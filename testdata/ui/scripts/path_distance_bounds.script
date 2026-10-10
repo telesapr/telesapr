@@ -1,0 +1,33 @@
+# A line given a minimum length of 40 and a maximum of 50, and a point
+# put on it as a segment, with the mouse; the same as
+# path_distance_bounds.go makes (TestPathEquivalenceDistanceBounds).
+key s
+move 200 250
+down L 200 250
+up L 200 250
+move 350 250
+down L 350 250
+up L 350 250
+key esc
+move 275 250
+down L 275 250
+up L 275 250
+menu Constrain|Minimum Distance
+edit 40
+move 275 250
+down L 275 250
+up L 275 250
+menu Constrain|Maximum Distance
+edit 50
+key p
+move 260 330
+down L 260 330
+up L 260 330
+key esc
+move 260 330
+down L 260 330
+up L 260 330
+move 300 250
+down L 300 250
+up L 300 250
+menu Constrain|On Segment

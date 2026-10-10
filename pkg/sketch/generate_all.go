@@ -563,9 +563,9 @@ func (sk *Sketch) WriteEquationsExceptFor(hg core.HGroup, hc core.HConstraint, l
 func (sk *Sketch) writeEqSystemForGroup(hg core.HGroup, groupParams []core.HParam) (*solver.System, *solver.Group) {
 	g := sk.Group(hg)
 
+	sys := &solver.System{SK: sk.Param}
 	// The solver works on copies of the group's params, with the
 	// sketch's values as initial guesses.
-	sys := &solver.System{SK: sk.Param}
 	for _, h := range groupParams {
 		p := *sk.Param(h)
 		p.Known = false
@@ -595,6 +595,73 @@ func (sk *Sketch) writeEqSystemForGroup(hg core.HGroup, groupParams []core.HPara
 		},
 	}
 	return sys, sg
+}
+
+// solveHoldingBounds solves group hg by solve, whose result how
+// reads, holding its inequalities at their bounds where the sketch
+// would cross them (core.Constraint.Bound). It solves with every bound
+// free, then holds the one crossed furthest and solves again, until
+// none is crossed or a solve fails; one at a time, since a bound held
+// may keep the sketch off another it crossed. Bounds the solution
+// stops at are held at last, so that the freedom counted is the
+// freedom left at the solution, unless holding them makes the group
+// redundant: a length dimension with a maximum of the same value is
+// no conflict.
+func (sk *Sketch) solveHoldingBounds(hg core.HGroup, solve func(), how func() core.SolveResult) {
+	var bounds []*core.Constraint
+	for ci := range sk.Constraints {
+		if c := &sk.Constraints[ci]; c.Group == hg && c.IsInequality() {
+			c.Bound = core.BoundFree
+			if !c.Reference {
+				// A point on a segment starts at its foot on it, which
+				// the solve then moves it from no more than it must.
+				c.SeedParam(sk)
+				bounds = append(bounds, c)
+			}
+		}
+	}
+	solve()
+	for range bounds {
+		if r := how(); r != core.SolveOkay && r != core.SolveRedundantOkay {
+			return
+		}
+		var worst *core.Constraint
+		worstBy, worstBound := 0.0, core.BoundFree
+		for _, c := range bounds {
+			if c.Bound != core.BoundFree {
+				continue
+			}
+			if by, bound := c.Crossed(sk); core.IsCrossed(by) && (worst == nil || by > worstBy) {
+				worst, worstBy, worstBound = c, by, bound
+			}
+		}
+		if worst == nil {
+			break
+		}
+		worst.Bound = worstBound
+		solve()
+	}
+	before := how()
+	if before != core.SolveOkay && before != core.SolveRedundantOkay {
+		return
+	}
+	var touching []*core.Constraint
+	for _, c := range bounds {
+		if by, bound := c.Crossed(sk); c.Bound == core.BoundFree && core.IsAtBound(by) {
+			c.Bound = bound
+			touching = append(touching, c)
+		}
+	}
+	if len(touching) == 0 {
+		return
+	}
+	solve()
+	if how() != before {
+		for _, c := range touching {
+			c.Bound = core.BoundFree
+		}
+		solve()
+	}
 }
 
 // groupParams lists the params group hg's requests, constraints and
@@ -652,18 +719,23 @@ func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam,
 	g := sk.Group(hg)
 	g.SketchDiagnostic = nil
 
-	sys, sg := sk.writeEqSystemForGroup(hg, groupParams)
 	g.Solved.Remove = nil
 	var how core.SolveResult
-	err := catchPanic(func() {
-		how, g.Solved.Dof, g.Solved.Remove = sys.Solve(sg, !g.AllowRedundant, andFindFree, !g.DofCheckOk)
-	})
-	if err != nil {
-		// A malformed sketch is reported, not a crash.
-		g.SketchDiagnostic = &SketchDiagnostic{AddConstraintErrors: []string{
-			fmt.Sprintf("group %v: %v", hg, err)}}
-		how = core.SolveDidntConverge
+	var sg *solver.Group
+	solve := func() {
+		var sys *solver.System
+		sys, sg = sk.writeEqSystemForGroup(hg, groupParams)
+		err := catchPanic(func() {
+			how, g.Solved.Dof, g.Solved.Remove = sys.Solve(sg, !g.AllowRedundant, andFindFree, !g.DofCheckOk)
+		})
+		if err != nil {
+			// A malformed sketch is reported, not a crash.
+			g.SketchDiagnostic = &SketchDiagnostic{AddConstraintErrors: []string{
+				fmt.Sprintf("group %v: %v", hg, err)}}
+			how = core.SolveDidntConverge
+		}
 	}
+	sk.solveHoldingBounds(hg, solve, func() core.SolveResult { return how })
 	g.Solved.Timeout = sg.Timeout
 	if how == core.SolveOkay {
 		g.DofCheckOk = true

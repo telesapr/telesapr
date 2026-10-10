@@ -38,6 +38,10 @@ func (ss *Application) constraintLabel(c *core.Constraint) string {
 		result = fmt.Sprintf("%.3f:1", c.ValA)
 	case core.ConstraintComment:
 		result = c.Comment
+	case core.ConstraintMinDistance:
+		result = "min " + ss.MmToStringSI(math.Abs(c.ValA), 0)
+	case core.ConstraintMaxDistance:
+		result = "max " + ss.MmToStringSI(math.Abs(c.ValA), 0)
 	case core.ConstraintDiameter:
 		if !c.Other {
 			result = "⌀" + ss.MmToStringSI(c.ValA, 0)
@@ -67,6 +71,7 @@ func (gw *graphicsWindow) constraintIsVisible(c *core.Constraint) bool {
 	if gw.showConstraints == sCMShowDim {
 		switch c.Type {
 		case core.ConstraintAngle, core.ConstraintDiameter, core.ConstraintPtPtDistance,
+			core.ConstraintMinDistance, core.ConstraintMaxDistance,
 			core.ConstraintPtFaceDistance, core.ConstraintPtLineDistance, core.ConstraintPtPlaneDistance:
 			isDim = true
 		}
@@ -638,7 +643,7 @@ func (d *constraintDrawer) doLayout(how constraintDrawAs, labelPos *geom.Vector,
 // layout lays the constraint out by its type.
 func (d *constraintDrawer) layout() {
 	switch d.c.Type {
-	case core.ConstraintPtPtDistance:
+	case core.ConstraintPtPtDistance, core.ConstraintMinDistance, core.ConstraintMaxDistance:
 		d.layoutPtPtDistance()
 		return
 
@@ -664,6 +669,10 @@ func (d *constraintDrawer) layout() {
 
 	case core.ConstraintPtOnCircle, core.ConstraintPtOnLine, core.ConstraintPtOnFace, core.ConstraintPtInPlane:
 		d.layoutPtOnEntity()
+		return
+
+	case core.ConstraintPtOnSegment:
+		d.layoutPtOnSegment()
 		return
 
 	case core.ConstraintWhereDragged:
@@ -1002,6 +1011,20 @@ func (d *constraintDrawer) layoutPtOnEntity() {
 	d.doLine(d.hcs, p.Plus(r).Minus(dd), p.Minus(r).Minus(dd))
 	d.doLine(d.hcs, p.Minus(r).Minus(dd), p.Minus(r).Plus(dd))
 	d.doLine(d.hcs, p.Minus(r).Plus(dd), p.Plus(r).Plus(dd))
+}
+
+// layoutPtOnSegment lays out a core.ConstraintPtOnSegment constraint: a
+// diamond, where a point on the line has a square.
+func (d *constraintDrawer) layoutPtOnSegment() {
+	p := d.drawNum(d.c.PtA)
+	d.addRef(p)
+	s := 6 / d.camera.Scale
+	r := d.gr.WithMagnitude(s)
+	u := d.gu.WithMagnitude(s)
+	d.doLine(d.hcs, p.Plus(r), p.Plus(u))
+	d.doLine(d.hcs, p.Plus(u), p.Minus(r))
+	d.doLine(d.hcs, p.Minus(r), p.Minus(u))
+	d.doLine(d.hcs, p.Minus(u), p.Plus(r))
 }
 
 // layoutWhereDragged lays out a core.ConstraintWhereDragged constraint.

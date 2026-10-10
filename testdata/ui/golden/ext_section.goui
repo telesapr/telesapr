@@ -119,6 +119,8 @@ tw 1 unsaved 1 cursor 0 tooltip ""
 &Constrain ind=0 en=1 act=0
   &Distance / Diameter [D] ind=0 en=1 act=0
   Re&ference Dimension [Shift+D] ind=0 en=1 act=0
+  M&inimum Distance ind=0 en=1 act=0
+  Ma&ximum Distance ind=0 en=1 act=0
   A&ngle / Equal Angle [N] ind=0 en=1 act=0
   Reference An&gle [Shift+N] ind=0 en=1 act=0
   Other S&upplementary Angle [U] ind=0 en=1 act=0
@@ -128,6 +130,7 @@ tw 1 unsaved 1 cursor 0 tooltip ""
   &Vertical [V] ind=0 en=1 act=0
   ---
   &On Point / Curve / Plane [O] ind=0 en=1 act=0
+  On &Segment ind=0 en=1 act=0
   E&qual Length / Radius [Q] ind=0 en=1 act=0
   Length / Arc Ra&tio [Z] ind=0 en=1 act=0
   Length / Arc Diff&erence [J] ind=0 en=1 act=0
@@ -489,6 +492,8 @@ row 21
 &Constrain ind=0 en=1 act=0
   &Distance / Diameter [D] ind=0 en=1 act=0
   Re&ference Dimension [Shift+D] ind=0 en=1 act=0
+  M&inimum Distance ind=0 en=1 act=0
+  Ma&ximum Distance ind=0 en=1 act=0
   A&ngle / Equal Angle [N] ind=0 en=1 act=0
   Reference An&gle [Shift+N] ind=0 en=1 act=0
   Other S&upplementary Angle [U] ind=0 en=1 act=0
@@ -498,6 +503,7 @@ row 21
   &Vertical [V] ind=0 en=1 act=0
   ---
   &On Point / Curve / Plane [O] ind=0 en=1 act=0
+  On &Segment ind=0 en=1 act=0
   E&qual Length / Radius [Q] ind=0 en=1 act=0
   Length / Arc Ra&tio [Z] ind=0 en=1 act=0
   Length / Arc Diff&erence [J] ind=0 en=1 act=0

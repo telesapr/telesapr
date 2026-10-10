@@ -974,7 +974,7 @@ func GenerateConstraint(c *core.Constraint, l *[]core.Param) {
 			break
 		}
 		fallthrough
-	case core.ConstraintSameOrientation, core.ConstraintPtOnLine:
+	case core.ConstraintSameOrientation, core.ConstraintPtOnLine, core.ConstraintPtOnSegment:
 		c.ValP = c.H.Param(0)
 		*l = append(*l, core.Param{H: c.ValP})
 	}

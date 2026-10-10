@@ -95,6 +95,8 @@ const (
 	// Constrain
 	cmdDistanceDia
 	cmdRefDistance
+	cmdMinDistance
+	cmdMaxDistance
 	cmdAngle
 	cmdRefAngle
 	cmdOtherAngle
@@ -103,6 +105,7 @@ const (
 	cmdRatio
 	cmdDifference
 	cmdOnEntity
+	cmdOnSegment
 	cmdSymmetric
 	cmdAtMidpoint
 	cmdHorizontal

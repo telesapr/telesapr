@@ -15,33 +15,20 @@ fixture has been done; its "Tried" notes say what not to try again.
 
 | # | Item | Kind | Size | Why here |
 |---|---|---|---|---|
-| 1 | [F2 Inequality and point-on-segment constraints](#f2-inequality-and-point-on-segment-constraints) | feature | M | Solver gap against neosolve; no kernel risk |
-| 2 | [K1 Robust point projection](#k1-robust-point-projection) | kernel foundation | S–M | Smallest kernel item with the widest effect (fillets, pullback, picking, STEP) |
-| 3 | [K2 Ray-cast CSG oracle](#k2-ray-cast-csg-oracle) | test foundation | M | An in-tree volume and Boolean oracle for every later kernel change, no FreeCAD needed |
-| 4 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (L) | Blocks four open items below |
-| 5 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks five open items below |
-| 6 | [F4 Corner radius on path sweeps](#f4-corner-radius-on-path-sweeps) | feature | M | The sound joint users usually want where 28.4's mitre fails |
-| 7 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
-| 8 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
-| 9 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
-| 10 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Wait for K3 |
-| 11 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
+| 1 | [K1 Robust point projection](#k1-robust-point-projection) | kernel foundation | S–M | Smallest kernel item with the widest effect (fillets, pullback, picking, STEP) |
+| 2 | [K2 Ray-cast CSG oracle](#k2-ray-cast-csg-oracle) | test foundation | M | An in-tree volume and Boolean oracle for every later kernel change, no FreeCAD needed |
+| 3 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (L) | Blocks four open items below |
+| 4 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks five open items below |
+| 5 | [F4 Corner radius on path sweeps](#f4-corner-radius-on-path-sweeps) | feature | M | The sound joint users usually want where 28.4's mitre fails |
+| 6 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
+| 7 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
+| 8 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
+| 9 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Wait for K3 |
+| 10 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
-Items 4 and 5 open most of the rest: the dependency column in each table below names which.
+Items 3 and 4 open most of the rest: the dependency column in each table below names which.
 
 ## Features
-
-### F2 Inequality and point-on-segment constraints
-
-From the neosolve survey (2026-10-07). Neosolve has them; TeleSAPR has neither.
-
-- **Minimum and maximum distance** (≥, ≤): two slack equations per constraint, as the solver's
-  other inequality mechanisms do.
-- **Point on segment**: a point held to a line's parameter t in [0, 1]; today `PtOnLine` is on
-  the infinite line. Same slack mechanism.
-
-Both need the usual menu entries, text-window rows, `pkg/script/api` methods and freedom/conflict
-reporting.
 
 ### F4 Corner radius on path sweeps
 
@@ -57,6 +44,7 @@ From the neosolve survey; each is small and independent.
 
 | Item | State |
 |---|---|
+| Minimum and maximum bounds on point-line and point-plane distances, radii and angles | F2 bounds point-point distances and lengths; the same active set (`core.Constraint.Crossed`) takes any dimension |
 | Arrow keys nudge the selected entities | not found in `pkg/ui` |
 | Directional marquee: window left to right, crossing right to left | check what the selection does today |
 | Separate visibility toggles for reference constraints and comments | check what View > Show offers |

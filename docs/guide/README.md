@@ -38,6 +38,7 @@ the entries had before the menus took this order are still taken.
 |---|---|---|
 | [Parameters and units](parameters-and-units.md) | Named values that drive dimensions; configurations; a motion study; dimensions read by name; the document's unit of length; measuring | `plate`, `configurations`, `motion`, `dimensions`, `feedback` |
 | [Constraints while drawing](drawing.md) | Tangent, perpendicular, parallel and equal inferred as a line is drawn | (none) |
+| [Minimum and maximum distances](limits.md) | Distances and lengths bounded from one side; a point kept between a segment's ends | `limits` |
 | [History](history.md) | Moving a group, suppressing one with what uses it, broken references | `history` |
 | [Appearance and shading](appearance.md) | Matte, plastic, glossy and metal faces, lit by a shader | `appearance` |
 | [Sketch on a face](sketch-on-face.md) | A sketch in a flat face of the solid, following it | `pedestal` |

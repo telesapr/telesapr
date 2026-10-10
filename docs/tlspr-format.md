@@ -384,7 +384,13 @@ The constraint type names are those the text window shows:
 `same-orientation`, `angle`, `parallel`, `perpendicular`, `arc-line-tangent`,
 `cubic-line-tangent`, `curve-curve-tangent`, `eq-radius`, `lock-where-dragged`,
 `arc-arc-length-ratio`, `arc-line-length-ratio`, `arc-arc-len-difference`,
-`arc-line-len-difference`, `comment`.
+`arc-line-len-difference`, `comment`, `min-distance`, `max-distance`, `pt-on-segment` (the
+last three added within version 2 on 2026-10-10).
+
+`min-distance` and `max-distance` bound the distance between `pt-a` and `pt-b` by `value`; they
+have no `param`. `pt-on-segment` keeps `pt-a` on the line segment `entity-a` between its ends;
+its `param` is the point's place along the segment, 0 at its start and 1 at its end. Whether an
+inequality holds at its bound is worked out at each solve and isn't saved.
 
 ### Style
 

@@ -33,6 +33,7 @@ func (sk *Sketch) AddConstraintRemember(c *core.Constraint, rememberForUndo bool
 
 	c.H = sk.AddConstraint(*c)
 	GenerateConstraint(sk.Constraint(c.H), &sk.Params)
+	sk.Constraint(c.H).SeedParam(sk)
 
 	sk.MarkGroupDirty(c.Group, false)
 	sk.Group(c.Group).DofCheckOk = false

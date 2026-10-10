@@ -1780,6 +1780,10 @@
 			"Constraint": {
 				"kind": "struct",
 				"methods": {
+					"Crossed": {
+						"decl": "func (c *Constraint) Crossed(sk EntitySketch) (by float64, bound int)",
+						"text": "Crossed is how far the sketch is past the inequality's bound, in mm, and the bound it is past or nearest: positive where it is crossed, and within atBound of zero at the bound (IsAtBound)."
+					},
 					"GenerateEquations": {
 						"decl": "func (c *Constraint) GenerateEquations(sk EntitySketch, l *[]Equation, forReference bool)",
 						"text": "GenerateEquations appends the constraint's equations."
@@ -1795,6 +1799,10 @@
 					"ModifyToSatisfy": {
 						"decl": "func (c *Constraint) ModifyToSatisfy(sk EntitySketch)",
 						"text": "ModifyToSatisfy changes the constraint's value (or its valP) so that it holds for the sketch as it stands; used for reference dimensions."
+					},
+					"SeedParam": {
+						"decl": "func (c *Constraint) SeedParam(sk EntitySketch)",
+						"text": "SeedParam gives a point on a segment its place along it, nearest the point and between the ends, so that the first solve moves it no more than it must."
 					},
 					"StyleOrDefault": {
 						"decl": "func (c *Constraint) StyleOrDefault() HStyle",
@@ -1814,6 +1822,10 @@
 					},
 					"Equals": {
 						"decl": "func (c *ConstraintBase) Equals(other *ConstraintBase) bool"
+					},
+					"IsInequality": {
+						"decl": "func (c *ConstraintBase) IsInequality() bool",
+						"text": "IsInequality reports whether the constraint is an inequality, held at its bound only where the sketch would cross it."
 					}
 				}
 			},
@@ -1835,9 +1847,12 @@
 					"ConstraintPtLineDistance",
 					"ConstraintPtFaceDistance",
 					"ConstraintProjPtDistance",
+					"ConstraintMinDistance",
+					"ConstraintMaxDistance",
 					"ConstraintPtInPlane",
 					"ConstraintPtOnLine",
 					"ConstraintPtOnFace",
+					"ConstraintPtOnSegment",
 					"ConstraintEqualLengthLines",
 					"ConstraintLengthRatio",
 					"ConstraintEqLenPtLineD",
@@ -2773,6 +2788,14 @@
 				"decl": "func FromVector(v geom.Vector) ExprVector",
 				"text": "FromVector returns an ExprVector from a numeric vector."
 			},
+			"IsAtBound": {
+				"decl": "func IsAtBound(by float64) bool",
+				"text": "IsAtBound reports whether a crossing of by, as Crossed measures it, leaves the inequality at its bound, within the solver's tolerance."
+			},
+			"IsCrossed": {
+				"decl": "func IsCrossed(by float64) bool",
+				"text": "IsCrossed reports whether a crossing of by, as Crossed measures it, is past the bound by more than the solver's tolerance."
+			},
 			"IsFreeIn3D": {
 				"decl": "func IsFreeIn3D(wrkpl HEntity) bool",
 				"text": "IsFreeIn3D reports whether wrkpl means \"free in 3d\"."
@@ -2892,6 +2915,22 @@
 			"AngleCosEps": {
 				"decl": "const AngleCosEps"
 			},
+			"BoundEnd": {
+				"decl": "const BoundEnd",
+				"text": "Bounds an inequality can be held at."
+			},
+			"BoundFree": {
+				"decl": "const BoundFree",
+				"text": "Bounds an inequality can be held at."
+			},
+			"BoundHeld": {
+				"decl": "const BoundHeld",
+				"text": "Bounds an inequality can be held at."
+			},
+			"BoundStart": {
+				"decl": "const BoundStart",
+				"text": "Bounds an inequality can be held at."
+			},
 			"ConstraintAngle": {
 				"decl": "const ConstraintAngle"
 			},
@@ -2952,6 +2991,12 @@
 			"ConstraintLengthRatio": {
 				"decl": "const ConstraintLengthRatio"
 			},
+			"ConstraintMaxDistance": {
+				"decl": "const ConstraintMaxDistance"
+			},
+			"ConstraintMinDistance": {
+				"decl": "const ConstraintMinDistance"
+			},
 			"ConstraintParallel": {
 				"decl": "const ConstraintParallel"
 			},
@@ -2981,6 +3026,9 @@
 			},
 			"ConstraintPtOnLine": {
 				"decl": "const ConstraintPtOnLine"
+			},
+			"ConstraintPtOnSegment": {
+				"decl": "const ConstraintPtOnSegment"
 			},
 			"ConstraintPtPlaneDistance": {
 				"decl": "const ConstraintPtPlaneDistance"
@@ -4444,6 +4492,10 @@
 						"decl": "func (d *Doc) LoftThrough(profiles []Group, name string) Group",
 						"text": "LoftThrough joins the closed loops of sketches in workplanes, three\nor more, in order, by one smooth surface through them all, and closes\nthe ends with the first and last sketches' planes. Loops of fewer\ncurves have their longest split until all match, and each loop after\nthe first starts at the curve nearest where the one before it does.\nThe new group becomes active."
 					},
+					"MaxDistance": {
+						"decl": "func (d *Doc) MaxDistance(a, b Entity, v float64) Constraint",
+						"text": "MaxDistance keeps two points at most v apart, or a line segment at\nmost v long when b is Entity{}. It leaves the points free to come\ncloser, and takes a degree of freedom only where the sketch would\ngo further."
+					},
 					"Measure": {
 						"decl": "func (d *Doc) Measure(entities ...Entity) (m sketch.Measurement)",
 						"text": "Measure measures what it is given, as the description of the\nselection and Analyze \u003e Measure do, without adding a constraint: one\nline segment (its length) or circle (its radius); two points; a point\nand a circle, line segment or plane face; two lines, normals or\nplane faces (their angle in degrees); or two points and a line to\nproject their distance on. Lengths are in mm. A face counts by its\noutward normal: a point outside the solid is at a positive distance\nfrom it, and two opposite faces are at 180 degrees."
@@ -4451,6 +4503,10 @@
 					"Midpoint": {
 						"decl": "func (d *Doc) Midpoint(point, line Entity) Constraint",
 						"text": "Midpoint puts a point at the middle of a line segment."
+					},
+					"MinDistance": {
+						"decl": "func (d *Doc) MinDistance(a, b Entity, v float64) Constraint",
+						"text": "MinDistance keeps two points at least v apart, or a line segment at\nleast v long when b is Entity{}. Unlike Distance it leaves the\npoints free to move further apart: it holds only where the sketch\nwould come closer, and takes a degree of freedom only then."
 					},
 					"Mirror": {
 						"decl": "func (d *Doc) Mirror(plane Entity, name string) Group",
@@ -4471,6 +4527,10 @@
 					"On": {
 						"decl": "func (d *Doc) On(point, on Entity) Constraint",
 						"text": "On puts a point on a line segment, a circle or an arc, a workplane\nor a face."
+					},
+					"OnSegment": {
+						"decl": "func (d *Doc) OnSegment(point, line Entity) Constraint",
+						"text": "OnSegment puts a point on a line segment, between its ends: unlike\nOn, which puts it anywhere on the segment's line."
 					},
 					"Origin": {
 						"decl": "func (d *Doc) Origin() Entity",

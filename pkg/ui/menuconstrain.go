@@ -58,14 +58,18 @@ func (ss *Application) MenuConstrain(id Command) {
 			}
 		}
 
-		if constraint := sk.Constraint(nc.H); constraint != nil {
+		// A bound is made at the distance as it stands, where another
+		// bound or a dimension may hold it already; it is a bound still,
+		// which the user's value then moves off the other one.
+		if constraint := sk.Constraint(nc.H); constraint != nil && !constraint.IsInequality() {
 			if how, _ := sk.TestRankForGroup(nc.Group); how == core.SolveRedundantOkay &&
 				!sk.Group(gw.activeGroupH()).AllowRedundant && constraint.HasLabel() {
 				constraint.Reference = true
 			}
 		}
 
-		if (id == cmdDistanceDia || id == cmdAngle || id == cmdRatio || id == cmdDifference) &&
+		if (id == cmdDistanceDia || id == cmdMinDistance || id == cmdMaxDistance ||
+			id == cmdAngle || id == cmdRatio || id == cmdDifference) &&
 			ss.ImmediatelyEditDimension {
 			gw.EditConstraint(nc.H)
 		}
@@ -80,8 +84,14 @@ func (k *constraining) run(id Command) {
 	case cmdDistanceDia, cmdRefDistance:
 		k.constrainDistance(id)
 
+	case cmdMinDistance, cmdMaxDistance:
+		k.constrainDistanceBound(id)
+
 	case cmdOnEntity:
 		k.constrainOnEntity()
+
+	case cmdOnSegment:
+		k.constrainOnSegment()
 
 	case cmdEqual:
 		k.constrainEqual()
@@ -194,6 +204,60 @@ func (k *constraining) constrainDistance(id Command) {
 	}
 	c.ValA = 0
 	c.ModifyToSatisfy(sk)
+	k.add(c, true)
+}
+
+// constrainDistanceBound adds the constraint of cmdMinDistance,
+// cmdMaxDistance: at first the distance as it is, which the user then
+// edits to the bound.
+func (k *constraining) constrainDistanceBound(id Command) {
+	sk := k.sk
+	gs := k.gs
+	c := k.c
+
+	c.Type = core.ConstraintMinDistance
+	what := "minimum"
+	if id == cmdMaxDistance {
+		c.Type = core.ConstraintMaxDistance
+		what = "maximum"
+	}
+	switch {
+	case gs.points == 2 && gs.n == 2:
+		c.PtA = gs.point[0]
+		c.PtB = gs.point[1]
+	case gs.lineSegments == 1 && gs.n == 1:
+		e := sk.Entity(gs.entity[0])
+		c.PtA = e.Point[0]
+		c.PtB = e.Point[1]
+	default:
+		k.errorf("Bad selection for " + what + " distance constraint. This " +
+			"constraint can apply to:\n\n" +
+			"    * two points (distance between points)\n" +
+			"    * a line segment (length)\n")
+		return
+	}
+	a := sk.Entity(c.PtA).PointGetNum(sk)
+	b := sk.Entity(c.PtB).PointGetNum(sk)
+	c.Disp.Offset = sk.DistanceLabelOffset(a, b)
+	c.ValA = 0
+	c.ModifyToSatisfy(sk)
+	k.add(c, true)
+}
+
+// constrainOnSegment adds the constraint of cmdOnSegment.
+func (k *constraining) constrainOnSegment() {
+	gs := k.gs
+	c := k.c
+
+	if gs.points != 1 || gs.lineSegments != 1 || gs.n != 2 {
+		k.errorf("Bad selection for on segment constraint. This " +
+			"constraint can apply to:\n\n" +
+			"    * a point and a line segment (point between the segment's ends)\n")
+		return
+	}
+	c.Type = core.ConstraintPtOnSegment
+	c.PtA = gs.point[0]
+	c.EntityA = gs.entity[0]
 	k.add(c, true)
 }
 
