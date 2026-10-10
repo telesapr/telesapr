@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -337,6 +338,27 @@ func TestPathEquivalenceInsertGroup(t *testing.T) {
 	if got := strings.Join(names, " "); got != "#references sketch-in-plane extrude extrude" ||
 		ui.Group(ui.GroupOrder[2]).H.V < ui.Group(ui.GroupOrder[3]).H.V {
 		t.Errorf("the history: %s", got)
+	}
+}
+
+// A line's minimum and maximum lengths and a point on it as a segment,
+// made with the mouse and the Constrain menu, and the same made by a
+// script (F2).
+func TestPathEquivalenceDistanceBounds(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_distance_bounds", "path_distance_bounds")
+	var kinds []core.ConstraintType
+	for i := range ui.Constraints {
+		kinds = append(kinds, ui.Constraints[i].Type)
+	}
+	want := []core.ConstraintType{core.ConstraintMinDistance, core.ConstraintMaxDistance, core.ConstraintPtOnSegment}
+	if !slices.Equal(kinds, want) {
+		t.Errorf("constraints %v, want %v", kinds, want)
+	}
+	// The point, drawn onto the line, draws the line a little past its
+	// minimum, which then holds by itself: the line's four freedoms and
+	// the point's one along it.
+	if g := ui.Group(ui.Active); !g.IsSolvedOkay() || g.Solved.Dof != 5 {
+		t.Errorf("the sketch: %v, %d DOF", g.Solved.How, g.Solved.Dof)
 	}
 }
 

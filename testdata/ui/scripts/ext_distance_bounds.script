@@ -1,0 +1,41 @@
+# Minimum and maximum distances and a point on a segment (F2): a line
+# of 30 given a minimum of 40 grows to it, labelled "min 40.00"; a
+# maximum of 50 leaves it as it is. A point off to the side put on the
+# segment comes to its nearest place between the ends. On Segment with
+# nothing selected says what to select.
+key s
+move 200 250
+down L 200 250
+up L 200 250
+move 350 250
+down L 350 250
+up L 350 250
+key esc
+move 275 250
+down L 275 250
+up L 275 250
+menu Constrain|Minimum Distance
+edit 40
+dump
+move 275 250
+down L 275 250
+up L 275 250
+menu Constrain|Maximum Distance
+edit 50
+dump
+key p
+move 260 330
+down L 260 330
+up L 260 330
+key esc
+move 260 330
+down L 260 330
+up L 260 330
+move 300 250
+down L 300 250
+up L 300 250
+menu Constrain|On Segment
+dump
+tw
+answer ok
+menu Constrain|On Segment
