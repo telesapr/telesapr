@@ -1,7 +1,9 @@
 package sketch
 
 import (
+	"context"
 	"math"
+	"runtime/trace"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -96,6 +98,7 @@ func (g *Group) GenerateLoops(sk *Sketch, rt EntityBezierResolver) {
 // previous group's running shell by the group's Boolean. A group forced
 // to a mesh combines meshes instead (see combineMeshes).
 func (g *Group) GenerateShellAndMesh(sk *Sketch) {
+	defer trace.StartRegion(context.Background(), "solid").End()
 	defer func() { g.DisplayDirty = true }()
 	g.BooleanFailed = false
 	g.Problem = GroupProblem{}
@@ -669,6 +672,7 @@ func (g *Group) generateForBooleanShell(prevs, thiss, outs *srf.SShell, how Comb
 // a mesh: triangulate both operands, combine the meshes, and make the
 // result vertex to vertex.
 func (g *Group) combineMeshes(prevg *Group, how CombineAs) {
+	defer trace.StartRegion(context.Background(), "mesh boolean").End()
 	var prevm, thism srf.SMesh
 	if prevg != nil {
 		prevm.MakeFromCopyOf(&prevg.RunningMesh)

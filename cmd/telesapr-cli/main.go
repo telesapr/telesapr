@@ -100,6 +100,7 @@ File formats:
 		list(platform.SurfaceFileFilters))
 	_, _ = io.WriteString(w, scriptUsage)
 	_, _ = io.WriteString(w, mcpUsage)
+	_, _ = io.WriteString(w, profileUsage)
 }
 
 // views are the camera directions --view names, as projRight and
@@ -475,6 +476,13 @@ func main() {
 // and returns the exit status: 0 for success, 1 for a command that
 // failed, and the scripting commands' own statuses.
 func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	return withProfiles(args, stderr, func(args []string) int {
+		return runCommandLine(ctx, args, stdin, stdout, stderr)
+	})
+}
+
+// runCommandLine is run without the profiling options.
+func runCommandLine(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 1 {
 		showUsage(stderr, args[0])
 		return exitOK

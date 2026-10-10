@@ -1,7 +1,9 @@
 package tlspr
 
 import (
+	"context"
 	"math"
+	"runtime/trace"
 	"slices"
 	"sort"
 	"strconv"
@@ -26,6 +28,7 @@ type Options struct{}
 // values and visibility are refreshed first, as for export, so the
 // sketch changes in those fields only.
 func Encode(sk *sketch.Sketch, o Options) []byte {
+	defer trace.StartRegion(context.Background(), "save").End()
 	for i := range sk.Entities {
 		e := &sk.Entities[i]
 		func() {

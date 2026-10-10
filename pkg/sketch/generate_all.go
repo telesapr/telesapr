@@ -2,8 +2,10 @@ package sketch
 
 import (
 	"cmp"
+	"context"
 	"fmt"
 	"math"
+	"runtime/trace"
 	"slices"
 	"time"
 
@@ -24,6 +26,11 @@ func (sk *Sketch) GenerateAll() {
 // run.
 func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	defer func() { sk.Generation++ }()
+	name := "regenerate"
+	if genForBBox {
+		name = "regenerate for size"
+	}
+	defer trace.StartRegion(context.Background(), name).End()
 	sk.GroupOrder = sk.GroupOrder[:0]
 	for i := range sk.Groups {
 		sk.GroupOrder = append(sk.GroupOrder, sk.Groups[i].H)
@@ -641,6 +648,7 @@ func (sk *Sketch) TestRankForGroup(hg core.HGroup) (core.SolveResult, int) {
 // requests, constraints and the group itself generate, holding every
 // other param fixed.
 func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam, andFindFree bool) {
+	defer trace.StartRegion(context.Background(), "solve").End()
 	g := sk.Group(hg)
 	g.SketchDiagnostic = nil
 
