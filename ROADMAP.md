@@ -15,15 +15,15 @@ fixture has been done; its "Tried" notes say what not to try again.
 
 | # | Item | Kind | Size | Why here |
 |---|---|---|---|---|
-| 1 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (L) | Three cases done; tilted rings on a pot left |
-| 2 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks five open items below |
+| 1 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | ? (L) | Retires the ear-clipper heuristics; blocks six open items below, the off-axis bore's 20 among them |
+| 2 | [K3 Coincident and tangent contact (F5)](#k3-coincident-and-tangent-contact-f5) | kernel foundation | ? (M) | Three cases done 2026-10-10; tilted rings touching a pot left |
 | 3 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
 | 4 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel |
 | 5 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
 | 6 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint is not a contact case after all |
 | 7 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
-Items 1 and 2 open most of the rest: the dependency column in each table below names which.
+K4 opens most of the rest, K3 what touches; the dependency column in each table below names which.
 
 ## Features
 
@@ -172,7 +172,7 @@ holding it, not only those sharing the nearest one's surface, made a sphere_bore
 
 | Item | State |
 |---|---|
-| What to take back from "Parked" | Every row there is a proposal; F5 contact (now K3) blocks items above |
+| What to take back from "Parked" | Every row there is a proposal |
 | What the review took in without being asked | B3 (16.11), G4 (17.4) and S3 (17.5) are built; the user may still disown them |
 
 ## Parked
