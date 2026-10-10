@@ -187,10 +187,11 @@ func TestOffsetCells(t *testing.T) {
 }
 
 // solidCorpusSound are the corpus files whose shapes read as sound
-// solids (2026-10-04); the others fall back to meshes: Schenkel's mesh
-// and shell disagree on its Euler characteristic, and NIST_MBE_PMI_6,
-// which closes since package 27.3 (TestSolidSeamEdges), has a topology
-// problem at its poles. screw.step reads since roadmap 24.2: its cones'
+// solids, all nine since 2026-10-11 (roadmap K5): Schenkel's mesh and
+// shell disagreed on its Euler characteristic, and NIST_MBE_PMI_6 had a
+// topology problem at its poles, both where two faces' meshes lay on
+// each other in slivers, which the mender now meshes again
+// (SShell.mendCrossings). screw.step reads since roadmap 24.2: its cones'
 // outlines ran across their patches to the apex. NIST_MBE_PMI_5 reads
 // since the mesh checker measures an edge's crossing in the plane of
 // the triangle it crosses (STriangle.edgeCrossesWithin): its crossings,
@@ -199,7 +200,7 @@ func TestOffsetCells(t *testing.T) {
 var solidCorpusSound = map[string]bool{
 	"NIST_MBE_PMI_1.stp": true, "NIST_MBE_PMI_3.stp": true, "NIST_MBE_PMI_11.stp": true,
 	"t20_data.step": true, "ap203e2_mapped_assembly.stp": true, "screw.step": true,
-	"NIST_MBE_PMI_5.stp": true,
+	"NIST_MBE_PMI_5.stp": true, "NIST_MBE_PMI_6.stp": true, "Schenkel.stp": true,
 }
 
 // TestSolidCorpus reads the vendor files as solids: each shape of those
@@ -250,7 +251,7 @@ func TestSolidCorpus(t *testing.T) {
 
 // TestSolidCorpusCDT reads the vendor files as solids meshed by the
 // constrained Delaunay mesher (roadmap K4): all nine are sound, at the
-// reference's volume within the mesh's tolerance. The ear clipper
+// reference's volume within the mesh's tolerance. The ear clipper alone
 // leaves NIST_MBE_PMI_6 with slivers at its poles, where the polar
 // chart makes a pole one point, and Schenkel's mesh off its shell's
 // Euler characteristic.
@@ -318,20 +319,14 @@ func TestSolidSeamEdges(t *testing.T) {
 		sh.TriangulateInto(&mesh)
 		r := check.Solid(sh, &mesh)
 		allow := e.area*tol + 1e-6*e.volume
-		// NIST_MBE_PMI_6's mesh has slivers in the meridian plane at
-		// two of its three poles, where a trim runs up a meridian into
-		// the pole: the mesher, out of other ears, joins the trim's
-		// points to the pole, as the face beyond does, so the slivers
-		// lie on each other (step 24, what is left). Since the mesher
-		// passes over such ears where it has others, the third pole is
-		// clean: the mesh's Euler characteristic is off by 6, was 8.
-		// Neither mesh crosses itself: the two crossings each had were
-		// the checker's (STriangle.edgeCrossesWithin).
-		topos, euler := 0, 0
-		if e.name == "NIST_MBE_PMI_6.stp" {
-			topos, euler = 1, 6
-		}
-		if d := topo.MeshEuler(&mesh) - r.Euler; r.NakedEdges != 0 || r.SelfIntersecting != 0 || r.TopologyProblems > topos || d > euler || d < -euler ||
+		// NIST_MBE_PMI_6's ear-clipped mesh has slivers in the meridian
+		// plane at two of its three poles, where a trim runs up a
+		// meridian into the pole: the mesher, out of other ears, joins
+		// the trim's points to the pole, as the face beyond does, so the
+		// slivers lie on each other. The mender meshes those faces again
+		// (roadmap K5), and the mesh's Euler characteristic is the
+		// shell's.
+		if d := topo.MeshEuler(&mesh) - r.Euler; r.NakedEdges != 0 || r.SelfIntersecting != 0 || r.TopologyProblems != 0 || d != 0 ||
 			math.Abs(r.Volume-e.volume) > allow {
 			t.Errorf("%s: %s, mesh Euler off by %d; want volume %.6g within %.3g", e.name, r.String(), d, e.volume, allow)
 		}
@@ -342,9 +337,10 @@ func TestSolidSeamEdges(t *testing.T) {
 // doesn't cross itself, at FreeCAD's volume within the mesh's tolerance.
 // A wedge of a sphere from a circle of latitude up to its pole was
 // turned over, its pole's parameter along the folded side being any,
-// which left 40 naked edges round it. The shell's Euler characteristic
-// still differs from its mesh's (-34 against -6), cause not found, so
-// it is not counted sound (roadmap 27.4).
+// which left 40 naked edges round it. Its shell's Euler characteristic
+// differed from its mesh's (-34 against -6) where two faces fanned from
+// one corner along the curve they share, their slivers lying on each
+// other; the mender meshes those faces again (roadmap K5).
 func TestSolidSchenkelClosed(t *testing.T) {
 	if testing.Short() {
 		t.Skip("the corpus")
@@ -363,8 +359,11 @@ func TestSolidSchenkelClosed(t *testing.T) {
 		}
 		r := solidReport(sh)
 		allow := e.area*tol + 1e-6*e.volume
-		if r.NakedEdges != 0 || r.SelfIntersecting != 0 || math.Abs(r.Volume-e.volume) > allow {
-			t.Errorf("%s: %s; want volume %.6g within %.3g", e.name, r.String(), e.volume, allow)
+		var mesh srf.SMesh
+		sh.TriangulateInto(&mesh)
+		if d := topo.MeshEuler(&mesh) - r.Euler; r.NakedEdges != 0 || r.SelfIntersecting != 0 || r.TopologyProblems != 0 || d != 0 ||
+			math.Abs(r.Volume-e.volume) > allow {
+			t.Errorf("%s: %s, mesh Euler off by %d; want volume %.6g within %.3g", e.name, r.String(), d, e.volume, allow)
 		}
 	}
 }
