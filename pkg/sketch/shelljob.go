@@ -97,14 +97,24 @@ func (sk *Sketch) Apply(j *ShellJob) bool {
 		return false
 	}
 	for i := range sk.Groups {
-		g := &sk.Groups[i]
-		c := j.clone.Group(g.H)
-		if c == nil {
+		if j.clone.Group(sk.Groups[i].H) == nil {
 			return false
 		}
+	}
+	// A sketch on a face was placed from the solids as they were; where
+	// the new ones moved its face, the entities and the solve placed
+	// from them are the copy's.
+	moved := false
+	for i := range sk.Groups {
+		g := &sk.Groups[i]
+		c := j.clone.Group(g.H)
+		moved = moved || c.facePlaneMoved(g.Predef.Q, g.Predef.At)
 		*g = *c
 		g.ShellsStale = false
 		g.DisplayDirty = true
+	}
+	if moved {
+		sk.Entities, sk.Params = j.clone.Entities, j.clone.Params
 	}
 	return true
 }

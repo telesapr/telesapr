@@ -4644,6 +4644,10 @@
 						"decl": "func (d *Doc) SketchIn(wp Entity, name string) Group",
 						"text": "SketchIn adds a group to draw in, in a workplane like wp: one of\nthe reference workplanes, a workplane that was drawn, or the\nworkplane of another group. The new group becomes active, and its\nworkplane the one drawn in."
 					},
+					"SketchOnFace": {
+						"decl": "func (d *Doc) SketchOnFace(face SolidFace, name string) Group",
+						"text": "SketchOnFace adds a group to draw in, in a workplane lying in a flat\nface of the solid so far, as Solid.FaceAt or Solid.Face give it: its\nnormal out of the solid, its origin on a corner of the face and u\nalong an edge of it (for a face with no straight edge, as a\ncylinder's cap, the origin at the centre of its circle). The\nworkplane follows the face when an edit upstream moves it; when the\nface is gone, it stays where it was and Problem says so. The new\ngroup becomes active, and its workplane the one drawn in."
+					},
 					"Split": {
 						"decl": "func (d *Doc) Split(a, b Entity, near Vec)",
 						"text": "Split cuts two curves where they cross, or a curve at a point on it,\nas Sketch \u003e Split Curves at Intersection does. Of several crossings\nit takes the one nearest near."
@@ -4936,6 +4940,10 @@
 					"Expr": {
 						"decl": "func (g Group) Expr(value sketch.GroupValue) (expr string)",
 						"text": "Expr is the expression one of the group's values comes from, or \"\"\nfor a plain number."
+					},
+					"Face": {
+						"decl": "func (g Group) Face() (f SolidFace)",
+						"text": "Face is the face of the solid so far that a sketch made by\nSketchOnFace lies in."
 					},
 					"Faces": {
 						"decl": "func (g Group) Faces() (faces []Entity)",
@@ -5884,6 +5892,10 @@
 						"decl": "func (g *Group) ExtrusionGetVector(sk *Sketch) geom.Vector",
 						"text": "ExtrusionGetVector returns the extrusion vector, from its parameters."
 					},
+					"FaceProblem": {
+						"decl": "func (g *Group) FaceProblem() string",
+						"text": "FaceProblem is why a sketch on a face did not find its face at the last regeneration, or \"\": the workplane then stays where it was."
+					},
 					"FieldName": {
 						"decl": "func (g *Group) FieldName(f GroupValue) string",
 						"text": "FieldName is the value's name in the file and in messages for this group: a chamfer's distance is ValB, as a helix's pitch is."
@@ -6025,6 +6037,7 @@
 					"GroupWorkplaneByPointOrtho",
 					"GroupWorkplaneByLineSegments",
 					"GroupWorkplaneByPointNormal",
+					"GroupWorkplaneByFace",
 					"GroupOneSided",
 					"GroupTwoSided",
 					"GroupOneSkewed",
@@ -6705,6 +6718,10 @@
 						"decl": "func (sk *Sketch) NewShellJob() *ShellJob",
 						"text": "NewShellJob copies what defines the sketch, for a job to regenerate."
 					},
+					"NewSketchOnFace": {
+						"decl": "func (sk *Sketch) NewSketchOnFace(face srf.FaceID, name string) (Group, error)",
+						"text": "NewSketchOnFace starts a sketch whose workplane lies in the flat face face of the solid at the active group, its normal out of the solid."
+					},
 					"NewSmoothLoft": {
 						"decl": "func (sk *Sketch) NewSmoothLoft(profiles []core.HGroup, name string) (Group, error)",
 						"text": "NewSmoothLoft starts a loft through the profiles of groups, two or more, in order: two make a ruled loft, more a smooth one."
@@ -7354,6 +7371,9 @@
 			},
 			"GroupValC": {
 				"decl": "const GroupValC"
+			},
+			"GroupWorkplaneByFace": {
+				"decl": "const GroupWorkplaneByFace"
 			},
 			"GroupWorkplaneByLineSegments": {
 				"decl": "const GroupWorkplaneByLineSegments"

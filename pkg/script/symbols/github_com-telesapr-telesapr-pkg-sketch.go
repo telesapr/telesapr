@@ -74,6 +74,7 @@ func init() {
 		"GroupTwoSided":                reflect.ValueOf(sketch.GroupTwoSided),
 		"GroupTwoSkewed":               reflect.ValueOf(sketch.GroupTwoSkewed),
 		"GroupValC":                    reflect.ValueOf(sketch.GroupValC),
+		"GroupWorkplaneByFace":         reflect.ValueOf(sketch.GroupWorkplaneByFace),
 		"GroupWorkplaneByLineSegments": reflect.ValueOf(sketch.GroupWorkplaneByLineSegments),
 		"GroupWorkplaneByPointNormal":  reflect.ValueOf(sketch.GroupWorkplaneByPointNormal),
 		"GroupWorkplaneByPointOrtho":   reflect.ValueOf(sketch.GroupWorkplaneByPointOrtho),

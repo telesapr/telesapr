@@ -658,6 +658,8 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 					g.Predef.Q = d.quaternionField(p)
 				case "origin":
 					g.Predef.Origin = core.HEntity{V: d.handleField(p)}
+				case "at":
+					g.Predef.At = d.vectorField(p)
 				case "entity-b":
 					g.Predef.EntityB = core.HEntity{V: d.handleField(p)}
 				case "entity-c":

@@ -336,6 +336,20 @@ func TestSolidGoldens(t *testing.T) {
 			s := cut.Solid()
 			d.ShellSolid([]api.SolidFace{s.FaceAt(api.V(5, 5, 10)), s.FaceAt(api.V(15, 0, 5))}, 1.5, "")
 		},
+		"sketch-on-face": func(d *api.Doc) {
+			ex := block(d, 0, 0, 20, 10, 5)
+			d.SketchOnFace(ex.Solid().FaceAt(api.V(10, 5, 5)), "")
+			d.Rect(api.V(2, 2, 5), api.V(6, 6, 5))
+			d.Extrude(3, "")
+		},
+		"sketch-on-chamfer-face": func(d *api.Doc) {
+			// A face no entity names, the chamfer's.
+			ex := block(d, 0, 0, 10, 10, 10)
+			c := d.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10))}, 3, "")
+			d.SketchOnFace(c.Solid().FaceAt(api.V(5, 1.5, 8.5)), "")
+			d.Circle(api.V(5, 1.5, 8.5), 1)
+			d.Extrude(2, "")
+		},
 		"sweep-pipe": func(d *api.Doc) {
 			path := pipePath(d, 10, 8, 12)
 			d.SketchIn(d.Workplane("XY"), "profile")

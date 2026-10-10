@@ -15,3 +15,6 @@ the typed values `1/4` and `1/2`.
 
 `suppress_all.tlspr` is an extruded rectangle whose sketch is suppressed whole (`suppress-all`,
 added within version 2 on 2026-10-02), which leaves the extrusion out with it.
+
+`sketch_on_face.tlspr` is a block with a chamfer and a cylinder drawn on the chamfer's face, a face
+no entity names (workplane subtype `face`, added within version 2 on 2026-10-10).

@@ -358,6 +358,7 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 	pd := block("predef")
 	pd.quaternion("q", g.Predef.Q)
 	pd.handle("origin", g.Predef.Origin.V)
+	pd.vector("at", g.Predef.At)
 	pd.handle("entity-b", g.Predef.EntityB.V)
 	pd.handle("entity-c", g.Predef.EntityC.V)
 	pd.flag("swap-uv", g.Predef.SwapUV)

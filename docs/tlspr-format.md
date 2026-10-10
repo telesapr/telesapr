@@ -248,6 +248,7 @@ group <handle> <type> <name> {
 predef {
   q <w> <x> <y> <z>         # a quaternion; left out when all four are 0
   origin <handle>
+  at <x> <y> <z>            # a sketch on a face: its origin as last found; left out when 0
   entity-b <handle>
   entity-c <handle>
   swap-uv
@@ -298,11 +299,17 @@ place among that group's surfaces. A sweep moves the
 loops of its `op-a`, a sketch in a workplane, along its `edges`, line segments and arcs that
 meet end to end and tangent.
 
+A sketch in a workplane of subtype `face` lies in the flat face of the solid so far named by its
+one `solid-face`, by identity as a shell's faces are, and is placed in it again at every
+regeneration; its `predef`'s `q` and `at` are the orientation and origin it was last found at,
+which hold the workplane while the face can't be found, as on loading, before the solids are made.
+
 | Subtype | Name |
 |---|---|
 | Workplane by a point, orthogonal | `point-ortho` |
 | Workplane by two line segments | `line-segments` |
 | Workplane by a point and a normal | `point-normal` |
+| Workplane in a face of the solid | `face` |
 | One sided | `one-sided` |
 | Two sided | `two-sided` |
 | One sided, skewed | `one-skewed` |
@@ -574,6 +581,9 @@ A loft's `edges` are its guide curves since 2026-10-04 (roadmap 28.3): line segm
 cubics drawn before it, each chain of them that joins end to end one guide from the first
 profile through every profile to the last, two at most. A reader from before reads the field
 and ignores it, so the loft is made without its guides.
+
+Version 2 gained the workplane subtype `face`, with the `predef` field `at`, on 2026-10-10
+(roadmap F1). A reader from before refuses the unknown subtype.
 
 `testdata/tlspr/v1` and `testdata/tlspr/v2` hold files that every later reader must load.
 

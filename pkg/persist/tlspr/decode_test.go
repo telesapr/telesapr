@@ -33,6 +33,7 @@ func fullDocument() *Document {
 	}
 	g.Predef.Q = geom.Quaternion{W: 0.5, X: -0.5, Y: 0.25, Z: math.Copysign(0, -1)}
 	g.Predef.Origin = core.HEntity{V: 0x10001}
+	g.Predef.At = geom.Vector{X: 1.5, Y: -2, Z: 1e-7}
 	g.Predef.EntityB = core.HEntity{V: 0x20001}
 	g.Predef.EntityC = core.HEntity{V: 0x30001}
 	g.Predef.SwapUV, g.Predef.NegateU, g.Predef.NegateV = true, true, true
