@@ -90,11 +90,13 @@ echo "Releasing $tag at ${sha:0:7}."
 # 2. The commits.
 git push origin master
 
-# 3. CI on the commit.
+# 3. CI on the commit, the run of the push to master just made: the
+# same commit may already have passed on a branch, with the quick tests
+# only, and that run must not stand in for it.
 if [[ ${SKIP_CI:-} != 1 ]]; then
     run=
     for _ in $(seq 1 24); do
-        run=$(gh run list -w CI -c "$sha" --json databaseId -q '.[0].databaseId')
+        run=$(gh run list -w CI -b master -c "$sha" --json databaseId -q '.[0].databaseId')
         [[ -n $run ]] && break
         sleep 5
     done
