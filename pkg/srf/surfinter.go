@@ -2,6 +2,7 @@ package srf
 
 import (
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -189,8 +190,7 @@ func (s *SSurface) intersectPlanes(b *SSurface, agnstA, agnstB *SShell, into *cu
 
 		var up, vp float64
 		sr.ClosestPointToUV(p, &up, &vp, true)
-		ud := dl.Dot(tu) / tu.MagSquared()
-		vd := dl.Dot(tv) / tv.MagSquared()
+		ud, vd := alongTangents(dl, tu, tv)
 
 		// so u = up + t*ud
 		//    v = vp + t*vd
@@ -226,6 +226,23 @@ func (s *SSurface) intersectPlanes(b *SSurface, agnstA, agnstB *SShell, into *cu
 		bezier := SBezierFrom2(p.Plus(dl.ScaledBy(tmin)), p.Plus(dl.ScaledBy(tmax)))
 		s.addExactIntersectionCurve(&bezier, b, agnstA, agnstB, into)
 	}
+}
+
+// alongTangents is how far u and v move per unit along d, a direction in
+// the plane of the tangents tu and tv. The tangents of a sheared patch,
+// as the sloping top of a wedge whose width leans, are not at right
+// angles, so d's projection on each is not its component: a line along
+// one edge of such a patch would seem to cross the other parameter and
+// be clipped short. Tangents at right angles, to within what moves no
+// clip, keep the plain projections, whose last bits the goldens record.
+func alongTangents(d, tu, tv geom.Vector) (ud, vd float64) {
+	uu, uv, vv := tu.MagSquared(), tu.Dot(tv), tv.MagSquared()
+	du, dv := d.Dot(tu), d.Dot(tv)
+	det := uu*vv - uv*uv
+	if det <= 0 || math.Abs(uv) <= 1e-9*math.Sqrt(uu*vv) {
+		return du / uu, dv / vv
+	}
+	return (du*vv - dv*uv) / det, (dv*uu - du*uv) / det
 }
 
 // intersectPlaneAndExtrusion is IntersectAgainst's case of a plane and
@@ -510,13 +527,30 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 				}
 			}
 
+			// The step ends at the first seed it reaches, with any seed
+			// at the same place; one beyond is where a later curve
+			// starts. Where the curve runs nearly straight along a
+			// patch's edge, crossing it and back (a cone along the top
+			// of a ring), one long step can pass several.
+			near := -1
 			for k := range spl.Points {
 				sp := &spl.Points[k]
-				if sp.P.OnLineSegment(start, npc, 2*s.Tol.ChordTolMm()) {
-					sp.Tag = 1
-					a = maxsteps
-					npc = sp.P
+				if sp.P.OnLineSegment(start, npc, 2*s.Tol.ChordTolMm()) &&
+					(near < 0 || sp.P.Minus(start).Magnitude() < spl.Points[near].P.Minus(start).Magnitude()) {
+					near = k
 				}
+			}
+			if near >= 0 {
+				end := spl.Points[near].P
+				for k := range spl.Points {
+					sp := &spl.Points[k]
+					if sp.P.OnLineSegment(start, npc, 2*s.Tol.ChordTolMm()) &&
+						sp.P.Minus(end).Magnitude() < 2*s.Tol.ChordTolMm() {
+						sp.Tag = 1
+					}
+				}
+				a = maxsteps
+				npc = end
 			}
 
 			padd.P = npc
@@ -526,6 +560,16 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 			start = npc
 		}
 
+		if !onBothPatches(s, b, sc.Points[1:], maxtol) {
+			// Two patches that touch only where an edge of each
+			// crosses the other's, as a lathe's seam crosses a ring's
+			// in the plane both lie in, give a seed there and no
+			// curve: the march leaves one of them at once and follows
+			// the surface it extends to, a copy of the curve its
+			// neighbour makes (roadmap K3). The seed it ran into may
+			// start a curve of its own.
+			continue
+		}
 		kept := spl.Points[:0]
 		for _, sp := range spl.Points {
 			if sp.Tag == 0 {
@@ -541,6 +585,23 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 	}
 
 	s.intersectClosedLoops(b, agnstA, agnstB, into, marched)
+}
+
+// offPatch tells whether p lies off the patch srf by more than tol: its
+// nearest point on the patch, which stops at the patch's edge, is that
+// far away.
+func offPatch(srf *SSurface, p geom.Vector, tol float64) bool {
+	var uv geom.Point2d
+	srf.ClosestPointTo(p, &uv, true)
+	return srf.PointAtUv(uv).Minus(p).Magnitude() > tol
+}
+
+// onBothPatches tells whether any of pts lies on both patches a and b. A
+// march may leave a patch and come back, or run past its edge to where
+// the classification trims it; one that never lies on both is no curve
+// of theirs.
+func onBothPatches(a, b *SSurface, pts []SCurvePt, tol float64) bool {
+	return slices.ContainsFunc(pts, func(p SCurvePt) bool { return !offPatch(a, p.P, tol) && !offPatch(b, p.P, tol) })
 }
 
 // loopDepth is how many times intersectClosedLoops halves each surface

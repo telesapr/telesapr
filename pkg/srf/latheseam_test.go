@@ -90,8 +90,9 @@ const latheSeamMaxFailRate = 0
 // little off it or not, with the bore's end cap in the plane of the
 // spout's tip, a disc of four flat patches meeting at the axis
 // (roadmap 24.3). A cap on the axis passes; one off it is coincident
-// contact across the patches' seams, which the kernel doesn't take
-// (F5, under "Left out"): every one of those fails.
+// contact across the patches' seams (roadmap K3), where the bore's
+// circle crosses a seam that no surface crosses: every one of those
+// failed until the circle was split at the seams (fuseCoplanarSeam).
 func TestBoreToLathedTipSweep(t *testing.T) {
 	sweepChordTol(t)
 	grid := sweep.Grid{
@@ -103,7 +104,7 @@ func TestBoreToLathedTipSweep(t *testing.T) {
 		},
 		MaxFailRate:       boreTipMaxFailRate,
 		Sample:            16,
-		SampleMaxFailRate: 10.0 / 16,
+		SampleMaxFailRate: 5.0 / 16,
 	}
 	grid.Run(func(p sweep.Point) error {
 		q := geom.QuaternionFromAxisAngle(geom.Vector{X: 0.3, Y: 1, Z: 0.1}.WithMagnitude(1), p.Float("tilt")*math.Pi/180)
@@ -123,8 +124,13 @@ func TestBoreToLathedTipSweep(t *testing.T) {
 }
 
 // boreTipMaxFailRate is the fraction of TestBoreToLathedTipSweep's
-// grid allowed to fail: the 40 of 80 with the bore off the axis.
-const boreTipMaxFailRate = 40.0 / 80
+// grid allowed to fail: of the 40 of 80 with the bore off the axis, the
+// 20 whose bore breaks out through the spout's side below the tip. Their
+// Booleans close; the mesh of the bore's wall, a thin lens between the
+// tip and where the bore leaves the cone, fans long chords from the
+// crossing and is sound at some chord tolerances and not others (the
+// mesher's, roadmap K4).
+const boreTipMaxFailRate = 20.0 / 80
 
 // errUnsound says how a Boolean's result failed.
 func errUnsound(failed bool) error {

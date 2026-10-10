@@ -2,6 +2,7 @@ package srf
 
 import (
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -418,8 +419,9 @@ func coplanarTrimCrossings(il []SInter, c *SCurve, sh *SShell, own *SSurface, a,
 	if math.Abs(n.Dot(a)-d) > splitEndTol || math.Abs(n.Dot(b)-d) > splitEndTol {
 		return il
 	}
-	// Only the patches of own's shell: a coplanar face of the other
-	// operand is the business of the coincident-surface handling.
+	// The patches of own's shell, facing as own does; or, own being a
+	// face of the other operand lying on this one's, facing either way,
+	// the seams between this one's patches there (fuseCoplanarSeam).
 	mine := false
 	for i := range sh.Surface {
 		if &sh.Surface[i] == own {
@@ -427,23 +429,32 @@ func coplanarTrimCrossings(il []SInter, c *SCurve, sh *SShell, own *SSurface, a,
 			break
 		}
 	}
-	if !mine {
-		return il
+	inPlane := func(ss *SSurface, either bool) bool {
+		if ss == nil || ss.DegM != 1 || ss.DegN != 1 {
+			return false
+		}
+		sn := ss.NormalAt(0.5, 0.5)
+		if sn.Magnitude() < geom.LengthEps {
+			return false
+		}
+		dot := sn.WithMagnitude(1).Dot(n)
+		if either {
+			dot = math.Abs(dot)
+		}
+		return dot >= 1-geom.LengthEps && math.Abs(n.Dot(ss.PointAt(0, 0))-d) <= splitEndTol
 	}
 	ab := b.Minus(a)
 	for i := range sh.Surface {
 		ss := &sh.Surface[i]
-		if ss == own || ss.DegM != 1 || ss.DegN != 1 {
-			continue
-		}
-		sn := ss.NormalAt(0.5, 0.5)
-		if sn.Magnitude() < geom.LengthEps || sn.WithMagnitude(1).Dot(n) < 1-geom.LengthEps ||
-			math.Abs(n.Dot(ss.PointAt(0, 0))-d) > splitEndTol {
+		if ss == own || !inPlane(ss, !mine) {
 			continue
 		}
 		for j := range ss.Trim {
 			tc := sh.FindCurve(ss.Trim[j].Curve)
 			if tc == nil {
+				continue
+			}
+			if !mine && !fuseCoplanarSeam(sh, tc, inPlane) {
 				continue
 			}
 			for k := 1; k < len(tc.Points); k++ {
@@ -465,11 +476,31 @@ func coplanarTrimCrossings(il []SInter, c *SCurve, sh *SShell, own *SSurface, a,
 				if sa <= 0 || sa >= 1 || p.EqualsTol(a, splitEndTol) || p.EqualsTol(b, splitEndTol) {
 					continue
 				}
+				// A seam is reached from the patches on both its sides,
+				// and where it ends on a face across the plane, that face
+				// split the segment there already.
+				if !mine && slices.ContainsFunc(il, func(si SInter) bool { return si.P.EqualsTol(p, splitEndTol) }) {
+					continue
+				}
 				il = append(il, SInter{P: p, Srf: ss})
 			}
 		}
 	}
 	return il
+}
+
+// fuseCoplanarSeam tells whether tc, a trim of a flat patch of sh in the
+// plane inPlane tests, is a seam between two patches both in that plane,
+// as the quarters of a lathe's flat end meet. A face of the other operand
+// lying on that plane (a bore's cap in a spout's tip) has an edge crossing
+// the seam where no surface of sh crosses it, so nothing splits the edge
+// there; the seam is split there, by the wall the edge bounds, and the two
+// must share the vertex for each patch's trim to close (roadmap K3: fuse
+// the operands' vertices and edges before classifying). Other trims are
+// edges of the face, which a surface across the plane meets, and the
+// ray cast splits at those.
+func fuseCoplanarSeam(sh *SShell, tc *SCurve, inPlane func(ss *SSurface, either bool) bool) bool {
+	return inPlane(sh.FindSurface(tc.SurfA), true) && inPlane(sh.FindSurface(tc.SurfB), true)
 }
 
 // exactCrossing is where the exact curve sb, between its points nearest

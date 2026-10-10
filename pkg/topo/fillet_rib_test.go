@@ -16,8 +16,7 @@ import (
 )
 
 // A rib on a plate: a wedge 14 along its foot and h high at its back,
-// 10 wide, its width leaning by lean along the foot (not less than 0:
-// the union with the plate fails for a rib that leans the other way),
+// 10 wide, its width leaning by lean along the foot, either way,
 // standing on the plate's top, z = 0. Its back and sides are upright and its top slopes
 // down to the plate at the front. The four edges of its foot go in; the
 // two along its slope and the two up its back stick out.
@@ -133,12 +132,12 @@ func TestFilletRibFootSweep(t *testing.T) {
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("h", 5, 10, 20, 40),
-			sweep.Floats("lean", 0, 2, 4),
+			sweep.Floats("lean", -4, -2, 0, 2, 4),
 			sweep.Floats("r", 0.5, 1, 2),
 			sweep.Strings("edges", "all", "sides", "ends"),
 		},
 		MaxFailRate: 0,
-		Sample:      18,
+		Sample:      24,
 	}
 	grid.Run(func(p sweep.Point) error {
 		rb := rib{p.Float("h"), p.Float("lean")}
