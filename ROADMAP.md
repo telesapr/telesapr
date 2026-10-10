@@ -15,15 +15,14 @@ fixture has been done; its "Tried" notes say what not to try again.
 
 | # | Item | Kind | Size | Why here |
 |---|---|---|---|---|
-| 1 | [K5 STEP repair and accounting rules](#k5-step-repair-and-accounting-rules) | kernel | ? (M) | Corpus 7 of 9 sound; NIST_6 and Schenkel, both sound with K4's mesher; the mender does not reach them |
-| 2 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry; the dome's end sections first, being measured |
-| 3 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint needs the line-arc joint inside the sweep |
-| 4 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
-| 5 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Since 2026-10-11 it mends the ear clipper's crossing faces; as the default it still costs 3 to 5 times the triangles |
-| 6 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
+| 1 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry; the dome's end sections first, being measured |
+| 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint needs the line-arc joint inside the sweep |
+| 3 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
+| 4 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Since 2026-10-11 it mends the ear clipper's crossing faces; as the default it still costs 3 to 5 times the triangles |
+| 5 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
-K3 (contact) is closed: every case it measured is sound, the last ones with K4's mender. Its notes
-stay below for the next contact case. K4, postponed as the default, would open the mesher's open
+K3 (contact) and K5 (STEP) are closed: every case they measured is sound, the last ones with K4's
+mender. Their notes stay below for the next case. K4, postponed as the default, would open the mesher's open
 items that are not crossings; the dependency column in each table below names which.
 
 ## Features
@@ -109,7 +108,8 @@ was tried and what making it the default needs.
 Since 2026-10-11 it is merged as a mender (`pkg/srf/triangulate_mend.go`, `triangulate_check.go`):
 the ear clipper meshes every face as before, a face whose chords part from their uv segments' images
 by more than four chord tolerances is a candidate, and a candidate whose triangles cross the shell's
-mesh, or leave an edge with no mate, is meshed again by the CDT. A sound mesh is left as it is, so
+mesh, or leave an edge with no mate, is meshed again by the CDT, as is a face holding a triangle
+another face holds too (K5). A sound mesh is left as it is, so
 no golden moved. The bore sweep went from 20 of 80 failing to none, the handle on the pot from 3 of
 144 to none, and the run-off chamfers' crossings are gone (2 of 36 left, refused fillets). The
 measure alone could not choose the faces: sound faces part as far (a sphere's patches 18 chord
@@ -140,7 +140,6 @@ As the default it would close these items, which the mender leaves open (none is
 | Open item | State today, with the ear clipper and the mender |
 |---|---|
 | A twisted swept bar | flat sides mesh within 1.6% of volume |
-| NIST_MBE_PMI_6 as a solid | mesh Euler number 6 off the shell's (see K5) |
 | A chamfer of 3 where a slot meets a cone | 6 naked edges, on the slot's flat walls; with K4's mesher none, but one topology problem left |
 
 The band-on-cone fillet at r 1 and chord 0.001%, listed here before, is sound with the ear
@@ -148,16 +147,19 @@ clipper at 0.001% to 0.005%.
 
 ### K5 STEP repair and accounting rules
 
-STEP corpus: 7 of 9 read as sound solids. From BRL-CAD's `conv/step` (`STEPImportArchitecture.md`,
+Closed 2026-10-11: the STEP corpus reads 9 of 9 as sound solids. NIST_MBE_PMI_6 at its poles and
+Schenkel where two faces fan from one corner along the curve they share had the same fault: the ear
+clipper put the same sliver triangle in both faces' meshes, which then closed and mated edge for edge
+but were off the shell's Euler number. The mender now takes a face holding a triangle another face
+holds too (`srf.stackedFaces`) and meshes it by the CDT; no golden moved.
+
+For the next file that fails, from BRL-CAD's `conv/step` (`STEPImportArchitecture.md`,
 `STEPBrepSeamRepair.cpp`): accept in model space by the file's declared or a measured tolerance,
 never a solver threshold; a ladder of faithful construction, safe repair, tagged inference;
-exactly one accounted result per entity, so the report says what was repaired or lost. Try
-`repair_missing_singular_trims`' approach on the two below.
-
-| Open item | State today |
-|---|---|
-| NIST_MBE_PMI_6 | the pole topology problem under K4; sound with the spike's mesher (polar chart). STEP's `newtonOnSurface` keeps its own steps: with the kernel's projection (`srf.ProjectFrom`, K1) the trims moved and the pole slivers grew, the mesh's Euler number off by 10, not 6; switch it after K4 |
-| Schenkel | mesh closed and not self-crossing (`TestSolidSchenkelClosed`), no naked edges since `ed03d3b`, but the shell's Euler number is -34 against the mesh's -6; cause not found, so not counted sound; sound with K4's mesher, so likely the mesh's |
+exactly one accounted result per entity, so the report says what was repaired or lost.
+`repair_missing_singular_trims` is the approach for poles. STEP's `newtonOnSurface` keeps its own
+steps: with the kernel's projection (`srf.ProjectFrom`, K1) NIST_MBE_PMI_6's trims moved and its
+pole slivers grew.
 
 ## Open defects
 
