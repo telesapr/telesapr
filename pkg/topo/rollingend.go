@@ -519,8 +519,7 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		specs = append(specs, rbSpec{end: 1, lam: float64(i) / steps})
 	}
 	cache := map[rbSpec]rbSection{}
-	var eval func(sp rbSpec) (rbSection, error)
-	eval = func(sp rbSpec) (rbSection, error) {
+	eval := func(sp rbSpec) (rbSection, error) {
 		if sec, ok := cache[sp]; ok {
 			return sec, nil
 		}
