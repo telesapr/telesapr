@@ -252,6 +252,20 @@ func (t *Topology) generalBlendEdge(e int) bool {
 
 // newRollingBall works out the chain through edge e and its sides.
 func (t *Topology) newRollingBall(e int, r float64, flat bool) (*rollingBall, error) {
+	rb, err := t.newChain(e, r, flat)
+	if err != nil {
+		return nil, err
+	}
+	if err := rb.finish(); err != nil {
+		return nil, err
+	}
+	return rb, nil
+}
+
+// newChain is the chain through edge e, its sides and its ends, the ends
+// of its own that meet in a mitre marked; finish traces it, when every
+// mitre's ends are known.
+func (t *Topology) newChain(e int, r float64, flat bool) (*rollingBall, error) {
 	at := midpoint(t.Edges[e].Points)
 	pieces, verts, closed := t.blendChain(e)
 	if !closed {
@@ -306,12 +320,24 @@ func (t *Topology) newRollingBall(e int, r float64, flat bool) (*rollingBall, er
 		}
 		rb.markMitre()
 	}
+	return rb, nil
+}
+
+// finish traces the chain's edge on its faces, sets its mitres' planes,
+// and finds which way it turns (turn).
+func (rb *rollingBall) finish() error {
 	if err := rb.trace(); err != nil {
-		return nil, err
+		return err
 	}
 	if err := rb.mitrePlane(); err != nil {
-		return nil, err
+		return err
 	}
+	rb.turn()
+	return nil
+}
+
+// turn sets sigma, which way the edge turns.
+func (rb *rollingBall) turn() {
 	// Convex when face 0 runs away from face 1's outside, seen at the
 	// middle of the edge, away from an open chain's ends.
 	mi := len(rb.pts) / 2
@@ -322,7 +348,6 @@ func (t *Topology) newRollingBall(e int, r float64, flat bool) (*rollingBall, er
 	if d0.Dot(b.n) > 0 {
 		rb.sigma = -1
 	}
-	return rb, nil
 }
 
 // foot is the point of side k's faces nearest x. Past an open chain's
@@ -1113,7 +1138,6 @@ type rbCrossing struct {
 // curved faces, with radius r, as the package comment above says. The
 // fillet's patches get origin as their origin and sheet.
 func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uint32, flat bool) error {
-	at := midpoint(t.Edges[e].Points)
 	rb, err := t.newRollingBall(e, r, flat)
 	if err != nil {
 		return err
@@ -1122,20 +1146,97 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 	if err != nil {
 		return err
 	}
+	bl, err := rb.patches(sf, secs, cross)
+	if err != nil {
+		return err
+	}
+	return putBlends(sh, []*rbBlend{bl}, origin)
+}
+
+// rbBlend is a chain's fillet: its surface's patches, a row or two
+// along the edge, its sections and the crossings of seams among them.
+type rbBlend struct {
+	rb    *rollingBall
+	all   [][]srf.SSurface
+	secs  []rbSection
+	cross []rbCrossing
+}
+
+// patches is the blend of surface sf, cut into its patches.
+func (rb *rollingBall) patches(sf *srf.BSplineSurface, secs []rbSection, cross []rbCrossing) (*rbBlend, error) {
+	at := midpoint(rb.pts)
 	all, err := sf.Patches()
 	if err != nil {
-		return filletErr(at, "the fillet's surface can't be cut into patches: %v", err)
+		return nil, filletErr(at, "the fillet's surface can't be cut into patches: %v", err)
 	}
 	// One row of patches along the edge, or two where the sections are
 	// split at their middles (splitEnds): side 0's half, then side 1's.
 	if len(all) != 1 && (!rb.splitEnds || len(all) != 2) {
-		return filletErr(at, "the fillet's sections are not single arcs")
+		return nil, filletErr(at, "the fillet's sections are not single arcs")
 	}
+	m := len(all[0])
+	if m != len(secs)-1 || len(all[len(all)-1]) != m {
+		return nil, filletErr(at, "the fillet's surface has %d patches for %d sections", m, len(secs))
+	}
+	return &rbBlend{rb: rb, all: all, secs: secs, cross: cross}, nil
+}
+
+// putBlends cuts the faces at each blend's edge back to it and puts its
+// patches in, those of blend i with origin origin+i, and checks that the
+// solid is closed: blends that meet in mitres go in together.
+func putBlends(sh *srf.SShell, bls []*rbBlend, origin uint32) error {
+	at := midpoint(bls[0].rb.pts)
+	t := bls[0].rb.t
+	loops := make([]map[int][]srf.SBezier, len(bls))
+	for i, bl := range bls {
+		var err error
+		if loops[i], err = bl.cutBack(sh); err != nil {
+			return err
+		}
+	}
+	dropUnusedCurves(sh)
+
+	// The fillet's patches.
+	fa := NewFaceAdder(sh)
+	for i, bl := range bls {
+		color := t.Surface(bl.rb.side[0][0]).Color
+		for _, row := range bl.all {
+			for b := range row {
+				p := row[b]
+				loop := patchLoop(&p)
+				if l, ok := loops[i][b]; ok {
+					if len(l) == 0 {
+						continue
+					}
+					loop = l
+				}
+				p.Color = color
+				p.Origin = origin + uint32(i)
+				p.Sheet = origin + uint32(i)
+				if _, err := fa.Add(p, [][]srf.SBezier{loop}); err != nil {
+					return filletErr(loop[0].Start(), "the fillet's face can't be put in: %v", err)
+				}
+			}
+		}
+	}
+	t2, err := Build(sh)
+	if err != nil {
+		return filletErr(at, "%v", err)
+	}
+	if probs := t2.Validate(); len(probs) > 0 {
+		return filletErr(probs[0].At, "the fillet leaves the solid open: %s", probs[0].Msg)
+	}
+	return nil
+}
+
+// cutBack cuts the faces at the blend's edge back along the curves the
+// ball touches them, and its ends' faces to its ends; it gives the loops
+// an end that runs off a face cuts the patches it crosses to, by patch.
+func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
+	rb, t, all, secs, cross := bl.rb, bl.rb.t, bl.all, bl.secs, bl.cross
+	at := midpoint(rb.pts)
 	row := all[0]
 	m := len(row)
-	if m != len(secs)-1 || len(all[len(all)-1]) != m {
-		return filletErr(at, "the fillet's surface has %d patches for %d sections", m, len(secs))
-	}
 	// sideRow is the row of patches along side k.
 	sideRow := func(k int) []srf.SSurface { return all[k*(len(all)-1)] }
 	// The fillet's corner at section j on side k.
@@ -1196,7 +1297,7 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 			}
 		}
 		if j < 0 {
-			return filletErr(at, "a seam's crossing is not among the fillet's sections")
+			return nil, filletErr(at, "a seam's crossing is not among the fillet's sections")
 		}
 		q := corner(j, c.side)
 		// The seam between the two patches from a vertex of the edge, the
@@ -1220,12 +1321,12 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 			}
 		}
 		if x < 0 {
-			return filletErr(q, "the fillet crosses a seam of a face that doesn't reach the edge: make it smaller")
+			return nil, filletErr(q, "the fillet crosses a seam of a face that doesn't reach the edge: make it smaller")
 		}
 		// By the curve nearest the point: a curve may run along both
 		// seams, and an earlier cut gives it new handles.
 		if err := splitNearest(sh, q, t.Vertices[v].P); err != nil {
-			return filletErr(q, "the fillet is wider than a patch of the face here: make it smaller")
+			return nil, filletErr(q, "the fillet is wider than a patch of the face here: make it smaller")
 		}
 		drop = append(drop, pair{q, t.Vertices[v].P})
 	}
@@ -1235,11 +1336,24 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 	// the edge gone from the flat face too, which takes the fillet's end.
 	var endCuts []rbEndCut
 	if rb.mitred() {
-		q, v, err := rb.mitreCut(sh, secs[0].arc)
-		if err != nil {
-			return err
+		for k, end := range rb.ends {
+			arc := secs[0].arc
+			if k == 1 {
+				arc = secs[len(secs)-1].arc
+			}
+			q, v := arc.Ctrl[0], t.Vertices[end.v].P
+			if end.ban[1] >= 0 {
+				q = arc.Ctrl[len(arc.Ctrl)-1]
+			}
+			if end.shared != nil {
+				// The end that fitted the mitre cuts the crease, once.
+				var err error
+				if q, v, err = rb.mitreCut(sh, k, arc); err != nil {
+					return nil, err
+				}
+			}
+			drop = append(drop, pair{q, v})
 		}
-		drop = append(drop, pair{q, v})
 	} else if !rb.closed {
 		for k, end := range rb.ends {
 			sec := secs[0]
@@ -1248,7 +1362,7 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 			}
 			cut, err := rb.cutEnd(sh, end, sec.arc)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			for i := range 2 {
 				if cut.goes[i] == nil && (cut.off == nil || cut.off.j != i) {
@@ -1257,11 +1371,11 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 			}
 			if ro := cut.off; ro != nil {
 				if len(all) > 1 {
-					return filletErr(t.Vertices[end.v].P, "the fillet runs off a face at one end and "+
+					return nil, filletErr(t.Vertices[end.v].P, "the fillet runs off a face at one end and "+
 						"ends on a curved face too wide to follow at the other: make it smaller")
 				}
 				if err := rb.runOffCuts(sh, row, k, ro); err != nil {
-					return err
+					return nil, err
 				}
 				w := t.Vertices[ro.w].P
 				drop = append(drop, pair{t.Vertices[end.v].P, w}, pair{w, ro.p2})
@@ -1280,11 +1394,11 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 		}
 		for b := ro.first; b < ro.after; b++ {
 			if _, ok := loops[b]; ok {
-				return filletErr(at, "the fillet runs off faces at both its ends: make it smaller")
+				return nil, filletErr(at, "the fillet runs off faces at both its ends: make it smaller")
 			}
 			l, a, err := clipPatch(&row[b], ro, math.Max(sh.Tol.ChordTolMm()/10, 1e-6))
 			if err != nil {
-				return err
+				return nil, err
 			}
 			snapEnds(l, ro.p1At, ro.p1)
 			snapEnds(a, ro.p1At, ro.p1)
@@ -1294,14 +1408,13 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 	}
 
 	// The faces at the edge, cut back along the fillet's edges.
-	color := t.Surface(rb.side[0][0]).Color
 	nextH := newCurveHandle(sh)
 	for k := range 2 {
 		pieces := map[int][]int{}
 		for b := range m {
 			sec, err := rb.section((secs[b].s + secs[b+1].s) / 2)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			f := sec.foot[k].f
 			pieces[f] = append(pieces[f], b)
@@ -1309,7 +1422,7 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 		for _, f := range rb.side[k] {
 			s := sh.FindSurface(t.Faces[f].Surface)
 			if s == nil {
-				return filletErr(at, "a face at the edge is not in the shell")
+				return nil, filletErr(at, "a face at the edge is not in the shell")
 			}
 			fwd, found := rb.forward(sh, s, chainCurve)
 			var kept []srf.STrimBy
@@ -1328,7 +1441,7 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 				}
 			}
 			if len(pieces[f]) > 0 && !found {
-				return filletErr(at, "a face the fillet touches is not along the edge")
+				return nil, filletErr(at, "a face the fillet touches is not along the edge")
 			}
 			for _, b := range pieces[f] {
 				sb, ok := rb.contactPiece(sideRow(k), endCuts, k, b)
@@ -1373,44 +1486,15 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 				part.Ctrl[0], part.Ctrl[part.Degree] = ro.p1, sec.Finish()
 			}
 			if err := rb.closeRunOff(sh, cut, part, across[k], &nextH); err != nil {
-				return err
+				return nil, err
 			}
 			continue
 		}
 		if err := rb.closeEnd(sh, cut, &nextH); err != nil {
-			return err
+			return nil, err
 		}
 	}
-	dropUnusedCurves(sh)
-
-	// The fillet's patches.
-	fa := NewFaceAdder(sh)
-	for _, row := range all {
-		for b := range m {
-			p := row[b]
-			loop := patchLoop(&p)
-			if l, ok := loops[b]; ok {
-				if len(l) == 0 {
-					continue
-				}
-				loop = l
-			}
-			p.Color = color
-			p.Origin = origin
-			p.Sheet = origin
-			if _, err := fa.Add(p, [][]srf.SBezier{loop}); err != nil {
-				return filletErr(loop[0].Start(), "the fillet's face can't be put in: %v", err)
-			}
-		}
-	}
-	t2, err := Build(sh)
-	if err != nil {
-		return filletErr(at, "%v", err)
-	}
-	if probs := t2.Validate(); len(probs) > 0 {
-		return filletErr(probs[0].At, "the fillet leaves the solid open: %s", probs[0].Msg)
-	}
-	return nil
+	return loops, nil
 }
 
 // forward reports whether surface s's face runs the edge along the way

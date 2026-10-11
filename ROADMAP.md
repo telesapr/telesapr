@@ -165,8 +165,8 @@ pole slivers grew.
 
 ### Fillet leftovers
 
-Code: `pkg/topo/rollingball.go`, `rollingend.go`, `rollingrunoff.go`, `fillet_setback.go`,
-`fillet_network.go`. Every case below is refused with a message today, except where the State
+Code: `pkg/topo/rollingball.go`, `rollingend.go`, `rollingrunoff.go`, `rollingmitre.go`,
+`rollingchains.go`, `fillet_setback.go`, `fillet_network.go`. Every case below is refused with a message today, except where the State
 column says unsound. Measure: `TestFilletOnOtherSolids` (fillets on lofts, sweeps and STEP
 solids) at 47 of 59 sound.
 
@@ -175,7 +175,9 @@ solids) at 47 of 59 sound.
 | Run-offs onto a curved face; a run-off of a blend that takes material away; both ends running off | refused, naming the place | The setback patch is the means: where the ball runs off a face, cut the fillet as a setback is cut and fill the hole between it, the next face's fillet (or the face) and the faces round. A run-off taking material away was never reached by any test case (a slot cut from the cone never got that far) |
 | Open chains ending on a curved face (the loft's foot edges, across a crease) | refused: "the ball doesn't touch the face" | Same patches, the end face's curve no longer planar: its side rule becomes the curved face's tangent plane along the curve, exact in the tau/sigma form only for ruled faces, fitted otherwise. Tried: the end section as the conic through the roots on the curved face, accepted within half the chord tolerance: no measured case gained |
 | The loft's top ring, where creases fade to tangent | "meets the flat face almost along it" | The chain should go on round the ring across a crease that is smooth at that vertex; `blendNext` takes only edges smooth all along |
-| Mitres between two different chains: a rim with two or more sharp creases, each run filleted as its own chain | not built; one chain whose ends meet at one crease is mitred (`rollingmitre.go`) | The same mitre, the other end's centres those of the other chain's: fillet the chains together, each end's height measured against the chain it meets, the two fitted to one shared curve |
+| Mitres where only some of a rim's chains are picked: a chain mitred at one end, ending on the unpicked chain's wall at the other | refused: "pick it alone" | Per-end mitres: `mitred` and `nearEnd` take both ends alike today; a mitred end beside a curved end (`curvedEndSection`) |
+| Chamfers meeting at a crease, of one chain or several | refused: "are not mitred" | The mitre is found from the ball's centres; a chamfer's would be where the two ruled surfaces, carried on, meet |
+| Mitres between chains of different radii | refused: "pick it alone" | The height against the other chain's centres less its own radius; the mitre is then no longer in the plane that halves the turn |
 | A rim's mitre below about 0.005% chord | refused: "the fillet's sections near its mitre can't be fitted" | At the cap the mitre runs nearly along the chain; tried: starting the fit from chord-length parameters (worse). More spans than two, or sections fitted against the mitre's own parameter |
 | A mitre of two radii over an edge left sharp | refused, naming the radii | Needs a crease in the blend, or the setback patch over the upright: the edges' cylinders meet tangentially where both touch the top face |
 | A rib rounded all over: its top's edges rounded as well as its foot filled | refused | The foot filled below a sharp top is made (uneven mitre). Top first: the foot's chain meets the arc where the floor cuts a leaning cylinder, which only the rolling ball rounds, and that edge must be picked alone. Foot first: the top's edge ends on the foot's fillet and the grown top |
@@ -195,8 +197,16 @@ ball's own lie on the swept surface, their arc lengths moved from the mitre's at
 vertices are OpenCASCADE's and our surfaces lie within 8e-5 mm of its result; r 0.5 and 1 are sound
 from chord 0.5% to 0.005%; r 1.5 and 2 are refused, as OpenCASCADE refuses them; below about 0.005%
 the sections near the mitre miss their fit (it runs nearly along the chain at the cap). A chain is
-closed only through a smooth join (`blendChain`). Mitres between two different chains are not
-built.
+closed only through a smooth join (`blendChain`).
+
+Done 2026-10-11: mitres between different chains, a rim that turns sharply at two or more creases of
+its wall, each run between two creases a chain of its own, picked together
+(`pkg/topo/rollingchains.go`). Each end's mate is the end it meets (`rbEnd.mate`): its height is
+measured against the mate chain's centres, the end fitted first fits the mitre and the other copies
+it, every chain is blended with split sections or none, and the faces of every chain are cut back
+before the solid is checked once. A lens of two cubics, and a profile of three: within 6e-6 of
+OpenCASCADE's volume, every point within 2e-4 mm of its fillet, its mitres' vertices
+(`TestFilletChainsMitred`).
 
 Done 2026-10-11: the box_hole.step edge whose ball passes a vertex where three of the hole's patches
 meet: the scan between two samples now walks every face the ball's point crosses, and a face it is on
