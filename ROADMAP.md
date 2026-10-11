@@ -168,12 +168,11 @@ pole slivers grew.
 Code: `pkg/topo/rollingball.go`, `rollingend.go`, `rollingrunoff.go`, `fillet_setback.go`,
 `fillet_network.go`. Every case below is refused with a message today, except where the State
 column says unsound. Measure: `TestFilletOnOtherSolids` (fillets on lofts, sweeps and STEP
-solids) at 45 of 59 sound.
+solids) at 47 of 59 sound.
 
 | Item | State | Approach / tried |
 |---|---|---|
 | Run-offs onto a curved face; a run-off of a blend that takes material away; both ends running off | refused, naming the place | The setback patch is the means: where the ball runs off a face, cut the fillet as a setback is cut and fill the hole between it, the next face's fillet (or the face) and the faces round. A run-off taking material away was never reached by any test case (a slot cut from the cone never got that far) |
-| Rims across a sharp upright edge of a curved wall: blob_extruded's two rims (each one closed edge, turning 130° where the B-spline wall has a crease), 2 of the 14 refused in `TestFilletOnOtherSolids` | refused: "the ball doesn't touch the face" | OpenCASCADE makes them (r 1 takes 8.469923, valid down to r 0.2). Spike 2026-10-11: within about r/tan(half the corner) of the crease the ball on one side comes within r of the other side's wall, so no section exists there; the two fillets must end in a mitre, as `fillet_network`'s do between planes and cylinders. Needed: the chain split at the crease into two ends; each side's foot kept to its own patches past the crease (`rollingBall.foot` takes the nearest of all); the end section the curve where the two swept tubes meet (`fitCut` with the height the distance to the other side's centres less r), one curve for both ends; the crease edge cut at the mitre's foot and the top face's foot curves meeting at its top. Also found: at a chain end on a crease the end's tangent is taken from the start side's wall normal (`newRollingBall`), so it came out as the start's reversed |
 | Open chains ending on a curved face (the loft's foot edges, across a crease) | refused: "the ball doesn't touch the face" | Same patches, the end face's curve no longer planar: its side rule becomes the curved face's tangent plane along the curve, exact in the tau/sigma form only for ruled faces, fitted otherwise. Tried: the end section as the conic through the roots on the curved face, accepted within half the chord tolerance: no measured case gained |
 | The loft's top ring, where creases fade to tangent | "meets the flat face almost along it" | The chain should go on round the ring across a crease that is smooth at that vertex; `blendNext` takes only edges smooth all along |
 | A mitre of two radii over an edge left sharp | refused, naming the radii | Needs a crease in the blend, or the setback patch over the upright: the edges' cylinders meet tangentially where both touch the top face |
@@ -183,6 +182,19 @@ solids) at 45 of 59 sound.
 | Chamfers of edges between flat faces that end on a curved face | refused | Routed like the fillets, they left 134 naked edges and edges run the same way; not traced |
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
 | Slot chamfer at 3 | see K4 | The teapot handle and the run-off chamfers' crossings, listed here before, are sound since K4's mender |
+
+Done 2026-10-11: rims across a sharp upright edge of a curved wall, blob_extruded's two (each one
+closed edge turning 130° where its B-spline wall has a crease): the chain runs from the crease round
+to it, and its ends meet in a mitre (`pkg/topo/rollingmitre.go`), where the surfaces the ball sweeps
+either way, carried on, meet. Near each end the ball keeps off the wall across the crease; the mitre
+is fitted where one swept surface meets the other (a root along the chain on the wall, the nearest
+approach on the cap the two share, where they meet tangentially); the sections between it and the
+ball's own lie on the swept surface, their arc lengths moved from the mitre's at each point. Its
+vertices are OpenCASCADE's and our surfaces lie within 8e-5 mm of its result; r 0.5 and 1 are sound
+from chord 0.5% to 0.005%; r 1.5 and 2 are refused, as OpenCASCADE refuses them; below about 0.005%
+the sections near the mitre miss their fit (it runs nearly along the chain at the cap). A chain is
+closed only through a smooth join (`blendChain`). Mitres between two different chains are not
+built.
 
 Done 2026-10-11: the box_hole.step edge whose ball passes a vertex where three of the hole's patches
 meet: the scan between two samples now walks every face the ball's point crosses, and a face it is on
