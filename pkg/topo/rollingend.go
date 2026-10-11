@@ -51,11 +51,18 @@ type rbEnd struct {
 	face   [2]int
 	curved bool
 	sign   float64
-	// mitre marks an end that meets the chain's other end across a
-	// crease (rollingmitre.go); ban is the face on each side the ball
-	// isn't taken onto near it, or -1.
+	// mitre marks an end that meets another end across a crease, the
+	// chain's own other end or one of another chain (rollingmitre.go):
+	// mate's end mateK. ban is, on the side whose face is creased there,
+	// the face across the crease, which the ball isn't taken onto near
+	// it, and -1 on the side whose face both chains share.
 	mitre bool
 	ban   [2]int
+	mate  *rollingBall
+	mateK int
+	// shared is the mitre, the last section of both ends, once one of
+	// them is fitted: the other copies it.
+	shared *rbSection
 }
 
 // rbEndAt is the flat face the chain, through edge at vertex v between
@@ -412,6 +419,10 @@ func (rb *rollingBall) endDerivative(k int) ([]geom.Vector4, error) {
 
 // blendOpen is blend for an open chain.
 func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossing, error) {
+	if rb.mitred() && rb.ends[0].mate == rb {
+		// Its own ends meet: the mitre is fitted again with the sections.
+		rb.ends[0].shared, rb.ends[1].shared = nil, nil
+	}
 	last := len(rb.pts) - 1
 	beyond := [2]geom.Vector{rb.tan[0].ScaledBy(-1), rb.tan[last]}
 	var inner [2]float64
@@ -530,11 +541,14 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		}
 		if err == nil && quartic {
 			switch {
-			case sp.end == 1 && sp.lam == 0 && rb.ends[1].mitre:
-				// The mitre is both ends' last section.
-				var first rbSection
-				if first, err = eval(rbSpec{end: 0}); err == nil {
-					sec.arc, sec.foot = first.arc, first.foot
+			case sp.end >= 0 && sp.lam == 0 && rb.ends[sp.end].mitre && rb.mateShared(sp.end) != nil:
+				// The mitre is both ends' last section, fitted by the end
+				// that came first.
+				sec = rb.fromMate(sp.end, sec)
+			case sp.end >= 0 && sp.lam == 0 && rb.ends[sp.end].mitre:
+				if sec, err = rb.curvedEndSection(sp.end, sec); err == nil {
+					shared := sec
+					rb.ends[sp.end].shared = &shared
 				}
 			case sp.end >= 0 && sp.lam == 0 && rb.ends[sp.end].curved:
 				sec, err = rb.curvedEndSection(sp.end, sec)

@@ -28,6 +28,11 @@ import (
 // the other end's centres less the radius. The end at the start is
 // fitted as a curved end is (curvedEndSection), to where that height is
 // zero, and the end at the finish takes the same curve.
+//
+// Where the rim turns at two or more creases, each run between two of
+// them is a chain of its own, and an end meets the next chain's end
+// (rollingchains.go): an end's mate is the end it meets, its own chain's
+// other end or another chain's, and "the other end" above is the mate.
 
 // mitreZone is how far along the chain from an end, in radii, the ball's
 // centres are kept for the other end's height.
@@ -40,9 +45,10 @@ const mitreCrossing = 0.1
 // mitreSamples is how many of the ball's centres are kept per radius.
 const mitreSamples = 32
 
-// mitred reports whether the chain's ends meet in a mitre.
+// mitred reports whether the chain's ends meet in mitres, each other or
+// other chains' ends.
 func (rb *rollingBall) mitred() bool {
-	return !rb.closed && rb.ends[0] != nil && rb.ends[0].mitre
+	return !rb.closed && rb.ends[0] != nil && rb.ends[0].mitre && rb.ends[1].mitre
 }
 
 // rbNear is the end of a mitred chain a section is nearer (end), and
@@ -85,28 +91,96 @@ func (rb *rollingBall) markMitre() {
 	}
 	for k, end := range rb.ends {
 		end.mitre, end.curved, end.ban = true, true, ban[k]
+		end.mate, end.mateK = rb, 1-k
 	}
 }
 
+// linkMitres makes mitre ends of the open chains' ends that meet
+// another chain's end at a vertex where the third edge, between the two
+// chains' faces on one side, is a crease: the two chains share their
+// other side's face, and each one's end face is the other's creased
+// face. It reports whether every end of every chain is linked so, and
+// to a chain of the same radius.
+func linkMitres(rbs []*rollingBall) bool {
+	for _, rb := range rbs {
+		for k, end := range rb.ends {
+			if rb.closed || end == nil {
+				return false
+			}
+			for _, o := range rbs {
+				if end.mitre {
+					break
+				}
+				if o == rb || o.closed || o.r != rb.r || o.flat != rb.flat {
+					continue
+				}
+				for ok, oe := range o.ends {
+					if oe.v != end.v || oe.mitre {
+						continue
+					}
+					ban, ok0 := mitreBan(end, oe, o)
+					oban, ok1 := mitreBan(oe, end, rb)
+					if !ok0 || !ok1 {
+						continue
+					}
+					end.mitre, end.curved, end.ban, end.mate, end.mateK = true, true, ban, o, ok
+					oe.mitre, oe.curved, oe.ban, oe.mate, oe.mateK = true, true, oban, rb, k
+					break
+				}
+			}
+			if !end.mitre {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// mitreBan is end's ban where chain o's end oe meets it in a mitre: on
+// the side whose edge with end's face is o's own, the face both share,
+// none; on the other, the crease, end's face. It reports false where
+// the two don't meet so.
+func mitreBan(end, oe *rbEnd, o *rollingBall) ([2]int, bool) {
+	ban := [2]int{-1, -1}
+	if !slices.Contains(oe.face[:], end.f) {
+		return ban, false
+	}
+	shared := 0
+	for j := range 2 {
+		if slices.ContainsFunc(o.pieces, func(pc ChainPiece) bool { return pc.Edge == end.a[j] }) {
+			shared++
+		} else {
+			ban[j] = end.f
+		}
+	}
+	return ban, shared == 1
+}
+
 // mitrePlane sets each mitre end's normal and plane: the plane that
-// halves the turn at the crease, through the vertex, its normal pointing
-// on past that end.
+// halves the turn at the crease from it to its mate, through the vertex,
+// its normal pointing on past that end.
 func (rb *rollingBall) mitrePlane() error {
 	if !rb.mitred() {
 		return nil
 	}
-	n := len(rb.tan)
-	m := rb.tan[0].Plus(rb.tan[n-1])
-	at := rb.t.Vertices[rb.ends[0].v].P
-	if m.Magnitude() < 1e-6 {
-		return filletErr(at, "the edge turns back on itself at the crease")
-	}
-	m = m.WithMagnitude(1)
 	for k, end := range rb.ends {
-		end.n = m.ScaledBy(endDir(k))
+		m := rb.beyond(k).Minus(end.mate.beyond(end.mateK))
+		at := rb.t.Vertices[end.v].P
+		if m.Magnitude() < 1e-6 {
+			return filletErr(at, "the edge turns back on itself at the crease")
+		}
+		end.n = m.WithMagnitude(1)
 		end.d = end.n.Dot(at)
 	}
 	return nil
+}
+
+// beyond is the way on past end k along the chain.
+func (rb *rollingBall) beyond(k int) geom.Vector {
+	if k == 0 {
+		return rb.tan[0].ScaledBy(-1)
+	}
+	return rb.tan[len(rb.tan)-1]
 }
 
 // rbCentres are the ball's centres at arc lengths s near an end.
@@ -189,20 +263,27 @@ func (rb *rollingBall) nearestCentre(k int, p geom.Vector) (geom.Vector, bool) {
 	return q, true
 }
 
+// mateCentre is the point of the ball's centres' curve near end k's
+// mate, the end it meets in the mitre, nearest p.
+func (rb *rollingBall) mateCentre(k int, p geom.Vector) (geom.Vector, bool) {
+	end := rb.ends[k]
+	return end.mate.nearestCentre(end.mateK, p)
+}
+
 // mitreHeight is how far p lies outside the surface the ball sweeps near
-// the other end than k: its distance from the centres less the radius.
+// end k's mate: its distance from the centres less the radius.
 func (rb *rollingBall) mitreHeight(k int, p geom.Vector) float64 {
-	c, ok := rb.nearestCentre(1-k, p)
+	c, ok := rb.mateCentre(k, p)
 	if !ok {
 		return math.NaN()
 	}
 	return p.Minus(c).Magnitude() - rb.r
 }
 
-// mitreNormal is the way out of the other end's swept surface at q,
+// mitreNormal is the way out of the mate's swept surface at q,
 // the normal of end k's end there: from the nearest of its centres.
 func (rb *rollingBall) mitreNormal(k int, q geom.Vector) geom.Vector {
-	c, ok := rb.nearestCentre(1-k, q)
+	c, ok := rb.mateCentre(k, q)
 	if !ok || q.Minus(c).Magnitude() == 0 {
 		return geom.Vector{}
 	}
@@ -228,7 +309,7 @@ func (rb *rollingBall) mitreFoot(k, i int) (float64, rbSection, error) {
 		if err != nil {
 			return math.NaN(), sec, false
 		}
-		c, ok := rb.nearestCentre(1-k, sec.foot[i].p)
+		c, ok := rb.mateCentre(k, sec.foot[i].p)
 		if !ok {
 			return math.NaN(), sec, false
 		}
@@ -360,8 +441,8 @@ func (rb *rollingBall) mitreRoot(k int, g func(rbSection) float64) (float64, rbS
 // both faces. The face the sides share takes the fillet's edge round to
 // the mitre from both ways, and the fillet's first and last patches
 // share the mitre, so nothing else is cut.
-func (rb *rollingBall) mitreCut(sh *srf.SShell, arc srf.BSplineCurve) (geom.Vector, geom.Vector, error) {
-	end := rb.ends[0]
+func (rb *rollingBall) mitreCut(sh *srf.SShell, k int, arc srf.BSplineCurve) (geom.Vector, geom.Vector, error) {
+	end := rb.ends[k]
 	v := rb.t.Vertices[end.v].P
 	q := arc.Ctrl[0]
 	if end.ban[1] >= 0 {
@@ -498,4 +579,47 @@ func (rb *rollingBall) mitreSectionWithin(k int, lam, slack float64) (rbSection,
 	sec.s, sec.arc = mean, fit
 	sec.foot = [2]rbFoot{first.foot[0], last.foot[1]}
 	return sec, inner, nil
+}
+
+// mateShared is the mitre end k's mate has fitted, or nil.
+func (rb *rollingBall) mateShared(k int) *rbSection {
+	end := rb.ends[k]
+	return end.mate.ends[end.mateK].shared
+}
+
+// fromMate is end k's last section sec with the mitre its mate fitted in
+// its place: run the other way where the face both share is the other
+// side of this chain than of the mate's.
+func (rb *rollingBall) fromMate(k int, sec rbSection) rbSection {
+	end := rb.ends[k]
+	m := rb.mateShared(k)
+	if end.mate == rb {
+		sec.arc, sec.foot = m.arc, m.foot
+		return sec
+	}
+	arc := m.arc
+	if (end.ban[0] < 0) != (end.mate.ends[end.mateK].ban[0] < 0) {
+		arc = reversedCurve(arc)
+	}
+	sec.arc = arc
+	sec.foot[0].p, sec.foot[1].p = arc.Ctrl[0], arc.Ctrl[len(arc.Ctrl)-1]
+	return sec
+}
+
+// reversedCurve is c run the other way.
+func reversedCurve(c srf.BSplineCurve) srf.BSplineCurve {
+	r := srf.BSplineCurve{Deg: c.Deg}
+	r.Ctrl = slices.Clone(c.Ctrl)
+	slices.Reverse(r.Ctrl)
+	if c.Weight != nil {
+		r.Weight = slices.Clone(c.Weight)
+		slices.Reverse(r.Weight)
+	}
+	n := len(c.Knots)
+	a, b := c.Knots[0], c.Knots[n-1]
+	r.Knots = make([]float64, n)
+	for i, x := range c.Knots {
+		r.Knots[n-1-i] = a + b - x
+	}
+	return r
 }

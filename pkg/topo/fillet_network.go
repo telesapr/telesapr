@@ -380,6 +380,12 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 				// Between two faces step 10's construction doesn't take: the
 				// rolling ball (roadmap 22.2), an edit of its own.
 				if len(picks) > 1 {
+					// Chains that meet in mitres, as a rim's runs between the
+					// creases of its wall, go together; else each on its own.
+					merr := filletMitredPicks(sh, t, picks, r, origin, flat)
+					if !errors.Is(merr, errNotMitred) {
+						return merr
+					}
 					return filletErr(midpoint(t.Edges[e].Points), "this edge's fillet rolls a ball between curved "+
 						"faces, which is made on its own: pick it alone (%v)", err)
 				}

@@ -93,3 +93,20 @@ func TestRollingBallOnEnvelope(t *testing.T) {
 		}
 	}
 }
+
+// A mitre copied to the chain whose shared face is its other side runs
+// the other way: the reversed curve's point at u is the curve's at
+// 1 - u, its weights and its knots between the spans carried over.
+func TestReversedCurve(t *testing.T) {
+	t.Parallel()
+	c := srf.BSplineCurve{Deg: 2, Knots: []float64{0, 0, 0, 0.3, 1, 1, 1},
+		Ctrl:   []geom.Vector{rbv(0, 0, 0), rbv(1, 2, 0), rbv(3, 2, 1), rbv(4, 0, 2)},
+		Weight: []float64{1, 0.7, 1.4, 1}}
+	r := reversedCurve(c)
+	for i := range 11 {
+		u := float64(i) / 10
+		if d := r.PointAt(u).Minus(c.PointAt(1 - u)).Magnitude(); d > 1e-12 {
+			t.Errorf("at %g: %v, want %v", u, r.PointAt(u), c.PointAt(1-u))
+		}
+	}
+}
