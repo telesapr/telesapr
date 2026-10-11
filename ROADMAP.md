@@ -165,8 +165,8 @@ pole slivers grew.
 
 ### Fillet leftovers
 
-Code: `pkg/topo/rollingball.go`, `rollingend.go`, `rollingrunoff.go`, `fillet_setback.go`,
-`fillet_network.go`. Every case below is refused with a message today, except where the State
+Code: `pkg/topo/rollingball.go`, `rollingend.go`, `rollingrunoff.go`, `rollingmitre.go`,
+`rollingchains.go`, `fillet_setback.go`, `fillet_network.go`. Every case below is refused with a message today, except where the State
 column says unsound. Measure: `TestFilletOnOtherSolids` (fillets on lofts, sweeps and STEP
 solids) at 47 of 59 sound.
 
