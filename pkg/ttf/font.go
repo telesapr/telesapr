@@ -58,7 +58,7 @@ func NewFontList(files []string) *FontList {
 // requests and entities that reference it store it.
 func (tf *Font) FontFileBaseName() string {
 	name := tf.FontFile
-	if i := strings.LastIndexByte(name, '/'); i >= 0 {
+	if i := strings.LastIndexAny(name, "/\\"); i >= 0 {
 		name = name[i+1:]
 	}
 	return name
