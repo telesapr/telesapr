@@ -7967,6 +7967,10 @@
 				"text": "BSplineCurve is a B-spline curve.",
 				"kind": "struct",
 				"methods": {
+					"Basis": {
+						"decl": "func (c *BSplineCurve) Basis(t float64) []float64",
+						"text": "Basis is the value at t of each of the curve's basis functions, one per control point, unweighted."
+					},
 					"Beziers": {
 						"decl": "func (c *BSplineCurve) Beziers() ([]SBezier, error)",
 						"text": "Beziers cuts the curve at its knots into Bezier curves, each running over one span of the domain from 0 to 1."
@@ -7990,6 +7994,10 @@
 					"PointAt": {
 						"decl": "func (c *BSplineCurve) PointAt(t float64) geom.Vector",
 						"text": "PointAt is the curve's point at t."
+					},
+					"WithKnot": {
+						"decl": "func (c BSplineCurve) WithKnot(t float64) BSplineCurve",
+						"text": "WithKnot is the curve with t inserted once into its knots: the same curve, one control point more."
 					}
 				},
 				"makers": [
@@ -9567,7 +9575,7 @@
 			},
 			"FromRevolutionOf": {
 				"decl": "func FromRevolutionOf(sb *SBezier, pt, axis geom.Vector, thetas, thetaf, dists, distf float64) SSurface",
-				"text": "FromRevolutionOf builds a surface by revolving a Bezier profile around an axis (pt, axis) over the angular range [thetas, thetaf], with optional endpoint shrinkage distances (dists, distf)."
+				"text": "FromRevolutionOf builds a surface by revolving a Bezier profile around an axis (pt, axis) over the angular range [thetas, thetaf], moved along the axis by dists at the start and distf at the finish."
 			},
 			"FromTransformationOf": {
 				"decl": "func FromTransformationOf(a *SSurface, t geom.Vector, q geom.Quaternion, scale float64, includingTrims bool) SSurface",
@@ -9580,6 +9588,10 @@
 			"GetParallelMode": {
 				"decl": "func GetParallelMode() ParallelMode",
 				"text": "GetParallelMode returns the mode."
+			},
+			"InsertKnotH": {
+				"decl": "func InsertKnotH(deg int, knots []float64, pts []geom.Vector4, t float64) ([]float64, []geom.Vector4)",
+				"text": "InsertKnotH inserts t once into the knots of homogeneous control points pts of degree deg, as WithKnot does, giving the new knots and points."
 			},
 			"InterpolatedCurve": {
 				"decl": "func InterpolatedCurve(pts []geom.Vector) SBezier",
