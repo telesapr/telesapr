@@ -54,6 +54,7 @@ func init() {
 		"FromTransformationOf":        reflect.ValueOf(srf.FromTransformationOf),
 		"FromTransformationOfSCurve":  reflect.ValueOf(srf.FromTransformationOfSCurve),
 		"GetParallelMode":             reflect.ValueOf(srf.GetParallelMode),
+		"InsertKnotH":                 reflect.ValueOf(srf.InsertKnotH),
 		"InterpolatedCurve":           reflect.ValueOf(srf.InterpolatedCurve),
 		"InterpolatedPatch":           reflect.ValueOf(srf.InterpolatedPatch),
 		"LocalOriginBit":              reflect.ValueOf(constant.MakeFromLiteral("32768", token.INT, 0)),
