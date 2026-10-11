@@ -139,7 +139,7 @@ func TestFilletOnOtherSolids(t *testing.T) {
 		}, 1, 12},
 		{"box_hole", step("shapes/box_hole.step"), 1, 14},
 		{"cylinder", step("shapes/cylinder.step"), 1, 2},
-		{"blob_extruded", step("shapes/blob_extruded.step"), 1, 1},
+		{"blob_extruded", step("shapes/blob_extruded.step"), 1, 3},
 		{"sphere_bored", step("shapes/sphere_bored.step"), 1, 2},
 		{"vase_revolved", step("shapes/vase_revolved.step"), 1, 2},
 		{"lid_degree7", step("degree/lid_degree7.step"), 1, 12},
@@ -339,4 +339,81 @@ func TestFilletEndsOnCurvedFaceSweep(t *testing.T) {
 		}
 		return nil
 	}).Require(t)
+}
+
+// The blob's top and bottom rims, each one closed edge that turns 130
+// degrees where its B-spline wall has a crease that stays sharp: the
+// ball rolling either way comes within its radius of the wall across
+// the crease near it, and the two ends meet in a mitre (rollingmitre.go).
+// The mitre runs from the crease, at the ball's height, to where the
+// curves the fillet touches the cap along cross: OpenCASCADE's makeFillet
+// of the same edges has its vertices there (0, 0, 4) and (0.0842189,
+// 2.4007678, 5), and every point of our fillet's surfaces lies within
+// 8e-5 mm of its result (sampled 2026-10-11). Both rims are sound and
+// take alike; the top one comes back alike after saving and loading.
+func TestFilletRimMitre(t *testing.T) {
+	if testing.Short() {
+		t.Skip("fillets over curved faces, slow")
+	}
+	blob := filepath.Join("..", "..", "..", "testdata", "step", "shapes", "blob_extruded.step")
+	var took [2]float64
+	for k, z := range []float64{5, 0} {
+		d := New()
+		d.Edit.SetChordTolerance(0.01)
+		g, err := d.Assembly.LinkStep(blob, "", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		before := g.Analyze().Check().Volume
+		var rim SolidEdge
+		for _, e := range g.Solid().Edges() {
+			if a, b := e.Ends(); a == b && math.Abs(a.Z-z) < 1e-9 {
+				rim = e
+			}
+		}
+		f := d.Features.FilletSolid([]SolidEdge{rim}, 1, "")
+		if p := f.Problem(); p != "" {
+			t.Fatalf("rim at z %g: %s", z, p)
+		}
+		rep := f.Analyze().Check()
+		if !rep.Sound() {
+			t.Errorf("rim at z %g: %s", z, rep.Summary())
+		}
+		took[k] = before - rep.Volume
+		// The mitre: from the crease at the ball's height up to the cap.
+		dz := 1.0
+		if z == 0 {
+			dz = -1
+		}
+		low, high := V(0, 0, z-dz), V(0.0842189, 2.4007678, z)
+		var ends [2]bool
+		for _, e := range f.Solid().Edges() {
+			a, b := e.Ends()
+			for i, q := range []Vec{low, high} {
+				ends[i] = ends[i] || a.Minus(q).Magnitude() < 1e-4 || b.Minus(q).Magnitude() < 1e-4
+			}
+		}
+		if !ends[0] || !ends[1] {
+			t.Errorf("rim at z %g: the mitre's ends %v and %v are not both vertices (%v)", z, low, high, ends)
+		}
+		if k == 1 {
+			continue
+		}
+		path := filepath.Join(t.TempDir(), "blob.tlspr")
+		if err := d.File.Save(path); err != nil {
+			t.Fatal(err)
+		}
+		l := New()
+		if err := l.File.Load(path); err != nil {
+			t.Fatal(err)
+		}
+		l.Edit.SetChordTolerance(0.01)
+		gs := l.Groups()
+		if r2 := gs[len(gs)-1].Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-rep.Volume) > 1e-6*rep.Volume {
+			t.Errorf("rim at z %g loaded: %s, volume %g, saved %g", z, r2.Summary(), r2.Volume, rep.Volume)
+		}
+	}
+	if math.Abs(took[0]-took[1]) > 1e-4*took[0] {
+		t.Errorf("the rims take %g and %g", took[0], took[1])
+	}
 }

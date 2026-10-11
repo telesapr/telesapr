@@ -25,7 +25,7 @@ PACKAGES=${PACKAGES:-./...}
 SHARDED=${SHARDED:-./pkg/persist/slvs ./pkg/topo ./pkg/script/api ./pkg/ui}
 HEAVY=${HEAVY:-TestParallelSameAsSerial TestParallelFastSameOnAnyGoroutines TestThreadSolids \
 TestThreadGoldens TestThreadSweep TestFreedomVsShowDof TestParallelFastSameShapeAsSerial TestMoveGroupSweep TestSuppressAllSweep \
-TestFilletOnOtherSolids TestFilletOnOtherSolidsVolumes TestEveryFacePicked}
+TestFilletOnOtherSolids TestFilletOnOtherSolidsVolumes TestEveryFacePicked TestFilletRimMitre}
 REST_SHARDS=${REST_SHARDS:-3}
 COVERPROFILE=${COVERPROFILE:-}
 

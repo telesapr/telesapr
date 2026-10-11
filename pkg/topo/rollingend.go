@@ -51,6 +51,11 @@ type rbEnd struct {
 	face   [2]int
 	curved bool
 	sign   float64
+	// mitre marks an end that meets the chain's other end across a
+	// crease (rollingmitre.go); ban is the face on each side the ball
+	// isn't taken onto near it, or -1.
+	mitre bool
+	ban   [2]int
 }
 
 // rbEndAt is the flat face the chain, through edge at vertex v between
@@ -66,7 +71,7 @@ func (t *Topology) rbEndAt(v int, faces [2]int, edge int) (*rbEnd, error) {
 	if len(others) != 2 {
 		return nil, errNotRolling
 	}
-	end := &rbEnd{v: v, f: -1, a: [2]int{-1, -1}, face: faces}
+	end := &rbEnd{v: v, f: -1, a: [2]int{-1, -1}, face: faces, ban: [2]int{-1, -1}}
 	for k := range 2 {
 		for _, x := range others {
 			fs := t.EdgeFaces(x)
@@ -113,6 +118,9 @@ func (t *Topology) rbEndAt(v int, faces [2]int, edge int) (*rbEnd, error) {
 // endHeight is how far p lies on past end's face, along its normal at
 // the point of it nearest p: for a flat face its height over the plane.
 func (rb *rollingBall) endHeight(end *rbEnd, p geom.Vector) float64 {
+	if end.mitre {
+		return rb.mitreHeight(slices.Index(rb.ends[:], end), p)
+	}
 	if !end.curved {
 		return end.n.Dot(p) - end.d
 	}
@@ -236,7 +244,15 @@ func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error
 			return rbSection{}, 0, filletErr(m, "the fillet's sections near the flat face its edge ends at fold here")
 		}
 		nrm = nrm.WithMagnitude(1)
-		if nrm.Dot(end.n) < 0 {
+		ref := end.n
+		if end.mitre {
+			// The plane that halves a mitre's turn may lean against the
+			// chain's way a few radii in, where the edge curves: past the
+			// end is on along the chain there.
+			_, tn := rb.along(ss[2])
+			ref = tn.ScaledBy(dir)
+		}
+		if nrm.Dot(ref) < 0 {
 			nrm = nrm.ScaledBy(-1)
 		}
 		sec, err := rb.conicIn(nrm, nrm.Dot(f0.p), [2]rbFoot{f0, f1}, m)
@@ -254,13 +270,28 @@ func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error
 	var ss [3]float64
 	var feet [2]rbFoot
 	for i := range 2 {
-		s, sec, err := rb.planeRoot(func(x rbSection) float64 { return rb.endHeight(end, x.foot[i].p) }, s0, dir, at)
+		var s float64
+		var sec rbSection
+		var err error
+		if end.mitre {
+			s, sec, err = rb.mitreFoot(k, i)
+		} else {
+			s, sec, err = rb.planeRoot(func(x rbSection) float64 { return rb.endHeight(end, x.foot[i].p) }, s0, dir, at)
+		}
 		if err != nil {
 			return rbSection{}, 0, err
 		}
 		ss[i], feet[i] = s, sec.foot[i]
 	}
-	sm, msec, err := rb.planeRoot(func(x rbSection) float64 { return rb.endHeight(end, x.arc.PointAt(0.5)) }, s0, dir, at)
+	mid := func(x rbSection) float64 { return rb.endHeight(end, x.arc.PointAt(0.5)) }
+	var sm float64
+	var msec rbSection
+	var err error
+	if end.mitre {
+		sm, msec, err = rb.mitreRoot(k, mid)
+	} else {
+		sm, msec, err = rb.planeRoot(mid, s0, dir, at)
+	}
 	if err != nil {
 		return rbSection{}, 0, err
 	}
@@ -291,6 +322,18 @@ func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error
 	}
 	rb.endS[k] = ss
 	sec.s = (ss[0] + ss[1] + ss[2]) / 3
+	if end.mitre {
+		// As the sections near it are reckoned (mitreSection).
+		ms, err := rb.mitreRoots(k)
+		if err != nil {
+			return sec, 0, err
+		}
+		sum := 0.0
+		for _, x := range ms {
+			sum += x
+		}
+		sec.s = sum / float64(len(ms))
+	}
 	inner := math.Max(ss[0], math.Max(ss[1], ss[2]))
 	if k == 1 {
 		inner = math.Min(ss[0], math.Min(ss[1], ss[2]))
@@ -346,11 +389,16 @@ func (rb *rollingBall) conicIn(nrm geom.Vector, d float64, feet [2]rbFoot, m geo
 func (rb *rollingBall) endDerivative(k int) ([]geom.Vector4, error) {
 	ramp := math.Abs(rb.target[k] - rb.endS[k][2])
 	h := 1e-4 * math.Min(1, rb.r/math.Max(ramp, 1e-9))
-	a, _, err := rb.endSection(k, -h)
+	sect := rb.endSection
+	if rb.ends[k].mitre {
+		// Fitted sections: a step the fits' last digits don't swamp.
+		h, sect = mitreStep, rb.mitreDerivative
+	}
+	a, _, err := sect(k, -h)
 	if err != nil {
 		return nil, err
 	}
-	b, _, err := rb.endSection(k, h)
+	b, _, err := sect(k, h)
 	if err != nil {
 		return nil, err
 	}
@@ -409,7 +457,7 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		if quartic {
 			deriv[k] = elevateH(deriv[k])
 		}
-		if rb.splitEnds {
+		if rb.splitEnds && len(deriv[k]) == endDeg+1 {
 			_, deriv[k] = srf.InsertKnotH(endDeg, bezierKnots(endDeg), deriv[k], 0.5)
 		}
 	}
@@ -460,19 +508,34 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		specs = append(specs, rbSpec{end: 1, lam: float64(i) / steps})
 	}
 	cache := map[rbSpec]rbSection{}
-	eval := func(sp rbSpec) (rbSection, error) {
+	var eval func(sp rbSpec) (rbSection, error)
+	eval = func(sp rbSpec) (rbSection, error) {
 		if sec, ok := cache[sp]; ok {
 			return sec, nil
 		}
 		var sec rbSection
 		var err error
-		if sp.end < 0 {
+		switch {
+		case sp.end < 0:
 			sec, err = rb.section(sp.s)
-		} else {
+		case sp.lam != 0 && rb.ends[sp.end].mitre:
+			// Already of the sections' degree and spans.
+			sec, _, err = rb.mitreSection(sp.end, sp.lam)
+			if err == nil {
+				cache[sp] = sec
+			}
+			return sec, err
+		default:
 			sec, _, err = rb.endSection(sp.end, sp.lam)
 		}
 		if err == nil && quartic {
 			switch {
+			case sp.end == 1 && sp.lam == 0 && rb.ends[1].mitre:
+				// The mitre is both ends' last section.
+				var first rbSection
+				if first, err = eval(rbSpec{end: 0}); err == nil {
+					sec.arc, sec.foot = first.arc, first.foot
+				}
 			case sp.end >= 0 && sp.lam == 0 && rb.ends[sp.end].curved:
 				sec, err = rb.curvedEndSection(sp.end, sec)
 			case sp.end >= 0 && rb.fitCuts:
@@ -936,10 +999,20 @@ func (rb *rollingBall) curvedEndSection(k int, sec rbSection) (rbSection, error)
 	s := rb.t.Surface(end.f)
 	// The curve's way at its ends: along the face and the side's.
 	tanAt := func(q, n geom.Vector) geom.Vector {
+		if end.mitre {
+			// Where the mitre meets the crease the two swept surfaces cross,
+			// and their normals give its way. They are tangent where it
+			// meets the face they share, and give none: the plane of the
+			// three points the conic went through does there.
+			if t := rb.mitreNormal(k, q).Cross(n); t.Magnitude() > mitreCrossing {
+				return t
+			}
+			return sec.cutN.Cross(n)
+		}
 		u, v, _ := nearestOnWithin(s, q, 0.5)
 		return s.NormalAt(u, v).Cross(n)
 	}
-	return rb.fitCut(k, sec, tanAt, func(p geom.Vector) float64 { return rb.endHeight(end, p) },
+	return rb.fitCut(k, sec, end.mitre, tanAt, func(p geom.Vector) float64 { return rb.endHeight(end, p) },
 		"the fillet's end on the curved face its edge ends at",
 		"the fillet's end strays %.3g mm from the curved face its edge ends at here: make it smaller")
 }
@@ -950,7 +1023,7 @@ func (rb *rollingBall) curvedEndSection(k int, sec rbSection) (rbSection, error)
 // tube, and the conic only near the cut.
 func (rb *rollingBall) planeCutSection(k int, sec rbSection) (rbSection, error) {
 	nrm, d := sec.cutN, sec.cutD
-	return rb.fitCut(k, sec, func(_, n geom.Vector) geom.Vector { return nrm.Cross(n) },
+	return rb.fitCut(k, sec, false, func(_, n geom.Vector) geom.Vector { return nrm.Cross(n) },
 		func(p geom.Vector) float64 { return nrm.Dot(p) - d }, "the fillet's end section near the face its edge ends at",
 		"the fillet's end section near the face its edge ends at strays %.3g mm from its plane here: make it smaller")
 }
@@ -960,8 +1033,10 @@ func (rb *rollingBall) planeCutSection(k int, sec rbSection) (rbSection, error) 
 // conic's, its ways there along tanAt's (from an end and the side's
 // face's normal there), and its middle points on the swept surface and
 // the cut within the fit's tolerance. what names the section in errors,
-// and strays says, of a height, that it strays from the cut.
-func (rb *rollingBall) fitCut(k int, sec rbSection, tanAt func(q, n geom.Vector) geom.Vector,
+// and strays says, of a height, that it strays from the cut. A mitre's
+// section (mitre) finds its points by mitreRoot, and its end on the face
+// both sides share may turn anywhere in that face.
+func (rb *rollingBall) fitCut(k int, sec rbSection, mitre bool, tanAt func(q, n geom.Vector) geom.Vector,
 	height func(geom.Vector) float64, what, strays string) (rbSection, error) {
 	at := sec.arc.PointAt(0.5)
 	c := rb.splitSection(raised(sec.arc))
@@ -989,6 +1064,17 @@ func (rb *rollingBall) fitCut(k int, sec rbSection, tanAt func(q, n geom.Vector)
 	}
 	t0 := way(q0, sec.foot[0].n, c.Ctrl[1])
 	t1 := way(q1, sec.foot[1].n, c.Ctrl[n-1])
+	// The ways the second and last but one control points may move from
+	// the ends: along the tangent, or, at a mitre's end on the face both
+	// sides share, where the two swept surfaces are tangent and give no
+	// way, anywhere in the face's tangent plane (mitreFreeEnd).
+	ways := [2][]geom.Vector{{t0}, {t1}}
+	for i := range 2 {
+		if mitre && rb.ends[k].ban[i] < 0 {
+			nf := sec.foot[i].n
+			ways[i] = []geom.Vector{nf.NormalDir(0), nf.NormalDir(1)}
+		}
+	}
 	// Where the swept surface meets the cut, along the ball's arcs.
 	dir := endDir(k)
 	nPts := 9
@@ -997,74 +1083,32 @@ func (rb *rollingBall) fitCut(k int, sec rbSection, tanAt func(q, n geom.Vector)
 	}
 	var ts []float64
 	var xs []geom.Vector
+	skipped := 0
 	for j := 1; j < nPts; j++ {
 		tj := float64(j) / float64(nPts)
-		_, xsec, err := rb.planeRoot(func(x rbSection) float64 { return height(x.arc.PointAt(tj)) }, sec.s, dir, at)
+		g := func(x rbSection) float64 { return height(x.arc.PointAt(tj)) }
+		var xsec rbSection
+		if mitre {
+			_, xsec, err = rb.mitreRoot(k, g)
+		} else {
+			_, xsec, err = rb.planeRoot(g, sec.s, dir, at)
+		}
 		if err != nil {
-			return sec, err
+			// An oblique cut may meet the swept surface at a point near a
+			// side far along the chain: up to two such points are left
+			// out, the curve held there by its ends and checked against
+			// the cut below.
+			if skipped++; skipped > maxSkippedCuts {
+				return sec, err
+			}
+			continue
 		}
 		ts = append(ts, tj)
 		xs = append(xs, xsec.arc.PointAt(tj))
 	}
-	// One span's basis is Bernstein's, as it was before two spans were
-	// fitted, which keeps the last digits of what one span made.
-	basis := c.Basis
-	if n == endDeg {
-		basis = func(u float64) []float64 {
-			b := make([]float64, endDeg+1)
-			for i := range b {
-				b[i] = binomial(endDeg, i) * math.Pow(u, float64(i)) * math.Pow(1-u, float64(endDeg-i))
-			}
-			return b
-		}
-	}
-	// Unknowns: P1 = q0 + a t0, P(n-1) = q1 + b t1, and the points between;
-	// fixed weights, so the weighted residual is linear in them. Each
-	// point's parameter is then the nearest on the curve, and the fit
-	// again.
-	nu := 2 + 3*(n-3)
-	us := append([]float64(nil), ts...)
-	fit := c
-	for range 10 {
-		ata := make([][]float64, nu)
-		for r := range ata {
-			ata[r] = make([]float64, nu)
-		}
-		atb := make([]float64, nu)
-		for j, x := range xs {
-			b := basis(us[j])
-			wt := 0.0
-			for i := range b {
-				wt += w[i] * b[i]
-			}
-			fixed := q0.ScaledBy(w[0]*b[0] + w[1]*b[1]).Plus(q1.ScaledBy(w[n-1]*b[n-1] + w[n]*b[n]))
-			rhs := x.ScaledBy(wt).Minus(fixed)
-			cols := []geom.Vector{t0.ScaledBy(w[1] * b[1]), t1.ScaledBy(w[n-1] * b[n-1])}
-			for i := 2; i <= n-2; i++ {
-				f := w[i] * b[i]
-				cols = append(cols, geom.Vector{X: f}, geom.Vector{Y: f}, geom.Vector{Z: f})
-			}
-			for r := range nu {
-				for q := range nu {
-					ata[r][q] += cols[r].Dot(cols[q])
-				}
-				atb[r] += cols[r].Dot(rhs)
-			}
-		}
-		x, ok := solveDense(ata, atb)
-		if !ok {
-			return sec, filletErr(at, "%s can't be fitted here", what)
-		}
-		ctrl := []geom.Vector{q0, q0.Plus(t0.ScaledBy(x[0]))}
-		for i := 2; i <= n-2; i++ {
-			o := 2 + 3*(i-2)
-			ctrl = append(ctrl, geom.Vector{X: x[o], Y: x[o+1], Z: x[o+2]})
-		}
-		ctrl = append(ctrl, q1.Plus(t1.ScaledBy(x[1])), q1)
-		fit.Ctrl = ctrl
-		for j, p := range xs {
-			us[j] = nearestParam(&fit, p, us[j])
-		}
+	fit, us, ok := fitThrough(c, w, ways, ts, xs)
+	if !ok {
+		return sec, filletErr(at, "%s can't be fitted here", what)
 	}
 	// The curve is both faces' edge: it keeps to them as their meshes do,
 	// within half the chord tolerance.
@@ -1083,6 +1127,93 @@ func (rb *rollingBall) fitCut(k int, sec rbSection, tanAt func(q, n geom.Vector)
 	sec.arc = fit
 	return sec, nil
 }
+
+// fitThrough is c, a section of weights w, refitted through the points
+// xs at first parameters ts: its ends c's, the second and last but one
+// control points moved from them along ways, the points between free;
+// the fixed weights make the weighted residual linear in them. Each
+// point's parameter is then the nearest on the curve, and the fit again.
+// It gives the curve and the points' parameters, and false where the
+// equations have no solution.
+func fitThrough(c srf.BSplineCurve, w []float64, ways [2][]geom.Vector, ts []float64, xs []geom.Vector) (srf.BSplineCurve, []float64, bool) {
+	n := len(c.Ctrl) - 1
+	q0, q1 := c.Ctrl[0], c.Ctrl[n]
+	nw := len(ways[0]) + len(ways[1])
+	// One span's basis is Bernstein's, as it was before two spans were
+	// fitted, which keeps the last digits of what one span made.
+	basis := c.Basis
+	if n == endDeg {
+		basis = func(u float64) []float64 {
+			b := make([]float64, endDeg+1)
+			for i := range b {
+				b[i] = binomial(endDeg, i) * math.Pow(u, float64(i)) * math.Pow(1-u, float64(endDeg-i))
+			}
+			return b
+		}
+	}
+	nu := nw + 3*(n-3)
+	us := append([]float64(nil), ts...)
+	fit := c
+	for range 10 {
+		ata := make([][]float64, nu)
+		for r := range ata {
+			ata[r] = make([]float64, nu)
+		}
+		atb := make([]float64, nu)
+		for j, x := range xs {
+			b := basis(us[j])
+			wt := 0.0
+			for i := range b {
+				wt += w[i] * b[i]
+			}
+			fixed := q0.ScaledBy(w[0]*b[0] + w[1]*b[1]).Plus(q1.ScaledBy(w[n-1]*b[n-1] + w[n]*b[n]))
+			rhs := x.ScaledBy(wt).Minus(fixed)
+			var cols []geom.Vector
+			for _, t := range ways[0] {
+				cols = append(cols, t.ScaledBy(w[1]*b[1]))
+			}
+			for _, t := range ways[1] {
+				cols = append(cols, t.ScaledBy(w[n-1]*b[n-1]))
+			}
+			for i := 2; i <= n-2; i++ {
+				f := w[i] * b[i]
+				cols = append(cols, geom.Vector{X: f}, geom.Vector{Y: f}, geom.Vector{Z: f})
+			}
+			for r := range nu {
+				for q := range nu {
+					ata[r][q] += cols[r].Dot(cols[q])
+				}
+				atb[r] += cols[r].Dot(rhs)
+			}
+		}
+		x, ok := solveDense(ata, atb)
+		if !ok {
+			return fit, us, false
+		}
+		p1, pn := q0, q1
+		for j, t := range ways[0] {
+			p1 = p1.Plus(t.ScaledBy(x[j]))
+		}
+		for j, t := range ways[1] {
+			pn = pn.Plus(t.ScaledBy(x[len(ways[0])+j]))
+		}
+		ctrl := []geom.Vector{q0, p1}
+		for i := 2; i <= n-2; i++ {
+			o := nw + 3*(i-2)
+			ctrl = append(ctrl, geom.Vector{X: x[o], Y: x[o+1], Z: x[o+2]})
+		}
+		ctrl = append(ctrl, pn, q1)
+		fit.Ctrl = ctrl
+		for j, p := range xs {
+			us[j] = nearestParam(&fit, p, us[j])
+		}
+	}
+	return fit, us, true
+}
+
+// maxSkippedCuts is how many of a fitted section's points fitCut may go
+// without, where the cut doesn't meet the swept surface near the end.
+const maxSkippedCuts = 2
 
 // nearestParam is the parameter of curve c's point nearest p, from u.
 func nearestParam(c *srf.BSplineCurve, p geom.Vector, u float64) float64 {
