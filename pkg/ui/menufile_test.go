@@ -236,6 +236,44 @@ func TestAnalyzeVolume(t *testing.T) {
 	t.Logf("%s / %s", d.Message, d.Description)
 }
 
+// TestLoadFindsLinks opens a model whose linked file is beside it, with
+// the chord tolerance the settings file holds: the links must be found
+// and read, and the user asked about none of them.
+func TestLoadFindsLinks(t *testing.T) {
+	from := filepath.Join("..", "..", "testdata", "tlspr", "golden", "group", "link")
+	dir := t.TempDir()
+	for _, name := range []string{"normal.tlspr", "rect_v20.tlspr"} {
+		copyFile(t, filepath.Join(from, name), filepath.Join(dir, name))
+	}
+	path := filepath.Join(dir, "normal.tlspr")
+
+	ss, p := newTestApp(t)
+	// The settings file keeps the tolerance as a single-precision
+	// number, so what a second session reads back is not quite the
+	// default; reading the links again for that is not a change.
+	ss.ChordTol = float64(float32(0.1))
+	p.DialogResponses = []platform.Response{platform.ResponseNo, platform.ResponseNo,
+		platform.ResponseNo, platform.ResponseNo}
+	if err := ss.Load(path); err != nil {
+		t.Fatal(err)
+	}
+	if len(p.DialogsShown) != 0 {
+		t.Errorf("%d dialogs about the links, first %q", len(p.DialogsShown), p.DialogsShown[0].Message)
+	}
+	var link *sketch.Group
+	for i := range ss.SK.Groups {
+		if ss.SK.Groups[i].Type == sketch.GroupLinked {
+			link = &ss.SK.Groups[i]
+		}
+	}
+	if link == nil {
+		t.Fatal("no link group")
+	}
+	if len(link.ImpEntity) == 0 {
+		t.Error("the linked file was not read")
+	}
+}
+
 // TestLoadMissingLinkAsks loads a sketch whose linked file is missing:,
 // the user is asked to locate it, and may decline, cancel the load, or
 // pick the file.

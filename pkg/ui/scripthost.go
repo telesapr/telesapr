@@ -250,8 +250,12 @@ func (h *ScriptHost) MmPerUnit() float64 { return h.ss.MmPerUnit() }
 func (h *ScriptHost) Load(path string) error {
 	ss := h.ss
 	var lerr error
+	// Before the read, for the links it reads; see Application.Load.
+	was := ss.SaveFile
+	ss.SaveFile = path
 	err := h.collect(func() { lerr = ss.LoadFromFile(path) })
 	if lerr != nil {
+		ss.SaveFile = was
 		return lerr
 	}
 	ss.SaveFile = path

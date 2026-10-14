@@ -148,7 +148,11 @@ func (ss *Application) applyEngineSettings() {
 		ss.SK.MaxSegments = ss.MaxSegments
 		ss.SK.CheckClosedContour = ss.CheckClosedContour
 		ss.SK.Exporting = ss.exportTolerance()
-		if ss.SK.ChordTolPercent() != was && ss.SK.ReloadAllLinked != nil {
+		// The tolerance is a single-precision number in the settings and
+		// in the dialogs that set it, so the default of 0.1% reads back
+		// from the settings file as 0.10000000149011612%; that is not a
+		// change of tolerance, and must not read every linked file again.
+		if float32(ss.SK.ChordTolPercent()) != float32(was) && ss.SK.ReloadAllLinked != nil {
 			ss.SK.ReloadAllLinked(ss.SK)
 		}
 	}

@@ -84,6 +84,11 @@ func (ss *Application) LoadAutosaveFor(filename string) (loaded bool, err error)
 // Load opens filename, or its autosave, as the sketch being edited; a
 // file that can't be read leaves a new sketch, and the error says why.
 func (ss *Application) Load(filename string) error {
+	// The links of the sketch are relative to the file it is read from,
+	// and reading it reads them, so the name is put in place before,
+	// not after: what reads them again while the sketch is being set up
+	// must know the file to read them relative to.
+	ss.SaveFile = filename
 	autosaveLoaded, err := ss.LoadAutosaveFor(filename)
 	if !autosaveLoaded {
 		ss.Report(err)
