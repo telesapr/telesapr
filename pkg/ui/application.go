@@ -207,7 +207,7 @@ func (ss *Application) Refresh() {
 	// GenerateAll must happen before updating displays.
 	if ss.scheduledGenerateAll {
 		ss.scheduledGenerateAll = false
-		if ss.BackgroundShells {
+		if ss.BackgroundShells && !ss.GW.draggingGeometry() {
 			ss.SK.DeferShells = true
 			ss.SK.Refresh()
 			ss.SK.DeferShells = false

@@ -249,6 +249,11 @@ func (gw *graphicsWindow) MouseMoved(x, y float64, leftDown, middleDown, rightDo
 				// We just started a drag, so remember for the undo before
 				// the drag changes anything.
 				ss.UndoRemember()
+				if gw.draggingGeometry() {
+					// A job from an earlier edit would be made for a
+					// state that is past.
+					ss.stopShellJob()
+				}
 			} else if gw.hover.Constraint.V == 0 {
 				// That's just marquee selection, which should not cause an
 				// undo remember.
@@ -547,9 +552,37 @@ func (gw *graphicsWindow) dragNormal(x, y float64, ctrlDown bool) {
 
 // ClearPending cancels the operation in progress.
 func (gw *graphicsWindow) ClearPending(scheduleShowTW bool) {
+	if gw.draggingGeometry() {
+		gw.endGeometryDrag()
+	}
 	gw.pending = pendingState{}
 	if scheduleShowTW {
 		gw.ss.ScheduleShowTW()
+	}
+}
+
+// draggingGeometry reports whether the operation in progress moves the
+// sketch's geometry, and so has to be regenerated on this thread: a
+// shell job takes a copy of the sketch and gives its solids back only if
+// the sketch is defined the same way as when it was made, and a drag
+// changes the sketch on every frame, so the job's work would be taken
+// back and the solid would never follow the pointer.
+func (gw *graphicsWindow) draggingGeometry() bool {
+	switch gw.pending.operation {
+	case pendingDraggingPoints, pendingDraggingRadius, pendingDraggingNormal:
+		return true
+	}
+	return false
+}
+
+// endGeometryDrag is called when such a drag ends. The regeneration its
+// last frame scheduled, which has not been made yet, is made here, so
+// that the solids are the ones the drag ended with: while the drag lasts
+// they are made on this thread, and the frame after it would be made in
+// a job, a step behind the sketch.
+func (gw *graphicsWindow) endGeometryDrag() {
+	if gw.ss.scheduledGenerateAll {
+		gw.ss.Refresh()
 	}
 }
 
