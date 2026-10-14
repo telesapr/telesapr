@@ -16,8 +16,12 @@ import (
 func (gw *graphicsWindow) sk() *sketch.Sketch { return gw.ss.SK }
 
 // activeGroupH is the active group, which the sketch keeps as
-// Sketch.Active.
-func (gw *graphicsWindow) activeGroupH() core.HGroup { return gw.sk().Active }
+// Sketch.Active. A file that was saved with its last group active names
+// none, and a sketch is drawn between being read and its first
+// regeneration, so the sketch's own answer is asked for: a handle no
+// group has would leave everything that draws the active group drawing
+// nothing.
+func (gw *graphicsWindow) activeGroupH() core.HGroup { return gw.sk().ActiveGroup() }
 
 func (gw *graphicsWindow) setActiveGroup(hg core.HGroup) { gw.sk().Active = hg }
 
