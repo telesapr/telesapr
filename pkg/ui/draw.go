@@ -383,17 +383,35 @@ func (gw *graphicsWindow) chooseFromHover(forDrag bool) Selection {
 	for i := range gw.hoverList {
 		hov := &gw.hoverList[i]
 		var hg core.HGroup
-		if hov.Selection.Entity.V != 0 {
+		switch {
+		case hov.Selection.Entity.V != 0:
 			e := sk.Entity(hov.Selection.Entity)
+			if e == nil {
+				// The model moved under a hover list built by an
+				// earlier hit test; the entity is gone.
+				continue
+			}
 			if forDrag && !gw.entityCanBeDragged(e) {
 				continue
 			}
 			hg = e.Group
-		} else if hov.Selection.Constraint.V != 0 {
-			hg = sk.Constraint(hov.Selection.Constraint).Group
+		case hov.Selection.Constraint.V != 0:
+			c := sk.Constraint(hov.Selection.Constraint)
+			if c == nil {
+				continue
+			}
+			hg = c.Group
+		default:
+			// A solid edge or an unnamed face: no group handle
+			// names it, so nothing to order by against the active
+			// group.
+			continue
 		}
 
 		g := sk.Group(hg)
+		if g == nil {
+			continue
+		}
 		if g.Order > activeGroup.Order {
 			continue
 		}
