@@ -8779,10 +8779,6 @@
 						"decl": "func (n *SKdNode) MakeMeshInto(m *SMesh)",
 						"text": "MakeMeshInto adds each triangle of the tree to m once."
 					},
-					"MakeOutlinesInto": {
-						"decl": "func (n *SKdNode) MakeOutlinesInto(sol *SOutlineList, edgeKind EdgeKind)",
-						"text": "MakeOutlinesInto lists the edges shared by two triangles, tagged 1 where they are emphasized or sharp (per edgeKind); untagged edges between triangles with the same normal are left out."
-					},
 					"OcclusionTestLine": {
 						"decl": "func (n *SKdNode) OcclusionTestLine(orig SEdge, sel *SEdgeList, cnt int)",
 						"text": "OcclusionTestLine splits orig against the mesh into sel, tagging the hidden pieces."
@@ -8898,7 +8894,7 @@
 					},
 					"MakeOutlinesInto": {
 						"decl": "func (m *SMesh) MakeOutlinesInto(sol *SOutlineList, edgeKind EdgeKind)",
-						"text": "MakeOutlinesInto lists the mesh's outline edges of the given kind."
+						"text": "MakeOutlinesInto lists the mesh's outline edges of the given kind: the edges two triangles share end for end, tagged 1 where they are emphasized or sharp; untagged edges between triangles with the same normal are left out, since they cannot produce an outline."
 					},
 					"MakeSectionPolygonInto": {
 						"decl": "func (m *SMesh) MakeSectionPolygonInto(h HalfSpace, dest *SPolygon) bool",
