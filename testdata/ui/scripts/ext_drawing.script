@@ -42,5 +42,5 @@ twdown L 46 376
 twup L 46 376
 tw
 file $tmp/sheet.svg
-menu File|Export|Drawing...
+menu File|Export|Drawing (.pdf, .eps, .svg, .dxf, .plt, .ngc)...
 save

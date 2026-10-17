@@ -11,7 +11,7 @@ down L 380 330
 up L 380 330
 key esc
 key x shift
-menu File|Export|Triangle Mesh...
+menu File|Export|Triangle Mesh (.stl, .3mf, .obj, .html, .js, .wrl)...
 tw
 twmove 231 125
 twdown L 231 125

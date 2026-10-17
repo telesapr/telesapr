@@ -143,6 +143,13 @@ var formerCommandLabels = map[string]Command{
 	"export 3d wireframe...":                    cmdExportWireframe,
 	"export triangle mesh...":                   cmdExportMesh,
 	"export surfaces...":                        cmdExportSurfaces,
+	"file > export > image...":                  cmdExportImage,
+	"file > export > 2d view...":                cmdExportView,
+	"file > export > 2d section...":             cmdExportSection,
+	"file > export > 3d wireframe...":           cmdExportWireframe,
+	"file > export > triangle mesh...":          cmdExportMesh,
+	"file > export > surfaces...":               cmdExportSurfaces,
+	"file > export > drawing...":                cmdExportDrawing,
 	"configuration...":                          cmdConfiguration,
 }
 
