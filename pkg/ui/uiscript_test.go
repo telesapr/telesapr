@@ -107,6 +107,12 @@ func newUIScriptRunner(t testing.TB) *uiScriptRunner {
 		}
 		fmt.Fprintf(&r.b, "filedialog %s\n", kind)
 	}
+	r.p.OnFormDialog = func(d *headless.FormDialog) {
+		fmt.Fprintf(&r.b, "formdialog %s|%s|%s\n", d.Title, d.Accept, d.Cancel)
+		for _, f := range d.Fields {
+			fmt.Fprintf(&r.b, "  %s %s %q %s %q %q\n", f.Kind, f.Key, f.Label, f.Value, f.Choices, f.Hint)
+		}
+	}
 	r.ss = New(r.p)
 	r.ss.Init()
 	// A script that allows AI connections listens here, not where the
@@ -404,6 +410,8 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 			switch {
 			case strings.HasPrefix(msg, "headless: unexpected message dialog"):
 				fmt.Fprintf(&r.b, "dialog unanswered\n")
+			case strings.HasPrefix(msg, "headless: unexpected form dialog"):
+				fmt.Fprintf(&r.b, "formdialog unanswered\n")
 			case strings.HasPrefix(msg, "headless: unexpected file dialog"):
 				fmt.Fprintf(&r.b, "filedialog unanswered\n")
 			default:
@@ -440,6 +448,18 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 			f = ""
 		}
 		r.p.FilePaths = append(r.p.FilePaths, f)
+	case "form":
+		// form [cancel] key=value...: the next form dialog is left
+		// with these changes, in this order, and accepted or cancelled.
+		var resp headless.FormResponse
+		for _, a := range t[1:] {
+			if a == "cancel" {
+				resp.Cancel = true
+			} else if k, v, ok := strings.Cut(a, "="); ok {
+				resp.Edits = append(resp.Edits, headless.FormEdit{Key: k, Value: v})
+			}
+		}
+		r.p.FormResponses = append(r.p.FormResponses, resp)
 	case "edit":
 		switch {
 		case r.gw().EditorVisible:

@@ -5,9 +5,11 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform/headless"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
@@ -185,7 +187,7 @@ func TestExportQualitySettingsRoundTrip(t *testing.T) {
 // TestScriptExportMeshQuality is the Go pair for the mesh quality
 // options. They are application settings, not document state, so a
 // path_ pair (which compares saved files) can't judge them: the same
-// cylinder is exported after the export screen's links and after the
+// cylinder is exported after the export dialog and after the
 // script's SetMeshQuality and SetExportOptions, and the two STL files
 // must be the same bytes, and finer than the standard preset's.
 func TestScriptExportMeshQuality(t *testing.T) {
@@ -203,14 +205,14 @@ func TestScriptExportMeshQuality(t *testing.T) {
 	if err := win.ExportMeshTo(std); err != nil {
 		t.Fatal(err)
 	}
-	tw := win.TW
-	tw.ScreenChangeMeshQuality(0, uint32(sketch.MeshQualityFine))
-	tw.ScreenChangeExportAngleTol(0, 0)
-	tw.EditControlDone("15")
 	byWindow := filepath.Join(dir, "window.stl")
-	if err := win.ExportMeshTo(byWindow); err != nil {
-		t.Fatal(err)
-	}
+	p := win.Platform.(*headless.Platform)
+	p.FormResponses = []headless.FormResponse{{Edits: []headless.FormEdit{
+		{Key: meshFieldQuality, Value: strconv.Itoa(int(sketch.MeshQualityFine))},
+		{Key: meshFieldAngle, Value: "15"},
+	}}}
+	p.FilePaths = []string{byWindow}
+	win.menuExportMesh()
 
 	_, doc := build()
 	if err := doc.File.SetMeshQuality(api.MeshFine); err != nil {
@@ -243,5 +245,61 @@ func TestScriptExportMeshQuality(t *testing.T) {
 	}
 	if len(a) <= len(s) {
 		t.Errorf("fine export is %d bytes, standard %d", len(a), len(s))
+	}
+}
+
+// TestExportMeshDialog has the mesh options dialog fill in a preset's
+// tolerances, call the quality custom when one is edited by hand, clamp
+// what is typed, write nothing when cancelled, and keep the settings it
+// was accepted with for the next time.
+func TestExportMeshDialog(t *testing.T) {
+	ss, p := newTestApp(t)
+	doc := api.NewDoc(ss.ScriptHost())
+	doc.Sketch.Circle(api.V(0, 0, 0), 10)
+	doc.Features.Extrude(5, "")
+	file := filepath.Join(t.TempDir(), "m.stl")
+
+	// The hook sees the dialog as it is shown; afterwards its fields hold
+	// the values it was left with.
+	var seen *headless.FormDialog
+	var shown map[string]string
+	p.OnFormDialog = func(d *headless.FormDialog) {
+		seen, shown = d, map[string]string{}
+		for _, f := range d.Fields {
+			shown[f.Key] = f.Value
+		}
+	}
+	p.FormResponses = []headless.FormResponse{{Cancel: true, Edits: []headless.FormEdit{{Key: meshFieldQuality, Value: "0"}}}}
+	ss.menuExportMesh()
+	if seen == nil || shown[meshFieldQuality] != "1" {
+		t.Fatalf("the dialog should start at the standard quality: %+v", seen)
+	}
+	if ss.ExportMaxSegments != 64 || len(p.FileDialogs) != 0 {
+		t.Errorf("a cancelled dialog changed %d segments or asked for a file (%d)", ss.ExportMaxSegments, len(p.FileDialogs))
+	}
+	if got := seen.Field(meshFieldSeg).Value; got != "32" {
+		t.Errorf("draft filled in %s segments, want 32", got)
+	}
+
+	p.FormResponses = []headless.FormResponse{{Edits: []headless.FormEdit{
+		{Key: meshFieldQuality, Value: "2"},
+		{Key: meshFieldAngle, Value: "400"},
+		{Key: meshFieldSeg, Value: "3"},
+		{Key: meshFieldStrict, Value: "1"},
+	}}}
+	p.FilePaths = []string{file}
+	ss.menuExportMesh()
+	if q := seen.Field(meshFieldQuality).Value; q != strconv.Itoa(int(sketch.MeshQualityCustom)) {
+		t.Errorf("quality %s after an edit by hand, want custom", q)
+	}
+	if float32(ss.ExportChordTol) != 0.02 || ss.ExportAngleTol != 180 ||
+		ss.ExportMaxSegments != 7 || !ss.ExportStrictMesh {
+		t.Errorf("settings %g, %g, %d, %t", ss.ExportChordTol, ss.ExportAngleTol, ss.ExportMaxSegments, ss.ExportStrictMesh)
+	}
+
+	p.FormResponses = []headless.FormResponse{{Cancel: true}}
+	ss.menuExportMesh()
+	if shown[meshFieldAngle] != "180" || shown[meshFieldStrict] != "1" {
+		t.Errorf("the dialog forgot the settings: angle %s, strict %s", shown[meshFieldAngle], shown[meshFieldStrict])
 	}
 }
