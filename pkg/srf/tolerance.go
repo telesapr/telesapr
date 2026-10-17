@@ -1,5 +1,11 @@
 package srf
 
+import (
+	"math"
+
+	"github.com/telesapr/telesapr/pkg/geom"
+)
+
 // Tolerance is how closely the piecewise-linear and triangulated forms
 // follow the curves and surfaces they are made from: the chord
 // tolerance, in mm, and the most segments one curve is cut into. The
@@ -9,6 +15,7 @@ type Tolerance struct {
 	chordTolMm  float64
 	maxSegments int
 	mesher      Mesher
+	angleDeg    float64
 	set         bool
 }
 
@@ -30,6 +37,54 @@ func (t Tolerance) WithMesher(m Mesher) Tolerance {
 	t = t.resolved()
 	t.mesher = m
 	return t
+}
+
+// WithAngle is t with an angular tolerance of deg degrees: the most a
+// curve's tangent or a surface's normal may turn across one piece, 0
+// for none. It is applied by the piecewise-linear curves and the surface
+// grids, not by the marched intersection curves of surfinter.go, which
+// step by chord alone.
+func (t Tolerance) WithAngle(deg float64) Tolerance {
+	t = t.resolved()
+	t.angleDeg = deg
+	return t
+}
+
+// AngleDeg is the angular tolerance in degrees, 0 for none.
+func (t Tolerance) AngleDeg() float64 { return t.resolved().angleDeg }
+
+// angleCos is the cosine of the angular tolerance, and whether there is
+// one.
+func (t Tolerance) angleCos() (c float64, on bool) {
+	t = t.resolved()
+	if t.angleDeg <= 0 {
+		return 1, false
+	}
+	return math.Cos(t.angleDeg * math.Pi / 180), true
+}
+
+// turnsLittle reports whether the tangent of b at ta, at tb and halfway
+// between stays within the angular tolerance of each other. A tangent
+// too short to have a direction passes.
+func (t Tolerance) turnsLittle(b *SBezier, ta, tb float64) bool {
+	c, on := t.angleCos()
+	if !on {
+		return true
+	}
+	dir := func(at float64) (geom.Vector, bool) {
+		d := b.TangentAt(at)
+		m := d.Magnitude()
+		if m < lengthEps {
+			return d, false
+		}
+		return d.ScaledBy(1 / m), true
+	}
+	da, oka := dir(ta)
+	dm, okm := dir((ta + tb) / 2)
+	db, okb := dir(tb)
+	return (!oka || !okm || da.Dot(dm) >= c) &&
+		(!okm || !okb || dm.Dot(db) >= c) &&
+		(!oka || !okb || da.Dot(db) >= c)
 }
 
 // Mesher is how curved surfaces are triangulated at t.

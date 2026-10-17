@@ -37,7 +37,7 @@ func (b *SBezier) makePwlWorker(l *[]geom.Vector, ta, tb float64, tol Tolerance,
 	d := pm.DistanceToLine(pa, pb.Minus(pa))
 
 	step := 1.0 / float64(tol.MaxSegments())
-	if ((tb-ta) < step || d < tol.ChordTolMm()) && (tb-ta) <= maxDt {
+	if ((tb-ta) < step || d < tol.ChordTolMm()) && (tb-ta) <= maxDt && tol.turnsLittle(b, ta, tb) {
 		// A previous call has already added the beginning of our interval.
 		*l = append(*l, pb)
 	} else {
@@ -64,7 +64,7 @@ func (b *SBezier) makePwlInitialWorker(l *[]geom.Vector, ta, tb float64, tol Tol
 		geom.Max(pm2.DistanceToLine(pa, dir), pm3.DistanceToLine(pa, dir)))
 
 	step := 1.0 / float64(tol.MaxSegments())
-	if ((tb-ta) < step || d < tol.ChordTolMm()) && (tb-ta) <= maxDt {
+	if ((tb-ta) < step || d < tol.ChordTolMm()) && (tb-ta) <= maxDt && tol.turnsLittle(b, ta, tb) {
 		// A previous call has already added the beginning of our interval.
 		*l = append(*l, pb)
 	} else {
