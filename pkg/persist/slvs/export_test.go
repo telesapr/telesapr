@@ -50,6 +50,37 @@ func TestExportStl(t *testing.T) {
 	}
 }
 
+// TestExportStlAngleTolerance exports a curved fixture with and without
+// an angular tolerance: the angle adds facets, and 0 adds none.
+func TestExportStlAngleTolerance(t *testing.T) {
+	doc, err := LoadFile(fixture("constraint/pt_on_face/normal.slvs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sk := doc.Sketch
+	sk.GenerateAllTyped(sketch.GenerateAll)
+	dir := t.TempDir()
+	count := func(angle float64) int {
+		out := filepath.Join(dir, "angle.stl")
+		es := sketch.ExportSettings{ChordTol: 0.1, MaxSegments: 64, Scale: 1, AngleTol: angle}
+		if err := sk.ExportMeshTo(out, es); err != nil {
+			t.Fatal(err)
+		}
+		b, err := os.ReadFile(out)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return (len(b) - 84) / 50
+	}
+	plain, angled := count(0), count(10)
+	if angled <= plain {
+		t.Errorf("%d triangles at an angle of 10, %d at 0", angled, plain)
+	}
+	if again := count(0); again != plain {
+		t.Errorf("%d triangles at 0 after the angle, %d before", again, plain)
+	}
+}
+
 // TestExportMeshToErrors checks the errors of a sketch without a mesh
 // and of a format that isn't STL.
 func TestExportMeshToErrors(t *testing.T) {
