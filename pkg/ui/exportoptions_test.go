@@ -44,6 +44,8 @@ func TestScriptExportOptions(t *testing.T) {
 	o.Canvas.Height = 90
 	o.ChordTol = 0.05
 	o.MaxSegments = 100
+	o.AngleTol = 15
+	o.StrictMesh = true
 	o.GCode.Passes = 4
 	o.GCode.Depth = 3
 	if err := doc.File.SetExportOptions(o); err != nil {
@@ -52,7 +54,7 @@ func TestScriptExportOptions(t *testing.T) {
 	doc.Edit.SetMaxSegments(30)
 
 	if ss.ExportScale != 2 || !ss.ExportPwlCurves || ss.ExportCanvasSizeAuto || ss.ExportCanvas.Width != 150 ||
-		ss.ExportChordTol != 0.05 || ss.ExportMaxSegments != 100 || ss.GCode.Passes != 4 || ss.GCode.Depth != 3 {
+		ss.ExportChordTol != 0.05 || ss.ExportMaxSegments != 100 || ss.ExportAngleTol != 15 || !ss.ExportStrictMesh || ss.GCode.Passes != 4 || ss.GCode.Depth != 3 {
 		t.Errorf("the window's settings did not follow: %+v", ss.config)
 	}
 	if ss.MaxSegments != 30 || ss.SK.MaxSegments != 30 || doc.Edit.MaxSegments() != 30 {

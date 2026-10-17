@@ -24,7 +24,7 @@ var MenuCalls = map[string]string{
 	"File/Export/2d View...":       "File.Export File.ExportAs",
 	"File/Export/2d Section...":    "File.ExportSection File.ExportAs",
 	"File/Export/3d Wireframe...":  "File.Export File.ExportAs",
-	"File/Export/Triangle Mesh...": "File.Export File.ExportAs",
+	"File/Export/Triangle Mesh...": "File.Export File.ExportAs File.SetMeshQuality",
 	"File/Export/Surfaces...":      "File.Export File.ExportAs",
 	"File/Export/Drawing...":       "Drawing.Export",
 	"File/Exit":                    "- the window's",

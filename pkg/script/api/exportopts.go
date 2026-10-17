@@ -57,6 +57,14 @@ type ExportOptions struct {
 	// MaxSegments is the most pieces a curve is cut into when exported,
 	// 7 to 1000.
 	MaxSegments int
+	// AngleTol is the angular tolerance in degrees: the most a curve's
+	// tangent or a surface's normal may turn across one facet of an
+	// exported mesh; 0 for none, 0 to 180.
+	AngleTol float64
+	// StrictMesh makes a mesh export refuse a mesh with naked edges or
+	// self-intersections, with an error wrapping sketch.ErrMeshNotSound,
+	// instead of writing it with a warning.
+	StrictMesh bool
 }
 
 // validate says what is wrong with the options, or nil. The rules are
@@ -72,7 +80,7 @@ func (o ExportOptions) validate() error {
 		name string
 		v    float64
 	}{
-		{"Scale", o.Scale}, {"CutterOffset", o.CutterOffset}, {"ChordTol", o.ChordTol},
+		{"Scale", o.Scale}, {"AngleTol", o.AngleTol}, {"CutterOffset", o.CutterOffset}, {"ChordTol", o.ChordTol},
 		{"Margin.Left", o.Margin.Left}, {"Margin.Right", o.Margin.Right},
 		{"Margin.Bottom", o.Margin.Bottom}, {"Margin.Top", o.Margin.Top},
 		{"Canvas.Width", o.Canvas.Width}, {"Canvas.Height", o.Canvas.Height},
@@ -91,6 +99,8 @@ func (o ExportOptions) validate() error {
 		return fmt.Errorf("cutter radius offset must not be negative, not %g", o.CutterOffset)
 	case o.ChordTol < 0:
 		return fmt.Errorf("export chord tolerance must not be negative, not %g", o.ChordTol)
+	case o.AngleTol < 0 || o.AngleTol > 180:
+		return fmt.Errorf("export angular tolerance must be 0 to 180 degrees, not %g", o.AngleTol)
 	case o.MaxSegments < MinSegments || o.MaxSegments > MaxSegmentsLimit:
 		return fmt.Errorf("export max segments must be %d to %d, not %d", MinSegments, MaxSegmentsLimit, o.MaxSegments)
 	case o.GCode.Passes < 1 || o.GCode.Passes > 1000:
@@ -141,6 +151,8 @@ func thawExportOptions(s core.Settings) ExportOptions {
 		},
 		ChordTol:    s.ThawFloat("ExportChordTolerance", 0.1),
 		MaxSegments: int(s.ThawInt("ExportMaxSegments", 64)),
+		AngleTol:    s.ThawFloat("ExportAngleTolerance", 0),
+		StrictMesh:  core.ThawBool(s, "ExportStrictMesh", false),
 	}
 }
 
