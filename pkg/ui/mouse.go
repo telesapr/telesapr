@@ -420,7 +420,9 @@ func (gw *graphicsWindow) dragConstraint(x, y float64) {
 	mp := geom.Point2d{U: x, V: y}
 
 	c := sk.Constraint(gw.pending.constraint)
-	gw.UpdateDraggedNum(&c.Disp.Offset, x, y)
+	off := c.Disp.Offset
+	gw.UpdateDraggedNum(&off, x, y)
+	_ = sk.SetConstraintLabelOffset(c.H, off)
 	gw.orig.mouse = mp
 	gw.Invalidate(false)
 }
@@ -545,9 +547,9 @@ func (gw *graphicsWindow) dragNormal(x, y float64, ctrlDown bool) {
 		vv = vv.RotatedAroundAxis(v.ProjRight, s*dy)
 	}
 	gw.orig.mouse = mp
-	normal.NormalForceTo(sk, geom.QuaternionFromBasis(u, vv))
-
-	sk.MarkGroupDirtyByEntity(gw.pending.normal)
+	// A normal that can't turn (one in a workplane, or copied) just stays
+	// where it is under the pointer, as it always has.
+	_ = sk.OrientNormal(gw.pending.normal, geom.QuaternionFromBasis(u, vv))
 }
 
 // ClearPending cancels the operation in progress.
@@ -1217,18 +1219,10 @@ func (gw *graphicsWindow) clickPlacesCubicPoint(mx, my float64) {
 	if gw.hover.Entity == hr.Entity(1) && r.ExtraPoints >= 2 {
 		// They want the endpoints coincident, which means a periodic
 		// spline instead.
-		r.Type = sketch.RequestCubicPeriodic
-		// Remove the off-curve control points, which are no longer
-		// needed here; so move [2,ep+1] down, skipping first pt.
-		for i := 2; i <= r.ExtraPoints+1; i++ {
-			pointForceTo(hr.Entity((i-1)+1), sk.Entity(hr.Entity(i+1)).PointGetNum(sk))
+		if err := sk.MakeSplinePeriodic(hr.Entity(0)); err != nil {
+			ss.Report(err)
 		}
-		// and move ep+3 down by two, skipping both
-		pointForceTo(hr.Entity((r.ExtraPoints+1)+1),
-			sk.Entity(hr.Entity((r.ExtraPoints+3)+1)).PointGetNum(sk))
-		r.ExtraPoints -= 2
 		// And we're done.
-		sk.MarkGroupDirty(r.Group, false)
 		gw.ClearPending(true)
 		return
 	}

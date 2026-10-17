@@ -22,17 +22,6 @@ import (
 // lf makes a method value a linkFunction for Printf.
 func lf(f func(link int, v uint32)) linkFunction { return f }
 
-// groupNumConstraints counts the constraints in group hg.
-func groupNumConstraints(sk *sketch.Sketch, hg core.HGroup) int {
-	n := 0
-	for i := range sk.Constraints {
-		if sk.Constraints[i].Group == hg {
-			n++
-		}
-	}
-	return n
-}
-
 // ScreenHome goes back to the list of groups.
 func (tw *textWindow) ScreenHome(link int, v uint32) {
 	tw.GoToScreen(screenListOfGroups)
@@ -118,8 +107,10 @@ func (tw *textWindow) ScreenSelectGroup(link int, v uint32) {
 
 // ScreenToggleGroupShown hides or shows a group.
 func (tw *textWindow) ScreenToggleGroupShown(link int, v uint32) {
+	tw.ss.UndoRemember()
 	g := tw.ss.SK.Group(core.HGroup{V: v})
 	g.Visible = !g.Visible
+	tw.ss.SK.MarkGroupDirty(g.H, false)
 	// If a group was just shown, then it might not have been generated
 	// previously, so regenerate.
 	tw.ss.GenerateAll(sketch.GenerateDirty)
@@ -128,6 +119,7 @@ func (tw *textWindow) ScreenToggleGroupShown(link int, v uint32) {
 // ScreenShowGroupsSpecial shows all, the unconstrained or no groups.
 func (tw *textWindow) ScreenShowGroupsSpecial(link int, v uint32) {
 	sk := tw.ss.SK
+	tw.ss.UndoRemember()
 	for _, hg := range sk.GroupOrder {
 		g := sk.Group(hg)
 		switch link {
@@ -400,46 +392,28 @@ func (tw *textWindow) ScreenChangeGroupOption(link int, v uint32) {
 			g.Subtype = sketch.GroupTwoSkewed
 		}
 	case 'w':
-		switch g.Subtype {
-		case sketch.GroupOneSided:
-			g.Subtype = sketch.GroupOneSkewed
-		case sketch.GroupTwoSided:
-			g.Subtype = sketch.GroupTwoSkewed
-		case sketch.GroupOneSkewed:
-			g.Subtype = sketch.GroupOneSided
-		case sketch.GroupTwoSkewed:
-			g.Subtype = sketch.GroupTwoSided
+		skewed := g.Subtype == sketch.GroupOneSided || g.Subtype == sketch.GroupTwoSided
+		if err := sk.SetGroupSkewed(g.H, skewed); err != nil {
+			ss.Report(err)
 		}
 
-	case 'k':
-		g.SkipFirst = true
-	case 'K':
-		g.SkipFirst = false
+	case 'k', 'K':
+		if err := sk.SetGroupSkipFirst(g.H, link == 'k'); err != nil {
+			ss.Report(err)
+		}
 	case 'm':
 		// A mirror of the whole solid so far, or of its source alone.
 		g.MirrorSolid = !g.MirrorSolid
 
 	case 'c':
-		as := sketch.CombineAs(v)
-		if g.Type == sketch.GroupExtrude {
-			// When an extrude group is first created, it's positioned
-			// for a union extrusion. If no constraints were added, flip
-			// it when we switch between union/assemble and
-			// difference/intersection modes to avoid manual work doing
-			// the same.
-			cut := func(c sketch.CombineAs) bool {
-				return c == sketch.CombineDifference || c == sketch.CombineIntersection
-			}
-			if g.MeshCombine != as && groupNumConstraints(sk, g.H) == 0 {
-				if cut(g.MeshCombine) != cut(as) {
-					g.ExtrusionForceVectorTo(sk, g.ExtrusionGetVector(sk).Negated())
-				}
-			}
+		if err := sk.SetGroupCombine(g.H, sketch.CombineAs(v), true); err != nil {
+			ss.Report(err)
 		}
-		g.MeshCombine = as
 
 	case 'P':
-		g.Suppress = !g.Suppress
+		if err := sk.SetGroupSuppressSolid(g.H, !g.Suppress); err != nil {
+			ss.Report(err)
+		}
 
 	case 'A':
 		if err := sk.SetSuppressAll(g.H, !g.SuppressAll); err != nil {
@@ -559,15 +533,9 @@ func (tw *textWindow) ScreenChangeLinkAsSolid(link int, v uint32) {
 		return
 	}
 	ss.UndoRemember()
-	g.LinkAsSolid = link == 's'
-	if ss.SK.ReloadAllLinked != nil {
-		ss.SK.ReloadAllLinked(ss.SK)
+	if err := ss.SK.SetGroupLinkAsSolid(g.H, link == 's'); err != nil {
+		ss.Report(err)
 	}
-	// A mesh forces its group to one; a solid that was one no longer.
-	if g.LinkAsSolid && len(g.ImpShell.Surface) > 0 {
-		g.ForceToMesh = false
-	}
-	ss.SK.MarkGroupDirty(g.H, false)
 	ss.GW.ClearSuper()
 }
 
@@ -580,17 +548,18 @@ func (tw *textWindow) ScreenChangeSweepUp(link int, v uint32) {
 		return
 	}
 	ss.UndoRemember()
+	up := geom.Vector{}
 	switch link {
 	case 'x':
-		g.SweepUp = geom.Vector{X: 1}
+		up = geom.Vector{X: 1}
 	case 'y':
-		g.SweepUp = geom.Vector{Y: 1}
+		up = geom.Vector{Y: 1}
 	case 'z':
-		g.SweepUp = geom.Vector{Z: 1}
-	default:
-		g.SweepUp = geom.Vector{}
+		up = geom.Vector{Z: 1}
 	}
-	ss.SK.MarkGroupDirty(g.H, false)
+	if err := ss.SK.SetSweepUp(g.H, up); err != nil {
+		ss.Report(err)
+	}
 	ss.GW.ClearSuper()
 }
 
@@ -627,29 +596,22 @@ func (tw *textWindow) ScreenChangeChamferDistance2(link int, v uint32) {
 // ScreenSwapChamferDistances swaps a chamfer's two distances, which
 // chamfers each edge the other way round.
 func (tw *textWindow) ScreenSwapChamferDistances(link int, v uint32) {
-	ss := tw.ss
-	g := ss.SK.Group(core.HGroup{V: v})
-	if g == nil || g.Type != sketch.GroupChamfer || g.ValC == 0 && g.ExprC == "" {
-		return
-	}
-	ss.UndoRemember()
-	g.ValB, g.ValC = g.ValC, g.ValB
-	g.ExprB, g.ExprC = g.ExprC, g.ExprB
-	ss.SK.MarkGroupDirty(g.H, false)
-	ss.GW.ClearSuper()
+	tw.chamferDistances(core.HGroup{V: v}, tw.ss.SK.SwapChamferDistances)
 }
 
 // ScreenSameChamferDistances makes a chamfer's second distance its first
 // again.
 func (tw *textWindow) ScreenSameChamferDistances(link int, v uint32) {
+	tw.chamferDistances(core.HGroup{V: v}, tw.ss.SK.SameChamferDistances)
+}
+
+// chamferDistances is one undo step of change to a chamfer's distances;
+// a group that can't take it is left as it is.
+func (tw *textWindow) chamferDistances(h core.HGroup, change func(core.HGroup) error) {
 	ss := tw.ss
-	g := ss.SK.Group(core.HGroup{V: v})
-	if g == nil || g.Type != sketch.GroupChamfer {
+	if ss.SK.UndoRememberFor(func() error { return change(h) }) != nil {
 		return
 	}
-	ss.UndoRemember()
-	g.ValC, g.ExprC = 0, ""
-	ss.SK.MarkGroupDirty(g.H, false)
 	ss.GW.ClearSuper()
 }
 
@@ -780,6 +742,7 @@ func (tw *textWindow) ScreenChangeLoftStart(link int, v uint32) {
 // ScreenChangePitchOption fixes or frees a helix's pitch.
 func (tw *textWindow) ScreenChangePitchOption(link int, v uint32) {
 	sk := tw.ss.SK
+	tw.ss.UndoRemember()
 	g := sk.Group(tw.shown.group)
 	if g.ValB == 0.0 {
 		g.ValB = sk.MustParam(g.H.Param(7)).Val * math.Pi / sk.MustParam(g.H.Param(3)).Val
@@ -787,6 +750,7 @@ func (tw *textWindow) ScreenChangePitchOption(link int, v uint32) {
 		g.ValB = 0.0
 	}
 	g.ExprB = ""
+	sk.MarkGroupDirty(g.H, false)
 	tw.ss.GW.Invalidate(false)
 }
 
@@ -945,22 +909,25 @@ func (tw *textWindow) ShowGroupInfo() {
 		tw.Printf(false, "") // blank line
 	}
 
-	if g.Type == sketch.GroupExtrude || g.Type == sketch.GroupLathe || g.Type == sketch.GroupRevolve ||
-		g.Type == sketch.GroupLinked || g.Type == sketch.GroupHelix || g.Type == sketch.GroupSweep {
-		un := g.MeshCombine == sketch.CombineUnion
-		diff := g.MeshCombine == sketch.CombineDifference
-		intr := g.MeshCombine == sketch.CombineIntersection
-		asy := g.MeshCombine == sketch.CombineAssemble
+	// Which of the solid's options a kind of group has is the sketch's
+	// to say (HasCombine and the others), so scripts refuse the same.
+	if g.HasAppearance() {
+		if g.HasCombine() {
+			un := g.MeshCombine == sketch.CombineUnion
+			diff := g.MeshCombine == sketch.CombineDifference
+			intr := g.MeshCombine == sketch.CombineIntersection
+			asy := g.MeshCombine == sketch.CombineAssemble
 
-		tw.Printf(false, " %Ftsolid model as")
-		tw.Printf(false, "%Ba   %f%D%Lc%Fd%s union%E  "+
-			"%f%D%Lc%Fd%s assemble%E  ",
-			lf(tw.ScreenChangeGroupOption), sketch.CombineUnion, radioMark(un),
-			lf(tw.ScreenChangeGroupOption), sketch.CombineAssemble, radioMark(asy))
-		tw.Printf(false, "%Ba   %f%D%Lc%Fd%s difference%E  "+
-			"%f%D%Lc%Fd%s intersection%E  ",
-			lf(tw.ScreenChangeGroupOption), sketch.CombineDifference, radioMark(diff),
-			lf(tw.ScreenChangeGroupOption), sketch.CombineIntersection, radioMark(intr))
+			tw.Printf(false, " %Ftsolid model as")
+			tw.Printf(false, "%Ba   %f%D%Lc%Fd%s union%E  "+
+				"%f%D%Lc%Fd%s assemble%E  ",
+				lf(tw.ScreenChangeGroupOption), sketch.CombineUnion, radioMark(un),
+				lf(tw.ScreenChangeGroupOption), sketch.CombineAssemble, radioMark(asy))
+			tw.Printf(false, "%Ba   %f%D%Lc%Fd%s difference%E  "+
+				"%f%D%Lc%Fd%s intersection%E  ",
+				lf(tw.ScreenChangeGroupOption), sketch.CombineDifference, radioMark(diff),
+				lf(tw.ScreenChangeGroupOption), sketch.CombineIntersection, radioMark(intr))
+		}
 		// The appearance when the window shades (roadmap 19.2).
 		app := g.Appearance
 		if app == "" {
@@ -975,8 +942,7 @@ func (tw *textWindow) ShowGroupInfo() {
 		}
 		tw.Printf(false, line.String(), args...)
 
-		if g.Type == sketch.GroupExtrude || g.Type == sketch.GroupLathe ||
-			g.Type == sketch.GroupRevolve || g.Type == sketch.GroupHelix || g.Type == sketch.GroupSweep {
+		if g.HasColor() {
 			tw.Printf(false,
 				"%Bd   %Ftcolor   %E%Bz  %Bd (%@, %@, %@) %f%D%Lf%Fl[change]%E",
 				&g.Color,
@@ -986,8 +952,10 @@ func (tw *textWindow) ShowGroupInfo() {
 				float64(g.Color.AlphaF()), lf(tw.ScreenOpacity))
 		}
 
-		tw.Printf(false, "   %Fd%f%LP%s  suppress this group's solid model",
-			lf(tw.ScreenChangeGroupOption), checkMark(g.Suppress))
+		if g.HasSolidSuppress() {
+			tw.Printf(false, "   %Fd%f%LP%s  suppress this group's solid model",
+				lf(tw.ScreenChangeGroupOption), checkMark(g.Suppress))
+		}
 
 		tw.Printf(false, "")
 	}
@@ -1759,11 +1727,25 @@ func exprNote(expr string) string {
 	return " (= " + expr + ")"
 }
 
-// setGroupText gives a group value typed text, as one undo step, and
-// reports whether it was taken; a refusal is shown in a dialog.
-func (ss *Application) setGroupText(hg core.HGroup, f sketch.GroupValue, s string) bool {
+// setGroupText gives a group value typed text, as one undo step; a
+// refusal is shown in a dialog.
+func (ss *Application) setGroupText(hg core.HGroup, f sketch.GroupValue, s string) {
 	err := ss.SK.UndoRememberFor(func() error {
 		return ss.SK.SetGroupText(hg, f, s)
+	})
+	if err != nil {
+		ss.Report(err)
+		return
+	}
+	ss.SK.Unsaved = true
+	ss.UndoEnableMenus()
+}
+
+// setGroupCopies is setGroupText for a group's copies, which also
+// re-spaces a rotate's copies (Sketch.SetGroupCopies).
+func (ss *Application) setGroupCopies(hg core.HGroup, s string) bool {
+	err := ss.SK.UndoRememberFor(func() error {
+		return ss.SK.SetGroupCopies(hg, s, true)
 	})
 	if err != nil {
 		ss.Report(err)
@@ -1784,23 +1766,7 @@ func (tw *textWindow) EditControlDone(s string) {
 	case editTimesRepeated:
 		if e := ss.exprFromString(s); e != nil {
 			g := sk.Group(tw.edit.group)
-			if !ss.setGroupText(g.H, sketch.GroupCopies, s) {
-				break
-			}
-			if g.Type == sketch.GroupRotate {
-				// If the group does not contain any constraints, then
-				// set the numerical guess to space the copies uniformly
-				// over one rotation. Don't touch the guess if we're
-				// already constrained, because that would break
-				// convergence.
-				if groupNumConstraints(sk, g.H) == 0 {
-					copies := g.ValA
-					if g.SkipFirst {
-						copies = g.ValA + 1
-					}
-					sk.MustParam(g.H.Param(3)).Val = math.Pi / (2 * copies)
-				}
-			}
+			ss.setGroupCopies(g.H, s)
 		}
 
 	case editGroupName:
@@ -1841,10 +1807,11 @@ func (tw *textWindow) EditControlDone(s string) {
 			if g == nil {
 				break
 			}
-			g.Color = core.RGBAFromFloat(float32(rgb.X), float32(rgb.Y), float32(rgb.Z),
-				g.Color.AlphaF())
-
-			sk.MarkGroupDirty(g.H, false)
+			c := core.RGBAFromFloat(float32(rgb.X), float32(rgb.Y), float32(rgb.Z), 1)
+			if err := sk.SetGroupColor(g.H, c); err != nil {
+				ss.Report(err)
+				break
+			}
 			ss.GW.ClearSuper()
 		} else {
 			ss.Error("Bad format: specify color as r, g, b")
@@ -1856,19 +1823,17 @@ func (tw *textWindow) EditControlDone(s string) {
 			if alpha < 0 || alpha > 1 {
 				ss.Error("Opacity must be between zero and one.")
 			} else {
-				g := sk.Group(tw.edit.group)
-				g.Color.Alpha = uint8(int(float64(float32(255.1)) * alpha))
-				sk.MarkGroupDirty(g.H, false)
+				ss.UndoRemember()
+				if err := sk.SetGroupOpacity(tw.edit.group, alpha); err != nil {
+					ss.Report(err)
+				}
 				ss.GW.ClearSuper()
 			}
 		}
 
 	case editTTFText:
 		ss.UndoRemember()
-		if r := sk.Request(tw.edit.request); r != nil {
-			r.Str = s
-			sk.MarkGroupDirty(r.Group, false)
-		}
+		_ = sk.SetTextString(tw.edit.request, s)
 
 	case editStepDimFinish:
 		if e := ss.exprFromString(s); e != nil {

@@ -2,6 +2,7 @@ package sketch_test
 
 import (
 	"math"
+	"slices"
 	"strings"
 	"testing"
 
@@ -42,9 +43,11 @@ func TestInsertGroup(t *testing.T) {
 	if v := cut.Analyze().Volume(); math.Abs(v-(2000-20-hole)) > 0.01*hole {
 		t.Errorf("the cut after the chamfer leaves %g", v)
 	}
-	for _, hg := range sk.GroupOrder {
-		if dep, later := sk.LaterReference(hg); later {
-			t.Errorf("%s refers to %s, after it", sk.GroupName(hg), sk.GroupName(dep.Group))
+	for at, hg := range sk.GroupOrder {
+		for _, dep := range sk.GroupDependencies(hg) {
+			if slices.Index(sk.GroupOrder, dep.Group) > at {
+				t.Errorf("%s refers to %s, after it", sk.GroupName(hg), sk.GroupName(dep.Group))
+			}
 		}
 	}
 	if err := ch.History().MoveBefore(block); err == nil || !strings.Contains(err.Error(), "which it uses") {

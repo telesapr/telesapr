@@ -341,7 +341,9 @@ func (tw *textWindow) ScreenChangeAppearance(link int, v uint32) {
 		return
 	}
 	ss.UndoRemember()
-	g.Appearance = render.MaterialNames[v]
+	if err := ss.SK.SetGroupAppearance(g.H, render.MaterialNames[v]); err != nil {
+		ss.Report(err)
+	}
 	ss.SK.Unsaved = true
 	ss.GW.Invalidate(false)
 	ss.ScheduleShowTW()

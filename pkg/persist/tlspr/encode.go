@@ -506,6 +506,9 @@ func encodeStyle(s *core.Style) *Node {
 		n.add(field("stipple", Word(enumName(stipples, s.StippleType))))
 	}
 	n.real("stipple-scale", s.StippleScale)
+	// Always written: 0 is a level a style can be set to, so a file that
+	// leaves it out is one saved before the field existed.
+	n.add(field("z-index", Word(strconv.Itoa(s.ZIndex))))
 	return n
 }
 

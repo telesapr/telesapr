@@ -10,6 +10,12 @@ popup
   Shell Solid Open Here ind=0 en=1 act=0
   Mirror in This Plane ind=0 en=1 act=0
   Sketch On Face ind=0 en=1 act=0
+  Appearance ind=0 en=1 act=0
+    The group's own ind=0 en=1 act=0
+    matte ind=0 en=1 act=0
+    plastic ind=0 en=1 act=0
+    glossy ind=0 en=1 act=0
+    metal ind=0 en=1 act=0
   Measure Selection ind=0 en=1 act=0
   Group ind=0 en=1 act=0
     Hide ind=0 en=1 act=0

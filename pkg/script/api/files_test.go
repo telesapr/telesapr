@@ -137,3 +137,47 @@ func TestFileMisuse(t *testing.T) {
 		}
 	}
 }
+
+// TestImportDXF imports a flat file into the workplane and a file with
+// a Z coordinate as construction in 3d; undo takes each back, the
+// workplane with it.
+func TestImportDXF(t *testing.T) {
+	t.Parallel()
+	root := filepath.Join("..", "..", "..", "testdata", "importdxf")
+	d := New()
+	before := len(d.Host().Sketch().Requests)
+	if _, err := d.File.ImportDXF(filepath.Join(root, "basic.dxf")); err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Host().Sketch().Requests) <= before {
+		t.Fatalf("%d requests after the import, %d before", len(d.Host().Sketch().Requests), before)
+	}
+	if !d.Host().Sketch().LockedInWorkplane() {
+		t.Error("a flat file left the workplane")
+	}
+	if !d.Edit.Undo() || len(d.Host().Sketch().Requests) != before {
+		t.Errorf("undo left %d requests, want %d", len(d.Host().Sketch().Requests), before)
+	}
+
+	if _, err := d.File.ImportDXF(filepath.Join(root, "extrusions.dxf")); err != nil {
+		t.Fatal(err)
+	}
+	if d.Host().Sketch().LockedInWorkplane() {
+		t.Error("a file with a Z coordinate stayed in the workplane")
+	}
+	d.Edit.Undo()
+	if !d.Host().Sketch().LockedInWorkplane() {
+		t.Error("undo did not bring the workplane back")
+	}
+
+	if _, err := d.File.ImportDXF(filepath.Join(root, "missing.dxf")); err == nil {
+		t.Error("a missing file imported")
+	}
+	bad := filepath.Join(t.TempDir(), "bad.dxf")
+	if err := os.WriteFile(bad, []byte("not a dxf file\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.File.ImportDXF(bad); err == nil {
+		t.Error("a corrupt file imported")
+	}
+}

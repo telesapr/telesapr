@@ -120,6 +120,33 @@ func (c Constraint) Expr() (expr string) {
 	return expr
 }
 
+// Style is the line style the constraint is drawn in: the one it was
+// given, or else the constraint style.
+func (c Constraint) Style() (style Style) {
+	c.d.read(func(sk *sketch.Sketch) { style = Style{c.d, c.get(sk).StyleOrDefault()} })
+	return style
+}
+
+// SetStyle draws the constraint in the given style, as the window's
+// style list does for what is selected; the zero Style (api.Style{})
+// takes the style away, and the constraint is drawn in the constraint
+// style again. Only a comment can be given a style, as in the window:
+// any other constraint, a dimension among them, fails with an error
+// that errors.Is finds ErrNotStylable in, and changes nothing.
+func (c Constraint) SetStyle(style Style) {
+	// Asked on a read, so that a refusal remembers no step of undo.
+	c.d.read(func(sk *sketch.Sketch) {
+		if con := c.get(sk); !con.IsStylable() {
+			fail("%s: %w", con.DescriptionString(), ErrNotStylable)
+		}
+	})
+	c.d.change(func(sk *sketch.Sketch) {
+		con := c.get(sk)
+		con.Disp.Style = style.handle(sk)
+		sk.MarkGroupDirty(con.Group, false)
+	})
+}
+
 // Name is what expressions read the constraint's value by, or "".
 func (c Constraint) Name() (name string) {
 	c.d.read(func(sk *sketch.Sketch) { name = c.get(sk).Name })
@@ -172,8 +199,9 @@ func (c Constraint) SetReference(reference bool) {
 	})
 }
 
-// Other is whether an angle measures the supplementary angle, or an
-// equal-angle constraint pairs the other angles.
+// Other is whether an angle measures the supplementary angle, an
+// equal-angle constraint pairs the other angles, or a diameter is shown
+// as a radius.
 func (c Constraint) Other() (other bool) {
 	c.d.read(func(sk *sketch.Sketch) { other = c.get(sk).Other })
 	return other
@@ -181,8 +209,9 @@ func (c Constraint) Other() (other bool) {
 
 // SetOther makes an angle measure the supplementary angle, the other
 // one of the two its lines make, or not; for an equal-angle
-// constraint it pairs the other angles. Constrain > Other
-// Supplementary Angle toggles it.
+// constraint it pairs the other angles; a diameter is shown as a
+// radius, as the text window's "show as radius" does (ShowAsRadius).
+// Constrain > Other Supplementary Angle toggles it.
 func (c Constraint) SetOther(other bool) {
 	c.d.change(func(sk *sketch.Sketch) {
 		constraint := c.get(sk)
@@ -192,10 +221,46 @@ func (c Constraint) SetOther(other bool) {
 			constraint.ModifyToSatisfy(sk)
 		case core.ConstraintEqualAngle:
 			constraint.Other = other
+		case core.ConstraintDiameter:
+			if err := sk.SetConstraintShowAsRadius(c.H, other); err != nil {
+				fail("%v", err)
+			}
 		default:
-			fail("%s isn't an angle", constraint.DescriptionString())
+			fail("%s isn't an angle or a diameter", constraint.DescriptionString())
 		}
 		sk.MarkGroupDirty(constraint.Group, false)
+	})
+}
+
+// SetShowAsRadius shows a diameter dimension as a radius, or as a
+// diameter again; the constraint holds the same size either way, and
+// Value is the one that is shown.
+func (c Constraint) SetShowAsRadius(radius bool) {
+	c.d.change(func(sk *sketch.Sketch) {
+		c.get(sk)
+		if err := sk.SetConstraintShowAsRadius(c.H, radius); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
+// LabelOffset is how far the label of a dimension or a comment is from
+// the place it belongs to, as dragging the label sets it, in mm.
+func (c Constraint) LabelOffset() (off Vec) {
+	c.d.read(func(sk *sketch.Sketch) { off = c.get(sk).Disp.Offset })
+	return off
+}
+
+// SetLabelOffset moves the label of a dimension or a comment to off
+// from the place it belongs to, as dragging it does. It changes how the
+// drawing looks, not what the sketch holds. For a comment off is where
+// the text stands, in the workplane it was written in.
+func (c Constraint) SetLabelOffset(off Vec) {
+	c.d.change(func(sk *sketch.Sketch) {
+		c.get(sk)
+		if err := sk.SetConstraintLabelOffset(c.H, off); err != nil {
+			fail("%v", err)
+		}
 	})
 }
 
@@ -228,7 +293,17 @@ func (c Constraint) Delete() {
 // constrain adds the constraint build fills in, in the active group
 // and workplane. A dimension starts at what it measures, and a
 // constraint the sketch already has is not added twice.
-func (d *Doc) constrain(build func(sk *sketch.Sketch, c *core.Constraint)) (out Constraint) {
+func (d *Doc) constrain(build func(sk *sketch.Sketch, c *core.Constraint)) Constraint {
+	return d.constrainEach(func(sk *sketch.Sketch, base core.Constraint) []core.Constraint {
+		build(sk, &base)
+		return []core.Constraint{base}
+	})
+}
+
+// constrainEach adds the constraints build makes of a constraint that
+// has the active group and workplane, as one change and so one undo
+// step, and returns the first. build may fail, and then none is added.
+func (d *Doc) constrainEach(build func(sk *sketch.Sketch, base core.Constraint) []core.Constraint) (out Constraint) {
 	d.change(func(sk *sketch.Sketch) {
 		// What is constrained is measured as the sketch is.
 		if sk.RegenerationPending() {
@@ -236,27 +311,38 @@ func (d *Doc) constrain(build func(sk *sketch.Sketch, c *core.Constraint)) (out 
 			sk = d.h.Sketch()
 		}
 		sk.Active = sk.ActiveGroup()
-		c := core.Constraint{
+		cs := build(sk, core.Constraint{
 			Group:     sk.Active,
-			Workplane: sk.ActiveWorkplane()}
-		build(sk, &c)
-		// A group refers only to what is made before it (roadmap 16.4).
-		for _, he := range []core.HEntity{c.PtA, c.PtB, c.EntityA, c.EntityB, c.EntityC, c.EntityD} {
-			if on, later := sk.EntityAfter(he, c.Group); later {
-				fail("%s belongs to %s, which comes after the active group %s in the history; "+
-					"a constraint refers to what is made before it",
-					Entity{d, he}.describe(sk), sk.GroupName(on), sk.GroupName(c.Group))
+			Workplane: sk.ActiveWorkplane()})
+		for i := range cs {
+			c := &cs[i]
+			// A group refers only to what is made before it (roadmap 16.4).
+			for _, he := range []core.HEntity{c.PtA, c.PtB, c.EntityA, c.EntityB, c.EntityC, c.EntityD} {
+				if on, later := sk.EntityAfter(he, c.Group); later {
+					fail("%s belongs to %s, which comes after the active group %s in the history; "+
+						"a constraint refers to what is made before it",
+						Entity{d, he}.describe(sk), sk.GroupName(on), sk.GroupName(c.Group))
+				}
+			}
+			h := d.addOnce(sk, c)
+			if i == 0 {
+				out = Constraint{d, h}
 			}
 		}
-		for i := range sk.Constraints {
-			if c.Equals(&sk.Constraints[i].ConstraintBase) {
-				out = Constraint{d, sk.Constraints[i].H}
-				return
-			}
-		}
-		out = Constraint{d, sk.AddConstraintRemember(&c, false)}
 	})
 	return out
+}
+
+// addOnce adds c through the sketch's own rule: an equal constraint is
+// not added twice, and a dimension that would make the group redundant
+// becomes a reference, as it does in the window. It returns the handle
+// of whichever the sketch has.
+func (d *Doc) addOnce(sk *sketch.Sketch, c *core.Constraint) core.HConstraint {
+	hs, err := sk.AddConstraints([]core.Constraint{*c})
+	if err != nil {
+		fail("%v", err)
+	}
+	return hs[0]
 }
 
 // must checks that an entity is what a constraint needs, and returns

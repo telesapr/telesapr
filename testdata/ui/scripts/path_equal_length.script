@@ -1,0 +1,26 @@
+# A point as far from a line segment as another line segment is long,
+# made with the mouse and the Constrain menu; the same as
+# path_equal_length.go makes (TestPathEquivalenceEqualLength).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key p
+move 250 250
+down L 250 250
+up L 250 250
+key esc
+move 290 200
+down L 290 200
+up L 290 200
+move 380 265
+down L 380 265
+up L 380 265
+move 250 250
+down L 250 250
+up L 250 250
+menu Constrain|Equal Length / Radius

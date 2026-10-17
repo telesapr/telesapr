@@ -343,6 +343,26 @@ func (e Entity) FacePoint() (p Vec) {
 	return p
 }
 
+// Visible reports whether the entity is drawn, as the window draws it:
+// the show flags of View > Show and the group's own show and suppress
+// modes decide, as PointOfRayCasting and a drawing in the window see
+// it.
+func (e Entity) Visible() (visible bool) {
+	e.d.read(func(sk *sketch.Sketch) { visible = sk.EntityIsVisible(e.get(sk)) })
+	return visible
+}
+
+// IsCoincident reports whether a constraint holds the point
+// coincident with another point, which is what DeleteCoincidences
+// takes away.
+func (e Entity) IsCoincident() (coincident bool) {
+	e.d.read(func(sk *sketch.Sketch) {
+		e.must(sk, "a point", isPoint)
+		coincident = sk.PointIsCoincident(e.H)
+	})
+	return coincident
+}
+
 // Construction reports whether the entity is construction geometry,
 // which helps to draw but makes no part of the outline.
 func (e Entity) Construction() (construction bool) {
@@ -379,6 +399,22 @@ func (e Entity) AddSplinePoint(p Vec) {
 			err = sk.AddSplinePoint(e.H, after, p)
 		}
 		if err != nil {
+			fail("%s: %v", e.describe(sk), err)
+		}
+	})
+}
+
+// MakePeriodic closes the open cubic spline into a periodic one, whose
+// ends meet: the window does it when a click lands on the first point
+// again while a point is being placed. A spline that is already
+// periodic is left as it is. Constraints on the last point move to the
+// first, those on the points between follow them to their new places,
+// and those on the control points beside the ends are deleted, as is
+// one left holding the first point against itself.
+func (e Entity) MakePeriodic() {
+	e.d.change(func(sk *sketch.Sketch) {
+		e.get(sk)
+		if err := sk.MakeSplinePeriodic(e.H); err != nil {
 			fail("%s: %v", e.describe(sk), err)
 		}
 	})
@@ -482,6 +518,44 @@ func (r Request) SetConstruction(construction bool) {
 	r.d.change(func(sk *sketch.Sketch) {
 		req := r.get(sk)
 		req.Construction = construction
+		sk.MarkGroupDirty(req.Group, false)
+	})
+}
+
+// Style is the line style the request is drawn in: the one it was
+// given, or else the one it has by where it is (construction geometry,
+// the active group, another).
+func (r Request) Style() (style Style) {
+	r.d.read(func(sk *sketch.Sketch) {
+		req := r.get(sk)
+		h := req.Style
+		if e := sk.Entity(r.H.Entity(0)); e != nil {
+			h = sk.StyleForEntity(e.H)
+		} else if h.V == 0 {
+			h = core.HStyle{V: core.StyleActiveGrp}
+		}
+		style = Style{r.d, h}
+	})
+	return style
+}
+
+// SetStyle draws the request in the given style, as the window's style
+// list does for what is selected; the zero Style (api.Style{}) takes
+// the style away, and the request is drawn in the style it has by where
+// it is. A request of a point, a workplane or a normal can't be given a
+// style, as in the window: the call fails with an error that errors.Is
+// finds ErrNotStylable in, and changes nothing.
+func (r Request) SetStyle(style Style) {
+	// Asked on a read, so that a refusal remembers no step of undo.
+	r.d.read(func(sk *sketch.Sketch) {
+		req := r.get(sk)
+		if e := sk.Entity(r.H.Entity(0)); e != nil && !e.IsStylable() {
+			fail("%s: %w", req.DescriptionString(), ErrNotStylable)
+		}
+	})
+	r.d.change(func(sk *sketch.Sketch) {
+		req := r.get(sk)
+		req.Style = style.handle(sk)
 		sk.MarkGroupDirty(req.Group, false)
 	})
 }

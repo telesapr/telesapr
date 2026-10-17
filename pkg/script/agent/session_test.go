@@ -151,7 +151,7 @@ func TestSessionRun(t *testing.T) {
 	}
 
 	// Trouble in a group that isn't active shows in the status.
-	res = run(t, s, "doc.Constrain.Length(l, 70)\ndoc.Features.Sketch3D(\"more\")")
+	res = run(t, s, "doc.Constrain.Length(l, 70).SetReference(false)\ndoc.Features.Sketch3D(\"more\")")
 	if !strings.Contains(res.Status, "active group g003-more, sketch-in-3d: solved") ||
 		!strings.Contains(res.Status, "\nin trouble: g002-sketch-in-plane, sketch-in-plane: NOT SOLVED") {
 		t.Errorf("after two lengths on a line, the status is\n%s", res.Status)

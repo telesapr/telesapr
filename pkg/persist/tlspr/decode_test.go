@@ -65,6 +65,7 @@ func fullDocument() *Document {
 		TextOrigin: core.TextOriginLeft | core.TextOriginTop,
 		Color:      core.RGBA{Red: 255, Alpha: 255}, FillColor: core.RGBA{Blue: 9, Alpha: 128},
 		Filled: true, Visible: true, Exportable: true, StippleType: core.StippleDashDot, StippleScale: 15,
+		ZIndex: 6,
 	})
 
 	sk.Params = []core.Param{
@@ -81,7 +82,11 @@ func fullDocument() *Document {
 	e.ExtraPoints, e.Normal, e.Distance = 1, core.HEntity{V: 0x90020}, core.HEntity{V: 0x90030}
 	e.ActPoint, e.ActNormal = geom.Vector{X: 1e-7, Y: 2, Z: 3}, geom.Quaternion{W: 1}
 	e.ActDistance, e.ActVisible = 4, true
-	sk.Entities = []core.Entity{e}
+	// A surface entity of SolveSpace's own: nothing here makes one, but
+	// a file that carries one must come back unchanged.
+	surface := e
+	surface.H, surface.Type = core.HEntity{V: 0x90010}, core.EntitySurfaceRevolved
+	sk.Entities = []core.Entity{e, surface}
 
 	sk.Units = core.UnitInches
 	doc := &Document{Sketch: sk, Version: Version, Units: core.UnitInches}

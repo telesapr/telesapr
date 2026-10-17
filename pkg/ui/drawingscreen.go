@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -77,19 +78,45 @@ func (tw *textWindow) ShowDrawing() {
 		lf(tw.ScreenChangeDrawing), radioMark(!d.FirstAngle), lf(tw.ScreenChangeDrawing), radioMark(d.FirstAngle))
 	tw.Printf(false, "%Ba   %f%Lh%Fd%s hidden edges, dashed%E", lf(tw.ScreenChangeDrawing), checkMark(d.Hidden))
 
+	// Which views the sheet shows and where (the standard ones, placed
+	// by the solid's size, until one is chosen or moved).
+	num := func(v float64) string { return strconv.FormatFloat(v, 'g', -1, 64) }
+	if len(d.Views) == 0 {
+		tw.Printf(true, "%Ft   views%E  the standard ones, placed automatically %Fl%LV%f[choose and place them]%E",
+			lf(tw.ScreenChangeDrawing))
+	} else {
+		tw.Printf(true, "%Ft   views%E  %Fl%LN%f[back to the standard ones]%E", lf(tw.ScreenChangeDrawing))
+		for i, kind := range sketch.ViewKinds {
+			if j := d.ViewIndex(kind); j >= 0 {
+				tw.Printf(false, "%Bp   %f%Lv%D%Fd%s%E %s at %s, %s mm %Fl%LM%D%f[move]%E",
+					byte('a'+i%2*3), lf(tw.ScreenChangeDrawing), i, checkMark(true), pad(kind, 7),
+					num(round2(d.Views[j].X)), num(round2(d.Views[j].Y)), i, lf(tw.ScreenChangeDrawing))
+			} else {
+				tw.Printf(false, "%Bp   %f%Lv%D%Fd%s%E %s", byte('a'+i%2*3), lf(tw.ScreenChangeDrawing), i,
+					checkMark(false), pad(kind, 7))
+			}
+		}
+	}
+
 	// The section and detail views (roadmap 18.3), lettered in order.
 	tw.Printf(true, "%Ft   sections and details%E")
 	n := 0
-	num := func(v float64) string { return strconv.FormatFloat(v, 'g', -1, 64) }
+	at := func(x, y float64) string {
+		if x == 0 && y == 0 {
+			return "placed automatically"
+		}
+		return "at " + num(round2(x)) + ", " + num(round2(y)) + " mm"
+	}
 	for i, sec := range d.Sections {
-		tw.Printf(false, "%Bp   %s: section of the %s view, %s mm toward it %Fl%Lx%D%f[delete]%E",
-			byte('a'+n%2*3), sketch.Letter(n), sec.View, num(sec.Offset), i, lf(tw.ScreenChangeDrawing))
+		tw.Printf(false, "%Bp   %s: %Fl%Lx%D%f[delete]%E %Fl%Ly%D%f[place]%E section of the %s view, %s mm toward it, %s",
+			byte('a'+n%2*3), sketch.Letter(n), i, lf(tw.ScreenChangeDrawing), i, lf(tw.ScreenChangeDrawing),
+			sec.View, num(sec.Offset), at(sec.X, sec.Y))
 		n++
 	}
 	for i, dt := range d.Details {
-		tw.Printf(false, "%Bp   %s: detail of the %s view at %s, %s, radius %s, %s times %Fl%LX%D%f[delete]%E",
-			byte('a'+n%2*3), sketch.Letter(n), dt.View, num(dt.CX), num(dt.CY), num(dt.R), num(dt.Scale),
-			i, lf(tw.ScreenChangeDrawing))
+		tw.Printf(false, "%Bp   %s: %Fl%LX%D%f[delete]%E %Fl%LY%D%f[place]%E detail of the %s view at %s, %s, radius %s, %s times, %s",
+			byte('a'+n%2*3), sketch.Letter(n), i, lf(tw.ScreenChangeDrawing), i, lf(tw.ScreenChangeDrawing),
+			dt.View, num(dt.CX), num(dt.CY), num(dt.R), num(dt.Scale), at(dt.X, dt.Y))
 		n++
 	}
 	tw.Printf(false, "   %Fl%La%f[add a section]%E   (type: view offset, as front 0)", lf(tw.ScreenChangeDrawing))
@@ -168,6 +195,7 @@ func (tw *textWindow) ScreenChangeDrawing(link int, v uint32) {
 		ss.SK.Unsaved = true
 		ss.ScheduleShowTW()
 	}
+	num := func(v float64) string { return strconv.FormatFloat(v, 'g', -1, 64) }
 	switch link {
 	case 'w':
 		ss.GW.MenuShowDrawingSheet()
@@ -196,6 +224,40 @@ func (tw *textWindow) ScreenChangeDrawing(link int, v uint32) {
 		}
 		tw.ShowEditControl(12, text)
 		tw.edit.meaning = editDrawingScale
+	case 'V':
+		tw.editDrawingCopy(func(d *sketch.Drawing) error { return ss.placeStandardViews(d) })
+	case 'N':
+		tw.editDrawingCopy(func(d *sketch.Drawing) error { d.Views = nil; return nil })
+	case 'v':
+		if int(v) >= len(sketch.ViewKinds) {
+			return
+		}
+		kind := sketch.ViewKinds[v]
+		tw.editDrawingCopy(func(d *sketch.Drawing) error {
+			if d.ViewIndex(kind) >= 0 {
+				return d.RemoveView(kind)
+			}
+			w, h := d.Size()
+			return d.PlaceView(kind, w/2, h/2)
+		})
+	case 'M', 'y', 'Y':
+		d := ss.drawing()
+		var x, y float64
+		switch {
+		case link == 'M' && int(v) < len(sketch.ViewKinds):
+			if i := d.ViewIndex(sketch.ViewKinds[v]); i >= 0 {
+				x, y = d.Views[i].X, d.Views[i].Y
+			}
+		case link == 'y' && int(v) < len(d.Sections):
+			x, y = d.Sections[v].X, d.Sections[v].Y
+		case link == 'Y' && int(v) < len(d.Details):
+			x, y = d.Details[v].X, d.Details[v].Y
+		default:
+			return
+		}
+		tw.ShowEditControl(18, num(x)+" "+num(y))
+		tw.edit.meaning = editDrawingPlace
+		tw.edit.i = link<<16 | int(v) // what is placed, and which
 	case 'x':
 		change(func(d *sketch.Drawing) {
 			if int(v) < len(d.Sections) {
@@ -239,6 +301,36 @@ func (tw *textWindow) ScreenChangeDrawing(link int, v uint32) {
 	}
 }
 
+// editDrawingCopy changes a copy of the drawing and, if the change is
+// allowed and the copy checks, makes it the drawing as one step of undo.
+func (tw *textWindow) editDrawingCopy(fn func(d *sketch.Drawing) error) {
+	ss := tw.ss
+	d := ss.drawing().Clone()
+	if err := fn(d); err != nil {
+		ss.Report(err)
+		return
+	}
+	if err := d.Check(); err != nil {
+		ss.Report(err)
+		return
+	}
+	ss.UndoRemember()
+	ss.SK.Drawing = d
+	ss.SK.Unsaved = true
+	ss.ScheduleShowTW()
+}
+
+// placeStandardViews gives d the views its standard layout puts on the
+// sheet, so that they can be chosen and moved one by one.
+func (ss *Application) placeStandardViews(d *sketch.Drawing) error {
+	_, views, _, err := ss.DrawingSheet(d)
+	if err != nil {
+		return err
+	}
+	d.Views = views
+	return nil
+}
+
 // editDrawing takes an edit of the drawing's screen, and reports
 // whether the edit was one of those.
 func (tw *textWindow) editDrawing(s string) bool {
@@ -264,6 +356,29 @@ func (tw *textWindow) editDrawing(s string) bool {
 		}
 		ss.UndoRemember()
 		ss.drawing().Scale = scale
+	case editDrawingPlace:
+		f := strings.Fields(s)
+		var x, y float64
+		var errX, errY error
+		if len(f) == 2 {
+			x, errX = strconv.ParseFloat(f[0], 64)
+			y, errY = strconv.ParseFloat(f[1], 64)
+		}
+		if len(f) != 2 || errX != nil || errY != nil {
+			ss.Error("A place is typed as x and y in mm from the sheet's bottom left, as 100 150; 0 0 lets a section or detail be placed automatically.")
+			return true
+		}
+		kind, i := tw.edit.i>>16, tw.edit.i&0xffff
+		tw.editDrawingCopy(func(d *sketch.Drawing) error {
+			switch kind {
+			case 'M':
+				return d.PlaceView(sketch.ViewKinds[i], x, y)
+			case 'y':
+				return d.PlaceSection(i, x, y)
+			}
+			return d.PlaceDetail(i, x, y)
+		})
+		return true
 	case editDrawingSection, editDrawingDetail:
 		f := strings.Fields(s)
 		var nums []float64
@@ -347,3 +462,7 @@ func (tw *textWindow) editDrawing(s string) bool {
 	ss.ScheduleShowTW()
 	return true
 }
+
+// round2 is v to the hundredth of a mm, which is what a place on the
+// sheet is shown to.
+func round2(v float64) float64 { return math.Round(v*100) / 100 }

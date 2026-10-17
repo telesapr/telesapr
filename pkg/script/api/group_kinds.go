@@ -129,7 +129,70 @@ func (v RepeatGroup) Copies() (n int) {
 	return n
 }
 
-// SetCopies is how many copies a step and repeat or a pattern makes.
+// SkipFirst reports whether a one-sided step and repeat starts with its
+// first copy, leaving the original out of the solid, as the group
+// screen's "start with copy #1" says.
+func (v RepeatGroup) SkipFirst() (skip bool) {
+	g := v.g
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBeStepAndRepeat(group, "SkipFirst")
+		skip = group.SkipFirst
+	})
+	return skip
+}
+
+// SetSkipFirst has a one-sided step and repeat start with its first
+// copy and leave the original out of the solid, or start with the
+// original again. A rotate keeps the angle the script gave it, where
+// the window re-spaces the copies when their count is typed. A
+// two-sided repeat always has the original, and fails.
+func (v RepeatGroup) SetSkipFirst(skip bool) {
+	g := v.g
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBeStepAndRepeat(group, "SetSkipFirst")
+		if err := sk.SetGroupSkipFirst(g.H, skip); err != nil {
+			fail("%s: %v", groupDescription(group), err)
+		}
+	})
+}
+
+// mustBeStepAndRepeat fails unless the group is a translate or a rotate.
+func (g Group) mustBeStepAndRepeat(group *sketch.Group, what string) {
+	if group.Type != sketch.GroupTranslate && group.Type != sketch.GroupRotate {
+		fail("%s is for a step and repeat, and %s is a %s", what, groupDescription(group), kindName(group.Type))
+	}
+}
+
+// Skewed reports whether an extrusion leans with its sketch's normal
+// rather than standing straight, as the group screen's "skewed" says.
+func (v ExtrudeGroup) Skewed() (skewed bool) {
+	g := v.g
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupExtrude, "Skewed")
+		skewed = group.Subtype == sketch.GroupOneSkewed || group.Subtype == sketch.GroupTwoSkewed
+	})
+	return skewed
+}
+
+// SetSkewed makes an extrusion's sides lean, or stand straight again,
+// whether it is one-sided or two-sided, which SetTwoSided keeps.
+func (v ExtrudeGroup) SetSkewed(skewed bool) {
+	g := v.g
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupExtrude, "SetSkewed")
+		if err := sk.SetGroupSkewed(g.H, skewed); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
+// SetCopies is how many copies a step and repeat or a pattern makes. A
+// rotate keeps the angle the script gave it, where the window re-spaces
+// the copies over one turn, because a script states its angle itself.
 func (v RepeatGroup) SetCopies(n int) {
 	g := v.g
 	g.d.change(func(sk *sketch.Sketch) {
@@ -140,8 +203,9 @@ func (v RepeatGroup) SetCopies(n int) {
 		if n < 1 || n > 999 || (group.Type == sketch.GroupPathPattern && n < 2) {
 			fail("can't repeat %d times", n)
 		}
-		group.ValA = float64(n)
-		sk.MarkGroupDirty(g.H, false)
+		if err := sk.SetGroupCopies(g.H, strconv.Itoa(n), false); err != nil {
+			fail("%v", err)
+		}
 	})
 }
 
@@ -331,14 +395,9 @@ func (v SweepGroup) SetSweepUp(up Vec) {
 	g.d.change(func(sk *sketch.Sketch) {
 		group := g.get(sk)
 		g.mustBe(group, sketch.GroupSweep, "SetSweepUp")
-		if math.IsNaN(up.X+up.Y+up.Z) || math.IsInf(up.X+up.Y+up.Z, 0) {
-			fail("an up direction is a vector of numbers, not %v", up)
+		if err := sk.SetSweepUp(g.H, up); err != nil {
+			fail("%v", err)
 		}
-		if up.Magnitude() > 0 {
-			up = up.WithMagnitude(1)
-		}
-		group.SweepUp = up
-		sk.MarkGroupDirty(group.H, false)
 	})
 }
 
@@ -361,16 +420,9 @@ func (v LinkGroup) SetAsSolid(on bool) {
 	g.d.change(func(sk *sketch.Sketch) {
 		group := g.get(sk)
 		g.mustBe(group, sketch.GroupLinked, "SetLinkAsSolid")
-		group.LinkAsSolid = on
-		if sk.ReloadAllLinked != nil {
-			sk.ReloadAllLinked(sk)
+		if err := sk.SetGroupLinkAsSolid(g.H, on); err != nil {
+			fail("%v", err)
 		}
-		// A mesh forces its group to one; a solid that was one no
-		// longer.
-		if on && len(group.ImpShell.Surface) > 0 {
-			group.ForceToMesh = false
-		}
-		sk.MarkGroupDirty(group.H, false)
 	})
 }
 
@@ -421,8 +473,9 @@ func (v MirrorGroup) SetKeepOriginal(keep bool) {
 	g.d.change(func(sk *sketch.Sketch) {
 		group := g.get(sk)
 		g.mustBe(group, sketch.GroupMirror, "SetKeepOriginal")
-		group.SkipFirst = !keep
-		sk.MarkGroupDirty(group.H, false)
+		if err := sk.SetGroupSkipFirst(group.H, !keep); err != nil {
+			fail("%v", err)
+		}
 	})
 }
 
@@ -515,11 +568,9 @@ func (v ChamferGroup) SetSecondDistance(mm float64) {
 	g.d.change(func(sk *sketch.Sketch) {
 		group := g.get(sk)
 		g.mustBe(group, sketch.GroupChamfer, "SetSecondDistance")
-		if mm < 0 || math.IsNaN(mm) || math.IsInf(mm, 0) {
-			fail("a chamfer's second distance must be more than zero, or zero for the first again, not %g", mm)
+		if err := sk.SetChamferSecondDistance(group.H, mm); err != nil {
+			fail("%v", err)
 		}
-		group.ValC, group.ExprC = mm, ""
-		sk.MarkGroupDirty(group.H, false)
 	})
 }
 
@@ -530,12 +581,9 @@ func (v ChamferGroup) SwapDistances() {
 	g.d.change(func(sk *sketch.Sketch) {
 		group := g.get(sk)
 		g.mustBe(group, sketch.GroupChamfer, "SwapDistances")
-		if group.ValC == 0 && group.ExprC == "" {
+		if err := sk.SwapChamferDistances(group.H); err != nil {
 			fail("%s has one distance; SetSecondDistance gives it a second", groupDescription(group))
 		}
-		group.ValB, group.ValC = group.ValC, group.ValB
-		group.ExprB, group.ExprC = group.ExprC, group.ExprB
-		sk.MarkGroupDirty(group.H, false)
 	})
 }
 

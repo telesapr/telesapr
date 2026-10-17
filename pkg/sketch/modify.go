@@ -386,9 +386,9 @@ func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) 
 	return nil
 }
 
-// SplitLine splits line segment he at pinter into two, and returns the
+// splitLine splits line segment he at pinter into two, and returns the
 // point where they join.
-func (sk *Sketch) SplitLine(he core.HEntity, pinter geom.Vector) core.HEntity {
+func (sk *Sketch) splitLine(he core.HEntity, pinter geom.Vector) core.HEntity {
 	// Save the original endpoints, since we're about to delete this
 	// entity.
 	e01 := sk.MustEntity(he)
@@ -423,9 +423,9 @@ func (sk *Sketch) SplitLine(he core.HEntity, pinter geom.Vector) core.HEntity {
 	return e0iPt[1]
 }
 
-// SplitCircle splits circle or arc he at pinter: a circle into a 360
+// splitCircle splits circle or arc he at pinter: a circle into a 360
 // degree arc, an arc into two. It returns the point at the split.
-func (sk *Sketch) SplitCircle(he core.HEntity, pinter geom.Vector) core.HEntity {
+func (sk *Sketch) splitCircle(he core.HEntity, pinter geom.Vector) core.HEntity {
 	circle := sk.MustEntity(he)
 	if circle.Type == core.EntityCircle {
 		// Start with an unbroken circle, split it into a 360 degree arc.
@@ -469,9 +469,9 @@ func (sk *Sketch) SplitCircle(he core.HEntity, pinter geom.Vector) core.HEntity 
 	return arc0Pt[2]
 }
 
-// SplitCubic splits cubic he at pinter into cubic segments, and returns
+// splitCubic splits cubic he at pinter into cubic segments, and returns
 // the point at the split.
-func (sk *Sketch) SplitCubic(he core.HEntity, pinter geom.Vector) core.HEntity {
+func (sk *Sketch) splitCubic(he core.HEntity, pinter geom.Vector) core.HEntity {
 	// Save the original endpoints, since we're about to delete this
 	// entity.
 	e01 := sk.MustEntity(he)
@@ -537,22 +537,22 @@ func (sk *Sketch) SplitCubic(he core.HEntity, pinter geom.Vector) core.HEntity {
 	return hepin
 }
 
-// SplitEntity splits line, circle or cubic he at pinter, deletes the
+// splitEntity splits line, circle or cubic he at pinter, deletes the
 // request it came from (unless that's construction or in another
 // group), and returns the point at the split.
-func (sk *Sketch) SplitEntity(he core.HEntity, pinter geom.Vector) (core.HEntity, error) {
+func (sk *Sketch) splitEntity(he core.HEntity, pinter geom.Vector) (core.HEntity, error) {
 	e := sk.MustEntity(he)
 
 	var ret core.HEntity
 	switch {
 	case e.IsCircle():
-		ret = sk.SplitCircle(he, pinter)
+		ret = sk.splitCircle(he, pinter)
 
 	case e.Type == core.EntityLineSegment:
-		ret = sk.SplitLine(he, pinter)
+		ret = sk.splitLine(he, pinter)
 
 	case e.Type == core.EntityCubic || e.Type == core.EntityCubicPeriodic:
-		ret = sk.SplitCubic(he, pinter)
+		ret = sk.splitCubic(he, pinter)
 
 	default:
 		return core.NoEntity, errors.New("couldn't split this entity; lines, circles, or cubics only")
@@ -708,8 +708,8 @@ func (sk *Sketch) SplitLinesOrCurves(selection []Selection, mouse geom.Point2d) 
 	sk.Constraints = kept
 
 	// A failed split is reported and the rest carries on.
-	hia, err := sk.SplitEntity(ha, pi)
-	// SplitEntity adds the coincident constraints to join the split
+	hia, err := sk.splitEntity(ha, pi)
+	// splitEntity adds the coincident constraints to join the split
 	// halves of each original entity; and then we add the constraint to
 	// join the two entities together at the split point.
 	if splitAtPoint {
@@ -742,7 +742,7 @@ func (sk *Sketch) SplitLinesOrCurves(selection []Selection, mouse geom.Point2d) 
 		sk.Requests = keptR
 	} else {
 		// Split second non-point entity and add constraint.
-		hib, errB := sk.SplitEntity(hb, pi)
+		hib, errB := sk.splitEntity(hb, pi)
 		if err == nil {
 			err = errB
 		}

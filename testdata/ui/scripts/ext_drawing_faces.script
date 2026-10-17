@@ -18,17 +18,17 @@ down L 285 315
 up L 285 315
 menu View|Drawing Sheet...
 tw
-twmove 46 305
-twdown L 46 305
-twup L 46 305
+twmove 46 336
+twdown L 46 336
+twup L 46 336
 edit front diameter
 tw
 move 285 315
 down L 285 315
 up L 285 315
-twmove 46 325
-twdown L 46 325
-twup L 46 325
+twmove 46 356
+twdown L 46 356
+twup L 46 356
 answer ok
 edit front length
 tw

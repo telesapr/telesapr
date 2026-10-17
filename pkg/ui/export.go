@@ -23,7 +23,9 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// ExportSectionTo exports the section of the solid model by a plane.
+// ExportSectionTo exports the section of the solid model by a plane the
+// selection names: the active workplane, a face, or a point and two
+// lines.
 func (ss *Application) ExportSectionTo(filename string) error {
 	sk := ss.SK
 	gw := ss.GW
@@ -33,8 +35,7 @@ func (ss *Application) ExportSectionTo(filename string) error {
 	g := sk.Group(gw.activeGroupH())
 	g.GenerateDisplayItems(sk)
 	if g.DisplayMesh.IsEmpty() {
-		return errors.New("no solid model present; draw one with extrudes and revolves, " +
-			"or use Export 2d View to export bare lines and curves")
+		return errNoSolidForSection
 	}
 
 	// The plane in which the exported section lies; need this because
@@ -89,6 +90,51 @@ func (ss *Application) ExportSectionTo(filename string) error {
 			"(plane through point and parallel to lines)")
 	}
 	gw.ClearSelection()
+
+	return ss.exportSectionIn(filename, origin, u, v, n)
+}
+
+// errNoSolidForSection is what a section of nothing says.
+var errNoSolidForSection = errors.New("no solid model present; draw one with extrudes and revolves, " +
+	"or use Export 2d View to export bare lines and curves")
+
+// ExportSectionHere exports the section of the active group's solid by
+// the plane a script means: the section view's, when it is on, and
+// otherwise the active workplane.
+func (ss *Application) ExportSectionHere(filename string) error {
+	sk := ss.SK
+	g := sk.Group(sk.ActiveGroup())
+	g.GenerateDisplayItems(sk)
+	if g.DisplayMesh.IsEmpty() {
+		return errNoSolidForSection
+	}
+	var origin, u, v, n geom.Vector
+	keep, o, ok, err := sk.SectionCut()
+	switch {
+	case err != nil:
+		return err
+	case ok:
+		origin, n = o, keep.N
+		u, v = n.NormalDir(0), n.NormalDir(1)
+	case core.IsFreeIn3D(g.ActiveWorkplane):
+		return errors.New("no section plane: turn the section view on, or activate a workplane")
+	default:
+		wrkpl := sk.MustEntity(g.ActiveWorkplane)
+		origin = wrkpl.WorkplaneGetOffset(sk)
+		normal := sk.MustEntity(wrkpl.Normal)
+		n = normal.NormalN(sk)
+		u = normal.NormalU(sk)
+		v = normal.NormalV(sk)
+	}
+	return ss.exportSectionIn(filename, origin, u, v, n)
+}
+
+// exportSectionIn writes the section of the active group's solid by the
+// plane through origin with normal n, laid out on u and v.
+func (ss *Application) exportSectionIn(filename string, origin, u, v, n geom.Vector) error {
+	sk := ss.SK
+	gw := ss.GW
+	g := sk.Group(gw.activeGroupH())
 
 	n = n.WithMagnitude(1)
 	d := origin.Dot(n)

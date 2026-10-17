@@ -831,6 +831,10 @@ func (d *decoder) style(n *Node) core.Style {
 	if s.H.V < core.StyleFirstCustom {
 		d.fail(a[0].Pos, "style %s is a built-in style, which is not saved", a[0].Text)
 	}
+	// A file without a z-index was saved before the level was kept: the
+	// style gets the level a new custom style is made with, not 0, which
+	// is a level a style can be set to on purpose.
+	s.ZIndex = core.StyleDefaults[0].ZIndex
 	for _, c := range n.Children {
 		switch c.Name {
 		case "width":
@@ -864,6 +868,8 @@ func (d *decoder) style(n *Node) core.Style {
 			enumField(d, stipples, c, &s.StippleType)
 		case "stipple-scale":
 			s.StippleScale = d.realField(c)
+		case "z-index":
+			s.ZIndex = d.intField(c)
 		default:
 			d.unknownField(c, "style")
 		}

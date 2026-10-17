@@ -25,6 +25,30 @@ func (sk *Sketch) StyleGet(h core.HStyle) *core.Style {
 	return sk.Style(h)
 }
 
+// StyleView is style h as it would be drawn, without changing the
+// sketch: the style itself when the sketch has it, else a copy of the
+// default it would be made as, and nil for a handle that is neither.
+// A read of the styles uses this, so that looking does not add styles
+// that the next save would write.
+func (sk *Sketch) StyleView(h core.HStyle) *core.Style {
+	if h.V == 0 {
+		h.V = core.StyleActiveGrp
+	}
+	if s := sk.Style(h); s != nil {
+		return s
+	}
+	for i := range core.StyleDefaults {
+		if core.StyleDefaults[i].H == h {
+			var ns core.Style
+			core.FillDefaultStyle(&ns, &core.StyleDefaults[i], false, sk.SettingsStore())
+			ns.Name = core.CnfPrefixToName(core.StyleDefaults[i].CnfPrefix)
+			ns.H = h
+			return &ns
+		}
+	}
+	return nil
+}
+
 // CreateAllDefaultStyles makes sure the sketch has every default style.
 func (sk *Sketch) CreateAllDefaultStyles() {
 	for _, d := range core.StyleDefaults {
@@ -176,4 +200,44 @@ func (sk *Sketch) NewCustomStyle() core.HStyle {
 	hs := core.HStyle{V: max(uint32(core.StyleFirstCustom), maxID+1)}
 	sk.StyleGet(hs)
 	return hs
+}
+
+// SetStyleTextHeightUnits measures style h's text height in as, keeping
+// the height it is drawn at on the screen: the number is converted at
+// the view's scale, so a switch of units changes what the style says
+// and not how big its text looks. It is what the style screen's pixels
+// and mm links and Style.SetTextHeightAs both do.
+func (sk *Sketch) SetStyleTextHeightUnits(h core.HStyle, as core.UnitsAs) {
+	s := sk.StyleGet(h)
+	if s.TextHeightAs == as {
+		return
+	}
+	scale := sk.view().Scale
+	switch as {
+	case core.UnitsMM:
+		s.TextHeight /= scale
+	case core.UnitsPixels:
+		s.TextHeight *= scale
+	}
+	s.TextHeightAs = as
+}
+
+// SetStyleTextHorizontal aligns style h's text on the left of its
+// anchor (core.TextOriginLeft), on the right (core.TextOriginRight) or
+// centred (core.TextOriginNone), leaving the vertical alignment as it
+// is.
+func (sk *Sketch) SetStyleTextHorizontal(h core.HStyle, o core.TextOrigin) {
+	s := sk.StyleGet(h)
+	s.TextOrigin = s.TextOrigin&^(core.TextOriginLeft|core.TextOriginRight) |
+		o&(core.TextOriginLeft|core.TextOriginRight)
+}
+
+// SetStyleTextVertical aligns style h's text on the bottom of its
+// anchor (core.TextOriginBot), on the top (core.TextOriginTop) or
+// centred (core.TextOriginNone), leaving the horizontal alignment as
+// it is.
+func (sk *Sketch) SetStyleTextVertical(h core.HStyle, o core.TextOrigin) {
+	s := sk.StyleGet(h)
+	s.TextOrigin = s.TextOrigin&^(core.TextOriginBot|core.TextOriginTop) |
+		o&(core.TextOriginBot|core.TextOriginTop)
 }

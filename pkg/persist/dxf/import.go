@@ -1273,3 +1273,33 @@ func Import(sk *sketch.Sketch, data []byte, o Options) (Report, error) {
 	}
 	return Report{Unknown: importer.unknownEntities}, nil
 }
+
+// ActiveResult is what ImportActive did.
+type ActiveResult struct {
+	Report
+	// Left3D says that the file leaves the XY plane, so the active
+	// group was put free in 3d and everything was imported as
+	// construction; the caller says so to whoever asked.
+	Left3D bool
+}
+
+// ImportActive imports the file into the sketch's active group, as the
+// File menu's Import does for a DXF: in the group's workplane, or, when
+// the file has a Z coordinate, as construction entities with the group
+// set free in 3d. The caller remembers the state for undo first, so
+// that undo brings the workplane back.
+func ImportActive(sk *sketch.Sketch, data []byte, textHeight float64) (ActiveResult, error) {
+	var res ActiveResult
+	asConstruction := true
+	if sk.LockedInWorkplane() {
+		if Has3D(data) {
+			res.Left3D = true
+			sk.Group(sk.ActiveGroup()).ActiveWorkplane = core.HEntity{}
+		} else {
+			asConstruction = false
+		}
+	}
+	rep, err := Import(sk, data, Options{AsConstruction: asConstruction, TextHeight: textHeight})
+	res.Report = rep
+	return res, err
+}

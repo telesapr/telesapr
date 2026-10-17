@@ -139,6 +139,9 @@ func (tw *textWindow) ScreenChangeShowContourAreas(link int, v uint32) {
 
 func (tw *textWindow) ScreenChangeCheckClosedContour(link int, v uint32) {
 	tw.ss.CheckClosedContour = !tw.ss.CheckClosedContour
+	// The check is made when loops are found, so the solids are
+	// generated again for the change to show, as the script's call does.
+	tw.ss.GenerateAll(sketch.GenerateAll)
 	tw.ss.GW.Invalidate(false)
 }
 

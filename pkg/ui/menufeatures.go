@@ -131,27 +131,12 @@ func (ss *Application) groupWorkplane(g *sketch.Group) bool {
 		g.Predef.Q = geom.QuaternionFromBasis(u, v)
 		g.Predef.Origin = gs.point[0]
 	case gs.points == 1 && gs.lineSegments == 2 && gs.n == 3:
-		g.Subtype = sketch.GroupWorkplaneByLineSegments
-
-		g.Predef.Origin = gs.point[0]
-		g.Predef.EntityB = gs.entity[0]
-		g.Predef.EntityC = gs.entity[1]
-
-		ut := sk.Entity(g.Predef.EntityB).VectorGetNum(sk)
-		vt := sk.Entity(g.Predef.EntityC).VectorGetNum(sk)
-		ut = ut.WithMagnitude(1)
-		vt = vt.WithMagnitude(1)
-
-		if abs(gw.view.ProjUp.Dot(vt)) < abs(gw.view.ProjUp.Dot(ut)) {
-			ut, vt = vt, ut
-			g.Predef.SwapUV = true
+		wg, err := sk.NewSketchOnLines(gs.point[0], gs.entity[0], gs.entity[1], gw.view.ProjRight, gw.view.ProjUp, "")
+		if err != nil {
+			ss.Error("Can't make the workplane. %s.", capitalize(err.Error()))
+			return false
 		}
-		if gw.view.ProjRight.Dot(ut) < 0 {
-			g.Predef.NegateU = true
-		}
-		if gw.view.ProjUp.Dot(vt) < 0 {
-			g.Predef.NegateV = true
-		}
+		*g = wg
 	case gs.workplanes == 1 && gs.n == 1:
 		if gs.entity[0].IsFromRequest() {
 			wrkpl := sk.Entity(gs.entity[0])
@@ -183,10 +168,12 @@ func (ss *Application) groupWorkplane(g *sketch.Group) bool {
 			}
 		}
 	case gs.anyNormals == 1 && gs.points == 1 && gs.n == 2:
-		g.Subtype = sketch.GroupWorkplaneByPointNormal
-		g.Predef.EntityB = gs.anyNormal[0]
-		g.Predef.Q = sk.Entity(gs.anyNormal[0]).NormalGetNum(sk)
-		g.Predef.Origin = gs.point[0]
+		wg, err := sk.NewSketchOnNormal(gs.point[0], gs.anyNormal[0], "")
+		if err != nil {
+			ss.Error("Can't make the workplane. %s.", capitalize(err.Error()))
+			return false
+		}
+		*g = wg
 	default:
 		ss.Error("Bad selection for new sketch in workplane. This " +
 			"group can be created with:\n\n" +
@@ -253,14 +240,12 @@ func (ss *Application) groupLatheOrRevolve(g *sketch.Group, id Command) bool {
 		ss.Error("%s operation can only be applied to planar sketches.", what)
 		return false
 	}
+	var point, vector core.HEntity
 	switch {
 	case gs.points == 1 && gs.vectors == 1 && gs.n == 2:
-		g.Predef.Origin = gs.point[0]
-		g.Predef.EntityB = gs.vector[0]
+		point, vector = gs.point[0], gs.vector[0]
 	case gs.lineSegments == 1 && gs.n == 1:
-		g.Predef.Origin = sk.Entity(gs.entity[0]).Point[0]
-		g.Predef.EntityB = gs.entity[0]
-		// since a line segment is a vector
+		vector = gs.entity[0] // a line segment is a vector, its first end the point
 	default:
 		ss.Error("Bad selection for new %s group. This group can "+
 			"be created with:\n\n"+
@@ -268,6 +253,11 @@ func (ss *Application) groupLatheOrRevolve(g *sketch.Group, id Command) bool {
 			"(revolved about an axis parallel to line / "+
 			"normal, through point)\n"+
 			"    * a line segment (revolved about line segment)\n", strings.ToLower(what))
+		return false
+	}
+	var err error
+	if g.Predef.Origin, g.Predef.EntityB, err = sk.TurnAxis(point, vector); err != nil {
+		ss.Error("Bad axis for new %s group. %s.", strings.ToLower(what), capitalize(err.Error()))
 		return false
 	}
 	g.OpA = gw.activeGroupH()
@@ -585,13 +575,6 @@ func (ss *Application) addNewGroup(g sketch.Group, rememberForUndo bool) core.HG
 	ss.TW.ScreenSelectGroup(0, gg.H.V)
 	gw.AnimateOntoWorkplane()
 	return hg
-}
-
-func abs(v float64) float64 {
-	if v < 0 {
-		return -v
-	}
-	return v
 }
 
 // reloadAllLinked reloads the linked files relative to the save file.

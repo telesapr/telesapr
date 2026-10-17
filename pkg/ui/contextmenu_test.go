@@ -8,6 +8,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // contextMenuFor selects he alone, opens the context menu and returns
@@ -184,5 +185,48 @@ func TestContextMenuSpline(t *testing.T) {
 	ss.UndoUndo()
 	if !sk.PointIsCoincident(end) {
 		t.Error("undo did not bring the coincidence back")
+	}
+}
+
+// The context menu of one face of the solid gives that face an
+// appearance of its own, as View.SetFaceAppearance does for a script,
+// and takes it back with the group's own.
+func TestContextMenuFaceAppearance(t *testing.T) {
+	ss, p := newTestApp(t)
+	if err := ss.LoadFromFile(filepath.Join("..", "..", "testdata", "topo", "slot.tlspr")); err != nil {
+		t.Fatal(err)
+	}
+	sk := ss.SK
+	var faceEntity core.HEntity
+	for i := range sk.Entities {
+		if e := &sk.Entities[i]; e.IsFace() && sk.Group(e.Group).Type == sketch.GroupExtrude {
+			faceEntity = e.H
+		}
+	}
+	if faceEntity.V == 0 {
+		t.Fatal("the extrusion has no face entity")
+	}
+	labels, menu := contextMenuFor(t, ss, p, faceEntity)
+	appearance := menu.Find("Appearance")
+	if appearance == nil || appearance.SubMenu == nil {
+		t.Fatalf("the face's menu has no Appearance submenu: %v", labels)
+	}
+	glossy := appearance.SubMenu.Find("glossy")
+	if glossy == nil {
+		t.Fatalf("no glossy in the Appearance submenu: %v", appearance.SubMenu.Items)
+	}
+	glossy.OnTrigger()
+	if got := sk.AppearanceOf(srf.FaceID(faceEntity.V)); got != "glossy" {
+		t.Errorf("the face's appearance is %q, want glossy", got)
+	}
+	// Taking it back gives the face its group's again.
+	_, menu = contextMenuFor(t, ss, p, faceEntity)
+	menu.Find("Appearance").SubMenu.Find("The group's own").OnTrigger()
+	if got := sk.AppearanceOf(srf.FaceID(faceEntity.V)); got == "glossy" {
+		t.Error("the face keeps the appearance it was given")
+	}
+	ss.UndoUndo()
+	if got := sk.AppearanceOf(srf.FaceID(faceEntity.V)); got != "glossy" {
+		t.Errorf("undo took away the appearance, and left %q", got)
 	}
 }

@@ -6730,6 +6730,7 @@ style 0x100 "@dxf" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x101 "@dxf-h86.47-a58.615-oh1-ov3" {
@@ -6743,6 +6744,7 @@ style 0x101 "@dxf-h86.47-a58.615-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x102 "@dxf-h0.02108-a56.367-oh1-ov3" {
@@ -6756,6 +6758,7 @@ style 0x102 "@dxf-h0.02108-a56.367-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x103 "@dxf-h100-ov3" {
@@ -6768,6 +6771,7 @@ style 0x103 "@dxf-h100-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x104 "@dxf-h0.03673-a49.663-oh1-ov3" {
@@ -6781,6 +6785,7 @@ style 0x104 "@dxf-h0.03673-a49.663-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x105 "@dxf-h2.181-a49.016-oh1-ov3" {
@@ -6794,6 +6799,7 @@ style 0x105 "@dxf-h2.181-a49.016-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x106 "@dxf-h100-a-53.278-ov3" {
@@ -6807,6 +6813,7 @@ style 0x106 "@dxf-h100-a-53.278-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x107 "@dxf-h1218-a43.821-oh1-ov3" {
@@ -6820,6 +6827,7 @@ style 0x107 "@dxf-h1218-a43.821-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x108 "@dxf-h249.8-a38.012-oh1-ov3" {
@@ -6833,6 +6841,7 @@ style 0x108 "@dxf-h249.8-a38.012-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x109 "@dxf-h249.8-a33.334-oh1-ov3" {
@@ -6846,6 +6855,7 @@ style 0x109 "@dxf-h249.8-a33.334-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x10a "@dxf-h249.8-a29.596-oh1-ov3" {
@@ -6859,6 +6869,7 @@ style 0x10a "@dxf-h249.8-a29.596-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x10b "@dxf-h249.8-a30.357-oh1-ov3" {
@@ -6872,6 +6883,7 @@ style 0x10b "@dxf-h249.8-a30.357-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x10c "@dxf-h50-oh2" {
@@ -6884,6 +6896,7 @@ style 0x10c "@dxf-h50-oh2" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x10d "@dxf-h50" {
@@ -6896,6 +6909,7 @@ style 0x10d "@dxf-h50" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x10e "@dxf-h249.8-a34.852-oh1-ov3" {
@@ -6909,6 +6923,7 @@ style 0x10e "@dxf-h249.8-a34.852-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x10f "@dxf-h249.8-a26.808-oh1-ov3" {
@@ -6922,6 +6937,7 @@ style 0x10f "@dxf-h249.8-a26.808-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x110 "@dxf-h249.8-a30.564-oh1-ov3" {
@@ -6935,6 +6951,7 @@ style 0x110 "@dxf-h249.8-a30.564-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x111 "@dxf-h249.8-a26.413-oh1-ov3" {
@@ -6948,6 +6965,7 @@ style 0x111 "@dxf-h249.8-a26.413-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x112 "@dxf-h249.8-a23.194-oh1-ov3" {
@@ -6961,6 +6979,7 @@ style 0x112 "@dxf-h249.8-a23.194-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x113 "@dxf-h1170-a35.004-oh1-ov3" {
@@ -6974,6 +6993,7 @@ style 0x113 "@dxf-h1170-a35.004-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x114 "@dxf-h20" {
@@ -6986,6 +7006,7 @@ style 0x114 "@dxf-h20" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x115 "@dxf-h1170-a32.099-oh1-ov3" {
@@ -6999,6 +7020,7 @@ style 0x115 "@dxf-h1170-a32.099-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x116 "@dxf-h25" {
@@ -7011,6 +7033,7 @@ style 0x116 "@dxf-h25" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x117 "@dxf-h25-oh1" {
@@ -7023,6 +7046,7 @@ style 0x117 "@dxf-h25-oh1" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x118 "@dxf-h25-oh2" {
@@ -7035,6 +7059,7 @@ style 0x118 "@dxf-h25-oh2" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x119 "@dxf-h25-oh4-ov2" {
@@ -7046,6 +7071,7 @@ style 0x119 "@dxf-h25-oh4-ov2" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x11a "@dxf-h41.46-oh5" {
@@ -7058,6 +7084,7 @@ style 0x11a "@dxf-h41.46-oh5" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x11b "@dxf-h12.91-oh3" {
@@ -7070,6 +7097,7 @@ style 0x11b "@dxf-h12.91-oh3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x11c "@dxf-h25-oh1-ov3" {
@@ -7082,6 +7110,7 @@ style 0x11c "@dxf-h25-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x11d "@dxf-h25-oh2-ov3" {
@@ -7094,6 +7123,7 @@ style 0x11d "@dxf-h25-oh2-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x11e "@dxf-h25-ov2" {
@@ -7106,6 +7136,7 @@ style 0x11e "@dxf-h25-ov2" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x11f "@dxf-h25-oh1-ov2" {
@@ -7117,6 +7148,7 @@ style 0x11f "@dxf-h25-oh1-ov2" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x120 "@dxf-h25-oh2-ov2" {
@@ -7129,6 +7161,7 @@ style 0x120 "@dxf-h25-oh2-ov2" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x121 "@dxf-h25-ov1" {
@@ -7141,6 +7174,7 @@ style 0x121 "@dxf-h25-ov1" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x122 "@dxf-h25-oh1-ov1" {
@@ -7153,6 +7187,7 @@ style 0x122 "@dxf-h25-oh1-ov1" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x123 "@dxf-h25-oh2-ov1" {
@@ -7165,6 +7200,7 @@ style 0x123 "@dxf-h25-oh2-ov1" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x124 "@dxf-h566.4-a44.092-oh1-ov3" {
@@ -7178,6 +7214,7 @@ style 0x124 "@dxf-h566.4-a44.092-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x125 "@dxf-h100" {
@@ -7190,6 +7227,7 @@ style 0x125 "@dxf-h100" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x126 "@dxf-h58.4" {
@@ -7202,6 +7240,7 @@ style 0x126 "@dxf-h58.4" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x127 "@dxf-h1012-a28.244-oh1-ov3" {
@@ -7215,6 +7254,7 @@ style 0x127 "@dxf-h1012-a28.244-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x128 "@dxf-h360.2-a67.481-oh1-ov3" {
@@ -7228,6 +7268,7 @@ style 0x128 "@dxf-h360.2-a67.481-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x129 "@dxf-h360.2-a69.194-oh1-ov3" {
@@ -7241,6 +7282,7 @@ style 0x129 "@dxf-h360.2-a69.194-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x12a "@dxf-h83.48-a73.573-oh1-ov3" {
@@ -7254,6 +7296,7 @@ style 0x12a "@dxf-h83.48-a73.573-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x12b "@dxf-h25-ov3" {
@@ -7266,6 +7309,7 @@ style 0x12b "@dxf-h25-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x12c "@dxf-h25-a314.44" {
@@ -7279,6 +7323,7 @@ style 0x12c "@dxf-h25-a314.44" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x12d "@dxf-h25-a314.44-oh1" {
@@ -7292,6 +7337,7 @@ style 0x12d "@dxf-h25-a314.44-oh1" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x12e "@dxf-h25-a314.44-oh2" {
@@ -7305,6 +7351,7 @@ style 0x12e "@dxf-h25-a314.44-oh2" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x12f "@dxf-h25-a314.44-oh4-ov2" {
@@ -7317,6 +7364,7 @@ style 0x12f "@dxf-h25-a314.44-oh4-ov2" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x130 "@dxf-h41.46-a314.51-oh5" {
@@ -7330,6 +7378,7 @@ style 0x130 "@dxf-h41.46-a314.51-oh5" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x131 "@dxf-h12.96-a314.22-oh3" {
@@ -7343,6 +7392,7 @@ style 0x131 "@dxf-h12.96-a314.22-oh3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x132 "@dxf-h50-a17.112-oh2" {
@@ -7356,6 +7406,7 @@ style 0x132 "@dxf-h50-a17.112-oh2" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x133 "@dxf-h50-a17.112" {
@@ -7369,6 +7420,7 @@ style 0x133 "@dxf-h50-a17.112" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x134 "@dxf-h25-a17.112-oh1-ov3" {
@@ -7382,6 +7434,7 @@ style 0x134 "@dxf-h25-a17.112-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x135 "@dxf-h25-a17.112-oh2-ov3" {
@@ -7395,6 +7448,7 @@ style 0x135 "@dxf-h25-a17.112-oh2-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x136 "@dxf-h25-a17.112-ov2" {
@@ -7408,6 +7462,7 @@ style 0x136 "@dxf-h25-a17.112-ov2" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x137 "@dxf-h25-a17.112-oh1-ov2" {
@@ -7420,6 +7475,7 @@ style 0x137 "@dxf-h25-a17.112-oh1-ov2" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x138 "@dxf-h25-a17.112-oh2-ov2" {
@@ -7433,6 +7489,7 @@ style 0x138 "@dxf-h25-a17.112-oh2-ov2" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x139 "@dxf-h25-a17.112-ov1" {
@@ -7446,6 +7503,7 @@ style 0x139 "@dxf-h25-a17.112-ov1" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x13a "@dxf-h25-a17.112-oh1-ov1" {
@@ -7459,6 +7517,7 @@ style 0x13a "@dxf-h25-a17.112-oh1-ov1" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x13b "@dxf-h25-a17.112-oh2-ov1" {
@@ -7472,6 +7531,7 @@ style 0x13b "@dxf-h25-a17.112-oh2-ov1" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x13c "@dxf-h25-a17.112-ov3" {
@@ -7485,6 +7545,7 @@ style 0x13c "@dxf-h25-a17.112-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x13d "@dxf-h360.2-a88.307-oh1-ov3" {
@@ -7498,6 +7559,7 @@ style 0x13d "@dxf-h360.2-a88.307-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x13e "@dxf-h100-a28.035" {
@@ -7511,6 +7573,7 @@ style 0x13e "@dxf-h100-a28.035" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x13f "@dxf-h58.4-a28.035" {
@@ -7524,6 +7587,7 @@ style 0x13f "@dxf-h58.4-a28.035" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x140 "@dxf-h1012-a-2.9668-oh1-ov3" {
@@ -7537,6 +7601,7 @@ style 0x140 "@dxf-h1012-a-2.9668-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x141 "@dxf-h375-a83.375-oh1-ov3" {
@@ -7550,6 +7615,7 @@ style 0x141 "@dxf-h375-a83.375-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x142 "@dxf-h1002-a23.935-oh1-ov3" {
@@ -7563,6 +7629,7 @@ style 0x142 "@dxf-h1002-a23.935-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x143 "@dxf-h1325-a163.08-oh1-ov3" {
@@ -7576,6 +7643,7 @@ style 0x143 "@dxf-h1325-a163.08-oh1-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 value 0x10010 0

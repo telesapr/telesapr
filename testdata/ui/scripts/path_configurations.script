@@ -27,18 +27,18 @@ dbl L 290 370
 up L 290 370
 edit w
 menu Edit|Parameters...
-twmove 46 215
-twdown L 46 215
-twup L 46 215
-edit small
 twmove 46 235
 twdown L 46 235
 twup L 46 235
+edit small
+twmove 46 255
+twdown L 46 255
+twup L 46 255
 edit large
 twmove 411 115
 twdown L 411 115
 twup L 411 115
 edit 50
-twmove 37 215
-twdown L 37 215
-twup L 37 215
+twmove 37 235
+twdown L 37 235
+twup L 37 235

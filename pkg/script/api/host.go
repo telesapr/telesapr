@@ -52,6 +52,10 @@ const (
 	ExportWireframe
 	// ExportSurfaces is the exact surfaces of the solid (STEP).
 	ExportSurfaces
+	// ExportSection is the section of the solid by a plane (SVG, DXF,
+	// PDF, ...): the section view's plane when it is on, and otherwise
+	// the active workplane.
+	ExportSection
 )
 
 // Host owns a sketch on behalf of a Doc: it is the program around the
@@ -116,6 +120,17 @@ type Host interface {
 	// as Configuration sets it, which it gives every sketch it
 	// regenerates; for a bare sketch, the sketch's own.
 	SetChordTolerance(pct float64)
+	// SetMaxSegments sets the most pieces a curve is cut into for
+	// display and meshes, as Configuration sets it.
+	SetMaxSegments(n int)
+	// SetCheckClosedContour sets whether a sketch's closed loops are
+	// checked for crossing themselves, as Configuration sets it.
+	SetCheckClosedContour(on bool)
+	// ExportOptions are the export settings, as Configuration shows
+	// them.
+	ExportOptions() ExportOptions
+	// SetExportOptions sets them, the options already checked.
+	SetExportOptions(o ExportOptions)
 }
 
 // errUnsupported is what a sketch without a program around it answers
@@ -128,6 +143,9 @@ type SketchHost struct {
 	sk       *sketch.Sketch
 	saveFile string
 	changed  bool
+	// export is the export options, nil until set: the settings
+	// store's, which has the defaults.
+	export *ExportOptions
 }
 
 var _ Host = (*SketchHost)(nil)
@@ -340,8 +358,26 @@ func (h *SketchHost) Export(kind ExportKind, path string) error {
 	if ext := filepath.Ext(path); kind != ExportMesh || !strings.EqualFold(ext, ".stl") && !strings.EqualFold(ext, ".3mf") {
 		return fmt.Errorf("export of %s: %w", filepath.Base(path), errUnsupported)
 	}
-	return h.sk.ExportMeshTo(path, sketch.ThawExportSettings(h.sk.SettingsStore()))
+	o := h.ExportOptions()
+	return h.sk.ExportMeshTo(path, sketch.ExportSettings{ChordTol: o.ChordTol, MaxSegments: o.MaxSegments, Scale: o.Scale})
 }
+
+// ExportOptions are the options set, or those of the settings store.
+func (h *SketchHost) ExportOptions() ExportOptions {
+	if h.export != nil {
+		return *h.export
+	}
+	return thawExportOptions(h.sk.SettingsStore())
+}
+
+// SetExportOptions keeps the options; only the mesh export reads them.
+func (h *SketchHost) SetExportOptions(o ExportOptions) { h.export = &o }
+
+// SetMaxSegments sets the sketch's own.
+func (h *SketchHost) SetMaxSegments(n int) { h.sk.MaxSegments = n }
+
+// SetCheckClosedContour sets the sketch's own.
+func (h *SketchHost) SetCheckClosedContour(on bool) { h.sk.CheckClosedContour = on }
 
 // ExportDrawing fails: drawing needs the application around the
 // sketch, or telesapr-cli export-drawing.

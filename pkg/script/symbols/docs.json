@@ -1886,6 +1886,10 @@
 						"decl": "func (c *Constraint) IsProjectible() bool",
 						"text": "IsProjectible reports whether the constraint applies in a workplane, projected into it."
 					},
+					"IsStylable": {
+						"decl": "func (c *Constraint) IsStylable() bool",
+						"text": "IsStylable reports whether the constraint can be given a style of its own: only a comment can, a dimension is always drawn in the constraint style."
+					},
 					"ModifyToSatisfy": {
 						"decl": "func (c *Constraint) ModifyToSatisfy(sk EntitySketch)",
 						"text": "ModifyToSatisfy changes the constraint's value (or its valP) so that it holds for the sketch as it stands; used for reference dimensions."
@@ -2075,6 +2079,10 @@
 					},
 					"IsPoint": {
 						"decl": "func (e *Entity) IsPoint() bool"
+					},
+					"IsStylable": {
+						"decl": "func (e *Entity) IsStylable() bool",
+						"text": "IsStylable reports whether the entity can be given a style of its own: points, workplanes and normals are drawn in styles the program chooses."
 					},
 					"IsWorkplane": {
 						"decl": "func (e *Entity) IsWorkplane() bool"
@@ -4330,7 +4338,7 @@
 				}
 			},
 			"ConstrainMenu": {
-				"text": "ConstrainMenu holds the calls of the Constrain menu: the dimensions\nand constraints that hold a sketch. A script reaches it as\ndoc.Constrain.",
+				"text": "ConstrainMenu holds the calls of the Constrain menu: the dimensions\nand constraints that hold a sketch. A script reaches it as\ndoc.Constrain. As in the window, a constraint the sketch already has\nis not added twice (the call returns the old one), and a dimension\nthat would over-constrain the group is made a reference dimension\ninstead, silently, unless the group allows redundant constraints.",
 				"kind": "struct",
 				"methods": {
 					"Angle": {
@@ -4349,6 +4357,10 @@
 						"decl": "func (m ConstrainMenu) Comment(at Vec, text string) Constraint",
 						"text": "Comment writes text on the drawing at a place."
 					},
+					"CommentOn": {
+						"decl": "func (m ConstrainMenu) CommentOn(point Entity, text string) Constraint",
+						"text": "CommentOn writes text on the drawing next to a point, as Constrain \u003e\nComment does for a selected point; Constraint.SetLabelOffset moves it."
+					},
 					"Diameter": {
 						"decl": "func (m ConstrainMenu) Diameter(circle Entity, v float64) Constraint",
 						"text": "Diameter sets the diameter of a circle or an arc."
@@ -4362,8 +4374,12 @@
 						"text": "Distance sets the distance between two points, or from a point to a\nline segment, a workplane or a face; either may come first. A\nnegative distance from a line, a workplane or a face is on the\nother side of it."
 					},
 					"Equal": {
-						"decl": "func (m ConstrainMenu) Equal(a, b Entity) Constraint",
-						"text": "Equal makes two line segments as long as each other, two circles or\narcs of the same radius, or a line segment as long as an arc."
+						"decl": "func (m ConstrainMenu) Equal(es ...Entity) Constraint",
+						"text": "Equal makes what it is given equal, as Constrain \u003e Equal Length /\nRadius does, with the entities in any order: two or more line\nsegments as long as each other; two or more circles or arcs of the\nsame radius (for three or more it makes one constraint of the first\nagainst each of the others, all as one undo step, and returns the\nfirst); a line segment as long as an arc; a point as far from a line\nsegment as that line segment is long, given the line segment,\nanother line segment and the point; and two points as far from a line\nsegment as each other, given that line segment with both points or\ntwo line segments with a point each (the first point is measured from\nthe first line segment, the second from the second). It fails for\nanything else."
+					},
+					"EqualAngle": {
+						"decl": "func (m ConstrainMenu) EqualAngle(es ...Entity) Constraint",
+						"text": "EqualAngle makes two angles as large as each other, as Constrain \u003e\nAngle / Equal Angle does: three line segments or normals for the two\nangles that share the second, or four for the angles they make in\npairs. The supplementary angle is taken where the sketch is drawn\nacross it, as the window takes it."
 					},
 					"Horizontal": {
 						"decl": "func (m ConstrainMenu) Horizontal(lineOrPoints ...Entity) Constraint",
@@ -4383,7 +4399,7 @@
 					},
 					"Midpoint": {
 						"decl": "func (m ConstrainMenu) Midpoint(point, line Entity) Constraint",
-						"text": "Midpoint puts a point at the middle of a line segment."
+						"text": "Midpoint puts a point at the middle of a line segment. Given a\nworkplane in place of the point, it puts the middle of the line\nsegment in that plane."
 					},
 					"MinDistance": {
 						"decl": "func (m ConstrainMenu) MinDistance(a, b Entity, v float64) Constraint",
@@ -4399,11 +4415,15 @@
 					},
 					"Parallel": {
 						"decl": "func (m ConstrainMenu) Parallel(a, b Entity) Constraint",
-						"text": "Parallel makes two line segments or normals parallel."
+						"text": "Parallel makes two line segments or normals parallel, or two faces."
 					},
 					"Perpendicular": {
 						"decl": "func (m ConstrainMenu) Perpendicular(a, b Entity) Constraint",
-						"text": "Perpendicular makes two line segments or normals perpendicular."
+						"text": "Perpendicular makes two line segments or normals perpendicular, or\ntwo faces."
+					},
+					"ProjectedDistance": {
+						"decl": "func (m ConstrainMenu) ProjectedDistance(a, b, along Entity, v float64) Constraint",
+						"text": "ProjectedDistance sets how far a is from b measured along the\ndirection of along, a line segment or a normal, as Constrain \u003e\nDistance / Diameter does for two points and a direction: the\ndistance is taken with its sign, so a negative v puts b on the other\nside of a from along. It is the distance between two parallel faces\nto measure, or between a point and a plane's own direction."
 					},
 					"Radius": {
 						"decl": "func (m ConstrainMenu) Radius(circle Entity, v float64) Constraint",
@@ -4423,11 +4443,11 @@
 					},
 					"Symmetric": {
 						"decl": "func (m ConstrainMenu) Symmetric(a, b, about Entity) Constraint",
-						"text": "Symmetric makes two points mirror images of each other about a\nworkplane or a line segment; with no such thing (Entity{}), about\nthe axis of the active workplane they are across."
+						"text": "Symmetric makes two points mirror images of each other about a\nworkplane or a line segment; with no such thing (Entity{}), about\nthe axis of the active workplane they are across. A line segment may\nstand for its two ends: give it as a, and Entity{} as b. Symmetric\nabout the axis, that line segment no longer needs the Horizontal or\nVertical constraint it had, and loses it, as in the window."
 					},
 					"Tangent": {
-						"decl": "func (m ConstrainMenu) Tangent(a, b Entity) Constraint",
-						"text": "Tangent makes an arc or a cubic tangent to a line segment, or to\nanother arc or cubic, where they share an end."
+						"decl": "func (m ConstrainMenu) Tangent(a, b Entity, ends ...Entity) Constraint",
+						"text": "Tangent makes an arc or a cubic tangent to a line segment, or to\nanother arc or cubic. They are tangent where they share an end; for\ncurves that don't, give the end points to make tangent: the end of\nthe arc or cubic for a line segment, and an end of each curve for two\ncurves, as selecting the points does in the window."
 					},
 					"Vertical": {
 						"decl": "func (m ConstrainMenu) Vertical(lineOrPoints ...Entity) Constraint",
@@ -4455,6 +4475,10 @@
 						"decl": "func (c Constraint) Group() (g Group)",
 						"text": "Group is the group the constraint is in."
 					},
+					"LabelOffset": {
+						"decl": "func (c Constraint) LabelOffset() (off Vec)",
+						"text": "LabelOffset is how far the label of a dimension or a comment is from\nthe place it belongs to, as dragging the label sets it, in mm."
+					},
 					"Limit": {
 						"decl": "func (c Constraint) Limit() (l core.Limit)",
 						"text": "Limit is the dimension's limit: NoLimit, Minimum or Maximum."
@@ -4465,7 +4489,7 @@
 					},
 					"Other": {
 						"decl": "func (c Constraint) Other() (other bool)",
-						"text": "Other is whether an angle measures the supplementary angle, or an\nequal-angle constraint pairs the other angles."
+						"text": "Other is whether an angle measures the supplementary angle, an\nequal-angle constraint pairs the other angles, or a diameter is shown\nas a radius."
 					},
 					"Reference": {
 						"decl": "func (c Constraint) Reference() (reference bool)",
@@ -4483,6 +4507,10 @@
 						"decl": "func (c Constraint) SetExpr(expr string) (err error)",
 						"text": "SetExpr gives the constraint the value of text, as typing it in its\nlabel does: a length in the document's unit (View.Units), an angle in\ndegrees, a ratio. A plain number is stored as its value; any other\ntext, \"25.4/2\" or \"wall*4\" with a parameter (Params.Set), is\nkept and evaluated again at each regeneration."
 					},
+					"SetLabelOffset": {
+						"decl": "func (c Constraint) SetLabelOffset(off Vec)",
+						"text": "SetLabelOffset moves the label of a dimension or a comment to off\nfrom the place it belongs to, as dragging it does. It changes how the\ndrawing looks, not what the sketch holds. For a comment off is where\nthe text stands, in the workplane it was written in."
+					},
 					"SetLimit": {
 						"decl": "func (c Constraint) SetLimit(l core.Limit)",
 						"text": "SetLimit makes the dimension a bound: Minimum lets what it measures\nbe its value or more, Maximum its value or less, and NoLimit makes it\nhold its value again. Any distance, a diameter or radius, and an\nangle take a limit; for an angle, Minimum is the least angle."
@@ -4493,15 +4521,27 @@
 					},
 					"SetOther": {
 						"decl": "func (c Constraint) SetOther(other bool)",
-						"text": "SetOther makes an angle measure the supplementary angle, the other\none of the two its lines make, or not; for an equal-angle\nconstraint it pairs the other angles. Constrain \u003e Other\nSupplementary Angle toggles it."
+						"text": "SetOther makes an angle measure the supplementary angle, the other\none of the two its lines make, or not; for an equal-angle\nconstraint it pairs the other angles; a diameter is shown as a\nradius, as the text window's \"show as radius\" does (ShowAsRadius).\nConstrain \u003e Other Supplementary Angle toggles it."
 					},
 					"SetReference": {
 						"decl": "func (c Constraint) SetReference(reference bool)",
 						"text": "SetReference makes the constraint a reference dimension, or a\nconstraint again."
 					},
+					"SetShowAsRadius": {
+						"decl": "func (c Constraint) SetShowAsRadius(radius bool)",
+						"text": "SetShowAsRadius shows a diameter dimension as a radius, or as a\ndiameter again; the constraint holds the same size either way, and\nValue is the one that is shown."
+					},
+					"SetStyle": {
+						"decl": "func (c Constraint) SetStyle(style Style)",
+						"text": "SetStyle draws the constraint in the given style, as the window's\nstyle list does for what is selected; the zero Style (api.Style{})\ntakes the style away, and the constraint is drawn in the constraint\nstyle again. Only a comment can be given a style, as in the window:\nany other constraint, a dimension among them, fails with an error\nthat errors.Is finds ErrNotStylable in, and changes nothing."
+					},
 					"String": {
 						"decl": "func (c Constraint) String() (s string)",
 						"text": "String describes the constraint as the property browser does, with\nits value if it has one: \"c002-pt-pt-distance = 40\"."
+					},
+					"Style": {
+						"decl": "func (c Constraint) Style() (style Style)",
+						"text": "Style is the line style the constraint is drawn in: the one it was\ngiven, or else the constraint style."
 					},
 					"Type": {
 						"decl": "func (c Constraint) Type() (t core.ConstraintType)",
@@ -4561,6 +4601,10 @@
 						"decl": "func (d *Doc) Host() Host",
 						"text": "Host is the program around the sketch."
 					},
+					"NewStyle": {
+						"decl": "func (d *Doc) NewStyle() (s Style)",
+						"text": "NewStyle adds a style of the user's own, with the settings a new one\nhas, as Edit \u003e Line Styles does on the group screen. It is drawn in\nnothing until a request or a dimension is given it with\nRequest.SetStyle or Constraint.SetStyle."
+					},
 					"Origin": {
 						"decl": "func (d *Doc) Origin() Entity",
 						"text": "Origin is the point at the origin."
@@ -4569,9 +4613,21 @@
 						"decl": "func (d *Doc) Request(name string) (r Request)",
 						"text": "Request is the request with a description as the property browser\nshows it: \"r004-line-segment\" or just \"r004\"."
 					},
+					"ResetStyles": {
+						"decl": "func (d *Doc) ResetStyles()",
+						"text": "ResetStyles puts the program's own styles back to their factory\nsettings, as Load Factory Defaults does on the styles screen. The\nuser's own styles are kept. It is one step of undo."
+					},
 					"String": {
 						"decl": "func (d *Doc) String() (s string)",
 						"text": "String describes the document."
+					},
+					"Style": {
+						"decl": "func (d *Doc) Style(name string) (s Style)",
+						"text": "Style is the style of that name, as the styles list names it:\n\"#def-solid-edge\" for one of the program's own styles, the name the\nuser gave a custom one. The call fails when the drawing has none, as\nthe zero Style it would otherwise give means no style to\nRequest.SetStyle."
+					},
+					"Styles": {
+						"decl": "func (d *Doc) Styles() (styles []Style)",
+						"text": "Styles are the drawing's line styles, in the order the styles list\nshows them: the program's own first, then the user's own."
 					},
 					"With": {
 						"decl": "func (d *Doc) With(fn func(sk *sketch.Sketch))",
@@ -4648,6 +4704,10 @@
 				"text": "EditMenu holds the calls of the Edit menu: undo, regeneration, the\nclipboard, the selection, commands and preferences. A script reaches\nit as doc.Edit.",
 				"kind": "struct",
 				"methods": {
+					"CheckClosedContour": {
+						"decl": "func (m EditMenu) CheckClosedContour() (on bool)",
+						"text": "CheckClosedContour is whether the closed loops of a sketch are\nchecked for crossing themselves."
+					},
 					"ChordTolerance": {
 						"decl": "func (m EditMenu) ChordTolerance() (pct float64)",
 						"text": "ChordTolerance is how closely meshes follow curves, as a percentage\nof the model's size."
@@ -4655,6 +4715,10 @@
 					"Copy": {
 						"decl": "func (m EditMenu) Copy(entities ...Entity)",
 						"text": "Copy puts the entities on the clipboard, with the constraints between\nthem, as Edit \u003e Copy does with them selected. Workplanes are left out."
+					},
+					"MaxSegments": {
+						"decl": "func (m EditMenu) MaxSegments() (n int)",
+						"text": "MaxSegments is the most straight pieces a curve is cut into when\nmeshes are made."
 					},
 					"Paste": {
 						"decl": "func (m EditMenu) Paste(move Vec, angle, scale float64) (pasted []Entity)",
@@ -4700,9 +4764,17 @@
 						"decl": "func (m EditMenu) Selection() (entities []Entity)",
 						"text": "Selection is what is selected on the drawing, but for the\nconstraints."
 					},
+					"SetCheckClosedContour": {
+						"decl": "func (m EditMenu) SetCheckClosedContour(on bool)",
+						"text": "SetCheckClosedContour sets whether the closed loops of a sketch are\nchecked for crossing themselves (on unless set; the check is slow),\nand regenerates everything. A loop that crosses itself is a problem\non the group that uses it only while this is on; a loop that is not\nclosed always is. In the application it is the setting \"check\nclosed contour\" of Configuration, kept with the application and not\nin the file."
+					},
 					"SetChordTolerance": {
 						"decl": "func (m EditMenu) SetChordTolerance(pct float64)",
 						"text": "SetChordTolerance sets how closely meshes follow curves, as a\npercentage of the model's size (0.1 unless set; smaller is finer and\nslower), and regenerates everything. In the application it is the\nsetting Configuration shows; scripts that check volumes against a\nformula use a fine one."
+					},
+					"SetMaxSegments": {
+						"decl": "func (m EditMenu) SetMaxSegments(n int)",
+						"text": "SetMaxSegments sets the most straight pieces a curve is cut into\nwhen meshes are made, from 7 to 1000 (20 unless set), and\nregenerates everything. In the application it is the setting\n\"max piecewise linear segments\" of Configuration. The pieces\nexported files cut curves into are ExportOptions.MaxSegments."
 					},
 					"Undo": {
 						"decl": "func (m EditMenu) Undo() (ok bool)",
@@ -4750,6 +4822,10 @@
 						"decl": "func (e Entity) FacePoint() (p Vec)",
 						"text": "FacePoint is a point a face's plane passes through."
 					},
+					"Font": {
+						"decl": "func (e Entity) Font() (font string)",
+						"text": "Font is the name of the font file a text is set in; Sketch.Fonts\nlists the names."
+					},
 					"Free": {
 						"decl": "func (e Entity) Free() (f sketch.Freedom)",
 						"text": "Free is how much of the entity its group's constraints fix, as the\ndrawing colours it: sketch.FreedomFixed when it is fully constrained,\nsketch.FreedomPartly when some of it can still move,\nsketch.FreedomFree when nothing holds it, and sketch.FreedomUnknown\nwhen its group did not solve. Parameters from earlier groups, such\nas a workplane's, count as fixed."
@@ -4758,6 +4834,14 @@
 						"decl": "func (e Entity) Group() (g Group)",
 						"text": "Group is the group the entity is in."
 					},
+					"IsCoincident": {
+						"decl": "func (e Entity) IsCoincident() (coincident bool)",
+						"text": "IsCoincident reports whether a constraint holds the point\ncoincident with another point, which is what DeleteCoincidences\ntakes away."
+					},
+					"Kerning": {
+						"decl": "func (e Entity) Kerning() (kerning bool)",
+						"text": "Kerning reports whether a text is set with the font's kerning, the\nspacing the font gives to particular pairs of letters."
+					},
 					"Kind": {
 						"decl": "func (e Entity) Kind() (kind string)",
 						"text": "Kind names what the entity is: \"point\", \"line\", \"circle\", \"arc\",\n\"cubic\", \"workplane\", \"normal\", \"face\", ..."
@@ -4765,6 +4849,10 @@
 					"Length": {
 						"decl": "func (e Entity) Length() (l float64)",
 						"text": "Length is the length of a line segment, an arc or a circle."
+					},
+					"MakePeriodic": {
+						"decl": "func (e Entity) MakePeriodic()",
+						"text": "MakePeriodic closes the open cubic spline into a periodic one, whose\nends meet: the window does it when a click lands on the first point\nagain while a point is being placed. A spline that is already\nperiodic is left as it is. Constraints on the last point move to the\nfirst, those on the points between follow them to their new places,\nand those on the control points beside the ends are deleted, as is\none left holding the first point against itself."
 					},
 					"MoveBy": {
 						"decl": "func (e Entity) MoveBy(d Vec)",
@@ -4777,6 +4865,10 @@
 					"Normal": {
 						"decl": "func (e Entity) Normal() (n Entity)",
 						"text": "Normal is the normal of a circle, an arc or a workplane."
+					},
+					"Orientation": {
+						"decl": "func (e Entity) Orientation() (u, v Vec)",
+						"text": "Orientation is where the entity's own x and y directions point: for a\nnormal, and for the workplane, circle or arc that has one, the unit\nvectors u and v of its turn (its normal points along u cross v)."
 					},
 					"Points": {
 						"decl": "func (e Entity) Points() (points []Entity)",
@@ -4802,9 +4894,25 @@
 						"decl": "func (e Entity) SetConstruction(construction bool)",
 						"text": "SetConstruction makes what was drawn construction geometry, or not."
 					},
+					"SetFont": {
+						"decl": "func (e Entity) SetFont(font string)",
+						"text": "SetFont sets a text in another font, given by the name of its font\nfile as Sketch.Fonts lists them; \"\" is the font built in. It fails for\na font the program doesn't have."
+					},
+					"SetKerning": {
+						"decl": "func (e Entity) SetKerning(kerning bool)",
+						"text": "SetKerning turns the kerning of a text on or off, as the text\nwindow's \"apply kerning\" does."
+					},
+					"SetOrientation": {
+						"decl": "func (e Entity) SetOrientation(u, w Vec)",
+						"text": "SetOrientation turns a normal, or the workplane, circle or arc that\nhas one, so that its x and y directions point along u and w, which\nmust not be parallel (w is made square to u), as dragging the normal\nin the window does; the solver then moves it as the constraints\nrequire. Only a normal free in 3D can turn: one in a workplane, or\ncopied from another group, is fixed and the call fails."
+					},
 					"SetRadius": {
 						"decl": "func (e Entity) SetRadius(r float64)",
 						"text": "SetRadius gives a circle a radius, as dragging it does; constrain\nit with Diameter or Radius to keep it."
+					},
+					"SetText": {
+						"decl": "func (e Entity) SetText(text string)",
+						"text": "SetText changes the string of a text. The text keeps its corner,\ndirection and height, and the constraints on them, and takes the\nwidth the new string has; the text window's [change] does the same."
 					},
 					"Start": {
 						"decl": "func (e Entity) Start() Entity",
@@ -4814,6 +4922,10 @@
 						"decl": "func (e Entity) String() (s string)",
 						"text": "String describes the entity, as \"line r004-line-segment\"."
 					},
+					"Text": {
+						"decl": "func (e Entity) Text() (text string)",
+						"text": "Text is the string of a text drawn with Sketch.Text."
+					},
 					"Type": {
 						"decl": "func (e Entity) Type() (t core.EntityType)",
 						"text": "Type is the entity's type, as the core package names them."
@@ -4821,8 +4933,16 @@
 					"Valid": {
 						"decl": "func (e Entity) Valid() (ok bool)",
 						"text": "Valid reports whether the entity exists."
+					},
+					"Visible": {
+						"decl": "func (e Entity) Visible() (visible bool)",
+						"text": "Visible reports whether the entity is drawn, as the window draws it:\nthe show flags of View \u003e Show and the group's own show and suppress\nmodes decide, as PointOfRayCasting and a drawing in the window see\nit."
 					}
 				}
+			},
+			"ExportCanvas": {
+				"text": "ExportCanvas is a 2d file's page when its size is fixed, in mm, and\nwhere the geometry starts on it.",
+				"kind": "struct"
 			},
 			"ExportKind": {
 				"text": "ExportKind is what Export writes.",
@@ -4831,8 +4951,17 @@
 					"ExportMesh",
 					"ExportView",
 					"ExportWireframe",
-					"ExportSurfaces"
+					"ExportSurfaces",
+					"ExportSection"
 				]
+			},
+			"ExportMargin": {
+				"text": "ExportMargin is the space left around the exported geometry when the\npage size is automatic, in mm.",
+				"kind": "struct"
+			},
+			"ExportOptions": {
+				"text": "ExportOptions are the settings that change what an export writes:\nthe ones the configuration screen shows. Lengths are in mm. Get them\nwith File.ExportOptions, change the fields and give them back to\nFile.SetExportOptions; they stay set for the rest of the session and\napply to every export after, whether the script or the window asks.",
+				"kind": "struct"
 			},
 			"ExtrudeGroup": {
 				"text": "ExtrudeGroup is the view of an extrusion: its draft.",
@@ -4861,6 +4990,14 @@
 					"SetDraftNeutral": {
 						"decl": "func (v ExtrudeGroup) SetDraftNeutral(mm float64)",
 						"text": "SetDraftNeutral leans an extrusion's drafted sides from the plane mm\nalong it from the sketch's plane, negative towards a two-sided\nextrusion's other end: there the solid has the profile's outline, and\nit narrows going away from it both ways, as a moulded part does from\nits parting line. 0 is the sketch's plane. A plane off the extrusion\nis a problem on the group. SetExpr with sketch.GroupPitch gives it an\nexpression in the document's unit."
+					},
+					"SetSkewed": {
+						"decl": "func (v ExtrudeGroup) SetSkewed(skewed bool)",
+						"text": "SetSkewed makes an extrusion's sides lean, or stand straight again,\nwhether it is one-sided or two-sided, which SetTwoSided keeps."
+					},
+					"Skewed": {
+						"decl": "func (v ExtrudeGroup) Skewed() (skewed bool)",
+						"text": "Skewed reports whether an extrusion leans with its sketch's normal\nrather than standing straight, as the group screen's \"skewed\" says."
 					}
 				}
 			},
@@ -4900,9 +5037,17 @@
 						"decl": "func (m FeaturesMenu) Helix(axis Entity, degrees, length float64, name string) Group",
 						"text": "Helix makes a solid of the active group's sketch by sweeping it\naround a line segment by an angle in degrees while moving it along\nthe segment's direction by length, as a screw thread does: 360 and a\nlength of the pitch make one turn. A negative angle turns the other\nway. The new group becomes active."
 					},
+					"HelixAbout": {
+						"decl": "func (m FeaturesMenu) HelixAbout(point, vector Entity, degrees, length float64, name string) Group",
+						"text": "HelixAbout is Helix about an axis through a point and parallel to a\nvector, a line segment or a normal."
+					},
 					"Lathe": {
 						"decl": "func (m FeaturesMenu) Lathe(axis Entity, name string) Group",
 						"text": "Lathe makes a solid of the active group's sketch by turning it all\nthe way around a line segment. The new group becomes active."
+					},
+					"LatheAbout": {
+						"decl": "func (m FeaturesMenu) LatheAbout(point, vector Entity, name string) Group",
+						"text": "LatheAbout is Lathe about an axis through a point and parallel to a\nvector, a line segment or a normal, as the window takes a point and\na line segment or normal."
 					},
 					"Loft": {
 						"decl": "func (m FeaturesMenu) Loft(from, to Group, name string) Group",
@@ -4923,6 +5068,10 @@
 					"Revolve": {
 						"decl": "func (m FeaturesMenu) Revolve(axis Entity, degrees float64, name string) Group",
 						"text": "Revolve makes a solid of the active group's sketch by turning it by\nan angle in degrees around a line segment. The new group becomes\nactive."
+					},
+					"RevolveAbout": {
+						"decl": "func (m FeaturesMenu) RevolveAbout(point, vector Entity, degrees float64, name string) Group",
+						"text": "RevolveAbout is Revolve about an axis through a point and parallel to\na vector, a line segment or a normal."
 					},
 					"Rotate": {
 						"decl": "func (m FeaturesMenu) Rotate(n int, center, axis Entity, degrees float64, name string) Group",
@@ -4951,6 +5100,14 @@
 					"SketchOnFace": {
 						"decl": "func (m FeaturesMenu) SketchOnFace(face SolidFace, name string) Group",
 						"text": "SketchOnFace adds a group to draw in, in a workplane lying in a flat\nface of the solid so far, as Solid.FaceAt or Solid.Face give it: its\nnormal out of the solid, its origin on a corner of the face and u\nalong an edge of it (for a face with no straight edge, as a\ncylinder's cap, the origin at the centre of its circle). The\nworkplane follows the face when an edit upstream moves it; when the\nface is gone, it stays where it was and Problem says so. The new\ngroup becomes active, and its workplane the one drawn in."
+					},
+					"SketchOnLines": {
+						"decl": "func (m FeaturesMenu) SketchOnLines(origin, lineA, lineB Entity, name string) Group",
+						"text": "SketchOnLines adds a group to draw in, in a workplane through a point\nand parallel to two line segments, as the window makes one from a\npoint and two line segments: u runs along lineA and v along lineB, each from its start to its end,\nand the workplane follows the point and the lines when they move.\nThe lines must not be parallel. The new group becomes active, and\nits workplane the one drawn in."
+					},
+					"SketchOnNormal": {
+						"decl": "func (m FeaturesMenu) SketchOnNormal(origin, normal Entity, name string) Group",
+						"text": "SketchOnNormal adds a group to draw in, in a workplane through a\npoint and square to a normal (an entity's Normal, or a workplane,\nwhose normal is taken), as the window makes one from a point and a\nnormal; the workplane follows the normal when it turns. The new\ngroup becomes active, and its workplane the one drawn in."
 					},
 					"Sweep": {
 						"decl": "func (m FeaturesMenu) Sweep(path []Entity, name string) Group",
@@ -4982,9 +5139,21 @@
 						"decl": "func (m FileMenu) ExportAs(kind ExportKind, path string) (err error)",
 						"text": "ExportAs is Export for a format that can hold several things, such\nas a wireframe in a .dxf or a .step."
 					},
+					"ExportOptions": {
+						"decl": "func (m FileMenu) ExportOptions() (o ExportOptions)",
+						"text": "ExportOptions are the settings that change what an export writes, as\nthe configuration screen shows them; see ExportOptions. In a script\nrun without the application only the mesh export (STL, 3MF) reads\nthem, and then only ChordTol, MaxSegments and Scale."
+					},
+					"ExportSection": {
+						"decl": "func (m FileMenu) ExportSection(path string) error",
+						"text": "ExportSection writes the section of the active group's solid by a\nplane as a 2d file (.svg, .dxf, .pdf, ...), as File \u003e Export \u003e 2d\nSection does. The plane is the section view's (Doc.Group views'\nSetSection) when it is on, and otherwise the active workplane; its\nnormal is the section's, so a flipped section view lays the section\nout mirrored. It needs the application's export writers, as the other\n2d exports do."
+					},
 					"ForgetChanges": {
 						"decl": "func (m FileMenu) ForgetChanges()",
 						"text": "ForgetChanges lets the changes made since the sketch was saved go, as\n\"Don't Save\" does when the application asks: File \u003e New, Open and\nthe others that replace the drawing refuse to run from a script while\nit has unsaved changes, so that nothing is lost unasked. The\ndrawing itself stays as it is until such a command replaces it."
+					},
+					"ImportDXF": {
+						"decl": "func (m FileMenu) ImportDXF(path string) (ignored int, err error)",
+						"text": "ImportDXF adds the entities of a DXF file to the active group, as\nFile \u003e Import does: in the group's workplane, or, when the file has\nentities off the XY plane, as construction entities in 3d, leaving the\nworkplane (undo brings it back). It returns how many entities of\nkinds the importer doesn't know were left out. It is one step of undo."
 					},
 					"Load": {
 						"decl": "func (m FileMenu) Load(path string) (err error)",
@@ -4997,6 +5166,10 @@
 					"Save": {
 						"decl": "func (m FileMenu) Save(path string) (err error)",
 						"text": "Save regenerates the sketch and writes it to a .tlspr file. A\nSolveSpace model (.slvs) is not written."
+					},
+					"SetExportOptions": {
+						"decl": "func (m FileMenu) SetExportOptions(o ExportOptions) error",
+						"text": "SetExportOptions replaces the export options, as the configuration\nscreen does one at a time, and fails, changing nothing, when one is\nout of range (see ExportOptions). Take the options with\nExportOptions, change the fields wanted and give them back. In the\napplication the values are the ones saved with its settings when it\ncloses."
 					},
 					"Unsaved": {
 						"decl": "func (m FileMenu) Unsaved() (unsaved bool)",
@@ -5030,10 +5203,22 @@
 					}
 				}
 			},
+			"GCodeOptions": {
+				"text": "GCodeOptions is what an exported G-code file cuts with, in mm.",
+				"kind": "struct"
+			},
 			"Group": {
 				"text": "Group is a group of the sketch: a drawing in a workplane or in 3d,\nor a step that makes a solid from the group before it, as an\nextrusion does.",
 				"kind": "struct",
 				"methods": {
+					"AllDimsReference": {
+						"decl": "func (g Group) AllDimsReference() (on bool)",
+						"text": "AllDimsReference reports whether every dimension in the group is\nmeasured without holding the sketch."
+					},
+					"AllowRedundant": {
+						"decl": "func (g Group) AllowRedundant() (on bool)",
+						"text": "AllowRedundant reports whether the group may solve with redundant\nconstraints left in it."
+					},
 					"Analyze": {
 						"decl": "func (g Group) Analyze() GroupAnalysis",
 						"text": "Analyze measures and checks the solid up to and with the group."
@@ -5078,6 +5263,14 @@
 						"decl": "func (g Group) AsSweep() SweepGroup",
 						"text": "AsSweep is the view of a sweep along a path."
 					},
+					"Color": {
+						"decl": "func (g Group) Color() (red, green, blue int)",
+						"text": "Color is the colour of the group's solid, each of red, green and blue\n0 to 255."
+					},
+					"Combine": {
+						"decl": "func (g Group) Combine() (how sketch.CombineAs)",
+						"text": "Combine is how the group's solid combines with the solid so far:\nUnion, Difference, Intersection or Assemble. A step and repeat, a\nmirror or a pattern takes its source group's mode, so this is the\nsource's for those."
+					},
 					"Conflicts": {
 						"decl": "func (g Group) Conflicts() (constraints []Constraint)",
 						"text": "Conflicts lists the constraints that keep the group from solving,\nas its solve-failure screen does, any one of which could be removed\nto fix it; none when the group solved."
@@ -5096,7 +5289,7 @@
 					},
 					"Dof": {
 						"decl": "func (g Group) Dof() (dof int)",
-						"text": "Dof is how many degrees of freedom the group's constraints leave."
+						"text": "Dof is how many degrees of freedom the group's constraints leave,\nor -1 where the group is left out of that count, as SetSuppressDof\nasks, and where Doc.Describe says the count was not made."
 					},
 					"Edges": {
 						"decl": "func (g Group) Edges() (edges []Entity)",
@@ -5118,6 +5311,10 @@
 						"decl": "func (g Group) Faces() (faces []Entity)",
 						"text": "Faces are the planar faces this group made, which constraints and\nthe section view can refer to."
 					},
+					"ForceToMesh": {
+						"decl": "func (g Group) ForceToMesh() (on bool)",
+						"text": "ForceToMesh reports whether the group's NURBS surfaces are turned\ninto a triangle mesh."
+					},
 					"History": {
 						"decl": "func (g Group) History() GroupHistory",
 						"text": "History is what the group depends on, and where it sits in the list\nof groups."
@@ -5134,41 +5331,73 @@
 						"decl": "func (g Group) Name() (name string)",
 						"text": "Name is the group's name."
 					},
+					"Opacity": {
+						"decl": "func (g Group) Opacity() (alpha float64)",
+						"text": "Opacity is how opaque the group's solid is, 0 (clear) to 1."
+					},
 					"Param": {
 						"decl": "func (g Group) Param(i int) Param",
-						"text": "Param is the group's i-th parameter: for an extrusion, 0 to 2 are\nthe vector to its middle; for a step and repeat translating, the step; for a\nrevolve or a step and repeat rotating, 3 is the angle in radians."
+						"text": "Param is the group's i-th parameter: for an extrusion, 0 to 2 are\nthe vector to its middle; for a step and repeat translating, the step; for a\nrevolve or a step and repeat rotating, 3 is the angle in radians; for a linked\npart, 0 to 2 are its move in mm and 3 to 6 the quaternion (w, x, y, z) of its turn,\nwhich LinkGroup.Move, Rotate and SetOrientation set with the group regenerated."
 					},
 					"Problem": {
 						"decl": "func (g Group) Problem() (msg string)",
 						"text": "Problem says what the last regeneration found wrong with the\ngroup's input, as an edge a chamfer can't cut, a sweep path with\na corner, or a sketch that crosses itself, is open, is not flat or\nhas a curve of no length, with the point where; or \"\" when there is\nnothing. A group with a problem adds no solid. A sketch says what is\nwrong with its contours only when a solid is made from it, since a\nsweep's path may be open and not flat; the group making the solid\nsays it too. It also says when the Boolean that joins the group's\nsolid to the solid so far failed: the group's solid is then\nunsound, and Check says where."
 					},
+					"RelaxConstraints": {
+						"decl": "func (g Group) RelaxConstraints() (on bool)",
+						"text": "RelaxConstraints reports whether the group's solver keeps only the\ncoincident constraints and lets the rest of the sketch move."
+					},
 					"Requests": {
 						"decl": "func (g Group) Requests() (requests []Request)",
 						"text": "Requests are what was drawn in the group."
 					},
+					"SetAllDimsReference": {
+						"decl": "func (g Group) SetAllDimsReference(on bool)",
+						"text": "SetAllDimsReference turns every dimension in the group into a\nreference dimension, which is measured and shown but does not hold\nthe sketch, or makes them constrain again."
+					},
+					"SetAllowRedundant": {
+						"decl": "func (g Group) SetAllowRedundant(on bool)",
+						"text": "SetAllowRedundant lets the group solve with redundant constraints in\nit, or asks for the surplus to be reported as conflicts to remove, as\nits solve-failure screen does."
+					},
 					"SetAppearance": {
 						"decl": "func (g Group) SetAppearance(name string)",
-						"text": "SetAppearance gives the group's solid an appearance: matte, plastic,\nglossy or metal, or \"\" for the default. Its colour stays."
+						"text": "SetAppearance gives the group's solid an appearance: matte, plastic,\nglossy or metal, or \"\" for the default. Its colour stays. A sketch\nmakes no solid, so it fails."
 					},
 					"SetColor": {
 						"decl": "func (g Group) SetColor(red, green, blue int)",
-						"text": "SetColor colours the group's solid; each of red, green and blue is\n0 to 255."
+						"text": "SetColor colours the group's solid; each of red, green and blue is\n0 to 255. Its opacity stays. Only an extrusion, lathe, revolve,\nhelix, sweep or loft makes faces of its own colour; a link brings its\nown, and a step and repeat, mirror, pattern, chamfer, fillet or shell\nkeeps the colours of the solid it works on, so those fail."
 					},
 					"SetCombine": {
 						"decl": "func (g Group) SetCombine(how sketch.CombineAs)",
-						"text": "SetCombine says how the group's solid combines with the solid so\nfar: Union, Difference, Intersection or Assemble."
+						"text": "SetCombine says how the group's solid combines with the solid so\nfar: Union, Difference, Intersection or Assemble. The extrusion keeps\nthe direction the script gave it, where the window turns it round,\nbecause a script's depth already says which way a cut goes; a mode\nthat doesn't exist fails. Only an extrusion, lathe, revolve, helix,\nlink, sweep or loft has a mode of its own: the others take their\nsource group's or edit the solid so far, and fail, as the group\nscreen doesn't offer the choice for them."
 					},
 					"SetExpr": {
 						"decl": "func (g Group) SetExpr(value sketch.GroupValue, expr string) (err error)",
-						"text": "SetExpr gives one of the group's values text, as typing it on the\ngroup screen does: sketch.GroupCopies for a step and repeat,\nsketch.GroupPitch for a helix's fixed pitch, a length in the\ndocument's unit (View.Units), sketch.GroupScale for a link. A plain\nnumber is stored as its value; any other text is kept and evaluated\nagain at each regeneration."
+						"text": "SetExpr gives one of the group's values text, as typing it on the\ngroup screen does: sketch.GroupCopies for a step and repeat or a pattern,\nsketch.GroupPitch for a helix's fixed pitch, a length in the\ndocument's unit (View.Units), sketch.GroupScale for a link. A plain\nnumber is stored as its value; any other text is kept and evaluated\nagain at each regeneration."
+					},
+					"SetForceToMesh": {
+						"decl": "func (g Group) SetForceToMesh(on bool)",
+						"text": "SetForceToMesh makes the group approximate its NURBS surfaces with a\ntriangle mesh, which an import that carries no such surface needs,\nor leaves it to keep them. It does nothing where the model is a\ntriangle mesh already."
 					},
 					"SetName": {
 						"decl": "func (g Group) SetName(name string)",
 						"text": "SetName names the group."
 					},
+					"SetOpacity": {
+						"decl": "func (g Group) SetOpacity(alpha float64)",
+						"text": "SetOpacity sets how opaque the group's solid is, from 0 (clear) to 1,\nas the group screen's opacity does. Its colour stays. It fails for a\nvalue out of range and for a group with no colour of its own, which\nSetColor says."
+					},
+					"SetRelaxConstraints": {
+						"decl": "func (g Group) SetRelaxConstraints(on bool)",
+						"text": "SetRelaxConstraints asks the group's solver to keep only the\ncoincident constraints, and to treat every other constraint and\ndimension as a hint the sketch may not follow, or to require all of\nthem again. A relaxed group solves where it did not, at the cost of\nthe dimensions no longer holding."
+					},
 					"SetSuppress": {
 						"decl": "func (g Group) SetSuppress(mode SuppressMode)",
 						"text": "SetSuppress leaves the group's solid out of the model with\nSuppressSolid; the whole group, its sketch, solve and solid, with\nSuppressWhole, which also leaves out every group that uses it; and\nputs everything back with Unsuppressed. Nothing is deleted. The\nreferences can't be suppressed whole."
+					},
+					"SetSuppressDof": {
+						"decl": "func (g Group) SetSuppressDof(on bool)",
+						"text": "SetSuppressDof leaves the group out of the model's count of free\nparameters, which a large group makes quicker to regenerate, or puts\nit back in, so that Group.Dof and the screen report the group again."
 					},
 					"SetTwoSided": {
 						"decl": "func (g Group) SetTwoSided(two bool)",
@@ -5193,6 +5422,10 @@
 					"String": {
 						"decl": "func (g Group) String() (s string)",
 						"text": "String describes the group as the property browser does:\n\"g003-extrude\"."
+					},
+					"SuppressDof": {
+						"decl": "func (g Group) SuppressDof() (on bool)",
+						"text": "SuppressDof reports whether the group is left out of the model's\ncount of free parameters, which a large group makes quicker to\nregenerate."
 					},
 					"Suppression": {
 						"decl": "func (g Group) Suppression() (mode SuppressMode)",
@@ -5324,13 +5557,37 @@
 						"decl": "func (v LinkGroup) Info() (lines []string)",
 						"text": "Info describes the file a link group links, a line each, as the\ngroup's screen shows it: for a STEP file its schema and unit, how\nmany shapes, faces and triangles it gave, and the chord tolerance it\nwas tessellated to. A sketch or STL file gives none."
 					},
+					"Move": {
+						"decl": "func (v LinkGroup) Move(t Vec)",
+						"text": "Move moves the part by t, in mm, and regenerates it."
+					},
+					"Offset": {
+						"decl": "func (v LinkGroup) Offset() (offset Vec)",
+						"text": "Offset is how far the part is moved from where its file puts it, in\nmm."
+					},
+					"Orientation": {
+						"decl": "func (v LinkGroup) Orientation() (u, w Vec)",
+						"text": "Orientation is where the part's own x and y directions point now, as\nunit vectors."
+					},
 					"Problem": {
 						"decl": "func (v LinkGroup) Problem() (msg string)",
 						"text": "Problem says what of the file a link group links could not be\nread, such as the faces of a STEP file on a kind of surface the\nreader does not support, or that the file holds no solid it can\nread; \"\" when all of it was."
 					},
+					"Rotate": {
+						"decl": "func (v LinkGroup) Rotate(axis Vec, degrees float64)",
+						"text": "Rotate turns the part by degrees about the axis through its own\norigin, on top of the turn it has, and regenerates it. The turn is\ncounter-clockwise looking against the axis."
+					},
+					"Rotate90": {
+						"decl": "func (v LinkGroup) Rotate90(axis Vec)",
+						"text": "Rotate90 is Edit \u003e Rotate Imported 90°: it turns the part a quarter\nabout the coordinate axis closest to axis, which the window takes to\nbe the direction of the view. It is one step of undo."
+					},
 					"SetAsSolid": {
 						"decl": "func (v LinkGroup) SetAsSolid(on bool)",
 						"text": "SetAsSolid reads a link group's STEP file as a solid, or as a\nreference mesh, and reads it again."
+					},
+					"SetOrientation": {
+						"decl": "func (v LinkGroup) SetOrientation(u, w Vec)",
+						"text": "SetOrientation turns the part so that its own x and y directions\npoint along u and w, which must not be parallel (w is made square to\nu), as dragging the part's normal in the window does."
 					}
 				}
 			},
@@ -5492,7 +5749,15 @@
 					},
 					"SetCopies": {
 						"decl": "func (v RepeatGroup) SetCopies(n int)",
-						"text": "SetCopies is how many copies a step and repeat or a pattern makes."
+						"text": "SetCopies is how many copies a step and repeat or a pattern makes. A\nrotate keeps the angle the script gave it, where the window re-spaces\nthe copies over one turn, because a script states its angle itself."
+					},
+					"SetSkipFirst": {
+						"decl": "func (v RepeatGroup) SetSkipFirst(skip bool)",
+						"text": "SetSkipFirst has a one-sided step and repeat start with its first\ncopy and leave the original out of the solid, or start with the\noriginal again. A rotate keeps the angle the script gave it, where\nthe window re-spaces the copies when their count is typed. A\ntwo-sided repeat always has the original, and fails."
+					},
+					"SkipFirst": {
+						"decl": "func (v RepeatGroup) SkipFirst() (skip bool)",
+						"text": "SkipFirst reports whether a one-sided step and repeat starts with its\nfirst copy, leaving the original out of the solid, as the group\nscreen's \"start with copy #1\" says."
 					}
 				}
 			},
@@ -5520,9 +5785,17 @@
 						"decl": "func (r Request) SetConstruction(construction bool)",
 						"text": "SetConstruction makes the request construction geometry, or not."
 					},
+					"SetStyle": {
+						"decl": "func (r Request) SetStyle(style Style)",
+						"text": "SetStyle draws the request in the given style, as the window's style\nlist does for what is selected; the zero Style (api.Style{}) takes\nthe style away, and the request is drawn in the style it has by where\nit is. A request of a point, a workplane or a normal can't be given a\nstyle, as in the window: the call fails with an error that errors.Is\nfinds ErrNotStylable in, and changes nothing."
+					},
 					"String": {
 						"decl": "func (r Request) String() (s string)",
 						"text": "String describes the request as the property browser does:\n\"r004-line-segment\"."
+					},
+					"Style": {
+						"decl": "func (r Request) Style() (style Style)",
+						"text": "Style is the line style the request is drawn in: the one it was\ngiven, or else the one it has by where it is (construction geometry,\nthe active group, another)."
 					},
 					"Type": {
 						"decl": "func (r Request) Type() (t sketch.RequestType)",
@@ -5596,6 +5869,10 @@
 						"decl": "func (h *SketchHost) ExportDrawing(path string, _ *sketch.Drawing) error",
 						"text": "ExportDrawing fails: drawing needs the application around the\nsketch, or telesapr-cli export-drawing."
 					},
+					"ExportOptions": {
+						"decl": "func (h *SketchHost) ExportOptions() ExportOptions",
+						"text": "ExportOptions are the options set, or those of the settings store."
+					},
 					"Hovered": {
 						"decl": "func (h *SketchHost) Hovered() sketch.Selection",
 						"text": "Hovered is nothing, for the same reason."
@@ -5652,9 +5929,21 @@
 						"decl": "func (h *SketchHost) Selection() []sketch.Selection",
 						"text": "Selection is nothing: there is no interface to select in."
 					},
+					"SetCheckClosedContour": {
+						"decl": "func (h *SketchHost) SetCheckClosedContour(on bool)",
+						"text": "SetCheckClosedContour sets the sketch's own."
+					},
 					"SetChordTolerance": {
 						"decl": "func (h *SketchHost) SetChordTolerance(pct float64)",
 						"text": "SetChordTolerance sets the sketch's chord tolerance. The linked\nsolids are read again at it: a solid keeps the tolerance it was\nread at."
+					},
+					"SetExportOptions": {
+						"decl": "func (h *SketchHost) SetExportOptions(o ExportOptions)",
+						"text": "SetExportOptions keeps the options; only the mesh export reads them."
+					},
+					"SetMaxSegments": {
+						"decl": "func (h *SketchHost) SetMaxSegments(n int)",
+						"text": "SetMaxSegments sets the sketch's own."
 					},
 					"ShowDrawingSheet": {
 						"decl": "func (h *SketchHost) ShowDrawingSheet(bool) error",
@@ -5696,6 +5985,10 @@
 					"Cubic": {
 						"decl": "func (m SketchMenu) Cubic(p0, p1, p2, p3 Vec) Entity",
 						"text": "Cubic adds a cubic Bézier curve from p0 to p3, with the control\npoints p1 and p2."
+					},
+					"Fonts": {
+						"decl": "func (m SketchMenu) Fonts() (fonts []string)",
+						"text": "Fonts lists the TrueType fonts a text can be set in, as the names of\ntheir font files: what Text and Entity.SetFont take, and what the\ntext window lists."
 					},
 					"Image": {
 						"decl": "func (m SketchMenu) Image(path string, at Vec, height float64) Entity",
@@ -5879,6 +6172,156 @@
 					}
 				}
 			},
+			"Style": {
+				"text": "Style is a line style: how a request or a dimension is drawn, and\nwhether it goes in an exported file. A script reaches the drawing's\nstyles as doc.Styles, and makes a new one as doc.NewStyle, which is\nwhat Edit \u003e Line Styles does on the group screen.\n\nThe styles the program has of its own — the active group's, a solid\nedge's, a datum's — may be changed too, but not deleted, and a\ncustom style may not be renamed away from what the screen gives it\nwithout the window's edit control: Style.SetName does both, and says\nso.",
+				"kind": "struct",
+				"methods": {
+					"Color": {
+						"decl": "func (s Style) Color() (red, green, blue int)",
+						"text": "Color is the style's line colour, each of red, green and blue 0 to\n255."
+					},
+					"Constraints": {
+						"decl": "func (s Style) Constraints() (constraints []Constraint)",
+						"text": "Constraints are the constraints, dimensions among them, drawn in the\nstyle."
+					},
+					"Custom": {
+						"decl": "func (s Style) Custom() (custom bool)",
+						"text": "Custom reports whether the style is one of the user's own, rather\nthan one of the program's."
+					},
+					"Delete": {
+						"decl": "func (s Style) Delete()",
+						"text": "Delete takes the style out of the drawing; whatever was drawn in it\nfalls back to the style it would have without one. A style of the\nprogram's own can't be deleted: the program has it of its own, and\nmakes it again at the next regeneration."
+					},
+					"Exportable": {
+						"decl": "func (s Style) Exportable() (exportable bool)",
+						"text": "Exportable reports whether lines in the style go in an exported\nfile: a style is exported only when it is both visible and\nexportable."
+					},
+					"FillColor": {
+						"decl": "func (s Style) FillColor() (red, green, blue int)",
+						"text": "FillColor is the colour of the contours the style fills, which only\na custom style has."
+					},
+					"Filled": {
+						"decl": "func (s Style) Filled() (filled bool)",
+						"text": "Filled reports whether the style fills the contours it draws, which\nis how a face or a section cap is given a colour."
+					},
+					"Name": {
+						"decl": "func (s Style) Name() (name string)",
+						"text": "Name is the style's name, as the styles list shows it."
+					},
+					"Requests": {
+						"decl": "func (s Style) Requests() (requests []Request)",
+						"text": "Requests are what is drawn in the style."
+					},
+					"SetColor": {
+						"decl": "func (s Style) SetColor(red, green, blue int)",
+						"text": "SetColor colours the style's lines."
+					},
+					"SetExportable": {
+						"decl": "func (s Style) SetExportable(exportable bool)",
+						"text": "SetExportable puts the style's lines in exported files, or leaves\nthem out of them."
+					},
+					"SetFillColor": {
+						"decl": "func (s Style) SetFillColor(red, green, blue int)",
+						"text": "SetFillColor sets the colour of the contours the style fills."
+					},
+					"SetFilled": {
+						"decl": "func (s Style) SetFilled(filled bool)",
+						"text": "SetFilled fills or stops filling the contours the style draws."
+					},
+					"SetName": {
+						"decl": "func (s Style) SetName(name string)",
+						"text": "SetName renames the style, as the style screen's rename does. A style\nof the program's own keeps its name: the program finds it by the name\nit has, in its settings and in a file."
+					},
+					"SetStipple": {
+						"decl": "func (s Style) SetStipple(stipple core.StipplePattern)",
+						"text": "SetStipple dashes the style's lines in the given pattern."
+					},
+					"SetStippleScale": {
+						"decl": "func (s Style) SetStippleScale(scale float64)",
+						"text": "SetStippleScale sets how far apart the dashes are."
+					},
+					"SetTextAlign": {
+						"decl": "func (s Style) SetTextAlign(horizontal, vertical string)",
+						"text": "SetTextAlign aligns the text of a dimension drawn in the style, as\nthe style screen's L/H/R and B/V/T links do. horizontal is \"left\",\n\"center\" or \"right\"; vertical is \"bottom\", \"center\" or \"top\"."
+					},
+					"SetTextAngle": {
+						"decl": "func (s Style) SetTextAngle(degrees float64)",
+						"text": "SetTextAngle turns the text of a dimension drawn in the style."
+					},
+					"SetTextHeight": {
+						"decl": "func (s Style) SetTextHeight(height float64)",
+						"text": "SetTextHeight sets the height of the text of a dimension drawn in the\nstyle."
+					},
+					"SetTextHeightAs": {
+						"decl": "func (s Style) SetTextHeightAs(as core.UnitsAs)",
+						"text": "SetTextHeightAs measures the text height in pixels (UnitsPixels) or\nin millimetres (UnitsMM). The height is converted at the view's\nscale, so the text keeps the size it is drawn at, as the style\nscreen's pixels and mm links do."
+					},
+					"SetVisible": {
+						"decl": "func (s Style) SetVisible(visible bool)",
+						"text": "SetVisible shows or hides the lines in the style, which leaves the\ndrawing as it is."
+					},
+					"SetWidth": {
+						"decl": "func (s Style) SetWidth(width float64)",
+						"text": "SetWidth sets the line width."
+					},
+					"SetWidthAs": {
+						"decl": "func (s Style) SetWidthAs(as core.UnitsAs)",
+						"text": "SetWidthAs measures the width in pixels or in the document's unit."
+					},
+					"SetZIndex": {
+						"decl": "func (s Style) SetZIndex(index int)",
+						"text": "SetZIndex draws the style above or below the others: a dimension's\nstyle at 4 puts it over the geometry, which is what the program's\nown styles do."
+					},
+					"Stipple": {
+						"decl": "func (s Style) Stipple() (stipple core.StipplePattern)",
+						"text": "Stipple is the style's dash pattern, one of the Stipple constants."
+					},
+					"StippleScale": {
+						"decl": "func (s Style) StippleScale() (scale float64)",
+						"text": "StippleScale is how far apart the dashes of a stippled line are, in\nthe unit Style.WidthAs names."
+					},
+					"String": {
+						"decl": "func (s Style) String() (name string)",
+						"text": "String is the style's name, as the styles list shows it."
+					},
+					"TextAlign": {
+						"decl": "func (s Style) TextAlign() (horizontal, vertical string)",
+						"text": "TextAlign is where the text of a dimension sits against its anchor:\nhorizontal is \"left\", \"center\" or \"right\", vertical is \"bottom\",\n\"center\" or \"top\"."
+					},
+					"TextAngle": {
+						"decl": "func (s Style) TextAngle() (degrees float64)",
+						"text": "TextAngle is the angle in degrees the text of a dimension is drawn\nat."
+					},
+					"TextHeight": {
+						"decl": "func (s Style) TextHeight() (height float64)",
+						"text": "TextHeight is the height of the text of a dimension drawn in the\nstyle, in the unit Style.TextHeightAs names."
+					},
+					"TextHeightAs": {
+						"decl": "func (s Style) TextHeightAs() (as core.UnitsAs)",
+						"text": "TextHeightAs is whether the text height is in pixels or in the\ndocument's unit."
+					},
+					"Valid": {
+						"decl": "func (s Style) Valid() (ok bool)",
+						"text": "Valid reports whether the style is still in the drawing."
+					},
+					"Visible": {
+						"decl": "func (s Style) Visible() (visible bool)",
+						"text": "Visible reports whether lines in the style are drawn."
+					},
+					"Width": {
+						"decl": "func (s Style) Width() (width float64)",
+						"text": "Width is the style's line width, in the unit Style.WidthAs names."
+					},
+					"WidthAs": {
+						"decl": "func (s Style) WidthAs() (as core.UnitsAs)",
+						"text": "WidthAs is whether the width and the stipple width are in pixels or\nin the document's unit."
+					},
+					"ZIndex": {
+						"decl": "func (s Style) ZIndex() (index int)",
+						"text": "ZIndex is how high the style is drawn: of the styles in one group,\nthe one with the highest index goes on top, and a file's entities\nare exported in that order too. It is what puts a dimension over the\ngeometry it measures."
+					}
+				}
+			},
 			"SuppressMode": {
 				"text": "SuppressMode is how much of a group is left out of the model.",
 				"kind": "int",
@@ -6035,8 +6478,15 @@
 				"decl": "const Difference",
 				"text": "How a group's solid combines with the solid so far."
 			},
+			"ErrNotStylable": {
+				"decl": "var ErrNotStylable",
+				"text": "ErrNotStylable is what a style given to a request or a constraint the\nwindow can't style gives: a point, a workplane, a normal, or a\nconstraint other than a comment."
+			},
 			"ExportMesh": {
 				"decl": "const ExportMesh"
+			},
+			"ExportSection": {
+				"decl": "const ExportSection"
 			},
 			"ExportSurfaces": {
 				"decl": "const ExportSurfaces"
@@ -6051,6 +6501,10 @@
 				"decl": "const Intersection",
 				"text": "How a group's solid combines with the solid so far."
 			},
+			"MaxSegmentsLimit": {
+				"decl": "const MaxSegmentsLimit",
+				"text": "The range of a curve's pieces, display or export, as the\nconfiguration screen allows."
+			},
 			"Maximum": {
 				"decl": "const Maximum",
 				"text": "Limits a dimension can have (Constraint.SetLimit)."
@@ -6059,6 +6513,10 @@
 				"decl": "var MenuCalls",
 				"text": "MenuCalls says, for each entry of the window's main menu, by its path\n(\"Features/Extrude\"), the calls a script makes instead, as help()\nnames them (\"Features.Extrude\"; several separated by spaces), or,\nafter \"- \", why the entry has none: most of those are the window's\nown, its view and its panels, which a script has none of. A test of\nthe package holds it to the menu, both ways."
 			},
+			"MinSegments": {
+				"decl": "const MinSegments",
+				"text": "The range of a curve's pieces, display or export, as the\nconfiguration screen allows."
+			},
 			"Minimum": {
 				"decl": "const Minimum",
 				"text": "Limits a dimension can have (Constraint.SetLimit)."
@@ -6066,6 +6524,42 @@
 			"NoLimit": {
 				"decl": "const NoLimit",
 				"text": "Limits a dimension can have (Constraint.SetLimit)."
+			},
+			"StippleContinuous": {
+				"decl": "const StippleContinuous",
+				"text": "The stipple patterns a line may be drawn in, as the style screen\nlists them."
+			},
+			"StippleDash": {
+				"decl": "const StippleDash",
+				"text": "The stipple patterns a line may be drawn in, as the style screen\nlists them."
+			},
+			"StippleDashDot": {
+				"decl": "const StippleDashDot",
+				"text": "The stipple patterns a line may be drawn in, as the style screen\nlists them."
+			},
+			"StippleDashDotDot": {
+				"decl": "const StippleDashDotDot",
+				"text": "The stipple patterns a line may be drawn in, as the style screen\nlists them."
+			},
+			"StippleDot": {
+				"decl": "const StippleDot",
+				"text": "The stipple patterns a line may be drawn in, as the style screen\nlists them."
+			},
+			"StippleFreehand": {
+				"decl": "const StippleFreehand",
+				"text": "The stipple patterns a line may be drawn in, as the style screen\nlists them."
+			},
+			"StippleLongDash": {
+				"decl": "const StippleLongDash",
+				"text": "The stipple patterns a line may be drawn in, as the style screen\nlists them."
+			},
+			"StippleShortDash": {
+				"decl": "const StippleShortDash",
+				"text": "The stipple patterns a line may be drawn in, as the style screen\nlists them."
+			},
+			"StippleZigzag": {
+				"decl": "const StippleZigzag",
+				"text": "The stipple patterns a line may be drawn in, as the style screen\nlists them."
 			},
 			"SuppressSolid": {
 				"decl": "const SuppressSolid",
@@ -6078,6 +6572,14 @@
 			"Union": {
 				"decl": "const Union",
 				"text": "How a group's solid combines with the solid so far."
+			},
+			"UnitsMM": {
+				"decl": "const UnitsMM",
+				"text": "The units a line's width, its dashes and a dimension's text are\nmeasured in: the screen's pixels, or millimetres."
+			},
+			"UnitsPixels": {
+				"decl": "const UnitsPixels",
+				"text": "The units a line's width, its dashes and a dimension's text are\nmeasured in: the screen's pixels, or millimetres."
 			},
 			"Unsuppressed": {
 				"decl": "const Unsuppressed",
@@ -6180,13 +6682,33 @@
 						"decl": "func (d *Drawing) Layout(sizes map[string][2]float64) ([]DrawingView, float64)",
 						"text": "Layout places the views: the drawing's own, or the standard ones, front, top, a side and the isometric, by the projection's convention, given each view's width and height on the model in mm (sizes, by kind)."
 					},
+					"PlaceDetail": {
+						"decl": "func (d *Drawing) PlaceDetail(i int, x, y float64) error",
+						"text": "PlaceDetail puts the i-th detail with its middle at x, y mm on the sheet; 0, 0 gives it back to the automatic placing."
+					},
 					"PlaceExtras": {
 						"decl": "func (d *Drawing) PlaceExtras(right float64, sizes [][2]float64) [][2]float64",
 						"text": "PlaceExtras places the sections and details that have no place, in columns to the right of the views, from the top down, given each one's size on the sheet in mm, the sections' first; right is where the views end."
 					},
+					"PlaceSection": {
+						"decl": "func (d *Drawing) PlaceSection(i int, x, y float64) error",
+						"text": "PlaceSection puts the i-th section with its middle at x, y mm on the sheet; 0, 0 gives it back to the automatic placing."
+					},
+					"PlaceView": {
+						"decl": "func (d *Drawing) PlaceView(kind string, x, y float64) error",
+						"text": "PlaceView shows the view of the given kind with its middle at x, y mm from the sheet's bottom left, moving it if the drawing shows it already."
+					},
+					"RemoveView": {
+						"decl": "func (d *Drawing) RemoveView(kind string) error",
+						"text": "RemoveView stops showing the view of that kind."
+					},
 					"Size": {
 						"decl": "func (d *Drawing) Size() (w, h float64)",
 						"text": "Size is the drawing's sheet in mm, turned as it is."
+					},
+					"ViewIndex": {
+						"decl": "func (d *Drawing) ViewIndex(kind string) int",
+						"text": "ViewIndex is the position of the view of that kind in Views, or -1 when the drawing does not show it."
 					}
 				},
 				"makers": [
@@ -6335,9 +6857,25 @@
 						"decl": "func (g *Group) GenerateShellAndMesh(sk *Sketch)",
 						"text": "GenerateShellAndMesh builds this group's shell (by extrusion, revolution, step and repeat, or linking), and combines it with the previous group's running shell by the group's Boolean."
 					},
+					"HasAppearance": {
+						"decl": "func (g *Group) HasAppearance() bool",
+						"text": "HasAppearance reports whether the group makes faces of its own to give an appearance to: every group that makes a solid does."
+					},
+					"HasColor": {
+						"decl": "func (g *Group) HasColor() bool",
+						"text": "HasColor reports whether the group's colour is the colour of the faces it makes."
+					},
+					"HasCombine": {
+						"decl": "func (g *Group) HasCombine() bool",
+						"text": "HasCombine reports whether the group's own combine mode is what joins its solid to the solid so far."
+					},
 					"HasDraft": {
 						"decl": "func (g *Group) HasDraft() bool",
 						"text": "HasDraft reports whether the group is an extrusion with a draft."
+					},
+					"HasSolidSuppress": {
+						"decl": "func (g *Group) HasSolidSuppress() bool",
+						"text": "HasSolidSuppress reports whether leaving the group's solid out of the model is something it does."
 					},
 					"IsCopyGroup": {
 						"decl": "func (g *Group) IsCopyGroup() bool",
@@ -6510,6 +7048,10 @@
 			},
 			"Image": {
 				"text": "Image is a loaded image file: its size in pixels, which sets an image request's aspect ratio, and its pixels, for drawing.",
+				"kind": "struct"
+			},
+			"Implied": {
+				"text": "Implied is a constraint that a new constraint makes redundant, and that the caller deletes in the same undo step as it adds the new one.",
 				"kind": "struct"
 			},
 			"Interference": {
@@ -6754,6 +7296,10 @@
 						"decl": "func (sk *Sketch) AddConstraintRemember(c *core.Constraint, rememberForUndo bool) core.HConstraint",
 						"text": "AddConstraintRemember adds c with a new handle, and its params, and marks its group dirty."
 					},
+					"AddConstraints": {
+						"decl": "func (sk *Sketch) AddConstraints(cs []core.Constraint) ([]core.HConstraint, error)",
+						"text": "AddConstraints adds cs, and returns the handle of each: the one made, or the one the sketch had already when it has an equal constraint, which is then not added twice."
+					},
 					"AddEntity": {
 						"decl": "func (s *Sketch) AddEntity(e core.Entity) core.HEntity"
 					},
@@ -6868,6 +7414,10 @@
 						"decl": "func (sk *Sketch) ClearSection()",
 						"text": "ClearSection turns the section view off."
 					},
+					"CommentConstraint": {
+						"decl": "func (sk *Sketch) CommentConstraint(base core.Constraint, pt core.HEntity, text string) (core.Constraint, error)",
+						"text": "CommentConstraint makes a comment with the given text, attached to the point pt when that is not NoEntity, as a copy of base."
+					},
 					"Configuration": {
 						"decl": "func (sk *Sketch) Configuration(name string) *Configuration",
 						"text": "Configuration is the configuration called name, or nil."
@@ -6923,6 +7473,10 @@
 						"decl": "func (sk *Sketch) DeleteConfiguration(name string) error",
 						"text": "DeleteConfiguration removes a configuration; the table stays as it is."
 					},
+					"DeleteImplied": {
+						"decl": "func (sk *Sketch) DeleteImplied(imp []Implied)",
+						"text": "DeleteImplied deletes the constraints imp names."
+					},
 					"DeleteParameter": {
 						"decl": "func (sk *Sketch) DeleteParameter(name string) error",
 						"text": "DeleteParameter removes a parameter."
@@ -6970,6 +7524,10 @@
 						"decl": "func (sk *Sketch) EntityName(he core.HEntity) string",
 						"text": "entityName names entity he, which may have been deleted since the last regeneration, by its request or its group."
 					},
+					"EqualConstraints": {
+						"decl": "func (sk *Sketch) EqualConstraints(base core.Constraint, es []core.HEntity) ([]core.Constraint, error)",
+						"text": "EqualConstraints makes the constraints that Constrain \u003e Equal Length / Radius makes of the entities es, whatever order they come in, each a copy of base with its type and entities set."
+					},
 					"EvaluateParameters": {
 						"decl": "func (sk *Sketch) EvaluateParameters() bool",
 						"text": "EvaluateParameters evaluates the parameter table, then every stored expression, and writes the numbers into the values they drive."
@@ -6993,6 +7551,10 @@
 					"FixConstraintsForRequestBeingDeleted": {
 						"decl": "func (sk *Sketch) FixConstraintsForRequestBeingDeleted(hr core.HRequest)",
 						"text": "FixConstraintsForRequestBeingDeleted keeps the points made coincident through a point of request hr, which is being deleted, coincident."
+					},
+					"FontFiles": {
+						"decl": "func (sk *Sketch) FontFiles() []string",
+						"text": "FontFiles is the basenames of the font files a text can be set in, as the text window lists them."
 					},
 					"FontList": {
 						"decl": "func (sk *Sketch) FontList() *ttf.FontList",
@@ -7049,10 +7611,6 @@
 						"decl": "func (sk *Sketch) Interferences(upTo core.HGroup) (found []Interference, meshOnly []core.HGroup)",
 						"text": "Interferences checks the parts of the model up to group upTo against each other."
 					},
-					"LaterReference": {
-						"decl": "func (sk *Sketch) LaterReference(h core.HGroup) (dep Dependency, ok bool)",
-						"text": "LaterReference is the first group that group h refers to and that comes after it in the history, as one made with an earlier group active and then named by a group before it would: what a group refers to must be made before it."
-					},
 					"Length": {
 						"decl": "func (sk *Sketch) Length(hs []core.HEntity) (float64, error)",
 						"text": "Length is the total length of the curves of entities hs: line segments, arcs, circles, cubics and text."
@@ -7064,6 +7622,10 @@
 					"LockedInWorkplane": {
 						"decl": "func (sk *Sketch) LockedInWorkplane() bool",
 						"text": "LockedInWorkplane is whether the active group sketches in a workplane."
+					},
+					"MakeSplinePeriodic": {
+						"decl": "func (sk *Sketch) MakeSplinePeriodic(he core.HEntity) error",
+						"text": "MakeSplinePeriodic closes the open cubic spline that entity he belongs to into a periodic one: its two ends become one, and the control points beside them are let go of, which the window does when a click lands on the spline's first point again while a point is being placed."
 					},
 					"MakeTangentArc": {
 						"decl": "func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) error",
@@ -7080,6 +7642,10 @@
 					"Measure": {
 						"decl": "func (sk *Sketch) Measure(entities ...core.HEntity) (Measurement, error)",
 						"text": "Measure measures entities, as the description of the selection does: one line segment or circle; two points; a point and a circle, line segment or plane face; two lines, normals or plane faces; or two points and a line along which to project their distance."
+					},
+					"MidpointConstraint": {
+						"decl": "func (sk *Sketch) MidpointConstraint(base core.Constraint, line, point core.HEntity) (core.Constraint, []Implied, error)",
+						"text": "MidpointConstraint makes the constraint that puts the middle of the line segment line at point, which may be a point or a workplane (the middle then lies in the plane), as a copy of base."
 					},
 					"MirrorPlaneOK": {
 						"decl": "func (sk *Sketch) MirrorPlaneOK(he core.HEntity) bool",
@@ -7121,10 +7687,6 @@
 						"decl": "func (sk *Sketch) NewChamfer(edges []core.HEntity, solidEdges []topo.Name, distance float64, name string) (Group, error)",
 						"text": "NewChamfer starts a chamfer at the active group, of edges of the solid so far: line segments along edges between two planar faces, and edges of the solid itself, by name, straight and between two planar faces; at distance mm from each edge on both faces."
 					},
-					"NewChamferTwo": {
-						"decl": "func (sk *Sketch) NewChamferTwo(edges []core.HEntity, solidEdges []topo.Name, distance, d2 float64, name string) (Group, error)",
-						"text": "NewChamferTwo is NewChamfer with two distances (roadmap 28.1): d1 on each edge's first face, d2 on the other."
-					},
 					"NewCustomStyle": {
 						"decl": "func (sk *Sketch) NewCustomStyle() core.HStyle",
 						"text": "NewCustomStyle adds a custom style, numbered after the last, with the defaults, and returns its handle."
@@ -7161,6 +7723,14 @@
 						"decl": "func (sk *Sketch) NewSketchOnFace(face srf.FaceID, name string) (Group, error)",
 						"text": "NewSketchOnFace starts a sketch whose workplane lies in the flat face face of the solid at the active group, its normal out of the solid."
 					},
+					"NewSketchOnLines": {
+						"decl": "func (sk *Sketch) NewSketchOnLines(origin, lineA, lineB core.HEntity, right, up geom.Vector, name string) (Group, error)",
+						"text": "NewSketchOnLines starts a sketch in the workplane through the point origin, parallel to the line segments lineA and lineB, which follows them when they move."
+					},
+					"NewSketchOnNormal": {
+						"decl": "func (sk *Sketch) NewSketchOnNormal(origin, normal core.HEntity, name string) (Group, error)",
+						"text": "NewSketchOnNormal starts a sketch in the workplane through the point origin, square to a normal, which it follows."
+					},
 					"NewSmoothLoft": {
 						"decl": "func (sk *Sketch) NewSmoothLoft(profiles []core.HGroup, name string) (Group, error)",
 						"text": "NewSmoothLoft starts a loft through the profiles of groups, two or more, in order: two make a ruled loft, more a smooth one."
@@ -7173,6 +7743,14 @@
 						"decl": "func (sk *Sketch) NewSweepAlong(path []core.HEntity, solidEdges []topo.Name, name string) (Group, error)",
 						"text": "NewSweepAlong is NewSweep along path and edges of the solid so far, by name, together one chain (roadmap 28.4): straight and circular edges, and curved ones as cubics are."
 					},
+					"NormalOf": {
+						"decl": "func (sk *Sketch) NormalOf(he core.HEntity) core.HEntity",
+						"text": "NormalOf is the normal entity that he stands for: he itself when it is a normal, the normal of a workplane, a circle or an arc otherwise."
+					},
+					"OrientNormal": {
+						"decl": "func (sk *Sketch) OrientNormal(he core.HEntity, q geom.Quaternion) error",
+						"text": "OrientNormal turns the normal of he (see NormalOf) to q and marks its group to be solved again, as dragging the normal in the window does; the solver then moves it as the constraints require."
+					},
 					"OutwardFaceNormal": {
 						"decl": "func (sk *Sketch) OutwardFaceNormal(e *core.Entity) geom.Vector",
 						"text": "OutwardFaceNormal is a face's normal, turned to point out of the solid, as its triangles' do."
@@ -7180,6 +7758,10 @@
 					"OwnSources": {
 						"decl": "func (sk *Sketch) OwnSources(h core.HGroup) []core.HGroup",
 						"text": "OwnSources is group h with the groups only it needs: those it refers to, directly or through each other, that no group outside them uses, as an extrusion's sketch and that sketch's own workplane."
+					},
+					"ParallelConstraint": {
+						"decl": "func (sk *Sketch) ParallelConstraint(base core.Constraint, a, b core.HEntity) (core.Constraint, error)",
+						"text": "ParallelConstraint makes the constraint that makes a and b parallel, as a copy of base: two line segments or normals in any mix, or two faces."
 					},
 					"Param": {
 						"decl": "func (s *Sketch) Param(h core.HParam) *core.Param"
@@ -7199,6 +7781,10 @@
 					"PasteClipboard": {
 						"decl": "func (sk *Sketch) PasteClipboard(trans geom.Vector, theta, scale float64) []Selection",
 						"text": "PasteClipboard pastes the clipboard into the active group and workplane: scaled (mirrored if negative) in the workplane, rotated by theta about its normal, and moved by trans."
+					},
+					"PerpendicularConstraint": {
+						"decl": "func (sk *Sketch) PerpendicularConstraint(base core.Constraint, a, b core.HEntity) (core.Constraint, error)",
+						"text": "PerpendicularConstraint makes the constraint that makes a and b perpendicular, as a copy of base: two line segments or normals in any mix, or two faces."
 					},
 					"PointIsCoincident": {
 						"decl": "func (sk *Sketch) PointIsCoincident(hp core.HEntity) bool",
@@ -7270,6 +7856,10 @@
 					"RunningMeshGroupFor": {
 						"decl": "func (s *Sketch) RunningMeshGroupFor(h core.HGroup) *Group"
 					},
+					"SameChamferDistances": {
+						"decl": "func (sk *Sketch) SameChamferDistances(h core.HGroup) error",
+						"text": "SameChamferDistances makes the second distance of chamfer h its first again."
+					},
 					"ScheduleGenerateAll": {
 						"decl": "func (sk *Sketch) ScheduleGenerateAll()",
 						"text": "ScheduleGenerateAll asks for a regeneration of the dirty groups when Refresh next runs."
@@ -7286,9 +7876,21 @@
 						"decl": "func (sk *Sketch) SegmentLimit() int",
 						"text": "SegmentLimit is MaxSegments, or its default."
 					},
+					"SetChamferSecondDistance": {
+						"decl": "func (sk *Sketch) SetChamferSecondDistance(h core.HGroup, mm float64) error",
+						"text": "SetChamferSecondDistance makes chamfer h one of two distances: ValB on each edge's first face and mm on the second; 0 makes it of one distance again."
+					},
+					"SetConstraintLabelOffset": {
+						"decl": "func (sk *Sketch) SetConstraintLabelOffset(hc core.HConstraint, off geom.Vector) error",
+						"text": "SetConstraintLabelOffset puts the label of a dimension or a comment at off from the place the constraint measures: what dragging the label does, on every move of the mouse."
+					},
 					"SetConstraintName": {
 						"decl": "func (sk *Sketch) SetConstraintName(hc core.HConstraint, name string) error",
 						"text": "SetConstraintName names the constraint hc, renaming every use of an old name, or with \"\" takes its name away, which a name in use can't be."
+					},
+					"SetConstraintShowAsRadius": {
+						"decl": "func (sk *Sketch) SetConstraintShowAsRadius(hc core.HConstraint, radius bool) error",
+						"text": "SetConstraintShowAsRadius makes a diameter dimension show as a radius, or as a diameter again."
 					},
 					"SetConstraintText": {
 						"decl": "func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string) error",
@@ -7302,9 +7904,45 @@
 						"decl": "func (sk *Sketch) SetEdgeRadiusText(hg core.HGroup, i int, text string) error",
 						"text": "SetEdgeRadiusText gives a fillet's edge i a radius of its own from what the user typed, in the document's unit, as SetGroupText does for the group's radius; \"\" gives it the group's radius again."
 					},
-					"SetEntityActPoint": {
-						"decl": "func (sk *Sketch) SetEntityActPoint(he core.HEntity, p geom.Vector)",
-						"text": "SetEntityActPoint updates an entity's cached actPoint."
+					"SetFaceAppearance": {
+						"decl": "func (sk *Sketch) SetFaceAppearance(id srf.FaceID, name string) error",
+						"text": "SetFaceAppearance gives the face id of the model an appearance of its own, or with \"\" takes it away, so that it has its group's again."
+					},
+					"SetGroupAppearance": {
+						"decl": "func (sk *Sketch) SetGroupAppearance(hg core.HGroup, name string) error",
+						"text": "SetGroupAppearance gives the group's solid an appearance by name, \"\" for the default."
+					},
+					"SetGroupColor": {
+						"decl": "func (sk *Sketch) SetGroupColor(hg core.HGroup, c core.RGBA) error",
+						"text": "SetGroupColor colours the group's solid with the red, green and blue of c, keeping its opacity."
+					},
+					"SetGroupCombine": {
+						"decl": "func (sk *Sketch) SetGroupCombine(hg core.HGroup, as CombineAs, flip bool) error",
+						"text": "SetGroupCombine sets how a group's solid combines with the solid so far."
+					},
+					"SetGroupCopies": {
+						"decl": "func (sk *Sketch) SetGroupCopies(hg core.HGroup, text string, respace bool) error",
+						"text": "SetGroupCopies sets a step and repeat or pattern group's number of copies from typed text, as SetGroupText does for GroupCopies."
+					},
+					"SetGroupLinkAsSolid": {
+						"decl": "func (sk *Sketch) SetGroupLinkAsSolid(hg core.HGroup, on bool) error",
+						"text": "SetGroupLinkAsSolid has a linked STEP file read as a solid (on) or as a reference mesh, and reads the file again."
+					},
+					"SetGroupOpacity": {
+						"decl": "func (sk *Sketch) SetGroupOpacity(hg core.HGroup, alpha float64) error",
+						"text": "SetGroupOpacity sets how opaque the group's solid is, from 0 to 1, leaving its colour."
+					},
+					"SetGroupSkewed": {
+						"decl": "func (sk *Sketch) SetGroupSkewed(hg core.HGroup, skewed bool) error",
+						"text": "SetGroupSkewed makes an extrusion's sides lean with its sketch (skewed) or stand straight, in either its one-sided or two-sided mode."
+					},
+					"SetGroupSkipFirst": {
+						"decl": "func (sk *Sketch) SetGroupSkipFirst(hg core.HGroup, skip bool) error",
+						"text": "SetGroupSkipFirst has a one-sided step and repeat start with its first copy (skip) rather than the original; for a mirror it leaves the original out of the solid, so that only the reflection is left."
+					},
+					"SetGroupSuppressSolid": {
+						"decl": "func (sk *Sketch) SetGroupSuppressSolid(hg core.HGroup, on bool) error",
+						"text": "SetGroupSuppressSolid leaves the group's solid out of the model, or puts it back, keeping the group's sketch and solve."
 					},
 					"SetGroupText": {
 						"decl": "func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string) error",
@@ -7322,9 +7960,37 @@
 						"decl": "func (sk *Sketch) SetSection(plane core.HEntity, offset string, flip bool) error",
 						"text": "SetSection turns the section view on, cutting parallel to plane, a workplane or a planar face, offset (typed, in the document's unit; \"\" is zero) along its normal, away from the side flip picks."
 					},
+					"SetStyleTextHeightUnits": {
+						"decl": "func (sk *Sketch) SetStyleTextHeightUnits(h core.HStyle, as core.UnitsAs)",
+						"text": "SetStyleTextHeightUnits measures style h's text height in as, keeping the height it is drawn at on the screen: the number is converted at the view's scale, so a switch of units changes what the style says and not how big its text looks."
+					},
+					"SetStyleTextHorizontal": {
+						"decl": "func (sk *Sketch) SetStyleTextHorizontal(h core.HStyle, o core.TextOrigin)",
+						"text": "SetStyleTextHorizontal aligns style h's text on the left of its anchor (core.TextOriginLeft), on the right (core.TextOriginRight) or centred (core.TextOriginNone), leaving the vertical alignment as it is."
+					},
+					"SetStyleTextVertical": {
+						"decl": "func (sk *Sketch) SetStyleTextVertical(h core.HStyle, o core.TextOrigin)",
+						"text": "SetStyleTextVertical aligns style h's text on the bottom of its anchor (core.TextOriginBot), on the top (core.TextOriginTop) or centred (core.TextOriginNone), leaving the horizontal alignment as it is."
+					},
 					"SetSuppressAll": {
 						"decl": "func (sk *Sketch) SetSuppressAll(h core.HGroup, on bool) error",
 						"text": "SetSuppressAll suppresses group h whole, or brings it back, and has the model regenerated."
+					},
+					"SetSweepUp": {
+						"decl": "func (sk *Sketch) SetSweepUp(hg core.HGroup, up geom.Vector) error",
+						"text": "SetSweepUp holds a sweep's frames to the direction up, made a unit vector, or lets them turn least when up is zero."
+					},
+					"SetTextFont": {
+						"decl": "func (sk *Sketch) SetTextFont(hr core.HRequest, font string) error",
+						"text": "SetTextFont changes the font of a text request to the font file whose basename is font."
+					},
+					"SetTextKerning": {
+						"decl": "func (sk *Sketch) SetTextKerning(hr core.HRequest, kerning bool) error",
+						"text": "SetTextKerning turns the kerning of a text request on or off."
+					},
+					"SetTextString": {
+						"decl": "func (sk *Sketch) SetTextString(hr core.HRequest, s string) error",
+						"text": "SetTextString changes the string of a text request."
 					},
 					"SetUnits": {
 						"decl": "func (sk *Sketch) SetUnits(u core.Unit) []string",
@@ -7333,6 +7999,10 @@
 					"SettingsStore": {
 						"decl": "func (sk *Sketch) SettingsStore() core.Settings",
 						"text": "SettingsStore is Settings, or a store that keeps nothing."
+					},
+					"SettleConstraint": {
+						"decl": "func (sk *Sketch) SettleConstraint(hc core.HConstraint) (existing core.HConstraint, duplicate bool)",
+						"text": "SettleConstraint finishes a constraint hc that was just added."
 					},
 					"ShowNakedEdges": {
 						"decl": "func (sk *Sketch) ShowNakedEdges(reportOnlyWhenNotOkay bool) srf.SEdgeList",
@@ -7353,22 +8023,6 @@
 					"SolveGroupAndReport": {
 						"decl": "func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam, andFindFree bool)",
 						"text": "SolveGroupAndReport solves group hg for groupParams, the params its requests, constraints and the group itself generate, holding every other param fixed."
-					},
-					"SplitCircle": {
-						"decl": "func (sk *Sketch) SplitCircle(he core.HEntity, pinter geom.Vector) core.HEntity",
-						"text": "SplitCircle splits circle or arc he at pinter: a circle into a 360 degree arc, an arc into two."
-					},
-					"SplitCubic": {
-						"decl": "func (sk *Sketch) SplitCubic(he core.HEntity, pinter geom.Vector) core.HEntity",
-						"text": "SplitCubic splits cubic he at pinter into cubic segments, and returns the point at the split."
-					},
-					"SplitEntity": {
-						"decl": "func (sk *Sketch) SplitEntity(he core.HEntity, pinter geom.Vector) (core.HEntity, error)",
-						"text": "SplitEntity splits line, circle or cubic he at pinter, deletes the request it came from (unless that's construction or in another group), and returns the point at the split."
-					},
-					"SplitLine": {
-						"decl": "func (sk *Sketch) SplitLine(he core.HEntity, pinter geom.Vector) core.HEntity",
-						"text": "SplitLine splits line segment he at pinter into two, and returns the point where they join."
 					},
 					"SplitLinesOrCurves": {
 						"decl": "func (sk *Sketch) SplitLinesOrCurves(selection []Selection, mouse geom.Point2d) error",
@@ -7409,6 +8063,10 @@
 						"decl": "func (sk *Sketch) StyleTextHeight(h core.HStyle, scale float64) float64",
 						"text": "StyleTextHeight is style h's text height in pixels."
 					},
+					"StyleView": {
+						"decl": "func (sk *Sketch) StyleView(h core.HStyle) *core.Style",
+						"text": "StyleView is style h as it would be drawn, without changing the sketch: the style itself when the sketch has it, else a copy of the default it would be made as, and nil for a handle that is neither."
+					},
 					"StyleWidth": {
 						"decl": "func (sk *Sketch) StyleWidth(h core.HStyle, scale float64) float64",
 						"text": "StyleWidth is style h's width in pixels, at the view's scale in pixels per mm."
@@ -7420,6 +8078,18 @@
 					"SuppressedReason": {
 						"decl": "func (sk *Sketch) SuppressedReason(h core.HGroup) string",
 						"text": "SuppressedReason says why group h is left out of the model, or \"\" if it is generated: \"suppressed\", or \"uses g003-extrude, which is suppressed\"."
+					},
+					"SwapChamferDistances": {
+						"decl": "func (sk *Sketch) SwapChamferDistances(h core.HGroup) error",
+						"text": "SwapChamferDistances swaps the two distances of chamfer h, which chamfers each edge the other way round."
+					},
+					"SymmetricConstraint": {
+						"decl": "func (sk *Sketch) SymmetricConstraint(base core.Constraint, a, b, about core.HEntity) (core.Constraint, []Implied, error)",
+						"text": "SymmetricConstraint makes the constraint that makes two points symmetric, as a copy of base: a and b are the points, or a is a line segment and b is NoEntity, and its two ends are the points."
+					},
+					"TangentConstraint": {
+						"decl": "func (sk *Sketch) TangentConstraint(base core.Constraint, a, b core.HEntity, ends ...core.HEntity) (core.Constraint, error)",
+						"text": "TangentConstraint makes the constraint that makes a and b tangent, as a copy of base: an arc or a cubic with a line segment (in either order), or an arc or a cubic with another, in the workplane of base."
 					},
 					"Tell": {
 						"decl": "func (sk *Sketch) Tell(msg string)",
@@ -7436,6 +8106,10 @@
 					"TryConstrain": {
 						"decl": "func (sk *Sketch) TryConstrain(typ core.ConstraintType, ptA, ptB, entityA, entityB core.HEntity, other, other2 bool) core.HConstraint",
 						"text": "TryConstrain is Constrain, except that a constraint that would be redundant isn't added; it then returns no constraint."
+					},
+					"TurnAxis": {
+						"decl": "func (sk *Sketch) TurnAxis(point, vector core.HEntity) (origin, dir core.HEntity, err error)",
+						"text": "TurnAxis is the point and the direction a lathe, a revolve or a helix turns about: the point and a vector (a line segment or a normal), the axis through the point parallel to it; or, with no point (a zero handle), a line segment, the axis along it from its first end."
 					},
 					"UndoClearStack": {
 						"decl": "func (s *Sketch) UndoClearStack(uk *UndoStack)",
@@ -7614,10 +8288,6 @@
 				"decl": "func ExportMeshAsStlTo(w io.Writer, m *srf.SMesh, scale float64) error",
 				"text": "ExportMeshAsStlTo writes m as a binary STL file, in export units of scale mm."
 			},
-			"FaceGroup": {
-				"decl": "func FaceGroup(id srf.FaceID) core.HGroup",
-				"text": "FaceGroup is the group that made a face, by its identity: an entity's group, or for a surface no entity names, the group in its origin."
-			},
 			"GenerateConstraint": {
 				"decl": "func GenerateConstraint(c *core.Constraint, l *[]core.Param)",
 				"text": "GenerateConstraint adds the params the constraint needs."
@@ -7710,6 +8380,14 @@
 				"decl": "var DimensionKinds",
 				"text": "DimensionKinds are the kinds of drawing dimension and how many edges each takes."
 			},
+			"ErrConstraintSelection": {
+				"decl": "var ErrConstraintSelection",
+				"text": "ErrConstraintSelection is wrapped by the errors of the builders in this file for entities that the constraint does not take."
+			},
+			"ErrEqualSelection": {
+				"decl": "var ErrEqualSelection",
+				"text": "ErrEqualSelection is wrapped by the error EqualConstraints returns for entities that no equal constraint takes."
+			},
 			"ErrFittedSweep": {
 				"decl": "var ErrFittedSweep",
 				"text": "ErrFittedSweep is SweepSteps' error for a sweep whose surface is fitted, not made of rigid steps: along a cubic, twisted, or held to a direction."
@@ -7718,9 +8396,37 @@
 				"decl": "var ErrNoClosedRegion",
 				"text": "ErrNoClosedRegion is returned when a group's sketch is not a closed region whose area can be taken."
 			},
+			"ErrNoColor": {
+				"decl": "var ErrNoColor",
+				"text": "Errors of the group options, for callers that say them in their own words."
+			},
+			"ErrNoCombine": {
+				"decl": "var ErrNoCombine",
+				"text": "Errors of the group options, for callers that say them in their own words."
+			},
+			"ErrNoConstraint": {
+				"decl": "var ErrNoConstraint",
+				"text": "ErrNoConstraint is what an edit returns for a constraint the sketch does not have."
+			},
+			"ErrNoRequest": {
+				"decl": "var ErrNoRequest",
+				"text": "ErrNoRequest is what an edit returns for a request the sketch does not have."
+			},
+			"ErrNoSolidSuppress": {
+				"decl": "var ErrNoSolidSuppress",
+				"text": "ErrNoSolidSuppress is a solid suppressed of a group that has none of its own to leave out (see HasSolidSuppress)."
+			},
+			"ErrNormalLocked": {
+				"decl": "var ErrNormalLocked",
+				"text": "ErrNormalLocked is what OrientNormal returns for a normal that nothing turns: one lying in a workplane, or copied from another group."
+			},
 			"ErrNotCopies": {
 				"decl": "var ErrNotCopies",
 				"text": "ErrNotCopies is CopyPlacements' error for a group that makes no copies: not a step and repeat, a pattern along a path or a mirror."
+			},
+			"ErrNotTextRequest": {
+				"decl": "var ErrNotTextRequest",
+				"text": "ErrNotTextRequest is what the text edits return for a request that is not a TrueType text."
 			},
 			"ErrSplinePointsFull": {
 				"decl": "var ErrSplinePointsFull",
@@ -7956,6 +8662,10 @@
 			"TitleBlockWidth": {
 				"decl": "const TitleBlockWidth",
 				"text": "TitleBlockSize is the title block's size in mm, at the sheet's bottom right inside the border."
+			},
+			"ViewKinds": {
+				"decl": "var ViewKinds",
+				"text": "ViewKinds are the kinds of view a drawing can show, in the order its screen lists them."
 			}
 		}
 	},

@@ -1,0 +1,29 @@
+# Two line segments and a point, picked with the mouse, and a sketch
+# started in the workplane through the point parallel to the lines; the
+# same as path_sketch_on_lines.go makes (TestPathEquivalenceSketchOnLines).
+key s
+move 200 320
+down L 200 320
+up L 200 320
+move 300 320
+down L 300 320
+up L 300 320
+key esc
+key s
+move 400 350
+down L 400 350
+up L 400 350
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+move 200 320
+down L 200 320
+up L 200 320
+move 250 320
+down L 250 320 shift
+up L 250 320 shift
+move 400 300
+down L 400 300 shift
+up L 400 300 shift
+menu Features|Sketch In New Workplane

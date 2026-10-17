@@ -89,3 +89,51 @@ func TestLinkStepUndo(t *testing.T) {
 		t.Errorf("after redo the link's volume is %g, was %g", v, volume)
 	}
 }
+
+// TestLinkPlacement moves and turns a linked part and checks the orientation it reports.
+func TestLinkPlacement(t *testing.T) {
+	d := New()
+	g, err := d.Assembly.Link(filepath.Join("..", "..", "..", "testdata", "step", "shapes", "box.step"), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := g.AsLink()
+	near := func(a, b Vec) bool { return a.Minus(b).Magnitude() < 1e-9 }
+	if u, w := l.Orientation(); !near(u, V(1, 0, 0)) || !near(w, V(0, 1, 0)) {
+		t.Fatalf("orientation of a new link %v %v", u, w)
+	}
+	l.Move(V(5, 0, -2))
+	l.Move(V(1, 2, 3))
+	if o := l.Offset(); !near(o, V(6, 2, 1)) {
+		t.Errorf("offset %v", o)
+	}
+	l.Rotate90(V(0.1, 0.2, 3))
+	if u, w := l.Orientation(); !near(u, V(0, 1, 0)) || !near(w, V(-1, 0, 0)) {
+		t.Errorf("after a quarter about z: %v %v", u, w)
+	}
+	l.Rotate(V(0, 0, 1), 90)
+	if u, _ := l.Orientation(); !near(u, V(-1, 0, 0)) {
+		t.Errorf("after a half about z: %v", u)
+	}
+	l.SetOrientation(V(0, 0, 1), V(1, 0.5, 0))
+	if u, w := l.Orientation(); !near(u, V(0, 0, 1)) || !near(w, V(1, 0.5, 0).WithMagnitude(1)) {
+		t.Errorf("set orientation: %v %v", u, w)
+	}
+
+	for name, fn := range map[string]func(){
+		"no axis":    func() { l.Rotate90(V(0, 0, 0)) },
+		"nan axis":   func() { l.Rotate(V(math.NaN(), 0, 1), 5) },
+		"parallel":   func() { l.SetOrientation(V(1, 0, 0), V(2, 0, 0)) },
+		"infinite":   func() { l.Move(V(math.Inf(1), 0, 0)) },
+		"not a link": func() { d.Groups()[0].AsLink().Move(V(1, 0, 0)) },
+	} {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Errorf("%s: no error", name)
+				}
+			}()
+			fn()
+		}()
+	}
+}

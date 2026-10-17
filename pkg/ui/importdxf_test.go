@@ -9,6 +9,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/internal/golden"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
+	"github.com/telesapr/telesapr/pkg/script/api"
 
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
@@ -73,4 +74,40 @@ func importDxfFor(t testing.TB, path string, in3d bool) []byte {
 	// A save regenerates again.
 	ss.SK.GenerateAll()
 	return tlspr.Encode(ss.SK, tlspr.Options{})
+}
+
+// TestImportDxfPathEquivalence imports DXF files through the interface
+// and through File.ImportDXF into new sketches, and requires the same
+// saved file from both: a flat file, which stays in the workplane, and
+// one with a Z coordinate, which leaves it. Both reach
+// dxf.ImportActive.
+func TestImportDxfPathEquivalence(t *testing.T) {
+	root := filepath.Join("..", "..", "testdata", "importdxf")
+	for _, name := range []string{"basic.dxf", "extrusions.dxf", "polylines.dxf"} {
+		t.Run(name, func(t *testing.T) {
+			path := filepath.Join(root, name)
+			// The solver is not a fixed point, so both sides regenerate
+			// the same number of times.
+			pl := headless.New()
+			for range 10 {
+				pl.DialogResponses = append(pl.DialogResponses, platform.ResponseOK)
+			}
+			ss := New(pl)
+			ss.Init()
+			ss.ImportDxf(path)
+			ss.SK.GenerateAll()
+			fromUI := tlspr.Encode(ss.SK, tlspr.Options{})
+
+			doc := api.New()
+			if _, err := doc.File.ImportDXF(path); err != nil {
+				t.Fatal(err)
+			}
+			doc.Host().Sketch().GenerateAll()
+			fromScript := tlspr.Encode(doc.Host().Sketch(), tlspr.Options{})
+			if string(fromUI) != string(fromScript) {
+				t.Fatalf("the interface and the script save different files, at %s",
+					firstDiffLine(string(fromUI), string(fromScript)))
+			}
+		})
+	}
 }

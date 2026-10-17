@@ -22,7 +22,7 @@ type Parameter struct {
 }
 
 // SetExpr gives one of the group's values text, as typing it on the
-// group screen does: sketch.GroupCopies for a step and repeat,
+// group screen does: sketch.GroupCopies for a step and repeat or a pattern,
 // sketch.GroupPitch for a helix's fixed pitch, a length in the
 // document's unit (View.Units), sketch.GroupScale for a link. A plain
 // number is stored as its value; any other text is kept and evaluated
@@ -30,8 +30,8 @@ type Parameter struct {
 func (g Group) SetExpr(value sketch.GroupValue, expr string) (err error) {
 	g.d.change(func(sk *sketch.Sketch) {
 		group := g.get(sk)
-		if value == sketch.GroupCopies && group.Type != sketch.GroupTranslate && group.Type != sketch.GroupRotate {
-			fail("%s isn't a step and repeat", groupDescription(group))
+		if value == sketch.GroupCopies && group.Type != sketch.GroupTranslate && group.Type != sketch.GroupRotate && group.Type != sketch.GroupPathPattern {
+			fail("%s isn't a step and repeat or a pattern", groupDescription(group))
 		}
 		err = sk.SetGroupText(g.H, value, expr)
 	})

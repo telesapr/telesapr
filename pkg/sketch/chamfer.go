@@ -26,14 +26,14 @@ import (
 // planar faces; at distance mm from each edge on both faces. It is
 // what the interface and scripts add with AddGroupAfterActive.
 func (sk *Sketch) NewChamfer(edges []core.HEntity, solidEdges []topo.Name, distance float64, name string) (Group, error) {
-	return sk.NewChamferTwo(edges, solidEdges, distance, 0, name)
+	return sk.newChamferTwo(edges, solidEdges, distance, 0, name)
 }
 
-// NewChamferTwo is NewChamfer with two distances (roadmap 28.1): d1 on
+// newChamferTwo is NewChamfer with two distances (roadmap 28.1): d1 on
 // each edge's first face, d2 on the other. The first face is the one of
 // the lower identity, the one the edge's name gives first; swapping the
 // distances chamfers the other way round. A d2 of 0 is d1 again.
-func (sk *Sketch) NewChamferTwo(edges []core.HEntity, solidEdges []topo.Name, distance, d2 float64, name string) (Group, error) {
+func (sk *Sketch) newChamferTwo(edges []core.HEntity, solidEdges []topo.Name, distance, d2 float64, name string) (Group, error) {
 	g := NewGroup()
 	g.Type = GroupChamfer
 	g.Name = name

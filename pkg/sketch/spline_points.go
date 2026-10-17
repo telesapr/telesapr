@@ -153,6 +153,73 @@ func distanceToSpan(p, a, b geom.Vector) float64 {
 	return p.DistanceTo(a.Plus(d.ScaledBy(t)))
 }
 
+// MakeSplinePeriodic closes the open cubic spline that entity he
+// belongs to into a periodic one: its two ends become one, and the
+// control points beside them are let go of, which the window does when
+// a click lands on the spline's first point again while a point is
+// being placed. A spline that is already periodic is left as it is.
+//
+// The constraints follow the points as they move to their new places.
+// The last point is merged into the first, so what held it holds the
+// first now, and a constraint left holding the first against itself is
+// deleted. The two control points are deleted as RemoveSplinePoint
+// deletes a point: the points made coincident with one stay coincident
+// with each other, and its other constraints go.
+func (sk *Sketch) MakeSplinePeriodic(he core.HEntity) error {
+	r, err := sk.splineRequest(he)
+	if err != nil {
+		return err
+	}
+	if r.Type == RequestCubicPeriodic {
+		return nil
+	}
+	if r.ExtraPoints < 2 {
+		return errors.New("the spline has too few points to close: it needs four to go round")
+	}
+	hr := r.H
+	n := r.ExtraPoints
+	// Point i of the spline is the request's entity i+1.
+	first, last := hr.Entity(1), hr.Entity(n+4)
+	startControl, endControl := hr.Entity(2), hr.Entity(n+3)
+
+	sk.ReplacePointInConstraints(last, first)
+	sk.removeSelfConstraints()
+	for _, hp := range []core.HEntity{startControl, endControl} {
+		sk.FixConstraintsForPointBeingDeleted(hp)
+		sk.RemoveConstraintsForPointBeingDeleted(hp)
+	}
+	// The off-curve control points are no longer needed: the points
+	// after the start control point move down over it, one place each,
+	// and the end control point and the last point are left without a
+	// place.
+	for i := 2; i <= n+1; i++ {
+		from, to := hr.Entity(i+1), hr.Entity(i)
+		sk.ReplacePointInConstraints(from, to)
+		sk.Entity(to).PointForceTo(sk, sk.Entity(from).PointGetNum(sk))
+	}
+	r.Type = RequestCubicPeriodic
+	r.ExtraPoints -= 2
+	sk.MarkGroupDirty(r.Group, false)
+	return nil
+}
+
+// removeSelfConstraints deletes the constraints that hold a point
+// against itself, which merging two points leaves behind.
+func (sk *Sketch) removeSelfConstraints() {
+	kept := sk.Constraints[:0]
+	for _, c := range sk.Constraints {
+		if c.PtA.V != 0 && c.PtA == c.PtB {
+			sk.Deleted.Constraints++
+			if c.Type != core.ConstraintPointsCoincident {
+				sk.Deleted.NonTrivialConstraints++
+			}
+			continue
+		}
+		kept = append(kept, c)
+	}
+	sk.Constraints = kept
+}
+
 // PointIsCoincident reports whether a constraint makes point hp
 // coincident with another.
 func (sk *Sketch) PointIsCoincident(hp core.HEntity) bool {

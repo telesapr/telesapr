@@ -407,10 +407,27 @@ type FaceAppearance struct {
 	Appearance string
 }
 
-// FaceGroup is the group that made a face, by its identity: an
-// entity's group, or for a surface no entity names, the group in its
-// origin.
-func FaceGroup(id srf.FaceID) core.HGroup { return faceGroup(id) }
+// SetFaceAppearance gives the face id of the model an appearance of its
+// own, or with "" takes it away, so that it has its group's again. The
+// face is kept by its identity, in the group that made it.
+func (sk *Sketch) SetFaceAppearance(id srf.FaceID, name string) error {
+	g := sk.Group(faceGroup(id))
+	if g == nil {
+		return fmt.Errorf("no group made face %x", uint32(id))
+	}
+	kept := g.FaceAppearances[:0]
+	for _, fa := range g.FaceAppearances {
+		if fa.Face != id {
+			kept = append(kept, fa)
+		}
+	}
+	g.FaceAppearances = kept
+	if name != "" {
+		g.FaceAppearances = append(g.FaceAppearances, FaceAppearance{Face: id, Appearance: name})
+	}
+	sk.Unsaved = true
+	return nil
+}
 
 // AppearanceOf is the appearance of the face id of the model: its own,
 // or its group's, or "" for the default.

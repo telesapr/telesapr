@@ -7,41 +7,58 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"go/constant"
+	"go/token"
 	"reflect"
 )
 
 func init() {
 	Symbols["github.com/telesapr/telesapr/pkg/script/api/api"] = map[string]reflect.Value{
 		// function, constant and variable definitions
-		"Appearances":     reflect.ValueOf(api.Appearances),
-		"Assemble":        reflect.ValueOf(api.Assemble),
-		"Commands":        reflect.ValueOf(api.Commands),
-		"Current":         reflect.ValueOf(api.Current),
-		"Difference":      reflect.ValueOf(api.Difference),
-		"ExportMesh":      reflect.ValueOf(api.ExportMesh),
-		"ExportSurfaces":  reflect.ValueOf(api.ExportSurfaces),
-		"ExportView":      reflect.ValueOf(api.ExportView),
-		"ExportWireframe": reflect.ValueOf(api.ExportWireframe),
-		"Import":          reflect.ValueOf(api.Import),
-		"Inch":            reflect.ValueOf(api.Inch),
-		"Intersection":    reflect.ValueOf(api.Intersection),
-		"Maximum":         reflect.ValueOf(api.Maximum),
-		"MenuCalls":       reflect.ValueOf(&api.MenuCalls).Elem(),
-		"MenuEntriesOf":   reflect.ValueOf(api.MenuEntriesOf),
-		"MenuEntryCalls":  reflect.ValueOf(api.MenuEntryCalls),
-		"Minimum":         reflect.ValueOf(api.Minimum),
-		"New":             reflect.ValueOf(api.New),
-		"NewDoc":          reflect.ValueOf(api.NewDoc),
-		"NewSketchHost":   reflect.ValueOf(api.NewSketchHost),
-		"NoLimit":         reflect.ValueOf(api.NoLimit),
-		"Open":            reflect.ValueOf(api.Open),
-		"SetCurrent":      reflect.ValueOf(api.SetCurrent),
-		"SuppressSolid":   reflect.ValueOf(api.SuppressSolid),
-		"SuppressWhole":   reflect.ValueOf(api.SuppressWhole),
-		"ThreadNearest":   reflect.ValueOf(api.ThreadNearest),
-		"Union":           reflect.ValueOf(api.Union),
-		"Unsuppressed":    reflect.ValueOf(api.Unsuppressed),
-		"V":               reflect.ValueOf(api.V),
+		"Appearances":       reflect.ValueOf(api.Appearances),
+		"Assemble":          reflect.ValueOf(api.Assemble),
+		"Commands":          reflect.ValueOf(api.Commands),
+		"Current":           reflect.ValueOf(api.Current),
+		"Difference":        reflect.ValueOf(api.Difference),
+		"ErrNotStylable":    reflect.ValueOf(&api.ErrNotStylable).Elem(),
+		"ExportMesh":        reflect.ValueOf(api.ExportMesh),
+		"ExportSection":     reflect.ValueOf(api.ExportSection),
+		"ExportSurfaces":    reflect.ValueOf(api.ExportSurfaces),
+		"ExportView":        reflect.ValueOf(api.ExportView),
+		"ExportWireframe":   reflect.ValueOf(api.ExportWireframe),
+		"Import":            reflect.ValueOf(api.Import),
+		"Inch":              reflect.ValueOf(api.Inch),
+		"Intersection":      reflect.ValueOf(api.Intersection),
+		"MaxSegmentsLimit":  reflect.ValueOf(constant.MakeFromLiteral("1000", token.INT, 0)),
+		"Maximum":           reflect.ValueOf(api.Maximum),
+		"MenuCalls":         reflect.ValueOf(&api.MenuCalls).Elem(),
+		"MenuEntriesOf":     reflect.ValueOf(api.MenuEntriesOf),
+		"MenuEntryCalls":    reflect.ValueOf(api.MenuEntryCalls),
+		"MinSegments":       reflect.ValueOf(constant.MakeFromLiteral("7", token.INT, 0)),
+		"Minimum":           reflect.ValueOf(api.Minimum),
+		"New":               reflect.ValueOf(api.New),
+		"NewDoc":            reflect.ValueOf(api.NewDoc),
+		"NewSketchHost":     reflect.ValueOf(api.NewSketchHost),
+		"NoLimit":           reflect.ValueOf(api.NoLimit),
+		"Open":              reflect.ValueOf(api.Open),
+		"SetCurrent":        reflect.ValueOf(api.SetCurrent),
+		"StippleContinuous": reflect.ValueOf(api.StippleContinuous),
+		"StippleDash":       reflect.ValueOf(api.StippleDash),
+		"StippleDashDot":    reflect.ValueOf(api.StippleDashDot),
+		"StippleDashDotDot": reflect.ValueOf(api.StippleDashDotDot),
+		"StippleDot":        reflect.ValueOf(api.StippleDot),
+		"StippleFreehand":   reflect.ValueOf(api.StippleFreehand),
+		"StippleLongDash":   reflect.ValueOf(api.StippleLongDash),
+		"StippleShortDash":  reflect.ValueOf(api.StippleShortDash),
+		"StippleZigzag":     reflect.ValueOf(api.StippleZigzag),
+		"SuppressSolid":     reflect.ValueOf(api.SuppressSolid),
+		"SuppressWhole":     reflect.ValueOf(api.SuppressWhole),
+		"ThreadNearest":     reflect.ValueOf(api.ThreadNearest),
+		"Union":             reflect.ValueOf(api.Union),
+		"UnitsMM":           reflect.ValueOf(api.UnitsMM),
+		"UnitsPixels":       reflect.ValueOf(api.UnitsPixels),
+		"Unsuppressed":      reflect.ValueOf(api.Unsuppressed),
+		"V":                 reflect.ValueOf(api.V),
 
 		// type definitions
 		"AnalyzeMenu":      reflect.ValueOf((*api.AnalyzeMenu)(nil)),
@@ -57,11 +74,15 @@ func init() {
 		"DrawingView":      reflect.ValueOf((*api.DrawingView)(nil)),
 		"EditMenu":         reflect.ValueOf((*api.EditMenu)(nil)),
 		"Entity":           reflect.ValueOf((*api.Entity)(nil)),
+		"ExportCanvas":     reflect.ValueOf((*api.ExportCanvas)(nil)),
 		"ExportKind":       reflect.ValueOf((*api.ExportKind)(nil)),
+		"ExportMargin":     reflect.ValueOf((*api.ExportMargin)(nil)),
+		"ExportOptions":    reflect.ValueOf((*api.ExportOptions)(nil)),
 		"ExtrudeGroup":     reflect.ValueOf((*api.ExtrudeGroup)(nil)),
 		"FeaturesMenu":     reflect.ValueOf((*api.FeaturesMenu)(nil)),
 		"FileMenu":         reflect.ValueOf((*api.FileMenu)(nil)),
 		"FilletGroup":      reflect.ValueOf((*api.FilletGroup)(nil)),
+		"GCodeOptions":     reflect.ValueOf((*api.GCodeOptions)(nil)),
 		"Group":            reflect.ValueOf((*api.Group)(nil)),
 		"GroupAnalysis":    reflect.ValueOf((*api.GroupAnalysis)(nil)),
 		"GroupHistory":     reflect.ValueOf((*api.GroupHistory)(nil)),
@@ -84,6 +105,7 @@ func init() {
 		"SolidEdge":        reflect.ValueOf((*api.SolidEdge)(nil)),
 		"SolidFace":        reflect.ValueOf((*api.SolidFace)(nil)),
 		"SolidVertex":      reflect.ValueOf((*api.SolidVertex)(nil)),
+		"Style":            reflect.ValueOf((*api.Style)(nil)),
 		"SuppressMode":     reflect.ValueOf((*api.SuppressMode)(nil)),
 		"SweepGroup":       reflect.ValueOf((*api.SweepGroup)(nil)),
 		"ThreadOptions":    reflect.ValueOf((*api.ThreadOptions)(nil)),
@@ -97,32 +119,36 @@ func init() {
 
 // _github_com_telesapr_telesapr_pkg_script_api_Host is an interface wrapper for Host type
 type _github_com_telesapr_telesapr_pkg_script_api_Host struct {
-	IValue             interface{}
-	WActivate          func(hg core.HGroup)
-	WAddGroup          func(g sketch.Group) core.HGroup
-	WChanging          func()
-	WCommands          func() []string
-	WDeleteGroup       func(hg core.HGroup)
-	WDrawingSheetShown func() bool
-	WExport            func(kind api.ExportKind, path string) error
-	WExportDrawing     func(path string, d *sketch.Drawing) error
-	WHovered           func() sketch.Selection
-	WLoad              func(path string) error
-	WMeasureDrawing    func(d *sketch.Drawing) ([]float64, []error)
-	WMmPerUnit         func() float64
-	WRedo              func() bool
-	WRegenerate        func()
-	WRemembered        func(n int)
-	WRender            func(path string, width int, height int, right geom.Vector, up geom.Vector) error
-	WRun               func(fn func())
-	WRunCommand        func(label string) error
-	WSave              func(path string) error
-	WSelect            func(sel []sketch.Selection)
-	WSelection         func() []sketch.Selection
-	WSetChordTolerance func(pct float64)
-	WShowDrawingSheet  func(show bool) error
-	WSketch            func() *sketch.Sketch
-	WUndo              func() bool
+	IValue                 interface{}
+	WActivate              func(hg core.HGroup)
+	WAddGroup              func(g sketch.Group) core.HGroup
+	WChanging              func()
+	WCommands              func() []string
+	WDeleteGroup           func(hg core.HGroup)
+	WDrawingSheetShown     func() bool
+	WExport                func(kind api.ExportKind, path string) error
+	WExportDrawing         func(path string, d *sketch.Drawing) error
+	WExportOptions         func() api.ExportOptions
+	WHovered               func() sketch.Selection
+	WLoad                  func(path string) error
+	WMeasureDrawing        func(d *sketch.Drawing) ([]float64, []error)
+	WMmPerUnit             func() float64
+	WRedo                  func() bool
+	WRegenerate            func()
+	WRemembered            func(n int)
+	WRender                func(path string, width int, height int, right geom.Vector, up geom.Vector) error
+	WRun                   func(fn func())
+	WRunCommand            func(label string) error
+	WSave                  func(path string) error
+	WSelect                func(sel []sketch.Selection)
+	WSelection             func() []sketch.Selection
+	WSetCheckClosedContour func(on bool)
+	WSetChordTolerance     func(pct float64)
+	WSetExportOptions      func(o api.ExportOptions)
+	WSetMaxSegments        func(n int)
+	WShowDrawingSheet      func(show bool) error
+	WSketch                func() *sketch.Sketch
+	WUndo                  func() bool
 }
 
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Activate(hg core.HGroup) {
@@ -148,6 +174,9 @@ func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Export(kind api.Expor
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) ExportDrawing(path string, d *sketch.Drawing) error {
 	return W.WExportDrawing(path, d)
+}
+func (W _github_com_telesapr_telesapr_pkg_script_api_Host) ExportOptions() api.ExportOptions {
+	return W.WExportOptions()
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Hovered() sketch.Selection {
 	return W.WHovered()
@@ -188,8 +217,17 @@ func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Select(sel []sketch.S
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Selection() []sketch.Selection {
 	return W.WSelection()
 }
+func (W _github_com_telesapr_telesapr_pkg_script_api_Host) SetCheckClosedContour(on bool) {
+	W.WSetCheckClosedContour(on)
+}
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) SetChordTolerance(pct float64) {
 	W.WSetChordTolerance(pct)
+}
+func (W _github_com_telesapr_telesapr_pkg_script_api_Host) SetExportOptions(o api.ExportOptions) {
+	W.WSetExportOptions(o)
+}
+func (W _github_com_telesapr_telesapr_pkg_script_api_Host) SetMaxSegments(n int) {
+	W.WSetMaxSegments(n)
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) ShowDrawingSheet(show bool) error {
 	return W.WShowDrawingSheet(show)

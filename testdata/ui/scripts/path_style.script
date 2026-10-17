@@ -1,0 +1,24 @@
+# A custom line style made on the styles screen and drawn at a level of
+# its own; the same as path_style.go makes (TestPathEquivalenceStyle).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+menu Edit|Line Styles...
+tw
+twmove 60 430
+twdown L 60 430
+twup L 60 430
+tw
+twmove 100 420
+twdown L 100 420
+twup L 100 420
+tw
+twmove 204 780
+twdown L 204 780
+twup L 204 780
+edit 7

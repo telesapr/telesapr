@@ -34,6 +34,7 @@ func TestStyleDefaults(t *testing.T) {
 			"  visible\n" +
 			"  exportable\n" +
 			"  stipple-scale 15\n" +
+			"  z-index 4\n" +
 			"}\n"
 	}
 	for _, tc := range []struct {

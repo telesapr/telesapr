@@ -4,7 +4,9 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/render"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // The context menu offers what applies to what was right-clicked: the
@@ -239,8 +241,20 @@ func (gw *graphicsWindow) addModelItems(menu platform.Menu, gs *groupedSelection
 		if gs.n == 1 && gs.faces == 1 && len(gs.solidFace) == 0 {
 			menu.AddItem("Mirror in This Plane", func() { ss.MenuFeatures(cmdGroupMirror, "") }, true)
 		}
-		if _, ok := gs.onlyFace(); ok {
+		// One face of the solid, whether it was picked by its identity or
+		// is the entity that drew it, may be sketched on and given an
+		// appearance of its own, as a whole group's is on the group's
+		// screen.
+		face, oneFace := gs.onlyFace()
+		if oneFace {
 			menu.AddItem("Sketch On Face", func() { ss.MenuFeatures(cmdGroupSketchOnFace, "") }, true)
+		}
+		if oneFace {
+			appearance := menu.AddSubMenu("Appearance")
+			appearance.AddItem("The group's own", func() { ss.SetFaceAppearance(face, "") }, true)
+			for i, name := range render.MaterialNames {
+				appearance.AddItem(name, func() { ss.SetFaceAppearance(face, render.MaterialNames[i]) }, true)
+			}
 		}
 	}
 	if edges || faces || gs.n > 0 {
@@ -257,6 +271,16 @@ func (gw *graphicsWindow) addModelItems(menu platform.Menu, gs *groupedSelection
 	if hg, ok := gw.selectedGroup(gs); ok {
 		gw.addGroupMenu(menu.AddSubMenu("Group"), hg)
 	}
+}
+
+// SetFaceAppearance gives one face of the model an appearance of its
+// own, as one step of undo, as View.SetFaceAppearance does for a script.
+func (ss *Application) SetFaceAppearance(face srf.FaceID, name string) {
+	ss.UndoRemember()
+	if err := ss.SK.SetFaceAppearance(face, name); err != nil {
+		ss.Report(err)
+	}
+	ss.GW.Invalidate(false)
 }
 
 // selectionIsSolidEdges reports whether the entities selected are all

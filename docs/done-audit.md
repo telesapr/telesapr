@@ -127,6 +127,21 @@ Where things are:
 | Toolbar from its table (UX) | the hover grids beside it | n/a: buttons run menu commands | n/a: the window's | `testdata/draw` (the axes beside it) | n/a | n/a | n/a | n/a |
 | Breadcrumbs and a group's actions (UX) | every `.goui` with the property browser | n/a: the actions are the group list's | n/a: the window's | `testdata/textwin`, `.goui` | n/a | n/a | n/a: the actions' own | n/a |
 | Copy, paste, length, areas, centre of mass from scripts (UX) | the Edit and Analyze menus' scenarios | n/a: one sketch call each, `TestEveryMenuCommandHasAMethod` | `measure` | n/a | n/a | n/a | `TestCopyPaste` | n/a: pastes are sketch edits |
+| The appearance of one face (parity) | `TestContextMenuFaceAppearance` (the face's context menu) | n/a: the two reach `SetFaceAppearance` in `pkg/sketch` | `styles` (the group appearance beside it) | n/a: nothing of its own | n/a: no solid | n/a | that test (one step, undone) | `TestEveryFieldRoundTrips` |
+| Configuration and export options (parity) | the configuration and export-options screens' own scenarios | `TestScriptExportOptions` (the Go pair: the window's fields follow the script's) | `feedback` | n/a: nothing of its own | n/a: no solid | n/a: not on the regeneration path | n/a: application settings, not in the document | n/a: kept with the application's settings; see "The export options a script reaches" |
+| Style text height units, text alignment and factory-default reset from scripts (parity) | the style screen's own links, `ext_line_styles` | n/a: the screen and `Style.SetTextHeightAs`/`SetTextAlign` call the same `SetStyleTextHeightUnits`, `SetStyleTextHorizontal` and `SetStyleTextVertical` | `styles` | n/a: nothing of its own | n/a | n/a | `TestResetStyles` | `TestEveryFieldRoundTrips` |
+| Which drawing views appear and where views, sections and details go, in the window (parity) | `ext_drawing_views` | `path_drawing_views` | `drawing` (the script side is `Drawing.Set`) | `ext_drawing_views.goui` | n/a | n/a | `TestDrawingScreenViews` (one step each) | `TestEveryFieldRoundTrips` |
+| Group dependencies, bounding box and parameter users in the window (parity) | `ext_group_dependencies` | n/a: queries, `TestAnalyzeGroupDependencies` compares the dialog with the script's answers | n/a | `ext_group_dependencies.goui` | n/a | n/a | n/a: nothing changes | n/a |
+| Line styles from scripts, and the level a style is drawn at (parity) | `ext_line_styles` | `path_style` | `styles` | `ext_line_styles.goui`, the textwin goldens with the new row | n/a: no solid | n/a: not on the regeneration path | `TestStyleUndoAndMisuse` (one step each) | `TestEveryFieldRoundTrips` (the level), the importdxf goldens |
+| Closing a spline into a periodic one (parity) | `ext_spline_periodic` | n/a: `Sketch.Cubic` draws a spline by its control points where the mouse's tool draws one through the points it passes, so the two files cannot be the same; both reach `MakeSplinePeriodic` | `spline` | `ext_spline_periodic.goui` | n/a: no solid | n/a | n/a: it keeps the spline's points | `TestMakePeriodicMisuse` | n/a: an ordinary request |
+| Point coincidence, visibility and the section plane's name (parity) | the Context menu's and the section screen's own scenarios | n/a: what the window asks the sketch, one call each | `equal` (the point) | n/a: nothing of its own | n/a | n/a | n/a: each is a query | n/a: not saved |
+| Equal point-line distances, equal angles, projected distance (parity) | the Constrain menu's own scenarios | `path_equal`, `path_equal_length`, `path_projected_distance` | `equal` | the constraints' own `.tlspr` goldens | n/a: no solid | n/a: not on the regeneration path | `TestEqualMisuse` and the rest of `constrain_equal_test.go` (one step each) | `TestEveryFieldRoundTrips` |
+| Group solve options from scripts (parity) | `ext_group_solve` | `path_group_solve` | `solve` | `ext_group_solve.goui` | n/a: no solid of its own | n/a: `SuppressDof` is what makes a large group quicker | `TestGroupSolveOptions` (each option is one step, undone with the group's own history) | `TestEveryFieldRoundTrips` (the flags) |
+| Workplane on two lines or a normal, axis as a point and a vector (parity) | the Sketch In New Workplane and Lathe menu scenarios | `path_sketch_on_lines`, `path_lathe_point_axis` | `workplanes` | n/a: the pair compares the saved files | n/a: no solid of its own (the lathe's is a revolution) | n/a: nothing on the regeneration path changed | `TestSketchOnLinesAndNormal` (one step, redo brings the group back) | `TestEveryFieldRoundTrips` (the predef) |
+| Chamfer's second distance, swap and same through the sketch (parity) | the chamfer group screen's own scenarios | `path_chamfer_two` | `chamfer` | `path_chamfer_two` pair | n/a: the existing chamfer sweeps | n/a | `TestChamferDistancesOnSketch` and `TestChamferTwoDistances` (one step each) | `TestEveryFieldRoundTrips` |
+| A text's string, font and kerning, and a list of fonts (parity) | the text window's own scenarios | `TestTextEditsMatchScript` (the Go pair: the same Sketch calls from the screens and from `SetText`, `SetFont`, `SetKerning`) | `text` | the textwin goldens are unchanged | n/a: no solid | n/a: not on the regeneration path | `TestTextEditsMatchScript` (each window edit one step, redo identical) | `TestEveryFieldRoundTrips` |
+| A diameter shown as a radius, a dimension's label position (parity) | the Constrain menu's and the drag's own scenarios | `TestShowAsRadiusMatchesScript`, `TestDragLabelUsesSketchCall` (the Go pair) | `text` | n/a: nothing of its own | n/a: no solid | n/a: display only | `TestShowAsRadiusMatchesScript` (undo and redo) | `TestEveryFieldRoundTrips` |
+| Tangent at chosen end points, parallel and perpendicular faces, midpoint in a workplane, symmetric line segment, comment on a point (parity) | the Constrain menu's own scenarios | `TestTangentAtEndMatchesScript`, `TestTangentCurvesAtEndsMatchesScript`, `TestFacesMatchScript`, `TestMidpointMatchesScript`, `TestSymmetricLineMatchesScript`, `TestCommentOnPointMatchesScript` (the Go pairs; a mouse pair for an arc and its end point was not made) | `text` | the constraints' own `.tlspr` goldens | n/a: no solid | n/a: not on the regeneration path | the Constrain menu's own (one step each; the implied constraints go in the same step) | `TestEveryFieldRoundTrips` |
 
 ## What the audit changed
 
@@ -138,3 +153,54 @@ Where things are:
 - `TestMirrorSweep`: 0 of 144. A mirror reflects its source group, not the solid so far, so a
   hole cut by a later group is not reflected (15.5); the sweep puts the hole in the profile.
 - `TestLinkStepUndo`: linking a STEP file is one undo step.
+
+### The export options a script reaches
+
+The configuration and export-options screens set `export.Options` (the canvas, margin,
+background colour, shaded triangles, PWL curves, the G-code feed, the scale and offset, the
+export chord tolerance and segment limit), and a script's export in the window or under
+`telesapr-cli run` and `mcp` goes through the same writers with `Application.exportOptions()`.
+A script now reaches the same fields: `File.ExportOptions()` and `File.SetExportOptions(o)` (an
+`api.ExportOptions` struct, checked by the screen's rules), `Edit.SetMaxSegments` and
+`Edit.MaxSegments` for the display limit, beside `Edit.SetChordTolerance`. Tests:
+`TestScriptExportOptions` (the window's fields follow, the SVG changes), `TestExportOptions` and
+`TestSetMaxSegments` (api).
+
+The export tolerance does reach the exported mesh: `ExportMeshTo` regenerates at it, and
+`TestExportOptionsMesh` (a bare sketch) and `TestScriptExportMeshTolerance` (the window) show an
+STL growing from the coarse to the fine tolerance and shrinking with the segment cap. The old
+claim, that a cylinder exported at 0.01% and at 5% with 8 segments gave identical files because
+the display mesh was cached, no longer holds.
+
+Still open: a sketch opened without the application (`api.Open`, `New`) writes only STL and 3MF
+meshes, so there the 2d options (scale, canvas, PWL curves, G-code) are kept and returned but
+nothing reads them; a script run by the application or `telesapr-cli run` is the way to a 2d
+file. The values are the session's, and the application saves them with its settings when it
+closes, as it does for the screen. `telesapr-cli` has no `export-section` command; the section
+export is `File.ExportSection` (or `File.ExportAs(ExportSection, path)`) in a script.
+
+### Import, section export and placing a linked part
+
+- DXF import into the active sketch is `File.ImportDXF(path)`; the window and the script both
+  call `dxf.ImportActive` (`pkg/persist/dxf`), which holds the workplane rule (a file with a Z
+  coordinate leaves the workplane and comes in as construction). Test: `TestImportDxfPathEquivalence`
+  (same saved file), `TestImportDXF` (api, undo and the workplane).
+- 2d Section export is `ExportSection` of `ExportKind`, `File.ExportSection`. The plane is the
+  section view's when it is on, otherwise the active workplane; the window's selection-driven
+  choice (a face, a point and two lines) stays the window's. Test: `TestExportSectionPaths`.
+- Edit > Rotate Imported 90° is `LinkGroup.Rotate90(axis)` (the window uses the coordinate axis
+  closest to the view's direction); dragging a part's normal is `LinkGroup.SetOrientation(u, v)`;
+  also `Rotate`, `Move`, `Offset`, `Orientation`. Test: `TestRotateImportedPaths`. Example:
+  `examples/scripts/dxfsection`.
+
+## Group options reachable from a script
+
+Each of these was a choice on the group screen only, or a script setter with no getter. The screen
+and the script now reach one `pkg/sketch` method (`group_options.go`, `group_edits.go`), and which
+kinds of group have each option is one table (`Group.HasCombine`, `HasColor`, `HasAppearance`,
+`HasSolidSuppress`): the screen shows the rows of those and the script setters fail for the others.
+
+| Option | Scenario | Path pair | Example | Golden | Sweep | Benchmark | Undo | Round trip |
+|---|---|---|---|---|---|---|---|---|
+| Skewed extrusion (`ExtrudeGroup.Skewed`, `SetSkewed`), start with copy #1 (`RepeatGroup.SkipFirst`, `SetSkipFirst`), opacity and colour (`Group.Opacity`, `SetOpacity`, `Color`), combine (`Group.Combine`), a pattern's copies as an expression | the group screen's links, as `act_groups_more` | `TestGroupOptionsMatchScript` (window and script leave the same group; a Go test, not a `path_` pair, because the script methods reach yaegi only after `make generate`) | n/a: none yet | the group-screen goldens that gained rows (`ext_*` of lofts, fillets, chamfers, shells, mirrors, patterns) | n/a | n/a | `TestGroupOpacityAndColor`, `TestExtrudeSkewed`, `TestRepeatSkipFirst` | `TestEveryFieldRoundTrips` |
+| Which kinds of group have which option (`TestGroupOptionKinds`) | `TestGroupScreenOptionsByKind` | n/a | n/a | n/a | n/a | n/a | n/a | n/a |

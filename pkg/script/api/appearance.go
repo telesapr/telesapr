@@ -24,8 +24,14 @@ func (g Group) Appearance() (name string) {
 }
 
 // SetAppearance gives the group's solid an appearance: matte, plastic,
-// glossy or metal, or "" for the default. Its colour stays.
+// glossy or metal, or "" for the default. Its colour stays. A sketch
+// makes no solid, so it fails.
 func (g Group) SetAppearance(name string) {
 	checkAppearance(name)
-	g.d.change(func(sk *sketch.Sketch) { g.get(sk).Appearance = name })
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		if err := sk.SetGroupAppearance(g.H, name); err != nil {
+			fail("%s: %v", groupDescription(group), err)
+		}
+	})
 }

@@ -24,22 +24,22 @@ edit 1:2
 twmove 172 165
 twdown L 172 165
 twup L 172 165
-twmove 181 355
-twdown L 181 355
-twup L 181 355
+twmove 181 386
+twdown L 181 386
+twup L 181 386
 edit PLATE
-twmove 46 235
-twdown L 46 235
-twup L 46 235
+twmove 46 266
+twdown L 46 266
+twup L 46 266
 edit top 0
-twmove 46 275
-twdown L 46 275
-twup L 46 275
+twmove 46 306
+twdown L 46 306
+twup L 46 306
 edit front -10 0 5 2
 answer ok
-twmove 46 345
-twdown L 46 345
-twup L 46 345
+twmove 46 376
+twdown L 46 376
+twup L 46 376
 tw
 file $tmp/sheet.svg
 menu File|Export|Drawing...

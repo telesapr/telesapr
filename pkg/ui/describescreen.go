@@ -34,13 +34,7 @@ func (tw *textWindow) ScreenToggleTtfKerning(link int, v uint32) {
 	r := ss.SK.Request(core.HRequest{V: v})
 
 	ss.UndoRemember()
-	if r.ExtraPoints != 0 {
-		r.ExtraPoints = 0
-	} else {
-		r.ExtraPoints = 1
-	}
-
-	ss.SK.MarkGroupDirty(r.Group, false)
+	_ = ss.SK.SetTextKerning(r.H, r.ExtraPoints == 0)
 	ss.ScheduleShowTW()
 }
 
@@ -71,8 +65,9 @@ func (tw *textWindow) ScreenSetTtfFont(link int, v uint32) {
 	}
 
 	ss.UndoRemember()
-	r.Font = fonts[i].FontFileBaseName()
-	sk.MarkGroupDirty(r.Group, false)
+	if err := sk.SetTextFont(r.H, fonts[i].FontFileBaseName()); err != nil {
+		ss.Error("%s", err)
+	}
 	ss.ScheduleShowTW()
 }
 
@@ -95,7 +90,7 @@ func (tw *textWindow) ScreenConstraintShowAsRadius(link int, v uint32) {
 	c := ss.SK.Constraint(core.HConstraint{V: v})
 
 	ss.UndoRemember()
-	c.Other = !c.Other
+	_ = ss.SK.SetConstraintShowAsRadius(c.H, !c.Other)
 
 	ss.ScheduleShowTW()
 }
@@ -433,7 +428,7 @@ func (d *describer) describeOne() {
 				ss.entityDescription(w))
 		}
 	}
-	if entityIsStylable(e) {
+	if e.IsStylable() {
 		if e.Style.V != 0 {
 			s := sk.StyleGet(e.Style)
 			tw.Printf(false, "%FtIN STYLE%E      %Fl%Ll%D%f%s%E",

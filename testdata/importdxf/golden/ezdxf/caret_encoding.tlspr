@@ -528,6 +528,7 @@ style 0x100 "@dxf-h2.5-ov3" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 value 0x10010 0

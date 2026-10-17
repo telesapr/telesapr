@@ -223,3 +223,39 @@ func TestChamferTwoDistancesSweep(t *testing.T) {
 		return nil
 	}).Require(t)
 }
+
+// The second distance, the swap and the same are the sketch's, which
+// refuses a group that is not a chamfer and a swap of one distance.
+func TestChamferDistancesOnSketch(t *testing.T) {
+	d := api.New()
+	ex := block(d, 0, 0, 10, 10, 5)
+	sk := d.Host().Sketch()
+	if err := sk.SetChamferSecondDistance(ex.H, 2); err == nil || !strings.Contains(err.Error(), "not a chamfer") {
+		t.Errorf("an extrusion's second distance: %v", err)
+	}
+	if err := sk.SwapChamferDistances(ex.H); err == nil {
+		t.Error("swapped an extrusion's distances")
+	}
+	c := d.Features.Chamfer([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))}, 1, "")
+	if err := sk.SwapChamferDistances(c.H); err == nil || !strings.Contains(err.Error(), "one distance") {
+		t.Errorf("swap of one distance: %v", err)
+	}
+	if err := sk.SetChamferSecondDistance(c.H, -1); err == nil {
+		t.Error("a negative second distance")
+	}
+	if err := sk.SetChamferSecondDistance(c.H, 3); err != nil {
+		t.Fatal(err)
+	}
+	if err := sk.SwapChamferDistances(c.H); err != nil {
+		t.Fatal(err)
+	}
+	if g := sk.Group(c.H); g.ValB != 3 || g.ValC != 1 {
+		t.Errorf("after the swap %g, %g", g.ValB, g.ValC)
+	}
+	if err := sk.SameChamferDistances(c.H); err != nil {
+		t.Fatal(err)
+	}
+	if g := sk.Group(c.H); g.ValC != 0 || g.ExprC != "" {
+		t.Errorf("after same %g %q", g.ValC, g.ExprC)
+	}
+}

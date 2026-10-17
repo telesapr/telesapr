@@ -20,19 +20,8 @@ func (m ViewMenu) SetFaceAppearance(face SolidFace, name string) {
 	d := m.d
 	checkAppearance(name)
 	d.change(func(sk *sketch.Sketch) {
-		g := sk.Group(sketch.FaceGroup(face.id))
-		if g == nil {
-			fail("no group made face %x", uint32(face.id))
-		}
-		kept := g.FaceAppearances[:0]
-		for _, fa := range g.FaceAppearances {
-			if fa.Face != face.id {
-				kept = append(kept, fa)
-			}
-		}
-		g.FaceAppearances = kept
-		if name != "" {
-			g.FaceAppearances = append(g.FaceAppearances, sketch.FaceAppearance{Face: face.id, Appearance: name})
+		if err := sk.SetFaceAppearance(face.id, name); err != nil {
+			fail("%v", err)
 		}
 	})
 }
@@ -106,6 +95,7 @@ func (m ViewMenu) Section() (s Section) {
 		}
 		s.On = true
 		s.Plane = Entity{d: d, H: sec.Plane}
+		s.PlaneName = sk.SectionPlaneName()
 		s.Offset, s.Flip = sec.Offset, sec.Flip
 		keep, point, ok, err := sk.SectionCut()
 		if !ok {

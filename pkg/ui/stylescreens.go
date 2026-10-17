@@ -5,6 +5,8 @@ package ui
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -31,7 +33,7 @@ func (ss *Application) AssignSelectionToStyle(v uint32) {
 	for i := range gw.gs.entities {
 		he := gw.gs.entity[i]
 		e := sk.MustEntity(he)
-		if !entityIsStylable(e) {
+		if !e.IsStylable() {
 			continue
 		}
 
@@ -46,7 +48,7 @@ func (ss *Application) AssignSelectionToStyle(v uint32) {
 	}
 	for i := range gw.gs.constraints {
 		c := sk.Constraint(gw.gs.constraint[i])
-		if !constraintIsStylable(c) {
+		if !c.IsStylable() {
 			continue
 		}
 
@@ -89,6 +91,7 @@ func (tw *textWindow) ScreenShowStyleInfo(link int, v uint32) {
 
 // ScreenLoadFactoryDefaultStyles resets the default styles.
 func (tw *textWindow) ScreenLoadFactoryDefaultStyles(link int, v uint32) {
+	tw.ss.UndoRemember()
 	tw.ss.LoadFactoryDefaultStyles()
 	tw.GoToScreen(screenListOfStyles)
 	tw.ss.GW.persistentDirty = true
@@ -168,6 +171,7 @@ func (tw *textWindow) ScreenDeleteStyle(link int, v uint32) {
 
 // ScreenChangeStylePatternType sets a style's stipple pattern.
 func (tw *textWindow) ScreenChangeStylePatternType(link int, v uint32) {
+	tw.ss.UndoRemember()
 	s := tw.ss.SK.StyleGet(core.HStyle{V: v})
 	s.StippleType = core.StipplePattern(link - 1)
 	tw.ss.GW.persistentDirty = true
@@ -225,6 +229,15 @@ func (tw *textWindow) ScreenChangeStyleTextAngle(link int, v uint32) {
 	tw.edit.meaning = editStyleTextAngle
 }
 
+// ScreenChangeStyleZIndex edits how high the style is drawn.
+func (tw *textWindow) ScreenChangeStyleZIndex(link int, v uint32) {
+	hs := core.HStyle{V: v}
+	s := tw.ss.SK.StyleGet(hs)
+	tw.ShowEditControl(24, fmt.Sprintf("%d", s.ZIndex))
+	tw.edit.style = hs
+	tw.edit.meaning = editStyleZIndex
+}
+
 // ScreenChangeStyleColor edits a style's stroke or fill colour.
 func (tw *textWindow) ScreenChangeStyleColor(link int, v uint32) {
 	hs := core.HStyle{V: v}
@@ -270,16 +283,10 @@ func (tw *textWindow) ScreenChangeStyleYesNo(link int, v uint32) {
 
 	// Units for the height
 	case 'g':
-		if s.TextHeightAs != core.UnitsMM {
-			s.TextHeightAs = core.UnitsMM
-			s.TextHeight /= scale
-		}
+		ss.SK.SetStyleTextHeightUnits(s.H, core.UnitsMM)
 
 	case 'G':
-		if s.TextHeightAs != core.UnitsPixels {
-			s.TextHeightAs = core.UnitsPixels
-			s.TextHeight *= scale
-		}
+		ss.SK.SetStyleTextHeightUnits(s.H, core.UnitsPixels)
 
 	case 'e':
 		s.Exportable = !s.Exportable
@@ -292,25 +299,19 @@ func (tw *textWindow) ScreenChangeStyleYesNo(link int, v uint32) {
 
 	// Horizontal text alignment
 	case 'L':
-		s.TextOrigin |= core.TextOriginLeft
-		s.TextOrigin &^= core.TextOriginRight
+		ss.SK.SetStyleTextHorizontal(s.H, core.TextOriginLeft)
 	case 'H':
-		s.TextOrigin &^= core.TextOriginLeft
-		s.TextOrigin &^= core.TextOriginRight
+		ss.SK.SetStyleTextHorizontal(s.H, core.TextOriginNone)
 	case 'R':
-		s.TextOrigin &^= core.TextOriginLeft
-		s.TextOrigin |= core.TextOriginRight
+		ss.SK.SetStyleTextHorizontal(s.H, core.TextOriginRight)
 
 	// Vertical text alignment
 	case 'B':
-		s.TextOrigin |= core.TextOriginBot
-		s.TextOrigin &^= core.TextOriginTop
+		ss.SK.SetStyleTextVertical(s.H, core.TextOriginBot)
 	case 'V':
-		s.TextOrigin &^= core.TextOriginBot
-		s.TextOrigin &^= core.TextOriginTop
+		ss.SK.SetStyleTextVertical(s.H, core.TextOriginNone)
 	case 'T':
-		s.TextOrigin &^= core.TextOriginBot
-		s.TextOrigin |= core.TextOriginTop
+		ss.SK.SetStyleTextVertical(s.H, core.TextOriginTop)
 	}
 	ss.GW.Invalidate(true)
 }
@@ -343,6 +344,17 @@ func (tw *textWindow) EditControlDoneForStyles(str string) bool {
 		default:
 			s.Width = v
 		}
+
+	case editStyleZIndex:
+		// A level is a whole number; anything else is refused with no undo
+		// step, rather than read as 0 by atoi.
+		z, err := strconv.Atoi(strings.TrimSpace(str))
+		if err != nil {
+			ss.Error("Bad format: specify z-index as a whole number")
+			break
+		}
+		ss.UndoRemember()
+		ss.SK.StyleGet(tw.edit.style).ZIndex = z
 
 	case editStyleTextAngle:
 		ss.UndoRemember()
@@ -550,6 +562,12 @@ func (tw *textWindow) ShowStyleInfo() {
 
 	tw.Printf(false, "  %Fd%D%f%Le%s  export these objects%E",
 		s.H.V, lf(tw.ScreenChangeStyleYesNo), checkMark(s.Exportable))
+
+	// How high the style is drawn: the highest level goes on top, and
+	// an exported file's entities are written in that order.
+	tw.Printf(false, "")
+	tw.Printf(false, "%Ba   %FtDrawn at level %E%d %D%f%Lz%Fl[change]%E",
+		s.ZIndex, s.H.V, lf(tw.ScreenChangeStyleZIndex))
 
 	if custom {
 		tw.Printf(false, "")

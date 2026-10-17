@@ -110,6 +110,43 @@ func (m FeaturesMenu) SketchAt(origin Entity, u, v Vec, name string) Group {
 	}, nil)
 }
 
+// SketchOnLines adds a group to draw in, in a workplane through a point
+// and parallel to two line segments, as the window makes one from a
+// point and two line segments: u runs along lineA and v along lineB, each from its start to its end,
+// and the workplane follows the point and the lines when they move.
+// The lines must not be parallel. The new group becomes active, and
+// its workplane the one drawn in.
+func (m FeaturesMenu) SketchOnLines(origin, lineA, lineB Entity, name string) Group {
+	d := m.d
+	return d.add(func(sk *sketch.Sketch) sketch.Group {
+		a, b := lineA.must(sk, "a line segment", isLine), lineB.must(sk, "a line segment", isLine)
+		// A line's vector runs from its end to its start; the directions it was drawn in, as the view, keep lineA as u and lineB as v.
+		right := sk.MustEntity(a).VectorGetNum(sk).ScaledBy(-1)
+		up := sk.MustEntity(b).VectorGetNum(sk).ScaledBy(-1)
+		g, err := sk.NewSketchOnLines(origin.must(sk, "a point", isPoint), a, b, right, up, name)
+		if err != nil {
+			fail("%v", err)
+		}
+		return g
+	}, nil)
+}
+
+// SketchOnNormal adds a group to draw in, in a workplane through a
+// point and square to a normal (an entity's Normal, or a workplane,
+// whose normal is taken), as the window makes one from a point and a
+// normal; the workplane follows the normal when it turns. The new
+// group becomes active, and its workplane the one drawn in.
+func (m FeaturesMenu) SketchOnNormal(origin, normal Entity, name string) Group {
+	d := m.d
+	return d.add(func(sk *sketch.Sketch) sketch.Group {
+		g, err := sk.NewSketchOnNormal(origin.must(sk, "a point", isPoint), normal.get(sk).H, name)
+		if err != nil {
+			fail("%v", err)
+		}
+		return g
+	}, nil)
+}
+
 // SketchOnFace adds a group to draw in, in a workplane lying in a flat
 // face of the solid so far, as Solid.FaceAt or Solid.Face give it: its
 // normal out of the solid, its origin on a corner of the face and u
@@ -155,11 +192,18 @@ func (m FeaturesMenu) Extrude(depth float64, name string) Group {
 // Lathe makes a solid of the active group's sketch by turning it all
 // the way around a line segment. The new group becomes active.
 func (m FeaturesMenu) Lathe(axis Entity, name string) Group {
+	return m.LatheAbout(Entity{}, axis, name)
+}
+
+// LatheAbout is Lathe about an axis through a point and parallel to a
+// vector, a line segment or a normal, as the window takes a point and
+// a line segment or normal.
+func (m FeaturesMenu) LatheAbout(point, vector Entity, name string) Group {
 	d := m.d
 	return d.add(func(sk *sketch.Sketch) sketch.Group {
 		g := newGroup(sketch.GroupLathe, name, "lathe")
 		workplaneNormal(sk, "Lathe")
-		g.Predef.Origin, g.Predef.EntityB = axisOf(sk, axis, "Lathe")
+		g.Predef.Origin, g.Predef.EntityB = axisOf(sk, point, vector, "Lathe")
 		g.OpA = sk.Active
 		return g
 	}, nil)
@@ -169,11 +213,17 @@ func (m FeaturesMenu) Lathe(axis Entity, name string) Group {
 // an angle in degrees around a line segment. The new group becomes
 // active.
 func (m FeaturesMenu) Revolve(axis Entity, degrees float64, name string) Group {
+	return m.RevolveAbout(Entity{}, axis, degrees, name)
+}
+
+// RevolveAbout is Revolve about an axis through a point and parallel to
+// a vector, a line segment or a normal.
+func (m FeaturesMenu) RevolveAbout(point, vector Entity, degrees float64, name string) Group {
 	d := m.d
 	return d.add(func(sk *sketch.Sketch) sketch.Group {
 		g := newGroup(sketch.GroupRevolve, name, "revolve")
 		workplaneNormal(sk, "Revolve")
-		g.Predef.Origin, g.Predef.EntityB = axisOf(sk, axis, "Revolve")
+		g.Predef.Origin, g.Predef.EntityB = axisOf(sk, point, vector, "Revolve")
 		g.OpA = sk.Active
 		g.ValA = 2
 		g.Subtype = sketch.GroupOneSided
@@ -190,11 +240,17 @@ func (m FeaturesMenu) Revolve(axis Entity, degrees float64, name string) Group {
 // length of the pitch make one turn. A negative angle turns the other
 // way. The new group becomes active.
 func (m FeaturesMenu) Helix(axis Entity, degrees, length float64, name string) Group {
+	return m.HelixAbout(Entity{}, axis, degrees, length, name)
+}
+
+// HelixAbout is Helix about an axis through a point and parallel to a
+// vector, a line segment or a normal.
+func (m FeaturesMenu) HelixAbout(point, vector Entity, degrees, length float64, name string) Group {
 	d := m.d
 	return d.add(func(sk *sketch.Sketch) sketch.Group {
 		g := newGroup(sketch.GroupHelix, name, "helix")
 		workplaneNormal(sk, "Helix")
-		g.Predef.Origin, g.Predef.EntityB = axisOf(sk, axis, "Helix")
+		g.Predef.Origin, g.Predef.EntityB = axisOf(sk, point, vector, "Helix")
 		g.OpA = sk.Active
 		g.ValA = 2
 		g.Subtype = sketch.GroupOneSided

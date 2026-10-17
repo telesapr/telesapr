@@ -1012,47 +1012,65 @@ row 16    repeat 3 times [change]
  26-99 64 61 0
 row 18 
  0-99 64 64 0
-row 20    show entities from this group
+row 20    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 22      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 24 
+ 0-99 64 64 0
+row 26    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 22    suppress this group and the groups that use it
+row 28    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 24    force NURBS surfaces to triangle mesh
+row 30    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 27    relax constraints and dimensions
+row 33    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 29    allow redundant constraints
+row 35    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 31    suppress dof calculation (improves solver performance)
+row 37    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 33    treat all dimensions as reference
+row 39    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 35 
- 0-99 64 64 0
-row 37  requests in group
- 0-99 74 64 0
-row 39    (none)
- 0-99 64 61 0
 row 41 
  0-99 64 64 0
-row 43  constraints in group (1 DOF)
+row 43  requests in group
  0-99 74 64 0
 row 45    (none)
  0-99 64 61 0
 row 47 
+ 0-99 64 64 0
+row 49  constraints in group (1 DOF)
+ 0-99 74 64 0
+row 51    (none)
+ 0-99 64 61 0
+row 53 
  0-99 64 64 0
 screen variant 3 4
 row 0  home › g003-extrude   in plane: g002-sketch-in-plane
@@ -1098,47 +1116,65 @@ row 14    repeat 1 time [change]
  25-99 64 64 0
 row 16 
  0-99 64 64 0
-row 18    show entities from this group
+row 18    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 20      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 22 
+ 0-99 64 64 0
+row 24    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 20    suppress this group and the groups that use it
+row 26    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 22    force NURBS surfaces to triangle mesh
+row 28    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 25    relax constraints and dimensions
+row 31    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 27    allow redundant constraints
+row 33    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 29    suppress dof calculation (improves solver performance)
+row 35    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 31    treat all dimensions as reference
+row 37    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 33 
- 0-99 64 64 0
-row 35  requests in group
- 0-99 74 64 0
-row 37    (none)
- 0-99 64 61 0
 row 39 
  0-99 64 64 0
-row 41  constraints in group (1 DOF)
+row 41  requests in group
  0-99 74 64 0
 row 43    (none)
  0-99 64 61 0
 row 45 
+ 0-99 64 64 0
+row 47  constraints in group (1 DOF)
+ 0-99 74 64 0
+row 49    (none)
+ 0-99 64 61 0
+row 51 
  0-99 64 64 0
 screen variant 3 5
 row 0  home › g003-extrude   in plane: g002-sketch-in-plane
@@ -1811,6 +1847,14 @@ row 53     export these objects
  25-99 64 64 0
 row 55 
  0-99 64 64 0
+row 57    Drawn at level 4 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 1 1 0
+ 28-99 64 61 0
+row 59 
+ 0-99 64 64 0
 screen style 2
 row 0  home › style   in plane: g002-sketch-in-plane
  0-0 64 64 0
@@ -1916,6 +1960,14 @@ row 53     export these objects
  2-24 64 64 101 2 1 0
  25-99 64 64 0
 row 55 
+ 0-99 64 64 0
+row 57    Drawn at level 0 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 2 1 0
+ 28-99 64 61 0
+row 59 
  0-99 64 64 0
 screen style 3
 row 0  home › style   in plane: g002-sketch-in-plane
@@ -2023,6 +2075,14 @@ row 53     export these objects
  25-99 64 64 0
 row 55 
  0-99 64 64 0
+row 57    Drawn at level 3 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 3 1 0
+ 28-99 64 61 0
+row 59 
+ 0-99 64 64 0
 screen style 4
 row 0  home › style   in plane: g002-sketch-in-plane
  0-0 64 64 0
@@ -2128,6 +2188,14 @@ row 53     export these objects
  2-24 64 64 101 4 1 0
  25-99 64 64 0
 row 55 
+ 0-99 64 64 0
+row 57    Drawn at level 0 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 4 1 0
+ 28-99 64 61 0
+row 59 
  0-99 64 64 0
 screen style 5
 row 0  home › style   in plane: g002-sketch-in-plane
@@ -2235,6 +2303,14 @@ row 53     export these objects
  25-99 64 64 0
 row 55 
  0-99 64 64 0
+row 57    Drawn at level 2 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 5 1 0
+ 28-99 64 61 0
+row 59 
+ 0-99 64 64 0
 screen style 6
 row 0  home › style   in plane: g002-sketch-in-plane
  0-0 64 64 0
@@ -2340,6 +2416,14 @@ row 53     export these objects
  2-24 64 64 101 6 1 0
  25-99 64 64 0
 row 55 
+ 0-99 64 64 0
+row 57    Drawn at level 0 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 6 1 0
+ 28-99 64 61 0
+row 59 
  0-99 64 64 0
 screen style 7
 row 0  home › style   in plane: g002-sketch-in-plane
@@ -2447,6 +2531,14 @@ row 53     export these objects
  25-99 64 64 0
 row 55 
  0-99 64 64 0
+row 57    Drawn at level 0 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 7 1 0
+ 28-99 64 61 0
+row 59 
+ 0-99 64 64 0
 screen style 8
 row 0  home › style   in plane: g002-sketch-in-plane
  0-0 64 64 0
@@ -2552,6 +2644,14 @@ row 53     export these objects
  2-24 64 64 101 8 1 0
  25-99 64 64 0
 row 55 
+ 0-99 64 64 0
+row 57    Drawn at level 0 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 8 1 0
+ 28-99 64 61 0
+row 59 
  0-99 64 64 0
 screen style 9
 row 0  home › style   in plane: g002-sketch-in-plane
@@ -2659,6 +2759,14 @@ row 53     export these objects
  25-99 64 64 0
 row 55 
  0-99 64 64 0
+row 57    Drawn at level 0 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 9 1 0
+ 28-99 64 61 0
+row 59 
+ 0-99 64 64 0
 screen style a
 row 0  home › style   in plane: g002-sketch-in-plane
  0-0 64 64 0
@@ -2764,6 +2872,14 @@ row 53     export these objects
  2-24 64 64 101 a 1 0
  25-99 64 64 0
 row 55 
+ 0-99 64 64 0
+row 57    Drawn at level 0 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 a 1 0
+ 28-99 64 61 0
+row 59 
  0-99 64 64 0
 screen style b
 row 0  home › style   in plane: g002-sketch-in-plane
@@ -2871,6 +2987,14 @@ row 53     export these objects
  25-99 64 64 0
 row 55 
  0-99 64 64 0
+row 57    Drawn at level 0 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 b 1 0
+ 28-99 64 61 0
+row 59 
+ 0-99 64 64 0
 screen style c
 row 0  home › style   in plane: g002-sketch-in-plane
  0-0 64 64 0
@@ -2976,6 +3100,14 @@ row 53     export these objects
  2-24 64 64 101 c 1 0
  25-99 64 64 0
 row 55 
+ 0-99 64 64 0
+row 57    Drawn at level 0 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 c 1 0
+ 28-99 64 61 0
+row 59 
  0-99 64 64 0
 screen style d
 row 0  home › style   in plane: g002-sketch-in-plane
@@ -3083,6 +3215,14 @@ row 53     export these objects
  25-99 64 64 0
 row 55 
  0-99 64 64 0
+row 57    Drawn at level 0 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 d 1 0
+ 28-99 64 61 0
+row 59 
+ 0-99 64 64 0
 screen style e
 row 0  home › style   in plane: g002-sketch-in-plane
  0-0 64 64 0
@@ -3188,6 +3328,14 @@ row 53     export these objects
  2-24 64 64 101 e 1 0
  25-99 64 64 0
 row 55 
+ 0-99 64 64 0
+row 57    Drawn at level 1 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 e 1 0
+ 28-99 64 61 0
+row 59 
  0-99 64 64 0
 screen style f
 row 0  home › style   in plane: g002-sketch-in-plane
@@ -3295,6 +3443,14 @@ row 53     export these objects
  25-99 64 64 0
 row 55 
  0-99 64 64 0
+row 57    Drawn at level 5 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 f 1 0
+ 28-99 64 61 0
+row 59 
+ 0-99 64 64 0
 screen style 10
 row 0  home › style   in plane: g002-sketch-in-plane
  0-0 64 64 0
@@ -3400,6 +3556,14 @@ row 53     export these objects
  2-24 64 64 101 10 1 0
  25-99 64 64 0
 row 55 
+ 0-99 64 64 0
+row 57    Drawn at level 1 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 10 1 0
+ 28-99 64 61 0
+row 59 
  0-99 64 64 0
 screen view
 row 0  home › view   in plane: g002-sketch-in-plane
@@ -7952,11 +8116,19 @@ row 73     export these objects
  25-99 64 64 0
 row 75 
  0-99 64 64 0
-row 77 To assign lines or curves to this style,
+row 77    Drawn at level 4 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 100 1 0
+ 28-99 64 61 0
+row 79 
  0-99 64 64 0
-row 79 right-click them on the drawing.
+row 81 To assign lines or curves to this style,
  0-99 64 64 0
-row 81 
+row 83 right-click them on the drawing.
+ 0-99 64 64 0
+row 85 
  0-99 64 64 0
 screen styles with custom
 row 0  home › line styles   in plane: g002-sketch-in-plane

@@ -63,47 +63,61 @@ row 22        [own radius]
  19-99 64 61 0
 row 24 
  0-99 64 64 0
-row 26    show entities from this group
+row 26    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 28 
+ 0-99 64 64 0
+row 30    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 28    suppress this group and the groups that use it
+row 32    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 30    force NURBS surfaces to triangle mesh
+row 34    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 33    relax constraints and dimensions
+row 37    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 35    allow redundant constraints
+row 39    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 37    suppress dof calculation (improves solver performance)
+row 41    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 39    treat all dimensions as reference
+row 43    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 41 
+row 45 
  0-99 64 64 0
-row 43  requests in group
+row 47  requests in group
  0-99 74 64 0
-row 45    (none)
+row 49    (none)
  0-99 64 61 0
-row 47 
+row 51 
  0-99 64 64 0
-row 49  constraints in group (0 DOF)
+row 53  constraints in group (0 DOF)
  0-99 74 64 0
-row 51    (none)
+row 55    (none)
  0-99 64 61 0
-row 53 
+row 57 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 36\nVolume: 74.87 cm³\nCenter of mass: (-2.00, 7.00, 39.99)\nExtent: 36.00 x 26.00 x 80.00
 row 0  home › g004-fillet   drawing / constraining in 3d
@@ -163,46 +177,60 @@ row 22        [own radius]
  19-99 64 61 0
 row 24 
  0-99 64 64 0
-row 26    show entities from this group
+row 26    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 28 
+ 0-99 64 64 0
+row 30    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 28    suppress this group and the groups that use it
+row 32    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 30    force NURBS surfaces to triangle mesh
+row 34    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 33    relax constraints and dimensions
+row 37    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 35    allow redundant constraints
+row 39    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 37    suppress dof calculation (improves solver performance)
+row 41    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 39    treat all dimensions as reference
+row 43    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 41 
+row 45 
  0-99 64 64 0
-row 43  requests in group
+row 47  requests in group
  0-99 74 64 0
-row 45    (none)
+row 49    (none)
  0-99 64 61 0
-row 47 
+row 51 
  0-99 64 64 0
-row 49  constraints in group (0 DOF)
+row 53  constraints in group (0 DOF)
  0-99 74 64 0
-row 51    (none)
+row 55    (none)
  0-99 64 61 0
-row 53 
+row 57 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 36\nVolume: 74.82 cm³\nCenter of mass: (-2.01, 6.99, 39.97)\nExtent: 36.00 x 26.00 x 80.00

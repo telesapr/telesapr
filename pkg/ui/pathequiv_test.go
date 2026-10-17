@@ -92,6 +92,12 @@ func TestPathEquivalenceSuppressAll(t *testing.T) {
 	requireSamePaths(t, "path_suppress_all", "path_suppress_all")
 }
 
+// A group's solve options set through its screen, and by a script: the
+// flags reach the same fields either way.
+func TestPathEquivalenceGroupSolve(t *testing.T) {
+	requireSamePaths(t, "path_group_solve", "path_group_solve")
+}
+
 // An inch document made through View > Dimension Units, and by a
 // script: the file's units line comes from either.
 func TestPathEquivalenceUnits(t *testing.T) {
@@ -385,6 +391,22 @@ func TestPathEquivalenceNudge(t *testing.T) {
 	}
 }
 
+// A diagonal dimension added to a rectangle that has its width and
+// height is a reference dimension, made with the mouse and by a script
+// alike, and the group solves.
+func TestPathEquivalenceRedundantDimension(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_redundant_dimension", "path_redundant_dimension")
+	refs := 0
+	for i := range ui.Constraints {
+		if ui.Constraints[i].Reference {
+			refs++
+		}
+	}
+	if refs != 1 {
+		t.Errorf("%d reference dimensions, want 1", refs)
+	}
+}
+
 // A dimension named in its label's editor and read by name in another
 // one's, and the same made by a script (roadmap 16.1).
 func TestPathEquivalenceDimensionName(t *testing.T) {
@@ -552,5 +574,61 @@ func TestPathEquivalenceDrawingFaces(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_drawing_faces", "path_drawing_faces")
 	if ui.Drawing == nil || len(ui.Drawing.Dimensions) != 1 || len(ui.Drawing.Dimensions[0].Faces) != 1 {
 		t.Errorf("the interface's drawing: %+v", ui.Drawing)
+	}
+}
+
+// A projected distance and two equal angles, made with the mouse and
+// the Constrain menu, and by a script.
+func TestPathEquivalenceEqual(t *testing.T) {
+	requireSamePaths(t, "path_equal", "path_equal")
+}
+
+// A point as far from a line segment as another line segment is long,
+// made with the mouse and the Constrain menu, and by a script.
+func TestPathEquivalenceEqualLength(t *testing.T) {
+	requireSamePaths(t, "path_equal_length", "path_equal_length")
+}
+
+// How far one point is from another along a line segment, made with the
+// mouse and the Constrain menu, and by a script.
+func TestPathEquivalenceProjectedDistance(t *testing.T) {
+	requireSamePaths(t, "path_projected_distance", "path_projected_distance")
+}
+
+// A custom line style drawn at a level of its own, made on the styles
+// screen, and by a script.
+func TestPathEquivalenceStyle(t *testing.T) {
+	requireSamePaths(t, "path_style", "path_style")
+}
+
+// A point and two line segments picked with the mouse and a workplane
+// made through the point parallel to the lines, and the same made by a
+// script.
+func TestPathEquivalenceSketchOnLines(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_sketch_on_lines", "path_sketch_on_lines")
+	g := ui.Group(ui.Active)
+	if g.Type != sketch.GroupDrawingWorkplane || g.Subtype != sketch.GroupWorkplaneByLineSegments || g.Problem.Msg != "" {
+		t.Errorf("the sketch: type %d, subtype %d, problem %q", g.Type, g.Subtype, g.Problem.Msg)
+	}
+}
+
+// A rectangle turned about a construction line with a point chosen
+// with it, which is the axis's point, and the same made by a script.
+func TestPathEquivalenceLathePointAxis(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_lathe_point_axis", "path_lathe_point_axis")
+	g := ui.Group(ui.Active)
+	if g.Type != sketch.GroupLathe || g.Problem.Msg != "" || g.Predef.Origin.V == 0 {
+		t.Errorf("the lathe: type %d, problem %q", g.Type, g.Problem.Msg)
+	}
+}
+
+// The drawing's views chosen and placed on its screen, with a section
+// placed, and the same set by a script.
+func TestPathEquivalenceDrawingViews(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_drawing_views", "path_drawing_views")
+	d := ui.Drawing
+	if d == nil || len(d.Views) != 4 || d.ViewIndex("back") < 0 || d.ViewIndex("iso") >= 0 ||
+		len(d.Sections) != 1 || d.Sections[0].X != 300 {
+		t.Errorf("the drawing: %+v", d)
 	}
 }

@@ -286,7 +286,7 @@ func (gw *graphicsWindow) GroupSelection() {
 		if s.Entity.V != 0 {
 			gs.n++
 			e := sk.Entity(s.Entity)
-			if entityIsStylable(e) {
+			if e.IsStylable() {
 				gs.stylables++
 			}
 			// A list of points, and a list of all entities that aren't
@@ -347,7 +347,7 @@ func (gw *graphicsWindow) GroupSelection() {
 			gs.constraints++
 			gs.constraint = append(gs.constraint, s.Constraint)
 			c := sk.Constraint(s.Constraint)
-			if constraintIsStylable(c) {
+			if c.IsStylable() {
 				gs.stylables++
 			}
 			if c.HasLabel() {

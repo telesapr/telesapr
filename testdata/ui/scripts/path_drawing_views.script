@@ -1,0 +1,46 @@
+# The drawing of ext_drawing_views set on its screen; the same as
+# path_drawing_views.go makes (TestPathEquivalenceDrawingViews).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+menu View|Drawing Sheet...
+twmove 581 221
+twdown L 581 221
+twup L 581 221
+twmove 34 367
+twdown L 34 367
+twup L 34 367
+twmove 34 263
+twdown L 34 263
+twup L 34 263
+twmove 290 245
+twdown L 290 245
+twup L 290 245
+edit 50 100
+twmove 322 284
+twdown L 322 284
+twup L 322 284
+edit 50 180
+twmove 322 346
+twdown L 322 346
+twup L 322 346
+edit 130 100
+twmove 322 263
+twdown L 322 263
+twup L 322 263
+edit 210 150
+twmove 40 419
+twdown L 40 419
+twup L 40 419
+edit top 0
+twmove 180 419
+twdown L 180 419
+twup L 180 419
+edit 300 100
+save

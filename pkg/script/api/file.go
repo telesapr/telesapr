@@ -2,9 +2,12 @@ package api
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/persist/dxf"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
@@ -51,6 +54,17 @@ func (m FileMenu) ExportAs(kind ExportKind, path string) (err error) {
 	return err
 }
 
+// ExportSection writes the section of the active group's solid by a
+// plane as a 2d file (.svg, .dxf, .pdf, ...), as File > Export > 2d
+// Section does. The plane is the section view's (Doc.Group views'
+// SetSection) when it is on, and otherwise the active workplane; its
+// normal is the section's, so a flipped section view lays the section
+// out mirrored. It needs the application's export writers, as the other
+// 2d exports do.
+func (m FileMenu) ExportSection(path string) error {
+	return m.ExportAs(ExportSection, path)
+}
+
 // Render draws the sketch into a PNG file of width by height pixels,
 // fitted to it and seen from "top", "bottom", "left", "right",
 // "front", "back" or "isometric"; or "window", as the application's
@@ -89,4 +103,30 @@ func (m FileMenu) ForgetChanges() {
 		}
 		d.h.Sketch().Unsaved = false
 	})
+}
+
+// ImportDXF adds the entities of a DXF file to the active group, as
+// File > Import does: in the group's workplane, or, when the file has
+// entities off the XY plane, as construction entities in 3d, leaving the
+// workplane (undo brings it back). It returns how many entities of
+// kinds the importer doesn't know were left out. It is one step of undo.
+func (m FileMenu) ImportDXF(path string) (ignored int, err error) {
+	d := m.d
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return 0, fmt.Errorf("reading %s: %w", filepath.Base(path), err)
+	}
+	d.change(func(sk *sketch.Sketch) {
+		scale := sketch.DefaultView().Scale
+		if sk.View != nil {
+			scale = sk.View.Scale
+		}
+		res, ierr := dxf.ImportActive(sk, data, sk.StyleTextHeight(core.HStyle{V: core.StyleConstraint}, scale))
+		if ierr != nil {
+			err = fmt.Errorf("%s: %w", filepath.Base(path), ierr)
+			return
+		}
+		ignored = res.Unknown
+	})
+	return ignored, err
 }

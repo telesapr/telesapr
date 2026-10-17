@@ -5345,6 +5345,7 @@ style 0x100 "@dxf-#ff0000" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x101 "@dxf-#00ff00" {
@@ -5357,6 +5358,7 @@ style 0x101 "@dxf-#00ff00" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x102 "@dxf-h0.1" {
@@ -5369,6 +5371,7 @@ style 0x102 "@dxf-h0.1" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x103 "@dxf-#ffff00-h0.1" {
@@ -5381,6 +5384,7 @@ style 0x103 "@dxf-#ffff00-h0.1" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x104 "@dxf-#ffff00" {
@@ -5393,6 +5397,7 @@ style 0x104 "@dxf-#ffff00" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 value 0x10010 0

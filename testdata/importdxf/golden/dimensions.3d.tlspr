@@ -170,6 +170,7 @@ style 0x100 "@dxf-invisible" {
   fill-color 76 76 76 255
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 value 0x10010 0

@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -50,28 +50,13 @@ func (ss *Application) MenuConstrain(id Command) {
 	newcons := k.newcons
 
 	for _, nc := range newcons {
-		for i := range sk.Constraints {
-			cc := &sk.Constraints[i]
-			// The bases are compared, and not the label or the offset.
-			if nc.H != cc.H && nc.ConstraintBase.Equals(&cc.ConstraintBase) { //nolint:staticcheck // QF1008: the base is named on purpose
-				// Oops, we already have this exact constraint. Remove the
-				// one we just added.
-				sk.RemoveConstraint(nc.H)
-				gw.ClearSelection()
-				// And now select the old one, to give feedback.
-				gw.MakeSelectedConstraint(cc.H)
-				return
-			}
-		}
-
-		// A bound is made at the distance as it stands, where another
-		// bound or a dimension may hold it already; it is a bound still,
-		// which the user's value then moves off the other one.
-		if constraint := sk.Constraint(nc.H); constraint != nil && !constraint.IsInequality() {
-			if how, _ := sk.TestRankForGroup(nc.Group); how == core.SolveRedundantOkay &&
-				!sk.Group(gw.activeGroupH()).AllowRedundant && constraint.HasLabel() {
-				constraint.Reference = true
-			}
+		if old, dup := sk.SettleConstraint(nc.H); dup {
+			// Oops, we already have this exact constraint, and it
+			// removed the one we just added. Select the old one, to
+			// give feedback.
+			gw.ClearSelection()
+			gw.MakeSelectedConstraint(old)
+			return
 		}
 
 		if (id == cmdDistanceDia || id == cmdMinDistance || id == cmdMaxDistance ||
@@ -324,55 +309,15 @@ func (k *constraining) constrainEqual() {
 	gs := k.gs
 	c := k.c
 
+	// The shared classification reads the selection as the scripts do,
+	// whatever order it was picked in; anything in it that is not a
+	// line segment, a circle, an arc or a point makes it a bad one.
 	var pending []core.Constraint
-	switch {
-	case gs.lineSegments >= 2 && gs.lineSegments == gs.n:
-		c.Type = core.ConstraintEqualLengthLines
-		c.EntityA = gs.entity[0]
-		for k := 1; k < len(gs.entity); k++ {
-			c.EntityB = gs.entity[k]
-			pending = append(pending, c)
-		}
-	case gs.lineSegments == 2 && gs.points == 2 && gs.n == 4:
-		c.Type = core.ConstraintEqPtLnDistances
-		c.EntityA = gs.entity[0]
-		c.PtA = gs.point[0]
-		c.EntityB = gs.entity[1]
-		c.PtB = gs.point[1]
-		pending = append(pending, c)
-	case gs.lineSegments == 1 && gs.points == 2 && gs.n == 3:
-		// The same line segment for the distances, but different
-		// points.
-		c.Type = core.ConstraintEqPtLnDistances
-		c.EntityA = gs.entity[0]
-		c.PtA = gs.point[0]
-		c.EntityB = gs.entity[0]
-		c.PtB = gs.point[1]
-		pending = append(pending, c)
-	case gs.lineSegments == 2 && gs.points == 1 && gs.n == 3:
-		c.Type = core.ConstraintEqLenPtLineD
-		c.EntityA = gs.entity[0]
-		c.EntityB = gs.entity[1]
-		c.PtA = gs.point[0]
-		pending = append(pending, c)
-	case gs.circlesOrArcs >= 2 && gs.circlesOrArcs == gs.n:
-		c.Type = core.ConstraintEqualRadius
-		c.EntityA = gs.entity[0]
-		for k := 1; k < len(gs.entity); k++ {
-			c.EntityB = gs.entity[k]
-			pending = append(pending, c)
-		}
-	case gs.arcs == 1 && gs.lineSegments == 1 && gs.n == 2:
-		c.Type = core.ConstraintEqualLineArcLen
-		if sk.Entity(gs.entity[0]).Type == core.EntityArcOfCircle {
-			c.EntityA = gs.entity[1]
-			c.EntityB = gs.entity[0]
-		} else {
-			c.EntityA = gs.entity[0]
-			c.EntityB = gs.entity[1]
-		}
-		pending = append(pending, c)
-	default:
+	if gs.n == len(gs.entity)+len(gs.point) {
+		es := append(slices.Clone(gs.entity), gs.point...)
+		pending, _ = sk.EqualConstraints(c, es)
+	}
+	if len(pending) == 0 {
 		k.errorf("Bad selection for equal length / radius constraint. " +
 			"This constraint can apply to:\n\n" +
 			"    * two or more line segments (equal length)\n" +
@@ -459,24 +404,26 @@ func (k *constraining) constrainAtMidpoint() {
 	c := k.c
 
 	switch {
-	case gs.lineSegments == 1 && gs.points == 1 && gs.n == 2:
-		c.Type = core.ConstraintAtMidpoint
-		c.EntityA = gs.entity[0]
-		c.PtA = gs.point[0]
+	case gs.lineSegments == 1 && (gs.points == 1 || gs.workplanes == 1) && gs.n == 2:
+		var line, other core.HEntity
+		switch {
+		case gs.points == 1:
+			line, other = gs.entity[0], gs.point[0]
+		case sk.Entity(gs.entity[0]).IsWorkplane():
+			line, other = gs.entity[1], gs.entity[0]
+		default:
+			line, other = gs.entity[0], gs.entity[1]
+		}
+		nc, implied, err := sk.MidpointConstraint(c, line, other)
+		if err != nil {
+			ss.Report(err)
+			return
+		}
 		// If a point is at-midpoint, then no reason to also constrain
 		// it on-line; so auto-remove that. Handle as one undo group.
 		ss.UndoRemember()
-		sk.DeleteAllConstraintsFor(core.ConstraintPtOnLine, c.EntityA, c.PtA)
-		k.add(c, false)
-	case gs.lineSegments == 1 && gs.workplanes == 1 && gs.n == 2:
-		c.Type = core.ConstraintAtMidpoint
-		i := 0
-		if sk.Entity(gs.entity[0]).IsWorkplane() {
-			i = 1
-		}
-		c.EntityA = gs.entity[i]
-		c.EntityB = gs.entity[1-i]
-		k.add(c, true)
+		sk.DeleteImplied(implied)
+		k.add(nc, false)
 	default:
 		k.errorf("Bad selection for at midpoint constraint. This " +
 			"constraint can apply to:\n\n" +
@@ -494,40 +441,30 @@ func (k *constraining) constrainSymmetric() {
 	gs := k.gs
 	c := k.c
 
+	// a and b are the points, or a is the line segment, and about is
+	// what they are symmetric about.
+	var a, b, about core.HEntity
 	switch {
 	case gs.points == 2 && ((gs.workplanes == 1 && gs.n == 3) || gs.n == 2):
 		if gs.entities > 0 {
-			c.EntityA = gs.entity[0]
+			about = gs.entity[0]
 		}
-		c.PtA = gs.point[0]
-		c.PtB = gs.point[1]
-		c.Type = core.ConstraintSymmetric
+		a, b = gs.point[0], gs.point[1]
 	case gs.lineSegments == 1 && ((gs.workplanes == 1 && gs.n == 2) || gs.n == 1):
-		var line *core.Entity
 		if sk.Entity(gs.entity[0]).IsWorkplane() {
-			line = sk.Entity(gs.entity[1])
-			c.EntityA = gs.entity[0]
+			a, about = gs.entity[1], gs.entity[0]
 		} else {
-			line = sk.Entity(gs.entity[0])
+			a = gs.entity[0]
 		}
-		c.PtA = line.Point[0]
-		c.PtB = line.Point[1]
-		c.Type = core.ConstraintSymmetric
 	case gw.LockedInWorkplane() && gs.lineSegments == 2 && gs.n == 2:
 		l0 := sk.Entity(gs.entity[0])
 		l1 := sk.Entity(gs.entity[1])
 		if l1.Group != gw.activeGroupH() || (l1.Construction && !l0.Construction) {
 			l0, l1 = l1, l0
 		}
-		c.PtA = l1.Point[0]
-		c.PtB = l1.Point[1]
-		c.EntityA = l0.H
-		c.Type = core.ConstraintSymmetricLine
+		a, about = l1.H, l0.H
 	case gw.LockedInWorkplane() && gs.lineSegments == 1 && gs.points == 2 && gs.n == 3:
-		c.PtA = gs.point[0]
-		c.PtB = gs.point[1]
-		c.EntityA = gs.entity[0]
-		c.Type = core.ConstraintSymmetricLine
+		a, b, about = gs.point[0], gs.point[1], gs.entity[0]
 	default:
 		k.errorf("Bad selection for symmetric constraint. This constraint " +
 			"can apply to:\n\n" +
@@ -539,37 +476,28 @@ func (k *constraining) constrainSymmetric() {
 			"(symmetric about workplane)\n")
 		return
 	}
-	// We may remove constraints so remember manually
-	if c.EntityA == core.NoEntity {
+	if about == core.NoEntity && core.IsFreeIn3D(c.Workplane) {
 		// Horizontal / vertical symmetry, implicit symmetry plane normal
 		// to the workplane
-		if core.IsFreeIn3D(c.Workplane) {
-			k.errorf("A workplane must be active when constraining " +
-				"symmetric without an explicit symmetry plane.")
-			return
-		}
-		pa := sk.Entity(c.PtA).PointGetNum(sk)
-		pb := sk.Entity(c.PtB).PointGetNum(sk)
-		dp := pa.Minus(pb)
-		norm := sk.Entity(c.Workplane).NormalEntity(sk)
-		u, v := norm.NormalU(sk), norm.NormalV(sk)
-		if math.Abs(dp.Dot(u)) > math.Abs(dp.Dot(v)) {
-			c.Type = core.ConstraintSymmetricHoriz
-		} else {
-			c.Type = core.ConstraintSymmetricVert
-		}
-		if gs.lineSegments == 1 {
-			// If this line segment is already constrained horiz or
-			// vert, then auto-remove that redundant constraint. Handle
-			// as one undo group.
-			ss.UndoRemember()
-			sk.DeleteAllConstraintsFor(core.ConstraintHorizontal, gs.entity[0], core.NoEntity)
-			sk.DeleteAllConstraintsFor(core.ConstraintVertical, gs.entity[0], core.NoEntity)
-			k.add(c, false)
-			return
-		}
+		k.errorf("A workplane must be active when constraining " +
+			"symmetric without an explicit symmetry plane.")
+		return
 	}
-	k.add(c, true)
+	nc, implied, err := sk.SymmetricConstraint(c, a, b, about)
+	if err != nil {
+		ss.Report(err)
+		return
+	}
+	if len(implied) > 0 {
+		// If this line segment is already constrained horiz or vert,
+		// then auto-remove that redundant constraint. Handle as one
+		// undo group.
+		ss.UndoRemember()
+		sk.DeleteImplied(implied)
+		k.add(nc, false)
+		return
+	}
+	k.add(nc, true)
 }
 
 // constrainHorizontalOrVertical adds the constraint of cmdVertical, cmdHorizontal.
@@ -756,73 +684,46 @@ func (k *constraining) constrainParallel() {
 	var pending []core.Constraint
 	switch {
 	case gs.faces == 2 && gs.n == 2:
-		c.Type = core.ConstraintParallel
-		c.EntityA = gs.face[0]
-		c.EntityB = gs.face[1]
-		pending = append(pending, c)
+		nc, err := sk.ParallelConstraint(c, gs.face[0], gs.face[1])
+		if err != nil {
+			ss.Report(err)
+			return
+		}
+		pending = append(pending, nc)
 	case gs.vectors > 1 && gs.vectors == gs.n:
-		c.Type = core.ConstraintParallel
-		c.EntityA = gs.vector[0]
 		for k := 1; k < len(gs.vector); k++ {
-			c.EntityB = gs.vector[k]
-			pending = append(pending, c)
+			nc, err := sk.ParallelConstraint(c, gs.vector[0], gs.vector[k])
+			if err != nil {
+				ss.Report(err)
+				return
+			}
+			pending = append(pending, nc)
 		}
 	case gs.lineSegments == 1 && gs.arcs == 1 && (gs.n == 2 || (gs.points == 1 && gs.n == 3)):
-		line := sk.Entity(gs.entity[0])
-		arc := sk.Entity(gs.entity[1])
-		if line.Type == core.EntityArcOfCircle {
-			line, arc = arc, line
-		}
-		var ep *core.Entity
-		if gs.points == 1 {
-			ep = sk.Entity(gs.point[0])
-		}
-		if err := sk.ConstrainArcLineTangent(&c, line, arc, ep); err != nil {
+		nc, err := sk.TangentConstraint(c, gs.entity[0], gs.entity[1], gs.point[:gs.points]...)
+		if err != nil {
 			ss.Report(err)
 			return
 		}
-		c.Type = core.ConstraintArcLineTangent
-		c.EntityA = arc.H
-		c.EntityB = line.H
-		pending = append(pending, c)
+		pending = append(pending, nc)
 	case gs.lineSegments == 1 && gs.cubics == 1 && (gs.n == 2 || (gs.points == 1 && gs.n == 3)):
-		line := sk.Entity(gs.entity[0])
-		cubic := sk.Entity(gs.entity[1])
-		if line.Type == core.EntityCubic {
-			line, cubic = cubic, line
-		}
-		var ep *core.Entity
-		if gs.points == 1 {
-			ep = sk.Entity(gs.point[0])
-		}
-		if err := sk.ConstrainCubicLineTangent(&c, line, cubic, ep); err != nil {
+		nc, err := sk.TangentConstraint(c, gs.entity[0], gs.entity[1], gs.point[:gs.points]...)
+		if err != nil {
 			ss.Report(err)
 			return
 		}
-		c.Type = core.ConstraintCubicLineTangent
-		c.EntityA = cubic.H
-		c.EntityB = line.H
-		pending = append(pending, c)
+		pending = append(pending, nc)
 	case gs.cubics+gs.arcs == 2 && (gs.n == 2 || (gs.points == 2 && gs.n == 4)):
 		if !gw.LockedInWorkplane() {
 			k.errorf("Curve-curve tangency must apply in workplane.")
 			return
 		}
-		eA := sk.Entity(gs.entity[0])
-		eB := sk.Entity(gs.entity[1])
-		var epA, epB *core.Entity
-		if gs.points == 2 {
-			epA = sk.Entity(gs.point[0])
-			epB = sk.Entity(gs.point[1])
-		}
-		if err := sk.ConstrainCurveCurveTangent(&c, eA, eB, epA, epB); err != nil {
+		nc, err := sk.TangentConstraint(c, gs.entity[0], gs.entity[1], gs.point[:gs.points]...)
+		if err != nil {
 			ss.Report(err)
 			return
 		}
-		c.Type = core.ConstraintCurveCurveTangent
-		c.EntityA = eA.H
-		c.EntityB = eB.H
-		pending = append(pending, c)
+		pending = append(pending, nc)
 	default:
 		k.errorf("Bad selection for parallel / tangent constraint. This " +
 			"constraint can apply to:\n\n" +
@@ -847,15 +748,12 @@ func (k *constraining) constrainPerpendicular() {
 	gs := k.gs
 	c := k.c
 
+	var a, b core.HEntity
 	switch {
 	case gs.faces == 2 && gs.n == 2:
-		c.Type = core.ConstraintPerpendicular
-		c.EntityA = gs.face[0]
-		c.EntityB = gs.face[1]
+		a, b = gs.face[0], gs.face[1]
 	case gs.vectors == 2 && gs.n == 2:
-		c.Type = core.ConstraintPerpendicular
-		c.EntityA = gs.vector[0]
-		c.EntityB = gs.vector[1]
+		a, b = gs.vector[0], gs.vector[1]
 	default:
 		k.errorf("Bad selection for perpendicular constraint. This " +
 			"constraint can apply to:\n\n" +
@@ -865,7 +763,12 @@ func (k *constraining) constrainPerpendicular() {
 			"    * two normals\n")
 		return
 	}
-	k.add(c, true)
+	nc, err := k.sk.PerpendicularConstraint(c, a, b)
+	if err != nil {
+		k.ss.Report(err)
+		return
+	}
+	k.add(nc, true)
 }
 
 // constrainWhereDragged adds the constraint of cmdWhereDragged.
@@ -893,12 +796,14 @@ func (k *constraining) constrainComment() {
 	c := k.c
 
 	if gs.points == 1 && gs.n == 1 {
-		c.Type = core.ConstraintComment
-		c.PtA = gs.point[0]
 		c.Group = gw.activeGroupH()
 		c.Workplane = gw.ActiveWorkplane()
-		c.Comment = "NEW COMMENT -- DOUBLE-CLICK TO EDIT"
-		k.add(c, true)
+		nc, err := k.sk.CommentConstraint(c, gs.point[0], "NEW COMMENT -- DOUBLE-CLICK TO EDIT")
+		if err != nil {
+			ss.Report(err)
+			return
+		}
+		k.add(nc, true)
 	} else {
 		gw.pending.operation = pendingCommand
 		gw.pending.command = cmdComment

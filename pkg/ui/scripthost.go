@@ -311,6 +311,8 @@ func (h *ScriptHost) Export(kind api.ExportKind, path string) error {
 			xerr = ss.ExportViewOrWireframeTo(path, true)
 		case api.ExportSurfaces:
 			xerr = ss.ExportSurfacesTo(path)
+		case api.ExportSection:
+			xerr = ss.ExportSectionHere(path)
 		default:
 			xerr = fmt.Errorf("nothing to export as %d", kind)
 		}

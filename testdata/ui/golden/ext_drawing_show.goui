@@ -41,56 +41,61 @@ row 18     hidden edges, dashed
  0-2 64 61 0
  3-24 64 61 104 0 1 0
  25-99 64 61 0
-row 21    sections and details
+row 21    views  the standard ones, placed automatically [choose and place them]
+ 0-7 74 64 0
+ 8-49 64 64 0
+ 50-72 6c 64 86 0 1 0
+ 73-99 64 64 0
+row 24    sections and details
  0-22 74 64 0
  23-99 64 64 0
-row 23    [add a section]   (type: view offset, as front 0)
+row 26    [add a section]   (type: view offset, as front 0)
  0-2 64 64 0
  3-17 6c 64 97 0 1 0
  18-99 64 64 0
-row 25    [add a detail]   (type: view x y radius times, as front 10 5 8 2)
+row 28    [add a detail]   (type: view x y radius times, as front 10 5 8 2)
  0-2 64 64 0
  3-16 6c 64 100 0 1 0
  17-99 64 64 0
-row 28    dimensions
+row 31    dimensions
  0-12 74 64 0
  13-99 64 64 0
-row 30    [dimension the selected edges or faces]   (type: view kind, as front length)
+row 33    [dimension the selected edges or faces]   (type: view kind, as front length)
  0-2 64 64 0
  3-41 6c 64 109 0 1 0
  42-99 64 64 0
-row 33    title block
+row 36    title block
  0-13 74 64 0
  14-99 64 64 0
-row 35    title        - [change]
+row 38    title        - [change]
  0-17 64 61 0
  18-25 6c 61 49 0 1 0
  26-99 64 61 0
-row 37    drawn by     - [change]
+row 40    drawn by     - [change]
  0-17 64 64 0
  18-25 6c 64 50 0 1 0
  26-99 64 64 0
-row 39    drawing no.  - [change]
+row 42    drawing no.  - [change]
  0-17 64 61 0
  18-25 6c 61 51 0 1 0
  26-99 64 61 0
-row 41    revision     - [change]
+row 44    revision     - [change]
  0-17 64 64 0
  18-25 6c 64 52 0 1 0
  26-99 64 64 0
-row 43    material     - [change]
+row 46    material     - [change]
  0-17 64 61 0
  18-25 6c 61 53 0 1 0
  26-99 64 61 0
-row 45    company      - [change]
+row 48    company      - [change]
  0-17 64 64 0
  18-25 6c 64 54 0 1 0
  26-99 64 64 0
-row 48 (back to the groups)
+row 51 (back to the groups)
  0-0 64 64 0
  1-18 6c 64 108 0 1 0
  19-99 64 64 0
-row 50 
+row 53 
  0-99 64 64 0
 row 0  home › drawing sheet   drawing / constraining in 3d
  0-0 64 64 0
@@ -135,56 +140,61 @@ row 18     hidden edges, dashed
  0-2 64 61 0
  3-24 64 61 104 0 1 0
  25-99 64 61 0
-row 21    sections and details
+row 21    views  the standard ones, placed automatically [choose and place them]
+ 0-7 74 64 0
+ 8-49 64 64 0
+ 50-72 6c 64 86 0 1 0
+ 73-99 64 64 0
+row 24    sections and details
  0-22 74 64 0
  23-99 64 64 0
-row 23    [add a section]   (type: view offset, as front 0)
+row 26    [add a section]   (type: view offset, as front 0)
  0-2 64 64 0
  3-17 6c 64 97 0 1 0
  18-99 64 64 0
-row 25    [add a detail]   (type: view x y radius times, as front 10 5 8 2)
+row 28    [add a detail]   (type: view x y radius times, as front 10 5 8 2)
  0-2 64 64 0
  3-16 6c 64 100 0 1 0
  17-99 64 64 0
-row 28    dimensions
+row 31    dimensions
  0-12 74 64 0
  13-99 64 64 0
-row 30    [dimension the selected edges or faces]   (type: view kind, as front length)
+row 33    [dimension the selected edges or faces]   (type: view kind, as front length)
  0-2 64 64 0
  3-41 6c 64 109 0 1 0
  42-99 64 64 0
-row 33    title block
+row 36    title block
  0-13 74 64 0
  14-99 64 64 0
-row 35    title        - [change]
+row 38    title        - [change]
  0-17 64 61 0
  18-25 6c 61 49 0 1 0
  26-99 64 61 0
-row 37    drawn by     - [change]
+row 40    drawn by     - [change]
  0-17 64 64 0
  18-25 6c 64 50 0 1 0
  26-99 64 64 0
-row 39    drawing no.  - [change]
+row 42    drawing no.  - [change]
  0-17 64 61 0
  18-25 6c 61 51 0 1 0
  26-99 64 61 0
-row 41    revision     - [change]
+row 44    revision     - [change]
  0-17 64 64 0
  18-25 6c 64 52 0 1 0
  26-99 64 64 0
-row 43    material     - [change]
+row 46    material     - [change]
  0-17 64 61 0
  18-25 6c 61 53 0 1 0
  26-99 64 61 0
-row 45    company      - [change]
+row 48    company      - [change]
  0-17 64 64 0
  18-25 6c 64 54 0 1 0
  26-99 64 64 0
-row 48 (back to the groups)
+row 51 (back to the groups)
  0-0 64 64 0
  1-18 6c 64 108 0 1 0
  19-99 64 64 0
-row 50 
+row 53 
  0-99 64 64 0
 save
 telesapr 2

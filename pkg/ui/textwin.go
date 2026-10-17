@@ -117,6 +117,7 @@ const (
 	editStyleName          Edit = 505
 	editBackgroundColor    Edit = 506
 	editStyleStipplePeriod Edit = 508
+	editStyleZIndex        Edit = 509
 	// For paste transforming
 	editPasteTimesRepeated Edit = 600
 	editPasteAngle         Edit = 601
@@ -158,6 +159,7 @@ const (
 	editDrawingSection   Edit = 922
 	editDrawingDetail    Edit = 923
 	editDrawingDimension Edit = 924
+	editDrawingPlace     Edit = 925 // where a view, section or detail goes on the sheet
 	// For the command search (an extension)
 	editCommandQuery Edit = 920
 	// For the section view (an extension)

@@ -166,6 +166,10 @@ func (tw *textWindow) ShowParameters() {
 		if p.Err != "" {
 			tw.Printf(false, "%Bp   %Fx! %s%E", bg, p.Err)
 		}
+		// What names it, which is also why it can't be deleted.
+		if users := sk.ParameterUsers(p.Name); len(users) > 0 {
+			tw.Printf(false, "%Bp   %Fd  used by %s%E", bg, strings.Join(users, ", "))
+		}
 	}
 	tw.Printf(true, "   %Fl%La%f[add a parameter]%E   (type: name = expression)", lf(tw.ScreenChangeParameter))
 

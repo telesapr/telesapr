@@ -90,6 +90,61 @@ func (m EditMenu) SetChordTolerance(pct float64) {
 	})
 }
 
+// SetMaxSegments sets the most straight pieces a curve is cut into
+// when meshes are made, from 7 to 1000 (20 unless set), and
+// regenerates everything. In the application it is the setting
+// "max piecewise linear segments" of Configuration. The pieces
+// exported files cut curves into are ExportOptions.MaxSegments.
+func (m EditMenu) SetMaxSegments(n int) {
+	d := m.d
+	if n < MinSegments || n > MaxSegmentsLimit {
+		fail("max segments must be %d to %d, not %d", MinSegments, MaxSegmentsLimit, n)
+	}
+	d.h.Run(func() {
+		d.h.SetMaxSegments(n)
+		for i := range d.h.Sketch().Groups {
+			d.h.Sketch().Groups[i].Clean = false
+		}
+		d.h.Sketch().ScheduleGenerateAll()
+		d.h.Regenerate()
+	})
+}
+
+// SetCheckClosedContour sets whether the closed loops of a sketch are
+// checked for crossing themselves (on unless set; the check is slow),
+// and regenerates everything. A loop that crosses itself is a problem
+// on the group that uses it only while this is on; a loop that is not
+// closed always is. In the application it is the setting "check
+// closed contour" of Configuration, kept with the application and not
+// in the file.
+func (m EditMenu) SetCheckClosedContour(on bool) {
+	d := m.d
+	d.h.Run(func() {
+		d.h.SetCheckClosedContour(on)
+		for i := range d.h.Sketch().Groups {
+			d.h.Sketch().Groups[i].Clean = false
+		}
+		d.h.Sketch().ScheduleGenerateAll()
+		d.h.Regenerate()
+	})
+}
+
+// CheckClosedContour is whether the closed loops of a sketch are
+// checked for crossing themselves.
+func (m EditMenu) CheckClosedContour() (on bool) {
+	d := m.d
+	d.read(func(sk *sketch.Sketch) { on = sk.CheckClosedContour })
+	return on
+}
+
+// MaxSegments is the most straight pieces a curve is cut into when
+// meshes are made.
+func (m EditMenu) MaxSegments() (n int) {
+	d := m.d
+	d.read(func(sk *sketch.Sketch) { n = sk.SegmentLimit() })
+	return n
+}
+
 // ChordTolerance is how closely meshes follow curves, as a percentage
 // of the model's size.
 func (m EditMenu) ChordTolerance() (pct float64) {

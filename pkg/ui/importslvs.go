@@ -133,26 +133,20 @@ func (ss *Application) ImportDxf(filename string) {
 		return
 	}
 
-	asConstruction := true
-	if ss.GW.LockedInWorkplane() {
-		if dxf.Has3D(data) {
-			ss.Message("This %s file contains entities with non-zero Z coordinate; "+
-				"the entire file will be imported as construction entities in 3d.", fileType)
-			ss.GW.SetWorkplaneFreeIn3d()
-			ss.GW.EnsureValidActives()
-		} else {
-			asConstruction = false
-		}
-	}
-
+	// Before the import may leave the workplane, so undo brings it back.
 	ss.UndoRemember()
-	rep, err := dxf.Import(ss.SK, data, dxf.Options{AsConstruction: asConstruction, TextHeight: ss.defaultTextHeight()})
+	res, err := dxf.ImportActive(ss.SK, data, ss.defaultTextHeight())
+	if res.Left3D {
+		ss.Message("This %s file contains entities with non-zero Z coordinate; "+
+			"the entire file will be imported as construction entities in 3d.", fileType)
+		ss.GW.EnsureValidActives()
+	}
 	if err != nil {
 		ss.Error("Corrupted %s file.", fileType)
 		return
 	}
-	if rep.Unknown > 0 {
-		ss.Message("%d %s entities of unknown type were ignored.", rep.Unknown, fileType)
+	if res.Unknown > 0 {
+		ss.Message("%d %s entities of unknown type were ignored.", res.Unknown, fileType)
 	}
 }
 

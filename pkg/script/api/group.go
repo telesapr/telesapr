@@ -151,7 +151,9 @@ func (g Group) Solved() (ok bool) {
 	return ok
 }
 
-// Dof is how many degrees of freedom the group's constraints leave.
+// Dof is how many degrees of freedom the group's constraints leave,
+// or -1 where the group is left out of that count, as SetSuppressDof
+// asks, and where Doc.Describe says the count was not made.
 func (g Group) Dof() (dof int) {
 	g.d.read(func(sk *sketch.Sketch) { dof = g.get(sk).Solved.Dof })
 	return dof
@@ -199,7 +201,9 @@ func (g Group) Constraints() (constraints []Constraint) {
 
 // Param is the group's i-th parameter: for an extrusion, 0 to 2 are
 // the vector to its middle; for a step and repeat translating, the step; for a
-// revolve or a step and repeat rotating, 3 is the angle in radians.
+// revolve or a step and repeat rotating, 3 is the angle in radians; for a linked
+// part, 0 to 2 are its move in mm and 3 to 6 the quaternion (w, x, y, z) of its turn,
+// which LinkGroup.Move, Rotate and SetOrientation set with the group regenerated.
 func (g Group) Param(i int) Param {
 	return Param{g.d, g.H.Param(i)}
 }
@@ -229,6 +233,89 @@ func (g Group) SetVisible(visible bool) {
 	})
 }
 
+// RelaxConstraints reports whether the group's solver keeps only the
+// coincident constraints and lets the rest of the sketch move.
+func (g Group) RelaxConstraints() (on bool) {
+	g.d.read(func(sk *sketch.Sketch) { on = g.get(sk).RelaxConstraints })
+	return on
+}
+
+// SetRelaxConstraints asks the group's solver to keep only the
+// coincident constraints, and to treat every other constraint and
+// dimension as a hint the sketch may not follow, or to require all of
+// them again. A relaxed group solves where it did not, at the cost of
+// the dimensions no longer holding.
+func (g Group) SetRelaxConstraints(on bool) {
+	g.setSolveOption(func(grp *sketch.Group) { grp.RelaxConstraints = on })
+}
+
+// AllowRedundant reports whether the group may solve with redundant
+// constraints left in it.
+func (g Group) AllowRedundant() (on bool) {
+	g.d.read(func(sk *sketch.Sketch) { on = g.get(sk).AllowRedundant })
+	return on
+}
+
+// SetAllowRedundant lets the group solve with redundant constraints in
+// it, or asks for the surplus to be reported as conflicts to remove, as
+// its solve-failure screen does.
+func (g Group) SetAllowRedundant(on bool) {
+	g.setSolveOption(func(grp *sketch.Group) { grp.AllowRedundant = on })
+}
+
+// SuppressDof reports whether the group is left out of the model's
+// count of free parameters, which a large group makes quicker to
+// regenerate.
+func (g Group) SuppressDof() (on bool) {
+	g.d.read(func(sk *sketch.Sketch) { on = g.get(sk).SuppressDofCalculation })
+	return on
+}
+
+// SetSuppressDof leaves the group out of the model's count of free
+// parameters, which a large group makes quicker to regenerate, or puts
+// it back in, so that Group.Dof and the screen report the group again.
+func (g Group) SetSuppressDof(on bool) {
+	g.setSolveOption(func(grp *sketch.Group) { grp.SuppressDofCalculation = on })
+}
+
+// AllDimsReference reports whether every dimension in the group is
+// measured without holding the sketch.
+func (g Group) AllDimsReference() (on bool) {
+	g.d.read(func(sk *sketch.Sketch) { on = g.get(sk).AllDimsReference })
+	return on
+}
+
+// SetAllDimsReference turns every dimension in the group into a
+// reference dimension, which is measured and shown but does not hold
+// the sketch, or makes them constrain again.
+func (g Group) SetAllDimsReference(on bool) {
+	g.setSolveOption(func(grp *sketch.Group) { grp.AllDimsReference = on })
+}
+
+// ForceToMesh reports whether the group's NURBS surfaces are turned
+// into a triangle mesh.
+func (g Group) ForceToMesh() (on bool) {
+	g.d.read(func(sk *sketch.Sketch) { on = g.get(sk).ForceToMesh })
+	return on
+}
+
+// SetForceToMesh makes the group approximate its NURBS surfaces with a
+// triangle mesh, which an import that carries no such surface needs,
+// or leaves it to keep them. It does nothing where the model is a
+// triangle mesh already.
+func (g Group) SetForceToMesh(on bool) {
+	g.setSolveOption(func(grp *sketch.Group) { grp.ForceToMesh = on })
+}
+
+// setSolveOption changes one of the group's solve options and
+// regenerates, as the group's screen does.
+func (g Group) setSolveOption(set func(grp *sketch.Group)) {
+	g.d.change(func(sk *sketch.Sketch) {
+		set(g.get(sk))
+		sk.MarkGroupDirty(g.H, false)
+	})
+}
+
 // SuppressMode is how much of a group is left out of the model.
 type SuppressMode int
 
@@ -252,7 +339,13 @@ func (g Group) SetSuppress(mode SuppressMode) {
 	g.d.change(func(sk *sketch.Sketch) {
 		group := g.get(sk)
 		if mode != SuppressWhole {
-			group.Suppress = mode == SuppressSolid
+			if mode == SuppressSolid && !group.HasSolidSuppress() {
+				fail("%s has no solid of its own to suppress: a %s makes none or edits the solid so far",
+					groupDescription(group), kindName(group.Type))
+			}
+			if err := sk.SetGroupSuppressSolid(g.H, mode == SuppressSolid); err != nil {
+				fail("%v", err)
+			}
 		}
 		if err := sk.SetSuppressAll(g.H, mode == SuppressWhole); err != nil {
 			fail("%v", err)
@@ -287,21 +380,86 @@ func (g Group) LeftOut() (why string) {
 	return why
 }
 
+// Combine is how the group's solid combines with the solid so far:
+// Union, Difference, Intersection or Assemble. A step and repeat, a
+// mirror or a pattern takes its source group's mode, so this is the
+// source's for those.
+func (g Group) Combine() (how sketch.CombineAs) {
+	g.d.read(func(sk *sketch.Sketch) { how = g.get(sk).MeshCombine })
+	return how
+}
+
 // SetCombine says how the group's solid combines with the solid so
-// far: Union, Difference, Intersection or Assemble.
+// far: Union, Difference, Intersection or Assemble. The extrusion keeps
+// the direction the script gave it, where the window turns it round,
+// because a script's depth already says which way a cut goes; a mode
+// that doesn't exist fails. Only an extrusion, lathe, revolve, helix,
+// link, sweep or loft has a mode of its own: the others take their
+// source group's or edit the solid so far, and fail, as the group
+// screen doesn't offer the choice for them.
 func (g Group) SetCombine(how sketch.CombineAs) {
 	g.d.change(func(sk *sketch.Sketch) {
-		g.get(sk).MeshCombine = how
+		group := g.get(sk)
+		if !group.HasCombine() {
+			fail("%s has no combine mode of its own: a %s takes its source group's or edits the solid so far",
+				groupDescription(group), kindName(group.Type))
+		}
+		if err := sk.SetGroupCombine(g.H, how, false); err != nil {
+			fail("%v", err)
+		}
 		sk.MarkGroupDirty(g.H, false)
 	})
 }
 
-// SetColor colours the group's solid; each of red, green and blue is
+// Color is the colour of the group's solid, each of red, green and blue
 // 0 to 255.
+func (g Group) Color() (red, green, blue int) {
+	g.d.read(func(sk *sketch.Sketch) {
+		c := g.get(sk).Color
+		red, green, blue = int(c.Red), int(c.Green), int(c.Blue)
+	})
+	return red, green, blue
+}
+
+// SetColor colours the group's solid; each of red, green and blue is
+// 0 to 255. Its opacity stays. Only an extrusion, lathe, revolve,
+// helix, sweep or loft makes faces of its own colour; a link brings its
+// own, and a step and repeat, mirror, pattern, chamfer, fillet or shell
+// keeps the colours of the solid it works on, so those fail.
 func (g Group) SetColor(red, green, blue int) {
+	if red < 0 || red > 255 || green < 0 || green > 255 || blue < 0 || blue > 255 {
+		fail("a colour is 0 to 255 for each of red, green and blue, not %d, %d, %d", red, green, blue)
+	}
 	g.d.change(func(sk *sketch.Sketch) {
-		g.get(sk).Color = core.NewRGBA(uint8(red), uint8(green), uint8(blue), 255)
-		sk.MarkGroupDirty(g.H, false)
+		group := g.get(sk)
+		if !group.HasColor() {
+			fail("%s has no colour of its own: a %s doesn't colour its solid", groupDescription(group), kindName(group.Type))
+		}
+		if err := sk.SetGroupColor(g.H, core.NewRGBA(uint8(red), uint8(green), uint8(blue), 255)); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
+// Opacity is how opaque the group's solid is, 0 (clear) to 1.
+func (g Group) Opacity() (alpha float64) {
+	g.d.read(func(sk *sketch.Sketch) { alpha = float64(g.get(sk).Color.AlphaF()) })
+	return alpha
+}
+
+// SetOpacity sets how opaque the group's solid is, from 0 (clear) to 1,
+// as the group screen's opacity does. Its colour stays. It fails for a
+// value out of range and for a group with no colour of its own, which
+// SetColor says.
+func (g Group) SetOpacity(alpha float64) {
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		if !group.HasColor() {
+			fail("%s has no colour of its own: a %s doesn't colour its solid", groupDescription(group), kindName(group.Type))
+		}
+		if err := sk.SetGroupOpacity(g.H, alpha); err != nil {
+			fail("%v", err)
+		}
 	})
 }
 
@@ -397,14 +555,19 @@ func workplaneNormal(sk *sketch.Sketch, what string) (core.HEntity, Vec) {
 	return wp, sk.MustEntity(wp).NormalEntity(sk).NormalN(sk)
 }
 
-// axisOf is the point and the direction a line segment gives to turn
-// about.
-func axisOf(sk *sketch.Sketch, axis Entity, what string) (origin, dir core.HEntity) {
-	ent := axis.get(sk)
-	if ent.Type != core.EntityLineSegment {
-		fail("%s turns about a line segment, and %s isn't one", what, axis.describe(sk))
+// axisOf is the point and the direction to turn about: the point and
+// vector given, or, with a zero point, the line segment vector from its
+// first end.
+func axisOf(sk *sketch.Sketch, point, vector Entity, what string) (origin, dir core.HEntity) {
+	vector.get(sk)
+	if point.H.V != 0 {
+		point.get(sk)
 	}
-	return ent.Point[0], axis.H
+	origin, dir, err := sk.TurnAxis(point.H, vector.H)
+	if err != nil {
+		fail("%s: %v", what, err)
+	}
+	return origin, dir
 }
 
 // Conflicts lists the constraints that keep the group from solving,

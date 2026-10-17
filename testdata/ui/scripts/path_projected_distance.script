@@ -1,0 +1,31 @@
+# How far one point is from another along a line segment, made with the
+# mouse and the Constrain menu; the same as path_projected_distance.go
+# makes (TestPathEquivalenceProjectedDistance).
+key p
+move 200 300
+down L 200 300
+up L 200 300
+key esc
+key p
+move 280 290
+down L 280 290
+up L 280 290
+key esc
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 380 200
+down L 380 200
+up L 380 200
+key esc
+move 200 300
+down L 200 300
+up L 200 300
+move 280 290
+down L 280 290
+up L 280 290
+move 290 200
+down L 290 200
+up L 290 200
+menu Constrain|Distance / Diameter

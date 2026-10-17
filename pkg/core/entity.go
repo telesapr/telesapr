@@ -65,7 +65,13 @@ const (
 	EntityTTFText       EntityType = 15000
 	EntityImage         EntityType = 16000
 
-	// Surface entities for generated meshes
+	// The surfaces of SolveSpace's generated meshes. No request here
+	// makes one, and nothing of this program draws or measures it: the
+	// kernel carries its own surfaces (pkg/srf), and an imported solid
+	// arrives as the mesh of its group, not as surface entities. They
+	// are named so that a file carrying them can be read back and
+	// written out again unchanged, which is what
+	// pkg/persist/tlspr/names.go does with the names.
 	EntitySurfaceExtruded EntityType = 20000
 	EntitySurfaceLathed   EntityType = 21000
 	EntitySurfaceRevolved EntityType = 22000
@@ -112,6 +118,13 @@ type Entity struct {
 
 	EdgesChordTol   float64
 	ScreenBBoxValid bool
+}
+
+// IsStylable reports whether the entity can be given a style of its
+// own: points, workplanes and normals are drawn in styles the program
+// chooses. The window and the scripts both ask this.
+func (e *Entity) IsStylable() bool {
+	return !e.IsPoint() && !e.IsWorkplane() && !e.IsNormal()
 }
 
 func (e *Entity) IsPoint() bool {

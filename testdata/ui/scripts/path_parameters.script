@@ -18,9 +18,9 @@ twmove 51 150
 twdown L 51 150
 twup L 51 150
 edit w = k*10
-twmove 51 170
-twdown L 51 170
-twup L 51 170
+twmove 51 190
+twdown L 51 190
+twup L 51 190
 edit h = w/2
 move 290 330
 down L 290 330

@@ -56,4 +56,16 @@ func main() {
 		fail("the line's start is %.3f mm from the spline's end, still joined", d)
 	}
 	fmt.Printf("the line starts at %v, apart from the spline\n", tail.Start().Pos())
+
+	// Closing a spline: it goes round, and its two ends are one, as a
+	// click on the first point closes the one the mouse is drawing.
+	ring := doc.Sketch.Cubic(api.V(0, 0, 0), api.V(20, 0, 0), api.V(20, 20, 0), api.V(0, 20, 0))
+	for _, p := range []api.Vec{api.V(0, 0, 0), api.V(20, 0, 0), api.V(20, 20, 0)} {
+		ring.AddSplinePoint(p)
+	}
+	ring.MakePeriodic()
+	if ring.Kind() != "periodic-cubic" {
+		fail("the spline is a %s, not a closed one", ring.Kind())
+	}
+	fmt.Printf("the spline goes round through %d points\n", len(ring.Points()))
 }

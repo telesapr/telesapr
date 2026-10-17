@@ -1,0 +1,768 @@
+row 0  home › line styles   in plane: g002-sketch-in-plane
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-21 64 64 0
+ 22-31 74 64 0
+ 32-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7  color  style-name
+ 0-99 74 64 0
+row 9         s001-#def-active-grp
+ 0-1 64 61 0
+ 2-4 64 7a ffffffff 0
+ 5-7 64 61 0
+ 8-27 6c 61 108 1 1 0
+ 28-99 64 61 0
+row 11         s002-#def-construction
+ 0-1 64 64 0
+ 2-4 64 7a 19b219ff 0
+ 5-7 64 64 0
+ 8-29 6c 64 108 2 1 0
+ 30-99 64 64 0
+row 13         s003-#def-inactive-grp
+ 0-1 64 61 0
+ 2-4 64 7a 7f4c00ff 0
+ 5-7 64 61 0
+ 8-29 6c 61 108 3 1 0
+ 30-99 64 61 0
+row 15         s004-#def-datum
+ 0-1 64 64 0
+ 2-4 64 7a 00cc00ff 0
+ 5-7 64 64 0
+ 8-22 6c 64 108 4 1 0
+ 23-99 64 64 0
+row 17         s005-#def-solid-edge
+ 0-1 64 61 0
+ 2-4 64 7a ccccccff 0
+ 5-7 64 61 0
+ 8-27 6c 61 108 5 1 0
+ 28-99 64 61 0
+row 19         s006-#def-constraint
+ 0-1 64 64 0
+ 2-4 64 7a ff19ffff 0
+ 5-7 64 64 0
+ 8-27 6c 64 108 6 1 0
+ 28-99 64 64 0
+row 21         s007-#def-selected
+ 0-1 64 61 0
+ 2-4 64 7a ff0000ff 0
+ 5-7 64 61 0
+ 8-25 6c 61 108 7 1 0
+ 26-99 64 61 0
+row 23         s008-#def-hovered
+ 0-1 64 64 0
+ 2-4 64 7a ffff00ff 0
+ 5-7 64 64 0
+ 8-24 6c 64 108 8 1 0
+ 25-99 64 64 0
+row 25         s009-#def-contour-fill
+ 0-1 64 61 0
+ 2-4 64 7a 001919ff 0
+ 5-7 64 61 0
+ 8-29 6c 61 108 9 1 0
+ 30-99 64 61 0
+row 27         s00a-#def-normals
+ 0-1 64 64 0
+ 2-4 64 7a 006666ff 0
+ 5-7 64 64 0
+ 8-24 6c 64 108 a 1 0
+ 25-99 64 64 0
+row 29         s00b-#def-analyze
+ 0-1 64 61 0
+ 2-4 64 7a 00ffffff 0
+ 5-7 64 61 0
+ 8-24 6c 61 108 b 1 0
+ 25-99 64 61 0
+row 31         s00c-#def-draw-error
+ 0-1 64 64 0
+ 2-4 64 7a ff0000ff 0
+ 5-7 64 64 0
+ 8-27 6c 64 108 c 1 0
+ 28-99 64 64 0
+row 33         s00d-#def-dim-solid
+ 0-1 64 61 0
+ 2-4 64 7a 191919ff 0
+ 5-7 64 61 0
+ 8-26 6c 61 108 d 1 0
+ 27-99 64 61 0
+row 35         s00e-#def-hidden-edge
+ 0-1 64 64 0
+ 2-4 64 7a ccccccff 0
+ 5-7 64 64 0
+ 8-28 6c 64 108 e 1 0
+ 29-99 64 64 0
+row 37         s00f-#def-outline
+ 0-1 64 61 0
+ 2-4 64 7a ccccccff 0
+ 5-7 64 61 0
+ 8-24 6c 61 108 f 1 0
+ 25-99 64 61 0
+row 39         s010-#def-section-cap
+ 0-1 64 64 0
+ 2-4 64 7a cd6450ff 0
+ 5-7 64 64 0
+ 8-28 6c 64 108 10 1 0
+ 29-99 64 64 0
+row 42   create a new custom style
+ 0-1 64 64 0
+ 2-26 6c 64 108 0 1 0
+ 27-99 64 64 0
+row 44 
+ 0-99 64 64 0
+row 46  background color (r, g, b)
+ 0-26 74 64 0
+ 27-99 64 64 0
+row 48    0.00, 0.00, 0.00 [change]
+ 0-19 64 61 0
+ 20-27 6c 61 108 30 1 0
+ 28-99 64 61 0
+row 50 
+ 0-99 64 64 0
+row 52   load factory defaults
+ 0-1 64 64 0
+ 2-22 6c 64 108 0 1 0
+ 23-99 64 64 0
+row 54 
+ 0-99 64 64 0
+row 0  home › line styles   in plane: g002-sketch-in-plane
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-21 64 64 0
+ 22-31 74 64 0
+ 32-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7  color  style-name
+ 0-99 74 64 0
+row 9         s001-#def-active-grp
+ 0-1 64 61 0
+ 2-4 64 7a ffffffff 0
+ 5-7 64 61 0
+ 8-27 6c 61 108 1 1 0
+ 28-99 64 61 0
+row 11         s002-#def-construction
+ 0-1 64 64 0
+ 2-4 64 7a 19b219ff 0
+ 5-7 64 64 0
+ 8-29 6c 64 108 2 1 0
+ 30-99 64 64 0
+row 13         s003-#def-inactive-grp
+ 0-1 64 61 0
+ 2-4 64 7a 7f4c00ff 0
+ 5-7 64 61 0
+ 8-29 6c 61 108 3 1 0
+ 30-99 64 61 0
+row 15         s004-#def-datum
+ 0-1 64 64 0
+ 2-4 64 7a 00cc00ff 0
+ 5-7 64 64 0
+ 8-22 6c 64 108 4 1 0
+ 23-99 64 64 0
+row 17         s005-#def-solid-edge
+ 0-1 64 61 0
+ 2-4 64 7a ccccccff 0
+ 5-7 64 61 0
+ 8-27 6c 61 108 5 1 0
+ 28-99 64 61 0
+row 19         s006-#def-constraint
+ 0-1 64 64 0
+ 2-4 64 7a ff19ffff 0
+ 5-7 64 64 0
+ 8-27 6c 64 108 6 1 0
+ 28-99 64 64 0
+row 21         s007-#def-selected
+ 0-1 64 61 0
+ 2-4 64 7a ff0000ff 0
+ 5-7 64 61 0
+ 8-25 6c 61 108 7 1 0
+ 26-99 64 61 0
+row 23         s008-#def-hovered
+ 0-1 64 64 0
+ 2-4 64 7a ffff00ff 0
+ 5-7 64 64 0
+ 8-24 6c 64 108 8 1 0
+ 25-99 64 64 0
+row 25         s009-#def-contour-fill
+ 0-1 64 61 0
+ 2-4 64 7a 001919ff 0
+ 5-7 64 61 0
+ 8-29 6c 61 108 9 1 0
+ 30-99 64 61 0
+row 27         s00a-#def-normals
+ 0-1 64 64 0
+ 2-4 64 7a 006666ff 0
+ 5-7 64 64 0
+ 8-24 6c 64 108 a 1 0
+ 25-99 64 64 0
+row 29         s00b-#def-analyze
+ 0-1 64 61 0
+ 2-4 64 7a 00ffffff 0
+ 5-7 64 61 0
+ 8-24 6c 61 108 b 1 0
+ 25-99 64 61 0
+row 31         s00c-#def-draw-error
+ 0-1 64 64 0
+ 2-4 64 7a ff0000ff 0
+ 5-7 64 64 0
+ 8-27 6c 64 108 c 1 0
+ 28-99 64 64 0
+row 33         s00d-#def-dim-solid
+ 0-1 64 61 0
+ 2-4 64 7a 191919ff 0
+ 5-7 64 61 0
+ 8-26 6c 61 108 d 1 0
+ 27-99 64 61 0
+row 35         s00e-#def-hidden-edge
+ 0-1 64 64 0
+ 2-4 64 7a ccccccff 0
+ 5-7 64 64 0
+ 8-28 6c 64 108 e 1 0
+ 29-99 64 64 0
+row 37         s00f-#def-outline
+ 0-1 64 61 0
+ 2-4 64 7a ccccccff 0
+ 5-7 64 61 0
+ 8-24 6c 61 108 f 1 0
+ 25-99 64 61 0
+row 39         s010-#def-section-cap
+ 0-1 64 64 0
+ 2-4 64 7a cd6450ff 0
+ 5-7 64 64 0
+ 8-28 6c 64 108 10 1 0
+ 29-99 64 64 0
+row 41         s100-new-custom-style
+ 0-1 64 61 0
+ 2-4 64 7a ffffffff 0
+ 5-7 64 61 0
+ 8-28 6c 61 108 100 1 0
+ 29-99 64 61 0
+row 44   create a new custom style
+ 0-1 64 64 0
+ 2-26 6c 64 108 0 1 0
+ 27-99 64 64 0
+row 46 
+ 0-99 64 64 0
+row 48  background color (r, g, b)
+ 0-26 74 64 0
+ 27-99 64 64 0
+row 50    0.00, 0.00, 0.00 [change]
+ 0-19 64 61 0
+ 20-27 6c 61 108 32 1 0
+ 28-99 64 61 0
+row 52 
+ 0-99 64 64 0
+row 54   load factory defaults
+ 0-1 64 64 0
+ 2-22 6c 64 108 0 1 0
+ 23-99 64 64 0
+row 56 
+ 0-99 64 64 0
+row 0  home › style   in plane: g002-sketch-in-plane
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-15 64 64 0
+ 16-25 74 64 0
+ 26-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 (back to list of styles)
+ 0-23 6c 64 108 0 1 0
+ 24-99 64 64 0
+row 10 STYLE  s100-new-custom-style [rename/del]
+ 0-6 74 64 0
+ 7-29 64 64 0
+ 30-35 6c 64 108 100 1 0
+ 36-36 64 64 0
+ 37-39 6c 64 108 100 1 0
+ 40-99 64 64 0
+row 13  line stroke style
+ 0-17 74 64 0
+ 18-99 64 64 0
+row 15    color    (1.00, 1.00, 1.00) [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-10 64 7a ffffffff 0
+ 11-30 64 61 0
+ 31-38 6c 61 115 100 1 0
+ 39-99 64 61 0
+row 17    width 1.50 [change]
+ 0-2 64 64 0
+ 3-7 74 64 0
+ 8-13 64 64 0
+ 14-21 6c 64 87 100 1 0
+ 22-99 64 64 0
+row 19    stipple width 15.00 [change]
+ 0-2 64 61 0
+ 3-15 74 61 0
+ 16-22 64 61 0
+ 23-30 6c 61 115 100 1 0
+ 31-99 64 61 0
+row 21    in units of   pixels   mm
+ 0-2 64 61 0
+ 3-15 74 61 0
+ 16-23 64 61 87 100 1 0
+ 24-25 64 61 0
+ 26-29 64 61 119 100 1 0
+ 30-99 64 61 0
+row 23    stipple type:
+ 0-2 64 61 0
+ 3-15 74 61 0
+ 16-99 64 61 0
+row 25       
+ 0-4 64 64 0
+ 5-17 64 64 1 100 1 0
+ 18-99 64 64 0
+row 27             
+ 0-4 64 61 0
+ 5-17 64 61 2 100 1 0
+ 18-99 64 61 0
+row 29            
+ 0-4 64 64 0
+ 5-17 64 64 3 100 1 0
+ 18-99 64 64 0
+row 31          
+ 0-4 64 61 0
+ 5-17 64 61 4 100 1 0
+ 18-99 64 61 0
+row 33       
+ 0-4 64 64 0
+ 5-17 64 64 5 100 1 0
+ 18-99 64 64 0
+row 35       
+ 0-4 64 61 0
+ 5-17 64 61 6 100 1 0
+ 18-99 64 61 0
+row 37       
+ 0-4 64 64 0
+ 5-17 64 64 7 100 1 0
+ 18-99 64 64 0
+row 39       
+ 0-4 64 61 0
+ 5-17 64 61 8 100 1 0
+ 18-99 64 61 0
+row 41       
+ 0-4 64 64 0
+ 5-17 64 64 9 100 1 0
+ 18-99 64 64 0
+row 43 
+ 0-99 64 64 0
+row 45  contour fill style
+ 0-18 74 64 0
+ 19-99 64 64 0
+row 47    color    (0.30, 0.30, 0.30) [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-10 64 7a 4c4c4cff 0
+ 11-30 64 61 0
+ 31-38 6c 61 102 100 1 0
+ 39-99 64 61 0
+row 49      contours are filled
+ 0-2 64 64 0
+ 3-24 64 64 102 100 1 0
+ 25-99 64 64 0
+row 51 
+ 0-99 64 64 0
+row 53  text style
+ 0-10 74 64 0
+ 11-99 64 64 0
+row 55    height 11.50 [change]
+ 0-2 64 61 0
+ 3-9 74 61 0
+ 10-15 64 61 0
+ 16-23 6c 61 116 100 1 0
+ 24-99 64 61 0
+row 57    in units of   pixels   mm
+ 0-2 64 64 0
+ 3-15 74 64 0
+ 16-23 64 64 71 100 1 0
+ 24-25 64 64 0
+ 26-29 64 64 103 100 1 0
+ 30-99 64 64 0
+row 59    angle 0.00 [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-13 64 61 0
+ 14-21 6c 61 108 100 1 0
+ 22-99 64 61 0
+row 61 
+ 0-99 64 64 0
+row 63  text comment alignment
+ 0-22 74 64 0
+ 23-99 64 64 0
+row 65     left     center   right
+ 0-2 64 61 0
+ 3-8 64 61 76 100 1 0
+ 9-12 64 61 0
+ 13-20 64 61 72 100 1 0
+ 21-22 64 61 0
+ 23-29 64 61 82 100 1 0
+ 30-99 64 61 0
+row 67     bottom   center   top
+ 0-2 64 64 0
+ 3-10 64 64 66 100 1 0
+ 11-12 64 64 0
+ 13-20 64 64 86 100 1 0
+ 21-22 64 64 0
+ 23-27 64 64 84 100 1 0
+ 28-99 64 64 0
+row 69 
+ 0-99 64 64 0
+row 71     show these objects on screen
+ 0-1 64 64 0
+ 2-32 64 64 118 100 1 0
+ 33-99 64 64 0
+row 73     export these objects
+ 0-1 64 64 0
+ 2-24 64 64 101 100 1 0
+ 25-99 64 64 0
+row 75 
+ 0-99 64 64 0
+row 77    Drawn at level 4 [change]
+ 0-2 64 61 0
+ 3-17 74 61 0
+ 18-19 64 61 0
+ 20-27 6c 61 122 100 1 0
+ 28-99 64 61 0
+row 79 
+ 0-99 64 64 0
+row 81 To assign lines or curves to this style,
+ 0-99 64 64 0
+row 83 right-click them on the drawing.
+ 0-99 64 64 0
+row 85 
+ 0-99 64 64 0
+edit no editor
+save
+telesapr 2
+
+units mm
+
+group 0x1 sketch-3d "#references" {
+  color 0 0 0 0
+  visible
+}
+
+group 0x2 sketch-in-plane "sketch-in-plane" {
+  order 1
+  subtype point-ortho
+  workplane 0x80020000
+  color 0 0 0 0
+  predef {
+    q 1 0 0 0
+    origin 0x10001
+  }
+  visible
+}
+
+request 0x1 workplane {
+  group 0x1
+}
+
+request 0x2 workplane {
+  group 0x1
+}
+
+request 0x3 workplane {
+  group 0x1
+}
+
+request 0x4 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x5 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x6 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x7 line-segment {
+  group 0x2
+  workplane 0x80020000
+}
+
+constraint 0x1 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x40001
+  pt-b 0x50002
+}
+
+constraint 0x2 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x50001
+  pt-b 0x60002
+}
+
+constraint 0x3 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x60001
+  pt-b 0x70002
+}
+
+constraint 0x4 pts-coincident {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x70001
+  pt-b 0x40002
+}
+
+constraint 0x5 vertical {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x40000
+}
+
+constraint 0x6 horizontal {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x50000
+}
+
+constraint 0x7 vertical {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x60000
+}
+
+constraint 0x8 horizontal {
+  group 0x2
+  workplane 0x80020000
+  entity-a 0x70000
+}
+
+style 0x100 "new-custom-style" {
+  width 1.5
+  text-height 11.5
+  color 255 255 255 255
+  fill-color 76 76 76 255
+  visible
+  stipple-scale 15
+  z-index 7
+}
+
+value 0x10010 0
+value 0x10011 0
+value 0x10012 0
+value 0x10020 1
+value 0x10021 0
+value 0x10022 0
+value 0x10023 0
+value 0x20010 0
+value 0x20011 0
+value 0x20012 0
+value 0x20020 0.5
+value 0x20021 0.5
+value 0x20022 0.5
+value 0x20023 0.5
+value 0x30010 0
+value 0x30011 0
+value 0x30012 0
+value 0x30020 0.5
+value 0x30021 -0.5
+value 0x30022 -0.5
+value 0x30023 -0.5
+value 0x40010 16
+value 0x40011 -6
+value 0x40013 16
+value 0x40014 20
+value 0x50010 -20
+value 0x50011 -6
+value 0x50013 16
+value 0x50014 -6
+value 0x60010 -20
+value 0x60011 20
+value 0x60013 -20
+value 0x60014 -6
+value 0x70010 16
+value 0x70011 20
+value 0x70013 -20
+value 0x70014 20
+
+entity 0x10000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  normal 0x10020
+  act-visible
+}
+
+entity 0x10001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x10020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x10001
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x20000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  normal 0x20020
+  act-visible
+}
+
+entity 0x20001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x20020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x20001
+  act-normal 0.5 0.5 0.5 0.5
+  act-visible
+}
+
+entity 0x30000 workplane {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  normal 0x30020
+  act-visible
+}
+
+entity 0x30001 point-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  construction
+  act-visible
+}
+
+entity 0x30020 normal-in-3d {
+  group 0x1
+  workplane 0xffffffff
+  points 0x30001
+  act-normal 0.5 -0.5 -0.5 -0.5
+  act-visible
+}
+
+entity 0x40000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x40001 0x40002
+  act-visible
+}
+
+entity 0x40001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 16 -6 0
+  act-visible
+}
+
+entity 0x40002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 16 20 0
+  act-visible
+}
+
+entity 0x50000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x50001 0x50002
+  act-visible
+}
+
+entity 0x50001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -20 -6 0
+  act-visible
+}
+
+entity 0x50002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 16 -6 0
+  act-visible
+}
+
+entity 0x60000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x60001 0x60002
+  act-visible
+}
+
+entity 0x60001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -20 20 0
+  act-visible
+}
+
+entity 0x60002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -20 -6 0
+  act-visible
+}
+
+entity 0x70000 line-segment {
+  group 0x2
+  workplane 0x80020000
+  points 0x70001 0x70002
+  act-visible
+}
+
+entity 0x70001 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point 16 20 0
+  act-visible
+}
+
+entity 0x70002 point-in-2d {
+  group 0x2
+  workplane 0x80020000
+  act-point -20 20 0
+  act-visible
+}
+
+entity 0x80020000 workplane {
+  group 0x2
+  points 0x80020002
+  normal 0x80020001
+  act-visible
+}
+
+entity 0x80020001 normal-n-copy {
+  group 0x2
+  points 0x80020002
+  act-normal 1 0 0 0
+  act-visible
+}
+
+entity 0x80020002 point-n-copy {
+  group 0x2
+  construction
+  act-visible
+}
+end save

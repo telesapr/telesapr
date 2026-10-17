@@ -191,6 +191,7 @@ style 0x100 "@dxf" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x101 "@dxf-h0.5" {
@@ -203,6 +204,7 @@ style 0x101 "@dxf-h0.5" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 value 0x10010 0

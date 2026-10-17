@@ -8,8 +8,12 @@ type Section struct {
 	// On is whether the section view is on; the rest is zero when it
 	// is off.
 	On bool
-	// Plane is the workplane or face the cut is parallel to.
+	// Plane is the workplane or face the cut is parallel to, and
+	// PlaneName is how the section screen names it.
 	Plane Entity
+	// PlaneName names the plane for the user: a workplane by its
+	// request or group, a face by the group it is of.
+	PlaneName string
 	// Offset is the cut's distance from Plane along its normal, as
 	// typed, in the document's unit.
 	Offset string

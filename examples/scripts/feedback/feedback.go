@@ -71,9 +71,15 @@ func main() {
 		fail("the bottom measures %g mm, want 50.8", m.Value)
 	}
 
-	// The top's length contradicts the bottom's: the group no longer
-	// solves, and Conflicts names what could be removed to fix it.
+	// The top's length would over-constrain the rectangle, so it is made
+	// a reference dimension, as the window makes it. Made to drive, it
+	// contradicts the bottom's: the group no longer solves, and
+	// Conflicts names what could be removed to fix it.
 	extra := doc.Constrain.Length(sides[2], 60)
+	if !extra.Reference() {
+		fail("the third length should be made a reference")
+	}
+	extra.SetReference(false)
 	g := doc.Active()
 	fmt.Printf("with a third length, solved: %v\n", g.Solved())
 	conflicts := g.Conflicts()

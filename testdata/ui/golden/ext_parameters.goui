@@ -64,7 +64,9 @@ row 11    len          20           20             [edit] [rename] [delete]
  59-59 64 61 0
  60-67 6c 61 120 0 1 0
  68-99 64 61 0
-row 13    w            5            len/4          [edit] [rename] [delete]
+row 13      used by parameter w
+ 0-99 64 61 0
+row 15    w            5            len/4          [edit] [rename] [delete]
  0-43 64 64 0
  44-49 6c 64 101 1 1 0
  50-50 64 64 0
@@ -72,32 +74,32 @@ row 13    w            5            len/4          [edit] [rename] [delete]
  59-59 64 64 0
  60-67 6c 64 120 1 1 0
  68-99 64 64 0
-row 16    [add a parameter]   (type: name = expression)
+row 18    [add a parameter]   (type: name = expression)
  0-2 64 64 0
  3-19 6c 64 97 0 1 0
  20-99 64 64 0
-row 19 CONFIGURATIONS   (each a set of the expressions above; one may be active)
+row 21 CONFIGURATIONS   (each a set of the expressions above; one may be active)
  0-13 74 64 0
  14-99 64 64 0
-row 21     none   (the table changes alone)
+row 23     none   (the table changes alone)
  0-2 64 61 0
  3-8 6c 61 99 0 1 0
  9-99 64 61 0
-row 23    [add a configuration of the table as it is]   (type its name)
+row 25    [add a configuration of the table as it is]   (type its name)
  0-2 64 64 0
  3-45 6c 64 65 0 1 0
  46-99 64 64 0
-row 25 
+row 27 
  0-99 64 64 0
-row 27    A parameter driving a length counts in the document's unit, mm;
+row 29    A parameter driving a length counts in the document's unit, mm;
  0-99 64 64 0
-row 29    one driving an angle, in degrees.
+row 31    one driving an angle, in degrees.
  0-99 64 64 0
-row 32 (back to the groups)
+row 34 (back to the groups)
  0-0 64 64 0
  1-18 6c 64 108 0 1 0
  19-99 64 64 0
-row 34 
+row 36 
  0-99 64 64 0
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
@@ -167,7 +169,9 @@ row 11    length       40           40             [edit] [rename] [delete]
  59-59 64 61 0
  60-67 6c 61 120 0 1 0
  68-99 64 61 0
-row 13    w            10           length/4       [edit] [rename] [delete]
+row 13      used by parameter w, constraint c001-pt-pt-distance
+ 0-99 64 61 0
+row 15    w            10           length/4       [edit] [rename] [delete]
  0-43 64 64 0
  44-49 6c 64 101 1 1 0
  50-50 64 64 0
@@ -175,32 +179,34 @@ row 13    w            10           length/4       [edit] [rename] [delete]
  59-59 64 64 0
  60-67 6c 64 120 1 1 0
  68-99 64 64 0
-row 16    [add a parameter]   (type: name = expression)
+row 17      used by constraint c001-pt-pt-distance
+ 0-99 64 64 0
+row 20    [add a parameter]   (type: name = expression)
  0-2 64 64 0
  3-19 6c 64 97 0 1 0
  20-99 64 64 0
-row 19 CONFIGURATIONS   (each a set of the expressions above; one may be active)
+row 23 CONFIGURATIONS   (each a set of the expressions above; one may be active)
  0-13 74 64 0
  14-99 64 64 0
-row 21     none   (the table changes alone)
+row 25     none   (the table changes alone)
  0-2 64 61 0
  3-8 6c 61 99 0 1 0
  9-99 64 61 0
-row 23    [add a configuration of the table as it is]   (type its name)
+row 27    [add a configuration of the table as it is]   (type its name)
  0-2 64 64 0
  3-45 6c 64 65 0 1 0
  46-99 64 64 0
-row 25 
+row 29 
  0-99 64 64 0
-row 27    A parameter driving a length counts in the document's unit, mm;
+row 31    A parameter driving a length counts in the document's unit, mm;
  0-99 64 64 0
-row 29    one driving an angle, in degrees.
+row 33    one driving an angle, in degrees.
  0-99 64 64 0
-row 32 (back to the groups)
+row 36 (back to the groups)
  0-0 64 64 0
  1-18 6c 64 108 0 1 0
  19-99 64 64 0
-row 34 
+row 38 
  0-99 64 64 0
 save
 telesapr 2

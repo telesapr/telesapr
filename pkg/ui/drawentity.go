@@ -182,11 +182,6 @@ func (gw *graphicsWindow) entityPositionOfPoint(e *core.Entity, camera *render.C
 	return int(op.Position)
 }
 
-// entityIsStylable is Entity::IsStylable.
-func entityIsStylable(e *core.Entity) bool {
-	return !e.IsPoint() && !e.IsWorkplane() && !e.IsNormal()
-}
-
 func (gw *graphicsWindow) ptCanDrag(pt core.HEntity) bool {
 	p := gw.sk().Entity(pt)
 	// a numeric copy can not move

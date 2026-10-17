@@ -103,7 +103,9 @@ func TestDescribeTrouble(t *testing.T) {
 	d := New()
 	line := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
 	d.Constrain.Length(line, 10)
-	d.Constrain.Length(line, 12)
+	// A second length is a reference where the window would make it one;
+	// the group fails only once it is a driving dimension.
+	d.Constrain.Length(line, 12).SetReference(false)
 	if got := d.Describe(); !strings.Contains(got, "NOT SOLVED") {
 		t.Errorf("two lengths on one line, and the description says:\n%s", got)
 	}

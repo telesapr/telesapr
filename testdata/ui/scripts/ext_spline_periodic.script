@@ -1,0 +1,21 @@
+# A cubic spline closed into a periodic one, by clicking its first point
+# again while the spline tool is still placing points; the same request
+# a script makes with Entity.MakePeriodic.
+key b
+move 150 300
+down L 150 300
+up L 150 300
+move 250 200
+down L 250 200
+up L 250 200
+move 350 400
+down L 350 400
+up L 350 400
+move 450 300
+down L 450 300
+up L 450 300
+move 150 300
+down L 150 300
+up L 150 300
+key esc
+save

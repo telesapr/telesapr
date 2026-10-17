@@ -283,6 +283,11 @@ func (c *ConstraintBase) DescriptionString() string {
 	return fmt.Sprintf("c%03x-%s", c.H.V, s)
 }
 
+// IsStylable reports whether the constraint can be given a style of its
+// own: only a comment can, a dimension is always drawn in the
+// constraint style. The window and the scripts both ask this.
+func (c *Constraint) IsStylable() bool { return c.Type == ConstraintComment }
+
 // StyleOrDefault is the style the constraint is drawn in: its own, or
 // the constraint style.
 func (c *Constraint) StyleOrDefault() HStyle {

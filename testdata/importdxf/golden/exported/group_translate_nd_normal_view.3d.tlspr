@@ -917,6 +917,7 @@ style 0x100 "@dxf-w0.3" {
   visible
   exportable
   stipple-scale 1.6
+  z-index 4
 }
 
 style 0x101 "@dxf-w0.3-#7f3f00" {
@@ -930,6 +931,7 @@ style 0x101 "@dxf-w0.3-#7f3f00" {
   visible
   exportable
   stipple-scale 1.6
+  z-index 4
 }
 
 value 0x10010 0

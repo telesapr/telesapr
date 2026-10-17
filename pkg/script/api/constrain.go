@@ -1,7 +1,7 @@
 package api
 
 import (
-	"math"
+	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/sketch"
@@ -9,7 +9,10 @@ import (
 
 // ConstrainMenu holds the calls of the Constrain menu: the dimensions
 // and constraints that hold a sketch. A script reaches it as
-// doc.Constrain.
+// doc.Constrain. As in the window, a constraint the sketch already has
+// is not added twice (the call returns the old one), and a dimension
+// that would over-constrain the group is made a reference dimension
+// instead, silently, unless the group allows redundant constraints.
 type ConstrainMenu struct{ d *Doc }
 
 // Raw adds a constraint of any type, as the core package names
@@ -52,6 +55,23 @@ func (m ConstrainMenu) Distance(a, b Entity, v float64) Constraint {
 	d := m.d
 	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
 		distanceBetween(sk, c, a, b, v)
+	})
+}
+
+// ProjectedDistance sets how far a is from b measured along the
+// direction of along, a line segment or a normal, as Constrain >
+// Distance / Diameter does for two points and a direction: the
+// distance is taken with its sign, so a negative v puts b on the other
+// side of a from along. It is the distance between two parallel faces
+// to measure, or between a point and a plane's own direction.
+func (m ConstrainMenu) ProjectedDistance(a, b, along Entity, v float64) Constraint {
+	d := m.d
+	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
+		c.Type = core.ConstraintProjPtDistance
+		c.PtA = a.must(sk, "a point", isPoint)
+		c.PtB = b.must(sk, "a point", isPoint)
+		c.EntityA = along.must(sk, "a line segment or a normal", hasVector)
+		dimension(sk, c, v)
 	})
 }
 
@@ -133,38 +153,96 @@ func (m ConstrainMenu) Vertical(lineOrPoints ...Entity) Constraint {
 	return d.inWorkplane(core.ConstraintVertical, "Vertical", lineOrPoints)
 }
 
-// Equal makes two line segments as long as each other, two circles or
-// arcs of the same radius, or a line segment as long as an arc.
-func (m ConstrainMenu) Equal(a, b Entity) Constraint {
+// Equal makes what it is given equal, as Constrain > Equal Length /
+// Radius does, with the entities in any order: two or more line
+// segments as long as each other; two or more circles or arcs of the
+// same radius (for three or more it makes one constraint of the first
+// against each of the others, all as one undo step, and returns the
+// first); a line segment as long as an arc; a point as far from a line
+// segment as that line segment is long, given the line segment,
+// another line segment and the point; and two points as far from a line
+// segment as each other, given that line segment with both points or
+// two line segments with a point each (the first point is measured from
+// the first line segment, the second from the second). It fails for
+// anything else.
+func (m ConstrainMenu) Equal(es ...Entity) Constraint {
 	d := m.d
-	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
-		ea, eb := a.get(sk), b.get(sk)
-		switch {
-		case isLine(ea) && isLine(eb):
-			c.Type = core.ConstraintEqualLengthLines
-			c.EntityA, c.EntityB = a.H, b.H
-		case ea.IsCircle() && eb.IsCircle():
-			c.Type = core.ConstraintEqualRadius
-			c.EntityA, c.EntityB = a.H, b.H
-		case isLine(ea) && eb.Type == core.EntityArcOfCircle:
-			c.Type = core.ConstraintEqualLineArcLen
-			c.EntityA, c.EntityB = a.H, b.H
-		case ea.Type == core.EntityArcOfCircle && isLine(eb):
-			c.Type = core.ConstraintEqualLineArcLen
-			c.EntityA, c.EntityB = b.H, a.H
-		default:
-			fail("%s and %s can't be equal", a.describe(sk), b.describe(sk))
+	return d.constrainEach(func(sk *sketch.Sketch, base core.Constraint) []core.Constraint {
+		hs := make([]core.HEntity, len(es))
+		for i, e := range es {
+			e.get(sk)
+			hs[i] = e.H
 		}
+		cs, err := sk.EqualConstraints(base, hs)
+		if err != nil {
+			fail("these cannot be made equal (%s): %v", equalMisuse(es, sk), err)
+		}
+		return cs
 	})
 }
 
-// Parallel makes two line segments or normals parallel.
+// equalMisuse says what Equal was given, for its error.
+func equalMisuse(es []Entity, sk *sketch.Sketch) string {
+	what := make([]string, len(es))
+	for i, e := range es {
+		what[i] = e.describe(sk)
+	}
+	return strings.Join(what, ", ")
+}
+
+// angleIsOther reports whether the angle between the two vectors is
+// the supplementary one, which is what the sketch means where they are
+// drawn head to head rather than in the same sense: the window takes it
+// the same way.
+func angleIsOther(sk *sketch.Sketch, a, b core.HEntity) bool {
+	ea, eb := sk.MustEntity(a), sk.MustEntity(b)
+	if ea.Type != core.EntityLineSegment || eb.Type != core.EntityLineSegment {
+		return false
+	}
+	a0 := sk.MustEntity(ea.Point[0]).PointGetNum(sk)
+	a1 := sk.MustEntity(ea.Point[1]).PointGetNum(sk)
+	b0 := sk.MustEntity(eb.Point[0]).PointGetNum(sk)
+	b1 := sk.MustEntity(eb.Point[1]).PointGetNum(sk)
+	// Which ends they share says which way round each one runs.
+	return !(a0.Equals(b0) || a1.Equals(b1)) && (a0.Equals(b1) || a1.Equals(b0))
+}
+
+// EqualAngle makes two angles as large as each other, as Constrain >
+// Angle / Equal Angle does: three line segments or normals for the two
+// angles that share the second, or four for the angles they make in
+// pairs. The supplementary angle is taken where the sketch is drawn
+// across it, as the window takes it.
+func (m ConstrainMenu) EqualAngle(es ...Entity) Constraint {
+	d := m.d
+	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
+		switch len(es) {
+		case 3:
+			// The two angles share the second of the three.
+			c.EntityA, c.EntityB, c.EntityC, c.EntityD = es[0].H, es[1].H, es[1].H, es[2].H
+		case 4:
+			c.EntityA, c.EntityB, c.EntityC, c.EntityD = es[0].H, es[1].H, es[2].H, es[3].H
+		default:
+			fail("EqualAngle takes three line segments or normals, or four, not %d", len(es))
+		}
+		for _, e := range es {
+			e.must(sk, "a line segment or a normal", hasVector)
+		}
+		c.Type = core.ConstraintEqualAngle
+		c.Other = angleIsOther(sk, c.EntityA, c.EntityB)
+	})
+}
+
+// Parallel makes two line segments or normals parallel, or two faces.
 func (m ConstrainMenu) Parallel(a, b Entity) Constraint {
 	d := m.d
 	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
-		c.Type = core.ConstraintParallel
-		c.EntityA = a.must(sk, "a line segment or a normal", hasVector)
-		c.EntityB = b.must(sk, "a line segment or a normal", hasVector)
+		a.get(sk)
+		b.get(sk)
+		nc, err := sk.ParallelConstraint(*c, a.H, b.H)
+		if err != nil {
+			fail("%s and %s can't be parallel: %v", a.describe(sk), b.describe(sk), err)
+		}
+		*c = nc
 	})
 }
 
@@ -221,13 +299,18 @@ func (m ConstrainMenu) SameOrientation(a, b Entity) Constraint {
 	})
 }
 
-// Perpendicular makes two line segments or normals perpendicular.
+// Perpendicular makes two line segments or normals perpendicular, or
+// two faces.
 func (m ConstrainMenu) Perpendicular(a, b Entity) Constraint {
 	d := m.d
 	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
-		c.Type = core.ConstraintPerpendicular
-		c.EntityA = a.must(sk, "a line segment or a normal", hasVector)
-		c.EntityB = b.must(sk, "a line segment or a normal", hasVector)
+		a.get(sk)
+		b.get(sk)
+		nc, err := sk.PerpendicularConstraint(*c, a.H, b.H)
+		if err != nil {
+			fail("%s and %s can't be perpendicular: %v", a.describe(sk), b.describe(sk), err)
+		}
+		*c = nc
 	})
 }
 
@@ -256,38 +339,24 @@ func (m ConstrainMenu) Angle(a, b Entity, degrees float64) Constraint {
 }
 
 // Tangent makes an arc or a cubic tangent to a line segment, or to
-// another arc or cubic, where they share an end.
-func (m ConstrainMenu) Tangent(a, b Entity) Constraint {
+// another arc or cubic. They are tangent where they share an end; for
+// curves that don't, give the end points to make tangent: the end of
+// the arc or cubic for a line segment, and an end of each curve for two
+// curves, as selecting the points does in the window.
+func (m ConstrainMenu) Tangent(a, b Entity, ends ...Entity) Constraint {
 	d := m.d
 	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
-		ea, eb := a.get(sk), b.get(sk)
-		if isLine(eb) {
-			ea, eb = eb, ea
+		a.get(sk)
+		b.get(sk)
+		hs := make([]core.HEntity, len(ends))
+		for i, e := range ends {
+			hs[i] = e.must(sk, "an end point", isPoint)
 		}
-		var err error
-		switch {
-		case isLine(ea) && eb.Type == core.EntityArcOfCircle:
-			err = sk.ConstrainArcLineTangent(c, ea, eb, nil)
-			c.Type = core.ConstraintArcLineTangent
-			c.EntityA, c.EntityB = eb.H, ea.H
-		case isLine(ea) && eb.Type == core.EntityCubic:
-			err = sk.ConstrainCubicLineTangent(c, ea, eb, nil)
-			c.Type = core.ConstraintCubicLineTangent
-			c.EntityA, c.EntityB = eb.H, ea.H
-		case (ea.Type == core.EntityArcOfCircle || ea.Type == core.EntityCubic) &&
-			(eb.Type == core.EntityArcOfCircle || eb.Type == core.EntityCubic):
-			if core.IsFreeIn3D(c.Workplane) {
-				fail("curves are made tangent in a workplane, and none is active")
-			}
-			err = sk.ConstrainCurveCurveTangent(c, ea, eb, nil, nil)
-			c.Type = core.ConstraintCurveCurveTangent
-			c.EntityA, c.EntityB = ea.H, eb.H
-		default:
-			fail("%s and %s can't be tangent", a.describe(sk), b.describe(sk))
-		}
+		nc, err := sk.TangentConstraint(*c, a.H, b.H, hs...)
 		if err != nil {
-			panic(err)
+			fail("%s and %s can't be tangent: %v", a.describe(sk), b.describe(sk), err)
 		}
+		*c = nc
 	})
 }
 
@@ -313,51 +382,48 @@ func (m ConstrainMenu) On(point, on Entity) Constraint {
 	})
 }
 
-// Midpoint puts a point at the middle of a line segment.
+// Midpoint puts a point at the middle of a line segment. Given a
+// workplane in place of the point, it puts the middle of the line
+// segment in that plane.
 func (m ConstrainMenu) Midpoint(point, line Entity) Constraint {
 	d := m.d
 	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
-		c.Type = core.ConstraintAtMidpoint
-		c.PtA = point.must(sk, "a point", isPoint)
-		c.EntityA = line.must(sk, "a line segment", isLine)
+		line.must(sk, "a line segment", isLine)
+		point.get(sk)
+		nc, implied, err := sk.MidpointConstraint(*c, line.H, point.H)
+		if err != nil {
+			fail("%s can't be at the middle of %s: %v", point.describe(sk), line.describe(sk), err)
+		}
+		*c = nc
 		// A point at the middle of a line needn't also be on it.
-		sk.DeleteAllConstraintsFor(core.ConstraintPtOnLine, c.EntityA, c.PtA)
+		sk.DeleteImplied(implied)
 	})
 }
 
 // Symmetric makes two points mirror images of each other about a
 // workplane or a line segment; with no such thing (Entity{}), about
-// the axis of the active workplane they are across.
+// the axis of the active workplane they are across. A line segment may
+// stand for its two ends: give it as a, and Entity{} as b. Symmetric
+// about the axis, that line segment no longer needs the Horizontal or
+// Vertical constraint it had, and loses it, as in the window.
 func (m ConstrainMenu) Symmetric(a, b, about Entity) Constraint {
 	d := m.d
 	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
-		c.PtA = a.must(sk, "a point", isPoint)
-		c.PtB = b.must(sk, "a point", isPoint)
-		if about.H.V != 0 {
-			c.EntityA = about.H
-			switch e := about.get(sk); {
-			case e.IsWorkplane():
-				c.Type = core.ConstraintSymmetric
-			case isLine(e):
-				if core.IsFreeIn3D(c.Workplane) {
-					fail("symmetry about a line is in a workplane, and none is active")
-				}
-				c.Type = core.ConstraintSymmetricLine
-			default:
-				fail("nothing is symmetric about %s", about.describe(sk))
-			}
-			return
-		}
-		if core.IsFreeIn3D(c.Workplane) {
-			fail("symmetry about nothing is about an axis of the workplane, and none is active")
-		}
-		dp := sk.MustEntity(c.PtA).PointGetNum(sk).Minus(sk.MustEntity(c.PtB).PointGetNum(sk))
-		norm := sk.MustEntity(c.Workplane).NormalEntity(sk)
-		if math.Abs(dp.Dot(norm.NormalU(sk))) > math.Abs(dp.Dot(norm.NormalV(sk))) {
-			c.Type = core.ConstraintSymmetricHoriz
+		if b.H.V == 0 {
+			a.must(sk, "a line segment, or a point with another", isLine)
 		} else {
-			c.Type = core.ConstraintSymmetricVert
+			a.must(sk, "a point", isPoint)
+			b.must(sk, "a point", isPoint)
 		}
+		if about.H.V != 0 {
+			about.get(sk)
+		}
+		nc, implied, err := sk.SymmetricConstraint(*c, a.H, b.H, about.H)
+		if err != nil {
+			fail("%v", err)
+		}
+		*c = nc
+		sk.DeleteImplied(implied)
 	})
 }
 
@@ -374,9 +440,25 @@ func (m ConstrainMenu) Lock(point Entity) Constraint {
 func (m ConstrainMenu) Comment(at Vec, text string) Constraint {
 	d := m.d
 	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
-		c.Type = core.ConstraintComment
+		nc, err := sk.CommentConstraint(*c, core.NoEntity, text)
+		if err != nil {
+			fail("%v", err)
+		}
+		*c = nc
 		c.Disp.Offset = at
-		c.Comment = text
+	})
+}
+
+// CommentOn writes text on the drawing next to a point, as Constrain >
+// Comment does for a selected point; Constraint.SetLabelOffset moves it.
+func (m ConstrainMenu) CommentOn(point Entity, text string) Constraint {
+	d := m.d
+	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
+		nc, err := sk.CommentConstraint(*c, point.must(sk, "a point", isPoint), text)
+		if err != nil {
+			fail("%v", err)
+		}
+		*c = nc
 	})
 }
 

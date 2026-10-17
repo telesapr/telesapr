@@ -63,6 +63,9 @@ func (ss *Application) MenuAnalyze(id Command) {
 	case cmdInterference:
 		ss.analyzeInterference()
 
+	case cmdGroupDependencies:
+		ss.analyzeGroupDependencies()
+
 	case cmdCheckSolid:
 		ss.CheckSolid()
 

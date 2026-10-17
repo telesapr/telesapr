@@ -2,6 +2,7 @@ package sketch
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/telesapr/telesapr/pkg/core"
 )
@@ -38,6 +39,71 @@ func (sk *Sketch) AddConstraintRemember(c *core.Constraint, rememberForUndo bool
 	sk.MarkGroupDirty(c.Group, false)
 	sk.Group(c.Group).DofCheckOk = false
 	return c.H
+}
+
+// equalConstraint returns the handle of a constraint other than skip
+// that has the same base as c: the same kind, entities and value. The
+// label and the offset are not compared.
+func (sk *Sketch) equalConstraint(c *core.Constraint, skip core.HConstraint) (core.HConstraint, bool) {
+	for i := range sk.Constraints {
+		cc := &sk.Constraints[i]
+		if cc.H != skip && c.ConstraintBase.Equals(&cc.ConstraintBase) { //nolint:staticcheck // QF1008: the base is named on purpose
+			return cc.H, true
+		}
+	}
+	return core.HConstraint{}, false
+}
+
+// SettleConstraint finishes a constraint hc that was just added. If the
+// sketch had an equal one, hc is removed again and the handle of the old
+// one is returned with duplicate set. Otherwise, a dimension that would
+// make its group redundant becomes a reference dimension, so that the
+// group still solves; a bound is left alone, because it is made at the
+// distance as it stands and another bound or a dimension may hold that
+// already. A group that allows redundancy keeps the dimension as it is.
+func (sk *Sketch) SettleConstraint(hc core.HConstraint) (existing core.HConstraint, duplicate bool) {
+	c := sk.Constraint(hc)
+	if c == nil {
+		return hc, false
+	}
+	if old, ok := sk.equalConstraint(c, hc); ok {
+		sk.RemoveConstraint(hc)
+		return old, true
+	}
+	if !c.IsInequality() && c.HasLabel() {
+		g := sk.Group(c.Group)
+		if g != nil && !g.AllowRedundant {
+			if how, _ := sk.TestRankForGroup(c.Group); how == core.SolveRedundantOkay {
+				c.Reference = true
+			}
+		}
+	}
+	return hc, false
+}
+
+// AddConstraints adds cs, and returns the handle of each: the one made,
+// or the one the sketch had already when it has an equal constraint,
+// which is then not added twice. A dimension that would make its group
+// redundant is made a reference dimension (SettleConstraint), as the
+// window does, so that every way of adding a constraint ends the same.
+// A constraint in a group that does not exist is an error, and none of cs
+// after it is added.
+func (sk *Sketch) AddConstraints(cs []core.Constraint) ([]core.HConstraint, error) {
+	hs := make([]core.HConstraint, 0, len(cs))
+	for i := range cs {
+		c := cs[i]
+		if sk.Group(c.Group) == nil {
+			return hs, fmt.Errorf("adding constraint %d: group %v does not exist", i, c.Group)
+		}
+		if old, ok := sk.equalConstraint(&c, core.HConstraint{}); ok {
+			hs = append(hs, old)
+			continue
+		}
+		h := sk.AddConstraintRemember(&c, false)
+		sk.SettleConstraint(h)
+		hs = append(hs, h)
+	}
+	return hs, nil
 }
 
 // Constrain adds a constraint of the given type in the active group and

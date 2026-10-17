@@ -258,7 +258,7 @@ func TestEntityFree(t *testing.T) {
 		t.Errorf("String %q", s)
 	}
 	// Over-constrained: the group does not solve, so nothing is known.
-	d.Constrain.Length(line, 12)
+	d.Constrain.Length(line, 12).SetReference(false)
 	if f := line.Free(); f != sketch.FreedomUnknown {
 		t.Errorf("a line of a group that did not solve is %v", f)
 	}
@@ -276,6 +276,7 @@ func TestConflicts(t *testing.T) {
 	a := d.Constrain.Length(line, 10)
 	d.Constrain.Vertical(line)
 	b := d.Constrain.Length(line, 12)
+	b.SetReference(false)
 	got := g.Conflicts()
 	if g.Solved() || len(got) == 0 {
 		t.Fatalf("solved %v, conflicts %v", g.Solved(), got)

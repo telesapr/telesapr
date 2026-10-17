@@ -50,7 +50,11 @@ func groupState(sk *sketch.Sketch, group *sketch.Group) string {
 	if !group.IsSolvedOkay() {
 		parts[0] = "NOT SOLVED"
 	}
-	parts = append(parts, fmt.Sprintf("%d DOF", group.Solved.Dof))
+	if group.Solved.Dof < 0 {
+		parts = append(parts, "DOF not counted")
+	} else {
+		parts = append(parts, fmt.Sprintf("%d DOF", group.Solved.Dof))
+	}
 	if msg := problemOf(group); msg != "" {
 		parts = append(parts, "problem: "+msg)
 	}

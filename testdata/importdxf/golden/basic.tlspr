@@ -167,6 +167,7 @@ style 0x100 "@dxf-w1-DASHED-#ff0000" {
   exportable
   stipple short-dash
   stipple-scale 3
+  z-index 4
 }
 
 style 0x101 "@dxf-w1-#ffff00" {
@@ -180,6 +181,7 @@ style 0x101 "@dxf-w1-#ffff00" {
   visible
   exportable
   stipple-scale 3
+  z-index 4
 }
 
 style 0x102 "@dxf-w0.5-DOT" {
@@ -194,6 +196,7 @@ style 0x102 "@dxf-w0.5-DOT" {
   exportable
   stipple dot
   stipple-scale 2
+  z-index 4
 }
 
 style 0x103 "@dxf-w1-#0000ff" {
@@ -207,6 +210,7 @@ style 0x103 "@dxf-w1-#0000ff" {
   visible
   exportable
   stipple-scale 3
+  z-index 4
 }
 
 style 0x104 "@dxf-DASHDOT" {
@@ -220,6 +224,7 @@ style 0x104 "@dxf-DASHDOT" {
   exportable
   stipple dash-dot
   stipple-scale 15
+  z-index 4
 }
 
 style 0x105 "@dxf" {
@@ -232,6 +237,7 @@ style 0x105 "@dxf" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 style 0x106 "@dxf-#00ffff" {
@@ -244,6 +250,7 @@ style 0x106 "@dxf-#00ffff" {
   visible
   exportable
   stipple-scale 15
+  z-index 4
 }
 
 value 0x10010 0

@@ -830,16 +830,6 @@ func (sk *Sketch) CreateParam(h core.HParam, val float64) core.HParam {
 	return h
 }
 
-// SetEntityActPoint updates an entity's cached actPoint.
-func (sk *Sketch) SetEntityActPoint(he core.HEntity, p geom.Vector) {
-	for i := range sk.Entities {
-		if sk.Entities[i].H == he {
-			sk.Entities[i].ActPoint = p
-			return
-		}
-	}
-}
-
 // ParseExprText parses a string expression and returns an Expr.
 // Phase 7 / Goal Item 3: delegates to core.NewFromString, which
 // implements the full Pratt parser.

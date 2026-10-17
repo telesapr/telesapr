@@ -1,0 +1,56 @@
+# Parameter users and group dependencies (an extension): a rectangle
+# whose sides come from parameters, extruded; the parameters screen says
+# what names each, and Analyze > Group Dependencies says what the
+# extrusion is built on, what it is used by and the box around it.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+menu Edit|Parameters...
+twmove 51 130
+twdown L 51 130
+twup L 51 130
+edit k = 4
+twmove 51 150
+twdown L 51 150
+twup L 51 150
+edit w = k*10
+twmove 51 190
+twdown L 51 190
+twup L 51 190
+edit h = w/2
+move 290 330
+down L 290 330
+up L 290 330
+key d
+key esc
+move 380 265
+down L 380 265
+up L 380 265
+key d
+key esc
+move 290 370
+down L 290 370
+up L 290 370
+down L 290 370
+dbl L 290 370
+up L 290 370
+edit w
+move 430 270
+down L 430 270
+up L 430 270
+down L 430 270
+dbl L 430 270
+up L 430 270
+edit h
+key x shift
+menu Edit|Parameters...
+tw
+answer ok
+menu Analyze|Group Dependencies
+dump
+save

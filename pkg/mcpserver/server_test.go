@@ -186,7 +186,7 @@ func TestDescribeHelpRender(t *testing.T) {
 	if res, text = call(t, cs, ToolHelp, map[string]any{"name": "Group.SetCombine"}); res.IsError || !strings.Contains(text, "func (g Group) SetCombine(") {
 		t.Errorf("help of Group.SetCombine reads %q", text)
 	}
-	if res, _ = call(t, cs, ToolHelp, map[string]any{"name": "Group.Combine"}); !res.IsError {
+	if res, _ = call(t, cs, ToolHelp, map[string]any{"name": "Group.NoSuchCall"}); !res.IsError {
 		t.Errorf("help of a name nothing has is no error")
 	}
 

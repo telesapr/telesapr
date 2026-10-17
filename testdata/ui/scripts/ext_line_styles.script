@@ -1,0 +1,38 @@
+# A custom line style on the styles screen: named, in another colour,
+# dashed, drawn above the geometry, and not exported with the drawing.
+# The same style is made by a script in examples/scripts/styles.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+menu Edit|Line Styles...
+tw
+# A style of its own, then into it.
+twmove 60 430
+twdown L 60 430
+twup L 60 430
+tw
+twmove 100 420
+twdown L 100 420
+twup L 100 420
+tw
+# Its colour, its dashes, and the level it is drawn at.
+twmove 300 160
+twdown L 240 160
+twup L 240 160
+edit 0.8, 0.1, 0.1
+twmove 100 280
+twdown L 120 270
+twup L 120 270
+twmove 204 780
+twdown L 204 780
+twup L 204 780
+edit 7
+twmove 30 740
+twdown L 30 740
+twup L 30 740
+save
