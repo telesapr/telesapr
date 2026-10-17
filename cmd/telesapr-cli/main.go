@@ -45,6 +45,19 @@ Common options:
         piecewise linear, and exact surfaces into triangle meshes.
         For export commands, the unit is mm, and the default is 1.0 mm.
         For non-export commands, the unit is %, and the default is 1.0 %.
+    -a, --angle-tol <degrees>
+        For export-mesh: the largest angle in degrees between the normals of
+        neighbouring triangles on a curved surface; 0 for none, the default.
+    -m, --max-segments <n>
+        For export-mesh: the most segments a curve is divided into.
+        The default is 64.
+    -q, --quality <draft|standard|fine>
+        For export-mesh: sets the chord tolerance, the angular tolerance and
+        the segment limit together, to those of the preset. An explicit
+        --chord-tol, --angle-tol or --max-segments overrides its part of it.
+    -s, --strict
+        For export-mesh: fails, writing no file, when the mesh has naked
+        edges or self-intersections.
     -b, --bg-color <on|off>
         Whether to export the background colour in vector formats. Defaults to off.
     -g, --group <group>
@@ -70,7 +83,9 @@ Commands:
         one, an A3 sheet of the standard views fitted, in a 2d vector format.
     export-wireframe --output <pattern> [--chord-tol <tolerance>] [--group <group>]
         Exports a wireframe of the sketch, in a 3d vector format.
-    export-mesh --output <pattern> [--chord-tol <tolerance>] [--group <group>]
+    export-mesh --output <pattern> [--chord-tol <tolerance>] [--angle-tol <degrees>]
+                [--max-segments <n>] [--quality <draft|standard|fine>] [--strict]
+                [--group <group>]
         Exports a triangle mesh of solids in the sketch, with exact surfaces
         being triangulated first.
     export-surfaces --output <pattern> [--group <group>]
@@ -133,6 +148,14 @@ type options struct {
 	width, height uint
 	overwrite     bool
 	group         string
+
+	angleTol    float64 // degrees, 0 for none
+	maxSegments int
+	strict      bool
+	quality     string
+
+	// What was given, so that a preset fills in the rest.
+	chordTolSet, angleTolSet, maxSegmentsSet bool
 }
 
 // parse reads args[2:] with the options the command accepts, which are
@@ -169,6 +192,26 @@ func (o *options) parse(args []string, accepted []string, stderr io.Writer) bool
 			n++
 			_, err := fmt.Sscan(args[n], &o.chordTol)
 			ok = err == nil
+			o.chordTolSet = ok
+		case hasValue && takes("--angle-tol", "-a", arg):
+			n++
+			_, err := fmt.Sscan(args[n], &o.angleTol)
+			ok = err == nil && o.angleTol >= 0
+			o.angleTolSet = ok
+		case hasValue && takes("--max-segments", "-m", arg):
+			n++
+			_, err := fmt.Sscan(args[n], &o.maxSegments)
+			ok = err == nil && o.maxSegments > 0
+			o.maxSegmentsSet = ok
+		case hasValue && takes("--quality", "-q", arg):
+			n++
+			if _, err := sketch.ParseMeshQuality(args[n]); err != nil {
+				fmt.Fprintf(stderr, "%v\n", err)
+			} else {
+				o.quality, ok = args[n], true
+			}
+		case (arg == "--strict" || arg == "-s") && takes("--strict", "", "--strict"):
+			o.strict, ok = true, true
 		case hasValue && takes("--bg-color", "-b", arg):
 			n++
 			switch args[n] {
@@ -323,11 +366,29 @@ var fileCommands = map[string]fileCommand{
 		},
 	},
 	"export-mesh": {
-		accepted:    []string{"--output", "--chord-tol", "--group"},
+		accepted: []string{"--output", "--chord-tol", "--group", "--angle-tol",
+			"--max-segments", "--quality", "--strict"},
 		solidsLater: true,
 		run: func(s *session, o *options, output string) error {
-			s.ss.ExportChordTol = o.chordTol
-			return s.ss.ExportMeshTo(output)
+			ss := s.ss
+			ss.ExportChordTol = o.chordTol
+			if o.quality != "" {
+				// parse has checked the name.
+				q, _ := sketch.ParseMeshQuality(o.quality)
+				c, a, n := sketch.MeshQualitySettings(q)
+				ss.ExportAngleTol, ss.ExportMaxSegments = a, n
+				if !o.chordTolSet {
+					ss.ExportChordTol = c
+				}
+			}
+			if o.angleTolSet {
+				ss.ExportAngleTol = o.angleTol
+			}
+			if o.maxSegmentsSet {
+				ss.ExportMaxSegments = o.maxSegments
+			}
+			ss.ExportStrictMesh = o.strict
+			return ss.ExportMeshTo(output)
 		},
 	},
 	"export-surfaces": {

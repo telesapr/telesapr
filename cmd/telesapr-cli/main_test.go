@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/persist/convert"
+	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func testdata(name string) string { return filepath.Join("..", "..", "testdata", name) }
@@ -168,6 +169,12 @@ func TestBadCommandLines(t *testing.T) {
 		{[]string{"thumbnail", "-v", "top", "-o", "x.png", in}, "viewport size"},
 		{[]string{"export-mesh", "-o", "x.stl", "nothere.tlspr"}, "Cannot load 'nothere.tlspr'"},
 		{[]string{"export-mesh", "-o", "x.stl", testdata("request/line_segment/normal.slvs")}, "telesapr-cli convert"},
+		{[]string{"export-mesh", "--quality", "bad", "-o", "x.stl", in}, "unknown mesh quality"},
+		{[]string{"export-mesh", "--angle-tol", "x", "-o", "x.stl", in}, "Unrecognized option '--angle-tol'"},
+		{[]string{"export-mesh", "--angle-tol", "-1", "-o", "x.stl", in}, "Unrecognized option '--angle-tol'"},
+		{[]string{"export-mesh", "--max-segments", "x", "-o", "x.stl", in}, "Unrecognized option '--max-segments'"},
+		{[]string{"export-view", "--angle-tol", "10", "-v", "top", "-o", "x.svg", in}, "Unrecognized option '--angle-tol'"},
+		{[]string{"export-view", "--strict", "-v", "top", "-o", "x.svg", in}, "Unrecognized option '--strict'"},
 		{[]string{"convert", "--view", "top", in}, "Unrecognized option '--view'"},
 		{[]string{"convert"}, "At least one input file"},
 		{[]string{"convert", "-o", "x.tlspr", in, in}, "must include a %"},
@@ -307,5 +314,75 @@ func TestExportGroup(t *testing.T) {
 	}
 	if ok, msg := runTool(t, "export-drawing", "-g", "g004", "-o", filepath.Join(dir, "x.pdf"), in); ok || !strings.Contains(msg, "Unrecognized option") {
 		t.Errorf("export-drawing --group: %v, %s", ok, msg)
+	}
+}
+
+// TestExportMeshQuality exports a model with curves at several quality
+// settings: a preset, an explicit option over it, and the options alone.
+func TestExportMeshQuality(t *testing.T) {
+	// Not parallel: a session's Init sets the link package's hooks,
+	// which are the process's.
+	in := filepath.Join("..", "..", "testdata", "solid", "fillet-tee.tlspr")
+	dir := t.TempDir()
+	size := func(args ...string) int64 {
+		t.Helper()
+		out := filepath.Join(dir, "out.stl")
+		if ok, msg := runTool(t, append([]string{"export-mesh", "-o", out}, append(args, in)...)...); !ok {
+			t.Fatalf("%v: %s", args, msg)
+		}
+		fi, err := os.Stat(out)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return fi.Size()
+	}
+	draft, fine := size("--quality", "draft"), size("--quality", "fine")
+	if fine <= draft {
+		t.Errorf("fine %d bytes, draft %d", fine, draft)
+	}
+	if coarse := size("--quality", "fine", "--chord-tol", "0.5"); coarse >= fine {
+		t.Errorf("fine at 0.5 mm: %d bytes, fine alone %d", coarse, fine)
+	}
+	if size("-q", "fine") != fine {
+		t.Errorf("-q differs from --quality")
+	}
+	if a0, a10 := size("--chord-tol", "0.5", "--angle-tol", "0"), size("--chord-tol", "0.5", "--angle-tol", "10"); a10 <= a0 {
+		t.Errorf("angle 10: %d bytes, angle 0: %d", a10, a0)
+	}
+	if few, many := size("--chord-tol", "0.01", "--max-segments", "8"), size("--chord-tol", "0.01", "--max-segments", "256"); few >= many {
+		t.Errorf("8 segments: %d bytes, 256: %d", few, many)
+	}
+}
+
+// TestExportMeshStrict exports a model whose solids overlap: without
+// --strict the mesh is written, with it the export fails and no file is
+// left.
+func TestExportMeshStrict(t *testing.T) {
+	dir := t.TempDir()
+	d := api.New()
+	d.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
+	d.Features.Extrude(10, "")
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(8, 0, 0), api.V(18, 10, 0))
+	d.Features.Extrude(10, "second").SetCombine(api.Assemble)
+	in := filepath.Join(dir, "overlap.tlspr")
+	if err := d.File.Save(in); err != nil {
+		t.Fatal(err)
+	}
+
+	out := filepath.Join(dir, "plain.stl")
+	if ok, msg := runTool(t, "export-mesh", "-o", out, in); !ok {
+		t.Fatalf("without --strict: %s", msg)
+	}
+	if _, err := os.Stat(out); err != nil {
+		t.Errorf("no file without --strict: %v", err)
+	}
+	out = filepath.Join(dir, "strict.stl")
+	ok, msg := runTool(t, "export-mesh", "--strict", "-o", out, in)
+	if ok || !strings.Contains(msg, "mesh is not sound") {
+		t.Errorf("--strict: ok=%v, %s", ok, msg)
+	}
+	if _, err := os.Stat(out); err == nil {
+		t.Errorf("--strict left a file")
 	}
 }
