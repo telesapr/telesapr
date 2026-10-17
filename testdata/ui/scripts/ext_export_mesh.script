@@ -1,0 +1,33 @@
+# Export mesh (an extension): File > Export > Triangle Mesh... opens a
+# screen of the mesh options. The fine preset is chosen, the angular
+# tolerance is set to 15 degrees, the strict check is turned on, and
+# the link writes the mesh to a file.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+menu File|Export|Triangle Mesh...
+tw
+twmove 231 125
+twdown L 231 125
+twup L 231 125
+tw
+twmove 150 215
+twdown L 150 215
+twup L 150 215
+edit 15
+twmove 100 285
+twdown L 100 285
+twup L 100 285
+tw
+file $tmp/mesh.stl
+twmove 60 335
+twdown L 60 335
+twup L 60 335
+tw
+dump
