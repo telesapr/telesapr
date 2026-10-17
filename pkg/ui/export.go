@@ -687,6 +687,12 @@ func (ss *Application) ExportMeshTo(filename string) error {
 		return errors.New("active group mesh is empty; nothing to export")
 	}
 
+	if ss.ExportStrictMesh {
+		naked, inters, leaks := sk.MeshProblems()
+		if err := sketch.MeshSoundnessError(naked, inters, leaks); err != nil {
+			return err
+		}
+	}
 	f, err := os.Create(filename)
 	if err != nil {
 		return fmt.Errorf("couldn't write to '%s'", filename)
@@ -695,7 +701,10 @@ func (ss *Application) ExportMeshTo(filename string) error {
 	ss.ShowNakedEdges(true)
 	switch {
 	case hasExtension(filename, "stl"):
-		_ = sketch.ExportMeshAsStlTo(&out, m, ss.ExportScale)
+		if err := sketch.ExportMeshAsStlTo(&out, m, ss.ExportScale); err != nil {
+			_ = f.Close()
+			return fmt.Errorf("writing '%s': %w", filename, err)
+		}
 	case hasExtension(filename, "3mf"):
 		_ = sketch.ExportMeshAs3mfTo(&out, m)
 	case hasExtension(filename, "obj"):

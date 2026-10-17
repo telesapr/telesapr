@@ -4961,7 +4961,13 @@
 			},
 			"ExportOptions": {
 				"text": "ExportOptions are the settings that change what an export writes:\nthe ones the configuration screen shows. Lengths are in mm. Get them\nwith File.ExportOptions, change the fields and give them back to\nFile.SetExportOptions; they stay set for the rest of the session and\napply to every export after, whether the script or the window asks.",
-				"kind": "struct"
+				"kind": "struct",
+				"methods": {
+					"Quality": {
+						"decl": "func (o ExportOptions) Quality() MeshQuality",
+						"text": "Quality is the preset whose chord tolerance, angular tolerance and\nsegment limit the options hold, or MeshCustom when they match none."
+					}
+				}
 			},
 			"ExtrudeGroup": {
 				"text": "ExtrudeGroup is the view of an extrusion: its draft.",
@@ -5170,6 +5176,10 @@
 					"SetExportOptions": {
 						"decl": "func (m FileMenu) SetExportOptions(o ExportOptions) error",
 						"text": "SetExportOptions replaces the export options, as the configuration\nscreen does one at a time, and fails, changing nothing, when one is\nout of range (see ExportOptions). Take the options with\nExportOptions, change the fields wanted and give them back. In the\napplication the values are the ones saved with its settings when it\ncloses."
+					},
+					"SetMeshQuality": {
+						"decl": "func (m FileMenu) SetMeshQuality(q MeshQuality) error",
+						"text": "SetMeshQuality sets the chord tolerance, angular tolerance and\nsegment limit of the export options to those of the preset q\n(MeshDraft, MeshStandard or MeshFine) and leaves the other options\nas they are. MeshCustom is not a preset, so it fails; set the fields\nwith SetExportOptions instead."
 					},
 					"Unsaved": {
 						"decl": "func (m FileMenu) Unsaved() (unsaved bool)",
@@ -5624,6 +5634,10 @@
 						"text": "Turn is how many curves a loft turns its second profile by before\njoining curve by curve; a smooth loft turns each after the first."
 					}
 				}
+			},
+			"MeshQuality": {
+				"text": "MeshQuality names a preset of the mesh export settings (ChordTol,\nAngleTol and MaxSegments of ExportOptions): MeshDraft, MeshStandard,\nMeshFine, or MeshCustom for any settings that match none.",
+				"kind": "sketch.MeshQuality"
 			},
 			"MirrorGroup": {
 				"text": "MirrorGroup is the view of a mirror: its plane and what it copies.",
@@ -6513,6 +6527,22 @@
 				"decl": "var MenuCalls",
 				"text": "MenuCalls says, for each entry of the window's main menu, by its path\n(\"Features/Extrude\"), the calls a script makes instead, as help()\nnames them (\"Features.Extrude\"; several separated by spaces), or,\nafter \"- \", why the entry has none: most of those are the window's\nown, its view and its panels, which a script has none of. A test of\nthe package holds it to the menu, both ways."
 			},
+			"MeshCustom": {
+				"decl": "const MeshCustom",
+				"text": "The mesh export presets, as the export dialog offers them."
+			},
+			"MeshDraft": {
+				"decl": "const MeshDraft",
+				"text": "The mesh export presets, as the export dialog offers them."
+			},
+			"MeshFine": {
+				"decl": "const MeshFine",
+				"text": "The mesh export presets, as the export dialog offers them."
+			},
+			"MeshStandard": {
+				"decl": "const MeshStandard",
+				"text": "The mesh export presets, as the export dialog offers them."
+			},
 			"MinSegments": {
 				"decl": "const MinSegments",
 				"text": "The range of a curve's pieces, display or export, as the\nconfiguration screen allows."
@@ -7071,6 +7101,26 @@
 			"Measurement": {
 				"text": "Measurement is what Measure finds.",
 				"kind": "struct"
+			},
+			"MeshQuality": {
+				"text": "MeshQuality names a preset of the mesh export settings: the window, the command line and scripts all pick one by the same table.",
+				"kind": "int",
+				"methods": {
+					"String": {
+						"decl": "func (q MeshQuality) String() string",
+						"text": "String is the name of q: draft, standard, fine or custom."
+					}
+				},
+				"makers": [
+					"ParseMeshQuality",
+					"QualityOf"
+				],
+				"values": [
+					"MeshQualityDraft",
+					"MeshQualityStandard",
+					"MeshQualityFine",
+					"MeshQualityCustom"
+				]
 			},
 			"Messages": {
 				"text": "Messages is the Hooks of a sketch whose messages go to a function and that asks nothing else.",
@@ -7642,6 +7692,10 @@
 					"Measure": {
 						"decl": "func (sk *Sketch) Measure(entities ...core.HEntity) (Measurement, error)",
 						"text": "Measure measures entities, as the description of the selection does: one line segment or circle; two points; a point and a circle, line segment or plane face; two lines, normals or plane faces; or two points and a line along which to project their distance."
+					},
+					"MeshProblems": {
+						"decl": "func (sk *Sketch) MeshProblems() (naked srf.SEdgeList, inters, leaks bool)",
+						"text": "MeshProblems measures the active group's display mesh: its naked and self-intersecting edges, whether it crosses itself and whether it leaks (has naked edges)."
 					},
 					"MidpointConstraint": {
 						"decl": "func (sk *Sketch) MidpointConstraint(base core.Constraint, line, point core.HEntity) (core.Constraint, []Implied, error)",
@@ -8304,6 +8358,14 @@
 				"decl": "func Letter(n int) string",
 				"text": "Letter is the letter of the n-th section or detail view: A, B, ..., Z, AA, AB, ..."
 			},
+			"MeshQualitySettings": {
+				"decl": "func MeshQualitySettings(q MeshQuality) (chordMm, angleDeg float64, segments int)",
+				"text": "MeshQualitySettings is the chord tolerance in export units, the angular tolerance in degrees and the segment limit of preset q."
+			},
+			"MeshSoundnessError": {
+				"decl": "func MeshSoundnessError(naked srf.SEdgeList, inters, leaks bool) error",
+				"text": "MeshSoundnessError is nil when a mesh with the given problems (as MeshProblems finds them) may be exported, and an error that wraps ErrMeshNotSound, saying what is wrong, when it may not."
+			},
 			"NewGroup": {
 				"decl": "func NewGroup() Group",
 				"text": "NewGroup is a group as the menu starts one: visible, grey, at scale 1."
@@ -8318,6 +8380,14 @@
 			"ParseExprText": {
 				"decl": "func ParseExprText(s string) *core.Expr",
 				"text": "ParseExprText parses a string expression and returns an Expr."
+			},
+			"ParseMeshQuality": {
+				"decl": "func ParseMeshQuality(s string) (MeshQuality, error)",
+				"text": "ParseMeshQuality is the preset named s, ignoring case."
+			},
+			"QualityOf": {
+				"decl": "func QualityOf(chordMm, angleDeg float64, segments int) MeshQuality",
+				"text": "QualityOf is the preset whose settings are the given ones, or MeshQualityCustom."
 			},
 			"ScaleText": {
 				"decl": "func ScaleText(s float64) string",
@@ -8391,6 +8461,10 @@
 			"ErrFittedSweep": {
 				"decl": "var ErrFittedSweep",
 				"text": "ErrFittedSweep is SweepSteps' error for a sweep whose surface is fitted, not made of rigid steps: along a cubic, twisted, or held to a direction."
+			},
+			"ErrMeshNotSound": {
+				"decl": "var ErrMeshNotSound",
+				"text": "ErrMeshNotSound is what an export wraps when Strict refuses a mesh that is not watertight or crosses itself."
 			},
 			"ErrNoClosedRegion": {
 				"decl": "var ErrNoClosedRegion",
@@ -8575,6 +8649,18 @@
 			},
 			"MeasureRadius": {
 				"decl": "const MeasureRadius"
+			},
+			"MeshQualityCustom": {
+				"decl": "const MeshQualityCustom"
+			},
+			"MeshQualityDraft": {
+				"decl": "const MeshQualityDraft"
+			},
+			"MeshQualityFine": {
+				"decl": "const MeshQualityFine"
+			},
+			"MeshQualityStandard": {
+				"decl": "const MeshQualityStandard"
 			},
 			"RemapBottom": {
 				"decl": "const RemapBottom",
@@ -10212,6 +10298,10 @@
 				"text": "Tolerance is how closely the piecewise-linear and triangulated forms follow the curves and surfaces they are made from: the chord tolerance, in mm, and the most segments one curve is cut into.",
 				"kind": "struct",
 				"methods": {
+					"AngleDeg": {
+						"decl": "func (t Tolerance) AngleDeg() float64",
+						"text": "AngleDeg is the angular tolerance in degrees, 0 for none."
+					},
 					"ChordTolMm": {
 						"decl": "func (t Tolerance) ChordTolMm() float64",
 						"text": "ChordTolMm is the chord tolerance in mm."
@@ -10231,6 +10321,10 @@
 					"Or": {
 						"decl": "func (t Tolerance) Or(o Tolerance) Tolerance",
 						"text": "Or is t if it is set, and o otherwise."
+					},
+					"WithAngle": {
+						"decl": "func (t Tolerance) WithAngle(deg float64) Tolerance",
+						"text": "WithAngle is t with an angular tolerance of deg degrees: the most a curve's tangent or a surface's normal may turn across one piece, 0 for none."
 					},
 					"WithMesher": {
 						"decl": "func (t Tolerance) WithMesher(m Mesher) Tolerance",

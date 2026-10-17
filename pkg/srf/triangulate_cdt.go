@@ -519,6 +519,9 @@ func (r *cdtRegion) quadPoints(srf *SSurface, ch *uvChart, tol float64) []cdt.Po
 				cutX = cutX || x1-x0 > 2*shortest
 				cutY = cutY || y1-y0 > 2*shortest
 			}
+			if cellTurns(srf, ch, x0, y0, x1, y1) {
+				cutX, cutY = true, true
+			}
 			cutX = cutX && x1-x0 > 2*r.minX
 			cutY = cutY && y1-y0 > 2*r.minY
 		}
@@ -555,6 +558,32 @@ func (r *cdtRegion) quadPoints(srf *SSurface, ch *uvChart, tol float64) []cdt.Po
 		}
 	}
 	return out
+}
+
+// cellTurns reports whether the surface's normal turns by more than the
+// angular tolerance across the cell, between its corners and middle.
+// It is false when srf has no angular tolerance.
+func cellTurns(srf *SSurface, ch *uvChart, x0, y0, x1, y1 float64) bool {
+	c, on := srf.Tol.angleCos()
+	if !on {
+		return false
+	}
+	var ns []geom.Vector
+	for _, p := range [...]cdt.Point{{X: x0, Y: y0}, {X: x1, Y: y0}, {X: x1, Y: y1}, {X: x0, Y: y1}, {X: (x0 + x1) / 2, Y: (y0 + y1) / 2}} {
+		q := ch.from(p)
+		n := srf.NormalAt(q.X, q.Y)
+		if m := n.Magnitude(); m >= lengthEps {
+			ns = append(ns, n.ScaledBy(1/m))
+		}
+	}
+	for i := range ns {
+		for j := i + 1; j < len(ns); j++ {
+			if ns[i].Dot(ns[j]) < c {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // cellSag is how far the surface strays from the cell (x0, y0)-(x1, y1)

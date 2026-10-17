@@ -164,7 +164,7 @@ func (ss *Application) exportTolerance() srf.Tolerance {
 	if !ss.ExportMode {
 		return srf.Tolerance{}
 	}
-	return srf.Tol(ss.ExportChordTolMm(), ss.ExportMaxSegments)
+	return srf.Tol(ss.ExportChordTolMm(), ss.ExportMaxSegments).WithAngle(ss.ExportAngleTol)
 }
 
 // EnterExportMode has the regenerations that follow use the export

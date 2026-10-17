@@ -1,0 +1,257 @@
+row 0  home › export mesh   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 EXPORT TRIANGLE MESH
+ 0-19 74 64 0
+ 20-99 64 64 0
+row 10  quality
+ 0-7 74 64 0
+ 8-99 64 64 0
+row 12    draft   standard   fine   custom
+ 0-1 64 61 0
+ 2-8 6c 61 108 0 1 0
+ 9-10 64 61 0
+ 11-20 6c 61 108 1 1 0
+ 21-22 64 61 0
+ 23-28 6c 61 108 2 1 0
+ 29-30 64 61 0
+ 31-38 6c 61 108 3 1 0
+ 39-99 64 61 0
+row 15  chord tolerance (in mm)
+ 0-23 74 64 0
+ 24-99 64 64 0
+row 17    0.10 [change]
+ 0-7 64 61 0
+ 8-15 6c 61 108 0 1 0
+ 16-99 64 61 0
+row 19  angular tolerance (in degrees, 0 for none)
+ 0-42 74 64 0
+ 43-99 64 64 0
+row 21    0.00 [change]
+ 0-7 64 61 0
+ 8-15 6c 61 108 0 1 0
+ 16-99 64 61 0
+row 23  max piecewise linear segments
+ 0-29 74 64 0
+ 30-99 64 64 0
+row 25    64 [change]
+ 0-5 64 61 0
+ 6-13 6c 61 108 0 1 0
+ 14-99 64 61 0
+row 28     refuse a mesh that isn't watertight or crosses itself
+ 0-1 64 64 0
+ 2-57 64 64 108 0 1 0
+ 58-99 64 64 0
+row 30  export scale factor 1:1.000 (preferences)
+ 0-41 74 64 0
+ 42-99 64 64 0
+row 33 [export mesh...]
+ 0-15 6c 64 99 0 1 0
+ 16-99 64 64 0
+row 36 (back to the groups)
+ 0-19 6c 64 108 0 1 0
+ 20-99 64 64 0
+row 38 
+ 0-99 64 64 0
+row 0  home › export mesh   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 EXPORT TRIANGLE MESH
+ 0-19 74 64 0
+ 20-99 64 64 0
+row 10  quality
+ 0-7 74 64 0
+ 8-99 64 64 0
+row 12    draft   standard   fine   custom
+ 0-1 64 61 0
+ 2-8 6c 61 108 0 1 0
+ 9-10 64 61 0
+ 11-20 6c 61 108 1 1 0
+ 21-22 64 61 0
+ 23-28 6c 61 108 2 1 0
+ 29-30 64 61 0
+ 31-38 6c 61 108 3 1 0
+ 39-99 64 61 0
+row 15  chord tolerance (in mm)
+ 0-23 74 64 0
+ 24-99 64 64 0
+row 17    0.02 [change]
+ 0-7 64 61 0
+ 8-15 6c 61 108 0 1 0
+ 16-99 64 61 0
+row 19  angular tolerance (in degrees, 0 for none)
+ 0-42 74 64 0
+ 43-99 64 64 0
+row 21    10.00 [change]
+ 0-8 64 61 0
+ 9-16 6c 61 108 0 1 0
+ 17-99 64 61 0
+row 23  max piecewise linear segments
+ 0-29 74 64 0
+ 30-99 64 64 0
+row 25    256 [change]
+ 0-6 64 61 0
+ 7-14 6c 61 108 0 1 0
+ 15-99 64 61 0
+row 28     refuse a mesh that isn't watertight or crosses itself
+ 0-1 64 64 0
+ 2-57 64 64 108 0 1 0
+ 58-99 64 64 0
+row 30  export scale factor 1:1.000 (preferences)
+ 0-41 74 64 0
+ 42-99 64 64 0
+row 33 [export mesh...]
+ 0-15 6c 64 99 0 1 0
+ 16-99 64 64 0
+row 36 (back to the groups)
+ 0-19 6c 64 108 0 1 0
+ 20-99 64 64 0
+row 38 
+ 0-99 64 64 0
+row 0  home › export mesh   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 EXPORT TRIANGLE MESH
+ 0-19 74 64 0
+ 20-99 64 64 0
+row 10  quality
+ 0-7 74 64 0
+ 8-99 64 64 0
+row 12    draft   standard   fine   custom
+ 0-1 64 61 0
+ 2-8 6c 61 108 0 1 0
+ 9-10 64 61 0
+ 11-20 6c 61 108 1 1 0
+ 21-22 64 61 0
+ 23-28 6c 61 108 2 1 0
+ 29-30 64 61 0
+ 31-38 6c 61 108 3 1 0
+ 39-99 64 61 0
+row 15  chord tolerance (in mm)
+ 0-23 74 64 0
+ 24-99 64 64 0
+row 17    0.02 [change]
+ 0-7 64 61 0
+ 8-15 6c 61 108 0 1 0
+ 16-99 64 61 0
+row 19  angular tolerance (in degrees, 0 for none)
+ 0-42 74 64 0
+ 43-99 64 64 0
+row 21    15.00 [change]
+ 0-8 64 61 0
+ 9-16 6c 61 108 0 1 0
+ 17-99 64 61 0
+row 23  max piecewise linear segments
+ 0-29 74 64 0
+ 30-99 64 64 0
+row 25    256 [change]
+ 0-6 64 61 0
+ 7-14 6c 61 108 0 1 0
+ 15-99 64 61 0
+row 28     refuse a mesh that isn't watertight or crosses itself
+ 0-1 64 64 0
+ 2-57 64 64 108 0 1 0
+ 58-99 64 64 0
+row 30  export scale factor 1:1.000 (preferences)
+ 0-41 74 64 0
+ 42-99 64 64 0
+row 33 [export mesh...]
+ 0-15 6c 64 99 0 1 0
+ 16-99 64 64 0
+row 36 (back to the groups)
+ 0-19 6c 64 108 0 1 0
+ 20-99 64 64 0
+row 38 
+ 0-99 64 64 0
+filedialog save
+row 0  home › export mesh   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 EXPORT TRIANGLE MESH
+ 0-19 74 64 0
+ 20-99 64 64 0
+row 10  quality
+ 0-7 74 64 0
+ 8-99 64 64 0
+row 12    draft   standard   fine   custom
+ 0-1 64 61 0
+ 2-8 6c 61 108 0 1 0
+ 9-10 64 61 0
+ 11-20 6c 61 108 1 1 0
+ 21-22 64 61 0
+ 23-28 6c 61 108 2 1 0
+ 29-30 64 61 0
+ 31-38 6c 61 108 3 1 0
+ 39-99 64 61 0
+row 15  chord tolerance (in mm)
+ 0-23 74 64 0
+ 24-99 64 64 0
+row 17    0.02 [change]
+ 0-7 64 61 0
+ 8-15 6c 61 108 0 1 0
+ 16-99 64 61 0
+row 19  angular tolerance (in degrees, 0 for none)
+ 0-42 74 64 0
+ 43-99 64 64 0
+row 21    15.00 [change]
+ 0-8 64 61 0
+ 9-16 6c 61 108 0 1 0
+ 17-99 64 61 0
+row 23  max piecewise linear segments
+ 0-29 74 64 0
+ 30-99 64 64 0
+row 25    256 [change]
+ 0-6 64 61 0
+ 7-14 6c 61 108 0 1 0
+ 15-99 64 61 0
+row 28     refuse a mesh that isn't watertight or crosses itself
+ 0-1 64 64 0
+ 2-57 64 64 108 0 1 0
+ 58-99 64 64 0
+row 30  export scale factor 1:1.000 (preferences)
+ 0-41 74 64 0
+ 42-99 64 64 0
+row 33 [export mesh...]
+ 0-15 6c 64 99 0 1 0
+ 16-99 64 64 0
+row 36 (back to the groups)
+ 0-19 6c 64 108 0 1 0
+ 20-99 64 64 0
+row 38 
+ 0-99 64 64 0
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 3 0
+camera 5 0 0 0 1 0 0 0 1 0
+counts 3 7 67 8 40
+editor 0 "" 0 "10"
+tw 18 unsaved 1 cursor 0 tooltip ""

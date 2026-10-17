@@ -129,6 +129,7 @@ Where things are:
 | Copy, paste, length, areas, centre of mass from scripts (UX) | the Edit and Analyze menus' scenarios | n/a: one sketch call each, `TestEveryMenuCommandHasAMethod` | `measure` | n/a | n/a | n/a | `TestCopyPaste` | n/a: pastes are sketch edits |
 | The appearance of one face (parity) | `TestContextMenuFaceAppearance` (the face's context menu) | n/a: the two reach `SetFaceAppearance` in `pkg/sketch` | `styles` (the group appearance beside it) | n/a: nothing of its own | n/a: no solid | n/a | that test (one step, undone) | `TestEveryFieldRoundTrips` |
 | Configuration and export options (parity) | the configuration and export-options screens' own scenarios | `TestScriptExportOptions` (the Go pair: the window's fields follow the script's) | `feedback` | n/a: nothing of its own | n/a: no solid | n/a: not on the regeneration path | n/a: application settings, not in the document | n/a: kept with the application's settings; see "The export options a script reaches" |
+| STL export quality: angular tolerance, presets, strict mode, zero-area facets dropped | `ext_export_mesh` | `TestScriptExportMeshQuality` (the Go pair: the screen's links and `File.SetMeshQuality` with `AngleTol` write the same STL bytes; the options are application settings, so a `path_` pair has nothing to compare) | `meshquality` | `testdata/export/stl` is unchanged at angle 0; `ext_export_mesh.goui` | `TestPwlAngleTolerance`, `TestSurfaceAngleTolerance` (srf), `TestExportStlAngleTolerance` (slvs), `TestStlDropsFlatTriangles`, `TestExportMeshStrict` (sketch) | n/a: off by default, so the regeneration path is as before | n/a: application settings, not in the document | n/a: kept with the application's settings; see "The export options a script reaches" |
 | Style text height units, text alignment and factory-default reset from scripts (parity) | the style screen's own links, `ext_line_styles` | n/a: the screen and `Style.SetTextHeightAs`/`SetTextAlign` call the same `SetStyleTextHeightUnits`, `SetStyleTextHorizontal` and `SetStyleTextVertical` | `styles` | n/a: nothing of its own | n/a | n/a | `TestResetStyles` | `TestEveryFieldRoundTrips` |
 | Which drawing views appear and where views, sections and details go, in the window (parity) | `ext_drawing_views` | `path_drawing_views` | `drawing` (the script side is `Drawing.Set`) | `ext_drawing_views.goui` | n/a | n/a | `TestDrawingScreenViews` (one step each) | `TestEveryFieldRoundTrips` |
 | Group dependencies, bounding box and parameter users in the window (parity) | `ext_group_dependencies` | n/a: queries, `TestAnalyzeGroupDependencies` compares the dialog with the script's answers | n/a | `ext_group_dependencies.goui` | n/a | n/a | n/a: nothing changes | n/a |
@@ -171,6 +172,19 @@ The export tolerance does reach the exported mesh: `ExportMeshTo` regenerates at
 STL growing from the coarse to the fine tolerance and shrinking with the segment cap. The old
 claim, that a cylinder exported at 0.01% and at 5% with 8 segments gave identical files because
 the display mesh was cached, no longer holds.
+
+The mesh export has two more options. `AngleTol` (degrees, 0 for off) bounds the angle between
+neighbouring facets along a curve or across a surface, and `StrictMesh` makes the export refuse a
+mesh that is not sound (`sketch.ErrMeshNotSound`) instead of reporting it. `File.SetMeshQuality`
+takes one of the presets `api.MeshDraft` (chord tolerance 0.5 mm, no angle, 32 segments), `api.MeshStandard`
+(the default, 0.1 mm, no angle, 64 segments) or `api.MeshFine` (0.02 mm, 10 degrees, 256 segments), and
+`ExportOptions.Quality()` names the preset the current values match, or `MeshCustom`.
+`telesapr-cli export-mesh` takes `--quality`, `--angle-tol`, `--max-segments` and `--strict`; the
+last three override their part of the preset. The angle is applied by the PWL curves, the surface
+grid and the CDT cells, but not by the intersection curves found by marching, which keep the
+chord tolerance alone. An STL facet with two equal corners has no area and is no longer written.
+`TestScriptExportMeshQuality` (the window and a script write the same file) and
+`TestExportOptions`, `TestExportOptionsMesh`, `TestExportStrictMesh` (api) are the tests.
 
 Still open: a sketch opened without the application (`api.Open`, `New`) writes only STL and 3MF
 meshes, so there the 2d options (scale, canvas, PWL curves, G-code) are kept and returned but

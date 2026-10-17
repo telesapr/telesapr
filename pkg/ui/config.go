@@ -20,8 +20,10 @@ type config struct {
 	MaxSegments              int
 	ExportChordTol           float64
 	ExportMaxSegments        int
-	TimeoutRedundantConstr   int // milliseconds
-	AnimationSpeed           int // milliseconds
+	ExportAngleTol           float64 // degrees, 0 for none
+	ExportStrictMesh         bool    // refuse an unsound mesh
+	TimeoutRedundantConstr   int     // milliseconds
+	AnimationSpeed           int     // milliseconds
 	CameraTangentSetting     float64
 	GridSpacing              float64
 	ExportScale              float64
@@ -96,6 +98,8 @@ func (c *config) Thaw(s core.Settings) {
 	c.MaxSegments = int(s.ThawInt("MaxSegments", 20))
 	c.ExportChordTol = s.ThawFloat("ExportChordTolerance", 0.1)
 	c.ExportMaxSegments = int(s.ThawInt("ExportMaxSegments", 64))
+	c.ExportAngleTol = s.ThawFloat("ExportAngleTolerance", 0)
+	c.ExportStrictMesh = core.ThawBool(s, "ExportStrictMesh", false)
 	c.TimeoutRedundantConstr = int(s.ThawInt("TimeoutRedundantConstraints", 1000))
 	c.AnimationSpeed = int(s.ThawInt("AnimationSpeed", 800))
 	c.DefaultUnits = core.Unit(s.ThawInt("ViewUnits", uint32(core.UnitMM)))
@@ -176,6 +180,8 @@ func (c *config) Freeze(s core.Settings) {
 	s.FreezeInt("MaxSegments", uint32(c.MaxSegments))
 	s.FreezeFloat("ExportChordTolerance", f32(c.ExportChordTol))
 	s.FreezeInt("ExportMaxSegments", uint32(c.ExportMaxSegments))
+	s.FreezeFloat("ExportAngleTolerance", f32(c.ExportAngleTol))
+	core.FreezeBool(s, "ExportStrictMesh", c.ExportStrictMesh)
 	s.FreezeInt("TimeoutRedundantConstraints", uint32(c.TimeoutRedundantConstr))
 	s.FreezeInt("AnimationSpeed", uint32(c.AnimationSpeed))
 	s.FreezeInt("ViewUnits", uint32(c.DefaultUnits))

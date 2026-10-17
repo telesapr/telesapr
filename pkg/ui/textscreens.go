@@ -71,6 +71,7 @@ var screenTitles = map[Screen]string{
 	screenBillOfMaterials:  "bill of materials",
 	screenMotionStudy:      "motion study",
 	screenDrawing:          "drawing sheet",
+	screenExportMesh:       "export mesh",
 }
 
 // breadcrumb says where the screen shown is from the list of groups,
@@ -1880,6 +1881,9 @@ func (tw *textWindow) EditControlDone(s string) {
 			cnt++
 		}
 		if tw.EditControlDoneForSection(s) {
+			cnt++
+		}
+		if tw.EditControlDoneForExportMesh(s) {
 			cnt++
 		}
 		if tw.editMotion(s) {

@@ -374,6 +374,10 @@ var windowActions = map[string]string{
 	"ScreenChangeMaxSegments":              "Edit.SetMaxSegments",
 	"ScreenChangeExportChordTolerance":     "File.SetExportOptions",
 	"ScreenChangeExportMaxSegments":        "File.SetExportOptions",
+	"ScreenChangeExportAngleTol":           "File.SetExportOptions",
+	"ScreenChangeExportStrictMesh":         "File.SetExportOptions",
+	"ScreenChangeMeshQuality":              "File.SetMeshQuality",
+	"ScreenExportMeshNow":                  "File.Export File.ExportAs",
 	"ScreenChangeGridSpacing":              "- the snap grid is the window's view",
 	"ScreenChangeDigitsAfterDecimal":       "- how the window writes numbers; an application setting",
 	"ScreenChangeDigitsAfterDecimalDegree": "- how the window writes numbers; an application setting",
@@ -435,6 +439,7 @@ var windowActions = map[string]string{
 	"editDigitsAfterDecimal":       "- how the window writes numbers",
 	"editDigitsAfterDecimalDegree": "- how the window writes numbers",
 	"editExportScale":              "File.SetExportOptions",
+	"editExportAngleTol":           "File.SetExportOptions",
 	"editExportOffset":             "File.SetExportOptions",
 	"editCanvasSize":               "File.SetExportOptions",
 	"editGCodeDepth":               "File.SetExportOptions",
@@ -605,6 +610,9 @@ func TestEveryWindowActionHasAScriptCall(t *testing.T) {
 // hatch; any other "- " gives its own reason; "GAP:" marks a model edit
 // of the window that the script cannot make.
 var objectMethods = map[string]string{
+	"ExportOptions": `
+Quality  -q
+`,
 	"Doc": `
 Dimension      -q
 Describe       -q

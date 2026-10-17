@@ -46,6 +46,8 @@ func (h *ScriptHost) ExportOptions() api.ExportOptions {
 		},
 		ChordTol:    ss.ExportChordTol,
 		MaxSegments: ss.ExportMaxSegments,
+		AngleTol:    float64(ss.ExportAngleTol),
+		StrictMesh:  ss.ExportStrictMesh,
 	}
 }
 
@@ -76,5 +78,7 @@ func (h *ScriptHost) SetExportOptions(o api.ExportOptions) {
 	ss.GCode.PlungeFeed = toF32(o.GCode.PlungeFeed)
 	ss.ExportChordTol = o.ChordTol
 	ss.ExportMaxSegments = o.MaxSegments
+	ss.ExportAngleTol = toF32(o.AngleTol)
+	ss.ExportStrictMesh = o.StrictMesh
 	ss.applyEngineSettings()
 }

@@ -359,7 +359,7 @@ func (h *SketchHost) Export(kind ExportKind, path string) error {
 		return fmt.Errorf("export of %s: %w", filepath.Base(path), errUnsupported)
 	}
 	o := h.ExportOptions()
-	return h.sk.ExportMeshTo(path, sketch.ExportSettings{ChordTol: o.ChordTol, MaxSegments: o.MaxSegments, Scale: o.Scale})
+	return h.sk.ExportMeshTo(path, sketch.ExportSettings{ChordTol: o.ChordTol, MaxSegments: o.MaxSegments, Scale: o.Scale, AngleTol: o.AngleTol, Strict: o.StrictMesh})
 }
 
 // ExportOptions are the options set, or those of the settings store.

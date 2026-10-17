@@ -1141,6 +1141,8 @@ func (s *SSurface) MakeTriangulationGridInto(l *[]float64, vs, vf float64, swapp
 	// Try piecewise linearizing four curves, at u = 0, 1/3, 2/3, 1; choose
 	// the worst chord tolerance of any of those.
 	worstTwist := 1.0
+	worstTurn := 1.0
+	angleCos, angleOn := s.Tol.angleCos()
 	for i := range 4 {
 		u := float64(i) / 3.0
 
@@ -1167,12 +1169,22 @@ func (s *SSurface) MakeTriangulationGridInto(l *[]float64, vs, vf float64, swapp
 			worstTwist = twist
 		}
 
+		if angleOn {
+			n1 := s.NormalAtMaybeSwapped(u, vm1, swapped)
+			n2 := s.NormalAtMaybeSwapped(u, vm2, swapped)
+			if n1.Magnitude() >= lengthEps && n2.Magnitude() >= lengthEps {
+				worstTurn = min(worstTurn, n1.Dot(n2))
+			}
+		}
+
 		worst = geom.Max(worst, pm1.DistanceToLine(ps, pf.Minus(ps)))
 		worst = geom.Max(worst, pm2.DistanceToLine(ps, pf.Minus(ps)))
 	}
 
 	step := 1.0 / float64(s.Tol.MaxSegments())
-	if ((vf-vs) < step || worst < s.Tol.ChordTolMm()) && (worstTwist > 0.999 || depth >= gridMaxTwistDepth) {
+	if ((vf-vs) < step || worst < s.Tol.ChordTolMm()) &&
+		(!angleOn || worstTurn >= angleCos || depth >= gridMaxTwistDepth) &&
+		(worstTwist > 0.999 || depth >= gridMaxTwistDepth) {
 		*l = append(*l, vf)
 	} else {
 		s.MakeTriangulationGridInto(l, vs, (vs+vf)/2, swapped, depth+1)

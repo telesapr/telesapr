@@ -67,6 +67,7 @@ const (
 	screenBillOfMaterials
 	screenMotionStudy
 	screenDrawing
+	screenExportMesh
 )
 
 // Edit is what the edit control is editing.
@@ -164,6 +165,8 @@ const (
 	editCommandQuery Edit = 920
 	// For the section view (an extension)
 	editSectionOffset Edit = 930
+	// For the mesh export screen (an extension)
+	editExportAngleTol Edit = 931
 )
 
 // drawOrHitHow is what DrawOrHitTestIcons and the colour picker do.
@@ -795,6 +798,8 @@ func (tw *textWindow) Show() {
 			tw.ShowMotionStudy()
 		case screenDrawing:
 			tw.ShowDrawing()
+		case screenExportMesh:
+			tw.ShowExportMesh()
 		}
 	}
 	tw.Printf(false, "")
