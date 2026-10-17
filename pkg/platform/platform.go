@@ -293,6 +293,35 @@ type MessageDialog interface {
 	RunModal() Response
 }
 
+// FormValues are the values a FormDialog was closed with, by field key:
+// a choice's value is the index of the choice taken, a check's "1" or
+// "0", an entry's its text.
+type FormValues map[string]string
+
+// FormDialog asks for a few settings together in a popup window. The
+// fields go in the order they are added; a "&" in a label marks its
+// mnemonic.
+type FormDialog interface {
+	SetTitle(string)
+	// SetButtons labels the button that accepts the form and the one
+	// that cancels it.
+	SetButtons(accept, cancel string)
+	// AddChoice adds a row of radio buttons, one per choice, with
+	// choices[selected] taken.
+	AddChoice(key, label string, choices []string, selected int)
+	// AddEntry adds a line of text. A hint, when set, is shown after it.
+	AddEntry(key, label, text, hint string)
+	// AddCheck adds a check box.
+	AddCheck(key, label string, on bool)
+	// OnChange sets what is called when the user changes a field, with
+	// its key and new value; the values it returns, by key, are put
+	// into other fields (the call is not repeated for those).
+	OnChange(func(key, value string) FormValues)
+	// RunModal shows the form and returns the values of all fields, and
+	// whether the accept button was pressed.
+	RunModal() (FormValues, bool)
+}
+
 // FileFilter is a named set of file extensions.
 type FileFilter struct {
 	Name       string
@@ -326,6 +355,7 @@ type Platform interface {
 	MainMenu() (bar MenuBar, unique bool)
 	CreateWindow(kind WindowKind, parent Window) Window
 	CreateMessageDialog(parent Window) MessageDialog
+	CreateFormDialog(parent Window) FormDialog
 	CreateOpenFileDialog(parent Window) FileDialog
 	CreateSaveFileDialog(parent Window) FileDialog
 

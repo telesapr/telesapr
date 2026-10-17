@@ -5,6 +5,7 @@ package headless
 
 import (
 	"image"
+	"strconv"
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -27,11 +28,15 @@ type Platform struct {
 	DialogResponses []platform.Response
 	DialogsShown    []*MessageDialog
 	// FilePaths answer file dialogs, in order: "" cancels.
-	FilePaths    []string
-	FileDialogs  []*FileDialog
-	Fonts        []string
-	OpenedURLs   []string
-	ExitRequests int
+	FilePaths   []string
+	FileDialogs []*FileDialog
+	// FormResponses answer form dialogs, in order; FormsShown records
+	// them.
+	FormResponses []FormResponse
+	FormsShown    []*FormDialog
+	Fonts         []string
+	OpenedURLs    []string
+	ExitRequests  int
 
 	// PopUpHook, when set, picks the item a context menu without its own
 	// PopUpChoice triggers; nil triggers none.
@@ -40,6 +45,7 @@ type Platform struct {
 	// is run, before it is answered.
 	OnMessageDialog func(d *MessageDialog)
 	OnFileDialog    func(d *FileDialog)
+	OnFormDialog    func(d *FormDialog)
 }
 
 var _ platform.Platform = (*Platform)(nil)
@@ -135,6 +141,13 @@ func (p *Platform) CreateWindow(kind platform.WindowKind, parent platform.Window
 func (p *Platform) CreateMessageDialog(platform.Window) platform.MessageDialog {
 	d := &MessageDialog{platform: p}
 	p.DialogsShown = append(p.DialogsShown, d)
+	return d
+}
+
+// CreateFormDialog returns a dialog answered from FormResponses.
+func (p *Platform) CreateFormDialog(platform.Window) platform.FormDialog {
+	d := &FormDialog{platform: p}
+	p.FormsShown = append(p.FormsShown, d)
 	return d
 }
 
@@ -509,4 +522,104 @@ func (d *FileDialog) RunModal() bool {
 	}
 	d.Path = path
 	return true
+}
+
+// FormEdit is one change the user makes to a form's field.
+type FormEdit struct{ Key, Value string }
+
+// FormResponse is what the user does with a form: the changes they make,
+// in order, and then accepting it, or cancelling it.
+type FormResponse struct {
+	Edits  []FormEdit
+	Cancel bool
+}
+
+// FormField is a recorded field of a form.
+type FormField struct {
+	Key, Label string
+	// Kind is "choice", "entry" or "check".
+	Kind    string
+	Choices []string
+	Hint    string
+	// Value is the field's value as platform.FormValues hold it, as the
+	// form was shown and then as it was left.
+	Value string
+}
+
+// FormDialog is a recorded form.
+type FormDialog struct {
+	platform *Platform
+	Title    string
+	Accept   string
+	Cancel   string
+	Fields   []*FormField
+	onChange func(key, value string) platform.FormValues
+	// Result is the values the form was accepted with.
+	Result platform.FormValues
+}
+
+func (d *FormDialog) SetTitle(s string)                { d.Title = s }
+func (d *FormDialog) SetButtons(accept, cancel string) { d.Accept, d.Cancel = accept, cancel }
+func (d *FormDialog) AddChoice(key, label string, choices []string, selected int) {
+	d.Fields = append(d.Fields, &FormField{Key: key, Label: label, Kind: "choice", Choices: choices,
+		Value: strconv.Itoa(selected)})
+}
+func (d *FormDialog) AddEntry(key, label, text, hint string) {
+	d.Fields = append(d.Fields, &FormField{Key: key, Label: label, Kind: "entry", Value: text, Hint: hint})
+}
+func (d *FormDialog) AddCheck(key, label string, on bool) {
+	v := "0"
+	if on {
+		v = "1"
+	}
+	d.Fields = append(d.Fields, &FormField{Key: key, Label: label, Kind: "check", Value: v})
+}
+func (d *FormDialog) OnChange(fn func(key, value string) platform.FormValues) { d.onChange = fn }
+
+// Field is the field with the key, nil if there is none.
+func (d *FormDialog) Field(key string) *FormField {
+	for _, f := range d.Fields {
+		if f.Key == key {
+			return f
+		}
+	}
+	return nil
+}
+
+// RunModal makes the next scripted response's edits, as the window does
+// (each is told to the form's change callback, whose answers are put
+// into the other fields), and accepts the form or cancels it. It panics
+// without a response, so tests say what every form gets.
+func (d *FormDialog) RunModal() (platform.FormValues, bool) {
+	if d.platform.OnFormDialog != nil {
+		d.platform.OnFormDialog(d)
+	}
+	if len(d.platform.FormResponses) == 0 {
+		panic("headless: unexpected form dialog: " + d.Title)
+	}
+	r := d.platform.FormResponses[0]
+	d.platform.FormResponses = d.platform.FormResponses[1:]
+	for _, e := range r.Edits {
+		f := d.Field(e.Key)
+		if f == nil {
+			panic("headless: form dialog has no field " + e.Key)
+		}
+		f.Value = e.Value
+		if d.onChange == nil {
+			continue
+		}
+		for key, v := range d.onChange(e.Key, e.Value) {
+			if g := d.Field(key); g != nil && g != f {
+				g.Value = v
+			}
+		}
+	}
+	if r.Cancel {
+		return nil, false
+	}
+	d.Result = make(platform.FormValues, len(d.Fields))
+	for _, f := range d.Fields {
+		d.Result[f.Key] = f.Value
+	}
+	return d.Result, true
 }

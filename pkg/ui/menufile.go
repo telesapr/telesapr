@@ -438,9 +438,7 @@ func (ss *Application) menuExport(id Command) {
 		}
 
 	case cmdExportMesh:
-		ss.TW.GoToScreen(screenExportMesh)
-		ss.GW.ForceTextWindowShown()
-		ss.ScheduleShowTW()
+		ss.menuExportMesh()
 
 	case cmdExportSurfaces:
 		if filename, ok := ss.exportDialog(platform.SurfaceFileFilters, "ExportSurfaces"); ok {
