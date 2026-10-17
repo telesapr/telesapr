@@ -3,6 +3,7 @@ package tkgui
 import (
 	"image"
 	"image/color"
+	"maps"
 	"os"
 	"slices"
 	"testing"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/takigo/takigo/event"
 	tkplatform "github.com/takigo/takigo/platform"
+	"github.com/takigo/takigo/widget"
 
 	"github.com/telesapr/telesapr/pkg/platform"
 )
@@ -342,5 +344,50 @@ func TestTooltipStaysWhilePointerRests(t *testing.T) {
 	}
 	if !left {
 		t.Error("tooltip still shown after the pointer left its area")
+	}
+}
+
+// TestFormDialog edits a form's entry as the user does, which the
+// change callback answers by setting another field, and accepts it from
+// the keyboard; Escape cancels it.
+func TestFormDialog(t *testing.T) {
+	p := requireGUI(t)
+	w := p.CreateWindow(platform.WindowToplevel, nil)
+	w.SetVisible(true)
+	ask := func(sym tkplatform.KeySym) (platform.FormValues, bool) {
+		d := p.CreateFormDialog(w)
+		d.SetTitle("Options")
+		d.AddChoice("q", "Quality", []string{"Low", "High", "Custom"}, 0)
+		d.AddEntry("n", "Number", "5", "things")
+		d.AddCheck("c", "Strict", true)
+		d.OnChange(func(key, value string) platform.FormValues {
+			if key == "n" {
+				return platform.FormValues{"q": "2"}
+			}
+			return nil
+		})
+		dlg := d.(*FormDialog)
+		p.app.After(300*time.Millisecond, func() {
+			win := dlg.fields[1].entry.Window()
+			if sym == tkplatform.XK_Return {
+				widget.Focus(p.app, win)
+				p.app.Dispatcher().Dispatch(&event.Event{Type: event.KeyPressType, Window: win.PlatformID,
+					KeySym: '7', Str: "7"})
+			}
+			p.app.Dispatcher().Dispatch(&event.Event{Type: event.KeyPressType, Window: win.PlatformID, KeySym: sym})
+		})
+		return d.RunModal()
+	}
+	var got platform.FormValues
+	var ok, cancelled bool
+	run(p, func() {
+		got, ok = ask(tkplatform.XK_Return)
+		_, cancelled = ask(tkplatform.XK_Escape)
+	})
+	if want := (platform.FormValues{"q": "2", "n": "75", "c": "1"}); !ok || !maps.Equal(got, want) {
+		t.Errorf("accepted %v %v, want %v", got, ok, want)
+	}
+	if cancelled {
+		t.Error("Escape accepted the form")
 	}
 }

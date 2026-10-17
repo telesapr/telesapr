@@ -2,6 +2,7 @@ package tkgui
 
 import (
 	"strconv"
+	"unicode"
 
 	"github.com/takigo/takigo/dialog"
 	"github.com/takigo/takigo/event"
@@ -165,19 +166,39 @@ func (d *FormDialog) RunModal() (platform.FormValues, bool) {
 
 	const base = 100
 	accept := dialog.DialogResult(base)
-	btnCancel := button.New(dlg.BtnFrame, "cancel", button.Text(d.cancel),
-		button.Command(func() { dlg.Close(dialog.ResultCancel) }))
-	_ = pack.Pack(btnCancel, pack.SideOpt(pack.Right), pack.PadX(5))
-	btnOK := button.New(dlg.BtnFrame, "accept", button.Text(d.accept),
-		button.Command(func() { dlg.Close(accept) }))
-	_ = pack.Pack(btnOK, pack.SideOpt(pack.Right), pack.PadX(5))
-
-	// Return accepts, wherever the focus is in the dialog.
+	labels := [2]string{d.accept, d.cancel}
+	results := [2]dialog.DialogResult{accept, dialog.ResultCancel}
+	var underlines [2]int
+	// Packed from the right, so the accept button goes in last.
+	for i := len(labels) - 1; i >= 0; i-- {
+		text, underline := prepareMnemonics(labels[i])
+		labels[i], underlines[i] = text, underline
+		res := results[i]
+		btn := button.New(dlg.BtnFrame, "b"+strconv.Itoa(i), button.Text(text),
+			button.Command(func() { dlg.Close(res) }))
+		btn.Underline = underline
+		underlineButton(btn)
+		_ = pack.Pack(btn, pack.SideOpt(pack.Right), pack.PadX(5))
+	}
+	// Return accepts, and Alt with a mnemonic presses its button,
+	// wherever the focus is in the dialog.
 	tw := dlg.Toplevel.Window()
 	d.p.app.Dispatcher().BindGlobalFor(tw.PlatformID, event.KeyPressMask, func(ev *event.Event) {
-		if ev.Type == event.KeyPressType && !ev.Handled && inToplevel(tw, ev.Window) &&
-			(ev.KeySym == tkplatform.XK_Return || ev.KeySym == xkKPEnter) {
+		if ev.Type != event.KeyPressType || ev.Handled || !inToplevel(tw, ev.Window) {
+			return
+		}
+		switch {
+		case ev.KeySym == tkplatform.XK_Return || ev.KeySym == xkKPEnter:
 			dlg.Close(accept)
+		case ev.State&(tkplatform.Mod1Mask|tkplatform.ControlMask) == tkplatform.Mod1Mask:
+			r := unicode.ToLower(tkplatform.KeySymToRune(ev.KeySym))
+			for i, text := range labels {
+				if runes := []rune(text); r > 0 && underlines[i] >= 0 && underlines[i] < len(runes) &&
+					unicode.ToLower(runes[underlines[i]]) == r {
+					dlg.Close(results[i])
+					return
+				}
+			}
 		}
 	})
 
