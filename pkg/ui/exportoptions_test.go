@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
@@ -178,5 +179,69 @@ func TestExportQualitySettingsRoundTrip(t *testing.T) {
 	fresh.Thaw(platform.NewMemorySettings())
 	if fresh.ExportAngleTol != 0 || fresh.ExportStrictMesh {
 		t.Errorf("defaults %g, %t", fresh.ExportAngleTol, fresh.ExportStrictMesh)
+	}
+}
+
+// TestScriptExportMeshQuality is the Go pair for the mesh quality
+// options. They are application settings, not document state, so a
+// path_ pair (which compares saved files) can't judge them: the same
+// cylinder is exported after the export screen's links and after the
+// script's SetMeshQuality and SetExportOptions, and the two STL files
+// must be the same bytes, and finer than the standard preset's.
+func TestScriptExportMeshQuality(t *testing.T) {
+	build := func() (*Application, *api.Doc) {
+		ss, _ := newTestApp(t)
+		doc := api.NewDoc(ss.ScriptHost())
+		doc.Sketch.Circle(api.V(0, 0, 0), 10)
+		doc.Features.Extrude(5, "")
+		return ss, doc
+	}
+	dir := t.TempDir()
+
+	win, _ := build()
+	std := filepath.Join(dir, "std.stl")
+	if err := win.ExportMeshTo(std); err != nil {
+		t.Fatal(err)
+	}
+	tw := win.TW
+	tw.ScreenChangeMeshQuality(0, uint32(sketch.MeshQualityFine))
+	tw.ScreenChangeExportAngleTol(0, 0)
+	tw.EditControlDone("15")
+	byWindow := filepath.Join(dir, "window.stl")
+	if err := win.ExportMeshTo(byWindow); err != nil {
+		t.Fatal(err)
+	}
+
+	_, doc := build()
+	if err := doc.File.SetMeshQuality(api.MeshFine); err != nil {
+		t.Fatal(err)
+	}
+	o := doc.File.ExportOptions()
+	o.AngleTol = 15
+	if err := doc.File.SetExportOptions(o); err != nil {
+		t.Fatal(err)
+	}
+	byScript := filepath.Join(dir, "script.stl")
+	if err := doc.File.Export(byScript); err != nil {
+		t.Fatal(err)
+	}
+
+	a, err := os.ReadFile(byWindow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(byScript)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := os.ReadFile(std)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(a, b) {
+		t.Errorf("the window wrote %d bytes, the script %d, and they differ", len(a), len(b))
+	}
+	if len(a) <= len(s) {
+		t.Errorf("fine export is %d bytes, standard %d", len(a), len(s))
 	}
 }
