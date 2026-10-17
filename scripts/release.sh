@@ -14,7 +14,7 @@
 #      this, for when CI is known to be broken for a reason that is
 #      not the code);
 #   4. the notes are made: the commits since the previous tag, the
-#      compare link and the names of the packages (docs/releasing.md);
+#      compare link and the names of the packages (doc/releasing.md);
 #   5. the annotated tag carries the notes and is pushed;
 #   6. the GitHub release is created with the same notes;
 #   7. the Release workflow, which builds and attaches the packages, is
@@ -81,7 +81,7 @@ gh auth status >/dev/null 2>&1 || die "gh is not logged in"
 [[ -z $(git status --porcelain --untracked-files=no) ]] || die "working tree has uncommitted changes"
 git fetch -q origin master --tags
 [[ -z $(git rev-list HEAD..origin/master) ]] || die "master is behind origin/master"
-git rev-parse -q --verify "refs/tags/$tag" >/dev/null && die "tag $tag exists; bump pkg/version/version.go first (docs/releasing.md)"
+git rev-parse -q --verify "refs/tags/$tag" >/dev/null && die "tag $tag exists; bump pkg/version/version.go first (doc/releasing.md)"
 [[ -z $(git ls-remote --tags origin "refs/tags/$tag") ]] || die "tag $tag exists on origin"
 
 sha=$(git rev-parse HEAD)
@@ -132,5 +132,5 @@ for _ in $(seq 1 24); do
 done
 [[ -n $run ]] || die "no Release run for $tag after two minutes; see gh run list -w Release"
 echo "Waiting for Release run $run to attach the packages (Ctrl-C leaves it running)."
-gh run watch "$run" --exit-status >/dev/null || die "the Release run failed; see gh run view $run, and docs/releasing.md"
+gh run watch "$run" --exit-status >/dev/null || die "the Release run failed; see gh run view $run, and doc/releasing.md"
 echo "Done: $url"

@@ -14,7 +14,7 @@ read anyway.
 
 TeleSAPR saves `.tlspr`, a line-oriented text format with a version number in its header,
 written in a stable order so that a save is reproducible and a change is a small diff
-(`docs/tlspr-format.md`). The reader and writer live in `pkg/persist/tlspr`, split into a syntax
+(`doc/tlspr-format.md`). The reader and writer live in `pkg/persist/tlspr`, split into a syntax
 layer that knows nothing of sketches and a model layer that maps the tree to `sketch.Sketch`.
 A packed model, `.tlsprz`, is a zip of the model with what it links. `.slvs` is imported only,
 through `pkg/persist/slvs` and `telesapr-cli convert`. Files with the old `spacesolve` header are

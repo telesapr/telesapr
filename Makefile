@@ -34,7 +34,7 @@ help:
 	@echo "  make clean        - Remove bin/ and coverage.out"
 	@echo "  make distclean    - clean, plus the Go build, test and module caches"
 	@echo ""
-	@echo "Release (docs/releasing.md):"
+	@echo "Release (doc/releasing.md):"
 	@echo "  make dist         - The packages for this OS into bin/dist (version $(VERSION))"
 	@echo "  make dist-linux   - tar.gz, .deb and .rpm (needs the X11 development packages)"
 	@echo "  make dist-windows - zips, cross-compiled; the installers where Inno Setup is"
@@ -264,7 +264,7 @@ uninstall:
 
 # The packages a release carries, into bin/dist: each script builds the
 # binaries for its OS with -trimpath and without symbols, then wraps
-# them as docs/releasing.md lists. dist picks the script for this host.
+# them as doc/releasing.md lists. dist picks the script for this host.
 DIST_OUT = $(PWD)/bin/dist
 DIST_ENV = VERSION=$(VERSION) OUT=$(DIST_OUT) GOCACHE=$(PWD)/.gocache
 

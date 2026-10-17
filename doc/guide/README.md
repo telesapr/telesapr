@@ -60,6 +60,6 @@ the entries had before the menus took this order are still taken.
 | [Assemblies](bill-of-materials.md) | Mates; the parts counted, to a CSV file; interfering parts by their shells; STEP with its structure | `mates`, `bom` |
 | [Check Solid](check-solid.md) | Whether a solid is sound, and its volume | every example |
 
-Files are saved as `.tlspr`, a text format described in [`docs/tlspr-format.md`](../tlspr-format.md).
+Files are saved as `.tlspr`, a text format described in [`doc/tlspr-format.md`](../tlspr-format.md).
 SolveSpace's `.slvs` files are imported (File > Import, or `telesapr-cli convert`) and never
-written. Drawing with an AI model is in [`docs/ai.md`](../ai.md).
+written. Drawing with an AI model is in [`doc/ai.md`](../ai.md).

@@ -1,14 +1,14 @@
 # TeleSAPR: how the code is written
 
 Read this before changing anything. `README.md` says what the program is; `ROADMAP.md` says
-what is being built; `docs/adr/` says why the big decisions were taken. This file is the
+what is being built; `doc/adr/` says why the big decisions were taken. This file is the
 conventions, for people and for coding agents alike (`CLAUDE.md` is the same file).
 
 ## Layout
 
 - `cmd/telesapr` is the window, `cmd/telesapr-cli` the command-line tool. Both are thin.
 - `pkg/` holds the packages (a recorded deviation from the usual root layout: see
-  `docs/adr/0003-pkg-directory.md`; do not move them). Private helpers go under `pkg/internal/`
+  `doc/adr/0003-pkg-directory.md`; do not move them). Private helpers go under `pkg/internal/`
   or a package's own `internal/`. There is no `util`, `common` or `helpers` package.
 - The layers, each importing only the ones above it: `geom`, `libm`, `ttf`, `dxf` → `core` →
   `srf`, `solver`, `thread` → `topo` → `sketch` → `persist/*`, `export`, `check`, `render` →
@@ -46,7 +46,7 @@ conventions, for people and for coding agents alike (`CLAUDE.md` is the same fil
   identifiers have a doc comment that starts with their name; every package has a package
   comment.
 - Comments say why, in terms of this code. They do not describe the code by reference to
-  SolveSpace's C++ (`docs/adr/0001-separate-from-solvespace.md`).
+  SolveSpace's C++ (`doc/adr/0001-separate-from-solvespace.md`).
 - Lint is `golangci-lint` with `.golangci.yml`; the tree is clean. A `//nolint` carries a reason.
   `golangci-lint run --fix` is not run over `examples/`: the scripts there run in yaegi, which
   has no range over an integer or a function, so they keep the older forms. A range loop over a
@@ -56,7 +56,7 @@ conventions, for people and for coding agents alike (`CLAUDE.md` is the same fil
 ## Tests and the definition of done
 
 A feature is done when it is tested, has a user interface and has scripting support, and all
-three reach the same `pkg/sketch` entry point. `docs/done-audit.md` keeps the table.
+three reach the same `pkg/sketch` entry point. `doc/done-audit.md` keeps the table.
 
 - Tests of a package whose tests touch no process-wide state call `t.Parallel()`; a test that
   sets `srf.DefaultTolerance`, `ttf.DefaultFonts`, an environment variable or the working
@@ -118,5 +118,5 @@ At run time, `TELESAPR_PARALLEL=off` generates solids on one goroutine and
 - A commit does one thing and says why in its message. Regenerated goldens are a commit of their
   own.
 - takigo is a public module, required in `go.mod` at a tagged version.
-- A release is `make release` on `master` (`docs/releasing.md`): the tag is `v` +
+- A release is `make release` on `master` (`doc/releasing.md`): the tag is `v` +
   `version.Version`, bumped by hand in a commit of its own.

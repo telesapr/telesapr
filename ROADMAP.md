@@ -1,9 +1,9 @@
 # Roadmap
 
 What is left to build, as of 2026-10-11. Only open work is listed; what is built is described in
-`docs/guide`, `docs/ai.md` and `docs/done-audit.md`, and `docs/done-audit.md` holds the definition
+`doc/guide`, `doc/ai.md` and `doc/done-audit.md`, and `doc/done-audit.md` holds the definition
 of done every feature meets. The plan of steps 1 to 29 and the kernel's working notes were
-`ROADMAP-JUMP.md` and `docs/notes/` up to commit `e0004fc` (`git show e0004fc:ROADMAP-JUMP.md`);
+`ROADMAP-JUMP.md` and `doc/notes/` up to commit `e0004fc` (`git show e0004fc:ROADMAP-JUMP.md`);
 code comments that cite "ROADMAP-JUMP.md", "package 5.1" or "roadmap 24.2" refer to that file.
 
 Sizes are focused weeks for one developer who knows the code, the definition of done included:
@@ -102,7 +102,7 @@ explicit, reported "approximate" mode.
 ### K4 Constrained Delaunay mesher
 
 Postponed 2026-10-10 as the default. A two-day spike built it behind a switch, off by default, on
-the branch `k4-cdt-spike`. `docs/notes/k4-cdt-spike.md` has the design, the measurements, what
+the branch `k4-cdt-spike`. `doc/notes/k4-cdt-spike.md` has the design, the measurements, what
 was tried and what making it the default needs.
 
 Since 2026-10-11 it is merged as a mender (`pkg/srf/triangulate_mend.go`, `triangulate_check.go`):

@@ -1,6 +1,6 @@
 // A drawing in words: what Doc.Describe and Group.Describe say of a
 // plate with a hole, which is what an AI program reads of a drawing
-// before it writes a script for it (telesapr-cli mcp, docs/ai.md).
+// before it writes a script for it (telesapr-cli mcp, doc/ai.md).
 //
 // Without a window:
 //

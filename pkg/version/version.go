@@ -13,4 +13,4 @@ const SolveSpaceVersion = "3.2~cbff7a91"
 const Repository = "https://github.com/telesapr/telesapr"
 
 // Guide is the user's guide.
-const Guide = Repository + "/blob/master/docs/guide/README.md"
+const Guide = Repository + "/blob/master/doc/guide/README.md"

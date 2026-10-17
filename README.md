@@ -28,7 +28,7 @@ It is built and tested on Linux. See [`ROADMAP.md`](ROADMAP.md) for where it is 
   export of the mesh with its colours.
 - **Scripting in Go**, and **drawing with an AI model** through MCP.
 
-The [user's guide](docs/guide/README.md) has a page for each, built on an example script.
+The [user's guide](doc/guide/README.md) has a page for each, built on an example script.
 
 ## Download
 
@@ -47,7 +47,7 @@ Each [release](https://github.com/telesapr/telesapr/releases) carries `telesapr`
   `telesapr-cli` is inside, at `TeleSAPR.app/Contents/MacOS/telesapr-cli`.
 
 `SHA256SUMS` lists the checksums. The Windows and macOS packages are built by the release
-workflow and not tested by it; TeleSAPR is tested on Linux. `docs/releasing.md` says how a
+workflow and not tested by it; TeleSAPR is tested on Linux. `doc/releasing.md` says how a
 release is made.
 
 ## Build
@@ -125,7 +125,7 @@ its own and needs no API key.
 
 The model writes scripts against `pkg/script/api`, reads the drawing in words and looks at
 pictures of it. Each script shows in the script console and is one step of undo.
-`telesapr-cli mcp --headless` does the same without a window. See [`docs/ai.md`](docs/ai.md).
+`telesapr-cli mcp --headless` does the same without a window. See [`doc/ai.md`](doc/ai.md).
 
 ## Project structure
 
@@ -133,7 +133,7 @@ pictures of it. Each script shows in the script console and is one step of undo.
 cmd/telesapr/          The application
 cmd/telesapr-cli/      The command-line tool
 dist/freedesktop/      Desktop entry, icons and MIME type
-docs/                  The user's guide, the .tlspr format, the AI guide, the audit
+doc/                  The user's guide, the .tlspr format, the AI guide, the audit
 examples/scripts/      Example scripts, one or more per feature
 pkg/
 ├── check/             Invariants of a sound solid: the test oracle, Analyze > Check Solid

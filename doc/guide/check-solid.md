@@ -34,7 +34,7 @@ fmt.Println(r.Faces, r.Volume, r.CenterOfMass)
 `group.Solid().Problems()` lists the topology's problems by face and edge.
 
 Every solid feature is tested by checking many variants of it this way, in sweeps; the tests and
-their failure rates are listed in [`docs/done-audit.md`](../done-audit.md).
+their failure rates are listed in [`doc/done-audit.md`](../done-audit.md).
 
 ## Ray-cast check
 

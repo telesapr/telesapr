@@ -25,7 +25,7 @@ One language for the program, its tests and its users; a feature is scriptable t
 API method exists, and the definition of done requires that method. yaegi lags the Go release
 (it reads up to the version it was built for, and has its own forms for a few constructs), so the
 symbol tables pin what scripts see. A sandbox is not provided: a script can do what the program
-can, which `docs/ai.md` says plainly.
+can, which `doc/ai.md` says plainly.
 
 ## Addendum, 2026-10-10: the API follows the menus
 
@@ -38,4 +38,4 @@ things in the drawing. What only one kind of group has is on a view of it
 commands. `api.MenuCalls` names the call of every menu entry, a test holds it to the menu both
 ways, and `help("Features > Fillet Edges")` reads it. The flat names were dropped, not kept as
 aliases, which would have kept the long lists: a script of 0.4 is brought up to date with
-`docs/script-api-renames.md`.
+`doc/script-api-renames.md`.

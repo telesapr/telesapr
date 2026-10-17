@@ -25,7 +25,7 @@ import (
 // headless platform, and the Go script testdata/ui/scripts/<goScript>.go
 // runs on a new sketch with no interface, as telesapr-cli run does.
 // Both paths must reach the same engine entry points, so neither can
-// drift from the other (docs/done-audit.md, "Definition of done").
+// drift from the other (doc/done-audit.md, "Definition of done").
 // The pairs are named path_*, and have no golden of their own: each
 // path is the other's judge. An interface script must not save: a save
 // regenerates, and the solver is not a fixed point, so a solved sketch

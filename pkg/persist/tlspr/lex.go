@@ -1,5 +1,5 @@
 // Package tlspr reads and writes TeleSAPR's own file format, .tlspr,
-// described in docs/tlspr-format.md.
+// described in doc/tlspr-format.md.
 //
 // The syntax layer (lex.go, parse.go, print.go) turns text into a tree
 // of statements and back, and knows nothing about sketches. The model

@@ -4063,7 +4063,7 @@
 	},
 	"github.com/telesapr/telesapr/pkg/persist/tlspr": {
 		"name": "tlspr",
-		"text": "Package tlspr reads and writes TeleSAPR's own file format, .tlspr, described in docs/tlspr-format.md.",
+		"text": "Package tlspr reads and writes TeleSAPR's own file format, .tlspr, described in doc/tlspr-format.md.",
 		"types": {
 			"Document": {
 				"text": "Document is a decoded file.",

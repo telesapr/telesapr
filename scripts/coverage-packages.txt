@@ -1,6 +1,6 @@
 # Packages that scripts/coverage-check.sh holds to 85% statement
 # coverage, one per line, as paths from the module root (pkg/check).
-# Every package created after 2026-10-01 goes here (docs/done-audit.md,
+# Every package created after 2026-10-01 goes here (doc/done-audit.md,
 # "Definition of done for every new feature").
 pkg/check
 pkg/internal/sweep
