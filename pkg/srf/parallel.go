@@ -125,6 +125,9 @@ type curveSink struct {
 	shell    *SShell
 	deferred bool
 	entries  []sinkEntry
+	// failed is a deferred sink's mark that the Boolean failed, which
+	// commitTo gives the shell: the sinks are filled concurrently.
+	failed bool
 }
 
 // sinkEntry is a curve on a deferred sink's list, or an exact curve
@@ -203,6 +206,15 @@ func (k *curveSink) add(sc SCurve) {
 	k.entries = append(k.entries, sinkEntry{curve: sc, added: true})
 }
 
+// fail marks the Boolean the sink's curves are for as failed.
+func (k *curveSink) fail() {
+	if !k.deferred {
+		k.shell.BooleanFailed = true
+		return
+	}
+	k.failed = true
+}
+
 // putExact takes the outcome of AddExactIntersectionCurve: the curve,
 // or nil if it was dropped.
 func (k *curveSink) putExact(sc *SCurve, ex exactCurve) {
@@ -229,6 +241,9 @@ var sinkRedone atomic.Int64
 // order would have; if that finds another curve than the sink knew of,
 // the exact curve is added over again.
 func (k *curveSink) commitTo(into *SShell, first int) {
+	if k.failed {
+		into.BooleanFailed = true
+	}
 	// Where each entry went in into.Curve; -1 if nowhere, or if it was
 	// made over.
 	at := make([]int, len(k.entries))
