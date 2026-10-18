@@ -148,7 +148,19 @@ func (d *Doc) read(fn func(sk *sketch.Sketch)) {
 
 // change runs fn, which changes the sketch.
 func (d *Doc) change(fn func(sk *sketch.Sketch)) {
+	d.changeOf(core.HGroup{}, fn)
+}
+
+// changeOf is change for a change of group hg's own settings. A group
+// that makes a solid is made at the read after it is added
+// (SketchHost.AddGroup); a change of anything else makes it first, so
+// that what is made is what it would have been made at once, but one of
+// the group itself, as its combine mode, is made with it.
+func (d *Doc) changeOf(hg core.HGroup, fn func(sk *sketch.Sketch)) {
 	d.h.Run(func() {
+		if p := d.h.Sketch().AddedPending(); p.V != 0 && p != hg {
+			d.h.Regenerate()
+		}
 		d.h.Changing()
 		fn(d.h.Sketch())
 	})

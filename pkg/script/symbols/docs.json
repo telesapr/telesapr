@@ -5853,7 +5853,7 @@
 					},
 					"AddGroup": {
 						"decl": "func (h *SketchHost) AddGroup(g sketch.Group, seed func(sk *sketch.Sketch, hg core.HGroup)) core.HGroup",
-						"text": "AddGroup adds g after the active group, activates it, and\nregenerates it and what follows it; seed is as for Host.AddGroup."
+						"text": "AddGroup adds g after the active group, activates it, and\nregenerates it and what follows it, a group that makes a solid at the\nnext read; seed is as for Host.AddGroup."
 					},
 					"BeginEval": {
 						"decl": "func (h *SketchHost) BeginEval()",
@@ -7394,6 +7394,10 @@
 						"decl": "func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, error)",
 						"text": "AddThread makes a screw thread on the circle or arc he, along its normal, after the active group: a sketch and a lathe group that turn the part down to the root of the thread (or bore it out, for an internal thread), then a sketch of the ridge and a helix group that sweeps it."
 					},
+					"AddedPending": {
+						"decl": "func (sk *Sketch) AddedPending() core.HGroup",
+						"text": "AddedPending is the group ScheduleAdded scheduled whose regeneration has not run yet, or zero."
+					},
 					"AlignSameOrientation": {
 						"decl": "func (s *Sketch) AlignSameOrientation(c *core.Constraint, active core.HGroup)",
 						"text": "AlignSameOrientation turns the normal of a same-orientation constraint that the active group can move onto the one it can't, as near as the constraint allows, so that the solver starts at the answer instead of finding a quarter turn of its own."
@@ -7926,6 +7930,10 @@
 					"SameChamferDistances": {
 						"decl": "func (sk *Sketch) SameChamferDistances(h core.HGroup) error",
 						"text": "SameChamferDistances makes the second distance of chamfer h its first again."
+					},
+					"ScheduleAdded": {
+						"decl": "func (sk *Sketch) ScheduleAdded(hg core.HGroup)",
+						"text": "ScheduleAdded is GenerateAdded when Refresh next runs: what was added can then be changed, as a script sets the combine mode of a solid it has just made, before anything is made of it."
 					},
 					"ScheduleGenerateAll": {
 						"decl": "func (sk *Sketch) ScheduleGenerateAll()",

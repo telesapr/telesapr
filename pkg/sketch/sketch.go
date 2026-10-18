@@ -112,6 +112,10 @@ type Sketch struct {
 	Unsaved bool
 
 	scheduledGenerateAll bool
+	// scheduledAdded is the group just added whose regeneration is
+	// scheduled (ScheduleAdded), which Refresh then makes as
+	// GenerateAdded does; zero for none.
+	scheduledAdded core.HGroup
 
 	// freedom caches GroupFreedom.
 	freedom []freedomCache

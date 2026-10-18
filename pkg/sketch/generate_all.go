@@ -910,6 +910,14 @@ const (
 // the model's size, and so the tolerance their solids are made at, has
 // changed.
 func (sk *Sketch) GenerateAdded(hg core.HGroup) {
+	sk.ScheduleAdded(hg)
+	sk.Refresh()
+}
+
+// ScheduleAdded is GenerateAdded when Refresh next runs: what was added
+// can then be changed, as a script sets the combine mode of a solid it
+// has just made, before anything is made of it.
+func (sk *Sketch) ScheduleAdded(hg core.HGroup) {
 	sk.orderGroups()
 	from := map[core.HGroup]bool{hg: true}
 	if g := sk.Group(hg); g != nil {
@@ -924,9 +932,13 @@ func (sk *Sketch) GenerateAdded(hg core.HGroup) {
 			sk.Group(h).Clean = false
 		}
 	}
-	sk.scheduledGenerateAll = false
-	sk.generateAll(GenerateNew, false, false)
+	sk.scheduledAdded = hg
+	sk.ScheduleGenerateAll()
 }
+
+// AddedPending is the group ScheduleAdded scheduled whose regeneration
+// has not run yet, or zero.
+func (sk *Sketch) AddedPending() core.HGroup { return sk.scheduledAdded }
 
 // profiles are the sketches the group makes a solid of.
 func (g *Group) profiles() []core.HGroup {
@@ -981,8 +993,12 @@ func (sk *Sketch) ScheduleGenerateAll() {
 // Refresh does the scheduled regeneration.
 func (sk *Sketch) Refresh() {
 	if sk.scheduledGenerateAll {
-		sk.scheduledGenerateAll = false
-		sk.generateAll(GenerateDirty, false, false)
+		typ := GenerateDirty
+		if sk.scheduledAdded.V != 0 {
+			typ = GenerateNew
+		}
+		sk.scheduledGenerateAll, sk.scheduledAdded = false, core.HGroup{}
+		sk.generateAll(typ, false, false)
 	}
 }
 

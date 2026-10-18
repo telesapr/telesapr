@@ -398,7 +398,7 @@ func (g Group) Combine() (how sketch.CombineAs) {
 // source group's or edit the solid so far, and fail, as the group
 // screen doesn't offer the choice for them.
 func (g Group) SetCombine(how sketch.CombineAs) {
-	g.d.change(func(sk *sketch.Sketch) {
+	g.d.changeOf(g.H, func(sk *sketch.Sketch) {
 		group := g.get(sk)
 		if !group.HasCombine() {
 			fail("%s has no combine mode of its own: a %s takes its source group's or edits the solid so far",
@@ -430,7 +430,7 @@ func (g Group) SetColor(red, green, blue int) {
 	if red < 0 || red > 255 || green < 0 || green > 255 || blue < 0 || blue > 255 {
 		fail("a colour is 0 to 255 for each of red, green and blue, not %d, %d, %d", red, green, blue)
 	}
-	g.d.change(func(sk *sketch.Sketch) {
+	g.d.changeOf(g.H, func(sk *sketch.Sketch) {
 		group := g.get(sk)
 		if !group.HasColor() {
 			fail("%s has no colour of its own: a %s doesn't colour its solid", groupDescription(group), kindName(group.Type))
