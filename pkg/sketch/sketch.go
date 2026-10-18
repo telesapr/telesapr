@@ -3,6 +3,7 @@ package sketch
 import (
 	"fmt"
 	"image"
+	"sort"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -174,6 +175,13 @@ func (s *Sketch) Entity(h core.HEntity) *core.Entity {
 	if i, ok := s.entityIndex[h]; ok && i < len(s.Entities) && s.Entities[i].H == h {
 		return &s.Entities[i]
 	}
+	// The list is kept sorted by handle, and a regeneration moves its
+	// entities after each group: found by halves, the index is mended
+	// for the one entity rather than made again for them all.
+	if i := sort.Search(len(s.Entities), func(i int) bool { return s.Entities[i].H.V >= h.V }); i < len(s.Entities) && s.Entities[i].H == h && s.entityIndex != nil {
+		s.entityIndex[h] = i
+		return &s.Entities[i]
+	}
 	s.entityIndex = make(map[core.HEntity]int, len(s.Entities))
 	for i := range s.Entities {
 		s.entityIndex[s.Entities[i].H] = i
@@ -216,6 +224,11 @@ func (s *Sketch) SeedParam(h core.HParam, v float64) {
 
 func (s *Sketch) Param(h core.HParam) *core.Param {
 	if i, ok := s.paramIndex[h]; ok && i < len(s.Params) && s.Params[i].H == h {
+		return &s.Params[i]
+	}
+	// As for Entity.
+	if i := sort.Search(len(s.Params), func(i int) bool { return s.Params[i].H.V >= h.V }); i < len(s.Params) && s.Params[i].H == h && s.paramIndex != nil {
+		s.paramIndex[h] = i
 		return &s.Params[i]
 	}
 	s.paramIndex = make(map[core.HParam]int, len(s.Params))
