@@ -45,7 +45,8 @@ func (m AssemblyMenu) ExportBOM(path string) error {
 
 // Link brings in another sketch file, a STEP file, or a mesh file (STL
 // or OBJ), as
-// a group, named after the file if name is empty. The new group becomes
+// a group, named after the file if name is empty, where the file draws
+// it: LinkGroup.Move and Rotate place it. The new group becomes
 // active. A STEP file comes in as a reference mesh, its faces
 // tessellated, with a point at each vertex and at the centre of each
 // circular edge for constraints to use; LinkInfo and LinkProblem say
@@ -79,7 +80,13 @@ func (m AssemblyMenu) Link(path, name string) (g Group, err error) {
 			}, stem)
 		}
 		return g
-	}, nil), nil
+	}, func(sk *sketch.Sketch, hg core.HGroup) {
+		// Where the window puts a model, beside what is drawn, depends
+		// on the view; a script's result must not.
+		for i := range 3 {
+			sk.SeedParam(hg.Param(i), 0)
+		}
+	}), nil
 }
 
 // LinkStep links a STEP file as Link does, as a solid when asSolid is
