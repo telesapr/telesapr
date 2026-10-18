@@ -105,6 +105,7 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	g.BooleanFailed = false
 	g.Problem = GroupProblem{}
 	g.forgetTopology()
+	g.solidTol = sk.tol
 
 	srcg := g
 

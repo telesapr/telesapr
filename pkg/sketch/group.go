@@ -222,6 +222,10 @@ type Group struct {
 	// group's solid as it was (shelljob.go).
 	ShellsStale bool
 
+	// solidTol is the tolerance the group's solid was last made at,
+	// which a regeneration that leaves the group alone keeps.
+	solidTol srf.Tolerance
+
 	// Appearance is how the group's solid takes light when the window
 	// shades (roadmap 19.2): matte, plastic, glossy or metal, "" for
 	// plastic; FaceAppearances give single faces their own.

@@ -32,11 +32,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		name = "regenerate for size"
 	}
 	defer trace.StartRegion(context.Background(), name).End()
-	sk.GroupOrder = sk.GroupOrder[:0]
-	for i := range sk.Groups {
-		sk.GroupOrder = append(sk.GroupOrder, sk.Groups[i].H)
-	}
-	slices.SortStableFunc(sk.GroupOrder, func(a, b core.HGroup) int { return cmp.Compare(sk.Group(a).Order, sk.Group(b).Order) })
+	sk.orderGroups()
 
 	// Parameters and stored expressions first, since they set the
 	// values the groups are solved for and which groups are dirty.
@@ -46,7 +42,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 
 	var first, last int
 	switch typ {
-	case GenerateDirty:
+	case GenerateDirty, GenerateNew:
 		first, last = math.MaxInt, 0
 
 		// Start from the first dirty group, and solve until the active group,
@@ -64,6 +60,10 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		if first == math.MaxInt || last == 0 {
 			// All clean; so just regenerate the entities, and don't solve anything.
 			first, last = -1, -1
+		} else if typ == GenerateNew {
+			// A group put in before others: they are made again too,
+			// as what they refer to may have moved.
+			last = math.MaxInt
 		}
 
 	case GenerateAll:
@@ -93,6 +93,13 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		size := box.MaxP.Minus(box.MinP)
 		maxSize := geom.Max(size.X, geom.Max(size.Y, size.Z))
 		sk.tol = srf.Tol(maxSize*sk.chordTolPct()/100.0, sk.SegmentLimit()).WithMesher(sk.Mesher)
+		// The groups before a new one keep their solids, made at the
+		// tolerance of some regeneration before; when the model's
+		// size, and so the tolerance, has changed since, they are made
+		// again, so that the model is meshed as when it is read.
+		if typ == GenerateNew && first > 0 && sk.solidsMadeAtOther(first) {
+			first = 0
+		}
 	}
 
 	// Remove any requests or constraints that refer to a nonexistent
@@ -883,7 +890,9 @@ func ParseExprText(s string) *core.Expr {
 
 // GenerateType is which groups GenerateAll solves: all of them; from
 // the first dirty or unsolved one to the active one; none, only
-// regenerating the entities; or up to the active one.
+// regenerating the entities; up to the active one; or, for a group
+// just added, from the first dirty one to the active one, and all of
+// them if the chord tolerance changes.
 type GenerateType int
 
 const (
@@ -891,7 +900,65 @@ const (
 	GenerateDirty
 	GenerateRegen
 	GenerateUntilActive
+	GenerateNew
 )
+
+// GenerateAdded regenerates after group hg was added: hg and the groups
+// after it, which may refer to what it makes, and the sketches it makes
+// a solid of, which say what is wrong with them as a profile only once
+// something is made of them. The groups before are as they were, unless
+// the model's size, and so the tolerance their solids are made at, has
+// changed.
+func (sk *Sketch) GenerateAdded(hg core.HGroup) {
+	sk.orderGroups()
+	from := map[core.HGroup]bool{hg: true}
+	if g := sk.Group(hg); g != nil {
+		for _, h := range g.profiles() {
+			from[h] = true
+		}
+	}
+	dirty := false
+	for _, h := range sk.GroupOrder {
+		dirty = dirty || from[h]
+		if dirty {
+			sk.Group(h).Clean = false
+		}
+	}
+	sk.scheduledGenerateAll = false
+	sk.generateAll(GenerateNew, false, false)
+}
+
+// profiles are the sketches the group makes a solid of.
+func (g *Group) profiles() []core.HGroup {
+	switch g.Type {
+	case GroupExtrude, GroupLathe, GroupRevolve, GroupHelix, GroupSweep:
+		return []core.HGroup{g.OpA}
+	case GroupLoft:
+		return g.LoftProfiles()
+	}
+	return nil
+}
+
+// solidsMadeAtOther reports whether a group before the one at first in
+// GroupOrder has a solid made at another tolerance than the sketch's.
+func (sk *Sketch) solidsMadeAtOther(first int) bool {
+	for _, h := range sk.GroupOrder[:first] {
+		// The references, and a group left out, make no solid.
+		if g := sk.Group(h); g.solidTol.IsSet() && g.solidTol != sk.tol {
+			return true
+		}
+	}
+	return false
+}
+
+// orderGroups puts the groups' handles in GroupOrder in their order.
+func (sk *Sketch) orderGroups() {
+	sk.GroupOrder = sk.GroupOrder[:0]
+	for i := range sk.Groups {
+		sk.GroupOrder = append(sk.GroupOrder, sk.Groups[i].H)
+	}
+	slices.SortStableFunc(sk.GroupOrder, func(a, b core.HGroup) int { return cmp.Compare(sk.Group(a).Order, sk.Group(b).Order) })
+}
 
 // GenerateAllTyped is GenerateAll with a GenerateType.
 func (sk *Sketch) GenerateAllTyped(t GenerateType) {
