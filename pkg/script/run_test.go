@@ -149,3 +149,24 @@ func TestHelpByName(t *testing.T) {
 		t.Errorf("Help of a name nothing has wrote %q", out.String())
 	}
 }
+
+// Statements whose lines stop in a call or after "defer func() {",
+// where the parser's first error is not that the source ended, are
+// read on to their end before they run: a closure that calls
+// doc.Batch, and one that recovers into a named result.
+func TestRunStopsInCall(t *testing.T) {
+	t.Parallel()
+	for name, src := range map[string]string{
+		"batch in a closure": "f := func() {\n\tdoc.Batch(func() {\n\t\tdoc.Sketch.Point(V(1, 2, 3))\n\t})\n}\nf()\nfmt.Println(\"boom\")",
+		"defer in a closure": "guard := func(fn func()) (msg string) {\n\tdefer func() {\n\t\tif r := recover(); r != nil {\n\t\t\tmsg = fmt.Sprint(r)\n\t\t}\n\t}()\n\tfn()\n\treturn \"\"\n}\nfmt.Println(guard(func() { panic(\"boom\") }))",
+	} {
+		var out bytes.Buffer
+		e, err := New(Options{Host: newHost(), Stdout: &out, Stderr: &out})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := e.Run(context.Background(), name, src); err != nil || out.String() != "boom\n" {
+			t.Errorf("%s: %v, printed %q", name, err, out.String())
+		}
+	}
+}

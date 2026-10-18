@@ -21,6 +21,7 @@ import (
 	"path"
 	"reflect"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -875,7 +876,28 @@ func Incomplete(err error, src string) bool {
 	msg := list[0].Msg
 	return strings.HasSuffix(msg, "found 'EOF'") || msg == "raw string literal not terminated" ||
 		msg == "comment not terminated" ||
-		(strings.HasPrefix(msg, "expected operand, found '}'") && !strings.HasSuffix(strings.TrimSpace(src), "}"))
+		(strings.HasPrefix(msg, "expected operand, found '}'") && !strings.HasSuffix(strings.TrimSpace(src), "}")) ||
+		endsEarly(src)
+}
+
+// endsEarly reports whether all that is wrong with src, read as
+// statements or as declarations, is that it stops: every error is where
+// the text ends. The interpreter's parser keeps the first error of a
+// line, which for source that stops in a call or after "defer func() {"
+// is not that the end came, but "missing ','" or that defer wants a call.
+func endsEarly(src string) bool {
+	for _, wrap := range [][2]string{{"package p\nfunc _() {\n", "\n}"}, {"package p\n", ""}} {
+		text := wrap[0] + src + wrap[1]
+		_, err := parser.ParseFile(token.NewFileSet(), "", text, parser.AllErrors|parser.SkipObjectResolution)
+		var list scanner.ErrorList
+		if !errors.As(err, &list) || len(list) == 0 {
+			continue
+		}
+		if !slices.ContainsFunc(list, func(e *scanner.Error) bool { return e.Pos.Offset < len(text) }) {
+			return true
+		}
+	}
+	return false
 }
 
 // unfinished reports whether src stops in the middle of something, as
