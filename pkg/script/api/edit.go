@@ -244,6 +244,29 @@ func (m EditMenu) SelectFaces(faces ...SolidFace) {
 	})
 }
 
+// SelectFaceEdges selects the edges that bound the faces, where they
+// meet other faces, and nothing else, as the context menu's Select Face
+// Edges does for the faces selected: for a fillet or a chamfer made from
+// the menu. The faces must be of the solid at the active group.
+func (m EditMenu) SelectFaceEdges(faces ...SolidFace) {
+	d := m.d
+	d.read(func(sk *sketch.Sketch) {
+		ids := make([]srf.FaceID, 0, len(faces))
+		for _, f := range faces {
+			ids = append(ids, f.id)
+		}
+		names, err := sk.FaceEdges(ids)
+		if err != nil {
+			fail("%v", err)
+		}
+		sel := make([]sketch.Selection, 0, len(names))
+		for _, n := range names {
+			sel = append(sel, sketch.Selection{Edge: n})
+		}
+		d.h.Select(sel)
+	})
+}
+
 // SelectedEdges are the edges of the solid selected on the drawing,
 // picked on the model or by SelectEdges, as edges of the solid at the
 // active group.

@@ -9,6 +9,7 @@ popup
   ---
   Shell Solid Open Here ind=0 en=1 act=0
   Mirror in This Plane ind=0 en=1 act=0
+  Select Face Edges ind=0 en=1 act=0
   Sketch On Face ind=0 en=1 act=0
   Appearance ind=0 en=1 act=0
     The group's own ind=0 en=1 act=0

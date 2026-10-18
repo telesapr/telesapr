@@ -4744,6 +4744,10 @@
 						"decl": "func (m EditMenu) SelectEdges(edges ...SolidEdge)",
 						"text": "SelectEdges selects edges of the solid on the drawing, and nothing\nelse, as picking them on the model does: for a fillet or a chamfer\nmade from the menu. The edges must be of the solid at the active\ngroup, which such a group is made after."
 					},
+					"SelectFaceEdges": {
+						"decl": "func (m EditMenu) SelectFaceEdges(faces ...SolidFace)",
+						"text": "SelectFaceEdges selects the edges that bound the faces, where they\nmeet other faces, and nothing else, as the context menu's Select Face\nEdges does for the faces selected: for a fillet or a chamfer made from\nthe menu. The faces must be of the solid at the active group."
+					},
 					"SelectFaces": {
 						"decl": "func (m EditMenu) SelectFaces(faces ...SolidFace)",
 						"text": "SelectFaces selects faces of the solid on the drawing, and nothing\nelse, as picking them on the model does: for a shell made from the\nmenu, or a face to draw on. A face an entity made is selected by its\nentity, one that no entity names by its identity."
@@ -7585,6 +7589,10 @@
 					"ExportMeshTo": {
 						"decl": "func (sk *Sketch) ExportMeshTo(filename string, es ExportSettings) error",
 						"text": "ExportMeshTo writes the active group's mesh, regenerated at the export chord tolerance, to filename; the extension picks the format, STL or 3MF."
+					},
+					"FaceEdges": {
+						"decl": "func (sk *Sketch) FaceEdges(faces []srf.FaceID) ([]topo.Name, error)",
+						"text": "FaceEdges are the edges of the solid at the active group that bound any of faces, where the face meets another: what the menu's Select Face Edges and a script's SolidFace.SelectEdges select."
 					},
 					"FaceName": {
 						"decl": "func (sk *Sketch) FaceName(id srf.FaceID) string",

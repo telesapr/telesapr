@@ -22,7 +22,7 @@ property browser do, and reference dimensions and comments apart from the other 
 and its key does nothing. Edit > Find Command (Ctrl+K) finds any entry by words of its name, and
 lists last, with the reason, those that can't run now. A right click offers what applies to what
 is under the pointer: on an edge of the solid, Fillet, Chamfer and Sweep Along Edges; on a face,
-Shell, Mirror and Sketch On Face; on a dimension, Edit Value; and on anything, a Group submenu to activate, hide,
+Shell, Mirror, Select Face Edges and Sketch On Face; on a dimension, Edit Value; and on anything, a Group submenu to activate, hide,
 suppress or delete the group it belongs to. The arrow keys move what is selected by a pixel of the view, ten with
 Shift, as a drag does (`Entity.MoveBy` in a script). A rectangle dragged from left to right selects what
 lies wholly inside it; dragged from right to left, drawn in the selection's colour, whatever it

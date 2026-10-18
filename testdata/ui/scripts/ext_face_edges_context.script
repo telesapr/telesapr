@@ -1,0 +1,22 @@
+# Select Face Edges from the context menu: the top face of the extrusion
+# of path_extrude, right-clicked, offers Select Face Edges, which selects
+# its four edges in place of the face; Chamfer Edges from the same menu
+# then takes them. Undo takes the chamfer back whole.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 290 265
+popup Select Face Edges
+down R 290 265
+up R 290 265
+dump
+menu Features|Chamfer Edges
+dump
+key z ctrl
+dump

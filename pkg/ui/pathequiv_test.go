@@ -218,6 +218,16 @@ func TestPathEquivalenceChamfer(t *testing.T) {
 	requireSamePaths(t, "path_chamfer", "path_chamfer")
 }
 
+// The top face of an extrusion picked with the mouse, its edges
+// selected from the context menu and chamfered, and the same made by a
+// script.
+func TestPathEquivalenceFaceEdges(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_face_edges", "path_face_edges")
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupChamfer || g.Problem.Msg != "" {
+		t.Errorf("the chamfer: type %d, problem %q", g.Type, g.Problem.Msg)
+	}
+}
+
 // A chamfer given a second distance and swapped on its screen, and by
 // a script (roadmap 28.1).
 func TestPathEquivalenceChamferTwo(t *testing.T) {

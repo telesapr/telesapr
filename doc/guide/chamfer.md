@@ -12,7 +12,10 @@ the edges it meets smoothly, round a rounded rectangle's corners by cones. Selec
 - line segments along edges between two flat faces, as the edges an extrusion makes;
 - circles where a flat face meets a cylinder or a cone, as an extruded circle's rims;
 - straight or circular edges of the solid itself, picked on the model. These include edges no
-  entity draws, such as where a pocket's wall meets the block's face.
+  entity draws, such as where a pocket's wall meets the block's face. To take every edge round a
+  face, right-click the face and choose Select Face Edges
+  ([`examples/scripts/face_edges`](../../examples/scripts/face_edges/face_edges.go);
+  `Edit.SelectFaceEdges` in a script).
 
 The group's screen lists the edges and takes a new distance, as a number or an expression.
 
