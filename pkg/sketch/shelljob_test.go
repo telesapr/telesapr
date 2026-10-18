@@ -80,3 +80,21 @@ func TestShellJob(t *testing.T) {
 	}
 	_ = d
 }
+
+// A job makes the solids at the sketch's own settings: the most
+// segments a curve may have, and the mesher.
+func TestShellJobSettings(t *testing.T) {
+	_, sk, cut := jobModel(t)
+	sk.MaxSegments = 60
+	sk.Mesher = 1
+	sk.GenerateAllTyped(sketch.GenerateAll)
+	want := sk.Group(cut.H).RunningShell
+	job := sk.NewShellJob()
+	job.Run()
+	if !sk.Apply(job) {
+		t.Fatal("the job wasn't applied")
+	}
+	if got := sk.Group(cut.H).RunningShell; !reflect.DeepEqual(got, want) {
+		t.Error("the job's solid differs from one made at the sketch's settings")
+	}
+}
