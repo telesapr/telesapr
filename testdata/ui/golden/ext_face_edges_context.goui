@@ -1,0 +1,55 @@
+popup
+  Assign to Style ind=0 en=1 act=0
+    No Style ind=0 en=1 act=0
+    Newly Created Custom Style... ind=0 en=1 act=0
+  Group Info ind=0 en=1 act=0
+  Style Info ind=0 en=1 act=0
+  Toggle Construction ind=0 en=1 act=0
+  ---
+  ---
+  Shell Solid Open Here ind=0 en=1 act=0
+  Mirror in This Plane ind=0 en=1 act=0
+  Select Face Edges ind=0 en=1 act=0
+  Sketch On Face ind=0 en=1 act=0
+  Appearance ind=0 en=1 act=0
+    The group's own ind=0 en=1 act=0
+    matte ind=0 en=1 act=0
+    plastic ind=0 en=1 act=0
+    glossy ind=0 en=1 act=0
+    metal ind=0 en=1 act=0
+  Measure Selection ind=0 en=1 act=0
+  Group ind=0 en=1 act=0
+    Hide ind=0 en=1 act=0
+    Suppress with What Uses It ind=0 en=1 act=0
+    ---
+    Delete Group ind=0 en=1 act=0
+  Delete ind=0 en=1 act=0
+  ---
+  Unselect All ind=0 en=1 act=0
+  ---
+  Zoom to Fit ind=0 en=1 act=0
+popup pick Select Face Edges
+pending 0 0 "" 0 0 0 0
+hover 8003002c 0 0
+selection 4 0/0/edge-80030007-8003002c-0-of-1 0/0/edge-80030010-8003002c-0-of-1 0/0/edge-80030019-8003002c-0-of-1 0/0/edge-80030022-8003002c-0-of-1
+active 3 0
+camera 5 0 0 0 1 0 0 0 1 0
+counts 3 7 67 8 40
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 4 0
+camera 5 0 0 0 1 0 0 0 1 0
+counts 4 7 67 8 40
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 3 0
+camera 5 0 0 0 1 0 0 0 1 0
+counts 3 7 67 8 40
+editor 0 "" 0 ""
+tw 0 unsaved 1 cursor 0 tooltip ""
