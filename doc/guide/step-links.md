@@ -10,7 +10,8 @@ TeleSAPR model or a triangle mesh: an STL file, binary or text, or a Wavefront O
 faces take the colours of the materials its `.mtl` file gives. A mesh links with a point at its
 origin, the corners of its bounding box, and a point at each vertex on its sharp edges. A STEP
 file or a mesh comes in where it was drawn, its coordinates the file's; a TeleSAPR model comes in
-off the middle of the view, beside what is drawn. A STEP file's solids are read and triangulated into a reference
+off the middle of the view, beside what is drawn, but where it was drawn when a script links it
+(`doc.Assembly.Link`), so that what a script makes doesn't depend on the view. A STEP file's solids are read and triangulated into a reference
 mesh, placed in the model, with a point at each vertex and at each circle's centre, so that
 the mesh can be constrained and measured against. The group's screen says what was read: the
 file's schema and unit, how many shapes, faces and triangles it gave, the chord tolerance it was

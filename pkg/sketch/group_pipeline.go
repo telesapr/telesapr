@@ -251,9 +251,14 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		if prevg != nil {
 			prevs = prevg.RunningShell
 		}
+		// A group that adds no solid, as a sketch, passes the solid so far
+		// through as it is, whatever its own combine mode: merged, the
+		// coplanar faces of the parts of an assembly before it would be
+		// joined across parts into faces that don't mesh.
+		combines := len(g.ThisShell.Surface) > 0 && !g.Suppress
 		g.generateForBooleanShell(&prevs, &g.ThisShell, &g.RunningShell, srcg.MeshCombine)
 
-		if srcg.MeshCombine != CombineAssemble {
+		if combines && srcg.MeshCombine != CombineAssemble {
 			g.RunningShell.MergeCoincidentSurfaces()
 		}
 

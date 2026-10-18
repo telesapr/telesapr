@@ -541,6 +541,13 @@ func (ss *Application) groupLink(g *sketch.Group) bool {
 // addNewGroup adds g after the active group, activates it and
 // regenerates.
 func (ss *Application) addNewGroup(g sketch.Group, rememberForUndo bool) core.HGroup {
+	return ss.addNewGroupSeeded(g, rememberForUndo, nil)
+}
+
+// addNewGroupSeeded is addNewGroup with the values the new group's
+// parameters start from, which seed gives them before its first
+// regeneration, as a script's Extrude gives its depth.
+func (ss *Application) addNewGroupSeeded(g sketch.Group, rememberForUndo bool, seed func(sk *sketch.Sketch, hg core.HGroup)) core.HGroup {
 	gw := ss.GW
 	sk := ss.SK
 
@@ -557,6 +564,9 @@ func (ss *Application) addNewGroup(g sketch.Group, rememberForUndo bool) core.HG
 
 	sk.BumpOrderAfterActive(&g)
 	hg := sk.AddGroup(g)
+	if seed != nil {
+		seed(sk, hg)
+	}
 	gg := sk.Group(hg)
 
 	if gg.Type == sketch.GroupLinked {

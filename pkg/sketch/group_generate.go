@@ -161,6 +161,7 @@ func (g *Group) generateDrawingWorkplane(sk *Sketch, entity *[]core.Entity) {
 // generateExtrude makes the entities and params of a GroupExtrude group.
 func (g *Group) generateExtrude(sk *Sketch, entity *[]core.Entity, param *[]core.Param) {
 	gn, _, _ := g.viewSeeds(sk)
+	gn = g.extrudeSeed(sk, gn)
 	h := g.H
 
 	AddParam(param, h.Param(0), gn.X)
@@ -506,6 +507,28 @@ func (g *Group) viewSeeds(sk *Sketch) (gn, gp, gc geom.Vector) {
 	gp = view.ProjRight.Plus(view.ProjUp).WithMagnitude(200 / view.Scale)
 	gc = view.Offset.ScaledBy(-1)
 	return gn, gp, gc
+}
+
+// extrudeSeed is where the solve of a new extrusion along its
+// workplane's normal starts: the view's normal, unless the workplane is
+// seen edge on. Then the view's normal projects onto the workplane's to
+// nothing, the first solid is a sheet in the sketch's own plane, and the
+// Boolean of it with the solid so far fails; the workplane's normal is
+// taken instead.
+func (g *Group) extrudeSeed(sk *Sketch, gn geom.Vector) geom.Vector {
+	if g.Subtype == GroupOneSkewed || g.Subtype == GroupTwoSkewed || core.IsFreeIn3D(g.Predef.EntityB) {
+		return gn
+	}
+	w := sk.Entity(g.Predef.EntityB)
+	if w == nil {
+		return gn
+	}
+	n := w.NormalEntity(sk).NormalN(sk)
+	// Within about six degrees of edge on.
+	if math.Abs(gn.Dot(n)) >= 0.1*gn.Magnitude() {
+		return gn
+	}
+	return n.WithMagnitude(gn.Magnitude())
 }
 
 // linksModel reports whether a link group links a model file, rather

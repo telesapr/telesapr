@@ -7,6 +7,7 @@ import (
 	"math"
 	"runtime/trace"
 	"slices"
+	"sort"
 	"time"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -295,8 +296,47 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 // sortByHandle sorts the entities and params by handle, the order the
 // lists are kept in.
 func (sk *Sketch) sortByHandle() {
-	slices.SortStableFunc(sk.Entities, func(a, b core.Entity) int { return cmp.Compare(a.H.V, b.H.V) })
-	slices.SortStableFunc(sk.Params, func(a, b core.Param) int { return cmp.Compare(a.H.V, b.H.V) })
+	sortTailStable(sk.Entities, func(e *core.Entity) uint32 { return e.H.V })
+	sortTailStable(sk.Params, func(p *core.Param) uint32 { return p.H.V })
+}
+
+// sortTailStable sorts s stably by key, as slices.SortStableFunc does,
+// in less time where s is sorted but for a tail: generateAll sorts the
+// lists after each group, which appends its own entities and params to
+// lists it left sorted, and sorting the whole of a list of entities
+// each time costs a large model more than the rest of a regeneration.
+// The tail is sorted alone and merged into the sorted head, from where
+// its first goes; what comes before that stays where it is.
+func sortTailStable[E any](s []E, key func(*E) uint32) {
+	head := 1
+	for head < len(s) && key(&s[head-1]) <= key(&s[head]) {
+		head++
+	}
+	if head >= len(s) {
+		return
+	}
+	slices.SortStableFunc(s[head:], func(a, b E) int { return cmp.Compare(key(&a), key(&b)) })
+	// The first of the head that the tail's first goes before: past
+	// those of an equal key, which stay first.
+	first := key(&s[head])
+	at := sort.Search(head, func(i int) bool { return key(&s[i]) > first })
+	if at == head {
+		return
+	}
+	// Merged from the end, the head's moving part steps right over where
+	// the tail was, which is kept aside: on an equal key the tail's goes
+	// later.
+	tail := slices.Clone(s[head:])
+	i, j := head-1, len(tail)-1
+	for k := len(s) - 1; j >= 0; k-- {
+		if i >= at && key(&s[i]) > key(&tail[j]) {
+			s[k] = s[i]
+			i--
+		} else {
+			s[k] = tail[j]
+			j--
+		}
+	}
 }
 
 // generateAllPruned is GenerateAll's "pruned:" exit: restore the

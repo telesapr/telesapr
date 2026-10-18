@@ -75,7 +75,13 @@ func (s *SSurface) addExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 	}
 
 	if sb.Start().Equals(sb.Finish()) {
-		panic("Unexpected zero-length edge")
+		// Only degenerate operands meet in a curve of no length, as a
+		// sketch extruded along a direction in its own plane: the
+		// Boolean fails, and the group says so, where a user's input
+		// must not stop the program.
+		into.fail()
+		into.putExact(nil, ex)
+		return
 	}
 
 	split.Source = CurveSourceIntersection

@@ -207,9 +207,9 @@ func (h *ScriptHost) Regenerate() {
 	}
 }
 
-func (h *ScriptHost) AddGroup(g sketch.Group) core.HGroup {
+func (h *ScriptHost) AddGroup(g sketch.Group, seed func(sk *sketch.Sketch, hg core.HGroup)) core.HGroup {
 	h.ss.GW.ClearSelection()
-	return h.ss.addNewGroup(g, false)
+	return h.ss.addNewGroupSeeded(g, false, seed)
 }
 
 // DeleteGroup is textWindow.ScreenDeleteGroup for any group.

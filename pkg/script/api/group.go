@@ -496,8 +496,9 @@ func newGroup(typ sketch.GroupType, name, defaultName string) sketch.Group {
 	return g
 }
 
-// add adds a group made by build, which runs on the sketch.
-func (d *Doc) add(build func(sk *sketch.Sketch) sketch.Group, after func(sk *sketch.Sketch, hg core.HGroup)) (g Group) {
+// add adds a group made by build, which runs on the sketch; seed, if
+// not nil, gives the new group's parameters their first values.
+func (d *Doc) add(build func(sk *sketch.Sketch) sketch.Group, seed func(sk *sketch.Sketch, hg core.HGroup)) (g Group) {
 	d.change(func(sk *sketch.Sketch) {
 		// What the new group is made from must be up to date.
 		if sk.RegenerationPending() {
@@ -516,13 +517,11 @@ func (d *Doc) add(build func(sk *sketch.Sketch) sketch.Group, after func(sk *ske
 				}
 			}
 		}
-		hg := d.h.AddGroup(ng)
-		sk = d.h.Sketch()
-		if after != nil {
-			after(sk, hg)
-			sk.MarkGroupDirty(hg, false)
-			d.h.Regenerate()
-		}
+		// The parameters are given before the group is first generated:
+		// solved from the view's guess, an extrusion can be a sheet the
+		// Boolean with the solid so far fails on, and each regeneration
+		// of a large model is one too many.
+		hg := d.h.AddGroup(ng, seed)
 		g = Group{d, hg}
 	})
 	return g

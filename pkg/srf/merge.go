@@ -138,6 +138,13 @@ func (s *SShell) mergeClass(class []int, curveAt map[core.HSCurve]*SCurve) (repl
 				if !sel.ContainsEdgeFrom(&tel) {
 					continue
 				}
+				// Faces beside each other run their shared edges opposite
+				// ways; one that runs the same way in both is where the
+				// faces lie on each other, as the faces of two parts of an
+				// assembly do, and joined they would not make one face.
+				if sel.sharesEdgeSameWay(&tel) {
+					continue
+				}
 
 				sj.Tag = 1
 				merged = true
@@ -244,6 +251,20 @@ func (el *SEdgeList) ContainsEdgeFrom(sel *SEdgeList) bool {
 	for i := range el.Edges {
 		if sel.ContainsEdge(&el.Edges[i]) {
 			return true
+		}
+	}
+	return false
+}
+
+// sharesEdgeSameWay reports whether an edge of sel is in el running the
+// same way.
+func (el *SEdgeList) sharesEdgeSameWay(sel *SEdgeList) bool {
+	for i := range sel.Edges {
+		set := &sel.Edges[i]
+		for j := range el.Edges {
+			if se := &el.Edges[j]; se.A.Equals(set.A) && se.B.Equals(set.B) {
+				return true
+			}
 		}
 	}
 	return false

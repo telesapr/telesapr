@@ -78,8 +78,10 @@ type Host interface {
 	// Regenerate regenerates what is dirty, now.
 	Regenerate()
 	// AddGroup adds g after the active group, activates it and
-	// regenerates.
-	AddGroup(g sketch.Group) core.HGroup
+	// regenerates. seed, if not nil, is called once g has its handle
+	// and before it is first regenerated, to give its parameters the
+	// values its first solve starts from (SeedParam).
+	AddGroup(g sketch.Group, seed func(sk *sketch.Sketch, hg core.HGroup)) core.HGroup
 	// DeleteGroup deletes a group, and with it what depends on it.
 	DeleteGroup(hg core.HGroup)
 	// Activate makes a group the one that is worked in.
@@ -225,10 +227,13 @@ func (h *SketchHost) Rollback() bool {
 func (h *SketchHost) Regenerate() { h.sk.Refresh() }
 
 // AddGroup adds g after the active group, activates it, and
-// regenerates.
-func (h *SketchHost) AddGroup(g sketch.Group) core.HGroup {
+// regenerates; seed is as for Host.AddGroup.
+func (h *SketchHost) AddGroup(g sketch.Group, seed func(sk *sketch.Sketch, hg core.HGroup)) core.HGroup {
 	sk := h.sk
 	hg := sk.AddGroupAfterActive(g)
+	if seed != nil {
+		seed(sk, hg)
+	}
 	gg := sk.Group(hg)
 	if gg.Type == sketch.GroupLinked && sk.ReloadAllLinked != nil {
 		sk.ReloadAllLinked(sk)

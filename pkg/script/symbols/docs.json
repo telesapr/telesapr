@@ -4295,7 +4295,7 @@
 					},
 					"Link": {
 						"decl": "func (m AssemblyMenu) Link(path, name string) (g Group, err error)",
-						"text": "Link brings in another sketch file, a STEP file, or a mesh file (STL\nor OBJ), as\na group, named after the file if name is empty. The new group becomes\nactive. A STEP file comes in as a reference mesh, its faces\ntessellated, with a point at each vertex and at the centre of each\ncircular edge for constraints to use; LinkInfo and LinkProblem say\nwhat was read."
+						"text": "Link brings in another sketch file, a STEP file, or a mesh file (STL\nor OBJ), as\na group, named after the file if name is empty, where the file draws\nit: LinkGroup.Move and Rotate place it. The new group becomes\nactive. A STEP file comes in as a reference mesh, its faces\ntessellated, with a point at each vertex and at the centre of each\ncircular edge for constraints to use; LinkInfo and LinkProblem say\nwhat was read."
 					},
 					"LinkStep": {
 						"decl": "func (m AssemblyMenu) LinkStep(path, name string, asSolid bool) (Group, error)",
@@ -5852,8 +5852,8 @@
 						"text": "Activate makes a group the active one."
 					},
 					"AddGroup": {
-						"decl": "func (h *SketchHost) AddGroup(g sketch.Group) core.HGroup",
-						"text": "AddGroup adds g after the active group, activates it, and\nregenerates."
+						"decl": "func (h *SketchHost) AddGroup(g sketch.Group, seed func(sk *sketch.Sketch, hg core.HGroup)) core.HGroup",
+						"text": "AddGroup adds g after the active group, activates it, and\nregenerates; seed is as for Host.AddGroup."
 					},
 					"BeginEval": {
 						"decl": "func (h *SketchHost) BeginEval()",
@@ -7933,6 +7933,10 @@
 					"SectionPlaneName": {
 						"decl": "func (sk *Sketch) SectionPlaneName() string",
 						"text": "SectionPlaneName names the section's plane for the user: a workplane by its request or group, a face by its group."
+					},
+					"SeedParam": {
+						"decl": "func (s *Sketch) SeedParam(h core.HParam, v float64)",
+						"text": "SeedParam sets param h to v, adding it if the group it belongs to has not been generated yet: the next regeneration takes v as where the param's solve starts, as it does a value from the regeneration before."
 					},
 					"SegmentLimit": {
 						"decl": "func (sk *Sketch) SegmentLimit() int",
