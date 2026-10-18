@@ -227,7 +227,7 @@ func (h *SketchHost) Rollback() bool {
 func (h *SketchHost) Regenerate() { h.sk.Refresh() }
 
 // AddGroup adds g after the active group, activates it, and
-// regenerates; seed is as for Host.AddGroup.
+// regenerates it and what follows it; seed is as for Host.AddGroup.
 func (h *SketchHost) AddGroup(g sketch.Group, seed func(sk *sketch.Sketch, hg core.HGroup)) core.HGroup {
 	sk := h.sk
 	hg := sk.AddGroupAfterActive(g)
@@ -238,9 +238,8 @@ func (h *SketchHost) AddGroup(g sketch.Group, seed func(sk *sketch.Sketch, hg co
 	if gg.Type == sketch.GroupLinked && sk.ReloadAllLinked != nil {
 		sk.ReloadAllLinked(sk)
 	}
-	gg.Clean = false
 	sk.Active = hg
-	sk.GenerateAll()
+	sk.GenerateAdded(hg)
 	gg = sk.Group(hg)
 	if gg != nil && gg.Type == sketch.GroupDrawingWorkplane {
 		gg.ActiveWorkplane = gg.H.Entity(0)

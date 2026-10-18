@@ -572,9 +572,10 @@ func (ss *Application) addNewGroupSeeded(g sketch.Group, rememberForUndo bool, s
 	if gg.Type == sketch.GroupLinked {
 		ss.reloadAllLinked()
 	}
-	gg.Clean = false
 	gw.setActiveGroup(gg.H)
-	ss.GenerateAll(sketch.GenerateAll)
+	ss.applyEngineSettings()
+	sk.GenerateAdded(hg)
+	ss.afterGenerate()
 	gg = sk.Group(hg)
 	if gg.Type == sketch.GroupDrawingWorkplane {
 		// Can't set the active workplane for this one until after we've
