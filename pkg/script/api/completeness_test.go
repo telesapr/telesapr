@@ -85,6 +85,7 @@ var noMenuEntry = map[string]string{
 	"Edit.SelectedFaces":           "the window shows the selection",
 	"Edit.SelectEdges":             "picking edges with the mouse",
 	"Edit.SelectFaces":             "picking faces with the mouse",
+	"Edit.SelectFaceEdges":         "Select Face Edges in the context menu of a face, which is no entry of the main menu",
 	"Edit.ChordTolerance":          "Edit > Preferences shows it",
 	"Edit.MaxSegments":             "Edit > Preferences shows it",
 	"Edit.CheckClosedContour":      "Edit > Preferences shows it",

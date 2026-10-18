@@ -164,6 +164,41 @@ func TestScriptHostSelectsSolid(t *testing.T) {
 	}
 }
 
+// The edges round a face, selected by a script and by the context
+// menu's entry, are the same; they replace the faces selected, and the
+// menu's chamfer takes them.
+func TestScriptHostSelectsFaceEdges(t *testing.T) {
+	ss, _ := newTestApp(t)
+	got := scriptConsole(t, ss,
+		`doc.Sketch.Rect(V(0, 0, 0), V(20, 10, 0))`,
+		`s := doc.Features.Extrude(10, "block").Solid()`,
+		`top := s.FaceAt(V(10, 5, 10))`,
+		`doc.Edit.SelectFaceEdges(top)`,
+		`len(doc.Edit.SelectedEdges())`,
+		`doc.Edit.SelectFaceEdges(top, s.FaceAt(V(0, 5, 5)))`,
+		`len(doc.Edit.SelectedEdges())`,
+		`doc.Edit.SelectFaces(top)`,
+	)
+	if want := "4\n7\n"; !strings.HasSuffix(got, want) {
+		t.Fatalf("the console showed:\n%s\nwant it to end with:\n%s", got, want)
+	}
+	// The entry of the context menu, on the face the script selected.
+	ss.SelectFaceEdges()
+	ss.GW.GroupSelection()
+	gs := ss.GW.gs
+	if len(gs.solidEdge) != 4 || len(ss.GW.selectedFaceIDs()) != 0 {
+		t.Fatalf("the entry selected %d edges and %d faces, want 4 and 0", len(gs.solidEdge), len(ss.GW.selectedFaceIDs()))
+	}
+	got = scriptConsole(t, ss,
+		`doc.Edit.RunCommand("Features > Chamfer Edges")`,
+		`doc.Active().Kind() + " " + doc.Active().Problem()`,
+		`doc.Edit.Undo()`,
+	)
+	if want := "nil\n\"chamfer \"\ntrue\n"; got != want {
+		t.Errorf("the console showed:\n%s\nwant:\n%s", got, want)
+	}
+}
+
 // loopPlatform is a headless platform with an event loop on another
 // goroutine, as the windowed one has.
 type loopPlatform struct {

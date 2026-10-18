@@ -246,6 +246,7 @@ func (gw *graphicsWindow) addModelItems(menu platform.Menu, gs *groupedSelection
 		// appearance of its own, as a whole group's is on the group's
 		// screen.
 		face, oneFace := gs.onlyFace()
+		menu.AddItem("Select Face Edges", func() { ss.SelectFaceEdges() }, true)
 		if oneFace {
 			menu.AddItem("Sketch On Face", func() { ss.MenuFeatures(cmdGroupSketchOnFace, "") }, true)
 		}

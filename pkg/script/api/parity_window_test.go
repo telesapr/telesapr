@@ -521,6 +521,7 @@ var windowActions = map[string]string{
 	"ctx:Shell Solid Open Here":              "Features.ShellSolid",
 	"ctx:Draft Selected Sides":               "ExtrudeGroup.SetDraftFaces",
 	"ctx:Mirror in This Plane":               "Features.Mirror",
+	"ctx:Select Face Edges":                  "Edit.SelectFaceEdges",
 	"ctx:Sketch On Face":                     "Features.SketchOnFace",
 	"ctx:Appearance":                         "View.SetFaceAppearance",
 	"ctx:The group's own":                    "View.SetFaceAppearance",
