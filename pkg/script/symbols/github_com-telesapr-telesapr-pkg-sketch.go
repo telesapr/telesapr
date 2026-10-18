@@ -59,6 +59,7 @@ func init() {
 		"GenerateConstraint":           reflect.ValueOf(sketch.GenerateConstraint),
 		"GenerateDirty":                reflect.ValueOf(sketch.GenerateDirty),
 		"GenerateEntityBeziers":        reflect.ValueOf(sketch.GenerateEntityBeziers),
+		"GenerateNew":                  reflect.ValueOf(sketch.GenerateNew),
 		"GenerateRegen":                reflect.ValueOf(sketch.GenerateRegen),
 		"GenerateUntilActive":          reflect.ValueOf(sketch.GenerateUntilActive),
 		"GroupChamfer":                 reflect.ValueOf(sketch.GroupChamfer),

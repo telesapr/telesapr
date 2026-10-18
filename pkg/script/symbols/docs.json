@@ -5853,7 +5853,7 @@
 					},
 					"AddGroup": {
 						"decl": "func (h *SketchHost) AddGroup(g sketch.Group, seed func(sk *sketch.Sketch, hg core.HGroup)) core.HGroup",
-						"text": "AddGroup adds g after the active group, activates it, and\nregenerates; seed is as for Host.AddGroup."
+						"text": "AddGroup adds g after the active group, activates it, and\nregenerates it and what follows it; seed is as for Host.AddGroup."
 					},
 					"BeginEval": {
 						"decl": "func (h *SketchHost) BeginEval()",
@@ -6815,13 +6815,14 @@
 				]
 			},
 			"GenerateType": {
-				"text": "GenerateType is which groups GenerateAll solves: all of them; from the first dirty or unsolved one to the active one; none, only regenerating the entities; or up to the active one.",
+				"text": "GenerateType is which groups GenerateAll solves: all of them; from the first dirty or unsolved one to the active one; none, only regenerating the entities; up to the active one; or, for a group just added, from the first dirty one to the active one, and all of them if the chord tolerance changes.",
 				"kind": "int",
 				"values": [
 					"GenerateAll",
 					"GenerateDirty",
 					"GenerateRegen",
-					"GenerateUntilActive"
+					"GenerateUntilActive",
+					"GenerateNew"
 				]
 			},
 			"Group": {
@@ -7625,6 +7626,10 @@
 					"FreezeDefaultStyles": {
 						"decl": "func (sk *Sketch) FreezeDefaultStyles(settings core.Settings)",
 						"text": "FreezeDefaultStyles saves the default styles as the user's settings, with widths and text heights at the view's scale."
+					},
+					"GenerateAdded": {
+						"decl": "func (sk *Sketch) GenerateAdded(hg core.HGroup)",
+						"text": "GenerateAdded regenerates after group hg was added: hg and the groups after it, which may refer to what it makes, and the sketches it makes a solid of, which say what is wrong with them as a profile only once something is made of them."
 					},
 					"GenerateAll": {
 						"decl": "func (sk *Sketch) GenerateAll()",
@@ -8535,6 +8540,9 @@
 			},
 			"GenerateDirty": {
 				"decl": "const GenerateDirty"
+			},
+			"GenerateNew": {
+				"decl": "const GenerateNew"
 			},
 			"GenerateRegen": {
 				"decl": "const GenerateRegen"
