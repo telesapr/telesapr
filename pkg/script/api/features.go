@@ -183,9 +183,9 @@ func (m FeaturesMenu) Extrude(depth float64, name string) Group {
 	}, func(sk *sketch.Sketch, hg core.HGroup) {
 		// The parameters are the vector to the middle of the extrusion.
 		v := n.ScaledBy(depth / 2)
-		sk.MustParam(hg.Param(0)).Val = v.X
-		sk.MustParam(hg.Param(1)).Val = v.Y
-		sk.MustParam(hg.Param(2)).Val = v.Z
+		sk.SeedParam(hg.Param(0), v.X)
+		sk.SeedParam(hg.Param(1), v.Y)
+		sk.SeedParam(hg.Param(2), v.Z)
 	})
 }
 
@@ -230,7 +230,7 @@ func (m FeaturesMenu) RevolveAbout(point, vector Entity, degrees float64, name s
 		return g
 	}, func(sk *sketch.Sketch, hg core.HGroup) {
 		// The group turns its copies twice by twice the parameter.
-		sk.MustParam(hg.Param(3)).Val = degrees * math.Pi / 180 / 4
+		sk.SeedParam(hg.Param(3), degrees*math.Pi/180/4)
 	})
 }
 
@@ -257,8 +257,8 @@ func (m FeaturesMenu) HelixAbout(point, vector Entity, degrees, length float64, 
 		return g
 	}, func(sk *sketch.Sketch, hg core.HGroup) {
 		// As for Revolve, and the copies move twice by the distance.
-		sk.MustParam(hg.Param(3)).Val = degrees * math.Pi / 180 / 4
-		sk.MustParam(hg.Param(7)).Val = length / 2
+		sk.SeedParam(hg.Param(3), degrees*math.Pi/180/4)
+		sk.SeedParam(hg.Param(7), length/2)
 	})
 }
 
@@ -280,9 +280,9 @@ func (m FeaturesMenu) Translate(n int, delta Vec, name string) Group {
 	}, func(sk *sketch.Sketch, hg core.HGroup) {
 		// Copy a is moved 2a times the parameters (stepTransform), so
 		// they hold half a step.
-		sk.MustParam(hg.Param(0)).Val = delta.X / 2
-		sk.MustParam(hg.Param(1)).Val = delta.Y / 2
-		sk.MustParam(hg.Param(2)).Val = delta.Z / 2
+		sk.SeedParam(hg.Param(0), delta.X/2)
+		sk.SeedParam(hg.Param(1), delta.Y/2)
+		sk.SeedParam(hg.Param(2), delta.Z/2)
 	})
 }
 
@@ -326,7 +326,7 @@ func (m FeaturesMenu) Rotate(n int, center, axis Entity, degrees float64, name s
 		// As for Revolve: copy a turns by the quaternion of 2a times
 		// parameter 3, which is 4a times it, so it holds a quarter step.
 		for i, v := range []float64{at.X, at.Y, at.Z, degrees * math.Pi / 180 / 4, dir.X, dir.Y, dir.Z} {
-			sk.MustParam(hg.Param(i)).Val = v
+			sk.SeedParam(hg.Param(i), v)
 		}
 	})
 }

@@ -126,7 +126,7 @@ func init() {
 type _github_com_telesapr_telesapr_pkg_script_api_Host struct {
 	IValue                 interface{}
 	WActivate              func(hg core.HGroup)
-	WAddGroup              func(g sketch.Group) core.HGroup
+	WAddGroup              func(g sketch.Group, seed func(sk *sketch.Sketch, hg core.HGroup)) core.HGroup
 	WChanging              func()
 	WCommands              func() []string
 	WDeleteGroup           func(hg core.HGroup)
@@ -159,8 +159,8 @@ type _github_com_telesapr_telesapr_pkg_script_api_Host struct {
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Activate(hg core.HGroup) {
 	W.WActivate(hg)
 }
-func (W _github_com_telesapr_telesapr_pkg_script_api_Host) AddGroup(g sketch.Group) core.HGroup {
-	return W.WAddGroup(g)
+func (W _github_com_telesapr_telesapr_pkg_script_api_Host) AddGroup(g sketch.Group, seed func(sk *sketch.Sketch, hg core.HGroup)) core.HGroup {
+	return W.WAddGroup(g, seed)
 }
 func (W _github_com_telesapr_telesapr_pkg_script_api_Host) Changing() {
 	W.WChanging()

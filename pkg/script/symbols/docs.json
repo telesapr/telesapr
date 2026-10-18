@@ -5852,8 +5852,8 @@
 						"text": "Activate makes a group the active one."
 					},
 					"AddGroup": {
-						"decl": "func (h *SketchHost) AddGroup(g sketch.Group) core.HGroup",
-						"text": "AddGroup adds g after the active group, activates it, and\nregenerates."
+						"decl": "func (h *SketchHost) AddGroup(g sketch.Group, seed func(sk *sketch.Sketch, hg core.HGroup)) core.HGroup",
+						"text": "AddGroup adds g after the active group, activates it, and\nregenerates; seed is as for Host.AddGroup."
 					},
 					"BeginEval": {
 						"decl": "func (h *SketchHost) BeginEval()",
@@ -7933,6 +7933,10 @@
 					"SectionPlaneName": {
 						"decl": "func (sk *Sketch) SectionPlaneName() string",
 						"text": "SectionPlaneName names the section's plane for the user: a workplane by its request or group, a face by its group."
+					},
+					"SeedParam": {
+						"decl": "func (s *Sketch) SeedParam(h core.HParam, v float64)",
+						"text": "SeedParam sets param h to v, adding it if the group it belongs to has not been generated yet: the next regeneration takes v as where the param's solve starts, as it does a value from the regeneration before."
 					},
 					"SegmentLimit": {
 						"decl": "func (sk *Sketch) SegmentLimit() int",
