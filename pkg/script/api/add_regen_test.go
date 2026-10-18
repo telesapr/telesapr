@@ -82,3 +82,31 @@ func TestAddGroupMidHistory(t *testing.T) {
 		t.Errorf("made %d triangles, %g mm³; read back %d, %g", triangles, volume, r.Triangles(), r.Volume())
 	}
 }
+
+// TestEditRemakesStaleMeshes lengthens a plate after a ring until the
+// model is many times larger. The edit regenerates the plate, not the
+// ring, whose solid was made at the tolerance of a small model; what
+// measures the mesh makes it again first, so that it is meshed as when
+// the file is read back.
+func TestEditRemakesStaleMeshes(t *testing.T) {
+	t.Parallel()
+	d := New()
+	d.Features.Sketch3D("datums")
+	at := d.Sketch.Point(V(0, 0, 0))
+	d.Constrain.Lock(at)
+	parts(d, at, 0, 1)
+	d.Features.SketchAt(at, V(1, 0, 0), V(0, 0, 1), "")
+	sides := d.Sketch.Polyline(true, V(60, 0, 0), V(70, 0, 0), V(70, 0, 10), V(60, 0, 10))
+	length := d.Constrain.Length(sides[0], 10)
+	d.Features.Extrude(5, "plate").SetCombine(Assemble)
+	length.Set(1000)
+	a := d.Active().Analyze()
+	if lo, hi := a.Bounds(); hi.X-lo.X < 1000 {
+		t.Fatalf("the model is %g wide", hi.X-lo.X)
+	}
+	triangles, volume := a.Triangles(), a.Volume()
+	r := readBack(t, d).Active().Analyze()
+	if triangles != r.Triangles() || volume != r.Volume() {
+		t.Errorf("made %d triangles, %g mm³; read back %d, %g", triangles, volume, r.Triangles(), r.Volume())
+	}
+}

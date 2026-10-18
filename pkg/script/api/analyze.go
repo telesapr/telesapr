@@ -33,7 +33,7 @@ func (m AnalyzeMenu) CurveLength(curves ...Entity) (mm float64) {
 // face entities an extrusion or a lathe makes.
 func (m AnalyzeMenu) FacesArea(faces ...Entity) (mm2 float64) {
 	d := m.d
-	d.read(func(sk *sketch.Sketch) {
+	d.readMesh(func(sk *sketch.Sketch) {
 		g := sk.Group(sk.ActiveGroup())
 		displayMesh(sk, g)
 		hs := make([]core.HEntity, len(faces))

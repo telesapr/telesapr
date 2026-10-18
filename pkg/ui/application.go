@@ -217,6 +217,11 @@ func (ss *Application) Refresh() {
 		} else {
 			ss.SK.Refresh()
 		}
+		// What is drawn and measured is meshed as the file read back
+		// would be, once nothing is being dragged.
+		if !ss.GW.draggingGeometry() {
+			ss.SK.RemakeStaleMeshes()
+		}
 		ss.afterGenerate()
 	}
 	if ss.scheduledShowTW {
