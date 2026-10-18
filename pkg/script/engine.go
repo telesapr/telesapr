@@ -420,7 +420,7 @@ func (e *Engine) eval(ctx context.Context, src string) (reflect.Value, error) {
 	// returning the error.
 	logged := log.Writer()
 	log.SetOutput(io.Discard)
-	v, err := e.i.EvalWithContext(ctx, src)
+	v, err := e.i.EvalWithContext(ctx, zeroNamedResults(src))
 	log.SetOutput(logged)
 	// The interpreter says where a panic of the script was; one without
 	// a place is its own, from before the script ran.
