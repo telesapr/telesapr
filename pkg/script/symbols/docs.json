@@ -5355,7 +5355,7 @@
 					},
 					"Problem": {
 						"decl": "func (g Group) Problem() (msg string)",
-						"text": "Problem says what the last regeneration found wrong with the\ngroup's input, as an edge a chamfer can't cut, a sweep path with\na corner, or a sketch that crosses itself, is open, is not flat or\nhas a curve of no length, with the point where; or \"\" when there is\nnothing. A group with a problem adds no solid. A sketch says what is\nwrong with its contours only when a solid is made from it, since a\nsweep's path may be open and not flat; the group making the solid\nsays it too. It also says when the Boolean that joins the group's\nsolid to the solid so far failed: the group's solid is then\nunsound, and Check says where."
+						"text": "Problem says what the last regeneration found wrong with the\ngroup's input, as an edge a chamfer can't cut, a sweep path with\na corner, or a sketch that crosses itself, is open, is not flat or\nhas a curve of no length, with the point where; or \"\" when there is\nnothing. A group with a problem adds no solid. A sketch says what is\nwrong with its contours only when a solid is made from it, since a\nsweep's path may be open and not flat; the group making the solid\nsays it too. It also says when the Boolean that joins the group's\nsolid to the solid so far failed: the group's solid is then\nunsound, and Check says where. When the solid so far holds parts\nassembled side by side, which may stand in each other, it says so:\na Boolean with such a solid is not defined."
 					},
 					"RelaxConstraints": {
 						"decl": "func (g Group) RelaxConstraints() (on bool)",
@@ -6944,6 +6944,10 @@
 					},
 					"IsVisible": {
 						"decl": "func (g *Group) IsVisible() bool"
+					},
+					"JoinsAssembly": {
+						"decl": "func (g *Group) JoinsAssembly(sk *Sketch) bool",
+						"text": "JoinsAssembly reports whether the solid so far that g's Boolean joins holds parts put side by side: a group before it combines as an assembly onto a solid made before that."
 					},
 					"LoftEnds": {
 						"decl": "func (g *Group) LoftEnds() topo.LoftEnds",

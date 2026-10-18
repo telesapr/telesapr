@@ -13,17 +13,24 @@ import (
 // sweep's path may be open and not flat; the group making the solid
 // says it too. It also says when the Boolean that joins the group's
 // solid to the solid so far failed: the group's solid is then
-// unsound, and Check says where.
+// unsound, and Check says where. When the solid so far holds parts
+// assembled side by side, which may stand in each other, it says so:
+// a Boolean with such a solid is not defined.
 func (g Group) Problem() (msg string) {
-	g.d.read(func(sk *sketch.Sketch) { msg = problemOf(g.get(sk)) })
+	g.d.read(func(sk *sketch.Sketch) { msg = problemOf(sk, g.get(sk)) })
 	return msg
 }
 
 // problemOf is the group's problem, or that its Boolean failed.
-func problemOf(group *sketch.Group) string {
+func problemOf(sk *sketch.Sketch, group *sketch.Group) string {
 	switch {
 	case group.Problem.Msg != "":
 		return group.Problem.Msg
+	case group.BooleanFailed && group.JoinsAssembly(sk):
+		return "the Boolean with the solid so far failed, so the solid is unsound: the solid so far " +
+			"holds parts assembled side by side, and where they stand in each other the Boolean is not " +
+			"defined (Assembly.Interferences finds where); join or cut each part before it is " +
+			"assembled, or force NURBS surfaces to triangle mesh to join them as meshes"
 	case group.BooleanFailed:
 		return "the Boolean with the solid so far failed, so the solid is unsound; " +
 			"the option to force NURBS surfaces to triangle mesh may join them as meshes"

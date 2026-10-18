@@ -55,7 +55,7 @@ func groupState(sk *sketch.Sketch, group *sketch.Group) string {
 	} else {
 		parts = append(parts, fmt.Sprintf("%d DOF", group.Solved.Dof))
 	}
-	if msg := problemOf(group); msg != "" {
+	if msg := problemOf(sk, group); msg != "" {
 		parts = append(parts, "problem: "+msg)
 	}
 	if !isDrawing(group.Type) {

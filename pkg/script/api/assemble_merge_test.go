@@ -2,7 +2,10 @@ package api
 
 import (
 	"math"
+	"strings"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // overlappingParts assembles a plate and two cheeks standing in it, the
@@ -51,5 +54,45 @@ func TestUnionAfterAssembly(t *testing.T) {
 	r := g.Analyze().Check()
 	if r.NakedEdges != 0 || r.Volume < 360+2*240+125-2 {
 		t.Errorf("%d naked edges, volume %g", r.NakedEdges, r.Volume)
+	}
+}
+
+// TestJoinsAssembly tells a group whose solid so far holds assembled
+// parts, and a failed Boolean of one says that the parts are the likely
+// cause; one first part assembled onto nothing is a part alone.
+func TestJoinsAssembly(t *testing.T) {
+	t.Parallel()
+	cutAfter := func(d *Doc, at Entity) Group {
+		d.Features.SketchAt(at, V(1, 0, 0), V(0, 1, 0), "")
+		d.Sketch.Circle(V(5, 5, 0), 1)
+		g := d.Features.Extrude(20, "cut")
+		g.SetCombine(Difference)
+		return g
+	}
+	d, at := overlappingParts(t)
+	cut := cutAfter(d, at)
+	alone := New()
+	alone.Features.Sketch3D("datums")
+	at2 := alone.Sketch.Point(V(0, 0, 0))
+	alone.Constrain.Lock(at2)
+	alone.Features.SketchAt(at2, V(1, 0, 0), V(0, 1, 0), "")
+	alone.Sketch.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(10, 10, 0), V(0, 10, 0))
+	alone.Features.Extrude(3, "plate").SetCombine(Assemble)
+	cutAlone := cutAfter(alone, at2)
+	for _, c := range []struct {
+		g    Group
+		want bool
+	}{{cut, true}, {cutAlone, false}} {
+		c.g.d.read(func(sk *sketch.Sketch) {
+			group := c.g.get(sk)
+			if got := group.JoinsAssembly(sk); got != c.want {
+				t.Errorf("%v joins an assembly: %v", c.want, got)
+			}
+			group.BooleanFailed = true
+			if msg := problemOf(sk, group); strings.Contains(msg, "assembled") != c.want {
+				t.Errorf("problem %q", msg)
+			}
+			group.BooleanFailed = false
+		})
 	}
 }
