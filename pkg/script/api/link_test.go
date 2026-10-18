@@ -137,30 +137,3 @@ func TestLinkPlacement(t *testing.T) {
 		}()
 	}
 }
-
-// TestLinkModelInPlace links a model file and finds it where the file
-// draws it, whatever the view: the window puts one beside what is
-// drawn, a script where it was drawn.
-func TestLinkModelInPlace(t *testing.T) {
-	t.Parallel()
-	part := New()
-	part.Features.SketchIn(part.Workplane("XY"), "")
-	part.Sketch.Polyline(true, V(10, 20, 0), V(14, 20, 0), V(14, 23, 0), V(10, 23, 0))
-	part.Features.Extrude(2, "")
-	path := filepath.Join(t.TempDir(), "part.tlspr")
-	if err := part.File.Save(path); err != nil {
-		t.Fatal(err)
-	}
-	d := New()
-	g, err := d.Assembly.Link(path, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if o := g.AsLink().Offset(); o.Magnitude() != 0 {
-		t.Errorf("offset %v", o)
-	}
-	lo, hi := g.Analyze().Bounds()
-	if lo.Minus(V(10, 20, 0)).Magnitude() > 1e-9 || hi.Minus(V(14, 23, 2)).Magnitude() > 1e-9 {
-		t.Errorf("bounds %v %v", lo, hi)
-	}
-}

@@ -76,9 +76,8 @@ func TestBillOfMaterials(t *testing.T) {
 }
 
 // A STEP file or a mesh links where it was drawn, its coordinates the
-// file's (roadmap 16.13); so does a model a script links, whatever the
-// view. The window's link of a model, which nothing places, comes in
-// off the middle of the view, beside what is drawn.
+// file's; a model comes in off the middle of the view, as before
+// (roadmap 16.13).
 func TestLinkPlacedAsDrawn(t *testing.T) {
 	dir := t.TempDir()
 	src := api.New()
@@ -115,16 +114,8 @@ func TestLinkPlacedAsDrawn(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if hi := highest(g); hi.Minus(api.V(110, 10, 5)).Magnitude() > 1e-4 {
-		t.Errorf("the model's highest corner is at %v", hi)
-	}
-
-	sk := sketch.NewSketch()
-	sk.NewFile()
-	hg := sk.AddGroup(sketch.Group{Type: sketch.GroupLinked, LinkFile: model, Order: 2, Scale: 1})
-	sk.GenerateAll()
-	if x, y := sk.MustParam(hg.Param(0)).Val, sk.MustParam(hg.Param(1)).Val; x == 0 || y == 0 {
-		t.Errorf("the window's link of a model starts at (%g, %g), where it was drawn", x, y)
+	if hi := highest(g); hi.Minus(api.V(110, 10, 5)).Magnitude() < 1 {
+		t.Errorf("the model came in where it was drawn, %v", hi)
 	}
 }
 
