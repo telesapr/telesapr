@@ -9977,6 +9977,10 @@
 						"decl": "func (s *SShell) MakeFromIntersectionOf(a, b *SShell)",
 						"text": "MakeFromIntersectionOf dispatches to MakeFromBoolean(INTERSECTION)."
 					},
+					"MakeFromPiecewiseOf": {
+						"decl": "func (s *SShell) MakeFromPiecewiseOf(a, b *SShell, intersect bool) bool",
+						"text": "MakeFromPiecewiseOf cuts a by b, or keeps what of a is in b with intersect, piece by piece, and assembles what comes of each: a Boolean of a shell of parts assembled side by side fails where the parts touch face to face, as a shaft standing on its gearbox cut across the plane they share, though each part's Boolean with b is sound."
+					},
 					"MakeFromRevolutionOf": {
 						"decl": "func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector, color core.RGBA, group ShellGroup)",
 						"text": "MakeFromRevolutionOf revolves a planar BezierLoopSet a full turn around the axis (pt, axis)."
