@@ -1384,7 +1384,7 @@ row 25
 row 27  chord tolerance (in percents)
  0-29 74 64 0
  30-99 64 64 0
-row 29    0.10 % [change]; 0.03 mm, 1726 triangles
+row 29    0.10 % [change]; 0.02 mm, 1726 triangles
  0-9 64 61 0
  10-17 6c 61 108 0 1 0
  18-99 64 61 0

@@ -162,7 +162,7 @@ row 69    (none)
  0-99 64 61 0
 row 71 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 2700\nVolume: 19.76 cm³\nCenter of mass: (-0.00, -0.00, 16.73)\nExtent: 30.00 x 30.00 x 40.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 2820\nVolume: 19.76 cm³\nCenter of mass: (-0.00, -0.00, 16.73)\nExtent: 30.00 x 30.00 x 40.00
 row 0  home › g008-loft   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
@@ -319,4 +319,4 @@ row 69    (none)
 row 71 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 2148\nVolume: 20.67 cm³\nCenter of mass: (0.00, -0.00, 16.83)\nExtent: 30.38 x 30.38 x 40.00
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 2700\nVolume: 19.76 cm³\nCenter of mass: (-0.00, -0.00, 16.73)\nExtent: 30.00 x 30.00 x 40.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 2820\nVolume: 19.76 cm³\nCenter of mass: (-0.00, -0.00, 16.73)\nExtent: 30.00 x 30.00 x 40.00

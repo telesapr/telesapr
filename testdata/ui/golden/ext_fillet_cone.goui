@@ -3,7 +3,7 @@ pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0
 active 5 0
-camera 27.605832869761517 -1.3823220444950559 -2.1354598687464654 0.19063850611405675 0.8295613557843402 -0.51847584736521257 0.20739033894608505 0.22216001430660143 0.6471617808061868 0.72926439478906124
+camera 27.60583286976151 -1.3823220444950559 -2.1354598687464654 0.19063850611405675 0.8295613557843402 -0.51847584736521257 0.20739033894608505 0.22216001430660143 0.6471617808061868 0.72926439478906124
 counts 5 8 82 4 41
 editor 0 "" 0 ""
 tw 1 unsaved 1 cursor 0 tooltip ""
@@ -218,4 +218,4 @@ row 51    (none)
  0-99 64 61 0
 row 53 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 4, of 10 patches\nTriangles: 756\nVolume: 1.63 cm³\nCenter of mass: (-0.00, -0.00, 3.32)\nExtent: 20.00 x 20.00 x 8.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 4, of 10 patches\nTriangles: 788\nVolume: 1.63 cm³\nCenter of mass: (-0.00, -0.00, 3.32)\nExtent: 20.00 x 20.00 x 8.00
