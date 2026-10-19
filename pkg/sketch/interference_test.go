@@ -2,6 +2,7 @@ package sketch_test
 
 import (
 	"math"
+	"path/filepath"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/script/api"
@@ -86,5 +87,41 @@ func TestInterferencesOfABoltedJoint(t *testing.T) {
 	found, _ := d.Assembly.Interferences()
 	for _, f := range found {
 		t.Errorf("%s and %s share %g mm³ (approximate %v)", f.A.Name(), f.B.Name(), f.Volume, f.Approximate)
+	}
+}
+
+// A linked part that is an assembly of its own, of blocks standing in
+// each other: a block assembled beside it shares volume with the one
+// block it reaches.
+func TestInterferencesOfALinkedAssembly(t *testing.T) {
+	t.Parallel()
+	sub := api.New()
+	block(sub, 0, 0, 10, 10, 10)
+	sub.Features.SketchIn(sub.Workplane("XY"), "")
+	sub.Sketch.Rect(api.V(5, 0, 0), api.V(15, 10, 0))
+	sub.Features.Extrude(10, "").SetCombine(api.Assemble)
+	path := filepath.Join(t.TempDir(), "sub.tlspr")
+	if err := sub.File.Save(path); err != nil {
+		t.Fatal(err)
+	}
+
+	d := api.New()
+	l, err := d.Assembly.Link(path, "sub")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The link comes in off the middle of the view: the block is put
+	// where its pieces are, 2 into the second of them.
+	lo, hi := l.Analyze().Bounds()
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(hi.X-2, lo.Y, 0), api.V(hi.X+8, hi.Y, 0))
+	b := d.Features.Extrude(hi.Z-lo.Z, "beside")
+	b.SetCombine(api.Assemble)
+	found, _ := d.Assembly.Interferences()
+	if len(found) != 1 || found[0].Failed || found[0].Approximate {
+		t.Fatalf("interferences %+v", found)
+	}
+	if want := 2 * (hi.Y - lo.Y) * (math.Min(hi.Z, hi.Z-lo.Z) - math.Max(lo.Z, 0)); math.Abs(found[0].Volume-want) > 1e-6*want {
+		t.Errorf("the block shares %g with the link, want %g", found[0].Volume, want)
 	}
 }

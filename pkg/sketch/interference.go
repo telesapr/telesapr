@@ -33,17 +33,54 @@ type Interference struct {
 	Failed bool
 }
 
-// part is a solid of an assembly, by the group that made it.
+// part is a solid of an assembly, by the group that made it: whole,
+// and its pieces when they are needed.
 type part struct {
 	g      core.HGroup
+	shell  *srf.SShell
+	whole  *piece
+	pieces []*piece
+	lo, hi geom.Vector
+	// uncut is set when a cut after the part failed on it, so that its
+	// shell is the part as made, before the cut.
+	uncut bool
+}
+
+// piece is a closed piece of a part's shell (srf.SShell.Pieces).
+type piece struct {
 	shell  *srf.SShell
 	mesh   srf.SMesh
 	volume float64
 	area   float64
 	lo, hi geom.Vector
-	// uncut is set when a cut after the part failed on it, so that its
-	// shell is the part as made, before the cut.
-	uncut bool
+}
+
+// newPiece is sh with its box, mesh, volume and area.
+func newPiece(sh *srf.SShell) *piece {
+	pc := &piece{shell: sh}
+	pc.lo, pc.hi = shellBox(sh)
+	sh.TriangulateInto(&pc.mesh)
+	pc.volume = pc.mesh.CalculateVolume()
+	for i := range pc.mesh.Triangles {
+		pc.area += pc.mesh.Triangles[i].Area()
+	}
+	return pc
+}
+
+// piecesOf are the part's pieces, made once; a part of one piece is
+// its whole.
+func (p *part) piecesOf() []*piece {
+	if p.pieces == nil {
+		shells := p.shell.Pieces()
+		if len(shells) == 1 {
+			p.pieces = []*piece{p.whole}
+		} else {
+			for _, sh := range shells {
+				p.pieces = append(p.pieces, newPiece(sh))
+			}
+		}
+	}
+	return p.pieces
 }
 
 // shellBox is the box about the shell's surfaces' control points.
@@ -71,8 +108,7 @@ func cutParts(parts []*part, g *Group) {
 	}
 	lo, hi := shellBox(tool)
 	for _, p := range parts {
-		meets := p.lo.X <= hi.X && lo.X <= p.hi.X && p.lo.Y <= hi.Y && lo.Y <= p.hi.Y &&
-			p.lo.Z <= hi.Z && lo.Z <= p.hi.Z
+		meets := boxesMeet(p.lo, p.hi, lo, hi)
 		out := &srf.SShell{Tol: p.shell.Tol}
 		switch {
 		case g.MeshCombine == CombineDifference && !meets:
@@ -139,74 +175,124 @@ func (sk *Sketch) Interferences(upTo core.HGroup) (found []Interference, meshOnl
 		}
 	}
 	for _, p := range parts {
-		p.shell.TriangulateInto(&p.mesh)
-		p.volume = p.mesh.CalculateVolume()
-		for i := range p.mesh.Triangles {
-			p.area += p.mesh.Triangles[i].Area()
-		}
+		p.whole = newPiece(p.shell)
 	}
 	for i := range parts {
 		for j := i + 1; j < len(parts); j++ {
 			a, b := parts[i], parts[j]
-			if a.lo.X > b.hi.X || b.lo.X > a.hi.X || a.lo.Y > b.hi.Y || b.lo.Y > a.hi.Y ||
-				a.lo.Z > b.hi.Z || b.lo.Z > a.hi.Z {
+			if !boxesMeet(a.lo, a.hi, b.lo, b.hi) {
 				continue
 			}
-			v, m, ok := overlap(a.shell, b.shell)
-			// Faces that lie on each other, as of a part placed twice
-			// at one place, can leave the Boolean with nothing: where
-			// the boxes share volume, again with the second part moved
-			// a ten-thousandth of a millimetre each way. A part placed
-			// twice overlaps itself either way; parts that only touch
-			// come apart one way, or share a sliver no thicker than the
-			// move, and a sliver is too thin for the Boolean to be sure
-			// of: the result moved apart stands, and the first one
-			// stands when both moved fail.
-			box := (math.Min(a.hi.X, b.hi.X) - math.Max(a.lo.X, b.lo.X)) *
-				(math.Min(a.hi.Y, b.hi.Y) - math.Max(a.lo.Y, b.lo.Y)) *
-				(math.Min(a.hi.Z, b.hi.Z) - math.Max(a.lo.Z, b.lo.Z))
-			if (!ok || v <= 0) && box > 1e-6*math.Min(a.volume, b.volume) {
-				retried := false
-				var least float64
-				var leastMesh srf.SMesh
-				for _, by := range []geom.Vector{nudge, nudge.ScaledBy(-1)} {
-					var moved srf.SShell
-					moved.MakeFromTransformationOf(b.shell, by, geom.QuaternionIdentity, 1)
-					mv, mm, mok := overlap(a.shell, &moved)
-					if mok && (!retried || mv < least) {
-						least, leastMesh, retried = mv, mm, true
-					}
-				}
-				switch {
-				case retried && least > nudge.Magnitude()*math.Min(a.area, b.area):
-					v, m, ok = least, leastMesh, true
-				case retried || ok:
-					v, m, ok = 0, srf.SMesh{}, true
-				}
+			f := Interference{A: a.g, B: b.g, Approximate: a.uncut || b.uncut}
+			if len(a.piecesOf()) > 1 || len(b.piecesOf()) > 1 {
+				f = a.overlapByPieces(b, f)
+			} else if v, m, approximate, ok := pieceOverlap(a.whole, b.whole); ok {
+				f.Volume, f.Mesh, f.Approximate = v, m, f.Approximate || approximate
+			} else {
+				f.Failed = true
 			}
-			if !ok {
-				// Surfaces that lie on each other, as a shank in its
-				// nut, the Boolean can't always follow: their meshes,
-				// within the chord tolerance of them, share no more
-				// than that tolerance through the parts' faces where
-				// they only touch.
-				f := Interference{A: a.g, B: b.g, Approximate: true}
-				f.Mesh.MakeFromIntersectionOf(&a.mesh, &b.mesh)
-				f.Volume = f.Mesh.CalculateVolume()
-				if math.IsNaN(f.Volume) || f.Volume < -1e-9 {
-					found = append(found, Interference{A: a.g, B: b.g, Failed: true})
-				} else if f.Volume > 2*a.shell.Tol.Or(b.shell.Tol).ChordTolMm()*math.Min(a.area, b.area) {
-					found = append(found, f)
-				}
+			if f.Failed {
+				found = append(found, Interference{A: a.g, B: b.g, Failed: true})
 				continue
 			}
 			// Touching faces leave slivers of no volume.
-			if v > 1e-6*math.Min(a.volume, b.volume) && v > 1e-9 {
-				found = append(found, Interference{A: a.g, B: b.g, Volume: v, Mesh: m, Approximate: a.uncut || b.uncut})
+			if f.Volume > 1e-9 {
+				found = append(found, f)
 			}
 		}
 	}
 	return found, meshOnly
+}
+
+// overlapByPieces is f, two parts' interference, found piece by piece:
+// a part may be an assembly of its own, of solids standing in each
+// other, as a linked model of parts, and a Boolean of such a shell is
+// not defined, where it doesn't fail it is wrong. Where more than one
+// pair of pieces overlaps, the volume is their sum, which counts twice
+// what pieces of one part share, and is marked approximate.
+func (p *part) overlapByPieces(o *part, f Interference) Interference {
+	pairs := 0
+	for _, pa := range p.piecesOf() {
+		for _, pb := range o.piecesOf() {
+			if !boxesMeet(pa.lo, pa.hi, pb.lo, pb.hi) {
+				continue
+			}
+			v, m, approximate, ok := pieceOverlap(pa, pb)
+			if !ok {
+				return Interference{A: f.A, B: f.B, Failed: true}
+			}
+			if v > 0 {
+				pairs++
+				f.Volume += v
+				f.Mesh.Triangles = append(f.Mesh.Triangles, m.Triangles...)
+				f.Approximate = f.Approximate || approximate || pairs > 1
+			}
+		}
+	}
+	return f
+}
+
+// boxesMeet reports whether two boxes share a point.
+func boxesMeet(alo, ahi, blo, bhi geom.Vector) bool {
+	return alo.X <= bhi.X && blo.X <= ahi.X && alo.Y <= bhi.Y && blo.Y <= ahi.Y &&
+		alo.Z <= bhi.Z && blo.Z <= ahi.Z
+}
+
+// pieceOverlap is the volume and the triangles two pieces of parts
+// share, zero where they only touch, whether it is of their meshes
+// rather than their shells, and false if nothing is known.
+func pieceOverlap(a, b *piece) (v float64, m srf.SMesh, approximate, ok bool) {
+	v, m, ok = overlap(a.shell, b.shell)
+	// Faces that lie on each other, as of a part placed twice at one
+	// place, can leave the Boolean with nothing: where the boxes share
+	// volume, again with the second part moved a ten-thousandth of a
+	// millimetre each way. A part placed twice overlaps itself either
+	// way; parts that only touch come apart one way, or share a sliver
+	// no thicker than the move, and a sliver is too thin for the
+	// Boolean to be sure of: the result moved apart stands, and the
+	// first one stands when both moved fail.
+	box := (math.Min(a.hi.X, b.hi.X) - math.Max(a.lo.X, b.lo.X)) *
+		(math.Min(a.hi.Y, b.hi.Y) - math.Max(a.lo.Y, b.lo.Y)) *
+		(math.Min(a.hi.Z, b.hi.Z) - math.Max(a.lo.Z, b.lo.Z))
+	if (!ok || v <= 0) && box > 1e-6*math.Min(a.volume, b.volume) {
+		retried := false
+		var least float64
+		var leastMesh srf.SMesh
+		for _, by := range []geom.Vector{nudge, nudge.ScaledBy(-1)} {
+			var moved srf.SShell
+			moved.MakeFromTransformationOf(b.shell, by, geom.QuaternionIdentity, 1)
+			mv, mm, mok := overlap(a.shell, &moved)
+			if mok && (!retried || mv < least) {
+				least, leastMesh, retried = mv, mm, true
+			}
+		}
+		switch {
+		case retried && least > nudge.Magnitude()*math.Min(a.area, b.area):
+			v, m, ok = least, leastMesh, true
+		case retried || ok:
+			v, m, ok = 0, srf.SMesh{}, true
+		}
+	}
+	if !ok {
+		// Surfaces that lie on each other, as a shank in its nut, the
+		// Boolean can't always follow: their meshes, within the chord
+		// tolerance of them, share no more than that tolerance through
+		// the parts' faces where they only touch.
+		m.MakeFromIntersectionOf(&a.mesh, &b.mesh)
+		v = m.CalculateVolume()
+		if math.IsNaN(v) || v < -1e-9 {
+			return 0, srf.SMesh{}, false, false
+		}
+		if v <= 2*a.shell.Tol.Or(b.shell.Tol).ChordTolMm()*math.Min(a.area, b.area) {
+			return 0, srf.SMesh{}, true, true
+		}
+		return v, m, true, true
+	}
+	// Touching faces leave slivers of no volume.
+	if v <= 1e-6*math.Min(a.volume, b.volume) {
+		return 0, srf.SMesh{}, false, true
+	}
+	return v, m, false, true
 }
 
 // overlap is the volume and the triangles a and b share, and false if

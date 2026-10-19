@@ -65,9 +65,12 @@ func (g Group) Edges() (edges []Entity) {
 // volume they share in mm³. Approximate is set when the volume is
 // that of the parts' meshes, within the chord tolerance of their
 // surfaces, the Boolean of their shells having failed, or that of a
-// part before a cut that failed on it.
+// part before a cut that failed on it. Failed is set when nothing is
+// known of the pair: the Boolean of their shells failed and so did that
+// of their meshes; Volume is then zero.
 type Interference struct {
 	A, B        Group
 	Volume      float64
 	Approximate bool
+	Failed      bool
 }
