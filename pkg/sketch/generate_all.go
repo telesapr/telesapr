@@ -939,6 +939,28 @@ func (g *Group) profiles() []core.HGroup {
 	return nil
 }
 
+// RemakeStaleMeshes makes every group's solid again when one was made
+// at another chord tolerance than the sketch's: a regeneration of the
+// groups after it changed the model's size, and so the tolerance, and
+// left the solid as it was. It is called before what shows or measures
+// the mesh, so that it is meshed as when the file is read. The entities
+// and the solve are those of the regeneration before, and are kept: a
+// solve again would move the last bits of the values. Nothing is made
+// while something is dragged, when making every solid at each step
+// would be too slow, nor while solids are being made off the thread,
+// in full. It reports whether it made them.
+func (sk *Sketch) RemakeStaleMeshes() bool {
+	if len(sk.hooks().DraggedParams()) > 0 || sk.AnyShellsStale() || !sk.solidsMadeAtOther(len(sk.GroupOrder)) {
+		return false
+	}
+	for _, h := range sk.GroupOrder {
+		if g := sk.Group(h); g.H.V != HGroupReferences {
+			g.GenerateShellAndMesh(sk)
+		}
+	}
+	return true
+}
+
 // solidsMadeAtOther reports whether a group before the one at first in
 // GroupOrder has a solid made at another tolerance than the sketch's.
 func (sk *Sketch) solidsMadeAtOther(first int) bool {

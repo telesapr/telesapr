@@ -7897,6 +7897,10 @@
 						"decl": "func (sk *Sketch) RegionArea(hg core.HGroup) (float64, error)",
 						"text": "RegionArea is the area of the closed region group hg's sketch draws, holes taken out."
 					},
+					"RemakeStaleMeshes": {
+						"decl": "func (sk *Sketch) RemakeStaleMeshes() bool",
+						"text": "RemakeStaleMeshes makes every group's solid again when one was made at another chord tolerance than the sketch's: a regeneration of the groups after it changed the model's size, and so the tolerance, and left the solid as it was."
+					},
 					"RemoveConstraint": {
 						"decl": "func (sk *Sketch) RemoveConstraint(hc core.HConstraint)",
 						"text": "RemoveConstraint deletes constraint hc."

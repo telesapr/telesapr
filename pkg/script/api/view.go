@@ -88,7 +88,7 @@ func (m ViewMenu) ClearSection() {
 // group's solid.
 func (m ViewMenu) Section() (s Section) {
 	d := m.d
-	d.read(func(sk *sketch.Sketch) {
+	d.readMesh(func(sk *sketch.Sketch) {
 		sec := sk.Section
 		if sec == nil {
 			return

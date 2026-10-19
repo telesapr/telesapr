@@ -29,7 +29,7 @@ func (v GroupAnalysis) Area() (mm2 float64) {
 // marks it.
 func (v GroupAnalysis) CenterOfMass() (p Vec) {
 	g := v.g
-	g.d.read(func(sk *sketch.Sketch) {
+	g.d.readMesh(func(sk *sketch.Sketch) {
 		group := g.get(sk)
 		displayMesh(sk, group)
 		var err error
@@ -45,7 +45,7 @@ func (v GroupAnalysis) CenterOfMass() (p Vec) {
 // regenerates.
 func (v GroupAnalysis) Mesh() (m *srf.SMesh) {
 	g := v.g
-	g.d.read(func(sk *sketch.Sketch) { m = displayMesh(sk, g.get(sk)) })
+	g.d.readMesh(func(sk *sketch.Sketch) { m = displayMesh(sk, g.get(sk)) })
 	return m
 }
 
@@ -53,14 +53,14 @@ func (v GroupAnalysis) Mesh() (m *srf.SMesh) {
 // like Mesh, it is the sketch's own.
 func (v GroupAnalysis) Shell() (s *srf.SShell) {
 	g := v.g
-	g.d.read(func(sk *sketch.Sketch) { s = &g.get(sk).RunningShell })
+	g.d.readMesh(func(sk *sketch.Sketch) { s = &g.get(sk).RunningShell })
 	return s
 }
 
 // Volume is the volume in mm³ of the model up to and with this group.
 func (v GroupAnalysis) Volume() (mm3 float64) {
 	g := v.g
-	g.d.read(func(sk *sketch.Sketch) { mm3 = displayMesh(sk, g.get(sk)).CalculateVolume() })
+	g.d.readMesh(func(sk *sketch.Sketch) { mm3 = displayMesh(sk, g.get(sk)).CalculateVolume() })
 	return mm3
 }
 
@@ -68,7 +68,7 @@ func (v GroupAnalysis) Volume() (mm3 float64) {
 // group.
 func (v GroupAnalysis) Triangles() (n int) {
 	g := v.g
-	g.d.read(func(sk *sketch.Sketch) { n = len(displayMesh(sk, g.get(sk)).Triangles) })
+	g.d.readMesh(func(sk *sketch.Sketch) { n = len(displayMesh(sk, g.get(sk)).Triangles) })
 	return n
 }
 
@@ -76,7 +76,7 @@ func (v GroupAnalysis) Triangles() (n int) {
 // this group.
 func (v GroupAnalysis) Bounds() (lo, hi Vec) {
 	g := v.g
-	g.d.read(func(sk *sketch.Sketch) {
+	g.d.readMesh(func(sk *sketch.Sketch) {
 		m := displayMesh(sk, g.get(sk))
 		if m.IsEmpty() {
 			return
@@ -97,7 +97,7 @@ func (v GroupAnalysis) Bounds() (lo, hi Vec) {
 // same report.
 func (v GroupAnalysis) Check() (r check.Report) {
 	g := v.g
-	g.d.read(func(sk *sketch.Sketch) { r = check.Group(sk, g.get(sk)) })
+	g.d.readMesh(func(sk *sketch.Sketch) { r = check.Group(sk, g.get(sk)) })
 	return r
 }
 
@@ -116,7 +116,7 @@ func (v GroupAnalysis) Check() (r check.Report) {
 // Analyze > Ray-Cast Check shows the same.
 func (v GroupAnalysis) RayCheck() (r check.RayReport) {
 	g := v.g
-	g.d.read(func(sk *sketch.Sketch) {
+	g.d.readMesh(func(sk *sketch.Sketch) {
 		var err error
 		if r, err = check.RayCheck(sk, g.get(sk), 24); err != nil {
 			fail("%v", err)
@@ -131,7 +131,7 @@ func (v GroupAnalysis) RayCheck() (r check.RayReport) {
 // dir's length to one. It fails as RayCheck does.
 func (v GroupAnalysis) Probe(from, dir Vec) (inside []check.Interval) {
 	g := v.g
-	g.d.read(func(sk *sketch.Sketch) {
+	g.d.readMesh(func(sk *sketch.Sketch) {
 		o, err := check.NewOracle(sk, g.get(sk).H)
 		if err != nil {
 			fail("%v", err)

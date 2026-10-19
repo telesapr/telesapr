@@ -146,6 +146,16 @@ func (d *Doc) read(fn func(sk *sketch.Sketch)) {
 	})
 }
 
+// readMesh is read for what measures or returns the solid's mesh: the
+// solids of groups a change after them left at another tolerance are
+// made again first (Sketch.RemakeStaleMeshes).
+func (d *Doc) readMesh(fn func(sk *sketch.Sketch)) {
+	d.read(func(sk *sketch.Sketch) {
+		sk.RemakeStaleMeshes()
+		fn(sk)
+	})
+}
+
 // change runs fn, which changes the sketch.
 func (d *Doc) change(fn func(sk *sketch.Sketch)) {
 	d.h.Run(func() {
