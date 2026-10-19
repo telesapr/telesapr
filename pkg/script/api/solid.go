@@ -29,7 +29,8 @@ func problemOf(sk *sketch.Sketch, group *sketch.Group) string {
 	case group.BooleanFailed && group.JoinsAssembly(sk):
 		return "the Boolean with the solid so far failed, so the solid is unsound: the solid so far " +
 			"holds parts assembled side by side, and where they stand in each other the Boolean is not " +
-			"defined (Assembly.Interferences finds where); join or cut each part before it is " +
+			"defined (Assembly.Interferences finds where), nor often where they touch face to face, " +
+			"as a shaft on the gearbox it stands on; join or cut each part before it is " +
 			"assembled, or force NURBS surfaces to triangle mesh to join them as meshes"
 	case group.BooleanFailed:
 		return "the Boolean with the solid so far failed, so the solid is unsound; " +
@@ -62,8 +63,15 @@ func (g Group) Edges() (edges []Entity) {
 }
 
 // Interference is two parts of an assembly that overlap, and the
-// volume they share in mm³.
+// volume they share in mm³. Approximate is set when the volume is
+// that of the parts' meshes, within the chord tolerance of their
+// surfaces, the Boolean of their shells having failed, or that of a
+// part before a cut that failed on it. Failed is set when nothing is
+// known of the pair: the Boolean of their shells failed and so did that
+// of their meshes; Volume is then zero.
 type Interference struct {
-	A, B   Group
-	Volume float64
+	A, B        Group
+	Volume      float64
+	Approximate bool
+	Failed      bool
 }

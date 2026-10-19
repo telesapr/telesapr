@@ -1008,8 +1008,9 @@ func (tw *textWindow) ShowGroupInfo() {
 			tw.Printf(false, "The solid so far holds parts assembled side ")
 			tw.Printf(false, "by side; where they stand in each other the ")
 			tw.Printf(false, "Boolean is not defined. Analyze > Show ")
-			tw.Printf(false, "Interfering Parts finds where. Join or cut ")
-			tw.Printf(false, "each part before it is assembled.")
+			tw.Printf(false, "Interfering Parts finds where. Parts that ")
+			tw.Printf(false, "touch face to face often fail it too. Join ")
+			tw.Printf(false, "or cut each part before it is assembled.")
 		}
 	}
 

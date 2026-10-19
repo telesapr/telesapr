@@ -269,17 +269,21 @@ func (m AssemblyMenu) MotionStudy(param string, from, to float64, steps int, fra
 // group against each other by their shells (Analyze > Show Interfering
 // Parts): each group that combines as an assembly is a part, and so is
 // the solid made before the first of them. It lists the pairs that
-// overlap, not those that only touch. A part with no shell, as a
+// overlap, not those that only touch. A cut made after the parts cuts
+// each one it reaches. Where the Boolean of two parts' shells fails, as
+// of surfaces lying on each other, their meshes are intersected
+// instead and the pair marked Approximate; a pair whose meshes fail too
+// is listed as Failed. A part is checked by its pieces, the solids its
+// shell holds, so that a linked assembly's own parts may stand in each
+// other. A part with no shell, as a
 // linked mesh or STEP file, can't be checked so; meshOnly lists them.
 func (m AssemblyMenu) Interferences() (found []Interference, meshOnly []Group) {
 	d := m.d
 	d.read(func(sk *sketch.Sketch) {
 		fs, mo := sk.Interferences(sk.ActiveGroup())
 		for _, f := range fs {
-			if f.Failed {
-				fail("the Boolean between %s and %s failed", sk.GroupName(f.A), sk.GroupName(f.B))
-			}
-			found = append(found, Interference{A: Group{d, f.A}, B: Group{d, f.B}, Volume: f.Volume})
+			found = append(found, Interference{A: Group{d, f.A}, B: Group{d, f.B}, Volume: f.Volume,
+				Approximate: f.Approximate, Failed: f.Failed})
 		}
 		for _, h := range mo {
 			meshOnly = append(meshOnly, Group{d, h})

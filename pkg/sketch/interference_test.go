@@ -2,6 +2,7 @@ package sketch_test
 
 import (
 	"math"
+	"path/filepath"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/script/api"
@@ -49,5 +50,78 @@ func TestInterferences(t *testing.T) {
 	b.Delete()
 	if found, _ := d.Assembly.Interferences(); len(found) != 0 {
 		t.Errorf("%d interferences without the second block", len(found))
+	}
+}
+
+// A bolted joint as a copied model draws one: a plate, its hole cut
+// after it, a nut touching its underside and a shank through both, the
+// shank filling the nut's hole exactly. Nothing interferes: the hole
+// cut after the plate is a hole in the plate part, the nut only
+// touches, though moved up it would cut a sliver of the plate, and the
+// shank lies on the nut's hole, where the Boolean of their shells
+// fails and their meshes share next to nothing.
+func TestInterferencesOfABoltedJoint(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	d.Sketch.Rect(api.V(-10, -10, 0), api.V(10, 10, 0))
+	d.Features.Extrude(4, "plate").SetCombine(api.Assemble)
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Circle(api.V(0, 0, 0), 1.7)
+	d.Features.Extrude(4, "hole").SetCombine(api.Difference)
+	at := func(name string) {
+		d.Features.SketchAt(above(d, -4), api.V(1, 0, 0), api.V(0, 1, 0), name)
+	}
+	at("nut profile")
+	var hex []api.Vec
+	for k := range 6 {
+		a := float64(k) * math.Pi / 3
+		hex = append(hex, api.V(3.2*math.Cos(a), 3.2*math.Sin(a), -4))
+	}
+	d.Sketch.Polyline(true, hex...)
+	d.Sketch.Circle(api.V(0, 0, -4), 1.5)
+	d.Features.Extrude(4, "nut").SetCombine(api.Assemble)
+	at("shank profile")
+	d.Sketch.Circle(api.V(0, 0, -4), 1.5)
+	d.Features.Extrude(12, "shank").SetCombine(api.Assemble)
+
+	found, _ := d.Assembly.Interferences()
+	for _, f := range found {
+		t.Errorf("%s and %s share %g mm³ (approximate %v)", f.A.Name(), f.B.Name(), f.Volume, f.Approximate)
+	}
+}
+
+// A linked part that is an assembly of its own, of blocks standing in
+// each other: a block assembled beside it shares volume with the one
+// block it reaches.
+func TestInterferencesOfALinkedAssembly(t *testing.T) {
+	t.Parallel()
+	sub := api.New()
+	block(sub, 0, 0, 10, 10, 10)
+	sub.Features.SketchIn(sub.Workplane("XY"), "")
+	sub.Sketch.Rect(api.V(5, 0, 0), api.V(15, 10, 0))
+	sub.Features.Extrude(10, "").SetCombine(api.Assemble)
+	path := filepath.Join(t.TempDir(), "sub.tlspr")
+	if err := sub.File.Save(path); err != nil {
+		t.Fatal(err)
+	}
+
+	d := api.New()
+	l, err := d.Assembly.Link(path, "sub")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The link comes in off the middle of the view: the block is put
+	// where its pieces are, 2 into the second of them.
+	lo, hi := l.Analyze().Bounds()
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(hi.X-2, lo.Y, 0), api.V(hi.X+8, hi.Y, 0))
+	b := d.Features.Extrude(hi.Z-lo.Z, "beside")
+	b.SetCombine(api.Assemble)
+	found, _ := d.Assembly.Interferences()
+	if len(found) != 1 || found[0].Failed || found[0].Approximate {
+		t.Fatalf("interferences %+v", found)
+	}
+	if want := 2 * (hi.Y - lo.Y) * (math.Min(hi.Z, hi.Z-lo.Z) - math.Max(lo.Z, 0)); math.Abs(found[0].Volume-want) > 1e-6*want {
+		t.Errorf("the block shares %g with the link, want %g", found[0].Volume, want)
 	}
 }

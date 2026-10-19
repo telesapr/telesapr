@@ -135,8 +135,12 @@ func (ss *Application) analyzeInterference() {
 					sk.GroupName(f.A), sk.GroupName(f.B)))
 				continue
 			}
-			lines = append(lines, fmt.Sprintf("    %s and %s share %s",
-				sk.GroupName(f.A), sk.GroupName(f.B), ss.MmToStringSI(f.Volume, 3)))
+			about := ""
+			if f.Approximate {
+				about = " (about: by their meshes)"
+			}
+			lines = append(lines, fmt.Sprintf("    %s and %s share %s%s",
+				sk.GroupName(f.A), sk.GroupName(f.B), ss.MmToStringSI(f.Volume, 3), about))
 			for _, tr := range f.Mesh.Triangles {
 				ss.GW.nakedEdges.AddEdge(tr.A, tr.B, 0, 0, 0)
 				ss.GW.nakedEdges.AddEdge(tr.B, tr.C, 0, 0, 0)
