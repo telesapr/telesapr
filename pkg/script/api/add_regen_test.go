@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
 	"testing"
 )
@@ -108,5 +109,43 @@ func TestEditRemakesStaleMeshes(t *testing.T) {
 	r := readBack(t, d).Active().Analyze()
 	if triangles != r.Triangles() || volume != r.Volume() {
 		t.Errorf("made %d triangles, %g mm³; read back %d, %g", triangles, volume, r.Triangles(), r.Volume())
+	}
+}
+
+// TestSolidMadeOnceWithItsCombine adds an extrusion and sets how it
+// combines before anything reads it: it is made once, with that mode,
+// as many regenerations as an extrusion read at once costs. A change of
+// another group makes it first.
+func TestSolidMadeOnceWithItsCombine(t *testing.T) {
+	t.Parallel()
+	regenerations := func(combine bool) uint64 {
+		d := New()
+		d.Sketch.Rect(V(0, 0, 0), V(10, 10, 0))
+		sk := d.Host().Sketch()
+		before := sk.Generation
+		g := d.Features.Extrude(5, "")
+		if combine {
+			g.SetCombine(Assemble)
+			g.SetColor(10, 20, 30)
+		}
+		if v := g.Analyze().Volume(); math.Abs(v-500) > 1e-6 {
+			t.Errorf("volume %g", v)
+		}
+		return sk.Generation - before
+	}
+	if alone, with := regenerations(false), regenerations(true); with != alone {
+		t.Errorf("%d regenerations with the combine mode set, %d without", with, alone)
+	}
+
+	d := New()
+	sketch := d.Active()
+	d.Sketch.Rect(V(0, 0, 0), V(10, 10, 0))
+	g := d.Features.Extrude(5, "")
+	sketch.SetVisible(false)
+	if p := d.Host().Sketch().AddedPending(); p.V != 0 {
+		t.Errorf("group %d still to be made after a change of another", p.V)
+	}
+	if v := g.Analyze().Volume(); math.Abs(v-500) > 1e-6 {
+		t.Errorf("volume %g", v)
 	}
 }

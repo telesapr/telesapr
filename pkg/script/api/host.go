@@ -227,7 +227,8 @@ func (h *SketchHost) Rollback() bool {
 func (h *SketchHost) Regenerate() { h.sk.Refresh() }
 
 // AddGroup adds g after the active group, activates it, and
-// regenerates it and what follows it; seed is as for Host.AddGroup.
+// regenerates it and what follows it, a group that makes a solid at the
+// next read; seed is as for Host.AddGroup.
 func (h *SketchHost) AddGroup(g sketch.Group, seed func(sk *sketch.Sketch, hg core.HGroup)) core.HGroup {
 	sk := h.sk
 	hg := sk.AddGroupAfterActive(g)
@@ -239,6 +240,12 @@ func (h *SketchHost) AddGroup(g sketch.Group, seed func(sk *sketch.Sketch, hg co
 		sk.ReloadAllLinked(sk)
 	}
 	sk.Active = hg
+	if gg.IsMeshGroup() {
+		// Made at the next read, so that what a script sets on it
+		// first, as the combine mode, is made once.
+		sk.ScheduleAdded(hg)
+		return hg
+	}
 	sk.GenerateAdded(hg)
 	gg = sk.Group(hg)
 	if gg != nil && gg.Type == sketch.GroupDrawingWorkplane {
