@@ -29,7 +29,8 @@ func problemOf(sk *sketch.Sketch, group *sketch.Group) string {
 	case group.BooleanFailed && group.JoinsAssembly(sk):
 		return "the Boolean with the solid so far failed, so the solid is unsound: the solid so far " +
 			"holds parts assembled side by side, and where they stand in each other the Boolean is not " +
-			"defined (Assembly.Interferences finds where); join or cut each part before it is " +
+			"defined (Assembly.Interferences finds where), nor often where they touch face to face, " +
+			"as a shaft on the gearbox it stands on; join or cut each part before it is " +
 			"assembled, or force NURBS surfaces to triangle mesh to join them as meshes"
 	case group.BooleanFailed:
 		return "the Boolean with the solid so far failed, so the solid is unsound; " +
