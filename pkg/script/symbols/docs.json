@@ -4874,6 +4874,10 @@
 						"decl": "func (e Entity) Orientation() (u, v Vec)",
 						"text": "Orientation is where the entity's own x and y directions point: for a\nnormal, and for the workplane, circle or arc that has one, the unit\nvectors u and v of its turn (its normal points along u cross v)."
 					},
+					"Overlap": {
+						"decl": "func (e Entity) Overlap() (points, curves []Entity)",
+						"text": "Overlap is what lies where the point e is, in the groups up to the\nactive one: the other points at the same position, and the lines,\ncircles, arcs and cubics that pass through it without a point of\ntheir own there. A click on the drawing picks one of them; the\nproperty browser lists the rest under ALSO HERE, and Edit.Select\nselects one from a script."
+					},
 					"Points": {
 						"decl": "func (e Entity) Points() (points []Entity)",
 						"text": "Points are the points of the entity: the ends of a line, the centre\nand the ends of an arc, the centre of a circle, the control points\nof a cubic, the origin of a workplane. A point has itself."
@@ -7188,6 +7192,10 @@
 					}
 				}
 			},
+			"Overlap": {
+				"text": "Overlap is what lies where a point is, so that one of them can be chosen where a click on the drawing picks only one.",
+				"kind": "struct"
+			},
 			"Parameter": {
 				"text": "Parameter is a named value that expressions can use.",
 				"kind": "struct"
@@ -7829,6 +7837,10 @@
 					"OutwardFaceNormal": {
 						"decl": "func (sk *Sketch) OutwardFaceNormal(e *core.Entity) geom.Vector",
 						"text": "OutwardFaceNormal is a face's normal, turned to point out of the solid, as its triangles' do."
+					},
+					"Overlap": {
+						"decl": "func (sk *Sketch) Overlap(he core.HEntity) (Overlap, error)",
+						"text": "Overlap lists what lies where point he is, in the groups up to the active one, in the order of the entities."
 					},
 					"OwnSources": {
 						"decl": "func (sk *Sketch) OwnSources(h core.HGroup) []core.HGroup",
@@ -8530,6 +8542,10 @@
 			"ErrNotCopies": {
 				"decl": "var ErrNotCopies",
 				"text": "ErrNotCopies is CopyPlacements' error for a group that makes no copies: not a step and repeat, a pattern along a path or a mirror."
+			},
+			"ErrNotPoint": {
+				"decl": "var ErrNotPoint",
+				"text": "ErrNotPoint is returned by Overlap for an entity that isn't a point."
 			},
 			"ErrNotTextRequest": {
 				"decl": "var ErrNotTextRequest",

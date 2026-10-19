@@ -725,6 +725,7 @@ Pos              -q
 MoveTo           dragPoints; ctx:Snap to Grid
 MoveBy           dragPoints
 Points           -q
+Overlap          -q
 Start            -q
 End              -q
 Center           -q
