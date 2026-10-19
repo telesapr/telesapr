@@ -61,14 +61,20 @@ must(doc.Assembly.ExportBOM("bom.csv"))
 Assembly > Show Interfering Parts checks the parts of an assembly against each other by their
 shells: each group that combines as an assembly is a part, and so is the solid made before the
 first of them. Two parts interfere where they share volume; parts that only touch don't. The
-message lists each pair with the volume they share, and the shared solid is outlined. A part
+message lists each pair with the volume they share, and the shared solid is outlined. A group
+that cuts the assembly after a part cuts the part too, so a hole cut after a bracket is a hole in
+the bracket and the screw through it doesn't interfere. A part that is itself an assembly, as a
+linked model of parts, is checked solid by solid. Where the Boolean of two parts fails, as for a
+shank lying on its nut's hole, their meshes are intersected instead, and the volume is marked
+"about"; so is a volume summed over several solids of one part, which counts twice what they share.
+A pair that can't be checked either way is listed as failed. A part
 linked from a mesh or a STEP file has no shell; with one in the model, the check falls back to
 the triangles of the whole model, as SolveSpace's does.
 
 ```go
 found, meshOnly := doc.Assembly.Interferences()
 for _, f := range found {
-	fmt.Println(f.A, f.B, f.Volume)
+	fmt.Println(f.A, f.B, f.Volume, f.Approximate, f.Failed)
 }
 ```
 
