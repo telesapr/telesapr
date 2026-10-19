@@ -63,3 +63,59 @@ func (s *SShell) Pieces() []*SShell {
 	}
 	return out
 }
+
+// MakeFromPiecewiseOf cuts a by b, or keeps what of a is in b with
+// intersect, piece by piece, and assembles what comes of each: a
+// Boolean of a shell of parts assembled side by side fails where the
+// parts touch face to face, as a shaft standing on its gearbox cut
+// across the plane they share, though each part's Boolean with b is
+// sound. Cutting each part is cutting the whole, as the parts don't
+// stand in each other. A piece clear of b is kept, or dropped with
+// intersect, as it is. It reports whether a has more than one piece;
+// when it hasn't, s is left alone.
+func (s *SShell) MakeFromPiecewiseOf(a, b *SShell, intersect bool) bool {
+	pieces := a.Pieces()
+	if len(pieces) < 2 {
+		return false
+	}
+	bMax, bMin := s.boundsOf(b)
+	var out SShell
+	out.Tol = a.Tol.Or(b.Tol)
+	failed := false
+	for _, p := range pieces {
+		pMax, pMin := s.boundsOf(p)
+		apart := pMin.X > bMax.X || pMin.Y > bMax.Y || pMin.Z > bMax.Z ||
+			bMin.X > pMax.X || bMin.Y > pMax.Y || bMin.Z > pMax.Z
+		var r SShell
+		switch {
+		case apart && intersect:
+			continue
+		case apart:
+			r.MakeFromCopyOf(p)
+		case intersect:
+			r.MakeFromIntersectionOf(p, b)
+		default:
+			r.MakeFromDifferenceOf(p, b)
+		}
+		failed = failed || r.BooleanFailed
+		var next SShell
+		next.MakeFromAssemblyOf(&out, &r)
+		out = next
+	}
+	*s = out
+	s.BooleanFailed = failed
+	return true
+}
+
+// boundsOf is the box about the shell's control points, which holds it.
+func (*SShell) boundsOf(sh *SShell) (ptMax, ptMin geom.Vector) {
+	ptMax = geom.Vector{X: veryNegative, Y: veryNegative, Z: veryNegative}
+	ptMin = geom.Vector{X: veryPositive, Y: veryPositive, Z: veryPositive}
+	for i := range sh.Surface {
+		var hi, lo geom.Vector
+		sh.Surface[i].AxisAlignedBounding(&hi, &lo)
+		hi.MakeMaxMin(&ptMax, &ptMin)
+		lo.MakeMaxMin(&ptMax, &ptMin)
+	}
+	return ptMax, ptMin
+}
