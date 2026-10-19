@@ -62,8 +62,12 @@ func (g Group) Edges() (edges []Entity) {
 }
 
 // Interference is two parts of an assembly that overlap, and the
-// volume they share in mm³.
+// volume they share in mm³. Approximate is set when the volume is
+// that of the parts' meshes, within the chord tolerance of their
+// surfaces, the Boolean of their shells having failed, or that of a
+// part before a cut that failed on it.
 type Interference struct {
-	A, B   Group
-	Volume float64
+	A, B        Group
+	Volume      float64
+	Approximate bool
 }

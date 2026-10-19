@@ -51,3 +51,40 @@ func TestInterferences(t *testing.T) {
 		t.Errorf("%d interferences without the second block", len(found))
 	}
 }
+
+// A bolted joint as a copied model draws one: a plate, its hole cut
+// after it, a nut touching its underside and a shank through both, the
+// shank filling the nut's hole exactly. Nothing interferes: the hole
+// cut after the plate is a hole in the plate part, the nut only
+// touches, though moved up it would cut a sliver of the plate, and the
+// shank lies on the nut's hole, where the Boolean of their shells
+// fails and their meshes share next to nothing.
+func TestInterferencesOfABoltedJoint(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	d.Sketch.Rect(api.V(-10, -10, 0), api.V(10, 10, 0))
+	d.Features.Extrude(4, "plate").SetCombine(api.Assemble)
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Circle(api.V(0, 0, 0), 1.7)
+	d.Features.Extrude(4, "hole").SetCombine(api.Difference)
+	at := func(name string) {
+		d.Features.SketchAt(above(d, -4), api.V(1, 0, 0), api.V(0, 1, 0), name)
+	}
+	at("nut profile")
+	var hex []api.Vec
+	for k := range 6 {
+		a := float64(k) * math.Pi / 3
+		hex = append(hex, api.V(3.2*math.Cos(a), 3.2*math.Sin(a), -4))
+	}
+	d.Sketch.Polyline(true, hex...)
+	d.Sketch.Circle(api.V(0, 0, -4), 1.5)
+	d.Features.Extrude(4, "nut").SetCombine(api.Assemble)
+	at("shank profile")
+	d.Sketch.Circle(api.V(0, 0, -4), 1.5)
+	d.Features.Extrude(12, "shank").SetCombine(api.Assemble)
+
+	found, _ := d.Assembly.Interferences()
+	for _, f := range found {
+		t.Errorf("%s and %s share %g mm³ (approximate %v)", f.A.Name(), f.B.Name(), f.Volume, f.Approximate)
+	}
+}

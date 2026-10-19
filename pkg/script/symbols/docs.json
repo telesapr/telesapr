@@ -4291,7 +4291,7 @@
 					},
 					"Interferences": {
 						"decl": "func (m AssemblyMenu) Interferences() (found []Interference, meshOnly []Group)",
-						"text": "Interferences checks the parts of the assembly up to the active\ngroup against each other by their shells (Analyze \u003e Show Interfering\nParts): each group that combines as an assembly is a part, and so is\nthe solid made before the first of them. It lists the pairs that\noverlap, not those that only touch. A part with no shell, as a\nlinked mesh or STEP file, can't be checked so; meshOnly lists them."
+						"text": "Interferences checks the parts of the assembly up to the active\ngroup against each other by their shells (Analyze \u003e Show Interfering\nParts): each group that combines as an assembly is a part, and so is\nthe solid made before the first of them. It lists the pairs that\noverlap, not those that only touch. A cut made after the parts cuts\neach one it reaches. Where the Boolean of two parts' shells fails, as\nof surfaces lying on each other, their meshes are intersected\ninstead and the pair marked Approximate. A part with no shell, as a\nlinked mesh or STEP file, can't be checked so; meshOnly lists them."
 					},
 					"Link": {
 						"decl": "func (m AssemblyMenu) Link(path, name string) (g Group, err error)",
@@ -5556,7 +5556,7 @@
 				"kind": "interface"
 			},
 			"Interference": {
-				"text": "Interference is two parts of an assembly that overlap, and the\nvolume they share in mm³.",
+				"text": "Interference is two parts of an assembly that overlap, and the\nvolume they share in mm³. Approximate is set when the volume is\nthat of the parts' meshes, within the chord tolerance of their\nsurfaces, the Boolean of their shells having failed, or that of a\npart before a cut that failed on it.",
 				"kind": "struct"
 			},
 			"LinkGroup": {
