@@ -433,3 +433,32 @@ func BenchmarkPathSweep(b *testing.B) {
 		sh.TriangulateInto(&m)
 	}
 }
+
+// A path that turns back on itself tighter than the profile is round,
+// as a hose's that doubles back, sweeps a surface folded through
+// itself. The search for the trims' points on its patches stalled on
+// the fold, where it was left depending on what it had looked for
+// before, and the mesh opened between patches; the solid crosses
+// itself, and is closed.
+func TestPathSweepHairpinCloses(t *testing.T) {
+	t.Parallel()
+	// A hairpin of the least radius 0.2, a circle of radius 3 round it.
+	const k = 3 / 1.15
+	p := func(x, z float64) geom.Vector { return v(k*(x-171), 0, k*(z-161)) }
+	path := []srf.SBezier{
+		srf.SBezierFrom4(p(179, 168), p(175.609, 164.872), p(172.219, 161.744), p(171, 161)),
+		srf.SBezierFrom4(p(171, 161), p(167.907, 159.112), p(178.799, 172.573), p(187.68, 182.2)),
+	}
+	loops, _ := profileAcross(path, 0)
+	sp := newPath(t, path, topo.PathSweepOptions{})
+	sh, err := topo.MakePathSweep(sp, loops, core.NewRGBA(100, 100, 100, 255),
+		srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2), srf.Tolerance{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m srf.SMesh
+	sh.TriangulateInto(&m)
+	if rep := check.Solid(sh, &m); rep.NakedEdges != 0 || rep.SelfIntersecting == 0 {
+		t.Errorf("%s: want closed and crossing itself", rep.String())
+	}
+}
