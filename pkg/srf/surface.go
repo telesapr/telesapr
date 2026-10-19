@@ -1,7 +1,9 @@
 package srf
 
 import (
+	"cmp"
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -475,7 +477,7 @@ func (s *SSurface) ClosestPointToUV(p geom.Vector, u, v *float64, mustConverge b
 		}
 	}
 
-	if s.closestPointNewton(p, u, v, mustConverge) {
+	if s.closestPointNewton(p, u, v, mustConverge) || mustConverge && s.closestPointRestarts(p, u, v) {
 		if !s.noCache {
 			s.Cached = geom.Point2d{U: *u, V: *v}
 		}
@@ -486,6 +488,56 @@ func (s *SSurface) ClosestPointToUV(p geom.Vector, u, v *float64, mustConverge b
 	if isReasonable(*u) || isReasonable(*v) {
 		*u, *v = 0, 0
 	}
+}
+
+// closestPointRestarts looks again for the closest point to p, which
+// Newton's method from the nearest point of the guess grid missed: on a
+// patch that folds back on itself, as a sweep's round a bend tighter
+// than its profile, the surface passes near a point of its own edge
+// inside the square, and the iteration stalls there. It starts again
+// from the next nearest grid points and from the square's corners and
+// the middles of its sides, and reports whether one reached p. When
+// none does, (u, v) is the nearest point any reached, the same whatever
+// the search started from, so that the trims and the mesh, which look
+// for one point twice, find one place for it.
+func (s *SSurface) closestPointRestarts(p geom.Vector, u, v *float64) bool {
+	type start struct{ u, v, d float64 }
+	res := s.guessResolution()
+	pts := s.guessPoints()
+	var starts []start
+	for i := range res {
+		for j := range res {
+			su, sv := guessU(i, res), guessU(j, res)
+			var q geom.Vector
+			if pts != nil {
+				q = pts[i*res+j]
+			} else {
+				q = s.PointAt(su, sv)
+			}
+			starts = append(starts, start{su, sv, q.Minus(p).Magnitude()})
+		}
+	}
+	slices.SortStableFunc(starts, func(a, b start) int { return cmp.Compare(a.d, b.d) })
+	// The nearest was tried already.
+	const tries = 12
+	starts = starts[1:min(len(starts), tries+1)]
+	for _, c := range [][2]float64{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0.5, 0}, {0.5, 1}, {0, 0.5}, {1, 0.5}} {
+		starts = append(starts, start{u: c[0], v: c[1]})
+	}
+	bu, bv := *u, *v
+	best := s.PointAt(bu, bv).Minus(p).Magnitude()
+	for _, st := range starts {
+		tu, tv := st.u, st.v
+		if s.closestPointNewton(p, &tu, &tv, true) {
+			*u, *v = tu, tv
+			return true
+		}
+		if d := s.PointAt(tu, tv).Minus(p).Magnitude(); d < best {
+			bu, bv, best = tu, tv, d
+		}
+	}
+	*u, *v = bu, bv
+	return false
 }
 
 // closestPointNewton refines the guess (u, v) by Newton iteration,
