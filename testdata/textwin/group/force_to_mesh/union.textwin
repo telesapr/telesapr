@@ -7858,20 +7858,99 @@ row 12 FROM REQUEST  r001-#XY
  12-13 64 64 0
  14-21 6c 64 108 1 1 1
  22-99 64 64 0
-row 14 IN GROUP      g001-#references
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r002-#YZ
+ 0-2 64 61 0
+ 3-20 6c 61 108 20001 1 1
+ 21-99 64 61 0
+row 18    origin of r003-#ZX
+ 0-2 64 64 0
+ 3-20 6c 64 108 30001 1 1
+ 21-99 64 64 0
+row 20    start of r005-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 50001 1 1
+ 29-99 64 61 0
+row 22    end of r008-line-segment
+ 0-2 64 64 0
+ 3-26 6c 64 108 80002 1 1
+ 27-99 64 64 0
+row 24    start of r009-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 90001 1 1
+ 29-99 64 61 0
+row 26    end of r00c-line-segment
+ 0-2 64 64 0
+ 3-26 6c 64 108 c0002 1 1
+ 27-99 64 64 0
+row 28    origin of g002-sketch-in-plane
+ 0-2 64 61 0
+ 3-32 6c 61 108 80020002 1 1
+ 33-99 64 61 0
+row 30    origin of g004-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80040002 1 1
+ 24-99 64 64 0
+row 32    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050002 1 1
+ 24-99 64 61 0
+row 34    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8005001e 1 1
+ 22-99 64 64 0
+row 36    point of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050028 1 1
+ 24-99 64 61 0
+row 38    origin of g006-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80060002 1 1
+ 24-99 64 64 0
+row 40    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070002 1 1
+ 24-99 64 61 0
+row 42    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8007001e 1 1
+ 22-99 64 64 0
+row 44    point of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070028 1 1
+ 24-99 64 61 0
+row 46    origin of g00a-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 800a0002 1 1
+ 24-99 64 64 0
+row 48    point of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b0028 1 1
+ 24-99 64 61 0
+row 50    r011-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 110000 1 1
+ 32-99 64 64 0
+row 52    g00b-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 800b0001 1 1
+ 27-99 64 61 0
+row 54 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
  14-29 6c 64 108 1 1 0
  30-99 64 64 0
-row 16 NOT LOCKED IN WORKPLANE
+row 56 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 18 CONSTRUCTION
+row 58 CONSTRUCTION
  0-99 74 64 0
-row 21 (unselect all)
+row 61 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 23 
+row 63 
  0-99 64 64 0
 screen entity 10020
 row 0         drawing / constraining in 3d
@@ -8012,20 +8091,99 @@ row 12 FROM REQUEST  r002-#YZ
  12-13 64 64 0
  14-21 6c 64 108 2 1 1
  22-99 64 64 0
-row 14 IN GROUP      g001-#references
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 18    origin of r003-#ZX
+ 0-2 64 64 0
+ 3-20 6c 64 108 30001 1 1
+ 21-99 64 64 0
+row 20    start of r005-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 50001 1 1
+ 29-99 64 61 0
+row 22    end of r008-line-segment
+ 0-2 64 64 0
+ 3-26 6c 64 108 80002 1 1
+ 27-99 64 64 0
+row 24    start of r009-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 90001 1 1
+ 29-99 64 61 0
+row 26    end of r00c-line-segment
+ 0-2 64 64 0
+ 3-26 6c 64 108 c0002 1 1
+ 27-99 64 64 0
+row 28    origin of g002-sketch-in-plane
+ 0-2 64 61 0
+ 3-32 6c 61 108 80020002 1 1
+ 33-99 64 61 0
+row 30    origin of g004-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80040002 1 1
+ 24-99 64 64 0
+row 32    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050002 1 1
+ 24-99 64 61 0
+row 34    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8005001e 1 1
+ 22-99 64 64 0
+row 36    point of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050028 1 1
+ 24-99 64 61 0
+row 38    origin of g006-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80060002 1 1
+ 24-99 64 64 0
+row 40    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070002 1 1
+ 24-99 64 61 0
+row 42    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8007001e 1 1
+ 22-99 64 64 0
+row 44    point of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070028 1 1
+ 24-99 64 61 0
+row 46    origin of g00a-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 800a0002 1 1
+ 24-99 64 64 0
+row 48    point of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b0028 1 1
+ 24-99 64 61 0
+row 50    r011-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 110000 1 1
+ 32-99 64 64 0
+row 52    g00b-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 800b0001 1 1
+ 27-99 64 61 0
+row 54 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
  14-29 6c 64 108 1 1 0
  30-99 64 64 0
-row 16 NOT LOCKED IN WORKPLANE
+row 56 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 18 CONSTRUCTION
+row 58 CONSTRUCTION
  0-99 74 64 0
-row 21 (unselect all)
+row 61 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 23 
+row 63 
  0-99 64 64 0
 screen entity 20020
 row 0         drawing / constraining in 3d
@@ -8166,20 +8324,99 @@ row 12 FROM REQUEST  r003-#ZX
  12-13 64 64 0
  14-21 6c 64 108 3 1 1
  22-99 64 64 0
-row 14 IN GROUP      g001-#references
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 18    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 20    start of r005-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 50001 1 1
+ 29-99 64 61 0
+row 22    end of r008-line-segment
+ 0-2 64 64 0
+ 3-26 6c 64 108 80002 1 1
+ 27-99 64 64 0
+row 24    start of r009-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 90001 1 1
+ 29-99 64 61 0
+row 26    end of r00c-line-segment
+ 0-2 64 64 0
+ 3-26 6c 64 108 c0002 1 1
+ 27-99 64 64 0
+row 28    origin of g002-sketch-in-plane
+ 0-2 64 61 0
+ 3-32 6c 61 108 80020002 1 1
+ 33-99 64 61 0
+row 30    origin of g004-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80040002 1 1
+ 24-99 64 64 0
+row 32    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050002 1 1
+ 24-99 64 61 0
+row 34    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8005001e 1 1
+ 22-99 64 64 0
+row 36    point of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050028 1 1
+ 24-99 64 61 0
+row 38    origin of g006-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80060002 1 1
+ 24-99 64 64 0
+row 40    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070002 1 1
+ 24-99 64 61 0
+row 42    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8007001e 1 1
+ 22-99 64 64 0
+row 44    point of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070028 1 1
+ 24-99 64 61 0
+row 46    origin of g00a-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 800a0002 1 1
+ 24-99 64 64 0
+row 48    point of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b0028 1 1
+ 24-99 64 61 0
+row 50    r011-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 110000 1 1
+ 32-99 64 64 0
+row 52    g00b-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 800b0001 1 1
+ 27-99 64 61 0
+row 54 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
  14-29 6c 64 108 1 1 0
  30-99 64 64 0
-row 16 NOT LOCKED IN WORKPLANE
+row 56 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 18 CONSTRUCTION
+row 58 CONSTRUCTION
  0-99 74 64 0
-row 21 (unselect all)
+row 61 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 23 
+row 63 
  0-99 64 64 0
 screen entity 30020
 row 0         drawing / constraining in 3d
@@ -8266,18 +8503,65 @@ row 10
 row 12 FROM REQUEST  r004-datum-point
  0-11 74 64 0
  12-99 64 64 0
-row 14 IN GROUP      g003-helpers
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r00d-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 d0001 1 1
+ 29-99 64 61 0
+row 18    end of r010-line-segment
+ 0-2 64 64 0
+ 3-26 6c 64 108 100002 1 1
+ 27-99 64 64 0
+row 20    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070005 1 1
+ 24-99 64 61 0
+row 22    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80070021 1 1
+ 22-99 64 64 0
+row 24    point of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8007002a 1 1
+ 24-99 64 61 0
+row 26    origin of g008-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80080002 1 1
+ 24-99 64 64 0
+row 28    start of g009-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80090002 1 1
+ 24-99 64 61 0
+row 30    end of g009-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8009001e 1 1
+ 22-99 64 64 0
+row 32    point of g009-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80090028 1 1
+ 24-99 64 61 0
+row 34    r011-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 110000 1 1
+ 32-99 64 64 0
+row 36    g00b-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 800b0001 1 1
+ 27-99 64 61 0
+row 38 IN GROUP      g003-helpers
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 3 1 0
  26-99 64 64 0
-row 16 NOT LOCKED IN WORKPLANE
+row 40 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 19 (unselect all)
+row 43 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 45 
  0-99 64 64 0
 screen entity 50000
 row 0         drawing / constraining in 3d
@@ -8369,20 +8653,99 @@ row 12 FROM REQUEST  r005-line-segment
  12-13 64 64 0
  14-30 6c 64 108 5 1 1
  31-99 64 64 0
-row 14 IN GROUP      g004-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 18    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 20    origin of r003-#ZX
+ 0-2 64 61 0
+ 3-20 6c 61 108 30001 1 1
+ 21-99 64 61 0
+row 22    end of r008-line-segment
+ 0-2 64 64 0
+ 3-26 6c 64 108 80002 1 1
+ 27-99 64 64 0
+row 24    start of r009-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 90001 1 1
+ 29-99 64 61 0
+row 26    end of r00c-line-segment
+ 0-2 64 64 0
+ 3-26 6c 64 108 c0002 1 1
+ 27-99 64 64 0
+row 28    origin of g002-sketch-in-plane
+ 0-2 64 61 0
+ 3-32 6c 61 108 80020002 1 1
+ 33-99 64 61 0
+row 30    origin of g004-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80040002 1 1
+ 24-99 64 64 0
+row 32    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050002 1 1
+ 24-99 64 61 0
+row 34    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8005001e 1 1
+ 22-99 64 64 0
+row 36    point of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050028 1 1
+ 24-99 64 61 0
+row 38    origin of g006-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80060002 1 1
+ 24-99 64 64 0
+row 40    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070002 1 1
+ 24-99 64 61 0
+row 42    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8007001e 1 1
+ 22-99 64 64 0
+row 44    point of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070028 1 1
+ 24-99 64 61 0
+row 46    origin of g00a-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 800a0002 1 1
+ 24-99 64 64 0
+row 48    point of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b0028 1 1
+ 24-99 64 61 0
+row 50    r011-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 110000 1 1
+ 32-99 64 64 0
+row 52    g00b-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 800b0001 1 1
+ 27-99 64 61 0
+row 54 IN GROUP      g004-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 4 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g004-sketch
+row 56 IN WORKPLANE  g004-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 4 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 59 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 61 
  0-99 64 64 0
 screen entity 50002
 row 0         drawing / constraining in 3d
@@ -8413,20 +8776,35 @@ row 12 FROM REQUEST  r005-line-segment
  12-13 64 64 0
  14-30 6c 64 108 5 1 1
  31-99 64 64 0
-row 14 IN GROUP      g004-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r006-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 60001 1 1
+ 29-99 64 61 0
+row 18    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80050003 1 1
+ 22-99 64 64 0
+row 20    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8005000b 1 1
+ 24-99 64 61 0
+row 22 IN GROUP      g004-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 4 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g004-sketch
+row 24 IN WORKPLANE  g004-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 4 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 27 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 29 
  0-99 64 64 0
 screen entity 60000
 row 0         drawing / constraining in 3d
@@ -8518,20 +8896,35 @@ row 12 FROM REQUEST  r006-line-segment
  12-13 64 64 0
  14-30 6c 64 108 6 1 1
  31-99 64 64 0
-row 14 IN GROUP      g004-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r005-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 50002 1 1
+ 27-99 64 61 0
+row 18    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80050003 1 1
+ 22-99 64 64 0
+row 20    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8005000b 1 1
+ 24-99 64 61 0
+row 22 IN GROUP      g004-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 4 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g004-sketch
+row 24 IN WORKPLANE  g004-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 4 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 27 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 29 
  0-99 64 64 0
 screen entity 60002
 row 0         drawing / constraining in 3d
@@ -8562,20 +8955,35 @@ row 12 FROM REQUEST  r006-line-segment
  12-13 64 64 0
  14-30 6c 64 108 6 1 1
  31-99 64 64 0
-row 14 IN GROUP      g004-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r007-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 70001 1 1
+ 29-99 64 61 0
+row 18    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8005000c 1 1
+ 22-99 64 64 0
+row 20    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050014 1 1
+ 24-99 64 61 0
+row 22 IN GROUP      g004-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 4 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g004-sketch
+row 24 IN WORKPLANE  g004-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 4 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 27 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 29 
  0-99 64 64 0
 screen entity 70000
 row 0         drawing / constraining in 3d
@@ -8667,20 +9075,35 @@ row 12 FROM REQUEST  r007-line-segment
  12-13 64 64 0
  14-30 6c 64 108 7 1 1
  31-99 64 64 0
-row 14 IN GROUP      g004-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r006-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 60002 1 1
+ 27-99 64 61 0
+row 18    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8005000c 1 1
+ 22-99 64 64 0
+row 20    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050014 1 1
+ 24-99 64 61 0
+row 22 IN GROUP      g004-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 4 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g004-sketch
+row 24 IN WORKPLANE  g004-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 4 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 27 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 29 
  0-99 64 64 0
 screen entity 70002
 row 0         drawing / constraining in 3d
@@ -8711,20 +9134,51 @@ row 12 FROM REQUEST  r007-line-segment
  12-13 64 64 0
  14-30 6c 64 108 7 1 1
  31-99 64 64 0
-row 14 IN GROUP      g004-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r008-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 80001 1 1
+ 29-99 64 61 0
+row 18    end of r00b-line-segment
+ 0-2 64 64 0
+ 3-26 6c 64 108 b0002 1 1
+ 27-99 64 64 0
+row 20    start of r00c-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 c0001 1 1
+ 29-99 64 61 0
+row 22    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80050015 1 1
+ 22-99 64 64 0
+row 24    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8005001d 1 1
+ 24-99 64 61 0
+row 26    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80070015 1 1
+ 22-99 64 64 0
+row 28    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8007001d 1 1
+ 24-99 64 61 0
+row 30 IN GROUP      g004-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 4 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g004-sketch
+row 32 IN WORKPLANE  g004-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 4 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 35 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 37 
  0-99 64 64 0
 screen entity 80000
 row 0         drawing / constraining in 3d
@@ -8816,20 +9270,51 @@ row 12 FROM REQUEST  r008-line-segment
  12-13 64 64 0
  14-30 6c 64 108 8 1 1
  31-99 64 64 0
-row 14 IN GROUP      g004-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r007-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 70002 1 1
+ 27-99 64 61 0
+row 18    end of r00b-line-segment
+ 0-2 64 64 0
+ 3-26 6c 64 108 b0002 1 1
+ 27-99 64 64 0
+row 20    start of r00c-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 c0001 1 1
+ 29-99 64 61 0
+row 22    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80050015 1 1
+ 22-99 64 64 0
+row 24    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8005001d 1 1
+ 24-99 64 61 0
+row 26    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80070015 1 1
+ 22-99 64 64 0
+row 28    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8007001d 1 1
+ 24-99 64 61 0
+row 30 IN GROUP      g004-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 4 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g004-sketch
+row 32 IN WORKPLANE  g004-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 4 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 35 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 37 
  0-99 64 64 0
 screen entity 80002
 row 0         drawing / constraining in 3d
@@ -8860,20 +9345,99 @@ row 12 FROM REQUEST  r008-line-segment
  12-13 64 64 0
  14-30 6c 64 108 8 1 1
  31-99 64 64 0
-row 14 IN GROUP      g004-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 18    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 20    origin of r003-#ZX
+ 0-2 64 61 0
+ 3-20 6c 61 108 30001 1 1
+ 21-99 64 61 0
+row 22    start of r005-line-segment
+ 0-2 64 64 0
+ 3-28 6c 64 108 50001 1 1
+ 29-99 64 64 0
+row 24    start of r009-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 90001 1 1
+ 29-99 64 61 0
+row 26    end of r00c-line-segment
+ 0-2 64 64 0
+ 3-26 6c 64 108 c0002 1 1
+ 27-99 64 64 0
+row 28    origin of g002-sketch-in-plane
+ 0-2 64 61 0
+ 3-32 6c 61 108 80020002 1 1
+ 33-99 64 61 0
+row 30    origin of g004-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80040002 1 1
+ 24-99 64 64 0
+row 32    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050002 1 1
+ 24-99 64 61 0
+row 34    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8005001e 1 1
+ 22-99 64 64 0
+row 36    point of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050028 1 1
+ 24-99 64 61 0
+row 38    origin of g006-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80060002 1 1
+ 24-99 64 64 0
+row 40    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070002 1 1
+ 24-99 64 61 0
+row 42    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8007001e 1 1
+ 22-99 64 64 0
+row 44    point of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070028 1 1
+ 24-99 64 61 0
+row 46    origin of g00a-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 800a0002 1 1
+ 24-99 64 64 0
+row 48    point of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b0028 1 1
+ 24-99 64 61 0
+row 50    r011-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 110000 1 1
+ 32-99 64 64 0
+row 52    g00b-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 800b0001 1 1
+ 27-99 64 61 0
+row 54 IN GROUP      g004-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 4 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g004-sketch
+row 56 IN WORKPLANE  g004-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 4 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 59 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 61 
  0-99 64 64 0
 screen entity 90000
 row 0         drawing / constraining in 3d
@@ -8965,20 +9529,99 @@ row 12 FROM REQUEST  r009-line-segment
  12-13 64 64 0
  14-30 6c 64 108 9 1 1
  31-99 64 64 0
-row 14 IN GROUP      g006-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 18    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 20    origin of r003-#ZX
+ 0-2 64 61 0
+ 3-20 6c 61 108 30001 1 1
+ 21-99 64 61 0
+row 22    start of r005-line-segment
+ 0-2 64 64 0
+ 3-28 6c 64 108 50001 1 1
+ 29-99 64 64 0
+row 24    end of r008-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 80002 1 1
+ 27-99 64 61 0
+row 26    end of r00c-line-segment
+ 0-2 64 64 0
+ 3-26 6c 64 108 c0002 1 1
+ 27-99 64 64 0
+row 28    origin of g002-sketch-in-plane
+ 0-2 64 61 0
+ 3-32 6c 61 108 80020002 1 1
+ 33-99 64 61 0
+row 30    origin of g004-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80040002 1 1
+ 24-99 64 64 0
+row 32    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050002 1 1
+ 24-99 64 61 0
+row 34    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8005001e 1 1
+ 22-99 64 64 0
+row 36    point of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050028 1 1
+ 24-99 64 61 0
+row 38    origin of g006-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80060002 1 1
+ 24-99 64 64 0
+row 40    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070002 1 1
+ 24-99 64 61 0
+row 42    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8007001e 1 1
+ 22-99 64 64 0
+row 44    point of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070028 1 1
+ 24-99 64 61 0
+row 46    origin of g00a-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 800a0002 1 1
+ 24-99 64 64 0
+row 48    point of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b0028 1 1
+ 24-99 64 61 0
+row 50    r011-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 110000 1 1
+ 32-99 64 64 0
+row 52    g00b-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 800b0001 1 1
+ 27-99 64 61 0
+row 54 IN GROUP      g006-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 6 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g006-sketch
+row 56 IN WORKPLANE  g006-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 6 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 59 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 61 
  0-99 64 64 0
 screen entity 90002
 row 0         drawing / constraining in 3d
@@ -9009,20 +9652,43 @@ row 12 FROM REQUEST  r009-line-segment
  12-13 64 64 0
  14-30 6c 64 108 9 1 1
  31-99 64 64 0
-row 14 IN GROUP      g006-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r00a-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 a0001 1 1
+ 29-99 64 61 0
+row 18    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80070003 1 1
+ 22-99 64 64 0
+row 20    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8007000b 1 1
+ 24-99 64 61 0
+row 22    r005-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 50000 1 1
+ 32-99 64 64 0
+row 24    g005-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 80050001 1 1
+ 27-99 64 61 0
+row 26 IN GROUP      g006-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 6 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g006-sketch
+row 28 IN WORKPLANE  g006-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 6 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 31 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 33 
  0-99 64 64 0
 screen entity a0000
 row 0         drawing / constraining in 3d
@@ -9114,20 +9780,43 @@ row 12 FROM REQUEST  r00a-line-segment
  12-13 64 64 0
  14-30 6c 64 108 a 1 1
  31-99 64 64 0
-row 14 IN GROUP      g006-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r009-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 90002 1 1
+ 27-99 64 61 0
+row 18    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80070003 1 1
+ 22-99 64 64 0
+row 20    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8007000b 1 1
+ 24-99 64 61 0
+row 22    r005-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 50000 1 1
+ 32-99 64 64 0
+row 24    g005-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 80050001 1 1
+ 27-99 64 61 0
+row 26 IN GROUP      g006-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 6 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g006-sketch
+row 28 IN WORKPLANE  g006-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 6 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 31 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 33 
  0-99 64 64 0
 screen entity a0002
 row 0         drawing / constraining in 3d
@@ -9158,20 +9847,43 @@ row 12 FROM REQUEST  r00a-line-segment
  12-13 64 64 0
  14-30 6c 64 108 a 1 1
  31-99 64 64 0
-row 14 IN GROUP      g006-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r00b-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 b0001 1 1
+ 29-99 64 61 0
+row 18    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8007000c 1 1
+ 22-99 64 64 0
+row 20    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070014 1 1
+ 24-99 64 61 0
+row 22    r007-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 70000 1 1
+ 32-99 64 64 0
+row 24    g005-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 80050013 1 1
+ 27-99 64 61 0
+row 26 IN GROUP      g006-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 6 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g006-sketch
+row 28 IN WORKPLANE  g006-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 6 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 31 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 33 
  0-99 64 64 0
 screen entity b0000
 row 0         drawing / constraining in 3d
@@ -9263,20 +9975,43 @@ row 12 FROM REQUEST  r00b-line-segment
  12-13 64 64 0
  14-30 6c 64 108 b 1 1
  31-99 64 64 0
-row 14 IN GROUP      g006-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r00a-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 a0002 1 1
+ 27-99 64 61 0
+row 18    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8007000c 1 1
+ 22-99 64 64 0
+row 20    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070014 1 1
+ 24-99 64 61 0
+row 22    r007-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 70000 1 1
+ 32-99 64 64 0
+row 24    g005-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 80050013 1 1
+ 27-99 64 61 0
+row 26 IN GROUP      g006-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 6 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g006-sketch
+row 28 IN WORKPLANE  g006-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 6 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 31 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 33 
  0-99 64 64 0
 screen entity b0002
 row 0         drawing / constraining in 3d
@@ -9307,20 +10042,51 @@ row 12 FROM REQUEST  r00b-line-segment
  12-13 64 64 0
  14-30 6c 64 108 b 1 1
  31-99 64 64 0
-row 14 IN GROUP      g006-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r007-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 70002 1 1
+ 27-99 64 61 0
+row 18    start of r008-line-segment
+ 0-2 64 64 0
+ 3-28 6c 64 108 80001 1 1
+ 29-99 64 64 0
+row 20    start of r00c-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 c0001 1 1
+ 29-99 64 61 0
+row 22    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80050015 1 1
+ 22-99 64 64 0
+row 24    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8005001d 1 1
+ 24-99 64 61 0
+row 26    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80070015 1 1
+ 22-99 64 64 0
+row 28    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8007001d 1 1
+ 24-99 64 61 0
+row 30 IN GROUP      g006-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 6 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g006-sketch
+row 32 IN WORKPLANE  g006-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 6 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 35 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 37 
  0-99 64 64 0
 screen entity c0000
 row 0         drawing / constraining in 3d
@@ -9412,20 +10178,51 @@ row 12 FROM REQUEST  r00c-line-segment
  12-13 64 64 0
  14-30 6c 64 108 c 1 1
  31-99 64 64 0
-row 14 IN GROUP      g006-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r007-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 70002 1 1
+ 27-99 64 61 0
+row 18    start of r008-line-segment
+ 0-2 64 64 0
+ 3-28 6c 64 108 80001 1 1
+ 29-99 64 64 0
+row 20    end of r00b-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 b0002 1 1
+ 27-99 64 61 0
+row 22    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80050015 1 1
+ 22-99 64 64 0
+row 24    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8005001d 1 1
+ 24-99 64 61 0
+row 26    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80070015 1 1
+ 22-99 64 64 0
+row 28    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8007001d 1 1
+ 24-99 64 61 0
+row 30 IN GROUP      g006-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 6 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g006-sketch
+row 32 IN WORKPLANE  g006-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 6 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 35 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 37 
  0-99 64 64 0
 screen entity c0002
 row 0         drawing / constraining in 3d
@@ -9456,20 +10253,99 @@ row 12 FROM REQUEST  r00c-line-segment
  12-13 64 64 0
  14-30 6c 64 108 c 1 1
  31-99 64 64 0
-row 14 IN GROUP      g006-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 18    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 20    origin of r003-#ZX
+ 0-2 64 61 0
+ 3-20 6c 61 108 30001 1 1
+ 21-99 64 61 0
+row 22    start of r005-line-segment
+ 0-2 64 64 0
+ 3-28 6c 64 108 50001 1 1
+ 29-99 64 64 0
+row 24    end of r008-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 80002 1 1
+ 27-99 64 61 0
+row 26    start of r009-line-segment
+ 0-2 64 64 0
+ 3-28 6c 64 108 90001 1 1
+ 29-99 64 64 0
+row 28    origin of g002-sketch-in-plane
+ 0-2 64 61 0
+ 3-32 6c 61 108 80020002 1 1
+ 33-99 64 61 0
+row 30    origin of g004-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80040002 1 1
+ 24-99 64 64 0
+row 32    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050002 1 1
+ 24-99 64 61 0
+row 34    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8005001e 1 1
+ 22-99 64 64 0
+row 36    point of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050028 1 1
+ 24-99 64 61 0
+row 38    origin of g006-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80060002 1 1
+ 24-99 64 64 0
+row 40    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070002 1 1
+ 24-99 64 61 0
+row 42    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8007001e 1 1
+ 22-99 64 64 0
+row 44    point of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070028 1 1
+ 24-99 64 61 0
+row 46    origin of g00a-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 800a0002 1 1
+ 24-99 64 64 0
+row 48    point of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b0028 1 1
+ 24-99 64 61 0
+row 50    r011-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 110000 1 1
+ 32-99 64 64 0
+row 52    g00b-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 800b0001 1 1
+ 27-99 64 61 0
+row 54 IN GROUP      g006-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 6 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g006-sketch
+row 56 IN WORKPLANE  g006-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 6 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 59 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 61 
  0-99 64 64 0
 screen entity d0000
 row 0         drawing / constraining in 3d
@@ -9561,20 +10437,67 @@ row 12 FROM REQUEST  r00d-line-segment
  12-13 64 64 0
  14-30 6c 64 108 d 1 1
  31-99 64 64 0
-row 14 IN GROUP      g008-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    point of r004-datum-point
+ 0-2 64 61 0
+ 3-27 6c 61 108 40000 1 1
+ 28-99 64 61 0
+row 18    end of r010-line-segment
+ 0-2 64 64 0
+ 3-26 6c 64 108 100002 1 1
+ 27-99 64 64 0
+row 20    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070005 1 1
+ 24-99 64 61 0
+row 22    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80070021 1 1
+ 22-99 64 64 0
+row 24    point of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8007002a 1 1
+ 24-99 64 61 0
+row 26    origin of g008-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80080002 1 1
+ 24-99 64 64 0
+row 28    start of g009-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80090002 1 1
+ 24-99 64 61 0
+row 30    end of g009-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8009001e 1 1
+ 22-99 64 64 0
+row 32    point of g009-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80090028 1 1
+ 24-99 64 61 0
+row 34    r011-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 110000 1 1
+ 32-99 64 64 0
+row 36    g00b-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 800b0001 1 1
+ 27-99 64 61 0
+row 38 IN GROUP      g008-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 8 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g008-sketch
+row 40 IN WORKPLANE  g008-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 8 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 43 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 45 
  0-99 64 64 0
 screen entity d0002
 row 0         drawing / constraining in 3d
@@ -9605,20 +10528,47 @@ row 12 FROM REQUEST  r00d-line-segment
  12-13 64 64 0
  14-30 6c 64 108 d 1 1
  31-99 64 64 0
-row 14 IN GROUP      g008-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r00e-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 e0001 1 1
+ 29-99 64 61 0
+row 18    end of g009-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80090003 1 1
+ 22-99 64 64 0
+row 20    start of g009-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8009000b 1 1
+ 24-99 64 61 0
+row 22    r013-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 130000 1 1
+ 32-99 64 64 0
+row 24    g007-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 80070004 1 1
+ 27-99 64 61 0
+row 26    g00b-extrude, through it
+ 0-2 64 64 0
+ 3-26 6c 64 108 800b0013 1 1
+ 27-99 64 64 0
+row 28 IN GROUP      g008-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 8 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g008-sketch
+row 30 IN WORKPLANE  g008-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 8 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 33 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 35 
  0-99 64 64 0
 screen entity e0000
 row 0         drawing / constraining in 3d
@@ -9710,20 +10660,47 @@ row 12 FROM REQUEST  r00e-line-segment
  12-13 64 64 0
  14-30 6c 64 108 e 1 1
  31-99 64 64 0
-row 14 IN GROUP      g008-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r00d-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 d0002 1 1
+ 27-99 64 61 0
+row 18    end of g009-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80090003 1 1
+ 22-99 64 64 0
+row 20    start of g009-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8009000b 1 1
+ 24-99 64 61 0
+row 22    r013-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 130000 1 1
+ 32-99 64 64 0
+row 24    g007-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 80070004 1 1
+ 27-99 64 61 0
+row 26    g00b-extrude, through it
+ 0-2 64 64 0
+ 3-26 6c 64 108 800b0013 1 1
+ 27-99 64 64 0
+row 28 IN GROUP      g008-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 8 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g008-sketch
+row 30 IN WORKPLANE  g008-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 8 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 33 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 35 
  0-99 64 64 0
 screen entity e0002
 row 0         drawing / constraining in 3d
@@ -9754,20 +10731,39 @@ row 12 FROM REQUEST  r00e-line-segment
  12-13 64 64 0
  14-30 6c 64 108 e 1 1
  31-99 64 64 0
-row 14 IN GROUP      g008-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r00f-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 f0001 1 1
+ 29-99 64 61 0
+row 18    end of g009-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8009000c 1 1
+ 22-99 64 64 0
+row 20    start of g009-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80090014 1 1
+ 24-99 64 61 0
+row 22    g007-extrude, through it
+ 0-2 64 64 0
+ 3-26 6c 64 108 80070016 1 1
+ 27-99 64 64 0
+row 24 IN GROUP      g008-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 8 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g008-sketch
+row 26 IN WORKPLANE  g008-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 8 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 29 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 31 
  0-99 64 64 0
 screen entity f0000
 row 0         drawing / constraining in 3d
@@ -9859,20 +10855,39 @@ row 12 FROM REQUEST  r00f-line-segment
  12-13 64 64 0
  14-30 6c 64 108 f 1 1
  31-99 64 64 0
-row 14 IN GROUP      g008-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r00e-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 e0002 1 1
+ 27-99 64 61 0
+row 18    end of g009-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8009000c 1 1
+ 22-99 64 64 0
+row 20    start of g009-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80090014 1 1
+ 24-99 64 61 0
+row 22    g007-extrude, through it
+ 0-2 64 64 0
+ 3-26 6c 64 108 80070016 1 1
+ 27-99 64 64 0
+row 24 IN GROUP      g008-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 8 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g008-sketch
+row 26 IN WORKPLANE  g008-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 8 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 29 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 31 
  0-99 64 64 0
 screen entity f0002
 row 0         drawing / constraining in 3d
@@ -9903,20 +10918,43 @@ row 12 FROM REQUEST  r00f-line-segment
  12-13 64 64 0
  14-30 6c 64 108 f 1 1
  31-99 64 64 0
-row 14 IN GROUP      g008-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r010-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 100001 1 1
+ 29-99 64 61 0
+row 18    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80070018 1 1
+ 22-99 64 64 0
+row 20    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070020 1 1
+ 24-99 64 61 0
+row 22    end of g009-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80090015 1 1
+ 22-99 64 64 0
+row 24    start of g009-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8009001d 1 1
+ 24-99 64 61 0
+row 26 IN GROUP      g008-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 8 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g008-sketch
+row 28 IN WORKPLANE  g008-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 8 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 31 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 33 
  0-99 64 64 0
 screen entity 100000
 row 0         drawing / constraining in 3d
@@ -10008,20 +11046,43 @@ row 12 FROM REQUEST  r010-line-segment
  12-13 64 64 0
  14-30 6c 64 108 10 1 1
  31-99 64 64 0
-row 14 IN GROUP      g008-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r00f-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 f0002 1 1
+ 27-99 64 61 0
+row 18    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80070018 1 1
+ 22-99 64 64 0
+row 20    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070020 1 1
+ 24-99 64 61 0
+row 22    end of g009-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80090015 1 1
+ 22-99 64 64 0
+row 24    start of g009-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8009001d 1 1
+ 24-99 64 61 0
+row 26 IN GROUP      g008-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 8 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g008-sketch
+row 28 IN WORKPLANE  g008-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 8 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 31 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 33 
  0-99 64 64 0
 screen entity 100002
 row 0         drawing / constraining in 3d
@@ -10052,20 +11113,67 @@ row 12 FROM REQUEST  r010-line-segment
  12-13 64 64 0
  14-30 6c 64 108 10 1 1
  31-99 64 64 0
-row 14 IN GROUP      g008-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    point of r004-datum-point
+ 0-2 64 61 0
+ 3-27 6c 61 108 40000 1 1
+ 28-99 64 61 0
+row 18    start of r00d-line-segment
+ 0-2 64 64 0
+ 3-28 6c 64 108 d0001 1 1
+ 29-99 64 64 0
+row 20    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070005 1 1
+ 24-99 64 61 0
+row 22    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80070021 1 1
+ 22-99 64 64 0
+row 24    point of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8007002a 1 1
+ 24-99 64 61 0
+row 26    origin of g008-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80080002 1 1
+ 24-99 64 64 0
+row 28    start of g009-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80090002 1 1
+ 24-99 64 61 0
+row 30    end of g009-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8009001e 1 1
+ 22-99 64 64 0
+row 32    point of g009-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80090028 1 1
+ 24-99 64 61 0
+row 34    r011-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 110000 1 1
+ 32-99 64 64 0
+row 36    g00b-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 800b0001 1 1
+ 27-99 64 61 0
+row 38 IN GROUP      g008-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 8 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g008-sketch
+row 40 IN WORKPLANE  g008-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 8 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 43 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 45 
  0-99 64 64 0
 screen entity 110000
 row 0         drawing / constraining in 3d
@@ -10157,20 +11265,47 @@ row 12 FROM REQUEST  r011-line-segment
  12-13 64 64 0
  14-30 6c 64 108 11 1 1
  31-99 64 64 0
-row 14 IN GROUP      g00a-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r014-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 140002 1 1
+ 27-99 64 61 0
+row 18    start of g005-extrude
+ 0-2 64 64 0
+ 3-23 6c 64 108 80050005 1 1
+ 24-99 64 64 0
+row 20    end of g005-extrude
+ 0-2 64 61 0
+ 3-21 6c 61 108 80050021 1 1
+ 22-99 64 61 0
+row 22    point of g005-extrude
+ 0-2 64 64 0
+ 3-23 6c 64 108 8005002a 1 1
+ 24-99 64 64 0
+row 24    start of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b0002 1 1
+ 24-99 64 61 0
+row 26    end of g00b-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 800b001e 1 1
+ 22-99 64 64 0
+row 28 IN GROUP      g00a-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 a 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g00a-sketch
+row 30 IN WORKPLANE  g00a-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 a 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 33 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 35 
  0-99 64 64 0
 screen entity 110002
 row 0         drawing / constraining in 3d
@@ -10201,20 +11336,47 @@ row 12 FROM REQUEST  r011-line-segment
  12-13 64 64 0
  14-30 6c 64 108 11 1 1
  31-99 64 64 0
-row 14 IN GROUP      g00a-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r012-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 120001 1 1
+ 29-99 64 61 0
+row 18    end of g00b-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 800b0003 1 1
+ 22-99 64 64 0
+row 20    start of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b000b 1 1
+ 24-99 64 61 0
+row 22    g009-extrude, through it
+ 0-2 64 64 0
+ 3-26 6c 64 108 80090008 1 1
+ 27-99 64 64 0
+row 24    g009-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 80090024 1 1
+ 27-99 64 61 0
+row 26    g009-extrude, through it
+ 0-2 64 64 0
+ 3-26 6c 64 108 8009002b 1 1
+ 27-99 64 64 0
+row 28 IN GROUP      g00a-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 a 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g00a-sketch
+row 30 IN WORKPLANE  g00a-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 a 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 33 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 35 
  0-99 64 64 0
 screen entity 120000
 row 0         drawing / constraining in 3d
@@ -10306,20 +11468,47 @@ row 12 FROM REQUEST  r012-line-segment
  12-13 64 64 0
  14-30 6c 64 108 12 1 1
  31-99 64 64 0
-row 14 IN GROUP      g00a-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r011-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 110002 1 1
+ 27-99 64 61 0
+row 18    end of g00b-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 800b0003 1 1
+ 22-99 64 64 0
+row 20    start of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b000b 1 1
+ 24-99 64 61 0
+row 22    g009-extrude, through it
+ 0-2 64 64 0
+ 3-26 6c 64 108 80090008 1 1
+ 27-99 64 64 0
+row 24    g009-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 80090024 1 1
+ 27-99 64 61 0
+row 26    g009-extrude, through it
+ 0-2 64 64 0
+ 3-26 6c 64 108 8009002b 1 1
+ 27-99 64 64 0
+row 28 IN GROUP      g00a-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 a 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g00a-sketch
+row 30 IN WORKPLANE  g00a-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 a 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 33 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 35 
  0-99 64 64 0
 screen entity 120002
 row 0         drawing / constraining in 3d
@@ -10350,20 +11539,43 @@ row 12 FROM REQUEST  r012-line-segment
  12-13 64 64 0
  14-30 6c 64 108 12 1 1
  31-99 64 64 0
-row 14 IN GROUP      g00a-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r013-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 130001 1 1
+ 29-99 64 61 0
+row 18    end of g00b-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 800b000c 1 1
+ 22-99 64 64 0
+row 20    start of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b0014 1 1
+ 24-99 64 61 0
+row 22    g009-extrude, through it
+ 0-2 64 64 0
+ 3-26 6c 64 108 80090009 1 1
+ 27-99 64 64 0
+row 24    g009-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 80090011 1 1
+ 27-99 64 61 0
+row 26 IN GROUP      g00a-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 a 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g00a-sketch
+row 28 IN WORKPLANE  g00a-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 a 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 31 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 33 
  0-99 64 64 0
 screen entity 130000
 row 0         drawing / constraining in 3d
@@ -10455,20 +11667,43 @@ row 12 FROM REQUEST  r013-line-segment
  12-13 64 64 0
  14-30 6c 64 108 13 1 1
  31-99 64 64 0
-row 14 IN GROUP      g00a-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r012-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 120002 1 1
+ 27-99 64 61 0
+row 18    end of g00b-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 800b000c 1 1
+ 22-99 64 64 0
+row 20    start of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b0014 1 1
+ 24-99 64 61 0
+row 22    g009-extrude, through it
+ 0-2 64 64 0
+ 3-26 6c 64 108 80090009 1 1
+ 27-99 64 64 0
+row 24    g009-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 80090011 1 1
+ 27-99 64 61 0
+row 26 IN GROUP      g00a-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 a 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g00a-sketch
+row 28 IN WORKPLANE  g00a-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 a 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 31 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 33 
  0-99 64 64 0
 screen entity 130002
 row 0         drawing / constraining in 3d
@@ -10499,20 +11734,39 @@ row 12 FROM REQUEST  r013-line-segment
  12-13 64 64 0
  14-30 6c 64 108 13 1 1
  31-99 64 64 0
-row 14 IN GROUP      g00a-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r014-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 140001 1 1
+ 29-99 64 61 0
+row 18    end of g00b-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 800b0015 1 1
+ 22-99 64 64 0
+row 20    start of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b001d 1 1
+ 24-99 64 61 0
+row 22    g005-extrude, through it
+ 0-2 64 64 0
+ 3-26 6c 64 108 80050004 1 1
+ 27-99 64 64 0
+row 24 IN GROUP      g00a-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 a 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g00a-sketch
+row 26 IN WORKPLANE  g00a-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 a 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 29 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 31 
  0-99 64 64 0
 screen entity 140000
 row 0         drawing / constraining in 3d
@@ -10604,20 +11858,39 @@ row 12 FROM REQUEST  r014-line-segment
  12-13 64 64 0
  14-30 6c 64 108 14 1 1
  31-99 64 64 0
-row 14 IN GROUP      g00a-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r013-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 130002 1 1
+ 27-99 64 61 0
+row 18    end of g00b-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 800b0015 1 1
+ 22-99 64 64 0
+row 20    start of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b001d 1 1
+ 24-99 64 61 0
+row 22    g005-extrude, through it
+ 0-2 64 64 0
+ 3-26 6c 64 108 80050004 1 1
+ 27-99 64 64 0
+row 24 IN GROUP      g00a-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 a 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g00a-sketch
+row 26 IN WORKPLANE  g00a-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 a 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 29 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 31 
  0-99 64 64 0
 screen entity 140002
 row 0         drawing / constraining in 3d
@@ -10648,20 +11921,47 @@ row 12 FROM REQUEST  r014-line-segment
  12-13 64 64 0
  14-30 6c 64 108 14 1 1
  31-99 64 64 0
-row 14 IN GROUP      g00a-sketch
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r011-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 110001 1 1
+ 29-99 64 61 0
+row 18    start of g005-extrude
+ 0-2 64 64 0
+ 3-23 6c 64 108 80050005 1 1
+ 24-99 64 64 0
+row 20    end of g005-extrude
+ 0-2 64 61 0
+ 3-21 6c 61 108 80050021 1 1
+ 22-99 64 61 0
+row 22    point of g005-extrude
+ 0-2 64 64 0
+ 3-23 6c 64 108 8005002a 1 1
+ 24-99 64 64 0
+row 24    start of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b0002 1 1
+ 24-99 64 61 0
+row 26    end of g00b-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 800b001e 1 1
+ 22-99 64 64 0
+row 28 IN GROUP      g00a-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 a 1 0
  25-99 64 64 0
-row 16 IN WORKPLANE  g00a-sketch
+row 30 IN WORKPLANE  g00a-sketch
  0-11 74 64 0
  12-13 64 64 0
  14-24 6c 64 108 a 1 1
  25-99 64 64 0
-row 19 (unselect all)
+row 33 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 35 
  0-99 64 64 0
 screen entity 80020000
 row 0         drawing / constraining in 3d
@@ -10789,20 +12089,99 @@ row 8 POINT at (0.00, 0.00, 0.00)
  27-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g002-sketch-in-plane
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 16    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 18    origin of r003-#ZX
+ 0-2 64 61 0
+ 3-20 6c 61 108 30001 1 1
+ 21-99 64 61 0
+row 20    start of r005-line-segment
+ 0-2 64 64 0
+ 3-28 6c 64 108 50001 1 1
+ 29-99 64 64 0
+row 22    end of r008-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 80002 1 1
+ 27-99 64 61 0
+row 24    start of r009-line-segment
+ 0-2 64 64 0
+ 3-28 6c 64 108 90001 1 1
+ 29-99 64 64 0
+row 26    end of r00c-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 c0002 1 1
+ 27-99 64 61 0
+row 28    origin of g004-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80040002 1 1
+ 24-99 64 64 0
+row 30    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050002 1 1
+ 24-99 64 61 0
+row 32    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8005001e 1 1
+ 22-99 64 64 0
+row 34    point of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050028 1 1
+ 24-99 64 61 0
+row 36    origin of g006-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80060002 1 1
+ 24-99 64 64 0
+row 38    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070002 1 1
+ 24-99 64 61 0
+row 40    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8007001e 1 1
+ 22-99 64 64 0
+row 42    point of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070028 1 1
+ 24-99 64 61 0
+row 44    origin of g00a-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 800a0002 1 1
+ 24-99 64 64 0
+row 46    point of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b0028 1 1
+ 24-99 64 61 0
+row 48    r011-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 110000 1 1
+ 32-99 64 64 0
+row 50    g00b-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 800b0001 1 1
+ 27-99 64 61 0
+row 52 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 54 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 16 CONSTRUCTION
+row 56 CONSTRUCTION
  0-99 74 64 0
-row 19 (unselect all)
+row 59 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 61 
  0-99 64 64 0
 screen entity 80040000
 row 0         drawing / constraining in 3d
@@ -10930,20 +12309,99 @@ row 8 POINT at (0.00, 0.00, 0.00)
  27-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g004-sketch
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 16    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 18    origin of r003-#ZX
+ 0-2 64 61 0
+ 3-20 6c 61 108 30001 1 1
+ 21-99 64 61 0
+row 20    start of r005-line-segment
+ 0-2 64 64 0
+ 3-28 6c 64 108 50001 1 1
+ 29-99 64 64 0
+row 22    end of r008-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 80002 1 1
+ 27-99 64 61 0
+row 24    start of r009-line-segment
+ 0-2 64 64 0
+ 3-28 6c 64 108 90001 1 1
+ 29-99 64 64 0
+row 26    end of r00c-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 c0002 1 1
+ 27-99 64 61 0
+row 28    origin of g002-sketch-in-plane
+ 0-2 64 64 0
+ 3-32 6c 64 108 80020002 1 1
+ 33-99 64 64 0
+row 30    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050002 1 1
+ 24-99 64 61 0
+row 32    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8005001e 1 1
+ 22-99 64 64 0
+row 34    point of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050028 1 1
+ 24-99 64 61 0
+row 36    origin of g006-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80060002 1 1
+ 24-99 64 64 0
+row 38    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070002 1 1
+ 24-99 64 61 0
+row 40    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8007001e 1 1
+ 22-99 64 64 0
+row 42    point of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070028 1 1
+ 24-99 64 61 0
+row 44    origin of g00a-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 800a0002 1 1
+ 24-99 64 64 0
+row 46    point of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b0028 1 1
+ 24-99 64 61 0
+row 48    r011-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 110000 1 1
+ 32-99 64 64 0
+row 50    g00b-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 800b0001 1 1
+ 27-99 64 61 0
+row 52 IN GROUP      g004-sketch
  0-7 74 64 0
  8-13 64 64 0
  14-24 6c 64 108 4 1 0
  25-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 54 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 16 CONSTRUCTION
+row 56 CONSTRUCTION
  0-99 74 64 0
-row 19 (unselect all)
+row 59 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 61 
  0-99 64 64 0
 screen entity 80050001
 row 0         drawing / constraining in 3d
@@ -11025,18 +12483,97 @@ row 8 POINT at (0.00, 0.00, 0.00)
  27-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g005-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 16    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 18    origin of r003-#ZX
+ 0-2 64 61 0
+ 3-20 6c 61 108 30001 1 1
+ 21-99 64 61 0
+row 20    start of r005-line-segment
+ 0-2 64 64 0
+ 3-28 6c 64 108 50001 1 1
+ 29-99 64 64 0
+row 22    end of r008-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 80002 1 1
+ 27-99 64 61 0
+row 24    start of r009-line-segment
+ 0-2 64 64 0
+ 3-28 6c 64 108 90001 1 1
+ 29-99 64 64 0
+row 26    end of r00c-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 c0002 1 1
+ 27-99 64 61 0
+row 28    origin of g002-sketch-in-plane
+ 0-2 64 64 0
+ 3-32 6c 64 108 80020002 1 1
+ 33-99 64 64 0
+row 30    origin of g004-sketch
+ 0-2 64 61 0
+ 3-23 6c 61 108 80040002 1 1
+ 24-99 64 61 0
+row 32    end of g005-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8005001e 1 1
+ 22-99 64 64 0
+row 34    point of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050028 1 1
+ 24-99 64 61 0
+row 36    origin of g006-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80060002 1 1
+ 24-99 64 64 0
+row 38    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070002 1 1
+ 24-99 64 61 0
+row 40    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8007001e 1 1
+ 22-99 64 64 0
+row 42    point of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070028 1 1
+ 24-99 64 61 0
+row 44    origin of g00a-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 800a0002 1 1
+ 24-99 64 64 0
+row 46    point of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b0028 1 1
+ 24-99 64 61 0
+row 48    r011-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 110000 1 1
+ 32-99 64 64 0
+row 50    g00b-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 800b0001 1 1
+ 27-99 64 61 0
+row 52 IN GROUP      g005-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 5 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 54 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 17 (unselect all)
+row 57 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 19 
+row 59 
  0-99 64 64 0
 screen entity 80050003
 row 0         drawing / constraining in 3d
@@ -11062,18 +12599,33 @@ row 8 POINT at (30.00, 0.00, 0.00)
  28-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g005-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    end of r005-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 50002 1 1
+ 27-99 64 61 0
+row 16    start of r006-line-segment
+ 0-2 64 64 0
+ 3-28 6c 64 108 60001 1 1
+ 29-99 64 64 0
+row 18    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8005000b 1 1
+ 24-99 64 61 0
+row 20 IN GROUP      g005-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 5 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 22 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 17 (unselect all)
+row 25 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 19 
+row 27 
  0-99 64 64 0
 screen entity 80050004
 row 0         drawing / constraining in 3d
@@ -11155,18 +12707,45 @@ row 8 POINT at (0.00, 0.00, -10.00)
  29-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g005-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    start of r011-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 110001 1 1
+ 29-99 64 61 0
+row 16    end of r014-line-segment
+ 0-2 64 64 0
+ 3-26 6c 64 108 140002 1 1
+ 27-99 64 64 0
+row 18    end of g005-extrude
+ 0-2 64 61 0
+ 3-21 6c 61 108 80050021 1 1
+ 22-99 64 61 0
+row 20    point of g005-extrude
+ 0-2 64 64 0
+ 3-23 6c 64 108 8005002a 1 1
+ 24-99 64 64 0
+row 22    start of g00b-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 800b0002 1 1
+ 24-99 64 61 0
+row 24    end of g00b-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 800b001e 1 1
+ 22-99 64 64 0
+row 26 IN GROUP      g005-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 5 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 28 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 17 (unselect all)
+row 31 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 19 
+row 33 
  0-99 64 64 0
 screen entity 80050006
 row 0         drawing / constraining in 3d
@@ -11192,18 +12771,25 @@ row 8 POINT at (30.00, 0.00, -10.00)
  30-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g005-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8005000e 1 1
+ 24-99 64 61 0
+row 16 IN GROUP      g005-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 5 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 18 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 17 (unselect all)
+row 21 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 19 
+row 23 
  0-99 64 64 0
 screen entity 80050007
 row 0         drawing / constraining in 3d
@@ -11447,18 +13033,33 @@ row 8 POINT at (30.00, 0.00, 0.00)
  28-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g005-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    end of r005-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 50002 1 1
+ 27-99 64 61 0
+row 16    start of r006-line-segment
+ 0-2 64 64 0
+ 3-28 6c 64 108 60001 1 1
+ 29-99 64 64 0
+row 18    end of g005-extrude
+ 0-2 64 61 0
+ 3-21 6c 61 108 80050003 1 1
+ 22-99 64 61 0
+row 20 IN GROUP      g005-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 5 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 22 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 17 (unselect all)
+row 25 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 19 
+row 27 
  0-99 64 64 0
 screen entity 8005000c
 row 0         drawing / constraining in 3d
@@ -11484,18 +13085,33 @@ row 8 POINT at (30.00, 20.00, 0.00)
  29-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g005-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    end of r006-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 60002 1 1
+ 27-99 64 61 0
+row 16    start of r007-line-segment
+ 0-2 64 64 0
+ 3-28 6c 64 108 70001 1 1
+ 29-99 64 64 0
+row 18    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050014 1 1
+ 24-99 64 61 0
+row 20 IN GROUP      g005-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 5 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 22 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 17 (unselect all)
+row 25 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 19 
+row 27 
  0-99 64 64 0
 screen entity 8005000d
 row 0         drawing / constraining in 3d
@@ -11577,18 +13193,25 @@ row 8 POINT at (30.00, 0.00, -10.00)
  30-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g005-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    end of g005-extrude
+ 0-2 64 61 0
+ 3-21 6c 61 108 80050006 1 1
+ 22-99 64 61 0
+row 16 IN GROUP      g005-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 5 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 18 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 17 (unselect all)
+row 21 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 19 
+row 23 
  0-99 64 64 0
 screen entity 8005000f
 row 0         drawing / constraining in 3d
@@ -11614,18 +13237,25 @@ row 8 POINT at (30.00, 20.00, -10.00)
  31-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g005-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    start of g005-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80050017 1 1
+ 24-99 64 61 0
+row 16 IN GROUP      g005-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 5 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 18 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 17 (unselect all)
+row 21 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 19 
+row 23 
  0-99 64 64 0
 screen entity 80050010
 row 0         drawing / constraining in 3d
@@ -18608,18 +20238,65 @@ row 10
 row 12 FROM REQUEST  r004-datum-point
  0-11 74 64 0
  12-99 64 64 0
-row 14 IN GROUP      g003-helpers
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r00d-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 d0001 1 1
+ 29-99 64 61 0
+row 18    end of r010-line-segment
+ 0-2 64 64 0
+ 3-26 6c 64 108 100002 1 1
+ 27-99 64 64 0
+row 20    start of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80070005 1 1
+ 24-99 64 61 0
+row 22    end of g007-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 80070021 1 1
+ 22-99 64 64 0
+row 24    point of g007-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8007002a 1 1
+ 24-99 64 61 0
+row 26    origin of g008-sketch
+ 0-2 64 64 0
+ 3-23 6c 64 108 80080002 1 1
+ 24-99 64 64 0
+row 28    start of g009-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80090002 1 1
+ 24-99 64 61 0
+row 30    end of g009-extrude
+ 0-2 64 64 0
+ 3-21 6c 64 108 8009001e 1 1
+ 22-99 64 64 0
+row 32    point of g009-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80090028 1 1
+ 24-99 64 61 0
+row 34    r011-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 110000 1 1
+ 32-99 64 64 0
+row 36    g00b-extrude, through it
+ 0-2 64 61 0
+ 3-26 6c 61 108 800b0001 1 1
+ 27-99 64 61 0
+row 38 IN GROUP      g003-helpers
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 3 1 0
  26-99 64 64 0
-row 16 NOT LOCKED IN WORKPLANE
+row 40 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 19 (unselect all)
+row 43 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 45 
  0-99 64 64 0
 screen custom style info
 row 0  home › style   drawing / constraining in 3d
