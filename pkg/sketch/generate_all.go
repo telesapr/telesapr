@@ -92,7 +92,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		box := sk.CalculateEntityBBox(true)
 		size := box.MaxP.Minus(box.MinP)
 		maxSize := geom.Max(size.X, geom.Max(size.Y, size.Z))
-		sk.tol = srf.Tol(maxSize*sk.chordTolPct()/100.0, sk.SegmentLimit()).WithMesher(sk.Mesher)
+		sk.tol = srf.Tol(tolStep(maxSize*sk.chordTolPct()/100.0), sk.SegmentLimit()).WithMesher(sk.Mesher)
 		// The groups before a new one keep their solids, made at the
 		// tolerance of some regeneration before; when the model's
 		// size, and so the tolerance, has changed since, they are made
@@ -829,6 +829,23 @@ func catchPanic(fn func()) (err error) {
 	}()
 	fn()
 	return nil
+}
+
+// tolStep is the chord tolerance mm put on a fixed scale, the largest
+// step of it no larger: a power of two times 4/8, 5/8, 6/8 or 7/8. The
+// tolerance follows the model's size, and a size that changes a little,
+// as a model does that grows by a part at a time, would change it each
+// time, and with it every solid's mesh, made again. On the scale it
+// changes only when the size passes a step, and the mesh is never
+// coarser than asked for, and at most a quarter finer. The steps are
+// exact in binary, and Frexp and Ldexp are exact, so that the tolerance
+// is the same on every machine.
+func tolStep(mm float64) float64 {
+	if mm <= 0 || math.IsInf(mm, 0) || math.IsNaN(mm) {
+		return mm
+	}
+	frac, exp := math.Frexp(mm) // mm = frac × 2^exp, frac in [0.5, 1)
+	return math.Ldexp(math.Floor(frac*8)/8, exp)
 }
 
 // chordTolPct is the chord tolerance as a percentage of the model's
