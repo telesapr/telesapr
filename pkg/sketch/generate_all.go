@@ -113,10 +113,22 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	for i := range prev {
 		prevByHandle[prev[i].H] = &prev[i]
 	}
+	prevEntities := sk.Entities
 	sk.Params = make([]core.Param, 0, len(prev))
 	sk.Entities = make([]core.Entity, 0, len(sk.Entities))
 
 	sk.markSuppressed()
+
+	// The groups before the first that is made again are clean: nothing
+	// they use has changed, since a change makes its group and every
+	// group after it dirty. Regenerated, they would give the entities
+	// and params they have; they keep them, and the loop starts after
+	// them, so that a change late in a large model costs what follows it.
+	start := 0
+	if (typ == GenerateDirty || typ == GenerateNew) && first > 0 && first < len(sk.GroupOrder) {
+		start = first
+		sk.keepGroups(sk.GroupOrder[:first], prevEntities, prev)
+	}
 
 	rt := &Runtime{Sketch: sk}
 	// The pass that finds the model's size solves the groups and makes
@@ -126,6 +138,9 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	// made again (face_workplane.go).
 	resolve := false
 	for i, hg := range sk.GroupOrder {
+		if i < start {
+			continue
+		}
 		if sk.hooks().Cancel() {
 			return
 		}
@@ -959,6 +974,46 @@ func (sk *Sketch) RemakeStaleMeshes() bool {
 		}
 	}
 	return true
+}
+
+// keepGroups puts in the lists the entities and params of groups keep
+// as the regeneration before left them, as a regeneration of them that
+// solves nothing makes them again: the params taken as known, the
+// entities' tags cleared.
+func (sk *Sketch) keepGroups(keep []core.HGroup, entities []core.Entity, params []core.Param) {
+	in := make(map[core.HGroup]bool, len(keep))
+	for _, h := range keep {
+		in[h] = true
+	}
+	for _, e := range entities {
+		if in[e.Group] {
+			e.Tag = 0
+			sk.Entities = append(sk.Entities, e)
+		}
+	}
+	// Whose each param is, as paramGroup tells, from a lookup made once.
+	ofRequest := make(map[core.HRequest]core.HGroup, len(sk.Requests))
+	for i := range sk.Requests {
+		ofRequest[sk.Requests[i].H] = sk.Requests[i].Group
+	}
+	ofConstraint := make(map[core.HConstraint]core.HGroup, len(sk.Constraints))
+	for i := range sk.Constraints {
+		ofConstraint[sk.Constraints[i].H] = sk.Constraints[i].Group
+	}
+	for _, p := range params {
+		var owner core.HGroup
+		switch {
+		case p.H.V&0x80000000 != 0:
+			owner = core.HGroup{V: (p.H.V >> 16) & 0x3FFF}
+		case p.H.V&0x40000000 != 0:
+			owner = ofConstraint[core.HConstraint{V: p.H.V &^ 0x40000000}]
+		default:
+			owner = ofRequest[p.H.Request()]
+		}
+		if in[owner] {
+			sk.Params = append(sk.Params, core.Param{H: p.H, Val: p.Val, Free: p.Free, Known: true})
+		}
+	}
 }
 
 // solidsMadeAtOther reports whether a group before the one at first in
