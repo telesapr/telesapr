@@ -667,10 +667,21 @@ func (g *Group) generateForBooleanShell(prevs, thiss, outs *srf.SShell, how Comb
 	switch how {
 	case CombineUnion:
 		outs.MakeFromUnionOf(prevs, thiss)
-	case CombineDifference:
-		outs.MakeFromDifferenceOf(prevs, thiss)
-	case CombineIntersection:
-		outs.MakeFromIntersectionOf(prevs, thiss)
+	case CombineDifference, CombineIntersection:
+		intersect := how == CombineIntersection
+		if intersect {
+			outs.MakeFromIntersectionOf(prevs, thiss)
+		} else {
+			outs.MakeFromDifferenceOf(prevs, thiss)
+		}
+		// Parts assembled side by side that touch may fail a Boolean
+		// each of them passes; the cut is made part by part then.
+		if outs.BooleanFailed {
+			var by srf.SShell
+			if by.MakeFromPiecewiseOf(prevs, thiss, intersect) && !by.BooleanFailed {
+				*outs = by
+			}
+		}
 	case CombineAssemble:
 		outs.MakeFromAssemblyOf(prevs, thiss)
 	}

@@ -96,3 +96,32 @@ func TestJoinsAssembly(t *testing.T) {
 		})
 	}
 }
+
+// TestCutAcrossTouchingParts cuts a slot across two blocks assembled
+// face to face, through the face they share, as the rover's D-flat cut
+// through a shaft and the gearbox it stands on. The cut of the two
+// together failed, and the group's solid was unsound; each block is
+// cut on its own then.
+func TestCutAcrossTouchingParts(t *testing.T) {
+	t.Parallel()
+	d := New()
+	d.Features.Sketch3D("datums")
+	at := d.Sketch.Point(V(0, 0, 0))
+	d.Constrain.Lock(at)
+	up := d.Sketch.Point(V(0, 0, 10))
+	d.Constrain.Lock(up)
+	for _, o := range []Entity{at, up} {
+		z := o.Pos().Z
+		d.Features.SketchAt(o, V(1, 0, 0), V(0, 1, 0), "")
+		d.Sketch.Polyline(true, V(0, 0, z), V(10, 0, z), V(10, 10, z), V(0, 10, z))
+		d.Features.Extrude(10, "block").SetCombine(Assemble)
+	}
+	d.Features.SketchAt(at, V(1, 0, 0), V(0, 0, 1), "")
+	d.Sketch.Polyline(true, V(2, -1, 5), V(4, -1, 5), V(4, -1, 15), V(2, -1, 15))
+	cut := d.Features.Extrude(-12, "slot")
+	cut.SetCombine(Difference)
+	r := cut.Analyze().Check()
+	if r.BooleanFailed || r.NakedEdges != 0 || math.Abs(r.Volume-(2000-2*10*10)) > 1e-6 || cut.Problem() != "" {
+		t.Errorf("%s, problem %q", r.String(), cut.Problem())
+	}
+}
