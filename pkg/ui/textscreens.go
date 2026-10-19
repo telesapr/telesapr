@@ -1003,6 +1003,14 @@ func (tw *textWindow) ShowGroupInfo() {
 		tw.Printf(false, "The Boolean operation failed. It may be ")
 		tw.Printf(false, "possible to fix the problem by choosing ")
 		tw.Printf(false, "'force NURBS surfaces to triangle mesh'.")
+		if g.JoinsAssembly(ss.SK) {
+			tw.Printf(false, "")
+			tw.Printf(false, "The solid so far holds parts assembled side ")
+			tw.Printf(false, "by side; where they stand in each other the ")
+			tw.Printf(false, "Boolean is not defined. Analyze > Show ")
+			tw.Printf(false, "Interfering Parts finds where. Join or cut ")
+			tw.Printf(false, "each part before it is assembled.")
+		}
 	}
 
 	tw.showGroupItems(g)

@@ -105,15 +105,15 @@ func TestSolidFeatureMisuse(t *testing.T) {
 // description, though its input has nothing wrong (roadmap 24.3).
 func TestProblemOfFailedBoolean(t *testing.T) {
 	g := &sketch.Group{}
-	if msg := problemOf(g); msg != "" {
+	if msg := problemOf(sketch.NewSketch(), g); msg != "" {
 		t.Fatalf("problem %q", msg)
 	}
 	g.BooleanFailed = true
-	if msg := problemOf(g); !strings.Contains(msg, "Boolean") {
+	if msg := problemOf(sketch.NewSketch(), g); !strings.Contains(msg, "Boolean") {
 		t.Errorf("problem %q", msg)
 	}
 	g.Problem.Msg = "a sketch that crosses itself"
-	if msg := problemOf(g); msg != g.Problem.Msg {
+	if msg := problemOf(sketch.NewSketch(), g); msg != g.Problem.Msg {
 		t.Errorf("problem %q", msg)
 	}
 }

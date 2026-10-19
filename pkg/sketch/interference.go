@@ -130,3 +130,24 @@ func overlap(a, b *srf.SShell) (float64, srf.SMesh, bool) {
 	x.TriangulateInto(&m)
 	return m.CalculateVolume(), m, true
 }
+
+// JoinsAssembly reports whether the solid so far that g's Boolean joins
+// holds parts put side by side: a group before it combines as an
+// assembly onto a solid made before that. Parts that stand in each
+// other make a solid whose Boolean with another is not defined, which
+// a failed Boolean then most likely comes of.
+func (g *Group) JoinsAssembly(sk *Sketch) bool {
+	assembled := false
+	for p := g.RunningMeshGroup(sk); p != nil; p = p.RunningMeshGroup(sk) {
+		if !p.IsMeshGroup() || p.Suppress || len(p.ThisShell.Surface) == 0 && p.ThisMesh.IsEmpty() {
+			continue
+		}
+		// A part with a solid before it is one of several; the first
+		// solid is a part alone, however it combines.
+		if assembled {
+			return true
+		}
+		assembled = p.MeshCombine == CombineAssemble
+	}
+	return false
+}
