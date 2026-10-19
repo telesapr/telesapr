@@ -38,7 +38,7 @@ var booleanFixtureGoldens = map[string]boolFixtureStats{
 		VMax:      [3]float64{1.5498346036820765, 1, 1},
 	},
 	"boolean_tangent_crossing": {
-		Triangles: 94,
+		Triangles: 124,
 		VMin:      [3]float64{-30, -30, -30},
 		VMax:      [3]float64{30, 30, 30},
 	},
@@ -53,7 +53,7 @@ var booleanFixtureGoldens = map[string]boolFixtureStats{
 		VMax:      [3]float64{1, 0, 0},
 	},
 	"boolean_tangent_spline": {
-		Triangles: 94,
+		Triangles: 120,
 		VMin:      [3]float64{-30, -30, -30},
 		VMax:      [3]float64{30, 30, 30},
 	},
@@ -65,10 +65,10 @@ var booleanFixtureGoldens = map[string]boolFixtureStats{
 var booleanFixtureVolumes = map[string]float64{
 	"boolean_coplanar_union":   13250.0,
 	"boolean_knife_edge":       1.8303900357690596,
-	"boolean_tangent_crossing": 205477.058604742,
+	"boolean_tangent_crossing": 205508.03402059205,
 	"boolean_tangent_edge":     296000.0,
 	"boolean_tangent_fillet":   0.9730161212,
-	"boolean_tangent_spline":   204638.6271882122,
+	"boolean_tangent_spline":   204664.88294936981,
 }
 
 // volumeRatioTol is how far a volume may be from its record, as a

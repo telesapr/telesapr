@@ -78,12 +78,18 @@ func bandOnCone(d *Doc, y, top float64) (SolidEdge, float64) {
 // too, and both the end face and the top grow by its end. Sound, and
 // the fillets add what OpenCASCADE's do on the same edge within 1.5%
 // (makeFillet, valid there; its chamfers of 2 are not valid shapes).
+// What a blend adds is the difference of two meshes' volumes, and at
+// the default of 20 segments a curve the cone's circle is capped, so
+// that the difference jumps by 0.07 mm³ (1.5% of the fillet) at some
+// chord tolerances, 0.00285% among them; at 200 it stays within 0.5% of
+// OpenCASCADE's from 0.0015% to 0.003%.
 func TestChamferRunsOffBand(t *testing.T) {
 	occ := map[float64]float64{2: 4.579086, 2.5: 6.797516}
 	for _, what := range []string{"a chamfer", "a fillet"} {
 		for _, r := range []float64{2, 2.5} {
 			d := New()
 			d.Edit.SetChordTolerance(0.003)
+			d.Edit.SetMaxSegments(200)
 			edge, before := bandOnCone(d, 3, 25)
 			var g Group
 			if what == "a chamfer" {
@@ -121,6 +127,7 @@ func TestChamferRunsOffBand(t *testing.T) {
 				t.Fatal(err)
 			}
 			e.Edit.SetChordTolerance(0.003)
+			e.Edit.SetMaxSegments(200)
 			gs := e.Groups()
 			if r2 := gs[len(gs)-1].Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-rep.Volume) > 1e-6*rep.Volume {
 				t.Errorf("%s, loaded: %s, volume %g, saved %g", what, r2.Summary(), r2.Volume, rep.Volume)
