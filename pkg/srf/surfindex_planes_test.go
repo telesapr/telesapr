@@ -28,6 +28,11 @@ func TestSurfacePlanesSameAsEach(t *testing.T) {
 	if flat == 0 || flat == len(sh.Surface) {
 		t.Fatalf("%d of %d surfaces flat: the shell tests one kind only", flat, len(sh.Surface))
 	}
+	for i := range sh.Surface {
+		if got := sh.index.planeOfHandle(sh, sh.Surface[i].H); got != planeOf(sh.FindSurface(sh.Surface[i].H)) {
+			t.Fatalf("surface %d by handle: the index has plane %v, the surface %v", i, got, planeOf(&sh.Surface[i]))
+		}
+	}
 	sh.Surface = sh.Surface[:len(sh.Surface)-1]
 	if sh.index.planesOf(sh) != nil {
 		t.Fatal("an index that no longer fits its shell gave planes")

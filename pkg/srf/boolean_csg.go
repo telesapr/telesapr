@@ -439,10 +439,12 @@ func coplanarTrimCrossings(il []SInter, c *SCurve, sh *SShell, own *SSurface, a,
 		}
 		return dot >= 1-geom.LengthEps && math.Abs(n.Dot(pl.p)-d) <= splitEndTol
 	}
-	inPlane := func(ss *SSurface, either bool) bool { return inPlaneOf(planeOf(ss), either) }
 	// The planes of the shell's surfaces, from its index while it has
 	// one that fits it, else each worked out here.
 	planes := sh.index.planesOf(sh)
+	inPlane := func(h core.HSSurface, either bool) bool {
+		return inPlaneOf(sh.index.planeOfHandle(sh, h), either)
+	}
 	ab := b.Minus(a)
 	for i := range sh.Surface {
 		ss := &sh.Surface[i]
@@ -453,7 +455,7 @@ func coplanarTrimCrossings(il []SInter, c *SCurve, sh *SShell, own *SSurface, a,
 			if !inPlaneOf(planes[i], !mine) {
 				continue
 			}
-		} else if !inPlane(ss, !mine) {
+		} else if !inPlaneOf(planeOf(ss), !mine) {
 			continue
 		}
 		for j := range ss.Trim {
@@ -506,8 +508,8 @@ func coplanarTrimCrossings(il []SInter, c *SCurve, sh *SShell, own *SSurface, a,
 // the operands' vertices and edges before classifying). Other trims are
 // edges of the face, which a surface across the plane meets, and the
 // ray cast splits at those.
-func fuseCoplanarSeam(sh *SShell, tc *SCurve, inPlane func(ss *SSurface, either bool) bool) bool {
-	return inPlane(sh.FindSurface(tc.SurfA), true) && inPlane(sh.FindSurface(tc.SurfB), true)
+func fuseCoplanarSeam(sh *SShell, tc *SCurve, inPlane func(h core.HSSurface, either bool) bool) bool {
+	return inPlane(tc.SurfA, true) && inPlane(tc.SurfB, true)
 }
 
 // exactCrossing is where the exact curve sb, between its points nearest

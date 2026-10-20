@@ -5,6 +5,7 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
@@ -39,6 +40,9 @@ type surfaceIndex struct {
 	// third of a 12 by 12 step and repeat on one goroutine).
 	planes     []surfacePlane
 	planesOnce sync.Once
+	// byHandle is each surface's place, for the plane of a surface a
+	// trim names.
+	byHandle map[core.HSSurface]int
 }
 
 // surfacePlane is a flat surface's plane as coplanarTrimCrossings
@@ -70,11 +74,25 @@ func (x *surfaceIndex) planesOf(sh *SShell) []surfacePlane {
 	}
 	x.planesOnce.Do(func() {
 		x.planes = make([]surfacePlane, len(sh.Surface))
+		x.byHandle = make(map[core.HSSurface]int, len(sh.Surface))
 		for i := range sh.Surface {
 			x.planes[i] = planeOf(&sh.Surface[i])
+			x.byHandle[sh.Surface[i].H] = i
 		}
 	})
 	return x.planes
+}
+
+// planeOfHandle is the plane of the shell's surface h, from the index
+// where it has the planes, else worked out now; none for a surface the
+// shell doesn't have.
+func (x *surfaceIndex) planeOfHandle(sh *SShell, h core.HSSurface) surfacePlane {
+	if planes := x.planesOf(sh); planes != nil {
+		if i, ok := x.byHandle[h]; ok && sh.Surface[i].H == h {
+			return planes[i]
+		}
+	}
+	return planeOf(sh.FindSurface(h))
 }
 
 // trimEnd is an end of a trim, and where the loop over them reaches it.
