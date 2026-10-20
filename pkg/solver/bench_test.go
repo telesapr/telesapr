@@ -24,6 +24,14 @@ type chain struct {
 }
 
 func makeChain(n int, closed bool) *chain {
+	return makeChainDimensioned(n, closed, 0)
+}
+
+// makeChainDimensioned is makeChain with lengths on the first
+// dimensioned segments only, and no horizontal or vertical
+// constraints: a sketch being dimensioned, whose equations are not
+// solved by substitution.
+func makeChainDimensioned(n int, closed bool, dimensioned int) *chain {
 	ch := &chain{sk: testSketch{}}
 	xs := make([]core.HParam, n+1)
 	ys := make([]core.HParam, n+1)
@@ -34,9 +42,14 @@ func makeChain(n int, closed bool) *chain {
 	}
 	var eqs [][]*core.Expr
 	for i := range n {
-		if i%2 == 0 {
+		switch {
+		case dimensioned > 0 && i < dimensioned:
+			d := p(xs[i]).Minus(p(xs[i+1])).Square().Plus(p(ys[i]).Minus(p(ys[i+1])).Square())
+			eqs = append(eqs, []*core.Expr{d.Minus(c(100))})
+		case dimensioned > 0:
+		case i%2 == 0:
 			eqs = append(eqs, []*core.Expr{p(ys[i]).Minus(p(ys[i+1]))})
-		} else {
+		default:
 			eqs = append(eqs, []*core.Expr{p(xs[i]).Minus(p(xs[i+1]))})
 		}
 	}
@@ -65,7 +78,10 @@ func (ch *chain) system() *System {
 }
 
 func benchmarkSolve(b *testing.B, n int, closed bool) {
-	ch := makeChain(n, closed)
+	benchmarkSolveChain(b, makeChain(n, closed))
+}
+
+func benchmarkSolveChain(b *testing.B, ch *chain) {
 	// The first solve settles the sketch, as a regeneration does.
 	ch.system().Solve(ch.g, true, false, true)
 	b.ResetTimer()
@@ -91,6 +107,16 @@ func BenchmarkSolveChain(b *testing.B) {
 func BenchmarkSolveClosed(b *testing.B) {
 	for _, n := range []int{20, 100, 400} {
 		b.Run(fmt.Sprint(n), func(b *testing.B) { benchmarkSolve(b, n, true) })
+	}
+}
+
+// BenchmarkSolveDimensioning solves a chain of 300 segments of which
+// the first k have a length, the shape of a sketch being dimensioned:
+// the rank test factors a Jacobian with far more unknowns than
+// equations, and nothing is solved by substitution.
+func BenchmarkSolveDimensioning(b *testing.B) {
+	for _, k := range []int{10, 50} {
+		b.Run(fmt.Sprint(k), func(b *testing.B) { benchmarkSolveChain(b, makeChainDimensioned(300, false, k)) })
 	}
 }
 
@@ -177,6 +203,36 @@ func BenchmarkFactorWide(b *testing.B) {
 			b.ResetTimer()
 			for b.Loop() {
 				factorSparseQR(a)
+			}
+		})
+	}
+}
+
+// BenchmarkRankWide is the rank alone of the matrices of
+// BenchmarkFactorWide, as the rank test asks for it.
+func BenchmarkRankWide(b *testing.B) {
+	for _, k := range []int{10, 50} {
+		b.Run(fmt.Sprint(k), func(b *testing.B) {
+			s := evaluatedSystem(b, makeChain(300, false))
+			a := spFromRows(s.mat.Anum[:k], k, s.mat.n)
+			b.ResetTimer()
+			for b.Loop() {
+				s.rankOf(a)
+			}
+		})
+	}
+}
+
+// BenchmarkRankSquare is the rank alone of the matrices of
+// BenchmarkFactorSquare.
+func BenchmarkRankSquare(b *testing.B) {
+	for _, n := range []int{100, 400} {
+		b.Run(fmt.Sprint(n), func(b *testing.B) {
+			s := evaluatedSystem(b, makeChain(n, true))
+			a := spFromRows(s.mat.Anum, s.mat.m, s.mat.n)
+			b.ResetTimer()
+			for b.Loop() {
+				s.rankOf(a)
 			}
 		})
 	}

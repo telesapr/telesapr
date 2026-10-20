@@ -427,7 +427,12 @@ func (s *System) CalculateRank() int {
 	if s.mat.n == 0 || s.mat.m == 0 {
 		return 0
 	}
-	return sparseQRRank(spFromRows(s.mat.Anum, s.mat.m, s.mat.n))
+	return s.rankOf(spFromRows(s.mat.Anum, s.mat.m, s.mat.n))
+}
+
+// rankOf is the rank of a as the rank test finds it.
+func (s *System) rankOf(a *spMat) int {
+	return sparseQRRank(a)
 }
 
 // TestRank evaluates the Jacobian and reports whether it has full row
