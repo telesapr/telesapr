@@ -3923,10 +3923,10 @@ row 20    origin of g002-sketch-in-plane
  0-2 64 61 0
  3-32 6c 61 108 80020002 1 1
  33-99 64 61 0
-row 22    point of g003-extrude
+row 22    end of g003-extrude
  0-2 64 64 0
- 3-23 6c 64 108 80030014 1 1
- 24-99 64 64 0
+ 3-21 6c 64 108 80030014 1 1
+ 22-99 64 64 0
 row 24 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
@@ -4096,10 +4096,10 @@ row 20    origin of g002-sketch-in-plane
  0-2 64 61 0
  3-32 6c 61 108 80020002 1 1
  33-99 64 61 0
-row 22    point of g003-extrude
+row 22    end of g003-extrude
  0-2 64 64 0
- 3-23 6c 64 108 80030014 1 1
- 24-99 64 64 0
+ 3-21 6c 64 108 80030014 1 1
+ 22-99 64 64 0
 row 24 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
@@ -4269,10 +4269,10 @@ row 20    origin of g002-sketch-in-plane
  0-2 64 61 0
  3-32 6c 61 108 80020002 1 1
  33-99 64 61 0
-row 22    point of g003-extrude
+row 22    end of g003-extrude
  0-2 64 64 0
- 3-23 6c 64 108 80030014 1 1
- 24-99 64 64 0
+ 3-21 6c 64 108 80030014 1 1
+ 22-99 64 64 0
 row 24 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
@@ -4437,10 +4437,10 @@ row 12 FROM REQUEST  r004-ttf-text
 row 14 ALSO HERE
  0-8 74 64 0
  9-99 64 64 0
-row 16    point of g003-extrude
+row 16    end of g003-extrude
  0-2 64 61 0
- 3-23 6c 61 108 80030002 1 1
- 24-99 64 61 0
+ 3-21 6c 61 108 80030002 1 1
+ 22-99 64 61 0
 row 18 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
@@ -4488,10 +4488,10 @@ row 12 FROM REQUEST  r004-ttf-text
 row 14 ALSO HERE
  0-8 74 64 0
  9-99 64 64 0
-row 16    point of g003-extrude
+row 16    end of g003-extrude
  0-2 64 61 0
- 3-23 6c 61 108 80030003 1 1
- 24-99 64 61 0
+ 3-21 6c 61 108 80030003 1 1
+ 22-99 64 61 0
 row 18 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
@@ -4539,10 +4539,10 @@ row 12 FROM REQUEST  r004-ttf-text
 row 14 ALSO HERE
  0-8 74 64 0
  9-99 64 64 0
-row 16    point of g003-extrude
+row 16    end of g003-extrude
  0-2 64 61 0
- 3-23 6c 61 108 80030004 1 1
- 24-99 64 61 0
+ 3-21 6c 61 108 80030004 1 1
+ 22-99 64 61 0
 row 18 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
@@ -4590,10 +4590,10 @@ row 12 FROM REQUEST  r004-ttf-text
 row 14 ALSO HERE
  0-8 74 64 0
  9-99 64 64 0
-row 16    point of g003-extrude
+row 16    end of g003-extrude
  0-2 64 61 0
- 3-23 6c 61 108 80030005 1 1
- 24-99 64 61 0
+ 3-21 6c 61 108 80030005 1 1
+ 22-99 64 61 0
 row 18 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
@@ -4810,10 +4810,10 @@ row 18    origin of r003-#ZX
  0-2 64 61 0
  3-20 6c 61 108 30001 1 1
  21-99 64 61 0
-row 20    point of g003-extrude
+row 20    end of g003-extrude
  0-2 64 64 0
- 3-23 6c 64 108 80030014 1 1
- 24-99 64 64 0
+ 3-21 6c 64 108 80030014 1 1
+ 22-99 64 64 0
 row 22 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0

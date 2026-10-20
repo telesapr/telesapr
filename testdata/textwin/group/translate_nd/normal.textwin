@@ -5817,26 +5817,26 @@ row 20    origin of g002-sketch-in-plane
  0-2 64 61 0
  3-32 6c 61 108 80020002 1 1
  33-99 64 61 0
-row 22    point of g003-extrude
+row 22    end of g003-extrude
  0-2 64 64 0
- 3-23 6c 64 108 80030028 1 1
- 24-99 64 64 0
+ 3-21 6c 64 108 80030028 1 1
+ 22-99 64 64 0
 row 24    origin of g004-sketch-in-plane
  0-2 64 61 0
  3-32 6c 61 108 80040002 1 1
  33-99 64 61 0
-row 26    point of g005-extrude
+row 26    end of g005-extrude
  0-2 64 64 0
- 3-23 6c 64 108 8005000d 1 1
- 24-99 64 64 0
-row 28    point of g006-translate
+ 3-21 6c 64 108 8005000d 1 1
+ 22-99 64 64 0
+row 28    end of g006-translate
  0-2 64 61 0
- 3-25 6c 61 108 8006000b 1 1
- 26-99 64 61 0
-row 30    point of g007-translate
+ 3-23 6c 61 108 8006000b 1 1
+ 24-99 64 61 0
+row 30    end of g007-translate
  0-2 64 64 0
- 3-25 6c 64 108 8007000b 1 1
- 26-99 64 64 0
+ 3-23 6c 64 108 8007000b 1 1
+ 24-99 64 64 0
 row 32    start of g007-translate
  0-2 64 61 0
  3-25 6c 61 108 8007011d 1 1
@@ -6014,26 +6014,26 @@ row 20    origin of g002-sketch-in-plane
  0-2 64 61 0
  3-32 6c 61 108 80020002 1 1
  33-99 64 61 0
-row 22    point of g003-extrude
+row 22    end of g003-extrude
  0-2 64 64 0
- 3-23 6c 64 108 80030028 1 1
- 24-99 64 64 0
+ 3-21 6c 64 108 80030028 1 1
+ 22-99 64 64 0
 row 24    origin of g004-sketch-in-plane
  0-2 64 61 0
  3-32 6c 61 108 80040002 1 1
  33-99 64 61 0
-row 26    point of g005-extrude
+row 26    end of g005-extrude
  0-2 64 64 0
- 3-23 6c 64 108 8005000d 1 1
- 24-99 64 64 0
-row 28    point of g006-translate
+ 3-21 6c 64 108 8005000d 1 1
+ 22-99 64 64 0
+row 28    end of g006-translate
  0-2 64 61 0
- 3-25 6c 61 108 8006000b 1 1
- 26-99 64 61 0
-row 30    point of g007-translate
+ 3-23 6c 61 108 8006000b 1 1
+ 24-99 64 61 0
+row 30    end of g007-translate
  0-2 64 64 0
- 3-25 6c 64 108 8007000b 1 1
- 26-99 64 64 0
+ 3-23 6c 64 108 8007000b 1 1
+ 24-99 64 64 0
 row 32    start of g007-translate
  0-2 64 61 0
  3-25 6c 61 108 8007011d 1 1
@@ -6211,26 +6211,26 @@ row 20    origin of g002-sketch-in-plane
  0-2 64 61 0
  3-32 6c 61 108 80020002 1 1
  33-99 64 61 0
-row 22    point of g003-extrude
+row 22    end of g003-extrude
  0-2 64 64 0
- 3-23 6c 64 108 80030028 1 1
- 24-99 64 64 0
+ 3-21 6c 64 108 80030028 1 1
+ 22-99 64 64 0
 row 24    origin of g004-sketch-in-plane
  0-2 64 61 0
  3-32 6c 61 108 80040002 1 1
  33-99 64 61 0
-row 26    point of g005-extrude
+row 26    end of g005-extrude
  0-2 64 64 0
- 3-23 6c 64 108 8005000d 1 1
- 24-99 64 64 0
-row 28    point of g006-translate
+ 3-21 6c 64 108 8005000d 1 1
+ 22-99 64 64 0
+row 28    end of g006-translate
  0-2 64 61 0
- 3-25 6c 61 108 8006000b 1 1
- 26-99 64 61 0
-row 30    point of g007-translate
+ 3-23 6c 61 108 8006000b 1 1
+ 24-99 64 61 0
+row 30    end of g007-translate
  0-2 64 64 0
- 3-25 6c 64 108 8007000b 1 1
- 26-99 64 64 0
+ 3-23 6c 64 108 8007000b 1 1
+ 24-99 64 64 0
 row 32    start of g007-translate
  0-2 64 61 0
  3-25 6c 61 108 8007011d 1 1
@@ -6432,10 +6432,10 @@ row 20    end of g003-extrude
  0-2 64 61 0
  3-21 6c 61 108 8003000c 1 1
  22-99 64 61 0
-row 22    point of g007-translate
+row 22    end of g007-translate
  0-2 64 64 0
- 3-25 6c 64 108 8007008b 1 1
- 26-99 64 64 0
+ 3-23 6c 64 108 8007008b 1 1
+ 24-99 64 64 0
 row 24 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
@@ -6710,10 +6710,10 @@ row 20    end of g003-extrude
  0-2 64 61 0
  3-21 6c 61 108 8003000c 1 1
  22-99 64 61 0
-row 22    point of g007-translate
+row 22    end of g007-translate
  0-2 64 64 0
- 3-25 6c 64 108 8007008b 1 1
- 26-99 64 64 0
+ 3-23 6c 64 108 8007008b 1 1
+ 24-99 64 64 0
 row 24 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
@@ -8253,26 +8253,26 @@ row 18    origin of r003-#ZX
  0-2 64 61 0
  3-20 6c 61 108 30001 1 1
  21-99 64 61 0
-row 20    point of g003-extrude
+row 20    end of g003-extrude
  0-2 64 64 0
- 3-23 6c 64 108 80030028 1 1
- 24-99 64 64 0
+ 3-21 6c 64 108 80030028 1 1
+ 22-99 64 64 0
 row 22    origin of g004-sketch-in-plane
  0-2 64 61 0
  3-32 6c 61 108 80040002 1 1
  33-99 64 61 0
-row 24    point of g005-extrude
+row 24    end of g005-extrude
  0-2 64 64 0
- 3-23 6c 64 108 8005000d 1 1
- 24-99 64 64 0
-row 26    point of g006-translate
+ 3-21 6c 64 108 8005000d 1 1
+ 22-99 64 64 0
+row 26    end of g006-translate
  0-2 64 61 0
- 3-25 6c 61 108 8006000b 1 1
- 26-99 64 61 0
-row 28    point of g007-translate
+ 3-23 6c 61 108 8006000b 1 1
+ 24-99 64 61 0
+row 28    end of g007-translate
  0-2 64 64 0
- 3-25 6c 64 108 8007000b 1 1
- 26-99 64 64 0
+ 3-23 6c 64 108 8007000b 1 1
+ 24-99 64 64 0
 row 30    start of g007-translate
  0-2 64 61 0
  3-25 6c 61 108 8007011d 1 1
@@ -8391,10 +8391,10 @@ row 18    end of g003-extrude
  0-2 64 61 0
  3-21 6c 61 108 8003000c 1 1
  22-99 64 61 0
-row 20    point of g007-translate
+row 20    end of g007-translate
  0-2 64 64 0
- 3-25 6c 64 108 8007008b 1 1
- 26-99 64 64 0
+ 3-23 6c 64 108 8007008b 1 1
+ 24-99 64 64 0
 row 22 IN GROUP      g003-extrude
  0-7 74 64 0
  8-13 64 64 0
@@ -8547,7 +8547,7 @@ row 14    end of g003-extrude
  0-2 64 61 0
  3-21 6c 61 108 8003000f 1 1
  22-99 64 61 0
-row 16    point of g007-translate
+row 16    start of g007-translate
  0-2 64 64 0
  3-25 6c 64 108 8007008d 1 1
  26-99 64 64 0
@@ -8917,10 +8917,10 @@ row 18    start of g003-extrude
  0-2 64 61 0
  3-23 6c 61 108 80030002 1 1
  24-99 64 61 0
-row 20    point of g007-translate
+row 20    end of g007-translate
  0-2 64 64 0
- 3-25 6c 64 108 8007008b 1 1
- 26-99 64 64 0
+ 3-23 6c 64 108 8007008b 1 1
+ 24-99 64 64 0
 row 22 IN GROUP      g003-extrude
  0-7 74 64 0
  8-13 64 64 0
@@ -9065,7 +9065,7 @@ row 14    start of g003-extrude
  0-2 64 61 0
  3-23 6c 61 108 80030005 1 1
  24-99 64 61 0
-row 16    point of g007-translate
+row 16    start of g007-translate
  0-2 64 64 0
  3-25 6c 64 108 8007008d 1 1
  26-99 64 64 0
@@ -10311,18 +10311,18 @@ row 22    origin of g004-sketch-in-plane
  0-2 64 61 0
  3-32 6c 61 108 80040002 1 1
  33-99 64 61 0
-row 24    point of g005-extrude
+row 24    end of g005-extrude
  0-2 64 64 0
- 3-23 6c 64 108 8005000d 1 1
- 24-99 64 64 0
-row 26    point of g006-translate
+ 3-21 6c 64 108 8005000d 1 1
+ 22-99 64 64 0
+row 26    end of g006-translate
  0-2 64 61 0
- 3-25 6c 61 108 8006000b 1 1
- 26-99 64 61 0
-row 28    point of g007-translate
+ 3-23 6c 61 108 8006000b 1 1
+ 24-99 64 61 0
+row 28    end of g007-translate
  0-2 64 64 0
- 3-25 6c 64 108 8007000b 1 1
- 26-99 64 64 0
+ 3-23 6c 64 108 8007000b 1 1
+ 24-99 64 64 0
 row 30    start of g007-translate
  0-2 64 61 0
  3-25 6c 61 108 8007011d 1 1
@@ -10426,15 +10426,15 @@ row 10
 row 12 ALSO HERE
  0-8 74 64 0
  9-99 64 64 0
-row 14    point of g005-extrude
+row 14    start of g005-extrude
  0-2 64 61 0
  3-23 6c 61 108 8005000f 1 1
  24-99 64 61 0
-row 16    point of g006-translate
+row 16    start of g006-translate
  0-2 64 64 0
  3-25 6c 64 108 8006000d 1 1
  26-99 64 64 0
-row 18    point of g007-translate
+row 18    start of g007-translate
  0-2 64 61 0
  3-25 6c 61 108 8007000d 1 1
  26-99 64 61 0
