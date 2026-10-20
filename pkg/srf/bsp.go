@@ -51,8 +51,9 @@ func SBsp3FromMesh(m *SMesh) *SBsp3 {
 	}
 
 	var bsp3 *SBsp3
+	var sc bspScratch
 	for i := range mc {
-		bsp3 = SBsp3InsertOrCreate(bsp3, &mc[i], nil)
+		bsp3 = insertOrCreate(bsp3, &mc[i], nil, &sc, 0)
 	}
 	return bsp3
 }
@@ -114,20 +115,26 @@ func (b *SBsp3) InsertInPlane(pos2 bool, tr *STriangle, m *SMesh) {
 // InsertHow inserts tr on the given side of the node, or, when instead
 // is set and the tree ends there, decides whether the Boolean keeps it.
 func (b *SBsp3) InsertHow(how BspClass, tr *STriangle, instead *SMesh) {
+	b.insertHow(how, tr, instead, &bspScratch{}, 0)
+}
+
+// insertHow is InsertHow with the scratch of the insertion, at the
+// node's depth.
+func (b *SBsp3) insertHow(how BspClass, tr *STriangle, instead *SMesh, sc *bspScratch, depth int) {
 	switch how {
 	case BspPos:
 		if instead != nil && b.Pos == nil {
 			b.insertAlt(how, tr, instead)
 			return
 		}
-		b.Pos = SBsp3InsertOrCreate(b.Pos, tr, instead)
+		b.Pos = insertOrCreate(b.Pos, tr, instead, sc, depth+1)
 
 	case BspNeg:
 		if instead != nil && b.Neg == nil {
 			b.insertAlt(how, tr, instead)
 			return
 		}
-		b.Neg = SBsp3InsertOrCreate(b.Neg, tr, instead)
+		b.Neg = insertOrCreate(b.Neg, tr, instead, sc, depth+1)
 
 	case BspCoplanar:
 		if instead != nil {
@@ -167,6 +174,46 @@ func (b *SBsp3) insertAlt(how BspClass, tr *STriangle, instead *SMesh) {
 	}
 }
 
+// bspScratch is the working space of one insertion into the tree, a
+// bspUtil for each depth it reaches: a node's split pieces are
+// inserted below it one after the other, so the util of a depth is in
+// use while those of the depths below come and go. Made once per
+// insertion, or per build of a tree, where a util was made at every
+// node a triangle passed, with five slices (a third of a mesh
+// Boolean's allocations).
+type bspScratch struct {
+	utils []*bspUtil
+}
+
+// at is the util of the given depth, made if it wasn't. Each is
+// allocated on its own, so that one in use stays where it is while
+// deeper ones are added.
+func (sc *bspScratch) at(depth int) *bspUtil {
+	for len(sc.utils) <= depth {
+		sc.utils = append(sc.utils, &bspUtil{})
+	}
+	return sc.utils[depth]
+}
+
+// boolsFor is a slice of n false values, in b's room where it has it.
+func boolsFor(b []bool, n int) []bool {
+	if cap(b) < n {
+		return make([]bool, n)
+	}
+	b = b[:n]
+	clear(b)
+	return b
+}
+
+// vectorsFor is an empty slice with room for n vectors, in v's room
+// where it has it.
+func vectorsFor(v []geom.Vector, n int) []geom.Vector {
+	if cap(v) < n {
+		return make([]geom.Vector, 0, n)
+	}
+	return v[:0]
+}
+
 // bspUtil classifies and splits a triangle or convex polygon against a
 // node's plane.
 type bspUtil struct {
@@ -190,7 +237,7 @@ func (u *bspUtil) classifyTriangle(tri *STriangle, node *SBsp3) {
 	u.bsp = node
 	u.onc, u.posc, u.negc = 0, 0, 0
 
-	u.isPos, u.isNeg, u.isOn = make([]bool, 3), make([]bool, 3), make([]bool, 3)
+	u.isPos, u.isNeg, u.isOn = boolsFor(u.isPos, 3), boolsFor(u.isNeg, 3), boolsFor(u.isOn, 3)
 
 	dt := [3]float64{u.tr.A.Dot(u.bsp.N), u.tr.B.Dot(u.bsp.N), u.tr.C.Dot(u.bsp.N)}
 	d := u.bsp.D
@@ -217,7 +264,7 @@ func (u *bspUtil) classifyConvex(vertex []geom.Vector, node *SBsp3, insertEdge b
 	u.onc, u.posc, u.negc = 0, 0, 0
 
 	cnt := len(vertex)
-	u.isPos, u.isNeg, u.isOn = make([]bool, cnt), make([]bool, cnt), make([]bool, cnt)
+	u.isPos, u.isNeg, u.isOn = boolsFor(u.isPos, cnt), boolsFor(u.isNeg, cnt), boolsFor(u.isOn, cnt)
 
 	for i := range cnt {
 		dt := u.bsp.N.Dot(vertex[i])
@@ -260,8 +307,8 @@ func (u *bspUtil) classifyConvexVertices(vertex []geom.Vector, insertEdges bool)
 
 	cnt := len(vertex)
 	// Enlarge vertices list to consider two intersections
-	u.vpos = make([]geom.Vector, 0, cnt+4)
-	u.vneg = make([]geom.Vector, 0, cnt+4)
+	u.vpos = vectorsFor(u.vpos, cnt+4)
+	u.vneg = vectorsFor(u.vneg, cnt+4)
 
 	for i := range cnt {
 		ip := (i + 1) % cnt
@@ -412,7 +459,7 @@ func (u *bspUtil) splitIntoTwoPieces(insertEdge bool) bool {
 
 	u.btri = STriangleFrom(u.tr.Meta, a, aPb, cPa)
 
-	u.vpos = []geom.Vector{aPb, b, c, cPa}
+	u.vpos = append(vectorsFor(u.vpos, 4), aPb, b, c, cPa)
 
 	if insertEdge {
 		se := SEdge{A: aPb, B: cPa}
@@ -422,10 +469,10 @@ func (u *bspUtil) splitIntoTwoPieces(insertEdge bool) bool {
 	return u.posc == 2 && u.negc == 1
 }
 
-func bspTriangulate(bsp *SBsp3, meta STriMeta, vertex []geom.Vector, instead *SMesh) *SBsp3 {
+func bspTriangulate(bsp *SBsp3, meta STriMeta, vertex []geom.Vector, instead *SMesh, sc *bspScratch, depth int) *SBsp3 {
 	for i := range len(vertex) - 2 {
 		tr := STriangleFrom(meta, vertex[0], vertex[i+1], vertex[i+2])
-		bsp = SBsp3InsertOrCreate(bsp, &tr, instead)
+		bsp = insertOrCreate(bsp, &tr, instead, sc, depth)
 	}
 	return bsp
 }
@@ -433,15 +480,21 @@ func bspTriangulate(bsp *SBsp3, meta STriMeta, vertex []geom.Vector, instead *SM
 // InsertConvexHow inserts a convex polygon on the given side of the
 // node.
 func (b *SBsp3) InsertConvexHow(how BspClass, meta STriMeta, vertex []geom.Vector, instead *SMesh) {
+	b.insertConvexHow(how, meta, vertex, instead, &bspScratch{}, 0)
+}
+
+// insertConvexHow is InsertConvexHow with the scratch of the
+// insertion, at the node's depth.
+func (b *SBsp3) insertConvexHow(how BspClass, meta STriMeta, vertex []geom.Vector, instead *SMesh, sc *bspScratch, depth int) {
 	switch how {
 	case BspPos:
 		if b.Pos != nil {
-			b.Pos = b.Pos.InsertConvex(meta, vertex, instead)
+			b.Pos = b.Pos.insertConvex(meta, vertex, instead, sc, depth+1)
 			return
 		}
 	case BspNeg:
 		if b.Neg != nil {
-			b.Neg = b.Neg.InsertConvex(meta, vertex, instead)
+			b.Neg = b.Neg.insertConvex(meta, vertex, instead, sc, depth+1)
 			return
 		}
 	default:
@@ -450,39 +503,51 @@ func (b *SBsp3) InsertConvexHow(how BspClass, meta STriMeta, vertex []geom.Vecto
 
 	for i := range len(vertex) - 2 {
 		tr := STriangleFrom(meta, vertex[0], vertex[i+1], vertex[i+2])
-		b.InsertHow(how, &tr, instead)
+		b.insertHow(how, &tr, instead, sc, depth)
 	}
 }
 
 // InsertConvex inserts a convex polygon, splitting it against the
 // node's plane as a polygon where it can.
 func (b *SBsp3) InsertConvex(meta STriMeta, vertex []geom.Vector, instead *SMesh) *SBsp3 {
-	u := &bspUtil{}
+	return b.insertConvex(meta, vertex, instead, &bspScratch{}, 0)
+}
+
+// insertConvex is InsertConvex with the scratch of the insertion, at
+// the node's depth.
+func (b *SBsp3) insertConvex(meta STriMeta, vertex []geom.Vector, instead *SMesh, sc *bspScratch, depth int) *SBsp3 {
+	u := sc.at(depth)
 	if u.classifyConvex(vertex, b, instead == nil) {
 		if u.posc == 0 {
-			b.InsertConvexHow(BspNeg, meta, vertex, instead)
+			b.insertConvexHow(BspNeg, meta, vertex, instead, sc, depth)
 			return b
 		}
 		if u.negc == 0 {
-			b.InsertConvexHow(BspPos, meta, vertex, instead)
+			b.insertConvexHow(BspPos, meta, vertex, instead, sc, depth)
 			return b
 		}
 
 		if u.classifyConvexVertices(vertex, instead == nil) {
-			b.InsertConvexHow(BspNeg, meta, u.vneg, instead)
-			b.InsertConvexHow(BspPos, meta, u.vpos, instead)
+			b.insertConvexHow(BspNeg, meta, u.vneg, instead, sc, depth)
+			b.insertConvexHow(BspPos, meta, u.vpos, instead, sc, depth)
 			return b
 		}
 	}
 
 	// We don't handle the special case for this; do it as triangles
-	return bspTriangulate(b, meta, vertex, instead)
+	return bspTriangulate(b, meta, vertex, instead, sc, depth)
 }
 
 // SBsp3InsertOrCreate inserts tr into the tree at where, making a node
 // of it if the tree ends there; with instead, the triangle instead goes
 // into (or is discarded from) that mesh.
 func SBsp3InsertOrCreate(where *SBsp3, tr *STriangle, instead *SMesh) *SBsp3 {
+	return insertOrCreate(where, tr, instead, &bspScratch{}, 0)
+}
+
+// insertOrCreate is SBsp3InsertOrCreate with the scratch of the
+// insertion, at where's depth.
+func insertOrCreate(where *SBsp3, tr *STriangle, instead *SMesh, sc *bspScratch, depth int) *SBsp3 {
 	if where == nil {
 		if instead != nil {
 			// ruevs: I do not think this code is reachable, but in
@@ -503,19 +568,25 @@ func SBsp3InsertOrCreate(where *SBsp3, tr *STriangle, instead *SMesh) *SBsp3 {
 		r.Tri = *tr
 		return r
 	}
-	where.Insert(tr, instead)
+	where.insert(tr, instead, sc, depth)
 	return where
 }
 
 // Insert inserts tr below this node, splitting it against the node's
 // plane.
 func (b *SBsp3) Insert(tr *STriangle, instead *SMesh) {
-	u := &bspUtil{}
+	b.insert(tr, instead, &bspScratch{}, 0)
+}
+
+// insert is Insert with the scratch of the insertion, at the node's
+// depth.
+func (b *SBsp3) insert(tr *STriangle, instead *SMesh, sc *bspScratch, depth int) {
+	u := sc.at(depth)
 	u.classifyTriangle(tr, b)
 
 	// All vertices in-plane
 	if u.onc == 3 {
-		b.InsertHow(BspCoplanar, tr, instead)
+		b.insertHow(BspCoplanar, tr, instead, sc, depth)
 		return
 	}
 
@@ -526,9 +597,9 @@ func (b *SBsp3) Insert(tr *STriangle, instead *SMesh) {
 		}
 
 		if u.posc > 0 {
-			b.InsertHow(BspPos, tr, instead)
+			b.insertHow(BspPos, tr, instead, sc, depth)
 		} else {
-			b.InsertHow(BspNeg, tr, instead)
+			b.insertHow(BspNeg, tr, instead, sc, depth)
 		}
 		return
 	}
@@ -536,22 +607,22 @@ func (b *SBsp3) Insert(tr *STriangle, instead *SMesh) {
 	// The polygon must be split into two triangles, one above, one below.
 	if u.posc == 1 && u.negc == 1 && u.onc == 1 {
 		if u.splitIntoTwoTriangles(instead == nil) {
-			b.InsertHow(BspPos, &u.btri, instead)
-			b.InsertHow(BspNeg, &u.ctri, instead)
+			b.insertHow(BspPos, &u.btri, instead, sc, depth)
+			b.insertHow(BspNeg, &u.ctri, instead, sc, depth)
 		} else {
-			b.InsertHow(BspPos, &u.ctri, instead)
-			b.InsertHow(BspNeg, &u.btri, instead)
+			b.insertHow(BspPos, &u.ctri, instead, sc, depth)
+			b.insertHow(BspNeg, &u.btri, instead, sc, depth)
 		}
 		return
 	}
 
 	// The polygon must be split into two pieces: a triangle and a quad.
 	if u.splitIntoTwoPieces(instead == nil) {
-		b.InsertConvexHow(BspPos, tr.Meta, u.vpos, instead)
-		b.InsertHow(BspNeg, &u.btri, instead)
+		b.insertConvexHow(BspPos, tr.Meta, u.vpos, instead, sc, depth)
+		b.insertHow(BspNeg, &u.btri, instead, sc, depth)
 	} else {
-		b.InsertConvexHow(BspNeg, tr.Meta, u.vpos, instead)
-		b.InsertHow(BspPos, &u.btri, instead)
+		b.insertConvexHow(BspNeg, tr.Meta, u.vpos, instead, sc, depth)
+		b.insertHow(BspPos, &u.btri, instead, sc, depth)
 	}
 }
 
