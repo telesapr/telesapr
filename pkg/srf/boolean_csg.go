@@ -429,24 +429,31 @@ func coplanarTrimCrossings(il []SInter, c *SCurve, sh *SShell, own *SSurface, a,
 			break
 		}
 	}
-	inPlane := func(ss *SSurface, either bool) bool {
-		if ss == nil || ss.DegM != 1 || ss.DegN != 1 {
+	inPlaneOf := func(pl surfacePlane, either bool) bool {
+		if !pl.ok {
 			return false
 		}
-		sn := ss.NormalAt(0.5, 0.5)
-		if sn.Magnitude() < geom.LengthEps {
-			return false
-		}
-		dot := sn.WithMagnitude(1).Dot(n)
+		dot := pl.n.Dot(n)
 		if either {
 			dot = math.Abs(dot)
 		}
-		return dot >= 1-geom.LengthEps && math.Abs(n.Dot(ss.PointAt(0, 0))-d) <= splitEndTol
+		return dot >= 1-geom.LengthEps && math.Abs(n.Dot(pl.p)-d) <= splitEndTol
 	}
+	inPlane := func(ss *SSurface, either bool) bool { return inPlaneOf(planeOf(ss), either) }
+	// The planes of the shell's surfaces, from its index while it has
+	// one that fits it, else each worked out here.
+	planes := sh.index.planesOf(sh)
 	ab := b.Minus(a)
 	for i := range sh.Surface {
 		ss := &sh.Surface[i]
-		if ss == own || !inPlane(ss, !mine) {
+		if ss == own {
+			continue
+		}
+		if planes != nil {
+			if !inPlaneOf(planes[i], !mine) {
+				continue
+			}
+		} else if !inPlane(ss, !mine) {
 			continue
 		}
 		for j := range ss.Trim {
