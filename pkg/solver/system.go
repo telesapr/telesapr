@@ -444,7 +444,43 @@ func (s *System) CalculateRank() int {
 	if s.mat.n == 0 || s.mat.m == 0 {
 		return 0
 	}
-	return s.rankOf(spFromRows(s.mat.Anum, s.mat.m, s.mat.n))
+	return s.rankOf(s.sparseJacobian())
+}
+
+// sparseJacobian is the evaluated Jacobian as a sparse matrix, as
+// spFromRows makes it: an entry that is exactly zero is not stored.
+// Only the entries with a partial derivative are looked at.
+func (s *System) sparseJacobian() *spMat {
+	m, n := s.mat.m, s.mat.n
+	sp := &spMat{rows: m, cols: n, idx: make([][]int, n), val: make([][]float64, n)}
+	count := make([]int, n+1)
+	for i := range m {
+		row := s.mat.Anum[i]
+		for j, pd := range s.mat.A[i] {
+			if pd != nil && row[j] != 0 {
+				count[j+1]++
+			}
+		}
+	}
+	for j := range n {
+		count[j+1] += count[j]
+	}
+	idx := make([]int, count[n])
+	val := make([]float64, count[n])
+	for j := range n {
+		sp.idx[j] = idx[count[j]:count[j]:count[j+1]]
+		sp.val[j] = val[count[j]:count[j]:count[j+1]]
+	}
+	for i := range m {
+		row := s.mat.Anum[i]
+		for j, pd := range s.mat.A[i] {
+			if pd != nil && row[j] != 0 {
+				sp.idx[j] = append(sp.idx[j], i)
+				sp.val[j] = append(sp.val[j], row[j])
+			}
+		}
+	}
+	return sp
 }
 
 // rankOf is the rank of a as the rank test finds it.
@@ -478,7 +514,7 @@ func (s *System) SolveLeastSquares() bool {
 			scale[c] = 1 / 20.0
 		}
 	}
-	a := spFromRows(s.mat.Anum, m, n)
+	a := s.sparseJacobian()
 	for c := range n {
 		for k := range a.val[c] {
 			a.val[c][k] *= scale[c]

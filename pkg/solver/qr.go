@@ -170,11 +170,18 @@ type sparseQR struct {
 // of the matrix whose column k is cols(perm[k]), and each row's first
 // column.
 func coletree(m, nc int, cols func(int) []int, perm []int) (parent, firstRowElt []int) {
+	parent, firstRowElt = make([]int, nc), make([]int, m)
+	coletreeInto(m, nc, cols, perm, parent, firstRowElt, make([]int, 2*nc))
+	return parent, firstRowElt
+}
+
+// coletreeInto is coletree writing into parent and firstRowElt, with
+// scratch of 2 nc ints: a factorisation that meets a dead column
+// computes the tree again, and keeps the arrays for it.
+func coletreeInto(m, nc int, cols func(int) []int, perm, parent, firstRowElt, scratch []int) {
 	diagSize := min(nc, m)
-	root := make([]int, nc)
-	pp := make([]int, nc)
-	parent = make([]int, nc)
-	firstRowElt = make([]int, m)
+	root := scratch[:nc]
+	pp := scratch[nc : 2*nc]
 	for i := range firstRowElt {
 		firstRowElt[i] = nc
 	}
@@ -215,7 +222,6 @@ func coletree(m, nc int, cols func(int) []int, perm []int) (parent, firstRowElt 
 			}
 		}
 	}
-	return parent, firstRowElt
 }
 
 // etreeFind finds the root of the set containing i, with path halving.
@@ -347,6 +353,9 @@ func factorSparseQRAnalyzed(a *spMat, sy *qrSymbolic, rankOnly bool) *sparseQR {
 	for i := range pivotperm {
 		pivotperm[i] = i
 	}
+	// The tree computed again at a dead column goes in arrays of this
+	// factorisation's own, so that sy keeps its.
+	var deadParent, deadFirstRowElt, deadScratch []int
 
 	f := &sparseQR{m: m, n: n, hcoeffs: make([]float64, diagSize)}
 	q := &spMat{rows: m, cols: diagSize, idx: make([][]int, diagSize), val: make([][]float64, diagSize)}
@@ -490,7 +499,11 @@ func factorSparseQRAnalyzed(a *spMat, sy *qrSymbolic, rankOnly bool) *sparseQR {
 				pivotperm[j], pivotperm[j+1] = pivotperm[j+1], pivotperm[j]
 			}
 			// Recompute the column elimination tree.
-			etree, firstRowElt = coletree(m, n, pcols, pivotperm)
+			if deadParent == nil {
+				deadParent, deadFirstRowElt, deadScratch = make([]int, n), make([]int, m), make([]int, 2*n)
+			}
+			coletreeInto(m, n, pcols, pivotperm, deadParent, deadFirstRowElt, deadScratch)
+			etree, firstRowElt = deadParent, deadFirstRowElt
 		}
 	}
 	for k := nonzeroCol; k < diagSize; k++ {
