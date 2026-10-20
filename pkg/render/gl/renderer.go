@@ -30,6 +30,9 @@ type Renderer struct {
 	shaded    shadedProgram
 	materials func(face uint32) render.Material
 
+	// The primitive being drawn, sent at its end.
+	batch vertexBatch
+
 	// Cached GL state, to group consecutive draw calls.
 	cur struct {
 		drawing bool
@@ -243,30 +246,25 @@ func (r *Renderer) Clear() {
 // CreateBatch returns nil, as the GL 1 renderer does.
 func (r *Renderer) CreateBatch() render.BatchCanvas { return nil }
 
+// selectPrimitive begins a run of primitives of mode, ending the
+// current one if it is of another mode (glBegin).
 func (r *Renderer) selectPrimitive(mode uint32) {
 	if r.cur.drawing && r.cur.mode == mode {
 		return
 	} else if r.cur.drawing {
-		glapi.End()
+		r.batch.flush(r.cur.mode)
 	}
-	glapi.Begin(mode)
 	r.cur.drawing = true
 	r.cur.mode = mode
 }
 
+// unSelectPrimitive ends the run of primitives, drawing it (glEnd).
 func (r *Renderer) unSelectPrimitive() {
 	if !r.cur.drawing {
 		return
 	}
-	glapi.End()
+	r.batch.flush(r.cur.mode)
 	r.cur.drawing = false
-}
-
-func vertex(v geom.Vector) { glapi.Vertex3d(v.X, v.Y, v.Z) }
-func normal(n geom.Vector) { glapi.Normal3d(n.X, n.Y, n.Z) }
-
-func colorRGBA(c core.RGBA) {
-	glapi.Color4d(float64(c.RedF()), float64(c.GreenF()), float64(c.BlueF()), float64(c.AlphaF()))
 }
 
 func materialRGBA(side uint32, c core.RGBA) {
@@ -343,7 +341,7 @@ func (r *Renderer) selectStroke(hcs render.HStroke) *render.Stroke {
 	}
 	s := r.Stroke(hcs)
 	r.unSelectPrimitive()
-	colorRGBA(s.Color)
+	r.colorRGBA(s.Color)
 	depthRange(s.Layer, s.ZIndex)
 	glapi.LineWidth(float32(s.WidthPx(&r.camera)))
 	// Fat lines and points are quads affected by glPolygonStipple, so
@@ -363,7 +361,7 @@ func (r *Renderer) selectFill(hcf render.HFill) *render.Fill {
 	}
 	f := r.Fill(hcf)
 	r.unSelectPrimitive()
-	colorRGBA(f.Color)
+	r.colorRGBA(f.Color)
 	depthRange(f.Layer, f.ZIndex)
 	fillPattern(f.Pattern)
 	glapi.Disable(glapi.TEXTURE_2D)
@@ -406,7 +404,7 @@ func (r *Renderer) selectTexture(pm *res.Pixmap) {
 func (r *Renderer) doFatLineEndcap(p, u, v geom.Vector) {
 	r.selectPrimitive(glapi.TRIANGLE_FAN)
 	for _, pc := range render.EndcapCircle {
-		vertex(p.Plus(u.ScaledBy(pc[0])).Plus(v.ScaledBy(pc[1])))
+		r.vertex(p.Plus(u.ScaledBy(pc[0])).Plus(v.ScaledBy(pc[1])))
 	}
 	r.unSelectPrimitive()
 }
@@ -424,10 +422,10 @@ func (r *Renderer) doFatLine(a, b geom.Vector, width float64) {
 	ab = ab.WithMagnitude(hw)
 
 	r.selectPrimitive(glapi.QUADS)
-	vertex(a.Plus(abn))
-	vertex(b.Plus(abn))
-	vertex(b.Minus(abn))
-	vertex(a.Minus(abn))
+	r.vertex(a.Plus(abn))
+	r.vertex(b.Plus(abn))
+	r.vertex(b.Minus(abn))
+	r.vertex(a.Minus(abn))
 	r.doFatLineEndcap(a, ab, abn)
 	r.doFatLineEndcap(b, ab.ScaledBy(-1), abn)
 }
@@ -439,8 +437,8 @@ func (r *Renderer) doLine(a, b geom.Vector, hcs render.HStroke) {
 	s := r.selectStroke(hcs)
 	if wpx := s.WidthPx(&r.camera); wpx <= 3.0 {
 		r.selectPrimitive(glapi.LINES)
-		vertex(a)
-		vertex(b)
+		r.vertex(a)
+		r.vertex(b)
 	} else {
 		r.doFatLine(a, b, wpx/r.camera.Scale)
 	}
@@ -450,8 +448,8 @@ func (r *Renderer) doPoint(p geom.Vector, d float64) {
 	u := r.camera.ProjRight.WithMagnitude(d / 2.0 / r.camera.Scale)
 	if d <= 3.0 {
 		r.selectPrimitive(glapi.LINES)
-		vertex(p.Minus(u))
-		vertex(p.Plus(u))
+		r.vertex(p.Minus(u))
+		r.vertex(p.Plus(u))
 		return
 	}
 	v := r.camera.ProjUp.WithMagnitude(d / 2.0 / r.camera.Scale)
@@ -557,10 +555,10 @@ func (r *Renderer) DrawVectorText(text string, height float64, o, u, v geom.Vect
 func (r *Renderer) DrawQuad(a, b, c, d geom.Vector, hcf render.HFill) {
 	r.selectFill(hcf)
 	r.selectPrimitive(glapi.QUADS)
-	vertex(a)
-	vertex(b)
-	vertex(c)
-	vertex(d)
+	r.vertex(a)
+	r.vertex(b)
+	r.vertex(c)
+	r.vertex(d)
 }
 
 // DrawPoint draws a point as a square of the stroke's width.
@@ -579,13 +577,13 @@ func (r *Renderer) DrawPolygon(p *srf.SPolygon, hcf render.HFill) {
 	r.selectFill(hcf)
 
 	m := triangulate(p)
-	normal(p.Normal)
+	r.normal(p.Normal)
 	r.selectPrimitive(glapi.TRIANGLES)
 	for i := range m.Triangles {
 		tr := &m.Triangles[i]
-		vertex(tr.A)
-		vertex(tr.B)
-		vertex(tr.C)
+		r.vertex(tr.A)
+		r.vertex(tr.B)
+		r.vertex(tr.C)
 	}
 	r.unSelectPrimitive()
 }
@@ -646,35 +644,38 @@ func (r *Renderer) DrawMesh(m *srf.SMesh, hcfFront, hcfBack render.HFill) {
 
 	var triangleColor core.RGBA
 	glapi.Enable(glapi.LIGHTING)
-	glapi.Begin(glapi.TRIANGLES)
+	r.selectPrimitive(glapi.TRIANGLES)
 	for i := range m.Triangles {
 		tr := &m.Triangles[i]
 		if frontColor.IsEmpty() || backColor.IsEmpty() {
 			if triangleColor.IsEmpty() || !triangleColor.Equals(tr.Meta.RGBA) {
 				triangleColor = tr.Meta.RGBA
+				// A material change applies to the vertices after it.
+				r.unSelectPrimitive()
 				if frontColor.IsEmpty() {
 					materialRGBA(glapi.FRONT, triangleColor)
 				}
 				if backColor.IsEmpty() {
 					materialRGBA(glapi.BACK, triangleColor)
 				}
+				r.selectPrimitive(glapi.TRIANGLES)
 			}
 		}
 		if tr.NA.EqualsExactly(geom.Vector{}) {
-			normal(tr.Normal())
-			vertex(tr.A)
-			vertex(tr.B)
-			vertex(tr.C)
+			r.normal(tr.Normal())
+			r.vertex(tr.A)
+			r.vertex(tr.B)
+			r.vertex(tr.C)
 		} else {
-			normal(tr.NA)
-			vertex(tr.A)
-			normal(tr.NB)
-			vertex(tr.B)
-			normal(tr.NC)
-			vertex(tr.C)
+			r.normal(tr.NA)
+			r.vertex(tr.A)
+			r.normal(tr.NB)
+			r.vertex(tr.B)
+			r.normal(tr.NC)
+			r.vertex(tr.C)
 		}
 	}
-	glapi.End()
+	r.unSelectPrimitive()
 	glapi.Disable(glapi.LIGHTING)
 }
 
@@ -689,9 +690,9 @@ func (r *Renderer) DrawFaces(m *srf.SMesh, faces []uint32, hcf render.HFill) {
 			if f != face {
 				continue
 			}
-			vertex(tr.A)
-			vertex(tr.B)
-			vertex(tr.C)
+			r.vertex(tr.A)
+			r.vertex(tr.B)
+			r.vertex(tr.C)
 			break
 		}
 	}
@@ -704,14 +705,14 @@ func (r *Renderer) DrawPixmap(pm *res.Pixmap, o, u, v geom.Vector, ta, tb geom.P
 	r.selectFill(hcf)
 	r.selectTexture(pm)
 	r.selectPrimitive(glapi.QUADS)
-	glapi.TexCoord2d(ta.U, ta.V)
-	vertex(o)
-	glapi.TexCoord2d(ta.U, tb.V)
-	vertex(o.Plus(v))
-	glapi.TexCoord2d(tb.U, tb.V)
-	vertex(o.Plus(u).Plus(v))
-	glapi.TexCoord2d(tb.U, ta.V)
-	vertex(o.Plus(u))
+	r.texCoord(ta.U, ta.V)
+	r.vertex(o)
+	r.texCoord(ta.U, tb.V)
+	r.vertex(o.Plus(v))
+	r.texCoord(tb.U, tb.V)
+	r.vertex(o.Plus(u).Plus(v))
+	r.texCoord(tb.U, ta.V)
+	r.vertex(o.Plus(u))
 }
 
 // InvalidatePixmap makes the next draw of pm upload it again.
