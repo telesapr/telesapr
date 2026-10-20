@@ -202,11 +202,17 @@ var epsilon = math.Nextafter(1, 2) - 1
 
 // factorSparseQR is SparseQR::compute: analyzePattern, then factorize.
 func factorSparseQR(a *spMat) *sparseQR {
+	return factorSparseQROrdered(a, colamdOrdering(a.rows, a.cols, a.idx))
+}
+
+// factorSparseQROrdered is factorSparseQR with the column ordering
+// permC given: column permC[i] of the matrix factored is column i of
+// a.
+func factorSparseQROrdered(a *spMat, permC []int) *sparseQR {
 	m, n := a.rows, a.cols
 	diagSize := min(m, n)
 
 	// analyzePattern.
-	permC := colamdOrdering(m, n, a.idx)
 	outputPerm := make([]int, n) // m_perm_c.inverse()
 	for i, p := range permC {
 		outputPerm[p] = i
