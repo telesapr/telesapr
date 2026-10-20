@@ -232,11 +232,14 @@ func (s *System) WriteJacobian(tag int) bool {
 	s.mat.n = len(s.mat.param)
 
 	s.mat.A = make([][]*core.Expr, s.mat.m)
+	seen := make(map[core.HParam]bool)
+	var used []core.HParam
 	for i, e := range s.mat.eq {
 		// Deep-copy and simplify (fold) the current equation.
 		f := s.deepCopyWithParamsAsPointers(e.E)
 
-		used := paramsUsed(f, map[core.HParam]bool{}, nil)
+		clear(seen)
+		used = paramsUsed(f, seen, used[:0])
 
 		s.mat.A[i] = make([]*core.Expr, s.mat.n)
 		for _, p := range used {
@@ -256,14 +259,24 @@ func (s *System) WriteJacobian(tag int) bool {
 	return true
 }
 
-// EvalJacobian evaluates the symbolic Jacobian.
+// EvalJacobian evaluates the symbolic Jacobian. The matrix is one
+// allocation, kept from one evaluation to the next of the same size:
+// the Newton iterations evaluate it over again.
 func (s *System) EvalJacobian() {
-	s.mat.Anum = make([][]float64, s.mat.m)
-	for i := range s.mat.m {
-		s.mat.Anum[i] = make([]float64, s.mat.n)
+	m, n := s.mat.m, s.mat.n
+	if len(s.mat.Anum) != m || (m > 0 && len(s.mat.Anum[0]) != n) {
+		backing := make([]float64, m*n)
+		s.mat.Anum = make([][]float64, m)
+		for i := range m {
+			s.mat.Anum[i] = backing[i*n : (i+1)*n : (i+1)*n]
+		}
+	}
+	for i := range m {
+		row := s.mat.Anum[i]
+		clear(row)
 		for j, pd := range s.mat.A[i] {
 			if pd != nil {
-				s.mat.Anum[i][j] = pd.Eval(nil, nil)
+				row[j] = pd.Eval(nil, nil)
 			}
 		}
 	}

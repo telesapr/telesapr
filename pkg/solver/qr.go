@@ -20,13 +20,28 @@ type spMat struct {
 // stored.
 func spFromRows(a [][]float64, m, n int) *spMat {
 	s := &spMat{rows: m, cols: n, idx: make([][]int, n), val: make([][]float64, n)}
-	for j := range n {
-		for i := range m {
-			if a[i][j] != 0 {
-				s.idx[j] = append(s.idx[j], i)
-				s.val[j] = append(s.val[j], a[i][j])
+	nnz := 0
+	for i := range m {
+		for _, v := range a[i][:n] {
+			if v != 0 {
+				nnz++
 			}
 		}
+	}
+	// One allocation for every column's entries, then a column's
+	// slice is taken from it as the column fills.
+	idx := make([]int, 0, nnz)
+	val := make([]float64, 0, nnz)
+	for j := range n {
+		start := len(idx)
+		for i := range m {
+			if a[i][j] != 0 {
+				idx = append(idx, i)
+				val = append(val, a[i][j])
+			}
+		}
+		s.idx[j] = idx[start:len(idx):len(idx)]
+		s.val[j] = val[start:len(val):len(val)]
 	}
 	return s
 }
@@ -35,6 +50,22 @@ func spFromRows(a [][]float64, m, n int) *spMat {
 // sparse matrix to a SparseMatrix does.
 func (s *spMat) transpose() *spMat {
 	t := &spMat{rows: s.cols, cols: s.rows, idx: make([][]int, s.rows), val: make([][]float64, s.rows)}
+	// Each row's count first, so that the entries are one allocation.
+	count := make([]int, s.rows+1)
+	for j := range s.cols {
+		for _, i := range s.idx[j] {
+			count[i+1]++
+		}
+	}
+	for i := range s.rows {
+		count[i+1] += count[i]
+	}
+	idx := make([]int, count[s.rows])
+	val := make([]float64, count[s.rows])
+	for i := range s.rows {
+		t.idx[i] = idx[count[i]:count[i]:count[i+1]]
+		t.val[i] = val[count[i]:count[i]:count[i+1]]
+	}
 	for j := range s.cols {
 		for k, i := range s.idx[j] {
 			t.idx[i] = append(t.idx[i], j)
