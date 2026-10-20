@@ -1588,9 +1588,8 @@ func nearestOnWithin(s *srf.SSurface, x geom.Vector, ext float64) (float64, floa
 	clamp := func(a float64) float64 { return math.Max(-ext, math.Min(1+ext, a)) }
 	u, v = clamp(u), clamp(v)
 	for range 80 {
-		p := s.PointAt(u, v)
-		var tu, tv geom.Vector
-		s.TangentsAt(u, v, &tu, &tv, true)
+		var p, tu, tv geom.Vector
+		s.PointAndTangentsAt(u, v, &p, &tu, &tv, true)
 		d := x.Minus(p)
 		a11, a12, a22 := tu.Dot(tu), tu.Dot(tv), tv.Dot(tv)
 		b1, b2 := tu.Dot(d), tv.Dot(d)

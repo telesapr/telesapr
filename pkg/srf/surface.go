@@ -180,6 +180,15 @@ func (s *SSurface) NormalAtUv(puv geom.Point2d) geom.Vector {
 // retry, (u, v) is then moved a little toward the middle and the
 // tangents recomputed.
 func (s *SSurface) TangentsAt(u, v float64, tu, tv *geom.Vector, retry bool) {
+	var p geom.Vector
+	s.PointAndTangentsAt(u, v, &p, tu, tv, retry)
+}
+
+// PointAndTangentsAt is PointAt and TangentsAt at (u, v) in one pass:
+// the tangents are quotients of the sums the point is made of, so a
+// Newton step that evaluated both twice over now has the point for
+// nothing, the same to the bit.
+func (s *SSurface) PointAndTangentsAt(u, v float64, p, tu, tv *geom.Vector, retry bool) {
 	var num, numU, numV geom.Vector
 	var den, denU, denV float64
 
@@ -207,6 +216,7 @@ func (s *SSurface) TangentsAt(u, v float64, tu, tv *geom.Vector, retry bool) {
 			denV += s.Weight[i][j] * bi * bjp
 		}
 	}
+	*p = num.ScaledBy(1.0 / den)
 	// quotient rule; f(t) = n(t)/d(t), so f' = (n'*d - n*d')/(d^2)
 	*tu = numU.ScaledBy(den).Minus(num.ScaledBy(denU))
 	*tu = tu.ScaledBy(1.0 / (den * den))
@@ -551,15 +561,14 @@ func (s *SSurface) closestPointNewton(p geom.Vector, u, v *float64, mustConverge
 		iters = 25
 	}
 	for range iters {
-		p0 := s.PointAt(*u, *v)
+		var p0, tu, tv geom.Vector
+		s.PointAndTangentsAt(*u, *v, &p0, &tu, &tv, true)
 		if mustConverge {
 			if p0.EqualsTol(p, ratPolyEps) {
 				return true
 			}
 		}
 
-		var tu, tv geom.Vector
-		s.TangentsAt(*u, *v, &tu, &tv, true)
 		n := tu.Cross(tv)
 		// since tu and tv may not be orthogonal, use y in place of v.
 		// |y| = |v|sin(theta) where theta is the angle between tu and tv.
@@ -609,9 +618,8 @@ func (s *SSurface) PointOnCurve(curve *SBezier, up, vp *float64) {
 
 	for range 30 {
 		// Approximate the surface by a plane
-		ps := s.PointAt(u, v)
-		var tu, tv geom.Vector
-		s.TangentsAt(u, v, &tu, &tv, true)
+		var ps, tu, tv geom.Vector
+		s.PointAndTangentsAt(u, v, &ps, &tu, &tv, true)
 		n := tu.Cross(tv).WithMagnitude(1)
 
 		// point on curve and tangent line direction
@@ -876,9 +884,8 @@ func (s *SSurface) DepartureFromCoplanar() float64 {
 // if that fails.
 func (s *SSurface) PointIntersectingLine(p0, p1 geom.Vector, u, v *float64) bool {
 	for range 20 {
-		var tu, tv geom.Vector
-		p := s.PointAt(*u, *v)
-		s.TangentsAt(*u, *v, &tu, &tv, true)
+		var p, tu, tv geom.Vector
+		s.PointAndTangentsAt(*u, *v, &p, &tu, &tv, true)
 
 		n := tu.Cross(tv).WithMagnitude(1)
 		d := p.Dot(n)
@@ -1023,8 +1030,7 @@ func (s *SSurface) PointOnSurfaces(s1, s2 *SSurface, up, vp *float64) {
 		var pj, tu, tv, n [3]geom.Vector
 		var d [3]float64
 		for j := range 3 {
-			pj[j] = srf[j].PointAt(u[j], v[j])
-			srf[j].TangentsAt(u[j], v[j], &tu[j], &tv[j], true)
+			srf[j].PointAndTangentsAt(u[j], v[j], &pj[j], &tu[j], &tv[j], true)
 			n[j] = tu[j].Cross(tv[j]).WithMagnitude(1)
 			d[j] = n[j].Dot(pj[j])
 		}
@@ -1068,9 +1074,7 @@ func (s *SSurface) ClosestPointOnThisAndSurface(srf2 *SSurface, p geom.Vector) g
 		var d [2]float64
 
 		for j := range 2 {
-			srf[j].TangentsAt(puv[j].U, puv[j].V, &tu[j], &tv[j], true)
-
-			cp[j] = srf[j].PointAtUv(puv[j])
+			srf[j].PointAndTangentsAt(puv[j].U, puv[j].V, &cp[j], &tu[j], &tv[j], true)
 
 			n[j] = tu[j].Cross(tv[j]).WithMagnitude(1)
 			d[j] = n[j].Dot(cp[j])
