@@ -347,6 +347,9 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 	if err != nil {
 		return filletErr(at0, "the solid's topology is broken: %v", err)
 	}
+	// The rolling ball projects its every step on the faces it rolls on.
+	sh.KeepClosestGuesses(true)
+	defer sh.KeepClosestGuesses(false)
 	var edges []filletEdge
 	byEdge := map[int]int{}
 	add := func(fe filletEdge) {

@@ -368,10 +368,9 @@ func acrossPatch(p *srf.SSurface, ro *rbRunOff, u0, v0, u1, v1 float64, a, b geo
 	// way there.
 	on := func(u, v float64) (geom.Vector, geom.Vector) {
 		for range 60 {
-			x := p.PointAt(u, v)
+			var x, tu, tv geom.Vector
+			p.PointAndTangentsAt(u, v, &x, &tu, &tv, true)
 			hv := ro.h(x)
-			var tu, tv geom.Vector
-			p.TangentsAt(u, v, &tu, &tv, true)
 			gu, gv := ro.np.Dot(tu), ro.np.Dot(tv)
 			g2 := gu*gu + gv*gv
 			if g2 == 0 || math.Abs(hv) < 1e-13 {

@@ -5,6 +5,7 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
@@ -32,6 +33,66 @@ type surfaceIndex struct {
 	// which a Boolean of surfaces with no exact curves never makes.
 	ends, odd []trimEnd
 	endsOnce  sync.Once
+
+	// planes are the surfaces' planes for coplanarTrimCrossings, made
+	// by the first call: it tested every surface of the shell for every
+	// segment of every curve split, taking the normal each time (a
+	// third of a 12 by 12 step and repeat on one goroutine).
+	planes     []surfacePlane
+	planesOnce sync.Once
+	// byHandle is each surface's place, for the plane of a surface a
+	// trim names.
+	byHandle map[core.HSSurface]int
+}
+
+// surfacePlane is a flat surface's plane as coplanarTrimCrossings
+// tests it: the unit normal at its middle and its first corner. ok is
+// false for a surface that is not a bilinear patch, or is degenerate
+// at its middle.
+type surfacePlane struct {
+	ok   bool
+	n, p geom.Vector
+}
+
+// planeOf is the surface's plane as coplanarTrimCrossings tests it.
+func planeOf(ss *SSurface) surfacePlane {
+	if ss == nil || ss.DegM != 1 || ss.DegN != 1 {
+		return surfacePlane{}
+	}
+	sn := ss.NormalAt(0.5, 0.5)
+	if sn.Magnitude() < geom.LengthEps {
+		return surfacePlane{}
+	}
+	return surfacePlane{ok: true, n: sn.WithMagnitude(1), p: ss.PointAt(0, 0)}
+}
+
+// planesOf is the planes of the shell's surfaces, in their order, or
+// nil when the shell has no index or one that no longer fits it.
+func (x *surfaceIndex) planesOf(sh *SShell) []surfacePlane {
+	if x == nil || x.n != len(sh.Surface) {
+		return nil
+	}
+	x.planesOnce.Do(func() {
+		x.planes = make([]surfacePlane, len(sh.Surface))
+		x.byHandle = make(map[core.HSSurface]int, len(sh.Surface))
+		for i := range sh.Surface {
+			x.planes[i] = planeOf(&sh.Surface[i])
+			x.byHandle[sh.Surface[i].H] = i
+		}
+	})
+	return x.planes
+}
+
+// planeOfHandle is the plane of the shell's surface h, from the index
+// where it has the planes, else worked out now; none for a surface the
+// shell doesn't have.
+func (x *surfaceIndex) planeOfHandle(sh *SShell, h core.HSSurface) surfacePlane {
+	if planes := x.planesOf(sh); planes != nil {
+		if i, ok := x.byHandle[h]; ok && sh.Surface[i].H == h {
+			return planes[i]
+		}
+	}
+	return planeOf(sh.FindSurface(h))
 }
 
 // trimEnd is an end of a trim, and where the loop over them reaches it.
