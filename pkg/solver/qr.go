@@ -1,6 +1,9 @@
 package solver
 
-import "math"
+import (
+	"math"
+	"slices"
+)
 
 // spMat is a column-major sparse matrix as Eigen stores one: each
 // column's row indices and values, in the order they were inserted.
@@ -17,13 +20,28 @@ type spMat struct {
 // stored.
 func spFromRows(a [][]float64, m, n int) *spMat {
 	s := &spMat{rows: m, cols: n, idx: make([][]int, n), val: make([][]float64, n)}
-	for j := range n {
-		for i := range m {
-			if a[i][j] != 0 {
-				s.idx[j] = append(s.idx[j], i)
-				s.val[j] = append(s.val[j], a[i][j])
+	nnz := 0
+	for i := range m {
+		for _, v := range a[i][:n] {
+			if v != 0 {
+				nnz++
 			}
 		}
+	}
+	// One allocation for every column's entries, then a column's
+	// slice is taken from it as the column fills.
+	idx := make([]int, 0, nnz)
+	val := make([]float64, 0, nnz)
+	for j := range n {
+		start := len(idx)
+		for i := range m {
+			if a[i][j] != 0 {
+				idx = append(idx, i)
+				val = append(val, a[i][j])
+			}
+		}
+		s.idx[j] = idx[start:len(idx):len(idx)]
+		s.val[j] = val[start:len(val):len(val)]
 	}
 	return s
 }
@@ -32,6 +50,22 @@ func spFromRows(a [][]float64, m, n int) *spMat {
 // sparse matrix to a SparseMatrix does.
 func (s *spMat) transpose() *spMat {
 	t := &spMat{rows: s.cols, cols: s.rows, idx: make([][]int, s.rows), val: make([][]float64, s.rows)}
+	// Each row's count first, so that the entries are one allocation.
+	count := make([]int, s.rows+1)
+	for j := range s.cols {
+		for _, i := range s.idx[j] {
+			count[i+1]++
+		}
+	}
+	for i := range s.rows {
+		count[i+1] += count[i]
+	}
+	idx := make([]int, count[s.rows])
+	val := make([]float64, count[s.rows])
+	for i := range s.rows {
+		t.idx[i] = idx[count[i]:count[i]:count[i+1]]
+		t.val[i] = val[count[i]:count[i]:count[i+1]]
+	}
 	for j := range s.cols {
 		for k, i := range s.idx[j] {
 			t.idx[i] = append(t.idx[i], j)
@@ -136,11 +170,18 @@ type sparseQR struct {
 // of the matrix whose column k is cols(perm[k]), and each row's first
 // column.
 func coletree(m, nc int, cols func(int) []int, perm []int) (parent, firstRowElt []int) {
+	parent, firstRowElt = make([]int, nc), make([]int, m)
+	coletreeInto(m, nc, cols, perm, parent, firstRowElt, make([]int, 2*nc))
+	return parent, firstRowElt
+}
+
+// coletreeInto is coletree writing into parent and firstRowElt, with
+// scratch of 2 nc ints: a factorisation that meets a dead column
+// computes the tree again, and keeps the arrays for it.
+func coletreeInto(m, nc int, cols func(int) []int, perm, parent, firstRowElt, scratch []int) {
 	diagSize := min(nc, m)
-	root := make([]int, nc)
-	pp := make([]int, nc)
-	parent = make([]int, nc)
-	firstRowElt = make([]int, m)
+	root := scratch[:nc]
+	pp := scratch[nc : 2*nc]
 	for i := range firstRowElt {
 		firstRowElt[i] = nc
 	}
@@ -181,7 +222,6 @@ func coletree(m, nc int, cols func(int) []int, perm []int) (parent, firstRowElt 
 			}
 		}
 	}
-	return parent, firstRowElt
 }
 
 // etreeFind finds the root of the set containing i, with path halving.
@@ -200,19 +240,92 @@ func etreeFind(i int, pp []int) int {
 // epsilon is the machine epsilon of float64 (Eigen NumTraits::epsilon).
 var epsilon = math.Nextafter(1, 2) - 1
 
+// qrSymbolic is what SparseQR::analyzePattern finds for a sparsity
+// pattern: the COLAMD column ordering and the column elimination tree
+// of the matrix so ordered. It depends on the pattern alone, so the
+// factorisations of one solve, whose Jacobian keeps its pattern while
+// its values change, share one.
+type qrSymbolic struct {
+	m, n int
+	// idx is a copy of the pattern analysed, to tell a matrix with
+	// the same one.
+	idx [][]int
+	// permC is the ordering: column permC[i] of the matrix factored
+	// is column i of the one analysed; outputPerm is its inverse.
+	permC, outputPerm  []int
+	etree, firstRowElt []int
+}
+
+// analyzeSparseQR is SparseQR::analyzePattern of a.
+func analyzeSparseQR(a *spMat) *qrSymbolic {
+	return analyzeSparseQROrdered(a, colamdOrdering(a.rows, a.cols, a.idx))
+}
+
+// analyzeSparseQROrdered is analyzeSparseQR with the column ordering
+// permC given.
+func analyzeSparseQROrdered(a *spMat, permC []int) *qrSymbolic {
+	sy := &qrSymbolic{m: a.rows, n: a.cols, idx: make([][]int, a.cols), permC: permC}
+	for j := range a.cols {
+		sy.idx[j] = slices.Clone(a.idx[j])
+	}
+	sy.outputPerm = make([]int, a.cols) // m_perm_c.inverse()
+	for i, p := range permC {
+		sy.outputPerm[p] = i
+	}
+	sy.etree, sy.firstRowElt = coletree(a.rows, a.cols, func(j int) []int { return a.idx[j] }, sy.outputPerm)
+	return sy
+}
+
+// matches reports whether a has the pattern sy was made for.
+func (sy *qrSymbolic) matches(a *spMat) bool {
+	if sy == nil || a.rows != sy.m || a.cols != sy.n {
+		return false
+	}
+	for j := range a.cols {
+		if !slices.Equal(a.idx[j], sy.idx[j]) {
+			return false
+		}
+	}
+	return true
+}
+
+// symbolicCache keeps the analysis of the last pattern factored.
+type symbolicCache struct {
+	sym *qrSymbolic
+}
+
+// analysis is the analysis of a: the one kept if a has its pattern,
+// else a new one, kept.
+func (c *symbolicCache) analysis(a *spMat) *qrSymbolic {
+	if !c.sym.matches(a) {
+		c.sym = analyzeSparseQR(a)
+	}
+	return c.sym
+}
+
 // factorSparseQR is SparseQR::compute: analyzePattern, then factorize.
 func factorSparseQR(a *spMat) *sparseQR {
+	return factorSparseQRAnalyzed(a, analyzeSparseQR(a), false)
+}
+
+// sparseQRRank is the rank factorSparseQR finds, without the factors.
+// Once as many columns are live as the matrix has rows or columns,
+// whichever is fewer, no later column can be: they are all dead, and
+// each of them would only have the column elimination tree computed
+// again. The rank test of a sketch being drawn, with far more unknowns
+// than equations, is nearly all such columns.
+func sparseQRRank(a *spMat, sy *qrSymbolic) int {
+	return factorSparseQRAnalyzed(a, sy, true).rank
+}
+
+// factorSparseQRAnalyzed is SparseQR::factorize of a, whose pattern
+// sy is the analysis of. With rankOnly, it stops at the first column
+// that cannot be live and keeps no factors.
+func factorSparseQRAnalyzed(a *spMat, sy *qrSymbolic, rankOnly bool) *sparseQR {
 	m, n := a.rows, a.cols
 	diagSize := min(m, n)
-
-	// analyzePattern.
-	permC := colamdOrdering(m, n, a.idx)
-	outputPerm := make([]int, n) // m_perm_c.inverse()
-	for i, p := range permC {
-		outputPerm[p] = i
-	}
-	cols := func(j int) []int { return a.idx[j] }
-	etree, firstRowElt := coletree(m, n, cols, outputPerm)
+	permC, outputPerm := sy.permC, sy.outputPerm
+	etree, firstRowElt := sy.etree, sy.firstRowElt
 
 	// factorize. Column permC[i] of pmat is column i of a.
 	pmatIdx := make([][]int, n)
@@ -240,6 +353,9 @@ func factorSparseQR(a *spMat) *sparseQR {
 	for i := range pivotperm {
 		pivotperm[i] = i
 	}
+	// The tree computed again at a dead column goes in arrays of this
+	// factorisation's own, so that sy keeps its.
+	var deadParent, deadFirstRowElt, deadScratch []int
 
 	f := &sparseQR{m: m, n: n, hcoeffs: make([]float64, diagSize)}
 	q := &spMat{rows: m, cols: diagSize, idx: make([][]int, diagSize), val: make([][]float64, diagSize)}
@@ -251,6 +367,9 @@ func factorSparseQR(a *spMat) *sparseQR {
 
 	nonzeroCol := 0
 	for col := range n {
+		if rankOnly && nonzeroCol == diagSize {
+			break
+		}
 		for i := range mark {
 			mark[i] = -1
 		}
@@ -353,15 +472,19 @@ func factorSparseQR(a *spMat) *sparseQR {
 		for i := nzcolR - 1; i >= 0; i-- {
 			curIdx := ridx[i]
 			if curIdx < nonzeroCol {
-				r.idx[col] = append(r.idx[col], curIdx)
-				r.val[col] = append(r.val[col], tval[curIdx])
+				if !rankOnly {
+					r.idx[col] = append(r.idx[col], curIdx)
+					r.val[col] = append(r.val[col], tval[curIdx])
+				}
 				tval[curIdx] = 0
 			}
 		}
 
 		if nonzeroCol < diagSize && math.Abs(beta) >= pivotThreshold {
-			r.idx[col] = append(r.idx[col], nonzeroCol)
-			r.val[col] = append(r.val[col], beta)
+			if !rankOnly {
+				r.idx[col] = append(r.idx[col], nonzeroCol)
+				r.val[col] = append(r.val[col], beta)
+			}
 			f.hcoeffs[nonzeroCol] = tau
 			for itq := range nzcolQ {
 				iQ := qidx[itq]
@@ -376,7 +499,11 @@ func factorSparseQR(a *spMat) *sparseQR {
 				pivotperm[j], pivotperm[j+1] = pivotperm[j+1], pivotperm[j]
 			}
 			// Recompute the column elimination tree.
-			etree, firstRowElt = coletree(m, n, pcols, pivotperm)
+			if deadParent == nil {
+				deadParent, deadFirstRowElt, deadScratch = make([]int, n), make([]int, m), make([]int, 2*n)
+			}
+			coletreeInto(m, n, pcols, pivotperm, deadParent, deadFirstRowElt, deadScratch)
+			etree, firstRowElt = deadParent, deadFirstRowElt
 		}
 	}
 	for k := nonzeroCol; k < diagSize; k++ {
@@ -385,6 +512,9 @@ func factorSparseQR(a *spMat) *sparseQR {
 
 	f.rank = nonzeroCol
 	f.perm = outputPerm
+	if rankOnly {
+		return f
+	}
 	if nonzeroCol < n {
 		// Put the dead columns of R at the end, and update the
 		// permutation. The permuted R is built with
