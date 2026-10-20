@@ -84,3 +84,39 @@ func TestOverlapAfterActive(t *testing.T) {
 		t.Errorf("with the first group active: %v", points)
 	}
 }
+
+// What the drawing hides isn't listed: a hidden group, and the points
+// when View > Show > Points is off.
+func TestOverlapHidden(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	a := d.Sketch.Line(api.V(0, 0, 0), api.V(20, 0, 0))
+	first := d.Active()
+	d.Features.SketchIn(d.Sketch.ActiveWorkplane(), "second")
+	b := d.Sketch.Line(api.V(20, 0, 0), api.V(20, 10, 0))
+	across := d.Sketch.Line(api.V(10, -5, 0), api.V(10, 5, 0))
+	mid := d.Sketch.Point(api.V(10, 0, 0))
+
+	points, _ := b.Start().Overlap()
+	if len(points) != 1 || points[0].H != a.End().H {
+		t.Fatalf("first group shown: %v", points)
+	}
+	if _, curves := mid.Overlap(); len(curves) != 2 {
+		t.Fatalf("first group shown: %v", curves)
+	}
+	first.SetVisible(false)
+	if points, _ = b.Start().Overlap(); len(points) != 0 {
+		t.Errorf("first group hidden: %v", points)
+	}
+	if _, curves := mid.Overlap(); len(curves) != 1 || curves[0].H != across.H {
+		t.Errorf("first group hidden: %v", curves)
+	}
+
+	sk := d.Host().(*api.SketchHost).Sketch()
+	show := sketch.DefaultVisibility()
+	show.Points = false
+	sk.Show = &show
+	if points, _ = a.End().Overlap(); len(points) != 0 {
+		t.Errorf("points hidden: %v", points)
+	}
+}

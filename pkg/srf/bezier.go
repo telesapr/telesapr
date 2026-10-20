@@ -184,6 +184,11 @@ func (b *SBezier) ClosestPointTo(p geom.Vector, mustConverge bool) (float64, boo
 		}
 
 		dp := b.TangentAt(t)
+		if dp.MagSquared() < ratPolyEps*ratPolyEps {
+			// A zero tangent (a control point on the end it belongs
+			// to) has no Newton step; t would turn NaN.
+			return t, false
+		}
 		pc := p.ClosestPointOnLine(p0, dp)
 		t += pc.Minus(p0).DivProjected(dp)
 	}
