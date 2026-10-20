@@ -69,6 +69,9 @@ type SSurface struct {
 	// guess holds the grid ClosestPointTo searches for a first guess
 	// while the cache is off (closest_guess.go).
 	guess *guessCell
+	// rays holds the subdivision rays cast at the surface walk while
+	// the cache is off (raycast_tree.go).
+	rays *rayCell
 
 	// TrimBuilt is true when the surface's Trim list is authoritative,
 	// so an empty one means "nothing to render". Every SShell

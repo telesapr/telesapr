@@ -73,8 +73,16 @@ func TestGuessGridClosestPointSame(t *testing.T) {
 	if moved.guessPoints() != nil {
 		t.Error("a surface changed since its grid was made still uses it")
 	}
+	// A cell serves the next loop of the Boolean, and goes with its
+	// cleanup.
+	cell := sh.Surface[0].guess
 	makeGuessGrids(false, &sh)
-	if sh.Surface[0].guess != nil {
-		t.Error("the grids were kept")
+	makeGuessGrids(true, &sh)
+	if sh.Surface[0].guess != cell {
+		t.Error("the grids were made again for the next loop")
+	}
+	sh.CleanupAfterBoolean()
+	if sh.Surface[0].guess != nil || sh.Surface[0].rays != nil {
+		t.Error("the cells were kept after the Boolean")
 	}
 }

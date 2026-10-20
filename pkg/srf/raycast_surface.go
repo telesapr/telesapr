@@ -262,9 +262,14 @@ func (s *SSurface) allPointsIntersecting(a, b geom.Vector, l *[]SInter,
 		}
 
 	default:
-		// General numerical solution by subdivision, fallback
+		// General numerical solution by subdivision, fallback; while
+		// the surface has a tree of its pieces, by walking that.
 		cnt, level := 0, 0
-		s.AllPointsIntersectingUntrimmed(a, b, &cnt, &level, &inters, asSegment, s)
+		if t := s.rayTreeFor(); t != nil {
+			t.walk(&t.root, a, b, &cnt, &inters, asSegment, s)
+		} else {
+			s.AllPointsIntersectingUntrimmed(a, b, &cnt, &level, &inters, asSegment, s)
+		}
 	}
 
 	// Remove duplicate intersection points
