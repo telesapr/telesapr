@@ -74,34 +74,55 @@ const guardBand = 8.0
 // wEpsilon keeps geometry in front of the eye in perspective.
 const wEpsilon = 1e-9
 
-// clip planes: each returns the signed distance, inside when >= 0.
-var clipPlanes = [...]func(v *cvert) float64{
-	func(v *cvert) float64 { return v.w - wEpsilon },
-	func(v *cvert) float64 { return v.w + v.z },
-	func(v *cvert) float64 { return v.w - v.z },
-	func(v *cvert) float64 { return guardBand*v.w + v.x },
-	func(v *cvert) float64 { return guardBand*v.w - v.x },
-	func(v *cvert) float64 { return guardBand*v.w + v.y },
-	func(v *cvert) float64 { return guardBand*v.w - v.y },
+// viewPlanes is how many clip planes the view has; the user's clip
+// plane, when set, is the one after them.
+const viewPlanes = 7
+
+// planeDist is the signed distance of v to clip plane i, inside when
+// >= 0: the view's planes first, then the user's. It is a switch rather
+// than a table of functions so that a vertex handed to it stays on the
+// stack.
+func (r *Renderer) planeDist(i int, v *cvert) float64 {
+	switch i {
+	case 0:
+		return v.w - wEpsilon
+	case 1:
+		return v.w + v.z
+	case 2:
+		return v.w - v.z
+	case 3:
+		return guardBand*v.w + v.x
+	case 4:
+		return guardBand*v.w - v.x
+	case 5:
+		return guardBand*v.w + v.y
+	case 6:
+		return guardBand*v.w - v.y
+	default:
+		eq := &r.userEq
+		return eq[0]*v.x + eq[1]*v.y + eq[2]*v.z + eq[3]*v.w
+	}
+}
+
+// planes is how many clip planes are in force.
+func (r *Renderer) planes() int {
+	if r.userClip {
+		return viewPlanes + 1
+	}
+	return viewPlanes
 }
 
 // clipPolygon clips a convex polygon in clip space (Sutherland-Hodgman),
-// by the view's planes and by user, if set.
-func clipPolygon(in []cvert, user func(v *cvert) float64) []cvert {
+// by the view's planes and by the user's, if set.
+func (r *Renderer) clipPolygon(in []cvert) []cvert {
 	cur := in
-	for i := 0; i <= len(clipPlanes); i++ {
-		var plane func(v *cvert) float64
-		if i < len(clipPlanes) {
-			plane = clipPlanes[i]
-		} else if plane = user; plane == nil {
-			break
-		}
+	for i := range r.planes() {
 		if len(cur) == 0 {
 			return cur
 		}
 		allIn := true
-		for i := range cur {
-			if plane(&cur[i]) < 0 {
+		for j := range cur {
+			if r.planeDist(i, &cur[j]) < 0 {
 				allIn = false
 				break
 			}
@@ -110,10 +131,10 @@ func clipPolygon(in []cvert, user func(v *cvert) float64) []cvert {
 			continue
 		}
 		out := make([]cvert, 0, len(cur)+2)
-		for i := range cur {
-			a := &cur[i]
-			b := &cur[(i+1)%len(cur)]
-			da, db := plane(a), plane(b)
+		for j := range cur {
+			a := &cur[j]
+			b := &cur[(j+1)%len(cur)]
+			da, db := r.planeDist(i, a), r.planeDist(i, b)
 			if da >= 0 {
 				out = append(out, *a)
 			}
@@ -127,16 +148,10 @@ func clipPolygon(in []cvert, user func(v *cvert) float64) []cvert {
 }
 
 // clipSegment clips a segment in clip space, by the view's planes and
-// by user, if set; ok is false if nothing is left.
-func clipSegment(a, b cvert, user func(v *cvert) float64) (cvert, cvert, bool) {
-	for i := 0; i <= len(clipPlanes); i++ {
-		var plane func(v *cvert) float64
-		if i < len(clipPlanes) {
-			plane = clipPlanes[i]
-		} else if plane = user; plane == nil {
-			break
-		}
-		da, db := plane(&a), plane(&b)
+// by the user's, if set; ok is false if nothing is left.
+func (r *Renderer) clipSegment(a, b cvert) (cvert, cvert, bool) {
+	for i := range r.planes() {
+		da, db := r.planeDist(i, &a), r.planeDist(i, &b)
 		if da < 0 && db < 0 {
 			return a, b, false
 		}
@@ -165,14 +180,15 @@ func (r *Renderer) toWindow(v *cvert) rvert {
 	}
 }
 
-// fragment runs the stipple, depth and blend stages for pixel x, y of
-// the frame (y down) with depth z and straight-alpha colour col.
-func (r *Renderer) fragment(x, y int, z float64, col [4]float64) {
+// fragmentDepth runs the stipple and depth stages for pixel x, y of
+// the frame (y down) with depth z: it reports whether the colour
+// stage follows, and the pixel's index.
+func (r *Renderer) fragmentDepth(x, y int, z float64) (int, bool) {
 	if st := r.cur.stipple; st != nil {
 		// The pattern is in GL window coordinates, y up.
 		gy := r.height - 1 - y
 		if st[gy&31]&(0x80000000>>uint(x&31)) == 0 {
-			return
+			return 0, false
 		}
 	}
 	idx := y*r.width + x
@@ -181,17 +197,24 @@ func (r *Renderer) fragment(x, y int, z float64, col [4]float64) {
 	switch r.cur.depthFunc {
 	case depthLEqual:
 		if !(zf <= d) {
-			return
+			return idx, false
 		}
 	case depthGreater:
 		if !(zf > d) {
-			return
+			return idx, false
 		}
 	}
 	if r.cur.depthWrite {
 		r.depth[idx] = zf
 	}
-	if !r.cur.colorWrite {
+	return idx, r.cur.colorWrite
+}
+
+// fragment runs the stipple, depth and blend stages for pixel x, y of
+// the frame (y down) with depth z and straight-alpha colour col.
+func (r *Renderer) fragment(x, y int, z float64, col [4]float64) {
+	idx, ok := r.fragmentDepth(x, y, z)
+	if !ok {
 		return
 	}
 	a := clamp01(col[3])
@@ -206,6 +229,51 @@ func (r *Renderer) fragment(x, y int, z float64, col [4]float64) {
 	for i := range 3 {
 		src := clamp01(col[i]) * 255
 		p[i] = uint8(math.Round(src*a + float64(p[i])*(1-a)))
+	}
+}
+
+// opaqueBytes is the bytes fragment writes for an opaque colour, which
+// are the same for every fragment of a solid-coloured primitive; ok is
+// false when the colour isn't opaque.
+func opaqueBytes(col [4]float64) (rgb [3]uint8, ok bool) {
+	if clamp01(col[3]) != 1 {
+		return rgb, false
+	}
+	for i := range 3 {
+		rgb[i] = uint8(math.Round(clamp01(col[i]) * 255))
+	}
+	return rgb, true
+}
+
+// fragmentOpaque is fragment for an opaque colour converted once, by
+// opaqueBytes.
+func (r *Renderer) fragmentOpaque(x, y int, z float64, rgb [3]uint8) {
+	idx, ok := r.fragmentDepth(x, y, z)
+	if !ok {
+		return
+	}
+	p := r.frame.Pix[idx*4 : idx*4+3 : idx*4+3]
+	p[0], p[1], p[2] = rgb[0], rgb[1], rgb[2]
+}
+
+// fragmentBlend is fragment for a colour whose channels are already
+// clamped and scaled to 255 (src), with alpha a, as a line's pixels
+// are, which differ only in their coverage.
+func (r *Renderer) fragmentBlend(x, y int, z float64, src [3]float64, a float64) {
+	idx, ok := r.fragmentDepth(x, y, z)
+	if !ok {
+		return
+	}
+	a = clamp01(a)
+	p := r.frame.Pix[idx*4 : idx*4+4 : idx*4+4]
+	if a == 1 {
+		for i := range 3 {
+			p[i] = uint8(math.Round(src[i]))
+		}
+		return
+	}
+	for i := range 3 {
+		p[i] = uint8(math.Round(src[i]*a + float64(p[i])*(1-a)))
 	}
 }
 
@@ -248,6 +316,7 @@ func edgeIncludes(dx, dy float64) bool {
 // rasterTriangle fills a triangle in window space; mode picks where
 // each fragment's colour comes from.
 func (r *Renderer) rasterTriangle(a, b, c *rvert, mode fragMode) {
+	r.readyDepth()
 	r.rasterTriangleRows(a, b, c, mode, 0, r.height)
 }
 
@@ -286,6 +355,14 @@ func (r *Renderer) rasterTriangleRows(a, b, c *rvert, mode fragMode, y0, y1 int)
 		incl[i] = edgeIncludes(e.dx, e.dy)
 	}
 	invArea := 1 / area
+	// A solid, opaque colour makes the same bytes at every fragment:
+	// convert it once.
+	var rgb [3]uint8
+	opaque := false
+	if mode == fragSolid {
+		rgb, opaque = opaqueBytes(r.cur.color)
+	}
+	e0, e1, e2 := &edges[0], &edges[1], &edges[2]
 	for py := minY; py <= maxY; py++ {
 		fy := float64(py) + 0.5
 		// Each edge bounds x on this row: w_i = k_i - dy_i*fx >= 0.
@@ -312,22 +389,30 @@ func (r *Renderer) rasterTriangleRows(a, b, c *rvert, mode fragMode, y0, y1 int)
 		// be safe from rounding; the exact test decides.
 		x0 := max(int(math.Ceil(lo-0.5))-1, minX)
 		x1 := min(int(math.Floor(hi-0.5))+1, maxX)
+		// The part of each edge function that doesn't depend on x, as
+		// the per-pixel expression e.dx*(fy-e.oy) - e.dy*(fx-e.ox)
+		// computes it, so that each pixel sees the same value.
+		r0, r1, r2 := e0.dx*(fy-e0.oy), e1.dx*(fy-e1.oy), e2.dx*(fy-e2.oy)
 		for px := x0; px <= x1; px++ {
 			fx := float64(px) + 0.5
-			var w [3]float64
-			inside := true
-			for i, e := range edges {
-				w[i] = e.dx*(fy-e.oy) - e.dy*(fx-e.ox)
-				if w[i] < 0 || (w[i] == 0 && !incl[i]) {
-					inside = false
-					break
-				}
-			}
-			if !inside {
+			w0 := r0 - e0.dy*(fx-e0.ox)
+			if w0 < 0 || (w0 == 0 && !incl[0]) {
 				continue
 			}
-			l0, l1, l2 := w[0]*invArea, w[1]*invArea, w[2]*invArea
+			w1 := r1 - e1.dy*(fx-e1.ox)
+			if w1 < 0 || (w1 == 0 && !incl[1]) {
+				continue
+			}
+			w2 := r2 - e2.dy*(fx-e2.ox)
+			if w2 < 0 || (w2 == 0 && !incl[2]) {
+				continue
+			}
+			l0, l1, l2 := w0*invArea, w1*invArea, w2*invArea
 			z := l0*a.z + l1*b.z + l2*c.z
+			if opaque {
+				r.fragmentOpaque(px, py, z, rgb)
+				continue
+			}
 			var col [4]float64
 			switch mode {
 			case fragSolid:
@@ -354,6 +439,7 @@ func (r *Renderer) rasterTriangleRows(a, b, c *rvert, mode fragMode, y0, y1 int)
 // as GL does with GL_LINE_SMOOTH: each pixel's coverage of the line's
 // rectangle scales its alpha.
 func (r *Renderer) rasterLine(a, b *rvert, width float64) {
+	r.readyDepth()
 	r.rasterLineRows(a, b, width, 0, r.height)
 }
 
@@ -382,6 +468,13 @@ func (r *Renderer) rasterLineRows(a, b *rvert, width float64, y0, y1 int) {
 	// the test below, and test just those; the test decides each pixel
 	// as before.
 	reach := hw + 0.5
+	// The colour is the stroke's at every pixel but for its coverage:
+	// clamp and scale it once, as fragment would at each.
+	var src [3]float64
+	for i := range src {
+		src[i] = clamp01(r.cur.color[i]) * 255
+	}
+	alpha := r.cur.color[3]
 	for py := minY; py <= maxY; py++ {
 		fy := float64(py) + 0.5 - a.y
 		lo, hi := minX, maxX
@@ -409,9 +502,7 @@ func (r *Renderer) rasterLineRows(a, b *rvert, width float64, y0, y1 int) {
 			}
 			t := min(max(along/length, 0), 1)
 			z := a.z + (b.z-a.z)*t
-			col := r.cur.color
-			col[3] *= cov
-			r.fragment(px, py, z, col)
+			r.fragmentBlend(px, py, z, src, alpha*cov)
 		}
 	}
 }

@@ -12,6 +12,7 @@ import (
 // affine in window coordinates, since it is planar. A polygon partly
 // behind the eye isn't drawn.
 func (r *Renderer) fillPlanarPolygon(p *srf.SPolygon) {
+	r.readyDepth()
 	type wpt struct{ x, y, z float64 }
 	var contours [][]wpt
 	var all []wpt
@@ -97,7 +98,7 @@ func (r *Renderer) fillPlanarPolygon(p *srf.SPolygon) {
 				if nz < -1 || nz > 1 {
 					continue
 				}
-				if r.userClip != nil {
+				if r.userClip {
 					// The plane's distance over w is affine in normalized
 					// device coordinates, and w > 0 here.
 					eq := &r.userEq
