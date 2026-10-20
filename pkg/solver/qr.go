@@ -202,13 +202,24 @@ var epsilon = math.Nextafter(1, 2) - 1
 
 // factorSparseQR is SparseQR::compute: analyzePattern, then factorize.
 func factorSparseQR(a *spMat) *sparseQR {
-	return factorSparseQROrdered(a, colamdOrdering(a.rows, a.cols, a.idx))
+	return factorSparseQROrdered(a, colamdOrdering(a.rows, a.cols, a.idx), false)
+}
+
+// sparseQRRank is the rank factorSparseQR finds, without the factors.
+// Once as many columns are live as the matrix has rows or columns,
+// whichever is fewer, no later column can be: they are all dead, and
+// each of them would only have the column elimination tree computed
+// again. The rank test of a sketch being drawn, with far more unknowns
+// than equations, is nearly all such columns.
+func sparseQRRank(a *spMat) int {
+	return factorSparseQROrdered(a, colamdOrdering(a.rows, a.cols, a.idx), true).rank
 }
 
 // factorSparseQROrdered is factorSparseQR with the column ordering
 // permC given: column permC[i] of the matrix factored is column i of
-// a.
-func factorSparseQROrdered(a *spMat, permC []int) *sparseQR {
+// a. With rankOnly, it stops at the first column that cannot be live
+// and keeps no factors.
+func factorSparseQROrdered(a *spMat, permC []int, rankOnly bool) *sparseQR {
 	m, n := a.rows, a.cols
 	diagSize := min(m, n)
 
@@ -257,6 +268,9 @@ func factorSparseQROrdered(a *spMat, permC []int) *sparseQR {
 
 	nonzeroCol := 0
 	for col := range n {
+		if rankOnly && nonzeroCol == diagSize {
+			break
+		}
 		for i := range mark {
 			mark[i] = -1
 		}
@@ -359,15 +373,19 @@ func factorSparseQROrdered(a *spMat, permC []int) *sparseQR {
 		for i := nzcolR - 1; i >= 0; i-- {
 			curIdx := ridx[i]
 			if curIdx < nonzeroCol {
-				r.idx[col] = append(r.idx[col], curIdx)
-				r.val[col] = append(r.val[col], tval[curIdx])
+				if !rankOnly {
+					r.idx[col] = append(r.idx[col], curIdx)
+					r.val[col] = append(r.val[col], tval[curIdx])
+				}
 				tval[curIdx] = 0
 			}
 		}
 
 		if nonzeroCol < diagSize && math.Abs(beta) >= pivotThreshold {
-			r.idx[col] = append(r.idx[col], nonzeroCol)
-			r.val[col] = append(r.val[col], beta)
+			if !rankOnly {
+				r.idx[col] = append(r.idx[col], nonzeroCol)
+				r.val[col] = append(r.val[col], beta)
+			}
 			f.hcoeffs[nonzeroCol] = tau
 			for itq := range nzcolQ {
 				iQ := qidx[itq]
@@ -391,6 +409,9 @@ func factorSparseQROrdered(a *spMat, permC []int) *sparseQR {
 
 	f.rank = nonzeroCol
 	f.perm = outputPerm
+	if rankOnly {
+		return f
+	}
 	if nonzeroCol < n {
 		// Put the dead columns of R at the end, and update the
 		// permutation. The permuted R is built with

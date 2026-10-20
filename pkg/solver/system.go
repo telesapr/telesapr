@@ -410,7 +410,7 @@ func (s *System) CalculateRank() int {
 	if s.mat.n == 0 || s.mat.m == 0 {
 		return 0
 	}
-	return factorSparseQR(spFromRows(s.mat.Anum, s.mat.m, s.mat.n)).rank
+	return sparseQRRank(spFromRows(s.mat.Anum, s.mat.m, s.mat.n))
 }
 
 // TestRank evaluates the Jacobian and reports whether it has full row
