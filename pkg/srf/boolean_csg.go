@@ -463,7 +463,7 @@ func coplanarTrimCrossings(il []SInter, c *SCurve, sh *SShell, own *SSurface, a,
 			if tc == nil {
 				continue
 			}
-			if !mine && !fuseCoplanarSeam(sh, tc, inPlane) {
+			if !mine && !fuseCoplanarSeam(tc, inPlane) {
 				continue
 			}
 			for k := 1; k < len(tc.Points); k++ {
@@ -508,7 +508,7 @@ func coplanarTrimCrossings(il []SInter, c *SCurve, sh *SShell, own *SSurface, a,
 // the operands' vertices and edges before classifying). Other trims are
 // edges of the face, which a surface across the plane meets, and the
 // ray cast splits at those.
-func fuseCoplanarSeam(sh *SShell, tc *SCurve, inPlane func(h core.HSSurface, either bool) bool) bool {
+func fuseCoplanarSeam(tc *SCurve, inPlane func(h core.HSSurface, either bool) bool) bool {
 	return inPlane(tc.SurfA, true) && inPlane(tc.SurfB, true)
 }
 
