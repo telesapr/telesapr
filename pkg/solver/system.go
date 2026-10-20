@@ -69,6 +69,9 @@ type System struct {
 	SK func(core.HParam) *core.Param
 
 	paramIndex map[core.HParam]*Param
+	// unsorted is set by AddParam: the unknowns are put in handle
+	// order once, when they are next read, not on every add.
+	unsorted bool
 
 	mat struct {
 		m, n  int
@@ -82,17 +85,32 @@ type System struct {
 		Bnum []float64
 		X    []float64
 	}
+	// rankSym and stepSym keep the symbolic analysis of the Jacobian
+	// as the rank test factors it and as the Newton step factors it,
+	// transposed, for the next factorisation with the same pattern.
+	rankSym, stepSym symbolicCache
 }
 
 // AddParam adds an unknown, with the sketch param's value as its
 // initial guess.
 func (s *System) AddParam(p core.Param) {
 	s.Param = append(s.Param, &Param{Param: p})
-	slices.SortStableFunc(s.Param, func(a, b *Param) int { return cmp.Compare(a.H.V, b.H.V) })
 	s.paramIndex = nil
+	s.unsorted = true
+}
+
+// sortParams puts the unknowns in handle order, if any were added
+// since they last were.
+func (s *System) sortParams() {
+	if !s.unsorted {
+		return
+	}
+	slices.SortStableFunc(s.Param, func(a, b *Param) int { return cmp.Compare(a.H.V, b.H.V) })
+	s.unsorted = false
 }
 
 func (s *System) findParam(h core.HParam) *Param {
+	s.sortParams()
 	if s.paramIndex == nil {
 		s.paramIndex = make(map[core.HParam]*Param, len(s.Param))
 		for _, p := range s.Param {
@@ -116,6 +134,7 @@ func (s *System) setEquations(l []core.Equation) {
 }
 
 func (s *System) clearParamTags() {
+	s.sortParams()
 	for _, p := range s.Param {
 		p.Tag = 0
 	}
@@ -185,6 +204,7 @@ func paramsUsed(e *core.Expr, set map[core.HParam]bool, order []core.HParam) []c
 // WriteJacobian writes the equations and params tagged tag into the
 // matrix, symbolically.
 func (s *System) WriteJacobian(tag int) bool {
+	s.sortParams()
 	s.mat.param = s.mat.param[:0]
 	s.mat.eq = s.mat.eq[:0]
 	s.mat.A = nil
@@ -212,11 +232,14 @@ func (s *System) WriteJacobian(tag int) bool {
 	s.mat.n = len(s.mat.param)
 
 	s.mat.A = make([][]*core.Expr, s.mat.m)
+	seen := make(map[core.HParam]bool)
+	var used []core.HParam
 	for i, e := range s.mat.eq {
 		// Deep-copy and simplify (fold) the current equation.
 		f := s.deepCopyWithParamsAsPointers(e.E)
 
-		used := paramsUsed(f, map[core.HParam]bool{}, nil)
+		clear(seen)
+		used = paramsUsed(f, seen, used[:0])
 
 		s.mat.A[i] = make([]*core.Expr, s.mat.n)
 		for _, p := range used {
@@ -236,14 +259,24 @@ func (s *System) WriteJacobian(tag int) bool {
 	return true
 }
 
-// EvalJacobian evaluates the symbolic Jacobian.
+// EvalJacobian evaluates the symbolic Jacobian. The matrix is one
+// allocation, kept from one evaluation to the next of the same size:
+// the Newton iterations evaluate it over again.
 func (s *System) EvalJacobian() {
-	s.mat.Anum = make([][]float64, s.mat.m)
-	for i := range s.mat.m {
-		s.mat.Anum[i] = make([]float64, s.mat.n)
+	m, n := s.mat.m, s.mat.n
+	if len(s.mat.Anum) != m || (m > 0 && len(s.mat.Anum[0]) != n) {
+		backing := make([]float64, m*n)
+		s.mat.Anum = make([][]float64, m)
+		for i := range m {
+			s.mat.Anum[i] = backing[i*n : (i+1)*n : (i+1)*n]
+		}
+	}
+	for i := range m {
+		row := s.mat.Anum[i]
+		clear(row)
 		for j, pd := range s.mat.A[i] {
 			if pd != nil {
-				s.mat.Anum[i][j] = pd.Eval(nil, nil)
+				row[j] = pd.Eval(nil, nil)
 			}
 		}
 	}
@@ -269,6 +302,7 @@ func substitute(e *core.Expr, subMap map[core.HParam]*Param) {
 // unknowns are equal, a - b = 0, by substituting one for the other; it
 // returns what each eliminated param was substituted by.
 func (s *System) SolveBySubstitution() map[core.HParam]*Param {
+	s.sortParams()
 	// Contains pointers to last substitutions in a substitution chain
 	var subVec []*Param
 	// Maps a parameter to the index of its last substitution in subVec
@@ -410,7 +444,48 @@ func (s *System) CalculateRank() int {
 	if s.mat.n == 0 || s.mat.m == 0 {
 		return 0
 	}
-	return factorSparseQR(spFromRows(s.mat.Anum, s.mat.m, s.mat.n)).rank
+	return s.rankOf(s.sparseJacobian())
+}
+
+// sparseJacobian is the evaluated Jacobian as a sparse matrix, as
+// spFromRows makes it: an entry that is exactly zero is not stored.
+// Only the entries with a partial derivative are looked at.
+func (s *System) sparseJacobian() *spMat {
+	m, n := s.mat.m, s.mat.n
+	sp := &spMat{rows: m, cols: n, idx: make([][]int, n), val: make([][]float64, n)}
+	count := make([]int, n+1)
+	for i := range m {
+		row := s.mat.Anum[i]
+		for j, pd := range s.mat.A[i] {
+			if pd != nil && row[j] != 0 {
+				count[j+1]++
+			}
+		}
+	}
+	for j := range n {
+		count[j+1] += count[j]
+	}
+	idx := make([]int, count[n])
+	val := make([]float64, count[n])
+	for j := range n {
+		sp.idx[j] = idx[count[j]:count[j]:count[j+1]]
+		sp.val[j] = val[count[j]:count[j]:count[j+1]]
+	}
+	for i := range m {
+		row := s.mat.Anum[i]
+		for j, pd := range s.mat.A[i] {
+			if pd != nil && row[j] != 0 {
+				sp.idx[j] = append(sp.idx[j], i)
+				sp.val[j] = append(sp.val[j], row[j])
+			}
+		}
+	}
+	return sp
+}
+
+// rankOf is the rank of a as the rank test finds it.
+func (s *System) rankOf(a *spMat) int {
+	return sparseQRRank(a, s.rankSym.analysis(a))
 }
 
 // TestRank evaluates the Jacobian and reports whether it has full row
@@ -439,7 +514,7 @@ func (s *System) SolveLeastSquares() bool {
 			scale[c] = 1 / 20.0
 		}
 	}
-	a := spFromRows(s.mat.Anum, m, n)
+	a := s.sparseJacobian()
 	for c := range n {
 		for k := range a.val[c] {
 			a.val[c][k] *= scale[c]
@@ -451,7 +526,7 @@ func (s *System) SolveLeastSquares() bool {
 		return true
 	}
 
-	s.mat.X = leastSquares(a, s.mat.Bnum)
+	s.mat.X = leastSquares(a, s.mat.Bnum, &s.stepSym)
 	for c := range n {
 		s.mat.X[c] *= scale[c]
 	}
@@ -459,8 +534,8 @@ func (s *System) SolveLeastSquares() bool {
 }
 
 // leastSquares returns the minimum-norm solution X of A X = B, once A
-// is scaled.
-func leastSquares(a *spMat, b []float64) []float64 {
+// is scaled; cache keeps the analysis of the pattern factored.
+func leastSquares(a *spMat, b []float64, cache *symbolicCache) []float64 {
 	m, n := a.rows, a.cols
 	var z []float64
 	if m <= n {
@@ -470,7 +545,8 @@ func leastSquares(a *spMat, b []float64) []float64 {
 		// A'*P = Q*R, A*A' = P*R'*R*P', so
 		//     z = (A*A')^-1*B = P*R^-1*R'^-1*P'*B,
 		// two triangular solves, with the rank decision taken on R.
-		f := factorSparseQR(a.transpose())
+		at := a.transpose()
+		f := factorSparseQRAnalyzed(at, cache.analysis(at), false)
 		v := make([]float64, m)
 		if f.rank > 0 {
 			for k := range f.rank {
@@ -823,6 +899,7 @@ func (s *System) SolveRank(g *Group, andFindBad, andFindFree bool) (how core.Sol
 // MarkParamsFree finds, if asked, the params that no equation pins
 // down; that might be more than the number of degrees of freedom.
 func (s *System) MarkParamsFree(find bool) {
+	s.sortParams()
 	for _, p := range s.Param {
 		p.Free = false
 

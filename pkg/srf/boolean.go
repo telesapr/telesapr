@@ -161,6 +161,7 @@ func (s *SShell) MakeFromAssemblyOf(a, b *SShell) {
 func (s *SShell) CleanupAfterBoolean() {
 	for i := range s.Surface {
 		s.Surface[i].Edges = SEdgeList{}
+		s.Surface[i].guess, s.Surface[i].rays = nil, nil
 	}
 	s.index = nil
 }

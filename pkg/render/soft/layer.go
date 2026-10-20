@@ -15,6 +15,7 @@ func (r *Renderer) SaveLayer(l *Layer) {
 		l.width, l.height = 0, 0
 		return
 	}
+	r.readyDepth()
 	l.pix = append(l.pix[:0], r.frame.Pix...)
 	l.depth = append(l.depth[:0], r.depth...)
 	l.width, l.height = r.width, r.height
@@ -29,5 +30,6 @@ func (r *Renderer) RestoreLayer(l *Layer) bool {
 	}
 	copy(r.frame.Pix, l.pix)
 	copy(r.depth, l.depth)
+	r.depthStale = false
 	return true
 }

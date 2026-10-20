@@ -429,24 +429,33 @@ func coplanarTrimCrossings(il []SInter, c *SCurve, sh *SShell, own *SSurface, a,
 			break
 		}
 	}
-	inPlane := func(ss *SSurface, either bool) bool {
-		if ss == nil || ss.DegM != 1 || ss.DegN != 1 {
+	inPlaneOf := func(pl surfacePlane, either bool) bool {
+		if !pl.ok {
 			return false
 		}
-		sn := ss.NormalAt(0.5, 0.5)
-		if sn.Magnitude() < geom.LengthEps {
-			return false
-		}
-		dot := sn.WithMagnitude(1).Dot(n)
+		dot := pl.n.Dot(n)
 		if either {
 			dot = math.Abs(dot)
 		}
-		return dot >= 1-geom.LengthEps && math.Abs(n.Dot(ss.PointAt(0, 0))-d) <= splitEndTol
+		return dot >= 1-geom.LengthEps && math.Abs(n.Dot(pl.p)-d) <= splitEndTol
+	}
+	// The planes of the shell's surfaces, from its index while it has
+	// one that fits it, else each worked out here.
+	planes := sh.index.planesOf(sh)
+	inPlane := func(h core.HSSurface, either bool) bool {
+		return inPlaneOf(sh.index.planeOfHandle(sh, h), either)
 	}
 	ab := b.Minus(a)
 	for i := range sh.Surface {
 		ss := &sh.Surface[i]
-		if ss == own || !inPlane(ss, !mine) {
+		if ss == own {
+			continue
+		}
+		if planes != nil {
+			if !inPlaneOf(planes[i], !mine) {
+				continue
+			}
+		} else if !inPlaneOf(planeOf(ss), !mine) {
 			continue
 		}
 		for j := range ss.Trim {
@@ -454,7 +463,7 @@ func coplanarTrimCrossings(il []SInter, c *SCurve, sh *SShell, own *SSurface, a,
 			if tc == nil {
 				continue
 			}
-			if !mine && !fuseCoplanarSeam(sh, tc, inPlane) {
+			if !mine && !fuseCoplanarSeam(tc, inPlane) {
 				continue
 			}
 			for k := 1; k < len(tc.Points); k++ {
@@ -499,8 +508,8 @@ func coplanarTrimCrossings(il []SInter, c *SCurve, sh *SShell, own *SSurface, a,
 // the operands' vertices and edges before classifying). Other trims are
 // edges of the face, which a surface across the plane meets, and the
 // ray cast splits at those.
-func fuseCoplanarSeam(sh *SShell, tc *SCurve, inPlane func(ss *SSurface, either bool) bool) bool {
-	return inPlane(sh.FindSurface(tc.SurfA), true) && inPlane(sh.FindSurface(tc.SurfB), true)
+func fuseCoplanarSeam(tc *SCurve, inPlane func(h core.HSSurface, either bool) bool) bool {
+	return inPlane(tc.SurfA, true) && inPlane(tc.SurfB, true)
 }
 
 // exactCrossing is where the exact curve sb, between its points nearest

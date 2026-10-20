@@ -9949,6 +9949,10 @@
 						"decl": "func (s *SShell) FindSurface(h core.HSSurface) *SSurface",
 						"text": "FindSurface returns the SSurface with the given handle, or nil if not found."
 					},
+					"KeepClosestGuesses": {
+						"decl": "func (s *SShell) KeepClosestGuesses(keep bool)",
+						"text": "KeepClosestGuesses gives the shell's curved surfaces the grid of points ClosestPointTo starts its search from, as a Boolean's loops have (makeGuessGrids), or takes it away: for a caller that projects many points on them, as a fillet's rolling ball does, which without it evaluated the surface at every point of the grid for each."
+					},
 					"MakeClassifyingBsps": {
 						"decl": "func (s *SShell) MakeClassifyingBsps(useCurvesFrom *SShell)",
 						"text": "MakeClassifyingBsps pre-computes uv-space BSPs for every surface in the shell."
@@ -10188,6 +10192,10 @@
 					"OffsetSurface": {
 						"decl": "func (s *SSurface) OffsetSurface(d, tol float64, maxGrid int) (*BSplineSurface, error)",
 						"text": "OffsetSurface is the patch's offset by d, along its normal (against it for d below zero), as a non-rational cubic B-spline surface within tol of it between the points it was fitted through, over the patch's own parameters."
+					},
+					"PointAndTangentsAt": {
+						"decl": "func (s *SSurface) PointAndTangentsAt(u, v float64, p, tu, tv *geom.Vector, retry bool)",
+						"text": "PointAndTangentsAt is PointAt and TangentsAt at (u, v) in one pass: the tangents are quotients of the sums the point is made of, so a Newton step that evaluated both twice over now has the point for nothing, the same to the bit."
 					},
 					"PointAt": {
 						"decl": "func (s *SSurface) PointAt(u, v float64) geom.Vector",

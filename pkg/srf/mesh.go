@@ -258,11 +258,12 @@ func (m *SMesh) Simplify(start int) {
 // against bsp3, as the mesh's flags say, split where they cross the
 // other mesh.
 func (m *SMesh) AddAgainstBsp(srcm *SMesh, bsp3 *SBsp3) {
+	var sc bspScratch
 	for i := range srcm.Triangles {
 		st := &srcm.Triangles[i]
 		pn := len(m.Triangles)
 		m.AtLeastOneDiscarded = false
-		SBsp3InsertOrCreate(bsp3, st, m)
+		insertOrCreate(bsp3, st, m, &sc, 0)
 		if !m.AtLeastOneDiscarded && len(m.Triangles) != pn+1 {
 			m.Triangles = m.Triangles[:pn]
 			if m.FlipNormal {

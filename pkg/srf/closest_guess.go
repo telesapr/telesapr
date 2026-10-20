@@ -72,15 +72,43 @@ func (s *SSurface) guessPoints() []geom.Vector {
 }
 
 // makeGuessGrids gives the curved surfaces of the shells a cell for
-// their grids, or, with on false, takes them away.
+// their grids and for their ray trees (raycast_tree.go), where they
+// have none yet: a cell made in one loop of a Boolean serves the next,
+// since what it holds is checked against the surface as it is. With on
+// false it does nothing; CleanupAfterBoolean takes the cells away.
 func makeGuessGrids(on bool, shells ...*SShell) {
+	if !on {
+		return
+	}
 	for _, sh := range shells {
 		for i := range sh.Surface {
 			s := &sh.Surface[i]
-			s.guess = nil
-			if _, _, _, plane := s.planeBasis(); on && !plane {
+			if _, _, _, plane := s.planeBasis(); plane {
+				s.guess, s.rays = nil, nil
+				continue
+			}
+			if s.guess == nil {
 				s.guess = &guessCell{}
 			}
+			if s.rays == nil {
+				s.rays = &rayCell{}
+			}
 		}
+	}
+}
+
+// KeepClosestGuesses gives the shell's curved surfaces the grid of
+// points ClosestPointTo starts its search from, as a Boolean's loops
+// have (makeGuessGrids), or takes it away: for a caller that projects
+// many points on them, as a fillet's rolling ball does, which without
+// it evaluated the surface at every point of the grid for each. The
+// points found are the same.
+func (s *SShell) KeepClosestGuesses(keep bool) {
+	if keep {
+		makeGuessGrids(true, s)
+		return
+	}
+	for i := range s.Surface {
+		s.Surface[i].guess, s.Surface[i].rays = nil, nil
 	}
 }

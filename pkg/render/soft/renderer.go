@@ -36,6 +36,11 @@ type Renderer struct {
 	width, height int
 	frame         *image.RGBA
 	depth         []float32
+	// depthStale says the depth buffer is to be cleared before it is
+	// next read: clearing is deferred until something is drawn, since a
+	// frame clears it several times over (at the camera, at the start,
+	// at the overlay) and only the last clear before a fragment counts.
+	depthStale bool
 
 	// The view transform (UpdateProjection): model space to clip space.
 	projN          geom.Vector
@@ -46,6 +51,8 @@ type Renderer struct {
 	// Thin lines collected by batchLines.
 	batching  bool
 	lineBatch []lineSeg
+	// triBuf holds one polygon's triangles while they are drawn.
+	triBuf []rvert
 
 	// Lighting state that outlives frames, as in GL.
 	lights  [2]glLight
@@ -55,12 +62,11 @@ type Renderer struct {
 	materials func(face uint32) render.Material
 
 	// The user's clip plane in model space, and as a clip-space plane
-	// for the current projection: userClip is its signed distance
-	// function, nil with no plane, and userEq its coefficients of x,
-	// y, z and w.
+	// for the current projection: userClip says there is one, and
+	// userEq is its coefficients of x, y, z and w (planeDist).
 	clipPlane *srf.HalfSpace
 	userEq    [4]float64
-	userClip  func(v *cvert) float64
+	userClip  bool
 }
 
 var _ render.ViewportCanvas = (*Renderer)(nil)
@@ -136,7 +142,7 @@ func (r *Renderer) SetClipPlane(h *srf.HalfSpace) {
 func (r *Renderer) updateUserClip() {
 	h := r.clipPlane
 	if h == nil || r.sx == 0 || r.sy == 0 || r.sz == 0 {
-		r.userClip = nil
+		r.userClip = false
 		return
 	}
 	c := &r.camera
@@ -147,8 +153,7 @@ func (r *Renderer) updateUserClip() {
 		-h.N.Dot(r.projN)/r.sz - c0*r.sw/r.sz,
 		c0,
 	}
-	eq := r.userEq
-	r.userClip = func(v *cvert) float64 { return eq[0]*v.x + eq[1]*v.y + eq[2]*v.z + eq[3]*v.w }
+	r.userClip = true
 }
 
 // clip transforms a model-space point to clip space.
@@ -197,7 +202,20 @@ func fill(b, pattern []byte) {
 	}
 }
 
+// clearDepth clears the depth buffer to the far plane, when it is next
+// read (readyDepth).
 func (r *Renderer) clearDepth() {
+	r.depthStale = true
+}
+
+// readyDepth does the clear clearDepth deferred. Every path that reads
+// or copies the depth buffer calls it first, before any goroutine of
+// its own starts.
+func (r *Renderer) readyDepth() {
+	if !r.depthStale {
+		return
+	}
+	r.depthStale = false
 	if len(r.depth) == 0 {
 		return
 	}
@@ -292,17 +310,7 @@ func (r *Renderer) selectFill(hcf render.HFill) *render.Fill {
 
 // drawPolygonClip draws a convex polygon given in clip space.
 func (r *Renderer) drawPolygonClip(vs []cvert, mode fragMode) {
-	vs = clipPolygon(vs, r.userClip)
-	if len(vs) < 3 {
-		return
-	}
-	w := make([]rvert, len(vs))
-	for i := range vs {
-		w[i] = r.toWindow(&vs[i])
-	}
-	for i := 1; i+1 < len(w); i++ {
-		r.rasterTriangle(&w[0], &w[i], &w[i+1], mode)
-	}
+	r.rasterTriangles(r.appendPolygonTriangles(r.triBuf[:0], vs), mode)
 }
 
 func (r *Renderer) quad(a, b, c, d geom.Vector) {
@@ -311,7 +319,7 @@ func (r *Renderer) quad(a, b, c, d geom.Vector) {
 
 // line draws a GL_LINES segment of the current stroke's pixel width.
 func (r *Renderer) line(a, b geom.Vector, widthPx float64) {
-	ca, cb, ok := clipSegment(r.clip(a), r.clip(b), r.userClip)
+	ca, cb, ok := r.clipSegment(r.clip(a), r.clip(b))
 	if !ok {
 		return
 	}
@@ -339,6 +347,7 @@ func (r *Renderer) batchLines(draw func()) {
 	r.lineBatch = r.lineBatch[:0]
 	draw()
 	r.batching = false
+	r.readyDepth()
 	segs := r.lineBatch
 	workers := min(runtime.GOMAXPROCS(0), r.height/16)
 	if len(segs) < 256 || workers < 2 {
@@ -582,7 +591,8 @@ func (r *Renderer) DrawMesh(m *srf.SMesh, hcfFront, hcfBack render.HFill) {
 			na, nb, nc = tr.NA, tr.NB, tr.NC
 		}
 
-		vs := []cvert{r.clip(tr.A), r.clip(tr.B), r.clip(tr.C)}
+		corners := [3]cvert{r.clip(tr.A), r.clip(tr.B), r.clip(tr.C)}
+		vs := corners[:]
 		frontFacing := r.isFrontFacing(vs)
 		mat, flip := matFront, false
 		if twoSide && !frontFacing {
@@ -609,7 +619,7 @@ func (r *Renderer) DrawMesh(m *srf.SMesh, hcfFront, hcfBack render.HFill) {
 // appendPolygonTriangles clips a convex polygon given in clip space and
 // appends its fan of triangles in window space.
 func (r *Renderer) appendPolygonTriangles(tris []rvert, vs []cvert) []rvert {
-	vs = clipPolygon(vs, r.userClip)
+	vs = r.clipPolygon(vs)
 	if len(vs) < 3 {
 		return tris
 	}
@@ -627,9 +637,10 @@ func (r *Renderer) appendPolygonTriangles(tris []rvert, vs []cvert) []rvert {
 // horizontal bands at once: each pixel still meets its triangles in
 // order, so the frame is the same.
 func (r *Renderer) rasterTriangles(tris []rvert, mode fragMode) {
+	r.readyDepth()
 	n := len(tris) / 3
 	workers := min(runtime.GOMAXPROCS(0), r.height/16)
-	if n < 64 || workers < 2 {
+	if (n < 64 && !r.bigTriangles(tris)) || workers < 2 {
 		for i := range n {
 			r.rasterTriangle(&tris[3*i], &tris[3*i+1], &tris[3*i+2], mode)
 		}
@@ -646,6 +657,31 @@ func (r *Renderer) rasterTriangles(tris []rvert, mode fragMode) {
 		})
 	}
 	wg.Wait()
+}
+
+// bigTrianglesPixels is the area of a few triangles' bounding boxes,
+// in pixels of the frame, from which drawing them in bands pays: a
+// quad over the window is two triangles and two million pixels.
+const bigTrianglesPixels = 1 << 16
+
+// bigTriangles reports whether a small batch covers enough of the frame
+// to be worth drawing in bands.
+func (r *Renderer) bigTriangles(tris []rvert) bool {
+	area := 0.0
+	for i := 0; i+2 < len(tris); i += 3 {
+		a, b, c := &tris[i], &tris[i+1], &tris[i+2]
+		x0 := max(min(a.x, b.x, c.x), 0)
+		x1 := min(max(a.x, b.x, c.x), float64(r.width))
+		y0 := max(min(a.y, b.y, c.y), 0)
+		y1 := min(max(a.y, b.y, c.y), float64(r.height))
+		if x1 > x0 && y1 > y0 {
+			area += (x1 - x0) * (y1 - y0)
+		}
+		if area >= bigTrianglesPixels {
+			return true
+		}
+	}
+	return false
 }
 
 // isFrontFacing reports whether the triangle is counterclockwise in GL
@@ -729,7 +765,8 @@ func (r *Renderer) DrawFaces(m *srf.SMesh, faces []uint32, hcf render.HFill) {
 			if f != face {
 				continue
 			}
-			tris = r.appendPolygonTriangles(tris, []cvert{r.clip(tr.A), r.clip(tr.B), r.clip(tr.C)})
+			corners := [3]cvert{r.clip(tr.A), r.clip(tr.B), r.clip(tr.C)}
+			tris = r.appendPolygonTriangles(tris, corners[:])
 			break
 		}
 	}
