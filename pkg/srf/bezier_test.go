@@ -705,3 +705,19 @@ func TestCullIdenticalBeziers(t *testing.T) {
 		}
 	}
 }
+
+// A cubic whose tangent control point lies on its start has a zero
+// tangent there. The closest-point search starts from that end for a
+// point just after it and has no Newton step; it reports not converged
+// with a finite parameter rather than NaN.
+func TestClosestPointToZeroTangent(t *testing.T) {
+	t.Parallel()
+	b := SBezierFrom4(
+		geom.NewVector(0, 0, 0), geom.NewVector(0, 0, 0),
+		geom.NewVector(10, 0, 0), geom.NewVector(10, 10, 0))
+	p := b.PointAt(0.01)
+	tt, _ := b.ClosestPointTo(p, true)
+	if math.IsNaN(tt) || math.IsInf(tt, 0) {
+		t.Fatalf("t = %v", tt)
+	}
+}

@@ -7840,7 +7840,7 @@
 					},
 					"Overlap": {
 						"decl": "func (sk *Sketch) Overlap(he core.HEntity) (Overlap, error)",
-						"text": "Overlap lists what lies where point he is, in the groups up to the active one, in the order of the entities."
+						"text": "Overlap lists what is drawn where point he is, in the order of the entities: what a click there could have picked."
 					},
 					"OwnSources": {
 						"decl": "func (sk *Sketch) OwnSources(h core.HGroup) []core.HGroup",

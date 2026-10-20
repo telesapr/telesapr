@@ -4014,10 +4014,10 @@ row 24    centre of g003-extrude
  0-2 64 61 0
  3-24 6c 61 108 80030002 1 1
  25-99 64 61 0
-row 26    point of g003-extrude
+row 26    end of g003-extrude
  0-2 64 64 0
- 3-23 6c 64 108 8003000d 1 1
- 24-99 64 64 0
+ 3-21 6c 64 108 8003000d 1 1
+ 22-99 64 64 0
 row 28 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
@@ -4209,10 +4209,10 @@ row 24    centre of g003-extrude
  0-2 64 61 0
  3-24 6c 61 108 80030002 1 1
  25-99 64 61 0
-row 26    point of g003-extrude
+row 26    end of g003-extrude
  0-2 64 64 0
- 3-23 6c 64 108 8003000d 1 1
- 24-99 64 64 0
+ 3-21 6c 64 108 8003000d 1 1
+ 22-99 64 64 0
 row 28 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
@@ -4390,10 +4390,10 @@ row 24    centre of g003-extrude
  0-2 64 61 0
  3-24 6c 61 108 80030002 1 1
  25-99 64 61 0
-row 26    point of g003-extrude
+row 26    end of g003-extrude
  0-2 64 64 0
- 3-23 6c 64 108 8003000d 1 1
- 24-99 64 64 0
+ 3-21 6c 64 108 8003000d 1 1
+ 22-99 64 64 0
 row 28 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
@@ -4582,10 +4582,10 @@ row 24    centre of g003-extrude
  0-2 64 61 0
  3-24 6c 61 108 80030002 1 1
  25-99 64 61 0
-row 26    point of g003-extrude
+row 26    end of g003-extrude
  0-2 64 64 0
- 3-23 6c 64 108 8003000d 1 1
- 24-99 64 64 0
+ 3-21 6c 64 108 8003000d 1 1
+ 22-99 64 64 0
 row 28 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
@@ -4914,10 +4914,10 @@ row 22    centre of g003-extrude
  0-2 64 61 0
  3-24 6c 61 108 80030002 1 1
  25-99 64 61 0
-row 24    point of g003-extrude
+row 24    end of g003-extrude
  0-2 64 64 0
- 3-23 6c 64 108 8003000d 1 1
- 24-99 64 64 0
+ 3-21 6c 64 108 8003000d 1 1
+ 22-99 64 64 0
 row 26 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
@@ -5031,10 +5031,10 @@ row 22    origin of g002-sketch-in-plane
  0-2 64 61 0
  3-32 6c 61 108 80020002 1 1
  33-99 64 61 0
-row 24    point of g003-extrude
+row 24    end of g003-extrude
  0-2 64 64 0
- 3-23 6c 64 108 8003000d 1 1
- 24-99 64 64 0
+ 3-21 6c 64 108 8003000d 1 1
+ 22-99 64 64 0
 row 26 IN GROUP      g003-extrude
  0-7 74 64 0
  8-13 64 64 0
@@ -5211,7 +5211,7 @@ row 10
 row 12 ALSO HERE
  0-8 74 64 0
  9-99 64 64 0
-row 14    point of g003-extrude
+row 14    start of g003-extrude
  0-2 64 61 0
  3-23 6c 61 108 8003000f 1 1
  24-99 64 61 0
