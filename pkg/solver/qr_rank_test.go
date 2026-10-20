@@ -45,7 +45,7 @@ func TestSparseQRRankMatchesFactor(t *testing.T) {
 		}
 		a := randomSparse(rng, m, n, 0.1+0.3*rng.Float64())
 		want := factorSparseQR(a).rank
-		if got := sparseQRRank(a); got != want {
+		if got := sparseQRRank(a, analyzeSparseQR(a)); got != want {
 			t.Fatalf("%dx%d: rank only %d, factor %d", m, n, got, want)
 		}
 	}

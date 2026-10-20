@@ -1,6 +1,9 @@
 package solver
 
-import "math"
+import (
+	"math"
+	"slices"
+)
 
 // spMat is a column-major sparse matrix as Eigen stores one: each
 // column's row indices and values, in the order they were inserted.
@@ -200,9 +203,72 @@ func etreeFind(i int, pp []int) int {
 // epsilon is the machine epsilon of float64 (Eigen NumTraits::epsilon).
 var epsilon = math.Nextafter(1, 2) - 1
 
+// qrSymbolic is what SparseQR::analyzePattern finds for a sparsity
+// pattern: the COLAMD column ordering and the column elimination tree
+// of the matrix so ordered. It depends on the pattern alone, so the
+// factorisations of one solve, whose Jacobian keeps its pattern while
+// its values change, share one.
+type qrSymbolic struct {
+	m, n int
+	// idx is a copy of the pattern analysed, to tell a matrix with
+	// the same one.
+	idx [][]int
+	// permC is the ordering: column permC[i] of the matrix factored
+	// is column i of the one analysed; outputPerm is its inverse.
+	permC, outputPerm  []int
+	etree, firstRowElt []int
+}
+
+// analyzeSparseQR is SparseQR::analyzePattern of a.
+func analyzeSparseQR(a *spMat) *qrSymbolic {
+	return analyzeSparseQROrdered(a, colamdOrdering(a.rows, a.cols, a.idx))
+}
+
+// analyzeSparseQROrdered is analyzeSparseQR with the column ordering
+// permC given.
+func analyzeSparseQROrdered(a *spMat, permC []int) *qrSymbolic {
+	sy := &qrSymbolic{m: a.rows, n: a.cols, idx: make([][]int, a.cols), permC: permC}
+	for j := range a.cols {
+		sy.idx[j] = slices.Clone(a.idx[j])
+	}
+	sy.outputPerm = make([]int, a.cols) // m_perm_c.inverse()
+	for i, p := range permC {
+		sy.outputPerm[p] = i
+	}
+	sy.etree, sy.firstRowElt = coletree(a.rows, a.cols, func(j int) []int { return a.idx[j] }, sy.outputPerm)
+	return sy
+}
+
+// matches reports whether a has the pattern sy was made for.
+func (sy *qrSymbolic) matches(a *spMat) bool {
+	if sy == nil || a.rows != sy.m || a.cols != sy.n {
+		return false
+	}
+	for j := range a.cols {
+		if !slices.Equal(a.idx[j], sy.idx[j]) {
+			return false
+		}
+	}
+	return true
+}
+
+// symbolicCache keeps the analysis of the last pattern factored.
+type symbolicCache struct {
+	sym *qrSymbolic
+}
+
+// analysis is the analysis of a: the one kept if a has its pattern,
+// else a new one, kept.
+func (c *symbolicCache) analysis(a *spMat) *qrSymbolic {
+	if !c.sym.matches(a) {
+		c.sym = analyzeSparseQR(a)
+	}
+	return c.sym
+}
+
 // factorSparseQR is SparseQR::compute: analyzePattern, then factorize.
 func factorSparseQR(a *spMat) *sparseQR {
-	return factorSparseQROrdered(a, colamdOrdering(a.rows, a.cols, a.idx), false)
+	return factorSparseQRAnalyzed(a, analyzeSparseQR(a), false)
 }
 
 // sparseQRRank is the rank factorSparseQR finds, without the factors.
@@ -211,25 +277,18 @@ func factorSparseQR(a *spMat) *sparseQR {
 // each of them would only have the column elimination tree computed
 // again. The rank test of a sketch being drawn, with far more unknowns
 // than equations, is nearly all such columns.
-func sparseQRRank(a *spMat) int {
-	return factorSparseQROrdered(a, colamdOrdering(a.rows, a.cols, a.idx), true).rank
+func sparseQRRank(a *spMat, sy *qrSymbolic) int {
+	return factorSparseQRAnalyzed(a, sy, true).rank
 }
 
-// factorSparseQROrdered is factorSparseQR with the column ordering
-// permC given: column permC[i] of the matrix factored is column i of
-// a. With rankOnly, it stops at the first column that cannot be live
-// and keeps no factors.
-func factorSparseQROrdered(a *spMat, permC []int, rankOnly bool) *sparseQR {
+// factorSparseQRAnalyzed is SparseQR::factorize of a, whose pattern
+// sy is the analysis of. With rankOnly, it stops at the first column
+// that cannot be live and keeps no factors.
+func factorSparseQRAnalyzed(a *spMat, sy *qrSymbolic, rankOnly bool) *sparseQR {
 	m, n := a.rows, a.cols
 	diagSize := min(m, n)
-
-	// analyzePattern.
-	outputPerm := make([]int, n) // m_perm_c.inverse()
-	for i, p := range permC {
-		outputPerm[p] = i
-	}
-	cols := func(j int) []int { return a.idx[j] }
-	etree, firstRowElt := coletree(m, n, cols, outputPerm)
+	permC, outputPerm := sy.permC, sy.outputPerm
+	etree, firstRowElt := sy.etree, sy.firstRowElt
 
 	// factorize. Column permC[i] of pmat is column i of a.
 	pmatIdx := make([][]int, n)

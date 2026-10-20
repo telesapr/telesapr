@@ -85,6 +85,10 @@ type System struct {
 		Bnum []float64
 		X    []float64
 	}
+	// rankSym and stepSym keep the symbolic analysis of the Jacobian
+	// as the rank test factors it and as the Newton step factors it,
+	// transposed, for the next factorisation with the same pattern.
+	rankSym, stepSym symbolicCache
 }
 
 // AddParam adds an unknown, with the sketch param's value as its
@@ -432,7 +436,7 @@ func (s *System) CalculateRank() int {
 
 // rankOf is the rank of a as the rank test finds it.
 func (s *System) rankOf(a *spMat) int {
-	return sparseQRRank(a)
+	return sparseQRRank(a, s.rankSym.analysis(a))
 }
 
 // TestRank evaluates the Jacobian and reports whether it has full row
@@ -473,7 +477,7 @@ func (s *System) SolveLeastSquares() bool {
 		return true
 	}
 
-	s.mat.X = leastSquares(a, s.mat.Bnum)
+	s.mat.X = leastSquares(a, s.mat.Bnum, &s.stepSym)
 	for c := range n {
 		s.mat.X[c] *= scale[c]
 	}
@@ -481,8 +485,8 @@ func (s *System) SolveLeastSquares() bool {
 }
 
 // leastSquares returns the minimum-norm solution X of A X = B, once A
-// is scaled.
-func leastSquares(a *spMat, b []float64) []float64 {
+// is scaled; cache keeps the analysis of the pattern factored.
+func leastSquares(a *spMat, b []float64, cache *symbolicCache) []float64 {
 	m, n := a.rows, a.cols
 	var z []float64
 	if m <= n {
@@ -492,7 +496,8 @@ func leastSquares(a *spMat, b []float64) []float64 {
 		// A'*P = Q*R, A*A' = P*R'*R*P', so
 		//     z = (A*A')^-1*B = P*R^-1*R'^-1*P'*B,
 		// two triangular solves, with the rank decision taken on R.
-		f := factorSparseQR(a.transpose())
+		at := a.transpose()
+		f := factorSparseQRAnalyzed(at, cache.analysis(at), false)
 		v := make([]float64, m)
 		if f.rank > 0 {
 			for k := range f.rank {
