@@ -96,3 +96,19 @@ func makeGuessGrids(on bool, shells ...*SShell) {
 		}
 	}
 }
+
+// KeepClosestGuesses gives the shell's curved surfaces the grid of
+// points ClosestPointTo starts its search from, as a Boolean's loops
+// have (makeGuessGrids), or takes it away: for a caller that projects
+// many points on them, as a fillet's rolling ball does, which without
+// it evaluated the surface at every point of the grid for each. The
+// points found are the same.
+func (s *SShell) KeepClosestGuesses(keep bool) {
+	if keep {
+		makeGuessGrids(true, s)
+		return
+	}
+	for i := range s.Surface {
+		s.Surface[i].guess, s.Surface[i].rays = nil, nil
+	}
+}

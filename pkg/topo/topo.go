@@ -233,6 +233,9 @@ func distanceToPolyline(p geom.Vector, pts []geom.Vector) float64 {
 // Build derives the topology of a shell. A shell whose trims don't
 // chain into loops gives an error, with what topology could be made.
 func Build(sh *srf.SShell) (*Topology, error) {
+	// Seams and loops project many points on the surfaces.
+	sh.KeepClosestGuesses(true)
+	defer sh.KeepClosestGuesses(false)
 	t := &Topology{shell: sh, surfFace: map[core.HSSurface][]int{}}
 	index := map[vertexKey][]int{}
 	edges := map[edgeKey][]int{}
