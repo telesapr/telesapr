@@ -69,6 +69,9 @@ type System struct {
 	SK func(core.HParam) *core.Param
 
 	paramIndex map[core.HParam]*Param
+	// unsorted is set by AddParam: the unknowns are put in handle
+	// order once, when they are next read, not on every add.
+	unsorted bool
 
 	mat struct {
 		m, n  int
@@ -88,11 +91,22 @@ type System struct {
 // initial guess.
 func (s *System) AddParam(p core.Param) {
 	s.Param = append(s.Param, &Param{Param: p})
-	slices.SortStableFunc(s.Param, func(a, b *Param) int { return cmp.Compare(a.H.V, b.H.V) })
 	s.paramIndex = nil
+	s.unsorted = true
+}
+
+// sortParams puts the unknowns in handle order, if any were added
+// since they last were.
+func (s *System) sortParams() {
+	if !s.unsorted {
+		return
+	}
+	slices.SortStableFunc(s.Param, func(a, b *Param) int { return cmp.Compare(a.H.V, b.H.V) })
+	s.unsorted = false
 }
 
 func (s *System) findParam(h core.HParam) *Param {
+	s.sortParams()
 	if s.paramIndex == nil {
 		s.paramIndex = make(map[core.HParam]*Param, len(s.Param))
 		for _, p := range s.Param {
@@ -116,6 +130,7 @@ func (s *System) setEquations(l []core.Equation) {
 }
 
 func (s *System) clearParamTags() {
+	s.sortParams()
 	for _, p := range s.Param {
 		p.Tag = 0
 	}
@@ -185,6 +200,7 @@ func paramsUsed(e *core.Expr, set map[core.HParam]bool, order []core.HParam) []c
 // WriteJacobian writes the equations and params tagged tag into the
 // matrix, symbolically.
 func (s *System) WriteJacobian(tag int) bool {
+	s.sortParams()
 	s.mat.param = s.mat.param[:0]
 	s.mat.eq = s.mat.eq[:0]
 	s.mat.A = nil
@@ -269,6 +285,7 @@ func substitute(e *core.Expr, subMap map[core.HParam]*Param) {
 // unknowns are equal, a - b = 0, by substituting one for the other; it
 // returns what each eliminated param was substituted by.
 func (s *System) SolveBySubstitution() map[core.HParam]*Param {
+	s.sortParams()
 	// Contains pointers to last substitutions in a substitution chain
 	var subVec []*Param
 	// Maps a parameter to the index of its last substitution in subVec
@@ -823,6 +840,7 @@ func (s *System) SolveRank(g *Group, andFindBad, andFindFree bool) (how core.Sol
 // MarkParamsFree finds, if asked, the params that no equation pins
 // down; that might be more than the number of degrees of freedom.
 func (s *System) MarkParamsFree(find bool) {
+	s.sortParams()
 	for _, p := range s.Param {
 		p.Free = false
 
