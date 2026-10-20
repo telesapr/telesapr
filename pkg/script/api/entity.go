@@ -200,6 +200,29 @@ func (e Entity) Points() (points []Entity) {
 	return points
 }
 
+// Overlap is what lies where the point e is, in the groups up to the
+// active one: the other points at the same position, and the lines,
+// circles, arcs and cubics that pass through it without a point of
+// their own there. A click on the drawing picks one of them; the
+// property browser lists the rest under ALSO HERE, and Edit.Select
+// selects one from a script.
+func (e Entity) Overlap() (points, curves []Entity) {
+	e.d.read(func(sk *sketch.Sketch) {
+		e.get(sk)
+		o, err := sk.Overlap(e.H)
+		if err != nil {
+			fail("%s: %v", e.describe(sk), err)
+		}
+		for _, h := range o.Points {
+			points = append(points, Entity{e.d, h})
+		}
+		for _, h := range o.Curves {
+			curves = append(curves, Entity{e.d, h})
+		}
+	})
+	return points, curves
+}
+
 // point is the i-th point of an entity of one of the kinds.
 func (e Entity) point(what string, i int, kinds ...core.EntityType) (p Entity) {
 	e.d.read(func(sk *sketch.Sketch) {

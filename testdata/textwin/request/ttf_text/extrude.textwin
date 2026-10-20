@@ -3908,20 +3908,39 @@ row 12 FROM REQUEST  r001-#XY
  12-13 64 64 0
  14-21 6c 64 108 1 1 1
  22-99 64 64 0
-row 14 IN GROUP      g001-#references
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r002-#YZ
+ 0-2 64 61 0
+ 3-20 6c 61 108 20001 1 1
+ 21-99 64 61 0
+row 18    origin of r003-#ZX
+ 0-2 64 64 0
+ 3-20 6c 64 108 30001 1 1
+ 21-99 64 64 0
+row 20    origin of g002-sketch-in-plane
+ 0-2 64 61 0
+ 3-32 6c 61 108 80020002 1 1
+ 33-99 64 61 0
+row 22    point of g003-extrude
+ 0-2 64 64 0
+ 3-23 6c 64 108 80030014 1 1
+ 24-99 64 64 0
+row 24 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
  14-29 6c 64 108 1 1 0
  30-99 64 64 0
-row 16 NOT LOCKED IN WORKPLANE
+row 26 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 18 CONSTRUCTION
+row 28 CONSTRUCTION
  0-99 74 64 0
-row 21 (unselect all)
+row 31 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 23 
+row 33 
  0-99 64 64 0
 screen entity 10020
 row 0         in plane: g002-sketch-in-plane
@@ -4062,20 +4081,39 @@ row 12 FROM REQUEST  r002-#YZ
  12-13 64 64 0
  14-21 6c 64 108 2 1 1
  22-99 64 64 0
-row 14 IN GROUP      g001-#references
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 18    origin of r003-#ZX
+ 0-2 64 64 0
+ 3-20 6c 64 108 30001 1 1
+ 21-99 64 64 0
+row 20    origin of g002-sketch-in-plane
+ 0-2 64 61 0
+ 3-32 6c 61 108 80020002 1 1
+ 33-99 64 61 0
+row 22    point of g003-extrude
+ 0-2 64 64 0
+ 3-23 6c 64 108 80030014 1 1
+ 24-99 64 64 0
+row 24 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
  14-29 6c 64 108 1 1 0
  30-99 64 64 0
-row 16 NOT LOCKED IN WORKPLANE
+row 26 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 18 CONSTRUCTION
+row 28 CONSTRUCTION
  0-99 74 64 0
-row 21 (unselect all)
+row 31 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 23 
+row 33 
  0-99 64 64 0
 screen entity 20020
 row 0         in plane: g002-sketch-in-plane
@@ -4216,20 +4254,39 @@ row 12 FROM REQUEST  r003-#ZX
  12-13 64 64 0
  14-21 6c 64 108 3 1 1
  22-99 64 64 0
-row 14 IN GROUP      g001-#references
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 18    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 20    origin of g002-sketch-in-plane
+ 0-2 64 61 0
+ 3-32 6c 61 108 80020002 1 1
+ 33-99 64 61 0
+row 22    point of g003-extrude
+ 0-2 64 64 0
+ 3-23 6c 64 108 80030014 1 1
+ 24-99 64 64 0
+row 24 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
  14-29 6c 64 108 1 1 0
  30-99 64 64 0
-row 16 NOT LOCKED IN WORKPLANE
+row 26 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 18 CONSTRUCTION
+row 28 CONSTRUCTION
  0-99 74 64 0
-row 21 (unselect all)
+row 31 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 23 
+row 33 
  0-99 64 64 0
 screen entity 30020
 row 0         in plane: g002-sketch-in-plane
@@ -4377,20 +4434,27 @@ row 12 FROM REQUEST  r004-ttf-text
  12-13 64 64 0
  14-26 6c 64 108 4 1 1
  27-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    point of g003-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80030002 1 1
+ 24-99 64 61 0
+row 18 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  g002-sketch-in-plane
+row 20 IN WORKPLANE  g002-sketch-in-plane
  0-11 74 64 0
  12-13 64 64 0
  14-33 6c 64 108 2 1 1
  34-99 64 64 0
-row 19 (unselect all)
+row 23 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 25 
  0-99 64 64 0
 screen entity 40002
 row 0         in plane: g002-sketch-in-plane
@@ -4421,20 +4485,27 @@ row 12 FROM REQUEST  r004-ttf-text
  12-13 64 64 0
  14-26 6c 64 108 4 1 1
  27-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    point of g003-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80030003 1 1
+ 24-99 64 61 0
+row 18 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  g002-sketch-in-plane
+row 20 IN WORKPLANE  g002-sketch-in-plane
  0-11 74 64 0
  12-13 64 64 0
  14-33 6c 64 108 2 1 1
  34-99 64 64 0
-row 19 (unselect all)
+row 23 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 25 
  0-99 64 64 0
 screen entity 40003
 row 0         in plane: g002-sketch-in-plane
@@ -4465,20 +4536,27 @@ row 12 FROM REQUEST  r004-ttf-text
  12-13 64 64 0
  14-26 6c 64 108 4 1 1
  27-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    point of g003-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80030004 1 1
+ 24-99 64 61 0
+row 18 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  g002-sketch-in-plane
+row 20 IN WORKPLANE  g002-sketch-in-plane
  0-11 74 64 0
  12-13 64 64 0
  14-33 6c 64 108 2 1 1
  34-99 64 64 0
-row 19 (unselect all)
+row 23 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 25 
  0-99 64 64 0
 screen entity 40004
 row 0         in plane: g002-sketch-in-plane
@@ -4509,20 +4587,27 @@ row 12 FROM REQUEST  r004-ttf-text
  12-13 64 64 0
  14-26 6c 64 108 4 1 1
  27-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    point of g003-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 80030005 1 1
+ 24-99 64 61 0
+row 18 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  g002-sketch-in-plane
+row 20 IN WORKPLANE  g002-sketch-in-plane
  0-11 74 64 0
  12-13 64 64 0
  14-33 6c 64 108 2 1 1
  34-99 64 64 0
-row 19 (unselect all)
+row 23 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 25 
  0-99 64 64 0
 screen entity 40020
 row 0         in plane: g002-sketch-in-plane
@@ -4710,20 +4795,39 @@ row 8 POINT at (0.00, 0.00, 0.00)
  27-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g002-sketch-in-plane
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 16    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 18    origin of r003-#ZX
+ 0-2 64 61 0
+ 3-20 6c 61 108 30001 1 1
+ 21-99 64 61 0
+row 20    point of g003-extrude
+ 0-2 64 64 0
+ 3-23 6c 64 108 80030014 1 1
+ 24-99 64 64 0
+row 22 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 24 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 16 CONSTRUCTION
+row 26 CONSTRUCTION
  0-99 74 64 0
-row 19 (unselect all)
+row 29 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 31 
  0-99 64 64 0
 screen entity 80030001
 row 0         in plane: g002-sketch-in-plane
@@ -4789,18 +4893,25 @@ row 8 POINT at (-5.00, 5.00, 0.00)
  28-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g003-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    point of r004-ttf-text
+ 0-2 64 61 0
+ 3-24 6c 61 108 40001 1 1
+ 25-99 64 61 0
+row 16 IN GROUP      g003-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 3 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 18 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 17 (unselect all)
+row 21 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 19 
+row 23 
  0-99 64 64 0
 screen entity 80030003
 row 0         in plane: g002-sketch-in-plane
@@ -4826,18 +4937,25 @@ row 8 POINT at (-5.00, -5.00, 0.00)
  29-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g003-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    point of r004-ttf-text
+ 0-2 64 61 0
+ 3-24 6c 61 108 40002 1 1
+ 25-99 64 61 0
+row 16 IN GROUP      g003-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 3 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 18 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 17 (unselect all)
+row 21 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 19 
+row 23 
  0-99 64 64 0
 screen entity 80030004
 row 0         in plane: g002-sketch-in-plane
@@ -4863,18 +4981,25 @@ row 8 POINT at (21.14, -5.00, 0.00)
  29-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g003-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    point of r004-ttf-text
+ 0-2 64 61 0
+ 3-24 6c 61 108 40003 1 1
+ 25-99 64 61 0
+row 16 IN GROUP      g003-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 3 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 18 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 17 (unselect all)
+row 21 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 19 
+row 23 
  0-99 64 64 0
 screen entity 80030005
 row 0         in plane: g002-sketch-in-plane
@@ -4900,18 +5025,25 @@ row 8 POINT at (21.14, 5.00, 0.00)
  28-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g003-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    point of r004-ttf-text
+ 0-2 64 61 0
+ 3-24 6c 61 108 40004 1 1
+ 25-99 64 61 0
+row 16 IN GROUP      g003-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 3 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 18 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 17 (unselect all)
+row 21 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 19 
+row 23 
  0-99 64 64 0
 screen entity 80030006
 row 0         in plane: g002-sketch-in-plane
@@ -5508,20 +5640,39 @@ row 8 POINT at (0.00, 0.00, 0.00)
  27-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g003-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 16    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 18    origin of r003-#ZX
+ 0-2 64 61 0
+ 3-20 6c 61 108 30001 1 1
+ 21-99 64 61 0
+row 20    origin of g002-sketch-in-plane
+ 0-2 64 64 0
+ 3-32 6c 64 108 80020002 1 1
+ 33-99 64 64 0
+row 22 IN GROUP      g003-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 3 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 24 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 16 CONSTRUCTION
+row 26 CONSTRUCTION
  0-99 74 64 0
-row 19 (unselect all)
+row 29 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 31 
  0-99 64 64 0
 screen entity 80030015
 row 0         in plane: g002-sketch-in-plane

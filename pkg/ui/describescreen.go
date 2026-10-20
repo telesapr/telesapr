@@ -411,6 +411,9 @@ func (d *describer) describeOne() {
 				r.DescriptionString())
 		}
 	}
+	if e.IsPoint() {
+		d.describeOverlap(e)
+	}
 	g := sk.Group(e.Group)
 	tw.Printf(false, "%FtIN GROUP%E      %Fl%Ll%D%f%s%E",
 		g.H.V, lf(tw.ScreenSelectGroup), groupDescription(g))

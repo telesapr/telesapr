@@ -2990,20 +2990,35 @@ row 12 FROM REQUEST  r001-#XY
  12-13 64 64 0
  14-21 6c 64 108 1 1 1
  22-99 64 64 0
-row 14 IN GROUP      g001-#references
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r002-#YZ
+ 0-2 64 61 0
+ 3-20 6c 61 108 20001 1 1
+ 21-99 64 61 0
+row 18    origin of r003-#ZX
+ 0-2 64 64 0
+ 3-20 6c 64 108 30001 1 1
+ 21-99 64 64 0
+row 20    origin of g002-sketch-in-plane
+ 0-2 64 61 0
+ 3-32 6c 61 108 80020002 1 1
+ 33-99 64 61 0
+row 22 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
  14-29 6c 64 108 1 1 0
  30-99 64 64 0
-row 16 NOT LOCKED IN WORKPLANE
+row 24 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 18 CONSTRUCTION
+row 26 CONSTRUCTION
  0-99 74 64 0
-row 21 (unselect all)
+row 29 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 23 
+row 31 
  0-99 64 64 0
 screen entity 10020
 row 0         in plane: g002-sketch-in-plane
@@ -3144,20 +3159,35 @@ row 12 FROM REQUEST  r002-#YZ
  12-13 64 64 0
  14-21 6c 64 108 2 1 1
  22-99 64 64 0
-row 14 IN GROUP      g001-#references
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 18    origin of r003-#ZX
+ 0-2 64 64 0
+ 3-20 6c 64 108 30001 1 1
+ 21-99 64 64 0
+row 20    origin of g002-sketch-in-plane
+ 0-2 64 61 0
+ 3-32 6c 61 108 80020002 1 1
+ 33-99 64 61 0
+row 22 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
  14-29 6c 64 108 1 1 0
  30-99 64 64 0
-row 16 NOT LOCKED IN WORKPLANE
+row 24 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 18 CONSTRUCTION
+row 26 CONSTRUCTION
  0-99 74 64 0
-row 21 (unselect all)
+row 29 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 23 
+row 31 
  0-99 64 64 0
 screen entity 20020
 row 0         in plane: g002-sketch-in-plane
@@ -3298,20 +3328,35 @@ row 12 FROM REQUEST  r003-#ZX
  12-13 64 64 0
  14-21 6c 64 108 3 1 1
  22-99 64 64 0
-row 14 IN GROUP      g001-#references
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 18    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 20    origin of g002-sketch-in-plane
+ 0-2 64 61 0
+ 3-32 6c 61 108 80020002 1 1
+ 33-99 64 61 0
+row 22 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
  14-29 6c 64 108 1 1 0
  30-99 64 64 0
-row 16 NOT LOCKED IN WORKPLANE
+row 24 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 18 CONSTRUCTION
+row 26 CONSTRUCTION
  0-99 74 64 0
-row 21 (unselect all)
+row 29 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 23 
+row 31 
  0-99 64 64 0
 screen entity 30020
 row 0         in plane: g002-sketch-in-plane
@@ -3627,29 +3672,36 @@ row 12 FROM REQUEST  r005-line-segment
  12-13 64 64 0
  14-30 6c 64 108 5 1 1
  31-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r008-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 80002 1 1
+ 27-99 64 61 0
+row 18 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  g002-sketch-in-plane
+row 20 IN WORKPLANE  g002-sketch-in-plane
  0-11 74 64 0
  12-13 64 64 0
  14-33 6c 64 108 2 1 1
  34-99 64 64 0
-row 18 CONSTRUCTION
+row 22 CONSTRUCTION
  0-99 74 64 0
-row 21 CONSTRAINED BY:
+row 25 CONSTRAINED BY:
  0-14 74 64 0
  15-99 64 64 0
-row 23    c003-pts-coincident
+row 27    c003-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 3 1 1
  22-99 64 61 0
-row 26 (unselect all)
+row 30 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 28 
+row 32 
  0-99 64 64 0
 screen entity 50002
 row 0         in plane: g002-sketch-in-plane
@@ -3680,29 +3732,36 @@ row 12 FROM REQUEST  r005-line-segment
  12-13 64 64 0
  14-30 6c 64 108 5 1 1
  31-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r006-arc-of-circle
+ 0-2 64 61 0
+ 3-29 6c 61 108 60002 1 1
+ 30-99 64 61 0
+row 18 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  g002-sketch-in-plane
+row 20 IN WORKPLANE  g002-sketch-in-plane
  0-11 74 64 0
  12-13 64 64 0
  14-33 6c 64 108 2 1 1
  34-99 64 64 0
-row 18 CONSTRUCTION
+row 22 CONSTRUCTION
  0-99 74 64 0
-row 21 CONSTRAINED BY:
+row 25 CONSTRAINED BY:
  0-14 74 64 0
  15-99 64 64 0
-row 23    c001-pts-coincident
+row 27    c001-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 1 1 1
  22-99 64 61 0
-row 26 (unselect all)
+row 30 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 28 
+row 32 
  0-99 64 64 0
 screen entity 60000
 row 0         in plane: g002-sketch-in-plane
@@ -3826,29 +3885,36 @@ row 12 FROM REQUEST  r006-arc-of-circle
  12-13 64 64 0
  14-31 6c 64 108 6 1 1
  32-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    centre of r009-arc-of-circle
+ 0-2 64 61 0
+ 3-30 6c 61 108 90001 1 1
+ 31-99 64 61 0
+row 18 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  g002-sketch-in-plane
+row 20 IN WORKPLANE  g002-sketch-in-plane
  0-11 74 64 0
  12-13 64 64 0
  14-33 6c 64 108 2 1 1
  34-99 64 64 0
-row 18 CONSTRUCTION
+row 22 CONSTRUCTION
  0-99 74 64 0
-row 21 CONSTRAINED BY:
+row 25 CONSTRAINED BY:
  0-14 74 64 0
  15-99 64 64 0
-row 23    c006-pts-coincident
+row 27    c006-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 6 1 1
  22-99 64 61 0
-row 26 (unselect all)
+row 30 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 28 
+row 32 
  0-99 64 64 0
 screen entity 60002
 row 0         in plane: g002-sketch-in-plane
@@ -3879,29 +3945,36 @@ row 12 FROM REQUEST  r006-arc-of-circle
  12-13 64 64 0
  14-31 6c 64 108 6 1 1
  32-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r005-line-segment
+ 0-2 64 61 0
+ 3-26 6c 61 108 50002 1 1
+ 27-99 64 61 0
+row 18 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  g002-sketch-in-plane
+row 20 IN WORKPLANE  g002-sketch-in-plane
  0-11 74 64 0
  12-13 64 64 0
  14-33 6c 64 108 2 1 1
  34-99 64 64 0
-row 18 CONSTRUCTION
+row 22 CONSTRUCTION
  0-99 74 64 0
-row 21 CONSTRAINED BY:
+row 25 CONSTRAINED BY:
  0-14 74 64 0
  15-99 64 64 0
-row 23    c001-pts-coincident
+row 27    c001-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 1 1 1
  22-99 64 61 0
-row 26 (unselect all)
+row 30 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 28 
+row 32 
  0-99 64 64 0
 screen entity 60003
 row 0         in plane: g002-sketch-in-plane
@@ -3932,29 +4005,36 @@ row 12 FROM REQUEST  r006-arc-of-circle
  12-13 64 64 0
  14-31 6c 64 108 6 1 1
  32-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r009-arc-of-circle
+ 0-2 64 61 0
+ 3-27 6c 61 108 90003 1 1
+ 28-99 64 61 0
+row 18 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  g002-sketch-in-plane
+row 20 IN WORKPLANE  g002-sketch-in-plane
  0-11 74 64 0
  12-13 64 64 0
  14-33 6c 64 108 2 1 1
  34-99 64 64 0
-row 18 CONSTRUCTION
+row 22 CONSTRUCTION
  0-99 74 64 0
-row 21 CONSTRAINED BY:
+row 25 CONSTRAINED BY:
  0-14 74 64 0
  15-99 64 64 0
-row 23    c008-pts-coincident
+row 27    c008-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 8 1 1
  22-99 64 61 0
-row 26 (unselect all)
+row 30 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 28 
+row 32 
  0-99 64 64 0
 screen entity 60020
 row 0         in plane: g002-sketch-in-plane
@@ -4193,27 +4273,38 @@ row 12 FROM REQUEST  r007-arc-of-circle
  12-13 64 64 0
  14-31 6c 64 108 7 1 1
  32-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r009-arc-of-circle
+ 0-2 64 61 0
+ 3-29 6c 61 108 90002 1 1
+ 30-99 64 61 0
+row 18    r006-arc-of-circle, through it
+ 0-2 64 64 0
+ 3-32 6c 64 108 60000 1 1
+ 33-99 64 64 0
+row 20 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  g002-sketch-in-plane
+row 22 IN WORKPLANE  g002-sketch-in-plane
  0-11 74 64 0
  12-13 64 64 0
  14-33 6c 64 108 2 1 1
  34-99 64 64 0
-row 19 CONSTRAINED BY:
+row 25 CONSTRAINED BY:
  0-14 74 64 0
  15-99 64 64 0
-row 21    c007-pts-coincident
+row 27    c007-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 7 1 1
  22-99 64 61 0
-row 24 (unselect all)
+row 30 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 26 
+row 32 
  0-99 64 64 0
 screen entity 70003
 row 0         in plane: g002-sketch-in-plane
@@ -4244,27 +4335,38 @@ row 12 FROM REQUEST  r007-arc-of-circle
  12-13 64 64 0
  14-31 6c 64 108 7 1 1
  32-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r008-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 80001 1 1
+ 29-99 64 61 0
+row 18    r005-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 50000 1 1
+ 32-99 64 64 0
+row 20 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  g002-sketch-in-plane
+row 22 IN WORKPLANE  g002-sketch-in-plane
  0-11 74 64 0
  12-13 64 64 0
  14-33 6c 64 108 2 1 1
  34-99 64 64 0
-row 19 CONSTRAINED BY:
+row 25 CONSTRAINED BY:
  0-14 74 64 0
  15-99 64 64 0
-row 21    c002-pts-coincident
+row 27    c002-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 2 1 1
  22-99 64 61 0
-row 24 (unselect all)
+row 30 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 26 
+row 32 
  0-99 64 64 0
 screen entity 70020
 row 0         in plane: g002-sketch-in-plane
@@ -4435,31 +4537,42 @@ row 12 FROM REQUEST  r008-line-segment
  12-13 64 64 0
  14-30 6c 64 108 8 1 1
  31-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r007-arc-of-circle
+ 0-2 64 61 0
+ 3-27 6c 61 108 70003 1 1
+ 28-99 64 61 0
+row 18    r005-line-segment, through it
+ 0-2 64 64 0
+ 3-31 6c 64 108 50000 1 1
+ 32-99 64 64 0
+row 20 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  g002-sketch-in-plane
+row 22 IN WORKPLANE  g002-sketch-in-plane
  0-11 74 64 0
  12-13 64 64 0
  14-33 6c 64 108 2 1 1
  34-99 64 64 0
-row 19 CONSTRAINED BY:
+row 25 CONSTRAINED BY:
  0-14 74 64 0
  15-99 64 64 0
-row 21    c002-pts-coincident
+row 27    c002-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 2 1 1
  22-99 64 61 0
-row 23    c004-pt-on-line
+row 29    c004-pt-on-line
  0-2 64 64 0
  3-17 6c 64 108 4 1 1
  18-99 64 64 0
-row 26 (unselect all)
+row 32 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 28 
+row 34 
  0-99 64 64 0
 screen entity 80002
 row 0         in plane: g002-sketch-in-plane
@@ -4490,27 +4603,34 @@ row 12 FROM REQUEST  r008-line-segment
  12-13 64 64 0
  14-30 6c 64 108 8 1 1
  31-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r005-line-segment
+ 0-2 64 61 0
+ 3-28 6c 61 108 50001 1 1
+ 29-99 64 61 0
+row 18 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  g002-sketch-in-plane
+row 20 IN WORKPLANE  g002-sketch-in-plane
  0-11 74 64 0
  12-13 64 64 0
  14-33 6c 64 108 2 1 1
  34-99 64 64 0
-row 19 CONSTRAINED BY:
+row 23 CONSTRAINED BY:
  0-14 74 64 0
  15-99 64 64 0
-row 21    c003-pts-coincident
+row 25    c003-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 3 1 1
  22-99 64 61 0
-row 24 (unselect all)
+row 28 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 26 
+row 30 
  0-99 64 64 0
 screen entity 90000
 row 0         in plane: g002-sketch-in-plane
@@ -4636,27 +4756,34 @@ row 12 FROM REQUEST  r009-arc-of-circle
  12-13 64 64 0
  14-31 6c 64 108 9 1 1
  32-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    centre of r006-arc-of-circle
+ 0-2 64 61 0
+ 3-30 6c 61 108 60001 1 1
+ 31-99 64 61 0
+row 18 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  g002-sketch-in-plane
+row 20 IN WORKPLANE  g002-sketch-in-plane
  0-11 74 64 0
  12-13 64 64 0
  14-33 6c 64 108 2 1 1
  34-99 64 64 0
-row 19 CONSTRAINED BY:
+row 23 CONSTRAINED BY:
  0-14 74 64 0
  15-99 64 64 0
-row 21    c006-pts-coincident
+row 25    c006-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 6 1 1
  22-99 64 61 0
-row 24 (unselect all)
+row 28 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 26 
+row 30 
  0-99 64 64 0
 screen entity 90002
 row 0         in plane: g002-sketch-in-plane
@@ -4687,27 +4814,38 @@ row 12 FROM REQUEST  r009-arc-of-circle
  12-13 64 64 0
  14-31 6c 64 108 9 1 1
  32-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    start of r007-arc-of-circle
+ 0-2 64 61 0
+ 3-29 6c 61 108 70002 1 1
+ 30-99 64 61 0
+row 18    r006-arc-of-circle, through it
+ 0-2 64 64 0
+ 3-32 6c 64 108 60000 1 1
+ 33-99 64 64 0
+row 20 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  g002-sketch-in-plane
+row 22 IN WORKPLANE  g002-sketch-in-plane
  0-11 74 64 0
  12-13 64 64 0
  14-33 6c 64 108 2 1 1
  34-99 64 64 0
-row 19 CONSTRAINED BY:
+row 25 CONSTRAINED BY:
  0-14 74 64 0
  15-99 64 64 0
-row 21    c007-pts-coincident
+row 27    c007-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 7 1 1
  22-99 64 61 0
-row 24 (unselect all)
+row 30 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 26 
+row 32 
  0-99 64 64 0
 screen entity 90003
 row 0         in plane: g002-sketch-in-plane
@@ -4738,27 +4876,34 @@ row 12 FROM REQUEST  r009-arc-of-circle
  12-13 64 64 0
  14-31 6c 64 108 9 1 1
  32-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    end of r006-arc-of-circle
+ 0-2 64 61 0
+ 3-27 6c 61 108 60003 1 1
+ 28-99 64 61 0
+row 18 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  g002-sketch-in-plane
+row 20 IN WORKPLANE  g002-sketch-in-plane
  0-11 74 64 0
  12-13 64 64 0
  14-33 6c 64 108 2 1 1
  34-99 64 64 0
-row 19 CONSTRAINED BY:
+row 23 CONSTRAINED BY:
  0-14 74 64 0
  15-99 64 64 0
-row 21    c008-pts-coincident
+row 25    c008-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 8 1 1
  22-99 64 61 0
-row 24 (unselect all)
+row 28 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 26 
+row 30 
  0-99 64 64 0
 screen entity 90020
 row 0         in plane: g002-sketch-in-plane
@@ -4953,20 +5098,35 @@ row 8 POINT at (0.00, 0.00, 0.00)
  27-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g002-sketch-in-plane
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 16    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 18    origin of r003-#ZX
+ 0-2 64 61 0
+ 3-20 6c 61 108 30001 1 1
+ 21-99 64 61 0
+row 20 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 22 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 16 CONSTRUCTION
+row 24 CONSTRUCTION
  0-99 74 64 0
-row 19 (unselect all)
+row 27 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 29 
  0-99 64 64 0
 screen entities 10000 10001
 row 0         in plane: g002-sketch-in-plane

@@ -3991,27 +3991,54 @@ row 12 FROM REQUEST  r001-#XY
  12-13 64 64 0
  14-21 6c 64 108 1 1 1
  22-99 64 64 0
-row 14 IN GROUP      g001-#references
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r002-#YZ
+ 0-2 64 61 0
+ 3-20 6c 61 108 20001 1 1
+ 21-99 64 61 0
+row 18    origin of r003-#ZX
+ 0-2 64 64 0
+ 3-20 6c 64 108 30001 1 1
+ 21-99 64 64 0
+row 20    centre of r004-circle
+ 0-2 64 61 0
+ 3-23 6c 61 108 40001 1 1
+ 24-99 64 61 0
+row 22    origin of g002-sketch-in-plane
+ 0-2 64 64 0
+ 3-32 6c 64 108 80020002 1 1
+ 33-99 64 64 0
+row 24    centre of g003-extrude
+ 0-2 64 61 0
+ 3-24 6c 61 108 80030002 1 1
+ 25-99 64 61 0
+row 26    point of g003-extrude
+ 0-2 64 64 0
+ 3-23 6c 64 108 8003000d 1 1
+ 24-99 64 64 0
+row 28 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
  14-29 6c 64 108 1 1 0
  30-99 64 64 0
-row 16 NOT LOCKED IN WORKPLANE
+row 30 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 18 CONSTRUCTION
+row 32 CONSTRUCTION
  0-99 74 64 0
-row 21 CONSTRAINED BY:
+row 35 CONSTRAINED BY:
  0-14 74 64 0
  15-99 64 64 0
-row 23    c001-pts-coincident
+row 37    c001-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 1 1 1
  22-99 64 61 0
-row 26 (unselect all)
+row 40 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 28 
+row 42 
  0-99 64 64 0
 screen entity 10020
 row 0         in plane: r001-#XY
@@ -4159,20 +4186,47 @@ row 12 FROM REQUEST  r002-#YZ
  12-13 64 64 0
  14-21 6c 64 108 2 1 1
  22-99 64 64 0
-row 14 IN GROUP      g001-#references
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 18    origin of r003-#ZX
+ 0-2 64 64 0
+ 3-20 6c 64 108 30001 1 1
+ 21-99 64 64 0
+row 20    centre of r004-circle
+ 0-2 64 61 0
+ 3-23 6c 61 108 40001 1 1
+ 24-99 64 61 0
+row 22    origin of g002-sketch-in-plane
+ 0-2 64 64 0
+ 3-32 6c 64 108 80020002 1 1
+ 33-99 64 64 0
+row 24    centre of g003-extrude
+ 0-2 64 61 0
+ 3-24 6c 61 108 80030002 1 1
+ 25-99 64 61 0
+row 26    point of g003-extrude
+ 0-2 64 64 0
+ 3-23 6c 64 108 8003000d 1 1
+ 24-99 64 64 0
+row 28 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
  14-29 6c 64 108 1 1 0
  30-99 64 64 0
-row 16 NOT LOCKED IN WORKPLANE
+row 30 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 18 CONSTRUCTION
+row 32 CONSTRUCTION
  0-99 74 64 0
-row 21 (unselect all)
+row 35 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 23 
+row 37 
  0-99 64 64 0
 screen entity 20020
 row 0         in plane: r001-#XY
@@ -4313,20 +4367,47 @@ row 12 FROM REQUEST  r003-#ZX
  12-13 64 64 0
  14-21 6c 64 108 3 1 1
  22-99 64 64 0
-row 14 IN GROUP      g001-#references
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 18    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 20    centre of r004-circle
+ 0-2 64 61 0
+ 3-23 6c 61 108 40001 1 1
+ 24-99 64 61 0
+row 22    origin of g002-sketch-in-plane
+ 0-2 64 64 0
+ 3-32 6c 64 108 80020002 1 1
+ 33-99 64 64 0
+row 24    centre of g003-extrude
+ 0-2 64 61 0
+ 3-24 6c 61 108 80030002 1 1
+ 25-99 64 61 0
+row 26    point of g003-extrude
+ 0-2 64 64 0
+ 3-23 6c 64 108 8003000d 1 1
+ 24-99 64 64 0
+row 28 IN GROUP      g001-#references
  0-7 74 64 0
  8-13 64 64 0
  14-29 6c 64 108 1 1 0
  30-99 64 64 0
-row 16 NOT LOCKED IN WORKPLANE
+row 30 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 18 CONSTRUCTION
+row 32 CONSTRUCTION
  0-99 74 64 0
-row 21 (unselect all)
+row 35 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 23 
+row 37 
  0-99 64 64 0
 screen entity 30020
 row 0         in plane: r001-#XY
@@ -4478,27 +4559,54 @@ row 12 FROM REQUEST  r004-circle
  12-13 64 64 0
  14-24 6c 64 108 4 1 1
  25-99 64 64 0
-row 14 IN GROUP      g002-sketch-in-plane
+row 14 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 16    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 18    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 20    origin of r003-#ZX
+ 0-2 64 61 0
+ 3-20 6c 61 108 30001 1 1
+ 21-99 64 61 0
+row 22    origin of g002-sketch-in-plane
+ 0-2 64 64 0
+ 3-32 6c 64 108 80020002 1 1
+ 33-99 64 64 0
+row 24    centre of g003-extrude
+ 0-2 64 61 0
+ 3-24 6c 61 108 80030002 1 1
+ 25-99 64 61 0
+row 26    point of g003-extrude
+ 0-2 64 64 0
+ 3-23 6c 64 108 8003000d 1 1
+ 24-99 64 64 0
+row 28 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 16 IN WORKPLANE  r002-#YZ
+row 30 IN WORKPLANE  r002-#YZ
  0-11 74 64 0
  12-13 64 64 0
  14-21 6c 64 108 2 1 1
  22-99 64 64 0
-row 19 CONSTRAINED BY:
+row 33 CONSTRAINED BY:
  0-14 74 64 0
  15-99 64 64 0
-row 21    c001-pts-coincident
+row 35    c001-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 1 1 1
  22-99 64 61 0
-row 24 (unselect all)
+row 38 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 26 
+row 40 
  0-99 64 64 0
 screen entity 40020
 row 0         in plane: r001-#XY
@@ -4783,20 +4891,47 @@ row 8 POINT at (0.00, 0.00, 0.00)
  27-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g002-sketch-in-plane
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 16    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 18    origin of r003-#ZX
+ 0-2 64 61 0
+ 3-20 6c 61 108 30001 1 1
+ 21-99 64 61 0
+row 20    centre of r004-circle
+ 0-2 64 64 0
+ 3-23 6c 64 108 40001 1 1
+ 24-99 64 64 0
+row 22    centre of g003-extrude
+ 0-2 64 61 0
+ 3-24 6c 61 108 80030002 1 1
+ 25-99 64 61 0
+row 24    point of g003-extrude
+ 0-2 64 64 0
+ 3-23 6c 64 108 8003000d 1 1
+ 24-99 64 64 0
+row 26 IN GROUP      g002-sketch-in-plane
  0-7 74 64 0
  8-13 64 64 0
  14-33 6c 64 108 2 1 0
  34-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 28 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 16 CONSTRUCTION
+row 30 CONSTRUCTION
  0-99 74 64 0
-row 19 (unselect all)
+row 33 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 35 
  0-99 64 64 0
 screen entity 80030001
 row 0         in plane: r001-#XY
@@ -4873,18 +5008,45 @@ row 8 POINT at (0.00, 0.00, 0.00)
  27-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g003-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 16    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 18    origin of r003-#ZX
+ 0-2 64 61 0
+ 3-20 6c 61 108 30001 1 1
+ 21-99 64 61 0
+row 20    centre of r004-circle
+ 0-2 64 64 0
+ 3-23 6c 64 108 40001 1 1
+ 24-99 64 64 0
+row 22    origin of g002-sketch-in-plane
+ 0-2 64 61 0
+ 3-32 6c 61 108 80020002 1 1
+ 33-99 64 61 0
+row 24    point of g003-extrude
+ 0-2 64 64 0
+ 3-23 6c 64 108 8003000d 1 1
+ 24-99 64 64 0
+row 26 IN GROUP      g003-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 3 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 28 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 17 (unselect all)
+row 31 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 19 
+row 33 
  0-99 64 64 0
 screen entity 80030003
 row 0         in plane: r001-#XY
@@ -5046,18 +5208,25 @@ row 8 POINT at (10.00, 0.00, 0.00)
  28-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g003-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    point of g003-extrude
+ 0-2 64 61 0
+ 3-23 6c 61 108 8003000f 1 1
+ 24-99 64 61 0
+row 16 IN GROUP      g003-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 3 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 18 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 17 (unselect all)
+row 21 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 19 
+row 23 
  0-99 64 64 0
 screen entity 80030007
 row 0         in plane: r001-#XY
@@ -5277,20 +5446,47 @@ row 8 POINT at (0.00, 0.00, 0.00)
  27-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g003-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    origin of r001-#XY
+ 0-2 64 61 0
+ 3-20 6c 61 108 10001 1 1
+ 21-99 64 61 0
+row 16    origin of r002-#YZ
+ 0-2 64 64 0
+ 3-20 6c 64 108 20001 1 1
+ 21-99 64 64 0
+row 18    origin of r003-#ZX
+ 0-2 64 61 0
+ 3-20 6c 61 108 30001 1 1
+ 21-99 64 61 0
+row 20    centre of r004-circle
+ 0-2 64 64 0
+ 3-23 6c 64 108 40001 1 1
+ 24-99 64 64 0
+row 22    origin of g002-sketch-in-plane
+ 0-2 64 61 0
+ 3-32 6c 61 108 80020002 1 1
+ 33-99 64 61 0
+row 24    centre of g003-extrude
+ 0-2 64 64 0
+ 3-24 6c 64 108 80030002 1 1
+ 25-99 64 64 0
+row 26 IN GROUP      g003-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 3 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 28 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 16 CONSTRUCTION
+row 30 CONSTRUCTION
  0-99 74 64 0
-row 19 (unselect all)
+row 33 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 35 
  0-99 64 64 0
 screen entity 8003000e
 row 0         in plane: r001-#XY
@@ -5369,20 +5565,27 @@ row 8 POINT at (10.00, 0.00, 0.00)
  28-99 64 64 0
 row 10 
  0-99 64 64 0
-row 12 IN GROUP      g003-extrude
+row 12 ALSO HERE
+ 0-8 74 64 0
+ 9-99 64 64 0
+row 14    centre of g003-extrude
+ 0-2 64 61 0
+ 3-24 6c 61 108 80030006 1 1
+ 25-99 64 61 0
+row 16 IN GROUP      g003-extrude
  0-7 74 64 0
  8-13 64 64 0
  14-25 6c 64 108 3 1 0
  26-99 64 64 0
-row 14 NOT LOCKED IN WORKPLANE
+row 18 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 16 CONSTRUCTION
+row 20 CONSTRUCTION
  0-99 74 64 0
-row 19 (unselect all)
+row 23 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 21 
+row 25 
  0-99 64 64 0
 screen entity 80030010
 row 0         in plane: r001-#XY

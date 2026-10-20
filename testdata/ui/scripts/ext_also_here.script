@@ -1,0 +1,26 @@
+# Two lines drawn as a chain share a corner: a click there picks one of
+# the two points, and ALSO HERE in the property browser selects the other.
+key s
+move 200 150
+down L 200 150
+up L 200 150
+move 400 250
+down L 400 250
+up L 400 250
+move 250 380
+down L 250 380
+up L 250 380
+key esc
+key esc
+move 400 293
+down L 400 293
+up L 400 293
+dump
+tw
+twmove 60 168
+dump
+twdown L 60 168
+twup L 60 168
+dump
+tw
+twleave
