@@ -181,29 +181,29 @@ func (r *Renderer) drawMeshShaded(m *srf.SMesh, frontColor, backColor core.RGBA,
 		glapi.Uniform1f(p.loc["spec"], float32(mat.Specular))
 		glapi.Uniform1f(p.loc["shin"], float32(mat.Shininess))
 		glapi.Uniform1f(p.loc["metal"], float32(mat.Metallic))
-		glapi.Begin(glapi.TRIANGLES)
+		r.selectPrimitive(glapi.TRIANGLES)
 		for _, i := range batches[mat] {
 			tr := &m.Triangles[i]
 			c := frontColor
 			if c.IsEmpty() {
 				c = tr.Meta.RGBA
 			}
-			colorRGBA(c)
+			r.colorRGBA(c)
 			if tr.NA.EqualsExactly(geom.Vector{}) {
-				normal(tr.Normal())
-				vertex(tr.A)
-				vertex(tr.B)
-				vertex(tr.C)
+				r.normal(tr.Normal())
+				r.vertex(tr.A)
+				r.vertex(tr.B)
+				r.vertex(tr.C)
 			} else {
-				normal(tr.NA)
-				vertex(tr.A)
-				normal(tr.NB)
-				vertex(tr.B)
-				normal(tr.NC)
-				vertex(tr.C)
+				r.normal(tr.NA)
+				r.vertex(tr.A)
+				r.normal(tr.NB)
+				r.vertex(tr.B)
+				r.normal(tr.NC)
+				r.vertex(tr.C)
 			}
 		}
-		glapi.End()
+		r.unSelectPrimitive()
 	}
 	return true
 }

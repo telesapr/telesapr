@@ -51,6 +51,12 @@ type persistentLayer struct {
 	valid    bool
 	disabled bool   // for tests: always draw
 	onHit    func() // for tests: told of each restored frame
+	// lastKey is the key of the last frame drawn, saved or not: a
+	// frame is saved only when the one before had the same key, since
+	// while the view moves no frame comes back, and saving one copies
+	// the whole frame and its depth.
+	lastKey   persistentKey
+	lastValid bool
 }
 
 func (gw *graphicsWindow) persistentKeyFor(canvas render.Canvas, lighting render.Lighting) persistentKey {
@@ -102,8 +108,11 @@ func (gw *graphicsWindow) drawPersistentLayer(canvas render.Canvas) {
 	gw.DrawPersistent(canvas)
 
 	if ok {
-		lc.SaveLayer(&gw.persistent.layer)
-		gw.persistent.key = key
-		gw.persistent.valid = true
+		if gw.persistent.lastValid && gw.persistent.lastKey == key {
+			lc.SaveLayer(&gw.persistent.layer)
+			gw.persistent.key = key
+			gw.persistent.valid = true
+		}
+		gw.persistent.lastKey, gw.persistent.lastValid = key, true
 	}
 }
