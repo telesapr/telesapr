@@ -25,6 +25,12 @@ type vertexBatch struct {
 	normal [3]float64
 	color  [4]float64
 	tex    [2]float64
+
+	// enabled says the arrays are enabled in GL, and set holds the
+	// pointers GL has for them (vertices, normals, colours, texture
+	// coordinates).
+	enabled bool
+	set     [4]unsafe.Pointer
 }
 
 // vertex adds a vertex with the current attributes.
@@ -37,25 +43,39 @@ func (b *vertexBatch) vertex(v geom.Vector) {
 
 // flush draws the vertices as primitives of mode, and empties the
 // batch. GL reads client arrays during the call, so the slices are
-// free to grow or be reused after it.
+// free to grow or be reused after it. The arrays stay enabled and
+// their pointers set between runs, since every vertex goes through
+// them: a run then costs one call, plus one per array whose slice
+// moved.
 func (b *vertexBatch) flush(mode uint32) {
 	n := len(b.verts) / 3
 	if n == 0 {
 		return
 	}
-	glapi.EnableClientState(glapi.VERTEX_ARRAY)
-	glapi.EnableClientState(glapi.NORMAL_ARRAY)
-	glapi.EnableClientState(glapi.COLOR_ARRAY)
-	glapi.EnableClientState(glapi.TEXTURE_COORD_ARRAY)
-	glapi.VertexPointer(3, glapi.DOUBLE, 0, unsafe.Pointer(&b.verts[0]))
-	glapi.NormalPointer(glapi.DOUBLE, 0, unsafe.Pointer(&b.norms[0]))
-	glapi.ColorPointer(4, glapi.DOUBLE, 0, unsafe.Pointer(&b.cols[0]))
-	glapi.TexCoordPointer(2, glapi.DOUBLE, 0, unsafe.Pointer(&b.texs[0]))
+	if !b.enabled {
+		glapi.EnableClientState(glapi.VERTEX_ARRAY)
+		glapi.EnableClientState(glapi.NORMAL_ARRAY)
+		glapi.EnableClientState(glapi.COLOR_ARRAY)
+		glapi.EnableClientState(glapi.TEXTURE_COORD_ARRAY)
+		b.enabled = true
+	}
+	if p := unsafe.Pointer(&b.verts[0]); p != b.set[0] {
+		glapi.VertexPointer(3, glapi.DOUBLE, 0, p)
+		b.set[0] = p
+	}
+	if p := unsafe.Pointer(&b.norms[0]); p != b.set[1] {
+		glapi.NormalPointer(glapi.DOUBLE, 0, p)
+		b.set[1] = p
+	}
+	if p := unsafe.Pointer(&b.cols[0]); p != b.set[2] {
+		glapi.ColorPointer(4, glapi.DOUBLE, 0, p)
+		b.set[2] = p
+	}
+	if p := unsafe.Pointer(&b.texs[0]); p != b.set[3] {
+		glapi.TexCoordPointer(2, glapi.DOUBLE, 0, p)
+		b.set[3] = p
+	}
 	glapi.DrawArrays(mode, 0, int32(n))
-	glapi.DisableClientState(glapi.TEXTURE_COORD_ARRAY)
-	glapi.DisableClientState(glapi.COLOR_ARRAY)
-	glapi.DisableClientState(glapi.NORMAL_ARRAY)
-	glapi.DisableClientState(glapi.VERTEX_ARRAY)
 	b.verts, b.norms, b.cols, b.texs = b.verts[:0], b.norms[:0], b.cols[:0], b.texs[:0]
 }
 

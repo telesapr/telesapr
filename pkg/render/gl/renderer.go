@@ -563,7 +563,10 @@ func (r *Renderer) DrawQuad(a, b, c, d geom.Vector, hcf render.HFill) {
 
 // DrawPoint draws a point as a square of the stroke's width.
 func (r *Renderer) DrawPoint(o geom.Vector, hcs render.HStroke) {
-	s := r.selectStroke(hcs)
+	// The stroke is read, not selected: the quad is drawn with its
+	// fill's state, which the fill selects, so that the points of one
+	// stroke are one run.
+	s := r.Stroke(hcs)
 	hcf := r.InternFill(render.Fill{Layer: s.Layer, ZIndex: s.ZIndex, Color: s.Color})
 	rr := r.camera.ProjRight.ScaledBy(s.Width / 2.0 / r.camera.Scale)
 	u := r.camera.ProjUp.ScaledBy(s.Width / 2.0 / r.camera.Scale)
