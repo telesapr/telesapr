@@ -33,9 +33,6 @@ func wrappedBand(a, r, h0, h1 float64) float64 {
 // finer mesh (pkg/srf, wrap_test.go).
 const bandTol = 0.025
 
-// nearRel reports whether got is within rel of want.
-func nearRel(got, want, rel float64) bool { return math.Abs(got-want) <= rel*math.Abs(want) }
-
 func TestWrapEmbossRectangle(t *testing.T) {
 	d := api.New()
 	ex, face := cylinderBody(d, 10, 40)

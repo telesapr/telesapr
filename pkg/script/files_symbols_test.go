@@ -160,6 +160,8 @@ var fileless = map[string]string{
 	"github.com/telesapr/telesapr/pkg/script/api/api Entity.SetText":                   ofDrawing,
 	"github.com/telesapr/telesapr/pkg/script/api/api FeaturesMenu.Chamfer":             groupName,
 	"github.com/telesapr/telesapr/pkg/script/api/api FeaturesMenu.ChamferSolid":        groupName,
+	"github.com/telesapr/telesapr/pkg/script/api/api FeaturesMenu.Emboss":              groupName,
+	"github.com/telesapr/telesapr/pkg/script/api/api FeaturesMenu.Engrave":             groupName,
 	"github.com/telesapr/telesapr/pkg/script/api/api FeaturesMenu.Extrude":             groupName,
 	"github.com/telesapr/telesapr/pkg/script/api/api FeaturesMenu.Fillet":              groupName,
 	"github.com/telesapr/telesapr/pkg/script/api/api FeaturesMenu.FilletSolid":         groupName,
