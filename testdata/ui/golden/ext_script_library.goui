@@ -269,10 +269,10 @@ row 137
 row 139  script library folder
  0-21 74 64 0
  22-99 64 64 0
-row 141    $testdata/ui/scriptlib/lib [change]
- 0-71 64 61 0
- 72-79 6c 61 108 0 1 0
- 80-99 64 61 0
+row 141    ../../testdata/ui/scriptlib/lib [change]
+ 0-34 64 61 0
+ 35-42 6c 61 108 0 1 0
+ 43-99 64 61 0
 row 143 
  0-99 64 64 0
 row 145  autosave interval (in minutes)
