@@ -791,37 +791,46 @@ row 131     ask before an AI program's script runs
  43-99 64 64 0
 row 133 
  0-99 64 64 0
-row 135  autosave interval (in minutes)
+row 135  script library folder
+ 0-21 74 64 0
+ 22-99 64 64 0
+row 137    telesapr/library in the configuration folder [change]
+ 0-47 64 61 0
+ 48-55 6c 61 108 0 1 0
+ 56-99 64 61 0
+row 139 
+ 0-99 64 64 0
+row 141  autosave interval (in minutes)
  0-30 74 64 0
  31-99 64 64 0
-row 137    5 [change]
+row 143    5 [change]
  0-4 64 61 0
  5-12 6c 61 108 0 1 0
  13-99 64 61 0
-row 139 
+row 145 
  0-99 64 64 0
-row 141  redundant constraint timeout (in ms)
+row 147  redundant constraint timeout (in ms)
  0-36 74 64 0
  37-99 64 64 0
-row 143    1000 [change]
+row 149    1000 [change]
  0-7 64 61 0
  8-15 6c 61 108 0 1 0
  16-99 64 61 0
-row 145 
+row 151 
  0-99 64 64 0
-row 147  animation speed (in ms; 0 to disable)
+row 153  animation speed (in ms; 0 to disable)
  0-37 74 64 0
  38-99 64 64 0
-row 149    800 [change]
+row 155    800 [change]
  0-6 64 61 0
  7-14 6c 61 108 0 1 0
  15-99 64 61 0
-row 151 
+row 157 
  0-99 64 64 0
-row 153 (renderer)
-row 155 (renderer)
-row 157 (renderer)
-row 159 
+row 159 (renderer)
+row 161 (renderer)
+row 163 (renderer)
+row 165 
  0-99 64 64 0
 screen styles
 row 0  home › line styles   in plane: r001-#XY
