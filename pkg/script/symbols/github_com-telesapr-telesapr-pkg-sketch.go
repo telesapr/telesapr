@@ -53,6 +53,7 @@ func init() {
 		"ErrNotTextRequest":            reflect.ValueOf(&sketch.ErrNotTextRequest).Elem(),
 		"ErrSplinePointsFull":          reflect.ValueOf(&sketch.ErrSplinePointsFull).Elem(),
 		"ExportMeshAs3mfTo":            reflect.ValueOf(sketch.ExportMeshAs3mfTo),
+		"ExportMeshAsGlbTo":            reflect.ValueOf(sketch.ExportMeshAsGlbTo),
 		"ExportMeshAsStlTo":            reflect.ValueOf(sketch.ExportMeshAsStlTo),
 		"FreedomFixed":                 reflect.ValueOf(sketch.FreedomFixed),
 		"FreedomFree":                  reflect.ValueOf(sketch.FreedomFree),

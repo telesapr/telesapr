@@ -34,4 +34,19 @@ formdialog Export Triangle Mesh|&Export...|Cancel
   entry segments "Max linear segments" 256 [] ""
   check strict "Refuse a mesh that isn't watertight or crosses itself" 1 [] ""
 filedialog save
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 3 0
+camera 5 0 0 0 1 0 0 0 1 0
+counts 3 7 67 8 40
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""
+formdialog Export Triangle Mesh|&Export...|Cancel
+  choice quality "Quality" 3 ["Draft" "Standard" "Fine" "Custom"] ""
+  entry chord "Chord tolerance" 0.02 [] "mm"
+  entry angle "Angular tolerance" 15 [] "degrees, 0 for none"
+  entry segments "Max linear segments" 256 [] ""
+  check strict "Refuse a mesh that isn't watertight or crosses itself" 1 [] ""
+filedialog save
 filedialog unanswered

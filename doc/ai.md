@@ -49,18 +49,26 @@ TeleSAPR may be closed and opened again in the middle of a conversation.
 
 ## What the model can do
 
-The model gets four tools.
+The model gets eight tools.
 
 | Tool | What it does |
 |---|---|
 | `run_script` | Runs Go on the drawing, as the script console does. It returns what the script printed, the value of its last expression, and how the drawing solved afterwards. |
 | `get_drawing` | Describes the drawing in words: groups, requests with their positions, constraints, parameters, what you have selected, and what your mouse is over, so that "this" can be pointed at. |
-| `render` | Returns a picture of the drawing from a named view, fitted, or as your window shows it (`window`), so the model can check its work; with a group, as the drawing is up to that group. |
+| `render` | Returns a picture of the drawing from a named view, fitted, or as your window shows it (`window`), so the model can check its work; with a group, as the drawing is up to that group; with a section, cut open by a plane parallel to the XY, YZ or ZX workplane to show the inside, leaving your own section view as it was. |
 | `api_help` | Returns the documentation of the scripting interface: a primer, or one menu, type or method, or what a script calls in place of an entry of the window's menu ("Features > Fillet Edges"). |
+| `measure` | Reports the solid as Analyze > Check Solid does: volume, surface area, centre of mass, bounding box, and whether it is sound; or measures what you have selected, as Analyze > Measure does. |
+| `export` | Writes the drawing to a file in the format its extension names (`.stl`, `.3mf`, `.glb`, `.step`, `.svg`, `.png`, ...) and says where. |
+| `open` | Opens a `.tlspr` drawing in place of the one on screen, and describes it. It never replaces a drawing with changes that aren't saved. |
+| `list_files` | Lists a directory, so the model can find the drawing you name or where to export. |
+
+`measure`, `render` and `list_files` only read. `export` and `open` are shown in the console as
+the script that would do the same, and with the confirmation setting on, you are asked before
+each, as for a script.
 
 A script can do whatever a script you type in the console can, which includes reading and
-writing files with your permissions. The model is told not to save, export or load unless you
-ask for it. Turn on the confirmation setting if you want to read every script first.
+writing files with your permissions. The model is told not to save, export or open files unless
+you ask for it. Turn on the confirmation setting if you want to read every script first.
 
 Only programs running as you can connect. The application listens on a socket file in a
 directory that is yours alone: `$XDG_RUNTIME_DIR/telesapr` on Linux, `$TMPDIR/telesapr`

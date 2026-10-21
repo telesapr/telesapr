@@ -5155,7 +5155,7 @@
 					},
 					"ExportOptions": {
 						"decl": "func (m FileMenu) ExportOptions() (o ExportOptions)",
-						"text": "ExportOptions are the settings that change what an export writes, as\nthe configuration screen shows them; see ExportOptions. In a script\nrun without the application only the mesh export (STL, 3MF) reads\nthem, and then only ChordTol, MaxSegments and Scale."
+						"text": "ExportOptions are the settings that change what an export writes, as\nthe configuration screen shows them; see ExportOptions. In a script\nrun without the application only the mesh export (STL, 3MF, glTF) reads\nthem, and then only ChordTol, MaxSegments and Scale."
 					},
 					"ExportSection": {
 						"decl": "func (m FileMenu) ExportSection(path string) error",
@@ -5897,7 +5897,7 @@
 					},
 					"Export": {
 						"decl": "func (h *SketchHost) Export(kind ExportKind, path string) error",
-						"text": "Export writes the mesh as STL; the other formats need the\napplication around the sketch."
+						"text": "Export writes the mesh as STL, 3MF or glTF; the other formats need\nthe application around the sketch."
 					},
 					"ExportDrawing": {
 						"decl": "func (h *SketchHost) ExportDrawing(path string, _ *sketch.Drawing) error",
@@ -8420,6 +8420,10 @@
 			"ExportMeshAs3mfTo": {
 				"decl": "func ExportMeshAs3mfTo(w io.Writer, m *srf.SMesh) error",
 				"text": "ExportMeshAs3mfTo writes m as a 3MF file."
+			},
+			"ExportMeshAsGlbTo": {
+				"decl": "func ExportMeshAsGlbTo(w io.Writer, m *srf.SMesh) error",
+				"text": "ExportMeshAsGlbTo writes the mesh as binary glTF (.glb): one primitive and one material per colour, in the order the colours first appear, lengths in metres as glTF asks."
 			},
 			"ExportMeshAsStlTo": {
 				"decl": "func ExportMeshAsStlTo(w io.Writer, m *srf.SMesh, scale float64) error",

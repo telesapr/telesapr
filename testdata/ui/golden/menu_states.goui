@@ -13,7 +13,7 @@ dialog 0 No workplane is active, so the grid will not appear.|
     2d &View (.pdf, .eps, .svg, .dxf, .plt, .ngc)... ind=0 en=1 act=0
     2d &Section (.pdf, .eps, .svg, .dxf, .plt, .ngc)... ind=0 en=1 act=0
     3d &Wireframe (.step, .dxf)... ind=0 en=1 act=0
-    Triangle &Mesh (.stl, .3mf, .obj, .html, .js, .wrl)... ind=0 en=1 act=0
+    Triangle &Mesh (.stl, .3mf, .glb, .obj, .html, .js, .wrl)... ind=0 en=1 act=0
     Sur&faces (.step)... ind=0 en=1 act=0
     &Drawing (.pdf, .eps, .svg, .dxf, .plt, .ngc)... ind=0 en=1 act=0
   ---
@@ -226,7 +226,7 @@ dialog 0 No workplane selected.|Activating default workplane for this group.
     2d &View (.pdf, .eps, .svg, .dxf, .plt, .ngc)... ind=0 en=1 act=0
     2d &Section (.pdf, .eps, .svg, .dxf, .plt, .ngc)... ind=0 en=1 act=0
     3d &Wireframe (.step, .dxf)... ind=0 en=1 act=0
-    Triangle &Mesh (.stl, .3mf, .obj, .html, .js, .wrl)... ind=0 en=1 act=0
+    Triangle &Mesh (.stl, .3mf, .glb, .obj, .html, .js, .wrl)... ind=0 en=1 act=0
     Sur&faces (.step)... ind=0 en=1 act=0
     &Drawing (.pdf, .eps, .svg, .dxf, .plt, .ngc)... ind=0 en=1 act=0
   ---

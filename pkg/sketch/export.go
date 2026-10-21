@@ -16,8 +16,9 @@ import (
 
 // This file ports the triangle mesh export of solvespace/src/export.cpp:
 // ExportMeshTo and ExportMeshAsStlTo, with the naked edge report of
-// SolveSpaceUI::ShowNakedEdges. The other mesh formats (OBJ, three.js,
-// VRML) aren't ported.
+// SolveSpaceUI::ShowNakedEdges. 3MF and glTF are written here too; the
+// other mesh formats (OBJ, three.js, VRML) are written by pkg/export,
+// for the window only.
 
 // ExportSettings are the user's export settings.
 type ExportSettings struct {
@@ -101,12 +102,14 @@ func (sk *Sketch) ExportMeshTo(filename string, es ExportSettings) error {
 		write = func(w io.Writer) error { return ExportMeshAsStlTo(w, m, es.Scale) }
 	case hasExtension(filename, "3mf"):
 		write = func(w io.Writer) error { return ExportMeshAs3mfTo(w, m) }
+	case hasExtension(filename, "glb"):
+		write = func(w io.Writer) error { return ExportMeshAsGlbTo(w, m) }
 	case hasExtension(filename, "obj"), hasExtension(filename, "js"),
 		hasExtension(filename, "html"), hasExtension(filename, "wrl"):
-		return fmt.Errorf("exporting a mesh to '%s' isn't supported; try .stl or .3mf", filename)
+		return fmt.Errorf("exporting a mesh to '%s' isn't supported; try .stl, .3mf or .glb", filename)
 	default:
 		return fmt.Errorf("can't identify output file type from file extension of "+
-			"filename '%s'; try .stl, .3mf, .obj, .js, .html", filename)
+			"filename '%s'; try .stl, .3mf, .glb, .obj, .js, .html", filename)
 	}
 
 	if es.Strict {

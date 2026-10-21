@@ -86,11 +86,37 @@ func TestRemoteSession(t *testing.T) {
 	if _, err = r.Describe(ctx, "nothing"); err == nil || !strings.Contains(err.Error(), `no group is called "nothing"`) {
 		t.Errorf("describing a group that isn't there: %v", err)
 	}
-	if _, err = r.Render(ctx, "top", "", 40, 30); err == nil || !strings.Contains(err.Error(), "not available") {
+	if _, err = r.Render(ctx, Picture{View: "top", Width: 40, Height: 30}); err == nil || !strings.Contains(err.Error(), "not available") {
 		t.Errorf("a picture of a sketch without the application: %v", err)
 	}
 	if text, err = r.Help(ctx, "Group.Dof"); err != nil || !strings.Contains(text, "func (g Group) Dof() (dof int)") {
 		t.Errorf("help of Group.Dof is %q, %v", text, err)
+	}
+
+	// Measuring, exporting, opening and listing go through as well.
+	if res, err = r.Run(ctx, "doc.Features.Extrude(2, \"disc\")"); err != nil || res.Error != "" {
+		t.Fatalf("the extrusion gave %+v, %v", res, err)
+	}
+	if text, err = r.Measure(ctx, "", false); err != nil || !strings.Contains(text, "the model up to g003-disc") {
+		t.Errorf("the disc measures as %q, %v", text, err)
+	}
+	if _, err = r.Measure(ctx, "", true); err == nil || !strings.Contains(err.Error(), "nothing is selected") {
+		t.Errorf("measuring no selection: %v", err)
+	}
+	files := t.TempDir()
+	stl := filepath.Join(files, "disc.stl")
+	if text, err = r.Export(ctx, stl); err != nil || !strings.HasPrefix(text, "wrote "+stl) {
+		t.Errorf("the export says %q, %v", text, err)
+	}
+	if _, err = r.Open(ctx, filepath.Join(files, "none.tlspr")); err == nil || err.Error() != ErrUnsaved.Error() {
+		t.Errorf("opening over unsaved changes: %v", err)
+	}
+	l, err := r.Files(ctx, files)
+	if err != nil || l.Dir != files || len(l.Entries) != 1 || l.Entries[0].Name != "disc.stl" || l.Entries[0].Size == 0 {
+		t.Errorf("the directory is listed as %+v, %v", l, err)
+	}
+	if _, err = r.Files(ctx, filepath.Join(files, "none")); err == nil {
+		t.Errorf("listing a directory that isn't there is no error")
 	}
 	if _, err = r.Run(ctx, ""); err == nil {
 		t.Errorf("running nothing is no error")

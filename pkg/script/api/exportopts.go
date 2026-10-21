@@ -158,7 +158,7 @@ func thawExportOptions(s core.Settings) ExportOptions {
 
 // ExportOptions are the settings that change what an export writes, as
 // the configuration screen shows them; see ExportOptions. In a script
-// run without the application only the mesh export (STL, 3MF) reads
+// run without the application only the mesh export (STL, 3MF, glTF) reads
 // them, and then only ChordTol, MaxSegments and Scale.
 func (m FileMenu) ExportOptions() (o ExportOptions) {
 	d := m.d

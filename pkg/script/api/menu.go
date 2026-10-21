@@ -21,12 +21,12 @@ var MenuCalls = map[string]string{
 	// package rather than of the document, which it opens.
 	"File/Import...":              "File.ImportDXF",
 	"File/Export/Image (.png)...": "File.Render",
-	"File/Export/2d View (.pdf, .eps, .svg, .dxf, .plt, .ngc)...":       "File.Export File.ExportAs",
-	"File/Export/2d Section (.pdf, .eps, .svg, .dxf, .plt, .ngc)...":    "File.ExportSection File.ExportAs",
-	"File/Export/3d Wireframe (.step, .dxf)...":                         "File.Export File.ExportAs",
-	"File/Export/Triangle Mesh (.stl, .3mf, .obj, .html, .js, .wrl)...": "File.Export File.ExportAs File.SetMeshQuality",
-	"File/Export/Surfaces (.step)...":                                   "File.Export File.ExportAs",
-	"File/Export/Drawing (.pdf, .eps, .svg, .dxf, .plt, .ngc)...":       "Drawing.Export",
+	"File/Export/2d View (.pdf, .eps, .svg, .dxf, .plt, .ngc)...":             "File.Export File.ExportAs",
+	"File/Export/2d Section (.pdf, .eps, .svg, .dxf, .plt, .ngc)...":          "File.ExportSection File.ExportAs",
+	"File/Export/3d Wireframe (.step, .dxf)...":                               "File.Export File.ExportAs",
+	"File/Export/Triangle Mesh (.stl, .3mf, .glb, .obj, .html, .js, .wrl)...": "File.Export File.ExportAs File.SetMeshQuality",
+	"File/Export/Surfaces (.step)...":                                         "File.Export File.ExportAs",
+	"File/Export/Drawing (.pdf, .eps, .svg, .dxf, .plt, .ngc)...":             "Drawing.Export",
 	"File/Exit": "- the window's",
 
 	"Edit/Undo":                   "Edit.Undo",

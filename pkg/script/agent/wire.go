@@ -20,8 +20,9 @@ import (
 // cancelled.
 
 // Protocol is the version of what goes over the connection; both
-// sides must have the same.
-const Protocol = 1
+// sides must have the same. Version 2 added measure, export, open and
+// files, and the section of a picture.
+const Protocol = 2
 
 // The operations of a request.
 const (
@@ -30,6 +31,10 @@ const (
 	opDescribe = "describe"
 	opRender   = "render"
 	opHelp     = "help"
+	opMeasure  = "measure"
+	opExport   = "export"
+	opOpen     = "open"
+	opFiles    = "files"
 	opCancel   = "cancel"
 )
 
@@ -40,12 +45,16 @@ type request struct {
 	Protocol int `json:"protocol,omitempty"`
 	// Code is what run runs.
 	Code string `json:"code,omitempty"`
-	// Group is what describe describes, the whole drawing for "".
+	// Group is what describe describes, the whole drawing for "", and
+	// the group measure measures up to.
 	Group string `json:"group,omitempty"`
-	// View, Width and Height are the picture render makes.
-	View   string `json:"view,omitempty"`
-	Width  int    `json:"width,omitempty"`
-	Height int    `json:"height,omitempty"`
+	// Picture is what render draws.
+	Picture *Picture `json:"picture,omitempty"`
+	// Selected has measure measure the selection.
+	Selected bool `json:"selected,omitempty"`
+	// Path is the file export writes and open reads, or the directory
+	// files lists.
+	Path string `json:"path,omitempty"`
 	// Name is what help is asked about.
 	Name string `json:"name,omitempty"`
 	// Target is the id of the request cancel stops.
@@ -58,10 +67,12 @@ type response struct {
 	Error string `json:"error,omitempty"`
 	// Protocol answers a hello.
 	Protocol int `json:"protocol,omitempty"`
-	// Result answers run, Text describe and help, PNG render.
-	Result *Result `json:"result,omitempty"`
-	Text   string  `json:"text,omitempty"`
-	PNG    []byte  `json:"png,omitempty"`
+	// Result answers run; Text describe, help, measure, export and
+	// open; PNG render; Listing files.
+	Result  *Result  `json:"result,omitempty"`
+	Text    string   `json:"text,omitempty"`
+	PNG     []byte   `json:"png,omitempty"`
+	Listing *Listing `json:"listing,omitempty"`
 }
 
 // maxLine is the longest line either side reads: a picture of
@@ -139,9 +150,24 @@ func answer(ctx context.Context, b Backend, req request) response {
 	case opDescribe:
 		res.Text, err = b.Describe(ctx, req.Group)
 	case opRender:
-		res.PNG, err = b.Render(ctx, req.View, req.Group, req.Width, req.Height)
+		var p Picture
+		if req.Picture != nil {
+			p = *req.Picture
+		}
+		res.PNG, err = b.Render(ctx, p)
 	case opHelp:
 		res.Text, err = b.Help(ctx, req.Name)
+	case opMeasure:
+		res.Text, err = b.Measure(ctx, req.Group, req.Selected)
+	case opExport:
+		res.Text, err = b.Export(ctx, req.Path)
+	case opOpen:
+		res.Text, err = b.Open(ctx, req.Path)
+	case opFiles:
+		var l Listing
+		if l, err = b.Files(ctx, req.Path); err == nil {
+			res.Listing = &l
+		}
 	default:
 		err = fmt.Errorf("no operation %q", req.Op)
 	}
@@ -352,9 +378,37 @@ func (r *Remote) Describe(ctx context.Context, group string) (string, error) {
 	return res.Text, err
 }
 
-func (r *Remote) Render(ctx context.Context, view, group string, width, height int) ([]byte, error) {
-	res, err := r.call(ctx, request{Op: opRender, View: view, Group: group, Width: width, Height: height})
+func (r *Remote) Render(ctx context.Context, p Picture) ([]byte, error) {
+	res, err := r.call(ctx, request{Op: opRender, Picture: &p})
 	return res.PNG, err
+}
+
+func (r *Remote) Measure(ctx context.Context, group string, selected bool) (string, error) {
+	res, err := r.call(ctx, request{Op: opMeasure, Group: group, Selected: selected})
+	return res.Text, err
+}
+
+func (r *Remote) Export(ctx context.Context, path string) (string, error) {
+	res, err := r.call(ctx, request{Op: opExport, Path: path})
+	return res.Text, err
+}
+
+func (r *Remote) Open(ctx context.Context, path string) (string, error) {
+	res, err := r.call(ctx, request{Op: opOpen, Path: path})
+	return res.Text, err
+}
+
+// Files is listed by the program with the drawing, so that a relative
+// directory is taken from where Export and Open take a relative path.
+func (r *Remote) Files(ctx context.Context, dir string) (Listing, error) {
+	res, err := r.call(ctx, request{Op: opFiles, Path: dir})
+	if err != nil {
+		return Listing{}, err
+	}
+	if res.Listing == nil {
+		return Listing{}, errors.New("TeleSAPR answered a listing with none")
+	}
+	return *res.Listing, nil
 }
 
 // Help needs no drawing, so it is answered here: it works before the

@@ -1,8 +1,9 @@
 // Package agent is what a program that draws by writing scripts needs
 // of TeleSAPR, such as an AI model behind an MCP client: it runs a
 // script and says what came of it, describes the drawing in words,
-// renders a picture of it, and gives the scripting interface's help. A
-// Backend does those four things; a Session does them on a script
+// renders a picture of it, measures it, exports and opens files, lists
+// a directory, and gives the scripting interface's help. A Backend
+// does those things; a Session does them on a script
 // engine, Serve and Dial pass them through a socket to the program
 // that has the drawing, and package mcpserver offers them as MCP
 // tools.
@@ -73,16 +74,49 @@ type Backend interface {
 	// Describe is the drawing in words (api.Doc.Describe), or the
 	// group called group if that isn't "" (api.Group.Describe).
 	Describe(ctx context.Context, group string) (string, error)
-	// Render is a PNG picture of the drawing, width by height pixels,
-	// seen as view names: "top", "bottom", "left", "right", "front",
-	// "back", "isometric", or "window" for the view the window shows.
-	// A zero size, or "" for the view, is the default: 800 by 600,
-	// isometric. With group not "", the drawing is drawn as it is up to
-	// that group, as if it were active.
-	Render(ctx context.Context, view, group string, width, height int) ([]byte, error)
+	// Render is a PNG picture of the drawing, as p asks for it.
+	Render(ctx context.Context, p Picture) ([]byte, error)
+	// Measure is the solid of the model up to group (the active group
+	// for "") as Analyze > Check Solid reports it; with selected, it is
+	// instead what the user has selected, measured as Analyze > Measure
+	// does.
+	Measure(ctx context.Context, group string, selected bool) (string, error)
+	// Export writes the drawing to path, in the format its extension
+	// names (api.FileMenu.Export), and says what it wrote. A relative
+	// path is taken from the directory the program with the drawing
+	// works in.
+	Export(ctx context.Context, path string) (string, error)
+	// Open replaces the drawing by the file at path (api.FileMenu.Load),
+	// and describes the drawing it opened; a drawing with changes that
+	// aren't saved is not replaced (ErrUnsaved).
+	Open(ctx context.Context, path string) (string, error)
+	// Files lists the directory dir, the working directory for "".
+	Files(ctx context.Context, dir string) (Listing, error)
 	// Help is what the scripting interface's help says of name, as
 	// "Features.Extrude", "Group" or "Features > Extrude"; of "", the Primer.
 	Help(ctx context.Context, name string) (string, error)
+}
+
+// Picture is what Render draws. A zero size, or "" for the view, is
+// the default: 800 by 600, isometric.
+type Picture struct {
+	// View is "top", "bottom", "left", "right", "front", "back",
+	// "isometric", or "window" for the view the window shows.
+	View string `json:"view,omitempty"`
+	// Group, if not "", has the drawing drawn as it is up to that group,
+	// as if it were active.
+	Group  string `json:"group,omitempty"`
+	Width  int    `json:"width,omitempty"`
+	Height int    `json:"height,omitempty"`
+	// Section, if not "", draws the solid cut by a plane parallel to
+	// the reference workplane it names, "XY", "YZ" or "ZX", as View >
+	// Section View does, for this picture only. SectionOffset is the
+	// plane's distance from the workplane along its normal, a number or
+	// an expression in the document's unit; SectionFlip keeps the side
+	// the normal points to instead of the other.
+	Section       string `json:"section,omitempty"`
+	SectionOffset string `json:"sectionOffset,omitempty"`
+	SectionFlip   bool   `json:"sectionFlip,omitempty"`
 }
 
 // The picture Render makes when it isn't told.
@@ -276,13 +310,19 @@ func (s *Session) Describe(_ context.Context, group string) (text string, err er
 			text = doc.Describe()
 			return
 		}
-		g := doc.Group(group)
-		if !g.Valid() {
-			panic(fmt.Errorf("no group is called %q; the groups are %v", group, groupNames(doc)))
-		}
-		text = g.Describe()
+		text = groupNamed(doc, group).Describe()
 	})
 	return text, err
+}
+
+// groupNamed is the group called name, or a panic with an error that
+// lists the groups there are.
+func groupNamed(doc *api.Doc, name string) api.Group {
+	g := doc.Group(name)
+	if !g.Valid() {
+		panic(fmt.Errorf("no group is called %q; the groups are %v", name, groupNames(doc)))
+	}
+	return g
 }
 
 // groupNames are the groups as Doc.Group takes them.
@@ -295,17 +335,17 @@ func groupNames(doc *api.Doc) []string {
 }
 
 // Render is a picture of the drawing.
-func (s *Session) Render(_ context.Context, view, group string, width, height int) (png []byte, err error) {
+func (s *Session) Render(_ context.Context, p Picture) (png []byte, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if view == "" {
-		view = DefaultView
+	if p.View == "" {
+		p.View = DefaultView
 	}
-	if width == 0 && height == 0 {
-		width, height = DefaultWidth, DefaultHeight
+	if p.Width == 0 && p.Height == 0 {
+		p.Width, p.Height = DefaultWidth, DefaultHeight
 	}
-	if width < 1 || height < 1 || width > MaxSide || height > MaxSide {
-		return nil, fmt.Errorf("a picture of %d by %d pixels; each side is from 1 to %d", width, height, MaxSide)
+	if p.Width < 1 || p.Height < 1 || p.Width > MaxSide || p.Height > MaxSide {
+		return nil, fmt.Errorf("a picture of %d by %d pixels; each side is from 1 to %d", p.Width, p.Height, MaxSide)
 	}
 	dir, err := os.MkdirTemp("", "telesapr-render")
 	if err != nil {
@@ -316,17 +356,26 @@ func (s *Session) Render(_ context.Context, view, group string, width, height in
 	var rerr error
 	if err := try(func() {
 		doc := s.engine.Doc()
-		if group != "" {
-			g := doc.Group(group)
-			if !g.Valid() {
-				panic(fmt.Errorf("no group is called %q; the groups are %v", group, groupNames(doc)))
-			}
+		if p.Group != "" {
+			g := groupNamed(doc, p.Group)
 			// Drawn as if active, and the active group put back.
 			was := doc.Active()
 			doc.Activate(g)
 			defer doc.Activate(was)
 		}
-		rerr = doc.File.Render(file, width, height, view)
+		if p.Section != "" {
+			// The user's own section view, if any, comes back after.
+			was := doc.View.Section()
+			doc.View.SetSection(doc.Workplane(p.Section), p.SectionOffset, p.SectionFlip)
+			defer func() {
+				if was.On {
+					doc.View.SetSection(was.Plane, was.Offset, was.Flip)
+				} else {
+					doc.View.ClearSection()
+				}
+			}()
+		}
+		rerr = doc.File.Render(file, p.Width, p.Height, p.View)
 	}); err != nil {
 		return nil, err
 	}

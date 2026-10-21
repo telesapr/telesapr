@@ -52,7 +52,7 @@ tw 0 unsaved 1 cursor 0 tooltip ""
     2d &View (.pdf, .eps, .svg, .dxf, .plt, .ngc)... ind=0 en=1 act=0
     2d &Section (.pdf, .eps, .svg, .dxf, .plt, .ngc)... ind=0 en=1 act=0
     3d &Wireframe (.step, .dxf)... ind=0 en=1 act=0
-    Triangle &Mesh (.stl, .3mf, .obj, .html, .js, .wrl)... ind=0 en=1 act=0
+    Triangle &Mesh (.stl, .3mf, .glb, .obj, .html, .js, .wrl)... ind=0 en=1 act=0
     Sur&faces (.step)... ind=0 en=1 act=0
     &Drawing (.pdf, .eps, .svg, .dxf, .plt, .ngc)... ind=0 en=1 act=0
   ---

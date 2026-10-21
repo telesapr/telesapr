@@ -707,6 +707,8 @@ func (ss *Application) ExportMeshTo(filename string) error {
 		}
 	case hasExtension(filename, "3mf"):
 		_ = sketch.ExportMeshAs3mfTo(&out, m)
+	case hasExtension(filename, "glb"):
+		_ = sketch.ExportMeshAsGlbTo(&out, m)
 	case hasExtension(filename, "obj"):
 		mtlFilename := withExtension(filename, "mtl")
 		fMtl, err := os.Create(mtlFilename)
@@ -732,7 +734,7 @@ func (ss *Application) ExportMeshTo(filename string) error {
 	default:
 		_ = f.Close()
 		return fmt.Errorf("can't identify output file type from file extension of "+
-			"filename '%s'; try .stl, .3mf, .obj, .js, .html", filename)
+			"filename '%s'; try .stl, .3mf, .glb, .obj, .js, .html", filename)
 	}
 
 	_, werr := f.Write(out.Bytes())

@@ -363,10 +363,10 @@ func (h *SketchHost) Save(path string) error {
 	return nil
 }
 
-// Export writes the mesh as STL; the other formats need the
-// application around the sketch.
+// Export writes the mesh as STL, 3MF or glTF; the other formats need
+// the application around the sketch.
 func (h *SketchHost) Export(kind ExportKind, path string) error {
-	if ext := filepath.Ext(path); kind != ExportMesh || !strings.EqualFold(ext, ".stl") && !strings.EqualFold(ext, ".3mf") {
+	if ext := filepath.Ext(path); kind != ExportMesh || !slices.ContainsFunc([]string{".stl", ".3mf", ".glb"}, func(e string) bool { return strings.EqualFold(ext, e) }) {
 		return fmt.Errorf("export of %s: %w", filepath.Base(path), errUnsupported)
 	}
 	o := h.ExportOptions()
