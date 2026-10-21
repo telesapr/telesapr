@@ -27,6 +27,7 @@ var (
 	MeshFileFilters = []FileFilter{
 		{"STL mesh", []string{"stl"}},
 		{"3MF mesh, with colours", []string{"3mf"}},
+		{"glTF binary mesh, with colours", []string{"glb"}},
 		{"Wavefront OBJ mesh", []string{"obj"}},
 		{"Three.js-compatible mesh, with viewer", []string{"html"}},
 		{"Three.js-compatible mesh, mesh only", []string{"js"}},

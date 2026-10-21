@@ -129,7 +129,7 @@ func exportAllFor(t testing.TB, path, dir string) {
 		t.Fatal(err)
 	}
 	ss.ExportOffset = 0
-	for _, ext := range []string{"stl", "obj", "js", "wrl"} {
+	for _, ext := range []string{"stl", "glb", "obj", "js", "wrl"} {
 		tolerate(ss.ExportMeshTo(filepath.Join(dir, "mesh."+ext)))
 	}
 	tolerate(ss.ExportSurfacesTo(filepath.Join(dir, "surfaces.step")))

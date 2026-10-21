@@ -25,7 +25,7 @@ It is built and tested on Linux. See [`ROADMAP.md`](ROADMAP.md) for where it is 
   measuring without a constraint, and a search over every command.
 - **Section view**, an OpenGL renderer, and **Check Solid**, which says whether a solid is sound.
 - **STEP files** linked as reference meshes, and STEP export with one surface per face; 3MF
-  export of the mesh with its colours. STL export has quality presets (draft, standard, fine)
+  and glTF (`.glb`, for Blender and web viewers) export of the mesh with its colours. STL export has quality presets (draft, standard, fine)
   and an angular tolerance, also as `telesapr-cli export-mesh --quality`.
 - **Scripting in Go**, and **drawing with an AI model** through MCP.
 

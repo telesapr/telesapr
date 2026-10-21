@@ -66,7 +66,7 @@ Assembly > Motion Study drives one parameter through a range: its screen takes t
 values to go from and to, and the number of steps. `[run]` regenerates the model at each step,
 and lists the value, whether every group solved, and the volume of the solid. `[run, saving each
 step...]` asks for a file and saves a frame of each step beside it, numbered: a picture of the
-view the window shows for `.png`, which makes an animation, or a mesh for `.stl` and `.3mf`.
+view the window shows for `.png`, which makes an animation, or a mesh for `.stl`, `.3mf` and `.glb`.
 The parameter gets its expression back afterwards.
 
 ```go

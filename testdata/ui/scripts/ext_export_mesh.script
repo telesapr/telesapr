@@ -3,7 +3,9 @@
 # writes nothing. The second takes the fine preset (which fills in its
 # tolerances), sets the angular tolerance to 15 degrees, which makes the
 # quality custom, turns the strict check on, and accepts; the file
-# dialog then takes the path.
+# dialog then takes the path. A third export, with the same options,
+# writes binary glTF, picked by the extension; the last leaves the file
+# dialog unanswered.
 key r
 move 200 200
 down L 200 200
@@ -14,11 +16,15 @@ up L 380 330
 key esc
 key x shift
 form cancel quality=2
-menu File|Export|Triangle Mesh (.stl, .3mf, .obj, .html, .js, .wrl)...
+menu File|Export|Triangle Mesh (.stl, .3mf, .glb, .obj, .html, .js, .wrl)...
 dump
 form quality=2 angle=15 strict=1
 file $tmp/mesh.stl
-menu File|Export|Triangle Mesh (.stl, .3mf, .obj, .html, .js, .wrl)...
+menu File|Export|Triangle Mesh (.stl, .3mf, .glb, .obj, .html, .js, .wrl)...
 dump
 form
-menu File|Export|Triangle Mesh (.stl, .3mf, .obj, .html, .js, .wrl)...
+file $tmp/mesh.glb
+menu File|Export|Triangle Mesh (.stl, .3mf, .glb, .obj, .html, .js, .wrl)...
+dump
+form
+menu File|Export|Triangle Mesh (.stl, .3mf, .glb, .obj, .html, .js, .wrl)...
