@@ -341,6 +341,11 @@ func (e *Engine) Doc() *api.Doc { return e.doc }
 // (api.Doc.Host), the program that runs the engine may.
 func (e *Engine) Host() api.Host { return e.opts.Host }
 
+// Files is the guard on the files scripts may use, or nil when they may
+// use any: what the program does for them outside a script, as listing a
+// folder, keeps to it too.
+func (e *Engine) Files() *Files { return e.opts.Files }
+
 // Running reports whether a script is running.
 func (e *Engine) Running() bool {
 	e.mu.Lock()

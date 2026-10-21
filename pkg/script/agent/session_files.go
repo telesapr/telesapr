@@ -117,8 +117,17 @@ func (s *Session) Open(_ context.Context, path string) (text string, err error) 
 	return text, err
 }
 
-// Files lists a directory.
+// Files lists a directory, one the session's scripts may read when
+// their files are guarded.
 func (s *Session) Files(_ context.Context, dir string) (Listing, error) {
+	if guard := s.engine.Files(); guard != nil {
+		if dir == "" {
+			dir = "."
+		}
+		if err := guard.Check(dir, false); err != nil {
+			return Listing{}, fmt.Errorf("listing %s: %w", dir, err)
+		}
+	}
 	return ListFiles(dir)
 }
 

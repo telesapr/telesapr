@@ -1,10 +1,16 @@
 package agent
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/script"
+	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // A listing leaves out hidden entries, marks directories, gives files
@@ -39,5 +45,24 @@ func TestListFiles(t *testing.T) {
 	}
 	if _, err := ListFiles(filepath.Join(dir, "none")); err == nil {
 		t.Errorf("a directory that isn't there is listed")
+	}
+}
+
+// A session whose scripts' files are guarded lists only the folders
+// they may read: list_files is no way around the guard.
+func TestFilesGuarded(t *testing.T) {
+	t.Parallel()
+	allowed, other := t.TempDir(), t.TempDir()
+	sk := sketch.NewSketch()
+	sk.NewFile()
+	s, _, err := Open(script.Options{Host: api.NewSketchHost(sk, ""), Files: &script.Files{Write: []string{allowed}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Files(context.Background(), allowed); err != nil {
+		t.Errorf("listing an allowed folder: %v", err)
+	}
+	if _, err := s.Files(context.Background(), other); !errors.Is(err, script.ErrNotAllowed) {
+		t.Errorf("listing a folder outside: %v", err)
 	}
 }
