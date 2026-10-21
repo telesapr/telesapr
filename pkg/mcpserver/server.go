@@ -131,7 +131,8 @@ func New(b agent.Backend, version string) *mcp.Server {
 		if err != nil {
 			out := text("error: " + err.Error() + "\nThe script did not run.\n")
 			out.IsError = true
-			return out, RunOutput{Error: err.Error(), Groups: []agent.GroupStatus{}}, nil
+			// The values don't fit the form: the tool's error, as a script's is, not the protocol's.
+			return out, RunOutput{Error: err.Error(), Groups: []agent.GroupStatus{}}, nil //nolint:nilerr // reported in the result
 		}
 		res, err := b.Run(ctx, code)
 		if err != nil {

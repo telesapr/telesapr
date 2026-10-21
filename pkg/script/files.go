@@ -57,8 +57,8 @@ func (f *Files) folders() (read, write []string) {
 		if dir == "" {
 			return list
 		}
-		if real, err := resolve(dir); err == nil {
-			return append(list, real)
+		if resolved, err := resolve(dir); err == nil {
+			return append(list, resolved)
 		}
 		return list
 	}
@@ -80,18 +80,18 @@ func (f *Files) folders() (read, write []string) {
 // or, with write, write it.
 func (f *Files) Check(path string, write bool) error {
 	if hasDotDot(path) {
-		return fmt.Errorf("%s: %w: a guarded script names files without ..", path, ErrNotAllowed)
+		return fmt.Errorf("%s: %w: a guarded script's path has no .. in it", path, ErrNotAllowed)
 	}
-	real, err := resolve(path)
+	resolved, err := resolve(path)
 	if err != nil {
-		return fmt.Errorf("%s: %w: %v", path, ErrNotAllowed, err)
+		return fmt.Errorf("%s: %w: %w", path, ErrNotAllowed, err)
 	}
 	read, writable := f.folders()
 	allowed := read
 	if write {
 		allowed = writable
 	}
-	if slices.ContainsFunc(allowed, func(dir string) bool { return within(real, dir) }) {
+	if slices.ContainsFunc(allowed, func(dir string) bool { return within(resolved, dir) }) {
 		return nil
 	}
 	return fmt.Errorf("%s: %w: %s", path, ErrNotAllowed, f.describe(write))
@@ -137,11 +137,11 @@ func resolve(path string) (string, error) {
 		tail = filepath.Join(filepath.Base(head), tail)
 		head = parent
 	}
-	real, err := filepath.EvalSymlinks(head)
+	resolved, err := filepath.EvalSymlinks(head)
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(real, tail), nil
+	return filepath.Join(resolved, tail), nil
 }
 
 // within reports whether path is dir or in it.

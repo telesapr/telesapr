@@ -42,8 +42,7 @@ func stringTaking(name string, v reflect.Value) []string {
 		var out []string
 		seen := map[string]bool{}
 		for _, tt := range []reflect.Type{typ, reflect.PointerTo(typ)} {
-			for i := range tt.NumMethod() {
-				m := tt.Method(i)
+			for m := range tt.Methods() {
 				if !seen[m.Name] && takesString(m.Type, 1) {
 					seen[m.Name] = true
 					out = append(out, name+"."+m.Name)

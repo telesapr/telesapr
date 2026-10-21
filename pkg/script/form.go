@@ -77,7 +77,7 @@ func ReadForm(src string) (*Form, error) {
 	}
 	expr, err := parser.ParseExpr(src[start:end])
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrForm, err)
+		return nil, fmt.Errorf("%w: %w", ErrForm, err)
 	}
 	lit := expr.(*ast.CompositeLit)
 	at := func(p token.Pos) int { return start + int(p) - 1 }
@@ -90,7 +90,7 @@ func ReadForm(src string) (*Form, error) {
 		switch key {
 		case "Title":
 			if f.Title, err = stringLit(value); err != nil {
-				return nil, fmt.Errorf("%w: the Title: %v", ErrForm, err)
+				return nil, fmt.Errorf("%w: the Title: %w", ErrForm, err)
 			}
 		case "Fields":
 			fields, ok := value.(*ast.CompositeLit)
@@ -188,7 +188,7 @@ func readField(el ast.Expr, at func(token.Pos) int) (FormField, error) {
 			for _, c := range list.Elts {
 				s, err := stringLit(c)
 				if err != nil {
-					return FormField{}, fmt.Errorf("%w: a choice is %v", ErrForm, err)
+					return FormField{}, fmt.Errorf("%w: a choice is %w", ErrForm, err)
 				}
 				fd.Choices = append(fd.Choices, s)
 			}
@@ -196,7 +196,7 @@ func readField(el ast.Expr, at func(token.Pos) int) (FormField, error) {
 			err = fmt.Errorf("a Field has no %s", key)
 		}
 		if err != nil {
-			return FormField{}, fmt.Errorf("%w: %v", ErrForm, err)
+			return FormField{}, fmt.Errorf("%w: %w", ErrForm, err)
 		}
 	}
 	if fd.Name == "" {
@@ -210,7 +210,7 @@ func readField(el ast.Expr, at func(token.Pos) int) (FormField, error) {
 	}
 	fd.start, fd.end = at(value.Pos()), at(value.End())
 	if err := fd.kindOf(value); err != nil {
-		return FormField{}, fmt.Errorf("%w: the field %q: %v", ErrForm, fd.Name, err)
+		return FormField{}, fmt.Errorf("%w: the field %q: %w", ErrForm, fd.Name, err)
 	}
 	return fd, nil
 }

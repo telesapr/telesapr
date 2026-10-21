@@ -8,7 +8,7 @@ twup L 217 202
 twmove 150 1360
 twdown L 150 1360
 twup L 150 1360
-edit $tmp/parts
+edit parts
 tw
 twmove 28 1340
 twdown L 28 1340
