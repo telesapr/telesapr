@@ -141,6 +141,14 @@ group 0x7 helix "M6-thread" {
   copies = 2
   pitch = 1
   color 100 100 100 255
+  thread {
+    circle 0x40000
+    form metric
+    diameter 6
+    pitch 1
+    length = 10
+    reverse
+  }
   predef {
     origin 0x40001
     entity-b 0x40020
