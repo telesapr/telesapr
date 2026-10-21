@@ -20,16 +20,23 @@ Branch `wp-c4-closed-sweep`, from devel 83b573fd. Item 8 of `modelling_upgrades.
   `TestOracleSweep` ring and frame (check, ray oracle agrees), `TestPathEquivalenceSweepRing`,
   `ext_sweep_ring`, the example `frame`, and goldens `sweep-ring` and `sweep-frame`.
 
-## Not done: a loft tangent to the solid's faces
+## Done: a loft along a solid's sides
 
-Design, not built:
-- An end condition beside the scalar one: the derivative across at each control point follows the
-  side face of the solid that meets the profile's edge, `d = n_T - (n_T·n_S) n_S` (n_T is the profile
-  plane's normal toward the loft, n_S the side face's normal), times the scalar times the loft's
-  length.
-- The side faces come from `topo.Build` of the solid before the loft: edges whose points pass
-  through the curve's Greville points, and their faces that aren't coplanar with the profile. At a
-  vertex, average the faces' directions.
-- Refuse it when no such face is found, or when d points back against the loft.
-- Save it as two flags on the group; it goes into `topo.smoothLoftBase` as direction functions
-  (`LoftEnds` must stay comparable).
+- `topo.SideTangents`: for a point of a profile drawn on a face, the direction the side face meeting
+  the edge there carries on in. That is the profile's normal made square to the side's normal, or at
+  a corner the line two sides meet in, so that a straight edge between two corners stays in its
+  side's plane. Faces are counted once, and a side must lie below the face.
+- `topo.LoftSides` and `MakeSmoothLoftSides`: the end derivatives at each control point's Greville
+  point. `LoftEnds` stays comparable.
+- `Group.LoftAlongSides [2]bool`, saved as `start-along-sides`/`end-along-sides`, kept by undo.
+  Entry point `Sketch.SetLoftAlongSides`; window `[along sides]`/`[square]` on the loft's screen
+  (`ScreenLoftAlongSides`); script `LoftGroup.SetAlongSides`/`AlongSides`. A tangency of 0 means 1.
+- Tests: `TestSideTangents`, `TestLoftAlongSides*` (slope just above a drafted top against
+  -tan(draft); the grid gave 0 of 16 failures), `TestPathEquivalenceLoftSides`, `ext_loft_sides`,
+  the example `spire`, and the golden `loft-sides`.
+
+## Not done
+
+- Closed lofts (the last profile back to the first).
+- A guided loft along the sides (refused).
+- Tangency at a profile between the ends.

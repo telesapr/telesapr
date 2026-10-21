@@ -5625,6 +5625,10 @@
 				"text": "LoftGroup is the view of a loft: its profiles, guides, turn and\ntangency.",
 				"kind": "struct",
 				"methods": {
+					"AlongSides": {
+						"decl": "func (v LoftGroup) AlongSides() (start, end bool)",
+						"text": "AlongSides reports whether a loft leaves its first profile (start)\nand reaches its last (end) along the sides of the solid each is drawn\non (see SetAlongSides)."
+					},
 					"Guides": {
 						"decl": "func (v LoftGroup) Guides() (curves []Entity)",
 						"text": "Guides are a loft's guide curves, the line segments, arcs and cubics\nthat hold it (see SetGuides), or none."
@@ -5632,6 +5636,10 @@
 					"Profiles": {
 						"decl": "func (v LoftGroup) Profiles() (out []Group)",
 						"text": "Profiles are the sketches a loft joins, in order."
+					},
+					"SetAlongSides": {
+						"decl": "func (v LoftGroup) SetAlongSides(start, end bool)",
+						"text": "SetAlongSides has a loft drawn from a face of a solid carry on its\nsides smoothly: at each point of the first profile (start) it leaves\nalong the side face meeting the profile's edge there, in that face's\ntangent plane, rather than square to the profile's plane, and\nlikewise reaches the last (end). Where the sides are square to the\nface that is the same; where they lean or curve, as a drafted or\nturned body's do, the loft follows them. The profile must lie along\nthe edges of the solid before the loft. Tangency sets how far the\nslope reaches, 1 where it is 0. A loft held by guides can't."
 					},
 					"SetGuides": {
 						"decl": "func (v LoftGroup) SetGuides(curves []Entity)",
@@ -8084,6 +8092,10 @@
 					"SetGroupText": {
 						"decl": "func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string) error",
 						"text": "SetGroupText gives a group value what the user typed, as SetConstraintText does for a constraint: a pitch is in the document's unit."
+					},
+					"SetLoftAlongSides": {
+						"decl": "func (sk *Sketch) SetLoftAlongSides(hg core.HGroup, start, end bool) error",
+						"text": "SetLoftAlongSides has the loft leave its first profile (start) and reach its last (end) along the sides of the solid each is drawn on, carrying them on smoothly, or square to the profile's plane: what the loft's screen and LoftGroup.SetAlongSides set."
 					},
 					"SetLoftGuides": {
 						"decl": "func (sk *Sketch) SetLoftGuides(hg core.HGroup, es []core.HEntity) error",

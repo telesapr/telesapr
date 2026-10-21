@@ -229,6 +229,13 @@ func TestSolidGoldens(t *testing.T) {
 			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
 			d.Edit.Regen()
 		},
+		"loft-sides": func(d *api.Doc) {
+			bottom, top, _ := draftedPost(d, 10)
+			d.Features.Loft(bottom, top, "").AsLoft().SetAlongSides(true, false)
+			// The file keeps no chord tolerance (draftedPost sets one).
+			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+			d.Edit.Regen()
+		},
 		"loft-guides": func(d *api.Doc) {
 			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.001 })
 			bottom := d.Features.SketchIn(d.Workplane("XY"), "bottom")

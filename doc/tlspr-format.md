@@ -216,6 +216,8 @@ group <handle> <type> <name> {
   sweep-up <x> <y> <z>      # sweep: the direction its frames are held to, rather than turning least; left out when none
   color <colour>
   skip-first
+  start-along-sides         # loft: leaves its first profile along the solid's sides, not square to it
+  end-along-sides           # loft: reaches its last profile along the solid's sides
   mirror-solid              # mirror: the whole solid so far, not op-a's own
   appearance <name>         # matte, plastic, glossy or metal; left out for plastic
   face-appearance <face> <name>  # a face's own appearance, by its identity; one line each

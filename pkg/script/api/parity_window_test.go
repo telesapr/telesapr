@@ -242,6 +242,7 @@ var windowActions = map[string]string{
 	"ScreenSwapChamferDistances":     "ChamferGroup.SwapDistances",
 	"ScreenSameChamferDistances":     "ChamferGroup.SetSecondDistance",
 	"ScreenLoftNoGuides":             "LoftGroup.SetGuides",
+	"ScreenLoftAlongSides":           "LoftGroup.SetAlongSides",
 	"ScreenDraftAllSides":            "ExtrudeGroup.SetDraftFaces",
 	"ScreenChangeLoftStart":          "LoftGroup.SetTangency",
 	"ScreenChangePitchOption":        "Group.SetExpr",
@@ -897,6 +898,8 @@ Turn         -q
 SetTurn      ScreenChangeLoftTurn
 Tangency     -q
 SetTangency  ScreenChangeLoftStart; ScreenChangeGroupDraft
+AlongSides     -q
+SetAlongSides  ScreenLoftAlongSides
 Guides       -q
 SetGuides    ScreenLoftNoGuides; menu:Features/Guide Loft by Selected Curves
 `,

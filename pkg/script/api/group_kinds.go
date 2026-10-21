@@ -749,6 +749,39 @@ func (v LoftGroup) SetTangency(start, end float64) {
 	})
 }
 
+// AlongSides reports whether a loft leaves its first profile (start)
+// and reaches its last (end) along the sides of the solid each is drawn
+// on (see SetAlongSides).
+func (v LoftGroup) AlongSides() (start, end bool) {
+	g := v.g
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLoft, "AlongSides")
+		start, end = group.LoftAlongSides[0], group.LoftAlongSides[1]
+	})
+	return start, end
+}
+
+// SetAlongSides has a loft drawn from a face of a solid carry on its
+// sides smoothly: at each point of the first profile (start) it leaves
+// along the side face meeting the profile's edge there, in that face's
+// tangent plane, rather than square to the profile's plane, and
+// likewise reaches the last (end). Where the sides are square to the
+// face that is the same; where they lean or curve, as a drafted or
+// turned body's do, the loft follows them. The profile must lie along
+// the edges of the solid before the loft. Tangency sets how far the
+// slope reaches, 1 where it is 0. A loft held by guides can't.
+func (v LoftGroup) SetAlongSides(start, end bool) {
+	g := v.g
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLoft, "SetAlongSides")
+		if err := sk.SetLoftAlongSides(group.H, start, end); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
 // Guides are a loft's guide curves, the line segments, arcs and cubics
 // that hold it (see SetGuides), or none.
 func (v LoftGroup) Guides() (curves []Entity) {

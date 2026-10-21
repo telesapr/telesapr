@@ -51,7 +51,7 @@ func GuidedLoftSurface(loops [][]srf.SBezier, turn int, ends LoftEnds, guides []
 	if len(guides) > 2 {
 		return nil, fmt.Errorf("a loft takes two guides at most, not %d", len(guides))
 	}
-	base, err := smoothLoftBase(loops, turn, ends)
+	base, err := smoothLoftBase(loops, turn, ends, LoftSides{})
 	if err != nil {
 		return nil, err
 	}

@@ -213,6 +213,15 @@ func TestPathEquivalenceLoftTangency(t *testing.T) {
 	}
 }
 
+// A loft set on its screen to leave along a drafted post's sides, and
+// by a script.
+func TestPathEquivalenceLoftSides(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_loft_sides", "path_loft_sides")
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupLoft || g.LoftAlongSides != [2]bool{true, false} || g.Problem.Msg != "" {
+		t.Errorf("the loft: type %d, along sides %v, problem %q", g.Type, g.LoftAlongSides, g.Problem.Msg)
+	}
+}
+
 // A loft's guide picked with the mouse and set by Features > Guide
 // Loft by Selected Curves, and by a script (roadmap 28.3).
 func TestPathEquivalenceLoftGuides(t *testing.T) {

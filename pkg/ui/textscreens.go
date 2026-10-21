@@ -4,6 +4,7 @@ package ui
 // arcs, and the edit control's dispatch.
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"path/filepath"
@@ -700,6 +701,30 @@ func (tw *textWindow) ScreenLoftNoGuides(link int, v uint32) {
 	ss.GW.ClearSuper()
 }
 
+// ScreenLoftAlongSides turns one end of the loft shown, the first (v
+// 0) or the last (1), between leaving square to its profile and along
+// the sides of the solid it is drawn on.
+func (tw *textWindow) ScreenLoftAlongSides(link int, v uint32) {
+	ss := tw.ss
+	hg := tw.shown.group
+	err := ss.SK.UndoRememberFor(func() error {
+		g := ss.SK.Group(hg)
+		if g == nil {
+			return errors.New("the loft is gone")
+		}
+		along := g.LoftAlongSides
+		along[v%2] = !along[v%2]
+		return ss.SK.SetLoftAlongSides(hg, along[0], along[1])
+	})
+	if err != nil {
+		ss.Report(err)
+		return
+	}
+	ss.SK.Unsaved = true
+	ss.UndoEnableMenus()
+	ss.GW.ClearSuper()
+}
+
 // ScreenDraftAllSides makes an extrusion's draft lean every side again.
 func (tw *textWindow) ScreenDraftAllSides(link int, v uint32) {
 	ss := tw.ss
@@ -716,16 +741,31 @@ func (tw *textWindow) ScreenDraftAllSides(link int, v uint32) {
 // showLoftEnds shows how a loft leaves its first profile and reaches
 // its last (roadmap 28.3).
 func (tw *textWindow) showLoftEnds(g *sketch.Group) {
-	end := func(v float64) string {
-		if v == 0 {
+	end := func(v float64, along bool) string {
+		switch {
+		case along && v == 0:
+			return "along the solid's sides, 1"
+		case along:
+			return fmt.Sprintf("along the solid's sides, %g", v)
+		case v == 0:
 			return "free"
 		}
 		return fmt.Sprintf("square to it, %g", v)
 	}
-	tw.Printf(false, "%Bd   %Ftleaves the first%E %s%s %Fl%Ll%f%D[change]%E",
-		end(g.ValB), exprNote(g.ExprB), lf(tw.ScreenChangeLoftStart), g.H.V)
-	tw.Printf(false, "%Ba   %Ftreaches the last%E %s%s %Fl%Ll%f%D[change]%E",
-		end(g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
+	// Each end leaves square to its profile or along the sides of the
+	// solid it is drawn on.
+	sides := func(along bool) string {
+		if along {
+			return "[square]"
+		}
+		return "[along sides]"
+	}
+	tw.Printf(false, "%Bd   %Ftleaves the first%E %s%s %Fl%Ll%f%D[change]%E %Fl%Ll%f%D%s%E",
+		end(g.ValB, g.LoftAlongSides[0]), exprNote(g.ExprB), lf(tw.ScreenChangeLoftStart), g.H.V,
+		lf(tw.ScreenLoftAlongSides), 0, sides(g.LoftAlongSides[0]))
+	tw.Printf(false, "%Ba   %Ftreaches the last%E %s%s %Fl%Ll%f%D[change]%E %Fl%Ll%f%D%s%E",
+		end(g.ValC, g.LoftAlongSides[1]), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V,
+		lf(tw.ScreenLoftAlongSides), 1, sides(g.LoftAlongSides[1]))
 	// Its guides: Features > Guide Loft by Selected Curves sets them.
 	if len(g.Edges) == 0 {
 		tw.Printf(false, "%Bd   %Ftguides%E none")
