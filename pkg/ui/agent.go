@@ -214,12 +214,81 @@ func (b consoleBackend) Describe(ctx context.Context, group string) (string, err
 	return s.Describe(ctx, group)
 }
 
-func (b consoleBackend) Render(ctx context.Context, view, group string, width, height int) ([]byte, error) {
+func (b consoleBackend) Render(ctx context.Context, p agent.Picture) ([]byte, error) {
 	s, err := b.session()
 	if err != nil {
 		return nil, err
 	}
-	return s.Render(ctx, view, group, width, height)
+	return s.Render(ctx, p)
+}
+
+func (b consoleBackend) Measure(ctx context.Context, group string, selected bool) (string, error) {
+	s, err := b.session()
+	if err != nil {
+		return "", err
+	}
+	return s.Measure(ctx, group, selected)
+}
+
+func (b consoleBackend) Files(ctx context.Context, dir string) (agent.Listing, error) {
+	s, err := b.session()
+	if err != nil {
+		return agent.Listing{}, err
+	}
+	return s.Files(ctx, dir)
+}
+
+// Export writes a file the program asks for, as a script calling
+// File.Export would, so the user is asked first as for a script, and
+// the console shows it.
+func (b consoleBackend) Export(ctx context.Context, path string) (string, error) {
+	s, err := b.allowed("export to "+path, fmt.Sprintf("doc.File.Export(%q)", path))
+	if err != nil {
+		return "", err
+	}
+	return s.Export(ctx, path)
+}
+
+// Open replaces the drawing by a file, as File.Load would, but not a
+// drawing with unsaved changes (agent.ErrUnsaved).
+func (b consoleBackend) Open(ctx context.Context, path string) (string, error) {
+	// Asked first, the user would be asked for what is then refused.
+	s, err := b.session()
+	if err != nil {
+		return "", err
+	}
+	if s.Engine().Doc().File.Unsaved() {
+		return "", agent.ErrUnsaved
+	}
+	if s, err = b.allowed("open "+path, fmt.Sprintf("doc.File.Load(%q)", path)); err != nil {
+		return "", err
+	}
+	return s.Open(ctx, path)
+}
+
+// allowed asks the user, if the setting says to, whether a program may
+// do what, shown as the script that would do the same, and puts that in
+// the console; it gives the session to do it with.
+func (b consoleBackend) allowed(what, asScript string) (*agent.Session, error) {
+	c := b.c
+	err := b.onLoop(func() error {
+		if err := c.ensureEngine(); err != nil {
+			return err
+		}
+		if c.busy {
+			return errors.New("another script is running in TeleSAPR; wait for it to end, or ask the user to stop it with Script > Stop")
+		}
+		if !b.confirmed(asScript) {
+			c.print(platform.ConsoleInfo, "An AI program asked to "+what+"; it was refused.\n")
+			return errors.New("the user refused; ask what to do instead")
+		}
+		c.print(platform.ConsoleInput, agentPrompt+asScript+"\n")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return c.session, nil
 }
 
 func (b consoleBackend) Help(_ context.Context, name string) (string, error) {

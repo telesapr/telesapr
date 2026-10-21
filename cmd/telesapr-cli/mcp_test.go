@@ -137,8 +137,8 @@ func TestMCPBracket(t *testing.T) {
 	if got := answers[1].Result.Instructions; got != agent.Instructions {
 		t.Errorf("the instructions are %q", got)
 	}
-	if n := len(answers[2].Result.Tools); n != 4 {
-		t.Errorf("%d tools are listed, want 4", n)
+	if n := len(answers[2].Result.Tools); n != 8 {
+		t.Errorf("%d tools are listed, want 8", n)
 	}
 	if got := answers[3].text(); got != agent.Primer() {
 		t.Errorf("api_help with no name gave %d bytes that aren't the primer", len(got))

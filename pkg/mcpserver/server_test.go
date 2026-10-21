@@ -8,7 +8,10 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -24,15 +27,12 @@ import (
 // program around it has none.
 type painter struct {
 	*agent.Session
-	asked struct {
-		view, group   string
-		width, height int
-	}
+	asked agent.Picture
 }
 
-func (p *painter) Render(_ context.Context, view, group string, width, height int) ([]byte, error) {
-	p.asked.view, p.asked.group, p.asked.width, p.asked.height = view, group, width, height
-	if view == "inside" {
+func (p *painter) Render(_ context.Context, pic agent.Picture) ([]byte, error) {
+	p.asked = pic
+	if pic.View == "inside" {
 		return nil, errors.New("no view 'inside'")
 	}
 	img := image.NewRGBA(image.Rect(0, 0, 4, 3))
@@ -88,8 +88,8 @@ func call(t *testing.T, cs *mcp.ClientSession, tool string, args map[string]any)
 	return res, strings.Join(parts, "\n")
 }
 
-// A client is told what the server is for, and offered the four
-// tools, each described within what clients keep.
+// A client is told what the server is for, and offered the tools,
+// each described within what clients keep.
 func TestToolsAndInstructions(t *testing.T) {
 	t.Parallel()
 	cs, _ := connect(t)
@@ -101,7 +101,8 @@ func TestToolsAndInstructions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	readOnly := map[string]bool{ToolRun: false, ToolDescribe: true, ToolRender: true, ToolHelp: true}
+	readOnly := map[string]bool{ToolRun: false, ToolDescribe: true, ToolRender: true, ToolHelp: true,
+		ToolMeasure: true, ToolExport: false, ToolOpen: false, ToolFiles: true}
 	if len(list.Tools) != len(readOnly) {
 		t.Errorf("%d tools are offered, want %d", len(list.Tools), len(readOnly))
 	}
@@ -202,10 +203,14 @@ func TestDescribeHelpRender(t *testing.T) {
 	if err != nil || decoded.Bounds().Dx() != 4 {
 		t.Errorf("the picture doesn't decode as the PNG that was made: %v", err)
 	}
-	if backend.asked.view != "front" || backend.asked.group != "g002" || backend.asked.width != 320 || backend.asked.height != 200 {
+	if backend.asked != (agent.Picture{View: "front", Group: "g002", Width: 320, Height: 200}) {
 		t.Errorf("the picture asked for was %+v", backend.asked)
 	}
-	if call(t, cs, ToolRender, nil); backend.asked.view != "" || backend.asked.width != 0 {
+	call(t, cs, ToolRender, map[string]any{"section": "YZ", "section_offset": "1.5", "section_flip": true})
+	if backend.asked != (agent.Picture{Section: "YZ", SectionOffset: "1.5", SectionFlip: true}) {
+		t.Errorf("the section asked for was %+v", backend.asked)
+	}
+	if call(t, cs, ToolRender, nil); backend.asked != (agent.Picture{}) {
 		t.Errorf("a picture with nothing said was asked for as %+v, want the backend's defaults", backend.asked)
 	}
 	if res, text = call(t, cs, ToolRender, map[string]any{"view": "inside"}); !res.IsError || !strings.Contains(text, "no view") {
@@ -262,5 +267,67 @@ func TestSketchProblemShown(t *testing.T) {
 	}
 	if _, text = call(t, cs, ToolRun, map[string]any{"code": "doc.Active().Analyze().Check().Sound()"}); !strings.Contains(text, "value: false") {
 		t.Errorf("the solid that isn't there is sound:\n%s", text)
+	}
+}
+
+// measure reports the solid, or says why it can't measure a selection
+// there isn't; export writes a file and says where; open refuses to
+// replace changes that aren't saved, and opens a saved drawing; and
+// list_files lists a directory, those under it first marked as such.
+func TestMeasureExportOpenFiles(t *testing.T) {
+	t.Parallel()
+	cs, _ := connect(t)
+	dir := t.TempDir()
+	call(t, cs, ToolRun, map[string]any{"code": "doc.Sketch.Rect(V(0, 0, 0), V(10, 20, 0))\ndoc.Features.Extrude(5, \"plate\")"})
+
+	res, text := call(t, cs, ToolMeasure, nil)
+	if res.IsError || !strings.Contains(text, "the model up to g003-plate") || !strings.Contains(text, "1000") {
+		t.Errorf("the plate measures as\n%s", text)
+	}
+	if res, text = call(t, cs, ToolMeasure, map[string]any{"group": "g099"}); !res.IsError || !strings.Contains(text, "no group") {
+		t.Errorf("measuring a group that isn't there: error %v, %q", res.IsError, text)
+	}
+	if res, text = call(t, cs, ToolMeasure, map[string]any{"selected": true}); !res.IsError || !strings.Contains(text, "nothing is selected") {
+		t.Errorf("measuring no selection: error %v, %q", res.IsError, text)
+	}
+
+	stl := filepath.Join(dir, "plate.stl")
+	if res, text = call(t, cs, ToolExport, map[string]any{"path": stl}); res.IsError || !strings.HasPrefix(text, "wrote "+stl+", ") {
+		t.Errorf("the export says %q", text)
+	}
+	if fi, err := os.Stat(stl); err != nil || fi.Size() == 0 {
+		t.Errorf("the export wrote no file: %v", err)
+	}
+	if res, text = call(t, cs, ToolExport, map[string]any{"path": filepath.Join(dir, "plate.xyz")}); !res.IsError {
+		t.Errorf("an export to no format: %q", text)
+	}
+
+	saved := filepath.Join(dir, "plate.tlspr")
+	if res, text = call(t, cs, ToolOpen, map[string]any{"path": saved}); !res.IsError || !strings.Contains(text, "aren't saved") {
+		t.Errorf("opening over unsaved changes: error %v, %q", res.IsError, text)
+	}
+	call(t, cs, ToolRun, map[string]any{"code": "doc.File.Save(" + strconv.Quote(saved) + ")\n" +
+		"doc.Features.SketchIn(doc.Workplane(\"XY\"), \"later\")\ndoc.File.ForgetChanges()"})
+	if _, text = call(t, cs, ToolDescribe, nil); !strings.Contains(text, "later") {
+		t.Fatalf("the sketch made after the save isn't there:\n%s", text)
+	}
+	if res, text = call(t, cs, ToolOpen, map[string]any{"path": saved}); res.IsError || !strings.HasPrefix(text, "opened "+saved+"\n") ||
+		!strings.Contains(text, "g003-plate") || strings.Contains(text, "later") {
+		t.Errorf("opening the saved plate: error %v,\n%s", res.IsError, text)
+	}
+
+	if err := os.Mkdir(filepath.Join(dir, "parts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".hidden"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, text = call(t, cs, ToolFiles, map[string]any{"dir": dir})
+	if res.IsError || !strings.HasPrefix(text, dir+":\n") || !strings.Contains(text, "parts/\n") ||
+		!strings.Contains(text, "plate.stl  ") || strings.Contains(text, ".hidden") {
+		t.Errorf("the directory is listed as\n%s", text)
+	}
+	if res, _ = call(t, cs, ToolFiles, map[string]any{"dir": filepath.Join(dir, "none")}); !res.IsError {
+		t.Errorf("listing a directory that isn't there is no error")
 	}
 }

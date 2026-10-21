@@ -155,7 +155,7 @@ func TestAgentDraws(t *testing.T) {
 	// The fitted view, the window's view, and the drawing up to the
 	// sketch, which leaves the plate active (roadmap 16.14).
 	for _, c := range [][2]string{{"isometric", ""}, {"window", ""}, {"front", "g002-sketch-in-plane"}} {
-		data, err := a.r.Render(ctx, c[0], c[1], 200, 150)
+		data, err := a.r.Render(ctx, agent.Picture{View: c[0], Group: c[1], Width: 200, Height: 150})
 		if err != nil {
 			t.Fatalf("%v: %v", c, err)
 		}
@@ -169,7 +169,7 @@ func TestAgentDraws(t *testing.T) {
 	if after != active {
 		t.Errorf("rendering a group left g%03x active, not g%03x", after.V, active.V)
 	}
-	if _, err := a.r.Render(ctx, "front", "g099", 20, 20); err == nil || !strings.Contains(err.Error(), "no group") {
+	if _, err := a.r.Render(ctx, agent.Picture{View: "front", Group: "g099", Width: 20, Height: 20}); err == nil || !strings.Contains(err.Error(), "no group") {
 		t.Errorf("a render of no group: %v", err)
 	}
 	// What the mouse is over is in the description.

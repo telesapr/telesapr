@@ -27,7 +27,9 @@ To draw what the user asks for:
 4. Read the status run_script returns. A sketch should be "solved", and a finished one has 0 DOF: constrain it with dimensions and with a point on the origin. A "problem" means a group made no solid.
 5. Call render and look at the picture before saying the work is done.
 
-Draw what was asked for and no more. Leave what the user drew as it is unless asked to change it. Do not save, export or load files unless asked.`
+measure gives the volume, centre of mass, bounds and soundness of the solid, or measures what the user selected. render with section cuts the solid open to show its inside. list_files lists a directory; export writes the drawing to a file (.stl, .step, .glb, .svg, ...) and open opens a .tlspr drawing in its place.
+
+Draw what was asked for and no more. Leave what the user drew as it is unless asked to change it. Do not save, export or open files unless asked.`
 
 // MaxInstructions is the most bytes Instructions, and the description
 // of a tool, may have: clients are known to cut them at 2 KB.
