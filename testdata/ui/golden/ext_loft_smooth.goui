@@ -56,18 +56,22 @@ row 18    turn those after the first by 0 [-1] [+1]
  39-39 64 64 0
  40-43 6c 64 108 1 1 0
  44-99 64 64 0
-row 20    leaves the first free [change]
+row 20    leaves the first free [change] [along sides]
  0-2 64 64 0
  3-18 74 64 0
  19-24 64 64 0
  25-32 6c 64 108 8 1 0
- 33-99 64 64 0
-row 22    reaches the last free [change]
+ 33-33 64 64 0
+ 34-46 6c 64 108 0 1 0
+ 47-99 64 64 0
+row 22    reaches the last free [change] [along sides]
  0-2 64 61 0
  3-18 74 61 0
  19-24 64 61 0
  25-32 6c 61 108 8 1 0
- 33-99 64 61 0
+ 33-33 64 61 0
+ 34-46 6c 61 108 1 1 0
+ 47-99 64 61 0
 row 24    guides none
  0-2 64 64 0
  3-8 74 64 0
@@ -216,18 +220,22 @@ row 18    turn those after the first by -1 [-1] [+1]
  40-40 64 64 0
  41-44 6c 64 108 1 1 0
  45-99 64 64 0
-row 20    leaves the first free [change]
+row 20    leaves the first free [change] [along sides]
  0-2 64 64 0
  3-18 74 64 0
  19-24 64 64 0
  25-32 6c 64 108 8 1 0
- 33-99 64 64 0
-row 22    reaches the last free [change]
+ 33-33 64 64 0
+ 34-46 6c 64 108 0 1 0
+ 47-99 64 64 0
+row 22    reaches the last free [change] [along sides]
  0-2 64 61 0
  3-18 74 61 0
  19-24 64 61 0
  25-32 6c 61 108 8 1 0
- 33-99 64 61 0
+ 33-33 64 61 0
+ 34-46 6c 61 108 1 1 0
+ 47-99 64 61 0
 row 24    guides none
  0-2 64 64 0
  3-8 74 64 0
