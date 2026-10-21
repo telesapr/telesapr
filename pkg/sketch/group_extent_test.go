@@ -33,7 +33,9 @@ func TestExtrudeDepthHeld(t *testing.T) {
 	}
 	step(d)
 	before := saved(t, d)
-	d.Params.Set("h", "15")
+	if err := d.Params.Set("h", "15"); err != nil {
+		t.Fatal(err)
+	}
 	if err := ex.SetExpr(sketch.GroupExtent, "h*2"); err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +69,9 @@ func TestExtrudeDepthHeld(t *testing.T) {
 		t.Fatalf("dragged to %g, want 30", got)
 	}
 
-	d.Params.Set("h", "-4")
+	if err := d.Params.Set("h", "-4"); err != nil {
+		t.Fatal(err)
+	}
 	if got := ex.AsExtrude().Depth(); math.Abs(got+8) > 1e-9 {
 		t.Fatalf("depth %g, want -8", got)
 	}
@@ -121,7 +125,9 @@ func TestRevolveAngleHeld(t *testing.T) {
 	if got := rv.AsRevolve().Angle(); math.Abs(got-90) > 1e-9 {
 		t.Fatalf("angle %g, want 90", got)
 	}
-	d.Params.Set("a", "180")
+	if err := d.Params.Set("a", "180"); err != nil {
+		t.Fatal(err)
+	}
 	if err := rv.SetExpr(sketch.GroupExtent, "a"); err != nil {
 		t.Fatal(err)
 	}
