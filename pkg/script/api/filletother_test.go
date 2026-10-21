@@ -270,6 +270,68 @@ func TestFilletEndsOnCurvedFace(t *testing.T) {
 	}
 }
 
+// The lid's four upright edges picked together, each ending on its
+// dome: the rolling ball rounds each alone, one after another, as their
+// fillets don't meet (topo.filletApart), and together they take what
+// OpenCASCADE's makeFillet takes from each alone (TestFilletEndsOnCurvedFace)
+// within half a percent. An upright picked with a bottom edge it meets
+// is refused at their corner.
+func TestFilletEndsOnCurvedFaceApart(t *testing.T) {
+	if testing.Short() {
+		t.Skip("fillets over curved faces, slow")
+	}
+	lid := filepath.Join("..", "..", "..", "testdata", "step", "degree", "lid_degree7.step")
+	d := New()
+	d.Edit.SetChordTolerance(0.002)
+	g, err := d.Assembly.LinkStep(lid, "", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := g.Analyze().Check().Volume
+	var edges []SolidEdge
+	for _, at := range []Vec{V(0, 0, 5), V(40, 0, 5), V(40, 30, 5), V(0, 30, 4)} {
+		edges = append(edges, g.Solid().EdgeAt(at))
+	}
+	f := d.Features.FilletSolid(edges, 1, "")
+	if p := f.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	rep := f.Analyze().Check()
+	const want = 2.173344 + 2.292926 + 2.025750 + 1.804228
+	took := before - rep.Volume
+	t.Logf("took %.6g, OpenCASCADE alone %g", took, want)
+	if !rep.Sound() || math.Abs(took-want) > 0.005*want {
+		t.Errorf("%s, took %g, OpenCASCADE %g", rep.Summary(), took, want)
+	}
+
+	d = New()
+	if g, err = d.Assembly.LinkStep(lid, "", true); err != nil {
+		t.Fatal(err)
+	}
+	var bottom SolidEdge
+	found := false
+	for _, e := range g.Solid().Edges() {
+		if a, b := e.Ends(); e.Straight() && a.Z < 1e-6 && b.Z < 1e-6 && (a.X < 1e-6 && a.Y < 1e-6 || b.X < 1e-6 && b.Y < 1e-6) {
+			bottom, found = e, true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("no bottom edge at the origin")
+	}
+	why := func() (msg string) {
+		defer func() {
+			if x := recover(); x != nil {
+				msg = fmt.Sprint(x)
+			}
+		}()
+		return d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(V(0, 0, 5)), bottom}, 1, "").Problem()
+	}()
+	if !strings.Contains(why, "pick it alone") {
+		t.Errorf("an upright with the bottom edge it meets: %q", why)
+	}
+}
+
 // The lid's upright edges filleted at radius 2.5 where they end on its
 // dome, too wide a corner for one quintic to follow: the sections are
 // split in two spans (rollingBall.splitEnds), and take what OpenCASCADE's

@@ -63,7 +63,11 @@ pipe on a pipe, a spout on a pot, a rod through a ball, a band's side on a cone)
 a ball of its radius along the edge, touching both faces, and the rounded face is the surface it
 sweeps: fitted through the ball's arcs to within a tenth of the chord tolerance, the faces cut
 back along the curves it touches them on. A chamfer is made the same way, its sections straight
-between the points at its distance along each face from the edge. The edge must be picked alone.
+between the points at its distance along each face from the edge. Such an edge, and an edge that
+ends on a curved face (below), is rounded on its own: picked with other edges whose fillets don't
+reach it, the others are rounded first and then each such edge alone, as the lid's four upright
+edges picked together are; where its fillet would meet another picked edge's, at a vertex the two
+share, it is refused there ("pick it alone").
 
 The edge may close on itself, as such joints do, or end where it meets a flat face at each end, as
 a band's side on a cone ends at the base and at the band's end. There the fillet ends in the flat

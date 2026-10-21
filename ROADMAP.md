@@ -187,6 +187,15 @@ solids) at 47 of 59 sound.
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
 | Slot chamfer at 3 | see K4 | The teapot handle and the run-off chamfers' crossings, listed here before, are sound since K4's mender |
 
+Done 2026-10-22: rolling-ball edges picked with others whose fillets don't reach them (an edge
+between curved faces, or between flat faces ending on a curved one), refused as "pick it alone"
+before: the picks step 10 takes are rounded first, together, then each rolling one alone in the
+solid as it is then, found again along its line (`pkg/topo/fillet_apart.go`). The lid's four
+uprights picked together take what each takes alone, within 0.15% of OpenCASCADE
+(`TestFilletEndsOnCurvedFaceApart`); a lens's top and bottom chains, the vertices of each as
+alone (`TestFilletChainsNotMitred`). Where a rolling chain's vertex is another pick's, the two
+fillets meet and the pick is refused at that vertex.
+
 Done 2026-10-11: rims across a sharp upright edge of a curved wall, blob_extruded's two (each one
 closed edge turning 130° where its B-spline wall has a crease): the chain runs from the crease round
 to it, and its ends meet in a mitre (`pkg/topo/rollingmitre.go`), where the surfaces the ball sweeps

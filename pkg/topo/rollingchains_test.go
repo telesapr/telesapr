@@ -1,6 +1,8 @@
 package topo_test
 
 import (
+	"math"
+	"slices"
 	"strings"
 	"testing"
 
@@ -104,25 +106,59 @@ func TestFilletChainsMitred(t *testing.T) {
 }
 
 // Picks that don't make chains meeting in mitres are each a rolling
-// ball's alone, as before: the lens's top edges at two radii, and a top
-// edge with a bottom one. Chamfers that would meet in mitres are
-// refused, saying so.
+// ball's alone: the lens's top edges at two radii meet at the creases,
+// and are refused; a top edge with a bottom one lie apart, and are
+// rounded one after the other (filletApart): each fillet's vertices
+// are those it has alone, and the two take what each takes alone,
+// within what the meshes' chords of the cut walls differ by. Chamfers that would meet in mitres are refused, saying so.
 func TestFilletChainsNotMitred(t *testing.T) {
 	fine(t, 0.002)
 	lens := lensCubics()
 	two := topPicks(lens)
 	two[1].R = 0.5
+	sh := cubicPrism(lens)
+	err := topo.FilletPicks(sh, two, 1, 1<<30, false)
+	if err == nil || !strings.Contains(err.Error(), "pick it alone") {
+		t.Errorf("two radii: %v", err)
+	}
+
 	bottom := []topo.FilletPick{two[0], {At: cubicMiddle(lens[1], 0), Arc: true}}
-	for name, picks := range map[string][]topo.FilletPick{"two radii": two, "top and bottom": bottom} {
+	before := meshVolume(cubicPrism(lens))
+	took := 0.0
+	var made []geom.Vector
+	orig := build(t, cubicPrism(lens)).Vertices
+	for _, p := range bottom {
 		sh := cubicPrism(lens)
-		err := topo.FilletPicks(sh, picks, 1, 1<<30, false)
-		if err == nil || !strings.Contains(err.Error(), "pick it alone") {
-			t.Errorf("%s: %v", name, err)
+		if err := topo.FilletPicks(sh, []topo.FilletPick{p}, 1, 1<<30, false); err != nil {
+			t.Fatalf("alone at %v: %v", p.At, err)
+		}
+		took += before - sound(t, sh)
+		for _, x := range build(t, sh).Vertices {
+			if !slices.ContainsFunc(orig, func(o topo.Vertex) bool { return o.P.Minus(x.P).Magnitude() < 1e-4 }) {
+				made = append(made, x.P)
+			}
 		}
 	}
+	sh = cubicPrism(lens)
+	if err := topo.FilletPicks(sh, bottom, 1, 1<<30, false); err != nil {
+		t.Fatalf("top and bottom: %v", err)
+	}
+	if got := before - sound(t, sh); math.Abs(got-took) > 1e-3*took {
+		t.Errorf("top and bottom took %.9g, %.9g alone", got, took)
+	}
+	if len(made) == 0 {
+		t.Error("the fillets alone made no vertices")
+	}
+	got := build(t, sh).Vertices
+	for _, p := range made {
+		if !slices.ContainsFunc(got, func(o topo.Vertex) bool { return o.P.Minus(p).Magnitude() < 1e-4 }) {
+			t.Errorf("top and bottom: no vertex at %v, which the fillet alone has", p)
+		}
+	}
+
 	// Chamfers: a mitre is found from the ball's centres.
-	sh := cubicPrism(lens)
-	err := topo.FilletPicks(sh, topPicks(lens), 1, 1<<30, true)
+	sh = cubicPrism(lens)
+	err = topo.FilletPicks(sh, topPicks(lens), 1, 1<<30, true)
 	if err == nil || !strings.Contains(err.Error(), "are not mitred") {
 		t.Errorf("chamfers: %v", err)
 	}
