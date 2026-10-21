@@ -103,8 +103,8 @@ func (sk *Sketch) DeleteDatum(name string) error {
 // called group links, as the link placed it.
 func (sk *Sketch) ResolveDatum(path string) (core.HEntity, error) {
 	// A datum's own name has no dot; a group's name may.
-	dot := strings.LastIndex(path, ".")
-	if dot < 0 {
+	group, name, linked := strings.CutLast(path, ".")
+	if !linked {
 		d := sk.Datum(path)
 		if d == nil {
 			return core.HEntity{}, fmt.Errorf("%w %q", ErrNoDatum, path)
@@ -114,7 +114,6 @@ func (sk *Sketch) ResolveDatum(path string) (core.HEntity, error) {
 		}
 		return d.Entity, nil
 	}
-	group, name := path[:dot], path[dot+1:]
 	g := sk.GroupNamed(group)
 	if g == nil || g.Type != GroupLinked {
 		return core.HEntity{}, fmt.Errorf("%w %q: no link called %s", ErrNoDatum, path, group)

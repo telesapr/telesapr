@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/platform"
@@ -20,13 +21,14 @@ func (tw *textWindow) showLinkModel(g *sketch.Group) {
 		return
 	}
 	if len(g.LinkConfigurations) > 0 {
-		format := "%Ba   %Ftconfiguration%E %f%D%Ll%Fd%s as saved%E"
+		var format strings.Builder
+		format.WriteString("%Ba   %Ftconfiguration%E %f%D%Ll%Fd%s as saved%E")
 		args := []any{lf(tw.ScreenChangeLinkConfiguration), uint32(0), radioMark(g.LinkConfiguration == "")}
 		for i, name := range g.LinkConfigurations {
-			format += "  %f%D%Ll%Fd%s %s%E"
+			format.WriteString("  %f%D%Ll%Fd%s %s%E")
 			args = append(args, lf(tw.ScreenChangeLinkConfiguration), uint32(i+1), radioMark(g.LinkConfiguration == name), name)
 		}
-		tw.Printf(false, format, args...)
+		tw.Printf(false, format.String(), args...)
 	}
 	for i, p := range g.LinkPartParameters {
 		if lp := g.LinkParam(p.Name); lp != nil {
@@ -59,7 +61,7 @@ func (tw *textWindow) ScreenRelink(link int, v uint32) {
 		return
 	}
 	dialog.FreezeChoices(ss.Settings, "LinkSketch")
-	ss.changeLink(g.H, func(sk *sketch.Sketch) error { return sk.SetLinkFile(g.H, dialog.Filename()) })
+	ss.changeLink(func(sk *sketch.Sketch) error { return sk.SetLinkFile(g.H, dialog.Filename()) })
 }
 
 // ScreenChangeLinkConfiguration regenerates the shown link's model in
@@ -77,7 +79,7 @@ func (tw *textWindow) ScreenChangeLinkConfiguration(link int, v uint32) {
 	if name == g.LinkConfiguration {
 		return
 	}
-	ss.changeLink(g.H, func(sk *sketch.Sketch) error { return sk.SetLinkConfiguration(g.H, name) })
+	ss.changeLink(func(sk *sketch.Sketch) error { return sk.SetLinkConfiguration(g.H, name) })
 }
 
 // ScreenChangeLinkParam edits the value the shown link passes to its
@@ -90,7 +92,7 @@ func (tw *textWindow) ScreenChangeLinkParam(link int, v uint32) {
 	}
 	p := g.LinkPartParameters[v]
 	if link == 'x' {
-		ss.changeLink(g.H, func(sk *sketch.Sketch) error { return sk.SetLinkParam(g.H, p.Name, "") })
+		ss.changeLink(func(sk *sketch.Sketch) error { return sk.SetLinkParam(g.H, p.Name, "") })
 		return
 	}
 	text := strconv.FormatFloat(p.Value, 'g', -1, 64)
@@ -112,12 +114,12 @@ func (tw *textWindow) editLinkParamDone(s string) {
 		return
 	}
 	name := g.LinkPartParameters[tw.edit.i].Name
-	ss.changeLink(g.H, func(sk *sketch.Sketch) error { return sk.SetLinkParam(g.H, name, s) })
+	ss.changeLink(func(sk *sketch.Sketch) error { return sk.SetLinkParam(g.H, name, s) })
 }
 
 // changeLink makes a change of a link group as one undo step, and
 // shows why when it is refused.
-func (ss *Application) changeLink(hg core.HGroup, fn func(sk *sketch.Sketch) error) {
+func (ss *Application) changeLink(fn func(sk *sketch.Sketch) error) {
 	if err := ss.SK.UndoRememberFor(func() error { return fn(ss.SK) }); err != nil {
 		ss.Report(fmt.Errorf("can't change the link: %w", err))
 		return
