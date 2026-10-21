@@ -37,6 +37,7 @@
   ---
   Find Comman&d... [Ctrl+K] ind=0 en=1 act=0
   Para&meters... [Ctrl+Shift+M] ind=0 en=1 act=0
+  Datum&s... ind=0 en=1 act=0
   ---
   &Line Styles... ind=0 en=1 act=0
   &View Projection... ind=0 en=1 act=0
@@ -241,6 +242,7 @@ Sc&ript ind=0 en=1 act=0
   ---
   Find Comman&d... [Ctrl+K] ind=0 en=1 act=0
   Para&meters... [Ctrl+Shift+M] ind=0 en=1 act=0
+  Datum&s... ind=0 en=1 act=0
   ---
   &Line Styles... ind=0 en=1 act=0
   &View Projection... ind=0 en=1 act=0
