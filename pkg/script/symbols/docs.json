@@ -5583,9 +5583,25 @@
 						"decl": "func (v LinkGroup) AsSolid() (on bool)",
 						"text": "AsSolid reports whether a link group reads its STEP file as a\nsolid rather than as a reference mesh."
 					},
+					"Configuration": {
+						"decl": "func (v LinkGroup) Configuration() (name string)",
+						"text": "Configuration is the configuration of the linked model it is\nregenerated in, or \"\" for the one its file was saved in."
+					},
+					"File": {
+						"decl": "func (v LinkGroup) File() (path string)",
+						"text": "File is the file the link links, as the group names it: relative to\nthe drawing's file once that is saved, else absolute."
+					},
 					"Info": {
 						"decl": "func (v LinkGroup) Info() (lines []string)",
 						"text": "Info describes the file a link group links, a line each, as the\ngroup's screen shows it: for a STEP file its schema and unit, how\nmany shapes, faces and triangles it gave, and the chord tolerance it\nwas tessellated to. A sketch or STL file gives none."
+					},
+					"ModelConfigurations": {
+						"decl": "func (v LinkGroup) ModelConfigurations() (names []string)",
+						"text": "ModelConfigurations are the names of the linked model's\nconfigurations."
+					},
+					"ModelParams": {
+						"decl": "func (v LinkGroup) ModelParams() (params map[string]float64)",
+						"text": "ModelParams are the linked model's parameters and their values as\nits file, in the configuration the link chooses, has them, before\nthe values the link passes; nil for a file that is not a model."
 					},
 					"Move": {
 						"decl": "func (v LinkGroup) Move(t Vec)",
@@ -5598,6 +5614,10 @@
 					"Orientation": {
 						"decl": "func (v LinkGroup) Orientation() (u, w Vec)",
 						"text": "Orientation is where the part's own x and y directions point now, as\nunit vectors."
+					},
+					"Param": {
+						"decl": "func (v LinkGroup) Param(name string) (expr string)",
+						"text": "Param is the expression the link passes to the linked model's\nparameter name, or \"\" when the model's own stands."
 					},
 					"Problem": {
 						"decl": "func (v LinkGroup) Problem() (msg string)",
@@ -5615,9 +5635,21 @@
 						"decl": "func (v LinkGroup) SetAsSolid(on bool)",
 						"text": "SetAsSolid reads a link group's STEP file as a solid, or as a\nreference mesh, and reads it again."
 					},
+					"SetConfiguration": {
+						"decl": "func (v LinkGroup) SetConfiguration(name string)",
+						"text": "SetConfiguration regenerates the linked model in its configuration\nname, or with \"\" reads it as its file was saved. A model linked twice\ncan so be two sizes. The model must have a configuration of that name."
+					},
+					"SetFile": {
+						"decl": "func (v LinkGroup) SetFile(path string)",
+						"text": "SetFile points the link at another file and reads it, keeping where\nthe part is placed, its scale and what the link passes into it: a\nnewer revision of a part saved under another name, or a STEP file in\nplace of a model. What later groups use of the old part and the new\none lacks is removed with them, as when a linked file is missing."
+					},
 					"SetOrientation": {
 						"decl": "func (v LinkGroup) SetOrientation(u, w Vec)",
 						"text": "SetOrientation turns the part so that its own x and y directions\npoint along u and w, which must not be parallel (w is made square to\nu), as dragging the part's normal in the window does."
+					},
+					"SetParam": {
+						"decl": "func (v LinkGroup) SetParam(name, expr string)",
+						"text": "SetParam passes the value of expr, a number or an expression in\nthis drawing's parameters, to the linked model's parameter name, and\nregenerates the model with it; when one of the drawing's parameters\nchanges, the model is regenerated again. With \"\" the model's own\nexpression stands again. The model must have a parameter of that\nname."
 					}
 				}
 			},
@@ -6955,6 +6987,10 @@
 						"decl": "func (g *Group) IsMeshGroup2() bool",
 						"text": "IsMeshGroup returns true if this group produces a mesh output (EXTRUDE, LATHE, REVOLVE, HELIX, ROTATE, TRANSLATE)."
 					},
+					"IsParametricLink": {
+						"decl": "func (g *Group) IsParametricLink() bool",
+						"text": "IsParametricLink reports whether the group passes a configuration or parameter values into the model it links."
+					},
 					"IsSolvedOkay": {
 						"decl": "func (g *Group) IsSolvedOkay() bool"
 					},
@@ -6968,6 +7004,14 @@
 					"JoinsAssembly": {
 						"decl": "func (g *Group) JoinsAssembly(sk *Sketch) bool",
 						"text": "JoinsAssembly reports whether the solid so far that g's Boolean joins holds parts put side by side: a group before it combines as an assembly onto a solid made before that."
+					},
+					"LinkOverridesKey": {
+						"decl": "func (g *Group) LinkOverridesKey() string",
+						"text": "LinkOverridesKey names what the group passes into the model it links, \"\" for nothing: the same key for the same configuration and values."
+					},
+					"LinkParam": {
+						"decl": "func (g *Group) LinkParam(name string) *LinkParam",
+						"text": "LinkParam is the value the group passes to the linked model's parameter name, or nil."
 					},
 					"LoftEnds": {
 						"decl": "func (g *Group) LoftEnds() topo.LoftEnds",
@@ -7115,6 +7159,10 @@
 			},
 			"Interference": {
 				"text": "Interference is two parts that overlap: the groups that made them, the volume they share, and its triangles.",
+				"kind": "struct"
+			},
+			"LinkParam": {
+				"text": "LinkParam is a value a link group passes to a parameter of the model it links.",
 				"kind": "struct"
 			},
 			"MassReport": {
@@ -8085,6 +8133,18 @@
 						"decl": "func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string) error",
 						"text": "SetGroupText gives a group value what the user typed, as SetConstraintText does for a constraint: a pitch is in the document's unit."
 					},
+					"SetLinkConfiguration": {
+						"decl": "func (sk *Sketch) SetLinkConfiguration(hg core.HGroup, name string) error",
+						"text": "SetLinkConfiguration has the link group hg regenerate the model it links in the model's configuration name, or with \"\" in the one it was saved in."
+					},
+					"SetLinkFile": {
+						"decl": "func (sk *Sketch) SetLinkFile(hg core.HGroup, file string) error",
+						"text": "SetLinkFile points the link group hg at another file, named as the group names its file (relative to the sketch's file, or absolute), and reads it, keeping the group's placement, scale and what it passes into the model."
+					},
+					"SetLinkParam": {
+						"decl": "func (sk *Sketch) SetLinkParam(hg core.HGroup, name, expr string) error",
+						"text": "SetLinkParam has the link group hg pass the value of expr, an expression in this sketch's parameters, to the linked model's parameter name; with expr \"\" the model's own expression stands again."
+					},
 					"SetLoftGuides": {
 						"decl": "func (sk *Sketch) SetLoftGuides(hg core.HGroup, es []core.HEntity) error",
 						"text": "SetLoftGuides makes the line segments, arcs and cubics es the guide curves of the loft hg, or takes its guides away when es is empty."
@@ -8444,6 +8504,10 @@
 			"Letter": {
 				"decl": "func Letter(n int) string",
 				"text": "Letter is the letter of the n-th section or detail view: A, B, ..., Z, AA, AB, ..."
+			},
+			"LinkParamField": {
+				"decl": "func LinkParamField(name string) string",
+				"text": "LinkParamField is the name in messages of the value a link passes to the linked model's parameter name."
 			},
 			"MeshQualitySettings": {
 				"decl": "func MeshQualitySettings(q MeshQuality) (chordMm, angleDeg float64, segments int)",

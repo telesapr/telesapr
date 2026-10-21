@@ -256,6 +256,16 @@ func TestPathEquivalenceLinkStepSolid(t *testing.T) {
 	}
 }
 
+// A part linked, given a configuration and a parameter value and then
+// relinked on its group screen, and the same by a script.
+func TestPathEquivalenceLinkParams(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_link_params", "path_link_params")
+	g := ui.Group(ui.Active)
+	if g.LinkConfiguration != "long" || len(g.LinkParams) != 1 || filepath.Base(g.LinkFile) != "block.tlspr" {
+		t.Errorf("the link: configuration %q, params %v, file %q", g.LinkConfiguration, g.LinkParams, g.LinkFile)
+	}
+}
+
 // An edge of the solid picked on the model and chamfered, and the same
 // edge chamfered by its name in a script.
 func TestPathEquivalenceChamferSolidEdge(t *testing.T) {

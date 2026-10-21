@@ -1,0 +1,28 @@
+# Parametric links and relink (an extension): a plate with a parameter
+# L and the configurations short and long is linked into an empty model.
+# Its group screen regenerates it in "long", then passes L the value 60;
+# Analyze > Measure Volume gives 60 x 30 x 10. [relink] points the link
+# at a block instead, which has no parameters, as the screen and the
+# file show.
+file $testdata/linkparams/host.tlspr
+menu File|Open...
+file $testdata/linkparams/plate.tlspr
+menu Assembly|Link / Assemble...
+tw
+twmove 366 170
+twdown L 366 170
+twup L 366 170
+tw
+twmove 258 190
+twdown L 258 190
+twup L 258 190
+edit 60
+tw
+answer ok
+menu Analyze|Measure Volume
+file $testdata/linkparams/block.tlspr
+twmove 186 130
+twdown L 186 130
+twup L 186 130
+tw
+save

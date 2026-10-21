@@ -389,6 +389,10 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 	}
 	n.str("link", g.LinkFile)
 	n.flag("link-as-solid", g.LinkAsSolid)
+	n.str("link-configuration", g.LinkConfiguration)
+	for _, lp := range g.LinkParams {
+		n.add(&Node{Name: "link-param", Args: []Value{Word(lp.Name)}, HasExpr: true, Expr: lp.Expr})
+	}
 
 	if len(g.Remap) > 0 {
 		type entry struct {

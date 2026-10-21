@@ -167,6 +167,8 @@ func (s *Sketch) definingState() *UndoState {
 			LinkFile:               src.LinkFile,
 			LinkAsSolid:            src.LinkAsSolid,
 			LinkParts:              slices.Clone(src.LinkParts),
+			LinkConfiguration:      src.LinkConfiguration,
+			LinkParams:             slices.Clone(src.LinkParams),
 			Color:                  src.Color,
 			Predef:                 src.Predef,
 			Edges:                  slices.Clone(src.Edges),

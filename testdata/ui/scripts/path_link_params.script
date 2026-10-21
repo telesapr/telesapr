@@ -1,0 +1,20 @@
+# A plate linked, regenerated in its configuration "long" and passed L
+# = 60 from its group screen, then relinked to a block; the same as
+# path_link_params.go makes (TestPathEquivalenceLinkParams). An empty
+# model beside the parts is opened first, so that the screen names them
+# relative to it, the same on every machine.
+file $testdata/linkparams/host.tlspr
+menu File|Open...
+file $testdata/linkparams/plate.tlspr
+menu Assembly|Link / Assemble...
+twmove 366 170
+twdown L 366 170
+twup L 366 170
+twmove 258 190
+twdown L 258 190
+twup L 258 190
+edit 60
+file $testdata/linkparams/block.tlspr
+twmove 186 130
+twdown L 186 130
+twup L 186 130

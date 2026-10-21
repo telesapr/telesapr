@@ -165,6 +165,8 @@ const (
 	editCommandQuery Edit = 920
 	// For the section view (an extension)
 	editSectionOffset Edit = 930
+	// For a value a link passes its model (an extension)
+	editLinkParam Edit = 931
 )
 
 // drawOrHitHow is what DrawOrHitTestIcons and the colour picker do.

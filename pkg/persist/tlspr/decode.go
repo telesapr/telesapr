@@ -702,6 +702,22 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			g.LinkFile = d.strField(c)
 		case "link-as-solid":
 			g.LinkAsSolid = d.flag(c)
+		case "link-configuration":
+			g.LinkConfiguration = d.strField(c)
+		case "link-param":
+			// "link-param <name> = <expression>": a value the link
+			// passes to the linked model's parameter name.
+			if !c.HasExpr || c.Block || len(c.Args) != 1 {
+				d.fail(c.Pos, "a value passed to a linked model is written as 'link-param <name> = <expression>'")
+			}
+			name := d.word(c.Args[0])
+			if g.LinkParam(name) != nil {
+				d.fail(c.Pos, "a second value for the linked model's parameter %s", name)
+			}
+			at := *c
+			at.Args = nil
+			val, _ := d.expr(&at, exprPlace{group: g.H, field: sketch.LinkParamField(name)})
+			g.LinkParams = append(g.LinkParams, sketch.LinkParam{Name: name, Expr: c.Expr, Value: val})
 		case "remap":
 			d.head(c, 0)
 			for _, m := range c.Children {

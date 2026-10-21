@@ -27,10 +27,12 @@ func fullDocument() *Document {
 		ValA:            3, ValB: -1.25, ValC: 1e-9,
 		Subtype: sketch.GroupTwoSkewed, SkipFirst: true,
 		MeshCombine: sketch.CombineIntersection, ForceToMesh: true,
-		Remap:    core.EntityMap{{Input: core.HEntity{V: 0x40001}, CopyNumber: 2}: {V: 5}},
-		LinkFile: "dir/part.tlspr",
-		Color:    core.RGBA{Red: 1, Green: 2, Blue: 3, Alpha: 4},
-		Density:  7.85,
+		Remap:             core.EntityMap{{Input: core.HEntity{V: 0x40001}, CopyNumber: 2}: {V: 5}},
+		LinkFile:          "dir/part.tlspr",
+		Color:             core.RGBA{Red: 1, Green: 2, Blue: 3, Alpha: 4},
+		Density:           7.85,
+		LinkConfiguration: "long",
+		LinkParams:        []sketch.LinkParam{{Name: "L", Expr: "60", Value: 60}, {Name: "w_2", Expr: "-0.5", Value: -0.5}},
 	}
 	g.Predef.Q = geom.Quaternion{W: 0.5, X: -0.5, Y: 0.25, Z: math.Copysign(0, -1)}
 	g.Predef.Origin = core.HEntity{V: 0x10001}

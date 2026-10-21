@@ -14,6 +14,7 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 
@@ -32,6 +33,19 @@ type Loader func(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell) (
 type Report struct {
 	Info    []string
 	Problem string
+	// Model is set for a file that is a model, with parameters it was
+	// regenerated with or saved with, and configurations.
+	Model          bool
+	Parameters     []sketch.Parameter
+	Configurations []string
+}
+
+// clone is a copy of r that shares nothing with it.
+func (r Report) clone() Report {
+	r.Info = slices.Clone(r.Info)
+	r.Parameters = slices.Clone(r.Parameters)
+	r.Configurations = slices.Clone(r.Configurations)
+	return r
 }
 
 // ReportingLoader is a Loader that also describes the file, and says
@@ -162,6 +176,18 @@ type Options struct {
 // find a missing one through LocateMissingFile. It is false when the
 // user cancelled.
 func ReloadAll(sk *sketch.Sketch, saveFile string, o Options) bool {
+	return reloadAll(sk, saveFile, o, &loadCtx{open: map[string]bool{}})
+}
+
+// loadCtx is what a reload passes down to the reloads of the models it
+// regenerates: the files open above it, and the files what it read
+// depends on.
+type loadCtx struct {
+	open map[string]bool
+	deps *[]stamp
+}
+
+func reloadAll(sk *sketch.Sketch, saveFile string, o Options, ctx *loadCtx) bool {
 	canCancel := o.CanCancel
 	locate := locateMissingFile
 	if o.Quiet {
@@ -180,6 +206,8 @@ func ReloadAll(sk *sketch.Sketch, saveFile string, o Options) bool {
 		g.ImpMesh.Clear()
 		g.ImpShell.Clear()
 		g.LinkInfo, g.LinkProblem, g.LinkParts = nil, "", nil
+		g.LinkModelRead, g.LinkPartParameters, g.LinkConfigurations = false, nil, nil
+		g.LinkLoaded = g.LinkOverridesKey()
 
 		if found, ok := linkMap[g.LinkFile]; ok {
 			g.LinkFile = found
@@ -197,11 +225,19 @@ func ReloadAll(sk *sketch.Sketch, saveFile string, o Options) bool {
 			}
 			var rep Report
 			loaded := false
-			if load != nil {
-				g.ImpEntity, loaded = cachedLoadAs(load, linkFile, solid, sk, &g.ImpMesh, &g.ImpShell, &rep)
+			overrides := g.LinkOverridesKey()
+			switch {
+			case overrides != "" && readerFor(linkFile) != nil:
+				g.ImpEntity, loaded = cachedLoadAs(regenerating(g, ctx), linkFile, solid, overrides, sk, &g.ImpMesh, &g.ImpShell, &rep, ctx)
+			case load != nil:
+				g.ImpEntity, loaded = cachedLoadAs(plain(load), linkFile, solid, "", sk, &g.ImpMesh, &g.ImpShell, &rep, ctx)
+				if loaded && overrides != "" {
+					rep.Problem = joinProblems(rep.Problem, "the file is not a model, so it takes no configuration or parameter values")
+				}
 			}
 			if loaded {
 				g.LinkInfo, g.LinkProblem = rep.Info, rep.Problem
+				g.LinkModelRead, g.LinkPartParameters, g.LinkConfigurations = rep.Model, rep.Parameters, rep.Configurations
 				g.LinkParts = LinkedParts(saveFile, linkFile)
 				// We loaded the data, good. Now import its dependencies
 				// as well.

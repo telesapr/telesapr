@@ -17,7 +17,7 @@ import (
 const Extension = "tlspr"
 
 func init() {
-	link.Register(Extension, loadLinked)
+	link.RegisterReporting(Extension, loadLinked)
 	link.RegisterSketchReader(Extension, readLinkedSketch)
 }
 
@@ -82,8 +82,10 @@ func Load(data []byte, path string) (doc *Document, err error) {
 }
 
 // loadLinked reads the saved entities, mesh and shell of a linked
-// .tlspr file, and imports its styles that the sketch doesn't have.
-func loadLinked(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell) ([]core.Entity, bool) {
+// .tlspr file, and imports its styles that the sketch doesn't have. It
+// reports the model's parameters and configurations, which a link can
+// pass values into.
+func loadLinked(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell, rep *link.Report) ([]core.Entity, bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, false
@@ -98,6 +100,11 @@ func loadLinked(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell) ([
 		if sk.Style(st.H) == nil {
 			sk.Styles = append(sk.Styles, st)
 		}
+	}
+	rep.Model = true
+	rep.Parameters = doc.Sketch.Parameters
+	for _, c := range doc.Sketch.Configurations {
+		rep.Configurations = append(rep.Configurations, c.Name)
 	}
 	m.Triangles = append(m.Triangles, doc.Mesh.Triangles...)
 	sh.Surface = append(sh.Surface, doc.Shell.Surface...)

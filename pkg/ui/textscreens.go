@@ -1280,7 +1280,7 @@ func (tw *textWindow) showLinkedInfo(g *sketch.Group) {
 	ss := tw.ss
 
 	tw.Printf(true, " %Ftlink geometry from file%E")
-	tw.Printf(false, "%Ba   '%s'", ss.linkDisplayPath(g.LinkFile))
+	tw.Printf(false, "%Ba   '%s' %Fl%Ll%f%D[relink]%E", ss.linkDisplayPath(g.LinkFile), lf(tw.ScreenRelink), g.H.V)
 	tw.Printf(false, "%Bd   %Ftscaled by%E %#%s %Fl%Ll%f%D[change]%E",
 		g.Scale, exprNote(g.ExprScale), lf(tw.ScreenChangeGroupScale), g.H.V)
 	if link.IsStep(g.LinkFile) {
@@ -1288,6 +1288,7 @@ func (tw *textWindow) showLinkedInfo(g *sketch.Group) {
 			lf(tw.ScreenChangeLinkAsSolid), radioMark(!g.LinkAsSolid),
 			lf(tw.ScreenChangeLinkAsSolid), radioMark(g.LinkAsSolid))
 	}
+	tw.showLinkModel(g)
 	for _, line := range g.LinkInfo {
 		tw.Printf(false, "   %Fd%s%E", line)
 	}
@@ -1815,6 +1816,9 @@ func (tw *textWindow) EditControlDone(s string) {
 		if e := ss.exprFromString(s); e != nil {
 			ss.setGroupText(tw.edit.group, sketch.GroupScale, s)
 		}
+
+	case editLinkParam:
+		tw.editLinkParamDone(s)
 
 	case editHelixPitch: // stored in valB
 		if e := ss.exprFromString(s); e != nil {

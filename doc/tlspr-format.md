@@ -239,6 +239,8 @@ group <handle> <type> <name> {
   scale <real>              # left out when 1, or 0, which is no scale; "scale = <expression>" for an expression
   link <string>             # linked file, relative to this file, with / separators
   link-as-solid             # a linked STEP file read as a solid, not a reference mesh
+  link-configuration <string>    # a linked model regenerated in its configuration of this name; left out for the one it was saved in
+  link-param <name> = <expression>  # a value passed to the linked model's parameter name, an expression in this file's parameters; one line each
   remap { ... }
 }
 ```
@@ -437,7 +439,7 @@ handle with bit 30 set is free.
 ## Generated data
 
 A file that is linked into another needs its entities, mesh and shell, since the linking file
-does not regenerate it. The writer therefore saves them. A reader that opens the file as a
+does not regenerate it, unless the link passes it a configuration or parameter values. The writer therefore saves them. A reader that opens the file as a
 document ignores them and regenerates them from the hand-made records. This may change in a
 later version, behind the version number.
 
@@ -602,6 +604,13 @@ A link group's `link` names a `.tlspr`, `.emn` or `.stl` file relative to the fi
 the group. A link to a `.slvs` file is not followed: importing a SolveSpace assembly converts
 every linked `.slvs` file to a `.tlspr` file beside it and rewrites the links
 (`pkg/persist/convert`, File > Import, `telesapr-cli convert`, `api.Import`).
+
+A link to a `.tlspr` file with a `link-configuration` or `link-param` lines reads the linked
+model's records instead of its saved entities, mesh and shell: it activates that configuration,
+gives each named parameter the value of its expression (evaluated in the linking file's
+parameters, a plain number to the model), and regenerates the model, its own links read the same
+way. A name the model has no parameter or configuration of is reported on the group and left
+out. Older readers skip both lines and read the model as it was saved.
 
 ## Autosave
 
