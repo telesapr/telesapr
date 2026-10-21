@@ -225,6 +225,7 @@ Asse&mbly ind=0 en=1 act=0
   Check S&olid [Ctrl+Shift+O] ind=0 en=1 act=0
   Group Dependencies ind=0 en=1 act=0
   Ray-Cast Check ind=0 en=1 act=0
+  Clearance and &Walls... ind=0 en=1 act=0
   Show &Naked Edges [Ctrl+Shift+N] ind=0 en=1 act=0
   Show &Underconstrained Points [Ctrl+Shift+F] ind=0 en=1 act=0
   ---
