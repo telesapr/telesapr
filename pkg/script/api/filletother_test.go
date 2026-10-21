@@ -123,7 +123,7 @@ func TestFilletOnOtherSolids(t *testing.T) {
 				d.Sketch.Circle(V(0, 0, p.z), p.r)
 			}
 			return d.Features.LoftThrough(ps, "vase")
-		}, 2, 0},
+		}, 2, 4},
 		{"sweep", func(d *Doc) Group {
 			d.Features.SketchIn(d.Workplane("ZX"), "path")
 			up := d.Sketch.Line(V(0, 0, 0), V(0, 0, 30))

@@ -12,20 +12,16 @@ Branch `wp-c3-fillet-curved`, from devel 83b573fd. State as of 2026-10-22.
   `TestFilletChainsNotMitred` (lens top and bottom chains), `TestRollingBallRefusals` (the rim with
   the branch now gives the rim's own refusal).
 
+- Loft foot edges: long Gauss-Newton steps that take the point further away are halved
+  (`nearestOnWithin`), and a section whose feet don't settle is made again with
+  `srf.SSurface.Project`. All four foot edges are sound. The fillet's surface lies within 4e-6 mm of
+  OpenCASCADE's, whose own result is not valid there.
+
 ## Measure
 
-`TestFilletOnOtherSolids`: 47 of 59 at the start, and still 47 after `3fdc41eb`, because it fillets
-each edge alone, so picks apart don't move it. All 12 refusals are the loft (`vase`, r 2):
+`TestFilletOnOtherSolids`: 47 of 59 at the start, **51 of 59** now. The 8 left are all the loft:
 
 | Edges | Refusal | Cause |
 |---|---|---|
-| 4 foot edges (bottom plane x side patch) | "the ball … doesn't touch the face on side 1" | At the corner, `nearestOnWithin`'s plain Gauss-Newton doesn't settle on the twisted side patch. The foot is 3.9 from the centre, not 2 |
-| 4 top ring arcs | "meets the flat face almost along it" | `blendNext` stops where a crease fades to tangent at the ring |
+| 4 top ring arcs | "meets the flat face almost along it" | `blendNext` stops where a crease fades to tangent at the ring, so the chain isn't closed round the ring |
 | 4 creases | "the faces meet tangent here" | The crease fades to tangent at the top. Refusing it is right; it would need a vanishing fillet |
-
-## In progress (not committed)
-
-The foot edges: retrying a failed section with `srf.SSurface.Project` (robust) makes the foot fillet
-sound (took 9.69 mm³), but it takes 47 s, from about 35,000 retried sections. Next, a cheaper fix:
-damped steps in `nearestOnWithin` (halve a step that moves away), or seeding from the previous
-section's foot. Goldens must be checked, since the feet's last bits may move.

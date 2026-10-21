@@ -168,12 +168,11 @@ pole slivers grew.
 Code: `pkg/topo/rollingball.go`, `rollingend.go`, `rollingrunoff.go`, `rollingmitre.go`,
 `rollingchains.go`, `fillet_setback.go`, `fillet_network.go`. Every case below is refused with a message today, except where the State
 column says unsound. Measure: `TestFilletOnOtherSolids` (fillets on lofts, sweeps and STEP
-solids) at 47 of 59 sound.
+solids) at 51 of 59 sound.
 
 | Item | State | Approach / tried |
 |---|---|---|
 | Run-offs onto a curved face; a run-off of a blend that takes material away; both ends running off | refused, naming the place | The setback patch is the means: where the ball runs off a face, cut the fillet as a setback is cut and fill the hole between it, the next face's fillet (or the face) and the faces round. A run-off taking material away was never reached by any test case (a slot cut from the cone never got that far) |
-| Open chains ending on a curved face (the loft's foot edges, across a crease) | refused: "the ball doesn't touch the face" | Same patches, the end face's curve no longer planar: its side rule becomes the curved face's tangent plane along the curve, exact in the tau/sigma form only for ruled faces, fitted otherwise. Tried: the end section as the conic through the roots on the curved face, accepted within half the chord tolerance: no measured case gained |
 | The loft's top ring, where creases fade to tangent | "meets the flat face almost along it" | The chain should go on round the ring across a crease that is smooth at that vertex; `blendNext` takes only edges smooth all along |
 | Mitres where only some of a rim's chains are picked: a chain mitred at one end, ending on the unpicked chain's wall at the other | refused: "pick it alone" | Per-end mitres: `mitred` and `nearEnd` take both ends alike today; a mitred end beside a curved end (`curvedEndSection`) |
 | Chamfers meeting at a crease, of one chain or several | refused: "are not mitred" | The mitre is found from the ball's centres; a chamfer's would be where the two ruled surfaces, carried on, meet |
@@ -186,6 +185,16 @@ solids) at 47 of 59 sound.
 | Chamfers of edges between flat faces that end on a curved face | refused | Routed like the fillets, they left 134 naked edges and edges run the same way; not traced |
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
 | Slot chamfer at 3 | see K4 | The teapot handle and the run-off chamfers' crossings, listed here before, are sound since K4's mender |
+
+Done 2026-10-22: the loft's foot edges, open chains ending across a crease on the next side
+patch, refused as "the ball doesn't touch the face": near the corner the side patch is twisted
+and the feet's plain Gauss-Newton steps overshot and stopped off the foot (3.9 from the centre for a
+ball of 2). Long steps that take the point further away are now halved (`nearestOnWithin`), and a
+section whose feet still don't settle is made again with them projected by
+`srf.SSurface.Project`. All four are sound, `TestFilletOnOtherSolids` 47 → 51 of 59. Our fillet's
+surface lies within 4e-6 mm of OpenCASCADE's along the run (its own result is not valid there). The
+loft's feet take about 20 s each, most of it the retried sections. At chord 0.002% the end is
+refused ("can't be fitted … make it smaller").
 
 Done 2026-10-22: rolling-ball edges picked with others whose fillets don't reach them (an edge
 between curved faces, or between flat faces ending on a curved one), refused as "pick it alone"
