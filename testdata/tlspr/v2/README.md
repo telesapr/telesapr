@@ -22,3 +22,6 @@ no entity names (workplane subtype `face`, added within version 2 on 2026-10-10)
 `limits.tlspr` is the rod and slot of `examples/scripts/limits`: a line between a minimum and a
 maximum length, and a point on a segment (`min-distance`, `max-distance` and `pt-on-segment`,
 added within version 2 on 2026-10-10).
+
+`wrap.tlspr` is a cylinder with a rectangle wrapped onto it and raised 1 mm (group type `wrap`,
+field `height`, added within version 2 on 2026-10-22).

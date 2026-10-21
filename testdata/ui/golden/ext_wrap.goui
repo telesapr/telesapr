@@ -1,0 +1,372 @@
+dialog 3 Bad selection for wrapping a sketch onto a face.|With the sketch to wrap active (Sketch -> In Workplane), in a workplane parallel to the face's axis, select one cylinder or cone of the solid (View -> Show -> Selectable Faces, to pick faces while sketching). The sketch's closed loops, text included, are rolled onto the side of the face towards the sketch and raised from it; the group's screen sets the height and whether they are raised or sunk.
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 5 0
+camera 5 0 0 0 1 0 0 0 1 0
+counts 5 11 82 16 53
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""
+row 0  home › g005-wrap   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-19 64 64 0
+ 20-47 74 64 0
+ 48-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g005-wrap [rename/del] [active/hide/↑/↓]
+ 0-6 74 64 0
+ 7-17 64 64 0
+ 18-23 6c 64 108 5 1 0
+ 24-24 64 64 0
+ 25-27 6c 64 108 5 1 0
+ 28-30 64 64 0
+ 31-36 73 64 0
+ 37-37 64 64 0
+ 38-41 6c 64 115 5 1 0
+ 42-42 64 64 0
+ 43-43 6c 64 117 5 1 0
+ 44-44 64 64 0
+ 45-45 6c 64 100 5 1 0
+ 46-99 64 64 0
+row 10  wrap the sketch onto a face
+ 0-0 64 64 0
+ 1-27 74 64 0
+ 28-99 64 64 0
+row 12    face face 4 of g003-lathe
+ 0-2 64 64 0
+ 3-6 74 64 0
+ 7-99 64 64 0
+row 14    height 1.00 [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-14 64 61 0
+ 15-22 6c 61 108 5 1 0
+ 23-99 64 61 0
+row 16     raised   sunk
+ 0-2 64 64 0
+ 3-10 64 64 99 0 1 0
+ 11-12 64 64 0
+ 13-18 64 64 99 1 1 0
+ 19-99 64 64 0
+row 18 
+ 0-99 64 64 0
+row 20    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 22    color      (0.39, 0.39, 0.39) [change]
+ 0-2 64 64 0
+ 3-10 74 64 0
+ 11-12 64 7a 646464ff 0
+ 13-32 64 64 0
+ 33-40 6c 64 102 16 1 0
+ 41-99 64 64 0
+row 24    opacity 1.00 [change]
+ 0-2 64 64 0
+ 3-9 74 64 0
+ 10-15 64 64 0
+ 16-23 6c 64 102 0 1 0
+ 24-99 64 64 0
+row 26      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 28 
+ 0-99 64 64 0
+row 30    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 32    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 34    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 37    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 39    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 41    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 43    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 45 
+ 0-99 64 64 0
+row 47  requests in group
+ 0-99 74 64 0
+row 49    (none)
+ 0-99 64 61 0
+row 51 
+ 0-99 64 64 0
+row 53  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 55    (none)
+ 0-99 64 61 0
+row 57 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8, of 11 patches\nTriangles: 312\nVolume: 6.29 cm³\nCenter of mass: (-0.01, 10.01, 0.02)\nExtent: 20.00 x 20.00 x 20.51
+row 0  home › g005-wrap   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-19 64 64 0
+ 20-47 74 64 0
+ 48-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g005-wrap [rename/del] [active/hide/↑/↓]
+ 0-6 74 64 0
+ 7-17 64 64 0
+ 18-23 6c 64 108 5 1 0
+ 24-24 64 64 0
+ 25-27 6c 64 108 5 1 0
+ 28-30 64 64 0
+ 31-36 73 64 0
+ 37-37 64 64 0
+ 38-41 6c 64 115 5 1 0
+ 42-42 64 64 0
+ 43-43 6c 64 117 5 1 0
+ 44-44 64 64 0
+ 45-45 6c 64 100 5 1 0
+ 46-99 64 64 0
+row 10  wrap the sketch onto a face
+ 0-0 64 64 0
+ 1-27 74 64 0
+ 28-99 64 64 0
+row 12    face face 4 of g003-lathe
+ 0-2 64 64 0
+ 3-6 74 64 0
+ 7-99 64 64 0
+row 14    height 2.00 (= 1+1) [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-22 64 61 0
+ 23-30 6c 61 108 5 1 0
+ 31-99 64 61 0
+row 16     raised   sunk
+ 0-2 64 64 0
+ 3-10 64 64 99 0 1 0
+ 11-12 64 64 0
+ 13-18 64 64 99 1 1 0
+ 19-99 64 64 0
+row 18 
+ 0-99 64 64 0
+row 20    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 22    color      (0.39, 0.39, 0.39) [change]
+ 0-2 64 64 0
+ 3-10 74 64 0
+ 11-12 64 7a 646464ff 0
+ 13-32 64 64 0
+ 33-40 6c 64 102 16 1 0
+ 41-99 64 64 0
+row 24    opacity 1.00 [change]
+ 0-2 64 64 0
+ 3-9 74 64 0
+ 10-15 64 64 0
+ 16-23 6c 64 102 0 1 0
+ 24-99 64 64 0
+row 26      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 28 
+ 0-99 64 64 0
+row 30    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 32    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 34    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 37    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 39    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 41    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 43    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 45 
+ 0-99 64 64 0
+row 47  requests in group
+ 0-99 74 64 0
+row 49    (none)
+ 0-99 64 61 0
+row 51 
+ 0-99 64 64 0
+row 53  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 55    (none)
+ 0-99 64 61 0
+row 57 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8, of 11 patches\nTriangles: 312\nVolume: 6.31 cm³\nCenter of mass: (-0.02, 10.03, 0.05)\nExtent: 20.00 x 20.00 x 21.46
+row 0  home › g005-wrap   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-19 64 64 0
+ 20-47 74 64 0
+ 48-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g005-wrap [rename/del] [active/hide/↑/↓]
+ 0-6 74 64 0
+ 7-17 64 64 0
+ 18-23 6c 64 108 5 1 0
+ 24-24 64 64 0
+ 25-27 6c 64 108 5 1 0
+ 28-30 64 64 0
+ 31-36 73 64 0
+ 37-37 64 64 0
+ 38-41 6c 64 115 5 1 0
+ 42-42 64 64 0
+ 43-43 6c 64 117 5 1 0
+ 44-44 64 64 0
+ 45-45 6c 64 100 5 1 0
+ 46-99 64 64 0
+row 10  wrap the sketch onto a face
+ 0-0 64 64 0
+ 1-27 74 64 0
+ 28-99 64 64 0
+row 12    face face 4 of g003-lathe
+ 0-2 64 64 0
+ 3-6 74 64 0
+ 7-99 64 64 0
+row 14    height 2.00 (= 1+1) [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-22 64 61 0
+ 23-30 6c 61 108 5 1 0
+ 31-99 64 61 0
+row 16     raised   sunk
+ 0-2 64 64 0
+ 3-10 64 64 99 0 1 0
+ 11-12 64 64 0
+ 13-18 64 64 99 1 1 0
+ 19-99 64 64 0
+row 18 
+ 0-99 64 64 0
+row 20    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 22    color      (0.39, 0.39, 0.39) [change]
+ 0-2 64 64 0
+ 3-10 74 64 0
+ 11-12 64 7a 646464ff 0
+ 13-32 64 64 0
+ 33-40 6c 64 102 16 1 0
+ 41-99 64 64 0
+row 24    opacity 1.00 [change]
+ 0-2 64 64 0
+ 3-9 74 64 0
+ 10-15 64 64 0
+ 16-23 6c 64 102 0 1 0
+ 24-99 64 64 0
+row 26      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 28 
+ 0-99 64 64 0
+row 30    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 32    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 34    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 37    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 39    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 41    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 43    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 45 
+ 0-99 64 64 0
+row 47  requests in group
+ 0-99 74 64 0
+row 49    (none)
+ 0-99 64 61 0
+row 51 
+ 0-99 64 64 0
+row 53  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 55    (none)
+ 0-99 64 61 0
+row 57 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8, of 11 patches\nTriangles: 312\nVolume: 6.24 cm³\nCenter of mass: (0.01, 9.98, -0.04)\nExtent: 20.00 x 20.00 x 20.00

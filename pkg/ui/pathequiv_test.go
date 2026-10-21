@@ -323,6 +323,16 @@ func TestPathEquivalenceShell(t *testing.T) {
 	}
 }
 
+// A cylinder picked with the mouse and a sketch wrapped onto it, and the
+// same made by a script (WP-C2).
+func TestPathEquivalenceWrap(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_wrap", "path_wrap")
+	g := ui.Group(ui.Active)
+	if g.Type != sketch.GroupWrap || g.Problem.Msg != "" || len(g.SolidFaces) != 1 {
+		t.Errorf("the wrap: type %d, problem %q, faces %v", g.Type, g.Problem.Msg, g.SolidFaces)
+	}
+}
+
 // The top of an extrusion picked with the mouse and a sketch started on
 // it, and the same made by a script (F1).
 func TestPathEquivalenceSketchOnFace(t *testing.T) {

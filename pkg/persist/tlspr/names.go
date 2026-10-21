@@ -43,6 +43,7 @@ var groupTypes = newEnum("group type", map[sketch.GroupType]string{
 	sketch.GroupFillet:           "fillet",
 	sketch.GroupShell:            "shell",
 	sketch.GroupLoft:             "loft",
+	sketch.GroupWrap:             "wrap",
 })
 
 var groupSubtypes = newEnum("group subtype", map[sketch.GroupSubtype]string{

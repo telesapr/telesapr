@@ -575,8 +575,13 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		chain.Edges = nil
 	}
 
-	// Step 8: cull duplicate / anti-parallel edges.
+	// Step 8: cull duplicate / anti-parallel edges, and edges of no
+	// length: a curve split a hair from where it crosses a patch's seam
+	// (a letter wrapped deep onto a cone across the seam of its patches)
+	// leaves a piece that bounds nothing, but whose point, kept, has two
+	// ways on, and the trim doesn't assemble.
 	final.CullExtraneousEdges(true)
+	final.Edges = slices.DeleteFunc(final.Edges, func(e SEdge) bool { return e.A == e.B })
 
 	// Step 9: assemble the trim polygon from the kept edges; if it
 	// fails to close, the caller marks booleanFailed in `into`.

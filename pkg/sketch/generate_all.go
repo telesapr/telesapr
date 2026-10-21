@@ -976,7 +976,7 @@ func (sk *Sketch) AddedPending() core.HGroup { return sk.scheduledAdded }
 // profiles are the sketches the group makes a solid of.
 func (g *Group) profiles() []core.HGroup {
 	switch g.Type {
-	case GroupExtrude, GroupLathe, GroupRevolve, GroupHelix, GroupSweep:
+	case GroupExtrude, GroupLathe, GroupRevolve, GroupHelix, GroupSweep, GroupWrap:
 		return []core.HGroup{g.OpA}
 	case GroupLoft:
 		return g.LoftProfiles()

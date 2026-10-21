@@ -95,6 +95,7 @@ func init() {
 		"GroupWorkplaneByLineSegments": reflect.ValueOf(sketch.GroupWorkplaneByLineSegments),
 		"GroupWorkplaneByPointNormal":  reflect.ValueOf(sketch.GroupWorkplaneByPointNormal),
 		"GroupWorkplaneByPointOrtho":   reflect.ValueOf(sketch.GroupWorkplaneByPointOrtho),
+		"GroupWrap":                    reflect.ValueOf(sketch.GroupWrap),
 		"HGroupReferences":             reflect.ValueOf(constant.MakeFromLiteral("1", token.INT, 0)),
 		"HRequestReferenceXY":          reflect.ValueOf(&sketch.HRequestReferenceXY).Elem(),
 		"HRequestReferenceYZ":          reflect.ValueOf(&sketch.HRequestReferenceYZ).Elem(),

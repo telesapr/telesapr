@@ -60,6 +60,10 @@ const (
 	// GroupPathPattern repeats the solid of its source group (OpA) ValA
 	// times along the path Edges, as a sweep's (pattern.go).
 	GroupPathPattern
+	// GroupWrap lays the loops of its profile group (OpA) onto a
+	// cylinder or a cone of the solid so far, SolidFaces[0], raised ValB
+	// above it or, combined as a difference, sunk ValB into it (wrap.go).
+	GroupWrap
 )
 
 type GroupSubtype int
@@ -362,7 +366,8 @@ func (g *Group) IsMeshGroup() bool {
 		g.Type == GroupFillet ||
 		g.Type == GroupLoft ||
 		g.Type == GroupShell ||
-		g.Type == GroupPathPattern
+		g.Type == GroupPathPattern ||
+		g.Type == GroupWrap
 }
 
 // IsCopyGroup reports whether the group copies its source group,

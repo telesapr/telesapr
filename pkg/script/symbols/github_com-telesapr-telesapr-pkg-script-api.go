@@ -121,6 +121,7 @@ func init() {
 		"ThreadOptions":    reflect.ValueOf((*api.ThreadOptions)(nil)),
 		"Vec":              reflect.ValueOf((*api.Vec)(nil)),
 		"ViewMenu":         reflect.ValueOf((*api.ViewMenu)(nil)),
+		"WrapGroup":        reflect.ValueOf((*api.WrapGroup)(nil)),
 
 		// interface wrapper definitions
 		"_FileGuard": reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_script_api_FileGuard)(nil)),

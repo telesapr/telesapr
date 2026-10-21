@@ -5067,6 +5067,14 @@
 						"decl": "func (m FeaturesMenu) ClearBrokenReferences()",
 						"text": "ClearBrokenReferences empties the list BrokenReferences gives."
 					},
+					"Emboss": {
+						"decl": "func (m FeaturesMenu) Emboss(face SolidFace, height float64, name string) Group",
+						"text": "Emboss wraps the active sketch's closed loops, text included, onto\nface, a cylinder or a cone of the solid so far picked from Solid, and\nraises them height mm above it. The sketch lies in a workplane\nparallel to the face's axis and is rolled onto the side of the face\ntowards it as paper is, so that seen from there it looks as drawn:\nlengths along the sketch are lengths on the face. Lines across or\nalong a cylinder's axis wrap exactly, other curves within 1e-7 mm. One\nloop with its holes, such as one letter, may span at most 170° round\nthe axis. The new group becomes active."
+					},
+					"Engrave": {
+						"decl": "func (m FeaturesMenu) Engrave(face SolidFace, depth float64, name string) Group",
+						"text": "Engrave wraps the active sketch's closed loops onto face as Emboss\ndoes, and sinks them depth mm into it."
+					},
 					"Extrude": {
 						"decl": "func (m FeaturesMenu) Extrude(depth float64, name string) Group",
 						"text": "Extrude makes a solid of the active group's sketch by extruding it\nby depth along the normal of its workplane, or against it for a\nnegative depth. The depth is where the extrusion starts, as when it\nis dragged; constrain a point of it to keep it. The new group\nbecomes active."
@@ -5347,6 +5355,10 @@
 						"decl": "func (g Group) AsSweep() SweepGroup",
 						"text": "AsSweep is the view of a sweep along a path."
 					},
+					"AsWrap": {
+						"decl": "func (g Group) AsWrap() WrapGroup",
+						"text": "AsWrap is the view of a wrap."
+					},
 					"Color": {
 						"decl": "func (g Group) Color() (red, green, blue int)",
 						"text": "Color is the colour of the group's solid, each of red, green and blue\n0 to 255."
@@ -5409,7 +5421,7 @@
 					},
 					"Kind": {
 						"decl": "func (g Group) Kind() string",
-						"text": "Kind names what the group is: \"sketch-in-plane\", \"sketch-in-3d\",\n\"extrude\", \"lathe\", \"revolve\", \"helix\", \"rotate\", \"translate\",\n\"mirror\", \"chamfer\", \"sweep\", \"fillet\", \"loft\", \"shell\" or \"link\"."
+						"text": "Kind names what the group is: \"sketch-in-plane\", \"sketch-in-3d\",\n\"extrude\", \"lathe\", \"revolve\", \"helix\", \"rotate\", \"translate\",\n\"mirror\", \"chamfer\", \"sweep\", \"fillet\", \"loft\", \"shell\", \"pattern\",\n\"wrap\" or \"link\"."
 					},
 					"LeftOut": {
 						"decl": "func (g Group) LeftOut() (why string)",
@@ -6535,6 +6547,24 @@
 						"text": "Units is the document's unit of length: what lengths typed as text,\nin Constraint.SetExpr and Group.SetExpr and in the user interface,\nare in. Every other length this package takes or gives is in mm."
 					}
 				}
+			},
+			"WrapGroup": {
+				"text": "WrapGroup is the view of a wrap: how high it raises its profile from\nthe face, or how deep it sinks it.",
+				"kind": "struct",
+				"methods": {
+					"Engraved": {
+						"decl": "func (v WrapGroup) Engraved() (yes bool)",
+						"text": "Engraved reports whether the wrap sinks its profile into the face\nrather than raising it: its combine is a difference."
+					},
+					"Height": {
+						"decl": "func (v WrapGroup) Height() (mm float64)",
+						"text": "Height is how far a wrap raises its profile above the face, or sinks\nit into the face, in mm."
+					},
+					"SetHeight": {
+						"decl": "func (v WrapGroup) SetHeight(mm float64)",
+						"text": "SetHeight sets how far a wrap raises or sinks its profile, in mm;\nSetExpr with sketch.GroupPitch gives it an expression in the\ndocument's unit."
+					}
+				}
 			}
 		},
 		"funcs": {
@@ -7182,6 +7212,7 @@
 					"GroupLoft",
 					"GroupShell",
 					"GroupPathPattern",
+					"GroupWrap",
 					"GroupLinked"
 				]
 			},
@@ -7960,6 +7991,10 @@
 					"NewSweepAlong": {
 						"decl": "func (sk *Sketch) NewSweepAlong(path []core.HEntity, solidEdges []topo.Name, name string) (Group, error)",
 						"text": "NewSweepAlong is NewSweep along path and edges of the solid so far, by name, together one chain (roadmap 28.4): straight and circular edges, and curved ones as cubics are."
+					},
+					"NewWrap": {
+						"decl": "func (sk *Sketch) NewWrap(face srf.FaceID, height float64, engrave bool, name string) (Group, error)",
+						"text": "NewWrap starts a wrap of the active group's sketch onto the face of the solid so far, raised height mm above it, or with engrave sunk height mm into it."
 					},
 					"NormalOf": {
 						"decl": "func (sk *Sketch) NormalOf(he core.HEntity) core.HEntity",
@@ -8835,6 +8870,10 @@
 			"GroupWorkplaneByPointOrtho": {
 				"decl": "const GroupWorkplaneByPointOrtho"
 			},
+			"GroupWrap": {
+				"decl": "const GroupWrap",
+				"text": "Groups of this program's own, which SolveSpace has no counterpart for."
+			},
 			"HGroupReferences": {
 				"decl": "const HGroupReferences",
 				"text": "HGroupReferences is the handle value of the references group."
@@ -9275,6 +9314,19 @@
 				},
 				"makers": [
 					"SweepEnd"
+				]
+			},
+			"RoundFace": {
+				"text": "RoundFace is a cylinder or a cone, as a face of a solid finds it: the surfaces a sketch can be wrapped onto (Wrap).",
+				"kind": "struct",
+				"methods": {
+					"IsCone": {
+						"decl": "func (f RoundFace) IsCone() bool",
+						"text": "IsCone reports whether f is a cone rather than a cylinder."
+					}
+				},
+				"makers": [
+					"RoundFaceOf"
 				]
 			},
 			"SBezier": {
@@ -10187,6 +10239,10 @@
 						"decl": "func (s *SShell) MakeFromUnionOf(a, b *SShell)",
 						"text": "MakeFromUnionOf dispatches to MakeFromBoolean(UNION)."
 					},
+					"MakeFromWrapOf": {
+						"decl": "func (s *SShell) MakeFromWrapOf(sbls *SBezierLoopSet, w *Wrap, h0, h1 float64, color core.RGBA) error",
+						"text": "MakeFromWrapOf adds to s the loop set sbls wrapped onto w's face and raised between the heights h0 and h1 along the face's outward normal."
+					},
 					"MakeIntersectionCurvesAgainst": {
 						"decl": "func (s *SShell) MakeIntersectionCurvesAgainst(agnst, into *SShell)",
 						"text": "MakeIntersectionCurvesAgainst computes the surface-surface intersection curves between every pair of surfaces (one from `s`, one from `agnst`) and appends them to into.Curve."
@@ -10572,6 +10628,23 @@
 				"makers": [
 					"Tol"
 				]
+			},
+			"Wrap": {
+				"text": "Wrap is the map of one sketch onto a RoundFace.",
+				"kind": "struct",
+				"methods": {
+					"LiftFactor": {
+						"decl": "func (w *Wrap) LiftFactor(h float64) float64",
+						"text": "LiftFactor is the scaling that lifts the face h along its outward normal; at or below zero the lift reaches the axis or the centre."
+					},
+					"MapCurve": {
+						"decl": "func (w *Wrap) MapCurve(b *SBezier) ([]SBezier, error)",
+						"text": "MapCurve is the sketch curve b wrapped onto the face: exact pieces where the wrapped curve is a line or a circle, fitted quintics elsewhere, each carrying b's Sheet and Entity."
+					}
+				},
+				"makers": [
+					"NewWrap"
+				]
 			}
 		},
 		"funcs": {
@@ -10651,6 +10724,10 @@
 				"decl": "func NewSTriMeta(face FaceID, color core.RGBA) STriMeta",
 				"text": "NewSTriMeta constructs an STriMeta with the given face id and color."
 			},
+			"NewWrap": {
+				"decl": "func NewWrap(face RoundFace, planePt, planeN geom.Vector, sets []SBezierLoopSet) (*Wrap, error)",
+				"text": "NewWrap is the wrap onto face of the loop sets sets, drawn in the plane through planePt with the unit normal planeN."
+			},
 			"OriginFor": {
 				"decl": "func OriginFor(g uint32, i int) uint32",
 				"text": "OriginFor is the Origin of surface i of the surfaces group g made: bit 30 set, which no entity handle a sketch makes has, then the group's handle and i."
@@ -10670,6 +10747,10 @@
 			"RayIsInside": {
 				"decl": "func RayIsInside(a, c, b, d geom.Vector) bool",
 				"text": "RayIsInside tests if ray b-\u003ed passes through triangle a,b,c."
+			},
+			"RoundFaceOf": {
+				"decl": "func RoundFaceOf(s *SSurface) (RoundFace, bool)",
+				"text": "RoundFaceOf finds the cylinder or cone patch s lies on: a patch straight one way, its lines parallel and as far from their axis (a cylinder) or meeting at one point and at one angle to their axis (a cone)."
 			},
 			"SBezierFrom2": {
 				"decl": "func SBezierFrom2(a, b geom.Vector) SBezier",
@@ -10856,6 +10937,10 @@
 			"EdgeTurning": {
 				"decl": "const EdgeTurning"
 			},
+			"ErrWrapPlane": {
+				"decl": "var ErrWrapPlane",
+				"text": "ErrWrapPlane is NewWrap's error for a sketch whose plane is not parallel to the face's axis."
+			},
 			"FaceAtLeastOneDiscarded": {
 				"decl": "const FaceAtLeastOneDiscarded"
 			},
@@ -10927,6 +11012,10 @@
 			},
 			"SurfaceUnion": {
 				"decl": "const SurfaceUnion"
+			},
+			"WrapMaxSpan": {
+				"decl": "const WrapMaxSpan",
+				"text": "WrapMaxSpan is the most a loop set (an outer loop and its holes) may span round the axis: its caps are one rational quadratic patch each."
 			}
 		}
 	},

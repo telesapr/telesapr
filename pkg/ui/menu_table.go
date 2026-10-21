@@ -209,6 +209,7 @@ var menuTable = []menuEntry{
 	{1, "Loft To Selected Pr&ofile", cmdGroupLoft, shift | 'o', kn, mFeatures},
 	{1, "Guide Loft by Selected &Curves", cmdLoftGuides, 0, kn, func(ss *Application, c Command) { ss.loftGuidesFromSelection() }},
 	{1, "Screw Thr&ead...", cmdGroupThread, shift | 'e', kn, func(ss *Application, c Command) { ss.MenuThread() }},
+	{1, "Wrap Sketch Onto Face", cmdGroupWrap, 0, kn, mFeatures},
 	{1, "", cmdNone, 0, kn, nil},
 	{1, "&Fillet Edges", cmdGroupFillet, shift | 'f', kn, mFeatures},
 	{1, "Chamfer E&dges", cmdGroupChamfer, shift | 'q', kn, mFeatures},

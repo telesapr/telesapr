@@ -126,6 +126,7 @@ var formerCommandLabels = map[string]Command{
 	"new group > fillet edges":                  cmdGroupFillet,
 	"new group > loft to selected profile":      cmdGroupLoft,
 	"new group > shell solid":                   cmdGroupShell,
+	"new group > wrap sketch onto face":         cmdGroupWrap,
 	"new group > pattern along path":            cmdGroupPathPattern,
 	"new group > draft selected sides":          cmdDraftSelectedSides,
 	"new group > guide loft by selected curves": cmdLoftGuides,

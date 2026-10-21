@@ -942,6 +942,8 @@ func (tw *textWindow) ShowGroupInfo() {
 		tw.showFilletInfo(g)
 	case sketch.GroupShell:
 		tw.showShellInfo(g)
+	case sketch.GroupWrap:
+		tw.showWrapInfo(g)
 	case sketch.GroupSweep:
 		tw.showSweepInfo(g)
 	case sketch.GroupPathPattern:
@@ -981,7 +983,8 @@ func (tw *textWindow) ShowGroupInfo() {
 	// Which of the solid's options a kind of group has is the sketch's
 	// to say (HasCombine and the others), so scripts refuse the same.
 	if g.HasAppearance() {
-		if g.HasCombine() {
+		// A wrap's raised or sunk is its combine, on its own lines.
+		if g.HasCombine() && g.Type != sketch.GroupWrap {
 			un := g.MeshCombine == sketch.CombineUnion
 			diff := g.MeshCombine == sketch.CombineDifference
 			intr := g.MeshCombine == sketch.CombineIntersection
@@ -1269,6 +1272,24 @@ func (tw *textWindow) showFilletInfo(g *sketch.Group) {
 	tw.Printf(false, "%Ba   %Ftradius%E %s%s %Fl%Ll%f%D[change]%E",
 		ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
 	tw.showGroupEdges(g, "edges")
+}
+
+// showWrapInfo shows the settings of a sketch.GroupWrap group: its face,
+// its height, and whether it is raised from the face (a union) or sunk
+// into it (a difference).
+func (tw *textWindow) showWrapInfo(g *sketch.Group) {
+	ss := tw.ss
+	sk := ss.SK
+
+	tw.Printf(true, " %Ftwrap the sketch onto a face%E")
+	if len(g.SolidFaces) > 0 {
+		tw.Printf(false, "%Bd   %Ftface%E %s", sk.FaceName(g.SolidFaces[0]))
+	}
+	tw.Printf(false, "%Ba   %Ftheight%E %s%s %Fl%Ll%f%D[change]%E",
+		ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
+	tw.Printf(false, "%Bd   %f%D%Lc%Fd%s raised%E  %f%D%Lc%Fd%s sunk%E",
+		lf(tw.ScreenChangeGroupOption), sketch.CombineUnion, radioMark(g.MeshCombine == sketch.CombineUnion),
+		lf(tw.ScreenChangeGroupOption), sketch.CombineDifference, radioMark(g.MeshCombine == sketch.CombineDifference))
 }
 
 // showShellInfo shows the settings of a sketch.GroupShell group.

@@ -1,0 +1,57 @@
+# Wrap Sketch Onto Face (an extension): with nothing selected the menu
+# says what to select; with the cylinder of path_wrap picked, the
+# sketch's rectangle is raised from it and the group screen shows the
+# face, the height and raised or sunk. Analyze > Check Solid finds it
+# sound; the height takes an expression, and sunk engraves the face.
+key r
+move 250 200
+down L 250 200
+up L 250 200
+move 350 250
+down L 350 250
+up L 350 250
+key esc
+move 300 250
+down L 300 250
+up L 300 250
+key l shift
+key esc
+move 250 200
+down L 250 200
+up L 250 200
+key w shift
+view default
+menu View|Show|Construction Entities
+key r
+move 275 215
+down L 275 215
+up L 275 215
+move 295 235
+down L 295 235
+up L 295 235
+key esc
+menu View|Show|Construction Entities
+answer ok
+menu Features|Wrap Sketch Onto Face
+menu View|Show|Selectable Faces
+move 330 280
+down L 330 280
+up L 330 280
+menu Features|Wrap Sketch Onto Face
+dump
+tw
+answer ok
+menu Analyze|Check Solid
+twmove 160 145
+twdown L 160 145
+twup L 160 145
+edit 1+1
+tw
+answer ok
+menu Analyze|Check Solid
+twmove 140 165
+twdown L 140 165
+twup L 140 165
+tw
+answer ok
+menu Analyze|Check Solid

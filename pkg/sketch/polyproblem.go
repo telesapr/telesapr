@@ -52,7 +52,7 @@ func pointText(p geom.Vector) string {
 // sweep, or a loft. Such a group with a Problem added no solid.
 func (g *Group) MakesSolidFromSketch() bool {
 	switch g.Type {
-	case GroupExtrude, GroupLathe, GroupRevolve, GroupHelix, GroupSweep, GroupLoft:
+	case GroupExtrude, GroupLathe, GroupRevolve, GroupHelix, GroupSweep, GroupLoft, GroupWrap:
 		return true
 	}
 	return false
@@ -86,7 +86,7 @@ func (g *Group) reportPolyProblem(sk *Sketch) {
 			return
 		}
 		g.setProblem(&at, "the sketch %s", msg)
-	case GroupExtrude, GroupLathe, GroupRevolve, GroupHelix, GroupSweep:
+	case GroupExtrude, GroupLathe, GroupRevolve, GroupHelix, GroupSweep, GroupWrap:
 		src := sk.Group(g.OpA)
 		if src == nil {
 			return
