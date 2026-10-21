@@ -405,6 +405,7 @@ var windowActions = map[string]string{
 	"ScreenChangeGCodeParameter/F":         "File.SetExportOptions",
 	"ScreenChangeGCodeParameter/P":         "File.SetExportOptions",
 	"ScreenChangeAutosaveInterval":         "- how often the window saves a backup; an application setting",
+	"ScreenChangeScriptLibrary":            "- where the window's scripts import their own packages from; an application setting, --lib on the command line",
 	"ScreenChangeFindConstraintTimeout":    "- how long the window looks for the constraints to remove; an application setting",
 	"ScreenChangeAnimationSpeed":           "- how fast the window turns the view; an application setting",
 
@@ -443,6 +444,7 @@ var windowActions = map[string]string{
 	"editGCodeFeed":                "File.SetExportOptions",
 	"editGCodePlungeFeed":          "File.SetExportOptions",
 	"editAutosaveInterval":         "- an application setting",
+	"editScriptLibrary":            "- an application setting",
 	"editLightAmbient":             "- the window's lights",
 	"editFindConstraintTimeout":    "- an application setting",
 	"editExplodeDistance":          "- the exploded view is the window's view",

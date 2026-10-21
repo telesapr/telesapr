@@ -58,6 +58,7 @@ the entries had before the menus took this order are still taken.
 | [Drawings](drawings.md) | A sheet of the standard views, sections and details with a title block, to PDF and DXF | `drawing` |
 | [STEP links](step-links.md) | A STEP file, or an STL or OBJ mesh, linked as a reference | `step` |
 | [Assemblies](bill-of-materials.md) | Mates; the parts counted, to a CSV file; interfering parts by their shells; STEP with its structure | `mates`, `bom` |
+| [Scripts](scripts.md) | Packages of your own in a script library folder | `library` |
 | [Check Solid](check-solid.md) | Whether a solid is sound, and its volume | every example |
 
 Files are saved as `.tlspr`, a text format described in [`doc/tlspr-format.md`](../tlspr-format.md).

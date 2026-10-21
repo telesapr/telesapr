@@ -71,6 +71,9 @@ type config struct {
 	// asked before each script of such a program runs.
 	AgentAllowed bool
 	AgentConfirm bool
+	// ScriptLibrary is the folder scripts import packages of their own
+	// from, "" for script.DefaultLibrary.
+	ScriptLibrary string
 }
 
 // Thaw reads the configuration from the store, with the defaults for
@@ -145,6 +148,7 @@ func (c *config) Thaw(s core.Settings) {
 	c.ShowToolbar = core.ThawBool(s, "ShowToolbar", true)
 	c.AgentAllowed = core.ThawBool(s, "AgentAllowed", false)
 	c.AgentConfirm = core.ThawBool(s, "AgentConfirm", false)
+	c.ScriptLibrary = s.ThawString("ScriptLibrary", "")
 	c.RecentFiles = nil
 	for i := range maxRecent {
 		if raw := s.ThawString("RecentFile_"+strconv.Itoa(i), ""); raw != "" {
@@ -226,5 +230,6 @@ func (c *config) Freeze(s core.Settings) {
 	core.FreezeBool(s, "ShowToolbar", c.ShowToolbar)
 	core.FreezeBool(s, "AgentAllowed", c.AgentAllowed)
 	core.FreezeBool(s, "AgentConfirm", c.AgentConfirm)
+	s.FreezeString("ScriptLibrary", c.ScriptLibrary)
 	s.FreezeInt("AutosaveInterval", uint32(c.AutosaveInterval))
 }

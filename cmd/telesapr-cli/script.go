@@ -18,16 +18,21 @@ import (
 
 const scriptUsage = `
 Scripting commands:
-    run [<sketch.tlspr>] <script.go> [<argument>...]
+    run [--lib <dir>] [<sketch.tlspr>] <script.go> [<argument>...]
         Runs a Go script on the sketch, or on a new sketch if none is given.
         The script is a program, with "package main" and a main function, or
         just statements. The arguments are the script's os.Args[1:]. Nothing
         is saved unless the script does it.
-    repl [<sketch.tlspr>]
+    repl [--lib <dir>] [<sketch.tlspr>]
         Reads Go statements and expressions from standard input and runs each
         on the sketch, printing the values of the expressions.
-    eval [<sketch.tlspr>] <code> [<code>...]
+    eval [--lib <dir>] [<sketch.tlspr>] <code> [<code>...]
         Runs each <code> as a line given to repl.
+
+    --lib <dir> is the script library: a script's import "gears" reads the
+    package in <dir>/gears. Without it the library is
+    telesapr/library in the user's configuration directory, as in the
+    window.
 
     A script works on the sketch through the package
     github.com/telesapr/telesapr/pkg/script/api, whose Current function
@@ -81,6 +86,14 @@ func scriptSession(file string, stderr io.Writer) (api.Host, error) {
 // tool's exit status.
 func runScript(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	rest := args[2:]
+	library := script.DefaultLibrary()
+	for len(rest) > 0 && rest[0] == "--lib" {
+		if len(rest) < 2 {
+			fmt.Fprintln(stderr, "--lib needs the library's folder.")
+			return exitUsage
+		}
+		library, rest = rest[1], rest[2:]
+	}
 	sketchFile := ""
 	if len(rest) > 0 && isSketch(rest[0]) {
 		sketchFile, rest = rest[0], rest[1:]
@@ -103,11 +116,12 @@ func runScript(ctx context.Context, args []string, stdin io.Reader, stdout, stde
 		return exitLoad
 	}
 	opts := script.Options{
-		Host:   host,
-		Stdin:  stdin,
-		Stdout: stdout,
-		Stderr: stderr,
-		Open:   func(path string) (api.Host, error) { return scriptSession(path, stderr) },
+		Host:    host,
+		Stdin:   stdin,
+		Stdout:  stdout,
+		Stderr:  stderr,
+		Library: library,
+		Open:    func(path string) (api.Host, error) { return scriptSession(path, stderr) },
 		New: func() api.Host {
 			h, _ := scriptSession("", stderr)
 			return h

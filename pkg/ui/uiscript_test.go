@@ -33,6 +33,9 @@ type uiScriptRunner struct {
 	savePath string
 
 	popupChoices []string
+	// consoleShown is how much of the script console's text the
+	// script has dumped.
+	consoleShown int
 
 	// frames, when not nil, collects a hash of each frame the graphics
 	// window presents.
@@ -461,6 +464,8 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 		}
 		r.p.FormResponses = append(r.p.FormResponses, resp)
 	case "edit":
+		// A path typed is written as file takes it.
+		rest = r.expand(rest)
 		switch {
 		case r.gw().EditorVisible:
 			r.gw().FinishEditing(rest)
@@ -534,6 +539,17 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 			break
 		}
 		fmt.Fprintf(&r.b, "cat %s\n%s", t[1], r.unexpand(string(data)))
+	case "console":
+		// What the script console has shown since it was last dumped.
+		if len(r.p.Consoles) == 0 {
+			fmt.Fprintf(&r.b, "console none\n")
+			break
+		}
+		c := r.p.Consoles[0]
+		for _, text := range c.Texts[r.consoleShown:] {
+			fmt.Fprintf(&r.b, "console %d %s\n", text.Kind, escLine(r.unexpand(text.Text)))
+		}
+		r.consoleShown = len(c.Texts)
 	case "tw":
 		var rows strings.Builder
 		r.ss.TW.dumpRows(&rows)

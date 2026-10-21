@@ -106,10 +106,30 @@ func (c *ScriptConsole) options(args []string) script.Options {
 	host := c.ss.ScriptHost()
 	host.Messages = consoleWriter{c, platform.ConsoleInfo}
 	return script.Options{
-		Host:   host,
-		Stdout: consoleWriter{c, platform.ConsoleOutput},
-		Stderr: consoleWriter{c, platform.ConsoleError},
-		Args:   args,
+		Host:    host,
+		Stdout:  consoleWriter{c, platform.ConsoleOutput},
+		Stderr:  consoleWriter{c, platform.ConsoleError},
+		Args:    args,
+		Library: c.ss.scriptLibrary(),
+	}
+}
+
+// scriptLibrary is the folder scripts import packages of their own
+// from: the setting's, or the default one.
+func (ss *Application) scriptLibrary() string {
+	if ss.ScriptLibrary != "" {
+		return ss.ScriptLibrary
+	}
+	return script.DefaultLibrary()
+}
+
+// SetScriptLibrary sets the folder scripts import packages of their
+// own from, "" for the default one. The console's interpreter takes it
+// for its next import; what it imported stays.
+func (ss *Application) SetScriptLibrary(dir string) {
+	ss.ScriptLibrary = dir
+	if c := ss.console; c != nil && c.engine != nil {
+		c.engine.SetLibrary(ss.scriptLibrary())
 	}
 }
 

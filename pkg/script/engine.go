@@ -56,6 +56,9 @@ type Options struct {
 	Open func(path string) (api.Host, error)
 	// New, if set, likewise makes a new sketch.
 	New func() api.Host
+	// Library is the folder a script imports packages of its own from
+	// (see DefaultLibrary), "" for none.
+	Library string
 }
 
 // evalHost is a host that is told where each step of a script starts
@@ -142,6 +145,10 @@ Files
     doc.File.Save("part.tlspr")  doc.File.Export("part.stl")  .step .svg .dxf .pdf .png
     doc.Edit.Undo()  doc.Edit.Redo()
 
+A package of your own is imported by its path in the script library
+folder (the configuration screen's; telesapr-cli --lib): import "gears"
+reads <library>/gears.
+
 help(x) says what a value is and what it can do: help(doc), help(doc.Sketch).
 help("name") says what a package, a type, a function or a method is:
 help("api"), help("Group"), help("Features.Extrude"), help("strings.ToUpper").
@@ -202,6 +209,10 @@ func (e *Engine) newInterpreter() error {
 		Stderr: &panicFilter{e: e, w: e.opts.Stderr},
 		Args:   e.opts.Args,
 		Env:    os.Environ(),
+		// Packages that aren't the program's come from the library.
+		GoPath:               libraryRoot,
+		SourcecodeFilesystem: libraryFS{e},
+		BuildTags:            []string{scriptTag},
 	})
 	if err := e.i.Use(e.exports(gen)); err != nil {
 		return fmt.Errorf("script: %w", err)
@@ -848,6 +859,7 @@ func (e *Engine) locate(err error, src string) error {
 			out.Col, _ = strconv.Atoi(m[2])
 			out.Err = errors.New(m[3])
 		}
+		out.Err = e.importError(out.Err)
 	}
 	if out.Line == 1 {
 		if out.Col -= wrapped(src); out.Col < 1 {

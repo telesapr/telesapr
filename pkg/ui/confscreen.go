@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -121,6 +122,13 @@ func (tw *textWindow) ScreenChangeUseOpenGL(link int, v uint32) {
 // off (an extension).
 func (tw *textWindow) ScreenChangeAgentConfirm(link int, v uint32) {
 	tw.ss.AgentConfirm = !tw.ss.AgentConfirm
+}
+
+// ScreenChangeScriptLibrary edits the folder scripts import packages
+// of their own from (an extension); emptied, it is the default again.
+func (tw *textWindow) ScreenChangeScriptLibrary(link int, v uint32) {
+	tw.ShowEditControl(3, tw.ss.ScriptLibrary)
+	tw.edit.meaning = editScriptLibrary
 }
 
 func (tw *textWindow) ScreenChangeCameraNav(link int, v uint32) {
@@ -395,6 +403,13 @@ func (tw *textWindow) ShowConfiguration() {
 	tw.Printf(false, "  %Fd%f%Ll%s  ask before an AI program's script runs%E",
 		lf(tw.ScreenChangeAgentConfirm), checkMark(ss.AgentConfirm))
 	tw.Printf(false, "")
+	tw.Printf(false, "%Ft script library folder%E")
+	library := ss.ScriptLibrary
+	if library == "" {
+		library = "telesapr/library in the configuration folder"
+	}
+	tw.Printf(false, "%Ba   %s %Fl%Ll%f[change]%E", library, lf(tw.ScreenChangeScriptLibrary))
+	tw.Printf(false, "")
 	tw.Printf(false, "%Ft autosave interval (in minutes)%E")
 	tw.Printf(false, "%Ba   %d %Fl%Ll%f[change]%E",
 		ss.AutosaveInterval, lf(tw.ScreenChangeAutosaveInterval))
@@ -571,6 +586,8 @@ func (tw *textWindow) EditControlDoneForConfiguration(s string) bool {
 				ss.TimeoutRedundantConstr = 1000
 			}
 		}
+	case editScriptLibrary:
+		ss.SetScriptLibrary(strings.TrimSpace(s))
 	case editAnimationSpeed:
 		speed := atoi(s)
 		if speed >= 0 {

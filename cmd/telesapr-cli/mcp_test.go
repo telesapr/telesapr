@@ -249,6 +249,8 @@ func TestMCPCommandLine(t *testing.T) {
 		{[]string{"--socket"}, exitUsage, "--socket needs the socket's path.\n"},
 		{[]string{"--headless", "--socket", "x"}, exitUsage, "with --headless there is none"},
 		{[]string{"--window"}, exitUsage, "Unrecognized option '--window'.\n"},
+		{[]string{"--headless", "--lib"}, exitUsage, "--lib needs the library's folder.\n"},
+		{[]string{"--lib", dir}, exitUsage, "--lib is for --headless"},
 		{[]string{model}, exitUsage, "Unrecognized option"},
 		{[]string{"--headless", filepath.Join(dir, "none.tlspr")}, exitLoad, "Cannot load"},
 	} {

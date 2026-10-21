@@ -33,9 +33,11 @@ AI commands:
         socket of the TeleSAPR to talk to, if not the last one started.
         A client is told to start this command, for example:
             claude mcp add telesapr -- telesapr-cli mcp
-    mcp --headless [<sketch.tlspr>]
+    mcp --headless [--lib <dir>] [<sketch.tlspr>]
         Serves a drawing of its own instead, with no window: the sketch
         file, or a new sketch. Nothing is saved unless a script does it.
+        <dir> is the script library, as for run; the window's is the one
+        set in its configuration.
 `
 
 // nopWriteCloser is a writer that isn't closed with the transport.
@@ -46,7 +48,7 @@ func (nopWriteCloser) Close() error { return nil }
 // runMCP performs the mcp command, and returns the tool's exit
 // status. It returns when the client closes its end.
 func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	headless, sketchFile, socket := false, "", ""
+	headless, sketchFile, socket, library := false, "", "", ""
 	rest := args[2:]
 	for i := 0; i < len(rest); i++ {
 		switch arg := rest[i]; {
@@ -59,6 +61,13 @@ func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr 
 			}
 			i++
 			socket = rest[i]
+		case arg == "--lib":
+			if i+1 >= len(rest) {
+				_, _ = fmt.Fprintln(stderr, "--lib needs the library's folder.")
+				return exitUsage
+			}
+			i++
+			library = rest[i]
 		case headless && sketchFile == "" && isSketch(arg):
 			sketchFile = arg
 		default:
@@ -69,6 +78,13 @@ func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr 
 	if headless && socket != "" {
 		_, _ = fmt.Fprintln(stderr, "--socket is of a TeleSAPR that is running; with --headless there is none.")
 		return exitUsage
+	}
+	if !headless && library != "" {
+		_, _ = fmt.Fprintln(stderr, "--lib is for --headless; the window's library is set in its configuration.")
+		return exitUsage
+	}
+	if library == "" {
+		library = script.DefaultLibrary()
 	}
 
 	var backend agent.Backend
@@ -82,10 +98,11 @@ func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr 
 			return exitLoad
 		}
 		engine, err := script.New(script.Options{
-			Host:   host,
-			Stdout: out,
-			Stderr: out,
-			Open:   func(path string) (api.Host, error) { return scriptSession(path, out) },
+			Host:    host,
+			Stdout:  out,
+			Stderr:  out,
+			Library: library,
+			Open:    func(path string) (api.Host, error) { return scriptSession(path, out) },
 			New: func() api.Host {
 				h, _ := scriptSession("", out)
 				return h

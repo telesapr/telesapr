@@ -103,6 +103,7 @@ const (
 	editFindConstraintTimeout    Edit = 119
 	editExplodeDistance          Edit = 120
 	editAnimationSpeed           Edit = 121
+	editScriptLibrary            Edit = 122
 	// For TTF text
 	editTTFText Edit = 300
 	// For the step dimension screen
