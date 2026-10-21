@@ -1,3 +1,5 @@
+//go:build cgo && !nogl
+
 package gl
 
 import (

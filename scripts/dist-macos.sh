@@ -49,8 +49,21 @@ rm -rf "$stage/arch"
 
 echo "==> $name.dmg"
 rm -f "$OUT/$name.dmg"
-hdiutil create -quiet -volname "TeleSAPR $VERSION" -srcfolder "$stage" -ov -format UDZO "$OUT/$name.dmg"
-hdiutil verify -quiet "$OUT/$name.dmg"
+# hdiutil fails now and then on the hosted runners ("Resource busy" while
+# the volume is detached, or a helper that dies), and -quiet hides why, so
+# it prints its errors and is tried again.
+made=
+for attempt in 1 2 3 4 5; do
+    rm -f "$OUT/$name.dmg"
+    if hdiutil create -volname "TeleSAPR $VERSION" -srcfolder "$stage" -ov -format UDZO "$OUT/$name.dmg" &&
+        hdiutil verify -quiet "$OUT/$name.dmg"; then
+        made=1
+        break
+    fi
+    echo "hdiutil failed (attempt $attempt of 5)" >&2
+    sleep $((attempt * 5))
+done
+[[ -n $made ]] || { echo "dist-macos.sh: could not make $name.dmg" >&2; exit 1; }
 
 rm -rf "$stage"
 ls -l "$OUT"
