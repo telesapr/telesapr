@@ -168,12 +168,12 @@ pole slivers grew.
 Code: `pkg/topo/rollingball.go`, `rollingend.go`, `rollingrunoff.go`, `rollingmitre.go`,
 `rollingchains.go`, `fillet_setback.go`, `fillet_network.go`. Every case below is refused with a message today, except where the State
 column says unsound. Measure: `TestFilletOnOtherSolids` (fillets on lofts, sweeps and STEP
-solids) at 51 of 59 sound.
+solids) at 55 of 59 sound; the 4 left are the loft's creases, which fade to tangent at its top (a fillet
+that vanishes along its edge).
 
 | Item | State | Approach / tried |
 |---|---|---|
 | Run-offs onto a curved face; a run-off of a blend that takes material away; both ends running off | refused, naming the place | The setback patch is the means: where the ball runs off a face, cut the fillet as a setback is cut and fill the hole between it, the next face's fillet (or the face) and the faces round. A run-off taking material away was never reached by any test case (a slot cut from the cone never got that far) |
-| The loft's top ring, where creases fade to tangent | "meets the flat face almost along it" | The chain should go on round the ring across a crease that is smooth at that vertex; `blendNext` takes only edges smooth all along |
 | Mitres where only some of a rim's chains are picked: a chain mitred at one end, ending on the unpicked chain's wall at the other | refused: "pick it alone" | Per-end mitres: `mitred` and `nearEnd` take both ends alike today; a mitred end beside a curved end (`curvedEndSection`) |
 | Chamfers meeting at a crease, of one chain or several | refused: "are not mitred" | The mitre is found from the ball's centres; a chamfer's would be where the two ruled surfaces, carried on, meet |
 | Mitres between chains of different radii | refused: "pick it alone" | The height against the other chain's centres less its own radius; the mitre is then no longer in the plane that halves the turn |
@@ -185,6 +185,13 @@ solids) at 51 of 59 sound.
 | Chamfers of edges between flat faces that end on a curved face | refused | Routed like the fillets, they left 134 naked edges and edges run the same way; not traced |
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
 | Slot chamfer at 3 | see K4 | The teapot handle and the run-off chamfers' crossings, listed here before, are sound since K4's mender |
+
+Done 2026-10-22: the loft's top ring, four edges between the flat top and side patches that meet
+in creases fading out at the ring, refused as "meets the flat face almost along it": a chain now
+goes on past a crease whose faces meet tangentially at the vertex (`blendNext`, `joinedAt`,
+`smoothAt`), and a foot on a patch's edge there is allowed the sag of `seamCos`. The ring's fillet
+of 2 is sound and takes what OpenCASCADE's takes, within 0.01% (`TestFilletLoftTopRing`);
+`TestFilletOnOtherSolids` 51 → 55 of 59.
 
 Done 2026-10-22: the loft's foot edges, open chains ending across a crease on the next side
 patch, refused as "the ball doesn't touch the face": near the corner the side patch is twisted
