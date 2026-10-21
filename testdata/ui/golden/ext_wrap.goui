@@ -54,7 +54,7 @@ row 16     raised   sunk
  19-99 64 64 0
 row 18 
  0-99 64 64 0
-row 20    appearance   matte   plastic   glossy   metal
+row 20    appearance   matte   plastic   glossy   metal   density not set [change]
  0-2 64 64 0
  3-12 74 64 0
  13-14 64 64 0
@@ -65,7 +65,11 @@ row 20    appearance   matte   plastic   glossy   metal
  35-42 64 64 97 2 1 0
  43-44 64 64 0
  45-51 64 64 97 3 1 0
- 52-99 64 64 0
+ 52-54 64 64 0
+ 55-61 74 64 0
+ 62-70 64 64 0
+ 71-78 6c 64 102 0 1 0
+ 79-99 64 64 0
 row 22    color      (0.39, 0.39, 0.39) [change]
  0-2 64 64 0
  3-10 74 64 0
@@ -175,7 +179,7 @@ row 16     raised   sunk
  19-99 64 64 0
 row 18 
  0-99 64 64 0
-row 20    appearance   matte   plastic   glossy   metal
+row 20    appearance   matte   plastic   glossy   metal   density not set [change]
  0-2 64 64 0
  3-12 74 64 0
  13-14 64 64 0
@@ -186,7 +190,11 @@ row 20    appearance   matte   plastic   glossy   metal
  35-42 64 64 97 2 1 0
  43-44 64 64 0
  45-51 64 64 97 3 1 0
- 52-99 64 64 0
+ 52-54 64 64 0
+ 55-61 74 64 0
+ 62-70 64 64 0
+ 71-78 6c 64 102 0 1 0
+ 79-99 64 64 0
 row 22    color      (0.39, 0.39, 0.39) [change]
  0-2 64 64 0
  3-10 74 64 0
@@ -296,7 +304,7 @@ row 16     raised   sunk
  19-99 64 64 0
 row 18 
  0-99 64 64 0
-row 20    appearance   matte   plastic   glossy   metal
+row 20    appearance   matte   plastic   glossy   metal   density not set [change]
  0-2 64 64 0
  3-12 74 64 0
  13-14 64 64 0
@@ -307,7 +315,11 @@ row 20    appearance   matte   plastic   glossy   metal
  35-42 64 64 97 2 1 0
  43-44 64 64 0
  45-51 64 64 97 3 1 0
- 52-99 64 64 0
+ 52-54 64 64 0
+ 55-61 74 64 0
+ 62-70 64 64 0
+ 71-78 6c 64 102 0 1 0
+ 79-99 64 64 0
 row 22    color      (0.39, 0.39, 0.39) [change]
  0-2 64 64 0
  3-10 74 64 0
