@@ -798,6 +798,7 @@ func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam,
 			how = core.SolveDidntConverge
 		}
 	}
+	sk.seedAxisAngles(hg)
 	sk.solveHoldingBounds(hg, solve, func() core.SolveResult { return how })
 	g.Solved.Timeout = sg.Timeout
 	if how == core.SolveOkay {

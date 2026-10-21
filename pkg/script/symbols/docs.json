@@ -1870,6 +1870,14 @@
 			"Constraint": {
 				"kind": "struct",
 				"methods": {
+					"AxisAngleNum": {
+						"decl": "func (c *Constraint) AxisAngleNum(sk EntitySketch) float64",
+						"text": "AxisAngleNum is a ConstraintAxisAngle's angle where its point is now, in degrees: of those a whole turn apart, the one nearest ValA."
+					},
+					"AxisAngleOffset": {
+						"decl": "func (c *Constraint) AxisAngleOffset(sk EntitySketch) (foot geom.Vector, r float64)",
+						"text": "AxisAngleOffset is how far a ConstraintAxisAngle's point is from its axis, and the foot of that on the axis: what a drawing of it needs."
+					},
 					"Crossed": {
 						"decl": "func (c *Constraint) Crossed(sk EntitySketch) (by float64, bound int)",
 						"text": "Crossed is how far the sketch is past the inequality's bound, in mm, and the bound it is past or nearest: positive where it is crossed, and within atBound of zero at the bound (IsAtBound)."
@@ -1973,6 +1981,7 @@
 					"ConstraintCubicLineTangent",
 					"ConstraintCurveCurveTangent",
 					"ConstraintEqualRadius",
+					"ConstraintAxisAngle",
 					"ConstraintWhereDragged",
 					"ConstraintArcArcLenRatio",
 					"ConstraintArcLineLenRatio",
@@ -3066,6 +3075,9 @@
 			},
 			"ConstraintAtMidpoint": {
 				"decl": "const ConstraintAtMidpoint"
+			},
+			"ConstraintAxisAngle": {
+				"decl": "const ConstraintAxisAngle"
 			},
 			"ConstraintComment": {
 				"decl": "const ConstraintComment"
@@ -4304,6 +4316,10 @@
 					"MotionStudy": {
 						"decl": "func (m AssemblyMenu) MotionStudy(param string, from, to float64, steps int, frames string) (out []MotionFrame, err error)",
 						"text": "MotionStudy drives the parameter param from from to to in steps\nequal steps, steps+1 frames with both ends, regenerating the model at\neach (roadmap 16.3). With frames not \"\", each frame is saved to the\nfile frames names with the step's number in place of its verb, as\n\"frames/f%03d.png\": a picture of the view the window shows for .png,\nin the application, and otherwise what Export writes for the\nextension. The parameter gets its expression back after, whatever\nhappened. A step whose groups don't all solve is kept, marked so."
+					},
+					"Screw": {
+						"decl": "func (m AssemblyMenu) Screw(a, b Entity, lead float64) (mate ScrewMate)",
+						"text": "Screw puts two circles or arcs on one axis, as Concentric does, and\ncouples the second part's turn about it to its travel along it, as a\nnut's on a screw: the part turns by the parameter Turn names and moves\nalong the first circle's normal by Turn/360 times the parameter Lead\nnames, from where it is, so that a motion study of Turn screws it in.\nThe turn is held by the half-plane through the axis that a point of\nthe second part lies in (an axis-angle constraint), which counts whole\nturns and either way; the travel by a distance along the axis. lead is\nin mm, as the parameter's first value. The parameters are new, named\n\"turn\" and \"lead\", or with a number after for a second screw. The\nmate is made in 3d, and the second part needs a point off the axis."
 					}
 				}
 			},
@@ -5870,6 +5886,10 @@
 						"text": "SetAngle holds a revolve's or helix's angle at degrees, as Angle\nmeasures it, in place of a dimension. A revolve turns by 360 degrees\nat most. SetExpr with sketch.GroupExtent gives it an expression, and\nFreeAngle frees it again."
 					}
 				}
+			},
+			"ScrewMate": {
+				"text": "ScrewMate is what Screw made: the parameters that drive it and its\nconstraints.",
+				"kind": "struct"
 			},
 			"Section": {
 				"text": "Section is the state of the section view, as its screen shows it,\nand the cut of the active group's solid.",

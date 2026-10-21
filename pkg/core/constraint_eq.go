@@ -40,7 +40,7 @@ func (c *Constraint) HasLabel() bool {
 		ConstraintLengthRatio, ConstraintArcArcLenRatio,
 		ConstraintArcLineLenRatio, ConstraintLengthDifference,
 		ConstraintArcArcDifference, ConstraintArcLineDifference,
-		ConstraintAngle, ConstraintComment:
+		ConstraintAngle, ConstraintAxisAngle, ConstraintComment:
 		return true
 	}
 	return false
@@ -138,6 +138,9 @@ func ProjectVectorInto(sk EntitySketch, v geom.Vector, wrkpl HEntity) geom.Vecto
 // it holds for the sketch as it stands; used for reference dimensions.
 func (c *Constraint) ModifyToSatisfy(sk EntitySketch) {
 	switch c.Type {
+	case ConstraintAxisAngle:
+		c.ValA = c.AxisAngleNum(sk)
+
 	case ConstraintAngle:
 		a := mustEntity(sk, c.EntityA).VectorGetNum(sk)
 		b := mustEntity(sk, c.EntityB).VectorGetNum(sk)
@@ -249,6 +252,10 @@ func (c *Constraint) GenerateEquations(sk EntitySketch, l *[]Equation, forRefere
 
 	case ConstraintProjPtDistance:
 		c.projPtDistanceEquations(sk, l)
+		return
+
+	case ConstraintAxisAngle:
+		c.axisAngleEquations(sk, l)
 		return
 
 	case ConstraintPtLineDistance:
@@ -1018,7 +1025,8 @@ func (c *Constraint) IsProjectible() bool {
 	case ConstraintPtPlaneDistance, ConstraintPtFaceDistance, ConstraintProjPtDistance,
 		ConstraintPtInPlane, ConstraintPtOnFace, ConstraintEqualLineArcLen, ConstraintDiameter,
 		ConstraintPtOnCircle, ConstraintSameOrientation, ConstraintCubicLineTangent,
-		ConstraintCurveCurveTangent, ConstraintArcLineTangent, ConstraintEqualRadius:
+		ConstraintCurveCurveTangent, ConstraintArcLineTangent, ConstraintEqualRadius,
+		ConstraintAxisAngle:
 		return false
 	}
 	panic("core: impossible constraint type")

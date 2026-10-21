@@ -553,7 +553,8 @@ func (sk *Sketch) evaluate() []core.HGroup {
 				Group: c.Group, Constraint: c.H, Field: "value", Expr: c.Expr, Err: err.Error()})
 			continue
 		}
-		if !signedValue(c.Type) {
+		// An axis angle turns either way, as its expression says.
+		if !signedValue(c.Type) && c.Type != core.ConstraintAxisAngle {
 			v = math.Abs(v)
 		}
 		if IsLengthValue(c.Type) {
@@ -769,7 +770,7 @@ func signedValue(t core.ConstraintType) bool {
 func IsLengthValue(t core.ConstraintType) bool {
 	switch t {
 	case core.ConstraintAngle, core.ConstraintLengthRatio, core.ConstraintArcArcLenRatio,
-		core.ConstraintArcLineLenRatio:
+		core.ConstraintArcLineLenRatio, core.ConstraintAxisAngle:
 		return false
 	}
 	return true
@@ -783,6 +784,9 @@ func IsLengthValue(t core.ConstraintType) bool {
 func SetConstraintValue(c *core.Constraint, v float64) {
 	c.Expr = ""
 	switch {
+	case c.Type == core.ConstraintAxisAngle:
+		// A turn either way, as typed.
+		c.ValA = v
 	case signedValue(c.Type):
 		if c.ValA < 0 {
 			c.ValA = -v

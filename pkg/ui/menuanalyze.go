@@ -32,7 +32,7 @@ func (ss *Application) MenuAnalyze(id Command) {
 				ss.TW.stepDim.finish = c.ValA
 				ss.TW.stepDim.steps = 10
 				switch c.Type {
-				case core.ConstraintAngle, core.ConstraintLengthRatio,
+				case core.ConstraintAngle, core.ConstraintAxisAngle, core.ConstraintLengthRatio,
 					core.ConstraintArcArcLenRatio, core.ConstraintArcLineLenRatio,
 					core.ConstraintLengthDifference, core.ConstraintArcArcDifference,
 					core.ConstraintArcLineDifference:

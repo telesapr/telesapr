@@ -103,6 +103,7 @@ func init() {
 		"RepeatGroup":      reflect.ValueOf((*api.RepeatGroup)(nil)),
 		"Request":          reflect.ValueOf((*api.Request)(nil)),
 		"RevolveGroup":     reflect.ValueOf((*api.RevolveGroup)(nil)),
+		"ScrewMate":        reflect.ValueOf((*api.ScrewMate)(nil)),
 		"Section":          reflect.ValueOf((*api.Section)(nil)),
 		"ShellGroup":       reflect.ValueOf((*api.ShellGroup)(nil)),
 		"SketchHost":       reflect.ValueOf((*api.SketchHost)(nil)),
