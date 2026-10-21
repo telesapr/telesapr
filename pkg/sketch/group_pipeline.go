@@ -599,28 +599,30 @@ func (g *Group) generateRevolveShell(sk *Sketch) {
 	pt, axis := g.revolveAxis(sk)
 	sg := shellGroup{g: g, sk: sk}
 
-	if g.Type == GroupLathe {
-		for i := range src.BezierLoops.Sets {
-			g.ThisShell.MakeFromRevolutionOf(&src.BezierLoops.Sets[i], pt, axis, g.Color, sg)
-		}
-	} else {
-		anglef := paramFloat(sk, g.H.Param(3)) * 4 // why the 4 is needed?
-		dists, distf := 0.0, 0.0
-		angles := 0.0
-		if g.Subtype != GroupOneSided {
-			anglef *= 0.5
-			angles = -anglef
-		}
-		for i := range src.BezierLoops.Sets {
-			sbls := &src.BezierLoops.Sets[i]
-			if math.Abs(anglef-angles) < 2*math.Pi {
-				g.ThisShell.MakeFromHelicalRevolutionOf(sbls, pt, axis, g.Color, sg,
-					angles, anglef, dists, distf)
-			} else {
-				g.ThisShell.MakeFromRevolutionOf(sbls, pt, axis, g.Color, sg)
-			}
+	angles, anglef, whole := g.revolveAngles(sk)
+	for i := range src.BezierLoops.Sets {
+		sbls := &src.BezierLoops.Sets[i]
+		if whole {
+			g.ThisShell.MakeFromRevolutionOf(sbls, pt, axis, g.Color, sg)
+		} else {
+			g.ThisShell.MakeFromHelicalRevolutionOf(sbls, pt, axis, g.Color, sg,
+				angles, anglef, 0, 0)
 		}
 	}
+}
+
+// revolveAngles are the angles a lathe or a revolve turns its profile
+// between, in radians, and whether that is a whole turn.
+func (g *Group) revolveAngles(sk *Sketch) (angles, anglef float64, whole bool) {
+	if g.Type == GroupLathe {
+		return 0, 2 * math.Pi, true
+	}
+	anglef = paramFloat(sk, g.H.Param(3)) * 4 // why the 4 is needed?
+	if g.Subtype != GroupOneSided {
+		anglef *= 0.5
+		angles = -anglef
+	}
+	return angles, anglef, math.Abs(anglef-angles) >= 2*math.Pi
 }
 
 // generateHelixShell makes a helix's solid: sweep each of the source

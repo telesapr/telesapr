@@ -24,6 +24,7 @@ import (
 // to the piece at its middle.
 type profilePiece struct {
 	a, b    geom.Vector
+	mid     geom.Vector // its middle, where a profile's piece says it
 	arc     bool
 	centre  geom.Vector
 	r       float64
@@ -43,7 +44,8 @@ func shellPrism(t *Topology, sh *srf.SShell, opened map[int]bool, thick float64,
 		if _, flat := t.planarNormal(f); !flat {
 			if !t.Surface(f).IsExtrusion(&of, &along) {
 				return nil, true, shellErr(t.faceAnchor(f), "a face of the solid is curved and not the side of a prism; "+
-					"a shell hollows prisms of lines and arcs, and solids of flat faces")
+					"a shell hollows prisms of lines and arcs, solids of flat faces, "+
+					"and solids of one lathe or revolve of lines and arcs")
 			}
 			axis = along.WithMagnitude(1)
 			break
@@ -179,7 +181,11 @@ func (t *Topology) offsetLoop(f, l int, n geom.Vector, d float64) ([]srf.SBezier
 		}
 		pieces = append(pieces, p)
 	}
-	keep, corner, err := offsetProfile(pieces, n, d, fmt.Sprintf("a thickness of %g", d))
+	ds := make([]float64, len(pieces))
+	for i := range ds {
+		ds[i] = d
+	}
+	keep, corner, err := offsetProfile(pieces, n, ds, fmt.Sprintf("a thickness of %g", d))
 	if err != nil {
 		return nil, err
 	}
@@ -194,16 +200,16 @@ func (t *Topology) offsetLoop(f, l int, n geom.Vector, d float64) ([]srf.SBezier
 	return out, nil
 }
 
-// offsetProfile moves the closed loop of pieces into its material by d,
-// in the plane of normal n: keep are the pieces that stay, in order, an
-// arc whose material lies inside it, of radius d or less, going to a
-// sharp corner, and corner[j] is where piece keep[j] starts, moved.
-// what names d for messages.
-func offsetProfile(pieces []profilePiece, n geom.Vector, d float64, what string) (keep []int, corner []geom.Vector, err error) {
+// offsetProfile moves the closed loop of pieces into its material,
+// piece i by ds[i], in the plane of normal n: keep are the pieces that
+// stay, in order, an arc whose material lies inside it, of radius its
+// distance or less, going to a sharp corner, and corner[j] is where
+// piece keep[j] starts, moved. what names the distance for messages.
+func offsetProfile(pieces []profilePiece, n geom.Vector, ds []float64, what string) (keep []int, corner []geom.Vector, err error) {
 	k := len(pieces)
 	// The moved copy of each piece: a line through a point, along a
 	// direction, or a circle.
-	moved := func(p profilePiece) profilePiece {
+	moved := func(p profilePiece, d float64) profilePiece {
 		q := p
 		if p.arc {
 			if p.outward {
@@ -218,7 +224,7 @@ func offsetProfile(pieces []profilePiece, n geom.Vector, d float64, what string)
 	}
 	mv := make([]profilePiece, k)
 	for i, p := range pieces {
-		mv[i] = moved(p)
+		mv[i] = moved(p, ds[i])
 		if !p.arc || mv[i].r > geom.LengthEps {
 			keep = append(keep, i)
 		}
@@ -233,8 +239,12 @@ func offsetProfile(pieces []profilePiece, n geom.Vector, d float64, what string)
 		v := pieces[i].a
 		if back := (i + k - 1) % k; back != prev {
 			v = pieces[back].centre
+		} else if smoothCorner(pieces[prev], pieces[i], n) && math.Abs(ds[prev]-ds[i]) > geom.LengthEps {
+			// Moved by different distances, the two would part.
+			return nil, nil, shellErr(v, "a face taken away runs on smoothly into one that is kept; "+
+				"there the wall would part")
 		}
-		c, err := meetMoved(mv[prev], mv[i], v, pieces[prev], pieces[i], d, n, what)
+		c, err := meetMoved(mv[prev], mv[i], v, pieces[prev], pieces[i], ds[i], n, what)
 		if err != nil {
 			return nil, nil, err
 		}
