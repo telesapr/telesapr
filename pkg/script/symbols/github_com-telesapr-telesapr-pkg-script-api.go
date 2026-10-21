@@ -85,6 +85,7 @@ func init() {
 		"ExtrudeGroup":     reflect.ValueOf((*api.ExtrudeGroup)(nil)),
 		"FeaturesMenu":     reflect.ValueOf((*api.FeaturesMenu)(nil)),
 		"Field":            reflect.ValueOf((*api.Field)(nil)),
+		"FileGuard":        reflect.ValueOf((*api.FileGuard)(nil)),
 		"FileMenu":         reflect.ValueOf((*api.FileMenu)(nil)),
 		"FilletGroup":      reflect.ValueOf((*api.FilletGroup)(nil)),
 		"Form":             reflect.ValueOf((*api.Form)(nil)),
@@ -120,8 +121,19 @@ func init() {
 		"ViewMenu":         reflect.ValueOf((*api.ViewMenu)(nil)),
 
 		// interface wrapper definitions
-		"_Host": reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_script_api_Host)(nil)),
+		"_FileGuard": reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_script_api_FileGuard)(nil)),
+		"_Host":      reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_script_api_Host)(nil)),
 	}
+}
+
+// _github_com_telesapr_telesapr_pkg_script_api_FileGuard is an interface wrapper for FileGuard type
+type _github_com_telesapr_telesapr_pkg_script_api_FileGuard struct {
+	IValue     interface{}
+	WCheckFile func(path string, write bool) error
+}
+
+func (W _github_com_telesapr_telesapr_pkg_script_api_FileGuard) CheckFile(path string, write bool) error {
+	return W.WCheckFile(path, write)
 }
 
 // _github_com_telesapr_telesapr_pkg_script_api_Host is an interface wrapper for Host type

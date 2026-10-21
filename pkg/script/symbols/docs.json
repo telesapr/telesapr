@@ -4599,7 +4599,7 @@
 					},
 					"Host": {
 						"decl": "func (d *Doc) Host() Host",
-						"text": "Host is the program around the sketch."
+						"text": "Host is the program around the sketch. A script whose files are\nguarded (FileGuard) can't have it, as it would read and write files\npast the guard."
 					},
 					"NewStyle": {
 						"decl": "func (d *Doc) NewStyle() (s Style)",
@@ -5144,6 +5144,10 @@
 			"Field": {
 				"text": "Field is one value a Form asks for.",
 				"kind": "struct"
+			},
+			"FileGuard": {
+				"text": "FileGuard is a Host that says which files a script may use: the\nengine of a script whose files are guarded (script.Files) gives its\ndocuments such a host, and every call of this package that reads or\nwrites a file the script names asks it first.",
+				"kind": "interface"
 			},
 			"FileMenu": {
 				"text": "FileMenu holds the calls of the File menu: loading, saving and\nexporting the drawing. A script reaches it as doc.File.",
