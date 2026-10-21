@@ -94,6 +94,7 @@ var menuTable = []menuEntry{
 	{1, "", cmdNone, 0, kn, nil},
 	{1, "Find Comman&d...", cmdFindCommand, ctrl | 'k', kn, func(ss *Application, c Command) { ss.MenuFindCommand() }},
 	{1, "Para&meters...", cmdParameters, ctrl | shift | 'm', kn, func(ss *Application, c Command) { ss.MenuParameters() }},
+	{1, "Datum&s...", cmdDatums, 0, kn, func(ss *Application, c Command) { ss.MenuDatums() }},
 	{1, "", cmdNone, 0, kn, nil},
 	{1, "&Line Styles...", cmdEditLineStyles, 0, kn, mEdit},
 	{1, "&View Projection...", cmdViewProjection, 0, kn, mEdit},

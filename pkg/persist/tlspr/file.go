@@ -103,6 +103,7 @@ func loadLinked(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell, re
 	}
 	rep.Model = true
 	rep.Parameters = doc.Sketch.Parameters
+	rep.Datums = doc.Sketch.Datums
 	for _, c := range doc.Sketch.Configurations {
 		rep.Configurations = append(rep.Configurations, c.Name)
 	}

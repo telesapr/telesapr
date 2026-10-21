@@ -79,6 +79,7 @@ func regenerate(part *sketch.Sketch, path string, sk *sketch.Sketch, cfg string,
 		}
 	}
 	rep.Parameters = slices.Clone(part.Parameters)
+	rep.Datums = slices.Clone(part.Datums)
 	for _, p := range params {
 		if part.Parameter(p.Name) == nil {
 			problems = append(problems, fmt.Sprintf("the model has no parameter %q", p.Name))

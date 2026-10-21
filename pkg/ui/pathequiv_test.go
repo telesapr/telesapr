@@ -256,6 +256,15 @@ func TestPathEquivalenceLinkStepSolid(t *testing.T) {
 	}
 }
 
+// A point picked and named on the datums screen, and the same named by
+// a script.
+func TestPathEquivalenceDatums(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_datums", "path_datums")
+	if len(ui.Datums) != 1 || ui.Datums[0].Name != "corner" {
+		t.Errorf("datums %v", ui.Datums)
+	}
+}
+
 // A part linked, given a configuration and a parameter value and then
 // relinked on its group screen, and the same by a script.
 func TestPathEquivalenceLinkParams(t *testing.T) {

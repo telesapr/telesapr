@@ -193,6 +193,10 @@ type Group struct {
 	LinkModelRead      bool
 	LinkPartParameters []Parameter
 	LinkConfigurations []string
+	// LinkDatums are the datums of the linked model, by the model's
+	// handles; Sketch.ResolveDatum finds them as placed here. Not saved;
+	// reloading the links fills them.
+	LinkDatums []Datum
 
 	Color core.RGBA
 

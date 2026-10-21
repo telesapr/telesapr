@@ -61,6 +61,7 @@ func fullDocument() *Document {
 	c.Other, c.Other2, c.Reference, c.Comment = true, true, true, "why"
 	c.Disp.Offset, c.Disp.Style = geom.Vector{X: 1, Y: -2, Z: 3}, core.HStyle{V: 0x101}
 	sk.Constraints = []core.Constraint{c}
+	sk.Datums = []sketch.Datum{{Name: "top", Entity: core.HEntity{V: 0x8003002c}}, {Name: "axis_1", Entity: core.HEntity{V: 0x40000}}}
 
 	sk.Styles = append(sk.Styles, core.Style{
 		H: core.HStyle{V: 0x100}, Name: "custom", Width: 2, WidthAs: core.UnitsMM,
@@ -156,6 +157,7 @@ func TestEveryFieldRoundTrips(t *testing.T) {
 		{"mesh", got.Mesh, doc.Mesh},
 		{"shell", got.Shell, doc.Shell},
 		{"drawing", have.Drawing, want.Drawing},
+		{"datums", have.Datums, want.Datums},
 	} {
 		if !reflect.DeepEqual(c.got, c.want) {
 			t.Errorf("%s:\n got %+v\nwant %+v", c.what, c.got, c.want)

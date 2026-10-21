@@ -67,6 +67,7 @@ const (
 	screenBillOfMaterials
 	screenMotionStudy
 	screenDrawing
+	screenDatums
 )
 
 // Edit is what the edit control is editing.
@@ -167,6 +168,9 @@ const (
 	editSectionOffset Edit = 930
 	// For a value a link passes its model (an extension)
 	editLinkParam Edit = 931
+	// For the datums (an extension)
+	editDatumAdd  Edit = 932
+	editDatumName Edit = 933
 )
 
 // drawOrHitHow is what DrawOrHitTestIcons and the colour picker do.
@@ -743,10 +747,11 @@ func (tw *textWindow) Show() {
 		tw.Printf(true, "%Fl%f%Ll(cancel operation)%E", linkFunction(tw.ScreenUnselectAll))
 
 	case (gs.n > 0 || gs.constraints > 0 || len(gs.solidEdge) > 0) && tw.shown.screen != screenPasteTransformed &&
-		tw.shown.screen != screenDrawing:
+		tw.shown.screen != screenDrawing && tw.shown.screen != screenDatums:
 
 		// The drawing's screen stays while edges and faces are picked
-		// for its dimensions (roadmap 29.2).
+		// for its dimensions (roadmap 29.2), and the datums' while what
+		// they name is picked or selected from them.
 		if tw.edit.meaning != editTTFText {
 			tw.HideEditControl()
 		}
@@ -786,6 +791,8 @@ func (tw *textWindow) Show() {
 			tw.ShowThread()
 		case screenParameters:
 			tw.ShowParameters()
+		case screenDatums:
+			tw.ShowDatums()
 		case screenCommands:
 			tw.ShowCommands()
 		case screenBrokenReferences:

@@ -157,6 +157,8 @@ func (d *decoder) file(f *File) {
 			d.configuration(n)
 		case "active-configuration":
 			sk.ActiveConfiguration = d.strField(n)
+		case "datum":
+			d.datum(n)
 		case "drawing":
 			sk.Drawing = d.drawing(n)
 		default:
@@ -432,6 +434,20 @@ func (d *decoder) param(n *Node) {
 	}
 	d.exprPos[exprPlace{param: name}] = n.ExprPos
 	sk.Parameters = append(sk.Parameters, sketch.Parameter{Name: name, Expr: n.Expr})
+}
+
+// datum reads "datum <name> <entity>".
+func (d *decoder) datum(n *Node) {
+	a := d.fieldArgs(n, 2)
+	name := d.word(a[0])
+	if !core.ValidVariableName(name) {
+		d.fail(a[0].Pos, "%q can't name a datum", name)
+	}
+	sk := d.doc.Sketch
+	if sk.Datum(name) != nil {
+		d.fail(a[0].Pos, "a second datum %q", name)
+	}
+	sk.Datums = append(sk.Datums, sketch.Datum{Name: name, Entity: core.HEntity{V: d.handle(a[1])}})
 }
 
 // lengths puts the lengths the user typed into the document's unit,

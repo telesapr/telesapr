@@ -1,0 +1,25 @@
+# Datums (an extension): a tile whose top face and a corner are named
+# as datums is linked twice into an empty model beside it. Edit >
+# Datums lists the tiles' datums by link, each link by its handle since
+# both are called tile. The screen stays while something is selected:
+# selecting the first's top there, then the second's, and Assembly >
+# Mate Flush lays the tiles' tops in one plane.
+file $testdata/datums/host.tlspr
+menu File|Open...
+file $testdata/datums/tile.tlspr
+menu Assembly|Link / Assemble...
+file $testdata/datums/tile.tlspr
+menu Assembly|Link / Assemble...
+menu Edit|Datums...
+tw
+twmove 276 180
+twdown L 276 180
+twup L 276 180
+tw
+twmove 276 250
+twdown L 276 250
+twup L 276 250
+menu Assembly|Mate Flush
+menu Edit|Datums...
+tw
+save

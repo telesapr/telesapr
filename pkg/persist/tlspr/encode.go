@@ -102,6 +102,9 @@ func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *Fil
 	if sk.ActiveConfiguration != "" {
 		add(field("active-configuration", String(sk.ActiveConfiguration)))
 	}
+	for _, dt := range sk.Datums {
+		add(field("datum", Word(dt.Name), hex(dt.Entity.V)))
+	}
 	if d := sk.Drawing; d != nil {
 		n := block("drawing")
 		n.add(field("sheet", Word(d.Sheet)))

@@ -185,6 +185,7 @@ const (
 	cmdShowOccludedVisible
 	cmdGroupSketchOnFace
 	cmdGroupDependencies
+	cmdDatums
 )
 
 // Pending is an operation to be completed by doing something with the

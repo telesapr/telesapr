@@ -177,6 +177,7 @@ its place. The value it drives keeps its default, 1 for copies and 0 otherwise.
 | `param <name> = <expression>` | A named parameter, see "Parameters". |
 | `configuration <string> { param <name> = <expression> ... }` | A configuration: a named set of the parameters' expressions, see "Parameters". |
 | `active-configuration <string>` | The configuration the table holds, if one does. |
+| `datum <name> <handle>` | A datum: a name, letters, digits and underscores, for the entity of that handle, a point, workplane, normal, face, line, circle or arc that the model offers a model linking it, which finds it as `group.name`. One line each, in the order they were named. |
 | `drawing { ... }` | The model's drawing: `sheet <name>`, `portrait`, `scale <real>` (0 or left out to fit), `first-angle`, `hidden`, a `view <kind> <x> <y>` for each placed view (none for the standard ones), a `section <view> <offset> <x> <y>` for each section view and a `detail <view> <cx> <cy> <r> <scale> <x> <y>` for each detail view (`x`, `y` 0 to place it), a `dimension <view> <kind> <offset> { solid-edge ... solid-face ... }` block for each dimension, `view` a view kind or a section's or detail's letter, `kind` length, distance, diameter or radius, its edges by name as a chamfer's are, then its faces by identity, `solid-face <handle>`, and `title`, `author`, `number`, `revision`, `material`, `company` strings. |
 | `group <handle> <type> <name> { ... }` | A group. |
 | `request <handle> <type> { ... }` | A request, what the user drew. |
