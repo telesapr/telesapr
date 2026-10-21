@@ -474,6 +474,11 @@ func (d *decoder) lengths() {
 		for k := range g.EdgeRadii {
 			length(&g.EdgeRadii[k].Val, &g.EdgeRadii[k].Expr)
 		}
+		if t := &g.Thread; t.IsThread() {
+			length(&t.Length, &t.LengthExpr)
+			noExpr := ""
+			length(&t.Clearance, &noExpr)
+		}
 	}
 }
 
@@ -566,6 +571,47 @@ func (d *decoder) unknownField(n *Node, in string) {
 	d.warn(n.Pos, "unknown field %q in %s; skipped", n.Name, in)
 }
 
+// thread reads what made a thread, as encodeThread writes it; its
+// lengths are in the document's unit, which the caller converts.
+func (d *decoder) thread(n *Node, hg core.HGroup) sketch.GroupThread {
+	d.head(n, 0)
+	var t sketch.GroupThread
+	for _, c := range n.Children {
+		switch c.Name {
+		case "circle":
+			t.Circle = core.HEntity{V: d.handleField(c)}
+		case "form":
+			enumField(d, threadForms, c, &t.Spec.Form)
+		case "diameter":
+			t.Spec.Diameter = d.realField(c)
+		case "pitch":
+			t.Spec.Pitch = d.realField(c)
+		case "starts":
+			t.Spec.Starts = d.intField(c)
+		case "left-hand":
+			t.Spec.LeftHand = d.flag(c)
+		case "internal":
+			t.Internal = d.flag(c)
+		case "length":
+			t.Length, t.LengthExpr = d.expr(c, exprPlace{group: hg, field: "thread length"})
+		case "reverse":
+			t.Reverse = d.flag(c)
+		case "through":
+			t.Through = d.flag(c)
+		case "clearance":
+			t.Clearance = d.realField(c)
+		case "crest":
+			enumField(d, threadCrests, c, &t.Crest)
+		default:
+			d.unknownField(c, "thread")
+		}
+	}
+	if t.Circle == core.NoEntity {
+		d.fail(n.Pos, "a thread names the circle it is on")
+	}
+	return t
+}
+
 func (d *decoder) group(n *Node) (sketch.Group, bool) {
 	a := d.head(n, 3)
 	g := sketch.Group{H: core.HGroup{V: d.handle(a[0])}, Scale: 1, Remap: make(core.EntityMap)}
@@ -632,6 +678,8 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			g.FaceAppearances = append(g.FaceAppearances, sketch.FaceAppearance{Face: srf.FaceID(d.handle(a[0])), Appearance: d.word(a[1])})
 		case "density":
 			g.Density = d.realField(c)
+		case "thread":
+			g.Thread = d.thread(c, g.H)
 		case "edge-radius":
 			// "edge-radius <n> = <expression>": the fillet's n-th edge,
 			// counting its entities and then its solid edges.

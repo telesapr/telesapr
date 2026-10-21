@@ -464,6 +464,9 @@ func (sk *Sketch) forEachExpr(fn func(expr *string, who string)) {
 				fn(&er.Expr, fmt.Sprintf("group %s %s", g.Name, EdgeRadiusField(er.Edge)))
 			}
 		}
+		if g.Thread.LengthExpr != "" {
+			fn(&g.Thread.LengthExpr, fmt.Sprintf("group %s thread length", g.Name))
+		}
 	}
 }
 
@@ -609,6 +612,13 @@ func (sk *Sketch) evaluate() []core.HGroup {
 			if er.Val != v {
 				er.Val = v
 				mark(g.H)
+			}
+		}
+		// A thread's length is carried by its dimensions, which report
+		// their own errors; the number kept is what its screen shows.
+		if t := &g.Thread; t.LengthExpr != "" {
+			if v, err := eval(t.LengthExpr); err == nil && v > 0 {
+				t.Length = v * sk.Units.MmPer()
 			}
 		}
 	}
@@ -985,6 +995,7 @@ func (sk *Sketch) SetUnits(u core.Unit) []string {
 		for k := range g.EdgeRadii {
 			convert(&g.EdgeRadii[k].Expr)
 		}
+		convert(&g.Thread.LengthExpr)
 	}
 	sk.Units = u
 	// What the lengths name, and what those name in turn.

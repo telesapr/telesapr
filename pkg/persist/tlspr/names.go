@@ -3,6 +3,7 @@ package tlspr
 import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/thread"
 )
 
 // The names the format gives enumerations. They belong to the format:
@@ -61,6 +62,18 @@ var combines = newEnum("combine", map[sketch.CombineAs]string{
 	sketch.CombineDifference:   "difference",
 	sketch.CombineAssemble:     "assemble",
 	sketch.CombineIntersection: "intersection",
+})
+
+var threadForms = newEnum("thread form", map[thread.Form]string{
+	thread.FormMetric:      "metric",
+	thread.FormUnified:     "unified",
+	thread.FormTrapezoidal: "trapezoidal",
+})
+
+var threadCrests = newEnum("thread crest", map[thread.Crest]string{
+	thread.CrestStandard:  "standard",
+	thread.CrestTruncated: "truncated",
+	thread.CrestRounded:   "rounded",
 })
 
 var requestTypes = newEnum("request type", map[sketch.RequestType]string{

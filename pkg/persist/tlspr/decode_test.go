@@ -10,6 +10,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/thread"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -31,6 +32,11 @@ func fullDocument() *Document {
 		LinkFile: "dir/part.tlspr",
 		Color:    core.RGBA{Red: 1, Green: 2, Blue: 3, Alpha: 4},
 		Density:  7.85,
+		Thread: sketch.GroupThread{Circle: core.HEntity{V: 0x30000}, ThreadOptions: sketch.ThreadOptions{
+			Spec:     thread.Spec{Form: thread.FormTrapezoidal, Diameter: 20, Pitch: 4, Starts: 2, LeftHand: true},
+			Internal: true, LengthExpr: "len * 2", Reverse: true, Through: true, Clearance: 12.7,
+			Crest: thread.CrestRounded,
+		}},
 	}
 	g.Predef.Q = geom.Quaternion{W: 0.5, X: -0.5, Y: 0.25, Z: math.Copysign(0, -1)}
 	g.Predef.Origin = core.HEntity{V: 0x10001}

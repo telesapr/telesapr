@@ -141,6 +141,10 @@ type Profile struct {
 	CrestWidth, RootWidth float64
 	// FlankAngle is the angle between the flanks, in degrees.
 	FlankAngle float64
+	// CrestRoundRadius is the radius of a rounded crest's arc, 0 for a
+	// flat crest; the arc meets the flanks at RoundFootRadius from the
+	// axis, CrestWidth apart (WithCrest).
+	CrestRoundRadius, RoundFootRadius float64
 }
 
 // Profile returns the ridge of the external or the internal thread.
@@ -178,10 +182,15 @@ func (p Profile) Height() float64 {
 
 // WidthAt is the length along the axis of the ridge at radius r, which
 // may lie beyond the root, where the flanks are carried on.
+// A rounded crest's flanks end at its arc's feet.
 func (p Profile) WidthAt(r float64) float64 {
 	slope := 2 * math.Tan(p.FlankAngle/2*math.Pi/180)
-	if p.RootRadius < p.CrestRadius {
-		return p.CrestWidth + slope*(p.CrestRadius-r)
+	top := p.CrestRadius
+	if p.CrestRoundRadius > 0 {
+		top = p.RoundFootRadius
 	}
-	return p.CrestWidth + slope*(r-p.CrestRadius)
+	if p.RootRadius < p.CrestRadius {
+		return p.CrestWidth + slope*(top-r)
+	}
+	return p.CrestWidth + slope*(r-top)
 }
