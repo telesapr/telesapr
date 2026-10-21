@@ -76,6 +76,12 @@ func TestPathEquivalenceThread(t *testing.T) {
 	requireSamePaths(t, "path_thread", "path_thread")
 }
 
+// A screw thread made, then edited as one from its helix group's
+// screen, and by a script through ThreadGroup.Edit.
+func TestPathEquivalenceThreadEdit(t *testing.T) {
+	requireSamePaths(t, "path_thread_edit", "path_thread_edit")
+}
+
 // A rectangle whose sides come from parameters, made through the
 // parameters screen and the dimension editor, and by a script.
 func TestPathEquivalenceParameters(t *testing.T) {

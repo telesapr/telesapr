@@ -973,7 +973,13 @@ func (tw *textWindow) ShowGroupInfo() {
 					(sk.MustParam(g.H.Param(3)).Val*ss.MmPerUnit()),
 				lf(tw.ScreenChangeHelixPitch), g.H.V)
 		}
-		tw.Printf(false, "   %Fd%f%LP%s  fixed", lf(tw.ScreenChangePitchOption), checkMark(g.ValB != 0))
+		if g.Thread.IsThread() {
+			// At the end of a row, so that the rows below stay put.
+			tw.Printf(false, "   %Fd%f%LP%s  fixed%E   %Fl%Le%f%D[edit thread]%E",
+				lf(tw.ScreenChangePitchOption), checkMark(g.ValB != 0), lf(tw.ScreenEditThread), g.H.V)
+		} else {
+			tw.Printf(false, "   %Fd%f%LP%s  fixed", lf(tw.ScreenChangePitchOption), checkMark(g.ValB != 0))
+		}
 
 		tw.Printf(false, "") // blank line
 	}

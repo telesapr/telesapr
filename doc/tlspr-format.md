@@ -220,6 +220,7 @@ group <handle> <type> <name> {
   appearance <name>         # matte, plastic, glossy or metal; left out for plastic
   face-appearance <face> <name>  # a face's own appearance, by its identity; one line each
   density <real>            # the solid's density in g/cm³, for its mass; left out when none is set
+  thread { ... }            # helix: what made a screw thread, for editing it as one; see below
   combine <combine>
   force-to-mesh
   edges <handle> ...        # chamfer: the edges cut; sweep: the path, in the order given; loft: its guide curves
@@ -322,6 +323,26 @@ which hold the workplane while the face can't be found, as on loading, before th
 | Difference | `difference` |
 | Assemble | `assemble` |
 | Intersection | `intersection` |
+
+A screw thread's helix group, the last of the four groups a thread is made of, keeps what made
+the thread, which drawing the thread again from new options starts from:
+
+```
+thread {
+  circle <handle>           # the circle or arc the thread is on
+  form <form>               # metric, unified or trapezoidal
+  diameter <real>           # the nominal diameter, in millimetres
+  pitch <real>              # in millimetres
+  starts <integer>          # left out for one
+  left-hand
+  internal                  # a nut's thread: the circle bored out
+  length = <expression>     # from the circle's plane, a length
+  reverse                   # against the circle's normal
+  through                   # past the far end
+  clearance <real>          # away from the mate, a length; left out for none
+  crest <crest>             # truncated or rounded; left out for the standard crest
+}
+```
 
 ### Request
 

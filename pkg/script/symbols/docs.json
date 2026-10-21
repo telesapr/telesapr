@@ -5317,6 +5317,10 @@
 						"decl": "func (g Group) AsSweep() SweepGroup",
 						"text": "AsSweep is the view of a sweep along a path."
 					},
+					"AsThread": {
+						"decl": "func (g Group) AsThread() ThreadGroup",
+						"text": "AsThread is the view of a thread's helix group."
+					},
 					"Color": {
 						"decl": "func (g Group) Color() (red, green, blue int)",
 						"text": "Color is the colour of the group's solid, each of red, green and blue\n0 to 255."
@@ -5376,6 +5380,10 @@
 					"History": {
 						"decl": "func (g Group) History() GroupHistory",
 						"text": "History is what the group depends on, and where it sits in the list\nof groups."
+					},
+					"IsThread": {
+						"decl": "func (g Group) IsThread() (is bool)",
+						"text": "IsThread reports whether the group is a screw thread's helix group,\nwhich AsThread edits."
 					},
 					"Kind": {
 						"decl": "func (g Group) Kind() string",
@@ -6457,6 +6465,24 @@
 					}
 				}
 			},
+			"ThreadGroup": {
+				"text": "ThreadGroup is the view of a screw thread, by its helix group, the\nlast of the four that Features.Thread makes: what it was made with,\nto read and to change as one.",
+				"kind": "struct",
+				"methods": {
+					"Edit": {
+						"decl": "func (v ThreadGroup) Edit(o ThreadOptions)",
+						"text": "Edit makes the thread again with the options o, in one step, as the\nthread's screen in the window does: its four groups are drawn again,\nkeeping their handles. A Designation of \"\" keeps the thread's, and a\nLength of 0 (with no LengthExpr) its length. Options gives what o\nstarts from:\n\n\to := t.Options()\n\to.Designation, o.Crest = \"M8x1\", \"rounded\"\n\tt.Edit(o)"
+					},
+					"Groups": {
+						"decl": "func (v ThreadGroup) Groups() (groups []Group)",
+						"text": "Groups are the thread's four groups: the sketch and the lathe that\nturn the part down or bore it, the sketch of the ridge, and the\nhelix that sweeps it."
+					},
+					"Options": {
+						"decl": "func (v ThreadGroup) Options() (o ThreadOptions)",
+						"text": "Options are what the thread is made with now: its designation, its\nlength in mm (as its expression gives it, when it has one), and the\nrest as Features.Thread takes them."
+					}
+				}
+			},
 			"ThreadOptions": {
 				"text": "ThreadOptions are what Features \u003e Screw Thread asks for. The zero\nvalue is what the screen starts with: the standard thread nearest\nthe circle's diameter, external, one and a half diameters long,\nending at a shoulder.",
 				"kind": "struct"
@@ -7130,6 +7156,16 @@
 					"GroupTwoSkewed"
 				]
 			},
+			"GroupThread": {
+				"text": "GroupThread is what made a thread, kept on its helix group: the circle it is on and its options.",
+				"kind": "struct",
+				"methods": {
+					"IsThread": {
+						"decl": "func (t GroupThread) IsThread() bool",
+						"text": "IsThread reports whether the group is a thread's helix."
+					}
+				}
+			},
 			"GroupTiming": {
 				"text": "GroupTiming is what one group took, summed over every regeneration that worked on it, and how many times each step ran.",
 				"kind": "struct"
@@ -7672,6 +7708,10 @@
 					"DistanceLabelOffset": {
 						"decl": "func (sk *Sketch) DistanceLabelOffset(a, b geom.Vector) geom.Vector",
 						"text": "DistanceLabelOffset is where the label of a new distance between points at a and b goes, as Constrain \u003e Distance puts it: 50 pixels from the middle, across the line between them in the view."
+					},
+					"EditThread": {
+						"decl": "func (sk *Sketch) EditThread(hg core.HGroup, o ThreadOptions) (ThreadResult, error)",
+						"text": "EditThread makes the thread whose helix group is hg again with the options o: its sketches are drawn again in their planes, the requests they had taken first, their dimensions made anew, and the helix given its pitch and length."
 					},
 					"EntitiesToMap": {
 						"decl": "func (s *Sketch) EntitiesToMap() map[core.HEntity]core.Entity",
@@ -8315,6 +8355,18 @@
 						"decl": "func (sk *Sketch) TestRankForGroup(hg core.HGroup) (core.SolveResult, int)",
 						"text": "TestRankForGroup reports whether group hg would be redundantly constrained, and its rank; a group that allows redundancy or doesn't count its freedom is okay with rank 0."
 					},
+					"ThreadGroups": {
+						"decl": "func (sk *Sketch) ThreadGroups(hg core.HGroup) ([]core.HGroup, error)",
+						"text": "ThreadGroups returns the thread's four groups, from its blank sketch to its helix, hg being the helix."
+					},
+					"ThreadLengthText": {
+						"decl": "func (sk *Sketch) ThreadLengthText(text string) (float64, string, error)",
+						"text": "ThreadLengthText reads a thread's length as the user typed it, in the document's unit: a plain number, or an expression of the parameters, which it evaluates."
+					},
+					"ThreadOf": {
+						"decl": "func (sk *Sketch) ThreadOf(hg core.HGroup) (ThreadOptions, error)",
+						"text": "ThreadOf returns the options of the thread whose helix group is hg, with its length as its expression now gives it."
+					},
 					"Tol": {
 						"decl": "func (sk *Sketch) Tol() srf.Tolerance",
 						"text": "Tol is the tolerance the last regeneration followed curves and surfaces at: the export one while Exporting is set, otherwise one from the model's size and ChordTolPct."
@@ -8679,6 +8731,10 @@
 			"ErrNotTextRequest": {
 				"decl": "var ErrNotTextRequest",
 				"text": "ErrNotTextRequest is what the text edits return for a request that is not a TrueType text."
+			},
+			"ErrNotThread": {
+				"decl": "var ErrNotThread",
+				"text": "ErrNotThread is returned for a group that is not a thread's helix."
 			},
 			"ErrSplinePointsFull": {
 				"decl": "var ErrSplinePointsFull",

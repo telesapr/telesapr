@@ -1,0 +1,45 @@
+# A screw thread made through its screen on an extruded circle, then
+# edited from its helix group's screen: rounded and 12 long. The same
+# model as path_thread_edit.go makes (TestPathEquivalenceThreadEdit).
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 350 300
+down L 350 300
+up L 350 300
+key esc
+key x shift
+move 350 300
+down L 350 300
+up L 350 300
+menu Features|Screw Thread...
+# The designation, the length, an internal thread, then make it.
+twmove 172 110
+twdown L 172 110
+twup L 172 110
+edit M6x1
+twmove 190 150
+twdown L 190 150
+twup L 190 150
+edit 9
+twmove 181 190
+twdown L 181 190
+twup L 181 190
+twmove 37 260
+twdown L 37 260
+twup L 37 260
+# The helix group's [edit thread]: a rounded crest, 12 long.
+twmove 150 210
+twdown L 150 210
+twup L 150 210
+twmove 546 190
+twdown L 546 190
+twup L 546 190
+twmove 190 150
+twdown L 190 150
+twup L 190 150
+edit 12
+twmove 37 260
+twdown L 37 260
+twup L 37 260

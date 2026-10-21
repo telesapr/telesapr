@@ -11,8 +11,8 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/sketch"
-	"github.com/telesapr/telesapr/pkg/thread"
 	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/thread"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
 

@@ -264,14 +264,18 @@ var windowActions = map[string]string{
 	"ScreenExportBOM":                "Assembly.ExportBOM",
 	"ScreenChangeCommandQuery":       "- the search box of Edit > Find Command; the script names the command",
 	"ScreenRunCommand":               "Edit.RunCommand",
-	"ScreenChangeThread/d":           "Features.Thread",
-	"ScreenChangeThread/l":           "Features.Thread",
-	"ScreenChangeThread/c":           "Features.Thread",
-	"ScreenChangeThread/e":           "Features.Thread",
-	"ScreenChangeThread/i":           "Features.Thread",
-	"ScreenChangeThread/t":           "Features.Thread",
-	"ScreenChangeThread/r":           "Features.Thread",
-	"ScreenMakeThread":               "Features.Thread",
+	"ScreenChangeThread/d":           "Features.Thread ThreadGroup.Edit",
+	"ScreenChangeThread/l":           "Features.Thread ThreadGroup.Edit",
+	"ScreenChangeThread/c":           "Features.Thread ThreadGroup.Edit",
+	"ScreenChangeThread/e":           "Features.Thread ThreadGroup.Edit",
+	"ScreenChangeThread/i":           "Features.Thread ThreadGroup.Edit",
+	"ScreenChangeThread/t":           "Features.Thread ThreadGroup.Edit",
+	"ScreenChangeThread/r":           "Features.Thread ThreadGroup.Edit",
+	"ScreenChangeThread/n":           "Features.Thread ThreadGroup.Edit",
+	"ScreenChangeThread/u":           "Features.Thread ThreadGroup.Edit",
+	"ScreenChangeThread/o":           "Features.Thread ThreadGroup.Edit",
+	"ScreenMakeThread":               "Features.Thread ThreadGroup.Edit",
+	"ScreenEditThread":               "ThreadGroup.Edit",
 	"ScreenChangeMotion/n":           "Assembly.MotionStudy",
 	"ScreenChangeMotion/f":           "Assembly.MotionStudy",
 	"ScreenChangeMotion/t":           "Assembly.MotionStudy",
@@ -476,9 +480,9 @@ var windowActions = map[string]string{
 	"editGroupDraft":               "ExtrudeGroup.SetDraft SweepGroup.SetTwist LoftGroup.SetTangency Group.SetExpr",
 	"editGroupExtent":              "ExtrudeGroup.SetDepth RevolveGroup.SetAngle Group.SetExpr",
 	"editChamferDistance2":         "ChamferGroup.SetSecondDistance",
-	"editThreadDesignation":        "Features.Thread",
-	"editThreadLength":             "Features.Thread",
-	"editThreadClearance":          "Features.Thread",
+	"editThreadDesignation":        "Features.Thread ThreadGroup.Edit",
+	"editThreadLength":             "Features.Thread ThreadGroup.Edit",
+	"editThreadClearance":          "Features.Thread ThreadGroup.Edit",
 	"editParameterAdd":             "Params.Set",
 	"editParameterExpr":            "Params.Set",
 	"editParameterName":            "Params.Rename",
@@ -690,6 +694,8 @@ AsShell               -an accessor for the typed group
 AsLoft                -an accessor for the typed group
 AsLink                -an accessor for the typed group
 AsRevolve             -an accessor for the typed group
+AsThread              -an accessor for the typed group
+IsThread              -q
 SetExpr               ScreenChangeExprA; ScreenChangeGroupScale; ScreenChangeHelixPitch; ScreenChangeGroupDraft; ScreenChangeLoftStart; ScreenChangePitchOption; ScreenChangeGroupExtent
 Expr                  -q
 Value                 -q
@@ -859,6 +865,11 @@ Depth            -q
 DepthHeld        -q
 SetDepth         ScreenChangeExtentHeld; ScreenChangeGroupExtent; editGroupExtent
 FreeDepth        ScreenChangeExtentHeld
+`,
+	"ThreadGroup": `
+Options  -q
+Groups   -q
+Edit     ScreenEditThread; ScreenMakeThread
 `,
 	"RevolveGroup": `
 Angle            -q
