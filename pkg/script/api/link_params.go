@@ -32,6 +32,9 @@ func (v LinkGroup) SetFile(path string) {
 		fail("%v", err)
 	}
 	g := v.g
+	if err := g.d.checkFile(abs, false); err != nil {
+		fail("%v", err)
+	}
 	g.d.change(func(sk *sketch.Sketch) {
 		v.placed(sk, "SetFile")
 		if err := sk.SetLinkFile(g.H, abs); err != nil {
