@@ -93,3 +93,5 @@ The example is [`examples/scripts/library`](../../examples/scripts/library), wit
   seen after Script > Stop has stopped a script, or in a new window. Script files run from the
   menu start a new interpreter each time, and see it at once.
 - There are no versions or downloads of packages: the library is a folder you keep.
+- An AI program's scripts are kept to some folders ([Drawing with an AI model](../ai.md#files));
+  yours are not.

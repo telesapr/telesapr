@@ -53,6 +53,9 @@ func (ss *Application) AllowAgent(allow bool) error {
 	if !allow {
 		a := ss.agent
 		ss.agent = nil
+		if c := ss.console; c != nil && !c.busy {
+			c.dropAgentSession()
+		}
 		_ = a.listener.Close()
 		// The connections end on their own goroutines: one may wait
 		// for this one, the event loop's, to run its script.
@@ -147,7 +150,8 @@ func (b consoleBackend) Run(ctx context.Context, code string) (agent.Result, err
 	}
 	done := make(chan outcome, 1)
 	err := b.onLoop(func() error {
-		if err := c.ensureEngine(); err != nil {
+		session, err := c.agentSession()
+		if err != nil {
 			return err
 		}
 		if c.busy {
@@ -163,7 +167,7 @@ func (b consoleBackend) Run(ctx context.Context, code string) (agent.Result, err
 			// The program's request ending stops the script too.
 			runCtx, cancel := context.WithCancel(jobCtx)
 			stop := context.AfterFunc(ctx, cancel)
-			res, err := c.session.Run(runCtx, code)
+			res, err := session.Run(runCtx, code)
 			stop()
 			cancel()
 			return func() {
@@ -198,12 +202,14 @@ func (b consoleBackend) Run(ctx context.Context, code string) (agent.Result, err
 	}
 }
 
-// session is the console's session, made if need be.
-func (b consoleBackend) session() (*agent.Session, error) {
-	if err := b.onLoop(b.c.ensureEngine); err != nil {
-		return nil, err
-	}
-	return b.c.session, nil
+// session is the session the program's scripts run in, made if need
+// be.
+func (b consoleBackend) session() (s *agent.Session, err error) {
+	err = b.onLoop(func() (err error) {
+		s, err = b.c.agentSession()
+		return err
+	})
+	return s, err
 }
 
 func (b consoleBackend) Describe(ctx context.Context, group string) (string, error) {

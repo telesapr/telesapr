@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -82,6 +83,9 @@ func newAgentApp(t *testing.T) *agentApp {
 // drawing's.
 func TestAgentDraws(t *testing.T) {
 	a := newAgentApp(t)
+	// Unguarded, the program's scripts run in the console's own
+	// interpreter (TestAgentGuarded has them guarded).
+	a.on(func() { a.ss.SetAgentFiles(false, nil) })
 	ctx := context.Background()
 	var listening, checked bool
 	a.on(func() {
@@ -253,6 +257,8 @@ func TestAgentConfirm(t *testing.T) {
 func TestAgentBusyStopAndOff(t *testing.T) {
 	a := newAgentApp(t)
 	ctx := context.Background()
+	// The program's script marks that it drew with a file there.
+	a.on(func() { a.ss.SetAgentFiles(true, []string{a.ss.AgentSocketDir}) })
 
 	a.on(func() { a.w.Submit("for {\n\ttime.Sleep(time.Millisecond)\n}") })
 	if _, err := a.r.Run(ctx, "1 + 1"); err == nil || !strings.Contains(err.Error(), "another script is running") {
@@ -354,5 +360,90 @@ func TestAgentSettings(t *testing.T) {
 	}
 	if err := other.AllowAgent(false); err != nil {
 		t.Errorf("turning off what is off: %v", err)
+	}
+}
+
+// By default a program's scripts read and write files only in the
+// drawing's folder, the folders set and a folder of their own, and run
+// in an interpreter of their own; turned off, they use any file, in the
+// console's interpreter.
+func TestAgentGuarded(t *testing.T) {
+	a := newAgentApp(t)
+	ctx := context.Background()
+	docDir, other, outside := t.TempDir(), t.TempDir(), t.TempDir()
+	model := filepath.Join(docDir, "part.tlspr")
+	a.on(func() {
+		if err := a.ss.SaveToFile(model); err != nil {
+			t.Error(err)
+		}
+		a.ss.SaveFile = model
+	})
+	if !a.ss.AgentGuarded {
+		t.Fatal("an AI program's files are not guarded by default")
+	}
+	save := func(path string) string {
+		t.Helper()
+		res, err := a.r.Run(ctx, "fmt.Println(doc.File.Save("+strconv.Quote(path)+"))")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return res.Output
+	}
+	run := func(code string) string {
+		t.Helper()
+		res, err := a.r.Run(ctx, code)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return res.Output + res.Value + res.Error
+	}
+	if got := save(filepath.Join(docDir, "a.tlspr")); got != "<nil>\n" {
+		t.Errorf("exporting beside the drawing: %q", got)
+	}
+	if got := save(filepath.Join(outside, "a.tlspr")); !strings.Contains(got, "not allowed") {
+		t.Errorf("exporting outside: %q", got)
+	}
+	if got := run("f, err := os.CreateTemp(\"\", \"x\")\nfmt.Println(err, f != nil)"); got != "<nil> true\n" {
+		t.Errorf("a temporary file of its own: %q", got)
+	}
+
+	// The folders set, and the program's definitions gone with its
+	// interpreter when they change.
+	run("x := 1")
+	a.on(func() { a.ss.TW.ScreenChangeAgentFolders(0, 0) })
+	a.on(func() { a.ss.TW.EditControlDone(other) })
+	if got := save(filepath.Join(other, "a.tlspr")); got != "<nil>\n" || len(a.ss.AgentFolders) != 1 {
+		t.Errorf("exporting in a folder set (%v): %q", a.ss.AgentFolders, got)
+	}
+	if got := run("x"); !strings.Contains(got, "undefined") {
+		t.Errorf("x after the folders changed: %q", got)
+	}
+
+	// The console doesn't see what the program defines.
+	run("y := 2")
+	n := 0
+	a.on(func() { n = len(a.w.Texts) })
+	a.on(func() { a.w.Submit("y") })
+	waitConsole(a)
+	if got := a.shown(n); !strings.Contains(got, "undefined: y") {
+		t.Errorf("the console showed %q for the program's y", got)
+	}
+
+	// Turned off, anything goes.
+	a.on(func() { a.ss.TW.ScreenChangeAgentGuarded(0, 0) })
+	if got := save(filepath.Join(outside, "b.tlspr")); got != "<nil>\n" || a.ss.AgentGuarded {
+		t.Errorf("exporting outside unguarded: %q", got)
+	}
+}
+
+// waitConsole waits for the console's script to end.
+func waitConsole(a *agentApp) {
+	for range 5000 {
+		busy := false
+		a.on(func() { busy = a.ss.Console().Busy() })
+		if !busy {
+			return
+		}
+		time.Sleep(time.Millisecond)
 	}
 }

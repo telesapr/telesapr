@@ -33,6 +33,12 @@ type ScriptConsole struct {
 	// writes, to return it to the program.
 	session *agent.Session
 	capture *agent.Capture
+
+	// guarded is the session an AI program's scripts run in while
+	// their files are guarded (AgentGuarded), made when first needed;
+	// guardDone removes its temporary folder.
+	guarded   *agent.Session
+	guardDone func()
 }
 
 const (
@@ -128,8 +134,22 @@ func (ss *Application) scriptLibrary() string {
 // for its next import; what it imported stays.
 func (ss *Application) SetScriptLibrary(dir string) {
 	ss.ScriptLibrary = dir
-	if c := ss.console; c != nil && c.engine != nil {
-		c.engine.SetLibrary(ss.scriptLibrary())
+	if c := ss.console; c != nil {
+		if c.engine != nil {
+			c.engine.SetLibrary(ss.scriptLibrary())
+		}
+		// The guarded session reads the library it was made with.
+		c.dropAgentSession()
+	}
+}
+
+// SetAgentFiles sets whether an AI program's scripts are kept to the
+// document's folder and folders, and what those are. A script of
+// theirs that is defined goes with the session it was in.
+func (ss *Application) SetAgentFiles(guarded bool, folders []string) {
+	ss.AgentGuarded, ss.AgentFolders = guarded, folders
+	if c := ss.console; c != nil && !c.busy {
+		c.dropAgentSession()
 	}
 }
 
@@ -222,6 +242,44 @@ func (c *ScriptConsole) ensureEngine() error {
 	c.engine = e
 	c.session = agent.NewSession(e, c.capture)
 	return nil
+}
+
+// agentSession is the session an AI program's scripts run in: while
+// their files are guarded, one of their own, whose engine is guarded,
+// and otherwise the console's. Either prints in the console.
+func (c *ScriptConsole) agentSession() (*agent.Session, error) {
+	ss := c.ss
+	if !ss.AgentGuarded {
+		if err := c.ensureEngine(); err != nil {
+			return nil, err
+		}
+		return c.session, nil
+	}
+	if c.guarded != nil {
+		return c.guarded, nil
+	}
+	files, done, err := agent.GuardFiles(ss.ScriptHost().Folder, ss.AgentFolders, ss.scriptLibrary())
+	if err != nil {
+		return nil, err
+	}
+	opts := c.options(nil)
+	opts.Files = files
+	e, err := script.New(opts)
+	if err != nil {
+		done()
+		return nil, err
+	}
+	c.guarded, c.guardDone = agent.NewSession(e, c.capture), done
+	return c.guarded, nil
+}
+
+// dropAgentSession forgets the guarded session, so that the next is
+// made with the settings as they are now.
+func (c *ScriptConsole) dropAgentSession() {
+	if c.guardDone != nil {
+		c.guardDone()
+	}
+	c.guarded, c.guardDone = nil, nil
 }
 
 // Submit takes what was entered in the console, one line or several:

@@ -62,6 +62,9 @@ type Options struct {
 	// Form is the values, by field name, given to the form that a
 	// script run by RunSource or RunFile declares (see ApplyForm).
 	Form map[string]string
+	// Files, if set, are the folders a script may read and write
+	// files in; without it, any its user may.
+	Files *Files
 }
 
 // evalHost is a host that is told where each step of a script starts
@@ -192,7 +195,8 @@ func newEngine(opts Options) (*Engine, error) {
 	if opts.Args == nil {
 		opts.Args = []string{"script"}
 	}
-	e := &Engine{opts: opts, doc: api.NewDoc(opts.Host)}
+	e := &Engine{opts: opts}
+	e.doc = api.NewDoc(e.guard(opts.Host))
 	if err := e.newInterpreter(); err != nil {
 		return nil, err
 	}
@@ -206,12 +210,19 @@ func (e *Engine) newInterpreter() error {
 	e.gen++
 	gen := e.gen
 	e.told.Unlock()
+	// The interpreter has an environment of its own, which a script
+	// changes without changing the program's. One whose files are
+	// guarded gets none: it may hold secrets.
+	env := os.Environ()
+	if e.opts.Files != nil {
+		env = nil
+	}
 	e.i = interp.New(interp.Options{
 		Stdin:  e.opts.Stdin,
 		Stdout: e.opts.Stdout,
 		Stderr: &panicFilter{e: e, w: e.opts.Stderr},
 		Args:   e.opts.Args,
-		Env:    os.Environ(),
+		Env:    env,
 		// Packages that aren't the program's come from the library.
 		GoPath:               libraryRoot,
 		SourcecodeFilesystem: libraryFS{e},
@@ -285,6 +296,7 @@ func (e *Engine) exports(gen uint64) interp.Exports {
 		std["Stderr"] = reflect.ValueOf(&stderr).Elem()
 	}
 	exports["os/os"] = std
+	e.guardExports(exports)
 
 	// What a console wraps an expression in to get all of its values.
 	exports[showPath+"/console"] = map[string]reflect.Value{
@@ -323,6 +335,11 @@ func typedFloats(pkg map[string]reflect.Value) map[string]reflect.Value {
 
 // Doc is the document scripts run on.
 func (e *Engine) Doc() *api.Doc { return e.doc }
+
+// Host is the program around the document scripts run on, as the
+// engine was given it: a guarded script's document doesn't hand it out
+// (api.Doc.Host), the program that runs the engine may.
+func (e *Engine) Host() api.Host { return e.opts.Host }
 
 // Running reports whether a script is running.
 func (e *Engine) Running() bool {

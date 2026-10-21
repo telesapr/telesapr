@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -250,7 +251,9 @@ func TestMCPCommandLine(t *testing.T) {
 		{[]string{"--headless", "--socket", "x"}, exitUsage, "with --headless there is none"},
 		{[]string{"--window"}, exitUsage, "Unrecognized option '--window'.\n"},
 		{[]string{"--headless", "--lib"}, exitUsage, "--lib needs the library's folder.\n"},
-		{[]string{"--lib", dir}, exitUsage, "--lib is for --headless"},
+		{[]string{"--lib", dir}, exitUsage, "are for --headless"},
+		{[]string{"--unguarded"}, exitUsage, "are for --headless"},
+		{[]string{"--headless", "--allow"}, exitUsage, "--allow needs a folder.\n"},
 		{[]string{model}, exitUsage, "Unrecognized option"},
 		{[]string{"--headless", filepath.Join(dir, "none.tlspr")}, exitLoad, "Cannot load"},
 	} {
@@ -318,5 +321,41 @@ func TestMCPThroughSocket(t *testing.T) {
 	}
 	if n := len(session.Engine().Doc().Active().Requests()); n != 1 {
 		t.Errorf("the program's drawing has %d requests after the script, want 1", n)
+	}
+}
+
+// A headless server's scripts write files in the sketch's folder and
+// those --allow names, and nowhere else unless --unguarded.
+func TestMCPGuardedFiles(t *testing.T) {
+	dir, other, outside := t.TempDir(), t.TempDir(), t.TempDir()
+	model := filepath.Join(dir, "part.tlspr")
+	if err := api.New().File.Save(model); err != nil {
+		t.Fatal(err)
+	}
+	save := func(path string) string {
+		code, err := json.Marshal("doc.File.Save(" + strconv.Quote(path) + ")")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"run_script","arguments":{"code":` + string(code) + `}}}`
+	}
+	start := []string{
+		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}`,
+		`{"jsonrpc":"2.0","method":"notifications/initialized"}`,
+	}
+	for _, c := range []struct {
+		args []string
+		path string
+		want string
+	}{
+		{[]string{"--headless", model}, filepath.Join(dir, "a.tlspr"), "value: nil"},
+		{[]string{"--headless", model}, filepath.Join(outside, "a.tlspr"), "not allowed: a guarded script writes files only in"},
+		{[]string{"--headless", "--allow", other, model}, filepath.Join(other, "a.tlspr"), "value: nil"},
+		{[]string{"--headless", "--unguarded", model}, filepath.Join(outside, "a.tlspr"), "value: nil"},
+	} {
+		answers, status, stderr := converse(t, c.args, append(start, save(c.path)))
+		if got := answers[3].text(); status != exitOK || stderr != "" || !strings.Contains(got, c.want) {
+			t.Errorf("mcp %v saving %s: status %d, stderr %q, answer\n%s", c.args, c.path, status, stderr, got)
+		}
 	}
 }

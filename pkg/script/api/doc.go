@@ -59,8 +59,15 @@ func NewDoc(h Host) *Doc {
 	return d
 }
 
-// Host is the program around the sketch.
-func (d *Doc) Host() Host { return d.h }
+// Host is the program around the sketch. A script whose files are
+// guarded (FileGuard) can't have it, as it would read and write files
+// past the guard.
+func (d *Doc) Host() Host {
+	if _, ok := d.h.(FileGuard); ok {
+		panic(errGuardedHost)
+	}
+	return d.h
+}
 
 // current is the document Current returns when the package is used
 // from compiled Go; an interpreter has its own.

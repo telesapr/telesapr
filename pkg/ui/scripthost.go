@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -244,6 +245,17 @@ func (h *ScriptHost) Redo() bool {
 }
 
 func (h *ScriptHost) MmPerUnit() float64 { return h.ss.MmPerUnit() }
+
+// Folder is the folder of the sketch's file, "" while it has none: what
+// a script whose files are guarded may use beside its own folders.
+func (h *ScriptHost) Folder() (dir string) {
+	h.Run(func() {
+		if h.ss.SaveFile != "" {
+			dir = filepath.Dir(h.ss.SaveFile)
+		}
+	})
+	return dir
+}
 
 // Load opens a file as File > Open does, without asking about the
 // sketch that is open; that one stays if the file can't be read.

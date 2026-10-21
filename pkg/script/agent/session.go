@@ -210,7 +210,7 @@ func (s *Session) Run(ctx context.Context, code string) (Result, error) {
 			res.Error = "the script was stopped"
 		}
 		doc := s.engine.Doc()
-		if rb, ok := doc.Host().(rollbacker); ok {
+		if rb, ok := s.engine.Host().(rollbacker); ok {
 			if rerr := try(func() { doc.Batch(func() { res.RolledBack = rb.Rollback() }) }); rerr != nil {
 				res.Error += "\n" + rerr.Error()
 			}
@@ -315,7 +315,9 @@ func (s *Session) Render(_ context.Context, view, group string, width, height in
 	file := filepath.Join(dir, "view.png")
 	var rerr error
 	if err := try(func() {
-		doc := s.engine.Doc()
+		// The program's own document: the picture is the session's
+		// file, not one a guarded script may write.
+		doc := api.NewDoc(s.engine.Host())
 		if group != "" {
 			g := doc.Group(group)
 			if !g.Valid() {

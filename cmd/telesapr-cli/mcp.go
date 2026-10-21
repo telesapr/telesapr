@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -33,11 +34,15 @@ AI commands:
         socket of the TeleSAPR to talk to, if not the last one started.
         A client is told to start this command, for example:
             claude mcp add telesapr -- telesapr-cli mcp
-    mcp --headless [--lib <dir>] [<sketch.tlspr>]
+    mcp --headless [--lib <dir>] [--allow <dir>...] [--unguarded] [<sketch.tlspr>]
         Serves a drawing of its own instead, with no window: the sketch
         file, or a new sketch. Nothing is saved unless a script does it.
         <dir> is the script library, as for run; the window's is the one
-        set in its configuration.
+        set in its configuration. The scripts read and write files only
+        in the sketch's folder (the working directory for a new sketch),
+        in each folder --allow names, and in a temporary folder of their
+        own; they read the library. --unguarded lets them use any file
+        you may. The window has the same in its configuration.
 `
 
 // nopWriteCloser is a writer that isn't closed with the transport.
@@ -45,10 +50,26 @@ type nopWriteCloser struct{ io.Writer }
 
 func (nopWriteCloser) Close() error { return nil }
 
+// sketchFolder is the folder of the sketch host has open: its file's,
+// or the working directory while it has none, where a script's
+// relative paths go.
+func sketchFolder(host api.Host) func() string {
+	return func() string {
+		if f, ok := host.(interface{ Folder() string }); ok {
+			if dir := f.Folder(); dir != "" {
+				return dir
+			}
+		}
+		dir, _ := os.Getwd()
+		return dir
+	}
+}
+
 // runMCP performs the mcp command, and returns the tool's exit
 // status. It returns when the client closes its end.
 func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	headless, sketchFile, socket, library := false, "", "", ""
+	unguarded, folders := false, []string(nil)
 	rest := args[2:]
 	for i := 0; i < len(rest); i++ {
 		switch arg := rest[i]; {
@@ -68,6 +89,15 @@ func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr 
 			}
 			i++
 			library = rest[i]
+		case arg == "--allow":
+			if i+1 >= len(rest) {
+				_, _ = fmt.Fprintln(stderr, "--allow needs a folder.")
+				return exitUsage
+			}
+			i++
+			folders = append(folders, rest[i])
+		case arg == "--unguarded":
+			unguarded = true
 		case headless && sketchFile == "" && isSketch(arg):
 			sketchFile = arg
 		default:
@@ -79,8 +109,8 @@ func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr 
 		_, _ = fmt.Fprintln(stderr, "--socket is of a TeleSAPR that is running; with --headless there is none.")
 		return exitUsage
 	}
-	if !headless && library != "" {
-		_, _ = fmt.Fprintln(stderr, "--lib is for --headless; the window's library is set in its configuration.")
+	if !headless && (library != "" || folders != nil || unguarded) {
+		_, _ = fmt.Fprintln(stderr, "--lib, --allow and --unguarded are for --headless; the window has them in its configuration.")
 		return exitUsage
 	}
 	if library == "" {
@@ -97,7 +127,7 @@ func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr 
 			_, _ = fmt.Fprintf(stderr, "%s\n", capitalized(err.Error()))
 			return exitLoad
 		}
-		engine, err := script.New(script.Options{
+		opts := script.Options{
 			Host:    host,
 			Stdout:  out,
 			Stderr:  out,
@@ -107,7 +137,17 @@ func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr 
 				h, _ := scriptSession("", out)
 				return h
 			},
-		})
+		}
+		if !unguarded {
+			files, done, err := agent.GuardFiles(sketchFolder(host), folders, library)
+			if err != nil {
+				_, _ = fmt.Fprintln(stderr, err)
+				return exitScript
+			}
+			defer done()
+			opts.Files = files
+		}
+		engine, err := script.New(opts)
 		if err != nil {
 			_, _ = fmt.Fprintln(stderr, err)
 			return exitScript

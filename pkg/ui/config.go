@@ -1,7 +1,9 @@
 package ui
 
 import (
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/export"
@@ -74,6 +76,10 @@ type config struct {
 	// ScriptLibrary is the folder scripts import packages of their own
 	// from, "" for script.DefaultLibrary.
 	ScriptLibrary string
+	// AgentGuarded has an AI program's scripts read and write files
+	// only in the document's folder and AgentFolders (agent.GuardFiles).
+	AgentGuarded bool
+	AgentFolders []string
 }
 
 // Thaw reads the configuration from the store, with the defaults for
@@ -149,6 +155,8 @@ func (c *config) Thaw(s core.Settings) {
 	c.AgentAllowed = core.ThawBool(s, "AgentAllowed", false)
 	c.AgentConfirm = core.ThawBool(s, "AgentConfirm", false)
 	c.ScriptLibrary = s.ThawString("ScriptLibrary", "")
+	c.AgentGuarded = core.ThawBool(s, "AgentGuarded", true)
+	c.AgentFolders = filepath.SplitList(s.ThawString("AgentFolders", ""))
 	c.RecentFiles = nil
 	for i := range maxRecent {
 		if raw := s.ThawString("RecentFile_"+strconv.Itoa(i), ""); raw != "" {
@@ -231,5 +239,7 @@ func (c *config) Freeze(s core.Settings) {
 	core.FreezeBool(s, "AgentAllowed", c.AgentAllowed)
 	core.FreezeBool(s, "AgentConfirm", c.AgentConfirm)
 	s.FreezeString("ScriptLibrary", c.ScriptLibrary)
+	core.FreezeBool(s, "AgentGuarded", c.AgentGuarded)
+	s.FreezeString("AgentFolders", strings.Join(c.AgentFolders, string(filepath.ListSeparator)))
 	s.FreezeInt("AutosaveInterval", uint32(c.AutosaveInterval))
 }

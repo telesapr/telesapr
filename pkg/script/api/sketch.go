@@ -255,6 +255,9 @@ func (m SketchMenu) Image(path string, at Vec, height float64) Entity {
 	if err != nil {
 		fail("%v", err)
 	}
+	if err := d.checkFile(path, false); err != nil {
+		fail("%v", err)
+	}
 	return d.request(sketch.RequestImage, needWorkplane("an image"), func(sk *sketch.Sketch, hr core.HRequest) {
 		if !link.LoadLinkedImage(sk, "", abs) {
 			fail("can't read the image '%s'", path)
