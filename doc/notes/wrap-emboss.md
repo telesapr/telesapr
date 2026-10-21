@@ -150,12 +150,23 @@ Rates:
   - Cylinders: 0 of 72 fail.
   - Cones: 14 of 72 refused. All are at depth 0.5 (14 of 36); none are at depth 0.1.
 
+Definition of done:
+
+- `ext_wrap` and its golden.
+- `path_wrap`, with `TestPathEquivalenceWrap`.
+- The example `examples/scripts/wrap`.
+- Fixtures `testdata/solid/wrap-*.tlspr` and `testdata/tlspr/v2/wrap.tlspr`.
+- `BenchmarkWrapText` (about 70 ms for a word).
+- A done-audit row and the format doc entry.
+
+Picking a face while sketching needs View > Show > Selectable Faces on, because faces are
+hidden in sketch groups. The menu's message says so.
+
 Left to do:
 
-- The cone failures. The face's trim doesn't assemble where marched curves end 1e-7 apart in
-  uv at a corner of the profile, near the cone's patch seams, or where a closed curve's two
-  ends miss.
-- A text window golden UI scenario (`ext_wrap`), a path-equivalence pair (`path_wrap`), and
-  an example (`examples/scripts/wrap`).
-- `.tlspr` fixtures under `testdata/solid/`.
-- The done-audit row and the format doc entry.
+- **Cone failures.** At a corner of the profile, the face's trim doesn't assemble: marched
+  curves end 1e-7 apart in uv, or a closed curve's two ends miss. That is a kernel issue in
+  `boolean_trim.go`, with the curve ends of `surfinter.go`.
+- **A thin wall under an emboss.** It isn't detected when the overlap crosses it.
+- **Loop sets wider than 170°.** A band wrapped right round a cylinder could be split into
+  patches in place of being refused.
