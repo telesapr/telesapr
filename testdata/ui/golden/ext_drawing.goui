@@ -37,10 +37,12 @@ row 16     third angle   first angle
  16-17 64 64 0
  18-30 64 64 102 0 1 0
  31-99 64 64 0
-row 18     hidden edges, dashed
+row 18     hidden edges, dashed    threads as modelled, not by convention
  0-2 64 61 0
  3-24 64 61 104 0 1 0
- 25-99 64 61 0
+ 25-27 64 61 0
+ 28-67 64 61 84 0 1 0
+ 68-99 64 61 0
 row 21    views  the standard ones, placed automatically [choose and place them]
  0-7 74 64 0
  8-49 64 64 0
@@ -137,10 +139,12 @@ row 16     third angle   first angle
  16-17 64 64 0
  18-30 64 64 102 0 1 0
  31-99 64 64 0
-row 18     hidden edges, dashed
+row 18     hidden edges, dashed    threads as modelled, not by convention
  0-2 64 61 0
  3-24 64 61 104 0 1 0
- 25-99 64 61 0
+ 25-27 64 61 0
+ 28-67 64 61 84 0 1 0
+ 68-99 64 61 0
 row 21    views  the standard ones, placed automatically [choose and place them]
  0-7 74 64 0
  8-49 64 64 0
