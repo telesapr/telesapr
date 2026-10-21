@@ -148,6 +148,7 @@ Fea&tures ind=0 en=1 act=0
   Loft To Selected Pr&ofile [Shift+O] ind=0 en=1 act=0
   Guide Loft by Selected &Curves ind=0 en=1 act=0
   Screw Thr&ead... [Shift+E] ind=0 en=1 act=0
+  Wrap Sketch Onto Face ind=0 en=1 act=0
   ---
   &Fillet Edges [Shift+F] ind=0 en=1 act=0
   Chamfer E&dges [Shift+Q] ind=0 en=1 act=0
@@ -360,6 +361,7 @@ Fea&tures ind=0 en=1 act=0
   Loft To Selected Pr&ofile [Shift+O] ind=0 en=1 act=0
   Guide Loft by Selected &Curves ind=0 en=1 act=0
   Screw Thr&ead... [Shift+E] ind=0 en=1 act=0
+  Wrap Sketch Onto Face ind=0 en=1 act=0
   ---
   &Fillet Edges [Shift+F] ind=0 en=1 act=0
   Chamfer E&dges [Shift+Q] ind=0 en=1 act=0
