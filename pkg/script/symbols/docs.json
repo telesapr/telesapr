@@ -5141,6 +5141,10 @@
 					}
 				}
 			},
+			"Field": {
+				"text": "Field is one value a Form asks for.",
+				"kind": "struct"
+			},
 			"FileMenu": {
 				"text": "FileMenu holds the calls of the File menu: loading, saving and\nexporting the drawing. A script reaches it as doc.File.",
 				"kind": "struct",
@@ -5218,6 +5222,28 @@
 					"SetRadius": {
 						"decl": "func (v FilletGroup) SetRadius(mm float64)",
 						"text": "SetRadius sets a fillet's radius in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
+					}
+				}
+			},
+			"Form": {
+				"text": "Form declares the values a script asks for when it is run, as a\nvariable at the top level of the script:\n\n\tvar Form = api.Form{\n\t\tTitle: \"Gear blank\",\n\t\tFields: []api.Field{\n\t\t\t{Name: \"teeth\", Label: \"Teeth\", Value: 24},\n\t\t\t{Name: \"module\", Label: \"Module (mm)\", Value: 2.0},\n\t\t\t{Name: \"hub\", Label: \"Hub\", Value: true},\n\t\t\t{Name: \"material\", Value: \"steel\", Choices: []string{\"steel\", \"brass\"}},\n\t\t},\n\t}\n\n(Form{...} without the package's name in a script of statements.)\nScript \u003e Run File shows the fields in a dialog before the script\nruns, telesapr-cli run takes them as --set teeth=30, and an AI\nprogram's run_script as its form argument; what is given replaces\nthe field's Value in the script's text, so the script reads the\nvalues with Int, Float, Text and Bool whichever way it was run. A\nscript run with nothing given has the Values as written.\n\nEach Value is a literal: a whole number, a number with a point, a\nquoted string or true or false, which says what the field takes. A\nfield with Choices takes one of them, and its Value is the first\ntaken.",
+				"kind": "struct",
+				"methods": {
+					"Bool": {
+						"decl": "func (f Form) Bool(name string) bool",
+						"text": "Bool is the value of the field name, true or false."
+					},
+					"Float": {
+						"decl": "func (f Form) Float(name string) float64",
+						"text": "Float is the value of the field name, a number."
+					},
+					"Int": {
+						"decl": "func (f Form) Int(name string) int",
+						"text": "Int is the value of the field name, a whole number."
+					},
+					"Text": {
+						"decl": "func (f Form) Text(name string) string",
+						"text": "Text is the value of the field name, a string or one of its\nchoices."
 					}
 				}
 			},

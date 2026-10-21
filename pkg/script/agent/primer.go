@@ -121,7 +121,7 @@ const primerExample = `    width, height, thick, bore := 60.0, 20.0, 4.0, 5.0
 
 // primerTypes are the types of package api whose methods the Primer
 // lists after Doc's and Group's.
-var primerTypes = []string{"Entity", "Request", "Constraint", "Param", "Style", "Solid", "SolidEdge", "SolidFace", "SolidVertex", "Section", "ExportOptions"}
+var primerTypes = []string{"Entity", "Request", "Constraint", "Param", "Style", "Solid", "SolidEdge", "SolidFace", "SolidVertex", "Section", "ExportOptions", "Form"}
 
 // Primer is what a program that writes scripts should read first: how
 // scripts and drawings work, what the interpreter lacks, an example,

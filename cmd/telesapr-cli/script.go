@@ -18,11 +18,12 @@ import (
 
 const scriptUsage = `
 Scripting commands:
-    run [--lib <dir>] [<sketch.tlspr>] <script.go> [<argument>...]
+    run [--lib <dir>] [--set <field>=<value>...] [<sketch.tlspr>] <script.go> [<argument>...]
         Runs a Go script on the sketch, or on a new sketch if none is given.
         The script is a program, with "package main" and a main function, or
         just statements. The arguments are the script's os.Args[1:]. Nothing
-        is saved unless the script does it.
+        is saved unless the script does it. --set gives a field of the form
+        the script declares (api.Form) a value, as the window's dialog does.
     repl [--lib <dir>] [<sketch.tlspr>]
         Reads Go statements and expressions from standard input and runs each
         on the sketch, printing the values of the expressions.
@@ -87,12 +88,32 @@ func scriptSession(file string, stderr io.Writer) (api.Host, error) {
 func runScript(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	rest := args[2:]
 	library := script.DefaultLibrary()
-	for len(rest) > 0 && rest[0] == "--lib" {
-		if len(rest) < 2 {
+	var form map[string]string
+	for len(rest) > 0 && (rest[0] == "--lib" || rest[0] == "--set") {
+		switch {
+		case rest[0] == "--lib" && len(rest) < 2:
 			fmt.Fprintln(stderr, "--lib needs the library's folder.")
 			return exitUsage
+		case rest[0] == "--lib":
+			library = rest[1]
+		case args[1] != "run":
+			fmt.Fprintln(stderr, "--set is for run: it fills a script's form.")
+			return exitUsage
+		default:
+			name, value, ok := "", "", false
+			if len(rest) >= 2 {
+				name, value, ok = strings.Cut(rest[1], "=")
+			}
+			if !ok || name == "" {
+				fmt.Fprintln(stderr, "--set needs a field and its value, as --set teeth=30.")
+				return exitUsage
+			}
+			if form == nil {
+				form = make(map[string]string)
+			}
+			form[name] = value
 		}
-		library, rest = rest[1], rest[2:]
+		rest = rest[2:]
 	}
 	sketchFile := ""
 	if len(rest) > 0 && isSketch(rest[0]) {
@@ -131,6 +152,7 @@ func runScript(ctx context.Context, args []string, stdin io.Reader, stdout, stde
 	switch args[1] {
 	case "run":
 		opts.Args = rest
+		opts.Form = form
 		err = script.RunFile(ctx, opts, rest[0])
 	default:
 		var e *script.Engine

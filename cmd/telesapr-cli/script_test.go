@@ -121,6 +121,10 @@ func TestScriptFailures(t *testing.T) {
 		{[]string{"eval"}, exitUsage, "Code to run must be specified.\n"},
 		{[]string{"repl", "-x"}, exitUsage, "Unrecognized option '-x'.\n"},
 		{[]string{"run", "--lib"}, exitUsage, "--lib needs the library's folder.\n"},
+		{[]string{"run", "--set"}, exitUsage, "--set needs a field and its value"},
+		{[]string{"run", "--set", "teeth"}, exitUsage, "--set needs a field and its value"},
+		{[]string{"eval", "--set", "a=1", "1"}, exitUsage, "--set is for run"},
+		{[]string{"run", "--set", "a=1", bad}, exitScript, "the script declares no form"},
 		{[]string{"run", "--lib", dir, gears}, exitScript, "nor in the script library " + dir},
 		{[]string{"run", filepath.Join(dir, "none.tlspr"), bad}, exitLoad, "Cannot load"},
 		{[]string{"run", filepath.Join("..", "..", "testdata", "request", "line_segment", "normal.slvs"), bad}, exitLoad, "telesapr-cli convert"},
@@ -146,5 +150,25 @@ func TestScriptLibrary(t *testing.T) {
 		`gears.Blank(doc, 10, 2, 4, 3, "gear").Kind()`)
 	if status != exitOK || stdout != "\"extrude\"\n" {
 		t.Errorf("eval --lib: status %d, stdout %q, stderr %q", status, stdout, stderr)
+	}
+}
+
+// --set fills the form a script declares.
+func TestScriptForm(t *testing.T) {
+	src, err := filepath.Abs(filepath.Join("..", "..", "examples", "scripts", "form", "form.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(t.TempDir())
+	status, stdout, stderr := runScripting(t, "", "run", "--set", "slots=4", "--set", "save=false", src)
+	if status != exitOK || !strings.Contains(stdout, ": 4 slots, volume ") {
+		t.Errorf("run --set: status %d, stdout %q, stderr %q", status, stdout, stderr)
+	}
+	if _, err := os.Stat("washer.tlspr"); err == nil {
+		t.Error("the washer was saved, though save was false")
+	}
+	status, _, stderr = runScripting(t, "", "run", "--set", "slots=many", src)
+	if status != exitScript || !strings.Contains(stderr, "slots is a whole number") {
+		t.Errorf("a value that doesn't fit: status %d, stderr %q", status, stderr)
 	}
 }

@@ -263,10 +263,21 @@ func (c *ScriptConsole) Submit(text string) {
 
 // RunFile runs a script file with arguments; what it prints shows in
 // the console. A file is a program of its own: it doesn't see what
-// was typed in the console, nor the console what it defines.
+// was typed in the console, nor the console what it defines. A script
+// that declares a form (api.Form) asks for its values first, and
+// doesn't run if that is cancelled.
 func (c *ScriptConsole) RunFile(path string, args ...string) {
+	if c.busy {
+		c.print(platform.ConsoleInfo, "A script is running; stop it first.\n")
+		return
+	}
+	form, ok := c.ss.askScriptForm(path)
+	if !ok {
+		return
+	}
 	c.print(platform.ConsoleInput, "run "+strings.Join(append([]string{path}, args...), " ")+"\n")
 	opts := c.options(append([]string{path}, args...))
+	opts.Form = form
 	c.start(func(ctx context.Context) func() {
 		err := script.RunFile(ctx, opts, path)
 		return func() {

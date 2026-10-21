@@ -264,3 +264,25 @@ func TestSketchProblemShown(t *testing.T) {
 		t.Errorf("the solid that isn't there is sound:\n%s", text)
 	}
 }
+
+// run_script's form gives the fields of the form the code declares
+// their values; one that doesn't fit stops the script before it runs.
+func TestRunScriptForm(t *testing.T) {
+	t.Parallel()
+	cs, _ := connect(t)
+	code := "var form = Form{Fields: []Field{{Name: \"r\", Value: 5.0}}}\ndoc.Sketch.Circle(V(0, 0, 0), form.Float(\"r\")).Radius()"
+	if _, text := call(t, cs, ToolRun, map[string]any{"code": code}); !strings.Contains(text, "value: 5\n") {
+		t.Errorf("as written:\n%s", text)
+	}
+	if _, text := call(t, cs, ToolRun, map[string]any{"code": code, "form": map[string]any{"r": "7.5"}}); !strings.Contains(text, "value: 7.5\n") {
+		t.Errorf("with r 7.5:\n%s", text)
+	}
+	res, text := call(t, cs, ToolRun, map[string]any{"code": code, "form": map[string]any{"r": "big"}})
+	if !res.IsError || !strings.Contains(text, "r is a number") || !strings.Contains(text, "did not run") {
+		t.Errorf("with r big: error %v,\n%s", res.IsError, text)
+	}
+	var out RunOutput
+	if b, err := json.Marshal(res.StructuredContent); err != nil || json.Unmarshal(b, &out) != nil || !strings.Contains(out.Error, "r is a number") {
+		t.Errorf("the structured result is %v", res.StructuredContent)
+	}
+}

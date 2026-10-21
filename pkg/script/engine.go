@@ -59,6 +59,9 @@ type Options struct {
 	// Library is the folder a script imports packages of its own from
 	// (see DefaultLibrary), "" for none.
 	Library string
+	// Form is the values, by field name, given to the form that a
+	// script run by RunSource or RunFile declares (see ApplyForm).
+	Form map[string]string
 }
 
 // evalHost is a host that is told where each step of a script starts
@@ -1051,6 +1054,10 @@ func Format(value any) string {
 // a main function, or statements as a console takes them. name is the
 // file's name, for the errors.
 func RunSource(ctx context.Context, opts Options, name, src string) error {
+	src, err := ApplyForm(src, opts.Form)
+	if err != nil {
+		return fmt.Errorf("%s: %w", name, err)
+	}
 	if isProgram(src) {
 		e, err := newEngine(opts)
 		if err != nil {

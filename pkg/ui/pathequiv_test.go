@@ -642,3 +642,31 @@ func TestPathEquivalenceDrawingViews(t *testing.T) {
 		t.Errorf("the drawing: %+v", d)
 	}
 }
+
+// The washer of examples/scripts/form, its form filled in the dialog
+// Script > Run File shows, and the same values given as telesapr-cli
+// run --set gives them.
+func TestPathEquivalenceScriptForm(t *testing.T) {
+	var r *uiScriptRunner
+	runUIScriptWith(t, "path_script_form", func(rr *uiScriptRunner) { r = rr })
+	savedUI := tlspr.Encode(r.ss.SK, tlspr.Options{})
+
+	path := filepath.Join("..", "..", "examples", "scripts", "form", "form.go")
+	src, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := api.New()
+	opts := script.Options{Host: doc.Host(), Stdout: io.Discard, Stderr: io.Discard,
+		Form: map[string]string{"outer": "40", "slots": "6", "finish": "plastic", "save": "false"}}
+	if err := script.RunSource(context.Background(), opts, path, string(src)); err != nil {
+		t.Fatal(err)
+	}
+	savedScript := tlspr.Encode(doc.Host().Sketch(), tlspr.Options{})
+	if string(savedUI) != string(savedScript) {
+		t.Fatalf("the dialog and --set save different files, at %s", firstDiffLine(string(savedUI), string(savedScript)))
+	}
+	if !strings.Contains(string(savedScript), "plastic") {
+		t.Error("the finish chosen is not in the file")
+	}
+}
