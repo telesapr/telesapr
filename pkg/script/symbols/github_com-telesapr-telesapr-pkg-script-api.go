@@ -69,6 +69,7 @@ func init() {
 		"AssemblyMenu":     reflect.ValueOf((*api.AssemblyMenu)(nil)),
 		"BrokenReference":  reflect.ValueOf((*api.BrokenReference)(nil)),
 		"ChamferGroup":     reflect.ValueOf((*api.ChamferGroup)(nil)),
+		"Clearance":        reflect.ValueOf((*api.Clearance)(nil)),
 		"ConstrainMenu":    reflect.ValueOf((*api.ConstrainMenu)(nil)),
 		"Constraint":       reflect.ValueOf((*api.Constraint)(nil)),
 		"Doc":              reflect.ValueOf((*api.Doc)(nil)),

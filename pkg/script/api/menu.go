@@ -170,6 +170,7 @@ var MenuCalls = map[string]string{
 	"Analyze/Check Solid":                  "GroupAnalysis.Check",
 	"Analyze/Group Dependencies":           "GroupHistory.DependsOn GroupHistory.UsedBy GroupHistory.OwnSources",
 	"Analyze/Ray-Cast Check":               "GroupAnalysis.RayCheck GroupAnalysis.Probe",
+	"Analyze/Clearance and Walls...":       "Assembly.Clearances GroupAnalysis.WallThickness",
 	"Analyze/Show Naked Edges":             "GroupAnalysis.Check",
 	"Analyze/Show Underconstrained Points": "Entity.Free Group.Dof",
 	"Analyze/Trace Point":                  "- draws a point's path in the window; Assembly.MotionStudy reports positions",

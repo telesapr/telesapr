@@ -276,6 +276,10 @@ var windowActions = map[string]string{
 	"ScreenChangeMotion/s":           "Assembly.MotionStudy",
 	"ScreenChangeMotion/r":           "Assembly.MotionStudy",
 	"ScreenChangeMotion/R":           "Assembly.MotionStudy",
+	"ScreenChangeClearance/g":        "Assembly.Clearances",
+	"ScreenChangeClearance/w":        "GroupAnalysis.WallThickness",
+	"ScreenChangeClearance/c":        "Assembly.Clearances",
+	"ScreenChangeClearance/t":        "GroupAnalysis.WallThickness",
 	"ScreenChangePasteTransformed/t": "Edit.Paste",
 	"ScreenChangePasteTransformed/r": "Edit.Paste",
 	"ScreenChangePasteTransformed/s": "Edit.Paste",
@@ -485,6 +489,8 @@ var windowActions = map[string]string{
 	"editMotionFrom":               "Assembly.MotionStudy",
 	"editMotionTo":                 "Assembly.MotionStudy",
 	"editMotionSteps":              "Assembly.MotionStudy",
+	"editClearanceGap":             "Assembly.Clearances",
+	"editClearanceWall":            "GroupAnalysis.WallThickness",
 	"editDrawingScale":             "Drawing.Set",
 	"editDrawingField":             "Drawing.Set",
 	"editDrawingSection":           "Drawing.Set",
@@ -717,6 +723,7 @@ Triangles       -script-only: the triangles of the group's solid
 Bounds          menu:Analyze/Group Dependencies
 Check           menu:Analyze/Check Solid
 RayCheck        menu:Analyze/Ray-Cast Check
+WallThickness   menu:Analyze/Clearance and Walls...
 Probe           -script-only: a ray cast at the group's solid
 `,
 	"Entity": `

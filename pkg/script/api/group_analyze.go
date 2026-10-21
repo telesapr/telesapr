@@ -63,6 +63,27 @@ func (v GroupAnalysis) MassProperties() (r sketch.MassReport) {
 	return r
 }
 
+// WallThickness measures the walls of the model up to and with this
+// group, in mm, as Analyze > Clearance and Walls does: from the middle
+// of each triangle of each part's mesh, square to it, into the solid to
+// where it leaves the part again. It lists the points thinner than
+// below, the thinnest first, or with a below of 0 only the thinnest
+// (WallReport.Thinnest). Each part is measured alone, as Assembly.
+// Interferences takes them. A spot thinner than the triangles about it
+// can fall between them; WallReport.Tolerance is how far each
+// thickness may be from the true one at its point.
+func (v GroupAnalysis) WallThickness(below float64) (r sketch.WallReport) {
+	g := v.g
+	g.d.readMesh(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		var err error
+		if r, err = sk.WallThickness(group.H, below); err != nil {
+			fail("%s: %v", groupDescription(group), err)
+		}
+	})
+	return r
+}
+
 // Mesh is the triangle mesh of the model up to and with this group.
 // It is the sketch's own, and is replaced when the sketch
 // regenerates.

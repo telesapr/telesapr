@@ -247,6 +247,7 @@ var menuTable = []menuEntry{
 	{1, "Check S&olid", cmdCheckSolid, ctrl | shift | 'o', kn, mAna},
 	{1, "Group Dependencies", cmdGroupDependencies, 0, kn, mAna},
 	{1, "Ray-Cast Check", cmdRayCheck, 0, kn, mAna},
+	{1, "Clearance and &Walls...", cmdClearance, 0, kn, func(ss *Application, c Command) { ss.MenuClearance() }},
 	{1, "Show &Naked Edges", cmdNakedEdges, ctrl | shift | 'n', kn, mAna},
 	{1, "Show &Underconstrained Points", cmdShowDOF, ctrl | shift | 'f', kn, mAna},
 	{1, "", cmdNone, 0, kn, nil},

@@ -291,3 +291,20 @@ func (m AssemblyMenu) Interferences() (found []Interference, meshOnly []Group) {
 	})
 	return found, meshOnly
 }
+
+// Clearances are the gaps between the parts of the assembly up to the
+// active group that are less than below mm, the nearest first (Analyze
+// > Clearance and Walls); a below of 0 lists every pair's. The parts
+// are those Interferences checks, and a part with no shell, as a linked
+// mesh, is taken by its triangles. Parts that touch or overlap have a
+// gap of 0.
+func (m AssemblyMenu) Clearances(below float64) (found []Clearance) {
+	d := m.d
+	d.readMesh(func(sk *sketch.Sketch) {
+		for _, c := range sk.Clearances(sk.ActiveGroup(), below) {
+			found = append(found, Clearance{A: Group{d, c.A}, B: Group{d, c.B}, Gap: c.Gap,
+				PA: c.PA, PB: c.PB, Tolerance: c.Tolerance, Refined: c.Refined})
+		}
+	})
+	return found
+}

@@ -758,6 +758,16 @@ func (s *SShell) MakeFromTransformationOf(a *SShell, t geom.Vector, q geom.Quate
 // the meshes are joined in the surfaces' order, so the result doesn't
 // depend on the timing.
 func (s *SShell) TriangulateInto(mesh *SMesh) {
+	ms := s.TriangulateBySurface()
+	for i := range ms {
+		mesh.Triangles = append(mesh.Triangles, ms[i].Triangles...)
+	}
+}
+
+// TriangulateBySurface is the triangles TriangulateInto makes, each
+// surface's apart, in the order of the shell's surfaces: to tell, of a
+// point of the mesh, which surface it stands for.
+func (s *SShell) TriangulateBySurface() []SMesh {
 	ms := make([]SMesh, len(s.Surface))
 	strays := make([]bool, len(s.Surface))
 	if len(s.Surface) < 2 || par.Workers() < 2 {
@@ -770,9 +780,7 @@ func (s *SShell) TriangulateInto(mesh *SMesh) {
 		})
 	}
 	s.mendCrossings(ms, strays)
-	for i := range ms {
-		mesh.Triangles = append(mesh.Triangles, ms[i].Triangles...)
-	}
+	return ms
 }
 
 // TriangulateInto is the per-surface version: build the uv-space trim

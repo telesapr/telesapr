@@ -4273,6 +4273,10 @@
 						"decl": "func (m AssemblyMenu) BillOfMaterials() (items []sketch.BOMItem)",
 						"text": "BillOfMaterials is the parts the model places by linking files, one\nitem a file: each link group places one, and a step and repeat, a\nmirror or a pattern of a link group its copies, but for one where the\npart already is. Groups left out of the model place none. The parts a\nlinked model links in turn count too, once for each place the model\nis, their groups named \"here \u003e there\"."
 					},
+					"Clearances": {
+						"decl": "func (m AssemblyMenu) Clearances(below float64) (found []Clearance)",
+						"text": "Clearances are the gaps between the parts of the assembly up to the\nactive group that are less than below mm, the nearest first (Analyze\n\u003e Clearance and Walls); a below of 0 lists every pair's. The parts\nare those Interferences checks, and a part with no shell, as a linked\nmesh, is taken by its triangles. Parts that touch or overlap have a\ngap of 0."
+					},
 					"Concentric": {
 						"decl": "func (m AssemblyMenu) Concentric(a, b Entity) []Constraint",
 						"text": "Concentric puts two circles or arcs on one axis. Drawing free in 3d,\ntheir axes are made parallel and the second's centre put on the\nfirst's axis, by its distance from the first's centre along two\ndirections square to the axis, each zero; one part may still turn\nabout the axis and slide along it, as a pin in a hole. The directions\nare lines or normals of the first circle's group, or the reference\naxes; with none square to the axis, the centres are put on each\nother. In a workplane, the centres are put on each other."
@@ -4336,6 +4340,10 @@
 						"text": "SwapDistances swaps a chamfer's two distances, which chamfers each\nedge the other way round. It fails for a chamfer of one distance."
 					}
 				}
+			},
+			"Clearance": {
+				"text": "Clearance is the gap in mm between two parts of an assembly\n(Assembly.Clearances), 0 where they touch or overlap, and the nearest\npoint of each. The gap is found on the parts' meshes, then, where\nboth parts have shells, followed onto their surfaces (Refined).\nTolerance is how far the true gap may be from Gap: the two meshes'\nchord tolerances, or, refined, the gap less the meshes' gap less\nthose tolerances.",
+				"kind": "struct"
 			},
 			"ConstrainMenu": {
 				"text": "ConstrainMenu holds the calls of the Constrain menu: the dimensions\nand constraints that hold a sketch. A script reaches it as\ndoc.Constrain. As in the window, a constraint the sketch already has\nis not added twice (the call returns the old one), and a dimension\nthat would over-constrain the group is made a reference dimension\ninstead, silently, unless the group allows redundant constraints.",
@@ -5530,6 +5538,10 @@
 					"Volume": {
 						"decl": "func (v GroupAnalysis) Volume() (mm3 float64)",
 						"text": "Volume is the volume in mm³ of the model up to and with this group."
+					},
+					"WallThickness": {
+						"decl": "func (v GroupAnalysis) WallThickness(below float64) (r sketch.WallReport)",
+						"text": "WallThickness measures the walls of the model up to and with this\ngroup, in mm, as Analyze \u003e Clearance and Walls does: from the middle\nof each triangle of each part's mesh, square to it, into the solid to\nwhere it leaves the part again. It lists the points thinner than\nbelow, the thinnest first, or with a below of 0 only the thinnest\n(WallReport.Thinnest). Each part is measured alone, as Assembly.\nInterferences takes them. A spot thinner than the triangles about it\ncan fall between them; WallReport.Tolerance is how far each\nthickness may be from the true one at its point."
 					}
 				}
 			},
@@ -6659,6 +6671,10 @@
 					}
 				}
 			},
+			"Clearance": {
+				"text": "Clearance is the gap between two parts: the groups that made them, the least distance between them, 0 where they touch or overlap, and the nearest points of each.",
+				"kind": "struct"
+			},
 			"Clipboard": {
 				"text": "Clipboard holds copied requests, and the constraints among them.",
 				"kind": "struct",
@@ -7515,6 +7531,10 @@
 						"decl": "func (sk *Sketch) ClearSection()",
 						"text": "ClearSection turns the section view off."
 					},
+					"Clearances": {
+						"decl": "func (sk *Sketch) Clearances(upTo core.HGroup, below float64) []Clearance",
+						"text": "Clearances are the gaps between the parts of the model up to group upTo that are less than below, the nearest first; a below of 0 or less lists every pair's."
+					},
 					"CommentConstraint": {
 						"decl": "func (sk *Sketch) CommentConstraint(base core.Constraint, pt core.HEntity, text string) (core.Constraint, error)",
 						"text": "CommentConstraint makes a comment with the given text, attached to the point pt when that is not NoEntity, as a copy of base."
@@ -8284,6 +8304,10 @@
 						"decl": "func (sk *Sketch) UpgradeLegacyData()",
 						"text": "UpgradeLegacyData brings a freshly loaded sketch up to date, and regenerates its entities without solving."
 					},
+					"WallThickness": {
+						"decl": "func (sk *Sketch) WallThickness(upTo core.HGroup, below float64) (WallReport, error)",
+						"text": "WallThickness measures the walls of the parts of the model up to group upTo, and lists the points thinner than below; with a below of 0 or less, only the thinnest."
+					},
 					"WriteEquationsExceptFor": {
 						"decl": "func (sk *Sketch) WriteEquationsExceptFor(hg core.HGroup, hc core.HConstraint, l *[]core.Equation)",
 						"text": "WriteEquationsExceptFor appends the equations of group hg: those of its constraints except hc, of its entities, and of the group itself."
@@ -8303,6 +8327,10 @@
 			},
 			"TangentArcSettings": {
 				"text": "TangentArcSettings are the user's settings for MakeTangentArc.",
+				"kind": "struct"
+			},
+			"ThinSpot": {
+				"text": "ThinSpot is a wall's thickness at a point: the part's group, the thickness, the point it was measured from and the one across the wall.",
 				"kind": "struct"
 			},
 			"ThreadOptions": {
@@ -8374,6 +8402,10 @@
 				"makers": [
 					"DefaultVisibility"
 				]
+			},
+			"WallReport": {
+				"text": "WallReport is the thickness of the walls of the model's parts.",
+				"kind": "struct"
 			}
 		},
 		"funcs": {
@@ -9040,6 +9072,10 @@
 					}
 				}
 			},
+			"MeshHit": {
+				"text": "MeshHit is where a ray first meets a mesh: how far along it, by the length of its direction, the triangle by its place in the mesh, and the cosine of the angle between the ray and the triangle's normal, positive where the ray leaves the solid there.",
+				"kind": "struct"
+			},
 			"MeshMass": {
 				"text": "MeshMass is what a closed mesh encloses, for a density of one: its volume, its centroid, and its inertia tensor about the centroid.",
 				"kind": "struct"
@@ -9049,6 +9085,43 @@
 				"kind": "struct",
 				"makers": [
 					"NewMeshMeta"
+				]
+			},
+			"MeshNearest": {
+				"text": "MeshNearest is where two meshes come nearest: the distance, a triangle of each by its place in its mesh, and the point on each.",
+				"kind": "struct"
+			},
+			"MeshTree": {
+				"text": "MeshTree is a tree of boxes over a mesh's triangles, to find the nearest points of two meshes, the point of one nearest a point, and where a ray leaves one, without looking at every triangle: the clearance between the parts of an assembly and the thickness of their walls (pkg/sketch).",
+				"kind": "struct",
+				"methods": {
+					"Len": {
+						"decl": "func (t *MeshTree) Len() int",
+						"text": "Len is the number of triangles in the tree."
+					},
+					"Nearest": {
+						"decl": "func (t *MeshTree) Nearest(o *MeshTree, limit float64) (MeshNearest, bool)",
+						"text": "Nearest is where the meshes of t and o come nearest, if it is less than limit apart; a distance of 0 is where they meet."
+					},
+					"NearestPoint": {
+						"decl": "func (t *MeshTree) NearestPoint(p geom.Vector) (d float64, tri int, q geom.Vector)",
+						"text": "NearestPoint is the point of the mesh nearest p, how far it is, and its triangle by its place in the mesh; -1 for an empty mesh."
+					},
+					"Ray": {
+						"decl": "func (t *MeshTree) Ray(p, dir geom.Vector, tmin float64, skip int) (MeshHit, bool)",
+						"text": "Ray is where the ray p + t·dir first meets the mesh for t past tmin, leaving out triangle skip (the one it starts from, or -1)."
+					},
+					"Triangle": {
+						"decl": "func (t *MeshTree) Triangle(i int) *STriangle",
+						"text": "Triangle is the tree's triangle i, by its place in the mesh."
+					},
+					"Within": {
+						"decl": "func (t *MeshTree) Within(p geom.Vector, r float64) []int",
+						"text": "Within are the triangles, by their places in the mesh, that come within r of p, in no order."
+					}
+				},
+				"makers": [
+					"NewMeshTree"
 				]
 			},
 			"Mesher": {
@@ -10107,6 +10180,10 @@
 						"decl": "func (s *SShell) SetTolerance(t Tolerance)",
 						"text": "SetTolerance gives the shell and its surfaces the tolerance t."
 					},
+					"TriangulateBySurface": {
+						"decl": "func (s *SShell) TriangulateBySurface() []SMesh",
+						"text": "TriangulateBySurface is the triangles TriangulateInto makes, each surface's apart, in the order of the shell's surfaces: to tell, of a point of the mesh, which surface it stands for."
+					},
 					"TriangulateInto": {
 						"decl": "func (s *SShell) TriangulateInto(mesh *SMesh)",
 						"text": "TriangulateInto triangulates every surface in the shell and appends the resulting triangles to mesh."
@@ -10534,6 +10611,10 @@
 			"NewMeshMeta": {
 				"decl": "func NewMeshMeta(face FaceID, color core.RGBA) MeshMeta",
 				"text": "NewMeshMeta constructs a MeshMeta with the given face id and color."
+			},
+			"NewMeshTree": {
+				"decl": "func NewMeshTree(m *SMesh) *MeshTree",
+				"text": "NewMeshTree is the tree of m's triangles."
 			},
 			"NewSTriMeta": {
 				"decl": "func NewSTriMeta(face FaceID, color core.RGBA) STriMeta",
