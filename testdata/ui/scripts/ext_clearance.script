@@ -1,0 +1,22 @@
+# Clearance and walls (an extension): testdata/solid/clearance.tlspr
+# (examples/scripts/clearance) has a pin 9 across in a plate's bore 10
+# across, and beside them a box hollowed to walls 1.2 thick. Analyze >
+# Clearance and Walls finds the pin 0.5 off the plate, and with walls
+# thinner than 1.5 sought, the box's walls, as the screen and the lines
+# drawn across them show.
+file $testdata/solid/clearance.tlspr
+menu File|Open...
+menu Analyze|Clearance and Walls...
+tw
+twmove 60 145
+twdown L 60 145
+twup L 60 145
+tw
+twmove 267 115
+twdown L 267 115
+twup L 267 115
+edit 1.5
+twmove 204 145
+twdown L 204 145
+twup L 204 145
+tw

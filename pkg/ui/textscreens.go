@@ -71,6 +71,7 @@ var screenTitles = map[Screen]string{
 	screenBillOfMaterials:  "bill of materials",
 	screenMotionStudy:      "motion study",
 	screenDrawing:          "drawing sheet",
+	screenClearance:        "clearance and walls",
 }
 
 // breadcrumb says where the screen shown is from the list of groups,
@@ -2023,6 +2024,9 @@ func (tw *textWindow) EditControlDone(s string) {
 			cnt++
 		}
 		if tw.editDrawing(s) {
+			cnt++
+		}
+		if tw.editClearance(s) {
 			cnt++
 		}
 		if cnt != 1 {

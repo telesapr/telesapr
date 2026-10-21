@@ -156,6 +156,7 @@ func init() {
 		"AssemblyPart":         reflect.ValueOf((*sketch.AssemblyPart)(nil)),
 		"BOMItem":              reflect.ValueOf((*sketch.BOMItem)(nil)),
 		"BrokenReference":      reflect.ValueOf((*sketch.BrokenReference)(nil)),
+		"Clearance":            reflect.ValueOf((*sketch.Clearance)(nil)),
 		"Clipboard":            reflect.ValueOf((*sketch.Clipboard)(nil)),
 		"ClipboardRequest":     reflect.ValueOf((*sketch.ClipboardRequest)(nil)),
 		"CombineAs":            reflect.ValueOf((*sketch.CombineAs)(nil)),
@@ -207,6 +208,7 @@ func init() {
 		"SketchDiagnostic":     reflect.ValueOf((*sketch.SketchDiagnostic)(nil)),
 		"Suggestion":           reflect.ValueOf((*sketch.Suggestion)(nil)),
 		"TangentArcSettings":   reflect.ValueOf((*sketch.TangentArcSettings)(nil)),
+		"ThinSpot":             reflect.ValueOf((*sketch.ThinSpot)(nil)),
 		"ThreadOptions":        reflect.ValueOf((*sketch.ThreadOptions)(nil)),
 		"ThreadResult":         reflect.ValueOf((*sketch.ThreadResult)(nil)),
 		"Timings":              reflect.ValueOf((*sketch.Timings)(nil)),
@@ -214,6 +216,7 @@ func init() {
 		"UndoState":            reflect.ValueOf((*sketch.UndoState)(nil)),
 		"View":                 reflect.ValueOf((*sketch.View)(nil)),
 		"Visibility":           reflect.ValueOf((*sketch.Visibility)(nil)),
+		"WallReport":           reflect.ValueOf((*sketch.WallReport)(nil)),
 
 		// interface wrapper definitions
 		"_EntityBezierResolver": reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_sketch_EntityBezierResolver)(nil)),

@@ -67,6 +67,7 @@ const (
 	screenBillOfMaterials
 	screenMotionStudy
 	screenDrawing
+	screenClearance
 )
 
 // Edit is what the edit control is editing.
@@ -169,6 +170,9 @@ const (
 	editCommandQuery Edit = 920
 	// For the section view (an extension)
 	editSectionOffset Edit = 930
+	// For the clearance and wall check (an extension)
+	editClearanceGap  Edit = 940
+	editClearanceWall Edit = 941
 )
 
 // drawOrHitHow is what DrawOrHitTestIcons and the colour picker do.
@@ -271,6 +275,9 @@ type textWindow struct {
 
 	// motion is the motion study's screen (motion.go).
 	motion motionStudy
+
+	// clearance is the clearance and wall check's screen (clearance.go).
+	clearance clearanceCheck
 
 	stepDim struct {
 		isDistance bool
@@ -800,6 +807,8 @@ func (tw *textWindow) Show() {
 			tw.ShowMotionStudy()
 		case screenDrawing:
 			tw.ShowDrawing()
+		case screenClearance:
+			tw.ShowClearance()
 		}
 	}
 	tw.Printf(false, "")

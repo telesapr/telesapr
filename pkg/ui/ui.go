@@ -187,6 +187,7 @@ const (
 	cmdGroupDependencies
 	cmdMateScrew
 	cmdGroupWrap
+	cmdClearance
 )
 
 // Pending is an operation to be completed by doing something with the

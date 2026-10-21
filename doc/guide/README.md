@@ -59,6 +59,7 @@ the entries had before the menus took this order are still taken.
 | [STEP links](step-links.md) | A STEP file, or an STL or OBJ mesh, linked as a reference | `step` |
 | [Assemblies](bill-of-materials.md) | Mates; the parts counted, to a CSV file; interfering parts by their shells; STEP with its structure | `mates`, `bom` |
 | [Scripts](scripts.md) | Forms that ask for a script's values; packages of your own in a script library folder | `form`, `library` |
+| [Clearance and walls](clearance.md) | Gaps between parts and walls thinner than a limit, before printing or machining | `clearance` |
 | [Check Solid](check-solid.md) | Whether a solid is sound, and its volume | every example |
 
 Files are saved as `.tlspr`, a text format described in [`doc/tlspr-format.md`](../tlspr-format.md).
