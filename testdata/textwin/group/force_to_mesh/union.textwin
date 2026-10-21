@@ -776,14 +776,18 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed
+row 12     one-sided   two-sided   skewed   depth -10.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
  27-28 64 61 0
  29-36 64 61 119 0 1 0
- 37-99 64 61 0
+ 37-39 64 61 0
+ 40-44 74 61 0
+ 45-53 64 61 0
+ 54-59 64 61 104 5 1 0
+ 60-99 64 61 0
 row 14    draft 0 deg [change]
  0-2 64 64 0
  3-7 74 64 0
@@ -910,14 +914,18 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed
+row 12     one-sided   two-sided   skewed   depth -10.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
  27-28 64 61 0
  29-36 64 61 119 0 1 0
- 37-99 64 61 0
+ 37-39 64 61 0
+ 40-44 74 61 0
+ 45-53 64 61 0
+ 54-59 64 61 104 5 1 0
+ 60-99 64 61 0
 row 14    draft 0 deg [change]
  0-2 64 64 0
  3-7 74 64 0
@@ -1220,14 +1228,18 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed
+row 12     one-sided   two-sided   skewed   depth 10.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
  27-28 64 61 0
  29-36 64 61 119 0 1 0
- 37-99 64 61 0
+ 37-39 64 61 0
+ 40-44 74 61 0
+ 45-52 64 61 0
+ 53-58 64 61 104 7 1 0
+ 59-99 64 61 0
 row 14    draft 0 deg [change]
  0-2 64 64 0
  3-7 74 64 0
@@ -1352,14 +1364,18 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed
+row 12     one-sided   two-sided   skewed   depth 10.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
  27-28 64 61 0
  29-36 64 61 119 0 1 0
- 37-99 64 61 0
+ 37-39 64 61 0
+ 40-44 74 61 0
+ 45-52 64 61 0
+ 53-58 64 61 104 7 1 0
+ 59-99 64 61 0
 row 14    draft 0 deg [change]
  0-2 64 64 0
  3-7 74 64 0
@@ -1660,14 +1676,18 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed
+row 12     one-sided   two-sided   skewed   depth 10.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
  27-28 64 61 0
  29-36 64 61 119 0 1 0
- 37-99 64 61 0
+ 37-39 64 61 0
+ 40-44 74 61 0
+ 45-52 64 61 0
+ 53-58 64 61 104 9 1 0
+ 59-99 64 61 0
 row 14    draft 0 deg [change]
  0-2 64 64 0
  3-7 74 64 0
@@ -1792,14 +1812,18 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed
+row 12     one-sided   two-sided   skewed   depth 10.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
  27-28 64 61 0
  29-36 64 61 119 0 1 0
- 37-99 64 61 0
+ 37-39 64 61 0
+ 40-44 74 61 0
+ 45-52 64 61 0
+ 53-58 64 61 104 9 1 0
+ 59-99 64 61 0
 row 14    draft 0 deg [change]
  0-2 64 64 0
  3-7 74 64 0
@@ -2100,14 +2124,18 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed
+row 12     one-sided   two-sided   skewed   depth -5.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
  27-28 64 61 0
  29-36 64 61 119 0 1 0
- 37-99 64 61 0
+ 37-39 64 61 0
+ 40-44 74 61 0
+ 45-52 64 61 0
+ 53-58 64 61 104 b 1 0
+ 59-99 64 61 0
 row 14    draft 0 deg [change]
  0-2 64 64 0
  3-7 74 64 0
@@ -2232,14 +2260,18 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed
+row 12     one-sided   two-sided   skewed   depth -5.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
  27-28 64 61 0
  29-36 64 61 119 0 1 0
- 37-99 64 61 0
+ 37-39 64 61 0
+ 40-44 74 61 0
+ 45-52 64 61 0
+ 53-58 64 61 104 b 1 0
+ 59-99 64 61 0
 row 14    draft 0 deg [change]
  0-2 64 64 0
  3-7 74 64 0
@@ -2485,12 +2517,16 @@ row 10  revolve original sketch
  0-0 64 64 0
  1-23 74 64 0
  24-99 64 64 0
-row 12     one-sided   two-sided
+row 12     one-sided   two-sided   angle 0 deg   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
- 27-99 64 61 0
+ 27-29 64 61 0
+ 30-34 74 61 0
+ 35-42 64 61 0
+ 43-48 64 61 104 5 1 0
+ 49-99 64 61 0
 row 14 
  0-99 64 64 0
 row 16  solid model as
@@ -2611,12 +2647,16 @@ row 10  create helical extrusion
  0-0 64 64 0
  1-24 74 64 0
  25-99 64 64 0
-row 12     one-sided   two-sided
+row 12     one-sided   two-sided   angle 0 deg   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
- 27-99 64 61 0
+ 27-29 64 61 0
+ 30-34 74 61 0
+ 35-42 64 61 0
+ 43-48 64 61 104 5 1 0
+ 49-99 64 61 0
 row 14 
  0-99 64 64 0
 row 16  pitch - length per turn
@@ -2966,14 +3006,18 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed
+row 12     one-sided   two-sided   skewed   depth -10.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
  27-28 64 61 0
  29-36 64 61 119 0 1 0
- 37-99 64 61 0
+ 37-39 64 61 0
+ 40-44 74 61 0
+ 45-53 64 61 0
+ 54-59 64 61 104 5 1 0
+ 60-99 64 61 0
 row 14    draft 0 deg [change]
  0-2 64 64 0
  3-7 74 64 0
@@ -3225,12 +3269,16 @@ row 10  revolve original sketch
  0-0 64 64 0
  1-23 74 64 0
  24-99 64 64 0
-row 12     one-sided   two-sided
+row 12     one-sided   two-sided   angle 0 deg   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
- 27-99 64 61 0
+ 27-29 64 61 0
+ 30-34 74 61 0
+ 35-42 64 61 0
+ 43-48 64 61 104 7 1 0
+ 49-99 64 61 0
 row 14 
  0-99 64 64 0
 row 16  solid model as
@@ -3349,12 +3397,16 @@ row 10  create helical extrusion
  0-0 64 64 0
  1-24 74 64 0
  25-99 64 64 0
-row 12     one-sided   two-sided
+row 12     one-sided   two-sided   angle 0 deg   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
- 27-99 64 61 0
+ 27-29 64 61 0
+ 30-34 74 61 0
+ 35-42 64 61 0
+ 43-48 64 61 104 7 1 0
+ 49-99 64 61 0
 row 14 
  0-99 64 64 0
 row 16  pitch - length per turn
@@ -3698,14 +3750,18 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed
+row 12     one-sided   two-sided   skewed   depth 10.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
  27-28 64 61 0
  29-36 64 61 119 0 1 0
- 37-99 64 61 0
+ 37-39 64 61 0
+ 40-44 74 61 0
+ 45-52 64 61 0
+ 53-58 64 61 104 7 1 0
+ 59-99 64 61 0
 row 14    draft 0 deg [change]
  0-2 64 64 0
  3-7 74 64 0
@@ -3955,12 +4011,16 @@ row 10  revolve original sketch
  0-0 64 64 0
  1-23 74 64 0
  24-99 64 64 0
-row 12     one-sided   two-sided
+row 12     one-sided   two-sided   angle 0 deg   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
- 27-99 64 61 0
+ 27-29 64 61 0
+ 30-34 74 61 0
+ 35-42 64 61 0
+ 43-48 64 61 104 9 1 0
+ 49-99 64 61 0
 row 14 
  0-99 64 64 0
 row 16  solid model as
@@ -4079,12 +4139,16 @@ row 10  create helical extrusion
  0-0 64 64 0
  1-24 74 64 0
  25-99 64 64 0
-row 12     one-sided   two-sided
+row 12     one-sided   two-sided   angle 0 deg   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
- 27-99 64 61 0
+ 27-29 64 61 0
+ 30-34 74 61 0
+ 35-42 64 61 0
+ 43-48 64 61 104 9 1 0
+ 49-99 64 61 0
 row 14 
  0-99 64 64 0
 row 16  pitch - length per turn
@@ -4428,14 +4492,18 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed
+row 12     one-sided   two-sided   skewed   depth 10.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
  27-28 64 61 0
  29-36 64 61 119 0 1 0
- 37-99 64 61 0
+ 37-39 64 61 0
+ 40-44 74 61 0
+ 45-52 64 61 0
+ 53-58 64 61 104 9 1 0
+ 59-99 64 61 0
 row 14    draft 0 deg [change]
  0-2 64 64 0
  3-7 74 64 0
@@ -4685,12 +4753,16 @@ row 10  revolve original sketch
  0-0 64 64 0
  1-23 74 64 0
  24-99 64 64 0
-row 12     one-sided   two-sided
+row 12     one-sided   two-sided   angle 0 deg   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
- 27-99 64 61 0
+ 27-29 64 61 0
+ 30-34 74 61 0
+ 35-42 64 61 0
+ 43-48 64 61 104 b 1 0
+ 49-99 64 61 0
 row 14 
  0-99 64 64 0
 row 16  solid model as
@@ -4809,12 +4881,16 @@ row 10  create helical extrusion
  0-0 64 64 0
  1-24 74 64 0
  25-99 64 64 0
-row 12     one-sided   two-sided
+row 12     one-sided   two-sided   angle 0 deg   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
- 27-99 64 61 0
+ 27-29 64 61 0
+ 30-34 74 61 0
+ 35-42 64 61 0
+ 43-48 64 61 104 b 1 0
+ 49-99 64 61 0
 row 14 
  0-99 64 64 0
 row 16  pitch - length per turn
@@ -5158,14 +5234,18 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed
+row 12     one-sided   two-sided   skewed   depth -5.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
  16-26 64 61 83 0 1 0
  27-28 64 61 0
  29-36 64 61 119 0 1 0
- 37-99 64 61 0
+ 37-39 64 61 0
+ 40-44 74 61 0
+ 45-52 64 61 0
+ 53-58 64 61 104 b 1 0
+ 59-99 64 61 0
 row 14    draft 0 deg [change]
  0-2 64 64 0
  3-7 74 64 0
