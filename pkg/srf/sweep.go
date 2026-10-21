@@ -130,6 +130,18 @@ func sweepStartDirection(st SweepStep, p geom.Vector) geom.Vector {
 // Boolean is needed. The profile must cross the path, and stay off the
 // axis of every turn.
 func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color core.RGBA, startFace, endFace FaceID) {
+	s.makeFromSweepOf(sbls, steps, color, startFace, endFace, false)
+}
+
+// MakeFromClosedSweepOf is MakeFromSweepOf along a path that closes,
+// whose steps bring the profile back where it was drawn: no caps, the
+// last piece's surfaces ending on the curves the first's start from. The
+// joint where the path closes must be smooth, not a mitre.
+func (s *SShell) MakeFromClosedSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color core.RGBA) {
+	s.makeFromSweepOf(sbls, steps, color, 0, 0, true)
+}
+
+func (s *SShell) makeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color core.RGBA, startFace, endFace FaceID, closed bool) {
 	if sbls == nil {
 		return
 	}
@@ -140,7 +152,10 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 	// As for an extrusion, the motion has to leave the sketch against
 	// its normal; else the sweep is made from the other end.
 	if sweepStartDirection(steps[0], sbls.Point).Dot(sbls.Normal) > 0 {
-		sbls = TransformedLoopSet(sbls, SweepEnd(steps))
+		// Closed, the steps end where they start.
+		if !closed {
+			sbls = TransformedLoopSet(sbls, SweepEnd(steps))
+		}
 		rev := make([]SweepStep, len(steps))
 		for i, st := range steps {
 			st.Along = st.Along.ScaledBy(-1)
@@ -222,12 +237,15 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 	u = u.ScaledBy(umax - umin)
 	v = v.ScaledBy(vmax - vmin)
 
-	s0 := FromPlane(orig, u, v)
-	s0.Color, s0.TrimBuilt, s0.Face = color, true, startFace
-	s1 := FromPlane(end.Apply(orig.Plus(u)), end.Q.Rotate(u.ScaledBy(-1)), end.Q.Rotate(v))
-	s1.Color, s1.TrimBuilt, s1.Face = color, true, endFace
-	hs0 := s.addAndAssignSurfaceID(s0)
-	hs1 := s.addAndAssignSurfaceID(s1)
+	var hs0, hs1 core.HSSurface
+	if !closed {
+		s0 := FromPlane(orig, u, v)
+		s0.Color, s0.TrimBuilt, s0.Face = color, true, startFace
+		s1 := FromPlane(end.Apply(orig.Plus(u)), end.Q.Rotate(u.ScaledBy(-1)), end.Q.Rotate(v))
+		s1.Color, s1.TrimBuilt, s1.Face = color, true, endFace
+		hs0 = s.addAndAssignSurfaceID(s0)
+		hs1 = s.addAndAssignSurfaceID(s1)
+	}
 
 	type turn struct {
 		center, axis geom.Vector
@@ -291,8 +309,13 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 				}
 			}
 			// The curve where each piece starts and the last ends,
-			// shared by the surfaces either side, or a cap.
-			for j := 0; j <= len(steps); j++ {
+			// shared by the surfaces either side, or a cap. Closed, the
+			// last piece ends where the first starts.
+			last := len(steps)
+			if closed {
+				last--
+			}
+			for j := 0; j <= last; j++ {
 				sc := SCurve{IsExact: true, Exact: section(&loop.Curves[i], j)}
 				if tValues == nil {
 					sc.Points = makePwlSCurvePoints(&sc.Exact, s.Tol, 0)
@@ -305,9 +328,12 @@ func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 				} else {
 					sc.SurfA = hs1
 				}
-				if j > 0 {
+				switch {
+				case j > 0:
 					sc.SurfB = srfs[j-1][i]
-				} else {
+				case closed:
+					sc.SurfB = srfs[len(steps)-1][i]
+				default:
 					sc.SurfB = hs0
 				}
 				s.addCurveTrimming(sc, true)

@@ -1,0 +1,9 @@
+# A square swept round a circle, the path picked with the mouse; the
+# same as path_sweep_ring.go makes (TestPathEquivalenceSweepRing).
+file $testdata/ui/sweep_ring.tlspr
+menu File|Open...
+view other
+move 339 280.5
+down L 339 280.5
+up L 339 280.5
+menu Features|Sweep Along Path

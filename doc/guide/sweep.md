@@ -80,7 +80,32 @@ block.
 bead := doc.Features.SweepEdges([]api.SolidEdge{front, right}, nil, "bead")
 ```
 
+## Closed paths
+
+A path that closes, a circle or pieces that come back to where they began, is swept round from
+the profile and back to it, with no caps: a ring, a gasket, a picture frame. Draw the profile
+across the path where it is smooth, not at a corner: the sweep starts where the profile's plane
+crosses the path, at the crossing nearest the profile, so the joint where the solid closes is
+smooth, and the path's corners are mitred, or rounded by a corner radius, as an open path's are.
+Example: [`examples/scripts/frame`](../../examples/scripts/frame/frame.go), a picture frame
+mitred at its four corners.
+
+Round lines and arcs in a plane the profile comes back as it left, and the surfaces are exact.
+Round a cubic, lines and arcs out of a plane, or with a twist, the surface is fitted, and the turn
+the frames come back with, which the path's shape decides, is taken out evenly along it; a twist
+must then be whole turns, or the profile wouldn't meet itself, and lines and arcs out of a plane
+take no corners. A profile at a corner of the path, or whose plane doesn't cross it, is a problem
+on the group.
+
+```go
+d.Features.SketchIn(d.Workplane("ZX"), "path")
+ring := d.Sketch.Circle(api.V(10, 0, 0), 10)
+d.Features.SketchIn(d.Workplane("XY"), "profile")
+d.Sketch.Circle(api.V(0, 0, 0), 2)
+d.Features.Sweep([]api.Entity{ring}, "o-ring")
+```
+
 ## Not yet
 
-A closed path is not done, nor a corner radius on a twisted sweep or one along a cubic. Repeating a solid along a path is
-[Pattern Along Path](pattern.md).
+A corner radius on a twisted sweep or one along a cubic is not done. Repeating a solid along a
+path is [Pattern Along Path](pattern.md).

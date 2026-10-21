@@ -22,7 +22,8 @@ import (
 // the profile rigidly (srf.MakeFromSweepOf). Along a cubic, or with a
 // twist (ValC, in degrees, over the whole path) or the frames held to a
 // direction (SweepUp), the surface is fitted to the true sweep by
-// rotation-minimising frames (topo.MakePathSweep, roadmap E10).
+// rotation-minimising frames (topo.MakePathSweep, roadmap E10). A
+// path that closes is swept round with no caps (sweep_closed.go).
 
 // sweepTol is how far apart two ends of the path may be and still
 // join.
@@ -164,11 +165,25 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 	if err != nil {
 		return nil, err
 	}
-	chain, _, err := sk.pathChainAny(g.Edges, solidPieces, "sweep", func(x geom.Vector) float64 {
+	chain, closed, err := sk.pathChainAny(g.Edges, solidPieces, "sweep", func(x geom.Vector) float64 {
 		return math.Abs(x.Minus(onPlane).Dot(normal))
-	}, true, false, true)
+	}, true, true, true)
 	if err != nil {
 		return nil, err
+	}
+	g.sweepClosed = closed
+	if closed {
+		// Corners are rounded on the whole loop, before it is cut where
+		// the profile is, so that a piece cut short there still takes the
+		// radius at its corner.
+		if g.ValB > 0 && !g.sweepFitted(chain) {
+			if chain, err = sk.roundClosedCorners(chain, g.ValB); err != nil {
+				return nil, err
+			}
+		}
+		if chain, err = sk.closedChainAt(chain, normal, onPlane, loopsCentre(sbls)); err != nil {
+			return nil, err
+		}
 	}
 	cornerAt := func(k int) bool {
 		return k > 0 && chain[k-1].tangentAt(true).Dot(chain[k].tangentAt(false)) < sweepTangentCos
@@ -184,12 +199,7 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 					"the path has one at (%g, %g, %g)", x.X, x.Y, x.Z)
 			}
 		}
-		sp, err := sweepPathOf(chain, g)
-		if err != nil {
-			return nil, pathErr(&chain[0].start, "%v", err)
-		}
-		g.fittedPath = sp
-		return nil, nil
+		return nil, g.fitPath(chain)
 	}
 	g.fittedPath = nil
 	if g.ValB > 0 {
@@ -292,8 +302,45 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 		}
 		frame = frame.Then(p.step().Motion())
 	}
+	if closed && !bringsBack(steps, ctrls) {
+		// Round lines and arcs out of a plane the profile comes back
+		// turned: the frames are fitted, and the turn taken out.
+		for k := range chain {
+			if cornerAt(k) || chain[k].rounded {
+				x := chain[k].start
+				return nil, pathErr(&x, "the closed path leaves its plane and has a corner at (%g, %g, %g): "+
+					"the profile would come back turned", x.X, x.Y, x.Z)
+			}
+		}
+		return nil, g.fitPath(chain)
+	}
 	return steps, nil
 }
+
+// fitPath makes the sweep's fitted path along the chain.
+func (g *Group) fitPath(chain []pathPiece) error {
+	sp, err := sweepPathOf(chain, g)
+	if err != nil {
+		return pathErr(&chain[0].start, "%v", err)
+	}
+	g.fittedPath = sp
+	return nil
+}
+
+// bringsBack reports whether the steps bring each of the profile's
+// control points (as ctrls visits them) back where it was drawn.
+func bringsBack(steps []srf.SweepStep, ctrls func(f func(q geom.Vector) error) error) bool {
+	end := srf.SweepEnd(steps)
+	return ctrls(func(q geom.Vector) error {
+		if end.Apply(q).Minus(q).Magnitude() > sweepTol {
+			return errNotBack
+		}
+		return nil
+	}) == nil
+}
+
+// errNotBack is bringsBack's way out of the loop.
+var errNotBack = errors.New("the profile doesn't come back")
 
 // pathChainOf reads the path entities into a chain of pieces end to
 // end, starting at the end where dist is least, and requires its
@@ -520,7 +567,8 @@ func (g *Group) generateSweep(sk *Sketch, entity *[]core.Entity) {
 			}
 		}
 	}
-	if pt.V == 0 {
+	if pt.V == 0 || g.sweepClosed {
+		// Round a closed path there are no caps.
 		return
 	}
 	n := g.sourceLoopNormal(sk)
@@ -563,6 +611,10 @@ func (g *Group) generateSweepShell(sk *Sketch) {
 		return
 	}
 	for i := range src.BezierLoops.Sets {
+		if g.sweepClosed {
+			g.ThisShell.MakeFromClosedSweepOf(&src.BezierLoops.Sets[i], steps, g.Color)
+			continue
+		}
 		g.ThisShell.MakeFromSweepOf(&src.BezierLoops.Sets[i], steps, g.Color, start, end)
 	}
 }
@@ -621,10 +673,15 @@ func sweepPathOf(chain []pathPiece, g *Group) (*topo.SweepPath, error) {
 			curves = append(curves, c)
 		}
 	}
+	if g.sweepClosed {
+		last := &curves[len(curves)-1]
+		last.Ctrl[last.Degree] = curves[0].Ctrl[0]
+	}
 	t0 := chain[0].tangentAt(false)
 	return topo.NewSweepPath(curves, t0.NormalDir(0), topo.PathSweepOptions{
-		Twist: g.ValC * math.Pi / 180,
-		Up:    g.SweepUp,
+		Twist:  g.ValC * math.Pi / 180,
+		Up:     g.SweepUp,
+		Closed: g.sweepClosed,
 	})
 }
 

@@ -81,11 +81,13 @@ func TestSweepProblems(t *testing.T) {
 	}{
 		// A corner between two lines is mitred (roadmap 28.4); one
 		// between a line and the tight arc is refused.
-		"corner":    {[]api.Entity{up, back}, "turns back"},
-		"apart":     {[]api.Entity{up, apart}, "not one chain"},
-		"flat":      {[]api.Entity{flat}, "along the profile's plane"},
-		"tight":     {[]api.Entity{up, tight}, "too tight"},
-		"circle":    {[]api.Entity{circle}, "not a line segment, an arc or a cubic"},
+		"corner": {[]api.Entity{up, back}, "turns back"},
+		"apart":  {[]api.Entity{up, apart}, "not one chain"},
+		"flat":   {[]api.Entity{flat}, "along the profile's plane"},
+		"tight":  {[]api.Entity{up, tight}, "too tight"},
+		// A circle closes, and a sweep goes round it, but not this one,
+		// the profile's own.
+		"circle":    {[]api.Entity{circle}, "along the profile's plane"},
 		"no path":   {nil, "no path"},
 		"branching": {[]api.Entity{up, corner, branch}, "branches"},
 	} {

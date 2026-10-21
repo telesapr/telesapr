@@ -5125,7 +5125,7 @@
 					},
 					"Sweep": {
 						"decl": "func (m FeaturesMenu) Sweep(path []Entity, name string) Group",
-						"text": "Sweep moves the closed loops of the active group, a sketch in a\nworkplane, along path, line segments, arcs and cubics joined end to\nend and meeting tangent, as a pipe follows its bends. The sweep\nstarts at the end of the path nearest the sketch's plane, with the\nsketch where it is drawn, and keeps its attitude to the path, turning\nas little as the path lets it. Along lines and arcs its surfaces are\nexact; along cubics they are fitted within a tenth of the chord\ntolerance (see also SetTwist and SetSweepUp). Two line segments may\nmeet at a corner, where the sweep is mitred: each piece cut by the\nplane that halves the corner. The new group becomes active."
+						"text": "Sweep moves the closed loops of the active group, a sketch in a\nworkplane, along path, line segments, arcs and cubics joined end to\nend and meeting tangent, as a pipe follows its bends. The sweep\nstarts at the end of the path nearest the sketch's plane, with the\nsketch where it is drawn, and keeps its attitude to the path, turning\nas little as the path lets it. Along lines and arcs its surfaces are\nexact; along cubics they are fitted within a tenth of the chord\ntolerance (see also SetTwist and SetSweepUp). Two line segments may\nmeet at a corner, where the sweep is mitred: each piece cut by the\nplane that halves the corner. A path that closes, a circle or pieces\nthat come back to where they began, is swept round from where the\nsketch's plane crosses it, nearest the sketch, back to the sketch,\nwith no caps: a ring, or a frame mitred at its corners; the sketch\nmust cross the path where it is smooth, and a twist must be whole\nturns. The new group becomes active."
 					},
 					"SweepEdges": {
 						"decl": "func (m FeaturesMenu) SweepEdges(edges []SolidEdge, path []Entity, name string) Group",
@@ -10034,6 +10034,10 @@
 					"MakeFromBoolean": {
 						"decl": "func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs)",
 						"text": "MakeFromBoolean sets s to the boolean combination of a and b."
+					},
+					"MakeFromClosedSweepOf": {
+						"decl": "func (s *SShell) MakeFromClosedSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color core.RGBA)",
+						"text": "MakeFromClosedSweepOf is MakeFromSweepOf along a path that closes, whose steps bring the profile back where it was drawn: no caps, the last piece's surfaces ending on the curves the first's start from."
 					},
 					"MakeFromCopyOf": {
 						"decl": "func (s *SShell) MakeFromCopyOf(src *SShell)",

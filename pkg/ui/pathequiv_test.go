@@ -189,6 +189,14 @@ func TestPathEquivalenceSweepCorner(t *testing.T) {
 	}
 }
 
+// A sweep round a closed path, picked with the mouse, and by a script.
+func TestPathEquivalenceSweepRing(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_sweep_ring", "path_sweep_ring")
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupSweep || g.Problem.Msg != "" || len(g.Edges) != 1 {
+		t.Errorf("the sweep: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.Edges))
+	}
+}
+
 // A sweep's corner rounded on its screen, and by a script (F4).
 func TestPathEquivalenceSweepRounded(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_sweep_rounded", "path_sweep_rounded")
