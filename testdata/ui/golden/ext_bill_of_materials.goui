@@ -98,6 +98,6 @@ row 27 (back to the groups)
 row 29 
  0-99 64 64 0
 cat $tmp/bom.csv
-part,count,file,groups
-cylinder,2,$testdata/step/shapes/cylinder.step,g003-cylinder; g004-cylinder
-box,1,$testdata/step/shapes/box.step,g005-box
+part,count,file,groups,mass_g
+cylinder,2,$testdata/step/shapes/cylinder.step,g003-cylinder; g004-cylinder,
+box,1,$testdata/step/shapes/box.step,g005-box,
