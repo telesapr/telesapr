@@ -36,6 +36,9 @@ func (m AssemblyMenu) BillOfMaterials() (items []sketch.BOMItem) {
 // file and the groups that place them.
 func (m AssemblyMenu) ExportBOM(path string) error {
 	d := m.d
+	if err := d.checkFile(path, true); err != nil {
+		return err
+	}
 	var b bytes.Buffer
 	if err := sketch.WriteBOMCSV(&b, d.Assembly.BillOfMaterials()); err != nil {
 		return err
@@ -61,6 +64,9 @@ func (m AssemblyMenu) Link(path, name string) (g Group, err error) {
 			err = e
 		}
 	}()
+	if err := d.checkFile(path, false); err != nil {
+		return Group{}, err
+	}
 	return d.add(func(sk *sketch.Sketch) sketch.Group {
 		g := newGroup(sketch.GroupLinked, name, "")
 		g.MeshCombine = sketch.CombineAssemble

@@ -1,0 +1,36 @@
+filedialog open
+formdialog Plate|&Run|Cancel
+  entry width "Width (mm)" 40 [] "a number"
+  entry holes "Holes" 2 [] "a whole number"
+  entry name "name" plate [] ""
+  check solid "Extrude" 1 [] ""
+  choice finish "finish" 0 ["matte" "metal"] ""
+console 3 Go on the sketch: doc is the drawing. Try\n    doc.Groups()                              the groups\n    l := doc.Sketch.Line(V(0, 0, 0), V(40, 0, 0))    draw, in mm\n    doc.Constrain.Length(l, 50)                         constrain\n    doc.Edit.Selection()                           what is selected\nhelp() says more.\n
+console 4 run $testdata/ui/scriptform/plate.go\n
+console 0 g004-base metal, volume 4466\n
+console 3 plate.go done.\n
+filedialog open
+formdialog Plate|&Run|Cancel
+  entry width "Width (mm)" 40 [] "a number"
+  entry holes "Holes" 2 [] "a whole number"
+  entry name "name" plate [] ""
+  check solid "Extrude" 1 [] ""
+  choice finish "finish" 0 ["matte" "metal"] ""
+filedialog open
+formdialog Plate|&Run|Cancel
+  entry width "Width (mm)" 40 [] "a number"
+  entry holes "Holes" 2 [] "a whole number"
+  entry name "name" plate [] ""
+  check solid "Extrude" 1 [] ""
+  choice finish "finish" 0 ["matte" "metal"] ""
+dialog 3 The script can't run with those values:|holes is a whole number, not "many".
+filedialog open
+formdialog Plate|&Run|Cancel
+  entry width "Width (mm)" 40 [] "a number"
+  entry holes "Holes" 2 [] "a whole number"
+  entry name "name" plate [] ""
+  check solid "Extrude" 1 [] ""
+  choice finish "finish" 0 ["matte" "metal"] ""
+console 4 run $testdata/ui/scriptform/plate.go\n
+console 0 a sketch only\n
+console 3 plate.go done.\n

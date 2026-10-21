@@ -33,6 +33,12 @@ type ScriptConsole struct {
 	// writes, to return it to the program.
 	session *agent.Session
 	capture *agent.Capture
+
+	// guarded is the session an AI program's scripts run in while
+	// their files are guarded (AgentGuarded), made when first needed;
+	// guardDone removes its temporary folder.
+	guarded   *agent.Session
+	guardDone func()
 }
 
 const (
@@ -106,10 +112,44 @@ func (c *ScriptConsole) options(args []string) script.Options {
 	host := c.ss.ScriptHost()
 	host.Messages = consoleWriter{c, platform.ConsoleInfo}
 	return script.Options{
-		Host:   host,
-		Stdout: consoleWriter{c, platform.ConsoleOutput},
-		Stderr: consoleWriter{c, platform.ConsoleError},
-		Args:   args,
+		Host:    host,
+		Stdout:  consoleWriter{c, platform.ConsoleOutput},
+		Stderr:  consoleWriter{c, platform.ConsoleError},
+		Args:    args,
+		Library: c.ss.scriptLibrary(),
+	}
+}
+
+// scriptLibrary is the folder scripts import packages of their own
+// from: the setting's, or the default one.
+func (ss *Application) scriptLibrary() string {
+	if ss.ScriptLibrary != "" {
+		return ss.ScriptLibrary
+	}
+	return script.DefaultLibrary()
+}
+
+// SetScriptLibrary sets the folder scripts import packages of their
+// own from, "" for the default one. The console's interpreter takes it
+// for its next import; what it imported stays.
+func (ss *Application) SetScriptLibrary(dir string) {
+	ss.ScriptLibrary = dir
+	if c := ss.console; c != nil {
+		if c.engine != nil {
+			c.engine.SetLibrary(ss.scriptLibrary())
+		}
+		// The guarded session reads the library it was made with.
+		c.dropAgentSession()
+	}
+}
+
+// SetAgentFiles sets whether an AI program's scripts are kept to the
+// document's folder and folders, and what those are. A script of
+// theirs that is defined goes with the session it was in.
+func (ss *Application) SetAgentFiles(guarded bool, folders []string) {
+	ss.AgentGuarded, ss.AgentFolders = guarded, folders
+	if c := ss.console; c != nil && !c.busy {
+		c.dropAgentSession()
 	}
 }
 
@@ -204,6 +244,44 @@ func (c *ScriptConsole) ensureEngine() error {
 	return nil
 }
 
+// agentSession is the session an AI program's scripts run in: while
+// their files are guarded, one of their own, whose engine is guarded,
+// and otherwise the console's. Either prints in the console.
+func (c *ScriptConsole) agentSession() (*agent.Session, error) {
+	ss := c.ss
+	if !ss.AgentGuarded {
+		if err := c.ensureEngine(); err != nil {
+			return nil, err
+		}
+		return c.session, nil
+	}
+	if c.guarded != nil {
+		return c.guarded, nil
+	}
+	files, done, err := agent.GuardFiles(ss.ScriptHost().Folder, ss.AgentFolders, ss.scriptLibrary())
+	if err != nil {
+		return nil, err
+	}
+	opts := c.options(nil)
+	opts.Files = files
+	e, err := script.New(opts)
+	if err != nil {
+		done()
+		return nil, err
+	}
+	c.guarded, c.guardDone = agent.NewSession(e, c.capture), done
+	return c.guarded, nil
+}
+
+// dropAgentSession forgets the guarded session, so that the next is
+// made with the settings as they are now.
+func (c *ScriptConsole) dropAgentSession() {
+	if c.guardDone != nil {
+		c.guardDone()
+	}
+	c.guarded, c.guardDone = nil, nil
+}
+
 // Submit takes what was entered in the console, one line or several:
 // each line is run once it, with the lines before it, makes something
 // complete, and the first error stops the rest.
@@ -243,10 +321,21 @@ func (c *ScriptConsole) Submit(text string) {
 
 // RunFile runs a script file with arguments; what it prints shows in
 // the console. A file is a program of its own: it doesn't see what
-// was typed in the console, nor the console what it defines.
+// was typed in the console, nor the console what it defines. A script
+// that declares a form (api.Form) asks for its values first, and
+// doesn't run if that is cancelled.
 func (c *ScriptConsole) RunFile(path string, args ...string) {
+	if c.busy {
+		c.print(platform.ConsoleInfo, "A script is running; stop it first.\n")
+		return
+	}
+	form, ok := c.ss.askScriptForm(path)
+	if !ok {
+		return
+	}
 	c.print(platform.ConsoleInput, "run "+strings.Join(append([]string{path}, args...), " ")+"\n")
 	opts := c.options(append([]string{path}, args...))
+	opts.Form = form
 	c.start(func(ctx context.Context) func() {
 		err := script.RunFile(ctx, opts, path)
 		return func() {

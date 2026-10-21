@@ -13,6 +13,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"github.com/telesapr/telesapr/pkg/script"
 	"github.com/telesapr/telesapr/pkg/script/agent"
 )
 
@@ -34,6 +35,8 @@ const (
 	runDescription = `Runs a Go script on the drawing that is open in TeleSAPR, and returns what it printed, the value of its last expression, and how the drawing is afterwards (the active group, whether it solved, its degrees of freedom, and any group in trouble).
 
 The code is statements, as in a function's body: doc is the drawing, V(x, y, z) a point in mm, and fmt, math and the like need no import. Variables stay defined for the next call. A whole program with "package main" also runs, but sees no such variables.
+
+A script that declares a form (var Form = api.Form{...}, see api_help "Form") takes values for its fields from form, by field name, as the user's dialog gives them.
 
 Each call is one step of undo for the user. If the script stops at an error, everything it changed is taken back and the drawing is as before the call: correct the script and send all of it again.
 
@@ -68,7 +71,8 @@ Open a file only when the user asks for it. The user may be asked to allow it.`
 
 // RunInput is what run_script takes.
 type RunInput struct {
-	Code string `json:"code" jsonschema:"Go statements to run on the drawing, or a whole Go program"`
+	Code string            `json:"code" jsonschema:"Go statements to run on the drawing, or a whole Go program"`
+	Form map[string]string `json:"form,omitempty" jsonschema:"values for the fields of the form the code declares, by field name, as \"teeth\": \"30\"; the values written in the code if left out"`
 }
 
 // DescribeInput is what get_drawing takes.
@@ -164,7 +168,14 @@ func New(b agent.Backend, version string) *mcp.Server {
 		Description: runDescription,
 		Annotations: &mcp.ToolAnnotations{OpenWorldHint: &closed},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in RunInput) (*mcp.CallToolResult, RunOutput, error) {
-		res, err := b.Run(ctx, in.Code)
+		code, err := script.ApplyForm(in.Code, in.Form)
+		if err != nil {
+			out := text("error: " + err.Error() + "\nThe script did not run.\n")
+			out.IsError = true
+			// The values don't fit the form: the tool's error, as a script's is, not the protocol's.
+			return out, RunOutput{Error: err.Error(), Groups: []agent.GroupStatus{}}, nil //nolint:nilerr // reported in the result
+		}
+		res, err := b.Run(ctx, code)
 		if err != nil {
 			return nil, RunOutput{}, err
 		}

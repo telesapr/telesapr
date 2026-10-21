@@ -36,8 +36,9 @@ TeleSAPR may be closed and opened again in the middle of a conversation.
 ## What you see
 
 - Each script the model runs is shown in the script console (**Script > Show Console**) after
-  an `ai>` prompt, with what it printed. The variables it defined are there for you to use in
-  the console.
+  an `ai>` prompt, with what it printed. Its scripts run in an interpreter of their own, kept
+  to the files below; with that turned off, they run in the console's, and the variables they
+  define are there for you to use.
 - Each script is one step of undo. Ctrl+Z takes back what one request to the model did, a
   script at a time.
 - A script that fails changes nothing: what it did before the error is taken back, and the
@@ -53,7 +54,7 @@ The model gets eight tools.
 
 | Tool | What it does |
 |---|---|
-| `run_script` | Runs Go on the drawing, as the script console does. It returns what the script printed, the value of its last expression, and how the drawing solved afterwards. |
+| `run_script` | Runs Go on the drawing, as the script console does. It returns what the script printed, the value of its last expression, and how the drawing solved afterwards. With `form`, it fills the fields of the form the script declares, as the window's dialog does ([Scripts](guide/scripts.md#forms)). |
 | `get_drawing` | Describes the drawing in words: groups, requests with their positions, constraints, parameters, what you have selected, and what your mouse is over, so that "this" can be pointed at. |
 | `render` | Returns a picture of the drawing from a named view, fitted, or as your window shows it (`window`), so the model can check its work; with a group, as the drawing is up to that group; with a section, cut open by a plane parallel to the XY, YZ or ZX workplane to show the inside, leaving your own section view as it was. |
 | `api_help` | Returns the documentation of the scripting interface: a primer, or one menu, type or method, or what a script calls in place of an entry of the window's menu ("Features > Fillet Edges"). |
@@ -66,9 +67,25 @@ The model gets eight tools.
 the script that would do the same, and with the confirmation setting on, you are asked before
 each, as for a script.
 
-A script can do whatever a script you type in the console can, which includes reading and
-writing files with your permissions. The model is told not to save, export or open files unless
-you ask for it. Turn on the confirmation setting if you want to read every script first.
+## Files
+
+A script reads and writes files with your permissions, so the model's scripts are kept to a few
+folders: the folder of the drawing that is open (none while it has never been saved), the
+folders you list on the configuration screen under **keep an AI program's scripts to the
+drawing's folder and these**, and a temporary folder of their own (where `os.CreateTemp` puts
+files). They may read the [script library](guide/scripts.md#the-script-library). Anything else
+is refused with an error that names the folders, whether the script names the file to
+`doc.File.Save`, `os.ReadFile`, `filepath.Glob` or any other call; a symbolic link that leads out
+of a folder leads out of what is allowed, and a path with `..` is refused. The scripts don't see
+your environment variables, and can't change the working directory or start programs.
+
+The guard is on by default. Unchecking the box lets the model's scripts use any file you may,
+as yours in the console do. The model is told not to save, export or load unless you ask for it
+either way. Turn on the confirmation setting if you want to read every script first.
+
+What the guard does not cover: the files a drawing links (other parts, STEP files, images) are
+read where they are when it regenerates, and the files a menu command reads or writes
+(`doc.Edit.RunCommand`) are the ones you choose in its dialog.
 
 Only programs running as you can connect. The application listens on a socket file in a
 directory that is yours alone: `$XDG_RUNTIME_DIR/telesapr` on Linux, `$TMPDIR/telesapr`
@@ -77,12 +94,14 @@ on macOS, `%LOCALAPPDATA%\telesapr` on Windows. Nothing listens on the network.
 ## Without a window
 
 ```bash
-telesapr-cli mcp --headless [sketch.tlspr]
+telesapr-cli mcp --headless [--allow <dir>...] [--unguarded] [sketch.tlspr]
 ```
 
 serves a drawing of its own instead of the application's: the sketch file, or a new sketch.
 The model works as above, with pictures drawn in software. Nothing is saved unless you ask
-the model to save.
+the model to save. Its scripts are kept to the sketch's folder (the directory the client
+started the command in, for a new sketch), each folder `--allow` names and a temporary folder;
+`--unguarded` lets them use any file.
 
 ## If it does not work
 

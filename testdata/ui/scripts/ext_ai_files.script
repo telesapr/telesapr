@@ -1,0 +1,16 @@
+# The files of an AI program's scripts (an extension): the
+# configuration screen's box keeps them to the drawing's folder and the
+# folders listed below it, on by default; the list is edited as a list
+# of paths.
+twmove 217 202
+twdown L 217 202
+twup L 217 202
+twmove 150 1360
+twdown L 150 1360
+twup L 150 1360
+edit parts
+tw
+twmove 28 1340
+twdown L 28 1340
+twup L 28 1340
+tw

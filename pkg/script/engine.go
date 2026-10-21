@@ -56,6 +56,15 @@ type Options struct {
 	Open func(path string) (api.Host, error)
 	// New, if set, likewise makes a new sketch.
 	New func() api.Host
+	// Library is the folder a script imports packages of its own from
+	// (see DefaultLibrary), "" for none.
+	Library string
+	// Form is the values, by field name, given to the form that a
+	// script run by RunSource or RunFile declares (see ApplyForm).
+	Form map[string]string
+	// Files, if set, are the folders a script may read and write
+	// files in; without it, any its user may.
+	Files *Files
 }
 
 // evalHost is a host that is told where each step of a script starts
@@ -142,6 +151,10 @@ Files
     doc.File.Save("part.tlspr")  doc.File.Export("part.stl")  .step .svg .dxf .pdf .png
     doc.Edit.Undo()  doc.Edit.Redo()
 
+A package of your own is imported by its path in the script library
+folder (the configuration screen's; telesapr-cli --lib): import "gears"
+reads <library>/gears.
+
 help(x) says what a value is and what it can do: help(doc), help(doc.Sketch).
 help("name") says what a package, a type, a function or a method is:
 help("api"), help("Group"), help("Features.Extrude"), help("strings.ToUpper").
@@ -182,7 +195,8 @@ func newEngine(opts Options) (*Engine, error) {
 	if opts.Args == nil {
 		opts.Args = []string{"script"}
 	}
-	e := &Engine{opts: opts, doc: api.NewDoc(opts.Host)}
+	e := &Engine{opts: opts}
+	e.doc = api.NewDoc(e.guard(opts.Host))
 	if err := e.newInterpreter(); err != nil {
 		return nil, err
 	}
@@ -196,12 +210,23 @@ func (e *Engine) newInterpreter() error {
 	e.gen++
 	gen := e.gen
 	e.told.Unlock()
+	// The interpreter has an environment of its own, which a script
+	// changes without changing the program's. One whose files are
+	// guarded gets none: it may hold secrets.
+	env := os.Environ()
+	if e.opts.Files != nil {
+		env = nil
+	}
 	e.i = interp.New(interp.Options{
 		Stdin:  e.opts.Stdin,
 		Stdout: e.opts.Stdout,
 		Stderr: &panicFilter{e: e, w: e.opts.Stderr},
 		Args:   e.opts.Args,
-		Env:    os.Environ(),
+		Env:    env,
+		// Packages that aren't the program's come from the library.
+		GoPath:               libraryRoot,
+		SourcecodeFilesystem: libraryFS{e},
+		BuildTags:            []string{scriptTag},
 	})
 	if err := e.i.Use(e.exports(gen)); err != nil {
 		return fmt.Errorf("script: %w", err)
@@ -271,6 +296,7 @@ func (e *Engine) exports(gen uint64) interp.Exports {
 		std["Stderr"] = reflect.ValueOf(&stderr).Elem()
 	}
 	exports["os/os"] = std
+	e.guardExports(exports)
 
 	// What a console wraps an expression in to get all of its values.
 	exports[showPath+"/console"] = map[string]reflect.Value{
@@ -309,6 +335,11 @@ func typedFloats(pkg map[string]reflect.Value) map[string]reflect.Value {
 
 // Doc is the document scripts run on.
 func (e *Engine) Doc() *api.Doc { return e.doc }
+
+// Host is the program around the document scripts run on, as the
+// engine was given it: a guarded script's document doesn't hand it out
+// (api.Doc.Host), the program that runs the engine may.
+func (e *Engine) Host() api.Host { return e.opts.Host }
 
 // Running reports whether a script is running.
 func (e *Engine) Running() bool {
@@ -848,6 +879,7 @@ func (e *Engine) locate(err error, src string) error {
 			out.Col, _ = strconv.Atoi(m[2])
 			out.Err = errors.New(m[3])
 		}
+		out.Err = e.importError(out.Err)
 	}
 	if out.Line == 1 {
 		if out.Col -= wrapped(src); out.Col < 1 {
@@ -1039,6 +1071,10 @@ func Format(value any) string {
 // a main function, or statements as a console takes them. name is the
 // file's name, for the errors.
 func RunSource(ctx context.Context, opts Options, name, src string) error {
+	src, err := ApplyForm(src, opts.Form)
+	if err != nil {
+		return fmt.Errorf("%s: %w", name, err)
+	}
 	if isProgram(src) {
 		e, err := newEngine(opts)
 		if err != nil {

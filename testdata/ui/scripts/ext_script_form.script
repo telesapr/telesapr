@@ -1,0 +1,21 @@
+# Script forms (an extension): a script file that declares an api.Form
+# shows it in a dialog when Script > Run File runs it, and runs with
+# the values it was left with. Cancelled, the script doesn't run; a
+# value that doesn't fit its field is refused with a message.
+file $testdata/ui/scriptform/plate.go
+form width=60 holes=3 name=base finish=1
+menu Script|Run File...
+console
+file $testdata/ui/scriptform/plate.go
+form cancel
+menu Script|Run File...
+console
+file $testdata/ui/scriptform/plate.go
+form holes=many
+answer ok
+menu Script|Run File...
+console
+file $testdata/ui/scriptform/plate.go
+form solid=0
+menu Script|Run File...
+console

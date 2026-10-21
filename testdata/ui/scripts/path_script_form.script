@@ -1,0 +1,5 @@
+# The washer of examples/scripts/form made through its form's dialog
+# (TestPathEquivalenceScriptForm), the same as with --set.
+file $testdata/../examples/scripts/form/form.go
+form outer=40 slots=6 finish=1 save=0
+menu Script|Run File...

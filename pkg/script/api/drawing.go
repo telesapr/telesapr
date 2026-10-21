@@ -52,6 +52,9 @@ func (m DrawingMenu) Set(dr Drawing) {
 // application, or telesapr-cli export-drawing.
 func (m DrawingMenu) Export(path string) (err error) {
 	d := m.d
+	if err := d.checkFile(path, true); err != nil {
+		return err
+	}
 	dr := d.Drawing.Get()
 	d.read(func(*sketch.Sketch) { err = d.h.ExportDrawing(path, &dr) })
 	return err

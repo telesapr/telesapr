@@ -94,6 +94,11 @@ A sketch can be read and changed from Go scripts, run by an embedded interpreter
 - Without a window, `telesapr-cli run [model.tlspr] script.go [args]` runs a file,
   `telesapr-cli repl` reads lines from standard input and `telesapr-cli eval` takes them from
   the command line.
+- A script that declares an `api.Form` asks for its values in a dialog when the window runs
+  it, and takes them as `--set name=value` on the command line.
+- Packages of your own go in the script library folder (the configuration screen's, or
+  `--lib` on the command line; by default `telesapr/library` in the user's configuration
+  folder): `import "gears"` reads `<library>/gears`. See [Scripts](doc/guide/scripts.md).
 
 ```go
 r := doc.Sketch.Rect(V(0, 0, 0), V(40, 25, 0)) // mm, in the active workplane

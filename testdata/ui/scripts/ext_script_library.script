@@ -1,0 +1,15 @@
+# Script library (an extension): the configuration screen's "script
+# library folder" is where a script's import of a package the program
+# doesn't have is read from. Set to a folder with the package gears, a
+# script file run from the Script menu imports it.
+twmove 217 202
+twdown L 217 202
+twup L 217 202
+twmove 460 1415
+twdown L 460 1415
+twup L 460 1415
+edit $testdata/ui/scriptlib/lib
+tw
+file $testdata/ui/scriptlib/gear.go
+menu Script|Run File...
+console

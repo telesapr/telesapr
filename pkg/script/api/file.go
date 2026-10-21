@@ -18,6 +18,9 @@ type FileMenu struct{ d *Doc }
 // Load replaces the sketch by the one in a .tlspr file.
 func (m FileMenu) Load(path string) (err error) {
 	d := m.d
+	if err := d.checkFile(path, false); err != nil {
+		return err
+	}
 	d.h.Run(func() { err = d.h.Load(path) })
 	return err
 }
@@ -26,6 +29,9 @@ func (m FileMenu) Load(path string) (err error) {
 // SolveSpace model (.slvs) is not written.
 func (m FileMenu) Save(path string) (err error) {
 	d := m.d
+	if err := d.checkFile(path, true); err != nil {
+		return err
+	}
 	d.h.Run(func() { err = d.h.Save(path) })
 	return err
 }
@@ -50,6 +56,9 @@ func (m FileMenu) Export(path string) error {
 // as a wireframe in a .dxf or a .step.
 func (m FileMenu) ExportAs(kind ExportKind, path string) (err error) {
 	d := m.d
+	if err := d.checkFile(path, true); err != nil {
+		return err
+	}
 	d.read(func(*sketch.Sketch) { err = d.h.Export(kind, path) })
 	return err
 }
@@ -77,6 +86,9 @@ func (m FileMenu) Render(path string, width, height int, view string) (err error
 	}
 	if width < 1 || height < 1 {
 		return fmt.Errorf("a picture of %d by %d pixels", width, height)
+	}
+	if err := d.checkFile(path, true); err != nil {
+		return err
 	}
 	d.read(func(*sketch.Sketch) { err = d.h.Render(path, width, height, v[0], v[1]) })
 	return err
@@ -112,6 +124,9 @@ func (m FileMenu) ForgetChanges() {
 // kinds the importer doesn't know were left out. It is one step of undo.
 func (m FileMenu) ImportDXF(path string) (ignored int, err error) {
 	d := m.d
+	if err := d.checkFile(path, false); err != nil {
+		return 0, err
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return 0, fmt.Errorf("reading %s: %w", filepath.Base(path), err)
