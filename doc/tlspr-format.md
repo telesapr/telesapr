@@ -284,6 +284,7 @@ remap {
 | Shell | `shell` |
 | Loft | `loft` |
 | Pattern along a path | `pattern-path` |
+| Wrap onto a cylinder or a cone | `wrap` |
 
 A mirror reflects its `op-a` in the plane `entity-b` of its `predef`, a workplane or a planar
 face; `skip-first` leaves the original out of its solid, and `mirror-solid` has it reflect the
@@ -298,6 +299,11 @@ surface no entity names, bit 30 set with the handle of the group that made it an
 place among that group's surfaces. A sweep moves the
 loops of its `op-a`, a sketch in a workplane, along its `edges`, line segments and arcs that
 meet end to end and tangent.
+
+A wrap lays the closed loops of its `op-a`, a sketch in a workplane parallel to the face's axis,
+onto the cylinder or cone of the solid so far named by its one `solid-face`, by identity as a
+shell's faces are. It raises them its `height` above the face when its `combine` is `union`, and
+sinks them that far into it when it is `difference`.
 
 A sketch in a workplane of subtype `face` lies in the flat face of the solid so far named by its
 one `solid-face`, by identity as a shell's faces are, and is placed in it again at every
@@ -592,6 +598,9 @@ and ignores it, so the loft is made without its guides.
 
 Version 2 gained the workplane subtype `face`, with the `predef` field `at`, on 2026-10-10
 (roadmap F1). A reader from before refuses the unknown subtype.
+
+Version 2 gained the group type `wrap`, with the field `height`, on 2026-10-22 (WP-C2). A
+reader from before reports the unknown type.
 
 `testdata/tlspr/v1` and `testdata/tlspr/v2` hold files that every later reader must load.
 

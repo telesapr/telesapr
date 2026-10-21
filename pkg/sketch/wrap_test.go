@@ -262,3 +262,17 @@ const wrapConeMaxFail = 14.0 / 72
 func TestWrapTextConeSweep(t *testing.T) {
 	wrapTextGrid("cone", wrapConeMaxFail, 3.0/8).Run(wrapTextCase).Require(t)
 }
+
+// BenchmarkWrapText embosses a word onto a cylinder: the band, its
+// Boolean with the cylinder, and the check.
+func BenchmarkWrapText(b *testing.B) {
+	for b.Loop() {
+		d := api.New()
+		_, face := cylinderBody(d, 20, 40)
+		d.Features.SketchAt(d.Origin(), api.V(1, 0, 0), api.V(0, 0, 1), "")
+		d.Sketch.Text("TeleSAPR", "", api.V(-15, 0, 15), 6)
+		if w := d.Features.Emboss(face, 0.6, ""); w.Problem() != "" {
+			b.Fatal(w.Problem())
+		}
+	}
+}
