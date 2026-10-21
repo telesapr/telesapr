@@ -959,6 +959,7 @@ func (g *Group) GenerateEquations(sk *Sketch, l *[]core.Equation) {
 					Minus(ep(3).Times(ec(g.ValB))), 6)
 			}
 		}
+		g.extentEquation(sk, addEq, 7)
 
 	case g.Type == GroupExtrude && g.Subtype != GroupOneSkewed && g.Subtype != GroupTwoSkewed:
 		if !core.IsFreeIn3D(g.Predef.EntityB) {
@@ -985,6 +986,10 @@ func (g *Group) GenerateEquations(sk *Sketch, l *[]core.Equation) {
 			// The translation vector is parallel to the workplane
 			addEq(trans.Dot(n), 0)
 		}
+	}
+	if g.Type == GroupExtrude {
+		// Skewed or not, a held depth is along the normal.
+		g.extentEquation(sk, addEq, 2)
 	}
 }
 

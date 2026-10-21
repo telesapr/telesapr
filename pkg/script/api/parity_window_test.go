@@ -237,6 +237,8 @@ var windowActions = map[string]string{
 	"ScreenChangeSweepUp/y":          "SweepGroup.SetSweepUp",
 	"ScreenChangeSweepUp/z":          "SweepGroup.SetSweepUp",
 	"ScreenChangeGroupDraft":         "ExtrudeGroup.SetDraft SweepGroup.SetTwist LoftGroup.SetTangency Group.SetExpr",
+	"ScreenChangeGroupExtent":        "ExtrudeGroup.SetDepth RevolveGroup.SetAngle Group.SetExpr",
+	"ScreenChangeExtentHeld":         "ExtrudeGroup.SetDepth ExtrudeGroup.FreeDepth RevolveGroup.SetAngle RevolveGroup.FreeAngle",
 	"ScreenChangeChamferDistance2":   "ChamferGroup.SetSecondDistance",
 	"ScreenSwapChamferDistances":     "ChamferGroup.SwapDistances",
 	"ScreenSameChamferDistances":     "ChamferGroup.SetSecondDistance",
@@ -470,6 +472,7 @@ var windowActions = map[string]string{
 	"editHelixPitch":               "Group.SetExpr FilletGroup.SetRadius ChamferGroup.SetDistance ShellGroup.SetThickness SweepGroup.SetCornerRadius LoftGroup.SetTangency",
 	"editEdgeRadius":               "FilletGroup.SetEdgeRadius FilletGroup.SetEdgeRadiusExpr",
 	"editGroupDraft":               "ExtrudeGroup.SetDraft SweepGroup.SetTwist LoftGroup.SetTangency Group.SetExpr",
+	"editGroupExtent":              "ExtrudeGroup.SetDepth RevolveGroup.SetAngle Group.SetExpr",
 	"editChamferDistance2":         "ChamferGroup.SetSecondDistance",
 	"editThreadDesignation":        "Features.Thread",
 	"editThreadLength":             "Features.Thread",
@@ -682,7 +685,8 @@ AsFillet              -an accessor for the typed group
 AsShell               -an accessor for the typed group
 AsLoft                -an accessor for the typed group
 AsLink                -an accessor for the typed group
-SetExpr               ScreenChangeExprA; ScreenChangeGroupScale; ScreenChangeHelixPitch; ScreenChangeGroupDraft; ScreenChangeLoftStart; ScreenChangePitchOption
+AsRevolve             -an accessor for the typed group
+SetExpr               ScreenChangeExprA; ScreenChangeGroupScale; ScreenChangeHelixPitch; ScreenChangeGroupDraft; ScreenChangeLoftStart; ScreenChangePitchOption; ScreenChangeGroupExtent
 Expr                  -q
 Value                 -q
 Faces                 -q
@@ -846,6 +850,16 @@ DraftFaces       -q
 SetDraftFaces    ScreenDraftAllSides; ctx:Draft Selected Sides; menu:Features/Draft Selected Sides
 DraftNeutral     -q
 SetDraftNeutral  -script-only: the window shows no row for the neutral plane of a draft
+Depth            -q
+DepthHeld        -q
+SetDepth         ScreenChangeExtentHeld; ScreenChangeGroupExtent; editGroupExtent
+FreeDepth        ScreenChangeExtentHeld
+`,
+	"RevolveGroup": `
+Angle            -q
+AngleHeld        -q
+SetAngle         ScreenChangeExtentHeld; ScreenChangeGroupExtent; editGroupExtent
+FreeAngle        ScreenChangeExtentHeld
 `,
 	"SweepGroup": `
 Twist            -q

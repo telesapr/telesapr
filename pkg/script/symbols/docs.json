@@ -4981,6 +4981,14 @@
 				"text": "ExtrudeGroup is the view of an extrusion: its draft.",
 				"kind": "struct",
 				"methods": {
+					"Depth": {
+						"decl": "func (v ExtrudeGroup) Depth() (mm float64)",
+						"text": "Depth is an extrusion's depth in mm, from the sketch's plane to its\nfar end along the workplane's normal, negative against it; a\ntwo-sided extrusion's from end to end. It is what the extrusion has\nnow, held or not."
+					},
+					"DepthHeld": {
+						"decl": "func (v ExtrudeGroup) DepthHeld() (held bool)",
+						"text": "DepthHeld reports whether SetDepth, or an expression, holds the\nextrusion's depth."
+					},
 					"Draft": {
 						"decl": "func (v ExtrudeGroup) Draft() (degrees float64)",
 						"text": "Draft is an extrusion's draft in degrees: its sides lean into the\nsolid by that much from the sketch's plane, out when it is negative."
@@ -4992,6 +5000,14 @@
 					"DraftNeutral": {
 						"decl": "func (v ExtrudeGroup) DraftNeutral() (mm float64)",
 						"text": "DraftNeutral is how far along an extrusion, from the sketch's plane,\nits draft's neutral plane lies, in mm: where the solid has the\nprofile's outline."
+					},
+					"FreeDepth": {
+						"decl": "func (v ExtrudeGroup) FreeDepth()",
+						"text": "FreeDepth frees an extrusion's depth, which stays where it is, to be\ndragged or dimensioned again."
+					},
+					"SetDepth": {
+						"decl": "func (v ExtrudeGroup) SetDepth(mm float64)",
+						"text": "SetDepth holds an extrusion's depth at mm, as Depth measures it, in\nplace of a dimension: the extrusion has no freedom along its normal\nleft, and a drag doesn't move its end. A dimension that holds it too\nis then redundant. SetExpr with sketch.GroupExtent gives it an\nexpression in the document's unit, and FreeDepth frees it again. An\nextrusion of a sketch in 3d has no normal to hold it along."
 					},
 					"SetDraft": {
 						"decl": "func (v ExtrudeGroup) SetDraft(degrees float64)",
@@ -5273,6 +5289,10 @@
 						"decl": "func (g Group) AsRepeat() RepeatGroup",
 						"text": "AsRepeat is the view of a step and repeat or a pattern along a path."
 					},
+					"AsRevolve": {
+						"decl": "func (g Group) AsRevolve() RevolveGroup",
+						"text": "AsRevolve is the view of a revolve or a helix."
+					},
 					"AsShell": {
 						"decl": "func (g Group) AsShell() ShellGroup",
 						"text": "AsShell is the view of a shell."
@@ -5391,7 +5411,7 @@
 					},
 					"SetExpr": {
 						"decl": "func (g Group) SetExpr(value sketch.GroupValue, expr string) (err error)",
-						"text": "SetExpr gives one of the group's values text, as typing it on the\ngroup screen does: sketch.GroupCopies for a step and repeat or a pattern,\nsketch.GroupPitch for a helix's fixed pitch, a length in the\ndocument's unit (View.Units), sketch.GroupScale for a link. A plain\nnumber is stored as its value; any other text is kept and evaluated\nagain at each regeneration."
+						"text": "SetExpr gives one of the group's values text, as typing it on the\ngroup screen does: sketch.GroupCopies for a step and repeat or a pattern,\nsketch.GroupPitch for a helix's fixed pitch, a length in the\ndocument's unit (View.Units), sketch.GroupScale for a link,\nsketch.GroupExtent for an extrusion's held depth, a length, or a\nrevolve's or helix's held angle in degrees. A plain\nnumber is stored as its value; any other text is kept and evaluated\nagain at each regeneration."
 					},
 					"SetForceToMesh": {
 						"decl": "func (g Group) SetForceToMesh(on bool)",
@@ -5826,6 +5846,28 @@
 					"Valid": {
 						"decl": "func (r Request) Valid() (ok bool)",
 						"text": "Valid reports whether the request exists."
+					}
+				}
+			},
+			"RevolveGroup": {
+				"text": "RevolveGroup is the view of a revolve or a helix: the angle it turns\nby.",
+				"kind": "struct",
+				"methods": {
+					"Angle": {
+						"decl": "func (v RevolveGroup) Angle() (degrees float64)",
+						"text": "Angle is the angle in degrees a revolve or a helix turns its sketch\nby, from its first copy to its last, negative the other way round. It\nis what the group has now, held or not."
+					},
+					"AngleHeld": {
+						"decl": "func (v RevolveGroup) AngleHeld() (held bool)",
+						"text": "AngleHeld reports whether SetAngle, or an expression, holds the\nangle."
+					},
+					"FreeAngle": {
+						"decl": "func (v RevolveGroup) FreeAngle()",
+						"text": "FreeAngle frees a revolve's or helix's angle, which stays where it is,\nto be dragged or dimensioned again."
+					},
+					"SetAngle": {
+						"decl": "func (v RevolveGroup) SetAngle(degrees float64)",
+						"text": "SetAngle holds a revolve's or helix's angle at degrees, as Angle\nmeasures it, in place of a dimension. A revolve turns by 360 degrees\nat most. SetExpr with sketch.GroupExtent gives it an expression, and\nFreeAngle frees it again."
 					}
 				}
 			},
@@ -6912,6 +6954,10 @@
 						"decl": "func (g *Group) HasDraft() bool",
 						"text": "HasDraft reports whether the group is an extrusion with a draft."
 					},
+					"HasExtent": {
+						"decl": "func (g *Group) HasExtent() bool",
+						"text": "HasExtent reports whether the group's extent can be held: an extrusion of a sketch in a workplane, a revolve or a helix."
+					},
 					"HasSolidSuppress": {
 						"decl": "func (g *Group) HasSolidSuppress() bool",
 						"text": "HasSolidSuppress reports whether leaving the group's solid out of the model is something it does."
@@ -6984,6 +7030,10 @@
 					"MakesSolidFromSketch": {
 						"decl": "func (g *Group) MakesSolidFromSketch() bool",
 						"text": "MakesSolidFromSketch reports whether the group makes a solid from the contours of a sketch: an extrusion, lathe, revolve, helix or sweep, or a loft."
+					},
+					"MeasuredExtent": {
+						"decl": "func (g *Group) MeasuredExtent(sk *Sketch) float64",
+						"text": "MeasuredExtent is the group's extent as its parameters have it now, held or not: an extrusion's depth in millimetres, signed along the normal of its workplane, or a revolve's or helix's angle in degrees."
 					},
 					"PolyProblem": {
 						"decl": "func (g *Group) PolyProblem() (msg string, at geom.Vector, ok bool)",
@@ -7082,7 +7132,8 @@
 					"GroupCopies",
 					"GroupPitch",
 					"GroupValC",
-					"GroupScale"
+					"GroupScale",
+					"GroupExtent"
 				]
 			},
 			"Hooks": {
@@ -8023,6 +8074,14 @@
 						"decl": "func (sk *Sketch) SetGroupCopies(hg core.HGroup, text string, respace bool) error",
 						"text": "SetGroupCopies sets a step and repeat or pattern group's number of copies from typed text, as SetGroupText does for GroupCopies."
 					},
+					"SetGroupExtent": {
+						"decl": "func (sk *Sketch) SetGroupExtent(hg core.HGroup, v float64) error",
+						"text": "SetGroupExtent holds a group's extent at v, an extrusion's depth in millimetres or a revolve's or helix's angle in degrees, as a plain number; SetGroupText with GroupExtent takes an expression."
+					},
+					"SetGroupExtentHeld": {
+						"decl": "func (sk *Sketch) SetGroupExtentHeld(hg core.HGroup, held bool) error",
+						"text": "SetGroupExtentHeld holds a group's extent where its parameters have it now, or, with held false, frees it again to be dragged or dimensioned."
+					},
 					"SetGroupLinkAsSolid": {
 						"decl": "func (sk *Sketch) SetGroupLinkAsSolid(hg core.HGroup, on bool) error",
 						"text": "SetGroupLinkAsSolid has a linked STEP file read as a solid (on) or as a reference mesh, and reads the file again."
@@ -8594,6 +8653,9 @@
 			},
 			"GroupDrawingWorkplane": {
 				"decl": "const GroupDrawingWorkplane"
+			},
+			"GroupExtent": {
+				"decl": "const GroupExtent"
 			},
 			"GroupExtrude": {
 				"decl": "const GroupExtrude"

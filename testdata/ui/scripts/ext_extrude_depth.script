@@ -1,0 +1,41 @@
+# Held depth (an extension): the extrusion of path_extrude, its depth
+# held from its group screen, which takes its last freedom, then typed
+# as 25 and as an expression; Analyze > Check Solid finds the solids
+# sound. Undo takes the expression back, and the depth is freed again.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+tw
+twmove 501 125
+twdown L 501 125
+twup L 501 125
+tw
+twmove 501 125
+twdown L 501 125
+twup L 501 125
+edit 25
+tw
+answer ok
+menu Analyze|Check Solid
+twmove 501 125
+twdown L 501 125
+twup L 501 125
+edit 5*6
+tw
+answer ok
+menu Analyze|Check Solid
+key z ctrl
+twmove 150 155
+twdown L 150 155
+twup L 150 155
+tw
+twmove 582 125
+twdown L 582 125
+twup L 582 125
+tw

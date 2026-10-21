@@ -24,7 +24,7 @@ func fullDocument() *Document {
 		Visible: true, Suppress: true, RelaxConstraints: true, AllowRedundant: true,
 		SuppressDofCalculation: true, AllDimsReference: true, Scale: 2.5,
 		ActiveWorkplane: core.HEntity{V: 0x80020000},
-		ValA:            3, ValB: -1.25, ValC: 1e-9,
+		ValA:            3, ValB: -1.25, ValC: 1e-9, Extent: -720.5,
 		Subtype: sketch.GroupTwoSkewed, SkipFirst: true,
 		MeshCombine: sketch.CombineIntersection, ForceToMesh: true,
 		Remap:    core.EntityMap{{Input: core.HEntity{V: 0x40001}, CopyNumber: 2}: {V: 5}},

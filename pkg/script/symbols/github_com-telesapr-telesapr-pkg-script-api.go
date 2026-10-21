@@ -102,6 +102,7 @@ func init() {
 		"ParamsMenu":       reflect.ValueOf((*api.ParamsMenu)(nil)),
 		"RepeatGroup":      reflect.ValueOf((*api.RepeatGroup)(nil)),
 		"Request":          reflect.ValueOf((*api.Request)(nil)),
+		"RevolveGroup":     reflect.ValueOf((*api.RevolveGroup)(nil)),
 		"Section":          reflect.ValueOf((*api.Section)(nil)),
 		"ShellGroup":       reflect.ValueOf((*api.ShellGroup)(nil)),
 		"SketchHost":       reflect.ValueOf((*api.SketchHost)(nil)),

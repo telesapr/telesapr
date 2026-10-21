@@ -73,6 +73,9 @@ const (
 	GroupValC
 	// GroupScale is a link group's scale (Scale).
 	GroupScale
+	// GroupExtent is an extrusion's depth, or a revolve's or helix's
+	// angle, when it is held (Extent).
+	GroupExtent
 )
 
 // Field is the value's name in the file.
@@ -86,6 +89,8 @@ func (f GroupValue) Field() string {
 		return "val-c"
 	case GroupScale:
 		return "scale"
+	case GroupExtent:
+		return "extent"
 	}
 	return fmt.Sprintf("GroupValue(%d)", int(f))
 }
@@ -126,13 +131,20 @@ func (g *Group) FieldName(f GroupValue) string {
 	if f == GroupPitch && g.Type == GroupSweep {
 		return "corner-radius"
 	}
+	if f == GroupExtent && g.Type == GroupExtrude {
+		return "depth"
+	}
+	if f == GroupExtent && (g.Type == GroupRevolve || g.Type == GroupHelix) {
+		return "angle"
+	}
 	return f.Field()
 }
 
 // IsLength reports whether the group's value f is a length, which the
 // interface shows in its unit: a helix's pitch, a chamfer's distances.
 func (g *Group) IsLength(f GroupValue) bool {
-	return f == GroupPitch && g.Type != GroupLoft || f == GroupValC && g.Type == GroupChamfer
+	return f == GroupPitch && g.Type != GroupLoft || f == GroupValC && g.Type == GroupChamfer ||
+		f == GroupExtent && g.Type == GroupExtrude
 }
 
 // Value returns the field's number and its expression, both
@@ -147,6 +159,8 @@ func (g *Group) Value(f GroupValue) (val *float64, expr *string) {
 		return &g.ValC, &g.ExprC
 	case GroupScale:
 		return &g.Scale, &g.ExprScale
+	case GroupExtent:
+		return &g.Extent, &g.ExprExtent
 	}
 	panic(fmt.Sprintf("sketch: no group value %d", int(f)))
 }
@@ -241,7 +255,7 @@ func (sk *Sketch) SetEdgeRadiusText(hg core.HGroup, i int, text string) error {
 }
 
 // groupValues are the group values in file order.
-var groupValues = []GroupValue{GroupCopies, GroupPitch, GroupValC, GroupScale}
+var groupValues = []GroupValue{GroupCopies, GroupPitch, GroupValC, GroupScale, GroupExtent}
 
 // checkGroupValue says what is wrong with v as the value of f, as the
 // group screen does when it is typed.
@@ -284,6 +298,8 @@ func checkGroupValue(g *Group, f GroupValue, v float64) error {
 		if g.Type == GroupShell && v <= 0 {
 			return errors.New("a shell's thickness must be more than zero")
 		}
+	case GroupExtent:
+		return checkExtent(g, v)
 	}
 	return nil
 }

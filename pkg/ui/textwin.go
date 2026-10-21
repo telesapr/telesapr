@@ -137,6 +137,8 @@ const (
 	editGroupDraft Edit = 804
 	// For a chamfer's second distance (an extension)
 	editChamferDistance2 Edit = 805
+	// For an extrusion's depth or a revolve's angle (an extension)
+	editGroupExtent Edit = 806
 	// For the screw thread (an extension)
 	editThreadDesignation Edit = 900
 	editThreadLength      Edit = 901

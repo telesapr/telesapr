@@ -123,6 +123,13 @@ type Group struct {
 	// ValB, ValC and Scale are evaluated from at each regeneration,
 	// or "" for a plain number.
 	ExprA, ExprB, ExprC, ExprScale string
+	// Extent is an extrusion's depth in millimetres, along the normal of
+	// its sketch's workplane, or a revolve's or helix's angle in degrees,
+	// end to end; an equation of the group holds it when it is not 0,
+	// and 0 leaves it free, to be dragged or dimensioned. ExprExtent is
+	// the expression it is evaluated from, or "" for a plain number.
+	Extent     float64
+	ExprExtent string
 
 	Solved struct {
 		How              core.SolveResult
