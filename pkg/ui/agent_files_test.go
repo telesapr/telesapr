@@ -23,6 +23,9 @@ func TestAgentFiles(t *testing.T) {
 	a := newAgentApp(t)
 	ctx := context.Background()
 	dir := t.TempDir()
+	// Guarded, as by default, with the test's folder allowed: the tools
+	// keep to it as the program's scripts do.
+	a.on(func() { a.ss.SetAgentFiles(true, []string{dir}) })
 	if res, err := a.r.Run(ctx, "doc.Sketch.Rect(V(0, 0, 0), V(10, 20, 0))\ndoc.Features.Extrude(5, \"plate\")"); err != nil || res.Error != "" {
 		t.Fatalf("the plate gave %+v, %v", res, err)
 	}
