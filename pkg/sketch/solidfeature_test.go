@@ -322,6 +322,29 @@ func TestSolidGoldens(t *testing.T) {
 			s := boss.Solid()
 			d.Features.ChamferSolid([]api.SolidEdge{s.EdgeAt(api.V(4, 0, 10)), s.EdgeAt(api.V(0, -10, 5))}, 1, "")
 		},
+		"wrap-cylinder-raised": func(d *api.Doc) {
+			_, face := cylinderBody(d, 10, 40)
+			d.Features.SketchIn(d.Workplane("ZX"), "")
+			d.Sketch.Rect(api.V(-5, 0, 10), api.V(5, 0, 30))
+			d.Features.Emboss(face, 1, "")
+		},
+		"wrap-cylinder-text-sunk": func(d *api.Doc) {
+			_, face := cylinderBody(d, 20, 40)
+			d.Features.SketchAt(d.Origin(), api.V(1, 0, 0), api.V(0, 0, 1), "")
+			d.Sketch.Text("Ag", "", api.V(-5, 0, 15), 8)
+			d.Features.Engrave(face, 0.6, "")
+		},
+		"wrap-cone-raised": func(d *api.Doc) {
+			d.Features.SketchIn(d.Workplane("ZX"), "")
+			axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 32))
+			axis.SetConstruction(true)
+			d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(4, 0, 30), api.V(0, 0, 30))
+			cone := d.Features.Lathe(axis, "")
+			face := cone.Solid().FaceAt(api.V(7, 0, 15))
+			d.Features.SketchIn(d.Workplane("ZX"), "")
+			d.Sketch.Rect(api.V(-3, 0, 10), api.V(3, 0, 20))
+			d.Features.Emboss(face, 1, "")
+		},
 		"shell-open-box": func(d *api.Doc) {
 			ex := block(d, 0, 0, 20, 10, 10)
 			d.Features.Shell([]api.Entity{ex.Solid().FaceAt(api.V(10, 5, 10)).Entity()}, 1, "")
