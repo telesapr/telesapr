@@ -208,6 +208,7 @@ func init() {
 		"SketchDiagnostic":     reflect.ValueOf((*sketch.SketchDiagnostic)(nil)),
 		"Suggestion":           reflect.ValueOf((*sketch.Suggestion)(nil)),
 		"TangentArcSettings":   reflect.ValueOf((*sketch.TangentArcSettings)(nil)),
+		"ThreadBand":           reflect.ValueOf((*sketch.ThreadBand)(nil)),
 		"ThreadOptions":        reflect.ValueOf((*sketch.ThreadOptions)(nil)),
 		"ThreadResult":         reflect.ValueOf((*sketch.ThreadResult)(nil)),
 		"Timings":              reflect.ValueOf((*sketch.Timings)(nil)),

@@ -8355,6 +8355,10 @@
 						"decl": "func (sk *Sketch) TestRankForGroup(hg core.HGroup) (core.SolveResult, int)",
 						"text": "TestRankForGroup reports whether group hg would be redundantly constrained, and its rank; a group that allows redundancy or doesn't count its freedom is okay with rank 0."
 					},
+					"ThreadBands": {
+						"decl": "func (sk *Sketch) ThreadBands(hg core.HGroup) []ThreadBand",
+						"text": "ThreadBands are the threads of the solid of group hg: those whose helix group comes at or before it and is generated."
+					},
 					"ThreadGroups": {
 						"decl": "func (sk *Sketch) ThreadGroups(hg core.HGroup) ([]core.HGroup, error)",
 						"text": "ThreadGroups returns the thread's four groups, from its blank sketch to its helix, hg being the helix."
@@ -8435,6 +8439,20 @@
 			"TangentArcSettings": {
 				"text": "TangentArcSettings are the user's settings for MakeTangentArc.",
 				"kind": "struct"
+			},
+			"ThreadBand": {
+				"text": "ThreadBand is where a thread lies, for a drawing that shows it by the drafting convention rather than turn by turn: along Axis from Origin for Length, between the radii Inner and Outer that its ridge, the turning or boring and the ridge's foot reach, the crest at Crest and the root at Root.",
+				"kind": "struct",
+				"methods": {
+					"Holds": {
+						"decl": "func (b ThreadBand) Holds(p geom.Vector, tol float64) bool",
+						"text": "Holds reports whether p lies in the band, within tol."
+					},
+					"OnCylinder": {
+						"decl": "func (b ThreadBand) OnCylinder(p geom.Vector, r, tol float64) bool",
+						"text": "OnCylinder reports whether p lies within tol of the cylinder of radius r about the band's axis, at any height."
+					}
+				}
 			},
 			"ThreadOptions": {
 				"text": "ThreadOptions is a screw thread to make on a circle.",
