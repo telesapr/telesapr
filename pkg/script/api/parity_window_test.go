@@ -228,6 +228,7 @@ var windowActions = map[string]string{
 	"ScreenChangeLoftTurn":           "LoftGroup.SetTurn",
 	"ScreenColor":                    "Group.SetColor",
 	"ScreenOpacity":                  "Group.SetOpacity",
+	"ScreenDensity":                  "Group.SetDensity",
 	"ScreenChangeExprA":              "RepeatGroup.SetCopies Group.SetExpr",
 	"ScreenChangeGroupName":          "Group.SetName",
 	"ScreenChangeGroupScale":         "Group.SetExpr",
@@ -425,6 +426,7 @@ var windowActions = map[string]string{
 	"editGroupScale":               "Group.SetExpr",
 	"editGroupColor":               "Group.SetColor",
 	"editGroupOpacity":             "Group.SetOpacity",
+	"editGroupDensity":             "Group.SetDensity",
 	"editLightDirection":           "- the window's lights",
 	"editLightIntensity":           "- the window's lights",
 	"editColor":                    "- the model colours of the window",
@@ -668,6 +670,8 @@ Color                 -q
 SetColor              ScreenColor; editGroupColor
 Opacity               -q
 SetOpacity            ScreenOpacity; editGroupOpacity
+Density               -q
+SetDensity            ScreenDensity; editGroupDensity
 Delete                ScreenDeleteGroup; ctx:Delete Group; menu:Edit/Delete
 Face                  -q
 Conflicts             ScreenHowGroupSolved
@@ -708,6 +712,7 @@ CenterOfMass    menu:Analyze/Show Center of Mass
 Mesh            -script-only: the triangles of the group's solid
 Shell           -script-only: the group's shell
 Volume          menu:Analyze/Measure Volume
+MassProperties  menu:Analyze/Measure Volume
 Triangles       -script-only: the triangles of the group's solid
 Bounds          menu:Analyze/Group Dependencies
 Check           menu:Analyze/Check Solid

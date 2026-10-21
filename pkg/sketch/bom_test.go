@@ -2,6 +2,7 @@ package sketch_test
 
 import (
 	"bytes"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -66,11 +67,11 @@ func TestBillOfMaterials(t *testing.T) {
 	}
 	csv, _ := os.ReadFile(out)
 	lines := strings.Split(strings.TrimSpace(string(csv)), "\n")
-	if len(lines) != 4 || lines[0] != "part,count,file,groups" || !strings.HasPrefix(lines[2], "bolt,3,"+bolt+",") {
+	if len(lines) != 4 || lines[0] != "part,count,file,groups,mass_g" || !strings.HasPrefix(lines[2], "bolt,3,"+bolt+",") {
 		t.Errorf("CSV:\n%s", csv)
 	}
 	var b bytes.Buffer
-	if err := sketch.WriteBOMCSV(&b, nil); err != nil || b.String() != "part,count,file,groups\n" {
+	if err := sketch.WriteBOMCSV(&b, nil); err != nil || b.String() != "part,count,file,groups,mass_g\n" {
 		t.Errorf("an empty bill: %q, %v", b.String(), err)
 	}
 }
@@ -198,5 +199,46 @@ func TestBillOfMaterialsNested(t *testing.T) {
 	link(loop, aPath)
 	if c := counts(loop); c["a"] < 1 || c["b"] != 1 {
 		t.Errorf("a loop of links: %v", c)
+	}
+}
+
+// A part's mass in the bill is its volume at the density set on the
+// link that places it; a part with none set has none.
+func TestBillOfMaterialsMass(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	part := func(name string) string {
+		d := api.New()
+		d.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
+		d.Features.Extrude(10, "")
+		path := filepath.Join(dir, name+".tlspr")
+		if err := d.File.Save(path); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	steel, plain := part("steel"), part("plain")
+	d := api.New()
+	g, err := d.Assembly.Link(steel, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.SetDensity(7.85)
+	if _, err := d.Assembly.Link(plain, ""); err != nil {
+		t.Fatal(err)
+	}
+	mass := map[string]float64{}
+	for _, it := range d.Assembly.BillOfMaterials() {
+		mass[it.Part] = it.Mass
+	}
+	if m := mass["steel"]; math.Abs(m-7.85) > 1e-9 || mass["plain"] != 0 {
+		t.Errorf("masses %v, want steel 7.85 and plain none", mass)
+	}
+	var b bytes.Buffer
+	if err := sketch.WriteBOMCSV(&b, d.Assembly.BillOfMaterials()); err != nil {
+		t.Fatal(err)
+	}
+	if lines := strings.Split(b.String(), "\n"); !strings.HasSuffix(lines[1], ",7.850") || !strings.HasSuffix(lines[2], ",") {
+		t.Errorf("CSV:\n%s", b.String())
 	}
 }

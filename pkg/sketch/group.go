@@ -232,6 +232,10 @@ type Group struct {
 	Appearance      string
 	FaceAppearances []FaceAppearance
 
+	// Density is the density of the group's solid in g/cm³, for its
+	// mass (mass.go); 0 when none is set.
+	Density float64
+
 	// Edges are the entities a chamfer cuts, the path a sweep
 	// follows, or a loft's guide curves, in the order the user gave
 	// them.

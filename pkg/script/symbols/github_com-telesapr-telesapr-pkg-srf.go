@@ -126,6 +126,7 @@ func init() {
 		"FaceFlag":          reflect.ValueOf((*srf.FaceFlag)(nil)),
 		"FaceID":            reflect.ValueOf((*srf.FaceID)(nil)),
 		"HalfSpace":         reflect.ValueOf((*srf.HalfSpace)(nil)),
+		"MeshMass":          reflect.ValueOf((*srf.MeshMass)(nil)),
 		"MeshMeta":          reflect.ValueOf((*srf.MeshMeta)(nil)),
 		"Mesher":            reflect.ValueOf((*srf.Mesher)(nil)),
 		"OutlineInto":       reflect.ValueOf((*srf.OutlineInto)(nil)),

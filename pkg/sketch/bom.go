@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // The bill of materials (roadmap 16.7, G2) counts the parts the model
@@ -32,6 +33,10 @@ type BOMItem struct {
 	Count int
 	// Groups are the groups that place them, by name.
 	Groups []string
+	// Mass is one part's mass in g, from the first link group that
+	// places it and has a density set (mass.go); 0 when none has, or
+	// when the model was not generated.
+	Mass float64
 }
 
 // BillOfMaterials is the model's parts, by file, in the order of the
@@ -68,6 +73,9 @@ func (sk *Sketch) BillOfMaterials() []BOMItem {
 			}
 			mine := map[string]int{g.LinkFile: 1}
 			add(g.LinkFile, 1, g)
+			if it := &items[index[g.LinkFile]]; it.Mass == 0 {
+				it.Mass = linkMass(g)
+			}
 			// What the linked model places in turn, named by the group
 			// here and the groups there.
 			for _, it := range g.LinkParts {
@@ -130,15 +138,34 @@ func (sk *Sketch) BillOfMaterials() []BOMItem {
 	return items
 }
 
+// linkMass is the mass in g of the part link group g places, at the
+// density set on it, or 0 when none is set or it has no solid yet.
+func linkMass(g *Group) float64 {
+	if g.Density <= 0 {
+		return 0
+	}
+	m := &g.ThisMesh
+	if len(g.ThisShell.Surface) > 0 {
+		m = &srf.SMesh{}
+		g.ThisShell.TriangulateInto(m)
+	}
+	return m.CalculateVolume() * g.Density / 1000
+}
+
 // WriteBOMCSV writes the bill of materials as CSV: a header, then a line
-// for each part with its count, its file and the groups that place it.
+// for each part with its count, its file, the groups that place it, and
+// one part's mass in g, empty where it is not known.
 func WriteBOMCSV(w io.Writer, items []BOMItem) error {
 	cw := csv.NewWriter(w)
-	if err := cw.Write([]string{"part", "count", "file", "groups"}); err != nil {
+	if err := cw.Write([]string{"part", "count", "file", "groups", "mass_g"}); err != nil {
 		return err
 	}
 	for _, it := range items {
-		if err := cw.Write([]string{it.Part, strconv.Itoa(it.Count), it.File, strings.Join(it.Groups, "; ")}); err != nil {
+		mass := ""
+		if it.Mass > 0 {
+			mass = strconv.FormatFloat(it.Mass, 'f', 3, 64)
+		}
+		if err := cw.Write([]string{it.Part, strconv.Itoa(it.Count), it.File, strings.Join(it.Groups, "; "), mass}); err != nil {
 			return err
 		}
 	}

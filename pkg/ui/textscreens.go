@@ -477,6 +477,19 @@ func (tw *textWindow) ScreenOpacity(link int, v uint32) {
 	tw.edit.group = g.H
 }
 
+// ScreenDensity edits the density of a group's solid.
+func (tw *textWindow) ScreenDensity(link int, v uint32) {
+	g := tw.ss.SK.Group(tw.shown.group)
+
+	text := ""
+	if g.Density > 0 {
+		text = strconv.FormatFloat(g.Density, 'g', -1, 64)
+	}
+	tw.ShowEditControl(11, text)
+	tw.edit.meaning = editGroupDensity
+	tw.edit.group = g.H
+}
+
 // ScreenChangeExprA edits how many times a group repeats.
 func (tw *textWindow) ScreenChangeExprA(link int, v uint32) {
 	g := tw.ss.SK.Group(tw.shown.group)
@@ -939,6 +952,16 @@ func (tw *textWindow) ShowGroupInfo() {
 		for _, name := range render.MaterialNames {
 			line.WriteString("  %f%Lp%D%Fd%s " + name + "%E")
 			args = append(args, lf(tw.ScreenChangeAppearance), 'a', appearanceIndex(name), radioMark(app == name))
+		}
+		// The density, for the part's mass, goes on the same row: a row
+		// of its own would move every row below it on the screen.
+		if g.HasDensity() {
+			density := "not set"
+			if g.Density > 0 {
+				density = strconv.FormatFloat(g.Density, 'g', -1, 64) + " g/cm³"
+			}
+			line.WriteString("   %Ftdensity%E %s %f%Lf%Fl[change]%E")
+			args = append(args, density, lf(tw.ScreenDensity))
 		}
 		tw.Printf(false, line.String(), args...)
 
@@ -1839,6 +1862,27 @@ func (tw *textWindow) EditControlDone(s string) {
 				ss.GW.ClearSuper()
 			}
 		}
+
+	case editGroupDensity:
+		// An empty field clears the density.
+		density := 0.0
+		if strings.TrimSpace(s) != "" {
+			e := ss.exprFromString(s)
+			if e == nil {
+				break
+			}
+			density = ss.evalExpr(e)
+		}
+		if density < 0 || math.IsNaN(density) {
+			ss.Error("A density is a positive number of g/cm³, or nothing for none.")
+			break
+		}
+		ss.UndoRemember()
+		if err := sk.SetGroupDensity(tw.edit.group, density); err != nil {
+			ss.Report(err)
+			break
+		}
+		sk.Unsaved = true
 
 	case editTTFText:
 		ss.UndoRemember()

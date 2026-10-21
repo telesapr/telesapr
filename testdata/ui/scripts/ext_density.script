@@ -1,0 +1,21 @@
+# Density and mass (an extension): the extrusion of path_extrude, its
+# group screen's density set to 7.85 g/cm³ on the appearance row, and
+# Analyze > Measure Volume giving the mass, as the screen, the message
+# and the file show.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+twmove 676 245
+twdown L 676 245
+twup L 676 245
+edit 7.85
+tw
+answer ok
+menu Analyze|Measure Volume
+save
