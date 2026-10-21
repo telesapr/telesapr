@@ -37,8 +37,10 @@ row 10  link geometry from file
  0-0 64 64 0
  1-23 74 64 0
  24-99 64 64 0
-row 12    'shapes/cylinder.step'
- 0-99 64 61 0
+row 12    'shapes/cylinder.step' [relink]
+ 0-25 64 61 0
+ 26-33 6c 61 108 3 1 0
+ 34-99 64 61 0
 row 14    scaled by 1.000 [change]
  0-2 64 64 0
  3-11 74 64 0
@@ -169,8 +171,10 @@ row 10  link geometry from file
  0-0 64 64 0
  1-23 74 64 0
  24-99 64 64 0
-row 12    'corpus/ap203e2_csg.stp'
- 0-99 64 61 0
+row 12    'corpus/ap203e2_csg.stp' [relink]
+ 0-27 64 61 0
+ 28-35 6c 61 108 4 1 0
+ 36-99 64 61 0
 row 14    scaled by 1.000 [change]
  0-2 64 64 0
  3-11 74 64 0

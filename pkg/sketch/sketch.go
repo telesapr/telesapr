@@ -35,6 +35,9 @@ type Sketch struct {
 	// (config.go).
 	Configurations      []Configuration
 	ActiveConfiguration string
+	// Datums are names given to entities the model offers others,
+	// as a part offers an assembly (datum.go).
+	Datums []Datum
 	// Drawing is the model's sheet of views, or nil (drawing.go).
 	Drawing *Drawing
 	// ExprErrors lists the stored expressions of constraints and

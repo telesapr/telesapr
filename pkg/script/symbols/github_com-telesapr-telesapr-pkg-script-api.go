@@ -72,6 +72,8 @@ func init() {
 		"Clearance":        reflect.ValueOf((*api.Clearance)(nil)),
 		"ConstrainMenu":    reflect.ValueOf((*api.ConstrainMenu)(nil)),
 		"Constraint":       reflect.ValueOf((*api.Constraint)(nil)),
+		"Datum":            reflect.ValueOf((*api.Datum)(nil)),
+		"DatumsMenu":       reflect.ValueOf((*api.DatumsMenu)(nil)),
 		"Doc":              reflect.ValueOf((*api.Doc)(nil)),
 		"Drawing":          reflect.ValueOf((*api.Drawing)(nil)),
 		"DrawingDimension": reflect.ValueOf((*api.DrawingDimension)(nil)),

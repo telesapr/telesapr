@@ -38,6 +38,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	// values the groups are solved for and which groups are dirty.
 	if !genForBBox {
 		sk.EvaluateParameters()
+		sk.reloadChangedLinks()
 	}
 
 	var first, last int

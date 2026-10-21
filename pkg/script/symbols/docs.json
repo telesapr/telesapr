@@ -4581,6 +4581,36 @@
 					}
 				}
 			},
+			"Datum": {
+				"text": "Datum is a name and the entity it names, as Datums.List gives them.",
+				"kind": "struct"
+			},
+			"DatumsMenu": {
+				"text": "DatumsMenu holds the calls of Edit \u003e Datums: names given to the\nentities a model offers others, a point, a workplane, a face or an\naxis, so that a part declares its interfaces and an assembly linking\nit finds them by name rather than by where they are. A script reaches\nit as doc.Datums.",
+				"kind": "struct",
+				"methods": {
+					"Delete": {
+						"decl": "func (m DatumsMenu) Delete(name string)",
+						"text": "Delete takes the datum called name away; the entity stays."
+					},
+					"Get": {
+						"decl": "func (m DatumsMenu) Get(name string) (e Entity)",
+						"text": "Get is the entity a datum names: \"name\" for one of the drawing's\nown, \"group.name\" for a datum of the model the link group called\ngroup links, as that link places it. Mates take it as they take any\nentity: doc.Assembly.Flush(doc.Datums.Get(\"base.top\"),\ndoc.Datums.Get(\"lid.bottom\"))."
+					},
+					"List": {
+						"decl": "func (m DatumsMenu) List() (ds []Datum)",
+						"text": "List lists the drawing's own datums, in the order they were named."
+					},
+					"Name": {
+						"decl": "func (m DatumsMenu) Name(name string, e Entity)",
+						"text": "Name names entity e as the datum name, a word of letters, digits and\nunderscores: a point, a workplane, a normal, a face of the solid\n(SolidFace.Entity), or a line, circle or arc as an axis. An entity\nnamed before takes the new name; a name given before moves to e. It\nis saved with the drawing, and a drawing linking this one finds it as\n\"group.name\"."
+					},
+					"Names": {
+						"decl": "func (m DatumsMenu) Names() (names []string)",
+						"text": "Names lists every name Get finds: the drawing's own datums, then\nthose of each linked model, as \"group.name\" for the link group of\nthat name."
+					}
+				}
+			},
 			"Doc": {
 				"text": "Doc is a sketch: the drawing a script reads and changes. Its own\nmethods find what the drawing holds; what changes it is in the\nfields, one for each menu of the window, so that a call is where\nthe command it does is: doc.Sketch.Line is Sketch \u003e Line Segment,\ndoc.Features.Extrude is Features \u003e Extrude.",
 				"kind": "struct",
@@ -5673,9 +5703,25 @@
 						"decl": "func (v LinkGroup) AsSolid() (on bool)",
 						"text": "AsSolid reports whether a link group reads its STEP file as a\nsolid rather than as a reference mesh."
 					},
+					"Configuration": {
+						"decl": "func (v LinkGroup) Configuration() (name string)",
+						"text": "Configuration is the configuration of the linked model it is\nregenerated in, or \"\" for the one its file was saved in."
+					},
+					"File": {
+						"decl": "func (v LinkGroup) File() (path string)",
+						"text": "File is the file the link links, as the group names it: relative to\nthe drawing's file once that is saved, else absolute."
+					},
 					"Info": {
 						"decl": "func (v LinkGroup) Info() (lines []string)",
 						"text": "Info describes the file a link group links, a line each, as the\ngroup's screen shows it: for a STEP file its schema and unit, how\nmany shapes, faces and triangles it gave, and the chord tolerance it\nwas tessellated to. A sketch or STL file gives none."
+					},
+					"ModelConfigurations": {
+						"decl": "func (v LinkGroup) ModelConfigurations() (names []string)",
+						"text": "ModelConfigurations are the names of the linked model's\nconfigurations."
+					},
+					"ModelParams": {
+						"decl": "func (v LinkGroup) ModelParams() (params map[string]float64)",
+						"text": "ModelParams are the linked model's parameters and their values as\nits file, in the configuration the link chooses, has them, before\nthe values the link passes; nil for a file that is not a model."
 					},
 					"Move": {
 						"decl": "func (v LinkGroup) Move(t Vec)",
@@ -5688,6 +5734,10 @@
 					"Orientation": {
 						"decl": "func (v LinkGroup) Orientation() (u, w Vec)",
 						"text": "Orientation is where the part's own x and y directions point now, as\nunit vectors."
+					},
+					"Param": {
+						"decl": "func (v LinkGroup) Param(name string) (expr string)",
+						"text": "Param is the expression the link passes to the linked model's\nparameter name, or \"\" when the model's own stands."
 					},
 					"Problem": {
 						"decl": "func (v LinkGroup) Problem() (msg string)",
@@ -5705,9 +5755,21 @@
 						"decl": "func (v LinkGroup) SetAsSolid(on bool)",
 						"text": "SetAsSolid reads a link group's STEP file as a solid, or as a\nreference mesh, and reads it again."
 					},
+					"SetConfiguration": {
+						"decl": "func (v LinkGroup) SetConfiguration(name string)",
+						"text": "SetConfiguration regenerates the linked model in its configuration\nname, or with \"\" reads it as its file was saved. A model linked twice\ncan so be two sizes. The model must have a configuration of that name."
+					},
+					"SetFile": {
+						"decl": "func (v LinkGroup) SetFile(path string)",
+						"text": "SetFile points the link at another file and reads it, keeping where\nthe part is placed, its scale and what the link passes into it: a\nnewer revision of a part saved under another name, or a STEP file in\nplace of a model. What later groups use of the old part and the new\none lacks is removed with them, as when a linked file is missing."
+					},
 					"SetOrientation": {
 						"decl": "func (v LinkGroup) SetOrientation(u, w Vec)",
 						"text": "SetOrientation turns the part so that its own x and y directions\npoint along u and w, which must not be parallel (w is made square to\nu), as dragging the part's normal in the window does."
+					},
+					"SetParam": {
+						"decl": "func (v LinkGroup) SetParam(name, expr string)",
+						"text": "SetParam passes the value of expr, a number or an expression in\nthis drawing's parameters, to the linked model's parameter name, and\nregenerates the model with it; when one of the drawing's parameters\nchanges, the model is regenerated again. With \"\" the model's own\nexpression stands again. The model must have a parameter of that\nname."
 					}
 				}
 			},
@@ -6854,6 +6916,10 @@
 				"text": "CopyPlacement is where a group that copies a solid puts one copy: the source scaled by Scale about the origin, 1, or -1 for a reflection (a point inversion, which the half turn in Move makes a mirror), then moved by Move.",
 				"kind": "struct"
 			},
+			"Datum": {
+				"text": "Datum is a name for an entity.",
+				"kind": "struct"
+			},
 			"Dependency": {
 				"text": "Dependency is one group that another group needs, and the first reason found for it.",
 				"kind": "struct"
@@ -7105,6 +7171,10 @@
 						"decl": "func (g *Group) IsMeshGroup2() bool",
 						"text": "IsMeshGroup returns true if this group produces a mesh output (EXTRUDE, LATHE, REVOLVE, HELIX, ROTATE, TRANSLATE)."
 					},
+					"IsParametricLink": {
+						"decl": "func (g *Group) IsParametricLink() bool",
+						"text": "IsParametricLink reports whether the group passes a configuration or parameter values into the model it links."
+					},
 					"IsSolvedOkay": {
 						"decl": "func (g *Group) IsSolvedOkay() bool"
 					},
@@ -7118,6 +7188,14 @@
 					"JoinsAssembly": {
 						"decl": "func (g *Group) JoinsAssembly(sk *Sketch) bool",
 						"text": "JoinsAssembly reports whether the solid so far that g's Boolean joins holds parts put side by side: a group before it combines as an assembly onto a solid made before that."
+					},
+					"LinkOverridesKey": {
+						"decl": "func (g *Group) LinkOverridesKey() string",
+						"text": "LinkOverridesKey names what the group passes into the model it links, \"\" for nothing: the same key for the same configuration and values."
+					},
+					"LinkParam": {
+						"decl": "func (g *Group) LinkParam(name string) *LinkParam",
+						"text": "LinkParam is the value the group passes to the linked model's parameter name, or nil."
 					},
 					"LoftEnds": {
 						"decl": "func (g *Group) LoftEnds() topo.LoftEnds",
@@ -7271,6 +7349,10 @@
 			},
 			"Interference": {
 				"text": "Interference is two parts that overlap: the groups that made them, the volume they share, and its triangles.",
+				"kind": "struct"
+			},
+			"LinkParam": {
+				"text": "LinkParam is a value a link group passes to a parameter of the model it links.",
 				"kind": "struct"
 			},
 			"MassReport": {
@@ -7726,6 +7808,18 @@
 						"decl": "func (sk *Sketch) CreateParam(h core.HParam, val float64) core.HParam",
 						"text": "CreateParam adds a new parameter to the sketch."
 					},
+					"Datum": {
+						"decl": "func (sk *Sketch) Datum(name string) *Datum",
+						"text": "Datum is the datum called name, or nil."
+					},
+					"DatumNames": {
+						"decl": "func (sk *Sketch) DatumNames() []string",
+						"text": "DatumNames are the names of every datum a ResolveDatum finds: this sketch's own, then each link's, as \"group.name\" (LinkLabel)."
+					},
+					"DatumOf": {
+						"decl": "func (sk *Sketch) DatumOf(he core.HEntity) *Datum",
+						"text": "DatumOf is the datum that names entity he, or nil."
+					},
 					"DeleteAllConstraintsFor": {
 						"decl": "func (sk *Sketch) DeleteAllConstraintsFor(typ core.ConstraintType, entityA, ptA core.HEntity)",
 						"text": "DeleteAllConstraintsFor deletes the constraints of the given type on entityA and ptA; used when auto-removing constraints that would become redundant."
@@ -7733,6 +7827,10 @@
 					"DeleteConfiguration": {
 						"decl": "func (sk *Sketch) DeleteConfiguration(name string) error",
 						"text": "DeleteConfiguration removes a configuration; the table stays as it is."
+					},
+					"DeleteDatum": {
+						"decl": "func (sk *Sketch) DeleteDatum(name string) error",
+						"text": "DeleteDatum takes the datum called name away; the entity stays."
 					},
 					"DeleteImplied": {
 						"decl": "func (sk *Sketch) DeleteImplied(imp []Implied)",
@@ -7883,6 +7981,10 @@
 					"Length": {
 						"decl": "func (sk *Sketch) Length(hs []core.HEntity) (float64, error)",
 						"text": "Length is the total length of the curves of entities hs: line segments, arcs, circles, cubics and text."
+					},
+					"LinkLabel": {
+						"decl": "func (sk *Sketch) LinkLabel(g *Group) string",
+						"text": "LinkLabel names a link group in a datum's name: by its name, or when another group has the same name, as a part linked twice from the window has, by its handle and name, \"g004-tile\"."
 					},
 					"LoadFactoryDefaults": {
 						"decl": "func (sk *Sketch) LoadFactoryDefaults()",
@@ -8142,6 +8244,10 @@
 					"Request": {
 						"decl": "func (s *Sketch) Request(h core.HRequest) *Request"
 					},
+					"ResolveDatum": {
+						"decl": "func (sk *Sketch) ResolveDatum(path string) (core.HEntity, error)",
+						"text": "ResolveDatum is the entity a datum name answers to: \"name\" for this sketch's own, \"group.name\" for a datum of the model the link group called group links, as the link placed it."
+					},
 					"RunningMeshGroupFor": {
 						"decl": "func (s *Sketch) RunningMeshGroupFor(h core.HGroup) *Group"
 					},
@@ -8192,6 +8298,10 @@
 					"SetConstraintText": {
 						"decl": "func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string) error",
 						"text": "SetConstraintText gives a constraint the value of what the user typed for its label, a length in the document's unit (Units)."
+					},
+					"SetDatum": {
+						"decl": "func (sk *Sketch) SetDatum(name string, he core.HEntity) error",
+						"text": "SetDatum names entity he as a datum called name; an entity already named takes the new name, and a name already given moves to he."
 					},
 					"SetDraftFaces": {
 						"decl": "func (sk *Sketch) SetDraftFaces(hg core.HGroup, es []core.HEntity) error",
@@ -8256,6 +8366,18 @@
 					"SetGroupText": {
 						"decl": "func (sk *Sketch) SetGroupText(hg core.HGroup, f GroupValue, text string) error",
 						"text": "SetGroupText gives a group value what the user typed, as SetConstraintText does for a constraint: a pitch is in the document's unit."
+					},
+					"SetLinkConfiguration": {
+						"decl": "func (sk *Sketch) SetLinkConfiguration(hg core.HGroup, name string) error",
+						"text": "SetLinkConfiguration has the link group hg regenerate the model it links in the model's configuration name, or with \"\" in the one it was saved in."
+					},
+					"SetLinkFile": {
+						"decl": "func (sk *Sketch) SetLinkFile(hg core.HGroup, file string) error",
+						"text": "SetLinkFile points the link group hg at another file, named as the group names its file (relative to the sketch's file, or absolute), and reads it, keeping the group's placement, scale and what it passes into the model."
+					},
+					"SetLinkParam": {
+						"decl": "func (sk *Sketch) SetLinkParam(hg core.HGroup, name, expr string) error",
+						"text": "SetLinkParam has the link group hg pass the value of expr, an expression in this sketch's parameters, to the linked model's parameter name; with expr \"\" the model's own expression stands again."
 					},
 					"SetLoftAlongSides": {
 						"decl": "func (sk *Sketch) SetLoftAlongSides(hg core.HGroup, start, end bool) error",
@@ -8577,6 +8699,10 @@
 				"decl": "func AlmostEqualVector(a, b geom.Vector, tol float64) bool",
 				"text": "AlmostEqualVector reports whether two vectors are within tolerance."
 			},
+			"CanBeDatum": {
+				"decl": "func CanBeDatum(e *core.Entity) bool",
+				"text": "CanBeDatum reports whether an entity can be named as a datum: one a mate or a constraint between parts can use."
+			},
 			"ConstraintText": {
 				"decl": "func ConstraintText(c *core.Constraint) string",
 				"text": "ConstraintText is the stored expression of a constraint as its label's editor shows it, the inverse of SetConstraintText: without the sign of a distance on the far side, and as a radius for a diameter shown as one."
@@ -8632,6 +8758,10 @@
 			"Letter": {
 				"decl": "func Letter(n int) string",
 				"text": "Letter is the letter of the n-th section or detail view: A, B, ..., Z, AA, AB, ..."
+			},
+			"LinkParamField": {
+				"decl": "func LinkParamField(name string) string",
+				"text": "LinkParamField is the name in messages of the value a link passes to the linked model's parameter name."
 			},
 			"MeshQualitySettings": {
 				"decl": "func MeshQualitySettings(q MeshQuality) (chordMm, angleDeg float64, segments int)",
@@ -8764,6 +8894,10 @@
 			"ErrNoConstraint": {
 				"decl": "var ErrNoConstraint",
 				"text": "ErrNoConstraint is what an edit returns for a constraint the sketch does not have."
+			},
+			"ErrNoDatum": {
+				"decl": "var ErrNoDatum",
+				"text": "ErrNoDatum is the error for a datum name nothing answers to."
 			},
 			"ErrNoRequest": {
 				"decl": "var ErrNoRequest",

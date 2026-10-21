@@ -470,6 +470,9 @@ func (sk *Sketch) forEachExpr(fn func(expr *string, who string)) {
 				fn(&er.Expr, fmt.Sprintf("group %s %s", g.Name, EdgeRadiusField(er.Edge)))
 			}
 		}
+		for k := range g.LinkParams {
+			fn(&g.LinkParams[k].Expr, fmt.Sprintf("group %s %s", g.Name, LinkParamField(g.LinkParams[k].Name)))
+		}
 	}
 }
 
@@ -525,22 +528,7 @@ func (sk *Sketch) evaluate() []core.HGroup {
 		changed = append(changed, hg)
 	}
 
-	eval := func(text string) (float64, error) {
-		e, err := core.NewFromString(text)
-		if err != nil {
-			return 0, err
-		}
-		for _, n := range e.Variables() {
-			if _, ok := vars[n]; !ok {
-				return 0, fmt.Errorf("unknown parameter %q", n)
-			}
-		}
-		v := e.Eval(nil, vars)
-		if math.IsNaN(v) || math.IsInf(v, 0) {
-			return 0, errors.New("not a number")
-		}
-		return v, nil
-	}
+	eval := func(text string) (float64, error) { return evalNamed(text, vars) }
 
 	for i := range sk.Constraints {
 		c := &sk.Constraints[i]
@@ -617,8 +605,39 @@ func (sk *Sketch) evaluate() []core.HGroup {
 				mark(g.H)
 			}
 		}
+		for k := range g.LinkParams {
+			lp := &g.LinkParams[k]
+			v, err := eval(lp.Expr)
+			if err != nil {
+				sk.ExprErrors = append(sk.ExprErrors, ExprError{
+					Group: g.H, Field: LinkParamField(lp.Name), Expr: lp.Expr, Err: err.Error()})
+				continue
+			}
+			if lp.Value != v {
+				lp.Value = v
+				mark(g.H)
+			}
+		}
 	}
 	return changed
+}
+
+// evalNamed is the value of an expression whose names are in vars.
+func evalNamed(text string, vars map[string]float64) (float64, error) {
+	e, err := core.NewFromString(text)
+	if err != nil {
+		return 0, err
+	}
+	for _, n := range e.Variables() {
+		if _, ok := vars[n]; !ok {
+			return 0, fmt.Errorf("unknown parameter %q", n)
+		}
+	}
+	v := e.Eval(nil, vars)
+	if math.IsNaN(v) || math.IsInf(v, 0) {
+		return 0, errors.New("not a number")
+	}
+	return v, nil
 }
 
 // evaluateTable evaluates every parameter and named constraint after

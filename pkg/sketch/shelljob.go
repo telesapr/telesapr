@@ -47,12 +47,16 @@ func (sk *Sketch) NewShellJob() *ShellJob {
 	c.Groups, c.GroupOrder, c.Requests, c.Constraints = clone.Groups, clone.GroupOrder, clone.Requests, clone.Constraints
 	c.Params, c.Styles, c.Parameters = clone.Params, clone.Styles, clone.Parameters
 	c.Configurations, c.ActiveConfiguration = clone.Configs, clone.ActiveConf
+	c.Datums = clone.Datums
 	// What the linked files gave is read, never written, by a
 	// regeneration: the copy shares it.
 	for i := range c.Groups {
 		if g := sk.Group(c.Groups[i].H); g != nil {
 			c.Groups[i].ImpEntity, c.Groups[i].ImpMesh, c.Groups[i].ImpShell = g.ImpEntity, g.ImpMesh, g.ImpShell
 			c.Groups[i].LinkInfo, c.Groups[i].LinkProblem = g.LinkInfo, g.LinkProblem
+			c.Groups[i].LinkLoaded, c.Groups[i].LinkModelRead = g.LinkLoaded, g.LinkModelRead
+			c.Groups[i].LinkPartParameters, c.Groups[i].LinkConfigurations = g.LinkPartParameters, g.LinkConfigurations
+			c.Groups[i].LinkDatums = g.LinkDatums
 		}
 	}
 	return &ShellJob{state: st, clone: c}
@@ -66,6 +70,7 @@ func (sk *Sketch) cloneState(st *UndoState) *UndoState {
 	sk.Groups, sk.GroupOrder, sk.Requests, sk.Constraints = st.Groups, st.GroupOrder, st.Requests, st.Constraints
 	sk.Params, sk.Styles, sk.Parameters = st.Params, st.Styles, st.Parameters
 	sk.Configurations, sk.ActiveConfiguration = st.Configs, st.ActiveConf
+	sk.Datums = st.Datums
 	return sk.definingState()
 }
 

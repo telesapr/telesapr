@@ -234,6 +234,9 @@ var windowActions = map[string]string{
 	"ScreenChangeGroupScale":         "Group.SetExpr",
 	"ScreenChangeHelixPitch":         "Group.SetExpr FilletGroup.SetRadius ChamferGroup.SetDistance ShellGroup.SetThickness SweepGroup.SetCornerRadius ExtrudeGroup.SetDraftNeutral",
 	"ScreenChangeLinkAsSolid":        "LinkGroup.SetAsSolid",
+	"ScreenRelink":                   "LinkGroup.SetFile",
+	"ScreenChangeLinkConfiguration":  "LinkGroup.SetConfiguration",
+	"ScreenChangeLinkParam":          "LinkGroup.SetParam",
 	"ScreenChangeSweepUp/x":          "SweepGroup.SetSweepUp",
 	"ScreenChangeSweepUp/y":          "SweepGroup.SetSweepUp",
 	"ScreenChangeSweepUp/z":          "SweepGroup.SetSweepUp",
@@ -304,6 +307,11 @@ var windowActions = map[string]string{
 	"ScreenChangeParameter/n":     "Params.Rename",
 	"ScreenChangeParameter/x":     "Params.Delete",
 	"ScreenChangeParameter/a":     "Params.Set",
+	"ScreenChangeDatum/a":         "Datums.Name",
+	"ScreenChangeDatum/n":         "Datums.Name",
+	"ScreenChangeDatum/x":         "Datums.Delete",
+	"ScreenChangeDatum/s":         "Datums.Get",
+	"ScreenSelectLinkedDatum":     "Datums.Get",
 	"ScreenChangeConfiguration/c": "Params.ActivateConfiguration",
 	"ScreenChangeConfiguration/r": "Params.RenameConfiguration",
 	"ScreenChangeConfiguration/x": "Params.DeleteConfiguration",
@@ -434,6 +442,7 @@ var windowActions = map[string]string{
 	"editTimesRepeated":            "RepeatGroup.SetCopies Group.SetExpr",
 	"editGroupName":                "Group.SetName",
 	"editGroupScale":               "Group.SetExpr",
+	"editLinkParam":                "LinkGroup.SetParam",
 	"editGroupColor":               "Group.SetColor",
 	"editGroupOpacity":             "Group.SetOpacity",
 	"editGroupDensity":             "Group.SetDensity",
@@ -492,6 +501,8 @@ var windowActions = map[string]string{
 	"editParameterAdd":             "Params.Set",
 	"editParameterExpr":            "Params.Set",
 	"editParameterName":            "Params.Rename",
+	"editDatumAdd":                 "Datums.Name",
+	"editDatumName":                "Datums.Name",
 	"editConfigurationAdd":         "Params.AddConfiguration",
 	"editConfigurationName":        "Params.RenameConfiguration",
 	"editMotionParameter":          "Assembly.MotionStudy",
@@ -939,6 +950,14 @@ SetGuides    ScreenLoftNoGuides; menu:Features/Guide Loft by Selected Curves
 	"LinkGroup": `
 AsSolid         -q
 SetAsSolid      ScreenChangeLinkAsSolid
+File            -q
+SetFile         ScreenRelink
+Configuration   -q
+SetConfiguration  ScreenChangeLinkConfiguration
+Param           -q
+SetParam        ScreenChangeLinkParam; editLinkParam
+ModelParams     -q
+ModelConfigurations  -q
 Info            -q
 Problem         -q
 Offset          -q

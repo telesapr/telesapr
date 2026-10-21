@@ -27,10 +27,12 @@ func fullDocument() *Document {
 		ValA:            3, ValB: -1.25, ValC: 1e-9, Extent: -720.5,
 		Subtype: sketch.GroupTwoSkewed, SkipFirst: true,
 		MeshCombine: sketch.CombineIntersection, ForceToMesh: true,
-		Remap:    core.EntityMap{{Input: core.HEntity{V: 0x40001}, CopyNumber: 2}: {V: 5}},
-		LinkFile: "dir/part.tlspr",
-		Color:    core.RGBA{Red: 1, Green: 2, Blue: 3, Alpha: 4},
-		Density:  7.85,
+		Remap:             core.EntityMap{{Input: core.HEntity{V: 0x40001}, CopyNumber: 2}: {V: 5}},
+		LinkFile:          "dir/part.tlspr",
+		Color:             core.RGBA{Red: 1, Green: 2, Blue: 3, Alpha: 4},
+		Density:           7.85,
+		LinkConfiguration: "long",
+		LinkParams:        []sketch.LinkParam{{Name: "L", Expr: "60", Value: 60}, {Name: "w_2", Expr: "-0.5", Value: -0.5}},
 	}
 	g.Predef.Q = geom.Quaternion{W: 0.5, X: -0.5, Y: 0.25, Z: math.Copysign(0, -1)}
 	g.Predef.Origin = core.HEntity{V: 0x10001}
@@ -59,6 +61,7 @@ func fullDocument() *Document {
 	c.Other, c.Other2, c.Reference, c.Comment = true, true, true, "why"
 	c.Disp.Offset, c.Disp.Style = geom.Vector{X: 1, Y: -2, Z: 3}, core.HStyle{V: 0x101}
 	sk.Constraints = []core.Constraint{c}
+	sk.Datums = []sketch.Datum{{Name: "top", Entity: core.HEntity{V: 0x8003002c}}, {Name: "axis_1", Entity: core.HEntity{V: 0x40000}}}
 
 	sk.Styles = append(sk.Styles, core.Style{
 		H: core.HStyle{V: 0x100}, Name: "custom", Width: 2, WidthAs: core.UnitsMM,
@@ -154,6 +157,7 @@ func TestEveryFieldRoundTrips(t *testing.T) {
 		{"mesh", got.Mesh, doc.Mesh},
 		{"shell", got.Shell, doc.Shell},
 		{"drawing", have.Drawing, want.Drawing},
+		{"datums", have.Datums, want.Datums},
 	} {
 		if !reflect.DeepEqual(c.got, c.want) {
 			t.Errorf("%s:\n got %+v\nwant %+v", c.what, c.got, c.want)

@@ -187,6 +187,27 @@ type Group struct {
 	// the file holding this sketch (roadmap 29.3). Not saved; reloading
 	// the links fills it.
 	LinkParts []BOMItem
+	// LinkConfiguration and LinkParams are what the group passes into
+	// the model it links, which is then regenerated with them
+	// (link_params.go): a configuration of the model, "" for the one it
+	// was saved in, and values for its parameters.
+	LinkConfiguration string
+	LinkParams        []LinkParam
+	// LinkLoaded is LinkOverridesKey as it was when the links were last
+	// read, so that a change of the values reads them again.
+	// LinkModelRead is set when the linked file was read and is a model,
+	// whose parameters, as its configuration has them, are
+	// LinkPartParameters and whose configurations are
+	// LinkConfigurations. None of them is saved; reloading the links
+	// fills them.
+	LinkLoaded         string
+	LinkModelRead      bool
+	LinkPartParameters []Parameter
+	LinkConfigurations []string
+	// LinkDatums are the datums of the linked model, by the model's
+	// handles; Sketch.ResolveDatum finds them as placed here. Not saved;
+	// reloading the links fills them.
+	LinkDatums []Datum
 
 	Color core.RGBA
 

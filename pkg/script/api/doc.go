@@ -32,6 +32,7 @@ type Doc struct {
 	File      FileMenu
 	Edit      EditMenu
 	Params    ParamsMenu
+	Datums    DatumsMenu
 	View      ViewMenu
 	Drawing   DrawingMenu
 	Sketch    SketchMenu
@@ -49,6 +50,7 @@ func NewDoc(h Host) *Doc {
 	d.File = FileMenu{d}
 	d.Edit = EditMenu{d}
 	d.Params = ParamsMenu{d}
+	d.Datums = DatumsMenu{d}
 	d.View = ViewMenu{d}
 	d.Drawing = DrawingMenu{d}
 	d.Sketch = SketchMenu{d}
