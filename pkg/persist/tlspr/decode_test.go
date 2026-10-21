@@ -119,7 +119,7 @@ func fullDocument() *Document {
 	}
 	sc.Points = []srf.SCurvePt{{Vertex: true, P: geom.Vector{X: 0}}, {P: geom.Vector{X: 1}}, {Vertex: true, P: geom.Vector{X: 2}}}
 	doc.Shell.Curve = []srf.SCurve{sc, {H: core.HSCurve{V: 3}, Exact: srf.SBezier{Degree: 1}}}
-	sk.Drawing = &sketch.Drawing{Sheet: "A2", Scale: 0.5, Hidden: true,
+	sk.Drawing = &sketch.Drawing{Sheet: "A2", Scale: 0.5, Hidden: true, ModelledThreads: true,
 		Sections: []sketch.DrawingSection{{View: "top", Offset: 2}},
 		Dimensions: []sketch.DrawingDimension{
 			{View: "front", Kind: "length", Edges: []topo.Name{{A: 0x10, B: 0x20, N: 1, Of: 2}}, Offset: 10},

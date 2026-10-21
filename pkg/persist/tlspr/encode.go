@@ -112,6 +112,7 @@ func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *Fil
 		}
 		n.flag("first-angle", d.FirstAngle)
 		n.flag("hidden", d.Hidden)
+		n.flag("modelled-threads", d.ModelledThreads)
 		for _, v := range d.Views {
 			n.add(field("view", Word(v.Kind), Word(FormatReal(v.X)), Word(FormatReal(v.Y))))
 		}

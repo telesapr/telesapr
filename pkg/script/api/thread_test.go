@@ -28,7 +28,9 @@ func TestThreadEdit(t *testing.T) {
 
 	// Made as a script's step, which is one step of undo.
 	d.Host().(*SketchHost).BeginEval()
-	d.Params.Set("len", "15")
+	if err := d.Params.Set("len", "15"); err != nil {
+		t.Fatal(err)
+	}
 	th.Edit(ThreadOptions{Designation: "M8x1", Crest: "truncated", LengthExpr: "len", Clearance: 0.1})
 	want = ThreadOptions{Designation: "M8x1", Length: 15, LengthExpr: "len", Clearance: 0.1, Crest: "truncated"}
 	if o := th.Options(); o != want {
@@ -45,7 +47,9 @@ func TestThreadEdit(t *testing.T) {
 	if o := th.Options(); o.Designation != "M8x1" || o.LengthExpr != "len" || o.Crest != "rounded" {
 		t.Errorf("an edit of the crest alone gave %+v", o)
 	}
-	d.Params.Set("len", "18")
+	if err := d.Params.Set("len", "18"); err != nil {
+		t.Fatal(err)
+	}
 	if o := th.Options(); o.Length != 18 {
 		t.Errorf("length %g after the parameter changed, want 18", o.Length)
 	}

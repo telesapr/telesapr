@@ -15,8 +15,11 @@
 // link of the helix group's screen does. Here an M8 thread becomes a
 // fine M8x1 with a rounded crest, which prints better, and its length
 // follows the parameter "len": changing it in the parameter table
-// (Edit > Parameters) regenerates the thread. The script checks the
-// solid, prints it, and saves threadedit.tlspr, unless given "-".
+// (Edit > Parameters) regenerates the thread. Its drawing shows the
+// thread by the drafting convention, as drawings do unless their
+// ModelledThreads is set. The script checks the solid, prints it, and
+// saves threadedit.tlspr and the drawing, threadedit.pdf, unless
+// given "-".
 package main
 
 import (
@@ -63,10 +66,17 @@ func main() {
 	}
 	check(t.Groups()[3])
 
+	d := doc.Drawing.Get()
+	d.Title, d.Hidden = "THREADED ROD", true
+	doc.Drawing.Set(d)
+
 	if write {
 		if err := doc.File.Save("threadedit.tlspr"); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
+		}
+		if err := doc.Drawing.Export("threadedit.pdf"); err != nil {
+			fmt.Println("no window to draw in; write the sheet with: telesapr-cli export-drawing -o threadedit.pdf threadedit.tlspr")
 		}
 	}
 }

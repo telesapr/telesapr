@@ -37,4 +37,22 @@ Branch `wp-b1-thread-group`, from devel 949e0399. Items 4 and 19 of `modelling_u
   start: not done.
 - Fade-out (run-out): not done; it would need groups after the helix (a cone cut), so the
   thread would no longer be four groups.
-- B2 cosmetic threads in drawings: next.
+
+## B2 done
+
+- `Sketch.ThreadBands` (`thread_cosmetic.go`): where each thread of a solid lies.
+- `pkg/ui/drawing_thread.go`: a view's edges and mesh lose what lies in a thread's band; the
+  mesh gains a cylinder at the crest; the thread's ends are solid circles (left out in an end
+  view where the solid already has a circle of the crest's size, else two outlines a chord
+  apart); the root is two thin (DimSolid) lines across the axis, three quarters of a circle
+  along it, the open quarter up and right in the view. A screw's root is never hidden; a nut's
+  is occlusion-tested, so hidden and dashed.
+- `Drawing.ModelledThreads` (saved `modelled-threads`) draws the turns; a box at the end of the
+  drawing screen's hidden-edges row.
+
+## B2 left
+
+- Section views draw threads turn by turn (convention there: hatching to the root/crest).
+- Anything else inside a thread's band (a cross hole through the threaded part) is dropped
+  with the turns.
+- The iso view shows the crest cylinder and ends, no root.

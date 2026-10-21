@@ -1,0 +1,45 @@
+# A thread's drawing (an extension): the thread of path_thread, then
+# File > Drawing Sheet, where "threads as modelled" turns the drafting
+# convention off, and on again.
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 350 300
+down L 350 300
+up L 350 300
+key esc
+key x shift
+move 350 300
+down L 350 300
+up L 350 300
+menu Features|Screw Thread...
+# The designation, the length, an internal thread, then make it.
+twmove 172 110
+twdown L 172 110
+twup L 172 110
+edit M6x1
+twmove 190 150
+twdown L 190 150
+twup L 190 150
+edit 9
+twmove 181 190
+twdown L 181 190
+twup L 181 190
+twmove 37 260
+twdown L 37 260
+twup L 37 260
+menu View|Drawing Sheet...
+twmove 262 190
+twdown L 262 190
+twup L 262 190
+tw
+dump
+menu View|Drawing Sheet...
+tw
+twmove 262 190
+twdown L 262 190
+twup L 262 190
+tw
+dump
+save

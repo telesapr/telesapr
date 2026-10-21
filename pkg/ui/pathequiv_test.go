@@ -504,6 +504,15 @@ func TestPathEquivalenceDrawing(t *testing.T) {
 	}
 }
 
+// A thread's drawing set to draw it as modelled on the drawing's
+// screen, and the same set by a script.
+func TestPathEquivalenceDrawingThread(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_drawing_thread", "path_drawing_thread")
+	if d := ui.Drawing; d == nil || !d.ModelledThreads {
+		t.Errorf("the drawing: %+v", d)
+	}
+}
+
 // An appearance set on the group screen, and the same set by a script
 // (roadmap 19.2).
 func TestPathEquivalenceAppearance(t *testing.T) {

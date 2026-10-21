@@ -321,6 +321,7 @@ var windowActions = map[string]string{
 	"ScreenChangeDrawing/t": "Drawing.Set",
 	"ScreenChangeDrawing/f": "Drawing.Set",
 	"ScreenChangeDrawing/h": "Drawing.Set",
+	"ScreenChangeDrawing/T": "Drawing.Set",
 	"ScreenChangeDrawing/c": "Drawing.Set",
 	"ScreenChangeDrawing/V": "Drawing.Set",
 	"ScreenChangeDrawing/N": "Drawing.Set",

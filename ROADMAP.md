@@ -275,7 +275,7 @@ Proposed on 2026-10-03; each stays out until its reason stops holding.
 | `make ai-eval` | Needs a model and an account, outside CI; take it when the primer next changes |
 | Tolerances per edge and vertex | 21.2 heals within a file's tolerance; more only if the measured rate asks |
 | Generated entities left out of `.tlspr` | Possible behind the version number; no need has come up |
-| Threads: tapered, variable pitch, run-out | Never asked for. A thread is edited as one, with shaped crests, since B1 of `doc/notes/modelling_upgrades.md` |
+| Threads: tapered, variable pitch, run-out | Never asked for. A thread is edited as one, with shaped crests, and drawn by the convention on drawings, since B1 and B2 of `doc/notes/modelling_upgrades.md` |
 | Scripting: a startup script, `--watch`, menu items made by scripts, zoom to fit | Never asked for |
 | The bit-exact scaffolding: `pkg/libm`, `CxxSort`, the FMA build rules | Harmless; replacing it moves every golden for nothing |
 | A mesh Boolean fallback with perturbation | Conflicts with "never silently wrong geometry"; only as an explicit approximate mode |

@@ -339,6 +339,8 @@ func (d *decoder) drawing(n *Node) *sketch.Drawing {
 			dr.FirstAngle = d.flag(f)
 		case "hidden":
 			dr.Hidden = d.flag(f)
+		case "modelled-threads":
+			dr.ModelledThreads = d.flag(f)
 		case "view":
 			a := d.fieldArgs(f, 3)
 			dr.Views = append(dr.Views, sketch.DrawingView{Kind: d.word(a[0]), X: d.real(a[1]), Y: d.real(a[2])})
