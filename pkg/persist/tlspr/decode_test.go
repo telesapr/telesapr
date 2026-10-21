@@ -30,6 +30,7 @@ func fullDocument() *Document {
 		Remap:    core.EntityMap{{Input: core.HEntity{V: 0x40001}, CopyNumber: 2}: {V: 5}},
 		LinkFile: "dir/part.tlspr",
 		Color:    core.RGBA{Red: 1, Green: 2, Blue: 3, Alpha: 4},
+		Density:  7.85,
 	}
 	g.Predef.Q = geom.Quaternion{W: 0.5, X: -0.5, Y: 0.25, Z: math.Copysign(0, -1)}
 	g.Predef.Origin = core.HEntity{V: 0x10001}

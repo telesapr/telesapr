@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/check"
@@ -199,9 +200,50 @@ func (ss *Application) analyzeVolume() {
 		msg += "\nThe volume of current group mesh is:\n\n    " + ss.MmToStringSI(curVol, 3)
 	}
 
+	msg += ss.massText(g.H)
+
 	msg += "\n\nCurved surfaces have been approximated as triangles.\n" +
 		"This introduces error, typically of around 1%."
 	ss.Message("%s", msg)
+}
+
+// massText is what Measure Volume says of the model's mass up to group
+// hg: the whole's mass and centre of mass, each part's mass where
+// there are several, and that some have no density set. A model with
+// no density set anywhere has nothing to say.
+func (ss *Application) massText(hg core.HGroup) string {
+	r, err := ss.SK.MassProperties(hg)
+	if err != nil || r.Mass == 0 || !slices.ContainsFunc(r.Parts, func(p sketch.PartMass) bool { return p.DensitySet }) {
+		return ""
+	}
+	c := r.CenterOfMass
+	msg := fmt.Sprintf("\n\nThe mass of the model is:\n\n    %s\n\ncentered at (%s, %s, %s).",
+		massString(r.Mass), ss.MmToString(c.X, false), ss.MmToString(c.Y, false), ss.MmToString(c.Z, false))
+	if len(r.Parts) > 1 {
+		var b strings.Builder
+		b.WriteString("\n\nThe parts:\n")
+		for _, p := range r.Parts {
+			name := "?"
+			if g := ss.SK.Group(p.Group); g != nil {
+				name = g.DescriptionString()
+			}
+			fmt.Fprintf(&b, "\n    %s  %s at %g g/cm³", name, massString(p.Mass), p.Density)
+		}
+		msg += b.String()
+	}
+	if r.DensityUnset() {
+		msg += fmt.Sprintf("\n\nWhere no density is set, %g g/cm³ is taken: set it in the group's screen.",
+			sketch.DefaultDensity)
+	}
+	return msg
+}
+
+// massString is a mass in g, or kg from a kilogram up.
+func massString(g float64) string {
+	if g >= 1000 {
+		return fmt.Sprintf("%.4g kg", g/1000)
+	}
+	return fmt.Sprintf("%.4g g", g)
 }
 
 // analyzeArea runs the Analyze menu's cmdArea.

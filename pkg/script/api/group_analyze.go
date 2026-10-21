@@ -40,6 +40,29 @@ func (v GroupAnalysis) CenterOfMass() (p Vec) {
 	return p
 }
 
+// MassProperties is the mass, centre of mass and inertia of the model
+// up to and with this group, in g and mm, and of each of its parts, as
+// Analyze > Measure Volume gives them. Each part is at its density
+// (Group.SetDensity): a group assembled into the model is a part of its
+// own, and the solid the groups before the first of them made is one at
+// the density last set among them; a part with none set is taken at
+// 1 g/cm³, which MassReport.DensityUnset says. The inertia tensors are
+// about each one's centre of mass. They come from the solid's
+// triangles, so a curved part is short as its mesh is, by the chord
+// tolerance.
+func (v GroupAnalysis) MassProperties() (r sketch.MassReport) {
+	g := v.g
+	g.d.readMesh(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		displayMesh(sk, group)
+		var err error
+		if r, err = sk.MassProperties(group.H); err != nil {
+			fail("%s: %v", groupDescription(group), err)
+		}
+	})
+	return r
+}
+
 // Mesh is the triangle mesh of the model up to and with this group.
 // It is the sketch's own, and is replaced when the sketch
 // regenerates.

@@ -28,6 +28,9 @@ func (tw *textWindow) ShowBillOfMaterials() {
 		tw.Printf(false, "%Bp   %s  %s", bg, fmt.Sprintf("%5d", it.Count), it.Part)
 		tw.Printf(false, "%Bp          %Fd%s%E", bg, it.File)
 		tw.Printf(false, "%Bp          %Fdby %s%E", bg, strings.Join(it.Groups, ", "))
+		if it.Mass > 0 {
+			tw.Printf(false, "%Bp          %Fd%s each%E", bg, massString(it.Mass))
+		}
 	}
 	if len(items) > 0 {
 		tw.Printf(true, "%Fl%Lc%f[export to a CSV file...]%E", lf(tw.ScreenExportBOM))

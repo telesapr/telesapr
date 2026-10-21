@@ -80,6 +80,7 @@ const (
 	editGroupScale    Edit = 3
 	editGroupColor    Edit = 4
 	editGroupOpacity  Edit = 5
+	editGroupDensity  Edit = 6
 	// For the configuration screen
 	editLightDirection           Edit = 100
 	editLightIntensity           Edit = 101

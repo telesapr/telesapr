@@ -163,7 +163,7 @@ var MenuCalls = map[string]string{
 	"Assembly/Mate Hinge":             "Assembly.Hinge",
 
 	"Analyze/Measure Selection":            "Analyze.Measure",
-	"Analyze/Measure Volume":               "GroupAnalysis.Volume",
+	"Analyze/Measure Volume":               "GroupAnalysis.Volume GroupAnalysis.MassProperties",
 	"Analyze/Measure Area":                 "GroupAnalysis.Area Analyze.FacesArea",
 	"Analyze/Measure Perimeter":            "Analyze.CurveLength",
 	"Analyze/Show Center of Mass":          "GroupAnalysis.CenterOfMass",

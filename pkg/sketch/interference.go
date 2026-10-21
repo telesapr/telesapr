@@ -131,10 +131,12 @@ func cutParts(parts []*part, g *Group) {
 // two parts found nothing, or failed.
 var nudge = geom.Vector{X: 1e-4, Y: 1.618e-4, Z: 1.414e-4}
 
-// Interferences checks the parts of the model up to group upTo against
-// each other. meshOnly lists the parts that have no shell.
-func (sk *Sketch) Interferences(upTo core.HGroup) (found []Interference, meshOnly []core.HGroup) {
-	var parts []*part
+// assemblyParts are the parts of the model up to group upTo, cut by
+// the groups that cut the assembly after them, and the parts that have
+// no shell, by group. before is the last group before the first
+// assembled one, whose solid so far is a part, or nil when the model is
+// no assembly, or one that starts with an assembled group.
+func (sk *Sketch) assemblyParts(upTo core.HGroup) (parts []*part, meshOnly []core.HGroup, before *Group) {
 	add := func(h core.HGroup, sh *srf.SShell) {
 		if len(sh.Surface) == 0 {
 			return
@@ -143,7 +145,6 @@ func (sk *Sketch) Interferences(upTo core.HGroup) (found []Interference, meshOnl
 		p.lo, p.hi = shellBox(sh)
 		parts = append(parts, p)
 	}
-	var before *Group // the last group before the first assembled one
 	assembled := false
 	for _, hg := range sk.GroupOrder {
 		g := sk.Group(hg)
@@ -174,6 +175,16 @@ func (sk *Sketch) Interferences(upTo core.HGroup) (found []Interference, meshOnl
 			break
 		}
 	}
+	if !assembled {
+		before = nil
+	}
+	return parts, meshOnly, before
+}
+
+// Interferences checks the parts of the model up to group upTo against
+// each other. meshOnly lists the parts that have no shell.
+func (sk *Sketch) Interferences(upTo core.HGroup) (found []Interference, meshOnly []core.HGroup) {
+	parts, meshOnly, _ := sk.assemblyParts(upTo)
 	for _, p := range parts {
 		p.whole = newPiece(p.shell)
 	}

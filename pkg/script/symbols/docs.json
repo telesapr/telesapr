@@ -5301,6 +5301,10 @@
 						"decl": "func (g Group) Delete()",
 						"text": "Delete deletes the group and what depends on it. If the active\ngroup goes, being this one or one that used it, the last group\nbefore it that is left becomes active, so that new groups come\nwhere the history ends; Doc.Active says which it is."
 					},
+					"Density": {
+						"decl": "func (g Group) Density() (gPerCm3 float64)",
+						"text": "Density is the density of the group's solid in g/cm³, 0 when none is\nset; GroupAnalysis.MassProperties then takes the part at 1."
+					},
 					"Describe": {
 						"decl": "func (g Group) Describe() (s string)",
 						"text": "Describe lists what the group holds, as text: how it solved, each\nrequest with where it is, in mm, and each constraint with its value\nand what it is on. The names it gives are the ones Doc.Request and\nDoc.Constraint take."
@@ -5388,6 +5392,10 @@
 					"SetCombine": {
 						"decl": "func (g Group) SetCombine(how sketch.CombineAs)",
 						"text": "SetCombine says how the group's solid combines with the solid so\nfar: Union, Difference, Intersection or Assemble. The extrusion keeps\nthe direction the script gave it, where the window turns it round,\nbecause a script's depth already says which way a cut goes; a mode\nthat doesn't exist fails. Only an extrusion, lathe, revolve, helix,\nlink, sweep or loft has a mode of its own: the others take their\nsource group's or edit the solid so far, and fail, as the group\nscreen doesn't offer the choice for them."
+					},
+					"SetDensity": {
+						"decl": "func (g Group) SetDensity(gPerCm3 float64)",
+						"text": "SetDensity sets the density of the group's solid in g/cm³ (steel is\nabout 7.85, aluminium 2.7, PLA 1.24), or clears it with 0, as the\ngroup screen's density does. A part of an assembly takes its own\ngroup's density; a solid made of several features takes the one last\nset among them. Only a group whose solid joins the model or is\nassembled into it has one: an extrusion, lathe, revolve, helix,\nsweep, loft or link. It fails for another, and for a value below 0."
 					},
 					"SetExpr": {
 						"decl": "func (g Group) SetExpr(value sketch.GroupValue, expr string) (err error)",
@@ -5494,6 +5502,10 @@
 					"Check": {
 						"decl": "func (v GroupAnalysis) Check() (r check.Report)",
 						"text": "Check checks the solid of the model up to and with this group: it\nreports naked and self-intersecting edges, whether the Boolean\nfailed, the face and triangle counts, and the volume, centre of mass\nand bounding box, in mm. Report.Sound() says whether the solid is\nclosed, does not cross itself, and came from a Boolean that worked,\nand is false too when the group added no solid for a Problem (as an\nextrusion of a sketch that crosses itself), which Report.Problem\nholds; Report.Summary() says it in words. Analyze \u003e Check Solid shows the\nsame report."
+					},
+					"MassProperties": {
+						"decl": "func (v GroupAnalysis) MassProperties() (r sketch.MassReport)",
+						"text": "MassProperties is the mass, centre of mass and inertia of the model\nup to and with this group, in g and mm, and of each of its parts, as\nAnalyze \u003e Measure Volume gives them. Each part is at its density\n(Group.SetDensity): a group assembled into the model is a part of its\nown, and the solid the groups before the first of them made is one at\nthe density last set among them; a part with none set is taken at\n1 g/cm³, which MassReport.DensityUnset says. The inertia tensors are\nabout each one's centre of mass. They come from the solid's\ntriangles, so a curved part is short as its mesh is, by the chord\ntolerance."
 					},
 					"Mesh": {
 						"decl": "func (v GroupAnalysis) Mesh() (m *srf.SMesh)",
@@ -6908,6 +6920,10 @@
 						"decl": "func (g *Group) HasCombine() bool",
 						"text": "HasCombine reports whether the group's own combine mode is what joins its solid to the solid so far."
 					},
+					"HasDensity": {
+						"decl": "func (g *Group) HasDensity() bool",
+						"text": "HasDensity reports whether the group's solid can be given a density: a group whose solid joins the model, or is assembled into it, as a part of its own."
+					},
 					"HasDraft": {
 						"decl": "func (g *Group) HasDraft() bool",
 						"text": "HasDraft reports whether the group is an extrusion with a draft."
@@ -7101,6 +7117,16 @@
 				"text": "Interference is two parts that overlap: the groups that made them, the volume they share, and its triangles.",
 				"kind": "struct"
 			},
+			"MassReport": {
+				"text": "MassReport is the mass properties of the model up to a group: its parts', and the whole's, the inertia about the whole's centre of mass.",
+				"kind": "struct",
+				"methods": {
+					"DensityUnset": {
+						"decl": "func (r MassReport) DensityUnset() bool",
+						"text": "DensityUnset reports whether some part is taken at DefaultDensity because none is set for it."
+					}
+				}
+			},
 			"MeasureKind": {
 				"text": "MeasureKind is what a measurement is.",
 				"kind": "int",
@@ -7198,6 +7224,10 @@
 			},
 			"Parameter": {
 				"text": "Parameter is a named value that expressions can use.",
+				"kind": "struct"
+			},
+			"PartMass": {
+				"text": "PartMass is the mass properties of one part.",
 				"kind": "struct"
 			},
 			"Request": {
@@ -7718,6 +7748,10 @@
 						"decl": "func (sk *Sketch) MarkGroupDirtyByEntity(he core.HEntity)",
 						"text": "MarkGroupDirtyByEntity marks the group of entity he dirty."
 					},
+					"MassProperties": {
+						"decl": "func (sk *Sketch) MassProperties(upTo core.HGroup) (MassReport, error)",
+						"text": "MassProperties are the mass properties of the model up to group upTo, from the triangles of its parts' solids, so a curved part is short of its volume as its mesh is, by the chord tolerance."
+					},
 					"Measure": {
 						"decl": "func (sk *Sketch) Measure(entities ...core.HEntity) (Measurement, error)",
 						"text": "Measure measures entities, as the description of the selection does: one line segment or circle; two points; a point and a circle, line segment or plane face; two lines, normals or plane faces; or two points and a line along which to project their distance."
@@ -8022,6 +8056,10 @@
 					"SetGroupCopies": {
 						"decl": "func (sk *Sketch) SetGroupCopies(hg core.HGroup, text string, respace bool) error",
 						"text": "SetGroupCopies sets a step and repeat or pattern group's number of copies from typed text, as SetGroupText does for GroupCopies."
+					},
+					"SetGroupDensity": {
+						"decl": "func (sk *Sketch) SetGroupDensity(hg core.HGroup, gPerCm3 float64) error",
+						"text": "SetGroupDensity sets the density of the group's solid, in g/cm³, or clears it with 0."
 					},
 					"SetGroupLinkAsSolid": {
 						"decl": "func (sk *Sketch) SetGroupLinkAsSolid(hg core.HGroup, on bool) error",
@@ -8460,7 +8498,7 @@
 			},
 			"WriteBOMCSV": {
 				"decl": "func WriteBOMCSV(w io.Writer, items []BOMItem) error",
-				"text": "WriteBOMCSV writes the bill of materials as CSV: a header, then a line for each part with its count, its file and the groups that place it."
+				"text": "WriteBOMCSV writes the bill of materials as CSV: a header, then a line for each part with its count, its file, the groups that place it, and one part's mass in g, empty where it is not known."
 			}
 		},
 		"values": {
@@ -8491,9 +8529,17 @@
 			"CopyAsNumeric": {
 				"decl": "const CopyAsNumeric"
 			},
+			"DefaultDensity": {
+				"decl": "const DefaultDensity",
+				"text": "DefaultDensity is the density, in g/cm³, of a part none is set for: water's, so that its mass in g is its volume in cm³."
+			},
 			"DimensionKinds": {
 				"decl": "var DimensionKinds",
 				"text": "DimensionKinds are the kinds of drawing dimension and how many edges each takes."
+			},
+			"ErrBadDensity": {
+				"decl": "var ErrBadDensity",
+				"text": "ErrBadDensity is a density that is not a positive number."
 			},
 			"ErrConstraintSelection": {
 				"decl": "var ErrConstraintSelection",
@@ -8989,6 +9035,10 @@
 						"text": "Contains reports whether p is in the half space, or within LengthEps of its plane."
 					}
 				}
+			},
+			"MeshMass": {
+				"text": "MeshMass is what a closed mesh encloses, for a density of one: its volume, its centroid, and its inertia tensor about the centroid.",
+				"kind": "struct"
 			},
 			"MeshMeta": {
 				"text": "MeshMeta is the colour/face tag attached to one triangle of an SMesh or to one surface of an SShell.",
@@ -9747,6 +9797,10 @@
 					"MakeSectionPolygonInto": {
 						"decl": "func (m *SMesh) MakeSectionPolygonInto(h HalfSpace, dest *SPolygon) bool",
 						"text": "MakeSectionPolygonInto puts the section of the mesh by the plane of h into dest: the loops where the plane cuts the triangles, to fill as the cap of a section view with the odd winding rule."
+					},
+					"Mass": {
+						"decl": "func (m *SMesh) Mass() MeshMass",
+						"text": "Mass integrates the mesh as a sum of tetrahedra, one from each triangle to a point in the middle of its box, signed so that the parts outside the mesh cancel."
 					},
 					"PrecomputeTransparency": {
 						"decl": "func (m *SMesh) PrecomputeTransparency()",
