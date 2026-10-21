@@ -497,7 +497,8 @@ func (ss *Application) groupWrap(g *sketch.Group) bool {
 	if !ok || !gw.LockedInWorkplane() {
 		ss.Error("Bad selection for wrapping a sketch onto a face. With the sketch to wrap " +
 			"active (Sketch -> In Workplane), in a workplane parallel to the face's axis, select " +
-			"one cylinder or cone of the solid. The sketch's closed loops, text included, are " +
+			"one cylinder or cone of the solid (View -> Show -> Selectable Faces, to pick faces while " +
+			"sketching). The sketch's closed loops, text included, are " +
 			"rolled onto the side of the face towards the sketch and raised from it; the group's " +
 			"screen sets the height and whether they are raised or sunk.")
 		return false
