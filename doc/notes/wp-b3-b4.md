@@ -23,13 +23,30 @@ Branch `wp-b3-links-datums`, from devel at 83b573fd. Items 3 and 2 of
 - Scripts: `LinkGroup.File`, `SetFile`, `Configuration`, `SetConfiguration`, `Param`,
   `SetParam`, `ModelParams`, `ModelConfigurations`. Example `partsizes`.
 
-## B4, in progress
+## B4, done
 
-Design: a datum is a name for an entity (point, workplane, normal, face entity, line, circle,
-arc), `Sketch.Datums`, saved as `datum <name> <handle>`. A linked model's datums come in as
-`Group.LinkDatums` (read by the link loaders), and resolve as `group.name` through the link's
-`Remap` (`Sketch.ResolveDatum`). Mates take the entity `Doc.Datum(name)` returns. Faces are
-named by their face entity, since a solid face's identity is that entity's handle.
+- A datum is a name for an entity a mate or a constraint can use: a point, workplane, normal,
+  face entity, line, circle or arc (`sketch.CanBeDatum`). `Sketch.Datums`, saved as
+  `datum <name> <handle>`, one name per entity; part of the undo state and of a `ShellJob`'s
+  copy. A face is named by its face entity, since a solid face's identity is that handle.
+- A linked model's datums come in with the link (`Group.LinkDatums`, from the saved file or
+  the regenerated model) and resolve as `group.name` through the link's `Remap`
+  (`Sketch.ResolveDatum`). A link sharing its name with another group is named by its
+  description, `g004-tile.top` (`Sketch.LinkLabel`), as a part linked twice from the window is.
+- A datum whose entity is gone is kept (undo may bring the entity back) and says so where it
+  is resolved or listed.
+- Window: Edit > Datums lists the model's own datums ([select], [rename], [delete]), names
+  the selected entity, and lists each link's datums with [select]; the screen stays while
+  something is selected, as the drawing's does, so two datums can be selected for a mate.
+- Scripts: `doc.Datums` (`List`, `Names`, `Name`, `Delete`, `Get`); mates take
+  `doc.Datums.Get("base.top")` as any entity. Example `datums`.
+
+## Not done
+
+- Mates by name in the window are a selection from the datums screen, then the mate's menu
+  entry; there is no "mate these two names" dialog.
+- A datum names an entity, so a face made by no entity (a fillet's, a Boolean's own) can't be
+  named; nor can an edge of the solid, which has a `topo.Name` rather than an entity.
 
 ## Traps
 
@@ -38,4 +55,8 @@ named by their face entity, since a solid face's identity is that entity's handl
 - A path scenario that shows a link's file on the screen must open a model beside the file
   first, or the screen shows the machine's absolute path and the columns move.
 - `ShellJob` copies must carry `LinkLoaded`, or `Apply` makes the next regeneration read the
-  links again.
+  links again. (The B3 commit missed it; the B4 commit adds it.)
+- A selection replaces whatever screen the text window shows with the selection's
+  description, except screens that ask for a selection (drawing, datums): a scenario that
+  selects from a screen must keep that screen up, or its next click lands elsewhere.
+- In `GroupSelection` a selected point is in `gs.point`, not `gs.entity`.
