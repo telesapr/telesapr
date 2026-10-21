@@ -79,6 +79,11 @@ func (ss *Application) MenuFeatures(id Command, linkFile string) {
 			return
 		}
 
+	case cmdGroupWrap:
+		if !ss.groupWrap(&g) {
+			return
+		}
+
 	case cmdGroupLoft:
 		if !ss.groupLoft(&g) {
 			return
@@ -482,6 +487,31 @@ func (ss *Application) groupPathPattern(g *sketch.Group) bool {
 		return false
 	}
 	*g = pg
+	return true
+}
+
+// groupWrap sets up a cmdGroupWrap group, or reports why it can't be made.
+func (ss *Application) groupWrap(g *sketch.Group) bool {
+	gw := ss.GW
+	face, ok := gw.gs.onlyFace()
+	if !ok || !gw.LockedInWorkplane() {
+		ss.Error("Bad selection for wrapping a sketch onto a face. With the sketch to wrap " +
+			"active (Sketch -> In Workplane), in a workplane parallel to the face's axis, select " +
+			"one cylinder or cone of the solid. The sketch's closed loops, text included, are " +
+			"rolled onto the side of the face towards the sketch and raised from it; the group's " +
+			"screen sets the height and whether they are raised or sunk.")
+		return false
+	}
+	wg, err := ss.SK.NewWrap(face, 1, false, "")
+	if err != nil {
+		ss.Error("Can't wrap the sketch onto %s. %s.\n\n"+
+			"Wrap Sketch Onto Face rolls the active sketch's closed loops onto a cylinder or a "+
+			"cone of the solid, from a workplane parallel to its axis, and raises them from it "+
+			"or sinks them into it. One loop with its holes may go at most 170° round the axis.",
+			ss.SK.FaceName(face), capitalize(err.Error()))
+		return false
+	}
+	*g = wg
 	return true
 }
 

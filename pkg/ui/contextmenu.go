@@ -249,6 +249,9 @@ func (gw *graphicsWindow) addModelItems(menu platform.Menu, gs *groupedSelection
 		menu.AddItem("Select Face Edges", func() { ss.SelectFaceEdges() }, true)
 		if oneFace {
 			menu.AddItem("Sketch On Face", func() { ss.MenuFeatures(cmdGroupSketchOnFace, "") }, true)
+			if gw.LockedInWorkplane() {
+				menu.AddItem("Wrap Sketch Onto This Face", func() { ss.MenuFeatures(cmdGroupWrap, "") }, true)
+			}
 		}
 		if oneFace {
 			appearance := menu.AddSubMenu("Appearance")

@@ -145,6 +145,7 @@ var MenuCalls = map[string]string{
 	"Features/Fillet Edges":                  "Features.Fillet",
 	"Features/Loft To Selected Profile":      "Features.Loft",
 	"Features/Shell Solid":                   "Features.Shell",
+	"Features/Wrap Sketch Onto Face":         "Features.Emboss",
 	"Features/Pattern Along Path":            "Features.PatternAlongPath",
 	"Features/Draft Selected Sides":          "ExtrudeGroup.SetDraftFaces",
 	"Features/Guide Loft by Selected Curves": "LoftGroup.SetGuides",

@@ -15,7 +15,7 @@ import (
 // mode set on one of those would change nothing.
 func (g *Group) HasCombine() bool {
 	switch g.Type {
-	case GroupExtrude, GroupLathe, GroupRevolve, GroupHelix, GroupLinked, GroupSweep, GroupLoft:
+	case GroupExtrude, GroupLathe, GroupRevolve, GroupHelix, GroupLinked, GroupSweep, GroupLoft, GroupWrap:
 		return true
 	}
 	return false
@@ -26,7 +26,7 @@ func (g *Group) HasCombine() bool {
 // edit or copy the solid so far keep the colours of what they edit.
 func (g *Group) HasColor() bool {
 	switch g.Type {
-	case GroupExtrude, GroupLathe, GroupRevolve, GroupHelix, GroupSweep, GroupLoft:
+	case GroupExtrude, GroupLathe, GroupRevolve, GroupHelix, GroupSweep, GroupLoft, GroupWrap:
 		return true
 	}
 	return false

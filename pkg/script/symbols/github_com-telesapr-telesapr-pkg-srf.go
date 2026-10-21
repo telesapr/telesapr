@@ -43,6 +43,7 @@ func init() {
 		"EdgeSharp":                   reflect.ValueOf(srf.EdgeSharp),
 		"EdgeSharpOrFace":             reflect.ValueOf(srf.EdgeSharpOrFace),
 		"EdgeTurning":                 reflect.ValueOf(srf.EdgeTurning),
+		"ErrWrapPlane":                reflect.ValueOf(&srf.ErrWrapPlane).Elem(),
 		"FaceAtLeastOneDiscarded":     reflect.ValueOf(srf.FaceAtLeastOneDiscarded),
 		"FaceFlipNormal":              reflect.ValueOf(srf.FaceFlipNormal),
 		"FaceIsTransparent":           reflect.ValueOf(srf.FaceIsTransparent),
@@ -64,6 +65,7 @@ func init() {
 		"MesherEarClip":               reflect.ValueOf(srf.MesherEarClip),
 		"NewMeshMeta":                 reflect.ValueOf(srf.NewMeshMeta),
 		"NewSTriMeta":                 reflect.ValueOf(srf.NewSTriMeta),
+		"NewWrap":                     reflect.ValueOf(srf.NewWrap),
 		"OriginFor":                   reflect.ValueOf(srf.OriginFor),
 		"ParallelOff":                 reflect.ValueOf(srf.ParallelOff),
 		"ParallelOn":                  reflect.ValueOf(srf.ParallelOn),
@@ -72,6 +74,7 @@ func init() {
 		"ProjectFrom":                 reflect.ValueOf(srf.ProjectFrom),
 		"RayIsInside":                 reflect.ValueOf(srf.RayIsInside),
 		"RigidIdentity":               reflect.ValueOf(&srf.RigidIdentity).Elem(),
+		"RoundFaceOf":                 reflect.ValueOf(srf.RoundFaceOf),
 		"SBezierFrom2":                reflect.ValueOf(srf.SBezierFrom2),
 		"SBezierFrom3":                reflect.ValueOf(srf.SBezierFrom3),
 		"SBezierFrom4":                reflect.ValueOf(srf.SBezierFrom4),
@@ -110,6 +113,7 @@ func init() {
 		"SweepEnd":                    reflect.ValueOf(srf.SweepEnd),
 		"Tol":                         reflect.ValueOf(srf.Tol),
 		"TransformedLoopSet":          reflect.ValueOf(srf.TransformedLoopSet),
+		"WrapMaxSpan":                 reflect.ValueOf(constant.MakeFromLiteral("2.967059728390360280770274306430641612852882210520933275365225446110873373066098731758048967941494383036515257570232438895474787057297649036575237000576835382675094956420221159465455684767221100628376007080078125", token.FLOAT, 0)),
 		"WrapSymmetric":               reflect.ValueOf(srf.WrapSymmetric),
 
 		// type definitions
@@ -136,6 +140,7 @@ func init() {
 		"ProjectDomain":     reflect.ValueOf((*srf.ProjectDomain)(nil)),
 		"Projection":        reflect.ValueOf((*srf.Projection)(nil)),
 		"Rigid":             reflect.ValueOf((*srf.Rigid)(nil)),
+		"RoundFace":         reflect.ValueOf((*srf.RoundFace)(nil)),
 		"SBezier":           reflect.ValueOf((*srf.SBezier)(nil)),
 		"SBezierList":       reflect.ValueOf((*srf.SBezierList)(nil)),
 		"SBezierLoop":       reflect.ValueOf((*srf.SBezierLoop)(nil)),
@@ -169,6 +174,7 @@ func init() {
 		"SurfaceCombineAs":  reflect.ValueOf((*srf.SurfaceCombineAs)(nil)),
 		"SweepStep":         reflect.ValueOf((*srf.SweepStep)(nil)),
 		"Tolerance":         reflect.ValueOf((*srf.Tolerance)(nil)),
+		"Wrap":              reflect.ValueOf((*srf.Wrap)(nil)),
 
 		// interface wrapper definitions
 		"_ShellGroup": reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_srf_ShellGroup)(nil)),

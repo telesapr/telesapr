@@ -102,6 +102,9 @@ func (g *Group) FieldName(f GroupValue) string {
 	if f == GroupPitch && g.Type == GroupShell {
 		return "thickness"
 	}
+	if f == GroupPitch && g.Type == GroupWrap {
+		return "height"
+	}
 	if f == GroupValC && g.Type == GroupExtrude {
 		return "draft"
 	}
@@ -283,6 +286,9 @@ func checkGroupValue(g *Group, f GroupValue, v float64) error {
 		}
 		if g.Type == GroupShell && v <= 0 {
 			return errors.New("a shell's thickness must be more than zero")
+		}
+		if g.Type == GroupWrap && v <= 0 {
+			return errors.New("a wrap's height must be more than zero")
 		}
 	}
 	return nil

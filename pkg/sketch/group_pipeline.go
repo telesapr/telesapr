@@ -187,6 +187,14 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		g.generateSweepShell(sk)
 	case GroupLoft:
 		g.generateLoftShell(sk)
+	case GroupWrap:
+		if !g.IsForcedToMesh(sk) {
+			// It combines the band with the solid so far by Booleans of
+			// its own, loop set by loop set where it must.
+			g.generateWrapShell(sk)
+			return
+		}
+		g.generateWrapBand(sk)
 	case GroupFillet:
 		// It edits the solid so far into its running shell; no Boolean.
 		g.generateFilletShell(sk)

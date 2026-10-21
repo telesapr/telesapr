@@ -519,6 +519,7 @@ var windowActions = map[string]string{
 	"ctx:Chamfer Edges":                      "Features.ChamferSolid",
 	"ctx:Sweep Along Edges":                  "Features.SweepEdges",
 	"ctx:Shell Solid Open Here":              "Features.ShellSolid",
+	"ctx:Wrap Sketch Onto This Face":         "Features.Emboss",
 	"ctx:Draft Selected Sides":               "ExtrudeGroup.SetDraftFaces",
 	"ctx:Mirror in This Plane":               "Features.Mirror",
 	"ctx:Select Face Edges":                  "Edit.SelectFaceEdges",
@@ -680,6 +681,7 @@ AsMirror              -an accessor for the typed group
 AsChamfer             -an accessor for the typed group
 AsFillet              -an accessor for the typed group
 AsShell               -an accessor for the typed group
+AsWrap                -an accessor for the typed group
 AsLoft                -an accessor for the typed group
 AsLink                -an accessor for the typed group
 SetExpr               ScreenChangeExprA; ScreenChangeGroupScale; ScreenChangeHelixPitch; ScreenChangeGroupDraft; ScreenChangeLoftStart; ScreenChangePitchOption
@@ -885,6 +887,11 @@ SetEdgeRadiusExpr    ScreenChangeEdgeRadius; ScreenResetEdgeRadius
 	"ShellGroup": `
 Thickness     -q
 SetThickness  ScreenChangeHelixPitch; editHelixPitch
+`,
+	"WrapGroup": `
+Height     -q
+SetHeight  ScreenChangeHelixPitch; editHelixPitch
+Engraved   -q
 `,
 	"LoftGroup": `
 Profiles     -q
