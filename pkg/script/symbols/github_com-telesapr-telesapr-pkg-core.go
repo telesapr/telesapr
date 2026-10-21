@@ -31,6 +31,7 @@ func init() {
 		"ConstraintArcLineLenRatio":   reflect.ValueOf(core.ConstraintArcLineLenRatio),
 		"ConstraintArcLineTangent":    reflect.ValueOf(core.ConstraintArcLineTangent),
 		"ConstraintAtMidpoint":        reflect.ValueOf(core.ConstraintAtMidpoint),
+		"ConstraintAxisAngle":         reflect.ValueOf(core.ConstraintAxisAngle),
 		"ConstraintComment":           reflect.ValueOf(core.ConstraintComment),
 		"ConstraintCubicLineTangent":  reflect.ValueOf(core.ConstraintCubicLineTangent),
 		"ConstraintCurveCurveTangent": reflect.ValueOf(core.ConstraintCurveCurveTangent),

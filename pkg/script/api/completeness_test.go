@@ -43,6 +43,7 @@ var apiTypes = map[string]reflect.Type{
 	"GroupAnalysis": reflect.TypeFor[api.GroupAnalysis](),
 	"ExtrudeGroup":  reflect.TypeFor[api.ExtrudeGroup](),
 	"LoftGroup":     reflect.TypeFor[api.LoftGroup](),
+	"RevolveGroup":  reflect.TypeFor[api.RevolveGroup](),
 	"LinkGroup":     reflect.TypeFor[api.LinkGroup](),
 	"Style":         reflect.TypeFor[api.Style](),
 	"Param":         reflect.TypeFor[api.Param](),

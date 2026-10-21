@@ -589,6 +589,62 @@ func (tw *textWindow) ScreenChangeGroupDraft(link int, v uint32) {
 	tw.edit.group = core.HGroup{V: v}
 }
 
+// ScreenChangeGroupExtent edits an extrusion's held depth, in the
+// document's unit, or a revolve's or helix's held angle, in degrees.
+func (tw *textWindow) ScreenChangeGroupExtent(link int, v uint32) {
+	g := tw.ss.SK.Group(tw.shown.group)
+	text := g.ExprExtent
+	if text == "" {
+		x := g.Extent
+		if g.IsLength(sketch.GroupExtent) {
+			x /= tw.ss.MmPerUnit()
+		}
+		text = fmt.Sprintf("%g", x)
+	}
+	tw.ShowEditControl(10, text)
+	tw.edit.meaning = editGroupExtent
+	tw.edit.group = core.HGroup{V: v}
+}
+
+// ScreenChangeExtentHeld holds an extrusion's depth or a revolve's or
+// helix's angle where it is, or frees it again.
+func (tw *textWindow) ScreenChangeExtentHeld(link int, v uint32) {
+	ss := tw.ss
+	g := ss.SK.Group(core.HGroup{V: v})
+	if g == nil {
+		return
+	}
+	held := g.Extent == 0
+	if err := ss.SK.UndoRememberFor(func() error { return ss.SK.SetGroupExtentHeld(g.H, held) }); err != nil {
+		ss.Report(err)
+		return
+	}
+	ss.GW.ClearSuper()
+}
+
+// extentFormat is the end of the line of an extrusion's sides, or a
+// revolve's or helix's, that shows its depth or angle and whether it is
+// held, and its arguments; on that line, so that what follows stays
+// where it was.
+func (tw *textWindow) extentFormat(g *sketch.Group) (string, []any) {
+	if !g.HasExtent() {
+		return "", nil
+	}
+	ss := tw.ss
+	what, val := "angle", ss.DegreeToString(g.MeasuredExtent(ss.SK))+" deg"
+	if g.Type == sketch.GroupExtrude {
+		what, val = "depth", ss.MmToString(g.MeasuredExtent(ss.SK), false)
+	}
+	format, args := "   %Ft%s%E %s", []any{what, val}
+	if g.Extent != 0 {
+		format += "%s %Fl%Ll%f%D[change]%E"
+		args = append(args, exprNote(g.ExprExtent), lf(tw.ScreenChangeGroupExtent), g.H.V)
+	}
+	format += "  %f%D%Lh%Fd%s held%E"
+	args = append(args, lf(tw.ScreenChangeExtentHeld), g.H.V, checkMark(g.Extent != 0))
+	return format, args
+}
+
 // ScreenChangeChamferDistance2 edits a chamfer's second distance, on
 // each edge's second face (roadmap 28.1).
 func (tw *textWindow) ScreenChangeChamferDistance2(link int, v uint32) {
@@ -1084,13 +1140,14 @@ func (tw *textWindow) showExtrusionInfo(g *sketch.Group) {
 	skew := g.Subtype == sketch.GroupOneSkewed || g.Subtype == sketch.GroupTwoSkewed
 
 	if g.Type == sketch.GroupExtrude {
+		extent, args := tw.extentFormat(g)
 		tw.Printf(false,
 			"%Ba   %f%Ls%Fd%s one-sided%E  "+
 				"%f%LS%Fd%s two-sided%E  "+
-				"%f%Lw%Fd%s skewed%E",
-			lf(tw.ScreenChangeGroupOption), radioMark(one),
-			lf(tw.ScreenChangeGroupOption), radioMark(two),
-			lf(tw.ScreenChangeGroupOption), checkMark(skew))
+				"%f%Lw%Fd%s skewed%E"+extent,
+			append([]any{lf(tw.ScreenChangeGroupOption), radioMark(one),
+				lf(tw.ScreenChangeGroupOption), radioMark(two),
+				lf(tw.ScreenChangeGroupOption), checkMark(skew)}, args...)...)
 		tw.Printf(false, "%Bd   %Ftdraft%E %s deg%s %Fl%Ll%f%D[change]%E",
 			fmt.Sprintf("%g", g.ValC), exprNote(g.ExprC), lf(tw.ScreenChangeGroupDraft), g.H.V)
 		if g.ValC != 0 || g.ExprC != "" {
@@ -1106,11 +1163,12 @@ func (tw *textWindow) showExtrusionInfo(g *sketch.Group) {
 			}
 		}
 	} else {
+		extent, args := tw.extentFormat(g)
 		tw.Printf(false,
 			"%Ba   %f%Ls%Fd%s one-sided%E  "+
-				"%f%LS%Fd%s two-sided%E",
-			lf(tw.ScreenChangeGroupOption), radioMark(one),
-			lf(tw.ScreenChangeGroupOption), radioMark(two))
+				"%f%LS%Fd%s two-sided%E"+extent,
+			append([]any{lf(tw.ScreenChangeGroupOption), radioMark(one),
+				lf(tw.ScreenChangeGroupOption), radioMark(two)}, args...)...)
 	}
 
 	if g.Type == sketch.GroupRotate || g.Type == sketch.GroupTranslate {
@@ -1819,6 +1877,11 @@ func (tw *textWindow) EditControlDone(s string) {
 	case editHelixPitch: // stored in valB
 		if e := ss.exprFromString(s); e != nil {
 			ss.setGroupText(tw.edit.group, sketch.GroupPitch, s)
+		}
+
+	case editGroupExtent:
+		if e := ss.exprFromString(s); e != nil {
+			ss.setGroupText(tw.edit.group, sketch.GroupExtent, s)
 		}
 
 	case editGroupDraft, editChamferDistance2:

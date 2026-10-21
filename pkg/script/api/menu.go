@@ -161,6 +161,7 @@ var MenuCalls = map[string]string{
 	"Assembly/Mate Concentric":        "Assembly.Concentric",
 	"Assembly/Mate Flush":             "Assembly.Flush",
 	"Assembly/Mate Hinge":             "Assembly.Hinge",
+	"Assembly/Mate Screw":             "Assembly.Screw",
 
 	"Analyze/Measure Selection":            "Analyze.Measure",
 	"Analyze/Measure Volume":               "GroupAnalysis.Volume GroupAnalysis.MassProperties",

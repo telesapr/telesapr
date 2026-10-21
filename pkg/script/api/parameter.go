@@ -24,7 +24,9 @@ type Parameter struct {
 // SetExpr gives one of the group's values text, as typing it on the
 // group screen does: sketch.GroupCopies for a step and repeat or a pattern,
 // sketch.GroupPitch for a helix's fixed pitch, a length in the
-// document's unit (View.Units), sketch.GroupScale for a link. A plain
+// document's unit (View.Units), sketch.GroupScale for a link,
+// sketch.GroupExtent for an extrusion's held depth, a length, or a
+// revolve's or helix's held angle in degrees. A plain
 // number is stored as its value; any other text is kept and evaluated
 // again at each regeneration.
 func (g Group) SetExpr(value sketch.GroupValue, expr string) (err error) {

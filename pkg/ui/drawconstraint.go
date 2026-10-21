@@ -27,7 +27,7 @@ func constraintStyle(c *core.Constraint) core.HStyle { return c.StyleOrDefault()
 func (ss *Application) constraintLabel(c *core.Constraint) string {
 	var result string
 	switch c.Type {
-	case core.ConstraintAngle:
+	case core.ConstraintAngle, core.ConstraintAxisAngle:
 		result = ss.DegreeToString(c.ValA) + "°"
 	case core.ConstraintLengthRatio, core.ConstraintArcArcLenRatio, core.ConstraintArcLineLenRatio:
 		result = fmt.Sprintf("%.3f:1", c.ValA)
@@ -688,6 +688,10 @@ func (d *constraintDrawer) layout() {
 		d.layoutAngle()
 		return
 
+	case core.ConstraintAxisAngle:
+		d.layoutAxisAngle()
+		return
+
 	case core.ConstraintPerpendicular:
 		d.layoutPerpendicular()
 		return
@@ -1041,6 +1045,24 @@ func (d *constraintDrawer) layoutWhereDragged() {
 		ur = ur.RotatedAbout(p, d.gn, math.Pi/2)
 		uu = uu.RotatedAbout(p, d.gn, math.Pi/2)
 	}
+}
+
+// layoutAxisAngle lays out a core.ConstraintAxisAngle constraint: a
+// stippled line from the axis along the normal's u, where the angle is
+// counted from, another to the point, and the label between them.
+func (d *constraintDrawer) layoutAxisAngle() {
+	sk := d.gw.sk()
+	c := d.c
+	foot, r := c.AxisAngleOffset(sk)
+	n := sk.Entity(c.EntityA)
+	u := n.NormalU(sk)
+	p := d.pointNum(c.PtB)
+	zero := foot.Plus(u.ScaledBy(r))
+	d.doStippledLine(d.hcs, foot, zero)
+	d.doStippledLine(d.hcs, foot, p)
+	ref := zero.Plus(p).ScaledBy(0.5).Plus(c.Disp.Offset)
+	d.addRef(ref)
+	d.doLabel(d.hcs, ref, d.labelPos, d.gr, d.gu)
 }
 
 // layoutSameOrientation lays out a core.ConstraintSameOrientation constraint.

@@ -70,6 +70,7 @@ func init() {
 		"GroupCopies":                  reflect.ValueOf(sketch.GroupCopies),
 		"GroupDrawing3D":               reflect.ValueOf(sketch.GroupDrawing3D),
 		"GroupDrawingWorkplane":        reflect.ValueOf(sketch.GroupDrawingWorkplane),
+		"GroupExtent":                  reflect.ValueOf(sketch.GroupExtent),
 		"GroupExtrude":                 reflect.ValueOf(sketch.GroupExtrude),
 		"GroupFillet":                  reflect.ValueOf(sketch.GroupFillet),
 		"GroupHelix":                   reflect.ValueOf(sketch.GroupHelix),

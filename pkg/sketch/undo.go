@@ -153,6 +153,8 @@ func (s *Sketch) definingState() *UndoState {
 			ExprB:                  src.ExprB,
 			ExprC:                  src.ExprC,
 			ExprScale:              src.ExprScale,
+			Extent:                 src.Extent,
+			ExprExtent:             src.ExprExtent,
 			Subtype:                src.Subtype,
 			SkipFirst:              src.SkipFirst,
 			MirrorSolid:            src.MirrorSolid,

@@ -372,6 +372,24 @@ func TestPathEquivalenceDraft(t *testing.T) {
 	}
 }
 
+// A screw mate of two picked circles, and the same made by a script,
+// with the lead the window takes for the hole's diameter.
+func TestPathEquivalenceMateScrew(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_mate_screw", "path_mate_screw")
+	if p := ui.Parameter("lead"); p == nil || p.Value != 0.7 || ui.Parameter("turn") == nil {
+		t.Errorf("the screw's parameters: %+v", ui.Parameters)
+	}
+}
+
+// An extrusion's depth held on its group screen, and the same held by
+// a script.
+func TestPathEquivalenceExtrudeDepth(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_extrude_depth", "path_extrude_depth")
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupExtrude || g.Extent != 25 || g.Solved.Dof != 0 {
+		t.Errorf("the extrusion: type %d, depth %g, dof %d", g.Type, g.Extent, g.Solved.Dof)
+	}
+}
+
 // A group made with an earlier group active, from the mouse and from a
 // script, goes into the history after that group, before the groups
 // that follow it (roadmap 16.4).

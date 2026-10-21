@@ -150,6 +150,7 @@ var constraintTypes = newEnum("constraint type", map[core.ConstraintType]string{
 	core.ConstraintArcLineLenRatio:   "arc-line-length-ratio",
 	core.ConstraintArcArcDifference:  "arc-arc-len-difference",
 	core.ConstraintArcLineDifference: "arc-line-len-difference",
+	core.ConstraintAxisAngle:         "axis-angle",
 	core.ConstraintComment:           "comment",
 })
 

@@ -2,11 +2,14 @@ package ui
 
 import (
 	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/thread"
 )
 
 // MenuMate makes a mate of the selection (roadmap 16.9): the
-// constraints api.Doc.Concentric, Flush or Hinge make, as one step of
-// undo, in the active group.
+// constraints api.Doc.Concentric, Flush, Hinge or Screw make, as one
+// step of undo, in the active group. A screw's lead is the coarse pitch
+// of the ISO metric thread of the first circle's diameter, or 1 mm; it
+// is the parameter the screw makes, to be changed in the table.
 func (ss *Application) MenuMate(id Command) {
 	gw := ss.GW
 	gw.GroupSelection()
@@ -28,6 +31,20 @@ func (ss *Application) MenuMate(id Command) {
 		run = func(d *api.Doc, a, b api.Entity) { d.Assembly.Flush(a, b) }
 		if gs.faces == 2 && gs.n == 2 {
 			for _, h := range gs.face {
+				picked = append(picked, h.V)
+			}
+		}
+	case cmdMateScrew:
+		what, need = "screw", "two circles or arcs"
+		run = func(d *api.Doc, a, b api.Entity) {
+			lead, ok := thread.CoarsePitch(2 * a.Radius())
+			if !ok {
+				lead = 1
+			}
+			d.Assembly.Screw(a, b, lead)
+		}
+		if gs.circlesOrArcs == 2 && gs.n == 2 {
+			for _, h := range gs.entity {
 				picked = append(picked, h.V)
 			}
 		}

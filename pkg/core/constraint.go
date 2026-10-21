@@ -49,6 +49,11 @@ const (
 	ConstraintCubicLineTangent  ConstraintType = 124
 	ConstraintCurveCurveTangent ConstraintType = 125
 	ConstraintEqualRadius       ConstraintType = 130
+	// ConstraintAxisAngle puts point PtB in the half-plane through the
+	// axis at PtA along normal EntityA turned ValA degrees from the
+	// normal's u, about its n: a part's turn about an axis, signed and
+	// of any size (constraint_axis_angle.go).
+	ConstraintAxisAngle         ConstraintType = 131
 	ConstraintWhereDragged      ConstraintType = 200
 	ConstraintArcArcLenRatio    ConstraintType = 210
 	ConstraintArcLineLenRatio   ConstraintType = 211
@@ -127,6 +132,8 @@ func (t ConstraintType) String() string {
 		return "CurveCurveTangent"
 	case ConstraintEqualRadius:
 		return "EqualRadius"
+	case ConstraintAxisAngle:
+		return "AxisAngle"
 	case ConstraintWhereDragged:
 		return "WhereDragged"
 	case ConstraintArcArcLenRatio:
@@ -240,6 +247,7 @@ var constraintNames = map[ConstraintType]string{
 	ConstraintLengthDifference:  "length-difference",
 	ConstraintArcArcDifference:  "arc-arc-len-difference",
 	ConstraintArcLineDifference: "arc-line-len-difference",
+	ConstraintAxisAngle:         "axis-angle",
 	ConstraintSymmetric:         "symmetric",
 	ConstraintSymmetricHoriz:    "symmetric-h",
 	ConstraintSymmetricVert:     "symmetric-v",

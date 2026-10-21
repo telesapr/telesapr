@@ -1,0 +1,29 @@
+# Screw mate (an extension): with nothing fitting selected, it says what
+# to select; the top circles of the holes of two linked plates, the
+# second active, made a screw mate: the second plate goes on the first's
+# axis, turned by the new parameter turn and moved along it by lead, the
+# M4's coarse pitch, per turn. Then turn is set to 90 in the parameter
+# table, and the plate turns a quarter and rises a quarter of the lead.
+file $testdata/ui/screw_pair.tlspr
+menu File|Open...
+key f
+answer ok
+menu Assembly|Mate Screw
+move 245 185
+down L 245 185
+up L 245 185
+move 445 195
+down L 445 195
+up L 445 195
+menu Assembly|Mate Screw
+tw
+twmove 60 255
+twdown L 60 255
+twup L 60 255
+tw
+twmove 420 115
+twdown L 420 115
+twup L 420 115
+edit 90
+tw
+save

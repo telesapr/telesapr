@@ -1,0 +1,19 @@
+# The extrusion of path_extrude, its depth held and typed as 25 on its
+# group screen; the same as path_extrude_depth.go makes
+# (TestPathEquivalenceExtrudeDepth).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+twmove 501 125
+twdown L 501 125
+twup L 501 125
+twmove 501 125
+twdown L 501 125
+twup L 501 125
+edit 25
