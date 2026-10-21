@@ -1,0 +1,32 @@
+# A rectangle beside a construction line, turned about it by a lathe
+# into a ring, and the ring hollowed open at its outer side, picked
+# with the mouse: a channel round the ring. The same as
+# path_shell_lathe.go makes (TestPathEquivalenceShellLathe).
+key r
+move 350 200
+down L 350 200
+up L 350 200
+move 420 300
+down L 420 300
+up L 420 300
+key esc
+key s
+move 300 150
+down L 300 150
+up L 300 150
+move 300 350
+down L 300 350
+up L 300 350
+key esc
+move 300 250
+down L 300 250
+up L 300 250
+key g
+move 300 250
+down L 300 250
+up L 300 250
+key l shift
+move 400 250
+down L 400 250
+up L 400 250
+menu Features|Shell Solid

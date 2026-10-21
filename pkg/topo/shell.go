@@ -11,7 +11,9 @@ import (
 
 // A shell hollows a solid, leaving walls of one thickness, open where
 // faces are taken away. It takes solids of planar faces, and prisms
-// whose sides are flat or extrusions of arcs (shellprism.go). Of flat
+// whose sides are flat or extrusions of arcs (shellprism.go); solids of
+// revolution, given how they were turned, ShellRevolved takes
+// (shellrevolve.go). Of flat
 // faces, the inner solid has the outer one's topology, each face moved in by the
 // thickness but those taken away, and each vertex where its faces'
 // moved planes meet. The shell is the solid less the inner one, by a
@@ -66,7 +68,8 @@ func ShellSolid(sh *srf.SShell, open []int, thick float64, origin uint32) (*srf.
 	for f := range t.Faces {
 		n, ok := t.planarNormal(f)
 		if !ok {
-			return nil, shellErr(t.faceAnchor(f), "a face of the solid is curved; a shell hollows solids of flat faces, and prisms of lines and arcs")
+			return nil, shellErr(t.faceAnchor(f), "a face of the solid is curved; a shell hollows solids of flat faces, prisms of lines and arcs, "+
+				"and solids of one lathe or revolve of lines and arcs")
 		}
 		// A face taken away stays where it is: the inside meets it, and
 		// the Boolean takes it away with the inside, as a cut flush with
@@ -81,7 +84,8 @@ func ShellSolid(sh *srf.SShell, open []int, thick float64, origin uint32) (*srf.
 	}
 	for e := range t.Edges {
 		if !t.Straight(e) {
-			return nil, shellErr(t.Edges[e].Points[0], "an edge of the solid is curved; a shell hollows solids of flat faces, and prisms of lines and arcs")
+			return nil, shellErr(t.Edges[e].Points[0], "an edge of the solid is curved; a shell hollows solids of flat faces, prisms of lines and arcs, "+
+				"and solids of one lathe or revolve of lines and arcs")
 		}
 	}
 

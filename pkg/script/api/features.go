@@ -565,8 +565,9 @@ func (m FeaturesMenu) FilletSolid(edges []SolidEdge, radius float64, name string
 
 // Shell hollows the solid so far to walls thick mm, open where the faces
 // are taken away: face entities, as Group.Faces gives an extrusion's.
-// This version hollows solids of flat faces, and refuses a thickness at
-// which walls meet. The faces of the cavity have names. The new group
+// This version hollows solids of flat faces, prisms of lines and arcs
+// open at their ends, and solids made by one lathe or revolve of lines
+// and arcs, and refuses a thickness at which walls meet. The faces of the cavity have names. The new group
 // becomes active.
 func (m FeaturesMenu) Shell(faces []Entity, thick float64, name string) Group {
 	d := m.d

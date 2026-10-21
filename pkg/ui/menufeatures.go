@@ -412,9 +412,9 @@ func (ss *Application) groupShell(g *sketch.Group) bool {
 		ss.Error("Can't shell the solid. %s.\n\n"+
 			"Shell Solid hollows the solid so far to walls of one thickness, open where "+
 			"faces are taken away. Select one or more of:\n\n"+
-			"    * flat faces of the solid, to take away\n\n"+
+			"    * faces of the solid, to take away\n\n"+
 			"The solid's faces must be flat, or the solid a prism of lines and arcs open only "+
-			"at its ends, and the walls must not meet.", capitalize(err.Error()))
+			"at its ends, or one lathe or revolve of lines and arcs, and the walls must not meet.", capitalize(err.Error()))
 		return false
 	}
 	*g = shg

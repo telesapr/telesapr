@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
@@ -339,6 +340,26 @@ func TestPathEquivalenceShellCup(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_shell_cup", "path_shell_cup")
 	if g := ui.Group(ui.Active); g.Type != sketch.GroupShell || g.Problem.Msg != "" {
 		t.Errorf("the shell: type %d, problem %q", g.Type, g.Problem.Msg)
+	}
+}
+
+// A ring turned by a lathe, its outer side picked with the mouse and
+// the ring hollowed open there, and the same made by a script: a shell
+// by the lathe's profile (WP-C1).
+func TestPathEquivalenceShellLathe(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_shell_lathe", "path_shell_lathe")
+	g := ui.Group(ui.Active)
+	if g.Type != sketch.GroupShell || g.Problem.Msg != "" {
+		t.Fatalf("the shell: type %d, problem %q", g.Type, g.Problem.Msg)
+	}
+	// The ring less the channel: the rectangle 10..24 by 0..20 less 11..24
+	// by 1..19, turned.
+	var m srf.SMesh
+	g.RunningShell.TriangulateInto(&m)
+	r := check.Solid(&g.RunningShell, &m)
+	want := math.Pi * ((24*24-10*10)*20 - (24*24-11*11)*18)
+	if !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Errorf("the channel ring: %s, want volume %g", r.String(), want)
 	}
 }
 

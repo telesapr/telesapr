@@ -5093,7 +5093,7 @@
 					},
 					"Shell": {
 						"decl": "func (m FeaturesMenu) Shell(faces []Entity, thick float64, name string) Group",
-						"text": "Shell hollows the solid so far to walls thick mm, open where the faces\nare taken away: face entities, as Group.Faces gives an extrusion's.\nThis version hollows solids of flat faces, and refuses a thickness at\nwhich walls meet. The faces of the cavity have names. The new group\nbecomes active."
+						"text": "Shell hollows the solid so far to walls thick mm, open where the faces\nare taken away: face entities, as Group.Faces gives an extrusion's.\nThis version hollows solids of flat faces, prisms of lines and arcs\nopen at their ends, and solids made by one lathe or revolve of lines\nand arcs, and refuses a thickness at which walls meet. The faces of the cavity have names. The new group\nbecomes active."
 					},
 					"ShellSolid": {
 						"decl": "func (m FeaturesMenu) ShellSolid(faces []SolidFace, thick float64, name string) Group",

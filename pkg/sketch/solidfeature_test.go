@@ -336,6 +336,30 @@ func TestSolidGoldens(t *testing.T) {
 			s := cut.Solid()
 			d.Features.ShellSolid([]api.SolidFace{s.FaceAt(api.V(5, 5, 10)), s.FaceAt(api.V(15, 0, 5))}, 1.5, "")
 		},
+		"shell-lathe": func(d *api.Doc) {
+			// A frustum turned by a lathe, open at its top: the inside by
+			// the lathe's profile (WP-C1).
+			d.Features.SketchIn(d.Workplane("ZX"), "")
+			axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 12))
+			axis.SetConstruction(true)
+			d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(6, 0, 8), api.V(0, 0, 8))
+			lathe := d.Features.Lathe(axis, "")
+			d.Features.ShellSolid([]api.SolidFace{lathe.Solid().FaceAt(api.V(1, 1, 8))}, 1, "")
+		},
+		"shell-revolve": func(d *api.Doc) {
+			// A rectangle off the axis revolved a quarter turn, open at its
+			// outer side, its ends kept.
+			d.Features.SketchIn(d.Workplane("ZX"), "")
+			axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 12))
+			axis.SetConstruction(true)
+			d.Sketch.Polyline(true, api.V(4, 0, 0), api.V(10, 0, 0), api.V(10, 0, 6), api.V(4, 0, 6))
+			rev := d.Features.Revolve(axis, 90, "")
+			y := 10 * math.Sin(math.Pi/4)
+			if lo, _ := rev.Analyze().Bounds(); lo.Y < -1 {
+				y = -y
+			}
+			d.Features.ShellSolid([]api.SolidFace{rev.Solid().FaceAt(api.V(10*math.Cos(math.Pi/4), y, 3))}, 1, "")
+		},
 		"sketch-on-face": func(d *api.Doc) {
 			ex := block(d, 0, 0, 20, 10, 5)
 			d.Features.SketchOnFace(ex.Solid().FaceAt(api.V(10, 5, 5)), "")
@@ -629,6 +653,18 @@ func BenchmarkShellCup(b *testing.B) {
 		d.Sketch.Circle(api.V(0, 0, 0), 5)
 		cyl := d.Features.Extrude(10, "")
 		d.Features.ShellSolid([]api.SolidFace{cyl.Solid().FaceAt(api.V(0, 0, 10))}, 1, "")
+	})
+}
+
+// A frustum turned by a lathe, hollowed by its profile (WP-C1).
+func BenchmarkShellLathe(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.Features.SketchIn(d.Workplane("ZX"), "")
+		axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 12))
+		axis.SetConstruction(true)
+		d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(6, 0, 8), api.V(0, 0, 8))
+		lathe := d.Features.Lathe(axis, "")
+		d.Features.ShellSolid([]api.SolidFace{lathe.Solid().FaceAt(api.V(1, 1, 8))}, 1, "")
 	})
 }
 
