@@ -2,6 +2,7 @@ package srf
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -23,22 +24,10 @@ func (s *SShell) MakeFromWrapOf(sbls *SBezierLoopSet, w *Wrap, h0, h1 float64, c
 	if w.LiftFactor(h0) <= 1e-6 || w.LiftFactor(h1) <= 1e-6 {
 		return fmt.Errorf("a depth of %g reaches the face's axis", max(-h0, -h1))
 	}
-	capAt0, err := w.capPatch(sbls)
+	capAt0, err := w.capPatch(sbls, max(math.Abs(h0), math.Abs(h1)))
 	if err != nil {
 		return err
 	}
-	loops := sbls.loops()
-	wrapped := make([][]SBezier, len(loops))
-	for i, l := range loops {
-		for bi := range l.Curves {
-			pieces, err := w.MapCurve(&l.Curves[bi])
-			if err != nil {
-				return err
-			}
-			wrapped[i] = append(wrapped[i], pieces...)
-		}
-	}
-
 	// The extrusion runs along the sketch's normal; the wrap carries the
 	// direction sigma*n, outward from the face, to its outward normal.
 	along := w.n.ScaledBy(w.Face.Outward)
@@ -59,14 +48,26 @@ func (s *SShell) MakeFromWrapOf(sbls *SBezierLoopSet, w *Wrap, h0, h1 float64, c
 		c.Color = color
 		c.TrimBuilt = true
 	}
+	// Every curve wrapped and lifted, before anything is added.
+	loops := sbls.loops()
+	los, his := make([][]SBezier, len(loops)), make([][]SBezier, len(loops))
+	for i, l := range loops {
+		for bi := range l.Curves {
+			lo, hi, err := w.bandCurves(&l.Curves[bi], h0, h1)
+			if err != nil {
+				return err
+			}
+			los[i] = append(los[i], lo...)
+			his[i] = append(his[i], hi...)
+		}
+	}
 	hs0 := s.addAndAssignSurfaceID(s0)
 	hs1 := s.addAndAssignSurfaceID(s1)
 
-	for _, curves := range wrapped {
+	for li := range loops {
 		var trimLines []shellTrimLine
-		for bi := range curves {
-			b0 := w.liftedCurve(curves[bi], h0)
-			b1 := w.liftedCurve(curves[bi], h1)
+		for bi := range los[li] {
+			b0, b1 := los[li][bi], his[li][bi]
 
 			ss := ruledBetween(&b0, &b1)
 			ss.Color = color

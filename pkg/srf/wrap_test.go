@@ -139,8 +139,28 @@ func cylinderBand(a, r, h0, h1 float64) float64 {
 	return a * ((r+h1)*(r+h1) - (r+h0)*(r+h0)) / (2 * r)
 }
 
-func TestWrapRectangleOnCylinder(t *testing.T) {
+// fineMesh meshes finely enough, chords and segments both, that the
+// difference a band makes to a body's volume is measured to 1e-3 of it.
+// It sets the default tolerance, so its tests don't run in parallel.
+func fineMesh(t *testing.T) {
 	fineChordTol(t)
+	old := MaxSegments()
+	SetMaxSegments(2000)
+	t.Cleanup(func() { SetMaxSegments(old) })
+}
+
+// checkAdded compares what a Boolean added to body's volume (taken
+// away, if negative) against want, within rel of it.
+func checkAdded(t *testing.T, name string, body, out *SShell, want, rel float64) {
+	t.Helper()
+	got := shellVolume(out) - shellVolume(body)
+	if math.Abs(got-want) > rel*math.Abs(want) {
+		t.Errorf("%s: added %v, want %v (rel err %.2g)", name, got, want, (got-want)/want)
+	}
+}
+
+func TestWrapRectangleOnCylinder(t *testing.T) {
+	fineMesh(t)
 	body := lathedTube(0, 5, 0, 20)
 	face := roundFaceIn(t, body)
 	for _, n := range []geom.Vector{{Y: -1}, {Y: 1}} {
@@ -168,12 +188,12 @@ func TestWrapRectangleOnCylinder(t *testing.T) {
 		if out.BooleanFailed || !meshIsSound(&out) {
 			t.Fatalf("normal %v: the union is not sound", n)
 		}
-		checkVolume(t, "embossed", shellVolume(&out), 500*math.Pi+cylinderBand(60, 5, 0, 1))
+		checkAdded(t, "embossed", body, &out, cylinderBand(60, 5, 0, 1), 1e-3)
 	}
 }
 
 func TestWrapCircleEngravedInCylinder(t *testing.T) {
-	fineChordTol(t)
+	fineMesh(t)
 	body := lathedTube(0, 5, 0, 20)
 	face := roundFaceIn(t, body)
 	n := geom.Vector{Y: -1}
@@ -205,14 +225,34 @@ func TestWrapCircleEngravedInCylinder(t *testing.T) {
 	if out.BooleanFailed || !meshIsSound(&out) {
 		t.Fatal("the engraving is not sound")
 	}
-	checkVolume(t, "engraved", shellVolume(&out), 500*math.Pi-cylinderBand(a, 5, -1, 0))
+	checkAdded(t, "engraved", body, &out, -cylinderBand(a, 5, -1, 0), 1e-3)
 }
 
-// On a cone the band is the cone of its profile from the centre of the
-// lift q, between the scalings k0 and k1: (k1³ - k0³)/3 times the
-// distance from q to the face times the profile's area.
+// coneBand is the volume of the band a rectangle of the sketch, s0 to
+// s1 across and z0 to z1 along the axis from the apex, makes on w's cone
+// between the heights h0 and h1 along its normal. A sheet of the band
+// at height h is the face's area grown by 1 + h/R, R = rho tan(alpha)
+// the face's distance from the axis along its normal, so the volume is
+// A (h1-h0) + (h1²-h0²)/2 times the integral of 1/R over the face, here
+// by the midpoint rule over the development.
+func coneBand(w *Wrap, s0, s1, z0, z1, h0, h1 float64) float64 {
+	const n = 400
+	ds, dz := (s1-s0)/n, (z1-z0)/n
+	tan := w.sinA / w.cosA
+	sum := 0.0
+	for i := range n {
+		for j := range n {
+			s := s0 + (float64(i)+0.5)*ds
+			z := z0 + (float64(j)+0.5)*dz
+			rho := math.Hypot(s, w.rhoC+z-w.rhoC*w.cosA)
+			sum += 1 / (rho * tan)
+		}
+	}
+	return (s1-s0)*(z1-z0)*(h1-h0) + (h1*h1-h0*h0)/2*sum*ds*dz
+}
+
 func TestWrapRectangleOnCone(t *testing.T) {
-	fineChordTol(t)
+	fineMesh(t)
 	// Apex up at z = 16, base radius 8 on z = 0.
 	body := lathedCone(8, 16)
 	face := roundFaceIn(t, body)
@@ -222,15 +262,22 @@ func TestWrapRectangleOnCone(t *testing.T) {
 	if !meshIsSound(band) {
 		t.Fatal("the band is not sound")
 	}
-	k0, k1 := w.LiftFactor(-0.25), w.LiftFactor(1)
-	checkVolume(t, "band", shellVolume(band), (k1*k1*k1-k0*k0*k0)/3*w.l*16)
+	// From the apex the rectangle runs 9 to 13 along the axis. The band's
+	// mesh comes to its volume slowly: 7e-3 short at a chord of 1e-4,
+	// 3e-4 at 3e-5, where meshing it takes 20 s.
+	want := coneBand(w, -2, 2, 9, 13, -0.25, 1)
+	if v := shellVolume(band); math.Abs(v-want) > 1e-2*want {
+		t.Fatalf("band: volume %g, want %g", v, want)
+	}
+	if testing.Short() {
+		t.Skip("the union with the cone, meshed finely, takes 15 s")
+	}
 	var out SShell
 	out.MakeFromUnionOf(body, band)
 	if out.BooleanFailed || !meshIsSound(&out) {
 		t.Fatal("the union is not sound")
 	}
-	k0 = 1
-	checkVolume(t, "embossed", shellVolume(&out), math.Pi*64*16/3+(k1*k1*k1-k0*k0*k0)/3*w.l*16)
+	checkAdded(t, "embossed", body, &out, coneBand(w, -2, 2, 9, 13, 0, 1), 1e-2)
 }
 
 func TestWrapRefusals(t *testing.T) {

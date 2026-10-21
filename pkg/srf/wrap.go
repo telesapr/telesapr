@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/libm"
@@ -179,29 +180,84 @@ func (w *Wrap) liftedSurface(s SSurface, h float64) SSurface {
 // where the wrapped curve is a line or a circle, fitted quintics
 // elsewhere, each carrying b's Sheet and Entity.
 func (w *Wrap) MapCurve(b *SBezier) ([]SBezier, error) {
+	lo, _, err := w.bandCurves(b, 0, 0)
+	return lo, err
+}
+
+// bandCurves are the sketch curve b wrapped onto the face and lifted h0
+// and h1 along its outward normal, in pieces that pair up: the edges of
+// the side of a band b sweeps. On a cylinder the lift is affine and the
+// lifted pieces are the wrapped ones' images. On a cone the uniform
+// lift's lines point at its centre, off the face's normal away from the
+// sketch's middle by as much as a few degrees, which left the Boolean
+// unable to close the face's trims where two sides meet it (a fifth of
+// the letters on cones of the text sweep); so there each point is lifted
+// along the face's normal, and both curves are fitted, halved together.
+func (w *Wrap) bandCurves(b *SBezier, h0, h1 float64) (lo, hi []SBezier, err error) {
 	a, z := b.Start(), b.Finish()
 	if _, _, ok := w.polar(a); !ok {
-		return nil, errors.New("the sketch reaches past the cone's apex")
+		return nil, nil, errWrapApex
+	}
+	keep := func(cs []SBezier) []SBezier {
+		for i := range cs {
+			cs[i].Sheet, cs[i].Entity = b.Sheet, b.Entity
+		}
+		return cs
 	}
 	if b.Degree == 1 {
 		if out, ok := w.exactLine(b); ok {
-			return out, nil
+			for _, c := range out {
+				lo = append(lo, w.liftedExact(c, h0))
+				hi = append(hi, w.liftedExact(c, h1))
+			}
+			return keep(lo), keep(hi), nil
 		}
 	}
 	for k := range 17 {
 		if _, _, ok := w.polar(b.PointAt(float64(k) / 16)); !ok {
-			return nil, errors.New("the sketch reaches past the cone's apex")
+			return nil, nil, errWrapApex
 		}
 	}
-	f := func(t float64) geom.Vector { return w.onFace(b.PointAt(t)) }
-	pieces, ok := fitCurve(f, 0, 1, wrapFitDepth)
+	at := func(h float64) func(t float64) geom.Vector {
+		return func(t float64) geom.Vector {
+			p := w.onFace(b.PointAt(t))
+			if !w.Face.IsCone() {
+				return w.lift(p, h)
+			}
+			return p.Plus(w.Face.normalAt(p).ScaledBy(w.Face.Outward * h))
+		}
+	}
+	fs := []func(float64) geom.Vector{at(h0)}
+	if h1 != h0 {
+		fs = append(fs, at(h1))
+	}
+	pieces, ok := fitCurves(fs, 0, 1, wrapFitDepth)
 	if !ok {
-		return nil, fmt.Errorf("a curve from %v to %v can't be wrapped within %g mm", a, z, wrapFitTol)
+		return nil, nil, fmt.Errorf("a curve from %v to %v can't be wrapped within %g mm", a, z, wrapFitTol)
 	}
-	for i := range pieces {
-		pieces[i].Sheet, pieces[i].Entity = b.Sheet, b.Entity
+	lo = pieces[0]
+	hi = lo
+	if h1 != h0 {
+		hi = pieces[1]
 	}
-	return pieces, nil
+	return keep(lo), keep(slices.Clone(hi)), nil
+}
+
+// errWrapApex is the refusal of a sketch that reaches past a cone's apex.
+var errWrapApex = errors.New("the sketch reaches past the cone's apex")
+
+// liftedExact is the exact wrapped curve c lifted h: by the affine lift
+// on a cylinder, and on a cone, where c is a generator, along the face's
+// normal, which is the same all along it.
+func (w *Wrap) liftedExact(c SBezier, h float64) SBezier {
+	if !w.Face.IsCone() {
+		return w.liftedCurve(c, h)
+	}
+	by := w.Face.normalAt(c.Start()).ScaledBy(w.Face.Outward * h)
+	for i := 0; i <= c.Degree; i++ {
+		c.Ctrl[i] = c.Ctrl[i].Plus(by)
+	}
+	return c
 }
 
 // exactLine wraps the line b exactly where it can: on a cylinder a line
@@ -219,7 +275,17 @@ func (w *Wrap) exactLine(b *SBezier) ([]SBezier, bool) {
 		return c
 	}
 	if math.Abs(th1-th0)*max(w.Face.Radius, al0*w.sinA, al1*w.sinA) < lengthEps/100 {
-		return []SBezier{keep(SBezierFrom2(w.at(th0, al0), w.at(th1, al1)))}, true
+		// Raised to degree 2, so that its side is no flat patch: a
+		// Boolean takes a flat patch against the face's cylinder by the
+		// plane's case, which follows their line the cylinder's whole
+		// length and splits it where the next side meets it a few
+		// micrometres off, leaving a trim open (16 of 120 letters
+		// engraved or embossed failed so).
+		line := SBezierFrom2(w.at(th0, al0), w.at(th1, al1))
+		if up, err := line.ElevatedTo(2); err == nil {
+			line = up
+		}
+		return []SBezier{keep(line)}, true
 	}
 	if w.Face.IsCone() || math.Abs(al1-al0) > lengthEps/100 {
 		return nil, false
@@ -244,10 +310,10 @@ func (w *Wrap) exactLine(b *SBezier) ([]SBezier, bool) {
 }
 
 // capPatch is one patch of the face, unlifted, holding the loop set
-// sbls once it is wrapped, with a margin all round; an error when the
-// set spans more than WrapMaxSpan round the axis or reaches past a
-// cone's apex.
-func (w *Wrap) capPatch(sbls *SBezierLoopSet) (SSurface, error) {
+// sbls once it is wrapped, with a margin all round; lifted as far as
+// lift, it holds the set lifted. An error when the set spans more than
+// WrapMaxSpan round the axis or reaches past a cone's apex.
+func (w *Wrap) capPatch(sbls *SBezierLoopSet, lift float64) (SSurface, error) {
 	thLo, thHi := math.Inf(1), math.Inf(-1)
 	alLo, alHi := math.Inf(1), math.Inf(-1)
 	for _, l := range sbls.loops() {
@@ -268,6 +334,12 @@ func (w *Wrap) capPatch(sbls *SBezierLoopSet) (SSurface, error) {
 	}
 	dth := 0.02*(thHi-thLo) + 0.002
 	dal := 0.02*(alHi-alLo) + 1e-3
+	if w.Face.IsCone() {
+		// A cap is the face scaled about the lift's centre, but the curves
+		// are lifted along the face's normal, which moves them along the
+		// generator, away from the sketch's middle, by up to the lift.
+		dal += lift
+	}
 	thLo, thHi = thLo-dth, thHi+dth
 	alLo, alHi = alLo-dal, alHi+dal
 	if w.Face.IsCone() {

@@ -2,6 +2,7 @@ package srf
 
 import (
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/geom"
 )
@@ -13,29 +14,39 @@ const (
 	fitChecks  = 64
 )
 
-// fitCurve fits f over [t0, t1] with polynomial Beziers of MaxDegree,
-// each within wrapFitTol of f at the same parameter, halving the range
-// up to depth times where one doesn't fit. The pieces meet end to end at
-// f's own points. False when a piece still doesn't fit at the last
-// depth.
-func fitCurve(f func(t float64) geom.Vector, t0, t1 float64, depth int) ([]SBezier, bool) {
-	b, err := fitQuintic(f, t0, t1)
-	if err <= wrapFitTol {
-		return []SBezier{b}, true
+// fitCurves fits each of fs over [t0, t1] with polynomial Beziers of
+// MaxDegree, each within wrapFitTol of its function at the same
+// parameter, halving the range up to depth times where one doesn't fit,
+// all of them together, so that the i-th pieces of each cover the same
+// range. The pieces meet end to end at the functions' own points. False
+// when a piece still doesn't fit at the last depth.
+func fitCurves(fs []func(t float64) geom.Vector, t0, t1 float64, depth int) ([][]SBezier, bool) {
+	out := make([][]SBezier, len(fs))
+	fits := true
+	for i, f := range fs {
+		b, err := fitQuintic(f, t0, t1)
+		out[i] = []SBezier{b}
+		fits = fits && err <= wrapFitTol
+	}
+	if fits {
+		return out, true
 	}
 	if depth == 0 {
 		return nil, false
 	}
 	tm := (t0 + t1) / 2
-	a, ok := fitCurve(f, t0, tm, depth-1)
+	a, ok := fitCurves(fs, t0, tm, depth-1)
 	if !ok {
 		return nil, false
 	}
-	c, ok := fitCurve(f, tm, t1, depth-1)
+	c, ok := fitCurves(fs, tm, t1, depth-1)
 	if !ok {
 		return nil, false
 	}
-	return append(a, c...), true
+	for i := range fs {
+		out[i] = slices.Concat(a[i], c[i])
+	}
+	return out, true
 }
 
 // fitQuintic is the quintic through f(t0) and f(t1) whose inner control
