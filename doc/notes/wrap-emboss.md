@@ -65,25 +65,36 @@ The band is the image of an extrusion of the profile along the face's normal. It
 - **Caps.** Two caps are the face's surface lifted to heights `h0` and `h1`. Each is one
   revolved patch (`FromRevolutionOf`) spanning the loop set's angles and heights with a small
   margin, and trimmed by the mapped loops.
-- **Lift.** Lifting is affine. On a cylinder it scales away from the axis by `(r+h)/r`. On a
-  cone it scales uniformly about the point `Q` of the axis where the normal through the
-  sketch's middle meets it, which carries the cone onto the parallel cone `h` away. So the
-  lifted curves and caps are exact images of the curves at the face, with control points
-  mapped and weights kept.
-- **Sides.** The sides are ruled patches between a curve at `h0` and the same curve at `h1`.
-  On a cylinder they are radial, square to the face. On a cone they point at `Q`, square to
-  the face at the sketch's middle and leaning a little away from it.
+- **Lift.** On a cylinder lifting is affine, a scaling away from the axis by `(r+h)/r`, so the
+  lifted curves and caps are exact images of the curves at the face. On a cone the caps are
+  the face scaled about the point `Q` of the axis on the normal through the sketch's middle,
+  which is the parallel cone `h` away, but the curves are lifted along the face's normal and
+  fitted, the two edges of a side halved together (`fitCurves`). Scaled curves leaned off the
+  normal and their Booleans failed more often. A cone's caps reach along the generator by the
+  lift beyond the profile, since the normal lift moves the curves along it.
+- **Sides.** The sides are ruled patches between a curve at `h0` and the same curve at `h1`,
+  square to the face on both kinds. A line wrapped to a line is raised to degree 2, so that its
+  side is no flat patch. The Boolean takes a flat patch against a cylinder by the plane's
+  case, which splits the line a few micrometres off and leaves a trim open; that failed 16 of
+  120 letters.
 
 The map is the identity to first order at the facing line and keeps orientation. The
 extrusion's rules for which cap faces which way, and which way the trims run, therefore carry
 over unchanged. Heights are measured along the face's outward normal, so a bore's inner face
 raises towards the axis.
 
-The band overlaps the face by a quarter of the height on the other side, `h0 = -H/4` for an
-emboss and `h1 = +H/4` for an engraving. That way the Boolean crosses the face rather than
-touching it, and coincident curved faces are where the kernel is weakest.
-A wall thinner than a quarter of the height under an emboss would be crossed. The diagnostic
-does not look for this; the user sees it.
+The band overlaps the face on the other side by a part of the height, `h0 = -kH` for an
+emboss and `h1 = +kH` for an engraving. That way the Boolean crosses the face rather than
+touching it: a touching band fails every time. The overlap is hidden in the result. The group
+does its own Boolean (`generateWrapShell`):
+
+1. It joins the whole band at k = 1/4.
+2. Where that fails, it joins loop set by loop set, each trying k = 1/4, 1/20, 2/5, 3/20 and 7/10.
+3. Where a loop set joins at none, it refuses. The group gets a problem and the solid so far
+   passes through, so the user never gets an unsound solid.
+
+A wall thinner than kH under an emboss would be crossed. The diagnostic does not look for
+this.
 
 **One patch per loop set.** A cap is one rational quadratic patch, so one loop set (an outer
 loop and its holes, such as one glyph) may span at most 170° round the axis. A longer one is
@@ -109,6 +120,42 @@ glyph is its own loop set.
 - The stress case is text, a sweep over sizes and radii. The rate of sound results is
   reported as it is.
 
-## State
+## Trap
 
-Started 2026-10-22 on branch `wp-c2-wrap`.
+`pkg/sketch` round trips at a fine chord tolerance (`Edit.SetChordTolerance(0.005)`) change
+the file when a later group grows the model. Two plain extrusions show it too: the
+tolerance is stepped by the model's size. The wrap's round-trip test runs at the default.
+
+## State (2026-10-22, branch `wp-c2-wrap`)
+
+Cylinder and cone, end to end.
+
+- **Kernel.** `srf.RoundFaceOf`, `srf.NewWrap`, `Wrap.MapCurve` and `SShell.MakeFromWrapOf`.
+  The kernel also drops trim edges of no length before a Boolean assembles a trim
+  (`boolean_trim.go`), which fixed 4 cone failures and moved no golden.
+- **Model.** `GroupWrap`: `Sketch.NewWrap`, saved as `wrap` with `height`, and
+  `solid-face`.
+- **Window.** Features > Wrap Sketch Onto Face, the face's context menu, and the group screen
+  (face, height, raised or sunk).
+- **Scripts.** `Features.Emboss`, `Features.Engrave` and `Group.AsWrap` (`Height`,
+  `SetHeight`, `Engraved`).
+
+Rates:
+
+- **Kernel volumes against closed forms.** The cylinder band is `A((r+h1)²-(r+h0)²)/2r`,
+  held to 1e-3 at a fine mesh. On a cone, `A h + h²/2 ∫ dA/R` converges as the mesh does
+  (7e-3 at a chord of 1e-4, 3e-4 at 3e-5).
+- **Text sweep (`TestWrapText*Sweep`).** Three strings, radii 10, 20 and 60, sizes 3 and 6,
+  depth 0.1 or 0.5 of the letter height, raised or sunk:
+  - Cylinders: 0 of 72 fail.
+  - Cones: 14 of 72 refused. All are at depth 0.5 (14 of 36); none are at depth 0.1.
+
+Left to do:
+
+- The cone failures. The face's trim doesn't assemble where marched curves end 1e-7 apart in
+  uv at a corner of the profile, near the cone's patch seams, or where a closed curve's two
+  ends miss.
+- A text window golden UI scenario (`ext_wrap`), a path-equivalence pair (`path_wrap`), and
+  an example (`examples/scripts/wrap`).
+- `.tlspr` fixtures under `testdata/solid/`.
+- The done-audit row and the format doc entry.
