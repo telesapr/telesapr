@@ -34,6 +34,13 @@ type PathSweepOptions struct {
 	Tol float64
 	// MaxSections bounds the sections; zero is 400.
 	MaxSections int
+	// Closed takes a path that ends where it starts, meeting itself
+	// tangent there: the profile is swept round to where it began, with
+	// no caps. Rotation-minimising frames carried round a loop come back
+	// turned about the tangent by an angle the loop's shape decides (its
+	// holonomy), so that turn is taken back evenly along the path, on
+	// top of Twist, which must then be whole turns.
+	Closed bool
 }
 
 // frame is a point of the path with a unit tangent and a unit normal
@@ -53,6 +60,9 @@ type SweepPath struct {
 	samples []frame
 	opts    PathSweepOptions
 	length  float64
+	// closure is the turn about the tangent, in radians, spread along a
+	// closed path so that its frames meet where it closes.
+	closure float64
 }
 
 // framesPerPiece are the frames sampled on each piece of a path; a
@@ -68,6 +78,14 @@ func NewSweepPath(pieces []srf.SBezier, r0 geom.Vector, opts PathSweepOptions) (
 	for i := 1; i < len(pieces); i++ {
 		if !pieces[i-1].Finish().Equals(pieces[i].Start()) {
 			return nil, fmt.Errorf("the path breaks at %v", pieces[i-1].Finish())
+		}
+	}
+	if opts.Closed && !pieces[len(pieces)-1].Finish().Equals(pieces[0].Start()) {
+		return nil, fmt.Errorf("the path doesn't close: it ends at %v", pieces[len(pieces)-1].Finish())
+	}
+	if opts.Closed {
+		if k := opts.Twist / (2 * math.Pi); math.Abs(k-math.Round(k)) > 1e-9 {
+			return nil, errors.New("a closed path's twist must be whole turns, or the profile doesn't meet itself")
 		}
 	}
 	sp := &SweepPath{pieces: pieces, opts: opts}
@@ -98,6 +116,16 @@ func NewSweepPath(pieces []srf.SBezier, r0 geom.Vector, opts PathSweepOptions) (
 		sp.samples = append(sp.samples, f)
 	}
 	sp.length = f.arc
+	if opts.Closed {
+		t1 := sp.tangent(sp.End())
+		if t1.Dot(t0) < 1-1e-6 {
+			return nil, errors.New("the path closes at a corner: a closed sweep's path meets itself tangent")
+		}
+		// The angle from the first frame's normal to the last's, about
+		// the tangent, taken back.
+		r1 := f.r.Minus(t0.ScaledBy(f.r.Dot(t0)))
+		sp.closure = -math.Atan2(sp.samples[0].r.Cross(r1).Dot(t0), sp.samples[0].r.Dot(r1))
+	}
 	return sp, nil
 }
 
@@ -182,8 +210,8 @@ func (sp *SweepPath) frameAt(s float64) frame {
 			f = g
 		}
 	}
-	if sp.opts.Twist != 0 && sp.length > 0 {
-		a := sp.opts.Twist * f.arc / sp.length
+	if tw := sp.opts.Twist + sp.closure; tw != 0 && sp.length > 0 {
+		a := tw * f.arc / sp.length
 		b := f.t.Cross(f.r)
 		f.r = f.r.ScaledBy(math.Cos(a)).Plus(b.ScaledBy(math.Sin(a)))
 	}
@@ -312,6 +340,11 @@ func (sp *SweepPath) skins(curves []srf.BSplineCurve, ss []float64) ([]*srf.BSpl
 	motions := make([]func(geom.Vector) geom.Vector, len(ss))
 	for k, s := range ss {
 		motions[k] = sp.Motion(s)
+		if sp.opts.Closed && s == sp.End() {
+			// Round a closed path the section is the first one exactly,
+			// so that the surfaces meet there.
+			motions[k] = sp.Motion(0)
+		}
 	}
 	// The derivatives at the ends by one-sided differences inside the
 	// piece, of second order, scaled to the parameter across.
@@ -389,14 +422,45 @@ func (sp *SweepPath) strays(curves []srf.BSplineCurve, surfs []*srf.BSplineSurfa
 // (loops), swept along the path: one face for each loop, of B-spline
 // patches (SweptSurfaces), and the profile's planes at both ends. The
 // start cap takes identity startFace, the end endFace, and the surfaces'
-// patches identities from origin on.
+// patches identities from origin on. Along a closed path there are no
+// caps, and startFace and endFace go unused.
 func MakePathSweep(sp *SweepPath, loops [][]srf.SBezier, color core.RGBA, startFace, endFace, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
 	sp.tol = tol
 	surfs, _, err := sp.SweptSurfaces(loops)
 	if err != nil {
 		return nil, err
 	}
+	if sp.opts.Closed {
+		return joinSkins(surfs, color, origin, tol)
+	}
 	return closeSkins(surfs, color, startFace, endFace, origin, tol)
+}
+
+// joinSkins is the solid bounded by chains of surfaces closed in u and
+// closed in v too, each chain's last surface ending on the loop its
+// first starts from: a closed sweep's, with no caps.
+func joinSkins(chains [][]*srf.BSplineSurface, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
+	sh := &srf.SShell{Tol: tol}
+	fa := NewFaceAdder(sh)
+	id := origin
+	for _, chain := range chains {
+		sheet := id
+		for _, bs := range chain {
+			hs, err := fa.AddBSplineFace(bs, id, sheet, color)
+			if err != nil {
+				return nil, err
+			}
+			id += uint32(len(hs) * len(hs[0]))
+		}
+	}
+	t, err := Build(sh)
+	if err != nil {
+		return nil, err
+	}
+	if probs := t.Validate(); len(probs) > 0 {
+		return nil, fmt.Errorf("the surface is not closed: %s", probs[0].Msg)
+	}
+	return sh, nil
 }
 
 // closeSkins is the solid bounded by chains of surfaces closed in u,

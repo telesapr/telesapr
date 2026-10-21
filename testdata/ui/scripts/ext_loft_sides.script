@@ -1,0 +1,17 @@
+# A loft that leaves along a solid's sides: the top circle of a drafted
+# post lofted to a tip, set on its screen to carry the post's sides on;
+# the screen, then the solid checked.
+file $testdata/ui/loft_sides.tlspr
+menu File|Open...
+view default
+move 300 250
+down L 300 250
+up L 300 250
+menu Features|Loft To Selected Profile
+twmove 320 185
+twdown L 320 185
+twup L 320 185
+tw
+answer ok
+menu Analyze|Check Solid
+dump

@@ -607,6 +607,10 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			g.Color = d.colorField(c)
 		case "skip-first":
 			g.SkipFirst = d.flag(c)
+		case "start-along-sides":
+			g.LoftAlongSides[0] = d.flag(c)
+		case "end-along-sides":
+			g.LoftAlongSides[1] = d.flag(c)
 		case "mirror-solid":
 			g.MirrorSolid = d.flag(c)
 		case "combine":

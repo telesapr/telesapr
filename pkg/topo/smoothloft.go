@@ -166,14 +166,36 @@ type LoftEnds struct {
 	Start, End float64
 }
 
+// LoftSides, where set, says which way a smooth loft leaves each point
+// of its first profile (Start) and reaches each point of its last
+// (End), a unit vector the way the loft goes, in place of square to the
+// profile's plane: along a solid's sides (SideTangents). It takes effect
+// where LoftEnds sets that end.
+type LoftSides struct {
+	Start, End func(p geom.Vector) (geom.Vector, error)
+}
+
 // MakeSmoothLoftEnds is MakeSmoothLoft with its ends set by ends; two
 // profiles make a cubic surface, not a ruled one, when an end is set.
 func MakeSmoothLoftEnds(loops [][]srf.SBezier, turn int, ends LoftEnds, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
-	bs, err := SmoothLoftSurfaceEnds(loops, turn, ends)
+	return MakeSmoothLoftSides(loops, turn, ends, LoftSides{}, color, origin, tol)
+}
+
+// MakeSmoothLoftSides is MakeSmoothLoftEnds with the directions its ends
+// leave and reach the profiles in set by sides.
+func MakeSmoothLoftSides(loops [][]srf.SBezier, turn int, ends LoftEnds, sides LoftSides, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
+	if ends.Start == 0 && ends.End == 0 {
+		bs, err := SmoothLoftSurface(loops, turn)
+		if err != nil {
+			return nil, err
+		}
+		return closeSkins([][]*srf.BSplineSurface{{bs}}, color, origin, origin+1, origin+2, tol)
+	}
+	b, err := smoothLoftBase(loops, turn, ends, sides)
 	if err != nil {
 		return nil, err
 	}
-	return closeSkins([][]*srf.BSplineSurface{{bs}}, color, origin, origin+1, origin+2, tol)
+	return closeSkins([][]*srf.BSplineSurface{{b.surface}}, color, origin, origin+1, origin+2, tol)
 }
 
 // SmoothLoftSurfaceEnds is SmoothLoftSurface with its ends set.
@@ -181,7 +203,7 @@ func SmoothLoftSurfaceEnds(loops [][]srf.SBezier, turn int, ends LoftEnds) (*srf
 	if ends.Start == 0 && ends.End == 0 {
 		return SmoothLoftSurface(loops, turn)
 	}
-	b, err := smoothLoftBase(loops, turn, ends)
+	b, err := smoothLoftBase(loops, turn, ends, LoftSides{})
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +222,7 @@ type loftBase struct {
 
 // smoothLoftBase is the smooth loft through loops with its ends set by
 // ends, free or not.
-func smoothLoftBase(loops [][]srf.SBezier, turn int, ends LoftEnds) (loftBase, error) {
+func smoothLoftBase(loops [][]srf.SBezier, turn int, ends LoftEnds, sides LoftSides) (loftBase, error) {
 	for _, x := range []float64{ends.Start, ends.End} {
 		if math.IsNaN(x) || math.IsInf(x, 0) {
 			return loftBase{}, fmt.Errorf("a loft's tangency at an end is a number, not %g", x)
@@ -242,6 +264,24 @@ func smoothLoftBase(loops [][]srf.SBezier, turn int, ends LoftEnds) (loftBase, e
 	end := make([]geom.Vector, len(curves[0].Ctrl))
 	n0 := newell(loops[0]).WithMagnitude(1)
 	n1 := newell(loops[k-1]).WithMagnitude(1)
+	startAlong := centroid(loops[1]).Minus(centroid(loops[0]))
+	endAlong := centroid(loops[k-1]).Minus(centroid(loops[k-2]))
+	// along is which way the loft goes through the point at control
+	// point i's Greville abscissa of curve c, by side, or nil.
+	along := func(side func(geom.Vector) (geom.Vector, error), c *srf.BSplineCurve, i int, way geom.Vector) (geom.Vector, error) {
+		t := 0.0
+		for j := 1; j <= c.Deg; j++ {
+			t += c.Knots[i+j]
+		}
+		d, err := side(c.PointAt(t / float64(c.Deg)))
+		if err != nil {
+			return d, err
+		}
+		if d.Dot(way) <= 0 {
+			return d, errSidesAgainst
+		}
+		return d, nil
+	}
 	for i := range start {
 		// The free surface's derivatives across at its ends; its
 		// weights don't change across, so its rows are polynomial there.
@@ -251,9 +291,23 @@ func smoothLoftBase(loops [][]srf.SBezier, turn int, ends LoftEnds) (loftBase, e
 		end[i] = free.Ctrl[i][nv-1].Minus(free.Ctrl[i][nv-2]).ScaledBy(b)
 		if ends.Start != 0 {
 			start[i] = n0.ScaledBy(ends.Start * length)
+			if sides.Start != nil {
+				d, err := along(sides.Start, &curves[0], i, startAlong)
+				if err != nil {
+					return loftBase{}, fmt.Errorf("the first profile: %w", err)
+				}
+				start[i] = d.ScaledBy(ends.Start * length)
+			}
 		}
 		if ends.End != 0 {
 			end[i] = n1.ScaledBy(ends.End * length)
+			if sides.End != nil {
+				d, err := along(sides.End, &curves[k-1], i, endAlong)
+				if err != nil {
+					return loftBase{}, fmt.Errorf("the last profile: %w", err)
+				}
+				end[i] = d.ScaledBy(ends.End * length)
+			}
 		}
 	}
 	if b.surface, err = srf.SkinWithEnds(curves, ts, start, end); err != nil {

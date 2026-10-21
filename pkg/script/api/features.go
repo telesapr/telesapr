@@ -407,7 +407,12 @@ func (m FeaturesMenu) PatternAlongPath(path []Entity, copies int, name string) G
 // exact; along cubics they are fitted within a tenth of the chord
 // tolerance (see also SetTwist and SetSweepUp). Two line segments may
 // meet at a corner, where the sweep is mitred: each piece cut by the
-// plane that halves the corner. The new group becomes active.
+// plane that halves the corner. A path that closes, a circle or pieces
+// that come back to where they began, is swept round from where the
+// sketch's plane crosses it, nearest the sketch, back to the sketch,
+// with no caps: a ring, or a frame mitred at its corners; the sketch
+// must cross the path where it is smooth, and a twist must be whole
+// turns. The new group becomes active.
 func (m FeaturesMenu) Sweep(path []Entity, name string) Group {
 	d := m.d
 	return d.add(func(sk *sketch.Sketch) sketch.Group {

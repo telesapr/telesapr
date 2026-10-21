@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -84,6 +85,89 @@ func (sk *Sketch) NewSmoothLoft(profiles []core.HGroup, name string) (Group, err
 // (roadmap 28.3).
 func (g *Group) LoftEnds() topo.LoftEnds { return topo.LoftEnds{Start: g.ValB, End: g.ValC} }
 
+// loftEnds is LoftEnds as the loft is made: an end along the solid's
+// sides and left at 0 leaves along them by 1.
+func (g *Group) loftEnds() topo.LoftEnds {
+	ends := g.LoftEnds()
+	if g.LoftAlongSides[0] && ends.Start == 0 {
+		ends.Start = 1
+	}
+	if g.LoftAlongSides[1] && ends.End == 0 {
+		ends.End = 1
+	}
+	return ends
+}
+
+// SetLoftAlongSides has the loft leave its first profile (start) and
+// reach its last (end) along the sides of the solid each is drawn on,
+// carrying them on smoothly, or square to the profile's plane: what the
+// loft's screen and LoftGroup.SetAlongSides set. An end along the sides
+// whose tangency is 0 takes 1. The caller remembers the undo state.
+func (sk *Sketch) SetLoftAlongSides(hg core.HGroup, start, end bool) error {
+	g := sk.Group(hg)
+	if g == nil {
+		return fmt.Errorf("no group %08x", hg.V)
+	}
+	if g.Type != GroupLoft {
+		return fmt.Errorf("%s is not a loft", g.DescriptionString())
+	}
+	if (start || end) && len(g.Edges) > 0 {
+		return errors.New("a loft held by guides can't also follow a solid's sides")
+	}
+	g.LoftAlongSides = [2]bool{start, end}
+	sk.MarkGroupDirty(hg, false)
+	return nil
+}
+
+// loftSides are the directions the loft leaves and reaches its end
+// profiles in, along the sides of the solid before it, where it says
+// so.
+func (g *Group) loftSides(sk *Sketch, loops [][]srf.SBezier) (topo.LoftSides, error) {
+	var sides topo.LoftSides
+	if !g.LoftAlongSides[0] && !g.LoftAlongSides[1] {
+		return sides, nil
+	}
+	before := g.PreviousGroup(sk)
+	if before == nil {
+		before = sk.Group(sk.Active)
+	}
+	var solid *Group
+	if before != nil {
+		solid = sk.solidAt(before.H)
+	}
+	if solid == nil || len(solid.RunningShell.Surface) == 0 {
+		return sides, errors.New("there is no solid before the loft for it to follow the sides of")
+	}
+	// Each end's normal away from the solid, toward the loft.
+	away := func(l, toward []srf.SBezier) geom.Vector {
+		n := topo.LoopNormal(l)
+		if n.Dot(topo.LoopCentroid(toward).Minus(topo.LoopCentroid(l))) < 0 {
+			n = n.ScaledBy(-1)
+		}
+		return n
+	}
+	k := len(loops)
+	if g.LoftAlongSides[0] {
+		f, err := topo.SideTangents(&solid.RunningShell, away(loops[0], loops[1]))
+		if err != nil {
+			return sides, err
+		}
+		sides.Start = f
+	}
+	if g.LoftAlongSides[1] {
+		f, err := topo.SideTangents(&solid.RunningShell, away(loops[k-1], loops[k-2]))
+		if err != nil {
+			return sides, err
+		}
+		// The way the loft goes arriving: back against the way out.
+		sides.End = func(p geom.Vector) (geom.Vector, error) {
+			d, err := f(p)
+			return d.ScaledBy(-1), err
+		}
+	}
+	return sides, nil
+}
+
 // LoftProfiles are the groups a loft joins, in order: OpA, LoftThrough
 // and OpB.
 func (g *Group) LoftProfiles() []core.HGroup {
@@ -118,10 +202,17 @@ func (g *Group) loftShell(sk *Sketch, origin uint32) (*srf.SShell, error) {
 		return nil, err
 	}
 	if len(guides) > 0 {
+		if g.LoftAlongSides != [2]bool{} {
+			return nil, errors.New("a loft held by guides can't also follow a solid's sides")
+		}
 		return topo.MakeGuidedLoft(loops, int(g.ValA), g.LoftEnds(), guides, g.Color, origin, sk.tol)
 	}
-	if ends := g.LoftEnds(); len(loops) > 2 || ends != (topo.LoftEnds{}) {
-		return topo.MakeSmoothLoftEnds(loops, int(g.ValA), ends, g.Color, origin, sk.tol)
+	if ends := g.loftEnds(); len(loops) > 2 || ends != (topo.LoftEnds{}) {
+		sides, err := g.loftSides(sk, loops)
+		if err != nil {
+			return nil, err
+		}
+		return topo.MakeSmoothLoftSides(loops, int(g.ValA), ends, sides, g.Color, origin, sk.tol)
 	}
 	loops = topo.MatchCounts(loops)
 	a, b := loops[0], loops[1]

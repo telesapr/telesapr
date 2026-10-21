@@ -1,0 +1,14 @@
+# Sweep Along Path round a closed path: a square swept round a circle,
+# picked with the mouse, back to where it started, with no caps; the
+# group screen, then the solid checked.
+file $testdata/ui/sweep_ring.tlspr
+menu File|Open...
+view other
+move 339 280.5
+down L 339 280.5
+up L 339 280.5
+menu Features|Sweep Along Path
+tw
+answer ok
+menu Analyze|Check Solid
+dump

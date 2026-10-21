@@ -189,6 +189,14 @@ func TestPathEquivalenceSweepCorner(t *testing.T) {
 	}
 }
 
+// A sweep round a closed path, picked with the mouse, and by a script.
+func TestPathEquivalenceSweepRing(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_sweep_ring", "path_sweep_ring")
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupSweep || g.Problem.Msg != "" || len(g.Edges) != 1 {
+		t.Errorf("the sweep: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.Edges))
+	}
+}
+
 // A sweep's corner rounded on its screen, and by a script (F4).
 func TestPathEquivalenceSweepRounded(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_sweep_rounded", "path_sweep_rounded")
@@ -202,6 +210,15 @@ func TestPathEquivalenceLoftTangency(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_loft_tangency", "path_loft_tangency")
 	if g := ui.Group(ui.Active); g.Type != sketch.GroupLoft || g.ValB != 1 || g.ValC != 0.5 || g.Problem.Msg != "" {
 		t.Errorf("the loft: type %d, ends %g and %g, problem %q", g.Type, g.ValB, g.ValC, g.Problem.Msg)
+	}
+}
+
+// A loft set on its screen to leave along a drafted post's sides, and
+// by a script.
+func TestPathEquivalenceLoftSides(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_loft_sides", "path_loft_sides")
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupLoft || g.LoftAlongSides != [2]bool{true, false} || g.Problem.Msg != "" {
+		t.Errorf("the loft: type %d, along sides %v, problem %q", g.Type, g.LoftAlongSides, g.Problem.Msg)
 	}
 }
 

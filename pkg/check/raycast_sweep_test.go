@@ -125,6 +125,9 @@ func TestOracleSweep(t *testing.T) {
 		"mitred": {func(d *api.Doc) { corner(d) }, 60 * 70},
 		"rounded": {func(d *api.Doc) { corner(d).AsSweep().SetCornerRadius(8) },
 			60 * (70 - 2*8 + 8*math.Pi/2)},
+		// Round closed paths, started where the profile crosses them.
+		"ring":  {func(d *api.Doc) { closedFrame(d, true) }, 4 * 2 * math.Pi * 10},
+		"frame": {func(d *api.Doc) { closedFrame(d, false) }, 4 * 60},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -178,4 +181,23 @@ func TestOracleRefusesFitted(t *testing.T) {
 	if _, err := check.NewOracle(sk, sk.ActiveGroup()); !errors.Is(err, check.ErrUnsupported) {
 		t.Errorf("a loft: %v", err)
 	}
+}
+
+// closedFrame sweeps a 2 by 2 square about the origin in XY round a
+// circle of radius 10 in ZX through the origin, with ring, or round a
+// 20 by 10 rectangle with its left side on the z axis about z = 0.
+func closedFrame(d *api.Doc, ring bool) {
+	d.Features.SketchIn(d.Workplane("ZX"), "path")
+	var path []api.Entity
+	if ring {
+		path = []api.Entity{d.Sketch.Circle(api.V(10, 0, 0), 10)}
+	} else {
+		p := []api.Vec{api.V(0, 0, -5), api.V(0, 0, 5), api.V(20, 0, 5), api.V(20, 0, -5)}
+		for i := range p {
+			path = append(path, d.Sketch.Line(p[i], p[(i+1)%4]))
+		}
+	}
+	d.Features.SketchIn(d.Workplane("XY"), "profile")
+	d.Sketch.Rect(api.V(-1, -1, 0), api.V(1, 1, 0))
+	d.Features.Sweep(path, "")
 }

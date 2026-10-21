@@ -56,6 +56,22 @@ loft.AsLoft().SetTangency(1, 1) // square to both ends
 loft.AsLoft().SetTangency(0, 0) // free again
 ```
 
+## Along a solid's sides
+
+A profile drawn on a face of the solid before the loft, along that face's edges, can be left
+along the solid's sides instead: [along sides] beside the end on the loft's screen. At each
+point of the profile the loft leaves in the tangent plane of the side face meeting the edge
+there, so the side carries on into the loft without a crease; at a corner between two sides it
+leaves along the line they meet in. Where the sides are square to the face that is the same as
+square to it; where they lean, as a drafted extrusion's or a cone's do, the loft follows the
+lean. The number is the slope's reach as for square ends, 1 where it is 0. A profile that is not
+on the edges of a side below its face is the loft's problem. Example:
+[`examples/scripts/spire`](../../examples/scripts/spire/spire.go), a spire on a tapered post.
+
+```go
+loft.AsLoft().SetAlongSides(true, false) // leave the first profile along the sides
+```
+
 ## Guide curves
 
 A loft can be held to guide curves: line segments, arcs and cubics drawn in a sketch before the
@@ -79,5 +95,5 @@ loft.AsLoft().SetGuides(nil)                       // none again
 
 ## Not yet
 
-Three guides or more are refused; nor is tangency set at a profile between the ends, or to the
-faces of a solid a loft meets.
+Three guides or more are refused, and a guided loft can't also follow a solid's sides; nor is
+tangency set at a profile between the ends.

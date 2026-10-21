@@ -260,6 +260,13 @@ type Group struct {
 	// fittedPath is a sweep's path when its surface is fitted, made
 	// with the group's shell.
 	fittedPath *topo.SweepPath
+	// sweepClosed marks a sweep whose path closes, made with the
+	// group's shell: it has no caps.
+	sweepClosed bool
+	// LoftAlongSides has a loft leave its first profile ([0]) or reach
+	// its last ([1]) along the sides of the solid the profile is drawn
+	// on, rather than square to its plane (loft.go).
+	LoftAlongSides [2]bool
 	// LoftThrough are the profiles a smooth loft goes through between
 	// OpA and OpB, in order (roadmap E8).
 	LoftThrough []core.HGroup

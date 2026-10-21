@@ -210,10 +210,29 @@ func TestSolidGoldens(t *testing.T) {
 			d.Sketch.Rect(api.V(0, -0.5, 4.5), api.V(0, 0.5, 5.5))
 			d.Features.SweepEdges([]api.SolidEdge{front, right}, nil, "")
 		},
+		"sweep-ring": func(d *api.Doc) {
+			d.Features.SketchIn(d.Workplane("ZX"), "path")
+			ring := d.Sketch.Circle(api.V(10, 0, 0), 10)
+			d.Features.SketchIn(d.Workplane("XY"), "profile")
+			d.Sketch.Circle(api.V(0, 0, 0), 2)
+			d.Features.Sweep([]api.Entity{ring}, "")
+		},
+		"sweep-frame": func(d *api.Doc) {
+			path := framePath(d, 20, 10)
+			squareProfile(d, 2)
+			d.Features.Sweep(path, "")
+		},
 		"loft-tangency": func(d *api.Doc) {
 			bottom, top := twoProfiles(d, 10, 4, 6)
 			d.Features.Loft(bottom, top, "").AsLoft().SetTangency(1, 0.5)
 			// The file keeps no chord tolerance (twoProfiles sets one).
+			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+			d.Edit.Regen()
+		},
+		"loft-sides": func(d *api.Doc) {
+			bottom, top, _ := draftedPost(d, 10)
+			d.Features.Loft(bottom, top, "").AsLoft().SetAlongSides(true, false)
+			// The file keeps no chord tolerance (draftedPost sets one).
 			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
 			d.Edit.Regen()
 		},
