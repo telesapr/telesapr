@@ -102,12 +102,6 @@ func (b ThreadBand) OnCylinder(p geom.Vector, r, tol float64) bool {
 	return math.Abs(d.Minus(b.Axis.ScaledBy(d.Dot(b.Axis))).Magnitude()-r) <= tol
 }
 
-// Radius is how far p lies from the band's axis.
-func (b ThreadBand) Radius(p geom.Vector) float64 {
-	d := p.Minus(b.Origin)
-	return d.Minus(b.Axis.ScaledBy(d.Dot(b.Axis))).Magnitude()
-}
-
 // ToCrest is p moved straight away from the axis, or towards it, onto
 // the crest's cylinder.
 func (b ThreadBand) ToCrest(p geom.Vector) geom.Vector {
