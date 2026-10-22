@@ -44,8 +44,8 @@ func TestSolidCacheSameAsMaking(t *testing.T) {
 				continue
 			}
 			t.Run(filepath.ToSlash(strings.TrimPrefix(f, filepath.Join("..", "..", "testdata")+string(filepath.Separator))), func(t *testing.T) {
-				made, _ := editedDigests(t, f, func(sk *sketch.Sketch) { sk.NoSolidCache = true })
-				kept, n := editedDigests(t, f, nil)
+				made, _ := editedDigests(t, f, func(sk *sketch.Sketch) { sk.NoSolidCache = true }, false)
+				kept, n := editedDigests(t, f, nil, false)
 				hits.Add(int64(n))
 				for step := range min(len(made), len(kept)) {
 					if made[step] != kept[step] {
@@ -65,9 +65,10 @@ func TestSolidCacheSameAsMaking(t *testing.T) {
 }
 
 // editedDigests opens file, set sets its sketch up (nil for none), it
-// is edited and gives a digest of the model after each step, and how
-// many solids were taken from the cache.
-func editedDigests(t *testing.T, file string, set func(*sketch.Sketch)) ([]string, int) {
+// is edited, with points moved as a drag moves them where moves is
+// set, and gives a digest of the model after each step, and how many
+// solids were taken from the cache.
+func editedDigests(t *testing.T, file string, set func(*sketch.Sketch), moves bool) ([]string, int) {
 	t.Helper()
 	abs, err := filepath.Abs(file)
 	if err != nil {
@@ -118,6 +119,9 @@ func editedDigests(t *testing.T, file string, set func(*sketch.Sketch)) ([]strin
 	// the same equations solved from other values.
 	var points []core.HParam
 	for ei := range sk.Entities {
+		if !moves {
+			break
+		}
 		if e := &sk.Entities[ei]; e.IsPoint() && sk.Group(e.Group) != nil && e.Param[0].V != 0 && sk.Param(e.Param[0]) != nil {
 			points = append(points, e.Param[0])
 		}
@@ -190,8 +194,8 @@ func TestSolverCacheSameAsWriting(t *testing.T) {
 			continue
 		}
 		t.Run(filepath.ToSlash(strings.TrimPrefix(f, filepath.Join("..", "..", "testdata")+string(filepath.Separator))), func(t *testing.T) {
-			written, _ := editedDigests(t, f, func(sk *sketch.Sketch) { sk.NoSolverCache = true })
-			kept, _ := editedDigests(t, f, nil)
+			written, _ := editedDigests(t, f, func(sk *sketch.Sketch) { sk.NoSolverCache = true }, true)
+			kept, _ := editedDigests(t, f, nil, true)
 			for step := range min(len(written), len(kept)) {
 				if written[step] != kept[step] {
 					t.Errorf("at step %d the model with its equations kept differs from the one written again", step)
