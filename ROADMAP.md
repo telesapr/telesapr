@@ -287,8 +287,6 @@ working notes are at commit `1e84ca0c` (`git show 1e84ca0c:doc/notes/wrap-emboss
 
 | Item | State | Approach / tried |
 |---|---|---|
-| Wrap onto a cone, deep (C2) | 14 of 72 text cases refused, all at depth 0.5 of the letter height; cylinders 0 of 72 | At a corner of the profile the face's trim doesn't assemble: marched curves end 1e-7 apart in uv, or a closed curve's two ends miss (`boolean_trim.go`, the curve ends of `surfinter.go`) |
-| Wrap: a thin wall under an emboss; loop sets wider than 170° | the wall isn't detected when the overlap crosses it; wide loop sets refused | Split a band wrapped right round into patches in place of refusing |
 | Closed lofts; a guided loft along a solid's sides; tangency at a middle profile (C4) | refused | Closed sweeps' periodic frame (`pkg/topo/pathsweep.go`) is the pattern for the first |
 | Fillets onto curved faces (C3) | 55 of 59 of `TestFilletOnOtherSolids` sound | Setbacks (`fillet_setback.go`) onto curved end faces, reached by no measured case; picks meeting at a vertex are refused there; chamfers of edges ending on a curved face (`filletApart` is for fillets only). Run-offs are under [Fillet leftovers](#fillet-leftovers) |
 | Thread fade-out (run-out); multi-start with every start at one height (B1) | not done | A fade-out needs groups after the helix (a cone cut), so a thread would no longer be four groups; starts at one height need a sketch and a helix per start |

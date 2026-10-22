@@ -5115,7 +5115,7 @@
 					},
 					"Emboss": {
 						"decl": "func (m FeaturesMenu) Emboss(face SolidFace, height float64, name string) Group",
-						"text": "Emboss wraps the active sketch's closed loops, text included, onto\nface, a cylinder or a cone of the solid so far picked from Solid, and\nraises them height mm above it. The sketch lies in a workplane\nparallel to the face's axis and is rolled onto the side of the face\ntowards it as paper is, so that seen from there it looks as drawn:\nlengths along the sketch are lengths on the face. Lines across or\nalong a cylinder's axis wrap exactly, other curves within 1e-7 mm. One\nloop with its holes, such as one letter, may span at most 170° round\nthe axis. The new group becomes active."
+						"text": "Emboss wraps the active sketch's closed loops, text included, onto\nface, a cylinder or a cone of the solid so far picked from Solid, and\nraises them height mm above it. The sketch lies in a workplane\nparallel to the face's axis and is rolled onto the side of the face\ntowards it as paper is, so that seen from there it looks as drawn:\nlengths along the sketch are lengths on the face. Lines across or\nalong a cylinder's axis wrap exactly, other curves within 1e-7 mm. One\nloop with its holes, such as one letter, may span at most 350° round\nthe axis. The new group becomes active."
 					},
 					"Engrave": {
 						"decl": "func (m FeaturesMenu) Engrave(face SolidFace, depth float64, name string) Group",
@@ -10974,6 +10974,10 @@
 				"text": "Wrap is the map of one sketch onto a RoundFace.",
 				"kind": "struct",
 				"methods": {
+					"FacePoints": {
+						"decl": "func (w *Wrap) FacePoints(sets []SBezierLoopSet) (pts, normals []geom.Vector)",
+						"text": "FacePoints are points of the face under the loop sets sets once wrapped, each with the face's outward normal there: points along every curve, and a grid of points inside the loops, out of their holes."
+					},
 					"LiftFactor": {
 						"decl": "func (w *Wrap) LiftFactor(h float64) float64",
 						"text": "LiftFactor is the scaling that lifts the face h along its outward normal; at or below zero the lift reaches the axis or the centre."
@@ -11360,7 +11364,7 @@
 			},
 			"WrapMaxSpan": {
 				"decl": "const WrapMaxSpan",
-				"text": "WrapMaxSpan is the most a loop set (an outer loop and its holes) may span round the axis: its caps are one rational quadratic patch each."
+				"text": "WrapMaxSpan is the most a loop set (an outer loop and its holes) may span round the axis: a band wider would meet itself."
 			}
 		}
 	},

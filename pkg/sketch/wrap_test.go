@@ -129,6 +129,55 @@ func TestWrapEmbossThinWall(t *testing.T) {
 	}
 }
 
+// A profile wider than half the face's way round has caps of several
+// patches, which meet at seams across it.
+func TestWrapRoundMostOfTheWay(t *testing.T) {
+	for _, c := range []struct {
+		name    string
+		engrave bool
+		hole    bool
+	}{{"raised", false, false}, {"sunk", true, false}, {"raised with a hole", false, true}, {"sunk with a hole", true, true}} {
+		t.Run(c.name, func(t *testing.T) {
+			d := api.New()
+			// The narrow ring left round the hole is small beside the
+			// cylinder's chords.
+			d.Edit.SetChordTolerance(0.005)
+			ex, face := cylinderBody(d, 10, 40)
+			base := ex.Analyze().Check().Volume
+			d.Features.SketchIn(d.Workplane("ZX"), "")
+			// 50 mm across a radius of 10: 286° round.
+			d.Sketch.Rect(api.V(-25, 0, 10), api.V(25, 0, 30))
+			area := 1000.0
+			if c.hole {
+				d.Sketch.Rect(api.V(-20, 0, 15), api.V(20, 0, 25))
+				area -= 400
+			}
+			var w api.Group
+			want := wrappedBand(area, 10, 0, 1)
+			if c.engrave {
+				w = d.Features.Engrave(face, 1, "")
+				want = wrappedBand(area, 10, -1, 0)
+			} else {
+				w = d.Features.Emboss(face, 1, "")
+			}
+			if p := w.Problem(); p != "" {
+				t.Fatal(p)
+			}
+			r := w.Analyze().Check()
+			if got := math.Abs(r.Volume - base); !r.Sound() || !nearRel(got, want, bandTol) {
+				t.Fatalf("%s: %s, band %g, want %g", c.name, r.String(), got, want)
+			}
+		})
+	}
+	d := api.New()
+	_, face := cylinderBody(d, 10, 40)
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	d.Sketch.Rect(api.V(-32, 0, 10), api.V(32, 0, 30))
+	if !refused(func() { d.Features.Emboss(face, 1, "") }) {
+		t.Fatal("a profile wrapped more than round the face was taken")
+	}
+}
+
 func TestWrapEngraveCircle(t *testing.T) {
 	d := api.New()
 	// The circle's pocket is small beside the cylinder's chords.
@@ -210,8 +259,8 @@ func TestWrapRefusals(t *testing.T) {
 	refused("no height", "more than zero", func() { d.Features.Emboss(face, 0, "") })
 	refused("an engraving through the axis", "axis", func() { d.Features.Engrave(face, 12, "") })
 	d.Features.SketchIn(d.Workplane("ZX"), "")
-	d.Sketch.Rect(api.V(-20, 0, 10), api.V(20, 0, 20))
-	refused("a loop round 229°", "split it", func() { d.Features.Emboss(face, 1, "") })
+	d.Sketch.Rect(api.V(-32, 0, 10), api.V(32, 0, 20))
+	refused("a loop round 367°", "meet itself", func() { d.Features.Emboss(face, 1, "") })
 	d.Features.SketchIn(d.Workplane("ZX"), "")
 	d.Sketch.Line(api.V(-2, 0, 10), api.V(2, 0, 20))
 	refused("an open sketch", "closed loops", func() { d.Features.Emboss(face, 1, "") })
