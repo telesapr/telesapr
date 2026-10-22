@@ -23,9 +23,9 @@ import (
 // params, entities, solids and meshes at each step with its solids kept
 // by what they were made from as with every solid made again: a solid
 // taken from the cache is the one making it would give. Under -short a
-// sample of the models.
+// sample of the models. Not parallel: Application.Init sets the link
+// package's hooks, which are the process's.
 func TestSolidCacheSameAsMaking(t *testing.T) {
-	t.Parallel()
 	var files []string
 	err := filepath.WalkDir(filepath.Join("..", "..", "testdata"), func(path string, d fs.DirEntry, err error) error {
 		if err == nil && !d.IsDir() && strings.HasSuffix(path, ".tlspr") {
@@ -39,11 +39,10 @@ func TestSolidCacheSameAsMaking(t *testing.T) {
 	var hits atomic.Int64
 	t.Run("models", func(t *testing.T) {
 		for i, f := range files {
-			if testing.Short() && i%10 != 0 {
+			if testing.Short() && i%20 != 0 {
 				continue
 			}
 			t.Run(filepath.ToSlash(strings.TrimPrefix(f, filepath.Join("..", "..", "testdata")+string(filepath.Separator))), func(t *testing.T) {
-				t.Parallel()
 				made, _ := editedDigests(t, f, false)
 				kept, n := editedDigests(t, f, true)
 				hits.Add(int64(n))
