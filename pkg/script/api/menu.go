@@ -26,6 +26,7 @@ var MenuCalls = map[string]string{
 	"File/Export/3d Wireframe (.step, .dxf)...":                               "File.Export File.ExportAs",
 	"File/Export/Triangle Mesh (.stl, .3mf, .glb, .obj, .html, .js, .wrl)...": "File.Export File.ExportAs File.SetMeshQuality",
 	"File/Export/Surfaces (.step)...":                                         "File.Export File.ExportAs",
+	"File/Export/Script (.go)...":                                             "File.ExportScript Doc.Script",
 	"File/Export/Drawing (.pdf, .eps, .svg, .dxf, .plt, .ngc)...":             "Drawing.Export",
 	"File/Exit": "- the window's",
 

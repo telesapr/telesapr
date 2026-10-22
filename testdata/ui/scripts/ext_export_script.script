@@ -1,0 +1,18 @@
+# Export script (an extension): File > Export > Script... writes the
+# model as a Go program that builds it again (File.ExportScript), here a
+# rectangle drawn and extruded. The file dialog takes the path; a
+# second export leaves it unanswered and writes nothing.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+file $tmp/model.go
+menu File|Export|Script (.go)...
+dump
+menu File|Export|Script (.go)...
+dump

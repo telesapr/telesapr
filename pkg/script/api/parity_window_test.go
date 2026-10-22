@@ -663,6 +663,7 @@ Styles         -q
 Style          -q
 ResetStyles    ScreenLoadFactoryDefaultStyles
 NewStyle       ScreenCreateCustomStyle; ctx:Newly Created Custom Style...
+Script         menu:File/Export/Script (.go)...
 `,
 	"Group": `
 Appearance            -q
@@ -678,6 +679,7 @@ Solved                -q
 Dof                   -q
 Requests              -q
 Entities              -q
+Made                  -q
 Constraints           -q
 Param                 -raw
 Workplane             -q
@@ -767,6 +769,7 @@ Pos              -q
 MoveTo           dragPoints; ctx:Snap to Grid
 MoveBy           dragPoints
 Points           -q
+Part             -q
 Overlap          -q
 Start            -q
 End              -q

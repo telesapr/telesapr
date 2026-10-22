@@ -445,3 +445,12 @@ func (h *SketchHost) Commands() []string { return nil }
 func (h *SketchHost) RunCommand(label string) error {
 	return fmt.Errorf("no window to run %q in: commands need the application", label)
 }
+
+// FileNamer is a Host that knows the file its sketch was opened from or
+// saved to, "" for none: what a link's relative path is relative to.
+type FileNamer interface {
+	FileName() string
+}
+
+// FileName is the file the sketch was opened from or saved to.
+func (h *SketchHost) FileName() string { return h.saveFile }

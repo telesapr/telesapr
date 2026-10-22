@@ -90,6 +90,7 @@ func init() {
 		"Field":            reflect.ValueOf((*api.Field)(nil)),
 		"FileGuard":        reflect.ValueOf((*api.FileGuard)(nil)),
 		"FileMenu":         reflect.ValueOf((*api.FileMenu)(nil)),
+		"FileNamer":        reflect.ValueOf((*api.FileNamer)(nil)),
 		"FilletGroup":      reflect.ValueOf((*api.FilletGroup)(nil)),
 		"Form":             reflect.ValueOf((*api.Form)(nil)),
 		"GCodeOptions":     reflect.ValueOf((*api.GCodeOptions)(nil)),
@@ -129,6 +130,7 @@ func init() {
 
 		// interface wrapper definitions
 		"_FileGuard": reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_script_api_FileGuard)(nil)),
+		"_FileNamer": reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_script_api_FileNamer)(nil)),
 		"_Host":      reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_script_api_Host)(nil)),
 	}
 }
@@ -141,6 +143,16 @@ type _github_com_telesapr_telesapr_pkg_script_api_FileGuard struct {
 
 func (W _github_com_telesapr_telesapr_pkg_script_api_FileGuard) CheckFile(path string, write bool) error {
 	return W.WCheckFile(path, write)
+}
+
+// _github_com_telesapr_telesapr_pkg_script_api_FileNamer is an interface wrapper for FileNamer type
+type _github_com_telesapr_telesapr_pkg_script_api_FileNamer struct {
+	IValue    interface{}
+	WFileName func() string
+}
+
+func (W _github_com_telesapr_telesapr_pkg_script_api_FileNamer) FileName() string {
+	return W.WFileName()
 }
 
 // _github_com_telesapr_telesapr_pkg_script_api_Host is an interface wrapper for Host type

@@ -90,6 +90,10 @@ Commands:
         being triangulated first.
     export-surfaces --output <pattern> [--group <group>]
         Exports exact surfaces of solids in the sketch, if any.
+    export-script [--output <pattern>]
+        Writes the sketch as a Go script that builds it again (File >
+        Export > Script), by default to <name>.go beside it; what it can't
+        write yet is a comment in the script starting "not written:".
     regenerate [--chord-tol <tolerance>]
         Reloads all imported files, regenerates the sketch, and saves it.
         Note that, although this is not an export command, it uses absolute
@@ -395,6 +399,13 @@ var fileCommands = map[string]fileCommand{
 		accepted: []string{"--output", "--group"},
 		run: func(s *session, _ *options, output string) error {
 			return s.ss.ExportSurfacesTo(output)
+		},
+	},
+	"export-script": {
+		accepted: []string{"--output"},
+		output:   "%.go",
+		run: func(s *session, _ *options, output string) error {
+			return s.ss.ExportScriptTo(output)
 		},
 	},
 	"regenerate": {

@@ -276,6 +276,7 @@ var apiGuarded = []string{
 	"DrawingMenu.Export",
 	"FileMenu.Export",
 	"FileMenu.ExportAs",
+	"FileMenu.ExportScript",
 	"FileMenu.ExportSection",
 	"FileMenu.ImportDXF",
 	"FileMenu.Load",
