@@ -131,14 +131,26 @@ func lineToFace(group ShellGroup, sb *SBezier) (FaceID, bool) {
 // addAndAssignCurveID appends sc to s.Curve with a fresh handle, one
 // more than the largest in use.
 func (s *SShell) addAndAssignCurveID(sc SCurve) core.HSCurve {
-	// Use one more than the largest id in use.
+	return s.addCurveAs(sc, s.nextCurveID())
+}
+
+// nextCurveID is the handle addAndAssignCurveID gives the next curve:
+// one more than the largest in use. A loop that adds curves one after
+// another finds it once and counts on from it, the handles being those
+// adding them one at a time would give, without a scan of the shell's
+// curves for each.
+func (s *SShell) nextCurveID() core.HSCurve {
 	var maxV uint32
 	for i := range s.Curve {
 		if s.Curve[i].H.V > maxV {
 			maxV = s.Curve[i].H.V
 		}
 	}
-	h := core.HSCurve{V: maxV + 1}
+	return core.HSCurve{V: maxV + 1}
+}
+
+// addCurveAs appends sc to s.Curve with handle h, which is nextCurveID.
+func (s *SShell) addCurveAs(sc SCurve, h core.HSCurve) core.HSCurve {
 	sc.H = h
 	s.Curve = append(s.Curve, sc)
 	return h

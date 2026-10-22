@@ -32,8 +32,11 @@ func (s *SShell) CopyCurvesSplitAgainst(opA bool, agnst, into *SShell) {
 			scn[i].Source = CurveSourceOrigB
 		}
 	})
+	into.Curve = slices.Grow(into.Curve, len(scn))
+	next := into.nextCurveID()
 	for i := range scn {
-		hsc := into.addAndAssignCurveID(scn[i])
+		hsc := into.addCurveAs(scn[i], next)
+		next.V++
 		// And note the new ID so that we can rewrite the trims appropriately
 		s.Curve[i].NewH = hsc
 	}
@@ -82,8 +85,9 @@ func (s *SShell) MakeIntersectionCurvesAgainst(agnst, into *SShell) {
 		}
 	})
 	first := len(into.Curve)
+	next := into.nextCurveID()
 	for i := range sinks {
-		sinks[i].commitTo(into, first)
+		next = sinks[i].commitTo(into, first, next)
 	}
 }
 

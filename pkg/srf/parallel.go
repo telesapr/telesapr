@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync/atomic"
 
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/par"
 )
@@ -239,8 +240,9 @@ var sinkRedone atomic.Int64
 // into.Curve[first] on. An exact curve that found none to follow in
 // the shell as it was is looked up again among them, as the loop in
 // order would have; if that finds another curve than the sink knew of,
-// the exact curve is added over again.
-func (k *curveSink) commitTo(into *SShell, first int) {
+// the exact curve is added over again. next is the handle the next
+// curve takes, which commitTo gives back for the next sink.
+func (k *curveSink) commitTo(into *SShell, first int, next core.HSCurve) core.HSCurve {
 	if k.failed {
 		into.BooleanFailed = true
 	}
@@ -262,12 +264,15 @@ func (k *curveSink) commitTo(into *SShell, first int) {
 			if !same {
 				sinkRedone.Add(1)
 				ex.s.AddExactIntersectionCurve(&ex.sb, ex.srfB, ex.agnstA, ex.agnstB, into)
+				next = into.nextCurveID()
 				continue
 			}
 		}
 		if e.added {
 			at[j] = len(into.Curve)
-			into.addAndAssignCurveID(e.curve)
+			into.addCurveAs(e.curve, next)
+			next.V++
 		}
 	}
+	return next
 }
