@@ -24,6 +24,12 @@ type filletTally struct {
 // up to max, alone in a document of its own, with radius r, and tallies
 // how they fare.
 func filletEveryEdge(t *testing.T, build func(d *Doc) Group, r float64, limit int) filletTally {
+	return cutEveryEdge(t, build, r, limit, false)
+}
+
+// cutEveryEdge is filletEveryEdge, or with flat the same for chamfers
+// of distance r.
+func cutEveryEdge(t *testing.T, build func(d *Doc) Group, r float64, limit int, flat bool) filletTally {
 	tl := filletTally{reasons: map[string]int{}}
 	n := 0
 	var smooth []bool
@@ -54,7 +60,12 @@ func filletEveryEdge(t *testing.T, build func(d *Doc) Group, r float64, limit in
 			d := New()
 			d.Edit.SetChordTolerance(0.01)
 			g := build(d)
-			f := d.Features.FilletSolid([]SolidEdge{g.Solid().Edges()[i]}, r, "")
+			var f Group
+			if flat {
+				f = d.Features.ChamferSolid([]SolidEdge{g.Solid().Edges()[i]}, r, "")
+			} else {
+				f = d.Features.FilletSolid([]SolidEdge{g.Solid().Edges()[i]}, r, "")
+			}
 			if p := f.Problem(); p != "" {
 				tl.refused++
 				tl.reasons[reasonOf(p)]++
@@ -95,12 +106,35 @@ func TestFilletOnOtherSolids(t *testing.T) {
 	if testing.Short() {
 		t.Skip("STEP solids at a fine tolerance")
 	}
-	type tcase struct {
-		name    string
-		build   func(d *Doc) Group
-		r       float64
-		minMade int
+	total, made := 0, 0
+	for _, c := range otherSolids(t) {
+		tl := filletEveryEdge(t, c.build, c.r, 16)
+		t.Logf("%s, r %g: %s", c.name, c.r, tl)
+		if tl.unsound > 0 {
+			t.Errorf("%s: %d fillets made but not sound", c.name, tl.unsound)
+		}
+		if tl.sound < c.minMade {
+			t.Errorf("%s: %d fillets made, %d were", c.name, tl.sound, c.minMade)
+		}
+		total += tl.sound + tl.unsound + tl.refused
+		made += tl.sound
 	}
+	t.Logf("in all: %d of %d edges filleted soundly (%.0f%%)", made, total, 100*float64(made)/float64(total))
+}
+
+// otherSolid is a solid of TestFilletOnOtherSolids: how to build it, the
+// radius its edges are filleted at, and how many fillets were sound.
+type otherSolid struct {
+	name    string
+	build   func(d *Doc) Group
+	r       float64
+	minMade int
+}
+
+// otherSolids are the loft, the sweep and the STEP solids whose every
+// edge TestFilletOnOtherSolids fillets.
+func otherSolids(t *testing.T) []otherSolid {
+	type tcase = otherSolid
 	step := func(file string) func(d *Doc) Group {
 		return func(d *Doc) Group {
 			g, err := d.Assembly.LinkStep(filepath.Join("..", "..", "..", "testdata", "step", file), "", true)
@@ -144,20 +178,7 @@ func TestFilletOnOtherSolids(t *testing.T) {
 		{"vase_revolved", step("shapes/vase_revolved.step"), 1, 2},
 		{"lid_degree7", step("degree/lid_degree7.step"), 1, 12},
 	}
-	total, made := 0, 0
-	for _, c := range cases {
-		tl := filletEveryEdge(t, c.build, c.r, 16)
-		t.Logf("%s, r %g: %s", c.name, c.r, tl)
-		if tl.unsound > 0 {
-			t.Errorf("%s: %d fillets made but not sound", c.name, tl.unsound)
-		}
-		if tl.sound < c.minMade {
-			t.Errorf("%s: %d fillets made, %d were", c.name, tl.sound, c.minMade)
-		}
-		total += tl.sound + tl.unsound + tl.refused
-		made += tl.sound
-	}
-	t.Logf("in all: %d of %d edges filleted soundly (%.0f%%)", made, total, 100*float64(made)/float64(total))
+	return cases
 }
 
 // The loft of TestFilletOnOtherSolids from a square foot through three

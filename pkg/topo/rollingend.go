@@ -1010,6 +1010,13 @@ func (rb *rollingBall) splitSection(c srf.BSplineCurve) srf.BSplineCurve {
 func (rb *rollingBall) curvedEndSection(k int, sec rbSection) (rbSection, error) {
 	end := rb.ends[k]
 	s := rb.t.Surface(end.f)
+	if rb.flat {
+		// A chamfer meets the sides' faces at an angle, not tangent: the
+		// curve's way at its ends is along the face and the chamfer's own
+		// surface, through its ruling and the curve each side's foot
+		// runs along.
+		sec.foot = rb.chamferNormals(sec)
+	}
 	// The curve's way at its ends: along the face and the side's.
 	tanAt := func(q, n geom.Vector) geom.Vector {
 		if end.mitre {
@@ -1287,4 +1294,28 @@ func solveDense(a [][]float64, b []float64) ([]float64, bool) {
 		x[r] = s / a[r][r]
 	}
 	return x, true
+}
+
+// chamferNormals are sec's feet with, in place of the sides' faces'
+// normals, the chamfer's own there: square to its ruling and to the way
+// the foot runs along the chain, from the sections either side.
+func (rb *rollingBall) chamferNormals(sec rbSection) [2]rbFoot {
+	feet := sec.foot
+	ruling := feet[1].p.Minus(feet[0].p)
+	_, d := rb.along(sec.s)
+	h := 1e-3 * math.Max(1, rb.r)
+	a, aerr := rb.section(sec.s - h)
+	b, berr := rb.section(sec.s + h)
+	for k := range feet {
+		way := d
+		if aerr == nil && berr == nil {
+			if w := b.foot[k].p.Minus(a.foot[k].p); w.Magnitude() > 0 {
+				way = w
+			}
+		}
+		if n := ruling.Cross(way); n.Magnitude() > 0 {
+			feet[k].n = n.WithMagnitude(1)
+		}
+	}
+	return feet
 }

@@ -27,11 +27,11 @@ const apartOrigins = 5 * stageOrigins
 // maxApart is how many rolling picks fit in the origins left.
 const maxApart = (0x10000 - apartOrigins) / stageOrigins
 
-// filletApart rounds picks of sh with radius r one after another, the
-// rolling ones each alone; errNotApart where none is rolling, and a
+// filletApart rounds picks of sh with radius r, or chamfers them where
+// flat, one after another, the rolling ones each alone; errNotApart where none is rolling, and a
 // refusal at the place where a rolling one's fillet meets another's.
 // The shell is changed only when every pick is rounded.
-func filletApart(sh *srf.SShell, picks []FilletPick, r float64, origin uint32) error {
+func filletApart(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) error {
 	if len(picks) < 2 {
 		return errNotApart
 	}
@@ -90,7 +90,7 @@ func filletApart(sh *srf.SShell, picks []FilletPick, r float64, origin uint32) e
 	var cp srf.SShell
 	cp.MakeFromCopyOf(sh)
 	if len(exact) > 0 {
-		if err := FilletPicks(&cp, exact, r, origin, false); err != nil {
+		if err := FilletPicks(&cp, exact, r, origin, flat); err != nil {
 			return err
 		}
 	}
@@ -110,7 +110,7 @@ func filletApart(sh *srf.SShell, picks []FilletPick, r float64, origin uint32) e
 			}
 			q.A, q.B = a, b
 		}
-		if err := filletOnCurvedEnd(&cp, q, r, origin+apartOrigins+uint32(k)*stageOrigins, false); err != nil {
+		if err := filletOnCurvedEnd(&cp, q, r, origin+apartOrigins+uint32(k)*stageOrigins, flat); err != nil {
 			return err
 		}
 	}

@@ -1,6 +1,7 @@
 package topo
 
 import (
+	"errors"
 	"fmt"
 	"math"
 
@@ -19,9 +20,30 @@ import (
 type FilletError struct {
 	Msg string
 	At  geom.Vector
+	// rolling says the rolling ball refused (RollingRefusal).
+	rolling bool
 }
 
 func (e *FilletError) Error() string { return e.Msg }
+
+// RollingRefusal reports whether err refuses a fillet or a chamfer that
+// only the rolling ball makes, of an edge beside a curved face or ending
+// on one: a wedge and a Boolean cut neither soundly (the wedge's end
+// would stand open across the curved face), so the refusal is the
+// chamfer's.
+func RollingRefusal(err error) bool {
+	var fx *FilletError
+	return errors.As(err, &fx) && (fx.rolling || fx.Msg == curvedEndMsg)
+}
+
+// byRollingBall marks err, a refusal by the rolling ball, as
+// RollingRefusal's.
+func byRollingBall(err error) error {
+	if fx, ok := errors.AsType[*FilletError](err); ok {
+		fx.rolling = true
+	}
+	return err
+}
 
 func filletErr(at geom.Vector, format string, args ...any) error {
 	return &FilletError{Msg: fmt.Sprintf(format, args...), At: at}

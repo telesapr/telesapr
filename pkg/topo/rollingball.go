@@ -935,11 +935,26 @@ func (rb *rollingBall) misfit(sf *srf.BSplineSurface, t, s float64, near bool) (
 	e = math.Max(e, rb.footNear(1, p1, nr).p.Minus(p1).Magnitude())
 	where := pm
 	if near && rb.flat {
-		// Near the ends a chamfer's rulings run between the points its
-		// oblique sections touch the faces: flat across.
+		k := 0
+		if s >= rb.length/2 {
+			k = 1
+		}
+		curved := k < len(rb.ends) && rb.ends[k] != nil && rb.ends[k].curved
 		for _, u := range []float64{0.25, 0.5, 0.75} {
 			p := sf.PointAt(u, t)
-			if d := distanceToPolyline(p, []geom.Vector{p0, p1}); d > e {
+			line := []geom.Vector{p0, p1}
+			if curved {
+				// An end on a curved face is curved across: the surface
+				// keeps to the chamfer's nearest ruling instead.
+				sec, err := rb.section(rb.nearestSection(p, s))
+				if err != nil {
+					return math.Inf(1), p
+				}
+				line = []geom.Vector{sec.foot[0].p, sec.foot[1].p}
+			}
+			// Elsewhere near the ends a chamfer's rulings run between the
+			// points its oblique sections touch the faces: flat across.
+			if d := distanceToPolyline(p, line); d > e {
 				e, where = d, p
 			}
 		}
