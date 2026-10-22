@@ -182,6 +182,14 @@ func (c *SCurve) RemoveShortSegmentsWithChordTol(sA, sB *SSurface, chordTolMm fl
 		sct := &c.Points[i]
 		scn := &c.Points[i+1]
 
+		// A vertex within LengthEps of the point before or of the end
+		// is that point: kept, it is a segment of no length whose ends
+		// a trim takes as one point, with two ways on from it, and the
+		// trim doesn't assemble (a word wrapped deep onto a cone, its
+		// marched curves split a hair from where they end).
+		if sct.Vertex && (sct.P.Equals(prev) || sct.P.Equals(c.Points[len(c.Points)-1].P)) {
+			continue
+		}
 		if sct.Vertex {
 			keep = append(keep, *sct)
 			prev = sct.P

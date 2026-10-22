@@ -310,10 +310,11 @@ func (w *Wrap) exactLine(b *SBezier) ([]SBezier, bool) {
 }
 
 // capPatch is one patch of the face, unlifted, holding the loop set
-// sbls once it is wrapped, with a margin all round; lifted as far as
-// lift, it holds the set lifted. An error when the set spans more than
+// sbls once it is wrapped, with a margin all round; lifted to h0 or h1,
+// it holds the set lifted. An error when the set spans more than
 // WrapMaxSpan round the axis or reaches past a cone's apex.
-func (w *Wrap) capPatch(sbls *SBezierLoopSet, lift float64) (SSurface, error) {
+func (w *Wrap) capPatch(sbls *SBezierLoopSet, h0, h1 float64) (SSurface, error) {
+	lift := max(math.Abs(h0), math.Abs(h1))
 	thLo, thHi := math.Inf(1), math.Inf(-1)
 	alLo, alHi := math.Inf(1), math.Inf(-1)
 	for _, l := range sbls.loops() {
@@ -340,10 +341,24 @@ func (w *Wrap) capPatch(sbls *SBezierLoopSet, lift float64) (SSurface, error) {
 		// generator, away from the sketch's middle, by up to the lift.
 		dal += lift
 	}
+	setLo, setHi := alLo, alHi
 	thLo, thHi = thLo-dth, thHi+dth
 	alLo, alHi = alLo-dal, alHi+dal
 	if w.Face.IsCone() {
 		alLo = max(alLo, (alLo+dal)/2)
+		// A curve lifted h along the normal lies on the cap, the face
+		// scaled by k about the lift's centre, where the face's point
+		// rhoC + (al-rhoC)/k along the generator goes: a cap sunk deep
+		// into a narrow cone must reach further along it than the set
+		// does, by more than the margin (a word engraved half as deep
+		// as its letters are high fell off its cap).
+		m := dal - lift
+		for _, h := range []float64{h0, h1} {
+			k := w.LiftFactor(h)
+			alLo = min(alLo, w.rhoC+(setLo-w.rhoC)/k-m)
+			alHi = max(alHi, w.rhoC+(setHi-w.rhoC)/k+m)
+		}
+		alLo = max(alLo, setLo/4)
 	}
 	gen := SBezierFrom2(w.at(0, alLo), w.at(0, alHi))
 	return FromRevolutionOf(&gen, w.Face.Point, w.Face.Axis, thLo, thHi, 0, 0), nil

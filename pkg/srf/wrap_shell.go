@@ -2,7 +2,6 @@ package srf
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -24,7 +23,7 @@ func (s *SShell) MakeFromWrapOf(sbls *SBezierLoopSet, w *Wrap, h0, h1 float64, c
 	if w.LiftFactor(h0) <= 1e-6 || w.LiftFactor(h1) <= 1e-6 {
 		return fmt.Errorf("a depth of %g reaches the face's axis", max(-h0, -h1))
 	}
-	capAt0, err := w.capPatch(sbls, max(math.Abs(h0), math.Abs(h1)))
+	capAt0, err := w.capPatch(sbls, h0, h1)
 	if err != nil {
 		return err
 	}
