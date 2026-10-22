@@ -63,6 +63,12 @@ type rbEnd struct {
 	// shared is the mitre, the last section of both ends, once one of
 	// them is fitted: the other copies it.
 	shared *rbSection
+	// fade marks an end where the crease fades out part way along the
+	// edge, at p: the faces turn less and less, and the fillet narrows to
+	// nothing. It ends there with no face of its own, its last section
+	// closed by the two short lines from its feet to p.
+	fade bool
+	p    geom.Vector
 }
 
 // rbEndAt is the flat face the chain, through edge at vertex v between
@@ -417,6 +423,32 @@ func (rb *rollingBall) endDerivative(k int) ([]geom.Vector4, error) {
 	return out, nil
 }
 
+// fadeDerivative is the derivative along the edge, in homogeneous
+// coordinates, of the ball's sections at end k where the crease fades
+// out (rbEnd.fade), one-sided, from sections in from it.
+func (rb *rollingBall) fadeDerivative(k int) ([]geom.Vector4, error) {
+	s, in := 0.0, 1.0
+	if k == 1 {
+		s, in = rb.length, -1
+	}
+	h := math.Min(rb.r/16, rb.length/256)
+	var hs [3][]geom.Vector4
+	for i := range 3 {
+		sec, err := rb.section(s + in*float64(i)*h)
+		if err != nil {
+			return nil, err
+		}
+		hs[i] = homog(sec.arc)
+	}
+	out := make([]geom.Vector4, len(hs[0]))
+	for i := range out {
+		// (f(s+2h) - 4 f(s+h) + 3 f(s)) / -2h, with h signed inwards.
+		d := hs[0][i].ScaledBy(-3).Plus(hs[1][i].ScaledBy(4)).Minus(hs[2][i])
+		out[i] = d.ScaledBy(1 / (2 * in * h))
+	}
+	return out, nil
+}
+
 // blendOpen is blend for an open chain.
 func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossing, error) {
 	if rb.mitred() && rb.ends[0].mate == rb {
@@ -429,6 +461,11 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	var deriv [2][]geom.Vector4
 	var at0 [2]rbSection
 	for k, end := range rb.ends {
+		if end.fade {
+			// No face: the ball's own sections run to the end.
+			inner[k] = rb.length * float64(k)
+			continue
+		}
 		if end.n.Dot(beyond[k]) < 0 {
 			end.n, end.d, end.sign = end.n.ScaledBy(-1), -end.d, -end.sign
 		}
@@ -454,6 +491,9 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	// in the oblique cut's spread.
 	var ramp [2]float64
 	for k, end := range rb.ends {
+		if end.fade {
+			continue
+		}
 		theta := math.Acos(math.Min(1, end.n.Dot(beyond[k])))
 		ramp[k] = math.Min(4*rb.r*theta+gap, avail/3)
 	}
@@ -462,7 +502,12 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	quartic := rb.anyCurvedEnd() || rb.fitCuts
 	for k := range rb.ends {
 		var err error
-		if deriv[k], err = rb.endDerivative(k); err != nil {
+		if rb.ends[k].fade {
+			deriv[k], err = rb.fadeDerivative(k)
+		} else {
+			deriv[k], err = rb.endDerivative(k)
+		}
+		if err != nil {
 			return nil, nil, nil, err
 		}
 		if quartic {
@@ -502,6 +547,9 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	var specs []rbSpec
 	const steps = 4
 	for i := range steps {
+		if rb.ends[0].fade {
+			break
+		}
 		specs = append(specs, rbSpec{end: 0, lam: float64(i) / steps})
 	}
 	for i := 0; i+1 < len(breaks); i++ {
@@ -516,6 +564,9 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	}
 	specs = append(specs, rbSpec{end: -1, s: r1})
 	for i := steps - 1; i >= 0; i-- {
+		if rb.ends[1].fade {
+			break
+		}
 		specs = append(specs, rbSpec{end: 1, lam: float64(i) / steps})
 	}
 	cache := map[rbSpec]rbSection{}

@@ -20,7 +20,7 @@ func TestChamferOnOtherSolids(t *testing.T) {
 	if testing.Short() {
 		t.Skip("STEP solids at a fine tolerance")
 	}
-	minMade := map[string]int{"loft": 4, "sweep": 12, "box_hole": 14, "cylinder": 2, "blob_extruded": 1,
+	minMade := map[string]int{"loft": 8, "sweep": 12, "box_hole": 14, "cylinder": 2, "blob_extruded": 1,
 		"sphere_bored": 2, "vase_revolved": 2, "lid_degree7": 12}
 	total, made := 0, 0
 	for _, c := range otherSolids(t) {
