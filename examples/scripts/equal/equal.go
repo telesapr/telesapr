@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
@@ -47,6 +48,14 @@ func main() {
 	// requires.
 	e.End().MoveTo(api.V(20, 70, 0))
 	fmt.Printf("the two corners: %s, solved %t\n", equal.String(), doc.Active().Solved())
+
+	// The same kind of equality as the core package names it, on four
+	// entities, as File > Export > Script writes it: two more corners.
+	f := doc.Sketch.Line(api.V(40, 30, 0), api.V(70, 30, 0))
+	g := doc.Sketch.Line(api.V(70, 30, 0), api.V(70, 40, 0))
+	doc.Constrain.Coincident(f.End(), g.Start())
+	raw := doc.Constrain.RawFour(core.ConstraintEqualAngle, api.Entity{}, api.Entity{}, a, b, f, g, false, false)
+	fmt.Printf("raw: %s, solved %t\n", raw.String(), doc.Active().Solved())
 
 	// How far one point is from another along a line segment, which is
 	// the gap between two parallel faces.

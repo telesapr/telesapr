@@ -65,7 +65,10 @@ func (m SketchMenu) UV(u, v float64) (p Vec) {
 	return p
 }
 
-// Point adds a datum point at p.
+// Point adds a datum point at p. Unlike the other drawing calls it may
+// be drawn in a group that isn't a sketch, as an extrusion, as the
+// window's Datum Point may: a point to measure from or to put a
+// dimension on, which changes no solid.
 func (m SketchMenu) Point(p Vec) Entity {
 	d := m.d
 	return d.request(sketch.RequestDatumPoint, nil, func(sk *sketch.Sketch, hr core.HRequest) {
@@ -119,6 +122,33 @@ func (m SketchMenu) Cubic(p0, p1, p2, p3 Vec) Entity {
 	return d.request(sketch.RequestCubic, nil, func(sk *sketch.Sketch, hr core.HRequest) {
 		for i, p := range []Vec{p0, p1, p2, p3} {
 			forceTo(sk, hr.Entity(1+i), p)
+		}
+	})
+}
+
+// Spline adds an open cubic spline with the given points, in order:
+// the start, the control point beside it, the points it passes through,
+// then the end's control point and the end; at least four and at most
+// twelve. With four it is the Bézier curve Cubic draws.
+func (m SketchMenu) Spline(points ...Vec) Entity {
+	return m.spline(sketch.RequestCubic, 4, points)
+}
+
+// PeriodicSpline adds a closed cubic spline through the given points,
+// in order, at least three and at most twelve: the curve goes round
+// from the last back to the first, as the window's spline does when a
+// click lands on its first point again.
+func (m SketchMenu) PeriodicSpline(points ...Vec) Entity {
+	return m.spline(sketch.RequestCubicPeriodic, 3, points)
+}
+
+func (m SketchMenu) spline(typ sketch.RequestType, least int, points []Vec) Entity {
+	if len(points) < least || len(points) > core.MaxPointsInEntity {
+		fail("a spline of this kind takes %d to %d points, not %d", least, core.MaxPointsInEntity, len(points))
+	}
+	return m.d.request(typ, nil, func(sk *sketch.Sketch, hr core.HRequest) {
+		if err := sk.SetSplinePoints(hr, points); err != nil {
+			fail("%v", err)
 		}
 	})
 }

@@ -12,7 +12,9 @@
 //
 // It draws a cubic from (0, 0) to (60, 0) and a line from its end,
 // joined there, bends the cubic through two more points, takes one of
-// them back, and frees the line from the cubic. It writes nothing.
+// them back, and frees the line from the cubic. Then it draws a spline
+// and a closed one straight from their points, as File > Export >
+// Script writes them. It writes nothing.
 package main
 
 import (
@@ -68,4 +70,15 @@ func main() {
 		fail("the spline is a %s, not a closed one", ring.Kind())
 	}
 	fmt.Printf("the spline goes round through %d points\n", len(ring.Points()))
+
+	// Drawn from all their points at once: an open spline's are its
+	// start, the control point beside it, the points it passes through,
+	// the end's control point and its end; a closed one's the points it
+	// passes through.
+	wave := doc.Sketch.Spline(api.V(0, 40, 0), api.V(10, 50, 0), api.V(20, 40, 0), api.V(30, 30, 0), api.V(40, 40, 0), api.V(50, 50, 0))
+	loop := doc.Sketch.PeriodicSpline(api.V(70, 30, 0), api.V(80, 40, 0), api.V(70, 50, 0), api.V(60, 40, 0))
+	if len(wave.Points()) != 6 || loop.Kind() != "periodic-cubic" {
+		fail("the wave has %d points, the loop is a %s", len(wave.Points()), loop.Kind())
+	}
+	fmt.Printf("a wave of %d points and a loop through %d\n", len(wave.Points()), len(loop.Points()))
 }
