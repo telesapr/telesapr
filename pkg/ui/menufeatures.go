@@ -165,9 +165,10 @@ func (ss *Application) groupWorkplane(g *sketch.Group) bool {
 			case sketch.GroupWorkplaneByPointNormal:
 				g.Predef.Q = wrkplg.Predef.Q
 				g.Predef.EntityB = wrkplg.Predef.EntityB
-			case sketch.GroupWorkplaneByFace:
+			case sketch.GroupWorkplaneByFace, sketch.GroupWorkplaneByDatum:
 				g.Predef.Q, g.Predef.At = wrkplg.Predef.Q, wrkplg.Predef.At
 				g.SolidFaces = slices.Clone(wrkplg.SolidFaces)
+				g.SolidEdges = slices.Clone(wrkplg.SolidEdges)
 			default:
 				panic("ui: unexpected workplane subtype")
 			}

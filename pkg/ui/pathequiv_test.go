@@ -324,6 +324,20 @@ func TestPathEquivalenceChamferSolidEdge(t *testing.T) {
 	}
 }
 
+// An edge of the solid that no entity draws, picked on the model and
+// named as a datum on the datums screen, and the same made by a script:
+// a workplane that follows the edge.
+func TestPathEquivalenceDatumSolidEdge(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_datum_solid_edge", "path_datum_solid_edge")
+	d := ui.Datum("notch")
+	if d == nil {
+		t.Fatalf("datums %v", ui.Datums)
+	}
+	if g := ui.Group(d.Entity.Group()); g.Subtype != sketch.GroupWorkplaneByDatum || len(g.SolidEdges) != 1 || g.Problem.Msg != "" {
+		t.Errorf("the datum's group: subtype %d, edges %v, problem %q", g.Subtype, g.SolidEdges, g.Problem.Msg)
+	}
+}
+
 // An edge of an extrusion picked with the mouse and rounded, and the
 // same made by a script.
 func TestPathEquivalenceFillet(t *testing.T) {

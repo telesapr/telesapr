@@ -109,22 +109,27 @@ func (m AssemblyMenu) LinkStep(path, name string, asSolid bool) (Group, error) {
 // about the axis and slide along it, as a pin in a hole. The directions
 // are lines or normals of the first circle's group, or the reference
 // axes; with none square to the axis, the centres are put on each
-// other. In a workplane, the centres are put on each other.
+// other. In a workplane, the centres are put on each other. A
+// workplane, or a normal with a point, is taken as an axis, the normal
+// through its origin, as a datum on a round face or edge of a solid is
+// (Datums.NameFace).
 func (m AssemblyMenu) Concentric(a, b Entity) []Constraint {
 	d := m.d
-	var ca, cb Entity
+	var ca, cb, na, nb Entity
 	var across []core.HEntity
 	free := false
 	d.read(func(sk *sketch.Sketch) {
+		var ok bool
 		for _, e := range []Entity{a, b} {
-			if t := e.get(sk).Type; t != core.EntityCircle && t != core.EntityArcOfCircle {
-				fail("a concentric mate is of two circles or arcs, and %s isn't one", e.describe(sk))
+			if _, _, ok = mateAxis(sk, e); !ok {
+				fail("a concentric mate is of two circles, arcs or axes, and %s isn't one", e.describe(sk))
 			}
 		}
-		ca, cb = a.Center(), b.Center()
+		ca, na, _ = mateAxis(sk, a)
+		cb, nb, _ = mateAxis(sk, b)
 		free = core.IsFreeIn3D(sk.ActiveWorkplane())
 		ea := a.get(sk)
-		axis := ea.NormalEntity(sk).NormalN(sk).WithMagnitude(1)
+		axis := na.get(sk).NormalN(sk).WithMagnitude(1)
 		for i := range sk.Entities {
 			e := &sk.Entities[i]
 			if e.Group != ea.Group && e.Group.V != core.HGroupReferences || !e.HasVector() {
@@ -150,7 +155,7 @@ func (m AssemblyMenu) Concentric(a, b Entity) []Constraint {
 		return []Constraint{d.Constrain.Coincident(ca, cb)}
 	}
 	// The axes parallel first, as for Flush.
-	out := d.addUnlessRedundant(nil, func() Constraint { return d.Constrain.Parallel(a.Normal(), b.Normal()) })
+	out := d.addUnlessRedundant(nil, func() Constraint { return d.Constrain.Parallel(na, nb) })
 	if len(across) < 2 {
 		return append(out, d.Constrain.Coincident(ca, cb))
 	}
@@ -166,16 +171,37 @@ func (m AssemblyMenu) Concentric(a, b Entity) []Constraint {
 
 // Flush makes two faces parallel and puts a point of the first, one
 // lying on it, on the second: the faces lie in one plane, facing as
-// they did, and one part may still slide and turn on the other.
+// they did, and one part may still slide and turn on the other. A
+// workplane, or a normal with a point, is taken as a face, as a datum
+// on a flat face of a solid is (Datums.NameFace): its origin is the
+// point that lies on it.
 func (m AssemblyMenu) Flush(faceA, faceB Entity) []Constraint {
 	d := m.d
 	var on Entity
+	// What the faces are parallel by: a face, or a workplane's normal;
+	// and B's point where B is a normal.
+	va, vb := faceA.H, faceB.H
+	var bAt Entity
 	d.read(func(sk *sketch.Sketch) {
 		fa := faceA.get(sk)
 		for _, e := range []Entity{faceA, faceB} {
-			if !e.get(sk).IsFace() {
-				fail("a flush mate is of two faces, and %s isn't one", e.describe(sk))
+			if ent := e.get(sk); !ent.IsFace() && !ent.IsWorkplane() && !isNormalAt(ent) {
+				fail("a flush mate is of two faces or workplanes, and %s isn't one", e.describe(sk))
 			}
+		}
+		switch eb := faceB.get(sk); {
+		case eb.IsWorkplane():
+			vb = eb.Normal
+		case isNormalAt(eb):
+			bAt = Entity{d, eb.Point[0]}
+		}
+		switch {
+		case fa.IsWorkplane():
+			va, on = fa.Normal, Entity{d, fa.Point[0]}
+			return
+		case isNormalAt(fa):
+			on = Entity{d, fa.Point[0]}
+			return
 		}
 		// A point of the first face's group, lying on it.
 		p0, n := fa.FaceGetPointNum(sk), fa.FaceGetNormalNum(sk).WithMagnitude(1)
@@ -196,10 +222,19 @@ func (m AssemblyMenu) Flush(faceA, faceB Entity) []Constraint {
 		return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
 			c.Type = core.ConstraintParallel
 			c.Workplane = core.NoEntity // free in 3d
-			c.EntityA, c.EntityB = faceA.H, faceB.H
+			c.EntityA, c.EntityB = va, vb
 		})
 	})
-	return append(out, d.Constrain.On(on, faceB))
+	if bAt.H.V == 0 {
+		return append(out, d.Constrain.On(on, faceB))
+	}
+	// On the plane of B's normal through its point: no distance between
+	// the two points along it.
+	return append(out, d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
+		c.Type = core.ConstraintProjPtDistance
+		c.Workplane = core.NoEntity // free in 3d
+		c.PtA, c.PtB, c.EntityA = on.H, bAt.H, faceB.H
+	}))
 }
 
 // Hinge puts the start of line b on the start of line a, and the end of
@@ -308,9 +343,48 @@ func (m AssemblyMenu) Clearances(below float64) (found []Clearance) {
 	d := m.d
 	d.readMesh(func(sk *sketch.Sketch) {
 		for _, c := range sk.Clearances(sk.ActiveGroup(), below) {
-			found = append(found, Clearance{A: Group{d, c.A}, B: Group{d, c.B}, Gap: c.Gap,
-				PA: c.PA, PB: c.PB, Tolerance: c.Tolerance, Refined: c.Refined})
+			found = append(found, clearanceOf(d, c))
 		}
 	})
 	return found
+}
+
+// ClearancesWithin is Clearances with each part of several solids, as
+// a linked assembly, taken by its solids (Analyze > Clearance and Walls,
+// "solids within parts"): the gaps between the solids of one part are
+// listed too, and Clearance.SolidA and SolidB say which solid of a part
+// a gap is to.
+func (m AssemblyMenu) ClearancesWithin(below float64) (found []Clearance) {
+	d := m.d
+	d.readMesh(func(sk *sketch.Sketch) {
+		for _, c := range sk.ClearancesWithin(sk.ActiveGroup(), below) {
+			found = append(found, clearanceOf(d, c))
+		}
+	})
+	return found
+}
+
+// clearanceOf is a sketch's clearance as a script sees it.
+func clearanceOf(d *Doc, c sketch.Clearance) Clearance {
+	return Clearance{A: Group{d, c.A}, B: Group{d, c.B}, Gap: c.Gap, PA: c.PA, PB: c.PB,
+		Tolerance: c.Tolerance, Refined: c.Refined, SolidA: c.SolidA, SolidB: c.SolidB}
+}
+
+// isNormalAt reports whether e is a normal that runs through a point,
+// as a workplane's does: a plane, or an axis.
+func isNormalAt(e *core.Entity) bool {
+	return e.IsNormal() && e.Point[0].V != 0
+}
+
+// mateAxis is the centre and the normal of a circle, an arc, a workplane,
+// or a normal through a point, as an axis; false for anything else.
+func mateAxis(sk *sketch.Sketch, e Entity) (centre, normal Entity, ok bool) {
+	ent := e.get(sk)
+	switch {
+	case ent.Type == core.EntityCircle || ent.Type == core.EntityArcOfCircle || ent.IsWorkplane():
+		return Entity{e.d, ent.Point[0]}, Entity{e.d, ent.Normal}, true
+	case isNormalAt(ent):
+		return Entity{e.d, ent.Point[0]}, e, true
+	}
+	return Entity{}, Entity{}, false
 }

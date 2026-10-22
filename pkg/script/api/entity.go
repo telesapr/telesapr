@@ -263,10 +263,18 @@ func (e Entity) End() (p Entity) {
 	return p
 }
 
-// Center is the centre of a circle or an arc, or the origin of a
-// workplane.
-func (e Entity) Center() Entity {
-	return e.point("centre", 0, core.EntityCircle, core.EntityArcOfCircle, core.EntityWorkplane)
+// Center is the centre of a circle or an arc, the origin of a
+// workplane, or the point a normal runs through, as the normal a link
+// gives for a datum on a solid (Datums.Get) does.
+func (e Entity) Center() (p Entity) {
+	e.d.read(func(sk *sketch.Sketch) {
+		if ent := e.get(sk); ent.IsNormal() && ent.Point[0].V != 0 {
+			p = Entity{e.d, ent.Point[0]}
+			return
+		}
+		p = e.point("centre", 0, core.EntityCircle, core.EntityArcOfCircle, core.EntityWorkplane)
+	})
+	return p
 }
 
 // Normal is the normal of a circle, an arc or a workplane.

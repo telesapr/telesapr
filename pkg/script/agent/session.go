@@ -76,11 +76,11 @@ type Backend interface {
 	Describe(ctx context.Context, group string) (string, error)
 	// Render is a PNG picture of the drawing, as p asks for it.
 	Render(ctx context.Context, p Picture) ([]byte, error)
-	// Measure is the solid of the model up to group (the active group
-	// for "") as Analyze > Check Solid reports it; with selected, it is
-	// instead what the user has selected, measured as Analyze > Measure
-	// does.
-	Measure(ctx context.Context, group string, selected bool) (string, error)
+	// Measure is the solid of the model up to m.Group (the active group
+	// for "") as Analyze > Check Solid reports it, with the gaps and
+	// walls m asks about; with m.Selected, it is instead what the user
+	// has selected, measured as Analyze > Measure does.
+	Measure(ctx context.Context, m Measuring) (string, error)
 	// Export writes the drawing to path, in the format its extension
 	// names (api.FileMenu.Export), and says what it wrote. A relative
 	// path is taken from the directory the program with the drawing

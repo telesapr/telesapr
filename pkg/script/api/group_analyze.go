@@ -186,3 +186,32 @@ func (v GroupAnalysis) Probe(from, dir Vec) (inside []check.Interval) {
 	})
 	return inside
 }
+
+// Clearances are the gaps less than below mm between the parts of the
+// assembly up to and with this group, the nearest first, as
+// Assembly.Clearances finds them up to the active group; a below of 0
+// lists every pair's.
+func (v GroupAnalysis) Clearances(below float64) []Clearance {
+	return v.clearances(below, false)
+}
+
+// ClearancesWithin is Clearances with each part of several solids taken
+// by its solids, as Assembly.ClearancesWithin.
+func (v GroupAnalysis) ClearancesWithin(below float64) []Clearance {
+	return v.clearances(below, true)
+}
+
+func (v GroupAnalysis) clearances(below float64, bySolid bool) (found []Clearance) {
+	g := v.g
+	g.d.readMesh(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		cs := sk.Clearances(group.H, below)
+		if bySolid {
+			cs = sk.ClearancesWithin(group.H, below)
+		}
+		for _, c := range cs {
+			found = append(found, clearanceOf(g.d, c))
+		}
+	})
+	return found
+}

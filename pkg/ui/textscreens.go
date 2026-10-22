@@ -995,9 +995,12 @@ func (tw *textWindow) ShowGroupInfo() {
 	case sketch.GroupDrawing3D:
 		tw.Printf(true, " %Ftsketch in 3d%E")
 	case sketch.GroupDrawingWorkplane:
-		if g.Subtype == sketch.GroupWorkplaneByFace {
+		switch g.Subtype {
+		case sketch.GroupWorkplaneByFace:
 			tw.showSketchOnFaceInfo(g)
-		} else {
+		case sketch.GroupWorkplaneByDatum:
+			tw.showDatumWorkplaneInfo(g)
+		default:
 			tw.Printf(true, " %Ftsketch in new workplane%E")
 		}
 	default:
@@ -1433,6 +1436,22 @@ func (tw *textWindow) showSketchOnFaceInfo(g *sketch.Group) {
 	tw.Printf(true, " %Ftsketch on face%E")
 	for _, id := range g.SolidFaces {
 		tw.Printf(false, "%Ba   %Ftin%E %s", sk.FaceName(id))
+	}
+}
+
+// showDatumWorkplaneInfo shows what the workplane of a datum on the
+// solid follows, and the datum's name.
+func (tw *textWindow) showDatumWorkplaneInfo(g *sketch.Group) {
+	sk := tw.ss.SK
+	tw.Printf(true, " %Ftdatum on the solid%E")
+	if d := sk.DatumOf(g.H.Entity(0)); d != nil {
+		tw.Printf(false, "%Bd   %Ftnamed%E %s", d.Name)
+	}
+	for _, id := range g.SolidFaces {
+		tw.Printf(false, "%Ba   %Ftfollows%E %s", sk.FaceName(id))
+	}
+	for _, n := range g.SolidEdges {
+		tw.Printf(false, "%Ba   %Ftfollows%E %s", sk.SolidEdgeName(n))
 	}
 }
 

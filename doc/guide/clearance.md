@@ -10,17 +10,25 @@ the active group for two things before it is printed or machined:
   are those Show Interfering Parts checks: each group assembled into the model, and the solid
   made before the first of them. [check gaps] lists each pair nearer than the distance, the
   nearest first, and draws a line across each gap. Parts that touch or overlap have a gap of 0;
-  Show Interfering Parts says which overlap.
-- **walls thinner** than a thickness. [check walls] casts a ray from the middle of each triangle
-  of each part's mesh, square to it, into the solid to where it leaves the part again, says what
-  the thinnest wall is and where, and draws a line across each point thinner than asked.
+  Show Interfering Parts says which overlap. With **solids within parts** checked, a part made of
+  several solids, as a linked assembly, is taken by its solids: the gaps between them are listed
+  too, as "g004-tile solid 2".
+- **walls thinner** than a thickness. [check walls] casts rays from points of each triangle of
+  each part's mesh, square to it, into the solid to where it leaves the part again, says what the
+  thinnest wall is and where, and draws a line across each point thinner than asked. The points
+  are no further apart than half the thickness asked about, or a fiftieth of the model's size,
+  and closer again about the thinnest, so that a spot thinner than the triangles about it, as
+  near the tip of a cone, isn't missed between their middles. The screen says how far apart they
+  were.
 
-A gap is found on the parts' meshes, then, where both parts have shells, followed onto the
-surfaces the nearest triangles stand for, so that a pin in a bore comes out at its true gap though
-the meshes' chords are a little nearer. The screen says how far the gaps may be off: the two
-meshes' chord tolerances, more where the points were followed onto the surfaces and moved. A wall
-is measured between two points of the mesh, each within the chord tolerance of the surface. Set
-the chord tolerance smaller (Configuration) when the last hundredths matter.
+A gap is found on the parts' meshes, then followed onto the surfaces the nearest triangles stand
+for, so that a pin in a bore comes out at its true gap though the meshes' chords are a little
+nearer. A part linked as a mesh, with no shell, is taken by its triangles, which are its
+geometry: the gap is followed on them and onto the other part's surfaces. The screen says how far
+the gaps may be off: the two meshes' chord tolerances, more where the points were followed onto
+the surfaces and moved. A wall is measured between two points of the mesh, each within the chord
+tolerance of the surface; the thinnest points are then followed onto the two surfaces of the
+wall. Set the chord tolerance smaller (Configuration) when the last hundredths matter.
 
 From a script:
 
@@ -28,14 +36,17 @@ From a script:
 for _, c := range doc.Assembly.Clearances(1) { // gaps under 1 mm; 0 lists every pair
 	fmt.Println(c.A.Name(), c.B.Name(), c.Gap, c.Tolerance)
 }
+for _, c := range doc.Assembly.ClearancesWithin(1) { // and between the solids of a part
+	fmt.Println(c.A.Name(), c.SolidA, c.B.Name(), c.SolidB, c.Gap)
+}
 r := group.Analyze().WallThickness(1.5) // points thinner than 1.5 mm
 fmt.Println(r.Thinnest.Thickness, len(r.Thin), r.Samples)
 ```
 
+The MCP `measure` tool reports both with `gaps` and `walls` ([AI](../ai.md)).
+
 ## What it does not do yet
 
-- A wall is measured at the middle of each triangle. A spot thinner than the triangles about it,
-  as near the tip of a cone, can fall between them; a finer chord tolerance measures more points.
-- A part linked as a mesh, with no shell, is taken by its triangles; the gaps to it are not
-  followed onto surfaces.
-- The gaps between the solids a linked assembly holds, within one part, are not checked.
+- A spot thinner than the points measured about it can still fall between them; the
+  measurement says how far apart they were.
+- A mesh part is one part: its pieces are not taken apart by "solids within parts".

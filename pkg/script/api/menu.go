@@ -45,7 +45,7 @@ var MenuCalls = map[string]string{
 	"Edit/Rotate Imported 90°":    "LinkGroup.Rotate90 LinkGroup.Rotate LinkGroup.SetOrientation LinkGroup.Move",
 	"Edit/Find Command...":        "Edit.RunCommand",
 	"Edit/Parameters...":          "Params.List Params.Set",
-	"Edit/Datums...":              "Datums.List Datums.Names Datums.Name Datums.Delete Datums.Get",
+	"Edit/Datums...":              "Datums.List Datums.Names Datums.Name Datums.NameFace Datums.NameEdge Datums.Delete Datums.Get",
 	"Edit/Line Styles...": "Doc.Styles Doc.Style Doc.NewStyle Style.SetName Style.Delete " +
 		"Style.SetColor Style.SetFillColor Style.SetFilled Style.SetWidth Style.SetWidthAs " +
 		"Style.SetStipple Style.SetStippleScale Style.SetTextHeight Style.SetTextHeightAs Style.SetTextAlign Style.SetTextAngle Doc.ResetStyles " +
@@ -174,7 +174,7 @@ var MenuCalls = map[string]string{
 	"Analyze/Check Solid":                  "GroupAnalysis.Check",
 	"Analyze/Group Dependencies":           "GroupHistory.DependsOn GroupHistory.UsedBy GroupHistory.OwnSources",
 	"Analyze/Ray-Cast Check":               "GroupAnalysis.RayCheck GroupAnalysis.Probe",
-	"Analyze/Clearance and Walls...":       "Assembly.Clearances GroupAnalysis.WallThickness",
+	"Analyze/Clearance and Walls...":       "Assembly.Clearances Assembly.ClearancesWithin GroupAnalysis.WallThickness",
 	"Analyze/Show Naked Edges":             "GroupAnalysis.Check",
 	"Analyze/Show Underconstrained Points": "Entity.Free Group.Dof",
 	"Analyze/Trace Point":                  "- draws a point's path in the window; Assembly.MotionStudy reports positions",

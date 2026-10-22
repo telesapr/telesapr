@@ -62,10 +62,16 @@ func (ss *Application) MenuMate(id Command) {
 			"the second of the part the active group places.", what, need)
 		return
 	}
+	ss.makeMate(what, func(d *api.Doc) { run(d, d.Entity(picked[0]), d.Entity(picked[1])) })
+	gw.ClearSelection()
+}
+
+// makeMate runs mate, which makes the constraints of a mate by what, as
+// one step of undo, or says why it can't.
+func (ss *Application) makeMate(what string, mate func(d *api.Doc)) {
 	host := ss.ScriptHost()
 	host.BeginEval()
 	d := api.NewDoc(host)
-	a, b := d.Entity(picked[0]), d.Entity(picked[1])
 	err := func() (err error) {
 		defer func() {
 			if r := recover(); r != nil {
@@ -76,7 +82,7 @@ func (ss *Application) MenuMate(id Command) {
 				err = e
 			}
 		}()
-		run(d, a, b)
+		mate(d)
 		return nil
 	}()
 	if err != nil {
@@ -84,5 +90,4 @@ func (ss *Application) MenuMate(id Command) {
 		ss.Error("Can't make the %s mate: %s.", what, err.Error())
 	}
 	host.EndEval()
-	gw.ClearSelection()
 }

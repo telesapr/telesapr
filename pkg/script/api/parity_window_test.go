@@ -292,6 +292,7 @@ var windowActions = map[string]string{
 	"ScreenChangeClearance/w":         "GroupAnalysis.WallThickness",
 	"ScreenChangeClearance/c":         "Assembly.Clearances",
 	"ScreenChangeClearance/t":         "GroupAnalysis.WallThickness",
+	"ScreenChangeClearance/s":         "Assembly.ClearancesWithin",
 	"ScreenChangePasteTransformed/t":  "Edit.Paste",
 	"ScreenChangePasteTransformed/r":  "Edit.Paste",
 	"ScreenChangePasteTransformed/s":  "Edit.Paste",
@@ -317,6 +318,9 @@ var windowActions = map[string]string{
 	"ScreenChangeDatum/n":         "Datums.Name",
 	"ScreenChangeDatum/x":         "Datums.Delete",
 	"ScreenChangeDatum/s":         "Datums.Get",
+	"ScreenChangeDatum/f":         "Datums.NameFace Datums.NameEdge",
+	"ScreenPickDatumForMate":      "Datums.Get",
+	"ScreenMateDatums":            "Assembly.Flush Assembly.Concentric Assembly.Hinge",
 	"ScreenSelectLinkedDatum":     "Datums.Get",
 	"ScreenChangeConfiguration/c": "Params.ActivateConfiguration",
 	"ScreenChangeConfiguration/r": "Params.RenameConfiguration",
@@ -511,6 +515,7 @@ var windowActions = map[string]string{
 	"editParameterName":            "Params.Rename",
 	"editDatumAdd":                 "Datums.Name",
 	"editDatumName":                "Datums.Name",
+	"editDatumSolid":               "Datums.NameFace Datums.NameEdge",
 	"editConfigurationAdd":         "Params.AddConfiguration",
 	"editConfigurationName":        "Params.RenameConfiguration",
 	"editMotionParameter":          "Assembly.MotionStudy",
@@ -759,6 +764,8 @@ Bounds          menu:Analyze/Group Dependencies
 Check           menu:Analyze/Check Solid
 RayCheck        menu:Analyze/Ray-Cast Check
 WallThickness   menu:Analyze/Clearance and Walls...
+Clearances      menu:Analyze/Clearance and Walls...
+ClearancesWithin menu:Analyze/Clearance and Walls...
 Probe           -script-only: a ray cast at the group's solid
 `,
 	"Entity": `

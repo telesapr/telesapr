@@ -2,15 +2,20 @@ package ui
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // The datums screen (Edit > Datums) lists the names given to entities
 // the model offers others, and those of the models it links; it names
-// the selected entity, renames and deletes, and selects what a name
-// names, for a mate. The window's side of doc.Datums.
+// the selected entity, or the selected face or edge of the solid,
+// renames and deletes, selects what a name names, and mates two names.
+// The window's side of doc.Datums.
 
 // MenuDatums shows the datums, from the menu. The selection is kept:
 // the screen names it.
@@ -33,6 +38,25 @@ func (ss *Application) selectedForDatum() (core.HEntity, bool) {
 	return he, e != nil && sketch.CanBeDatum(e)
 }
 
+// selectedSolidForDatum is the one face or edge of the solid selected
+// that no entity makes, if one is: a datum names it by a workplane
+// that follows it (Datums.NameFace, Datums.NameEdge).
+func (ss *Application) selectedSolidForDatum() (face srf.FaceID, edge *topo.Name, ok bool) {
+	ss.GW.GroupSelection()
+	gs := &ss.GW.gs
+	if gs.n != 0 || gs.constraints != 0 {
+		return 0, nil, false
+	}
+	switch {
+	case len(gs.solidFace) == 1 && len(gs.solidEdge) == 0:
+		return gs.solidFace[0], nil, true
+	case len(gs.solidFace) == 0 && len(gs.solidEdge) == 1:
+		n := gs.solidEdge[0]
+		return 0, &n, true
+	}
+	return 0, nil, false
+}
+
 // ShowDatums shows the datums screen.
 func (tw *textWindow) ShowDatums() {
 	ss := tw.ss
@@ -50,14 +74,21 @@ func (tw *textWindow) ShowDatums() {
 		if sk.Entity(d.Entity) != nil {
 			what = sk.EntityName(d.Entity)
 		}
-		tw.Printf(false, "%Bp   %s %Fd%s%E %Fl%Ls%D%f[select]%E %Fl%Ln%D%f[rename]%E %Fl%Lx%D%f[delete]%E",
+		tw.Printf(false, "%Bp   %s %Fd%s%E %Fl%Ls%D%f[select]%E %Fl%Ln%D%f[rename]%E %Fl%Lx%D%f[delete]%E %Fl%Lm%D%f[mate]%E",
 			bg, pad(d.Name, 13), what,
-			i, lf(tw.ScreenChangeDatum), i, lf(tw.ScreenChangeDatum), i, lf(tw.ScreenChangeDatum))
+			i, lf(tw.ScreenChangeDatum), i, lf(tw.ScreenChangeDatum), i, lf(tw.ScreenChangeDatum),
+			i, lf(tw.ScreenPickDatumForMate))
 	}
 	if _, ok := ss.selectedForDatum(); ok {
 		tw.Printf(true, "   %Fl%La%f[name the selected entity]%E", lf(tw.ScreenChangeDatum))
+	} else if _, edge, ok := ss.selectedSolidForDatum(); ok {
+		what := "face"
+		if edge != nil {
+			what = "edge"
+		}
+		tw.Printf(true, "   %Fl%Lf%f[name the selected %s of the solid]%E", lf(tw.ScreenChangeDatum), what)
 	} else {
-		tw.Printf(true, "   %Fdselect a point, workplane, face or axis to name it%E")
+		tw.Printf(true, "   %Fdselect a point, workplane, face, edge or axis to name it%E")
 	}
 
 	k := 0
@@ -70,23 +101,128 @@ func (tw *textWindow) ShowDatums() {
 		tw.Printf(true, "%Ftlinked by %s%E", label)
 		for _, d := range g.LinkDatums {
 			name := label + "." + d.Name
-			tw.Printf(false, "%Bd   %s %Fl%Ll%D%f[select]%E", pad(name, 24), k, lf(tw.ScreenSelectLinkedDatum))
+			tw.Printf(false, "%Bd   %s %Fl%Ll%D%f[select]%E %Fl%Lm%D%f[mate]%E", pad(name, 24), k, lf(tw.ScreenSelectLinkedDatum),
+				len(sk.Datums)+k, lf(tw.ScreenPickDatumForMate))
 			k++
 		}
 	}
+	tw.showDatumMate()
+}
+
+// showDatumMate shows the names picked for a mate, and the mates that
+// can be made of two.
+func (tw *textWindow) showDatumMate() {
+	switch len(tw.datumMate) {
+	case 0:
+		tw.Printf(true, "   %Fd[mate] two names to make a mate of them%E")
+	case 1:
+		tw.Printf(true, "%Ftmate%E %s and   %Fd([mate] another)%E   %Fl%Lx%f[clear]%E", tw.datumMate[0], lf(tw.ScreenMateDatums))
+	default:
+		tw.Printf(true, "%Ftmate%E %s and %s", tw.datumMate[0], tw.datumMate[1])
+		tw.Printf(false, "   %Fl%Lf%f[flush]%E %Fl%Lc%f[concentric]%E %Fl%Lh%f[hinge]%E %Fl%Lx%f[clear]%E",
+			lf(tw.ScreenMateDatums), lf(tw.ScreenMateDatums), lf(tw.ScreenMateDatums), lf(tw.ScreenMateDatums))
+	}
+}
+
+// ScreenPickDatumForMate picks the v-th datum name (DatumNames) for a
+// mate: the first is of the part that stays. A third starts again.
+func (tw *textWindow) ScreenPickDatumForMate(link int, v uint32) {
+	names := tw.ss.SK.DatumNames()
+	if int(v) >= len(names) {
+		return
+	}
+	if len(tw.datumMate) == 2 {
+		tw.datumMate = nil
+	}
+	tw.datumMate = append(tw.datumMate, names[v])
+	tw.ss.ScheduleShowTW()
+}
+
+// ScreenMateDatums makes the two names picked flush ('f'), concentric
+// ('c') or a hinge ('h'), as the Assembly menu's mates do of a
+// selection, or clears them ('x').
+func (tw *textWindow) ScreenMateDatums(link int, v uint32) {
+	ss := tw.ss
+	picked := tw.datumMate
+	if link == 'x' || len(picked) != 2 {
+		tw.datumMate = nil
+		ss.ScheduleShowTW()
+		return
+	}
+	mates := map[int]struct {
+		what string
+		run  func(d *api.Doc, a, b api.Entity)
+	}{
+		'f': {"flush", func(d *api.Doc, a, b api.Entity) { d.Assembly.Flush(a, b) }},
+		'c': {"concentric", func(d *api.Doc, a, b api.Entity) { d.Assembly.Concentric(a, b) }},
+		'h': {"hinge", func(d *api.Doc, a, b api.Entity) { d.Assembly.Hinge(a, b) }},
+	}
+	m, ok := mates[link]
+	if !ok {
+		return
+	}
+	ss.makeMate(m.what, func(d *api.Doc) { m.run(d, d.Datums.Get(picked[0]), d.Datums.Get(picked[1])) })
+	tw.datumMate = nil
+	ss.ScheduleShowTW()
+}
+
+// nameSolidDatum names the selected face or edge of the solid as the
+// datum name, by a workplane that follows it, as one step of undo.
+func (ss *Application) nameSolidDatum(name string) {
+	face, edge, ok := ss.selectedSolidForDatum()
+	if !ok {
+		return
+	}
+	host := ss.ScriptHost()
+	host.BeginEval()
+	d := api.NewDoc(host)
+	err := func() (err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				e, isErr := r.(error)
+				if !isErr {
+					panic(r)
+				}
+				err = e
+			}
+		}()
+		solid := d.Active().Solid()
+		if edge != nil {
+			d.Datums.NameEdge(name, solid.Edge(edge.String()))
+		} else {
+			d.Datums.NameFace(name, solid.Face(uint32(face)))
+		}
+		return nil
+	}()
+	if err != nil {
+		host.Rollback()
+		ss.Error("Can't name it %s: %s.", name, err.Error())
+	}
+	host.EndEval()
+	ss.GW.ClearSelection()
+	ss.ScheduleShowTW()
 }
 
 // ScreenChangeDatum selects ('s'), renames ('n') or deletes ('x') datum
-// v, or ('a') names the selected entity.
+// v, or names the selected entity ('a') or face or edge of the solid
+// ('f').
 func (tw *textWindow) ScreenChangeDatum(link int, v uint32) {
 	ss := tw.ss
 	sk := ss.SK
-	if link == 'a' {
+	switch link {
+	case 'a':
 		if _, ok := ss.selectedForDatum(); !ok {
 			return
 		}
 		tw.ShowEditControl(3, "")
 		tw.edit.meaning = editDatumAdd
+		return
+	case 'f':
+		if _, _, ok := ss.selectedSolidForDatum(); !ok {
+			return
+		}
+		tw.ShowEditControl(3, "")
+		tw.edit.meaning = editDatumSolid
 		return
 	}
 	i := int(v)
@@ -144,6 +280,8 @@ func (tw *textWindow) EditControlDoneForDatums(s string) bool {
 			return true
 		}
 		ss.parameterEdit(func() error { return sk.SetDatum(s, he) })
+	case editDatumSolid:
+		ss.nameSolidDatum(strings.TrimSpace(s))
 	case editDatumName:
 		if tw.edit.i >= len(sk.Datums) {
 			return true

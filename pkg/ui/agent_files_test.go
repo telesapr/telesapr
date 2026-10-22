@@ -30,7 +30,7 @@ func TestAgentFiles(t *testing.T) {
 		t.Fatalf("the plate gave %+v, %v", res, err)
 	}
 
-	if text, err := a.r.Measure(ctx, "", false); err != nil || !strings.Contains(text, "g003-plate") || !strings.Contains(text, "1000") {
+	if text, err := a.r.Measure(ctx, agent.Measuring{}); err != nil || !strings.Contains(text, "g003-plate") || !strings.Contains(text, "1000") {
 		t.Errorf("the plate measures as %q, %v", text, err)
 	}
 

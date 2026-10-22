@@ -124,12 +124,12 @@ func (g *Group) generateDrawingWorkplane(sk *Sketch, entity *[]core.Entity) {
 		q = g.Predef.Q
 	case GroupWorkplaneByPointNormal:
 		q = sk.MustEntity(g.Predef.EntityB).NormalGetNum(sk)
-	case GroupWorkplaneByFace:
+	case GroupWorkplaneByFace, GroupWorkplaneByDatum:
 		q, origin = g.facePlane(sk)
 	default:
 		panic(fmt.Sprintf("unexpected workplane subtype %d", g.Subtype))
 	}
-	if g.Subtype != GroupWorkplaneByFace {
+	if !g.followsSolid() {
 		origin = sk.MustEntity(g.Predef.Origin).PointGetNum(sk)
 	}
 

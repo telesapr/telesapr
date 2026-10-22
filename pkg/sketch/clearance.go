@@ -19,7 +19,11 @@ import (
 // the triangles there stand for, and kept where they stay on the
 // parts, near their meshes; the gap is then between points of the
 // solids, and the tolerance says how far the true one may still be
-// below it.
+// below it. Where only one part has a shell, the other's point is
+// followed on its triangles, which are its geometry. A part that is
+// several solids, as a linked assembly, is one part to Clearances and
+// its solids to ClearancesWithin, which also finds the gaps between
+// them.
 
 // Clearance is the gap between two parts: the groups that made them,
 // the least distance between them, 0 where they touch or overlap, and
@@ -36,12 +40,17 @@ type Clearance struct {
 	// surfaces, so that they lie on the solids rather than on their
 	// meshes.
 	Refined bool
+	// SolidA and SolidB are which solid of each part the gap is to,
+	// counted from 1, where ClearancesWithin took a part of several
+	// solids by its solids; 0 for the whole part.
+	SolidA, SolidB int
 }
 
 // clearancePart is a part's mesh, its tree, and its shell and the
 // surface of each triangle, where it has one.
 type clearancePart struct {
 	g     core.HGroup
+	solid int
 	shell *srf.SShell
 	mesh  srf.SMesh
 	tree  *srf.MeshTree
@@ -65,15 +74,34 @@ func newClearancePart(hg core.HGroup, sh *srf.SShell) *clearancePart {
 // clearanceParts are the parts of the model up to group upTo, with
 // shells or as meshes: a part with no shell is taken by its triangles,
 // which are its geometry, so its chord tolerance is 0.
-func (sk *Sketch) clearanceParts(upTo core.HGroup) []*clearancePart {
+// With bySolid, a part of several solids is taken by its solids. A
+// mesh is taken whole.
+func (sk *Sketch) clearanceParts(upTo core.HGroup, bySolid bool) []*clearancePart {
 	parts, meshOnly, _ := sk.assemblyParts(upTo)
 	var out []*clearancePart
 	for _, p := range parts {
+		if bySolid {
+			if pieces := p.shell.Pieces(); len(pieces) > 1 {
+				for i, sh := range pieces {
+					cp := newClearancePart(p.g, sh)
+					cp.solid = i + 1
+					out = append(out, cp)
+				}
+				continue
+			}
+		}
 		out = append(out, newClearancePart(p.g, p.shell))
 	}
 	for _, hg := range meshOnly {
+		// A group forced to a mesh holds the triangles of its own solid
+		// in its shell until they are combined.
+		g := sk.Group(hg)
 		mp := &clearancePart{g: hg}
-		mp.mesh.Triangles = append(mp.mesh.Triangles, sk.Group(hg).ThisMesh.Triangles...)
+		mp.mesh.MakeFromCopyOf(&g.ThisMesh)
+		g.ThisShell.TriangulateInto(&mp.mesh)
+		for i := range mp.mesh.Triangles {
+			mp.mesh.Triangles[i].Tag = -1
+		}
 		mp.tree = srf.NewMeshTree(&mp.mesh)
 		out = append(out, mp)
 	}
@@ -85,11 +113,23 @@ func (sk *Sketch) clearanceParts(upTo core.HGroup) []*clearancePart {
 // less lists every pair's. Parts that touch or overlap have a gap of 0:
 // Interferences tells which overlap.
 func (sk *Sketch) Clearances(upTo core.HGroup, below float64) []Clearance {
+	return sk.clearances(upTo, below, false)
+}
+
+// ClearancesWithin is Clearances with each part of several solids, as a
+// linked assembly or a part a cut parted, taken by its solids: the gaps
+// between the solids of one part are listed too, and a gap to such a
+// part says which of its solids it is to.
+func (sk *Sketch) ClearancesWithin(upTo core.HGroup, below float64) []Clearance {
+	return sk.clearances(upTo, below, true)
+}
+
+func (sk *Sketch) clearances(upTo core.HGroup, below float64, bySolid bool) []Clearance {
 	limit := below
 	if limit <= 0 {
 		limit = math.Inf(1)
 	}
-	parts := sk.clearanceParts(upTo)
+	parts := sk.clearanceParts(upTo, bySolid)
 	var found []Clearance
 	for i := range parts {
 		for j := i + 1; j < len(parts); j++ {
@@ -112,8 +152,8 @@ func clearanceOf(a, b *clearancePart, limit float64) (Clearance, bool) {
 	if !ok {
 		return Clearance{}, false
 	}
-	c := Clearance{A: a.g, B: b.g, Gap: n.Dist, PA: n.PA, PB: n.PB, Tolerance: tol}
-	if n.Dist > 0 && a.shell != nil && b.shell != nil {
+	c := Clearance{A: a.g, B: b.g, Gap: n.Dist, PA: n.PA, PB: n.PB, Tolerance: tol, SolidA: a.solid, SolidB: b.solid}
+	if n.Dist > 0 && (a.shell != nil || b.shell != nil) {
 		c.refine(a, b, n)
 	}
 	if c.Gap >= limit {
@@ -132,7 +172,7 @@ func (c *Clearance) refine(a, b *clearancePart, n srf.MeshNearest) {
 	var bpa, bpb geom.Vector
 	for _, ia := range surfacesAt(a, n.PA) {
 		for _, ib := range surfacesAt(b, n.PB) {
-			pa, pb, ok := follow(a, b, &a.shell.Surface[ia], &b.shell.Surface[ib], n.PA, n.PB)
+			pa, pb, ok := follow(a, b, a.surface(ia), b.surface(ib), n.PA, n.PB)
 			if gap := pa.Minus(pb).Magnitude(); ok && gap < best {
 				best, bpa, bpb = gap, pa, pb
 			}
@@ -147,9 +187,21 @@ func (c *Clearance) refine(a, b *clearancePart, n srf.MeshNearest) {
 	c.Gap, c.PA, c.PB, c.Refined = best, bpa, bpb, true
 }
 
+// surface is the surface at place i of the part's shell, or nil for a
+// part with none.
+func (p *clearancePart) surface(i int) *srf.SSurface {
+	if p.shell == nil || i < 0 {
+		return nil
+	}
+	return &p.shell.Surface[i]
+}
+
 // surfacesAt are the surfaces, by their places in the part's shell, of
-// the triangles of its mesh at p.
+// the triangles of its mesh at p; -1 alone for a part with no shell.
 func surfacesAt(p *clearancePart, at geom.Vector) []int {
+	if p.shell == nil {
+		return []int{-1}
+	}
 	var found []int
 	for _, i := range p.tree.Within(at, geom.LengthEps) {
 		if s := p.tree.Triangle(i).Tag; !slices.Contains(found, s) {
@@ -163,11 +215,19 @@ func surfacesAt(p *clearancePart, at geom.Vector) []int {
 // nearest the other, until they stop, and reports whether they did and
 // stayed on the parts: near their meshes, within the chord tolerances.
 // A point that has run off its face, past a trim, onto the rest of its
-// surface, is far from the mesh.
+// surface, is far from the mesh. A nil surface is the part's mesh, and
+// its point the nearest of its triangles'.
 func follow(a, b *clearancePart, sa, sb *srf.SSurface, pa, pb geom.Vector) (geom.Vector, geom.Vector, bool) {
+	onto := func(p *clearancePart, s *srf.SSurface, q geom.Vector) geom.Vector {
+		if s == nil {
+			_, _, at := p.tree.NearestPoint(q)
+			return at
+		}
+		return s.Project(q, 0).P
+	}
 	for range 50 {
-		qa := sa.Project(pb, 0).P
-		qb := sb.Project(qa, 0).P
+		qa := onto(a, sa, pb)
+		qb := onto(b, sb, qa)
 		moved := qa.Minus(pa).Magnitude() + qb.Minus(pb).Magnitude()
 		pa, pb = qa, qb
 		if moved < 1e-9 {
