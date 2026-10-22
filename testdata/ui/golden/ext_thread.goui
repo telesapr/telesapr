@@ -26,12 +26,16 @@ row 14    length    30.00 [change]
  9-18 64 61 0
  19-26 6c 61 108 0 1 0
  27-99 64 61 0
-row 16    clearance 0.00 [change]
+row 16    clearance 0.00 [change]    run-out 0.00 [change]
  0-2 64 64 0
  3-11 74 64 0
  12-17 64 64 0
  18-25 6c 64 99 0 1 0
- 26-99 64 64 0
+ 26-29 64 64 0
+ 30-36 74 64 0
+ 37-42 64 64 0
+ 43-50 6c 64 98 0 1 0
+ 51-99 64 64 0
 row 18     external   internal    crest  standard  truncated  rounded
  0-2 64 61 0
  3-12 64 61 101 0 1 0
@@ -99,12 +103,16 @@ row 14    length    9.00 [change]
  9-17 64 61 0
  18-25 6c 61 108 0 1 0
  26-99 64 61 0
-row 16    clearance 0.00 [change]
+row 16    clearance 0.00 [change]    run-out 0.00 [change]
  0-2 64 64 0
  3-11 74 64 0
  12-17 64 64 0
  18-25 6c 64 99 0 1 0
- 26-99 64 64 0
+ 26-29 64 64 0
+ 30-36 74 64 0
+ 37-42 64 64 0
+ 43-50 6c 64 98 0 1 0
+ 51-99 64 64 0
 row 18     external   internal    crest  standard  truncated  rounded
  0-2 64 61 0
  3-12 64 61 101 0 1 0
