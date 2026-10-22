@@ -39,6 +39,7 @@ func (sk *Sketch) SetTextString(hr core.HRequest, s string) error {
 		return err
 	}
 	r.Str = s
+	sk.fitTextWidth(r)
 	sk.MarkGroupDirty(r.Group, false)
 	return nil
 }
@@ -55,6 +56,7 @@ func (sk *Sketch) SetTextFont(hr core.HRequest, font string) error {
 		return fmt.Errorf("the font '%s' is not there", font)
 	}
 	r.Font = font
+	sk.fitTextWidth(r)
 	sk.MarkGroupDirty(r.Group, false)
 	return nil
 }
@@ -70,8 +72,31 @@ func (sk *Sketch) SetTextKerning(hr core.HRequest, kerning bool) error {
 	if kerning {
 		r.ExtraPoints = 1
 	}
+	sk.fitTextWidth(r)
 	sk.MarkGroupDirty(r.Group, false)
 	return nil
+}
+
+// fitTextWidth moves the right corners of text request r to the width
+// its string, font and kerning have at its height, the left corners
+// kept: left to the solver, the change of width would move all four.
+func (sk *Sketch) fitTextWidth(r *Request) {
+	aspect := sk.FontList().AspectRatio(r.Font, r.Str, r.ExtraPoints != 0)
+	e := sk.Entity(r.H.Entity(0))
+	if aspect == 0 || e == nil {
+		return
+	}
+	top, bot := sk.Entity(r.H.Entity(1)), sk.Entity(r.H.Entity(2))
+	right, topRight := sk.Entity(r.H.Entity(3)), sk.Entity(r.H.Entity(4))
+	n := sk.Entity(e.Normal)
+	if top == nil || bot == nil || right == nil || topRight == nil || n == nil {
+		return
+	}
+	p1, p2 := top.PointGetNum(sk), bot.PointGetNum(sk)
+	v := p1.Minus(p2)
+	u := v.Cross(n.NormalGetNum(sk).RotationN()).WithMagnitude(v.Magnitude() * aspect)
+	right.PointForceTo(sk, p2.Plus(u))
+	topRight.PointForceTo(sk, p1.Plus(u))
 }
 
 // FontFiles is the basenames of the font files a text can be set in, as
