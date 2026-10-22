@@ -38,6 +38,25 @@ func TestTextEdits(t *testing.T) {
 	}
 }
 
+// With nothing holding a text, a change of width leaves its left
+// corners and its height where they were: left to the solver, the four
+// corners all moved, and the text grew.
+func TestTextEditKeepsCorner(t *testing.T) {
+	d := New()
+	text := d.Sketch.Text("To", "", V(-5, -5, 0), 10)
+	text.SetKerning(true)
+	text.SetText("Toto")
+	d.Edit.Regen()
+	pts := text.Points()
+	if p, q := pts[0].Pos(), pts[1].Pos(); !near(p.X, -5) || !near(p.Y, 5) || !near(q.X, -5) || !near(q.Y, -5) {
+		t.Errorf("the left corners moved to %v and %v", p, q)
+	}
+	aspect := ttf.DefaultFonts.AspectRatio(ttf.EmbeddedFont, "Toto", true)
+	if w := pts[2].Pos().X - pts[1].Pos().X; !near(w, aspect*10) {
+		t.Errorf("the text is %g wide, want %g", w, aspect*10)
+	}
+}
+
 // The fonts a text can take are listed, and the built-in one is among
 // them.
 func TestSketchFonts(t *testing.T) {

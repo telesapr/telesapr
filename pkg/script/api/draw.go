@@ -11,8 +11,8 @@ import (
 func (d *Doc) request(typ sketch.RequestType, check func(sk *sketch.Sketch),
 	place func(sk *sketch.Sketch, hr core.HRequest)) (e Entity) {
 	d.change(func(sk *sketch.Sketch) {
-		if g := sk.Group(sk.ActiveGroup()); g == nil ||
-			(g.Type != sketch.GroupDrawing3D && g.Type != sketch.GroupDrawingWorkplane) {
+		if g := sk.Group(sk.ActiveGroup()); g == nil || (typ != sketch.RequestDatumPoint &&
+			g.Type != sketch.GroupDrawing3D && g.Type != sketch.GroupDrawingWorkplane) {
 			fail("%s isn't a group to draw in; make one with SketchIn or Sketch3D, or Activate one",
 				groupDescription(g))
 		}

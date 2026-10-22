@@ -3,9 +3,12 @@ package api
 import (
 	"fmt"
 	"math"
+	"os"
+	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/persist/link"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
@@ -51,11 +54,20 @@ func (w *scriptWriter) writeRequests(g *sketch.Group) {
 				}
 			}
 		}
-		if r.Construction {
+		if r.Type == sketch.RequestTTFText && r.ExtraPoints != 0 {
+			w.line("%s.SetKerning(true)", v)
+		}
+		switch {
+		case r.Type == sketch.RequestImage && !r.Construction:
+			// An image is drawn as construction.
+			w.line("%s.SetConstruction(false)", v)
+		case r.Type != sketch.RequestImage && r.Construction:
 			w.line("%s.SetConstruction(true)", v)
 		}
 		if r.Style.V != 0 {
-			w.notWritten("%s's style", v)
+			if st, ok := w.styleRef(r.Style); ok {
+				w.line("%s.Request().SetStyle(%s)", v, st)
+			}
 		}
 	}
 }
@@ -91,10 +103,19 @@ func (w *scriptWriter) requestCall(r *sketch.Request) string {
 		return "doc.Sketch.Arc(" + at(1) + ", " + at(2) + ", " + at(3) + ")"
 	case sketch.RequestCubic:
 		if r.ExtraPoints != 0 {
-			w.notWritten("r%d, a spline through more than four points", r.H.V)
-			return ""
+			return "doc.Sketch.Spline(" + w.points(r, 4+r.ExtraPoints) + ")"
 		}
 		return "doc.Sketch.Cubic(" + at(1) + ", " + at(2) + ", " + at(3) + ", " + at(4) + ")"
+	case sketch.RequestCubicPeriodic:
+		return "doc.Sketch.PeriodicSpline(" + w.points(r, 3+r.ExtraPoints) + ")"
+	case sketch.RequestImage:
+		path := link.Path(w.file, r.File)
+		if _, err := os.Stat(path); err != nil {
+			w.notWritten("r%d, an image whose file %s isn't there", r.H.V, r.File)
+			return ""
+		}
+		height := pos(1).Minus(pos(2)).Magnitude()
+		return fmt.Sprintf("doc.Sketch.Image(%q, %s, %s)", path, at(2), num(height))
 	case sketch.RequestWorkplane:
 		u, v := geom.Vector{X: 1}, geom.Vector{Y: 1}
 		if n := sk.Entity(r.H.Entity(32)); n != nil {
@@ -107,6 +128,19 @@ func (w *scriptWriter) requestCall(r *sketch.Request) string {
 	}
 	w.notWritten("r%d, a request of a kind no call draws (%d)", r.H.V, int(r.Type))
 	return ""
+}
+
+// points are the first n points of the request, as a call takes them.
+func (w *scriptWriter) points(r *sketch.Request, n int) string {
+	parts := make([]string, n)
+	for i := range n {
+		p := geom.Vector{}
+		if e := w.sk.Entity(r.H.Entity(1 + i)); e != nil && e.IsPoint() {
+			p = e.PointGetNum(w.sk)
+		}
+		parts[i] = vecText(p)
+	}
+	return strings.Join(parts, ", ")
 }
 
 // writeConstraints writes the group's constraints.
@@ -123,10 +157,6 @@ func (w *scriptWriter) writeConstraints(g *sketch.Group) {
 
 // writeConstraint writes one constraint, by type, then what it holds.
 func (w *scriptWriter) writeConstraint(c *core.Constraint) {
-	if c.EntityC.V != 0 || c.EntityD.V != 0 {
-		w.notWritten("constraint %08x, %s, on more than two entities", c.H.V, c.DescriptionString())
-		return
-	}
 	w.drawIn(c.Workplane)
 	v := fmt.Sprintf("c%d", c.H.V)
 	if c.Type == core.ConstraintComment {
@@ -135,6 +165,9 @@ func (w *scriptWriter) writeConstraint(c *core.Constraint) {
 			w.line("%s.SetLabelOffset(%s)", v, vecText(c.Disp.Offset))
 		} else {
 			w.line("%s := doc.Constrain.Comment(%s, %q)", v, vecText(c.Disp.Offset), c.Comment)
+		}
+		if st, ok := w.styleRef(c.Disp.Style); ok && c.Disp.Style.V != 0 {
+			w.line("%s.SetStyle(%s)", v, st)
 		}
 		return
 	}
@@ -148,8 +181,13 @@ func (w *scriptWriter) writeConstraint(c *core.Constraint) {
 		// Shown as a radius, set after.
 		other = false
 	}
-	w.line("%s := doc.Constrain.Raw(core.%s, %s, %s, %s, %s, %v, %v)", v, name,
-		w.ref(c.PtA), w.ref(c.PtB), w.ref(c.EntityA), w.ref(c.EntityB), other, c.Other2)
+	if c.EntityC.V != 0 || c.EntityD.V != 0 {
+		w.line("%s := doc.Constrain.RawFour(core.%s, %s, %s, %s, %s, %s, %s, %v, %v)", v, name,
+			w.ref(c.PtA), w.ref(c.PtB), w.ref(c.EntityA), w.ref(c.EntityB), w.ref(c.EntityC), w.ref(c.EntityD), other, c.Other2)
+	} else {
+		w.line("%s := doc.Constrain.Raw(core.%s, %s, %s, %s, %s, %v, %v)", v, name,
+			w.ref(c.PtA), w.ref(c.PtB), w.ref(c.EntityA), w.ref(c.EntityB), other, c.Other2)
+	}
 	if c.HasLabel() {
 		if c.Type == core.ConstraintDiameter && c.Other {
 			w.line("%s.SetShowAsRadius(true)", v)

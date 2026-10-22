@@ -18,7 +18,7 @@ import (
 // scriptRoundTripKnown are the fixtures whose script doesn't build the
 // model again, with why. The list may only shrink.
 var scriptRoundTripKnown = map[string]string{
-	// Drawn by the DXF import as no script can draw.
+	// Drawn by the DXF import as neither the window nor a script draws.
 	"importdxf/golden/basic.3d.tlspr":                         dxf3dArc,
 	"importdxf/golden/binary.3d.tlspr":                        dxf3dArc,
 	"importdxf/golden/negative_extrusion.3d.tlspr":            dxf3dArc,
@@ -31,25 +31,8 @@ var scriptRoundTripKnown = map[string]string{
 	"importdxf/golden/ezdxf/colors.tlspr":                     dxfTwice,
 	"importdxf/golden/ezdxf/text_negative_extrusion.3d.tlspr": dxfTwice,
 	"importdxf/golden/ezdxf/text_negative_extrusion.tlspr":    dxfTwice,
-	// Not written yet (ROADMAP, "Modelling upgrade leftovers").
-	"tlspr/golden/constraint/equal_angle/normal.tlspr":             fourEntities,
-	"tlspr/golden/constraint/equal_angle/normal_old_version.tlspr": fourEntities,
-	"tlspr/golden/constraint/equal_angle/other.tlspr":              fourEntities,
-	"tlspr/golden/constraint/pt_face_distance/normal.tlspr":        notSketch,
-	"tlspr/golden/constraint/pt_face_distance/reference.tlspr":     notSketch,
-	"tlspr/golden/constraint/pt_on_face/normal.tlspr":              notSketch,
-	"tlspr/golden/request/cubic/normal.tlspr":                      spline,
-	"tlspr/golden/request/cubic_periodic/normal.tlspr":             spline,
-	"ui/spline_line.tlspr":                                         spline,
-	"tlspr/golden/request/image/normal.tlspr":                      image,
-	"tlspr/v1/image/image.tlspr":                                   image,
-	// The font the fixture names is beside it, and a script's text is
-	// looked for among the fonts installed.
-	"tlspr/golden/request/ttf_text/extrude.tlspr":         font,
-	"tlspr/golden/request/ttf_text/extrude_kerning.tlspr": font,
-	"tlspr/golden/request/ttf_text/kerning.tlspr":         font,
-	"tlspr/golden/request/ttf_text/normal.tlspr":          font,
-	"tlspr/v1/text.tlspr":                                 font,
+	// The image the fixture names isn't beside it.
+	"tlspr/golden/request/image/normal.tlspr": "the image's file is missing",
 	// A file whose model doesn't regenerate.
 	"tlspr/v1/fields.tlspr": "every field set, not a model that regenerates",
 }
@@ -58,11 +41,6 @@ const (
 	dxf3dArc     = "an arc drawn in 3d, which a script draws only in a workplane"
 	dxfWorkplane = "a workplane drawn in a workplane, which a script draws in 3d"
 	dxfTwice     = "the same constraint twice, which a script adds once"
-	fourEntities = "a constraint on four entities, not written yet"
-	notSketch    = "a request in a group that isn't a sketch, which a script can't draw"
-	spline       = "a spline of more than four points or a periodic one, not written yet"
-	image        = "an image, not written yet"
-	font         = "a font beside the fixture, not installed"
 )
 
 // handlePrefix is the handle part of a group's name in Describe, which

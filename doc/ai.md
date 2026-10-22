@@ -59,7 +59,7 @@ The model gets eight tools.
 | `render` | Returns a picture of the drawing from a named view, fitted, or as your window shows it (`window`), so the model can check its work; with a group, as the drawing is up to that group; with a section, cut open by a plane parallel to the XY, YZ or ZX workplane to show the inside, leaving your own section view as it was. |
 | `api_help` | Returns the documentation of the scripting interface: a primer, or one menu, type or method, or what a script calls in place of an entry of the window's menu ("Features > Fillet Edges"). |
 | `measure` | Reports the solid as Analyze > Check Solid does: volume, surface area, centre of mass, bounding box, and whether it is sound; or measures what you have selected, as Analyze > Measure does. With `gaps` and `walls` it also lists the gaps between parts and the walls thinner than those many mm, as Analyze > Clearance and Walls does ([Clearance and walls](guide/clearance.md)); `within_parts` takes a part of several solids by its solids. |
-| `export` | Writes the drawing to a file in the format its extension names (`.stl`, `.3mf`, `.glb`, `.step`, `.svg`, `.png`, ...) and says where. |
+| `export` | Writes the drawing to a file in the format its extension names (`.stl`, `.3mf`, `.glb`, `.step`, `.svg`, `.png`, ...) and says where. To `.go` it writes the program that builds the model again, as File > Export > Script does, and lists what it couldn't write. |
 | `open` | Opens a `.tlspr` drawing in place of the one on screen, and describes it. It never replaces a drawing with changes that aren't saved. |
 | `list_files` | Lists a directory, so the model can find the drawing you name or where to export. |
 

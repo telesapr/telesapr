@@ -116,6 +116,36 @@ func (sk *Sketch) AddSplinePoint(he core.HEntity, after int, at geom.Vector) err
 	return nil
 }
 
+// SetSplinePoints gives the cubic spline request hr, just added and
+// constrained by nothing, the points pts in order: an open spline's are
+// its start, the control point beside it, the points it passes through
+// and the end's control point and end; a periodic one's are the points
+// it passes through. ExtraPoints is set from how many there are, as a
+// paste does, and the entities are made again to hold them.
+func (sk *Sketch) SetSplinePoints(hr core.HRequest, pts []geom.Vector) error {
+	r := sk.Request(hr)
+	if r == nil || (r.Type != RequestCubic && r.Type != RequestCubicPeriodic) {
+		return fmt.Errorf("r%03x is not a cubic spline", hr.V)
+	}
+	least := 4
+	if r.Type == RequestCubicPeriodic {
+		least = 3
+	}
+	if len(pts) < least {
+		return fmt.Errorf("a spline of this kind has at least %d points, not %d", least, len(pts))
+	}
+	if len(pts) > core.MaxPointsInEntity {
+		return ErrSplinePointsFull
+	}
+	r.ExtraPoints = len(pts) - least
+	sk.GenerateAllTyped(GenerateRegen)
+	for i, p := range pts {
+		sk.Entity(hr.Entity(1+i)).PointForceTo(sk, p)
+	}
+	sk.MarkGroupDirty(sk.Request(hr).Group, false)
+	return nil
+}
+
 // NearestSplineSpan is the point of the spline of entity he that a
 // point added nearest at should follow: the start of the span between
 // two neighbouring points, of those AddSplinePoint takes, that passes

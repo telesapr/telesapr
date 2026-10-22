@@ -37,6 +37,26 @@ func (m ConstrainMenu) Raw(t core.ConstraintType, ptA, ptB, entityA, entityB Ent
 	})
 }
 
+// RawFour is Raw for the types that take four entities, as an equal
+// angle's two pairs of lines: entityC and entityD are the second pair.
+func (m ConstrainMenu) RawFour(t core.ConstraintType, ptA, ptB, entityA, entityB, entityC, entityD Entity, other, other2 bool) Constraint {
+	d := m.d
+	return d.constrain(func(sk *sketch.Sketch, c *core.Constraint) {
+		for _, e := range []Entity{ptA, ptB, entityA, entityB, entityC, entityD} {
+			if e.H.V != 0 {
+				e.get(sk)
+			}
+		}
+		c.Type = t
+		c.PtA, c.PtB = ptA.H, ptB.H
+		c.EntityA, c.EntityB, c.EntityC, c.EntityD = entityA.H, entityB.H, entityC.H, entityD.H
+		c.Other, c.Other2 = other, other2
+		if c.HasLabel() {
+			c.ModifyToSatisfy(sk)
+		}
+	})
+}
+
 // Coincident puts two points at the same place.
 func (m ConstrainMenu) Coincident(a, b Entity) Constraint {
 	d := m.d

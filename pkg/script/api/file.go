@@ -38,12 +38,17 @@ func (m FileMenu) Save(path string) (err error) {
 
 // Export writes the sketch in the format the file's extension names:
 // the mesh of the solid (.stl, .obj, ...), the view (.svg, .dxf, .pdf,
-// ...), the surfaces of the solid (.step), or a picture as Render
-// makes it (.png).
+// ...), the surfaces of the solid (.step), a picture as Render makes it
+// (.png), or the program that builds the model again as ExportScript
+// writes it (.go).
 func (m FileMenu) Export(path string) error {
 	d := m.d
-	if strings.EqualFold(filepath.Ext(path), ".png") {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".png":
 		return d.File.Render(path, 1024, 768, "isometric")
+	case ".go":
+		_, err := d.File.ExportScript(path)
+		return err
 	}
 	kind, ok := exportKinds[strings.ToLower(filepath.Ext(path))]
 	if !ok {

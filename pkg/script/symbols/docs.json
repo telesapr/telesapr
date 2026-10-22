@@ -4465,6 +4465,10 @@
 						"decl": "func (m ConstrainMenu) Raw(t core.ConstraintType, ptA, ptB, entityA, entityB Entity, other, other2 bool) Constraint",
 						"text": "Raw adds a constraint of any type, as the core package names\nthem, on up to two points and two other entities; see the solver's\ndocumentation for what each type takes. Give Entity{} for what a\ntype doesn't take."
 					},
+					"RawFour": {
+						"decl": "func (m ConstrainMenu) RawFour(t core.ConstraintType, ptA, ptB, entityA, entityB, entityC, entityD Entity, other, other2 bool) Constraint",
+						"text": "RawFour is Raw for the types that take four entities, as an equal\nangle's two pairs of lines: entityC and entityD are the second pair."
+					},
 					"SameOrientation": {
 						"decl": "func (m ConstrainMenu) SameOrientation(a, b Entity) Constraint",
 						"text": "SameOrientation makes two normals point the same way and turn the\nsame way about it, as Constrain \u003e Same Orientation does: a linked\npart's to a workplane's, say."
@@ -5253,7 +5257,7 @@
 				"methods": {
 					"Export": {
 						"decl": "func (m FileMenu) Export(path string) error",
-						"text": "Export writes the sketch in the format the file's extension names:\nthe mesh of the solid (.stl, .obj, ...), the view (.svg, .dxf, .pdf,\n...), the surfaces of the solid (.step), or a picture as Render\nmakes it (.png)."
+						"text": "Export writes the sketch in the format the file's extension names:\nthe mesh of the solid (.stl, .obj, ...), the view (.svg, .dxf, .pdf,\n...), the surfaces of the solid (.step), a picture as Render makes it\n(.png), or the program that builds the model again as ExportScript\nwrites it (.go)."
 					},
 					"ExportAs": {
 						"decl": "func (m FileMenu) ExportAs(kind ExportKind, path string) (err error)",
@@ -6294,9 +6298,13 @@
 						"decl": "func (m SketchMenu) NewWorkplane(origin, u, v Vec) Entity",
 						"text": "NewWorkplane adds a workplane through origin, with u to its right\nand v up, to a group drawn freely in 3d."
 					},
+					"PeriodicSpline": {
+						"decl": "func (m SketchMenu) PeriodicSpline(points ...Vec) Entity",
+						"text": "PeriodicSpline adds a closed cubic spline through the given points,\nin order, at least three and at most twelve: the curve goes round\nfrom the last back to the first, as the window's spline does when a\nclick lands on its first point again."
+					},
 					"Point": {
 						"decl": "func (m SketchMenu) Point(p Vec) Entity",
-						"text": "Point adds a datum point at p."
+						"text": "Point adds a datum point at p. Unlike the other drawing calls it may\nbe drawn in a group that isn't a sketch, as an extrusion, as the\nwindow's Datum Point may: a point to measure from or to put a\ndimension on, which changes no solid."
 					},
 					"Polyline": {
 						"decl": "func (m SketchMenu) Polyline(closed bool, points ...Vec) (lines []Entity)",
@@ -6305,6 +6313,10 @@
 					"Rect": {
 						"decl": "func (m SketchMenu) Rect(a, b Vec) (lines []Entity)",
 						"text": "Rect adds a rectangle with the corners a and b and sides along the\nactive workplane's axes: four line segments, joined, two horizontal\nand two vertical, returned starting with the bottom one and going\naround counter-clockwise. It makes the same requests and constraints\nas the interface's rectangle tool dragged from the top left corner."
+					},
+					"Spline": {
+						"decl": "func (m SketchMenu) Spline(points ...Vec) Entity",
+						"text": "Spline adds an open cubic spline with the given points, in order:\nthe start, the control point beside it, the points it passes through,\nthen the end's control point and the end; at least four and at most\ntwelve. With four it is the Bézier curve Cubic draws."
 					},
 					"Split": {
 						"decl": "func (m SketchMenu) Split(a, b Entity, near Vec)",
@@ -8515,6 +8527,10 @@
 					"SetSection": {
 						"decl": "func (sk *Sketch) SetSection(plane core.HEntity, offset string, flip bool) error",
 						"text": "SetSection turns the section view on, cutting parallel to plane, a workplane or a planar face, offset (typed, in the document's unit; \"\" is zero) along its normal, away from the side flip picks."
+					},
+					"SetSplinePoints": {
+						"decl": "func (sk *Sketch) SetSplinePoints(hr core.HRequest, pts []geom.Vector) error",
+						"text": "SetSplinePoints gives the cubic spline request hr, just added and constrained by nothing, the points pts in order: an open spline's are its start, the control point beside it, the points it passes through and the end's control point and end; a periodic one's are the points it passes through."
 					},
 					"SetStyleTextHeightUnits": {
 						"decl": "func (sk *Sketch) SetStyleTextHeightUnits(h core.HStyle, as core.UnitsAs)",
