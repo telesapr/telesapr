@@ -53,3 +53,24 @@ func BenchmarkRegenerateTranslate(b *testing.B) {
 func BenchmarkRegenerateFillet(b *testing.B) {
 	benchmarkRegenerate(b, "group/boolean_tangent_fillet/normal.slvs", nil)
 }
+
+// The 12 by 12 step and repeat with every group forced to a mesh: the
+// mesh Booleans and their BSPs.
+func BenchmarkRegenerateMesh(b *testing.B) {
+	doc, err := LoadFile(fixture("group/translate_nd/normal.slvs"))
+	if err != nil {
+		b.Fatal(err)
+	}
+	sk := doc.Sketch
+	sk.NoSolidCache = true
+	sk.Group(core.HGroup{V: 6}).ValA = 12
+	sk.Group(core.HGroup{V: 7}).ValA = 12
+	for _, hg := range sk.GroupOrder {
+		sk.Group(hg).ForceToMesh = true
+	}
+	sk.GenerateAllTyped(sketch.GenerateAll)
+	b.ResetTimer()
+	for b.Loop() {
+		sk.GenerateAllTyped(sketch.GenerateAll)
+	}
+}
