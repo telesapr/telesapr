@@ -24,12 +24,14 @@ row 11    walls thinner than 1.00 [change]
  21-26 64 64 0
  27-34 6c 64 119 0 1 0
  35-99 64 64 0
-row 14    [check gaps]   [check walls]
+row 14    [check gaps]   [check walls]    solids within parts
  0-2 64 64 0
  3-14 6c 64 99 0 1 0
  15-17 64 64 0
  18-30 6c 64 116 0 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-54 6c 64 115 0 1 0
+ 55-99 64 64 0
 row 17 (back to the groups)
  0-0 64 64 0
  1-18 6c 64 108 0 1 0
@@ -61,12 +63,14 @@ row 11    walls thinner than 1.00 [change]
  21-26 64 64 0
  27-34 6c 64 119 0 1 0
  35-99 64 64 0
-row 14    [check gaps]   [check walls]
+row 14    [check gaps]   [check walls]    solids within parts
  0-2 64 64 0
  3-14 6c 64 99 0 1 0
  15-17 64 64 0
  18-30 6c 64 116 0 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-54 6c 64 115 0 1 0
+ 55-99 64 64 0
 row 17    gap            parts
  0-22 74 64 0
  23-99 64 64 0
@@ -107,21 +111,71 @@ row 11    walls thinner than 1.50 [change]
  21-26 64 64 0
  27-34 6c 64 119 0 1 0
  35-99 64 64 0
-row 14    [check gaps]   [check walls]
+row 14    [check gaps]   [check walls]    solids within parts
  0-2 64 64 0
  3-14 6c 64 99 0 1 0
  15-17 64 64 0
  18-30 6c 64 116 0 1 0
- 31-99 64 64 0
+ 31-33 64 64 0
+ 34-54 6c 64 115 0 1 0
+ 55-99 64 64 0
 row 17    The thinnest wall is 1.20, in g004-walls.
  0-99 64 64 0
-row 19    20 of 304 points are thinner than 1.50.
+row 19    15968 of 136221 points are thinner than 1.50.
  0-2 64 64 0
- 3-41 78 64 0
- 42-99 64 64 0
-row 21    Each is within 0.12, measured at the middle
+ 3-47 78 64 0
+ 48-99 64 64 0
+row 21    Each is within 0.12, measured at points no more
  0-99 64 64 0
-row 23    of each triangle of the mesh.
+row 23    than 0.75 apart, closer about the thinnest.
+ 0-99 64 64 0
+row 26 (back to the groups)
+ 0-0 64 64 0
+ 1-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 28 
+ 0-99 64 64 0
+row 0  home › clearance and walls   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-29 64 64 0
+ 30-57 74 64 0
+ 58-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 CLEARANCE AND WALLS
+ 0-18 74 64 0
+ 19-99 64 64 0
+row 9    gaps less than   1.00 [change]
+ 0-2 64 61 0
+ 3-16 74 61 0
+ 17-24 64 61 0
+ 25-32 6c 61 103 0 1 0
+ 33-99 64 61 0
+row 11    walls thinner than 1.50 [change]
+ 0-2 64 64 0
+ 3-20 74 64 0
+ 21-26 64 64 0
+ 27-34 6c 64 119 0 1 0
+ 35-99 64 64 0
+row 14    [check gaps]   [check walls]    solids within parts
+ 0-2 64 64 0
+ 3-14 6c 64 99 0 1 0
+ 15-17 64 64 0
+ 18-30 6c 64 116 0 1 0
+ 31-33 64 64 0
+ 34-54 6c 64 115 0 1 0
+ 55-99 64 64 0
+row 17    gap            parts
+ 0-22 74 64 0
+ 23-99 64 64 0
+row 19    0.50           g006-plate and g00a-pin
+ 0-99 64 61 0
+row 21    Gaps are within 0.13; parts that touch may overlap:
+ 0-99 64 64 0
+row 23    Show Interfering Parts tells.
  0-99 64 64 0
 row 26 (back to the groups)
  0-0 64 64 0
