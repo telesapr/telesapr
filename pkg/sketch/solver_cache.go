@@ -41,6 +41,17 @@ func (sk *Sketch) keptSystem(hg core.HGroup, groupParams []core.HParam) *solver.
 	return sys
 }
 
+// keepSystem lets go of the system that solved group hg if it has
+// nothing worth keeping: where substitution and the equations solved
+// alone leave no system to write, as for a sketch held by horizontals,
+// verticals and coincidences, a kept system saves nothing and only
+// adds to what the collector scans at every regeneration.
+func (sk *Sketch) keepSystem(hg core.HGroup, sys *solver.System) {
+	if sys.Unsolved() == 0 && sk.systems[hg] == sys {
+		delete(sk.systems, hg)
+	}
+}
+
 // sameParams is whether sys's unknowns are hs, which are in handle
 // order as the system keeps them.
 func sameParams(sys *solver.System, hs []core.HParam) bool {

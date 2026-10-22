@@ -894,6 +894,7 @@ func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam,
 				fmt.Sprintf("group %v: %v", hg, err)}}
 			how = core.SolveDidntConverge
 		}
+		sk.keepSystem(hg, sys)
 	}
 	sk.seedAxisAngles(hg)
 	sk.solveHoldingBounds(hg, solve, func() core.SolveResult { return how })

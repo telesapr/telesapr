@@ -401,11 +401,13 @@ benchmark run at two counts and the difference taken), which the load does not m
 
 The rover regenerated from the command line is the same file and the same 33.0 G instructions:
 its time is the solids'. The window's drag of a zigzag held by horizontals and verticals, which
-substitution solves whole (`BenchmarkDrag150`, host quiet, 3000 steps), went 1.40 → 1.65 ms a
-step: the solve itself is about the same (0.86 → 0.97 s of the run), the rest is the
-collector's, scanning the systems and Jacobians now kept for every group. A sketch solved by
-substitution gains nothing from them; not keeping a group's system where nothing is left to
-write after substitution would take that back. Left: recommendations 1, 2, 4, 5, 7, 8, 10 and 14 to 18, none of
+substitution solves whole (`BenchmarkDrag150`, host quiet, 1000 steps, six runs of each
+interleaved), was 1.30 ms a step on `devel`, then 1.60 ms (+23%) with every group's system kept:
+the solve itself cost about the same, the rest was the collector's, scanning the systems kept.
+A group whose solve leaves nothing to solve together after substitution and the equations
+solved alone has no Jacobian worth keeping, so its system is let go (`Sketch.keepSystem`,
+`System.Unsolved`): 1.27 ms (−1.9% against `devel`), allocations −5.5%; the fixture hashes
+the same. Left: recommendations 1, 2, 4, 5, 7, 8, 10 and 14 to 18, none of
 which the modelling upgrades asked for; the two rank tests of each solve are now most of a drag
 step's solve, and 2 is what would take them down.
 

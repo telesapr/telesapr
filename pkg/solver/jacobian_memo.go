@@ -21,6 +21,19 @@ func (s *System) Reseed(sk func(core.HParam) *core.Param) {
 	s.Dragged = nil
 }
 
+// Unsolved is how many equations the last solve left to solve together
+// after substitution and those solved alone: none where a kept System
+// has no Jacobian worth keeping.
+func (s *System) Unsolved() int {
+	n := 0
+	for i := range s.Eq {
+		if s.Eq[i].Tag == 0 {
+			n++
+		}
+	}
+	return n
+}
+
 // JacobiansKept is how many times s evaluated a Jacobian it had
 // written before rather than writing it again.
 func (s *System) JacobiansKept() int { return s.written.hits }
