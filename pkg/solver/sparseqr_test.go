@@ -164,7 +164,7 @@ func TestSparseQRGolden(t *testing.T) {
 	var sb strings.Builder
 	for _, c := range readLeastSquaresCases(t, casesPath) {
 		fmt.Fprintf(&sb, "rank %d\n", factorSparseQR(c.a).rank)
-		for _, x := range leastSquares(c.a, c.b, &symbolicCache{}) {
+		for _, x := range leastSquares(c.a, c.b, &matchedCache{}) {
 			sb.WriteString(hexFloat(x) + "\n")
 		}
 	}

@@ -425,18 +425,38 @@ func sortTailStable[E any](s []E, key func(*E) uint32) {
 	if head >= len(s) {
 		return
 	}
-	slices.SortStableFunc(s[head:], func(a, b E) int { return cmp.Compare(key(&a), key(&b)) })
+	// The tail sorted by its keys and places, which is the stable
+	// order, into a copy kept aside: a comparison of the elements
+	// themselves passed each by value to key, which made a copy of it
+	// on the heap, two for every comparison of a list of entities.
+	type keyed struct {
+		k uint32
+		i int
+	}
+	order := make([]keyed, len(s)-head)
+	for i := range order {
+		order[i] = keyed{key(&s[head+i]), i}
+	}
+	slices.SortFunc(order, func(a, b keyed) int {
+		if c := cmp.Compare(a.k, b.k); c != 0 {
+			return c
+		}
+		return cmp.Compare(a.i, b.i)
+	})
+	tail := make([]E, len(order))
+	for n, o := range order {
+		tail[n] = s[head+o.i]
+	}
 	// The first of the head that the tail's first goes before: past
 	// those of an equal key, which stay first.
-	first := key(&s[head])
+	first := order[0].k
 	at := sort.Search(head, func(i int) bool { return key(&s[i]) > first })
 	if at == head {
+		copy(s[head:], tail)
 		return
 	}
 	// Merged from the end, the head's moving part steps right over where
-	// the tail was, which is kept aside: on an equal key the tail's goes
-	// later.
-	tail := slices.Clone(s[head:])
+	// the tail was: on an equal key the tail's goes later.
 	i, j := head-1, len(tail)-1
 	for k := len(s) - 1; j >= 0; k-- {
 		if i >= at && key(&s[i]) > key(&tail[j]) {

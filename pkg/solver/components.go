@@ -2,13 +2,9 @@ package solver
 
 import (
 	"math"
-	"slices"
-)
 
-// componentTag is the first tag newtonSolveComponents puts on the
-// equations and params of a component, counting down: it meets none of
-// the tags Solve puts (the equations solved alone count up from 1).
-const componentTag = -1
+	"github.com/telesapr/telesapr/pkg/core"
+)
 
 // newtonSolveComponents is NewtonSolve of the system written for tag 0,
 // one connected component at a time: a sketch of several profiles that
@@ -25,30 +21,37 @@ func (s *System) newtonSolveComponents() bool {
 	if len(comps) <= 1 {
 		return s.NewtonSolve()
 	}
-	eqs := slices.Clone(s.mat.eq)
-	params := slices.Clone(s.mat.param)
+	// Each component's system is the whole's rows and columns for it:
+	// the partials are those WriteJacobian would write for the
+	// component alone, an equation reading no unknown of another, so
+	// they are taken rather than written again.
+	whole := s.mat
 	ok := true
 	for k, c := range comps {
-		tag := componentTag - k
-		for _, i := range c.rows {
-			eqs[i].Tag = tag
+		s.mat.m, s.mat.n = len(c.rows), len(c.cols)
+		s.mat.eq = make([]*Equation, len(c.rows))
+		s.mat.B = make([]*core.Expr, len(c.rows))
+		s.mat.A = make([][]*core.Expr, len(c.rows))
+		for r, i := range c.rows {
+			s.mat.eq[r], s.mat.B[r] = whole.eq[i], whole.B[i]
+			s.mat.A[r] = make([]*core.Expr, len(c.cols))
+			for q, j := range c.cols {
+				s.mat.A[r][q] = whole.A[i][j]
+			}
 		}
-		for _, j := range c.cols {
-			s.findParam(params[j]).Tag = tag
+		s.mat.param = make([]core.HParam, len(c.cols))
+		for q, j := range c.cols {
+			s.mat.param[q] = whole.param[j]
 		}
-		s.WriteJacobian(tag)
+		s.mat.id = s.written.componentID(whole.id, k)
 		if !s.NewtonSolve() {
 			ok = false
 			break
 		}
 	}
-	for _, e := range eqs {
-		e.Tag = 0
-	}
-	for _, h := range params {
-		s.findParam(h).Tag = 0
-	}
-	s.WriteJacobian(0)
+	s.mat.m, s.mat.n = whole.m, whole.n
+	s.mat.eq, s.mat.param = whole.eq, whole.param
+	s.mat.A, s.mat.B, s.mat.id = whole.A, whole.B, whole.id
 	s.mat.Bnum = make([]float64, s.mat.m)
 	for i := range s.mat.m {
 		s.mat.Bnum[i] = s.mat.B[i].Eval(nil, nil)

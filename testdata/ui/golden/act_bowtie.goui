@@ -408,7 +408,7 @@ value 0x30021 -0.5
 value 0x30022 -0.5
 value 0x30023 -0.5
 value 0x40010 -20
-value 0x40011 -3.552713678800501e-15
+value 0x40011 -1.0658141036401503e-14
 value 0x40013 20
 value 0x40014 3.552713678800501e-15
 value 0x50010 20
@@ -418,11 +418,11 @@ value 0x50014 3.552713678800501e-15
 value 0x60010 0.09999999999999787
 value 0x60011 3.552713678800501e-15
 value 0x60013 0.09999999999999787
-value 0x60014 -3.552713678800501e-15
+value 0x60014 -1.0658141036401503e-14
 value 0x70010 0.09999999999999787
-value 0x70011 -3.552713678800501e-15
+value 0x70011 -1.0658141036401503e-14
 value 0x70013 -20
-value 0x70014 -3.552713678800501e-15
+value 0x70014 -1.0658141036401503e-14
 value 0x80030000 0
 value 0x80030001 0
 value 0x80030002 40
@@ -506,7 +506,7 @@ entity 0x40000 line-segment {
 entity 0x40001 point-in-2d {
   group 0x2
   workplane 0x80020000
-  act-point -20 -3.552713678800501e-15 0
+  act-point -20 -1.0658141036401503e-14 0
   act-visible
 }
 
@@ -555,7 +555,7 @@ entity 0x60001 point-in-2d {
 entity 0x60002 point-in-2d {
   group 0x2
   workplane 0x80020000
-  act-point 0.09999999999999787 -3.552713678800501e-15 0
+  act-point 0.09999999999999787 -1.0658141036401503e-14 0
   act-visible
 }
 
@@ -569,14 +569,14 @@ entity 0x70000 line-segment {
 entity 0x70001 point-in-2d {
   group 0x2
   workplane 0x80020000
-  act-point 0.09999999999999787 -3.552713678800501e-15 0
+  act-point 0.09999999999999787 -1.0658141036401503e-14 0
   act-visible
 }
 
 entity 0x70002 point-in-2d {
   group 0x2
   workplane 0x80020000
-  act-point -20 -3.552713678800501e-15 0
+  act-point -20 -1.0658141036401503e-14 0
   act-visible
 }
 
@@ -607,7 +607,7 @@ entity 0x80030001 line-segment {
 
 entity 0x80030002 point-n-trans {
   group 0x3
-  act-point -20 -3.552713678800501e-15 0
+  act-point -20 -1.0658141036401503e-14 0
   act-visible
 }
 
@@ -625,7 +625,7 @@ entity 0x80030004 line-segment {
 
 entity 0x80030005 point-n-trans {
   group 0x3
-  act-point -20 -3.552713678800501e-15 80
+  act-point -20 -1.0658141036401503e-14 80
   act-visible
 }
 
@@ -638,8 +638,8 @@ entity 0x80030006 point-n-trans {
 entity 0x80030007 face-xprod {
   group 0x3
   points 0x80030005
-  act-point -20 -3.552713678800501e-15 0
-  act-normal 0 -1.7763568394002506e-16 1 0
+  act-point -20 -1.0658141036401503e-14 0
+  act-normal 0 -3.552713678800501e-16 1 0
   act-visible
 }
 
@@ -725,7 +725,7 @@ entity 0x80030014 point-n-trans {
 
 entity 0x80030015 point-n-trans {
   group 0x3
-  act-point 0.09999999999999787 -3.552713678800501e-15 0
+  act-point 0.09999999999999787 -1.0658141036401503e-14 0
   act-visible
 }
 
@@ -743,7 +743,7 @@ entity 0x80030017 point-n-trans {
 
 entity 0x80030018 point-n-trans {
   group 0x3
-  act-point 0.09999999999999787 -3.552713678800501e-15 80
+  act-point 0.09999999999999787 -1.0658141036401503e-14 80
   act-visible
 }
 
@@ -775,13 +775,13 @@ entity 0x8003001c line-segment {
 
 entity 0x8003001d point-n-trans {
   group 0x3
-  act-point 0.09999999999999787 -3.552713678800501e-15 0
+  act-point 0.09999999999999787 -1.0658141036401503e-14 0
   act-visible
 }
 
 entity 0x8003001e point-n-trans {
   group 0x3
-  act-point -20 -3.552713678800501e-15 0
+  act-point -20 -1.0658141036401503e-14 0
   act-visible
 }
 
@@ -793,20 +793,20 @@ entity 0x8003001f line-segment {
 
 entity 0x80030020 point-n-trans {
   group 0x3
-  act-point 0.09999999999999787 -3.552713678800501e-15 80
+  act-point 0.09999999999999787 -1.0658141036401503e-14 80
   act-visible
 }
 
 entity 0x80030021 point-n-trans {
   group 0x3
-  act-point -20 -3.552713678800501e-15 80
+  act-point -20 -1.0658141036401503e-14 80
   act-visible
 }
 
 entity 0x80030022 face-xprod {
   group 0x3
   points 0x80030020
-  act-point 0.09999999999999787 -3.552713678800501e-15 0
+  act-point 0.09999999999999787 -1.0658141036401503e-14 0
   act-normal 0 0 -1 0
   act-visible
 }

@@ -91,7 +91,7 @@ type System struct {
 	// rankSym and stepSym keep the symbolic analysis of the Jacobian
 	// as the rank test factors it and as the Newton step factors it,
 	// transposed, for the next factorisation with the same pattern.
-	rankSym, stepSym symbolicCache
+	rankSym, stepSym matchedCache
 	// written keeps the Jacobians WriteJacobian wrote, by what they
 	// were written from (jacobian_memo.go).
 	written jacobianMemo
@@ -506,9 +506,16 @@ func (s *System) sparseJacobian() *spMat {
 	return sp
 }
 
-// rankOf is the rank of a as the rank test finds it.
+// rankOf is the rank of a as the rank test finds it: of a' where a
+// has no more rows than columns, which the rank is the same of, so
+// that the matrix factored is tall and its rows can be matched to its
+// columns. A sketch's square and wide Jacobians factor with a band
+// that way, where a as it is fills in along a chain.
 func (s *System) rankOf(a *spMat) int {
-	return sparseQRRank(a, s.rankSym.analysis(a))
+	if a.rows <= a.cols {
+		a = a.transpose()
+	}
+	return factorMatched(a, &s.rankSym, true).rank
 }
 
 // TestRank evaluates the Jacobian and reports whether it has full row
@@ -560,7 +567,7 @@ func (s *System) SolveLeastSquares() bool {
 
 // leastSquares returns the minimum-norm solution X of A X = B, once A
 // is scaled; cache keeps the analysis of the pattern factored.
-func leastSquares(a *spMat, b []float64, cache *symbolicCache) []float64 {
+func leastSquares(a *spMat, b []float64, cache *matchedCache) []float64 {
 	return factorLeastSquares(a, cache).solve(b)
 }
 
@@ -575,7 +582,7 @@ type stepFactor struct {
 }
 
 // factorLeastSquares factors a for leastSquares.
-func factorLeastSquares(a *spMat, cache *symbolicCache) *stepFactor {
+func factorLeastSquares(a *spMat, cache *matchedCache) *stepFactor {
 	if a.rows <= a.cols {
 		// We want the minimum norm solution of the underdetermined system
 		// A*x = B, which is x = A'*(A*A')^-1*B. Factor A' rather than
@@ -584,7 +591,10 @@ func factorLeastSquares(a *spMat, cache *symbolicCache) *stepFactor {
 		//     z = (A*A')^-1*B = P*R^-1*R'^-1*P'*B,
 		// two triangular solves, with the rank decision taken on R.
 		at := a.transpose()
-		return &stepFactor{a: a, f: factorSparseQRAnalyzed(at, cache.analysis(at), false), wide: true}
+		// The rows of A' are matched to its columns (rowmatch.go):
+		// the solve below reads R alone, which a row permutation leaves
+		// as it is up to rounding.
+		return &stepFactor{a: a, f: factorMatched(at, cache, false), wide: true}
 	}
 	// More equations than unknowns; A' is wide, which Eigen's sparse QR
 	// does not handle, so fall back to the normal equations. A system

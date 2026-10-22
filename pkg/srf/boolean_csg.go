@@ -492,54 +492,77 @@ func coplanarTrimCrossings(il []SInter, c *SCurve, sh *SShell, own *SSurface, a,
 	inPlane := func(h core.HSSurface, either bool) bool {
 		return inPlaneOf(sh.index.planeOfHandle(sh, h), either)
 	}
+	// The trims that can cross: of the surfaces in own's plane, in
+	// their order, and of those only the seams where own isn't the
+	// shell's. They depend on own alone, so the index keeps them for
+	// the next segment of a curve split against own.
+	trims := func() []coplanarTrim {
+		var in []int
+		for i := range sh.Surface {
+			ss := &sh.Surface[i]
+			if ss == own {
+				continue
+			}
+			if planes != nil {
+				if !inPlaneOf(planes[i], !mine) {
+					continue
+				}
+			} else if !inPlaneOf(planeOf(ss), !mine) {
+				continue
+			}
+			in = append(in, i)
+		}
+		var ts []coplanarTrim
+		for _, i := range in {
+			ss := &sh.Surface[i]
+			for j := range ss.Trim {
+				tc := sh.FindCurve(ss.Trim[j].Curve)
+				if tc == nil {
+					continue
+				}
+				if !mine && !fuseCoplanarSeam(tc, inPlane) {
+					continue
+				}
+				ts = append(ts, coplanarTrim{ss, tc})
+			}
+		}
+		return ts
+	}
+	var ts []coplanarTrim
+	if planes != nil {
+		ts = sh.index.coplanarTrims(own, trims)
+	} else {
+		ts = trims()
+	}
 	ab := b.Minus(a)
-	for i := range sh.Surface {
-		ss := &sh.Surface[i]
-		if ss == own {
-			continue
-		}
-		if planes != nil {
-			if !inPlaneOf(planes[i], !mine) {
+	for _, t := range ts {
+		ss, tc := t.ss, t.tc
+		for k := 1; k < len(tc.Points); k++ {
+			q0, q1 := tc.Points[k-1].P, tc.Points[k].P
+			dq := q1.Minus(q0)
+			den := ab.Cross(dq).Dot(n)
+			if math.Abs(den) < geom.LengthEps*ab.Magnitude()*dq.Magnitude() {
 				continue
 			}
-		} else if !inPlaneOf(planeOf(ss), !mine) {
-			continue
-		}
-		for j := range ss.Trim {
-			tc := sh.FindCurve(ss.Trim[j].Curve)
-			if tc == nil {
+			sa := q0.Minus(a).Cross(dq).Dot(n) / den
+			uq := q0.Minus(a).Cross(ab).Dot(n) / den
+			if uq < -geom.LengthEps || uq > 1+geom.LengthEps {
 				continue
 			}
-			if !mine && !fuseCoplanarSeam(tc, inPlane) {
+			p := a.Plus(ab.ScaledBy(sa))
+			if c.IsExact {
+				p = exactCrossing(&c.Exact, a, b, q0, dq, n)
+			}
+			if sa <= 0 || sa >= 1 || p.EqualsTol(a, splitEndTol) || p.EqualsTol(b, splitEndTol) {
 				continue
 			}
-			for k := 1; k < len(tc.Points); k++ {
-				q0, q1 := tc.Points[k-1].P, tc.Points[k].P
-				dq := q1.Minus(q0)
-				den := ab.Cross(dq).Dot(n)
-				if math.Abs(den) < geom.LengthEps*ab.Magnitude()*dq.Magnitude() {
-					continue
-				}
-				sa := q0.Minus(a).Cross(dq).Dot(n) / den
-				uq := q0.Minus(a).Cross(ab).Dot(n) / den
-				if uq < -geom.LengthEps || uq > 1+geom.LengthEps {
-					continue
-				}
-				p := a.Plus(ab.ScaledBy(sa))
-				if c.IsExact {
-					p = exactCrossing(&c.Exact, a, b, q0, dq, n)
-				}
-				if sa <= 0 || sa >= 1 || p.EqualsTol(a, splitEndTol) || p.EqualsTol(b, splitEndTol) {
-					continue
-				}
-				// A seam is reached from the patches on both its sides,
-				// and where it ends on a face across the plane, that face
-				// split the segment there already.
-				if !mine && slices.ContainsFunc(il, func(si SInter) bool { return si.P.EqualsTol(p, splitEndTol) }) {
-					continue
-				}
-				il = append(il, SInter{P: p, Srf: ss})
+			// A seam is reached from the patches on both its sides,
+			// and where it ends on a face across the plane, that face
+			// split the segment there already.
+			if !mine && slices.ContainsFunc(il, func(si SInter) bool { return si.P.EqualsTol(p, splitEndTol) }) {
+				continue
 			}
+			il = append(il, SInter{P: p, Srf: ss})
 		}
 	}
 	return il

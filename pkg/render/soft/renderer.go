@@ -36,11 +36,17 @@ type Renderer struct {
 	width, height int
 	frame         *image.RGBA
 	depth         []float32
-	// depthStale says the depth buffer is to be cleared before it is
-	// next read: clearing is deferred until something is drawn, since a
-	// frame clears it several times over (at the camera, at the start,
-	// at the overlay) and only the last clear before a fragment counts.
-	depthStale bool
+	// rows is the state of each row of the frame (rowstate.go): the
+	// clears of its colour and depth waiting for it, and whether it
+	// differs from the layer the frame was last saved to or restored
+	// from.
+	rows []rowState
+	// bg is the colour StartFrame clears to.
+	bg [4]byte
+	// layer is the layer the frame was last saved to or restored from,
+	// which the rows not marked rowDiffers still hold.
+	layer    *Layer
+	layerGen uint64
 
 	// The view transform (UpdateProjection): model space to clip space.
 	projN          geom.Vector
@@ -106,6 +112,8 @@ func (r *Renderer) updateProjection() {
 		r.width, r.height = w, h
 		r.frame = image.NewRGBA(image.Rect(0, 0, w, h))
 		r.depth = make([]float32, w*h)
+		r.rows = make([]rowState, h)
+		r.layer = nil
 	}
 
 	// glScaled(scale*2/width, scale*2/height, scale/30000), then the
@@ -186,8 +194,13 @@ func (r *Renderer) StartFrame() {
 	r.SetClipPlane(nil)
 
 	bg := l.BackgroundColor
-	// The frame is read back as RGB, as the GL renderer does.
-	fill(r.frame.Pix, []byte{bg.Red, bg.Green, bg.Blue, 255})
+	// The frame is read back as RGB, as the GL renderer does. The fill
+	// waits for each row's first fragment, or a read: a frame that puts
+	// a saved layer back over it never pays for it.
+	r.bg = [4]byte{bg.Red, bg.Green, bg.Blue, 255}
+	for y := range r.rows {
+		r.rows[y] |= rowColorStale
+	}
 	r.clearDepth()
 }
 
@@ -202,26 +215,13 @@ func fill(b, pattern []byte) {
 	}
 }
 
-// clearDepth clears the depth buffer to the far plane, when it is next
-// read (readyDepth).
+// clearDepth clears the depth buffer to the far plane, each row before
+// its next fragment or read (settleRow): a frame clears it several times
+// over (at the camera, at the start, at the overlay) and only the last
+// clear before a fragment counts.
 func (r *Renderer) clearDepth() {
-	r.depthStale = true
-}
-
-// readyDepth does the clear clearDepth deferred. Every path that reads
-// or copies the depth buffer calls it first, before any goroutine of
-// its own starts.
-func (r *Renderer) readyDepth() {
-	if !r.depthStale {
-		return
-	}
-	r.depthStale = false
-	if len(r.depth) == 0 {
-		return
-	}
-	r.depth[0] = 1
-	for n := 1; n < len(r.depth); n *= 2 {
-		copy(r.depth[n:], r.depth[:n])
+	for y := range r.rows {
+		r.rows[y] |= rowDepthStale
 	}
 }
 
@@ -233,7 +233,10 @@ func (r *Renderer) FinishFrame() {}
 
 // ReadFrame is the frame drawn so far, top row first and opaque. The
 // renderer keeps drawing into it.
-func (r *Renderer) ReadFrame() *image.RGBA { return r.frame }
+func (r *Renderer) ReadFrame() *image.RGBA {
+	r.settleAll()
+	return r.frame
+}
 
 // Ident names the renderer.
 func (r *Renderer) Ident() (vendor, renderer, version string) {
@@ -347,7 +350,6 @@ func (r *Renderer) batchLines(draw func()) {
 	r.lineBatch = r.lineBatch[:0]
 	draw()
 	r.batching = false
-	r.readyDepth()
 	segs := r.lineBatch
 	workers := min(runtime.GOMAXPROCS(0), r.height/16)
 	if len(segs) < 256 || workers < 2 {
@@ -637,7 +639,6 @@ func (r *Renderer) appendPolygonTriangles(tris []rvert, vs []cvert) []rvert {
 // horizontal bands at once: each pixel still meets its triangles in
 // order, so the frame is the same.
 func (r *Renderer) rasterTriangles(tris []rvert, mode fragMode) {
-	r.readyDepth()
 	n := len(tris) / 3
 	workers := min(runtime.GOMAXPROCS(0), r.height/16)
 	if (n < 64 && !r.bigTriangles(tris)) || workers < 2 {

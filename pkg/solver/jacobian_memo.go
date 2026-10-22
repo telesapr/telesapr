@@ -64,6 +64,24 @@ type jacobianMemo struct {
 	hits int
 	// lastID is the id of the Jacobian last written.
 	lastID uint64
+	// components are the ids of the components' systems taken from a
+	// Jacobian, by its id and the component's place, so that a drag's
+	// steps find the factorisation kept for a component again.
+	components map[[2]uint64]uint64
+}
+
+// componentID is the id of component k's system of the Jacobian id.
+func (j *jacobianMemo) componentID(id uint64, k int) uint64 {
+	key := [2]uint64{id, uint64(k)}
+	if c, ok := j.components[key]; ok {
+		return c
+	}
+	if j.components == nil || len(j.components) >= maxWritten {
+		j.components = make(map[[2]uint64]uint64)
+	}
+	c := j.newID()
+	j.components[key] = c
+	return c
 }
 
 // writtenJacobian is what WriteJacobian leaves in mat.A and mat.B.

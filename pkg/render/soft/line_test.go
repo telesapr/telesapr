@@ -16,6 +16,7 @@ import (
 // rasterLineFullScan is rasterLine as it was: every pixel of the
 // bounding box tested, which the per-row column bounds must match.
 func (r *Renderer) rasterLineFullScan(a, b *rvert, width float64) {
+	r.settleAll()
 	dx, dy := b.x-a.x, b.y-a.y
 	length := math.Hypot(dx, dy)
 	if length == 0 || math.IsNaN(length) {
@@ -86,6 +87,7 @@ func TestRasterLineSameAsFullScan(t *testing.T) {
 				r.rasterLine(&a, &b, line[4])
 			}
 		})
+		r.settleAll()
 		return bytes.Clone(r.frame.Pix), slices.Clone(r.depth)
 	}
 	blank, _ := draw([5]float64{-100, -100, -90, -100, 1}, false)

@@ -43,6 +43,28 @@ type surfaceIndex struct {
 	// byHandle is each surface's place, for the plane of a surface a
 	// trim names.
 	byHandle map[core.HSSurface]int
+	// coplanar is, for each surface a curve was split against, the
+	// trims of the shell coplanarTrimCrossings tests for crossings
+	// (*SSurface to []coplanarTrim): every segment of a curve asked for
+	// them again, testing every surface of the shell.
+	coplanar sync.Map
+}
+
+// coplanarTrim is a trim coplanarTrimCrossings tests: the surface and
+// the curve.
+type coplanarTrim struct {
+	ss *SSurface
+	tc *SCurve
+}
+
+// coplanarTrims is the trims find gives for own, found by the first
+// call for own and kept.
+func (x *surfaceIndex) coplanarTrims(own *SSurface, find func() []coplanarTrim) []coplanarTrim {
+	if ts, ok := x.coplanar.Load(own); ok {
+		return ts.([]coplanarTrim)
+	}
+	ts, _ := x.coplanar.LoadOrStore(own, find())
+	return ts.([]coplanarTrim)
 }
 
 // surfacePlane is a flat surface's plane as coplanarTrimCrossings

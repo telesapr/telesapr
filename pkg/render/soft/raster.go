@@ -217,6 +217,12 @@ func (r *Renderer) fragment(x, y int, z float64, col [4]float64) {
 	if !ok {
 		return
 	}
+	r.blend(idx, col)
+}
+
+// blend is fragment's blend stage, for the pixel at idx that passed
+// the stipple and depth stages.
+func (r *Renderer) blend(idx int, col [4]float64) {
 	a := clamp01(col[3])
 	p := r.frame.Pix[idx*4 : idx*4+4 : idx*4+4]
 	if a == 1 {
@@ -316,7 +322,6 @@ func edgeIncludes(dx, dy float64) bool {
 // rasterTriangle fills a triangle in window space; mode picks where
 // each fragment's colour comes from.
 func (r *Renderer) rasterTriangle(a, b, c *rvert, mode fragMode) {
-	r.readyDepth()
 	r.rasterTriangleRows(a, b, c, mode, 0, r.height)
 }
 
@@ -342,6 +347,7 @@ func (r *Renderer) rasterTriangleRows(a, b, c *rvert, mode fragMode, y0, y1 int)
 	if minX > maxX || minY > maxY {
 		return
 	}
+	r.settleRows(minY, maxY)
 
 	// Edge e_i is opposite vertex i; it is positive inside.
 	type edge struct{ ox, oy, dx, dy float64 }
@@ -393,24 +399,39 @@ func (r *Renderer) rasterTriangleRows(a, b, c *rvert, mode fragMode, y0, y1 int)
 		// the per-pixel expression e.dx*(fy-e.oy) - e.dy*(fx-e.ox)
 		// computes it, so that each pixel sees the same value.
 		r0, r1, r2 := e0.dx*(fy-e0.oy), e1.dx*(fy-e1.oy), e2.dx*(fy-e2.oy)
+		// Each edge function, as computed, is monotonic in px (every
+		// step of it rounds monotonically), so the pixels that pass all
+		// three tests are a run: find its ends with the tests, and the
+		// pixels between need none.
+		inside := func(px int) bool {
+			fx := float64(px) + 0.5
+			w0 := r0 - e0.dy*(fx-e0.ox)
+			w1 := r1 - e1.dy*(fx-e1.ox)
+			w2 := r2 - e2.dy*(fx-e2.ox)
+			return (w0 > 0 || (w0 == 0 && incl[0])) && (w1 > 0 || (w1 == 0 && incl[1])) &&
+				(w2 > 0 || (w2 == 0 && incl[2]))
+		}
+		for x0 <= x1 && !inside(x0) {
+			x0++
+		}
+		for x1 >= x0 && !inside(x1) {
+			x1--
+		}
 		for px := x0; px <= x1; px++ {
 			fx := float64(px) + 0.5
 			w0 := r0 - e0.dy*(fx-e0.ox)
-			if w0 < 0 || (w0 == 0 && !incl[0]) {
-				continue
-			}
 			w1 := r1 - e1.dy*(fx-e1.ox)
-			if w1 < 0 || (w1 == 0 && !incl[1]) {
-				continue
-			}
 			w2 := r2 - e2.dy*(fx-e2.ox)
-			if w2 < 0 || (w2 == 0 && !incl[2]) {
-				continue
-			}
 			l0, l1, l2 := w0*invArea, w1*invArea, w2*invArea
 			z := l0*a.z + l1*b.z + l2*c.z
 			if opaque {
 				r.fragmentOpaque(px, py, z, rgb)
+				continue
+			}
+			// The stipple and depth stages first: a hidden fragment's
+			// colour is never needed, and most of a solid's are hidden.
+			idx, ok := r.fragmentDepth(px, py, z)
+			if !ok {
 				continue
 			}
 			var col [4]float64
@@ -430,7 +451,7 @@ func (r *Renderer) rasterTriangleRows(a, b, c *rvert, mode fragMode, y0, y1 int)
 				t := (q0*a.t + q1*b.t + q2*c.t) * qs
 				col = r.texel(s, t, r.cur.color)
 			}
-			r.fragment(px, py, z, col)
+			r.blend(idx, col)
 		}
 	}
 }
@@ -439,7 +460,6 @@ func (r *Renderer) rasterTriangleRows(a, b, c *rvert, mode fragMode, y0, y1 int)
 // as GL does with GL_LINE_SMOOTH: each pixel's coverage of the line's
 // rectangle scales its alpha.
 func (r *Renderer) rasterLine(a, b *rvert, width float64) {
-	r.readyDepth()
 	r.rasterLineRows(a, b, width, 0, r.height)
 }
 
@@ -462,6 +482,7 @@ func (r *Renderer) rasterLineRows(a, b *rvert, width float64, y0, y1 int) {
 	minY = max(minY, 0, y0)
 	maxX = min(maxX, r.width-1)
 	maxY = min(maxY, r.height-1, y1-1)
+	r.settleRows(minY, maxY)
 	// Only the pixels near the segment can be covered: in each row, those
 	// within hw+0.5 of its line and within 0.5 of its ends. Bound them,
 	// with a margin far wider than the rounding of either this bound or

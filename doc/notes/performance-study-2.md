@@ -411,6 +411,67 @@ the same. Left: recommendations 1, 2, 4, 5, 7, 8, 10 and 14 to 18, none of
 which the modelling upgrades asked for; the two rank tests of each solve are now most of a drag
 step's solve, and 2 is what would take them down.
 
+## Taken up, 2026-10-23 (the rest of the list)
+
+On branch `lo2-perf`, the recommendations left above. Costs are instructions (`perf stat -e
+instructions:u`, two benchmark counts and the difference), the host being shared; times where
+instructions don't show the cost (copies), with the runs of each build interleaved.
+
+- **Recommendations 1 and 2, rows matched.** The rows of the matrix factored are renumbered so
+  that row i has an entry in the i-th column ordered (`rowmatch.go`, kept per pattern with the
+  analysis): the Newton step's factorisation of A', and the rank test, which now factors A'
+  where A is wide or square, the rank being the same. The rank of a square 400-chain 988 M →
+  3.5 M instructions; of the wide 50-of-300 sketch 3.8 M → 0.2 M; the Newton step's
+  factorisation of a 400-chain 28.4 → 0.29 ms. Solves: closed 400-chain kept 260 M → 51 M,
+  `SolveDimensioning/50` kept 14.4 M → 3.4 M, the dimensioned drag kept 12.2 M → 5.2 M, sixteen
+  profiles 9.8 G → 0.5 G. Goldens: 24 files of the fixtures and the interface, numbers only, by
+  at most 1.2e-14 in params (1.7e-13 relative on `large_dimensions`); no rank, dof or structure
+  changed; the solver's least-squares cases keep every rank. The window's drag (host at load
+  5 to 30, three interleaved runs): `BenchmarkDrag150` about 1.3 → 1.1 ms a step,
+  `BenchmarkDrag400` about 4.0 → 3.2 ms.
+- **Recommendation 12, again.** With the rows matched, the components cost more than they saved
+  (four profiles 108 M against 74 M whole): each was written again. A component's system is now
+  the whole Jacobian's rows and columns for it (`components.go`): four profiles 67 M, sixteen
+  502 M against 501 M whole. Same bytes.
+- **Recommendation 4.** A triangle's fragments are tested for depth before their colour is
+  made, and a row's pixels are tested at the ends of their run only, the edge functions being
+  monotonic as computed. Same pixels (`TestRasterTriangleSameAsFullScan`). Frames: bolt
+  1175 M → 994 M, ball mill 1455 M → 1193 M, `PaintTranslate` 418 M → 367 M.
+- **Recommendation 14.** Clears are kept per row and done at a row's first fragment, and a frame
+  put back from the layer it was last saved to or restored from copies only the rows drawn on
+  since (`rowstate.go`). `BenchmarkPaintHover` 7.8 → 7.3 ms. Same pixels
+  (`TestRestoreLayerRowsSameAsWhole`).
+- **Recommendation 10, by surface.** The trims `coplanarTrimCrossings` tests are kept per
+  surface split against, in the shell's index: the 12x12 step and repeat on one goroutine
+  1572 M → 1313 M (−16%). Same bytes. Bucketing the planes was not needed once the candidates
+  are found once per surface.
+- **Found on the way:** `sortTailStable` compared elements passed by value to a key taking a
+  pointer, two heap copies of an entity a comparison: half the allocations of a mesh
+  regeneration (`BenchmarkRegenerateMesh`, 43k → 22k, 27.8 → 19.8 MB). Same order.
+
+Not taken:
+
+- **7, arenas for the BSP's nodes.** Built (chunks of nodes in the insertion's scratch) and
+  measured on `BenchmarkRegenerateMesh`: allocations 30k → 22k, bytes +8%, time and
+  instructions no better (169 M against 171 M). Reverted.
+- **5, GL vertex buffers kept.** A GL frame of the ball mill is 3.6 ms, of which the meshes are
+  under a tenth; the entities and their lines are the rest. `DisplayMesh` is rebuilt in place,
+  so a buffer kept needs a generation threaded through `render.Canvas` to know when it is stale:
+  not worth it at that share.
+- **8, a closed-form start on cylinders.** The guess grid is about 6% of the thread on one
+  goroutine; another start ends Newton elsewhere in the last bits, so goldens for that 6%.
+- **15, GOGC.** `BenchmarkDrag150` at GOGC 100, 200, 400: 1.15, 1.10, 1.05 ms a step, paint
+  6.9, 6.8, 6.4 ms, against a heap up to four times the live one for the session; a soft memory
+  limit would be the way, and the binaries keep the default.
+- **16, CDT as the mesher.** K4 meshes the faces the ear clipper gets wrong; as the default it
+  costs 3 to 5 times the triangles (`doc/notes/k4-cdt-spike.md`), and no profile here has the
+  triangulation in it.
+- **17, robust predicates for the mesh BSP.** For robustness, with no failing case to fix and no
+  cost in a profile.
+- **18.** `GOAMD64=v3` measured: 91 of 296 fixtures regenerate differently (fused multiply-adds,
+  `pkg/libm` included) and the thread regenerates in 0.13–0.14 s either way. The tiled
+  rasteriser, SIMD and a BVH remain goldens for gains the profiles don't point at.
+
 ## Libraries and algorithms surveyed
 
 - **Sparse linear algebra.** gonum's `mat` has a dense QR, O(n³) and slower than the sparse one
