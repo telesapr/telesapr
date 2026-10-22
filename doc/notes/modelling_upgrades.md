@@ -96,6 +96,12 @@ analysis, tooling and speed.
 - **D1.** Broad phase from `interference.go`, closest points on the meshes refined with
   `ClosestPointOnThisAndSurface`; thickness by inward rays. The report states its tolerance.
 - **D3.** Not done until every file-touching symbol exposed to scripts is covered by a test.
-- **D4.** Recommendations 3, 6 and 9 keep every fixture hash; 11–13 move goldens.
+- **D4.** Done 2026-10-22 on branch `wp-d4-incremental`: recommendation 3 (one pass over the
+  groups where the size keeps the tolerance) and a cache of solids by what they were made from,
+  which makes undo, redo, an edit taken back and an unchanged regeneration cost the solve and
+  copies (numbers in `performance-study-2.md`, "Taken up"). Not done: recommendation 6 (the
+  Jacobian kept between solves) and 9 (drawing the last solids while a drag's are made off the
+  thread, which goes against 151fda16: a drag makes its solids on the thread so linked parts
+  follow the pointer); 11–13 move goldens.
 - **D5.** Beside `pkg/script/api/describe.go`; the test builds each fixture from its emitted
   script and compares the saves.

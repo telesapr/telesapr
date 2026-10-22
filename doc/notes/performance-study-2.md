@@ -322,6 +322,44 @@ their own, with `pkg/check` passing. The letters refer to the notes' own lists (
 A text-window benchmark (D8) is worth adding before any work on it: it paints a rectangle and
 a pixmap per character cell and is in none of the frame benchmarks.
 
+## Taken up, 2026-10-22
+
+On branch `wp-d4-incremental` (item 17 of `modelling_upgrades.md`), same bytes throughout: a
+display-mode digest of all 296 fixtures (params, entities, shells and meshes, after loading,
+after groups are made dirty, after dimensions are changed and changed back, after a full
+regeneration) is identical before and after, and `TestSolidCacheSameAsMaking` holds it.
+
+- **Recommendation 3, one pass.** After the first regeneration the tolerance is known: the
+  groups are solved, their loops made and their solids built at it in one pass (`passOne` in
+  `generate_all.go`). Only where the size that pass finds moves the tolerance across a step, or
+  a new group follows solids made at another, does the build pass run again as before. The
+  params a solve took as known are put back as the build pass left them. `BenchmarkDrag20` drag
+  0.41 → 0.23 ms (−45%), `BenchmarkDrag150` 1.72 → 1.33 ms (−23%); the rover regenerated in full
+  1.01 → 0.96 s, its solids being most of it.
+- **Solids kept by what they were made from** (`solid_cache.go`), not in the list above. A
+  group's solid is a function of its definition, its entities and params, those of the groups
+  before it, the solid before it and the tolerance; those are hashed group by group into a
+  key, every solid made is kept as an exact copy under its key (an LRU of 256 MB and 4096
+  solids), and a group whose key is kept takes a copy in place of making it. The window's
+  `ShellJob`, which regenerates a copy of the sketch in full for every edit, shares the cache.
+  Three-thread screw (`testdata/thread/triple_m12.tlspr`): an edit of the first sketch and back,
+  131 → 45 ms a regeneration (`BenchmarkEditBack`); an undo and a redo, 267 → 47 ms
+  (`BenchmarkUndoRedo`); the rover regenerated with nothing changed, 1.01 → 0.13 s. No key is
+  made while something is dragged, when none would come again: drags are as with one pass alone.
+- **Recommendation 9, not taken.** Drawing the last solids while a drag's are made off the
+  thread goes against 151fda16, where a drag makes its solids on the thread so that linked
+  parts follow the pointer; a variant that shows a job's solids a frame or two late is the
+  user's call.
+- **Recommendation 6, not done.** The Jacobian kept between solves of a group stays open, as do
+  11–13, which move goldens.
+
+Traps: a key must leave out what a group keeps from an earlier state that nothing reads (the
+profile's error point once it is good, empty slices by where their array is), or a solid
+made again from the same inputs gets another key; a group with no solid passes one key down
+whatever tolerance it was made at, or the references group's first tolerance would split the
+keys of a sketch and its `ShellJob` copy. A test reading a script's sketch through `Doc.With`
+records an undo step and marks the active group dirty: read through the host.
+
 ## Libraries and algorithms surveyed
 
 - **Sparse linear algebra.** gonum's `mat` has a dense QR, O(n³) and slower than the sparse one
