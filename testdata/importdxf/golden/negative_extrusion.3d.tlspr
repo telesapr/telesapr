@@ -107,7 +107,7 @@ value 0x40021 0
 value 0x40022 1
 value 0x40023 0
 value 0x50010 -6
-value 0x50011 0
+value 0x50011 1.5383701491068504e-16
 value 0x50013 -4
 value 0x50014 4.440892098500626e-16
 value 0x50016 -7
@@ -129,7 +129,7 @@ value 0x70015 0
 value 0x70016 0
 value 0x70017 0
 value 0x70018 0
-value 0x70020 0
+value 0x70020 1
 value 0x70021 0
 value 0x70022 0
 value 0x70023 0
@@ -359,6 +359,7 @@ entity 0x70020 normal-in-3d {
   construction
   style 0x100
   points 0x70001
+  act-normal 1 0 0 0
   act-visible
 }
 

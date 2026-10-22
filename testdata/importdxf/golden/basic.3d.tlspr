@@ -280,7 +280,7 @@ value 0x90015 0
 value 0x90016 2.401923788646684
 value 0x90017 6.5
 value 0x90018 0
-value 0x90020 0
+value 0x90020 1
 value 0x90021 0
 value 0x90022 0
 value 0x90023 0
@@ -293,7 +293,7 @@ value 0xa0015 0
 value 0xa0016 6.879385241571817
 value 0xa0017 5.684040286651338
 value 0xa0018 0
-value 0xa0020 0
+value 0xa0020 1
 value 0xa0021 0
 value 0xa0022 0
 value 0xa0023 0
@@ -557,6 +557,7 @@ entity 0x90020 normal-in-3d {
   construction
   style 0x100
   points 0x90001
+  act-normal 1 0 0 0
   act-visible
 }
 
@@ -603,6 +604,7 @@ entity 0xa0020 normal-in-3d {
   construction
   style 0x105
   points 0xa0001
+  act-normal 1 0 0 0
   act-visible
 }
 

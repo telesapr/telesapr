@@ -271,7 +271,7 @@ value 0x80015 0
 value 0x80016 15
 value 0x80017 0
 value 0x80018 0
-value 0x80020 0
+value 0x80020 1
 value 0x80021 0
 value 0x80022 0
 value 0x80023 0
@@ -284,7 +284,7 @@ value 0x90015 0
 value 0x90016 15
 value 0x90017 0
 value 0x90018 0
-value 0x90020 0
+value 0x90020 1
 value 0x90021 0
 value 0x90022 0
 value 0x90023 0
@@ -303,7 +303,7 @@ value 0xb0015 0
 value 0xb0016 10
 value 0xb0017 0
 value 0xb0018 0
-value 0xb0020 0
+value 0xb0020 1
 value 0xb0021 0
 value 0xb0022 0
 value 0xb0023 0
@@ -316,7 +316,7 @@ value 0xc0015 0
 value 0xc0016 25
 value 0xc0017 0
 value 0xc0018 0
-value 0xc0020 0
+value 0xc0020 1
 value 0xc0021 0
 value 0xc0022 0
 value 0xc0023 0
@@ -341,7 +341,7 @@ value 0xf0015 0
 value 0xf0016 5
 value 0xf0017 20
 value 0xf0018 0
-value 0xf0020 0
+value 0xf0020 1
 value 0xf0021 0
 value 0xf0022 0
 value 0xf0023 0
@@ -588,6 +588,7 @@ entity 0x80020 normal-in-3d {
   construction
   style 0x100
   points 0x80001
+  act-normal 1 0 0 0
   act-visible
 }
 
@@ -634,6 +635,7 @@ entity 0x90020 normal-in-3d {
   construction
   style 0x100
   points 0x90001
+  act-normal 1 0 0 0
   act-visible
 }
 
@@ -707,6 +709,7 @@ entity 0xb0020 normal-in-3d {
   construction
   style 0x100
   points 0xb0001
+  act-normal 1 0 0 0
   act-visible
 }
 
@@ -753,6 +756,7 @@ entity 0xc0020 normal-in-3d {
   construction
   style 0x100
   points 0xc0001
+  act-normal 1 0 0 0
   act-visible
 }
 
@@ -853,6 +857,7 @@ entity 0xf0020 normal-in-3d {
   construction
   style 0x100
   points 0xf0001
+  act-normal 1 0 0 0
   act-visible
 }
 
