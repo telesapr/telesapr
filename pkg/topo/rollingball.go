@@ -577,13 +577,14 @@ func (rb *rollingBall) trace() error {
 	// patches are both nearest, and the tangent must be its own side's.
 	run := 0.0
 	near := func() rbNear {
-		switch {
-		case !rb.mitred():
-			return rbNear{end: -1}
-		case run < total/2:
-			return rbNear{end: 0}
+		k := 1
+		if run < total/2 {
+			k = 0
 		}
-		return rbNear{end: 1}
+		if !rb.mitreAt(k) {
+			return rbNear{end: -1}
+		}
+		return rbNear{end: k}
 	}
 	for i := 0; i <= segs; i++ {
 		a, b := raw[i%len(raw)], raw[(i+1)%len(raw)]
@@ -1044,7 +1045,7 @@ const refineNear = 0.75
 // blend is the fillet's surface, its sections, and the arc lengths of
 // the crossings of seams among them.
 func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, error) {
-	if rb.mitred() {
+	if rb.anyMitre() {
 		// A mitre runs nearly along the chain where it meets the face both
 		// sides share: one quintic follows it only at coarse tolerances,
 		// two spans do down to fine ones.
@@ -1401,8 +1402,11 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 	// face's edge to where the fillet's end meets it, and that piece of
 	// the edge gone from the flat face too, which takes the fillet's end.
 	var endCuts []rbEndCut
-	if rb.mitred() {
+	if !rb.closed {
 		for k, end := range rb.ends {
+			if !end.mitre {
+				continue
+			}
 			arc := secs[0].arc
 			if k == 1 {
 				arc = secs[len(secs)-1].arc
@@ -1420,8 +1424,12 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 			}
 			drop = append(drop, pair{q, v})
 		}
-	} else if !rb.closed {
 		for k, end := range rb.ends {
+			if end.mitre {
+				// endCuts is by end: a mitre end cuts nothing more.
+				endCuts = append(endCuts, rbEndCut{})
+				continue
+			}
 			sec := secs[0]
 			if k == 1 {
 				sec = secs[len(secs)-1]
@@ -1534,6 +1542,10 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 		}
 	}
 	for k, cut := range endCuts {
+		if cut.end == nil {
+			// A mitre end: its mate's fillet closes it.
+			continue
+		}
 		if ro := cut.off; ro != nil {
 			// The end section's part under the next face's plane, from side
 			// 1-j's cut to p1.

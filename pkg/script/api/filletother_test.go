@@ -331,7 +331,10 @@ func TestFilletEndsOnCurvedFace(t *testing.T) {
 // fillets don't meet (topo.filletApart), and together they take what
 // OpenCASCADE's makeFillet takes from each alone (TestFilletEndsOnCurvedFace)
 // within half a percent. An upright picked with a bottom edge it meets
-// is refused at their corner.
+// at a corner whose third edge stays sharp: the two fillets meet in a
+// mitre there (topo.filletCornerPicks), and take what each takes alone
+// less what both would take at the corner, the integral over the
+// corner's cube of the square of 1 - sqrt(1 - a^2): 5/3 - pi/2.
 func TestFilletEndsOnCurvedFaceApart(t *testing.T) {
 	if testing.Short() {
 		t.Skip("fillets over curved faces, slow")
@@ -361,6 +364,7 @@ func TestFilletEndsOnCurvedFaceApart(t *testing.T) {
 	}
 
 	d = New()
+	d.Edit.SetChordTolerance(0.002)
 	if g, err = d.Assembly.LinkStep(lid, "", true); err != nil {
 		t.Fatal(err)
 	}
@@ -375,16 +379,27 @@ func TestFilletEndsOnCurvedFaceApart(t *testing.T) {
 	if !found {
 		t.Fatal("no bottom edge at the origin")
 	}
-	why := func() (msg string) {
-		defer func() {
-			if x := recover(); x != nil {
-				msg = fmt.Sprint(x)
-			}
-		}()
-		return d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(V(0, 0, 5)), bottom}, 1, "").Problem()
-	}()
-	if !strings.Contains(why, "pick it alone") {
-		t.Errorf("an upright with the bottom edge it meets: %q", why)
+	before = g.Analyze().Check().Volume
+	took = 0.0
+	for _, at := range []Vec{V(0, 0, 5), V(0, 15, 0)} {
+		da := New()
+		da.Edit.SetChordTolerance(0.002)
+		ga, err := da.Assembly.LinkStep(lid, "", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		took += before - da.Features.FilletSolid([]SolidEdge{ga.Solid().EdgeAt(at)}, 1, "").Analyze().Check().Volume
+	}
+	const corner = 5.0/3 - math.Pi/2
+	f = d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(V(0, 0, 5)), bottom}, 1, "")
+	if p := f.Problem(); p != "" {
+		t.Fatalf("an upright with the bottom edge it meets: %s", p)
+	}
+	rep = f.Analyze().Check()
+	both := before - rep.Volume
+	t.Logf("together took %.6g, alone %.6g less the corner %.6g", both, took, corner)
+	if !rep.Sound() || math.Abs(both-(took-corner)) > 1e-3 {
+		t.Errorf("an upright with the bottom edge it meets: %s, took %g, want %g", rep.Summary(), both, took-corner)
 	}
 }
 

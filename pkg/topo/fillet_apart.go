@@ -79,6 +79,11 @@ func filletApart(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 		for _, v := range vs {
 			j, ok := seen[v]
 			if edgeVerts[v] > 0 || ok && j != i {
+				// Fillets that meet at a corner whose third edge stays
+				// sharp: all the rolling ball's, mitred there.
+				if cerr := filletCornerPicks(sh, picks, r, origin, flat); !errors.Is(cerr, errNotMitred) {
+					return cerr
+				}
 				return filletErr(t.Vertices[v].P, "an edge's fillet that only the rolling ball makes, "+
 					"which is made on its own, meets another picked edge's fillet here: pick it alone, "+
 					"and round the other after")

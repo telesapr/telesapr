@@ -51,8 +51,21 @@ func (rb *rollingBall) mitred() bool {
 	return !rb.closed && rb.ends[0] != nil && rb.ends[0].mitre && rb.ends[1].mitre
 }
 
+// mitreAt reports whether end k of the open chain meets a mitre.
+func (rb *rollingBall) mitreAt(k int) bool {
+	return !rb.closed && rb.ends[k] != nil && rb.ends[k].mitre
+}
+
+// anyMitre reports whether either end of the chain meets a mitre: a
+// chain whose other end ends at a face, flat or curved, as an edge
+// picked with one it meets at a corner (linkMitres, partial) does.
+func (rb *rollingBall) anyMitre() bool {
+	return rb.mitreAt(0) || rb.mitreAt(1)
+}
+
 // rbNear is the end of a mitred chain a section is nearer (end), and
-// whether past it; end is -1 on any other chain.
+// whether past it; end is -1 on any other chain, and away from an end
+// that isn't a mitre.
 type rbNear struct {
 	end  int
 	past bool
@@ -61,10 +74,16 @@ type rbNear struct {
 // nearEnd is the end of a mitred chain that arc length s is nearer.
 func (rb *rollingBall) nearEnd(s float64) rbNear {
 	switch {
-	case !rb.mitred():
+	case !rb.anyMitre():
 		return rbNear{end: -1}
 	case s < rb.length/2:
+		if !rb.mitreAt(0) {
+			return rbNear{end: -1}
+		}
 		return rbNear{end: 0, past: s < 0}
+	}
+	if !rb.mitreAt(1) {
+		return rbNear{end: -1}
 	}
 	return rbNear{end: 1, past: s > rb.length}
 }
@@ -102,6 +121,15 @@ func (rb *rollingBall) markMitre() {
 // face. It reports whether every end of every chain is linked so, and
 // to a chain of the same radius.
 func linkMitres(rbs []*rollingBall) bool {
+	return linkMitresAt(rbs, false)
+}
+
+// linkMitresAt is linkMitres; with partial, an end at a vertex no other
+// chain's end shares may stay an end at a face, flat or curved, and it
+// reports whether every end that shares its vertex with another chain's
+// is linked, and at least one is.
+func linkMitresAt(rbs []*rollingBall, partial bool) bool {
+	linked := false
 	for _, rb := range rbs {
 		for k, end := range rb.ends {
 			if rb.closed || end == nil {
@@ -128,12 +156,27 @@ func linkMitres(rbs []*rollingBall) bool {
 					break
 				}
 			}
-			if !end.mitre {
+			if end.mitre {
+				linked = true
+				continue
+			}
+			if !partial || sharesVertex(rbs, rb, end.v) {
 				return false
 			}
 		}
 	}
-	return true
+	return !partial || linked
+}
+
+// sharesVertex reports whether a chain of rbs other than rb has an end
+// or a vertex at v.
+func sharesVertex(rbs []*rollingBall, rb *rollingBall, v int) bool {
+	for _, o := range rbs {
+		if o != rb && slices.Contains(o.verts, v) {
+			return true
+		}
+	}
+	return false
 }
 
 // mitreBan is end's ban where chain o's end oe meets it in a mitre: on
@@ -160,10 +203,13 @@ func mitreBan(end, oe *rbEnd, o *rollingBall) ([2]int, bool) {
 // halves the turn at the crease from it to its mate, through the vertex,
 // its normal pointing on past that end.
 func (rb *rollingBall) mitrePlane() error {
-	if !rb.mitred() {
+	if !rb.anyMitre() {
 		return nil
 	}
 	for k, end := range rb.ends {
+		if !end.mitre {
+			continue
+		}
 		m := rb.beyond(k).Minus(end.mate.beyond(end.mateK))
 		at := rb.t.Vertices[end.v].P
 		if m.Magnitude() < 1e-6 {
