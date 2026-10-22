@@ -75,10 +75,10 @@ Without level starts, several starts are swept by one helix, their ridges a pitc
 ridge sketch: that is a turn of 1/n between them, and leaves the first (n-1) pitches with fewer
 ridges.
 
-Where a ridge runs into the run-out's cone, the Boolean that joins them fails for some lengths
-(8 of 72 in the sweep, `TestThreadRunOutSweep`), after the thread has tried several planes for
-its ridges; the window then says the solid isn't sound, and a run-out a little longer or shorter
-usually puts it right.
+Where a ridge runs into the run-out's cone, its flanks cross the cone at the thread's helix
+angle. Every run-out of the sweep (`TestThreadRunOutSweep`, 72 lengths and threads) comes out
+sound; should one not, the thread tries other planes for its ridges, and the window says the
+solid isn't sound if none does.
 
 ## Not yet
 
