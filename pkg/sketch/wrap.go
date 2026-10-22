@@ -25,7 +25,7 @@ import (
 // The Boolean of a band with a cone or a cylinder can fail where it
 // can't close the trims of the face at a corner of the profile, by
 // chance of where its marched curves end (no case of the text sweeps
-// does since 2026-10-23). Where the whole band fails, the group joins it
+// does since 2026-10-22). Where the whole band fails, the group joins it
 // loop set by loop set, each through the face as far as each of
 // wrapOverlaps in turn until one joins: the result is the same solid.
 // Where a loop set joins at none, the group refuses, the solid so far

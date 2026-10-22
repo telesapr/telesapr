@@ -393,7 +393,7 @@ var runOutSweepCases = map[string]threadCase{
 }
 
 // threadRunOutMaxFail is the rate of the run-out sweep allowed to
-// fail: none since 2026-10-23, when the Boolean took the crossings of
+// fail: none since 2026-10-22, when the Boolean took the crossings of
 // the turned surface's circle and seams with the ridge's flanks, at the
 // thread's helix angle, on the flank's patch they lie on (8 of 72
 // before).

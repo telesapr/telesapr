@@ -8,7 +8,7 @@ import (
 
 // Chamfers on the solids of TestFilletOnOtherSolids, every edge alone at
 // the fillets' radius as the distance: one that is made must be sound,
-// and the counts made may only get better. Until 2026-10-23 a straight
+// and the counts made may only get better. Until 2026-10-22 a straight
 // edge between flat faces that ends on a curved face was cut by a wedge
 // and a Boolean, which left the wedge's end open across the curved face
 // (the lid's 4 uprights, unsound with no word of it); it is now the
@@ -39,7 +39,7 @@ func TestChamferOnOtherSolids(t *testing.T) {
 // lidUprights are the lid's four upright edges, between two flat walls,
 // each ending at the top on its curved dome, by a point on each, with
 // what OpenCASCADE's makeChamfer takes from each at distances 1 and 2
-// (FreeCAD 2026-10-23, as scripts/fillet-step-volumes.py does for
+// (FreeCAD 2026-10-22, as scripts/fillet-step-volumes.py does for
 // fillets).
 var lidUprights = []struct {
 	at     Vec
@@ -149,7 +149,7 @@ func TestChamferEndsOnCurvedFaceApart(t *testing.T) {
 // side, ending where the sides meet in creases: its rulings twist near
 // the ends, which the rolling ball's sections there are fitted to, each
 // end's way along the chamfer from its foot's own ruling. Exported as
-// STEP and read by OpenCASCADE (2026-10-23), the solid is valid and the
+// STEP and read by OpenCASCADE (2026-10-22), the solid is valid and the
 // chamfer of 2 took 40.142 mm³; OpenCASCADE's own makeChamfer of the edge
 // takes 40.134 and leaves a solid it finds invalid.
 func TestChamferLoftFoot(t *testing.T) {

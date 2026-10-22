@@ -232,7 +232,7 @@ func TestFilletLoftTopRing(t *testing.T) {
 // z 24, and the other way above): filleted or chamfered, the fillet
 // narrows to nothing where the crease fades out and ends there, and the
 // crease goes on above it as an edge. OpenCASCADE refuses both. Exported
-// as STEP and read by it (2026-10-23), the solids are valid, and the
+// as STEP and read by it (2026-10-22), the solids are valid, and the
 // fillet of 2 took 8.462 mm³ and the chamfer of 2 42.537 by its volumes,
 // 8.519 and 45.066 by slices 0.1 mm apart. Our meshes can't tell: the
 // sides' chords change with their trims by more than the fillet.
