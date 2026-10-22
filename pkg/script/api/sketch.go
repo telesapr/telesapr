@@ -115,6 +115,32 @@ func (m SketchMenu) Arc(center, start, end Vec) Entity {
 		})
 }
 
+// ArcIn3D adds an arc of a circle drawn in 3d, in no workplane: around
+// center, from start counter-clockwise to end about the normal u cross
+// v, as a DXF import draws one. The window draws an arc only in a
+// workplane, whose plane its clicks are in; here u and v give the
+// plane, and the arc's normal turns as SetOrientation turns it.
+func (m SketchMenu) ArcIn3D(center, start, end, u, v Vec) Entity {
+	d := m.d
+	checkFinite("an orientation", u)
+	checkFinite("an orientation", v)
+	if u.Magnitude() == 0 || u.Cross(v).Magnitude() == 0 {
+		fail("the directions of an arc's plane must differ")
+	}
+	u = u.WithMagnitude(1)
+	v = v.Minus(u.ScaledBy(v.Dot(u))).WithMagnitude(1)
+	return d.request(sketch.RequestArcOfCircle, func(sk *sketch.Sketch) {
+		if !core.IsFreeIn3D(sk.ActiveWorkplane()) {
+			fail("ArcIn3D draws in 3d; in a workplane, Arc draws the arc")
+		}
+	}, func(sk *sketch.Sketch, hr core.HRequest) {
+		forceTo(sk, hr.Entity(1), center)
+		forceTo(sk, hr.Entity(2), start)
+		forceTo(sk, hr.Entity(3), end)
+		sk.MustEntity(hr.Entity(32)).NormalForceTo(sk, geom.QuaternionFromBasis(u, v))
+	})
+}
+
 // Cubic adds a cubic Bézier curve from p0 to p3, with the control
 // points p1 and p2.
 func (m SketchMenu) Cubic(p0, p1, p2, p3 Vec) Entity {
@@ -169,6 +195,22 @@ func (m SketchMenu) NewWorkplane(origin, u, v Vec) Entity {
 	}, func(sk *sketch.Sketch, hr core.HRequest) {
 		forceTo(sk, hr.Entity(1), origin)
 		sk.MustEntity(hr.Entity(32)).NormalForceTo(sk, geom.QuaternionFromBasis(u, v))
+	})
+}
+
+// NewWorkplaneIn adds a workplane in the active workplane, as a DXF
+// import draws one: its origin is a point of the active workplane,
+// which the solver keeps there, and it lies parallel to it, its normal
+// the active workplane's. The window draws a workplane only in 3d,
+// where NewWorkplane draws one turned any way.
+func (m SketchMenu) NewWorkplaneIn(origin Vec) Entity {
+	d := m.d
+	return d.request(sketch.RequestWorkplane, func(sk *sketch.Sketch) {
+		if core.IsFreeIn3D(sk.ActiveWorkplane()) {
+			fail("no workplane is active; NewWorkplane draws one in 3d")
+		}
+	}, func(sk *sketch.Sketch, hr core.HRequest) {
+		forceTo(sk, hr.Entity(1), origin)
 	})
 }
 
@@ -296,6 +338,36 @@ func (m SketchMenu) Image(path string, at Vec, height float64) Entity {
 		r := sk.Request(hr)
 		r.File, r.Construction = abs, true
 		box(sk, hr, at, height, float64(img.Width)/float64(img.Height))
+	})
+}
+
+// ImageFrame adds a picture as Image does, but sized by the caller: its
+// bottom left corner at at, height high and width wide. Its pixels are
+// read from path when the file is there, and then its own proportions
+// hold; when it isn't, the frame stays width wide with the path, as
+// opening a drawing whose picture has gone keeps it, and File > Export
+// > Script writes such a picture with this.
+func (m SketchMenu) ImageFrame(path string, at Vec, height, width float64) Entity {
+	d := m.d
+	if height <= 0 || width <= 0 {
+		fail("an image can't be %g by %g", width, height)
+	}
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		fail("%v", err)
+	}
+	if err := d.checkFile(path, false); err != nil {
+		fail("%v", err)
+	}
+	return d.request(sketch.RequestImage, needWorkplane("an image"), func(sk *sketch.Sketch, hr core.HRequest) {
+		aspect := width / height
+		if link.LoadLinkedImage(sk, "", abs) {
+			img := sk.Images[abs]
+			aspect = float64(img.Width) / float64(img.Height)
+		}
+		r := sk.Request(hr)
+		r.File, r.Construction, r.AspectRatio = abs, true, aspect
+		box(sk, hr, at, height, aspect)
 	})
 }
 

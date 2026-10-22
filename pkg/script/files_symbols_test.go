@@ -286,4 +286,5 @@ var apiGuarded = []string{
 	"FileMenu.Save",
 	"LinkGroup.SetFile",
 	"SketchMenu.Image",
+	"SketchMenu.ImageFrame",
 }

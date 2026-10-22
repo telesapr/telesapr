@@ -96,10 +96,12 @@ appearances. An image's file is named where it is, as a link's is. Edit it, give
 any script. `telesapr-cli export-script model.tlspr` does the same without a window, and a
 script calls `doc.File.ExportScript(path)`, or `doc.Script()` for the text.
 
-What the script can't write yet is a comment in it starting `not written:`, and the window says
-so when it writes the file: an image whose file is missing, a face's appearance on a face no
-point finds, and what the DXF import draws as the window can't (arcs drawn in 3d, workplanes
-drawn in a workplane, the same constraint twice). Handles are numbered
+What a DXF import draws as the window can't is written with calls of its own: an arc drawn in
+3d (`doc.Sketch.ArcIn3D`), a workplane drawn in a workplane (`doc.Sketch.NewWorkplaneIn`) and
+the same constraint twice (`doc.Constrain.Again`). An image whose file is missing is written as
+its frame (`doc.Sketch.ImageFrame`), and the window says so. What the script can't write is a
+comment in it starting `not written:`, and the window says so too: a face's appearance on a
+face no point finds. Handles are numbered
 afresh, so the script names what a group made by what it was made from (`g3.Made(r4, 1002)`)
 and a request's points by their number (`r4.Part(1)`).
 

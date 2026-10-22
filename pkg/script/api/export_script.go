@@ -61,6 +61,7 @@ type scriptWriter struct {
 
 	groupVar map[core.HGroup]string
 	reqVar   map[core.HRequest]string
+	conVar   map[core.HConstraint]string
 	styleVar map[core.HStyle]string
 	// skip are groups written by another's call: a thread's sketches
 	// and lathe, written with its helix.
@@ -80,6 +81,7 @@ func newScriptWriter(sk *sketch.Sketch) *scriptWriter {
 		sk:       sk,
 		groupVar: map[core.HGroup]string{},
 		reqVar:   map[core.HRequest]string{},
+		conVar:   map[core.HConstraint]string{},
 		styleVar: map[core.HStyle]string{},
 		skip:     map[core.HGroup]bool{},
 	}

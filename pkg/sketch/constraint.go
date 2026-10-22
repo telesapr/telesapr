@@ -108,6 +108,20 @@ func (sk *Sketch) AddConstraints(cs []core.Constraint) ([]core.HConstraint, erro
 	return hs, nil
 }
 
+// DuplicateConstraint adds a second constraint equal to hc, in its group
+// and workplane, with a new handle. AddConstraints never adds one equal
+// to another; a DXF import does, where its drawing meets the same point
+// twice (Constrain), and a script that draws such a drawing again says
+// so with this.
+func (sk *Sketch) DuplicateConstraint(hc core.HConstraint) (core.HConstraint, error) {
+	c := sk.Constraint(hc)
+	if c == nil {
+		return core.HConstraint{}, fmt.Errorf("duplicating constraint %08x: %w", hc.V, ErrNoConstraint)
+	}
+	dup := *c
+	return sk.AddConstraintRemember(&dup, false), nil
+}
+
 // Constrain adds a constraint of the given type in the active group and
 // workplane.
 func (sk *Sketch) Constrain(typ core.ConstraintType, ptA, ptB, entityA, entityB core.HEntity,
