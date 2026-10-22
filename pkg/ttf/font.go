@@ -5,6 +5,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/cxxutf8"
@@ -39,8 +40,11 @@ type Font struct {
 }
 
 // FontList is the fonts of a set of font files and the builtin font,
-// read when first used.
+// read when first used. It is safe for concurrent use: sketches that
+// share one, as ttf.DefaultFonts, regenerate on goroutines of their
+// own, and a font's face is used by one at a time.
 type FontList struct {
+	mu     sync.Mutex
 	files  []string
 	l      []Font
 	loaded bool
@@ -132,6 +136,12 @@ func (tf *Font) extractTTFData(keepOpen bool) bool {
 // LoadAll reads the font files, then the builtin font, and sorts them
 // by name, keeping one font of each name.
 func (fl *FontList) LoadAll() {
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+	fl.loadAll()
+}
+
+func (fl *FontList) loadAll() {
 	if fl.loaded {
 		return
 	}
@@ -168,7 +178,9 @@ func (fl *FontList) LoadAll() {
 
 // List is the fonts, loaded if they weren't.
 func (fl *FontList) List() []Font {
-	fl.LoadAll()
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+	fl.loadAll()
 	return fl.l
 }
 
@@ -178,6 +190,12 @@ func (fl *FontList) List() []Font {
 // file, and reading every font of the system to find one took longer
 // than the rest of regenerating a sketch of text.
 func (fl *FontList) LoadFont(font string) *Font {
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+	return fl.loadFont(font)
+}
+
+func (fl *FontList) loadFont(font string) *Font {
 	if tf, ok := fl.open[font]; ok {
 		return tf
 	}
@@ -208,7 +226,9 @@ type OutlineSink interface {
 // font, a big X marks the error.
 func (fl *FontList) PlotString(font, str string, out OutlineSink, kerning bool,
 	origin, u, v geom.Vector) {
-	tf := fl.LoadFont(font)
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+	tf := fl.loadFont(font)
 	if str != "" && tf != nil {
 		tf.PlotString(str, out, kerning, origin, u, v)
 	} else {
@@ -220,7 +240,9 @@ func (fl *FontList) PlotString(font, str string, out OutlineSink, kerning bool,
 // AspectRatio is the width of str, set in font, over its cap height;
 // 0 when the font can't be loaded.
 func (fl *FontList) AspectRatio(font, str string, kerning bool) float64 {
-	if tf := fl.LoadFont(font); tf != nil {
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+	if tf := fl.loadFont(font); tf != nil {
 		return tf.AspectRatio(str, kerning)
 	}
 	return 0
