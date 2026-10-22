@@ -6,13 +6,14 @@ import (
 	"math"
 
 	"github.com/telesapr/telesapr/pkg/core"
-	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/thread"
 )
 
 // A screw thread is drawn with the groups a user would make by hand, so
-// the file it saves is an ordinary one.
+// the file it saves is an ordinary one. Its helix group keeps what made
+// it (Group.Thread), so that the four can be edited as one thread
+// (thread_edit.go).
 
 // ThreadOptions is a screw thread to make on a circle.
 type ThreadOptions struct {
@@ -24,6 +25,10 @@ type ThreadOptions struct {
 	// Length is how far the thread reaches from the circle's plane,
 	// in millimeters.
 	Length float64
+	// LengthExpr is the expression Length comes from, in the document's
+	// unit, or "" for a plain number. The dimensions of the thread's
+	// length then carry it, so that a parameter drives the thread.
+	LengthExpr string
 	// Reverse runs the thread against the circle's normal.
 	Reverse bool
 	// Through carries the turning or the boring past Length, for a
@@ -31,6 +36,9 @@ type ThreadOptions struct {
 	Through bool
 	// Clearance moves the thread away from its mate, in millimeters.
 	Clearance float64
+	// Crest is the shape of the ridge's top: the standard flat one, cut
+	// lower, or rounded, which prints better.
+	Crest thread.Crest
 }
 
 // threadLayout is where AddThread draws, in millimeters: radii from
@@ -59,6 +67,9 @@ func (o ThreadOptions) layout(circleR float64) (threadLayout, error) {
 	if math.IsNaN(o.Clearance) || math.IsInf(o.Clearance, 0) {
 		return threadLayout{}, errors.New("thread clearance must be a number")
 	}
+	if o.Crest < thread.CrestStandard || o.Crest > thread.CrestRounded {
+		return threadLayout{}, fmt.Errorf("unknown thread crest %v", o.Crest)
+	}
 	l := threadLayout{profile: s.Profile(o.Internal, o.Clearance)}
 	p := l.profile
 
@@ -78,6 +89,9 @@ func (o ThreadOptions) layout(circleR float64) (threadLayout, error) {
 	if !(p.CrestRadius > 0 && p.RootRadius > 0 && l.baseR > 0) || !(into > 0) {
 		return threadLayout{}, errors.New("thread clearance is too large for its size")
 	}
+	// The crest is shaped once the ridge's foot is placed, which it
+	// leaves where it was.
+	l.profile = p.WithCrest(o.Crest)
 
 	l.blankBottom, l.blankTop = -margin, o.Length
 	if o.Through {
@@ -101,6 +115,11 @@ func (sk *Sketch) CheckThread(he core.HEntity, o ThreadOptions) error {
 	circle := sk.Entity(he)
 	if circle == nil || !circle.IsCircle() {
 		return errors.New("thread must be made on a circle or an arc")
+	}
+	if o.LengthExpr != "" {
+		if _, _, err := sk.parseNamed(o.LengthExpr); err != nil {
+			return fmt.Errorf("thread length: %w", err)
+		}
 	}
 	_, err := o.layout(circle.CircleGetRadiusNum(sk))
 	return err
@@ -126,182 +145,45 @@ func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, err
 	if err := sk.CheckThread(he, o); err != nil {
 		return ThreadResult{}, err
 	}
-	circle := sk.Entity(he)
-	center := circle.Point[0]
-	radius := circle.CircleGetRadiusNum(sk)
-	l, _ := o.layout(radius)
-	p := l.profile
+	d := sk.newThreadDrawer(he, o, nil)
 
-	origin := sk.MustEntity(center).PointGetNum(sk)
-	q := sk.MustEntity(circle.Normal).NormalGetNum(sk)
-	along := 1.0
-	if o.Reverse {
-		along = -1
-	}
-	hand := 1.0
-	if o.Spec.LeftHand {
-		hand = -1
-	}
-	turns := l.ridgeSweep / o.Spec.Lead()
-
-	// The sketches lie in planes through the axis: a radius to the
-	// right, the axis upwards.
-	u, v := q.RotationU(), q.RotationN().ScaledBy(along)
-	at := func(r, z float64) geom.Vector {
-		return origin.Plus(u.ScaledBy(r)).Plus(v.ScaledBy(z))
-	}
-	name := o.Spec.String()
-
-	// plane is the sketch plane at the given angle about the circle's
-	// normal.
-	plane := func(angle float64) geom.Quaternion {
-		return geom.QuaternionFromBasis(q.RotationU().RotatedAroundAxis(q.RotationN(), angle), v)
-	}
-	addSketch := func(what string, angle float64) {
-		g := Group{Type: GroupDrawingWorkplane, Subtype: GroupWorkplaneByPointOrtho, Name: name + "-" + what}
-		g.Predef.Q = plane(angle)
-		g.Predef.Origin = center
-		u = g.Predef.Q.RotationU()
+	addSketch := func(what string, angle float64) core.HGroup {
+		g := Group{Type: GroupDrawingWorkplane, Subtype: GroupWorkplaneByPointOrtho}
+		d.placeSketch(&g, what, angle)
 		gg := sk.addGroupAfterActive(g)
 		gg.ActiveWorkplane = gg.H.Entity(0)
+		return gg.H
 	}
 	addSolid := func(g Group, what string, how CombineAs) *Group {
-		g.Name = name + "-" + what
 		g.OpA = sk.ActiveGroup()
-		g.Predef.Origin = center
-		g.Predef.EntityB = circle.Normal
+		g.Predef.Origin = d.center
+		g.Predef.EntityB = d.circle.Normal
 		g.MeshCombine = how
+		d.nameSolid(&g, what)
 		return sk.addGroupAfterActive(g)
 	}
-	// line draws a line segment of the active sketch.
-	line := func(r0, z0, r1, z1 float64) core.HRequest {
-		hr := sk.AddRequestOfType(RequestLineSegment, false)
-		sk.MustEntity(hr.Entity(1)).PointForceTo(sk, at(r0, z0))
-		sk.MustEntity(hr.Entity(2)).PointForceTo(sk, at(r1, z1))
-		return hr
-	}
-	closeLoop := func(lines []core.HRequest) {
-		for i := range lines {
-			sk.ConstrainCoincident(lines[i].Entity(2), lines[(i+1)%len(lines)].Entity(1))
-		}
-	}
-	constrain := func(typ core.ConstraintType, ptA, ptB, entityA, entityB core.HEntity) {
-		sk.Constrain(typ, ptA, ptB, entityA, entityB, false, false)
-	}
-	// dimension adds a constraint with a value, which the drawing already
-	// has: the sign and the supplement are whatever make it so.
-	dimension := func(typ core.ConstraintType, val float64, ptA, ptB, entityA, entityB core.HEntity) {
-		c := core.Constraint{
-			Group:     sk.ActiveGroup(),
-			Workplane: sk.ActiveWorkplane(),
-			Type:      typ}
-		c.PtA, c.PtB = ptA, ptB
-		c.EntityA, c.EntityB = entityA, entityB
-		c.ModifyToSatisfy(sk)
-		if typ == core.ConstraintAngle && math.Abs(c.ValA-val) > 1 {
-			c.Other = true
-			c.ModifyToSatisfy(sk)
-		}
-		if math.Abs(math.Abs(c.ValA)-val) > 1e-6 {
-			panic(fmt.Sprintf("sketch: thread dimension is %v, drawn as %v", val, c.ValA))
-		}
-		c.ValA = math.Copysign(val, c.ValA)
-		sk.AddConstraintRemember(&c, false)
-	}
-	none := core.NoEntity
 
-	// What the turning or the boring takes away: a rectangle, revolved.
-	addSketch("blank", 0)
-	blank := []core.HRequest{
-		line(l.blankIn, l.blankBottom, l.blankIn, l.blankTop),
-		line(l.blankIn, l.blankTop, l.blankOut, l.blankTop),
-		line(l.blankOut, l.blankTop, l.blankOut, l.blankBottom),
-		line(l.blankOut, l.blankBottom, l.blankIn, l.blankBottom),
-	}
-	closeLoop(blank)
-	constrain(core.ConstraintVertical, none, none, blank[0].Entity(0), none)
-	constrain(core.ConstraintVertical, none, none, blank[2].Entity(0), none)
-	constrain(core.ConstraintHorizontal, none, none, blank[1].Entity(0), none)
-	constrain(core.ConstraintHorizontal, none, none, blank[3].Entity(0), none)
-	if l.blankIn == 0 {
-		constrain(core.ConstraintPtOnLine, center, none, blank[0].Entity(0), none)
-	} else {
-		dimension(core.ConstraintPtLineDistance, l.blankIn, center, none, blank[0].Entity(0), none)
-	}
-	dimension(core.ConstraintPtLineDistance, l.blankOut, center, none, blank[2].Entity(0), none)
-	dimension(core.ConstraintPtLineDistance, l.blankTop, center, none, blank[1].Entity(0), none)
-	dimension(core.ConstraintPtLineDistance, -l.blankBottom, center, none, blank[3].Entity(0), none)
+	var tg threadGroups
+	tg.blank = addSketch("blank", 0)
+	d.drawBlank()
+	tg.lathe = addSolid(Group{Type: GroupLathe}, d.latheName(), CombineDifference).H
+	tg.profile = addSketch("profile", d.start)
+	d.drawProfile()
 
-	what := "core"
-	if o.Internal {
-		what = "bore"
-	}
-	lathe := addSolid(Group{Type: GroupLathe}, what, CombineDifference).H
-
-	// The ridges, one for each start, a pitch apart. A revolved surface
-	// is made in quarters, from the plane of its sketch on, and a ridge
-	// has a flat end in that plane and another where its sweep stops.
-	// Those ends would meet the turned surface along the joins of its
-	// quarters, where a Boolean is least sure of itself: so the ridges'
-	// plane is turned to put both ends as far from the joins as can be,
-	// which is an eighth of a turn or more.
-	quarter := math.Pi / 2
-	past := math.Mod(turns*2*math.Pi, quarter)
-	start := (quarter - past) / 2
-	if past > quarter/2 {
-		start = (2*quarter - past) / 2
-	}
-	start *= along * hand
-	addSketch("profile", start)
-	var first core.HRequest
-	for i := range o.Spec.NumStarts() {
-		z := l.ridgeBottom + float64(i)*o.Spec.Pitch + l.baseW/2
-		base, crest := l.baseW/2, p.CrestWidth/2
-		ridge := []core.HRequest{
-			line(l.baseR, z-base, l.baseR, z+base),
-			line(l.baseR, z+base, p.CrestRadius, z+crest),
-			line(p.CrestRadius, z+crest, p.CrestRadius, z-crest),
-			line(p.CrestRadius, z-crest, l.baseR, z-base),
-		}
-		closeLoop(ridge)
-		constrain(core.ConstraintVertical, none, none, ridge[0].Entity(0), none)
-		constrain(core.ConstraintVertical, none, none, ridge[2].Entity(0), none)
-		dimension(core.ConstraintPtLineDistance, l.baseR, center, none, ridge[0].Entity(0), none)
-		dimension(core.ConstraintPtLineDistance, p.CrestRadius, center, none, ridge[2].Entity(0), none)
-		dimension(core.ConstraintPtPtDistance, p.CrestWidth, ridge[2].Entity(1), ridge[2].Entity(2), none, none)
-		dimension(core.ConstraintAngle, p.FlankAngle, none, none, ridge[1].Entity(0), ridge[3].Entity(0))
-		constrain(core.ConstraintEqualLengthLines, none, none, ridge[1].Entity(0), ridge[3].Entity(0))
-		// Along the axis: the first ridge from the circle's plane, the
-		// others from the first.
-		if i == 0 {
-			first = ridge[2]
-			dimension(core.ConstraintProjPtDistance, z-crest, center, first.Entity(2), circle.Normal, none)
-		} else {
-			dimension(core.ConstraintProjPtDistance, float64(i)*o.Spec.Pitch,
-				first.Entity(2), ridge[2].Entity(2), circle.Normal, none)
-		}
-	}
-
-	// The helix turns by four times its angle param while it moves by
-	// twice its distance param; a right-hand thread turns the way it
-	// moves, about the axis.
-	helix := Group{Type: GroupHelix, Subtype: GroupOneSided, ValA: 2, ValB: hand * o.Spec.Lead()}
+	helix := Group{Type: GroupHelix, Subtype: GroupOneSided}
 	hg := sk.nextGroupHandle()
-	sk.Params = append(sk.Params,
-		core.Param{H: hg.Param(3), Val: along * hand * turns * 2 * math.Pi / 4},
-		core.Param{H: hg.Param(7), Val: along * l.ridgeSweep / 2})
+	sk.Params = append(sk.Params, core.Param{H: hg.Param(3)}, core.Param{H: hg.Param(7)})
+	d.setHelix(&helix, hg)
 	hel := addSolid(helix, "thread", CombineUnion)
 	if hel.H != hg {
 		panic("sketch: thread helix group got another handle")
 	}
-	// Without its length the helix could be dragged longer.
-	dimension(core.ConstraintProjPtDistance, l.ridgeSweep,
-		hel.RemapEntity(first.Entity(2), RemapLatheStart), hel.RemapEntity(first.Entity(2), RemapLatheEnd),
-		circle.Normal, none)
+	tg.helix = hel.H
+	d.dimensionHelix(hel)
 
 	sk.GenerateAllTyped(GenerateAll)
-	sound := sk.solidIsSound(lathe) && sk.solidIsSound(hel.H)
-	return ThreadResult{Group: hel.H, Sound: sound}, nil
+	sound := sk.solidIsSound(tg.lathe) && sk.solidIsSound(tg.helix)
+	return ThreadResult{Group: tg.helix, Sound: sound}, nil
 }
 
 // solidIsSound tells whether the group's Boolean succeeded and the

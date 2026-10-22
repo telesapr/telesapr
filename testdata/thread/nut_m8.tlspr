@@ -140,6 +140,15 @@ group 0x7 helix "M8-thread" {
   copies = 2
   pitch = 1.25
   color 100 100 100 255
+  thread {
+    circle 0x40000
+    form metric
+    diameter 8
+    pitch 1.25
+    internal
+    length = 6.5
+    through
+  }
   predef {
     origin 0x40001
     entity-b 0x40020

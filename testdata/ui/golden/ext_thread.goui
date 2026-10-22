@@ -32,12 +32,20 @@ row 16    clearance 0.00 [change]
  12-17 64 64 0
  18-25 6c 64 99 0 1 0
  26-99 64 64 0
-row 18     external   internal
+row 18     external   internal    crest  standard  truncated  rounded
  0-2 64 61 0
  3-12 64 61 101 0 1 0
  13-14 64 61 0
  15-24 64 61 105 0 1 0
- 25-99 64 61 0
+ 25-28 64 61 0
+ 29-33 74 61 0
+ 34-34 64 61 0
+ 35-44 64 61 110 0 1 0
+ 45-45 64 61 0
+ 46-56 64 61 117 0 1 0
+ 57-57 64 61 0
+ 58-66 64 61 111 0 1 0
+ 67-99 64 61 0
 row 20      through the far end
  0-2 64 64 0
  3-24 64 64 116 0 1 0
@@ -97,12 +105,20 @@ row 16    clearance 0.00 [change]
  12-17 64 64 0
  18-25 6c 64 99 0 1 0
  26-99 64 64 0
-row 18     external   internal
+row 18     external   internal    crest  standard  truncated  rounded
  0-2 64 61 0
  3-12 64 61 101 0 1 0
  13-14 64 61 0
  15-24 64 61 105 0 1 0
- 25-99 64 61 0
+ 25-28 64 61 0
+ 29-33 74 61 0
+ 34-34 64 61 0
+ 35-44 64 61 110 0 1 0
+ 45-45 64 61 0
+ 46-56 64 61 117 0 1 0
+ 57-57 64 61 0
+ 58-66 64 61 111 0 1 0
+ 67-99 64 61 0
 row 20      through the far end
  0-2 64 64 0
  3-24 64 64 116 0 1 0
@@ -170,10 +186,12 @@ row 18    1.000 [change]
  2-8 64 61 0
  9-16 6c 61 108 7 1 0
  17-99 64 61 0
-row 20      fixed
+row 20      fixed   [edit thread]
  0-2 64 64 0
  3-10 64 64 80 0 1 0
- 11-99 64 64 0
+ 11-13 64 64 0
+ 14-26 6c 64 101 7 1 0
+ 27-99 64 64 0
 row 22 
  0-99 64 64 0
 row 24  solid model as
@@ -496,6 +514,14 @@ group 0x7 helix "M6-thread" {
   copies = 2
   pitch = 1
   color 100 100 100 255
+  thread {
+    circle 0x80030005
+    form metric
+    diameter 6
+    pitch 1
+    internal
+    length = 9
+  }
   predef {
     origin 0x80030006
     entity-b 0x80030007

@@ -8,7 +8,6 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
-	"github.com/telesapr/telesapr/pkg/thread"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
 
@@ -469,22 +468,7 @@ func (m FeaturesMenu) Thread(circle Entity, o ThreadOptions) (g Group) {
 		if !c.IsCircle() {
 			fail("a thread is made on a circle or an arc, and %s isn't one", circle.describe(sk))
 		}
-		var opts sketch.ThreadOptions
-		diameter := 2 * c.CircleGetRadiusNum(sk)
-		if o.Designation == "" {
-			opts.Spec = thread.Nearest(diameter)
-		} else {
-			spec, err := thread.Parse(o.Designation)
-			if err != nil {
-				fail("%v", err)
-			}
-			opts.Spec = spec
-		}
-		opts.Internal, opts.Through, opts.Reverse = o.Internal, o.Through, o.Reverse
-		opts.Length, opts.Clearance = o.Length, o.Clearance
-		if opts.Length == 0 {
-			opts.Length = math.Ceil(1.5 * opts.Spec.Diameter)
-		}
+		opts := o.sketchOptions(sk, 2*c.CircleGetRadiusNum(sk))
 		res, err := sk.AddThread(circle.H, opts)
 		if err != nil {
 			fail("%v", err)

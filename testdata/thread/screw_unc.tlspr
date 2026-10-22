@@ -141,6 +141,14 @@ group 0x7 helix "1/4-20 UNC-thread" {
   copies = 2
   pitch = 1.27
   color 100 100 100 255
+  thread {
+    circle 0x40000
+    form unified
+    diameter 6.35
+    pitch 1.27
+    length = 12
+    clearance 0.1
+  }
   predef {
     origin 0x40001
     entity-b 0x40020

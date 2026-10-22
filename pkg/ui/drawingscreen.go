@@ -76,7 +76,9 @@ func (tw *textWindow) ShowDrawing() {
 	tw.Printf(false, "%Ba   %Ftscale%E      %s %Fl%Lc%f[change]%E", scale, lf(tw.ScreenChangeDrawing))
 	tw.Printf(false, "%Bd   %f%Lt%Fd%s third angle%E  %f%Lf%Fd%s first angle%E",
 		lf(tw.ScreenChangeDrawing), radioMark(!d.FirstAngle), lf(tw.ScreenChangeDrawing), radioMark(d.FirstAngle))
-	tw.Printf(false, "%Ba   %f%Lh%Fd%s hidden edges, dashed%E", lf(tw.ScreenChangeDrawing), checkMark(d.Hidden))
+	// Threads at the end of the row, so that the rows below stay put.
+	tw.Printf(false, "%Ba   %f%Lh%Fd%s hidden edges, dashed%E   %f%LT%Fd%s threads as modelled, not by convention%E",
+		lf(tw.ScreenChangeDrawing), checkMark(d.Hidden), lf(tw.ScreenChangeDrawing), checkMark(d.ModelledThreads))
 
 	// Which views the sheet shows and where (the standard ones, placed
 	// by the solid's size, until one is chosen or moved).
@@ -216,6 +218,8 @@ func (tw *textWindow) ScreenChangeDrawing(link int, v uint32) {
 		change(func(d *sketch.Drawing) { d.FirstAngle = link == 'f' })
 	case 'h':
 		change(func(d *sketch.Drawing) { d.Hidden = !d.Hidden })
+	case 'T':
+		change(func(d *sketch.Drawing) { d.ModelledThreads = !d.ModelledThreads })
 	case 'c':
 		d := ss.SK.Drawing
 		text := "0"

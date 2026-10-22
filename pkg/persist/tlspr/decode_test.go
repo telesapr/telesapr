@@ -11,6 +11,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/thread"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
 
@@ -33,6 +34,11 @@ func fullDocument() *Document {
 		Density:           7.85,
 		LinkConfiguration: "long",
 		LinkParams:        []sketch.LinkParam{{Name: "L", Expr: "60", Value: 60}, {Name: "w_2", Expr: "-0.5", Value: -0.5}},
+		Thread: sketch.GroupThread{Circle: core.HEntity{V: 0x30000}, ThreadOptions: sketch.ThreadOptions{
+			Spec:     thread.Spec{Form: thread.FormTrapezoidal, Diameter: 20, Pitch: 4, Starts: 2, LeftHand: true},
+			Internal: true, LengthExpr: "len * 2", Reverse: true, Through: true, Clearance: 12.7,
+			Crest: thread.CrestRounded,
+		}},
 	}
 	g.Predef.Q = geom.Quaternion{W: 0.5, X: -0.5, Y: 0.25, Z: math.Copysign(0, -1)}
 	g.Predef.Origin = core.HEntity{V: 0x10001}
@@ -116,7 +122,7 @@ func fullDocument() *Document {
 	}
 	sc.Points = []srf.SCurvePt{{Vertex: true, P: geom.Vector{X: 0}}, {P: geom.Vector{X: 1}}, {Vertex: true, P: geom.Vector{X: 2}}}
 	doc.Shell.Curve = []srf.SCurve{sc, {H: core.HSCurve{V: 3}, Exact: srf.SBezier{Degree: 1}}}
-	sk.Drawing = &sketch.Drawing{Sheet: "A2", Scale: 0.5, Hidden: true,
+	sk.Drawing = &sketch.Drawing{Sheet: "A2", Scale: 0.5, Hidden: true, ModelledThreads: true,
 		Sections: []sketch.DrawingSection{{View: "top", Offset: 2}},
 		Dimensions: []sketch.DrawingDimension{
 			{View: "front", Kind: "length", Edges: []topo.Name{{A: 0x10, B: 0x20, N: 1, Of: 2}}, Offset: 10},

@@ -76,6 +76,12 @@ func TestPathEquivalenceThread(t *testing.T) {
 	requireSamePaths(t, "path_thread", "path_thread")
 }
 
+// A screw thread made, then edited as one from its helix group's
+// screen, and by a script through ThreadGroup.Edit.
+func TestPathEquivalenceThreadEdit(t *testing.T) {
+	requireSamePaths(t, "path_thread_edit", "path_thread_edit")
+}
+
 // A rectangle whose sides come from parameters, made through the
 // parameters screen and the dimension editor, and by a script.
 func TestPathEquivalenceParameters(t *testing.T) {
@@ -540,6 +546,15 @@ func TestPathEquivalenceMate(t *testing.T) {
 func TestPathEquivalenceDrawing(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_drawing", "path_drawing")
 	if d := ui.Drawing; d == nil || d.Sheet != "A2" || d.Title != "PLATE" {
+		t.Errorf("the drawing: %+v", d)
+	}
+}
+
+// A thread's drawing set to draw it as modelled on the drawing's
+// screen, and the same set by a script.
+func TestPathEquivalenceDrawingThread(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_drawing_thread", "path_drawing_thread")
+	if d := ui.Drawing; d == nil || !d.ModelledThreads {
 		t.Errorf("the drawing: %+v", d)
 	}
 }

@@ -23,11 +23,17 @@ import (
 
 // viewEdges are the edges of the solid seen with right and up as the
 // view's x and y, in model mm about the origin, visible ones in the
-// SolidEdge style and, with hidden, hidden ones in HiddenEdge.
-func (ss *Application) viewEdges(g *sketch.Group, right, up geom.Vector, hidden bool) srf.SEdgeList {
+// SolidEdge style and, with hidden, hidden ones in HiddenEdge. Its
+// threads are drawn by the convention (drawing_thread.go) unless
+// modelled says to draw every turn of their ridges.
+func (ss *Application) viewEdges(g *sketch.Group, right, up geom.Vector, hidden, modelled bool) srf.SEdgeList {
 	g.GenerateDisplayItems(ss.SK)
 	var sel srf.SEdgeList
 	g.DisplayOutlines.ListTaggedInto(&sel, core.StyleSolidEdge, 0)
+	if bands := ss.SK.ThreadBands(g.H); len(bands) > 0 && !modelled {
+		m, extra, always := threadConvention(&sel, &g.DisplayMesh, bands, right, up)
+		return ss.hiddenLineEdgesWith(sel, extra, always, &m, right, up, hidden)
+	}
 	return ss.hiddenLineEdges(sel, &g.DisplayMesh, right, up, hidden)
 }
 
@@ -36,12 +42,24 @@ func (ss *Application) viewEdges(g *sketch.Group, right, up geom.Vector, hidden 
 // m's curved faces turn away, and splits each edge where m hides it:
 // the hidden parts in the HiddenEdge style, or left out without hidden.
 func (ss *Application) hiddenLineEdges(sel srf.SEdgeList, m *srf.SMesh, right, up geom.Vector, hidden bool) srf.SEdgeList {
+	return ss.hiddenLineEdgesWith(sel, srf.SEdgeList{}, srf.SEdgeList{}, m, right, up, hidden)
+}
+
+// hiddenLineEdgesWith is hiddenLineEdges with the edges extra split as
+// sel's are, after the outlines, and the edges always, which nothing
+// hides, projected and added last.
+func (ss *Application) hiddenLineEdgesWith(sel, extra, always srf.SEdgeList, m *srf.SMesh, right, up geom.Vector, hidden bool) srf.SEdgeList {
 	n := right.Cross(up)
-	for i := range sel.Edges {
-		e := &sel.Edges[i]
-		e.A = e.A.InPerspective(right, up, n, geom.Vector{}, 0)
-		e.B = e.B.InPerspective(right, up, n, geom.Vector{}, 0)
+	project := func(el *srf.SEdgeList) {
+		for i := range el.Edges {
+			e := &el.Edges[i]
+			e.A = e.A.InPerspective(right, up, n, geom.Vector{}, 0)
+			e.B = e.B.InPerspective(right, up, n, geom.Vector{}, 0)
+		}
 	}
+	project(&sel)
+	project(&extra)
+	project(&always)
 	var smp srf.SMesh
 	for _, tr := range m.Triangles {
 		tt := tr
@@ -51,12 +69,14 @@ func (ss *Application) hiddenLineEdges(sel srf.SEdgeList, m *srf.SMesh, right, u
 		smp.AddTriangle(tt)
 	}
 	if len(smp.Triangles) == 0 {
+		sel.Edges = append(append(sel.Edges, extra.Edges...), always.Edges...)
 		return sel
 	}
 	root := srf.SKdNodeFrom(&smp)
 	// The outlines of curved faces, where they turn away.
 	root.MakeCertainEdgesInto(&sel, srf.EdgeTurning, false, nil, nil, core.StyleSolidEdge)
 	root.ClearTags()
+	sel.Edges = append(sel.Edges, extra.Edges...)
 	var out srf.SEdgeList
 	cnt := 1234
 	for _, se := range sel.Edges {
@@ -79,6 +99,9 @@ func (ss *Application) hiddenLineEdges(sel srf.SEdgeList, m *srf.SMesh, right, u
 		for _, p := range parts.Edges {
 			out.AddEdge(p.A, p.B, p.AuxA, 0, 0)
 		}
+	}
+	for _, e := range always.Edges {
+		out.AddEdge(e.A, e.B, e.AuxA, 0, 0)
 	}
 	cleanExportEdges(ss.SK, &out)
 	return out
@@ -273,7 +296,7 @@ func (ss *Application) DrawingSheet(d *sketch.Drawing) (srf.SEdgeList, []sketch.
 	mids := map[string]geom.Vector{}
 	for _, k := range kinds {
 		r, u, _ := sketch.ViewDirection(k)
-		el := ss.viewEdges(g, vec(r), vec(u), d.Hidden && k != "iso")
+		el := ss.viewEdges(g, vec(r), vec(u), d.Hidden && k != "iso", d.ModelledThreads)
 		lo, hi := box(&el)
 		edges[k], sizes[k], mids[k] = el, [2]float64{hi.X - lo.X, hi.Y - lo.Y}, lo.Plus(hi).ScaledBy(0.5)
 	}

@@ -86,6 +86,10 @@ type Drawing struct {
 	Views []DrawingView
 	// Hidden draws the hidden edges of the orthographic views, dashed.
 	Hidden bool
+	// ModelledThreads draws screw threads turn by turn, as modelled;
+	// otherwise they are drawn by the drafting convention: the crest's
+	// outline, the root in thin lines and three quarters of a circle.
+	ModelledThreads bool
 	// Sections and Details are the section and detail views, lettered
 	// A, B, ... in that order.
 	Sections []DrawingSection

@@ -141,6 +141,14 @@ group 0x7 helix "Tr20x8(P4)-thread" {
   copies = 2
   pitch = 8
   color 100 100 100 255
+  thread {
+    circle 0x40000
+    form trapezoidal
+    diameter 20
+    pitch 4
+    starts 2
+    length = 30
+  }
   predef {
     origin 0x40001
     entity-b 0x40020

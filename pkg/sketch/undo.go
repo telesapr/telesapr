@@ -240,6 +240,7 @@ func (g *Group) defining() Group {
 		Appearance:             g.Appearance,
 		FaceAppearances:        slices.Clone(g.FaceAppearances),
 		Density:                g.Density,
+		Thread:                 g.Thread,
 		BooleanFailed:          g.BooleanFailed,
 		MeshCombine:            g.MeshCombine,
 		ForceToMesh:            g.ForceToMesh,

@@ -12,6 +12,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/thread"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
 
@@ -114,6 +115,7 @@ func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *Fil
 		}
 		n.flag("first-angle", d.FirstAngle)
 		n.flag("hidden", d.Hidden)
+		n.flag("modelled-threads", d.ModelledThreads)
 		for _, v := range d.Views {
 			n.add(field("view", Word(v.Kind), Word(FormatReal(v.X)), Word(FormatReal(v.Y))))
 		}
@@ -288,6 +290,29 @@ func FormatReal(v float64) string {
 	return strconv.FormatFloat(v, 'g', -1, 64)
 }
 
+// encodeThread writes what made a thread: its designation's numbers in
+// millimetres, the lengths the user typed in the document's unit.
+func encodeThread(t sketch.GroupThread, mmPer float64) *Node {
+	n := block("thread")
+	n.handle("circle", t.Circle.V)
+	n.add(field("form", Word(enumName(threadForms, t.Spec.Form))))
+	n.real("diameter", t.Spec.Diameter)
+	n.real("pitch", t.Spec.Pitch)
+	if t.Spec.NumStarts() > 1 {
+		n.int("starts", t.Spec.Starts)
+	}
+	n.flag("left-hand", t.Spec.LeftHand)
+	n.flag("internal", t.Internal)
+	n.expr("length", t.Length/mmPer, t.LengthExpr)
+	n.flag("reverse", t.Reverse)
+	n.flag("through", t.Through)
+	n.real("clearance", t.Clearance/mmPer)
+	if t.Crest != thread.CrestStandard {
+		n.add(field("crest", Word(enumName(threadCrests, t.Crest))))
+	}
+	return n
+}
+
 // encodeGroup writes a group; a length the user typed is written in
 // the document's unit, mmPer millimetres.
 func encodeGroup(g *sketch.Group, mmPer float64) *Node {
@@ -358,6 +383,9 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 		n.add(field("face-appearance", hex(uint32(fa.Face)), Word(fa.Appearance)))
 	}
 	n.real("density", g.Density)
+	if g.Thread.IsThread() {
+		n.add(encodeThread(g.Thread, mmPer))
+	}
 	for _, f := range g.SolidFaces {
 		n.add(field("solid-face", hex(uint32(f))))
 	}

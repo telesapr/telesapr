@@ -268,6 +268,10 @@ type Group struct {
 	// mass (mass.go); 0 when none is set.
 	Density float64
 
+	// Thread is what made a screw thread, on the thread's helix group;
+	// none on any other group (thread_edit.go).
+	Thread GroupThread
+
 	// Edges are the entities a chamfer cuts, the path a sweep
 	// follows, or a loft's guide curves, in the order the user gave
 	// them.

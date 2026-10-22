@@ -11,11 +11,14 @@ import (
 
 // The thread screen follows the paste-transformed one (clipboard.go).
 
-// threadScreen is what the screw thread screen shows and makes.
+// threadScreen is what the screw thread screen shows and makes, or,
+// when edit is a thread's helix group, what it makes that thread again
+// with.
 type threadScreen struct {
 	circle      core.HEntity
 	designation string
 	options     sketch.ThreadOptions
+	edit        core.HGroup
 }
 
 // MenuThread starts a screw thread on the selected circle or arc: it
@@ -60,12 +63,16 @@ func (tw *textWindow) EditControlDoneForThread(s string) bool {
 		t.options.Spec = spec
 
 	case editThreadLength:
-		if e := ss.exprFromString(s); e != nil {
-			if v := ss.ExprToMm(e); v < core.LengthEps {
-				ss.Error("Length cannot be zero or negative.")
-			} else {
-				t.options.Length = v
-			}
+		// A plain number, or an expression of the parameters, which the
+		// thread's length then follows.
+		v, expr, err := ss.SK.ThreadLengthText(s)
+		switch {
+		case err != nil:
+			ss.Report(err)
+		case v < core.LengthEps:
+			ss.Error("Length cannot be zero or negative.")
+		default:
+			t.options.Length, t.options.LengthExpr = v, expr
 		}
 
 	case editThreadClearance:
@@ -88,7 +95,11 @@ func (tw *textWindow) ScreenChangeThread(link int, v uint32) {
 		tw.ShowEditControl(14, t.designation)
 		tw.edit.meaning = editThreadDesignation
 	case 'l':
-		tw.ShowEditControl(14, ss.MmToString(t.options.Length, true))
+		text := t.options.LengthExpr
+		if text == "" {
+			text = ss.MmToString(t.options.Length, true)
+		}
+		tw.ShowEditControl(14, text)
 		tw.edit.meaning = editThreadLength
 	case 'c':
 		tw.ShowEditControl(14, ss.MmToString(t.options.Clearance, true))
@@ -101,7 +112,29 @@ func (tw *textWindow) ScreenChangeThread(link int, v uint32) {
 		t.options.Through = !t.options.Through
 	case 'r':
 		t.options.Reverse = !t.options.Reverse
+	case 'n':
+		t.options.Crest = thread.CrestStandard
+	case 'u':
+		t.options.Crest = thread.CrestTruncated
+	case 'o':
+		t.options.Crest = thread.CrestRounded
 	}
+}
+
+// ScreenEditThread shows the thread screen for the thread whose helix
+// group is v, filled in from what it was made with.
+func (tw *textWindow) ScreenEditThread(link int, v uint32) {
+	ss := tw.ss
+	hg := core.HGroup{V: v}
+	o, err := ss.SK.ThreadOf(hg)
+	if err != nil {
+		ss.Report(err)
+		return
+	}
+	tw.shown.thread = threadScreen{
+		circle: ss.SK.Group(hg).Thread.Circle, designation: o.Spec.String(), options: o, edit: hg}
+	tw.GoToScreen(screenThread)
+	ss.ScheduleShowTW()
 }
 
 // ScreenMakeThread makes the thread.
@@ -116,7 +149,13 @@ func (tw *textWindow) ScreenMakeThread(link int, v uint32) {
 	ss.UndoRemember()
 	ss.GW.ClearSelection()
 	ss.applyEngineSettings()
-	res, err := sk.AddThread(t.circle, t.options)
+	var res sketch.ThreadResult
+	var err error
+	if t.edit.V != 0 {
+		res, err = sk.EditThread(t.edit, t.options)
+	} else {
+		res, err = sk.AddThread(t.circle, t.options)
+	}
 	if err != nil {
 		ss.Report(err)
 		return
@@ -139,7 +178,11 @@ func (tw *textWindow) ShowThread() {
 	ss := tw.ss
 	t := &tw.shown.thread
 	o := &t.options
-	tw.Printf(true, "%FtSCREW THREAD%E")
+	if t.edit.V != 0 {
+		tw.Printf(true, "%FtSCREW THREAD%E   (editing %s)", tw.ss.SK.Group(t.edit).Name)
+	} else {
+		tw.Printf(true, "%FtSCREW THREAD%E")
+	}
 	tw.Printf(true, "%Ba   %Ftthread%E    %s %Fl%Ld%f[change]%E", t.designation, lf(tw.ScreenChangeThread))
 	hand := "right"
 	if o.Spec.LeftHand {
@@ -150,14 +193,23 @@ func (tw *textWindow) ShowThread() {
 		starts = fmt.Sprintf(", %d starts", n)
 	}
 	tw.Printf(false, "%Bd             %s pitch, %s-hand%s", ss.MmToString(o.Spec.Pitch, false), hand, starts)
-	tw.Printf(false, "%Ba   %Ftlength%E    %s %Fl%Ll%f[change]%E", ss.MmToString(o.Length, false), lf(tw.ScreenChangeThread))
+	tw.Printf(false, "%Ba   %Ftlength%E    %s%s %Fl%Ll%f[change]%E", ss.MmToString(o.Length, false),
+		exprNote(o.LengthExpr), lf(tw.ScreenChangeThread))
 	tw.Printf(false, "%Bd   %Ftclearance%E %s %Fl%Lc%f[change]%E", ss.MmToString(o.Clearance, false), lf(tw.ScreenChangeThread))
-	tw.Printf(false, "%Ba   %f%Le%Fd%s external%E  %f%Li%Fd%s internal%E",
-		lf(tw.ScreenChangeThread), radioMark(!o.Internal), lf(tw.ScreenChangeThread), radioMark(o.Internal))
+	// The crest at the end of a row, so that the rows below stay put.
+	tw.Printf(false, "%Ba   %f%Le%Fd%s external%E  %f%Li%Fd%s internal%E    %Ftcrest%E %f%Ln%Fd%s standard%E %f%Lu%Fd%s truncated%E %f%Lo%Fd%s rounded%E",
+		lf(tw.ScreenChangeThread), radioMark(!o.Internal), lf(tw.ScreenChangeThread), radioMark(o.Internal),
+		lf(tw.ScreenChangeThread), radioMark(o.Crest == thread.CrestStandard),
+		lf(tw.ScreenChangeThread), radioMark(o.Crest == thread.CrestTruncated),
+		lf(tw.ScreenChangeThread), radioMark(o.Crest == thread.CrestRounded))
 	tw.Printf(false, "%Bd   %Fd%f%Lt%s  through the far end%E", lf(tw.ScreenChangeThread), checkMark(o.Through))
 	tw.Printf(false, "%Ba   %Fd%f%Lr%s  against the circle's normal%E", lf(tw.ScreenChangeThread), checkMark(o.Reverse))
 
-	tw.Printf(true, " %Fl%Lg%fmake the thread now%E", lf(tw.ScreenMakeThread))
+	if t.edit.V != 0 {
+		tw.Printf(true, " %Fl%Lg%fmake the thread again now%E", lf(tw.ScreenMakeThread))
+	} else {
+		tw.Printf(true, " %Fl%Lg%fmake the thread now%E", lf(tw.ScreenMakeThread))
+	}
 
 	tw.Printf(true, "(or %Fl%Ll%fcancel operation%E)", lf(tw.ScreenHome))
 }

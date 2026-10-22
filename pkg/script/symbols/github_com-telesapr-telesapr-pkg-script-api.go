@@ -121,6 +121,7 @@ func init() {
 		"Style":            reflect.ValueOf((*api.Style)(nil)),
 		"SuppressMode":     reflect.ValueOf((*api.SuppressMode)(nil)),
 		"SweepGroup":       reflect.ValueOf((*api.SweepGroup)(nil)),
+		"ThreadGroup":      reflect.ValueOf((*api.ThreadGroup)(nil)),
 		"ThreadOptions":    reflect.ValueOf((*api.ThreadOptions)(nil)),
 		"Vec":              reflect.ValueOf((*api.Vec)(nil)),
 		"ViewMenu":         reflect.ValueOf((*api.ViewMenu)(nil)),
