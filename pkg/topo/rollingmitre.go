@@ -58,7 +58,7 @@ func (rb *rollingBall) mitreAt(k int) bool {
 
 // anyMitre reports whether either end of the chain meets a mitre: a
 // chain whose other end ends at a face, flat or curved, as an edge
-// picked with one it meets at a corner (linkMitres, partial) does.
+// picked with one it meets at a corner (linkMitresAt, partial) does.
 func (rb *rollingBall) anyMitre() bool {
 	return rb.mitreAt(0) || rb.mitreAt(1)
 }
@@ -114,20 +114,15 @@ func (rb *rollingBall) markMitre() {
 	}
 }
 
-// linkMitres makes mitre ends of the open chains' ends that meet
+// linkMitresAt makes mitre ends of the open chains' ends that meet
 // another chain's end at a vertex where the third edge, between the two
 // chains' faces on one side, is a crease: the two chains share their
 // other side's face, and each one's end face is the other's creased
 // face. It reports whether every end of every chain is linked so, and
-// to a chain of the same radius.
-func linkMitres(rbs []*rollingBall) bool {
-	return linkMitresAt(rbs, false)
-}
-
-// linkMitresAt is linkMitres; with partial, an end at a vertex no other
-// chain's end shares may stay an end at a face, flat or curved, and it
-// reports whether every end that shares its vertex with another chain's
-// is linked, and at least one is.
+// to a chain of the same radius. With partial, an end at a vertex no
+// other chain's end shares may stay an end at a face, flat or curved,
+// and it reports whether every end that shares its vertex with another
+// chain's is linked, and at least one is.
 func linkMitresAt(rbs []*rollingBall, partial bool) bool {
 	linked := false
 	for _, rb := range rbs {

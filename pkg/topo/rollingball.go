@@ -1180,24 +1180,14 @@ func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, 
 			if fsf, fsecs, fcross, ferr := rb.blendOpen(); ferr == nil {
 				return fsf, fsecs, fcross, nil
 			}
-			if !rb.flat {
-				// Both: the sections near the ends fitted to their cuts,
-				// in two spans each.
-				rb.fitCuts = true
-				if fsf, fsecs, fcross, ferr := rb.blendOpen(); ferr == nil {
-					return fsf, fsecs, fcross, nil
-				}
-				rb.fitCuts = false
-			} else {
-				// A chamfer's end on a doubly curved face, where its rulings
-				// twist: its sections near the end fitted to their cuts, in
-				// two spans each.
-				rb.fitCuts = true
-				if fsf, fsecs, fcross, ferr := rb.blendOpen(); ferr == nil {
-					return fsf, fsecs, fcross, nil
-				}
-				rb.fitCuts = false
+			// Both: the sections near the ends fitted to their cuts, in
+			// two spans each; for a chamfer ending on a doubly curved
+			// face, where its rulings twist, as for a fillet.
+			rb.fitCuts = true
+			if fsf, fsecs, fcross, ferr := rb.blendOpen(); ferr == nil {
+				return fsf, fsecs, fcross, nil
 			}
+			rb.fitCuts = false
 			rb.splitEnds = false
 		}
 		return sf, secs, cross, err
