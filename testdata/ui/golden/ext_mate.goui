@@ -1,5 +1,5 @@
-dialog 3 Bad selection for a concentric mate.|Select two circles or arcs: the first of the part that stays, the second of the part the active group places.
-dialog 3 Bad selection for a flush mate.|Select two faces: the first of the part that stays, the second of the part the active group places.
+dialog 3 Bad selection for a concentric mate.|Select two circles, arcs or datum axes: the first of the part that stays, the second of the part the active group places.
+dialog 3 Bad selection for a flush mate.|Select two faces or datum planes: the first of the part that stays, the second of the part the active group places.
 dialog 3 Bad selection for a hinge mate.|Select two line segments: the first of the part that stays, the second of the part the active group places.
 save
 telesapr 2

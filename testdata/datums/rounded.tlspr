@@ -2,8 +2,8 @@ telesapr 2
 
 units mm
 
-datum corner 0x80050000
-datum base 0x80060000
+datum corner 0x80050000 axis
+datum base 0x80060000 plane
 
 group 0x1 sketch-3d "#references" {
   color 0 0 0 0
