@@ -138,6 +138,12 @@ type Sketch struct {
 	// stops one between groups.
 	DeferShells bool
 
+	// NoSolidCache has every solid made again at each regeneration, as
+	// before solids were kept by what they were made from
+	// (solid_cache.go); for a measure of what keeping them saves.
+	NoSolidCache bool
+	solids       *solidCache
+
 	// Clipboard holds what was copied.
 	Clipboard Clipboard
 

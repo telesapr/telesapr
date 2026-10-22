@@ -136,6 +136,10 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 		}
 	}
 
+	// Whether something is dragged, asked while the entities it names
+	// are there.
+	dragging := len(sk.hooks().DraggedParams()) > 0
+
 	// Remove any requests or constraints that refer to a nonexistent
 	// group; can check those immediately, since we know what the list
 	// of groups should be.
@@ -174,6 +178,19 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 	// The params a solve of passOne took as known that the build pass,
 	// which solves nothing, would leave as generated: unknown.
 	var unknown []core.HParam
+	// The keys of what the groups before are made from, and of the solid
+	// so far (solid_cache.go); a pass that makes no solids leaves them.
+	// While something is dragged the values change at every step, so no
+	// key would come again: the groups made are given none.
+	keys := pass != passSize
+	prefix, prevSolid := sk.globalKey(), sk.firstSolidKey()
+	if dragging {
+		prefix, prevSolid = solidKey{}, solidKey{}
+	}
+	if start > 0 && prefix.known() {
+		pg := sk.Group(sk.GroupOrder[start-1])
+		prefix, prevSolid = pg.prefixKey, sk.chainKey(pg)
+	}
 	for i, hg := range sk.GroupOrder {
 		if i < start {
 			continue
@@ -184,7 +201,13 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 		// A group suppressed whole, or using one that is, is left out
 		// before anything could prune what it refers to.
 		if g := sk.Group(hg); g.SuppressedBy.V != 0 {
-			sk.skipGroup(g, prev, i >= first && i <= last, pass != passSize)
+			if keys {
+				g.prefixKey = sk.prefixKey(prefix, g, nil)
+			}
+			sk.skipGroup(g, prev, i >= first && i <= last, keys, sk.solidKeyOf(g.prefixKey, prevSolid))
+			if keys {
+				prefix, prevSolid = g.prefixKey, sk.chainKey(g)
+			}
 			continue
 		}
 		// The group may depend on entities or other groups, to define its
@@ -264,6 +287,10 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 			sk.ForceReferences()
 			g.Solved.How = core.SolveOkay
 			g.Clean = true
+			if keys {
+				g.prefixKey = sk.prefixKey(prefix, g, groupParams)
+				g.solidKey = sk.solidKeyOf(g.prefixKey, prevSolid)
+			}
 
 		case i >= first && i <= last:
 			// The group falls inside the range, so really solve it,
@@ -287,7 +314,9 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 					sk.SolveGroupAndReport(hg, groupParams, andFindFree)
 					g.GenerateLoops(sk, rt)
 				}
-				// The solid as it was, to be made off the thread.
+				// The solid as it was, to be made off the thread; its
+				// key stays that of the solid it holds.
+				g.prefixKey = sk.prefixKey(prefix, g, groupParams)
 				g.ShellsStale = true
 				g.Clean = true
 
@@ -296,7 +325,8 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 					sk.SolveGroupAndReport(hg, groupParams, andFindFree)
 					g.GenerateLoops(sk, rt)
 				}
-				g.GenerateShellAndMesh(sk)
+				g.prefixKey = sk.prefixKey(prefix, g, groupParams)
+				sk.makeSolid(g, sk.solidKeyOf(g.prefixKey, prevSolid))
 				g.ShellsStale = false
 				g.Clean = true
 			}
@@ -310,6 +340,12 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 					sk.Params[pi].Known = true
 				}
 			}
+			if keys {
+				g.prefixKey = sk.prefixKey(prefix, g, groupParams)
+			}
+		}
+		if keys {
+			prefix, prevSolid = g.prefixKey, sk.chainKey(g)
 		}
 	}
 
@@ -1066,10 +1102,15 @@ func (sk *Sketch) RemakeStaleMeshes() bool {
 	if len(sk.hooks().DraggedParams()) > 0 || sk.AnyShellsStale() || !sk.solidsMadeAtOther(len(sk.GroupOrder)) {
 		return false
 	}
+	prev := sk.firstSolidKey()
 	for _, h := range sk.GroupOrder {
-		if g := sk.Group(h); g.H.V != HGroupReferences {
-			g.GenerateShellAndMesh(sk)
+		g := sk.Group(h)
+		if g.H.V == HGroupReferences {
+			g.solidKey = sk.solidKeyOf(g.prefixKey, prev)
+		} else {
+			sk.makeSolid(g, sk.solidKeyOf(g.prefixKey, prev))
 		}
+		prev = sk.chainKey(g)
 	}
 	return true
 }

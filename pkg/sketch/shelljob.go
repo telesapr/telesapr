@@ -42,6 +42,9 @@ func (sk *Sketch) NewShellJob() *ShellJob {
 		ChordTolPct: sk.ChordTolPct, CheckClosedContour: sk.CheckClosedContour,
 		MaxSegments: sk.MaxSegments, Mesher: sk.Mesher,
 		Images: sk.Images, Fonts: sk.Fonts, Settings: sk.Settings,
+		// The copy takes the solids the sketch made before, and keeps
+		// those it makes, in the sketch's cache, which locks.
+		NoSolidCache: sk.NoSolidCache, solids: sk.solidCache(),
 	}
 	clone := sk.cloneState(st)
 	c.Groups, c.GroupOrder, c.Requests, c.Constraints = clone.Groups, clone.GroupOrder, clone.Requests, clone.Constraints

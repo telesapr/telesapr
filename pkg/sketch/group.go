@@ -313,6 +313,10 @@ type Group struct {
 	// then adds no solid. It is not saved.
 	Problem GroupProblem
 
+	// prefixKey and solidKey name what the group's entities and its
+	// solid were made from (solid_cache.go); zero when unknown.
+	prefixKey, solidKey solidKey
+
 	Name string
 }
 
@@ -338,6 +342,7 @@ func (g *Group) setProblem(at *geom.Vector, format string, args ...any) {
 
 // Clear drops everything regeneration makes, and the remap table.
 func (g *Group) Clear() {
+	g.prefixKey, g.solidKey = solidKey{}, solidKey{}
 	g.Solved.Remove = nil
 	g.PolyLoops.Clear()
 	g.BezierLoops.Clear()

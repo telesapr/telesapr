@@ -8451,6 +8451,10 @@
 						"decl": "func (sk *Sketch) SolidAt(hg core.HGroup) *Group",
 						"text": "SolidAt is the group whose running solid is the model at group hg, or nil when there is none: the solid whose edges a chamfer there cuts and the interface lets the user pick."
 					},
+					"SolidCacheStats": {
+						"decl": "func (sk *Sketch) SolidCacheStats() (hits, misses int)",
+						"text": "SolidCacheStats are how many solids were taken from the cache and how many were looked for there and made."
+					},
 					"SolidEdgeName": {
 						"decl": "func (sk *Sketch) SolidEdgeName(n topo.Name) string",
 						"text": "SolidEdgeName names an edge of a solid for a person: the faces it lies between."
@@ -8854,6 +8858,10 @@
 			"DefaultDensity": {
 				"decl": "const DefaultDensity",
 				"text": "DefaultDensity is the density, in g/cm³, of a part none is set for: water's, so that its mass in g is its volume in cm³."
+			},
+			"DefaultSolidCacheBytes": {
+				"decl": "const DefaultSolidCacheBytes",
+				"text": "DefaultSolidCacheBytes is about how much a sketch's solid cache holds before it forgets the solids used longest ago."
 			},
 			"DimensionKinds": {
 				"decl": "var DimensionKinds",
@@ -10138,6 +10146,10 @@
 						"decl": "func (m *SMesh) Clear()",
 						"text": "Clear drops the triangles; it keeps the flags."
 					},
+					"ExactCopy": {
+						"decl": "func (m *SMesh) ExactCopy() SMesh",
+						"text": "ExactCopy is a copy of the mesh that shares no triangles with it."
+					},
 					"FirstIntersectionIn": {
 						"decl": "func (m *SMesh) FirstIntersectionIn(rayPoint, rayDir geom.Vector, h *HalfSpace) uint32",
 						"text": "FirstIntersectionIn is FirstIntersectionWith counting only hits in the half space h, if it isn't nil: a face cut away by a section isn't there to hit."
@@ -10377,6 +10389,10 @@
 					"CopySurfacesTrimAgainst": {
 						"decl": "func (s *SShell) CopySurfacesTrimAgainst(sha, shb, into *SShell, op SurfaceCombineAs)",
 						"text": "CopySurfacesTrimAgainst copies every surface of s into `into`, trimmed against the other operand per the boolean op, and records each surface's handle in `into` as its NewH."
+					},
+					"ExactCopy": {
+						"decl": "func (s *SShell) ExactCopy() SShell",
+						"text": "ExactCopy is a copy of the shell that shares none of what a later operation on either could change: the curves' points, the surfaces' trims and edges, and each surface's last closest point, which starts the next search on it."
 					},
 					"FindCurve": {
 						"decl": "func (s *SShell) FindCurve(h core.HSCurve) *SCurve",

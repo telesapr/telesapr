@@ -32,6 +32,7 @@ func init() {
 		"CopyAsNumeric":                reflect.ValueOf(sketch.CopyAsNumeric),
 		"DefaultDensity":               reflect.ValueOf(constant.MakeFromLiteral("1", token.FLOAT, 0)),
 		"DefaultDrawing":               reflect.ValueOf(sketch.DefaultDrawing),
+		"DefaultSolidCacheBytes":       reflect.ValueOf(constant.MakeFromLiteral("268435456", token.INT, 0)),
 		"DefaultView":                  reflect.ValueOf(sketch.DefaultView),
 		"DefaultVisibility":            reflect.ValueOf(sketch.DefaultVisibility),
 		"DimensionKinds":               reflect.ValueOf(&sketch.DimensionKinds).Elem(),

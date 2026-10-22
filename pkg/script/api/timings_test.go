@@ -15,6 +15,9 @@ func TestSketchTimings(t *testing.T) {
 	d.Sketch.Rect(V(0, 0, 0), V(10, 10, 0))
 	ex := d.Features.Extrude(5, "")
 	sk := d.Host().Sketch()
+	// Every solid made again: a regeneration of what is unchanged
+	// would take the extrusion's from the cache and time no solid.
+	sk.NoSolidCache = true
 	sk.GenerateAll()
 	tm := &sketch.Timings{}
 	sk.Timings = tm
