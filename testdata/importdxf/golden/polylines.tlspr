@@ -319,15 +319,15 @@ value 0x70014 0
 value 0x80010 12.5
 value 0x80011 1.8750000000000009
 value 0x80013 10
-value 0x80014 -2.2507691073562183e-16
+value 0x80014 -2.2507691073562173e-16
 value 0x80016 15
-value 0x80017 -1.8055148191423212e-17
+value 0x80017 -1.8055148191423203e-17
 value 0x90010 15
 value 0x90011 2.5
 value 0x90013 15
 value 0x90014 5
 value 0x90016 15
-value 0x90017 -1.8055148191423212e-17
+value 0x90017 -1.8055148191423203e-17
 value 0xa0010 15
 value 0xa0011 5
 value 0xa0013 10
@@ -337,7 +337,7 @@ value 0xb0011 2.5
 value 0xb0013 10
 value 0xb0014 5
 value 0xb0016 10
-value 0xb0017 -2.2507691073562183e-16
+value 0xb0017 -2.2507691073562173e-16
 value 0xc0010 22.5
 value 0xc0011 -1.8749999999999991
 value 0xc0013 20
@@ -559,7 +559,7 @@ entity 0x80002 point-in-2d {
   group 0x2
   workplane 0x80020000
   style 0x100
-  act-point 10 -2.2507691073562183e-16 0
+  act-point 10 -2.2507691073562173e-16 0
   act-visible
 }
 
@@ -567,7 +567,7 @@ entity 0x80003 point-in-2d {
   group 0x2
   workplane 0x80020000
   style 0x100
-  act-point 15 -1.8055148191423212e-17 0
+  act-point 15 -1.8055148191423203e-17 0
   act-visible
 }
 
@@ -609,7 +609,7 @@ entity 0x90003 point-in-2d {
   group 0x2
   workplane 0x80020000
   style 0x100
-  act-point 15 -1.8055148191423212e-17 0
+  act-point 15 -1.8055148191423203e-17 0
   act-visible
 }
 
@@ -675,7 +675,7 @@ entity 0xb0003 point-in-2d {
   group 0x2
   workplane 0x80020000
   style 0x100
-  act-point 10 -2.2507691073562183e-16 0
+  act-point 10 -2.2507691073562173e-16 0
   act-visible
 }
 

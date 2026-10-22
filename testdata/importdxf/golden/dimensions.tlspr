@@ -242,11 +242,11 @@ value 0xd0014 0
 value 0xe0010 50
 value 0xe0011 5
 value 0xe0013 50
-value 0xe0014 8.929716243782784e-17
+value 0xe0014 8.929716243782782e-17
 value 0xf0010 50
-value 0xf0011 8.929716243782784e-17
+value 0xf0011 8.929716243782782e-17
 value 0xf0013 55
-value 0xf0014 -1.403241124023009e-16
+value 0xf0014 -1.4032411240230086e-16
 
 entity 0x10000 workplane {
   group 0x1
@@ -522,7 +522,7 @@ entity 0xe0002 point-in-2d {
   group 0x2
   workplane 0x80020000
   style 0x100
-  act-point 50 8.929716243782784e-17 0
+  act-point 50 8.929716243782782e-17 0
 }
 
 entity 0xf0000 line-segment {
@@ -536,14 +536,14 @@ entity 0xf0001 point-in-2d {
   group 0x2
   workplane 0x80020000
   style 0x100
-  act-point 50 8.929716243782784e-17 0
+  act-point 50 8.929716243782782e-17 0
 }
 
 entity 0xf0002 point-in-2d {
   group 0x2
   workplane 0x80020000
   style 0x100
-  act-point 55 -1.403241124023009e-16 0
+  act-point 55 -1.4032411240230086e-16 0
 }
 
 entity 0x80020000 workplane {
