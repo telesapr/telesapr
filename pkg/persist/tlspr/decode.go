@@ -496,6 +496,7 @@ func (d *decoder) lengths() {
 			length(&t.Length, &t.LengthExpr)
 			noExpr := ""
 			length(&t.Clearance, &noExpr)
+			length(&t.RunOut, &noExpr)
 		}
 	}
 }
@@ -620,6 +621,10 @@ func (d *decoder) thread(n *Node, hg core.HGroup) sketch.GroupThread {
 			t.Clearance = d.realField(c)
 		case "crest":
 			enumField(d, threadCrests, c, &t.Crest)
+		case "run-out":
+			t.RunOut = d.realField(c)
+		case "level-starts":
+			t.LevelStarts = d.flag(c)
 		default:
 			d.unknownField(c, "thread")
 		}

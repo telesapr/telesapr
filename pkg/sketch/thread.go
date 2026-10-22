@@ -39,7 +39,21 @@ type ThreadOptions struct {
 	// Crest is the shape of the ridge's top: the standard flat one, cut
 	// lower, or rounded, which prints better.
 	Crest thread.Crest
+	// RunOut is how far, in millimeters along the axis, the thread
+	// fades out before its shoulder, as a die's thread does: over it a
+	// cone cuts the ridge down from its crest towards its root. 0 is
+	// none; a thread that is Through has no shoulder, and none.
+	RunOut float64
+	// LevelStarts starts every start of a thread of several at the
+	// circle's plane, each its own ridge and helix turned by a part of
+	// a turn from the last; otherwise one helix sweeps all the ridges,
+	// stacked a pitch apart, which costs a pitch of length per start.
+	LevelStarts bool
 }
+
+// levelStarts tells whether the thread is made of a ridge and a helix
+// per start.
+func (o ThreadOptions) levelStarts() bool { return o.LevelStarts && o.Spec.NumStarts() > 1 }
 
 // threadLayout is where AddThread draws, in millimeters: radii from
 // the axis, and heights along it from the circle's plane.
@@ -53,6 +67,10 @@ type threadLayout struct {
 	blankIn, blankOut       float64
 	blankBottom, blankTop   float64
 	ridgeBottom, ridgeSweep float64
+	// runOut is whether the turning or the boring tapers, from the
+	// root at runFrom to runTo at the thread's end.
+	runOut         bool
+	runFrom, runTo float64
 }
 
 // layout places the thread on a circle of the given radius.
@@ -101,12 +119,47 @@ func (o ThreadOptions) layout(circleR float64) (threadLayout, error) {
 	// blunt ends and the mating thread a lead-in.
 	l.ridgeBottom = s.Pitch / 2
 	profiles := float64(s.NumStarts()-1)*s.Pitch + l.baseW
+	if o.levelStarts() {
+		profiles = l.baseW
+	}
 	l.ridgeSweep = o.Length - 2*l.ridgeBottom - profiles
 	if !(l.ridgeSweep > 0) {
 		return threadLayout{}, fmt.Errorf("thread length must be more than %.4g mm for this pitch",
 			2*l.ridgeBottom+profiles)
 	}
+	if err := l.layRunOut(o); err != nil {
+		return threadLayout{}, err
+	}
 	return l, nil
+}
+
+// layRunOut places the run-out: the turned or bored surface leaves the
+// root RunOut short of the thread's end and tapers to the crest there,
+// so the ridge sinks into it, as a die's thread does at a shoulder.
+func (l *threadLayout) layRunOut(o ThreadOptions) error {
+	if math.IsNaN(o.RunOut) || math.IsInf(o.RunOut, 0) || o.RunOut < 0 {
+		return errors.New("thread run-out must be a length of 0 or more")
+	}
+	if o.RunOut == 0 {
+		return nil
+	}
+	if o.Through {
+		return errors.New("a through thread has no shoulder to run out at")
+	}
+	if o.RunOut >= o.Length {
+		return fmt.Errorf("thread run-out must be less than its length, %.4g mm", o.Length)
+	}
+	l.runOut = true
+	l.runFrom = o.Length - o.RunOut
+	// A screw's cone stops a tenth of the thread's depth short of the
+	// crest, which a rod as thick as the thread has as its radius: the
+	// cone would end on the rod's side, touching it along a circle.
+	p := l.profile
+	l.runTo = p.CrestRadius
+	if !o.Internal {
+		l.runTo -= 0.1 * (p.CrestRadius - p.RootRadius)
+	}
+	return nil
 }
 
 // CheckThread reports why AddThread would refuse to make the thread,
@@ -127,8 +180,8 @@ func (sk *Sketch) CheckThread(he core.HEntity, o ThreadOptions) error {
 
 // ThreadResult is what AddThread made.
 type ThreadResult struct {
-	// Group is the helix group, the last of the thread's four, which is
-	// left active.
+	// Group is the helix group of the thread's first start, which keeps
+	// what made the thread. The thread's last group is left active.
 	Group core.HGroup
 	// Sound tells whether the solid came out whole: both Booleans
 	// succeeded and the mesh is watertight.
@@ -139,51 +192,41 @@ type ThreadResult struct {
 // normal, after the active group: a sketch and a lathe group that turn
 // the part down to the root of the thread (or bore it out, for an
 // internal thread), then a sketch of the ridge and a helix group that
-// sweeps it. It generates the sketch, and says whether the solid came
+// sweeps it; with level starts, a sketch and a helix for each further
+// start. It generates the sketch, and says whether the solid came
 // out sound.
 func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, error) {
 	if err := sk.CheckThread(he, o); err != nil {
 		return ThreadResult{}, err
 	}
-	d := sk.newThreadDrawer(he, o, nil)
-
-	addSketch := func(what string, angle float64) core.HGroup {
-		g := Group{Type: GroupDrawingWorkplane, Subtype: GroupWorkplaneByPointOrtho}
-		d.placeSketch(&g, what, angle)
-		gg := sk.addGroupAfterActive(g)
-		gg.ActiveWorkplane = gg.H.Entity(0)
-		return gg.H
-	}
-	addSolid := func(g Group, what string, how CombineAs) *Group {
-		g.OpA = sk.ActiveGroup()
-		g.Predef.Origin = d.center
-		g.Predef.EntityB = d.circle.Normal
-		g.MeshCombine = how
-		d.nameSolid(&g, what)
-		return sk.addGroupAfterActive(g)
-	}
+	d := sk.newThreadDrawer(he, o, nil, 0)
 
 	var tg threadGroups
-	tg.blank = addSketch("blank", 0)
+	tg.blank = d.addSketch("blank", 0)
 	d.drawBlank()
-	tg.lathe = addSolid(Group{Type: GroupLathe}, d.latheName(), CombineDifference).H
-	tg.profile = addSketch("profile", d.start)
+	tg.lathe = d.addSolid(Group{Type: GroupLathe}, d.latheName(), CombineDifference).H
+	tg.profile = d.addSketch("profile", d.start)
 	d.drawProfile()
-
-	helix := Group{Type: GroupHelix, Subtype: GroupOneSided}
-	hg := sk.nextGroupHandle()
-	sk.Params = append(sk.Params, core.Param{H: hg.Param(3)}, core.Param{H: hg.Param(7)})
-	d.setHelix(&helix, hg)
-	hel := addSolid(helix, "thread", CombineUnion)
-	if hel.H != hg {
-		panic("sketch: thread helix group got another handle")
-	}
-	tg.helix = hel.H
-	d.dimensionHelix(hel)
+	tg.helix = d.addHelix("thread", true).H
+	d.addStarts(&tg)
 
 	sk.GenerateAllTyped(GenerateAll)
-	sound := sk.solidIsSound(tg.lathe) && sk.solidIsSound(tg.helix)
-	return ThreadResult{Group: tg.helix, Sound: sound}, nil
+	res := ThreadResult{Group: tg.helix, Sound: sk.threadIsSound(tg)}
+	if !res.Sound && d.retries() {
+		return sk.redrawThread(tg.helix, o, 1)
+	}
+	return res, nil
+}
+
+// threadIsSound tells whether every solid of the thread came out
+// sound.
+func (sk *Sketch) threadIsSound(tg threadGroups) bool {
+	for _, h := range tg.solids() {
+		if !sk.solidIsSound(h) {
+			return false
+		}
+	}
+	return true
 }
 
 // solidIsSound tells whether the group's Boolean succeeded and the

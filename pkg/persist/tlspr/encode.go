@@ -310,6 +310,10 @@ func encodeThread(t sketch.GroupThread, mmPer float64) *Node {
 	if t.Crest != thread.CrestStandard {
 		n.add(field("crest", Word(enumName(threadCrests, t.Crest))))
 	}
+	if t.RunOut != 0 {
+		n.real("run-out", t.RunOut/mmPer)
+	}
+	n.flag("level-starts", t.LevelStarts)
 	return n
 }
 

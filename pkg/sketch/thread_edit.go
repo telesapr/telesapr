@@ -28,9 +28,10 @@ func (t GroupThread) IsThread() bool { return t.Circle != core.NoEntity }
 // ErrNotThread is returned for a group that is not a thread's helix.
 var ErrNotThread = errors.New("not a screw thread's group")
 
-// threadGroupsOf finds the four groups of the thread whose helix group
-// is hg, checking that they are still the groups a thread is: a
-// sketch, a lathe of it, a sketch, and the helix of that.
+// threadGroupsOf finds the groups of the thread whose helix group is
+// hg, checking that they are still the groups a thread is: a sketch, a
+// lathe of it, a sketch, and the helix of that; then, as its options
+// say, a sketch and a helix of it per further level start.
 func (sk *Sketch) threadGroupsOf(hg core.HGroup) (threadGroups, error) {
 	hel := sk.Group(hg)
 	if hel == nil || hel.Type != GroupHelix || !hel.Thread.IsThread() {
@@ -51,17 +52,37 @@ func (sk *Sketch) threadGroupsOf(hg core.HGroup) (threadGroups, error) {
 	if blank := sk.Group(tg.blank); blank == nil || blank.Type != GroupDrawingWorkplane {
 		return tg, errors.New("the thread's blank sketch is gone; edit its groups one by one")
 	}
+
+	o := hel.Thread.ThreadOptions
+	next := slices.Index(sk.GroupOrder, hg) + 1
+	if !o.levelStarts() {
+		return tg, nil
+	}
+	// Each further start is the next two groups: a sketch, and a helix
+	// of it.
+	for range o.Spec.NumStarts() - 1 {
+		if next+1 >= len(sk.GroupOrder) {
+			return tg, errors.New("a start of the thread is gone; edit its groups one by one")
+		}
+		p, h := sk.Group(sk.GroupOrder[next]), sk.Group(sk.GroupOrder[next+1])
+		if p.Type != GroupDrawingWorkplane || h.Type != GroupHelix || h.OpA != p.H {
+			return tg, errors.New("a start of the thread is gone; edit its groups one by one")
+		}
+		tg.starts = append(tg.starts, [2]core.HGroup{p.H, h.H})
+		next += 2
+	}
 	return tg, nil
 }
 
-// ThreadGroups returns the thread's four groups, from its blank sketch
-// to its helix, hg being the helix.
+// ThreadGroups returns the thread's groups, from its blank sketch to
+// its last, hg being its first helix: four, then a sketch and a helix
+// per further level start.
 func (sk *Sketch) ThreadGroups(hg core.HGroup) ([]core.HGroup, error) {
 	tg, err := sk.threadGroupsOf(hg)
 	if err != nil {
 		return nil, err
 	}
-	return []core.HGroup{tg.blank, tg.lathe, tg.profile, tg.helix}, nil
+	return tg.all(), nil
 }
 
 // ThreadLengthText reads a thread's length as the user typed it, in
@@ -84,76 +105,142 @@ func (sk *Sketch) ThreadLengthText(text string) (float64, string, error) {
 // EditThread makes the thread whose helix group is hg again with the
 // options o: its sketches are drawn again in their planes, the
 // requests they had taken first, their dimensions made anew, and the
-// helix given its pitch and length. What the later groups refer to of
-// a request the thread no longer draws (a ridge of a start taken
-// away) is reported as broken. It generates the sketch, and says
-// whether the solid came out sound; it changes nothing when o is
-// refused.
+// helices given their pitch and length. The groups of level starts are
+// kept when o has as many, and made anew otherwise. What
+// the later groups refer to of a request the thread no longer draws (a
+// ridge of a start taken away) is reported as broken. It generates the
+// sketch, and says whether the solid came out sound; it changes nothing
+// when o is refused.
 func (sk *Sketch) EditThread(hg core.HGroup, o ThreadOptions) (ThreadResult, error) {
+	if _, err := sk.threadGroupsOf(hg); err != nil {
+		return ThreadResult{}, err
+	}
+	if err := sk.CheckThread(sk.Group(hg).Thread.Circle, o); err != nil {
+		return ThreadResult{}, err
+	}
+	return sk.redrawThread(hg, o, 0)
+}
+
+// redrawThread is EditThread with options CheckThread has passed,
+// trying the planes for the ridges from try on until the solid comes
+// out sound or none is left.
+func (sk *Sketch) redrawThread(hg core.HGroup, o ThreadOptions, try int) (ThreadResult, error) {
+	for {
+		res, d, err := sk.redrawThreadOnce(hg, o, try)
+		try++
+		if err != nil || res.Sound || !d.retries() || try == startTries {
+			return res, err
+		}
+	}
+}
+
+// redrawThreadOnce draws the thread again with the try'th plane for its
+// ridges.
+func (sk *Sketch) redrawThreadOnce(hg core.HGroup, o ThreadOptions, try int) (ThreadResult, *threadDrawer, error) {
 	tg, err := sk.threadGroupsOf(hg)
 	if err != nil {
-		return ThreadResult{}, err
+		return ThreadResult{}, nil, err
 	}
 	circle := sk.Group(hg).Thread.Circle
-	if err := sk.CheckThread(circle, o); err != nil {
-		return ThreadResult{}, err
-	}
 	if !sk.Group(tg.blank).Clean || !sk.Group(hg).Clean {
 		sk.GenerateAllTyped(GenerateAll)
+	}
+	active := sk.Active
+	d := sk.newThreadDrawer(circle, o, nil, try)
+
+	// Groups past the first helix are kept only if o has the same.
+	starts := 0
+	if o.levelStarts() {
+		starts = o.Spec.NumStarts() - 1
+	}
+	remake := len(tg.starts) != starts
+	if remake {
+		gone := tg.extra()
+		sk.Groups = slices.DeleteFunc(sk.Groups, func(g Group) bool { return slices.Contains(gone, g.H) })
+		sk.PruneOrphans()
+		sk.GenerateAllTyped(GenerateRegen)
+		tg.starts = nil
+	}
+
+	type sketchAt struct {
+		h     core.HGroup
+		what  string
+		angle float64
+	}
+	sketches := []sketchAt{{tg.blank, "blank", 0}, {tg.profile, "profile", d.start}}
+	for i, st := range tg.starts {
+		sketches = append(sketches, sketchAt{st[0], startName("profile", i+1), d.startAngle(i + 1)})
+	}
+	helices := []core.HGroup{tg.helix}
+	for _, st := range tg.starts {
+		helices = append(helices, st[1])
 	}
 
 	reuse := map[core.HGroup][]core.HRequest{}
 	for _, r := range sk.Requests {
-		if r.Group == tg.blank || r.Group == tg.profile {
+		if slices.ContainsFunc(sketches, func(s sketchAt) bool { return s.h == r.Group }) {
 			reuse[r.Group] = append(reuse[r.Group], r.H)
 		}
 	}
+	d.reuse = reuse
 	sk.Constraints = slices.DeleteFunc(sk.Constraints, func(c core.Constraint) bool {
-		return c.Group == tg.blank || c.Group == tg.profile || c.Group == tg.helix
+		return slices.ContainsFunc(sketches, func(s sketchAt) bool { return s.h == c.Group }) ||
+			slices.Contains(helices, c.Group)
 	})
-	active := sk.Active
-	d := sk.newThreadDrawer(circle, o, reuse)
 
 	// The sketches' planes turn first, and their workplanes with them,
 	// so that the points drawn land in them.
-	blank, profile := sk.Group(tg.blank), sk.Group(tg.profile)
-	d.placeSketch(blank, "blank", 0)
-	d.placeSketch(profile, "profile", d.start)
-	blank.Clean, profile.Clean = false, false
+	for _, s := range sketches {
+		g := sk.Group(s.h)
+		d.placeSketch(g, s.what, s.angle)
+		g.Clean = false
+	}
 	sk.GenerateAllTyped(GenerateRegen)
-	blank, profile = sk.Group(tg.blank), sk.Group(tg.profile)
 
-	d.placeSketch(blank, "blank", 0)
-	sk.Active = tg.blank
-	d.drawBlank()
+	for i, s := range sketches {
+		d.placeSketch(sk.Group(s.h), s.what, s.angle)
+		sk.Active = s.h
+		if i == 0 {
+			d.drawBlank()
+		} else {
+			d.drawProfile()
+		}
+	}
 	d.nameSolid(sk.Group(tg.lathe), d.latheName())
-	d.placeSketch(profile, "profile", d.start)
-	sk.Active = tg.profile
-	d.drawProfile()
-	hel := sk.Group(hg)
-	d.setHelix(hel, hg)
-	d.nameSolid(hel, "thread")
+	for i, h := range helices {
+		hel := sk.Group(h)
+		d.setHelix(hel, h, i == 0)
+		d.nameSolid(hel, startName("thread", i))
+	}
 
-	// What the sketches no longer draw goes, then the helix's copies
-	// of the ridges are made where they now are, for its length.
+	// What the sketches no longer draw goes, then the helices' copies
+	// of the ridges are made where they now are, for their length.
 	sk.Requests = slices.DeleteFunc(sk.Requests, func(r Request) bool {
 		return slices.Contains(reuse[r.Group], r.H)
 	})
-	for _, h := range []core.HGroup{tg.blank, tg.lathe, tg.profile, tg.helix} {
+	for _, h := range tg.all() {
 		sk.Group(h).Clean = false
 	}
 	sk.markDirtyFrom(tg.blank)
-	sk.Active = hg
+	sk.Active = tg.all()[len(tg.all())-1]
 	sk.GenerateAllTyped(GenerateRegen)
-	d.dimensionHelix(sk.Group(hg))
+	for _, h := range helices {
+		sk.Active = h
+		d.dimensionHelix(sk.Group(h))
+	}
+
+	// Starts the thread didn't have are made after its first helix.
+	if remake {
+		sk.Active = tg.helix
+		d.addStarts(&tg)
+	}
 	sk.Active = active
 	if sk.Group(active) == nil {
 		sk.Active = hg
 	}
 
 	sk.GenerateAllTyped(GenerateAll)
-	sound := sk.solidIsSound(tg.lathe) && sk.solidIsSound(tg.helix)
-	return ThreadResult{Group: hg, Sound: sound}, nil
+	return ThreadResult{Group: hg, Sound: sk.threadIsSound(tg)}, d, nil
 }
 
 // ThreadOf returns the options of the thread whose helix group is hg,
