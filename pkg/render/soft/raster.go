@@ -399,20 +399,29 @@ func (r *Renderer) rasterTriangleRows(a, b, c *rvert, mode fragMode, y0, y1 int)
 		// the per-pixel expression e.dx*(fy-e.oy) - e.dy*(fx-e.ox)
 		// computes it, so that each pixel sees the same value.
 		r0, r1, r2 := e0.dx*(fy-e0.oy), e1.dx*(fy-e1.oy), e2.dx*(fy-e2.oy)
+		// Each edge function, as computed, is monotonic in px (every
+		// step of it rounds monotonically), so the pixels that pass all
+		// three tests are a run: find its ends with the tests, and the
+		// pixels between need none.
+		inside := func(px int) bool {
+			fx := float64(px) + 0.5
+			w0 := r0 - e0.dy*(fx-e0.ox)
+			w1 := r1 - e1.dy*(fx-e1.ox)
+			w2 := r2 - e2.dy*(fx-e2.ox)
+			return (w0 > 0 || (w0 == 0 && incl[0])) && (w1 > 0 || (w1 == 0 && incl[1])) &&
+				(w2 > 0 || (w2 == 0 && incl[2]))
+		}
+		for x0 <= x1 && !inside(x0) {
+			x0++
+		}
+		for x1 >= x0 && !inside(x1) {
+			x1--
+		}
 		for px := x0; px <= x1; px++ {
 			fx := float64(px) + 0.5
 			w0 := r0 - e0.dy*(fx-e0.ox)
-			if w0 < 0 || (w0 == 0 && !incl[0]) {
-				continue
-			}
 			w1 := r1 - e1.dy*(fx-e1.ox)
-			if w1 < 0 || (w1 == 0 && !incl[1]) {
-				continue
-			}
 			w2 := r2 - e2.dy*(fx-e2.ox)
-			if w2 < 0 || (w2 == 0 && !incl[2]) {
-				continue
-			}
 			l0, l1, l2 := w0*invArea, w1*invArea, w2*invArea
 			z := l0*a.z + l1*b.z + l2*c.z
 			if opaque {
