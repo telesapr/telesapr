@@ -315,3 +315,95 @@ func smoothLoftBase(loops [][]srf.SBezier, turn int, ends LoftEnds, sides LoftSi
 	}
 	return b, nil
 }
+
+// MakeSmoothLoftThrough is MakeSmoothLoftSides held square to profiles
+// between its ends too: middle[j], when not 0, makes the surface square
+// to the plane of profile j + 2 (the first between the ends is j 0),
+// its slope across there middle[j] times the loft's length, as an end's
+// tangency does. The loft is then one surface from each such profile to
+// the next, meeting tangent there, all one face.
+func MakeSmoothLoftThrough(loops [][]srf.SBezier, turn int, ends LoftEnds, sides LoftSides, middle []float64, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
+	bss, err := SmoothLoftThroughSurfaces(loops, turn, ends, sides, middle)
+	if err != nil {
+		return nil, err
+	}
+	return closeSkins([][]*srf.BSplineSurface{bss}, color, origin, origin+1, origin+2, tol)
+}
+
+// SmoothLoftThroughSurfaces are the surfaces of MakeSmoothLoftThrough,
+// in order from the first profile.
+func SmoothLoftThroughSurfaces(loops [][]srf.SBezier, turn int, ends LoftEnds, sides LoftSides, middle []float64) ([]*srf.BSplineSurface, error) {
+	if len(middle) > max(len(loops)-2, 0) {
+		return nil, fmt.Errorf("a loft of %d profiles has %d between its ends, not %d", len(loops), max(len(loops)-2, 0), len(middle))
+	}
+	for _, x := range middle {
+		if math.IsNaN(x) || math.IsInf(x, 0) {
+			return nil, fmt.Errorf("a loft's tangency at a profile is a number, not %g", x)
+		}
+	}
+	base, err := smoothLoftBase(loops, turn, ends, sides)
+	if err != nil {
+		return nil, err
+	}
+	k := len(base.curves)
+	cuts := []int{0}
+	for j, x := range middle {
+		if x != 0 {
+			cuts = append(cuts, j+1)
+		}
+	}
+	cuts = append(cuts, k-1)
+	if len(cuts) == 2 {
+		return []*srf.BSplineSurface{base.surface}, nil
+	}
+	length := 0.0
+	for i := 1; i < k; i++ {
+		length += centroid(base.loops[i]).Minus(centroid(base.loops[i-1])).Magnitude()
+	}
+	// The slopes across, in homogeneous coordinates against the whole
+	// loft's v: at the ends the loft's own, at a cut square to the
+	// profile's plane, which SmoothLoftSections turned to face the way
+	// the loft goes.
+	bs := base.surface
+	dv := bs.DegV
+	nv := len(bs.Ctrl[0])
+	a := float64(dv) / (bs.KnotsV[dv+1] - bs.KnotsV[0])
+	b := float64(dv) / (bs.KnotsV[len(bs.KnotsV)-1] - bs.KnotsV[len(bs.KnotsV)-dv-2])
+	slope := func(s int) []geom.Vector4 {
+		out := make([]geom.Vector4, len(bs.Ctrl))
+		for i := range bs.Ctrl {
+			h := func(j int) geom.Vector4 { return geom.Vector4FromWeighted(bs.Weight[i][j], bs.Ctrl[i][j]) }
+			switch s {
+			case 0:
+				out[i] = h(1).Minus(h(0)).ScaledBy(a)
+			case k - 1:
+				out[i] = h(nv - 1).Minus(h(nv - 2)).ScaledBy(b)
+			default:
+				n := newell(base.loops[s]).WithMagnitude(middle[s-1] * length)
+				out[i] = geom.Vector4FromWeighted(base.curves[s].Weight[i], n)
+				out[i].W = 0
+			}
+		}
+		return out
+	}
+	var out []*srf.BSplineSurface
+	for c := 1; c < len(cuts); c++ {
+		from, to := cuts[c-1], cuts[c]
+		span := base.ts[to] - base.ts[from]
+		ts := make([]float64, 0, to-from+1)
+		for s := from; s <= to; s++ {
+			ts = append(ts, (base.ts[s]-base.ts[from])/span)
+		}
+		ts[len(ts)-1] = 1
+		start, end := slope(from), slope(to)
+		for i := range start {
+			start[i], end[i] = start[i].ScaledBy(span), end[i].ScaledBy(span)
+		}
+		piece, err := srf.SkinThrough(base.curves[from:to+1], ts, start, end)
+		if err != nil {
+			return nil, fmt.Errorf("from profile %d to %d: %w", from+1, to+1, err)
+		}
+		out = append(out, piece)
+	}
+	return out, nil
+}
