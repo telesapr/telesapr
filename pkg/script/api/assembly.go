@@ -112,7 +112,8 @@ func (m AssemblyMenu) LinkStep(path, name string, asSolid bool) (Group, error) {
 // other. In a workplane, the centres are put on each other. A
 // workplane, or a normal with a point, is taken as an axis, the normal
 // through its origin, as a datum on a round face or edge of a solid is
-// (Datums.NameFace).
+// (Datums.NameFace); a datum on a flat face, whose normal runs through
+// a corner of the face, is refused.
 func (m AssemblyMenu) Concentric(a, b Entity) []Constraint {
 	d := m.d
 	var ca, cb, na, nb Entity
@@ -123,6 +124,9 @@ func (m AssemblyMenu) Concentric(a, b Entity) []Constraint {
 		for _, e := range []Entity{a, b} {
 			if _, _, ok = mateAxis(sk, e); !ok {
 				fail("a concentric mate is of two circles, arcs or axes, and %s isn't one", e.describe(sk))
+			}
+			if k := sk.DatumKindOf(e.H); !k.IsAxis() {
+				fail("%s is the datum of a flat face, a plane with no axis; mate it flush", e.describe(sk))
 			}
 		}
 		ca, na, _ = mateAxis(sk, a)
@@ -174,7 +178,8 @@ func (m AssemblyMenu) Concentric(a, b Entity) []Constraint {
 // they did, and one part may still slide and turn on the other. A
 // workplane, or a normal with a point, is taken as a face, as a datum
 // on a flat face of a solid is (Datums.NameFace): its origin is the
-// point that lies on it.
+// point that lies on it. A datum on an edge, which is a line, is
+// refused.
 func (m AssemblyMenu) Flush(faceA, faceB Entity) []Constraint {
 	d := m.d
 	var on Entity
@@ -187,6 +192,9 @@ func (m AssemblyMenu) Flush(faceA, faceB Entity) []Constraint {
 		for _, e := range []Entity{faceA, faceB} {
 			if ent := e.get(sk); !ent.IsFace() && !ent.IsWorkplane() && !isNormalAt(ent) {
 				fail("a flush mate is of two faces or workplanes, and %s isn't one", e.describe(sk))
+			}
+			if k := sk.DatumKindOf(e.H); !k.IsPlane() {
+				fail("%s is the datum of an edge, a line with no one plane; mate it concentric", e.describe(sk))
 			}
 		}
 		switch eb := faceB.get(sk); {

@@ -438,10 +438,22 @@ func (d *decoder) param(n *Node) {
 	sk.Parameters = append(sk.Parameters, sketch.Parameter{Name: name, Expr: n.Expr})
 }
 
-// datum reads "datum <name> <entity>".
+// datum reads "datum <name> <entity> [<kind>]", the kind of a datum on
+// a face or an edge of the solid.
 func (d *decoder) datum(n *Node) {
-	a := d.fieldArgs(n, 2)
+	d.plain(n)
+	if len(n.Args) != 2 && len(n.Args) != 3 {
+		d.fail(n.Pos, "%q takes 2 or 3 values, not %d", n.Name, len(n.Args))
+	}
+	a := n.Args
 	name := d.word(a[0])
+	kind := topo.DatumUnknown
+	if len(a) == 3 {
+		var ok bool
+		if kind, ok = topo.ParseDatumKind(d.word(a[2])); !ok {
+			d.fail(a[2].Pos, "%q is no kind of datum", d.word(a[2]))
+		}
+	}
 	if !core.ValidVariableName(name) {
 		d.fail(a[0].Pos, "%q can't name a datum", name)
 	}
@@ -449,7 +461,7 @@ func (d *decoder) datum(n *Node) {
 	if sk.Datum(name) != nil {
 		d.fail(a[0].Pos, "a second datum %q", name)
 	}
-	sk.Datums = append(sk.Datums, sketch.Datum{Name: name, Entity: core.HEntity{V: d.handle(a[1])}})
+	sk.Datums = append(sk.Datums, sketch.Datum{Name: name, Entity: core.HEntity{V: d.handle(a[1])}, Kind: kind})
 }
 
 // lengths puts the lengths the user typed into the document's unit,

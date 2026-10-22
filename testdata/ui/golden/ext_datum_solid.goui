@@ -21,13 +21,13 @@ row 12    select a point, workplane, face, edge or axis to name it
 row 15 linked by g003-rounded
  0-21 74 64 0
  22-99 64 64 0
-row 17    g003-rounded.corner      [select] [mate]
+row 17    g003-rounded.corner axis [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 0 1 0
  36-36 64 64 0
  37-42 6c 64 109 0 1 0
  43-99 64 64 0
-row 19    g003-rounded.base        [select] [mate]
+row 19    g003-rounded.base plane  [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 1 1 0
  36-36 64 64 0
@@ -36,13 +36,13 @@ row 19    g003-rounded.base        [select] [mate]
 row 22 linked by g004-rounded
  0-21 74 64 0
  22-99 64 64 0
-row 24    g004-rounded.corner      [select] [mate]
+row 24    g004-rounded.corner axis [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 2 1 0
  36-36 64 64 0
  37-42 6c 64 109 2 1 0
  43-99 64 64 0
-row 26    g004-rounded.base        [select] [mate]
+row 26    g004-rounded.base plane  [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 3 1 0
  36-36 64 64 0
@@ -72,13 +72,13 @@ row 12    select a point, workplane, face, edge or axis to name it
 row 15 linked by g003-rounded
  0-21 74 64 0
  22-99 64 64 0
-row 17    g003-rounded.corner      [select] [mate]
+row 17    g003-rounded.corner axis [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 0 1 0
  36-36 64 64 0
  37-42 6c 64 109 0 1 0
  43-99 64 64 0
-row 19    g003-rounded.base        [select] [mate]
+row 19    g003-rounded.base plane  [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 1 1 0
  36-36 64 64 0
@@ -87,13 +87,13 @@ row 19    g003-rounded.base        [select] [mate]
 row 22 linked by g004-rounded
  0-21 74 64 0
  22-99 64 64 0
-row 24    g004-rounded.corner      [select] [mate]
+row 24    g004-rounded.corner axis [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 2 1 0
  36-36 64 64 0
  37-42 6c 64 109 2 1 0
  43-99 64 64 0
-row 26    g004-rounded.base        [select] [mate]
+row 26    g004-rounded.base plane  [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 3 1 0
  36-36 64 64 0
@@ -134,13 +134,13 @@ row 12    select a point, workplane, face, edge or axis to name it
 row 15 linked by g003-rounded
  0-21 74 64 0
  22-99 64 64 0
-row 17    g003-rounded.corner      [select] [mate]
+row 17    g003-rounded.corner axis [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 0 1 0
  36-36 64 64 0
  37-42 6c 64 109 0 1 0
  43-99 64 64 0
-row 19    g003-rounded.base        [select] [mate]
+row 19    g003-rounded.base plane  [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 1 1 0
  36-36 64 64 0
@@ -149,13 +149,13 @@ row 19    g003-rounded.base        [select] [mate]
 row 22 linked by g004-rounded
  0-21 74 64 0
  22-99 64 64 0
-row 24    g004-rounded.corner      [select] [mate]
+row 24    g004-rounded.corner axis [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 2 1 0
  36-36 64 64 0
  37-42 6c 64 109 2 1 0
  43-99 64 64 0
-row 26    g004-rounded.base        [select] [mate]
+row 26    g004-rounded.base plane  [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 3 1 0
  36-36 64 64 0

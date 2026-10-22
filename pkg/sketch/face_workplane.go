@@ -48,8 +48,7 @@ func (sk *Sketch) NewSketchOnFace(face srf.FaceID, name string) (Group, error) {
 // NewDatumWorkplane starts a workplane that follows a face or an edge
 // of the solid at the active group, as a datum names it: face, or with
 // edge set, the edge of that name (GroupWorkplaneByDatum). It is an
-// error when that solid has no such face or edge, or one neither flat,
-// straight nor round. It is what the interface and scripts add with
+// error when that solid has no such face or edge. It is what the interface and scripts add with
 // AddGroupAfterActive before naming its workplane (Group.Workplane).
 func (sk *Sketch) NewDatumWorkplane(face srf.FaceID, edge *topo.Name, name string) (Group, error) {
 	g := NewGroup()
@@ -61,11 +60,12 @@ func (sk *Sketch) NewDatumWorkplane(face srf.FaceID, edge *topo.Name, name strin
 	} else {
 		g.SolidFaces = []srf.FaceID{face}
 	}
-	fr, err := sk.solidFrameAt(sk.solidAt(sk.Active), &g)
+	fr, kind, err := sk.solidFrameAt(sk.solidAt(sk.Active), &g)
 	if err != nil {
 		return g, err
 	}
 	g.Predef.Q, g.Predef.At = fr.Quaternion(), fr.Origin
+	g.datumKind = kind
 	return g, nil
 }
 
@@ -85,25 +85,26 @@ func (sk *Sketch) faceFrameAt(solid *Group, face srf.FaceID) (topo.FaceFrame, er
 }
 
 // solidFrameAt is the frame of g's face or edge in the solid of group
-// solid: for a sketch on a face, its face's; for a datum, its face's or
-// its edge's as a datum.
-func (sk *Sketch) solidFrameAt(solid *Group, g *Group) (topo.FaceFrame, error) {
+// solid, and what it stands for: for a sketch on a face, its face's, a
+// plane; for a datum, its face's or its edge's as a datum.
+func (sk *Sketch) solidFrameAt(solid *Group, g *Group) (topo.FaceFrame, topo.DatumKind, error) {
 	if g.Subtype != GroupWorkplaneByDatum {
 		if len(g.SolidFaces) == 0 {
-			return topo.FaceFrame{}, errors.New("the sketch names no face to lie in")
+			return topo.FaceFrame{}, topo.DatumUnknown, errors.New("the sketch names no face to lie in")
 		}
-		return sk.faceFrameAt(solid, g.SolidFaces[0])
+		fr, err := sk.faceFrameAt(solid, g.SolidFaces[0])
+		return fr, topo.DatumPlane, err
 	}
 	t, err := solidTopology(sk, solid)
 	switch {
 	case err != nil:
-		return topo.FaceFrame{}, err
+		return topo.FaceFrame{}, topo.DatumUnknown, err
 	case len(g.SolidEdges) > 0:
 		return t.EdgeFrame(g.SolidEdges[0])
 	case len(g.SolidFaces) > 0:
 		return t.DatumFrame(g.SolidFaces[0])
 	}
-	return topo.FaceFrame{}, errors.New("the datum names no face or edge")
+	return topo.FaceFrame{}, topo.DatumUnknown, errors.New("the datum names no face or edge")
 }
 
 // solidTopology is the topology of the solid of group solid.
@@ -131,12 +132,16 @@ func (g *Group) facePlane(sk *Sketch) (geom.Quaternion, geom.Vector) {
 	if prev := g.PreviousGroup(sk); prev != nil {
 		solid = sk.solidAt(prev.H)
 	}
-	fr, err := sk.solidFrameAt(solid, g)
+	fr, kind, err := sk.solidFrameAt(solid, g)
 	if err != nil {
 		g.faceProblem = err.Error() + "; the workplane stays where it was"
 		return g.Predef.Q, g.Predef.At
 	}
 	g.Predef.Q, g.Predef.At = fr.Quaternion(), fr.Origin
+	if g.Subtype == GroupWorkplaneByDatum {
+		g.datumKind = kind
+		sk.keepDatumKind(g)
+	}
 	return g.Predef.Q, g.Predef.At
 }
 

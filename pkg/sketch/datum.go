@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // A datum (roadmap item 2 of doc/notes/modelling_upgrades.md) is a name
@@ -23,6 +24,11 @@ import (
 type Datum struct {
 	Name   string
 	Entity core.HEntity
+	// Kind is what a datum on a face or an edge of the solid stands for
+	// (NewDatumWorkplane), as its workplane last found it, saved so that
+	// a model linking this one knows it too; DatumUnknown for a datum of
+	// any other entity.
+	Kind topo.DatumKind
 }
 
 // ErrNoDatum is the error for a datum name nothing answers to.
@@ -77,10 +83,14 @@ func (sk *Sketch) SetDatum(name string, he core.HEntity) error {
 	if !CanBeDatum(e) {
 		return fmt.Errorf("%s can't be a datum: name a point, a workplane, a face, or a line, normal, circle or arc as an axis", sk.EntityName(he))
 	}
+	kind := topo.DatumUnknown
+	if g := sk.Group(e.Group); g != nil && g.Subtype == GroupWorkplaneByDatum && he == g.H.Entity(0) {
+		kind = g.datumKind
+	}
 	if d := sk.Datum(name); d != nil {
-		d.Entity = he
+		d.Entity, d.Kind = he, kind
 	} else {
-		sk.Datums = append(sk.Datums, Datum{Name: name, Entity: he})
+		sk.Datums = append(sk.Datums, Datum{Name: name, Entity: he, Kind: kind})
 	}
 	// One name for an entity: an older name of it goes.
 	sk.Datums = slices.DeleteFunc(sk.Datums, func(d Datum) bool { return d.Entity == he && d.Name != name })
@@ -175,4 +185,56 @@ func (sk *Sketch) LinkLabel(g *Group) string {
 		}
 	}
 	return g.Name
+}
+
+// keepDatumKind gives the datum naming the workplane of g, a datum on
+// the solid, the kind its frame was last found as.
+func (sk *Sketch) keepDatumKind(g *Group) {
+	for i := range sk.Datums {
+		if sk.Datums[i].Entity == g.H.Entity(0) {
+			sk.Datums[i].Kind = g.datumKind
+		}
+	}
+}
+
+// DatumKind is what the datum on a face or an edge of the solid that g
+// makes stands for, as its frame was last found; DatumUnknown for any
+// other group.
+func (g *Group) DatumKind() topo.DatumKind {
+	if g.Subtype != GroupWorkplaneByDatum {
+		return topo.DatumUnknown
+	}
+	return g.datumKind
+}
+
+// DatumKindOf is what the entity he stands for as a datum on a face or
+// an edge of a solid, so that a mate can refuse a plane for an axis: he
+// the workplane of such a datum or its normal, or the normal a link's
+// datum answers with (ResolveDatum). It is DatumUnknown for any other
+// entity, which mates take as they always have.
+func (sk *Sketch) DatumKindOf(he core.HEntity) topo.DatumKind {
+	e := sk.Entity(he)
+	if e == nil {
+		return topo.DatumUnknown
+	}
+	g := sk.Group(e.Group)
+	switch {
+	case g == nil:
+		return topo.DatumUnknown
+	case g.Subtype == GroupWorkplaneByDatum && g.Type == GroupDrawingWorkplane:
+		if wp := sk.Entity(g.H.Entity(0)); wp != nil && (he == wp.H || he == wp.Normal) {
+			return g.datumKind
+		}
+	case g.Type == GroupLinked:
+		label := sk.LinkLabel(g)
+		for _, d := range g.LinkDatums {
+			if d.Kind == topo.DatumUnknown {
+				continue
+			}
+			if at, err := sk.ResolveDatum(label + "." + d.Name); err == nil && at == he {
+				return d.Kind
+			}
+		}
+	}
+	return topo.DatumUnknown
 }

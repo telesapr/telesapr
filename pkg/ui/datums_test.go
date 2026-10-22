@@ -4,6 +4,7 @@ import (
 	"math"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/script/api"
@@ -97,4 +98,59 @@ func solidEdgeOf(t *testing.T, e api.SolidEdge) topo.Name {
 		t.Fatal(err)
 	}
 	return n
+}
+
+// The Assembly menu's Mate Concentric and Mate Flush take two datums on
+// the solids selected, as linked normals, in the order selected; a
+// straight edge's datum, a line, is refused as a plane, with the reason.
+func TestMateMenuTakesDatums(t *testing.T) {
+	t.Parallel()
+	ss, _ := newTestApp(t)
+	doc := api.NewDoc(ss.ScriptHost())
+	doc.Sketch.Rect(api.V(0, 0, 0), api.V(40, 30, 0))
+	b := doc.Features.Extrude(10, "plate")
+	r := doc.Features.FilletSolid([]api.SolidEdge{b.Solid().EdgeAt(api.V(40, 30, 5))}, 6, "fillet")
+	k := 6 * (1 - math.Sqrt(0.5))
+	doc.Datums.NameFace("corner", r.Solid().FaceAt(api.V(40-k, 30-k, 5)))
+	doc.Datums.NameEdge("front", r.Solid().EdgeAt(api.V(20, 0, 0)))
+	path := filepath.Join(t.TempDir(), "rounded.tlspr")
+	if err := doc.File.Save(path); err != nil {
+		t.Fatal(err)
+	}
+
+	ss, _ = newTestApp(t)
+	doc = api.NewDoc(ss.ScriptHost())
+	if _, err := doc.Assembly.Link(path, "a"); err != nil {
+		t.Fatal(err)
+	}
+	lb, err := doc.Assembly.Link(path, "b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	lb.AsLink().Move(api.V(70, 50, 0))
+	gw := ss.GW
+	pick := func(names ...string) {
+		gw.selection = gw.selection[:0]
+		for _, n := range names {
+			gw.selection = append(gw.selection, Selection{Entity: doc.Datums.Get(n).H})
+		}
+	}
+	// The script host takes the window's messages while it runs.
+	var said strings.Builder
+	ss.ScriptHost().Messages = &said
+	before := len(ss.SK.Constraints)
+	pick("a.front", "b.front")
+	ss.MenuMate(cmdMateFlush)
+	if len(ss.SK.Constraints) != before || !strings.Contains(said.String(), "datum of an edge") {
+		t.Fatalf("an edge's datum mated flush: %d constraints, said %q", len(ss.SK.Constraints)-before, said.String())
+	}
+	pick("a.corner", "b.corner")
+	ss.MenuMate(cmdMateConcentric)
+	if len(ss.SK.Constraints) == before {
+		t.Fatal("no concentric mate of the corners")
+	}
+	ca, cb := doc.Datums.Get("a.corner").Center().Pos(), doc.Datums.Get("b.corner").Center().Pos()
+	if math.Hypot(ca.X-cb.X, ca.Y-cb.Y) > 1e-6 {
+		t.Errorf("the corners' axes at %v and %v", ca, cb)
+	}
 }

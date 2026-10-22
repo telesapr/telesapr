@@ -74,10 +74,16 @@ func (tw *textWindow) ShowDatums() {
 		if sk.Entity(d.Entity) != nil {
 			what = sk.EntityName(d.Entity)
 		}
+		if d.Kind != topo.DatumUnknown {
+			what += " " + d.Kind.String()
+		}
 		tw.Printf(false, "%Bp   %s %Fd%s%E %Fl%Ls%D%f[select]%E %Fl%Ln%D%f[rename]%E %Fl%Lx%D%f[delete]%E %Fl%Lm%D%f[mate]%E",
 			bg, pad(d.Name, 13), what,
 			i, lf(tw.ScreenChangeDatum), i, lf(tw.ScreenChangeDatum), i, lf(tw.ScreenChangeDatum),
 			i, lf(tw.ScreenPickDatumForMate))
+		if datumAfterActive(sk, d) {
+			tw.Printf(false, "%Bp       %Fx(after the active group: it follows its face when that group is active, and on saving)%E", bg)
+		}
 	}
 	if _, ok := ss.selectedForDatum(); ok {
 		tw.Printf(true, "   %Fl%La%f[name the selected entity]%E", lf(tw.ScreenChangeDatum))
@@ -101,12 +107,28 @@ func (tw *textWindow) ShowDatums() {
 		tw.Printf(true, "%Ftlinked by %s%E", label)
 		for _, d := range g.LinkDatums {
 			name := label + "." + d.Name
+			if d.Kind != topo.DatumUnknown {
+				name += " " + d.Kind.String()
+			}
 			tw.Printf(false, "%Bd   %s %Fl%Ll%D%f[select]%E %Fl%Lm%D%f[mate]%E", pad(name, 24), k, lf(tw.ScreenSelectLinkedDatum),
 				len(sk.Datums)+k, lf(tw.ScreenPickDatumForMate))
 			k++
 		}
 	}
 	tw.showDatumMate()
+}
+
+// datumAfterActive reports whether datum d names an entity of a group
+// after the active one, which is not made again until it is active or
+// the model is saved: a datum on the solid there stays where it was
+// last found while groups before it change.
+func datumAfterActive(sk *sketch.Sketch, d sketch.Datum) bool {
+	e := sk.Entity(d.Entity)
+	if e == nil {
+		return false
+	}
+	g, active := sk.Group(e.Group), sk.Group(sk.Active)
+	return g != nil && active != nil && g.Order > active.Order
 }
 
 // showDatumMate shows the names picked for a mate, and the mates that

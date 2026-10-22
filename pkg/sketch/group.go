@@ -316,6 +316,9 @@ type Group struct {
 	// found when the group's entities were made, which the solid's
 	// regeneration, clearing Problem, then reports (face_workplane.go).
 	faceProblem string
+	// datumKind is what the frame of a datum on the solid stood for at
+	// the last regeneration (topo.DatumFrame, topo.EdgeFrame).
+	datumKind topo.DatumKind
 	// EdgeRadii are a fillet's edges that have a radius of their own,
 	// rather than ValB, in the order of Edges and then SolidEdges.
 	EdgeRadii []EdgeRadius

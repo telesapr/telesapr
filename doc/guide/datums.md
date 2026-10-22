@@ -3,7 +3,9 @@
 Examples: [`examples/scripts/datums`](../../examples/scripts/datums/datums.go), a block's top and
 bottom named and two blocks mated by those names;
 [`examples/scripts/datums_solid`](../../examples/scripts/datums_solid/datums_solid.go), a plate
-whose fillet's face is named and two plates mated by it.
+whose fillet's face is named and two plates mated by it;
+[`examples/scripts/datums_freeform`](../../examples/scripts/datums_freeform/datums_freeform.go),
+a lens-shaped block whose curved wall and rim are named, and two blocks laid wall to wall.
 
 A datum is a name a part gives what it offers others: a point, a workplane, a face, or a line,
 circle or arc as an axis. An assembly that links the part finds it as `link.name`, so a mate
@@ -19,13 +21,20 @@ selected on the model, the screen offers to name it:
   workplane is added after the active group that follows the face or edge each time the model
   changes: in a flat face it lies in the face; on a face round about an axis (a cylinder, a cone,
   a fillet) and on a circular edge its normal runs along the axis and its origin is on it; on a
-  straight edge its normal runs along the edge from its start. The datum names that workplane.
+  straight edge its normal runs along the edge from its start. On any other face, as a loft's,
+  a blend's or a sphere's, it touches the face at the face's middle, its normal out of the
+  solid; on any other edge, as a cubic's or a helix's, its normal runs along the edge at its
+  middle. The datum names that workplane, and the screen says which of these it is: `plane`,
+  `axis`, `line`, `face-point` or `edge-point`.
 
 Each datum row has [select], [rename], [delete] and [mate]. [mate] on two names, own or linked,
 the part that stays first, offers [flush], [concentric] and [hinge]: the mates the Assembly menu
-makes of a selection, made of the two names. A workplane mates as a face when flush and as an axis
-when concentric; through a link, a datum on a solid comes as the workplane's normal through its
-origin, which mates the same.
+makes of a selection, made of the two names. The Assembly menu's Mate Flush and Mate Concentric
+also take two such workplanes, or linked datums' normals, selected on the model. A workplane
+mates as a face when flush and as an axis when concentric; through a link, a datum on a solid
+comes as the workplane's normal through its origin, which mates the same. A flat face's datum is
+refused as an axis, its normal running through a corner of the face, and an edge's line, straight
+or curved, is refused as a plane.
 
 From a script:
 
@@ -36,9 +45,12 @@ doc.Datums.NameEdge("front", filleted.Solid().EdgeAt(api.V(20, 0, 0)))
 doc.Assembly.Concentric(doc.Datums.Get("a.corner"), doc.Datums.Get("b.corner"))
 ```
 
+A datum on a solid in a group after the active one stays where it was while the groups before
+it change, as every group after the active one does; the datums screen says so under its row. It
+follows its face again when its group is active, and when the model is saved, so a model linking
+the saved part finds it where the face is.
+
 ## What it does not do yet
 
-- A face neither flat nor round about one axis, and an edge neither straight nor round, can't be
-  named.
-- A datum on a solid follows its face only while it comes after the groups that make the face and
-  before the active group: groups after the active one are not made again.
+- A datum on a face neither flat nor round, or on an edge neither straight nor round, is taken at
+  the middle of the face or edge; a point picked on it isn't kept.
