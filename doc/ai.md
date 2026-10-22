@@ -122,7 +122,8 @@ MCP client ──stdin/stdout, MCP──> telesapr-cli mcp ──socket file, JS
 ```
 
 `telesapr-cli mcp` speaks MCP (`pkg/mcpserver`, on the official Go SDK) and passes each
-call to the application over the socket (`pkg/script/agent`), where it runs in the script
-console's interpreter (`pkg/ui/agent.go`). The model writes scripts against the same
+call to the application over the socket (`pkg/script/agent`), where it runs in an interpreter
+of its own kept to the allowed files, or in the script console's when that guard is off
+(`pkg/ui/agent.go`). The model writes scripts against the same
 `pkg/script/api` that scripts and the console use, so every feature with a scripting method
 is available to it with nothing added.
