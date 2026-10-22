@@ -16,31 +16,41 @@ row 7 DATUMS   (names of what the model offers a model linking it)
  6-99 64 64 0
 row 9    (none)
  0-99 64 61 0
-row 12    select a point, workplane, face or axis to name it
+row 12    select a point, workplane, face, edge or axis to name it
  0-99 64 64 0
 row 15 linked by g003-tile
  0-18 74 64 0
  19-99 64 64 0
-row 17    g003-tile.top            [select]
+row 17    g003-tile.top            [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 0 1 0
- 36-99 64 64 0
-row 19    g003-tile.corner         [select]
+ 36-36 64 64 0
+ 37-42 6c 64 109 0 1 0
+ 43-99 64 64 0
+row 19    g003-tile.corner         [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 1 1 0
- 36-99 64 64 0
+ 36-36 64 64 0
+ 37-42 6c 64 109 1 1 0
+ 43-99 64 64 0
 row 22 linked by g004-tile
  0-18 74 64 0
  19-99 64 64 0
-row 24    g004-tile.top            [select]
+row 24    g004-tile.top            [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 2 1 0
- 36-99 64 64 0
-row 26    g004-tile.corner         [select]
+ 36-36 64 64 0
+ 37-42 6c 64 109 2 1 0
+ 43-99 64 64 0
+row 26    g004-tile.corner         [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 3 1 0
- 36-99 64 64 0
-row 28 
+ 36-36 64 64 0
+ 37-42 6c 64 109 3 1 0
+ 43-99 64 64 0
+row 29    [mate] two names to make a mate of them
+ 0-99 64 64 0
+row 31 
  0-99 64 64 0
 row 0  home › datums   drawing / constraining in 3d
  0-0 64 64 0
@@ -64,26 +74,36 @@ row 12    [name the selected entity]
 row 15 linked by g003-tile
  0-18 74 64 0
  19-99 64 64 0
-row 17    g003-tile.top            [select]
+row 17    g003-tile.top            [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 0 1 0
- 36-99 64 64 0
-row 19    g003-tile.corner         [select]
+ 36-36 64 64 0
+ 37-42 6c 64 109 0 1 0
+ 43-99 64 64 0
+row 19    g003-tile.corner         [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 1 1 0
- 36-99 64 64 0
+ 36-36 64 64 0
+ 37-42 6c 64 109 1 1 0
+ 43-99 64 64 0
 row 22 linked by g004-tile
  0-18 74 64 0
  19-99 64 64 0
-row 24    g004-tile.top            [select]
+row 24    g004-tile.top            [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 2 1 0
- 36-99 64 64 0
-row 26    g004-tile.corner         [select]
+ 36-36 64 64 0
+ 37-42 6c 64 109 2 1 0
+ 43-99 64 64 0
+row 26    g004-tile.corner         [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 3 1 0
- 36-99 64 64 0
-row 28 
+ 36-36 64 64 0
+ 37-42 6c 64 109 3 1 0
+ 43-99 64 64 0
+row 29    [mate] two names to make a mate of them
+ 0-99 64 64 0
+row 31 
  0-99 64 64 0
 row 0  home › datums   drawing / constraining in 3d
  0-0 64 64 0
@@ -100,31 +120,41 @@ row 7 DATUMS   (names of what the model offers a model linking it)
  6-99 64 64 0
 row 9    (none)
  0-99 64 61 0
-row 12    select a point, workplane, face or axis to name it
+row 12    select a point, workplane, face, edge or axis to name it
  0-99 64 64 0
 row 15 linked by g003-tile
  0-18 74 64 0
  19-99 64 64 0
-row 17    g003-tile.top            [select]
+row 17    g003-tile.top            [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 0 1 0
- 36-99 64 64 0
-row 19    g003-tile.corner         [select]
+ 36-36 64 64 0
+ 37-42 6c 64 109 0 1 0
+ 43-99 64 64 0
+row 19    g003-tile.corner         [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 1 1 0
- 36-99 64 64 0
+ 36-36 64 64 0
+ 37-42 6c 64 109 1 1 0
+ 43-99 64 64 0
 row 22 linked by g004-tile
  0-18 74 64 0
  19-99 64 64 0
-row 24    g004-tile.top            [select]
+row 24    g004-tile.top            [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 2 1 0
- 36-99 64 64 0
-row 26    g004-tile.corner         [select]
+ 36-36 64 64 0
+ 37-42 6c 64 109 2 1 0
+ 43-99 64 64 0
+row 26    g004-tile.corner         [select] [mate]
  0-27 64 64 0
  28-35 6c 64 108 3 1 0
- 36-99 64 64 0
-row 28 
+ 36-36 64 64 0
+ 37-42 6c 64 109 3 1 0
+ 43-99 64 64 0
+row 29    [mate] two names to make a mate of them
+ 0-99 64 64 0
+row 31 
  0-99 64 64 0
 save
 telesapr 2
