@@ -5235,7 +5235,7 @@
 					},
 					"Thread": {
 						"decl": "func (m FeaturesMenu) Thread(circle Entity, o ThreadOptions) (g Group)",
-						"text": "Thread makes a screw thread on a circle or an arc, about its axis\nand from its plane, as Features \u003e Screw Thread does: four groups,\na sketch and a lathe that turn the part down (or bore it), and a\nridge sketch and a helix that sweeps it. It returns the helix group,\nwhich becomes active; its Check says whether the solid came out\nsound at the chord tolerance of the moment."
+						"text": "Thread makes a screw thread on a circle or an arc, about its axis\nand from its plane, as Features \u003e Screw Thread does: four groups,\na sketch and a lathe that turn the part down (or bore it), and a\nridge sketch and a helix that sweeps it, then with LevelStarts a\nridge sketch and a helix per further start. It returns the helix\ngroup, which keeps what made the thread (AsThread); the thread's last\ngroup becomes active. Its Check says whether the solid came out sound\nat the chord tolerance of the moment."
 					},
 					"Translate": {
 						"decl": "func (m FeaturesMenu) Translate(n int, delta Vec, name string) Group",
@@ -6662,16 +6662,16 @@
 				}
 			},
 			"ThreadGroup": {
-				"text": "ThreadGroup is the view of a screw thread, by its helix group, the\nlast of the four that Features.Thread makes: what it was made with,\nto read and to change as one.",
+				"text": "ThreadGroup is the view of a screw thread, by its helix group, the\nfourth of the groups that Features.Thread makes: what it was made\nwith, to read and to change as one.",
 				"kind": "struct",
 				"methods": {
 					"Edit": {
 						"decl": "func (v ThreadGroup) Edit(o ThreadOptions)",
-						"text": "Edit makes the thread again with the options o, in one step, as the\nthread's screen in the window does: its four groups are drawn again,\nkeeping their handles. A Designation of \"\" keeps the thread's, and a\nLength of 0 (with no LengthExpr) its length. Options gives what o\nstarts from:\n\n\to := t.Options()\n\to.Designation, o.Crest = \"M8x1\", \"rounded\"\n\tt.Edit(o)"
+						"text": "Edit makes the thread again with the options o, in one step, as the\nthread's screen in the window does: its groups are drawn again,\nkeeping their handles (those of further level starts only while\nthere are as many). A Designation of \"\" keeps the thread's, and a\nLength of 0 (with no LengthExpr) its length. Options gives what o\nstarts from:\n\n\to := t.Options()\n\to.Designation, o.Crest = \"M8x1\", \"rounded\"\n\tt.Edit(o)"
 					},
 					"Groups": {
 						"decl": "func (v ThreadGroup) Groups() (groups []Group)",
-						"text": "Groups are the thread's four groups: the sketch and the lathe that\nturn the part down or bore it, the sketch of the ridge, and the\nhelix that sweeps it."
+						"text": "Groups are the thread's groups: the sketch and the lathe that turn\nthe part down or bore it, the sketch of the ridge, and the helix that\nsweeps it; then, with level starts, a ridge sketch and a helix for\neach further start."
 					},
 					"Options": {
 						"decl": "func (v ThreadGroup) Options() (o ThreadOptions)",
@@ -7785,7 +7785,7 @@
 					},
 					"AddThread": {
 						"decl": "func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, error)",
-						"text": "AddThread makes a screw thread on the circle or arc he, along its normal, after the active group: a sketch and a lathe group that turn the part down to the root of the thread (or bore it out, for an internal thread), then a sketch of the ridge and a helix group that sweeps it."
+						"text": "AddThread makes a screw thread on the circle or arc he, along its normal, after the active group: a sketch and a lathe group that turn the part down to the root of the thread (or bore it out, for an internal thread), then a sketch of the ridge and a helix group that sweeps it; with level starts, a sketch and a helix for each further start."
 					},
 					"AddedPending": {
 						"decl": "func (sk *Sketch) AddedPending() core.HGroup",
@@ -7979,7 +7979,7 @@
 					},
 					"EditThread": {
 						"decl": "func (sk *Sketch) EditThread(hg core.HGroup, o ThreadOptions) (ThreadResult, error)",
-						"text": "EditThread makes the thread whose helix group is hg again with the options o: its sketches are drawn again in their planes, the requests they had taken first, their dimensions made anew, and the helix given its pitch and length."
+						"text": "EditThread makes the thread whose helix group is hg again with the options o: its sketches are drawn again in their planes, the requests they had taken first, their dimensions made anew, and the helices given their pitch and length."
 					},
 					"EntitiesToMap": {
 						"decl": "func (s *Sketch) EntitiesToMap() map[core.HEntity]core.Entity",
@@ -8681,7 +8681,7 @@
 					},
 					"ThreadGroups": {
 						"decl": "func (sk *Sketch) ThreadGroups(hg core.HGroup) ([]core.HGroup, error)",
-						"text": "ThreadGroups returns the thread's four groups, from its blank sketch to its helix, hg being the helix."
+						"text": "ThreadGroups returns the thread's groups, from its blank sketch to its last, hg being its first helix: four, then a sketch and a helix per further level start."
 					},
 					"ThreadLengthText": {
 						"decl": "func (sk *Sketch) ThreadLengthText(text string) (float64, string, error)",
@@ -8776,9 +8776,17 @@
 						"decl": "func (b ThreadBand) Holds(p geom.Vector, tol float64) bool",
 						"text": "Holds reports whether p lies in the band, within tol."
 					},
+					"Makes": {
+						"decl": "func (b ThreadBand) Makes(face uint32) bool",
+						"text": "Makes reports whether the thread made what face carries, a handle of an entity of the group that made it."
+					},
 					"OnCylinder": {
 						"decl": "func (b ThreadBand) OnCylinder(p geom.Vector, r, tol float64) bool",
 						"text": "OnCylinder reports whether p lies within tol of the cylinder of radius r about the band's axis, at any height."
+					},
+					"ToCrest": {
+						"decl": "func (b ThreadBand) ToCrest(p geom.Vector) geom.Vector",
+						"text": "ToCrest is p moved straight away from the axis, or towards it, onto the crest's cylinder."
 					}
 				}
 			},

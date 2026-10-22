@@ -2,6 +2,7 @@ package sketch
 
 import (
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -18,8 +19,20 @@ type ThreadBand struct {
 	Crest, Root  float64
 	Inner, Outer float64
 	Internal     bool
-	// Helix is the thread's helix group.
-	Helix core.HGroup
+	// RunOut is how far before Length the root starts to taper to the
+	// crest, 0 for none.
+	RunOut float64
+	// Helix is the thread's helix group, and Groups those of its groups
+	// that make its solid: what lies in the band and was made by
+	// another group, as a hole across the thread, is the part's own.
+	Helix  core.HGroup
+	Groups []core.HGroup
+}
+
+// Makes reports whether the thread made what face carries, a handle
+// of an entity of the group that made it.
+func (b ThreadBand) Makes(face uint32) bool {
+	return slices.Contains(b.Groups, core.HEntity{V: face}.Group())
 }
 
 // ThreadBands are the threads of the solid of group hg: those whose
@@ -63,7 +76,11 @@ func (sk *Sketch) threadBand(g *Group) (ThreadBand, bool) {
 	p := l.profile
 	b := ThreadBand{
 		Origin: sk.MustEntity(circle.Point[0]).PointGetNum(sk), Axis: axis, Length: t.Length,
-		Crest: p.CrestRadius, Root: p.RootRadius, Internal: t.Internal, Helix: g.H,
+		Crest: p.CrestRadius, Root: p.RootRadius, Internal: t.Internal, RunOut: t.RunOut, Helix: g.H,
+		Groups: []core.HGroup{g.H},
+	}
+	if tg, err := sk.threadGroupsOf(g.H); err == nil {
+		b.Groups = tg.solids()
 	}
 	b.Inner = math.Min(math.Min(p.CrestRadius, p.RootRadius), l.baseR)
 	b.Outer = math.Max(math.Max(p.CrestRadius, p.RootRadius), l.baseR)
@@ -83,4 +100,16 @@ func (b ThreadBand) Holds(p geom.Vector, tol float64) bool {
 func (b ThreadBand) OnCylinder(p geom.Vector, r, tol float64) bool {
 	d := p.Minus(b.Origin)
 	return math.Abs(d.Minus(b.Axis.ScaledBy(d.Dot(b.Axis))).Magnitude()-r) <= tol
+}
+
+// ToCrest is p moved straight away from the axis, or towards it, onto
+// the crest's cylinder.
+func (b ThreadBand) ToCrest(p geom.Vector) geom.Vector {
+	d := p.Minus(b.Origin)
+	along := b.Axis.ScaledBy(d.Dot(b.Axis))
+	r := d.Minus(along)
+	if r.Magnitude() == 0 {
+		return p
+	}
+	return b.Origin.Plus(along).Plus(r.WithMagnitude(b.Crest))
 }

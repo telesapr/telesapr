@@ -344,8 +344,9 @@ straight edge its normal runs along the edge from its start.
 | Assemble | `assemble` |
 | Intersection | `intersection` |
 
-A screw thread's helix group, the last of the four groups a thread is made of, keeps what made
-the thread, which drawing the thread again from new options starts from:
+A screw thread's first helix group, the fourth of the groups a thread is made of (a sketch and a
+helix follow it for each further start when its starts are level), keeps what made the thread,
+which drawing the thread again from new options starts from:
 
 ```
 thread {
@@ -361,6 +362,8 @@ thread {
   through                   # past the far end
   clearance <real>          # away from the mate, a length; left out for none
   crest <crest>             # truncated or rounded; left out for the standard crest
+  run-out <real>            # how far the root tapers to the crest before the shoulder, a length; left out for none
+  level-starts              # every start from the circle's plane, a ridge and a helix each
 }
 ```
 

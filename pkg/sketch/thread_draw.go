@@ -10,9 +10,33 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
-// threadGroups are the four groups of a thread, in their order.
+// threadGroups are the groups of a thread, in their order: four, then
+// a ridge's sketch and helix for each level start past the first.
 type threadGroups struct {
 	blank, lathe, profile, helix core.HGroup
+	// starts are the sketch and the helix of each start past the first.
+	starts [][2]core.HGroup
+}
+
+// all are the thread's groups in their order.
+func (tg threadGroups) all() []core.HGroup {
+	out := []core.HGroup{tg.blank, tg.lathe, tg.profile, tg.helix}
+	for _, st := range tg.starts {
+		out = append(out, st[0], st[1])
+	}
+	return out
+}
+
+// extra are the groups after the first helix.
+func (tg threadGroups) extra() []core.HGroup { return tg.all()[4:] }
+
+// solids are the thread's groups that make solids.
+func (tg threadGroups) solids() []core.HGroup {
+	out := []core.HGroup{tg.lathe, tg.helix}
+	for _, st := range tg.starts {
+		out = append(out, st[1])
+	}
+	return out
 }
 
 // threadDrawer draws a thread's sketches and dimensions into the
@@ -40,22 +64,24 @@ type threadDrawer struct {
 	// reuse are requests of the groups being drawn again, by group,
 	// in the order they were drawn.
 	reuse map[core.HGroup][]core.HRequest
-	// first is the first ridge's request whose point the others and
-	// the helix's length are measured from.
-	first     core.HRequest
-	firstMark int
+	// first is, by ridge sketch, the point of its first ridge that the
+	// others and its helix's length are measured from.
+	first map[core.HGroup]core.HEntity
 }
 
 // newThreadDrawer lays out the thread o on the circle he, which
 // CheckThread has passed.
-func (sk *Sketch) newThreadDrawer(he core.HEntity, o ThreadOptions, reuse map[core.HGroup][]core.HRequest) *threadDrawer {
+//
+// try picks among the planes for the ridges that keep their edges off
+// the joins, the best first (startTries).
+func (sk *Sketch) newThreadDrawer(he core.HEntity, o ThreadOptions, reuse map[core.HGroup][]core.HRequest, try int) *threadDrawer {
 	circle := sk.MustEntity(he)
 	l, err := o.layout(circle.CircleGetRadiusNum(sk))
 	if err != nil {
 		panic("sketch: thread laid out after its check failed: " + err.Error())
 	}
 	d := &threadDrawer{sk: sk, o: o, l: l, circle: circle, center: circle.Point[0], reuse: reuse,
-		along: 1, hand: 1}
+		along: 1, hand: 1, first: map[core.HGroup]core.HEntity{}}
 	d.origin = sk.MustEntity(d.center).PointGetNum(sk)
 	d.q = sk.MustEntity(circle.Normal).NormalGetNum(sk)
 	if o.Reverse {
@@ -79,8 +105,91 @@ func (sk *Sketch) newThreadDrawer(he core.HEntity, o ThreadOptions, reuse map[co
 	if past > quarter/2 {
 		start = (2*quarter - past) / 2
 	}
+	if o.levelStarts() || l.runOut {
+		start = startsClearOfJoins(d.crossings())[try]
+	}
 	d.start = start * d.along * d.hand
 	return d
+}
+
+// retries tells whether another plane for the ridges may make a
+// solid that failed: only one with level starts or a run-out picks
+// among several.
+func (d *threadDrawer) retries() bool { return d.o.levelStarts() || d.l.runOut }
+
+// crossings are the angles, from the ridge sketch's plane and the way
+// the thread turns, where a ridge's edge would cross a join of the
+// turned surface's quarters if that plane lay on one: each start's ends
+// and, with a run-out, where each flank crosses the circle at which the
+// root turns into the run-out's cone.
+func (d *threadDrawer) crossings() []float64 {
+	o, l := d.o, d.l
+	sweep := d.turns * 2 * math.Pi
+	n := o.Spec.NumStarts()
+	var out []float64
+	for i := range n {
+		// The start's turn about the axis and its ridge's middle along
+		// it: level starts are turned, stacked ones raised a pitch.
+		turn, z := 0.0, l.ridgeBottom+l.baseW/2
+		if o.levelStarts() {
+			turn = float64(i) * 2 * math.Pi / float64(n)
+		} else {
+			z += float64(i) * o.Spec.Pitch
+		}
+		if i == 0 || o.levelStarts() {
+			out = append(out, turn, turn+sweep)
+		}
+		if !l.runOut {
+			continue
+		}
+		w := l.profile.WidthAt(l.profile.RootRadius) / 2
+		for _, flank := range []float64{z - w, z + w} {
+			if at := (l.runFrom - flank) / o.Spec.Lead() * 2 * math.Pi; at > 0 && at < sweep {
+				out = append(out, turn+at)
+			}
+		}
+	}
+	return out
+}
+
+// startTries is how many planes for the ridges a thread with level
+// starts or a run-out tries: where the ridges' edges cross the
+// turned surface's cone, a Boolean that fails at one plane may not at
+// another.
+const startTries = 4
+
+// startsClearOfJoins are startTries angles in the first quarter turn
+// that, added to each of the angles, keep the nearest of them far from
+// a multiple of a quarter turn: the farthest first, then the farthest
+// of those an eighth of a quarter from the ones before.
+func startsClearOfJoins(angles []float64) []float64 {
+	const steps = 900
+	quarter := math.Pi / 2
+	margin := make([]float64, steps)
+	for k := range steps {
+		s := quarter * float64(k) / steps
+		margin[k] = quarter
+		for _, a := range angles {
+			margin[k] = min(margin[k], math.Abs(math.Remainder(s+a, quarter)))
+		}
+	}
+	var picked []float64
+	for range startTries {
+		best, bestAt := -1.0, 0.0
+		for k := range steps {
+			s := quarter * float64(k) / steps
+			if slices.ContainsFunc(picked, func(p float64) bool {
+				return math.Abs(math.Remainder(s-p, quarter)) < quarter/8
+			}) {
+				continue
+			}
+			if margin[k] > best {
+				best, bestAt = margin[k], s
+			}
+		}
+		picked = append(picked, bestAt)
+	}
+	return picked
 }
 
 // name is the name of the thread's group that does what.
@@ -208,8 +317,13 @@ func (d *threadDrawer) lengthDimension(typ core.ConstraintType, plus float64, pt
 }
 
 // drawBlank draws, in the active sketch, what the turning or the
-// boring takes away: a rectangle, revolved.
+// boring takes away: a rectangle, revolved; with a run-out, its side at
+// the root tapers to the crest at the thread's end.
 func (d *threadDrawer) drawBlank() {
+	if d.l.runOut {
+		d.drawTaperedBlank()
+		return
+	}
 	l, none := d.l, core.NoEntity
 	blank := []core.HRequest{
 		d.line(l.blankIn, l.blankBottom, l.blankIn, l.blankTop),
@@ -232,10 +346,61 @@ func (d *threadDrawer) drawBlank() {
 	d.dimension(core.ConstraintPtLineDistance, -l.blankBottom, d.center, none, blank[3].Entity(0), none)
 }
 
+// drawTaperedBlank is drawBlank with a run-out: five sides, the root's
+// side ending at the run-out's start and a cone from there to about the
+// crest at the thread's end, where the part's shoulder is.
+func (d *threadDrawer) drawTaperedBlank() {
+	l, none := d.l, core.NoEntity
+	var blank []core.HRequest
+	// rootSide is the side at the root, and top the side along the
+	// thread's end, whose lengths hold the cone.
+	var rootSide, top, inSide, outSide core.HRequest
+	if !d.o.Internal {
+		blank = []core.HRequest{
+			d.line(l.blankIn, l.blankBottom, l.blankIn, l.runFrom),
+			d.line(l.blankIn, l.runFrom, l.runTo, l.blankTop),
+			d.line(l.runTo, l.blankTop, l.blankOut, l.blankTop),
+			d.line(l.blankOut, l.blankTop, l.blankOut, l.blankBottom),
+			d.line(l.blankOut, l.blankBottom, l.blankIn, l.blankBottom),
+		}
+		rootSide, top, inSide, outSide = blank[0], blank[2], blank[0], blank[3]
+		d.dimension(core.ConstraintPtPtDistance, l.blankOut-l.runTo, top.Entity(1), top.Entity(2), none, none)
+	} else {
+		blank = []core.HRequest{
+			d.line(l.blankIn, l.blankBottom, l.blankIn, l.blankTop),
+			d.line(l.blankIn, l.blankTop, l.runTo, l.blankTop),
+			d.line(l.runTo, l.blankTop, l.blankOut, l.runFrom),
+			d.line(l.blankOut, l.runFrom, l.blankOut, l.blankBottom),
+			d.line(l.blankOut, l.blankBottom, l.blankIn, l.blankBottom),
+		}
+		rootSide, top, inSide, outSide = blank[3], blank[1], blank[0], blank[3]
+		d.dimension(core.ConstraintPtPtDistance, l.runTo-l.blankIn, top.Entity(1), top.Entity(2), none, none)
+	}
+	d.closeLoop(blank)
+	d.constrain(core.ConstraintVertical, none, none, inSide.Entity(0), none, false)
+	d.constrain(core.ConstraintVertical, none, none, outSide.Entity(0), none, false)
+	d.constrain(core.ConstraintHorizontal, none, none, top.Entity(0), none, false)
+	d.constrain(core.ConstraintHorizontal, none, none, blank[4].Entity(0), none, false)
+	if l.blankIn == 0 {
+		d.constrain(core.ConstraintPtOnLine, d.center, none, inSide.Entity(0), none, false)
+	} else {
+		d.dimension(core.ConstraintPtLineDistance, l.blankIn, d.center, none, inSide.Entity(0), none)
+	}
+	d.dimension(core.ConstraintPtLineDistance, l.blankOut, d.center, none, outSide.Entity(0), none)
+	d.lengthDimension(core.ConstraintPtLineDistance, l.blankTop-d.o.Length, d.center, none, top.Entity(0), none)
+	d.dimension(core.ConstraintPtLineDistance, -l.blankBottom, d.center, none, blank[4].Entity(0), none)
+	d.lengthDimension(core.ConstraintPtPtDistance, l.runFrom-l.blankBottom-d.o.Length,
+		rootSide.Entity(1), rootSide.Entity(2), none, none)
+}
+
 // drawProfile draws, in the active sketch, the ridges, one for each
-// start, a pitch apart.
+// start, a pitch apart; with level starts, each sketch has one.
 func (d *threadDrawer) drawProfile() {
-	for i := range d.o.Spec.NumStarts() {
+	n := d.o.Spec.NumStarts()
+	if d.o.levelStarts() {
+		n = 1
+	}
+	for i := range n {
 		z := d.l.ridgeBottom + float64(i)*d.o.Spec.Pitch + d.l.baseW/2
 		if d.l.profile.CrestRoundRadius > 0 {
 			d.drawRoundRidge(i, z)
@@ -312,30 +477,102 @@ func (d *threadDrawer) drawRoundRidge(i int, z float64) {
 func (d *threadDrawer) placeRidge(i int, hr core.HRequest, mark int, z float64) {
 	none := core.NoEntity
 	if i == 0 {
-		d.first, d.firstMark = hr, mark
+		d.first[d.sk.ActiveGroup()] = hr.Entity(mark)
 		d.dimension(core.ConstraintProjPtDistance, z, d.center, hr.Entity(mark), d.circle.Normal, none)
 		return
 	}
 	d.dimension(core.ConstraintProjPtDistance, float64(i)*d.o.Spec.Pitch,
-		d.first.Entity(d.firstMark), hr.Entity(mark), d.circle.Normal, none)
+		d.first[d.sk.ActiveGroup()], hr.Entity(mark), d.circle.Normal, none)
 }
 
 // setHelix gives the thread's helix group hg its pitch and its params
 // their values. The helix turns by four times its angle param while it
 // moves by twice its distance param; a right-hand thread turns the way
-// it moves, about the axis.
-func (d *threadDrawer) setHelix(g *Group, hg core.HGroup) {
+// it moves, about the axis. The first start's helix keeps what made
+// the thread.
+func (d *threadDrawer) setHelix(g *Group, hg core.HGroup, main bool) {
 	g.ValA, g.ValB, g.ExprB = 2, d.hand*d.o.Spec.Lead(), ""
 	d.sk.MustParam(hg.Param(3)).Val = d.along * d.hand * d.turns * 2 * math.Pi / 4
 	d.sk.MustParam(hg.Param(7)).Val = d.along * d.l.ridgeSweep / 2
-	g.Thread = GroupThread{Circle: d.circle.H, ThreadOptions: d.o}
+	g.Thread = GroupThread{}
+	if main {
+		g.Thread = GroupThread{Circle: d.circle.H, ThreadOptions: d.o}
+	}
 }
 
 // dimensionHelix holds the helix's length, without which it could be
 // dragged longer. The helix group must be active, its entities made.
 func (d *threadDrawer) dimensionHelix(hel *Group) {
-	mark := d.first.Entity(d.firstMark)
+	mark := d.first[hel.OpA]
 	d.lengthDimension(core.ConstraintProjPtDistance, d.l.ridgeSweep-d.o.Length,
 		hel.RemapEntity(mark, RemapLatheStart), hel.RemapEntity(mark, RemapLatheEnd),
 		d.circle.Normal, core.NoEntity)
+}
+
+// startAngle is the angle of the ridge sketch of start i, with level
+// starts: each a part of a turn on from the last.
+func (d *threadDrawer) startAngle(i int) float64 {
+	return d.start + float64(i)*2*math.Pi/float64(d.o.Spec.NumStarts())*d.along*d.hand
+}
+
+// startName is the name of what of start i: the first start's names
+// are plain.
+func startName(what string, i int) string {
+	if i == 0 {
+		return what
+	}
+	return what + "-" + strconv.Itoa(i+1)
+}
+
+// addSketch adds a sketch of the thread after the active group, in
+// its plane at angle, and makes it active.
+func (d *threadDrawer) addSketch(what string, angle float64) core.HGroup {
+	sk := d.sk
+	g := Group{Type: GroupDrawingWorkplane, Subtype: GroupWorkplaneByPointOrtho}
+	d.placeSketch(&g, what, angle)
+	gg := sk.addGroupAfterActive(g)
+	gg.ActiveWorkplane = gg.H.Entity(0)
+	return gg.H
+}
+
+// addSolid adds a solid group of the thread, of the active sketch,
+// about the circle's axis.
+func (d *threadDrawer) addSolid(g Group, what string, how CombineAs) *Group {
+	sk := d.sk
+	g.OpA = sk.ActiveGroup()
+	g.Predef.Origin = d.center
+	g.Predef.EntityB = d.circle.Normal
+	g.MeshCombine = how
+	d.nameSolid(&g, what)
+	return sk.addGroupAfterActive(g)
+}
+
+// addHelix adds the helix group that sweeps the active sketch's ridge,
+// and holds its length.
+func (d *threadDrawer) addHelix(what string, main bool) *Group {
+	sk := d.sk
+	helix := Group{Type: GroupHelix, Subtype: GroupOneSided}
+	hg := sk.nextGroupHandle()
+	sk.Params = append(sk.Params, core.Param{H: hg.Param(3)}, core.Param{H: hg.Param(7)})
+	d.setHelix(&helix, hg, main)
+	hel := d.addSolid(helix, what, CombineUnion)
+	if hel.H != hg {
+		panic("sketch: thread helix group got another handle")
+	}
+	d.dimensionHelix(hel)
+	return hel
+}
+
+// addStarts adds, after the active group, a ridge's sketch and helix
+// for each level start past the first.
+func (d *threadDrawer) addStarts(tg *threadGroups) {
+	tg.starts = nil
+	if !d.o.levelStarts() {
+		return
+	}
+	for i := 1; i < d.o.Spec.NumStarts(); i++ {
+		p := d.addSketch(startName("profile", i), d.startAngle(i))
+		d.drawProfile()
+		tg.starts = append(tg.starts, [2]core.HGroup{p, d.addHelix(startName("thread", i), false).H})
+	}
 }

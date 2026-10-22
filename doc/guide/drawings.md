@@ -18,9 +18,12 @@ View > Drawing Sheet shows its screen:
 - **hidden edges**, drawn dashed in the orthographic views;
 - **threads as modelled**: a screw thread (Features > Screw Thread) is drawn by the drafting
   convention unless this is ticked: a plain cylinder at its crest with solid lines at its ends,
-  its root in thin lines along it in a view across the axis and three quarters of a thin circle in
-  a view along it; a nut's root, in the part, is hidden like any edge behind material. Ticked, the
-  ridge is drawn turn by turn. In a script, `d.ModelledThreads`;
+  its root in thin lines along it in a view across the axis or askew to it (slanting out to the
+  crest over a run-out) and three quarters of a thin circle in a view along it; a nut's root, in
+  the part, is hidden like any edge behind material. What another group made in the thread, as a
+  hole across it, is drawn on the crest's cylinder. In a section the cut face reaches the crest,
+  hatched to it, with the root a thin line on it. Ticked, the ridge is drawn turn by turn. In a
+  script, `d.ModelledThreads`;
 - the **title block**: title, drawn by, drawing number, revision, material and company; the scale,
   sheet and projection are filled in.
 
@@ -91,5 +94,5 @@ millimetres from the bottom left; empty, the standard ones are placed.
 
 Dimensions are not of vertices or angles, nor between curved faces; a distance from a face to a
 curved edge is refused. A section's half beyond is drawn with hidden edges as the
-drawing has them, and its threads turn by turn; a section is of the whole solid, not a broken-out or offset section. The text is the vector font's, which has no colon: the title
+drawing has them; a section is of the whole solid, not a broken-out or offset section. The text is the vector font's, which has no colon: the title
 block writes a scale of 1:2 as 1/2.

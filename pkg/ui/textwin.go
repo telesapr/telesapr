@@ -151,6 +151,7 @@ const (
 	editThreadDesignation Edit = 900
 	editThreadLength      Edit = 901
 	editThreadClearance   Edit = 902
+	editThreadRunOut      Edit = 903
 	// For the parameter table (an extension)
 	editParameterAdd  Edit = 910
 	editParameterExpr Edit = 911

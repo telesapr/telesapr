@@ -208,6 +208,12 @@ func (w *scriptWriter) threadCall(g *sketch.Group) (string, core.HGroup) {
 	if t.Crest != "" && t.Crest != "standard" {
 		fields = append(fields, fmt.Sprintf("Crest: %q", t.Crest))
 	}
+	if t.RunOut != 0 {
+		fields = append(fields, "RunOut: "+num(t.RunOut))
+	}
+	if t.LevelStarts {
+		fields = append(fields, "LevelStarts: true")
+	}
 	// The thread is cut on the solid of the group before its sketch.
 	hs, _ := sk.ThreadGroups(g.H)
 	from := core.HGroup{}

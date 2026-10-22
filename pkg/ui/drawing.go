@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"math"
+	"slices"
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -176,7 +177,10 @@ func clipEdges(el *srf.SEdgeList, keep srf.HalfSpace) srf.SEdgeList {
 // up by the plane offset mm toward the viewer from the solid's middle,
 // as viewEdges gives a view's: the half beyond, with the cut face's
 // outline and a hatch every hatch mm across it, which nothing hides.
-func (ss *Application) sectionEdges(g *sketch.Group, right, up geom.Vector, offset, hatch float64, hidden bool) srf.SEdgeList {
+// Its threads are drawn by the convention unless modelled says not to:
+// the cut face reaches the crest, the hatch with it, and the root is a
+// thin line on it (drawing_thread.go).
+func (ss *Application) sectionEdges(g *sketch.Group, right, up geom.Vector, offset, hatch float64, hidden, modelled bool) srf.SEdgeList {
 	g.GenerateDisplayItems(ss.SK)
 	keep := sectionPlane(&g.DisplayMesh, right, up, offset)
 	var outlines srf.SEdgeList
@@ -185,11 +189,44 @@ func (ss *Application) sectionEdges(g *sketch.Group, right, up geom.Vector, offs
 	m := clipMesh(&g.DisplayMesh, keep)
 	var capPoly srf.SPolygon
 	g.DisplayMesh.MakeSectionPolygonInto(keep, &capPoly)
+	var bands []sketch.ThreadBand
+	if !modelled {
+		bands = ss.SK.ThreadBands(g.H)
+	}
+	var extra, always srf.SEdgeList
+	if len(bands) > 0 {
+		var conv srf.SMesh
+		conv, extra, always = threadConvention(&sel, &m, bands, right, up)
+		m = clipMesh(&conv, keep)
+		// The roots of the view are its silhouettes, which the cut's own
+		// take the place of.
+		notRoot := func(el *srf.SEdgeList) srf.SEdgeList {
+			el.Edges = slices.DeleteFunc(el.Edges, func(e srf.SEdge) bool { return e.AuxA == core.StyleDimSolid })
+			return clipEdges(el, keep)
+		}
+		extra, always = notRoot(&extra), notRoot(&always)
+		// A plane through a thread's axis passes through the corners of
+		// its turned surfaces' quarters, where the section's contours
+		// come apart; a tenth of a micrometre off it they close, and are
+		// laid back on it.
+		capPoly.Clear()
+		nudged := keep
+		nudged.D += 1e-4
+		g.DisplayMesh.MakeSectionPolygonInto(nudged, &capPoly)
+		for ci := range capPoly.Contours {
+			for i := range capPoly.Contours[ci].Points {
+				p := &capPoly.Contours[ci].Points[i].P
+				*p = p.Minus(keep.N.WithMagnitude(1).ScaledBy(1e-4 / keep.N.Magnitude()))
+			}
+		}
+		threadCut(&capPoly, bands, keep.N)
+		threadCutRoots(&always, bands, keep)
+	}
 	// The cut face hides what is beyond it.
 	var capMesh srf.SMesh
 	capPoly.TriangulateInto(&capMesh)
 	m.Triangles = append(m.Triangles, capMesh.Triangles...)
-	out := ss.hiddenLineEdges(sel, &m, right, up, hidden)
+	out := ss.hiddenLineEdgesWith(sel, extra, always, &m, right, up, hidden)
 
 	n := right.Cross(up)
 	var front srf.SEdgeList
@@ -353,7 +390,7 @@ func (ss *Application) drawExtras(sheet *srf.SEdgeList, g *sketch.Group, d *sket
 	var extras []extra
 	for _, sec := range d.Sections {
 		r, u, _ := sketch.ViewDirection(sec.View)
-		el := ss.sectionEdges(g, vec(r), vec(u), sec.Offset, 3/scale, d.Hidden)
+		el := ss.sectionEdges(g, vec(r), vec(u), sec.Offset, 3/scale, d.Hidden, d.ModelledThreads)
 		lo, hi := box(&el)
 		extras = append(extras, extra{el, lo.Plus(hi).ScaledBy(0.5), [2]float64{scale * (hi.X - lo.X), scale * (hi.Y - lo.Y)}, scale})
 	}

@@ -29,14 +29,23 @@ takes:
 - **against the circle's normal**, to run the other way;
 - **crest**: **standard**, the flat crest the standards give; **truncated**, cut a quarter of the
   ridge's height lower; or **rounded**, an arc tangent to both flanks whose top is where the
-  standard crest is. A printed thread is stronger and mates more easily without the point.
+  standard crest is. A printed thread is stronger and mates more easily without the point;
+- **run-out**, how far before its shoulder the thread fades out, as a die leaves it: over that
+  length the turned or bored surface leaves the root and tapers to the crest (to a tenth of the
+  thread's depth short of it on a screw), so the ridge sinks into the part. 0 is none; a thread
+  through the far end has no shoulder and takes none;
+- **starts level**, offered for a thread of several starts: every start begins at the circle's
+  plane, each a ridge and a helix of its own turned a part of a turn from the last.
 
 "make the thread now" adds four groups: a sketch and a lathe that turn the part down or bore it,
-and a ridge sketch and a helix that sweeps it. Undo takes all four away at once.
+and a ridge sketch and a helix that sweeps it; with level starts, a ridge sketch and a helix for
+each further start after them. Undo takes them all away at once. The thread's last group is
+active afterwards.
 
-The helix group keeps what the thread was made with. Its screen has **[edit thread]**, which
-opens the same screen filled in from the thread: "make the thread again now" draws the four
-groups again from what it shows, in one step of undo. The groups keep their handles, and the
+The first helix group keeps what the thread was made with. Its screen has **[edit thread]**, which
+opens the same screen filled in from the thread: "make the thread again now" draws the
+groups again from what it shows, in one step of undo. The groups keep their handles (a level
+start's only while there are as many starts), and the
 sketches their lines where the thread keeps its shape, so later groups that use the thread stay
 attached; a ridge taken away with a start is reported as a broken reference. The groups can
 still be edited one by one, but an edit of the thread draws them again from its screen.
@@ -54,10 +63,22 @@ o.Designation, o.Crest, o.LengthExpr = "M8x1", "rounded", "len"
 t.Edit(o)
 ```
 
-Example: [`examples/scripts/threadedit`](../../examples/scripts/threadedit/threadedit.go).
+```go
+doc.Features.Thread(rod, api.ThreadOptions{Designation: "M8", Length: 12, RunOut: 3})
+doc.Features.Thread(lead, api.ThreadOptions{Designation: "M12xPh3P1", Length: 14, LevelStarts: true})
+```
 
-Several starts are swept by one helix, their ridges a pitch apart in the ridge sketch: that is a
-turn of 1/n between them, and leaves the first (n-1) pitches with fewer ridges.
+Examples: [`examples/scripts/threadedit`](../../examples/scripts/threadedit/threadedit.go),
+[`examples/scripts/threadrunout`](../../examples/scripts/threadrunout/threadrunout.go).
+
+Without level starts, several starts are swept by one helix, their ridges a pitch apart in the
+ridge sketch: that is a turn of 1/n between them, and leaves the first (n-1) pitches with fewer
+ridges.
+
+Where a ridge runs into the run-out's cone, the Boolean that joins them fails for some lengths
+(8 of 72 in the sweep, `TestThreadRunOutSweep`), after the thread has tried several planes for
+its ridges; the window then says the solid isn't sound, and a run-out a little longer or shorter
+usually puts it right.
 
 ## Not yet
 

@@ -455,9 +455,11 @@ func (m FeaturesMenu) SweepEdges(edges []SolidEdge, path []Entity, name string) 
 // Thread makes a screw thread on a circle or an arc, about its axis
 // and from its plane, as Features > Screw Thread does: four groups,
 // a sketch and a lathe that turn the part down (or bore it), and a
-// ridge sketch and a helix that sweeps it. It returns the helix group,
-// which becomes active; its Check says whether the solid came out
-// sound at the chord tolerance of the moment.
+// ridge sketch and a helix that sweeps it, then with LevelStarts a
+// ridge sketch and a helix per further start. It returns the helix
+// group, which keeps what made the thread (AsThread); the thread's last
+// group becomes active. Its Check says whether the solid came out sound
+// at the chord tolerance of the moment.
 func (m FeaturesMenu) Thread(circle Entity, o ThreadOptions) (g Group) {
 	d := m.d
 	d.change(func(sk *sketch.Sketch) {
@@ -474,7 +476,11 @@ func (m FeaturesMenu) Thread(circle Entity, o ThreadOptions) (g Group) {
 		if err != nil {
 			fail("%v", err)
 		}
-		d.h.Activate(res.Group)
+		hs, err := sk.ThreadGroups(res.Group)
+		if err != nil {
+			fail("%v", err)
+		}
+		d.h.Activate(hs[len(hs)-1])
 		g = Group{d, res.Group}
 	})
 	return g
