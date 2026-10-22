@@ -92,6 +92,9 @@ type System struct {
 	// written keeps the Jacobians WriteJacobian wrote, by what they
 	// were written from (jacobian_memo.go).
 	written jacobianMemo
+	// whole solves the system as one, not a component at a time; for a
+	// measure of what the components save.
+	whole bool
 }
 
 // AddParam adds an unknown, with the sketch param's value as its
@@ -793,8 +796,8 @@ func (s *System) Solve(g *Group, andFindBad, andFindFree, forceDofCheck bool) (h
 		rankOk, dof, _ = s.TestRank()
 	}
 
-	// And do the leftovers as one big system
-	if !s.NewtonSolve() {
+	// And do the leftovers, a connected component at a time.
+	if !s.newtonSolveComponents() {
 		how, bad = s.didntConverge(g, rankOk)
 		return how, dof, bad
 	}
