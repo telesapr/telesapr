@@ -6,6 +6,7 @@ import (
 	"math"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
@@ -131,6 +132,70 @@ func (g *Group) bandOf(sk *Sketch, w *srf.Wrap, sets []srf.SBezierLoopSet, overl
 	return sh, nil
 }
 
+// wrapOverlapsIn are the overlaps of wrapOverlaps that keep the part
+// of the band through the face within the wall under it, for an emboss,
+// or within the air over it, for an engraving: a band reaching through
+// a wall thinner than its overlap would stand out of the wall's other
+// side. Where the wall is thinner than all of them, the one overlap is
+// half the wall; where the wall is too thin to hold even that, an
+// error.
+func (g *Group) wrapOverlapsIn(solid *srf.SShell, w *srf.Wrap, sets []srf.SBezierLoopSet) ([]float64, error) {
+	h := g.ValB
+	room, at := wrapRoom(solid, w, sets, g.MeshCombine == CombineDifference)
+	var out []float64
+	for _, o := range wrapOverlaps {
+		if o*h <= room/2 {
+			out = append(out, o)
+		}
+	}
+	if len(out) > 0 {
+		return out, nil
+	}
+	if room/2 > 2*solid.Tol.ChordTolMm() {
+		return []float64{room / 2 / h}, nil
+	}
+	what := "wall under the emboss"
+	if g.MeshCombine == CombineDifference {
+		what = "room over the engraving, before the solid again,"
+	}
+	return nil, fmt.Errorf("the %s is %.3g mm at its thinnest, at (%.3f, %.3f, %.3f): too little to join the band through",
+		what, room, at.X, at.Y, at.Z)
+}
+
+// wrapRoom is the least distance from the face under the wrapped sets
+// to the solid's surface beyond, along the face's normal: inwards,
+// across the wall to where the ray leaves the solid, or with out,
+// outwards, across the air over the face to where it enters the solid
+// again; +Inf where the rays meet nothing. It is measured on the
+// solid's mesh, and a ray from the face that meets the face's own
+// triangles, the other way, passes them.
+func wrapRoom(solid *srf.SShell, w *srf.Wrap, sets []srf.SBezierLoopSet, out bool) (float64, geom.Vector) {
+	var m srf.SMesh
+	solid.TriangulateInto(&m)
+	tree := srf.NewMeshTree(&m)
+	room, at := math.Inf(1), geom.Vector{}
+	pts, ns := w.FacePoints(sets)
+	for i, p := range pts {
+		dir := ns[i]
+		if !out {
+			dir = dir.ScaledBy(-1)
+		}
+		tmin := geom.LengthEps
+		for range 4 {
+			hit, ok := tree.Ray(p, dir, tmin, -1)
+			if !ok || hit.T >= room {
+				break
+			}
+			if (hit.Cos > 0) != out {
+				room, at = hit.T, p
+				break
+			}
+			tmin = hit.T + geom.LengthEps
+		}
+	}
+	return room, at
+}
+
 // wrapNamer names a band's surfaces from the group, in order, so that a
 // band made loop set by loop set names its faces as the whole one does.
 type wrapNamer struct {
@@ -164,7 +229,12 @@ func (g *Group) generateWrapShell(sk *Sketch) {
 		g.setProblem(nil, "%v", err)
 		return
 	}
-	band, err := g.bandOf(sk, w, sets, wrapOverlaps[0])
+	overlaps, err := g.wrapOverlapsIn(&prevs, w, sets)
+	if err != nil {
+		g.setProblem(nil, "%v", err)
+		return
+	}
+	band, err := g.bandOf(sk, w, sets, overlaps[0])
 	if err != nil {
 		g.setProblem(nil, "%v", err)
 		return
@@ -175,7 +245,7 @@ func (g *Group) generateWrapShell(sk *Sketch) {
 	out.Tol = sk.tol
 	g.generateForBooleanShell(&prevs, band, &out, g.MeshCombine)
 	if out.BooleanFailed {
-		out = g.wrapBySets(sk, &prevs, w, sets)
+		out = g.wrapBySets(sk, &prevs, w, sets, overlaps)
 	}
 	if out.BooleanFailed {
 		// Refused rather than left unsound: the solid so far passes
@@ -189,15 +259,15 @@ func (g *Group) generateWrapShell(sk *Sketch) {
 }
 
 // wrapBySets combines the band with prev loop set by loop set, each
-// reaching through the face as far as each of wrapOverlaps in turn,
-// until it joins.
-func (g *Group) wrapBySets(sk *Sketch, prev *srf.SShell, w *srf.Wrap, sets []srf.SBezierLoopSet) srf.SShell {
+// reaching through the face as far as each of overlaps in turn, until
+// it joins.
+func (g *Group) wrapBySets(sk *Sketch, prev *srf.SShell, w *srf.Wrap, sets []srf.SBezierLoopSet, overlaps []float64) srf.SShell {
 	cur := *prev
 	namer := &wrapNamer{g: g}
 	for i := range sets {
 		var out srf.SShell
 		start := namer.next
-		for _, o := range wrapOverlaps {
+		for _, o := range overlaps {
 			namer.next = start
 			band, err := g.bandOf(sk, w, sets[i:i+1], o)
 			if err != nil {

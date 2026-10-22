@@ -363,3 +363,60 @@ func (w *Wrap) capPatch(sbls *SBezierLoopSet, h0, h1 float64) (SSurface, error) 
 	gen := SBezierFrom2(w.at(0, alLo), w.at(0, alHi))
 	return FromRevolutionOf(&gen, w.Face.Point, w.Face.Axis, thLo, thHi, 0, 0), nil
 }
+
+// wrapGrid is how many points across and along a loop set's extent
+// FacePoints tries inside it.
+const wrapGrid = 12
+
+// FacePoints are points of the face under the loop sets sets once
+// wrapped, each with the face's outward normal there: points along
+// every curve, and a grid of points inside the loops, out of their
+// holes. They are where a band wrapped from sets crosses the face.
+func (w *Wrap) FacePoints(sets []SBezierLoopSet) (pts, normals []geom.Vector) {
+	add := func(p geom.Vector) {
+		if _, _, ok := w.polar(p); !ok {
+			return
+		}
+		f := w.onFace(p)
+		pts = append(pts, f)
+		normals = append(normals, w.Face.normalAt(f).ScaledBy(w.Face.Outward))
+	}
+	for i := range sets {
+		n := sets[i].Normal
+		if n.Magnitude() < geom.LengthEps {
+			continue
+		}
+		n = n.WithMagnitude(1)
+		u, v := n.NormalDir(0).WithMagnitude(1), n.NormalDir(1).WithMagnitude(1)
+		uLo, uHi, vLo, vHi := math.Inf(1), math.Inf(-1), math.Inf(1), math.Inf(-1)
+		var off float64
+		for _, l := range sets[i].loops() {
+			for _, b := range l.Curves {
+				for k := range 8 {
+					p := b.PointAt(float64(k) / 8)
+					add(p)
+					uLo, uHi = min(uLo, p.Dot(u)), max(uHi, p.Dot(u))
+					vLo, vHi = min(vLo, p.Dot(v)), max(vHi, p.Dot(v))
+					off = p.Dot(n)
+				}
+			}
+		}
+		if math.IsInf(uLo, 0) {
+			continue
+		}
+		var poly SPolygon
+		sets[i].MakePwlInto(&poly, Tolerance{})
+		poly.Normal = n
+		for a := 1; a < wrapGrid; a++ {
+			for b := 1; b < wrapGrid; b++ {
+				su := uLo + (uHi-uLo)*float64(a)/wrapGrid
+				sv := vLo + (vHi-vLo)*float64(b)/wrapGrid
+				p := u.ScaledBy(su).Plus(v.ScaledBy(sv)).Plus(n.ScaledBy(off))
+				if poly.ContainsPoint(p) {
+					add(p)
+				}
+			}
+		}
+	}
+	return pts, normals
+}

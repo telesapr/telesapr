@@ -93,6 +93,42 @@ func TestWrapEmbossRectangle(t *testing.T) {
 	}
 }
 
+// tubeBody is a tube of outer radius r and wall wall on the z axis from
+// z = 0 to height, and its outer face.
+func tubeBody(d *api.Doc, r, wall, height float64) (api.Group, api.SolidFace) {
+	d.Sketch.Circle(api.V(0, 0, 0), r)
+	d.Sketch.Circle(api.V(0, 0, 0), r-wall)
+	ex := d.Features.Extrude(height, "")
+	return ex, ex.Solid().FaceAt(api.V(r, 0, height/2))
+}
+
+// A band reaches through the face it is joined to by a part of its
+// height; on a wall thinner than that it stood out of the wall's inside.
+// It reaches no further than half the wall, and where the wall is too
+// thin even for that the group says so.
+func TestWrapEmbossThinWall(t *testing.T) {
+	d := api.New()
+	ex, face := tubeBody(d, 10, 0.3, 40)
+	base := ex.Analyze().Check().Volume
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	d.Sketch.Rect(api.V(-5, 0, 10), api.V(5, 0, 30))
+	w := d.Features.Emboss(face, 4, "")
+	if p := w.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	if r := w.Analyze().Check(); !r.Sound() || !nearRel(r.Volume-base, wrappedBand(200, 10, 0, 4), bandTol) {
+		t.Fatalf("embossed on a thin wall: %s, added %g, want %g", r.String(), r.Volume-base, wrappedBand(200, 10, 0, 4))
+	}
+
+	d = api.New()
+	_, face = tubeBody(d, 10, 0.004, 40)
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	d.Sketch.Rect(api.V(-5, 0, 10), api.V(5, 0, 30))
+	if w := d.Features.Emboss(face, 1, ""); !strings.Contains(w.Problem(), "wall under the emboss") {
+		t.Fatalf("on a wall of 0.004: %q", w.Problem())
+	}
+}
+
 func TestWrapEngraveCircle(t *testing.T) {
 	d := api.New()
 	// The circle's pocket is small beside the cylinder's chords.
