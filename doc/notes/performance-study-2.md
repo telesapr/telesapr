@@ -400,7 +400,12 @@ benchmark run at two counts and the difference taken), which the load does not m
   13.4 M with them.
 
 The rover regenerated from the command line is the same file and the same 33.0 G instructions:
-its time is the solids'. Left: recommendations 1, 2, 4, 5, 7, 8, 10 and 14 to 18, none of
+its time is the solids'. The window's drag of a zigzag held by horizontals and verticals, which
+substitution solves whole (`BenchmarkDrag150`, host quiet, 3000 steps), went 1.40 → 1.65 ms a
+step: the solve itself is about the same (0.86 → 0.97 s of the run), the rest is the
+collector's, scanning the systems and Jacobians now kept for every group. A sketch solved by
+substitution gains nothing from them; not keeping a group's system where nothing is left to
+write after substitution would take that back. Left: recommendations 1, 2, 4, 5, 7, 8, 10 and 14 to 18, none of
 which the modelling upgrades asked for; the two rank tests of each solve are now most of a drag
 step's solve, and 2 is what would take them down.
 
