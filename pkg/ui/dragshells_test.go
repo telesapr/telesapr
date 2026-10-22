@@ -152,7 +152,9 @@ func TestDragSolidsLate(t *testing.T) {
 		if ss.shellJobs.job != first {
 			break
 		}
-		p.RunDueTimers(10)
+		// One round of the timers at a time, so that the next job is
+		// looked at only on the next round.
+		p.RunDueTimers(1)
 		time.Sleep(time.Millisecond)
 	}
 	w.Render()
