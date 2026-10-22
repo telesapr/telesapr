@@ -22,6 +22,13 @@ var errNotMitred = errors.New("topo: the chains don't meet in mitres")
 // another's in a mitre; errNotMitred where they don't. The chains'
 // patches get origins origin, origin+1, and so on.
 func rollingBallFillets(sh *srf.SShell, t *Topology, edges []int, r float64, origin uint32, flat bool) error {
+	return rollingBallFilletsAt(sh, t, edges, r, origin, flat, false)
+}
+
+// rollingBallFilletsAt is rollingBallFillets; with partial, a chain's end
+// that meets no other chain ends at its face as a lone chain's does
+// (linkMitresAt).
+func rollingBallFilletsAt(sh *srf.SShell, t *Topology, edges []int, r float64, origin uint32, flat, partial bool) error {
 	var rbs []*rollingBall
 	taken := map[int]bool{}
 	for _, e := range edges {
@@ -37,7 +44,7 @@ func rollingBallFillets(sh *srf.SShell, t *Topology, edges []int, r float64, ori
 		}
 		rbs = append(rbs, rb)
 	}
-	if !linkMitres(rbs) {
+	if !linkMitresAt(rbs, partial) {
 		return errNotMitred
 	}
 	if flat {
@@ -131,6 +138,38 @@ func filletMitredPicks(sh *srf.SShell, t *Topology, picks []FilletPick, r float6
 	var cp srf.SShell
 	cp.MakeFromCopyOf(sh)
 	if err := rollingBallFillets(&cp, t, edges, r, origin, flat); err != nil {
+		return err
+	}
+	*sh = cp
+	return nil
+}
+
+// filletCornerPicks rounds picks, all of radius r, that meet at corners
+// where the third edge stays sharp, some of them the rolling ball's (an
+// edge ending on a curved face): every pick a rolling-ball chain, the
+// chains meeting in mitres there (rollingmitre.go) and their other ends
+// at their faces, flat or curved, as a lone chain's. It is what
+// filletApart refuses, its picks' fillets meeting; errNotMitred where
+// the picks don't meet so. The shell is changed only when it succeeds.
+func filletCornerPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) error {
+	t, err := Build(sh)
+	if err != nil {
+		return errNotMitred
+	}
+	edges := make([]int, 0, len(picks))
+	for _, p := range picks {
+		if p.R != 0 && p.R != r {
+			return errNotMitred
+		}
+		e, err := t.pickEdge(p)
+		if err != nil {
+			return errNotMitred
+		}
+		edges = append(edges, e)
+	}
+	var cp srf.SShell
+	cp.MakeFromCopyOf(sh)
+	if err := rollingBallFilletsAt(&cp, t, edges, r, origin, flat, true); err != nil {
 		return err
 	}
 	*sh = cp

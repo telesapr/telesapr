@@ -63,6 +63,12 @@ type rbEnd struct {
 	// shared is the mitre, the last section of both ends, once one of
 	// them is fitted: the other copies it.
 	shared *rbSection
+	// fade marks an end where the crease fades out part way along the
+	// edge, at p: the faces turn less and less, and the fillet narrows to
+	// nothing. It ends there with no face of its own, its last section
+	// closed by the two short lines from its feet to p.
+	fade bool
+	p    geom.Vector
 }
 
 // rbEndAt is the flat face the chain, through edge at vertex v between
@@ -267,6 +273,7 @@ func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error
 			return sec, 0, err
 		}
 		sec.s = (ss[0] + ss[1] + ss[2]) / 3
+		sec.footS = [2]float64{ss[0], ss[1]}
 		inner := math.Max(ss[0], math.Max(ss[1], ss[2]))
 		if k == 1 {
 			inner = math.Min(ss[0], math.Min(ss[1], ss[2]))
@@ -329,6 +336,7 @@ func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error
 	}
 	rb.endS[k] = ss
 	sec.s = (ss[0] + ss[1] + ss[2]) / 3
+	sec.footS = [2]float64{ss[0], ss[1]}
 	if end.mitre {
 		// As the sections near it are reckoned (mitreSection).
 		ms, err := rb.mitreRoots(k)
@@ -417,6 +425,32 @@ func (rb *rollingBall) endDerivative(k int) ([]geom.Vector4, error) {
 	return out, nil
 }
 
+// fadeDerivative is the derivative along the edge, in homogeneous
+// coordinates, of the ball's sections at end k where the crease fades
+// out (rbEnd.fade), one-sided, from sections in from it.
+func (rb *rollingBall) fadeDerivative(k int) ([]geom.Vector4, error) {
+	s, in := 0.0, 1.0
+	if k == 1 {
+		s, in = rb.length, -1
+	}
+	h := math.Min(rb.r/16, rb.length/256)
+	var hs [3][]geom.Vector4
+	for i := range 3 {
+		sec, err := rb.section(s + in*float64(i)*h)
+		if err != nil {
+			return nil, err
+		}
+		hs[i] = homog(sec.arc)
+	}
+	out := make([]geom.Vector4, len(hs[0]))
+	for i := range out {
+		// (f(s+2h) - 4 f(s+h) + 3 f(s)) / -2h, with h signed inwards.
+		d := hs[0][i].ScaledBy(-3).Plus(hs[1][i].ScaledBy(4)).Minus(hs[2][i])
+		out[i] = d.ScaledBy(1 / (2 * in * h))
+	}
+	return out, nil
+}
+
 // blendOpen is blend for an open chain.
 func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossing, error) {
 	if rb.mitred() && rb.ends[0].mate == rb {
@@ -429,6 +463,11 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	var deriv [2][]geom.Vector4
 	var at0 [2]rbSection
 	for k, end := range rb.ends {
+		if end.fade {
+			// No face: the ball's own sections run to the end.
+			inner[k] = rb.length * float64(k)
+			continue
+		}
 		if end.n.Dot(beyond[k]) < 0 {
 			end.n, end.d, end.sign = end.n.ScaledBy(-1), -end.d, -end.sign
 		}
@@ -454,6 +493,9 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	// in the oblique cut's spread.
 	var ramp [2]float64
 	for k, end := range rb.ends {
+		if end.fade {
+			continue
+		}
 		theta := math.Acos(math.Min(1, end.n.Dot(beyond[k])))
 		ramp[k] = math.Min(4*rb.r*theta+gap, avail/3)
 	}
@@ -462,7 +504,12 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	quartic := rb.anyCurvedEnd() || rb.fitCuts
 	for k := range rb.ends {
 		var err error
-		if deriv[k], err = rb.endDerivative(k); err != nil {
+		if rb.ends[k].fade {
+			deriv[k], err = rb.fadeDerivative(k)
+		} else {
+			deriv[k], err = rb.endDerivative(k)
+		}
+		if err != nil {
 			return nil, nil, nil, err
 		}
 		if quartic {
@@ -502,6 +549,9 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	var specs []rbSpec
 	const steps = 4
 	for i := range steps {
+		if rb.ends[0].fade {
+			break
+		}
 		specs = append(specs, rbSpec{end: 0, lam: float64(i) / steps})
 	}
 	for i := 0; i+1 < len(breaks); i++ {
@@ -516,6 +566,9 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	}
 	specs = append(specs, rbSpec{end: -1, s: r1})
 	for i := steps - 1; i >= 0; i-- {
+		if rb.ends[1].fade {
+			break
+		}
 		specs = append(specs, rbSpec{end: 1, lam: float64(i) / steps})
 	}
 	cache := map[rbSpec]rbSection{}
@@ -1015,7 +1068,7 @@ func (rb *rollingBall) curvedEndSection(k int, sec rbSection) (rbSection, error)
 		// curve's way at its ends is along the face and the chamfer's own
 		// surface, through its ruling and the curve each side's foot
 		// runs along.
-		sec.foot = rb.chamferNormals(sec)
+		sec.foot = rb.chamferFootNormals(sec)
 	}
 	// The curve's way at its ends: along the face and the side's.
 	tanAt := func(q, n geom.Vector) geom.Vector {
@@ -1043,6 +1096,10 @@ func (rb *rollingBall) curvedEndSection(k int, sec rbSection) (rbSection, error)
 // tube, and the conic only near the cut.
 func (rb *rollingBall) planeCutSection(k int, sec rbSection) (rbSection, error) {
 	nrm, d := sec.cutN, sec.cutD
+	if rb.flat {
+		// The cut's way at a foot is along the chamfer, not the face.
+		sec.foot = rb.chamferFootNormals(sec)
+	}
 	return rb.fitCut(k, sec, false, func(_, n geom.Vector) geom.Vector { return nrm.Cross(n) },
 		func(p geom.Vector) float64 { return nrm.Dot(p) - d }, "the fillet's end section near the face its edge ends at",
 		"the fillet's end section near the face its edge ends at strays %.3g mm from its plane here: make it smaller")
@@ -1315,6 +1372,30 @@ func (rb *rollingBall) chamferNormals(sec rbSection) [2]rbFoot {
 		}
 		if n := ruling.Cross(way); n.Magnitude() > 0 {
 			feet[k].n = n.WithMagnitude(1)
+		}
+	}
+	return feet
+}
+
+// chamferFootNormals is chamferNormals for an end section, which cuts
+// the chamfer obliquely: each foot lies on the chamfer's section of its
+// own arc length (footS), whose ruling and whose foot's way along the
+// edge give the chamfer's normal there, not the end section's chord.
+func (rb *rollingBall) chamferFootNormals(sec rbSection) [2]rbFoot {
+	feet := sec.foot
+	h := 1e-3 * math.Max(1, rb.r)
+	for i := range feet {
+		si := sec.footS[i]
+		at, err := rb.section(si)
+		a, aerr := rb.section(si - h)
+		b, berr := rb.section(si + h)
+		if err != nil || aerr != nil || berr != nil {
+			return rb.chamferNormals(sec)
+		}
+		ruling := at.foot[1].p.Minus(at.foot[0].p)
+		way := b.foot[i].p.Minus(a.foot[i].p)
+		if n := ruling.Cross(way); n.Magnitude() > 0 {
+			feet[i].n = n.WithMagnitude(1)
 		}
 	}
 	return feet

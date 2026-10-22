@@ -157,7 +157,7 @@ func otherSolids(t *testing.T) []otherSolid {
 				d.Sketch.Circle(V(0, 0, p.z), p.r)
 			}
 			return d.Features.LoftThrough(ps, "vase")
-		}, 2, 8},
+		}, 2, 12},
 		{"sweep", func(d *Doc) Group {
 			d.Features.SketchIn(d.Workplane("ZX"), "path")
 			up := d.Sketch.Line(V(0, 0, 0), V(0, 0, 30))
@@ -213,6 +213,63 @@ func TestFilletLoftTopRing(t *testing.T) {
 	t.Logf("took %.6g by the meshes", before-rep.Volume)
 	if !rep.Sound() {
 		t.Errorf("%s", rep.Summary())
+	}
+}
+
+// The loft's crease from a corner of its square foot, which fades out
+// at the first ring (its faces turn by 138° at the foot, by nothing at
+// z 24, and the other way above): filleted or chamfered, the fillet
+// narrows to nothing where the crease fades out and ends there, and the
+// crease goes on above it as an edge. OpenCASCADE refuses both. Exported
+// as STEP and read by it (2026-10-23), the solids are valid, and the
+// fillet of 2 took 8.462 mm³ and the chamfer of 2 42.537 by its volumes,
+// 8.519 and 45.066 by slices 0.1 mm apart. Our meshes can't tell: the
+// sides' chords change with their trims by more than the fillet.
+func TestFilletCreaseFades(t *testing.T) {
+	if testing.Short() {
+		t.Skip("rolling-ball fillets of a loft, slow")
+	}
+	var loft otherSolid
+	for _, c := range otherSolids(t) {
+		if c.name == "loft" {
+			loft = c
+		}
+	}
+	for _, flat := range []bool{false, true} {
+		d := New()
+		g := loft.build(d)
+		var e SolidEdge
+		for _, x := range g.Solid().Edges() {
+			if a, b := x.Ends(); a.Minus(V(18, -18, 0)).Magnitude() < 1e-6 && b.Minus(V(14, 0, 60)).Magnitude() < 1e-6 {
+				e = x
+			}
+		}
+		var f Group
+		if flat {
+			f = d.Features.ChamferSolid([]SolidEdge{e}, 2, "")
+		} else {
+			f = d.Features.FilletSolid([]SolidEdge{e}, 2, "")
+		}
+		if p := f.Problem(); p != "" {
+			t.Fatalf("chamfer %v: %s", flat, p)
+		}
+		if rep := f.Analyze().Check(); !rep.Sound() {
+			t.Errorf("chamfer %v: %s", flat, rep.Summary())
+		}
+		above := false
+		for _, x := range f.Solid().Edges() {
+			a, b := x.Ends()
+			if a.Z > b.Z {
+				a, b = b, a
+			}
+			if math.Abs(a.Z-24) < 0.2 && b.Minus(V(14, 0, 60)).Magnitude() < 1e-6 {
+				above = true
+				t.Logf("chamfer %v: the crease goes on from %v", flat, a)
+			}
+		}
+		if !above {
+			t.Errorf("chamfer %v: the crease doesn't go on above the fillet", flat)
+		}
 	}
 }
 
@@ -331,7 +388,10 @@ func TestFilletEndsOnCurvedFace(t *testing.T) {
 // fillets don't meet (topo.filletApart), and together they take what
 // OpenCASCADE's makeFillet takes from each alone (TestFilletEndsOnCurvedFace)
 // within half a percent. An upright picked with a bottom edge it meets
-// is refused at their corner.
+// at a corner whose third edge stays sharp: the two fillets meet in a
+// mitre there (topo.filletCornerPicks), and take what each takes alone
+// less what both would take at the corner, the integral over the
+// corner's cube of the square of 1 - sqrt(1 - a^2): 5/3 - pi/2.
 func TestFilletEndsOnCurvedFaceApart(t *testing.T) {
 	if testing.Short() {
 		t.Skip("fillets over curved faces, slow")
@@ -361,6 +421,7 @@ func TestFilletEndsOnCurvedFaceApart(t *testing.T) {
 	}
 
 	d = New()
+	d.Edit.SetChordTolerance(0.002)
 	if g, err = d.Assembly.LinkStep(lid, "", true); err != nil {
 		t.Fatal(err)
 	}
@@ -375,16 +436,27 @@ func TestFilletEndsOnCurvedFaceApart(t *testing.T) {
 	if !found {
 		t.Fatal("no bottom edge at the origin")
 	}
-	why := func() (msg string) {
-		defer func() {
-			if x := recover(); x != nil {
-				msg = fmt.Sprint(x)
-			}
-		}()
-		return d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(V(0, 0, 5)), bottom}, 1, "").Problem()
-	}()
-	if !strings.Contains(why, "pick it alone") {
-		t.Errorf("an upright with the bottom edge it meets: %q", why)
+	before = g.Analyze().Check().Volume
+	took = 0.0
+	for _, at := range []Vec{V(0, 0, 5), V(0, 15, 0)} {
+		da := New()
+		da.Edit.SetChordTolerance(0.002)
+		ga, err := da.Assembly.LinkStep(lid, "", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		took += before - da.Features.FilletSolid([]SolidEdge{ga.Solid().EdgeAt(at)}, 1, "").Analyze().Check().Volume
+	}
+	const corner = 5.0/3 - math.Pi/2
+	f = d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(V(0, 0, 5)), bottom}, 1, "")
+	if p := f.Problem(); p != "" {
+		t.Fatalf("an upright with the bottom edge it meets: %s", p)
+	}
+	rep = f.Analyze().Check()
+	both := before - rep.Volume
+	t.Logf("together took %.6g, alone %.6g less the corner %.6g", both, took, corner)
+	if !rep.Sound() || math.Abs(both-(took-corner)) > 1e-3 {
+		t.Errorf("an upright with the bottom edge it meets: %s, took %g, want %g", rep.Summary(), both, took-corner)
 	}
 }
 
