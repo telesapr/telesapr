@@ -419,10 +419,11 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 	// boundary of the other surface.
 	var spl SPointList
 	for a := range 2 {
-		shA, srfA, srfB := agnstA, s, b
+		shA, srfA, srfB, shB := agnstA, s, b, agnstB
 		if a == 1 {
-			shA, srfA, srfB = agnstB, b, s
+			shA, srfA, srfB, shB = agnstB, b, s, agnstA
 		}
+		near := srfB.neighbours(shB)
 
 		var el SEdgeList
 		srfA.MakeEdgesInto(shA, &el, false, nil)
@@ -432,6 +433,19 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 			var lsi []SInter
 
 			srfB.AllPointsIntersecting(se.A, se.B, &lsi, true, true, false)
+			// An edge that crosses srfB at a grazing angle, as a turned
+			// part's circle crosses a thread's flank, has its chord
+			// cross a neighbour of srfB where the edge itself crosses
+			// srfB, or the other way about: where the chord misses
+			// srfB, its hits on the neighbours are refined onto srfB,
+			// and each hit is kept only where its refined point lies on
+			// srfB.
+			own := len(lsi)
+			if own == 0 && !srfB.LineEntirelyOutsideBbox(se.A, se.B, true) {
+				for _, nb := range near {
+					nb.AllPointsIntersecting(se.A, se.B, &lsi, true, true, false)
+				}
+			}
 			if len(lsi) == 0 {
 				continue
 			}
@@ -444,7 +458,7 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 			}
 			other := shA.FindSurface(hother)
 
-			for _, si := range lsi {
+			for i, si := range lsi {
 				p := si.P
 				var u, v float64
 				srfB.ClosestPointToUV(p, &u, &v, true)
@@ -454,6 +468,10 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 					srfB.PointOnSurfaces(srfA, other, &u, &v)
 				}
 				p = srfB.PointAt(u, v)
+				if !seedOnPatch(srfB, srfA, other, p, i < own) ||
+					i >= own && !(u > 0 && u < 1 && v > 0 && v < 1 && p.OnLineSegment(se.A, se.B, s.Tol.ChordTolMm())) {
+					continue
+				}
 				if !spl.ContainsPoint(p) {
 					sp := SPoint{P: p}
 					// We also need the edge normal, so that we know in
@@ -591,6 +609,41 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 	}
 
 	s.intersectClosedLoops(b, agnstA, agnstB, into, marched)
+}
+
+// seedOnPatch tells whether p, a hit of an edge of srfA (trimming it
+// with other) refined onto srfB, is a seed of srfB's: on srfB, and for
+// a hit on one of srfB's neighbours, on the edge (and, as the caller
+// checks, on the segment of it that hit, and inside srfB's square of
+// parameters, not on a side it shares). A refinement that
+// runs off srfB is where the edge crosses srfB's extension past its
+// side, near a crossing of a neighbour's, which the neighbour's seeds
+// have; kept, it would be a second end a hair from that one.
+func seedOnPatch(srfB, srfA, other *SSurface, p geom.Vector, own bool) bool {
+	if offPatch(srfB, p, geom.LengthEps) {
+		return false
+	}
+	return own || (!offPatch(srfA, p, geom.LengthEps) && (other == nil || !offPatch(other, p, geom.LengthEps)))
+}
+
+// neighbours are the surfaces of sh that share a trim curve with s.
+func (s *SSurface) neighbours(sh *SShell) []*SSurface {
+	var out []*SSurface
+	for _, t := range s.Trim {
+		c := sh.FindCurve(t.Curve)
+		if c == nil {
+			continue
+		}
+		for _, h := range [2]core.HSSurface{c.SurfA, c.SurfB} {
+			if h == s.H {
+				continue
+			}
+			if nb := sh.FindSurface(h); nb != nil && !slices.Contains(out, nb) {
+				out = append(out, nb)
+			}
+		}
+	}
+	return out
 }
 
 // offPatch tells whether p lies off the patch srf by more than tol: its

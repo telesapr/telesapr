@@ -393,11 +393,11 @@ var runOutSweepCases = map[string]threadCase{
 }
 
 // threadRunOutMaxFail is the rate of the run-out sweep allowed to
-// fail: 8 of 72 on 2026-10-23, each a Boolean of the ridge with the
-// run-out's cone that leaves naked edges where the ridge's flanks cross
-// the cone's seams, with every plane for the ridges tried; the window
-// says so, as for any thread whose solid isn't sound.
-const threadRunOutMaxFail = 8.0 / 72
+// fail: none since 2026-10-23, when the Boolean took the crossings of
+// the turned surface's circle and seams with the ridge's flanks, at the
+// thread's helix angle, on the flank's patch they lie on (8 of 72
+// before).
+const threadRunOutMaxFail = 0.0
 
 // TestThreadRunOutSweep makes run-outs of several lengths on threads
 // of several lengths, and requires sound solids but at the rate fixed.
@@ -411,9 +411,8 @@ func TestThreadRunOutSweep(t *testing.T) {
 			sweep.Floats("longer", 0, 0.3, 0.7),
 			sweep.Floats("run-out", 1, 2.2, 3.5),
 		},
-		MaxFailRate:       threadRunOutMaxFail,
-		Sample:            8,
-		SampleMaxFailRate: 2.0 / 8,
+		MaxFailRate: threadRunOutMaxFail,
+		Sample:      8,
 	}.Run(func(p sweep.Point) error {
 		tc := runOutSweepCases[p.String("thread")]
 		tc.o.Length += p.Float("longer")
