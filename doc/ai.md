@@ -55,11 +55,11 @@ The model gets eight tools.
 | Tool | What it does |
 |---|---|
 | `run_script` | Runs Go on the drawing, as the script console does. It returns what the script printed, the value of its last expression, and how the drawing solved afterwards. With `form`, it fills the fields of the form the script declares, as the window's dialog does ([Scripts](guide/scripts.md#forms)). |
-| `get_drawing` | Describes the drawing in words: groups, requests with their positions, constraints, parameters, what you have selected, and what your mouse is over, so that "this" can be pointed at. |
-| `render` | Returns a picture of the drawing from a named view, fitted, or as your window shows it (`window`), so the model can check its work; with a group, as the drawing is up to that group; with a section, cut open by a plane parallel to the XY, YZ or ZX workplane to show the inside, leaving your own section view as it was. |
+| `get_drawing` | Describes the drawing in words: the unit, the parameters, the groups with how they solved and the volume and bounds of the solid up to each, the active group's requests with their positions and its constraints, what you have selected, and what your mouse is over, so that "this" can be pointed at. With `group`, it lists that group's requests and constraints instead of the active one's. |
+| `render` | Returns a picture of the drawing (800 by 600 pixels unless `width` and `height` say otherwise) from a named view, fitted, or as your window shows it (`window`), so the model can check its work; with `group`, as the drawing is up to that group; with `section`, cut open by a plane parallel to the XY, YZ or ZX workplane to show the inside, moved along its normal by `section_offset` and with the other side taken away by `section_flip`, leaving your own section view as it was. |
 | `api_help` | Returns the documentation of the scripting interface: a primer, or one menu, type or method, or what a script calls in place of an entry of the window's menu ("Features > Fillet Edges"). |
-| `measure` | Reports the solid as Analyze > Check Solid does: volume, surface area, centre of mass, bounding box, and whether it is sound; or measures what you have selected, as Analyze > Measure does. With `gaps` and `walls` it also lists the gaps between parts and the walls thinner than those many mm, as Analyze > Clearance and Walls does ([Clearance and walls](guide/clearance.md)); `within_parts` takes a part of several solids by its solids. |
-| `export` | Writes the drawing to a file in the format its extension names (`.stl`, `.3mf`, `.glb`, `.step`, `.svg`, `.png`, ...) and says where. To `.go` it writes the program that builds the model again, as File > Export > Script does, and lists what it couldn't write. |
+| `measure` | Reports the solid as Analyze > Check Solid does: volume, surface area, centre of mass, bounding box, and whether it is sound, of the model up to the active group or the one `group` names; or, with `selected`, measures what you have selected, as Analyze > Measure Selection does. With `gaps` and `walls` it also lists the gaps between parts and the walls thinner than those many mm, as Analyze > Clearance and Walls does ([Clearance and walls](guide/clearance.md)); `within_parts` takes a part of several solids by its solids. |
+| `export` | Writes the drawing to a file in the format its extension names (`.stl`, `.3mf`, `.glb`, `.obj`, `.wrl`, `.step`, `.svg`, `.dxf`, `.pdf`, `.eps`, `.png`) and says where. To `.go` it writes the program that builds the model again, as File > Export > Script does, and lists what it couldn't write. |
 | `open` | Opens a `.tlspr` drawing in place of the one on screen, and describes it. It never replaces a drawing with changes that aren't saved. |
 | `list_files` | Lists a directory, so the model can find the drawing you name or where to export. |
 
@@ -94,14 +94,16 @@ on macOS, `%LOCALAPPDATA%\telesapr` on Windows. Nothing listens on the network.
 ## Without a window
 
 ```bash
-telesapr-cli mcp --headless [--allow <dir>...] [--unguarded] [sketch.tlspr]
+telesapr-cli mcp --headless [--lib <dir>] [--allow <dir>...] [--unguarded] [sketch.tlspr]
 ```
 
 serves a drawing of its own instead of the application's: the sketch file, or a new sketch.
 The model works as above, with pictures drawn in software. Nothing is saved unless you ask
 the model to save. Its scripts are kept to the sketch's folder (the directory the client
 started the command in, for a new sketch), each folder `--allow` names and a temporary folder;
-`--unguarded` lets them use any file.
+`--unguarded` lets them use any file. `--lib` names the script library they may read, as for
+`telesapr-cli run`; without it, the default one. `--lib`, `--allow` and `--unguarded` are for
+`--headless` only: the window has them on its configuration screen.
 
 ## If it does not work
 

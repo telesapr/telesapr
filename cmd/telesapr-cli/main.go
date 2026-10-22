@@ -575,7 +575,7 @@ func convertModels(o *options, stderr io.Writer) bool {
 // gcPercent is the collector's target for a run of the tool, unless
 // GOGC says otherwise: a command lives for one model, and collecting
 // four times less often makes it 15-20% quicker for a fifth to two
-// thirds more memory at its peak (doc/notes/performance-study.md).
+// thirds more memory at its peak (doc/notes/performance.md).
 const gcPercent = 400
 
 func main() {

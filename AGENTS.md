@@ -12,9 +12,10 @@ conventions, for people and for coding agents alike (`CLAUDE.md` is the same fil
   or a package's own `internal/`. There is no `util`, `common` or `helpers` package.
 - The layers, each importing only the ones above it: `geom`, `libm`, `ttf`, `dxf` → `core` →
   `srf`, `solver`, `thread` → `topo` → `sketch` → `persist/*`, `export`, `check`, `render` →
-  `script/*`, `platform/*` → `ui` → `cmd/*`. The font and DXF libraries know nothing of the
-  kernel: text outlines go through `ttf.OutlineSink`, which `srf.OutlineInto` takes into Béziers. `pkg/sketch` is the model: every way of changing a model (window, script,
-  file) reaches the same entry point there.
+  `script/*`, `mcpserver`, `platform/*` → `ui` → `cmd/*`. The font and DXF libraries know nothing
+  of the kernel: text outlines go through `ttf.OutlineSink`, which `srf.OutlineInto` takes into
+  Béziers. `pkg/sketch` is the model: every way of changing a model (window, script, file)
+  reaches the same entry point there.
 - One concern per file, named for what it holds (`group_generate.go`, not `util.go`). A function
   longer than a screen is split.
 
@@ -106,6 +107,9 @@ three reach the same `pkg/sketch` entry point. `doc/done-audit.md` keeps the tab
 | `TELESAPR_STEP_OUT=dir`, `TELESAPR_KEEP_STEP=1`, `TELESAPR_RENDER_DIR=dir`, `TELESAPR_PATHEQUIV_DIR=dir`, `TELESAPR_GL_DUMP=dir` | Tests in `pkg/ui` and `pkg/render/gl` keep what they produced there, for a diff. |
 | `TELESAPR_UI_SCRIPT=name` | `TestUIScript` prints what the interface shows for one script of `testdata/ui/scripts`. |
 | `TELESAPR_CACHE_DIR=dir` | Where tessellations of STEP files are kept; tests keep none unless it is set. |
+| `TELESAPR_SCRIPT_OUT=dir` | `TestScriptRoundTrip` (`pkg/script`) writes there the script of each fixture that fails to come back. |
+| `TELESAPR_BENCH_MODEL=file` | `BenchmarkRegenerateModel` (`pkg/persist/tlspr`) regenerates that model, one too large for `testdata` (`doc/notes/performance.md`). |
+| `TELESAPR_CLI=file` | The `telesapr-cli` that `scripts/perf-fixture-hashes.sh` runs, in place of `bin/telesapr-cli`. |
 | `TELESAPR_SOLVESPACE_SRC=dir` | A SolveSpace source tree, for `scripts/gen-dxf-cptables.py`, which reads its vendored libdxfrw. Not needed to build or test. |
 
 At run time, `TELESAPR_PARALLEL=off` generates solids on one goroutine and
@@ -113,8 +117,9 @@ At run time, `TELESAPR_PARALLEL=off` generates solids on one goroutine and
 
 ## Branches and commits
 
-- One branch per work package or step, cut from `master` and named for it. `make test` passes
-  after each commit, `make ci` before the merge; the branch is merged into `master` and deleted.
+- One branch per work package or step, cut from `devel` and named for it. `make test` passes
+  after each commit, `make ci` before the merge; the branch is merged into `devel` and deleted.
+  `devel` is merged into `master` when it is to be pushed or released.
 - A commit does one thing and says why in its message. Regenerated goldens are a commit of their
   own.
 - takigo is a public module, required in `go.mod` at a tagged version.

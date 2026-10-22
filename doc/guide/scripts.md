@@ -87,14 +87,18 @@ The example is [`examples/scripts/library`](../../examples/scripts/library), wit
 
 ## A model as a script
 
-File > Export > Script writes the drawing as a Go program that builds it again on a new
+Example: [`examples/scripts/exportscript`](../../examples/scripts/exportscript/exportscript.go),
+a plate whose width is a parameter, written out as the program that builds it.
+
+File > Export > Script (.go) writes the drawing as a Go program that builds it again on a new
 drawing: the parameters, every group in the order the model is built made by the call that
 makes one of its kind, the requests of each sketch where they are solved to, and the
 constraints with their values, names and expressions, the styles, images, splines of any
-number of points (`doc.Sketch.Spline`, `doc.Sketch.PeriodicSpline`) and faces' own
-appearances. An image's file is named where it is, as a link's is. Edit it, give it a form, and run it as
+number of points (`doc.Sketch.Spline`, `doc.Sketch.PeriodicSpline`), kerned text, datum points
+in groups that aren't sketches, and faces' own appearances. An image's file is named where it is, as a link's is. Edit it, give it a form, and run it as
 any script. `telesapr-cli export-script model.tlspr` does the same without a window, and a
-script calls `doc.File.ExportScript(path)`, or `doc.Script()` for the text.
+script calls `doc.File.ExportScript(path)`, or `doc.Script()` for the text and a list of what it
+left out. An AI program's `export` tool writes it for a file ending `.go`.
 
 What a DXF import draws as the window can't is written with calls of its own: an arc drawn in
 3d (`doc.Sketch.ArcIn3D`), a workplane drawn in a workplane (`doc.Sketch.NewWorkplaneIn`) and

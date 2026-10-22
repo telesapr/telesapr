@@ -66,8 +66,14 @@ back along the curves it touches them on. A chamfer is made the same way, its se
 between the points at its distance along each face from the edge. Such an edge, and an edge that
 ends on a curved face (below), is rounded on its own: picked with other edges whose fillets don't
 reach it, the others are rounded first and then each such edge alone, as the lid's four upright
-edges picked together are; where its fillet would meet another picked edge's, at a vertex the two
-share, it is refused there ("pick it alone").
+edges picked together are. Where its fillet meets another picked edge's at a corner whose third
+edge stays sharp, as a lid's upright edge and the bottom edge it meets, the two are mitred there;
+other meetings at a vertex the two share, and fillets of different radii meeting so, are refused
+there ("pick it alone"), and chamfers meeting so are refused as not mitred.
+
+An edge along a crease that fades out, as a loft's from a corner of its square foot up to where
+its sides meet smoothly, is rounded or chamfered up to where its faces turn by almost nothing,
+and ends there; the crease goes on above it.
 
 The edge may close on itself, as such joints do, or end where it meets a flat face at each end, as
 a band's side on a cone ends at the base and at the band's end. There the fillet ends in the flat
@@ -86,17 +92,20 @@ The end face may be curved too, as a box's upright edge between flat walls ends 
 domed lid: the ball's sweep is cut by the dome, and the fillet's end is a curve of degree 5
 fitted to where the two meet, the dome's edge too, keeping to both within half the chord
 tolerance; where the dome bends too much across a wide fillet for one such curve, the fillet is
-refused at the place ("make it smaller"). A chamfer there is not made yet, and a face that goes
-on past the curved face, so that the fillet's end would stand out of it, is refused. Examples: [`examples/scripts/tee`](../../examples/scripts/tee/tee.go),
+refused at the place ("make it smaller"). A chamfer ends on the curved face the same way, its end
+fitted to where it meets it, as does a chamfer of a loft's foot edge where the sides meet in
+creases. A face that goes on past the curved face, so that the fillet's end would stand out of
+it, is refused. Examples: [`examples/scripts/tee`](../../examples/scripts/tee/tee.go),
 [`examples/scripts/bandfillet`](../../examples/scripts/bandfillet/bandfillet.go).
 
 ## Not yet
 
 A rib rounded all over, the edges of its top rounded as well as its foot filled (round the
 foot alone, or the top's edges alone), fillets between curved faces along an edge that ends at
-a curved face the side faces go on past, chamfers of an edge that ends at a curved face, corners where convex
+a curved face the side faces go on past, chamfers meeting at a crease or at a corner whose third
+edge stays sharp, mitres between fillets of different radii, corners where convex
 meets concave at a vertex that the stages can't round, setback corners of chamfers, and a
 blend that runs off its face onto a curved face, or that takes material away and runs off onto
 the next face, are refused with a message; they are the rest
-of roadmap 22. A fillet whose radius stops its chain at a rounded corner names the curved face rather than
+of roadmap 22. A crease that fades out is rounded only up to where it does. A fillet whose radius stops its chain at a rounded corner names the curved face rather than
 saying so (15.7).

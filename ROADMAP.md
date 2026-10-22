@@ -1,6 +1,6 @@
 # Roadmap
 
-What is left to build, as of 2026-10-11. Only open work is listed; what is built is described in
+What is left to build, as of 2026-10-22. Only open work is listed; what is built is described in
 `doc/guide`, `doc/ai.md` and `doc/done-audit.md`, and `doc/done-audit.md` holds the definition
 of done every feature meets. The plan of steps 1 to 29 and the kernel's working notes were
 `ROADMAP-JUMP.md` and `doc/notes/` up to commit `e0004fc` (`git show e0004fc:ROADMAP-JUMP.md`);
@@ -17,10 +17,12 @@ fixture has been done; its "Tried" notes say what not to try again.
 |---|---|---|---|---|
 | 1 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
 | 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint needs the line-arc joint inside the sweep |
-| 2a | [Modelling upgrade leftovers](#modelling-upgrade-leftovers) | kernel and feature | ? | What the 2026-10-23 work packages left; each refuses with a message today |
+| 2a | [Modelling upgrade leftovers](#modelling-upgrade-leftovers) | kernel and feature | ? | What the 2026-10-22 work packages left; each refuses with a message today |
 | 3 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
+| 3a | [F7 Editing what a feature is built from](#f7-editing-what-a-feature-is-built-from) | feature | M | Today a fillet's edges or a shell's faces change only by making the feature again |
 | 4 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Since 2026-10-11 it mends the ear clipper's crossing faces; as the default it still costs 3 to 5 times the triangles |
 | 5 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
+| 6 | [F8 TeleSAPR in a browser](#f8-telesapr-in-a-browser) | feature | ? | A spike is planned; sized after it |
 
 K3 (contact) and K5 (STEP) are closed: every case they measured is sound, the last ones with K4's
 mender. Their notes stay below for the next case. K4, postponed as the default, would open the
@@ -35,11 +37,28 @@ From the neosolve survey; each is small and independent.
 | Item | State |
 |---|---|
 | The ray-cast oracle (K2) for lofts | extrusions, lathes, revolves, and since 2026-10-10 step and repeats, patterns along a path and mirrors of them (`sketch.Group.CopyPlacements`), with moments of inertia; since 2026-10-11 drafted extrusions (`pkg/check/raycast_draft.go`), helices of a profile in a plane through the axis (`raycast_helix.go`: inside exact, crossings sampled along the ray at steps sized by how fast its image crosses the profile, the samples kept as cuts) and sweeps along lines and arcs, mitred or rounded (`raycast_sweep.go`, from `sketch.Group.SweepSteps`: prisms cut by the mitre planes, revolutions). Refused by name (`check.ErrUnsupported`): lofts, whose surfaces between sections are the kernel's own construction (rebuilding them would repeat it, not check it), sweeps fitted along cubics, twisted or held to a direction, and a profile leaning to a helix's or an arc's axis |
+| A section from the command line | `telesapr-cli` has no `export-section`: a section needs a plane, which no flag names. A `--plane` option or the section saved with the view (`doc/notes/feature-inputs.md`). Today `telesapr-cli run` with `File.ExportSection` |
 | Dockable property browser | takigo decides; lowest |
 
 ### F6 IGES import and export
 
 Neosolve reads and writes IGES. Low priority: STEP covers the exchange; take it when a user asks.
+
+### F7 Editing what a feature is built from
+
+A fillet's or chamfer's edges, a shell's faces, a sweep's or pattern's path, a loft's profiles, a
+mirror's plane and any feature's source are fixed when it is made. Drafted sides, loft guides and a
+link's file are the three inputs edited afterwards, and the pattern to follow.
+`doc/notes/feature-inputs.md` has what an edit must settle: radii carried with their edges, names
+taken from the solid before the feature, broken references in later groups, the move checks for a
+changed source, and a setter per typed group in `pkg/script/api`.
+
+### F8 TeleSAPR in a browser
+
+Go to WebAssembly: the kernel and the software renderer are pure Go, and `pkg/ui` is written
+against `pkg/platform`, so a `web` platform would sit beside `tkgui` and `headless`. The spike is
+planned, not started (`doc/notes/browser-wasm-spike.md`): compile the kernel and `pkg/render/soft`
+for js/wasm, run yaegi there (the highest risk), measure a frame loop in a canvas, and settle fonts.
 
 ## Kernel foundations
 
@@ -169,13 +188,13 @@ pole slivers grew.
 Code: `pkg/topo/rollingball.go`, `rollingend.go`, `rollingrunoff.go`, `rollingmitre.go`,
 `rollingchains.go`, `fillet_setback.go`, `fillet_network.go`. Every case below is refused with a message today, except where the State
 column says unsound. Measure: `TestFilletOnOtherSolids` (fillets on lofts, sweeps and STEP
-solids) at 59 of 59 sound since 2026-10-23. Chamfers: `TestChamferOnOtherSolids` at 57 of 59, the
+solids) at 59 of 59 sound since 2026-10-22. Chamfers: `TestChamferOnOtherSolids` at 57 of 59, the
 blob's 2 rims refused as not mitred (below).
 
 | Item | State | Approach / tried |
 |---|---|---|
 | Run-offs onto a curved face; a run-off of a blend that takes material away; both ends running off | refused, naming the place | The setback patch is the means: where the ball runs off a face, cut the fillet as a setback is cut and fill the hole between it, the next face's fillet (or the face) and the faces round. A run-off taking material away was never reached by any test case (a slot cut from the cone never got that far) |
-| Mitres where only some of a rim's chains are picked: a chain mitred at one end, ending on the unpicked chain's wall at the other | refused: "pick it alone" | A chain mitred at one end only exists since 2026-10-23 (`linkMitresAt` partial, for picks meeting at a corner); `filletMitredPicks` still asks every end of a rim's chains to be mitred. Try it partial, the other end a curved end (`curvedEndSection`), on a rim of three creases |
+| Mitres where only some of a rim's chains are picked: a chain mitred at one end, ending on the unpicked chain's wall at the other | refused: "pick it alone" | A chain mitred at one end only exists since 2026-10-22 (`linkMitresAt` partial, for picks meeting at a corner); `filletMitredPicks` still asks every end of a rim's chains to be mitred. Try it partial, the other end a curved end (`curvedEndSection`), on a rim of three creases |
 | Chamfers meeting at a crease, of one chain or several, or at a corner whose third edge stays sharp (the lid's upright chamfered with the bottom edge it meets) | refused: "are not mitred" | The mitre is found from the ball's centres; a chamfer's would be where the two ruled surfaces, carried on, meet |
 | Mitres between chains of different radii | refused: "pick it alone" | The height against the other chain's centres less its own radius; the mitre is then no longer in the plane that halves the turn |
 | A rim's mitre below about 0.005% chord | refused: "the fillet's sections near its mitre can't be fitted" | At the cap the mitre runs nearly along the chain; tried: starting the fit from chord-length parameters (worse). More spans than two, or sections fitted against the mitre's own parameter |
@@ -279,19 +298,19 @@ goldens take 17% longer.
 
 ### Modelling upgrade leftovers
 
-What the work packages of `doc/notes/modelling_upgrades.md` (merged 2026-10-23) left open. Their
+What the work packages of `doc/notes/modelling_upgrades.md` (merged 2026-10-22) left open. Their
 working notes are at commit `1e84ca0c` (`git show 1e84ca0c:doc/notes/wrap-emboss.md`, and
 `model-to-script.md`, `wp-b1-b2.md`, `wp-b3-b4.md`, `wp-c3.md`, `wp-c4.md`, `wp-d1.md`,
 `wp-scripting.md` beside it).
 
 | Item | State | Approach / tried |
 |---|---|---|
-| Lofts (C4) | closed lofts, a guided loft along a solid's sides and tangency at a profile between the ends done 2026-10-23 (branch `lo-loft`); a closed loft refuses profiles more than a quarter turn apart round the ring | Left: a closed loft held by guides or square to a profile (the guided loft's sections and the pieces would have to close round too); a ring of few profiles is thinner than the profiles between them, as any loft's blend of turned sections is: sections turned with the ring's frame, as a closed sweep's are, would keep them full |
-| Datums (B4) | since 2026-10-23 any face or edge of the solid no entity makes is named by a workplane that follows it (`Datums.NameFace`, `NameEdge`): a plane, an axis, a line, or on other faces and edges the plane touching the face or the line along the edge at its middle; mates refuse a flat face as an axis and an edge as a plane; the Assembly menu mates selected datums, the datums screen two names. Left: a point picked on a curved face or edge isn't kept, the datum is at its middle; a datum after the active group moves with its face only when that group is active or the model is saved (the screen says so) | |
-| Fillets onto curved faces (C3) | since 2026-10-23 `TestFilletOnOtherSolids` 59 of 59 sound and `TestChamferOnOtherSolids` 57 of 59, none unsound: picks meeting at a corner whose third edge stays sharp, one of them the rolling ball's, are mitred there (`filletCornerPicks`, a chain mitred at one end only); a fillet or chamfer ends where the crease it rounds fades out (`rbEnd.fade`, the loft's 4 creases, which OpenCASCADE refuses); a chamfer's end on a doubly curved face takes its ways from each foot's own ruling and its sections there are fitted to their cuts (the loft's 4 foot edges) | Left: chamfers picked together at such a corner (under [Fillet leftovers](#fillet-leftovers), not mitred); the blob's 2 rims' chamfers; a crease that fades out is rounded only up to where it does, never past where it turns the other way (the loft's creases turn back above the first ring by up to 5°); run-offs and the rest under [Fillet leftovers](#fillet-leftovers) |
-| Clearance and walls (D1) | since 2026-10-23 walls are measured at points no further apart than half the thickness asked about, finer about the thinnest, and followed onto the surfaces; gaps to mesh parts are followed onto the other's surfaces; `ClearancesWithin` takes a part by its solids; MCP `measure` reports both. Left: a spot thinner than the points about it can still be missed; a mesh part is not taken apart by its pieces | |
-| Model to script (D5) | 300 of 301 fixtures come back (`scriptRoundTripKnown`, which may only shrink); images, splines of any number of points, constraints on four entities, styles, kerned text, faces' own appearances and datum points in a group that isn't a sketch are written since 2026-10-23, and the MCP `export` tool writes `.go`; what the DXF import draws as the window can't (`Sketch.ArcIn3D`, `Sketch.NewWorkplaneIn`, `Constrain.Again`) and an image whose file is missing (`Sketch.ImageFrame`) since 2026-10-23 | Left: `tlspr/v1/fields.tlspr`, a file of every field set whose references lead nowhere, which opens as no model |
-| Regeneration (D4) | recommendations 1 to 4, 6, 10 and 12 to 14 and a solid cache taken up, 9 behind a setting that is off, 11 in part (`doc/notes/performance-study-2.md`, "Taken up") | 5, 7, 8 and 15 to 18 measured and not taken, each with why in the same note; 11's parallel commits (curve ids reserved in advance) left |
+| Lofts (C4) | closed lofts, a guided loft along a solid's sides and tangency at a profile between the ends done 2026-10-22 (branch `lo-loft`); a closed loft refuses profiles more than a quarter turn apart round the ring | Left: a closed loft held by guides or square to a profile (the guided loft's sections and the pieces would have to close round too); a ring of few profiles is thinner than the profiles between them, as any loft's blend of turned sections is: sections turned with the ring's frame, as a closed sweep's are, would keep them full |
+| Datums (B4) | since 2026-10-22 any face or edge of the solid no entity makes is named by a workplane that follows it (`Datums.NameFace`, `NameEdge`): a plane, an axis, a line, or on other faces and edges the plane touching the face or the line along the edge at its middle; mates refuse a flat face as an axis and an edge as a plane; the Assembly menu mates selected datums, the datums screen two names. Left: a point picked on a curved face or edge isn't kept, the datum is at its middle; a datum after the active group moves with its face only when that group is active or the model is saved (the screen says so) | |
+| Fillets onto curved faces (C3) | since 2026-10-22 `TestFilletOnOtherSolids` 59 of 59 sound and `TestChamferOnOtherSolids` 57 of 59, none unsound: picks meeting at a corner whose third edge stays sharp, one of them the rolling ball's, are mitred there (`filletCornerPicks`, a chain mitred at one end only); a fillet or chamfer ends where the crease it rounds fades out (`rbEnd.fade`, the loft's 4 creases, which OpenCASCADE refuses); a chamfer's end on a doubly curved face takes its ways from each foot's own ruling and its sections there are fitted to their cuts (the loft's 4 foot edges) | Left: chamfers picked together at such a corner (under [Fillet leftovers](#fillet-leftovers), not mitred); the blob's 2 rims' chamfers; a crease that fades out is rounded only up to where it does, never past where it turns the other way (the loft's creases turn back above the first ring by up to 5°); run-offs and the rest under [Fillet leftovers](#fillet-leftovers) |
+| Clearance and walls (D1) | since 2026-10-22 walls are measured at points no further apart than half the thickness asked about, finer about the thinnest, and followed onto the surfaces; gaps to mesh parts are followed onto the other's surfaces; `ClearancesWithin` takes a part by its solids; MCP `measure` reports both. Left: a spot thinner than the points about it can still be missed; a mesh part is not taken apart by its pieces | |
+| Model to script (D5) | 300 of 301 fixtures come back (`scriptRoundTripKnown`, which may only shrink); images, splines of any number of points, constraints on four entities, styles, kerned text, faces' own appearances and datum points in a group that isn't a sketch are written since 2026-10-22, and the MCP `export` tool writes `.go`; what the DXF import draws as the window can't (`Sketch.ArcIn3D`, `Sketch.NewWorkplaneIn`, `Constrain.Again`) and an image whose file is missing (`Sketch.ImageFrame`) since 2026-10-22 | Left: `tlspr/v1/fields.tlspr`, a file of every field set whose references lead nowhere, which opens as no model |
+| Regeneration (D4) | recommendations 1 to 4, 6, 10 and 12 to 14 and a solid cache taken up, 9 behind a setting that is off, 11 in part (`doc/notes/performance.md`) | 5, 7, 8 and 15 to 18 measured and not taken, each with why in the same note; 11's parallel commits (curve ids reserved in advance) left |
 
 ## Waiting for the user
 
@@ -316,8 +335,10 @@ Proposed on 2026-10-03; each stays out until its reason stops holding.
 | `make ai-eval` | Needs a model and an account, outside CI; take it when the primer next changes |
 | Tolerances per edge and vertex | 21.2 heals within a file's tolerance; more only if the measured rate asks |
 | Generated entities left out of `.tlspr` | Possible behind the version number; no need has come up |
-| Threads: tapered, variable pitch, run-out | Never asked for. A thread is edited as one, with shaped crests, and drawn by the convention on drawings, since B1 and B2 of `doc/notes/modelling_upgrades.md` |
+| Threads: tapered, variable pitch | Never asked for. A thread is edited as one, with shaped crests, a run-out and level starts, and drawn by the convention on drawings, since B1 and B2 of `doc/notes/modelling_upgrades.md` and their leftovers |
 | Scripting: a startup script, `--watch`, menu items made by scripts, zoom to fit | Never asked for |
 | The bit-exact scaffolding: `pkg/libm`, `CxxSort`, the FMA build rules | Harmless; replacing it moves every golden for nothing |
 | A mesh Boolean fallback with perturbation | Conflicts with "never silently wrong geometry"; only as an explicit approximate mode |
 | Sheet metal, direct modelling, tolerancing, CAM, simulation | Each an XL product of its own |
+| Dual contouring (Ju et al. 2002) | Analysed 2026-10-21 (`git show 39142006:doc/notes/dual-contouring-fit.md`): a mesher for sampled fields, not for an exact B-rep; it would make STL less exact and regeneration no faster. Only its quadric simplification with the topology-safety test fits, as an LOD for large STL and assemblies, if one is ever asked for |
+| `.tlspr` read and written as streams | P5 of `doc/notes/performance.md`; decoding is 15% of a mesh model's allocations, and no user has waited on it |

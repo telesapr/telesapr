@@ -190,7 +190,8 @@ its place. The value it drives keeps its default, 1 for copies and 0 otherwise.
 
 ### Order
 
-The writer puts statements in this order: header, `units`, parameters in the user's order,
+The writer puts statements in this order: header, `units`, `active`, parameters in the user's
+order, configurations, `active-configuration`, datums in the order they were named, `drawing`,
 groups in their `order`, ties by handle, then requests, constraints, styles, values and
 entities, each by handle, then `mesh` and `shell`. A reader accepts any order of the top-level statements after the header.
 
@@ -207,33 +208,42 @@ group <handle> <type> <name> {
   workplane <handle>        # the group's active workplane
   op-a <handle>
   op-b <handle>
+  sweep-up <x> <y> <z>      # sweep: the direction its frames are held to, rather than turning least; left out when none
   loft-through <handle> ... # loft: the profiles between op-a and op-b a smooth loft goes through, in order
   through-tangency <real> ... # loft: how square it passes each of those, in order, 0 for free; left out when all are
   closed-loft               # loft: goes from op-b back to op-a, a ring with no caps
-  copies = <expression>     # step and repeat: the number of copies
+  copies = <expression>     # step and repeat, pattern along a path: the number of copies
+  turn = <expression>       # loft: how many curves the second profile is turned by when matched to the first (the field copies under another name)
   pitch = <expression>      # helix: the fixed pitch, a length; 0 when free
-  distance = <expression>   # chamfer: the distance from each edge, a length (the field pitch is under another name)
+  distance = <expression>   # chamfer: the distance from each edge, a length (the field pitch under another name)
+  radius = <expression>     # fillet: the radius of its edges, a length (the field pitch)
+  thickness = <expression>  # shell: the walls' thickness, a length (the field pitch)
+  height = <expression>     # wrap: how far it raises or sinks its loops, a length (the field pitch)
+  corner-radius = <expression>  # sweep: the radius its path's sharp corners are rounded to, a length; left out for none (the field pitch)
+  draft-neutral = <expression>  # extrusion: where along it, from the sketch's plane, the draft's neutral plane lies, a length (the field pitch)
+  start-tangency = <expression>  # loft: how square it leaves its first profile, a number; 0 or left out for free (the field pitch)
   second-distance = <expression>  # chamfer: the distance on each edge's second face (the one of the higher identity), a length; left out for the same as distance (the field val-c under another name)
-  draft = <expression>      # extrude: the sides' lean into the solid, in degrees (the field val-c, unused by other groups)
+  draft = <expression>      # extrude: the sides' lean into the solid, in degrees (the field val-c)
   twist = <expression>      # sweep: the profile's turn about the path over its whole length, in degrees (the field val-c)
-  sweep-up <x> <y> <z>      # sweep: the direction its frames are held to, rather than turning least; left out when none
+  end-tangency = <expression>    # loft: how square it reaches its last profile (the field val-c)
+  depth = <expression>      # extrude: the depth held along its sketch's normal, a length; left out when free, to be dragged or dimensioned (the field extent)
+  angle = <expression>      # revolve, helix: the angle held end to end, in degrees; left out when free (the field extent)
   color <colour>
   skip-first
   start-along-sides         # loft: leaves its first profile along the solid's sides, not square to it
   end-along-sides           # loft: reaches its last profile along the solid's sides
   mirror-solid              # mirror: the whole solid so far, not op-a's own
+  combine <combine>
+  force-to-mesh
+  edges <handle> ...        # chamfer, fillet: the edges cut; sweep, pattern along a path: the path, in the order given; loft: its guide curves
+  draft-faces <handle> ...  # extrusion: the curves of its sketch whose sides the draft leans; left out for all
+  solid-edge <face> <face> <n> of <m>  # chamfer, fillet: an edge of the solid cut; sweep: an edge of its path; datum: its edge; by name, one line each
   appearance <name>         # matte, plastic, glossy or metal; left out for plastic
   face-appearance <face> <name>  # a face's own appearance, by its identity; one line each
   density <real>            # the solid's density in g/cm³, for its mass; left out when none is set
   thread { ... }            # helix: what made a screw thread, for editing it as one; see below
-  combine <combine>
-  force-to-mesh
-  edges <handle> ...        # chamfer: the edges cut; sweep: the path, in the order given; loft: its guide curves
-  start-tangency = <expression>  # loft: how square it leaves its first profile, a number; 0 or left out for free
-  end-tangency = <expression>    # loft: how square it reaches its last profile
-  draft-faces <handle> ...  # extrusion: the curves of its sketch whose sides the draft leans; left out for all
-  draft-neutral = <expression>  # extrusion: where along it, from the sketch's plane, the draft's neutral plane lies, a length (the field pitch under another name)
-  solid-edge <face> <face> <n> of <m>  # chamfer, fillet: an edge of the solid cut; sweep: an edge of its path; by name, one line each
+  solid-face <face>         # shell: a face taken away; wrap, sketch on a face, datum: its face; by identity, one line each
+  edge-radius <n> = <expression>  # fillet: edge n's own radius, a length, counting edges and then solid-edge lines from 1; one line each
   predef { ... }
   visible
   suppress                  # the solid is left out
@@ -306,8 +316,19 @@ along another number, the name does not resolve. A `solid-edge` without `of <m>`
 place alone. A face's identity is the handle of the entity that made it, or, for a
 surface no entity names, bit 30 set with the handle of the group that made it and the surface's
 place among that group's surfaces. A sweep moves the
-loops of its `op-a`, a sketch in a workplane, along its `edges`, line segments and arcs that
-meet end to end and tangent.
+loops of its `op-a`, a sketch in a workplane, along its `edges` and `solid-edge`s, line
+segments, arcs and cubics that meet end to end and tangent, or at sharp corners its
+`corner-radius` rounds; a path that closes is swept round with no caps.
+
+A fillet rounds its `edges` and `solid-edge`s of the solid so far at its `radius`, or at an
+edge's own `edge-radius`. A shell hollows the solid so far to walls `thickness` thick, open where
+its `solid-face`s are taken away. A loft without `loft-through` joins `op-a` to `op-b` by ruled
+patches, the second profile's curves matched to the first's turned by `turn`; with it, one smooth
+surface goes through every profile.
+
+A value with an expression is left out when it is 0 and has no expression. A group of a type the
+comments above don't name writes the field under its plain name: `copies`, `pitch`, `val-c` or
+`extent`; a reader takes each name of a field for the field, whatever the group's type.
 
 A wrap lays the closed loops of its `op-a`, a sketch in a workplane parallel to the face's axis,
 onto the cylinder or cone of the solid so far named by its one `solid-face`, by identity as a
@@ -433,7 +454,12 @@ The constraint type names are those the text window shows:
 `same-orientation`, `angle`, `parallel`, `perpendicular`, `arc-line-tangent`,
 `cubic-line-tangent`, `curve-curve-tangent`, `eq-radius`, `lock-where-dragged`,
 `arc-arc-length-ratio`, `arc-line-length-ratio`, `arc-arc-len-difference`,
-`arc-line-len-difference`, `comment`, `pt-on-segment` (added within version 2 on 2026-10-10).
+`arc-line-len-difference`, `comment`, `pt-on-segment` (added within version 2 on 2026-10-10),
+`axis-angle` (added within version 2 on 2026-10-22).
+
+`axis-angle` holds a turn about an axis, as a screw mate does: the axis through `pt-a` along the
+normal `entity-a`, and `pt-b` on the half-plane through it at `value` degrees from the normal's u
+towards its v. Angles a whole turn apart are different values.
 
 A dimension with `limit min` or `limit max` (added within version 2 on 2026-10-10) is a bound: its
 `value` is the least or the most what it measures may be. `pt-on-segment` keeps `pt-a` on the
@@ -445,6 +471,8 @@ their own read as `pt-pt-distance` with `limit min` and `limit max`.
 ### Style
 
 Fields that are left out are zero. Unlike `.slvs`, they do not take the default style's values.
+The exception is `z-index`: a style without it was saved before the level was kept (2026-10-17)
+and takes the level a new custom style is made with.
 
 ```
 style <handle> <name> {
@@ -461,6 +489,7 @@ style <handle> <name> {
   exportable
   stipple <pattern>
   stipple-scale <real>
+  z-index <integer>         # the level it is drawn at; always written, since 0 is a level
 }
 ```
 
@@ -638,17 +667,30 @@ cubics drawn before it, each chain of them that joins end to end one guide from 
 profile through every profile to the last, two at most. A reader from before reads the field
 and ignores it, so the loft is made without its guides.
 
-Version 2 gained the loft fields `through-tangency` and `closed-loft` on 2026-10-23. A reader
+Version 2 gained the loft fields `through-tangency` and `closed-loft` on 2026-10-22. A reader
 from before skips them with a report, and makes the loft free through its profiles, open.
 
 Version 2 gained the workplane subtype `face`, with the `predef` field `at`, on 2026-10-10
-(roadmap F1). A reader from before refuses the unknown subtype.
+(roadmap F1). A reader from before reports the unknown subtype and keeps the default one.
 
 Version 2 gained the group type `wrap`, with the field `height`, on 2026-10-22 (WP-C2). A
 reader from before reports the unknown type.
 
-Version 2 gained the workplane subtype `datum` on 2026-10-23. A reader from before refuses the
-unknown subtype.
+Version 2 gained the workplane subtype `datum`, and the kind on a `datum` line, on 2026-10-22. A
+reader from before reports the unknown subtype and keeps the default one, and refuses a `datum`
+line with three values.
+
+Version 2 gained these on 2026-10-22 as well; a reader from before skips each with a report:
+the group fields `density` (no mass), `depth` and `angle` (the extrusion or revolve left free),
+`thread` (the thread's groups kept, but not editable as one), `start-along-sides` and
+`end-along-sides` (the loft square to its end profiles), `link-configuration` and `link-param`
+(the linked model read as saved, see "Links"); the thread fields `run-out` and `level-starts`;
+and the drawing field `modelled-threads`. The top-level `datum` line, a name for an entity that a
+linking model finds as `group.name`, is of the same day; a reader from before skips it. The
+constraint type `axis-angle` is too; a reader from before reports the unknown type.
+
+Version 2 gained the style field `z-index` on 2026-10-17. A reader from before skips it with a
+report, and draws the style at its default level.
 
 `testdata/tlspr/v1` and `testdata/tlspr/v2` hold files that every later reader must load.
 

@@ -23,7 +23,21 @@ doc.View.SetFaceAppearance(housing.Solid().FaceAt(api.V(15, 15, 15)), "matte")
 A face's own appearance is kept by the face's identity in the group that made it, and saved with
 the model.
 
+## glTF
+
+Example: [`examples/scripts/gltf`](../../examples/scripts/gltf/gltf.go), a block seen through
+and a pin beside it, each its own colour.
+
+File > Export > Triangle Mesh writes binary glTF 2.0 for a file ending `.glb`, for Blender, a
+three.js viewer or a web page: the mesh of the solid up to the active group, one material for
+each colour, a colour seen through (a group's opacity below 1) as a blended one, and lengths in
+metres, which is what glTF asks for. `telesapr-cli export-mesh --output %.glb model.tlspr`
+does the same without a window, and a script calls `doc.File.Export("model.glb")`. A motion study
+saves its frames as `.glb` too.
+
 ## Not yet
 
 Textures, reflections of an environment, and appearances made by the user; a face's own
-appearance set from the window; drawings and exports in the appearance's colours.
+appearance set from the window; drawings and exports in the appearance's colours. A glTF file is
+one mesh: its materials are plain colours, not matte, glossy or metal, and the parts of an
+assembly are not nodes of their own.

@@ -18,6 +18,8 @@ the edges it meets smoothly, round a rounded rectangle's corners by cones. Selec
   `Edit.SelectFaceEdges` in a script).
 
 The group's screen lists the edges and takes a new distance, as a number or an expression.
+Edges between curved faces, and edges that end on one, are chamfered as they are filleted:
+see [Fillet](fillet.md#between-two-curved-faces).
 
 ## Two distances
 

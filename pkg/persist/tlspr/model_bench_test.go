@@ -11,7 +11,7 @@ import (
 
 // BenchmarkRegenerateModel regenerates the model TELESAPR_BENCH_MODEL
 // names, for a model too large to keep under testdata: the scaled
-// step-and-repeat models of doc/notes/performance-study.md, which are
+// step-and-repeat models of doc/notes/performance.md, which are
 // made from testdata/group/translate_nd/normal.slvs as that note says,
 // converted.
 // It is skipped when the variable is not set.

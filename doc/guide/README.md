@@ -22,7 +22,8 @@ property browser do, and reference dimensions and comments apart from the other 
 and its key does nothing. Edit > Find Command (Ctrl+K) finds any entry by words of its name, and
 lists last, with the reason, those that can't run now. A right click offers what applies to what
 is under the pointer: on an edge of the solid, Fillet, Chamfer and Sweep Along Edges; on a face,
-Shell, Mirror, Select Face Edges and Sketch On Face; on a dimension, Edit Value; and on anything, a Group submenu to activate, hide,
+Shell, Mirror, Select Face Edges and Sketch On Face, and with a sketch active Wrap Sketch Onto
+This Face; on a dimension, Edit Value; and on anything, a Group submenu to activate, hide,
 suppress or delete the group it belongs to. The arrow keys move what is selected by a pixel of the view, ten with
 Shift, as a drag does (`Entity.MoveBy` in a script). A rectangle dragged from left to right selects what
 lies wholly inside it; dragged from right to left, drawn in the selection's colour, whatever it
@@ -39,11 +40,11 @@ the entries had before the menus took this order are still taken.
 
 | Page | What it covers | Example |
 |---|---|---|
-| [Parameters and units](parameters-and-units.md) | Named values that drive dimensions; configurations; a motion study; dimensions read by name; the document's unit of length; measuring | `plate`, `configurations`, `motion`, `dimensions`, `feedback` |
+| [Parameters and units](parameters-and-units.md) | Named values that drive dimensions; an extrusion's depth and a revolve's angle held; configurations; a motion study; dimensions read by name; the document's unit of length; measuring | `plate`, `extent`, `configurations`, `motion`, `dimensions`, `feedback` |
 | [Constraints while drawing](drawing.md) | Tangent, perpendicular, parallel and equal inferred as a line is drawn | (none) |
 | [Minimum and maximum dimensions](limits.md) | Distances, lengths, radii and angles bounded from one side; a point kept between a segment's ends | `limits` |
 | [History](history.md) | Moving a group, suppressing one with what uses it, broken references | `history` |
-| [Appearance and shading](appearance.md) | Matte, plastic, glossy and metal faces, lit by a shader | `appearance` |
+| [Appearance and shading](appearance.md) | Matte, plastic, glossy and metal faces, lit by a shader; glTF with the colours | `appearance`, `gltf` |
 | [Sketch on a face](sketch-on-face.md) | A sketch in a flat face of the solid, following it | `pedestal` |
 | [Section view](section-view.md) | Cutting the model open to look inside | `section` |
 | [Mirror](mirror.md) | A group reflected in a plane | `mirror` |
@@ -55,11 +56,13 @@ the entries had before the menus took this order are still taken.
 | [Sweep](sweep.md) | A profile moved along a path | `sweep` |
 | [Pattern along a path](pattern.md) | A solid repeated along a path | `pattern` |
 | [Screw threads](threads.md) | Metric, unified and trapezoidal threads | `bolt` |
+| [Wrap and emboss](wrap.md) | A sketch rolled onto a cylinder or a cone, raised from it or sunk into it | `wrap` |
 | [Drawings](drawings.md) | A sheet of the standard views, sections and details with a title block, to PDF and DXF | `drawing` |
 | [STEP links](step-links.md) | A STEP file, or an STL or OBJ mesh, linked as a reference | `step` |
 | [Datums](datums.md) | Names for what a part offers, on entities or on its solid's faces and edges; mates by name | `datums`, `datums_solid` |
-| [Assemblies](bill-of-materials.md) | Mates; the parts counted, to a CSV file; interfering parts by their shells; STEP with its structure | `mates`, `bom` |
-| [Scripts](scripts.md) | Forms that ask for a script's values; packages of your own in a script library folder | `form`, `library` |
+| [Assemblies](bill-of-materials.md) | Links relinked, or passed a configuration and parameter values; mates, a screw among them; the parts counted, with their masses, to a CSV file; interfering parts by their shells; STEP with its structure | `partsizes`, `mates`, `screw`, `bom` |
+| [Density and mass](mass.md) | A density for each part; the mass, centre of mass and inertia of each and of the whole | `mass` |
+| [Scripts](scripts.md) | Forms that ask for a script's values; packages of your own in a script library folder; a model written as a script | `form`, `library`, `exportscript` |
 | [Clearance and walls](clearance.md) | Gaps between parts and walls thinner than a limit, before printing or machining | `clearance` |
 | [Check Solid](check-solid.md) | Whether a solid is sound, and its volume | every example |
 

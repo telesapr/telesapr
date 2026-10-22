@@ -11,6 +11,7 @@ point. The template is at the end of this file.
 | [0003](0003-pkg-directory.md) | Packages stay under `pkg/` | Accepted |
 | [0004](0004-scripting-with-yaegi.md) | Scripting is Go, run by yaegi, and MCP exposes it | Accepted |
 | [0005](0005-gpl-3-or-later.md) | Licence: GPL-3.0-or-later | Accepted |
+| [0006](0006-ui-split.md) | What leaves `pkg/ui`, and what stays | Accepted |
 
 ## Template
 

@@ -12,13 +12,19 @@ It is built and tested on Linux. See [`ROADMAP.md`](ROADMAP.md) for where it is 
 
 ## What it adds to SolveSpace
 
-- **Solid features**: fillets (rounded and filled edges, corners, edges of their own radius),
-  chamfers, shell, draft, ruled loft, sweep along a path, patterns along a path, mirror, and
-  screw threads.
+- **Solid features**: fillets and chamfers (rounded and filled edges, corners, edges of their own
+  radius, edges between curved faces by a rolling ball), shell, draft, ruled and smooth lofts
+  (guided, closed into a ring, along a solid's sides), sweeps along open and closed paths,
+  patterns along a path, mirror, a sketch wrapped or embossed onto a cylinder or cone, and screw
+  threads edited as one, with run-outs, drawn by the drafting convention on drawings.
 - **Edges by name**: any edge of a solid can be picked on the model, including edges no sketch
   entity draws, and is saved by a name that holds when the model upstream changes.
-- **Parameters**: named values and expressions that drive dimensions, and dimensions read by
-  name; the document's own unit of length.
+- **Parameters**: named values and expressions that drive dimensions and feature values
+  (extrusion depth, revolve angle, radii), and dimensions read by name; the document's own unit
+  of length.
+- **Assemblies**: linked parts that take a configuration and parameter values, relinked to
+  another file; named datums on entities or any face or edge of a part, mated by name; a screw
+  mate; density and mass properties per part; clearance between parts and wall thickness.
 - **History**: groups moved in the history, suppressed with what uses them, and what a deletion
   took listed.
 - **Sketch feedback**: entities coloured by how free they are, conflicting constraints marked,
@@ -27,7 +33,9 @@ It is built and tested on Linux. See [`ROADMAP.md`](ROADMAP.md) for where it is 
 - **STEP files** linked as reference meshes, and STEP export with one surface per face; 3MF
   and glTF (`.glb`, for Blender and web viewers) export of the mesh with its colours. STL export has quality presets (draft, standard, fine)
   and an angular tolerance, also as `telesapr-cli export-mesh --quality`.
-- **Scripting in Go**, and **drawing with an AI model** through MCP.
+- **Scripting in Go**, with forms that ask for a script's values and a library folder of your
+  own packages; a model written back as the script that builds it; and **drawing with an AI
+  model** through MCP.
 
 The [user's guide](doc/guide/README.md) has a page for each, built on an example script.
 
@@ -80,8 +88,8 @@ Windows and macOS.
 `telesapr [file.tlspr]` opens the application. Solids are made off the window's thread: while a
 change is being made into the solid, the window draws the solid as it was, and Esc stops it
 (`TELESAPR_BACKGROUND=off` makes them on the thread, as before). `telesapr-cli` works without a window:
-`telesapr-cli --help` lists its commands, which export views, meshes and surfaces, convert
-`.slvs` files (`telesapr-cli convert`), and run scripts.
+`telesapr-cli --help` lists its commands, which export views, drawings, meshes, surfaces and the
+model as a script, convert `.slvs` files (`telesapr-cli convert`), and run scripts.
 
 ### Scripting
 
@@ -139,21 +147,24 @@ pictures of it. Each script shows in the script console and is one step of undo.
 cmd/telesapr/          The application
 cmd/telesapr-cli/      The command-line tool
 dist/freedesktop/      Desktop entry, icons and MIME type
-doc/                  The user's guide, the .tlspr format, the AI guide, the audit
+doc/                   The user's guide, the .tlspr format, the AI guide, the audit,
+                       decision records (adr/) and working notes (notes/)
 examples/scripts/      Example scripts, one or more per feature
 pkg/
 ├── check/             Invariants of a sound solid: the test oracle, Analyze > Check Solid
 ├── core/              Handles, entities, constraints, expressions
 ├── dxf/               DXF writing
+├── export/            File > Export: vector, mesh and STEP files
 ├── geom/              Geometric primitives and algorithms
-├── internal/          The constrained Delaunay triangulator, C's printf, goldens,
-│                      parallel loops and robustness sweeps
+├── internal/          The constrained Delaunay triangulator, C's printf, UTF-8 as the
+│                      fonts read it, goldens, parallel loops and robustness sweeps
 ├── libm/              Bit-exact libm functions, as glibc computes them
 ├── mcpserver/         The drawing as tools for an MCP client (telesapr-cli mcp)
 ├── persist/
 │   ├── tlspr/         TeleSAPR's file format, .tlspr
 │   ├── slvs/          SolveSpace's .slvs, read for import
 │   ├── convert/       .slvs files and what they link imported as .tlspr
+│   ├── dxf/           DXF drawings imported into a sketch
 │   ├── link/          Loading what link groups link: models, STL and STEP files
 │   └── step/          STEP (ISO 10303-21) reading and tessellation
 ├── platform/          Windows, menus and dialogs (takigo, headless)

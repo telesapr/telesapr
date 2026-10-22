@@ -37,6 +37,26 @@ for _, p := range doc.Params.List() {
 `RenameParameter` and `DeleteParameter` do what the table does; `doc.Params.Errors()` lists
 expressions that do not evaluate.
 
+## An extrusion's depth and a revolve's angle
+
+Example: [`examples/scripts/extent`](../../examples/scripts/extent/extent.go), a plate whose
+depth is the parameter `thick` and an arc of a ring turned by the parameter `arc`.
+
+An extrusion's depth, and a revolve's or a helix's angle, are free until something holds them:
+a dimension on the solid, or the group's own value. The group's screen shows the depth or angle
+it has now, on the row of its sides, with **held** beside it. Checked, the value is held where
+it is, a drag no longer moves the far end, and `[change]` takes a number or an expression of the
+parameters, as `thick`; a dimension that held it too is then redundant. Unchecked, it is free
+again, to be dragged or dimensioned. A revolve turns by 360 degrees at most. An extrusion of a
+sketch in 3d has no normal to hold its depth along.
+
+```go
+must(plate.SetExpr(sketch.GroupExtent, "thick"))
+plate.AsExtrude().SetDepth(6)    // held at 6 mm; FreeDepth frees it
+ring.AsRevolve().SetAngle(120)   // degrees; FreeAngle frees it
+fmt.Println(plate.AsExtrude().Depth(), plate.AsExtrude().DepthHeld(), ring.AsRevolve().AngleHeld())
+```
+
 ## Configurations
 
 Example: [`examples/scripts/configurations`](../../examples/scripts/configurations/configurations.go),
@@ -67,7 +87,8 @@ values to go from and to, and the number of steps. `[run]` regenerates the model
 and lists the value, whether every group solved, and the volume of the solid. `[run, saving each
 step...]` asks for a file and saves a frame of each step beside it, numbered: a picture of the
 view the window shows for `.png`, which makes an animation, or a mesh for `.stl`, `.3mf` and `.glb`.
-The parameter gets its expression back afterwards.
+The parameter gets its expression back afterwards. A [screw mate](bill-of-materials.md#mates)'s
+`turn` is such a parameter: a study of it runs a nut up its screw.
 
 ```go
 frames, err := doc.Assembly.MotionStudy("w", 20, 80, 6, "frames/plate-%02d.stl")
