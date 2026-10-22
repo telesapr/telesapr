@@ -52,6 +52,16 @@ func ClosedLoftSections(loops [][]srf.SBezier) ([][]srf.SBezier, error) {
 			loops[i] = reverseLoop(loops[i])
 		}
 	}
+	// Sections between profiles turned far apart are the profiles'
+	// blend, which shrinks across as they turn: past a quarter turn from
+	// one to the next it pinches, and a wide profile's surface crosses
+	// itself.
+	for i := range loops {
+		a, b := newell(loops[i]).WithMagnitude(1), newell(loops[(i+1)%k]).WithMagnitude(1)
+		if a.Dot(b) < -1e-6 {
+			return nil, fmt.Errorf("profiles %d and %d turn by more than a quarter turn from one to the other; a closed loft needs profiles between them", i+1, (i+1)%k+1)
+		}
+	}
 	for i := 1; i < k; i++ {
 		loops[i] = alignTo(loops[i], loops[i-1])
 	}
