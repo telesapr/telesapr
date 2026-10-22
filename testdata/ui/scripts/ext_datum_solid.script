@@ -1,0 +1,31 @@
+# Datums on a solid (an extension): a plate whose corner a fillet
+# rounds, its fillet's face named corner and its bottom base
+# (testdata/datums/rounded.tlspr, examples/scripts/datums_solid), is
+# linked twice into an empty model. Edit > Datums lists both links'
+# names; [mate] on the first's corner, then the second's, offers the
+# mates of two names, and [concentric] puts the second's corner on the
+# first's axis; the second link keeps 2 degrees of freedom, turning about
+# and sliding along the axis.
+file $testdata/datums/host.tlspr
+menu File|Open...
+file $testdata/datums/rounded.tlspr
+menu Assembly|Link / Assemble...
+file $testdata/datums/rounded.tlspr
+menu Assembly|Link / Assemble...
+menu Edit|Datums...
+tw
+twmove 361 180
+twdown L 361 180
+twup L 361 180
+twmove 361 250
+twdown L 361 250
+twup L 361 250
+tw
+twmove 154 320
+twdown L 154 320
+twup L 154 320
+tw
+twmove 28 10
+twdown L 28 10
+twup L 28 10
+tw

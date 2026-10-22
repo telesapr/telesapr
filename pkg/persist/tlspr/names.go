@@ -52,6 +52,7 @@ var groupSubtypes = newEnum("group subtype", map[sketch.GroupSubtype]string{
 	sketch.GroupWorkplaneByLineSegments: "line-segments",
 	sketch.GroupWorkplaneByPointNormal:  "point-normal",
 	sketch.GroupWorkplaneByFace:         "face",
+	sketch.GroupWorkplaneByDatum:        "datum",
 	sketch.GroupOneSided:                "one-sided",
 	sketch.GroupTwoSided:                "two-sided",
 	sketch.GroupOneSkewed:               "one-skewed",

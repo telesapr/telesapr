@@ -77,9 +77,10 @@ func (m FeaturesMenu) SketchIn(wp Entity, name string) Group {
 		case sketch.GroupWorkplaneByPointNormal:
 			g.Predef.Q = from.Predef.Q
 			g.Predef.EntityB = from.Predef.EntityB
-		case sketch.GroupWorkplaneByFace:
+		case sketch.GroupWorkplaneByFace, sketch.GroupWorkplaneByDatum:
 			g.Predef.Q, g.Predef.At = from.Predef.Q, from.Predef.At
 			g.SolidFaces = slices.Clone(from.SolidFaces)
+			g.SolidEdges = slices.Clone(from.SolidEdges)
 		default:
 			fail("%s has no workplane to copy", groupDescription(from))
 		}

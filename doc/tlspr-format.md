@@ -317,12 +317,19 @@ one `solid-face`, by identity as a shell's faces are, and is placed in it again 
 regeneration; its `predef`'s `q` and `at` are the orientation and origin it was last found at,
 which hold the workplane while the face can't be found, as on loading, before the solids are made.
 
+A workplane of subtype `datum` is a datum on the solid so far: it follows the face named by its
+one `solid-face`, or the edge named by its one `solid-edge`, as `face` does, and the model's
+`datum` line names its workplane. In a flat face it lies as `face` would; on a face round about
+an axis, and on a circular edge, its normal runs along the axis and its origin is on it; on a
+straight edge its normal runs along the edge from its start.
+
 | Subtype | Name |
 |---|---|
 | Workplane by a point, orthogonal | `point-ortho` |
 | Workplane by two line segments | `line-segments` |
 | Workplane by a point and a normal | `point-normal` |
 | Workplane in a face of the solid | `face` |
+| Workplane following a face or edge of the solid, as a datum | `datum` |
 | One sided | `one-sided` |
 | Two sided | `two-sided` |
 | One sided, skewed | `one-skewed` |
@@ -628,6 +635,9 @@ Version 2 gained the workplane subtype `face`, with the `predef` field `at`, on 
 
 Version 2 gained the group type `wrap`, with the field `height`, on 2026-10-22 (WP-C2). A
 reader from before reports the unknown type.
+
+Version 2 gained the workplane subtype `datum` on 2026-10-23. A reader from before refuses the
+unknown subtype.
 
 `testdata/tlspr/v1` and `testdata/tlspr/v2` hold files that every later reader must load.
 

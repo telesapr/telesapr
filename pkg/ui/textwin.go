@@ -177,8 +177,9 @@ const (
 	// For a value a link passes its model (an extension)
 	editLinkParam Edit = 931
 	// For the datums (an extension)
-	editDatumAdd  Edit = 932
-	editDatumName Edit = 933
+	editDatumAdd   Edit = 932
+	editDatumName  Edit = 933
+	editDatumSolid Edit = 934
 )
 
 // drawOrHitHow is what DrawOrHitTestIcons and the colour picker do.
@@ -284,6 +285,9 @@ type textWindow struct {
 
 	// clearance is the clearance and wall check's screen (clearance.go).
 	clearance clearanceCheck
+	// datumMate are the names of the datums picked for a mate on the
+	// datums screen, the part that stays first.
+	datumMate []string
 
 	stepDim struct {
 		isDistance bool

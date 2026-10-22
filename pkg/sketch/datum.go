@@ -67,8 +67,8 @@ func CanBeDatum(e *core.Entity) bool {
 // caller remembers the undo state.
 func (sk *Sketch) SetDatum(name string, he core.HEntity) error {
 	name = strings.TrimSpace(name)
-	if !core.ValidVariableName(name) {
-		return fmt.Errorf("%q can't name a datum: use a letter or underscore, then letters, digits and underscores", name)
+	if err := CheckDatumName(name); err != nil {
+		return err
 	}
 	e := sk.Entity(he)
 	if e == nil {
@@ -87,6 +87,14 @@ func (sk *Sketch) SetDatum(name string, he core.HEntity) error {
 	return nil
 }
 
+// CheckDatumName is why name can't name a datum, or nil.
+func CheckDatumName(name string) error {
+	if !core.ValidVariableName(strings.TrimSpace(name)) {
+		return fmt.Errorf("%q can't name a datum: use a letter or underscore, then letters, digits and underscores", name)
+	}
+	return nil
+}
+
 // DeleteDatum takes the datum called name away; the entity stays. The
 // caller remembers the undo state.
 func (sk *Sketch) DeleteDatum(name string) error {
@@ -100,7 +108,10 @@ func (sk *Sketch) DeleteDatum(name string) error {
 
 // ResolveDatum is the entity a datum name answers to: "name" for this
 // sketch's own, "group.name" for a datum of the model the link group
-// called group links, as the link placed it.
+// called group links, as the link placed it. A link copies no
+// workplanes, so a datum of the linked model that names one, as a datum
+// on a face or edge of its solid does (NewDatumWorkplane), answers with
+// the workplane's normal, which runs through its origin.
 func (sk *Sketch) ResolveDatum(path string) (core.HEntity, error) {
 	// A datum's own name has no dot; a group's name may.
 	group, name, linked := strings.CutLast(path, ".")
@@ -122,7 +133,11 @@ func (sk *Sketch) ResolveDatum(path string) (core.HEntity, error) {
 	if i < 0 {
 		return core.HEntity{}, fmt.Errorf("%w %q: the model %s links has no datum %s", ErrNoDatum, path, group, name)
 	}
-	id, ok := g.Remap[core.EntityKey{Input: g.LinkDatums[i].Entity}]
+	in := g.LinkDatums[i].Entity
+	if j := slices.IndexFunc(g.ImpEntity, func(e core.Entity) bool { return e.H == in }); j >= 0 && g.ImpEntity[j].IsWorkplane() {
+		in = g.ImpEntity[j].Normal
+	}
+	id, ok := g.Remap[core.EntityKey{Input: in}]
 	he := g.H.Entity(int(id.V))
 	if !ok || sk.Entity(he) == nil {
 		return core.HEntity{}, fmt.Errorf("datum %s: the model %s links has no such entity now", path, group)

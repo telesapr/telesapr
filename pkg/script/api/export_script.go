@@ -186,9 +186,15 @@ func (w *scriptWriter) writeParameters() {
 	}
 }
 
-// writeDatums names entities once every group is made.
+// writeDatums names entities once every group is made; a datum on a
+// face or edge of the solid was named as its group was made.
 func (w *scriptWriter) writeDatums() {
 	for _, dt := range w.sk.Datums {
+		if g := w.sk.Group(dt.Entity.Group()); g != nil && g.Subtype == sketch.GroupWorkplaneByDatum && dt.Entity == g.H.Entity(0) {
+			if _, ok := w.datumCall(g); ok {
+				continue
+			}
+		}
 		w.line("doc.Datums.Name(%q, %s)", dt.Name, w.ref(dt.Entity))
 	}
 }

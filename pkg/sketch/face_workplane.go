@@ -45,19 +45,80 @@ func (sk *Sketch) NewSketchOnFace(face srf.FaceID, name string) (Group, error) {
 	return g, nil
 }
 
+// NewDatumWorkplane starts a workplane that follows a face or an edge
+// of the solid at the active group, as a datum names it: face, or with
+// edge set, the edge of that name (GroupWorkplaneByDatum). It is an
+// error when that solid has no such face or edge, or one neither flat,
+// straight nor round. It is what the interface and scripts add with
+// AddGroupAfterActive before naming its workplane (Group.Workplane).
+func (sk *Sketch) NewDatumWorkplane(face srf.FaceID, edge *topo.Name, name string) (Group, error) {
+	g := NewGroup()
+	g.Type = GroupDrawingWorkplane
+	g.Subtype = GroupWorkplaneByDatum
+	g.Name = name
+	if edge != nil {
+		g.SolidEdges = []topo.Name{*edge}
+	} else {
+		g.SolidFaces = []srf.FaceID{face}
+	}
+	fr, err := sk.solidFrameAt(sk.solidAt(sk.Active), &g)
+	if err != nil {
+		return g, err
+	}
+	g.Predef.Q, g.Predef.At = fr.Quaternion(), fr.Origin
+	return g, nil
+}
+
+// followsSolid reports whether g is a workplane that follows a face or
+// an edge of the solid so far.
+func (g *Group) followsSolid() bool {
+	return g.Type == GroupDrawingWorkplane && (g.Subtype == GroupWorkplaneByFace || g.Subtype == GroupWorkplaneByDatum)
+}
+
 // faceFrameAt is the frame of face in the solid of group solid.
 func (sk *Sketch) faceFrameAt(solid *Group, face srf.FaceID) (topo.FaceFrame, error) {
+	t, err := solidTopology(sk, solid)
+	if err != nil {
+		return topo.FaceFrame{}, err
+	}
+	return t.FaceFrame(face)
+}
+
+// solidFrameAt is the frame of g's face or edge in the solid of group
+// solid: for a sketch on a face, its face's; for a datum, its face's or
+// its edge's as a datum.
+func (sk *Sketch) solidFrameAt(solid *Group, g *Group) (topo.FaceFrame, error) {
+	if g.Subtype != GroupWorkplaneByDatum {
+		if len(g.SolidFaces) == 0 {
+			return topo.FaceFrame{}, errors.New("the sketch names no face to lie in")
+		}
+		return sk.faceFrameAt(solid, g.SolidFaces[0])
+	}
+	t, err := solidTopology(sk, solid)
+	switch {
+	case err != nil:
+		return topo.FaceFrame{}, err
+	case len(g.SolidEdges) > 0:
+		return t.EdgeFrame(g.SolidEdges[0])
+	case len(g.SolidFaces) > 0:
+		return t.DatumFrame(g.SolidFaces[0])
+	}
+	return topo.FaceFrame{}, errors.New("the datum names no face or edge")
+}
+
+// solidTopology is the topology of the solid of group solid.
+func solidTopology(sk *Sketch, solid *Group) (*topo.Topology, error) {
 	switch {
 	case solid != nil && solid.IsForcedToMesh(sk):
-		return topo.FaceFrame{}, errors.New("the solid is a triangle mesh, which has no faces to sketch on")
+		return nil, errors.New("the solid is a triangle mesh, which has no faces or edges")
 	case solid == nil || len(solid.RunningShell.Surface) == 0:
-		return topo.FaceFrame{}, errors.New("there is no solid with faces to sketch on")
+		return nil, errors.New("there is no solid with faces")
 	}
 	t, err := solid.Topology()
 	if err != nil {
-		return topo.FaceFrame{}, fmt.Errorf("finding the solid's faces: %w", err)
+		return nil, fmt.Errorf("finding the solid's faces: %w", err)
 	}
-	return t.FaceFrame(face)
+	return t, nil
 }
 
 // facePlane is the orientation and origin of a sketch on a face: the
@@ -66,15 +127,11 @@ func (sk *Sketch) faceFrameAt(solid *Group, face srf.FaceID) (topo.FaceFrame, er
 // group's problem.
 func (g *Group) facePlane(sk *Sketch) (geom.Quaternion, geom.Vector) {
 	g.faceProblem = ""
-	if len(g.SolidFaces) == 0 {
-		g.faceProblem = "the sketch names no face to lie in"
-		return g.Predef.Q, g.Predef.At
-	}
 	var solid *Group
 	if prev := g.PreviousGroup(sk); prev != nil {
 		solid = sk.solidAt(prev.H)
 	}
-	fr, err := sk.faceFrameAt(solid, g.SolidFaces[0])
+	fr, err := sk.solidFrameAt(solid, g)
 	if err != nil {
 		g.faceProblem = err.Error() + "; the workplane stays where it was"
 		return g.Predef.Q, g.Predef.At
@@ -90,6 +147,5 @@ func (g *Group) FaceProblem() string { return g.faceProblem }
 // facePlaneMoved reports whether g is a sketch on a face that no
 // longer lies where q and at put it.
 func (g *Group) facePlaneMoved(q geom.Quaternion, at geom.Vector) bool {
-	return g.Type == GroupDrawingWorkplane && g.Subtype == GroupWorkplaneByFace &&
-		(g.Predef.Q != q || g.Predef.At != at)
+	return g.followsSolid() && (g.Predef.Q != q || g.Predef.At != at)
 }

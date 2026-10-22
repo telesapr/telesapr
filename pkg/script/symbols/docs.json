@@ -4295,7 +4295,7 @@
 					},
 					"Concentric": {
 						"decl": "func (m AssemblyMenu) Concentric(a, b Entity) []Constraint",
-						"text": "Concentric puts two circles or arcs on one axis. Drawing free in 3d,\ntheir axes are made parallel and the second's centre put on the\nfirst's axis, by its distance from the first's centre along two\ndirections square to the axis, each zero; one part may still turn\nabout the axis and slide along it, as a pin in a hole. The directions\nare lines or normals of the first circle's group, or the reference\naxes; with none square to the axis, the centres are put on each\nother. In a workplane, the centres are put on each other."
+						"text": "Concentric puts two circles or arcs on one axis. Drawing free in 3d,\ntheir axes are made parallel and the second's centre put on the\nfirst's axis, by its distance from the first's centre along two\ndirections square to the axis, each zero; one part may still turn\nabout the axis and slide along it, as a pin in a hole. The directions\nare lines or normals of the first circle's group, or the reference\naxes; with none square to the axis, the centres are put on each\nother. In a workplane, the centres are put on each other. A\nworkplane, or a normal with a point, is taken as an axis, the normal\nthrough its origin, as a datum on a round face or edge of a solid is\n(Datums.NameFace)."
 					},
 					"ExportBOM": {
 						"decl": "func (m AssemblyMenu) ExportBOM(path string) error",
@@ -4303,7 +4303,7 @@
 					},
 					"Flush": {
 						"decl": "func (m AssemblyMenu) Flush(faceA, faceB Entity) []Constraint",
-						"text": "Flush makes two faces parallel and puts a point of the first, one\nlying on it, on the second: the faces lie in one plane, facing as\nthey did, and one part may still slide and turn on the other."
+						"text": "Flush makes two faces parallel and puts a point of the first, one\nlying on it, on the second: the faces lie in one plane, facing as\nthey did, and one part may still slide and turn on the other. A\nworkplane, or a normal with a point, is taken as a face, as a datum\non a flat face of a solid is (Datums.NameFace): its origin is the\npoint that lies on it."
 					},
 					"Hinge": {
 						"decl": "func (m AssemblyMenu) Hinge(a, b Entity) []Constraint",
@@ -4609,6 +4609,14 @@
 						"decl": "func (m DatumsMenu) Name(name string, e Entity)",
 						"text": "Name names entity e as the datum name, a word of letters, digits and\nunderscores: a point, a workplane, a normal, a face of the solid\n(SolidFace.Entity), or a line, circle or arc as an axis. An entity\nnamed before takes the new name; a name given before moves to e. It\nis saved with the drawing, and a drawing linking this one finds it as\n\"group.name\"."
 					},
+					"NameEdge": {
+						"decl": "func (m DatumsMenu) NameEdge(name string, e SolidEdge) Group",
+						"text": "NameEdge names edge e of a solid as the datum name, as NameFace does\na face: the workplane follows the edge, its normal along it from its\nstart where it is straight, about its axis where it is a circle or an\narc."
+					},
+					"NameFace": {
+						"decl": "func (m DatumsMenu) NameFace(name string, f SolidFace) Group",
+						"text": "NameFace names face f of a solid as the datum name, a face no entity\nneed make, as a fillet's or a Boolean's: a workplane that follows the\nface at each regeneration is added after the active group, and the\ndatum names it. In a flat face the workplane lies as a sketch on the\nface does; on a face round about an axis, as a cylinder's, a cone's\nor a fillet's, its normal runs along the axis and its origin is on it,\nso that Assembly.Concentric takes it as an axis and Assembly.Flush a\nflat one as a face. The new group becomes active, as any new group\ndoes: groups after the active one are not regenerated, so a datum\nafter it would not follow its face."
+					},
 					"Names": {
 						"decl": "func (m DatumsMenu) Names() (names []string)",
 						"text": "Names lists every name Get finds: the drawing's own datums, then\nthose of each linked model, as \"group.name\" for the link group of\nthat name."
@@ -4857,8 +4865,8 @@
 						"text": "AddSplinePoint adds a point at p to the cubic spline the entity is,\nin the span of the spline's points that passes nearest p, as the\ncontext menu's Add Spline Point does where the curve is clicked. The\nspline then passes through p, or for a periodic one through it too."
 					},
 					"Center": {
-						"decl": "func (e Entity) Center() Entity",
-						"text": "Center is the centre of a circle or an arc, or the origin of a\nworkplane."
+						"decl": "func (e Entity) Center() (p Entity)",
+						"text": "Center is the centre of a circle or an arc, the origin of a\nworkplane, or the point a normal runs through, as the normal a link\ngives for a datum on a solid (Datums.Get) does."
 					},
 					"Construction": {
 						"decl": "func (e Entity) Construction() (construction bool)",
@@ -7348,6 +7356,7 @@
 					"GroupWorkplaneByLineSegments",
 					"GroupWorkplaneByPointNormal",
 					"GroupWorkplaneByFace",
+					"GroupWorkplaneByDatum",
 					"GroupOneSided",
 					"GroupTwoSided",
 					"GroupOneSkewed",
@@ -8150,6 +8159,10 @@
 						"decl": "func (sk *Sketch) NewCustomStyle() core.HStyle",
 						"text": "NewCustomStyle adds a custom style, numbered after the last, with the defaults, and returns its handle."
 					},
+					"NewDatumWorkplane": {
+						"decl": "func (sk *Sketch) NewDatumWorkplane(face srf.FaceID, edge *topo.Name, name string) (Group, error)",
+						"text": "NewDatumWorkplane starts a workplane that follows a face or an edge of the solid at the active group, as a datum names it: face, or with edge set, the edge of that name (GroupWorkplaneByDatum)."
+					},
 					"NewFile": {
 						"decl": "func (sk *Sketch) NewFile()",
 						"text": "NewFile makes the sketch a new, empty file: the references group with the three reference workplanes, and a drawing group."
@@ -8817,6 +8830,10 @@
 				"decl": "func CanBeDatum(e *core.Entity) bool",
 				"text": "CanBeDatum reports whether an entity can be named as a datum: one a mate or a constraint between parts can use."
 			},
+			"CheckDatumName": {
+				"decl": "func CheckDatumName(name string) error",
+				"text": "CheckDatumName is why name can't name a datum, or nil."
+			},
 			"ConstraintText": {
 				"decl": "func ConstraintText(c *core.Constraint) string",
 				"text": "ConstraintText is the stored expression of a constraint as its label's editor shows it, the inverse of SetConstraintText: without the sign of a distance on the far side, and as a radius for a diameter shown as one."
@@ -9157,6 +9174,9 @@
 			},
 			"GroupValC": {
 				"decl": "const GroupValC"
+			},
+			"GroupWorkplaneByDatum": {
+				"decl": "const GroupWorkplaneByDatum"
 			},
 			"GroupWorkplaneByFace": {
 				"decl": "const GroupWorkplaneByFace"

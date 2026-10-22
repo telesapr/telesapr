@@ -77,6 +77,13 @@ const (
 	// (topo.FaceFrame); Predef.Q and Predef.At hold where it was last
 	// found.
 	GroupWorkplaneByFace
+	// GroupWorkplaneByDatum is a datum on the solid so far: a workplane
+	// on its face SolidFaces[0] or its edge SolidEdges[0] that follows it
+	// at each regeneration (topo.DatumFrame, topo.EdgeFrame), in the
+	// face where it is flat, about the axis where it is round, along the
+	// edge where it is straight. Predef.Q and Predef.At hold where it was
+	// last found.
+	GroupWorkplaneByDatum
 )
 
 const (

@@ -45,7 +45,7 @@ var MenuCalls = map[string]string{
 	"Edit/Rotate Imported 90°":    "LinkGroup.Rotate90 LinkGroup.Rotate LinkGroup.SetOrientation LinkGroup.Move",
 	"Edit/Find Command...":        "Edit.RunCommand",
 	"Edit/Parameters...":          "Params.List Params.Set",
-	"Edit/Datums...":              "Datums.List Datums.Names Datums.Name Datums.Delete Datums.Get",
+	"Edit/Datums...":              "Datums.List Datums.Names Datums.Name Datums.NameFace Datums.NameEdge Datums.Delete Datums.Get",
 	"Edit/Line Styles...": "Doc.Styles Doc.Style Doc.NewStyle Style.SetName Style.Delete " +
 		"Style.SetColor Style.SetFillColor Style.SetFilled Style.SetWidth Style.SetWidthAs " +
 		"Style.SetStipple Style.SetStippleScale Style.SetTextHeight Style.SetTextHeightAs Style.SetTextAlign Style.SetTextAngle Doc.ResetStyles " +

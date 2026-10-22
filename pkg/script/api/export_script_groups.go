@@ -119,6 +119,11 @@ func (w *scriptWriter) workplaneCall(g *sketch.Group, name string) string {
 			return "doc.Features.SketchOnFace(" + faces[0] + ", " + name + ")"
 		}
 		w.notWritten("%s: the face it is drawn on; drawn in its workplane as it is", g.Name)
+	case sketch.GroupWorkplaneByDatum:
+		if call, ok := w.datumCall(g); ok {
+			return call
+		}
+		w.notWritten("%s: the face or edge of the solid its datum names; drawn in its workplane as it is", g.Name)
 	}
 	for _, wp := range []string{"XY", "YZ", "ZX"} {
 		ref := referenceQ(wp)
@@ -435,4 +440,35 @@ func (w *scriptWriter) writeKindOptions(g *sketch.Group, v string) {
 			w.line("%s.AsLink().SetParam(%q, %q)", v, lp.Name, lp.Expr)
 		}
 	}
+}
+
+// datumCall names the face or edge of the solid that datum workplane g
+// follows, as the datum that names g's workplane, which must be called
+// as g is.
+func (w *scriptWriter) datumCall(g *sketch.Group) (string, bool) {
+	sk := w.sk
+	dt := sk.DatumOf(g.H.Entity(0))
+	if dt == nil || dt.Name != g.Name {
+		return "", false
+	}
+	if len(g.SolidEdges) > 0 {
+		tp := topologyAt(sk, g.PreviousGroup(sk))
+		if tp == nil {
+			return "", false
+		}
+		i, err := tp.Resolve(g.SolidEdges[0])
+		if err != nil {
+			return "", false
+		}
+		p, ok := edgePoint(tp, i)
+		if !ok {
+			return "", false
+		}
+		return fmt.Sprintf("doc.Datums.NameEdge(%q, doc.Active().Solid().EdgeAt(%s))", dt.Name, vecText(p)), true
+	}
+	faces, ok := w.solidFaceList(g, g.PreviousGroup(sk))
+	if !ok || len(faces) != 1 {
+		return "", false
+	}
+	return fmt.Sprintf("doc.Datums.NameFace(%q, %s)", dt.Name, faces[0]), true
 }
