@@ -20,23 +20,47 @@ import (
 // GenerateAll regenerates the whole model: every group's entities and
 // params, then the solve, loops and shells.
 func (sk *Sketch) GenerateAll() {
-	sk.generateAll(GenerateAll, false, false)
+	sk.generateAll(GenerateAll, false, passBuild)
 }
+
+// regenPass is what one pass over the groups of generateAll does. In
+// display mode the chord tolerance follows from the model's size, which
+// is known only once the groups are solved.
+type regenPass int
+
+const (
+	// passBuild makes the solids. Called from outside, it first runs
+	// passOne, or passSize, for the tolerance; after passSize it solves
+	// only a sketch on a face whose face moved.
+	passBuild regenPass = iota
+	// passSize solves the groups and makes their loops, to find the
+	// model's size; it makes no solids.
+	passSize
+	// passOne solves, makes the loops and makes the solids, at the
+	// tolerance of the regeneration before. Where the size it finds
+	// keeps that tolerance, it is the whole regeneration: in the window,
+	// where a drag or an edit seldom moves the size across a step, one
+	// pass over the groups in place of two.
+	passOne
+)
 
 // generateAll is the regeneration that GenerateAll and its variants
 // run.
-func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
+func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass) {
 	defer func() { sk.Generation++ }()
 	name := "regenerate"
-	if genForBBox {
+	switch pass {
+	case passSize:
 		name = "regenerate for size"
+	case passOne:
+		name = "regenerate in one pass"
 	}
 	defer trace.StartRegion(context.Background(), name).End()
 	sk.orderGroups()
 
 	// Parameters and stored expressions first, since they set the
 	// values the groups are solved for and which groups are dirty.
-	if !genForBBox {
+	if pass == passBuild {
 		sk.EvaluateParameters()
 		sk.reloadChangedLinks()
 	}
@@ -88,17 +112,26 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	switch {
 	case sk.Exporting.IsSet():
 		sk.tol = sk.Exporting.WithMesher(sk.Mesher)
-	case !genForBBox:
-		sk.generateAll(typ, andFindFree, true)
-		box := sk.CalculateEntityBBox(true)
-		size := box.MaxP.Minus(box.MinP)
-		maxSize := geom.Max(size.X, geom.Max(size.Y, size.Z))
-		sk.tol = srf.Tol(tolStep(maxSize*sk.chordTolPct()/100.0), sk.SegmentLimit()).WithMesher(sk.Mesher)
+	case pass == passBuild:
+		if sk.tol.IsSet() {
+			sk.generateAll(typ, andFindFree, passOne)
+			if sk.hooks().Cancel() {
+				return
+			}
+			was := sk.tol
+			sk.tol = sk.sizeTol()
+			if sk.tol == was && !sk.newAfterOther(typ, first) {
+				return
+			}
+		} else {
+			sk.generateAll(typ, andFindFree, passSize)
+			sk.tol = sk.sizeTol()
+		}
 		// The groups before a new one keep their solids, made at the
 		// tolerance of some regeneration before; when the model's
 		// size, and so the tolerance, has changed since, they are made
 		// again, so that the model is meshed as when it is read.
-		if typ == GenerateNew && first > 0 && sk.solidsMadeAtOther(first) {
+		if sk.newAfterOther(typ, first) {
 			first = 0
 		}
 	}
@@ -138,6 +171,9 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 	// that sketch and every group after it are solved and their loops
 	// made again (face_workplane.go).
 	resolve := false
+	// The params a solve of passOne took as known that the build pass,
+	// which solves nothing, would leave as generated: unknown.
+	var unknown []core.HParam
 	for i, hg := range sk.GroupOrder {
 		if i < start {
 			continue
@@ -148,14 +184,14 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		// A group suppressed whole, or using one that is, is left out
 		// before anything could prune what it refers to.
 		if g := sk.Group(hg); g.SuppressedBy.V != 0 {
-			sk.skipGroup(g, prev, i >= first && i <= last, genForBBox)
+			sk.skipGroup(g, prev, i >= first && i <= last, pass != passSize)
 			continue
 		}
 		// The group may depend on entities or other groups, to define its
 		// workplane geometry or for its operands. Those must already exist
 		// in a previous group, so check them before generating.
 		if sk.PruneGroups(hg) {
-			sk.generateAllPruned(prev, typ, andFindFree, genForBBox)
+			sk.generateAllPruned(prev, typ, andFindFree, pass)
 			return
 		}
 		g := sk.Group(hg)
@@ -192,7 +228,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		was := g.Predef
 		g.Generate(sk, &sk.Entities, &sk.Params)
 		sk.sortByHandle()
-		resolve = resolve || (!genForBBox && g.facePlaneMoved(was.Q, was.At))
+		resolve = resolve || (pass == passBuild && g.facePlaneMoved(was.Q, was.At))
 		// The params this group's solve may change: those its requests,
 		// its constraints and the group itself generate.
 		groupParams := make([]core.HParam, 0, len(sk.Params)-len(prevGroupParams))
@@ -205,7 +241,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		// The requests and constraints depend on stuff in this or the
 		// previous group, so check them after generating.
 		if sk.PruneRequestsAndConstraints(hg) {
-			sk.generateAllPruned(prev, typ, andFindFree, genForBBox)
+			sk.generateAllPruned(prev, typ, andFindFree, pass)
 			return
 		}
 
@@ -232,13 +268,22 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 		case i >= first && i <= last:
 			// The group falls inside the range, so really solve it,
 			// and then regenerate the mesh based on the solved stuff.
-			switch {
-			case genForBBox:
+			if pass == passOne {
+				for _, h := range groupParams {
+					if !sk.Param(h).Known {
+						unknown = append(unknown, h)
+					}
+				}
+			}
+			if pass != passBuild {
 				sk.SolveGroupAndReport(hg, groupParams, andFindFree)
 				g.GenerateLoops(sk, rt)
-
+			}
+			switch {
+			case pass == passSize:
+				// Its solid waits for the pass that builds.
 			case sk.DeferShells:
-				if resolve {
+				if resolve && pass == passBuild {
 					sk.SolveGroupAndReport(hg, groupParams, andFindFree)
 					g.GenerateLoops(sk, rt)
 				}
@@ -247,7 +292,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 				g.Clean = true
 
 			default:
-				if resolve {
+				if resolve && pass == passBuild {
 					sk.SolveGroupAndReport(hg, groupParams, andFindFree)
 					g.GenerateLoops(sk, rt)
 				}
@@ -265,6 +310,12 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree, genForBBox bool) {
 					sk.Params[pi].Known = true
 				}
 			}
+		}
+	}
+
+	for _, h := range unknown {
+		if p := sk.Param(h); p != nil {
+			p.Known = false
 		}
 	}
 
@@ -364,9 +415,25 @@ func sortTailStable[E any](s []E, key func(*E) uint32) {
 
 // generateAllPruned is GenerateAll's "pruned:" exit: restore the
 // numerical guesses and try again.
-func (sk *Sketch) generateAllPruned(prev []core.Param, typ GenerateType, andFindFree, genForBBox bool) {
+func (sk *Sketch) generateAllPruned(prev []core.Param, typ GenerateType, andFindFree bool, pass regenPass) {
 	sk.Params = prev
-	sk.generateAll(typ, andFindFree, genForBBox)
+	sk.generateAll(typ, andFindFree, pass)
+}
+
+// sizeTol is the tolerance the model's size, as its entities span it,
+// gives in display mode.
+func (sk *Sketch) sizeTol() srf.Tolerance {
+	box := sk.CalculateEntityBBox(true)
+	size := box.MaxP.Minus(box.MinP)
+	maxSize := geom.Max(size.X, geom.Max(size.Y, size.Z))
+	return srf.Tol(tolStep(maxSize*sk.chordTolPct()/100.0), sk.SegmentLimit()).WithMesher(sk.Mesher)
+}
+
+// newAfterOther reports whether a regeneration of typ from the group at
+// first is of a group put in after groups whose solids were made at
+// another tolerance than the sketch's.
+func (sk *Sketch) newAfterOther(typ GenerateType, first int) bool {
+	return typ == GenerateNew && first > 0 && first <= len(sk.GroupOrder) && sk.solidsMadeAtOther(first)
 }
 
 // HGroupReferences is the handle value of the references group.
@@ -1070,13 +1137,13 @@ func (sk *Sketch) orderGroups() {
 
 // GenerateAllTyped is GenerateAll with a GenerateType.
 func (sk *Sketch) GenerateAllTyped(t GenerateType) {
-	sk.generateAll(t, false, false)
+	sk.generateAll(t, false, passBuild)
 }
 
 // GenerateAllFindFree regenerates like GenerateAllTyped and also works
 // out which parameters are free, for Analyze > Show Degrees of Freedom.
 func (sk *Sketch) GenerateAllFindFree(t GenerateType) {
-	sk.generateAll(t, true, false)
+	sk.generateAll(t, true, passBuild)
 }
 
 // ScheduleGenerateAll asks for a regeneration of the dirty groups when
@@ -1094,7 +1161,7 @@ func (sk *Sketch) Refresh() {
 			typ = GenerateNew
 		}
 		sk.scheduledGenerateAll, sk.scheduledAdded = false, core.HGroup{}
-		sk.generateAll(typ, false, false)
+		sk.generateAll(typ, false, passBuild)
 	}
 }
 

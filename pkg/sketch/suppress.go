@@ -109,7 +109,7 @@ func (sk *Sketch) nearestGenerated(h core.HGroup) core.HGroup {
 // values of its parameters, which are in prev, for when it comes back;
 // it makes no entities and has nothing to solve; and its solid is the
 // solid so far.
-func (sk *Sketch) skipGroup(g *Group, prev []core.Param, inRange, genForBBox bool) {
+func (sk *Sketch) skipGroup(g *Group, prev []core.Param, inRange, makeSolid bool) {
 	for _, p := range prev {
 		if sk.paramGroup(p.H) == g.H {
 			p.Known = true
@@ -128,7 +128,7 @@ func (sk *Sketch) skipGroup(g *Group, prev []core.Param, inRange, genForBBox boo
 	g.Solved.Timeout = false
 	g.SketchDiagnostic = nil
 	g.BooleanFailed = false
-	if !genForBBox && inRange {
+	if makeSolid && inRange {
 		g.GenerateShellAndMesh(sk)
 		g.Clean = true
 	}
