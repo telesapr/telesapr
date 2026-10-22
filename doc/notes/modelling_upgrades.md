@@ -103,9 +103,11 @@ analysis, tooling and speed.
   Jacobian kept between solves) and 9 (drawing the last solids while a drag's are made off the
   thread, which goes against 151fda16: a drag makes its solids on the thread so linked parts
   follow the pointer); 11–13 move goldens.
-- **D5.** Done 2026-10-23 on branch `wp-d5-model-script` (`doc/notes/model-to-script.md`):
+- **D5.** Done 2026-10-23 on branch `wp-d5-model-script`:
   `Doc.Script` and `File.ExportScript` beside `describe.go`, File > Export > Script, and
   `telesapr-cli export-script`. `TestScriptRoundTrip` runs every fixture's script on a new
   document and compares groups, counts, DOF, volumes and bounds: 267 of 296 come back; the
   rest (DXF imports drawn as no script draws, splines through more points, images, constraints
   on four entities, fonts beside a fixture) are listed with why.
+
+What the packages left open is in ROADMAP, "Modelling upgrade leftovers".

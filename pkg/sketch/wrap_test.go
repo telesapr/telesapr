@@ -253,9 +253,9 @@ func TestWrapTextCylinderSweep(t *testing.T) {
 const wrapConeMaxFail = 14.0 / 72
 
 // Text wrapped onto cones: the Boolean of a band with a cone fails at
-// some corners where the band is deep, and the group refuses
-// (doc/notes/wrap-emboss.md). The rate, set after the first run of the
-// whole grid, may only fall.
+// some corners where the band is deep, and the group refuses (ROADMAP,
+// "Modelling upgrade leftovers"). The rate, set after the first run of
+// the whole grid, may only fall.
 func TestWrapTextConeSweep(t *testing.T) {
 	wrapTextGrid("cone", wrapConeMaxFail, 3.0/8).Run(wrapTextCase).Require(t)
 }

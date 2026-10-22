@@ -31,7 +31,7 @@ var scriptRoundTripKnown = map[string]string{
 	"importdxf/golden/ezdxf/colors.tlspr":                     dxfTwice,
 	"importdxf/golden/ezdxf/text_negative_extrusion.3d.tlspr": dxfTwice,
 	"importdxf/golden/ezdxf/text_negative_extrusion.tlspr":    dxfTwice,
-	// Not written yet (doc/notes/model-to-script.md).
+	// Not written yet (ROADMAP, "Modelling upgrade leftovers").
 	"tlspr/golden/constraint/equal_angle/normal.tlspr":             fourEntities,
 	"tlspr/golden/constraint/equal_angle/normal_old_version.tlspr": fourEntities,
 	"tlspr/golden/constraint/equal_angle/other.tlspr":              fourEntities,

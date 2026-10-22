@@ -17,6 +17,7 @@ fixture has been done; its "Tried" notes say what not to try again.
 |---|---|---|---|---|
 | 1 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
 | 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint needs the line-arc joint inside the sweep |
+| 2a | [Modelling upgrade leftovers](#modelling-upgrade-leftovers) | kernel and feature | ? | What the 2026-10-23 work packages left; each refuses with a message today |
 | 3 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
 | 4 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Since 2026-10-11 it mends the ear clipper's crossing faces; as the default it still costs 3 to 5 times the triangles |
 | 5 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
@@ -276,6 +277,26 @@ goldens take 17% longer.
 |---|---|---|
 | Mitred sweep corners next to an arc or curve; corners on twisted or fitted sweeps | refused; corners between two lines are mitred, and any corner beside lines or arcs rounded with a corner radius (F4). Closed paths are swept since 2026-10-22 (WP-C4): started where the profile crosses the path, so the closing joint is smooth; exact round planar lines and arcs, mitres and corner radii included; fitted round cubics, twists of whole turns and paths out of a plane, the frames' turn taken out along the path | A plain mitre can't work: on the inside of the turn the halving plane cuts the arc's revolved sides. Tried twice and reverted: runs cut by a half-space box at the mitre plane and unioned (the union leaves a partial coplanar face with curved trims; 188 naked edges with a round profile); runs cut by a bent prism ("bent caps") and unioned (cuts sound, union fails on the touching faces, even between two lines; whole caps from one ellipse unite, `TestMitredBarsUnion`, so it is the cut caps, not contact). What would work: both runs and the joint in one shell with shared exact curves, which needs line-prism against arc-revolve side intersection inside `MakeFromSweepOf`. Fitted sweeps need the end frame of a fitted run and twist split by length. A corner radius (F4, done) rounds corners beside arcs, which is what users usually want |
 | Shells of other curved solids (filleted, lofted) | prisms, and since 2026-10-22 (WP-C1) one lathe or revolve of lines and arcs, by its offset profile | Offsets of patches (22.1) are the first part; faces whose offsets do not cross themselves can be sized. The general shell is open-ended (E12, parked). Left from WP-C1: a lathe joined to other solids (needs the profile from the topology), cones made by an extrusion's draft, revolves of more than half a turn with an end kept, curved faces opened at an inside corner |
+
+### Modelling upgrade leftovers
+
+What the work packages of `doc/notes/modelling_upgrades.md` (merged 2026-10-23) left open. Their
+working notes are at commit `1e84ca0c` (`git show 1e84ca0c:doc/notes/wrap-emboss.md`, and
+`model-to-script.md`, `wp-b1-b2.md`, `wp-b3-b4.md`, `wp-c3.md`, `wp-c4.md`, `wp-d1.md`,
+`wp-scripting.md` beside it).
+
+| Item | State | Approach / tried |
+|---|---|---|
+| Wrap onto a cone, deep (C2) | 14 of 72 text cases refused, all at depth 0.5 of the letter height; cylinders 0 of 72 | At a corner of the profile the face's trim doesn't assemble: marched curves end 1e-7 apart in uv, or a closed curve's two ends miss (`boolean_trim.go`, the curve ends of `surfinter.go`) |
+| Wrap: a thin wall under an emboss; loop sets wider than 170° | the wall isn't detected when the overlap crosses it; wide loop sets refused | Split a band wrapped right round into patches in place of refusing |
+| Closed lofts; a guided loft along a solid's sides; tangency at a middle profile (C4) | refused | Closed sweeps' periodic frame (`pkg/topo/pathsweep.go`) is the pattern for the first |
+| Fillets onto curved faces (C3) | 55 of 59 of `TestFilletOnOtherSolids` sound | Setbacks (`fillet_setback.go`) onto curved end faces, reached by no measured case; picks meeting at a vertex are refused there; chamfers of edges ending on a curved face (`filletApart` is for fillets only). Run-offs are under [Fillet leftovers](#fillet-leftovers) |
+| Thread fade-out (run-out); multi-start with every start at one height (B1) | not done | A fade-out needs groups after the helix (a cone cut), so a thread would no longer be four groups; starts at one height need a sketch and a helix per start |
+| Cosmetic threads in sections and around other features (B2) | sections draw threads turn by turn; anything inside a thread's band (a cross hole) is dropped with the turns; the iso view shows no root | Hatching to the root and crest in sections |
+| Datums (B4) | a datum names an entity, so faces made by no entity (a fillet's, a Boolean's) and edges of the solid can't be named; mating two names in the window is a selection from the datums screen, then the mate | A datum by `topo.Name`; a "mate these names" dialog |
+| Clearance and walls (D1) | thin spots between triangle middles are missed; gaps to parts made only of a mesh aren't followed onto surfaces; solids within one linked part aren't checked against each other; the MCP `measure` tool reports neither | |
+| Model to script (D5) | 267 of 296 fixtures come back (`scriptRoundTripKnown`, which may only shrink) | Not written: images, splines through more points (`AddSplinePoint` places a point in the nearest span), constraints on four entities (`Constrain.Raw` takes two), request styles, a face's own appearance; the MCP `export` tool doesn't write `.go` |
+| Regeneration (D4) | recommendations 3 and a solid cache taken up (`doc/notes/performance-study-2.md`, "Taken up") | 6 (the Jacobian kept between solves) open; 9 (drawing the last solids while a drag's are made off the thread) goes against 151fda16, the user's call; 11 to 13 move goldens |
 
 ## Waiting for the user
 

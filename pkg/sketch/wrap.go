@@ -19,7 +19,7 @@ import (
 // through the face by a part of its height, so that the Boolean crosses
 // the face rather than touching it, which it can't do; how far is
 // hidden in the result, inside the solid or in the air. The group makes
-// no entities; its faces are named from it (doc/notes/wrap-emboss.md).
+// no entities; its faces are named from it.
 //
 // The Boolean of a band with a cone, and now and then a cylinder, fails
 // where it can't close the trims of the face at a corner of the profile,

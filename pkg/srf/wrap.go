@@ -14,7 +14,7 @@ import (
 // wrapped onto it as paper is: lengths in the sketch are lengths on the
 // face, and near the line of the face that faces the sketch the map is
 // the identity, so the profile seen from the sketch's side looks as it
-// was drawn (doc/notes/wrap-emboss.md). On a cylinder a point at s
+// was drawn. On a cylinder a point at s
 // across and z along the axis goes to the angle s/r. A cone's sketch is
 // laid on its tangent plane along the facing generator, turned there
 // about the line across it at the sketch's middle, and rolled on by the

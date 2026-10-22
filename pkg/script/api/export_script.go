@@ -13,9 +13,9 @@ import (
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
-// This file is the model written as a script that builds it again
-// (doc/notes/model-to-script.md): the groups in order, each made by the
-// call the window's command reaches, then its requests and constraints.
+// This file is the model written as a script that builds it again:
+// the groups in order, each made by the call the window's command
+// reaches, then its requests and constraints.
 
 // Script is the drawing as a Go program that builds it again on a new
 // document through this package: the unit, the parameters and their
