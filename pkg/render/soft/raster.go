@@ -217,6 +217,12 @@ func (r *Renderer) fragment(x, y int, z float64, col [4]float64) {
 	if !ok {
 		return
 	}
+	r.blend(idx, col)
+}
+
+// blend is fragment's blend stage, for the pixel at idx that passed
+// the stipple and depth stages.
+func (r *Renderer) blend(idx int, col [4]float64) {
 	a := clamp01(col[3])
 	p := r.frame.Pix[idx*4 : idx*4+4 : idx*4+4]
 	if a == 1 {
@@ -413,6 +419,12 @@ func (r *Renderer) rasterTriangleRows(a, b, c *rvert, mode fragMode, y0, y1 int)
 				r.fragmentOpaque(px, py, z, rgb)
 				continue
 			}
+			// The stipple and depth stages first: a hidden fragment's
+			// colour is never needed, and most of a solid's are hidden.
+			idx, ok := r.fragmentDepth(px, py, z)
+			if !ok {
+				continue
+			}
 			var col [4]float64
 			switch mode {
 			case fragSolid:
@@ -430,7 +442,7 @@ func (r *Renderer) rasterTriangleRows(a, b, c *rvert, mode fragMode, y0, y1 int)
 				t := (q0*a.t + q1*b.t + q2*c.t) * qs
 				col = r.texel(s, t, r.cur.color)
 			}
-			r.fragment(px, py, z, col)
+			r.blend(idx, col)
 		}
 	}
 }
