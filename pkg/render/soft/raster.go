@@ -316,7 +316,6 @@ func edgeIncludes(dx, dy float64) bool {
 // rasterTriangle fills a triangle in window space; mode picks where
 // each fragment's colour comes from.
 func (r *Renderer) rasterTriangle(a, b, c *rvert, mode fragMode) {
-	r.readyDepth()
 	r.rasterTriangleRows(a, b, c, mode, 0, r.height)
 }
 
@@ -342,6 +341,7 @@ func (r *Renderer) rasterTriangleRows(a, b, c *rvert, mode fragMode, y0, y1 int)
 	if minX > maxX || minY > maxY {
 		return
 	}
+	r.settleRows(minY, maxY)
 
 	// Edge e_i is opposite vertex i; it is positive inside.
 	type edge struct{ ox, oy, dx, dy float64 }
@@ -439,7 +439,6 @@ func (r *Renderer) rasterTriangleRows(a, b, c *rvert, mode fragMode, y0, y1 int)
 // as GL does with GL_LINE_SMOOTH: each pixel's coverage of the line's
 // rectangle scales its alpha.
 func (r *Renderer) rasterLine(a, b *rvert, width float64) {
-	r.readyDepth()
 	r.rasterLineRows(a, b, width, 0, r.height)
 }
 
@@ -462,6 +461,7 @@ func (r *Renderer) rasterLineRows(a, b *rvert, width float64, y0, y1 int) {
 	minY = max(minY, 0, y0)
 	maxX = min(maxX, r.width-1)
 	maxY = min(maxY, r.height-1, y1-1)
+	r.settleRows(minY, maxY)
 	// Only the pixels near the segment can be covered: in each row, those
 	// within hw+0.5 of its line and within 0.5 of its ends. Bound them,
 	// with a margin far wider than the rounding of either this bound or

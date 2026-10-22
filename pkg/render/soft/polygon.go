@@ -12,7 +12,6 @@ import (
 // affine in window coordinates, since it is planar. A polygon partly
 // behind the eye isn't drawn.
 func (r *Renderer) fillPlanarPolygon(p *srf.SPolygon) {
-	r.readyDepth()
 	type wpt struct{ x, y, z float64 }
 	var contours [][]wpt
 	var all []wpt
@@ -76,6 +75,7 @@ func (r *Renderer) fillPlanarPolygon(p *srf.SPolygon) {
 	}
 	y0 := max(int(math.Floor(minY)), 0)
 	y1 := min(int(math.Ceil(maxY)), r.height-1)
+	r.settleRows(y0, y1)
 	var xs []float64
 	for py := y0; py <= y1; py++ {
 		yc := float64(py) + 0.5
