@@ -165,12 +165,12 @@ const startTries = 4
 func startsClearOfJoins(angles []float64) []float64 {
 	const steps = 900
 	quarter := math.Pi / 2
-	clear := make([]float64, steps)
+	margin := make([]float64, steps)
 	for k := range steps {
 		s := quarter * float64(k) / steps
-		clear[k] = quarter
+		margin[k] = quarter
 		for _, a := range angles {
-			clear[k] = min(clear[k], math.Abs(math.Remainder(s+a, quarter)))
+			margin[k] = min(margin[k], math.Abs(math.Remainder(s+a, quarter)))
 		}
 	}
 	var picked []float64
@@ -183,8 +183,8 @@ func startsClearOfJoins(angles []float64) []float64 {
 			}) {
 				continue
 			}
-			if clear[k] > best {
-				best, bestAt = clear[k], s
+			if margin[k] > best {
+				best, bestAt = margin[k], s
 			}
 		}
 		picked = append(picked, bestAt)
