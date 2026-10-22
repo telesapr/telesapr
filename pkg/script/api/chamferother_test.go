@@ -22,12 +22,12 @@ func TestChamferOnOtherSolids(t *testing.T) {
 		"sphere_bored": 2, "vase_revolved": 2, "lid_degree7": 12}
 	total, made := 0, 0
 	for _, c := range otherSolids(t) {
-		tl := cutEveryEdge(t, c.build, c.r, 16, true)
+		tl := cutEveryEdge(t, c.build, c.r, edgesPerSolid(), true)
 		t.Logf("%s, d %g: %s", c.name, c.r, tl)
 		if tl.unsound > 0 {
 			t.Errorf("%s: %d chamfers made but not sound", c.name, tl.unsound)
 		}
-		if tl.sound < minMade[c.name] {
+		if !raceDetector && tl.sound < minMade[c.name] {
 			t.Errorf("%s: %d chamfers made, %d were", c.name, tl.sound, minMade[c.name])
 		}
 		total += tl.sound + tl.unsound + tl.refused

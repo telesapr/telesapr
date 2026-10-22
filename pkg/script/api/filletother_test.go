@@ -108,18 +108,29 @@ func TestFilletOnOtherSolids(t *testing.T) {
 	}
 	total, made := 0, 0
 	for _, c := range otherSolids(t) {
-		tl := filletEveryEdge(t, c.build, c.r, 16)
+		tl := filletEveryEdge(t, c.build, c.r, edgesPerSolid())
 		t.Logf("%s, r %g: %s", c.name, c.r, tl)
 		if tl.unsound > 0 {
 			t.Errorf("%s: %d fillets made but not sound", c.name, tl.unsound)
 		}
-		if tl.sound < c.minMade {
+		if !raceDetector && tl.sound < c.minMade {
 			t.Errorf("%s: %d fillets made, %d were", c.name, tl.sound, c.minMade)
 		}
 		total += tl.sound + tl.unsound + tl.refused
 		made += tl.sound
 	}
 	t.Logf("in all: %d of %d edges filleted soundly (%.0f%%)", made, total, 100*float64(made)/float64(total))
+}
+
+// edgesPerSolid is how many edges of each solid the fillet and chamfer
+// sweeps cut. Under the race detector, which makes the rolling ball some
+// ten times slower, only the first few: what is made must still be
+// sound, but the counts are the plain run's to hold.
+func edgesPerSolid() int {
+	if raceDetector {
+		return 4
+	}
+	return 16
 }
 
 // otherSolid is a solid of TestFilletOnOtherSolids: how to build it, the
