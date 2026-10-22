@@ -24,6 +24,9 @@ func benchmarkRegenerate(b *testing.B, name string, copies map[uint32]float64) {
 				b.Fatal(err)
 			}
 			sk := doc.Sketch
+			// The kernel is what is timed: every solid made again, none
+			// taken from the cache of solids made before.
+			sk.NoSolidCache = true
 			for h, n := range copies {
 				sk.Group(core.HGroup{V: h}).ValA = n
 			}
