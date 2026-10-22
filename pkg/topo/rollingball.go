@@ -68,7 +68,10 @@ type rbSection struct {
 
 // rollingBall is a fillet's edge, its two sides, and the ball.
 type rollingBall struct {
-	t      *Topology
+	t *Topology
+	// robust has the feet projected by srf.SSurface.Project, for a
+	// section whose plain steps didn't settle.
+	robust bool
 	r      float64
 	flat   bool
 	sigma  float64 // 1 for a convex edge, whose ball lies inside the solid
@@ -145,17 +148,44 @@ func (t *Topology) Smooth(e int) bool { return t.smoothEdge(e) }
 // the solid between the same two faces: the only edge there, other than
 // e, that is not smooth; -1 when there is none.
 func (t *Topology) blendNext(e, v int) int {
-	next := -1
+	var cands []int
 	for _, x := range t.Vertices[v].Edges {
 		if x == e || t.smoothEdge(x) {
 			continue
 		}
-		if next >= 0 {
-			return -1
-		}
-		next = x
+		cands = append(cands, x)
 	}
-	return next
+	if len(cands) > 1 {
+		// A crease that fades out at v, as a loft's between two side
+		// patches at its round top, is no corner there: the edge goes on
+		// past it.
+		cands = slices.DeleteFunc(cands, func(x int) bool { return t.smoothAt(x, t.Vertices[v].P) })
+	}
+	if len(cands) != 1 {
+		return -1
+	}
+	return cands[0]
+}
+
+// smoothAt reports whether edge x's two faces meet tangentially at p, a
+// point of the edge.
+func (t *Topology) smoothAt(x int, p geom.Vector) bool {
+	fs := t.EdgeFaces(x)
+	if len(t.Edges[x].CoEdges) != 2 || fs[0] < 0 || fs[1] < 0 || fs[0] == fs[1] {
+		return false
+	}
+	a, b := t.Surface(fs[0]), t.Surface(fs[1])
+	if a == nil || b == nil {
+		return false
+	}
+	var ua, va, ub, vb float64
+	a.ClosestPointToUV(p, &ua, &va, true)
+	b.ClosestPointToUV(p, &ub, &vb, true)
+	na, nb := a.NormalAt(ua, va), b.NormalAt(ub, vb)
+	if na.Magnitude() == 0 || nb.Magnitude() == 0 {
+		return false
+	}
+	return na.WithMagnitude(1).Dot(nb.WithMagnitude(1)) >= seamCos
 }
 
 // blendChain is the edge of the solid through edge e, across the seams
@@ -227,7 +257,7 @@ func (t *Topology) joinedAt(v, a, b int) bool {
 	}
 	for _, x := range t.Vertices[v].Edges {
 		fs := t.EdgeFaces(x)
-		if (fs[0] == a && fs[1] == b || fs[0] == b && fs[1] == a) && t.smoothEdge(x) {
+		if (fs[0] == a && fs[1] == b || fs[0] == b && fs[1] == a) && (t.smoothEdge(x) || t.smoothAt(x, t.Vertices[v].P)) {
 			return true
 		}
 	}
@@ -383,7 +413,14 @@ func (rb *rollingBall) footNear(k int, x geom.Vector, nr rbNear) rbFoot {
 			continue
 		}
 		s := rb.t.Surface(f)
-		u, v, p := nearestOnWithin(s, x, ext)
+		var u, v float64
+		var p geom.Vector
+		if rb.robust {
+			pr := s.Project(x, ext)
+			u, v, p = pr.U, pr.V, pr.P
+		} else {
+			u, v, p = nearestOnWithin(s, x, ext)
+		}
 		out := math.Max(math.Max(-u, u-1), math.Max(-v, v-1))
 		out = math.Max(0, out-1e-9)
 		d := p.Minus(x).Magnitude()
@@ -660,7 +697,21 @@ func (rb *rollingBall) section(s float64) (rbSection, error) {
 	for k, f := range []rbFoot{a, b} {
 		dist := c.Minus(f.p)
 		eps := 1e-6 * math.Max(1, rb.r)
+		if onPatchEdge(f.u) || onPatchEdge(f.v) {
+			// At the edge between two patches that meet smoothly within
+			// seamCos, as a loft's crease fading out at its top, the ball
+			// touching both comes within that angle's sag of each.
+			eps += 2 * rb.r * (1 - seamCos)
+		}
 		if !converged || math.Abs(dist.Magnitude()-rb.r) > eps || math.Abs(dist.Dot(f.n)+sr) > eps {
+			if !rb.robust {
+				// The steps may have stopped short of a foot on a twisted
+				// patch: the section again, the feet projected robustly.
+				rb.robust = true
+				sec, err := rb.section(s)
+				rb.robust = false
+				return sec, err
+			}
 			return sec, filletErr(f.p, "the ball the fillet rolls doesn't touch the face on side %d here: "+
 				"the fillet runs off the face, or its radius is too large for the face's curve", k+1)
 		}
@@ -1582,6 +1633,16 @@ func splitNearest(sh *srf.SShell, p, v geom.Vector) error {
 // is given are on faces far from the ball, where the steps don't settle
 // and the answer is thrown away, and Project's refining them made the
 // fillets of TestFilletOnOtherSolids four times slower, none better.
+// onPatchEdge reports whether parameter u is at an end of a patch's
+// range.
+func onPatchEdge(u float64) bool {
+	return math.Abs(u) < 1e-9 || math.Abs(u-1) < 1e-9
+}
+
+// longStep is the step in (u, v), summed, past which nearestOnWithin
+// checks that it brings the point nearer.
+const longStep = 1e-3
+
 func nearestOnWithin(s *srf.SSurface, x geom.Vector, ext float64) (float64, float64, geom.Vector) {
 	var u, v float64
 	s.ClosestPointToUV(x, &u, &v, false)
@@ -1599,6 +1660,17 @@ func nearestOnWithin(s *srf.SSurface, x geom.Vector, ext float64) (float64, floa
 		}
 		du, dv := (a22*b1-a12*b2)/det, (a11*b2-a12*b1)/det
 		nu, nv := clamp(u+du), clamp(v+dv)
+		// A long step that takes the point further away has overshot
+		// round a twisted patch's curve, as at a loft's corner: halved
+		// until it doesn't. The short steps near the foot are left alone,
+		// cheap and to the last bit as they were.
+		for range 12 {
+			if math.Abs(du)+math.Abs(dv) < longStep || s.PointAt(nu, nv).Minus(x).Magnitude() <= d.Magnitude()*(1+1e-9)+1e-12 {
+				break
+			}
+			du, dv = du/2, dv/2
+			nu, nv = clamp(u+du), clamp(v+dv)
+		}
 		moved := math.Abs(nu-u) + math.Abs(nv-v)
 		u, v = nu, nv
 		if moved < 1e-15 {

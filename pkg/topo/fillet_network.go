@@ -243,6 +243,13 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 			return rerr
 		}
 	}
+	if (curvedEndRefusal(err) || rollingAloneRefusal(err)) && len(picks) > 1 && !flat {
+		// Picks whose fillets don't meet, some of them the rolling
+		// ball's: one after another.
+		if aerr := filletApart(sh, picks, r, origin); !errors.Is(aerr, errNotApart) {
+			return aerr
+		}
+	}
 	if err == nil || !mixedCorner(err) && !setbackRefusal(err) {
 		return err
 	}
@@ -284,6 +291,17 @@ func curvedEndRefusal(err error) bool {
 	var fx *FilletError
 	return errors.As(err, &fx) && fx.Msg == "a face at the edge's end is curved"
 }
+
+// rollingAloneRefusal reports whether err refuses a rolling-ball edge
+// picked with others.
+func rollingAloneRefusal(err error) bool {
+	var fx *FilletError
+	return errors.As(err, &fx) && strings.HasPrefix(fx.Msg, rollingAloneMsg)
+}
+
+// rollingAloneMsg begins the refusal of a rolling-ball edge picked with
+// others whose fillets it meets.
+const rollingAloneMsg = "this edge's fillet rolls a ball between curved faces, which is made on its own"
 
 // filletOnCurvedEnd rounds the one picked edge p by the rolling ball.
 func filletOnCurvedEnd(sh *srf.SShell, p FilletPick, r float64, origin uint32, flat bool) error {
@@ -389,8 +407,8 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 					if !errors.Is(merr, errNotMitred) {
 						return merr
 					}
-					return filletErr(midpoint(t.Edges[e].Points), "this edge's fillet rolls a ball between curved "+
-						"faces, which is made on its own: pick it alone (%v)", err)
+					return filletErr(midpoint(t.Edges[e].Points), rollingAloneMsg+
+						": pick it alone, or with edges whose fillets don't meet its own (%v)", err)
 				}
 				rerr := rollingBallFillet(sh, t, e, pr, origin, flat)
 				if errors.Is(rerr, errNotRolling) || rerr != nil && strings.Contains(err.Error(), "large") {

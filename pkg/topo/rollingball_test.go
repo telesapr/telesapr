@@ -177,7 +177,7 @@ func TestRollingBallSphere(t *testing.T) {
 }
 
 // What the rolling ball refuses, with the place: a radius the hole's
-// rim has no room for, and an edge picked with another.
+// rim has no room for, and an edge picked with another that is refused.
 func TestRollingBallRefusals(t *testing.T) {
 	sh, at := branched(0.5, math.Pi/2, 0, true)
 	err := topo.FilletPicks(sh, []topo.FilletPick{{At: at, Arc: true}}, 3, 1<<30, false)
@@ -187,12 +187,16 @@ func TestRollingBallRefusals(t *testing.T) {
 	} else if fe.At.Magnitude() < 5 {
 		t.Errorf("the refusal is placed at %v, not on the rim", fe.At)
 	}
-	// With another edge picked too, the ball's edge must be picked alone.
+	// With the pipe's top rim picked too, apart from the ball's edge: the
+	// rim is rounded first, and refused as it is alone, the pipe's wall
+	// holding the branch's curve, which isn't exact.
 	sh, at = branched(0.5, math.Pi/2, 0, false)
 	top := v(10*math.Cos(0.3), 10*math.Sin(0.3), 20)
+	alone := topo.FilletPicks(sh, []topo.FilletPick{{At: top, Arc: true}}, 1, 1<<30, false)
+	sh, _ = branched(0.5, math.Pi/2, 0, false)
 	err = topo.FilletPicks(sh, []topo.FilletPick{{At: top, Arc: true}, {At: at, Arc: true}}, 1, 1<<30, false)
-	if err == nil || !strings.Contains(err.Error(), "pick it alone") {
-		t.Errorf("the ball's edge with another: %v", err)
+	if err == nil || alone == nil || err.Error() != alone.Error() {
+		t.Errorf("the ball's edge with the rim: %v; the rim alone: %v", err, alone)
 	}
 }
 

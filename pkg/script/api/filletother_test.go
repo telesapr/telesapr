@@ -123,7 +123,7 @@ func TestFilletOnOtherSolids(t *testing.T) {
 				d.Sketch.Circle(V(0, 0, p.z), p.r)
 			}
 			return d.Features.LoftThrough(ps, "vase")
-		}, 2, 0},
+		}, 2, 8},
 		{"sweep", func(d *Doc) Group {
 			d.Features.SketchIn(d.Workplane("ZX"), "path")
 			up := d.Sketch.Line(V(0, 0, 0), V(0, 0, 30))
@@ -158,6 +158,41 @@ func TestFilletOnOtherSolids(t *testing.T) {
 		made += tl.sound
 	}
 	t.Logf("in all: %d of %d edges filleted soundly (%.0f%%)", made, total, 100*float64(made)/float64(total))
+}
+
+// The loft of TestFilletOnOtherSolids from a square foot through three
+// circles: its top ring is four edges between the flat top and the side
+// patches, which meet in creases that fade out at the ring. The ring is
+// one chain past them, and its fillet of 2 is sound. OpenCASCADE's
+// makeFillet of the four edges took 241.787 mm³ and ours, exported as
+// STEP, 241.807 by its volumes (checked 2026-10-22). Our own meshes can't
+// tell: the side's chords change with its trims by more than that.
+func TestFilletLoftTopRing(t *testing.T) {
+	if testing.Short() {
+		t.Skip("rolling-ball fillet round a loft, slow")
+	}
+	d := New()
+	d.Edit.SetChordTolerance(0.01)
+	d.Features.SketchIn(d.Workplane("XY"), "foot")
+	d.Sketch.Rect(V(-18, -18, 0), V(18, 18, 0))
+	ps := []Group{d.Groups()[len(d.Groups())-1]}
+	for _, p := range []struct{ z, r float64 }{{24, 30}, {50, 10}, {60, 14}} {
+		d.Features.Sketch3D("")
+		o := d.Sketch.Point(V(0, 0, p.z))
+		ps = append(ps, d.Features.SketchAt(o, V(1, 0, 0), V(0, 1, 0), ""))
+		d.Sketch.Circle(V(0, 0, p.z), p.r)
+	}
+	g := d.Features.LoftThrough(ps, "vase")
+	before := g.Analyze().Check().Volume
+	f := d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(V(14*math.Cos(0.3), 14*math.Sin(0.3), 60))}, 2, "")
+	if p := f.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	rep := f.Analyze().Check()
+	t.Logf("took %.6g by the meshes", before-rep.Volume)
+	if !rep.Sound() {
+		t.Errorf("%s", rep.Summary())
+	}
 }
 
 // A fillet of radius 1 round the foot of a cylinder of radius 5 read
@@ -267,6 +302,68 @@ func TestFilletEndsOnCurvedFace(t *testing.T) {
 		if !d.Edit.Undo() || len(d.Groups()) >= n {
 			t.Errorf("undo left %d groups of %d", len(d.Groups()), n)
 		}
+	}
+}
+
+// The lid's four upright edges picked together, each ending on its
+// dome: the rolling ball rounds each alone, one after another, as their
+// fillets don't meet (topo.filletApart), and together they take what
+// OpenCASCADE's makeFillet takes from each alone (TestFilletEndsOnCurvedFace)
+// within half a percent. An upright picked with a bottom edge it meets
+// is refused at their corner.
+func TestFilletEndsOnCurvedFaceApart(t *testing.T) {
+	if testing.Short() {
+		t.Skip("fillets over curved faces, slow")
+	}
+	lid := filepath.Join("..", "..", "..", "testdata", "step", "degree", "lid_degree7.step")
+	d := New()
+	d.Edit.SetChordTolerance(0.002)
+	g, err := d.Assembly.LinkStep(lid, "", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := g.Analyze().Check().Volume
+	var edges []SolidEdge
+	for _, at := range []Vec{V(0, 0, 5), V(40, 0, 5), V(40, 30, 5), V(0, 30, 4)} {
+		edges = append(edges, g.Solid().EdgeAt(at))
+	}
+	f := d.Features.FilletSolid(edges, 1, "")
+	if p := f.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	rep := f.Analyze().Check()
+	const want = 2.173344 + 2.292926 + 2.025750 + 1.804228
+	took := before - rep.Volume
+	t.Logf("took %.6g, OpenCASCADE alone %g", took, want)
+	if !rep.Sound() || math.Abs(took-want) > 0.005*want {
+		t.Errorf("%s, took %g, OpenCASCADE %g", rep.Summary(), took, want)
+	}
+
+	d = New()
+	if g, err = d.Assembly.LinkStep(lid, "", true); err != nil {
+		t.Fatal(err)
+	}
+	var bottom SolidEdge
+	found := false
+	for _, e := range g.Solid().Edges() {
+		if a, b := e.Ends(); e.Straight() && a.Z < 1e-6 && b.Z < 1e-6 && (a.X < 1e-6 && a.Y < 1e-6 || b.X < 1e-6 && b.Y < 1e-6) {
+			bottom, found = e, true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("no bottom edge at the origin")
+	}
+	why := func() (msg string) {
+		defer func() {
+			if x := recover(); x != nil {
+				msg = fmt.Sprint(x)
+			}
+		}()
+		return d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(V(0, 0, 5)), bottom}, 1, "").Problem()
+	}()
+	if !strings.Contains(why, "pick it alone") {
+		t.Errorf("an upright with the bottom edge it meets: %q", why)
 	}
 }
 
