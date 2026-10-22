@@ -729,14 +729,7 @@ func (sk *Sketch) WriteEquationsExceptFor(hg core.HGroup, hc core.HConstraint, l
 func (sk *Sketch) writeEqSystemForGroup(hg core.HGroup, groupParams []core.HParam) (*solver.System, *solver.Group) {
 	g := sk.Group(hg)
 
-	sys := &solver.System{SK: sk.Param}
-	// The solver works on copies of the group's params, with the
-	// sketch's values as initial guesses.
-	for _, h := range groupParams {
-		p := *sk.Param(h)
-		p.Known = false
-		sys.AddParam(p)
-	}
+	sys := sk.keptSystem(hg, groupParams)
 	for _, h := range sk.hooks().DraggedParams() {
 		if sys.Dragged == nil {
 			sys.Dragged = make(map[core.HParam]bool)

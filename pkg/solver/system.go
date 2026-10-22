@@ -89,6 +89,9 @@ type System struct {
 	// as the rank test factors it and as the Newton step factors it,
 	// transposed, for the next factorisation with the same pattern.
 	rankSym, stepSym symbolicCache
+	// written keeps the Jacobians WriteJacobian wrote, by what they
+	// were written from (jacobian_memo.go).
+	written jacobianMemo
 }
 
 // AddParam adds an unknown, with the sketch param's value as its
@@ -231,6 +234,12 @@ func (s *System) WriteJacobian(tag int) bool {
 	}
 	s.mat.n = len(s.mat.param)
 
+	key := s.written.key(s, tag)
+	if w, ok := s.written.get(key); ok {
+		s.mat.A, s.mat.B = w.A, w.B
+		return true
+	}
+
 	s.mat.A = make([][]*core.Expr, s.mat.m)
 	seen := make(map[core.HParam]bool)
 	var used []core.HParam
@@ -256,6 +265,7 @@ func (s *System) WriteJacobian(tag int) bool {
 		}
 		s.mat.B = append(s.mat.B, f)
 	}
+	s.written.put(key, s.mat.A, s.mat.B)
 	return true
 }
 

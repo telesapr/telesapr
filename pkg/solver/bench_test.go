@@ -82,11 +82,24 @@ func benchmarkSolve(b *testing.B, n int, closed bool) {
 }
 
 func benchmarkSolveChain(b *testing.B, ch *chain) {
+	b.Run("new", func(b *testing.B) { benchmarkSolveSystem(b, ch, false) })
+	b.Run("kept", func(b *testing.B) { benchmarkSolveSystem(b, ch, true) })
+}
+
+// benchmarkSolveSystem solves ch over and over, with a new system each
+// time or with one kept and reseeded, as the sketch keeps one per
+// group.
+func benchmarkSolveSystem(b *testing.B, ch *chain, keep bool) {
 	// The first solve settles the sketch, as a regeneration does.
-	ch.system().Solve(ch.g, true, false, true)
+	kept := ch.system()
+	kept.Solve(ch.g, true, false, true)
 	b.ResetTimer()
 	for b.Loop() {
 		s := ch.system()
+		if keep {
+			kept.Reseed(ch.sk.get)
+			s = kept
+		}
 		if how, _, _ := s.Solve(ch.g, true, false, false); how != core.SolveOkay {
 			b.Fatalf("how %d", how)
 		}
@@ -125,12 +138,22 @@ func BenchmarkSolveDimensioning(b *testing.B) {
 // the point's x marked as dragged, as the window does on each mouse
 // move.
 func BenchmarkSolveDrag(b *testing.B) {
+	b.Run("new", func(b *testing.B) { benchmarkSolveDrag(b, false) })
+	b.Run("kept", func(b *testing.B) { benchmarkSolveDrag(b, true) })
+}
+
+func benchmarkSolveDrag(b *testing.B, keep bool) {
 	ch := makeChain(100, false)
-	ch.system().Solve(ch.g, true, false, true)
+	kept := ch.system()
+	kept.Solve(ch.g, true, false, true)
 	b.ResetTimer()
 	for b.Loop() {
 		ch.sk[ch.last].Val += 0.1
 		s := ch.system()
+		if keep {
+			kept.Reseed(ch.sk.get)
+			s = kept
+		}
 		s.Dragged = map[core.HParam]bool{ch.last: true}
 		if how, _, _ := s.Solve(ch.g, true, false, false); how != core.SolveOkay {
 			b.Fatalf("how %d", how)
