@@ -1,10 +1,8 @@
 package api
 
 import (
-	"fmt"
 	"math"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -20,7 +18,7 @@ func TestChamferOnOtherSolids(t *testing.T) {
 	if testing.Short() {
 		t.Skip("STEP solids at a fine tolerance")
 	}
-	minMade := map[string]int{"loft": 8, "sweep": 12, "box_hole": 14, "cylinder": 2, "blob_extruded": 1,
+	minMade := map[string]int{"loft": 12, "sweep": 12, "box_hole": 14, "cylinder": 2, "blob_extruded": 1,
 		"sphere_bored": 2, "vase_revolved": 2, "lid_degree7": 12}
 	total, made := 0, 0
 	for _, c := range otherSolids(t) {
@@ -148,22 +146,24 @@ func TestChamferEndsOnCurvedFaceApart(t *testing.T) {
 }
 
 // A chamfer of the loft's foot edge, between its flat foot and a curved
-// side, ending where the sides meet in creases: the rolling ball can't
-// fit its end there, and the chamfer says so rather than cutting a wedge
-// that would leave the solid open.
-func TestChamferRollingRefusal(t *testing.T) {
+// side, ending where the sides meet in creases: its rulings twist near
+// the ends, which the rolling ball's sections there are fitted to, each
+// end's way along the chamfer from its foot's own ruling. Exported as
+// STEP and read by OpenCASCADE (2026-10-23), the solid is valid and the
+// chamfer of 2 took 40.142 mm³; OpenCASCADE's own makeChamfer of the edge
+// takes 40.134 and leaves a solid it finds invalid.
+func TestChamferLoftFoot(t *testing.T) {
+	if testing.Short() {
+		t.Skip("rolling-ball chamfer of a loft, slow")
+	}
 	d := New()
 	d.Edit.SetChordTolerance(0.01)
 	g := otherSolids(t)[0].build(d)
-	msg := func() (msg string) {
-		defer func() {
-			if x := recover(); x != nil {
-				msg = fmt.Sprint(x)
-			}
-		}()
-		return d.Features.ChamferSolid([]SolidEdge{g.Solid().EdgeAt(V(0, -18, 0))}, 2, "").Problem()
-	}()
-	if !strings.Contains(msg, "curved face its edge ends at") {
-		t.Errorf("the loft's foot chamfered: %q", msg)
+	f := d.Features.ChamferSolid([]SolidEdge{g.Solid().EdgeAt(V(0, -18, 0))}, 2, "")
+	if p := f.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	if rep := f.Analyze().Check(); !rep.Sound() {
+		t.Errorf("%s", rep.Summary())
 	}
 }

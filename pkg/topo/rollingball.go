@@ -64,6 +64,9 @@ type rbSection struct {
 	// (conicIn), cutN zero for the ball's own.
 	cutN geom.Vector
 	cutD float64
+	// footS are, for an end section, the arc lengths of the ball's own
+	// sections each foot is taken from.
+	footS [2]float64
 }
 
 // rollingBall is a fillet's edge, its two sides, and the ball.
@@ -1180,6 +1183,15 @@ func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, 
 			if !rb.flat {
 				// Both: the sections near the ends fitted to their cuts,
 				// in two spans each.
+				rb.fitCuts = true
+				if fsf, fsecs, fcross, ferr := rb.blendOpen(); ferr == nil {
+					return fsf, fsecs, fcross, nil
+				}
+				rb.fitCuts = false
+			} else {
+				// A chamfer's end on a doubly curved face, where its rulings
+				// twist: its sections near the end fitted to their cuts, in
+				// two spans each.
 				rb.fitCuts = true
 				if fsf, fsecs, fcross, ferr := rb.blendOpen(); ferr == nil {
 					return fsf, fsecs, fcross, nil

@@ -273,6 +273,7 @@ func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error
 			return sec, 0, err
 		}
 		sec.s = (ss[0] + ss[1] + ss[2]) / 3
+		sec.footS = [2]float64{ss[0], ss[1]}
 		inner := math.Max(ss[0], math.Max(ss[1], ss[2]))
 		if k == 1 {
 			inner = math.Min(ss[0], math.Min(ss[1], ss[2]))
@@ -335,6 +336,7 @@ func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error
 	}
 	rb.endS[k] = ss
 	sec.s = (ss[0] + ss[1] + ss[2]) / 3
+	sec.footS = [2]float64{ss[0], ss[1]}
 	if end.mitre {
 		// As the sections near it are reckoned (mitreSection).
 		ms, err := rb.mitreRoots(k)
@@ -1066,7 +1068,7 @@ func (rb *rollingBall) curvedEndSection(k int, sec rbSection) (rbSection, error)
 		// curve's way at its ends is along the face and the chamfer's own
 		// surface, through its ruling and the curve each side's foot
 		// runs along.
-		sec.foot = rb.chamferNormals(sec)
+		sec.foot = rb.chamferFootNormals(sec)
 	}
 	// The curve's way at its ends: along the face and the side's.
 	tanAt := func(q, n geom.Vector) geom.Vector {
@@ -1094,6 +1096,10 @@ func (rb *rollingBall) curvedEndSection(k int, sec rbSection) (rbSection, error)
 // tube, and the conic only near the cut.
 func (rb *rollingBall) planeCutSection(k int, sec rbSection) (rbSection, error) {
 	nrm, d := sec.cutN, sec.cutD
+	if rb.flat {
+		// The cut's way at a foot is along the chamfer, not the face.
+		sec.foot = rb.chamferFootNormals(sec)
+	}
 	return rb.fitCut(k, sec, false, func(_, n geom.Vector) geom.Vector { return nrm.Cross(n) },
 		func(p geom.Vector) float64 { return nrm.Dot(p) - d }, "the fillet's end section near the face its edge ends at",
 		"the fillet's end section near the face its edge ends at strays %.3g mm from its plane here: make it smaller")
@@ -1366,6 +1372,30 @@ func (rb *rollingBall) chamferNormals(sec rbSection) [2]rbFoot {
 		}
 		if n := ruling.Cross(way); n.Magnitude() > 0 {
 			feet[k].n = n.WithMagnitude(1)
+		}
+	}
+	return feet
+}
+
+// chamferFootNormals is chamferNormals for an end section, which cuts
+// the chamfer obliquely: each foot lies on the chamfer's section of its
+// own arc length (footS), whose ruling and whose foot's way along the
+// edge give the chamfer's normal there, not the end section's chord.
+func (rb *rollingBall) chamferFootNormals(sec rbSection) [2]rbFoot {
+	feet := sec.foot
+	h := 1e-3 * math.Max(1, rb.r)
+	for i := range feet {
+		si := sec.footS[i]
+		at, err := rb.section(si)
+		a, aerr := rb.section(si - h)
+		b, berr := rb.section(si + h)
+		if err != nil || aerr != nil || berr != nil {
+			return rb.chamferNormals(sec)
+		}
+		ruling := at.foot[1].p.Minus(at.foot[0].p)
+		way := b.foot[i].p.Minus(a.foot[i].p)
+		if n := ruling.Cross(way); n.Magnitude() > 0 {
+			feet[i].n = n.WithMagnitude(1)
 		}
 	}
 	return feet
