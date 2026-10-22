@@ -2,7 +2,8 @@
 
 Examples: [`examples/scripts/loft`](../../examples/scripts/loft/loft.go), a round-to-square
 duct adapter; [`examples/scripts/vase`](../../examples/scripts/vase/vase.go), a vase lofted
-smoothly through four profiles.
+smoothly through four profiles; [`examples/scripts/ring`](../../examples/scripts/ring/ring.go),
+a ring closed on itself.
 
 A loft joins the closed loop of the active group's sketch, in a workplane, to those of other
 sketches. Activate one sketch, select any entity of each other one, and choose Features > Loft
@@ -65,7 +66,8 @@ there, so the side carries on into the loft without a crease; at a corner betwee
 leaves along the line they meet in. Where the sides are square to the face that is the same as
 square to it; where they lean, as a drafted extrusion's or a cone's do, the loft follows the
 lean. The number is the slope's reach as for square ends, 1 where it is 0. A profile that is not
-on the edges of a side below its face is the loft's problem. Example:
+on the edges of a side below its face is the loft's problem. A loft held by guides follows the
+sides too, and still holds its guides. Example:
 [`examples/scripts/spire`](../../examples/scripts/spire/spire.go), a spire on a tapered post.
 
 ```go
@@ -93,7 +95,40 @@ loft.AsLoft().SetGuides([]api.Entity{right, left}) // two guides
 loft.AsLoft().SetGuides(nil)                       // none again
 ```
 
+## Square to a profile between the ends
+
+A smooth loft can be held square to a profile it goes through between its ends, as its ends can
+be: each such profile's row on the loft's screen says how the loft *passes* it, free or square
+to it by a number, and [change] sets the number (0 frees it). The slope across there is that many
+times the loft's length, so the loft runs straight through the profile for a stretch, where free
+it would bend through it as the profiles about it shape it. The loft is then one surface from
+each held profile to the next, meeting there with one slope, still one face. A guided loft can't
+also hold a profile between its ends. Example:
+[`examples/scripts/waist`](../../examples/scripts/waist/waist.go), a column running straight up
+through its waist.
+
+```go
+loft.AsLoft().SetProfileTangency(waist, 0.5) // square to the waist
+loft.AsLoft().SetProfileTangency(waist, 0)   // free again
+```
+
+## Closed into a ring
+
+A smooth loft, of three profiles or more, can go on from its last profile back to its first:
+[closed] on the last row of its screen ([open] undoes it). The ring has no caps, and is as smooth
+where it closes as anywhere else. It has no ends to set, nothing to turn its profiles against,
+no guides and no profiles held square; any of those set is the loft's problem. Profiles more
+than a quarter turn apart round the ring are refused: the sections between them would pinch, so
+draw more. Between profiles turned far apart the loft's sections shrink as the profiles' blend
+does, so a ring of few profiles is thinner between them than a torus; eight or more round a
+circle make one within a percent. Example:
+[`examples/scripts/ring`](../../examples/scripts/ring/ring.go), a ring that swells and narrows.
+
+```go
+ring := doc.Features.LoftThrough(profiles, "ring")
+ring.AsLoft().SetClosed(true)
+```
+
 ## Not yet
 
-Three guides or more are refused, and a guided loft can't also follow a solid's sides; nor is
-tangency set at a profile between the ends.
+Three guides or more are refused. A closed loft can't be held by guides or square to a profile.

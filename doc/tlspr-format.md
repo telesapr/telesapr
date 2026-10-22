@@ -208,6 +208,8 @@ group <handle> <type> <name> {
   op-a <handle>
   op-b <handle>
   loft-through <handle> ... # loft: the profiles between op-a and op-b a smooth loft goes through, in order
+  through-tangency <real> ... # loft: how square it passes each of those, in order, 0 for free; left out when all are
+  closed-loft               # loft: goes from op-b back to op-a, a ring with no caps
   copies = <expression>     # step and repeat: the number of copies
   pitch = <expression>      # helix: the fixed pitch, a length; 0 when free
   distance = <expression>   # chamfer: the distance from each edge, a length (the field pitch is under another name)
@@ -622,6 +624,9 @@ A loft's `edges` are its guide curves since 2026-10-04 (roadmap 28.3): line segm
 cubics drawn before it, each chain of them that joins end to end one guide from the first
 profile through every profile to the last, two at most. A reader from before reads the field
 and ignores it, so the loft is made without its guides.
+
+Version 2 gained the loft fields `through-tangency` and `closed-loft` on 2026-10-23. A reader
+from before skips them with a report, and makes the loft free through its profiles, open.
 
 Version 2 gained the workplane subtype `face`, with the `predef` field `at`, on 2026-10-10
 (roadmap F1). A reader from before refuses the unknown subtype.
