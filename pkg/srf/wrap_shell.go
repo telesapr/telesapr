@@ -1,8 +1,10 @@
 package srf
 
 import (
+	"cmp"
+	"errors"
 	"fmt"
-	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -24,7 +26,7 @@ func (s *SShell) MakeFromWrapOf(sbls *SBezierLoopSet, w *Wrap, h0, h1 float64, c
 	if w.LiftFactor(h0) <= 1e-6 || w.LiftFactor(h1) <= 1e-6 {
 		return fmt.Errorf("a depth of %g reaches the face's axis", max(-h0, -h1))
 	}
-	capAt0, err := w.capPatch(sbls, max(math.Abs(h0), math.Abs(h1)))
+	capsAt0, seams, err := w.capPatches(sbls, h0, h1)
 	if err != nil {
 		return err
 	}
@@ -40,66 +42,80 @@ func (s *SShell) MakeFromWrapOf(sbls *SBezierLoopSet, w *Wrap, h0, h1 float64, c
 	flat := FromPlane(geom.Vector{}, nn.NormalDir(0), nn.NormalDir(1))
 	bottomUp := flat.NormalAt(0.5, 0.5).Dot(along) > 0
 
-	s0 := w.liftedSurface(capAt0, h0)
-	s1 := w.liftedSurface(capAt0, h1)
-	w.faceCap(&s0, bottomUp)
-	w.faceCap(&s1, !bottomUp)
-	for _, c := range []*SSurface{&s0, &s1} {
-		c.Color = color
-		c.TrimBuilt = true
-	}
-	// Every curve wrapped and lifted, before anything is added.
-	loops := sbls.loops()
-	los, his := make([][]SBezier, len(loops)), make([][]SBezier, len(loops))
-	for i, l := range loops {
-		for bi := range l.Curves {
-			lo, hi, err := w.bandCurves(&l.Curves[bi], h0, h1)
-			if err != nil {
-				return err
-			}
-			los[i] = append(los[i], lo...)
-			his[i] = append(his[i], hi...)
+	s0s, s1s := make([]SSurface, len(capsAt0)), make([]SSurface, len(capsAt0))
+	for i := range capsAt0 {
+		s0s[i] = w.liftedSurface(capsAt0[i], h0)
+		s1s[i] = w.liftedSurface(capsAt0[i], h1)
+		w.faceCap(&s0s[i], bottomUp)
+		w.faceCap(&s1s[i], !bottomUp)
+		for _, c := range []*SSurface{&s0s[i], &s1s[i]} {
+			c.Color = color
+			c.TrimBuilt = true
 		}
 	}
-	hs0 := s.addAndAssignSurfaceID(s0)
-	hs1 := s.addAndAssignSurfaceID(s1)
+	// Every curve split at the seams, wrapped and lifted, before
+	// anything is added.
+	loops := sbls.loops()
+	pieces := make([][]wrapPiece, len(loops))
+	for i, l := range loops {
+		for bi := range l.Curves {
+			for _, part := range w.splitAtSeams(&l.Curves[bi], seams) {
+				lo, hi, err := w.bandCurves(&part, h0, h1)
+				if err != nil {
+					return err
+				}
+				_, al, _ := w.polar(part.Finish())
+				pieces[i] = append(pieces[i], wrapPiece{
+					lo: lo, hi: hi, patch: w.patchOf(part.PointAt(0.5), seams), along: al,
+				})
+			}
+		}
+	}
+	hs0s, hs1s := make([]core.HSSurface, len(s0s)), make([]core.HSSurface, len(s1s))
+	for i := range s0s {
+		hs0s[i] = s.addAndAssignSurfaceID(s0s[i])
+		hs1s[i] = s.addAndAssignSurfaceID(s1s[i])
+	}
 
 	for li := range loops {
 		var trimLines []shellTrimLine
-		for bi := range los[li] {
-			b0, b1 := los[li][bi], his[li][bi]
+		for _, pc := range pieces[li] {
+			hs0, hs1 := hs0s[pc.patch], hs1s[pc.patch]
+			for bi := range pc.lo {
+				b0, b1 := pc.lo[bi], pc.hi[bi]
 
-			ss := ruledBetween(&b0, &b1)
-			ss.Color = color
-			ss.TrimBuilt = true
-			hsext := s.addAndAssignSurfaceID(ss)
+				ss := ruledBetween(&b0, &b1)
+				ss.Color = color
+				ss.TrimBuilt = true
+				hsext := s.addAndAssignSurfaceID(ss)
 
-			hc0 := s.addAndAssignCurveID(SCurve{
-				IsExact: true,
-				Exact:   b0,
-				Points:  makePwlSCurvePoints(&b0, s.Tol, 0),
-				SurfA:   hs0,
-				SurfB:   hsext,
-			})
-			hc1 := s.addAndAssignCurveID(SCurve{
-				IsExact: true,
-				Exact:   b1,
-				Points:  makePwlSCurvePoints(&b1, s.Tol, 0),
-				SurfA:   hs1,
-				SurfB:   hsext,
-			})
-			appendTrim(s, hs0, STrimByEntireCurveFromShell(s, hc0, false))
-			appendTrim(s, hs1, STrimByEntireCurveFromShell(s, hc1, true))
-			appendTrim(s, hsext, STrimByEntireCurveFromShell(s, hc0, true))
-			appendTrim(s, hsext, STrimByEntireCurveFromShell(s, hc1, false))
+				hc0 := s.addAndAssignCurveID(SCurve{
+					IsExact: true,
+					Exact:   b0,
+					Points:  makePwlSCurvePoints(&b0, s.Tol, 0),
+					SurfA:   hs0,
+					SurfB:   hsext,
+				})
+				hc1 := s.addAndAssignCurveID(SCurve{
+					IsExact: true,
+					Exact:   b1,
+					Points:  makePwlSCurvePoints(&b1, s.Tol, 0),
+					SurfA:   hs1,
+					SurfB:   hsext,
+				})
+				appendTrim(s, hs0, STrimByEntireCurveFromShell(s, hc0, false))
+				appendTrim(s, hs1, STrimByEntireCurveFromShell(s, hc1, true))
+				appendTrim(s, hsext, STrimByEntireCurveFromShell(s, hc0, true))
+				appendTrim(s, hsext, STrimByEntireCurveFromShell(s, hc1, false))
 
-			lineBez := SBezierFrom2(b0.Finish(), b1.Finish())
-			hl := s.addAndAssignCurveID(SCurve{
-				IsExact: true,
-				Exact:   lineBez,
-				Points:  makePwlSCurvePoints(&lineBez, s.Tol, 0),
-			})
-			trimLines = append(trimLines, shellTrimLine{hc: hl, hs: hsext})
+				lineBez := SBezierFrom2(b0.Finish(), b1.Finish())
+				hl := s.addAndAssignCurveID(SCurve{
+					IsExact: true,
+					Exact:   lineBez,
+					Points:  makePwlSCurvePoints(&lineBez, s.Tol, 0),
+				})
+				trimLines = append(trimLines, shellTrimLine{hc: hl, hs: hsext})
+			}
 		}
 
 		nl := len(trimLines)
@@ -113,6 +129,85 @@ func (s *SShell) MakeFromWrapOf(sbls *SBezierLoopSet, w *Wrap, h0, h1 float64, c
 			}
 			if c := s.FindCurve(tlp.hc); c != nil {
 				c.SurfB = tl.hs
+			}
+		}
+	}
+	return s.addWrapSeams(pieces, len(seams), hs0s, hs1s)
+}
+
+// wrapPiece is a part of a curve of a wrapped loop between seams: its
+// curves lifted to the two heights, the cap patch it lies on, and how
+// far along the face it ends.
+type wrapPiece struct {
+	lo, hi []SBezier
+	patch  int
+	along  float64
+}
+
+// wrapCrossing is where a loop crosses a seam: its ends there at the two
+// heights, how far along the face, and the patches of the loop before
+// and after.
+type wrapCrossing struct {
+	lo, hi        geom.Vector
+	along         float64
+	before, after int
+}
+
+// addWrapSeams trims the caps' patches along the seams between them,
+// where the loops' insides cross. Along each seam the loops cross in
+// pairs, the inside between; of each pair, the loop runs from the patch
+// before the seam into the next at one and back at the other. The
+// patch before runs along the seam from where its loop leaves it to
+// where its loop comes back, as the loop runs, and the next patch the
+// other way.
+func (s *SShell) addWrapSeams(pieces [][]wrapPiece, nSeams int, hs0s, hs1s []core.HSSurface) error {
+	at := make([][]wrapCrossing, nSeams)
+	for _, loop := range pieces {
+		for i, pc := range loop {
+			next := loop[(i+1)%len(loop)]
+			if next.patch == pc.patch {
+				continue
+			}
+			if d := next.patch - pc.patch; d != 1 && d != -1 {
+				return errors.New("a curve of the wrapped profile crosses two seams of its caps at once")
+			}
+			k := min(pc.patch, next.patch)
+			at[k] = append(at[k], wrapCrossing{
+				lo: pc.lo[len(pc.lo)-1].Finish(), hi: pc.hi[len(pc.hi)-1].Finish(),
+				along: pc.along, before: pc.patch, after: next.patch,
+			})
+		}
+	}
+	for k, cs := range at {
+		slices.SortFunc(cs, func(a, b wrapCrossing) int { return cmp.Compare(a.along, b.along) })
+		if len(cs)%2 != 0 {
+			return errors.New("the wrapped profile crosses a seam of its caps an odd number of times")
+		}
+		for i := 0; i < len(cs); i += 2 {
+			from, to := cs[i], cs[i+1]
+			if from.before != k {
+				from, to = to, from
+			}
+			if from.before != k || to.after != k {
+				return errors.New("the wrapped profile's crossings of a seam of its caps don't pair up")
+			}
+			// Along the seam, at each height: forwards on patch k's cap
+			// as its loop's curves run, backwards on patch k+1's.
+			for _, sd := range []struct {
+				a, b    geom.Vector
+				hs      []core.HSSurface
+				reverse bool
+			}{{from.lo, to.lo, hs0s, false}, {from.hi, to.hi, hs1s, true}} {
+				line := SBezierFrom2(sd.a, sd.b)
+				hc := s.addAndAssignCurveID(SCurve{
+					IsExact: true,
+					Exact:   line,
+					Points:  makePwlSCurvePoints(&line, s.Tol, 0),
+					SurfA:   sd.hs[k],
+					SurfB:   sd.hs[k+1],
+				})
+				appendTrim(s, sd.hs[k], STrimByEntireCurveFromShell(s, hc, sd.reverse))
+				appendTrim(s, sd.hs[k+1], STrimByEntireCurveFromShell(s, hc, !sd.reverse))
 			}
 		}
 	}

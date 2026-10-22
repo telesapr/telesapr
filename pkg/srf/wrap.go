@@ -47,8 +47,13 @@ const wrapFitTol = lengthEps / 10
 const wrapFitDepth = 8
 
 // WrapMaxSpan is the most a loop set (an outer loop and its holes) may
-// span round the axis: its caps are one rational quadratic patch each.
-const WrapMaxSpan = 170 * math.Pi / 180
+// span round the axis: a band wider would meet itself.
+const WrapMaxSpan = 350 * math.Pi / 180
+
+// wrapPatchSpan is the most a patch of a band's cap spans round the axis:
+// a rational quadratic patch reaches to under half a turn. A loop set
+// within it has caps of one patch each.
+const wrapPatchSpan = 170 * math.Pi / 180
 
 // ErrWrapPlane is NewWrap's error for a sketch whose plane is not
 // parallel to the face's axis.
@@ -309,11 +314,15 @@ func (w *Wrap) exactLine(b *SBezier) ([]SBezier, bool) {
 	return out, true
 }
 
-// capPatch is one patch of the face, unlifted, holding the loop set
-// sbls once it is wrapped, with a margin all round; lifted as far as
-// lift, it holds the set lifted. An error when the set spans more than
-// WrapMaxSpan round the axis or reaches past a cone's apex.
-func (w *Wrap) capPatch(sbls *SBezierLoopSet, lift float64) (SSurface, error) {
+// capPatches are patches of the face, unlifted, side by side round the
+// axis, holding the loop set sbls once it is wrapped, with a margin all
+// round; lifted to h0 or h1, they hold the set lifted. Within
+// wrapPatchSpan they are one patch; wider, a patch to each part between
+// the seams, the angles where one patch meets the next. An error when
+// the set spans more than WrapMaxSpan round the axis or reaches past a
+// cone's apex.
+func (w *Wrap) capPatches(sbls *SBezierLoopSet, h0, h1 float64) ([]SSurface, []float64, error) {
+	lift := max(math.Abs(h0), math.Abs(h1))
 	thLo, thHi := math.Inf(1), math.Inf(-1)
 	alLo, alHi := math.Inf(1), math.Inf(-1)
 	for _, l := range sbls.loops() {
@@ -321,7 +330,7 @@ func (w *Wrap) capPatch(sbls *SBezierLoopSet, lift float64) (SSurface, error) {
 			for k := range 33 {
 				th, al, ok := w.polar(b.PointAt(float64(k) / 32))
 				if !ok {
-					return SSurface{}, errors.New("the sketch reaches past the cone's apex")
+					return nil, nil, errors.New("the sketch reaches past the cone's apex")
 				}
 				thLo, thHi = min(thLo, th), max(thHi, th)
 				alLo, alHi = min(alLo, al), max(alHi, al)
@@ -329,10 +338,18 @@ func (w *Wrap) capPatch(sbls *SBezierLoopSet, lift float64) (SSurface, error) {
 		}
 	}
 	if thHi-thLo > WrapMaxSpan {
-		return SSurface{}, fmt.Errorf("a loop of the sketch wraps through %.0f° of the face, more than %.0f°: split it",
+		return nil, nil, fmt.Errorf("a loop of the sketch wraps through %.0f° of the face, more than %.0f°: it would meet itself",
 			(thHi-thLo)*180/math.Pi, WrapMaxSpan*180/math.Pi)
 	}
+	var seams []float64
+	if thHi-thLo > wrapPatchSpan {
+		seams = w.seamsFor(sbls, thLo, thHi)
+	}
 	dth := 0.02*(thHi-thLo) + 0.002
+	if seams != nil {
+		// Not round onto itself.
+		dth = min(dth, (2*math.Pi-(thHi-thLo))/4)
+	}
 	dal := 0.02*(alHi-alLo) + 1e-3
 	if w.Face.IsCone() {
 		// A cap is the face scaled about the lift's centre, but the curves
@@ -340,11 +357,192 @@ func (w *Wrap) capPatch(sbls *SBezierLoopSet, lift float64) (SSurface, error) {
 		// generator, away from the sketch's middle, by up to the lift.
 		dal += lift
 	}
+	setLo, setHi := alLo, alHi
 	thLo, thHi = thLo-dth, thHi+dth
 	alLo, alHi = alLo-dal, alHi+dal
 	if w.Face.IsCone() {
 		alLo = max(alLo, (alLo+dal)/2)
+		// A curve lifted h along the normal lies on the cap, the face
+		// scaled by k about the lift's centre, where the face's point
+		// rhoC + (al-rhoC)/k along the generator goes: a cap sunk deep
+		// into a narrow cone must reach further along it than the set
+		// does, by more than the margin (a word engraved half as deep
+		// as its letters are high fell off its cap).
+		m := dal - lift
+		for _, h := range []float64{h0, h1} {
+			k := w.LiftFactor(h)
+			alLo = min(alLo, w.rhoC+(setLo-w.rhoC)/k-m)
+			alHi = max(alHi, w.rhoC+(setHi-w.rhoC)/k+m)
+		}
+		alLo = max(alLo, setLo/4)
 	}
 	gen := SBezierFrom2(w.at(0, alLo), w.at(0, alHi))
-	return FromRevolutionOf(&gen, w.Face.Point, w.Face.Axis, thLo, thHi, 0, 0), nil
+	edges := append(append([]float64{thLo}, seams...), thHi)
+	caps := make([]SSurface, 0, len(edges)-1)
+	for i := range len(edges) - 1 {
+		caps = append(caps, FromRevolutionOf(&gen, w.Face.Point, w.Face.Axis, edges[i], edges[i+1], 0, 0))
+	}
+	return caps, seams, nil
+}
+
+// seamsFor are the angles where the patches of the caps of sbls, which
+// spans thLo to thHi round the axis, meet: as few as keep each within
+// wrapPatchSpan, spaced alike, and of the spacings tried the one
+// furthest from the curves' ends and from where a curve turns back
+// round the axis, where a seam would cross the profile at a corner or
+// touch it.
+func (w *Wrap) seamsFor(sbls *SBezierLoopSet, thLo, thHi float64) []float64 {
+	span := thHi - thLo
+	// Room for the spacing to move a third of a patch either way.
+	n := int(math.Ceil(span / (wrapPatchSpan * 0.6)))
+	var crit []float64
+	for _, l := range sbls.loops() {
+		for _, b := range l.Curves {
+			const m = 32
+			var th [m + 1]float64
+			for k := range m + 1 {
+				th[k], _, _ = w.polar(b.PointAt(float64(k) / m))
+			}
+			crit = append(crit, th[0], th[m])
+			for k := 1; k < m; k++ {
+				if (th[k]-th[k-1])*(th[k+1]-th[k]) <= 0 {
+					crit = append(crit, th[k])
+				}
+			}
+		}
+	}
+	var best []float64
+	bestGap := -1.0
+	for _, shift := range []float64{0, 0.1, -0.1, 0.2, -0.2, 0.3, -0.3} {
+		seams := make([]float64, n-1)
+		gap := math.Inf(1)
+		for i := range seams {
+			seams[i] = thLo + span*(float64(i+1)+shift)/float64(n)
+			for _, c := range crit {
+				gap = min(gap, math.Abs(c-seams[i]))
+			}
+		}
+		if gap > bestGap {
+			best, bestGap = seams, gap
+		}
+	}
+	return best
+}
+
+// splitAtSeams is b in parts, split where it crosses the seams.
+func (w *Wrap) splitAtSeams(b *SBezier, seams []float64) []SBezier {
+	if len(seams) == 0 {
+		return []SBezier{*b}
+	}
+	theta := func(t float64) float64 {
+		th, _, _ := w.polar(b.PointAt(t))
+		return th
+	}
+	const m = 32
+	var ts []float64
+	for _, seam := range seams {
+		for k := range m {
+			ta, tb := float64(k)/m, float64(k+1)/m
+			fa, fb := theta(ta)-seam, theta(tb)-seam
+			if fa == 0 || fa*fb > 0 {
+				continue
+			}
+			for range 60 {
+				tm := (ta + tb) / 2
+				if fm := theta(tm) - seam; fm*fa > 0 {
+					ta, fa = tm, fm
+				} else {
+					tb = tm
+				}
+			}
+			ts = append(ts, (ta+tb)/2)
+		}
+	}
+	slices.Sort(ts)
+	parts := make([]SBezier, 0, len(ts)+1)
+	rest, at := *b, 0.0
+	for _, t := range ts {
+		var bef, aft SBezier
+		rest.SplitAt((t-at)/(1-at), &bef, &aft)
+		bef.Sheet, bef.Entity = b.Sheet, b.Entity
+		aft.Sheet, aft.Entity = b.Sheet, b.Entity
+		parts = append(parts, bef)
+		rest, at = aft, t
+	}
+	parts = append(parts, rest)
+	// The ends exactly as they were, where the curves before and after
+	// meet them.
+	parts[0].Ctrl[0] = b.Ctrl[0]
+	parts[len(parts)-1].Ctrl[b.Degree] = b.Ctrl[b.Degree]
+	return parts
+}
+
+// patchOf is the index of the cap patch the point p of the sketch lands
+// on, between the seams.
+func (w *Wrap) patchOf(p geom.Vector, seams []float64) int {
+	th, _, _ := w.polar(p)
+	n := 0
+	for _, s := range seams {
+		if th > s {
+			n++
+		}
+	}
+	return n
+}
+
+// wrapGrid is how many points across and along a loop set's extent
+// FacePoints tries inside it.
+const wrapGrid = 12
+
+// FacePoints are points of the face under the loop sets sets once
+// wrapped, each with the face's outward normal there: points along
+// every curve, and a grid of points inside the loops, out of their
+// holes. They are where a band wrapped from sets crosses the face.
+func (w *Wrap) FacePoints(sets []SBezierLoopSet) (pts, normals []geom.Vector) {
+	add := func(p geom.Vector) {
+		if _, _, ok := w.polar(p); !ok {
+			return
+		}
+		f := w.onFace(p)
+		pts = append(pts, f)
+		normals = append(normals, w.Face.normalAt(f).ScaledBy(w.Face.Outward))
+	}
+	for i := range sets {
+		n := sets[i].Normal
+		if n.Magnitude() < geom.LengthEps {
+			continue
+		}
+		n = n.WithMagnitude(1)
+		u, v := n.NormalDir(0).WithMagnitude(1), n.NormalDir(1).WithMagnitude(1)
+		uLo, uHi, vLo, vHi := math.Inf(1), math.Inf(-1), math.Inf(1), math.Inf(-1)
+		var off float64
+		for _, l := range sets[i].loops() {
+			for _, b := range l.Curves {
+				for k := range 8 {
+					p := b.PointAt(float64(k) / 8)
+					add(p)
+					uLo, uHi = min(uLo, p.Dot(u)), max(uHi, p.Dot(u))
+					vLo, vHi = min(vLo, p.Dot(v)), max(vHi, p.Dot(v))
+					off = p.Dot(n)
+				}
+			}
+		}
+		if math.IsInf(uLo, 0) {
+			continue
+		}
+		var poly SPolygon
+		sets[i].MakePwlInto(&poly, Tolerance{})
+		poly.Normal = n
+		for a := 1; a < wrapGrid; a++ {
+			for b := 1; b < wrapGrid; b++ {
+				su := uLo + (uHi-uLo)*float64(a)/wrapGrid
+				sv := vLo + (vHi-vLo)*float64(b)/wrapGrid
+				p := u.ScaledBy(su).Plus(v.ScaledBy(sv)).Plus(n.ScaledBy(off))
+				if poly.ContainsPoint(p) {
+					add(p)
+				}
+			}
+		}
+	}
+	return pts, normals
 }

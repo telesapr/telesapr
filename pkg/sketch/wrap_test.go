@@ -93,6 +93,91 @@ func TestWrapEmbossRectangle(t *testing.T) {
 	}
 }
 
+// tubeBody is a tube of outer radius r and wall wall on the z axis from
+// z = 0 to height, and its outer face.
+func tubeBody(d *api.Doc, r, wall, height float64) (api.Group, api.SolidFace) {
+	d.Sketch.Circle(api.V(0, 0, 0), r)
+	d.Sketch.Circle(api.V(0, 0, 0), r-wall)
+	ex := d.Features.Extrude(height, "")
+	return ex, ex.Solid().FaceAt(api.V(r, 0, height/2))
+}
+
+// A band reaches through the face it is joined to by a part of its
+// height; on a wall thinner than that it stood out of the wall's inside.
+// It reaches no further than half the wall, and where the wall is too
+// thin even for that the group says so.
+func TestWrapEmbossThinWall(t *testing.T) {
+	d := api.New()
+	ex, face := tubeBody(d, 10, 0.3, 40)
+	base := ex.Analyze().Check().Volume
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	d.Sketch.Rect(api.V(-5, 0, 10), api.V(5, 0, 30))
+	w := d.Features.Emboss(face, 4, "")
+	if p := w.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	if r := w.Analyze().Check(); !r.Sound() || !nearRel(r.Volume-base, wrappedBand(200, 10, 0, 4), bandTol) {
+		t.Fatalf("embossed on a thin wall: %s, added %g, want %g", r.String(), r.Volume-base, wrappedBand(200, 10, 0, 4))
+	}
+
+	d = api.New()
+	_, face = tubeBody(d, 10, 0.004, 40)
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	d.Sketch.Rect(api.V(-5, 0, 10), api.V(5, 0, 30))
+	if w := d.Features.Emboss(face, 1, ""); !strings.Contains(w.Problem(), "wall under the emboss") {
+		t.Fatalf("on a wall of 0.004: %q", w.Problem())
+	}
+}
+
+// A profile wider than half the face's way round has caps of several
+// patches, which meet at seams across it.
+func TestWrapRoundMostOfTheWay(t *testing.T) {
+	for _, c := range []struct {
+		name    string
+		engrave bool
+		hole    bool
+	}{{"raised", false, false}, {"sunk", true, false}, {"raised with a hole", false, true}, {"sunk with a hole", true, true}} {
+		t.Run(c.name, func(t *testing.T) {
+			d := api.New()
+			// The narrow ring left round the hole is small beside the
+			// cylinder's chords.
+			d.Edit.SetChordTolerance(0.005)
+			ex, face := cylinderBody(d, 10, 40)
+			base := ex.Analyze().Check().Volume
+			d.Features.SketchIn(d.Workplane("ZX"), "")
+			// 50 mm across a radius of 10: 286° round.
+			d.Sketch.Rect(api.V(-25, 0, 10), api.V(25, 0, 30))
+			area := 1000.0
+			if c.hole {
+				d.Sketch.Rect(api.V(-20, 0, 15), api.V(20, 0, 25))
+				area -= 400
+			}
+			var w api.Group
+			want := wrappedBand(area, 10, 0, 1)
+			if c.engrave {
+				w = d.Features.Engrave(face, 1, "")
+				want = wrappedBand(area, 10, -1, 0)
+			} else {
+				w = d.Features.Emboss(face, 1, "")
+			}
+			if p := w.Problem(); p != "" {
+				t.Fatal(p)
+			}
+			r := w.Analyze().Check()
+			if got := math.Abs(r.Volume - base); !r.Sound() || !nearRel(got, want, bandTol) {
+				t.Fatalf("%s: %s, band %g, want %g", c.name, r.String(), got, want)
+			}
+		})
+	}
+	d := api.New()
+	_, face := cylinderBody(d, 10, 40)
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	d.Sketch.Rect(api.V(-32, 0, 10), api.V(32, 0, 30))
+	if !refused(func() { d.Features.Emboss(face, 1, "") }) {
+		t.Fatal("a profile wrapped more than round the face was taken")
+	}
+}
+
 func TestWrapEngraveCircle(t *testing.T) {
 	d := api.New()
 	// The circle's pocket is small beside the cylinder's chords.
@@ -174,8 +259,8 @@ func TestWrapRefusals(t *testing.T) {
 	refused("no height", "more than zero", func() { d.Features.Emboss(face, 0, "") })
 	refused("an engraving through the axis", "axis", func() { d.Features.Engrave(face, 12, "") })
 	d.Features.SketchIn(d.Workplane("ZX"), "")
-	d.Sketch.Rect(api.V(-20, 0, 10), api.V(20, 0, 20))
-	refused("a loop round 229°", "split it", func() { d.Features.Emboss(face, 1, "") })
+	d.Sketch.Rect(api.V(-32, 0, 10), api.V(32, 0, 20))
+	refused("a loop round 367°", "meet itself", func() { d.Features.Emboss(face, 1, "") })
 	d.Features.SketchIn(d.Workplane("ZX"), "")
 	d.Sketch.Line(api.V(-2, 0, 10), api.V(2, 0, 20))
 	refused("an open sketch", "closed loops", func() { d.Features.Emboss(face, 1, "") })
@@ -246,18 +331,12 @@ func TestWrapTextCylinderSweep(t *testing.T) {
 	wrapTextGrid("cylinder", 0, 0).Run(wrapTextCase).Require(t)
 }
 
-// wrapConeMaxFail is the rate of the cone's text sweep allowed to fail:
-// 14 of 72 on 2026-10-22, every one a band half as deep as its letters
-// are high, refused with a problem on the group (none of the bands a
-// tenth as deep fails).
-const wrapConeMaxFail = 14.0 / 72
-
-// Text wrapped onto cones: the Boolean of a band with a cone fails at
-// some corners where the band is deep, and the group refuses (ROADMAP,
-// "Modelling upgrade leftovers"). The rate, set after the first run of
-// the whole grid, may only fall.
+// Text wrapped onto cones: none may fail. 14 of 72 did on 2026-10-22,
+// every one a band half as deep as its letters are high: the cap of a
+// band sunk deep reached less far along the cone than its letters, and
+// marched curves kept vertices a hair from their ends.
 func TestWrapTextConeSweep(t *testing.T) {
-	wrapTextGrid("cone", wrapConeMaxFail, 3.0/8).Run(wrapTextCase).Require(t)
+	wrapTextGrid("cone", 0, 0).Run(wrapTextCase).Require(t)
 }
 
 // BenchmarkWrapText embosses a word onto a cylinder: the band, its

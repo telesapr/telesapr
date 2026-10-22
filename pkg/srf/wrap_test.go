@@ -280,6 +280,57 @@ func TestWrapRectangleOnCone(t *testing.T) {
 	checkAdded(t, "embossed", body, &out, coneBand(w, -2, 2, 9, 13, 0, 1), 1e-2)
 }
 
+// A loop round 275° of a cylinder has caps of three patches, and of a
+// cone too; the seams between them cross it, and the hole in it.
+func TestWrapRoundMostOfTheWay(t *testing.T) {
+	fineMesh(t)
+	n := geom.Vector{Y: -1}
+	body := lathedTube(0, 5, 0, 20)
+	face := roundFaceIn(t, body)
+	sbls := sketchLoop(rectIn(-20, -12, 12, 5, 15), n)
+	hole := sketchLoop(rectIn(-20, -10, 10, 8, 12), n)
+	hole.Outer.Reverse()
+	sbls.Holes = []SBezierLoop{hole.Outer}
+	band, w := wrapBand(t, face, geom.Vector{Y: -20}, n, sbls, -0.25, 1)
+	caps, seams, err := w.capPatches(sbls, -0.25, 1)
+	if err != nil || len(caps) != 3 || len(seams) != 2 {
+		t.Fatalf("%d caps, %d seams, %v", len(caps), len(seams), err)
+	}
+	if !meshIsSound(band) {
+		t.Fatal("the band is not sound")
+	}
+	checkVolume(t, "band", shellVolume(band), cylinderBand(240-80, 5, -0.25, 1))
+	var out SShell
+	out.MakeFromUnionOf(body, band)
+	if out.BooleanFailed || !meshIsSound(&out) {
+		t.Fatal("the union is not sound")
+	}
+	checkAdded(t, "embossed", body, &out, cylinderBand(160, 5, 0, 1), 1e-3)
+
+	cone := lathedCone(8, 16)
+	cface := roundFaceIn(t, cone)
+	csbls := sketchLoop(rectIn(-20, -12, 12, 3, 7), n)
+	cband, cw := wrapBand(t, cface, geom.Vector{Y: -20}, n, csbls, -0.25, 1)
+	if _, seams, _ := cw.capPatches(csbls, -0.25, 1); len(seams) == 0 {
+		t.Fatal("the cone's band has caps of one patch")
+	}
+	if !meshIsSound(cband) {
+		t.Fatal("the cone's band is not sound")
+	}
+	if v, want := shellVolume(cband), coneBand(cw, -12, 12, 9, 13, -0.25, 1); math.Abs(v-want) > 1e-2*want {
+		t.Fatalf("the cone's band: volume %g, want %g", v, want)
+	}
+	if testing.Short() {
+		t.Skip("the union with the cone, meshed finely, takes 15 s")
+	}
+	var cout SShell
+	cout.MakeFromUnionOf(cone, cband)
+	if cout.BooleanFailed || !meshIsSound(&cout) {
+		t.Fatal("the union with the cone is not sound")
+	}
+	checkAdded(t, "embossed on the cone", cone, &cout, coneBand(cw, -12, 12, 9, 13, 0, 1), 1e-2)
+}
+
 func TestWrapRefusals(t *testing.T) {
 	t.Parallel()
 	face := roundFaceIn(t, lathedTube(0, 5, 0, 20))
@@ -295,9 +346,9 @@ func TestWrapRefusals(t *testing.T) {
 	if err := sh.MakeFromWrapOf(sbls, w, -6, 0, core.RGBA{}); err == nil {
 		t.Fatal("an engraving through the axis was taken")
 	}
-	long := sketchLoop(rectIn(-20, -12, 12, 5, 15), geom.Vector{Y: -1})
+	long := sketchLoop(rectIn(-20, -16, 16, 5, 15), geom.Vector{Y: -1})
 	if err := sh.MakeFromWrapOf(long, w, 0, 1, core.RGBA{}); err == nil {
-		t.Fatal("a loop round 275° was taken")
+		t.Fatal("a loop round 367° was taken")
 	}
 	cone := roundFaceIn(t, lathedCone(8, 16))
 	high := sketchLoop(rectIn(-20, -2, 2, 12, 17), geom.Vector{Y: -1})

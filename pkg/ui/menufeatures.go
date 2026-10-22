@@ -508,7 +508,7 @@ func (ss *Application) groupWrap(g *sketch.Group) bool {
 		ss.Error("Can't wrap the sketch onto %s. %s.\n\n"+
 			"Wrap Sketch Onto Face rolls the active sketch's closed loops onto a cylinder or a "+
 			"cone of the solid, from a workplane parallel to its axis, and raises them from it "+
-			"or sinks them into it. One loop with its holes may go at most 170° round the axis.",
+			"or sinks them into it. One loop with its holes may go at most 350° round the axis.",
 			ss.SK.FaceName(face), capitalize(err.Error()))
 		return false
 	}

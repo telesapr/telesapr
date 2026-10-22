@@ -17,7 +17,7 @@ type WrapGroup struct{ g Group }
 // towards it as paper is, so that seen from there it looks as drawn:
 // lengths along the sketch are lengths on the face. Lines across or
 // along a cylinder's axis wrap exactly, other curves within 1e-7 mm. One
-// loop with its holes, such as one letter, may span at most 170° round
+// loop with its holes, such as one letter, may span at most 350° round
 // the axis. The new group becomes active.
 func (m FeaturesMenu) Emboss(face SolidFace, height float64, name string) Group {
 	return m.wrap(face, height, false, name)
