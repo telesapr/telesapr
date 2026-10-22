@@ -511,10 +511,16 @@ row 159    0 [change]
  13-99 64 61 0
 row 161 
  0-99 64 64 0
-row 163 (renderer)
-row 165 (renderer)
+row 163     while dragging, make solids off the thread (they lag)
+ 0-1 64 64 0
+ 2-57 64 64 108 0 1 0
+ 58-99 64 64 0
+row 165 
+ 0-99 64 64 0
 row 167 (renderer)
-row 169 
+row 169 (renderer)
+row 171 (renderer)
+row 173 
  0-99 64 64 0
 row 0  home › preferences   in plane: g002-sketch-in-plane
  0-0 64 64 0
@@ -820,10 +826,16 @@ row 159    0 [change]
  13-99 64 61 0
 row 161 
  0-99 64 64 0
-row 163 (renderer)
-row 165 (renderer)
+row 163     while dragging, make solids off the thread (they lag)
+ 0-1 64 64 0
+ 2-57 64 64 108 0 1 0
+ 58-99 64 64 0
+row 165 
+ 0-99 64 64 0
 row 167 (renderer)
-row 169 
+row 169 (renderer)
+row 171 (renderer)
+row 173 
  0-99 64 64 0
 &File ind=0 en=1 act=0
   &New [Ctrl+N] ind=0 en=1 act=0

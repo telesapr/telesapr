@@ -378,10 +378,16 @@ row 159    0 [change]
  13-99 64 61 0
 row 161 
  0-99 64 64 0
-row 163 (renderer)
-row 165 (renderer)
+row 163     while dragging, make solids off the thread (they lag)
+ 0-1 64 64 0
+ 2-57 64 64 108 0 1 0
+ 58-99 64 64 0
+row 165 
+ 0-99 64 64 0
 row 167 (renderer)
-row 169 
+row 169 (renderer)
+row 171 (renderer)
+row 173 
  0-99 64 64 0
 row 0  home › preferences   drawing / constraining in 3d
  0-0 64 64 0
@@ -687,10 +693,16 @@ row 159    0 [change]
  13-99 64 61 0
 row 161 
  0-99 64 64 0
-row 163 (renderer)
-row 165 (renderer)
+row 163     while dragging, make solids off the thread (they lag)
+ 0-1 64 64 0
+ 2-57 64 64 108 0 1 0
+ 58-99 64 64 0
+row 165 
+ 0-99 64 64 0
 row 167 (renderer)
-row 169 
+row 169 (renderer)
+row 171 (renderer)
+row 173 
  0-99 64 64 0
 dialog 0 The volume of the solid model is:|0.97 mm³\nThe volume of current group mesh is:\n\n    0.03 mm³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
 dialog 0 The volume of the solid model is:|0.97 mm³\nThe volume of current group mesh is:\n\n    0.03 mm³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
