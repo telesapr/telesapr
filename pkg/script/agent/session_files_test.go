@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/script"
@@ -64,5 +65,34 @@ func TestFilesGuarded(t *testing.T) {
 	}
 	if _, err := s.Files(context.Background(), other); !errors.Is(err, script.ErrNotAllowed) {
 		t.Errorf("listing a folder outside: %v", err)
+	}
+}
+
+// Export writes a .go file as the program that builds the model again,
+// only into a folder the guard allows.
+func TestExportScriptGuarded(t *testing.T) {
+	t.Parallel()
+	allowed, other := t.TempDir(), t.TempDir()
+	sk := sketch.NewSketch()
+	sk.NewFile()
+	s, _, err := Open(script.Options{Host: api.NewSketchHost(sk, ""), Files: &script.Files{Write: []string{allowed}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if _, err := s.Run(ctx, `doc.Sketch.Rect(V(0, 0, 0), V(10, 20, 0))`); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(allowed, "model.go")
+	text, err := s.Export(ctx, path)
+	if err != nil || !strings.HasPrefix(text, "wrote "+path) {
+		t.Fatalf("exporting the script: %q, %v", text, err)
+	}
+	src, err := os.ReadFile(path)
+	if err != nil || !strings.Contains(string(src), "doc.Sketch.Line(") {
+		t.Errorf("the script written is\n%s", src)
+	}
+	if _, err := s.Export(ctx, filepath.Join(other, "model.go")); !errors.Is(err, script.ErrNotAllowed) {
+		t.Errorf("exporting outside the allowed folder: %v", err)
 	}
 }

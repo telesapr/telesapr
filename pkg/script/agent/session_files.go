@@ -77,7 +77,14 @@ func (s *Session) Export(_ context.Context, path string) (string, error) {
 		return "", err
 	}
 	var xerr error
-	if err := try(func() { xerr = s.engine.Doc().File.Export(abs) }); err != nil {
+	var notes []string
+	if err := try(func() {
+		if strings.EqualFold(filepath.Ext(abs), ".go") {
+			notes, xerr = s.engine.Doc().File.ExportScript(abs)
+		} else {
+			xerr = s.engine.Doc().File.Export(abs)
+		}
+	}); err != nil {
 		return "", err
 	}
 	if xerr != nil {
@@ -87,7 +94,12 @@ func (s *Session) Export(_ context.Context, path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("wrote %s, %d bytes", abs, fi.Size()), nil
+	text := fmt.Sprintf("wrote %s, %d bytes", abs, fi.Size())
+	if len(notes) > 0 {
+		// The script says each where it would be, as a comment.
+		text += "\nnot written:\n- " + strings.Join(notes, "\n- ")
+	}
+	return text, nil
 }
 
 // Open replaces the drawing by a file's.

@@ -56,7 +56,7 @@ With section ("XY", "YZ" or "ZX"), the solid is drawn cut by a plane parallel to
 
 With selected, it measures what the user has selected instead, as Analyze > Measure does: a line's length, a circle's radius, the distance between two points, from a point to a line or a face, or the angle between two lines or faces. To measure other things, use run_script with doc.Analyze.`
 
-	exportDescription = `Writes the drawing that is open in TeleSAPR to a file, in the format the file's extension names: a mesh of the solid (.stl, .3mf, .glb, .obj, .wrl), its exact surfaces (.step), a 2d view (.svg, .dxf, .pdf, .eps), or a picture (.png). It says where it wrote and how many bytes. A relative path is taken from the directory TeleSAPR works in; list_files shows which that is.
+	exportDescription = `Writes the drawing that is open in TeleSAPR to a file, in the format the file's extension names: a mesh of the solid (.stl, .3mf, .glb, .obj, .wrl), its exact surfaces (.step), a 2d view (.svg, .dxf, .pdf, .eps), a picture (.png), or a Go program that builds the model again (.go), with what it couldn't write listed. It says where it wrote and how many bytes. A relative path is taken from the directory TeleSAPR works in; list_files shows which that is.
 
 Export only when the user asks for a file. The user may be asked to allow it.`
 
