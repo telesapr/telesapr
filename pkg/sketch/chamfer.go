@@ -75,10 +75,15 @@ func (sk *Sketch) newChamferTwo(edges []core.HEntity, solidEdges []topo.Name, di
 		return g, err
 	}
 	if !solid.IsForcedToMesh(sk) && len(solid.RunningShell.Surface) > 0 {
-		if _, err := chamferByEdit(&solid.RunningShell, segs, distance, d2, 1<<30); err == nil {
+		_, err := chamferByEdit(&solid.RunningShell, segs, distance, d2, 1<<30)
+		if err == nil {
 			g.Edges = append([]core.HEntity(nil), edges...)
 			g.SolidEdges = append([]topo.Name(nil), solidEdges...)
 			return g, nil
+		}
+		if topo.RollingRefusal(err) {
+			// No wedge cuts there soundly (generateChamferShell).
+			return g, err
 		}
 	}
 	var mesh srf.SMesh
@@ -412,9 +417,22 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 	// forced to a mesh, which has no faces to edit, straight edges are
 	// cut by wedges and a Boolean, as before.
 	if !prev.IsForcedToMesh(sk) && len(prev.RunningShell.Surface) > 0 {
-		if sh, err := chamferByEdit(&prev.RunningShell, segs, d, d2, srf.OriginFor(g.H.V, 0)); err == nil {
+		sh, err := chamferByEdit(&prev.RunningShell, segs, d, d2, srf.OriginFor(g.H.V, 0))
+		if err == nil {
 			g.RunningShell = sh
 			g.ThisShell.MakeFromCopyOf(&sh)
+			return true
+		}
+		if topo.RollingRefusal(err) {
+			// A wedge would stand open across a curved face: the
+			// edit's reason is the group's.
+			g.RunningShell.MakeFromCopyOf(&prev.RunningShell)
+			if fe, ok := errors.AsType[*topo.FilletError](err); ok {
+				at := fe.At
+				g.setProblem(&at, "%v", err)
+			} else {
+				g.setProblem(nil, "%v", err)
+			}
 			return true
 		}
 	}

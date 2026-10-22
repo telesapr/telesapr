@@ -228,10 +228,10 @@ func FilletNetwork(sh *srf.SShell, segs [][2]geom.Vector, r float64, origin uint
 // (filletInStages).
 func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) error {
 	err := filletPicks(sh, picks, r, origin, flat, nil)
-	if curvedEndRefusal(err) && len(picks) == 1 && !flat {
+	if curvedEndRefusal(err) && len(picks) == 1 {
 		// An edge between flat faces that ends on a curved one: the
-		// rolling ball, whose end follows the curved face (roadmap 22.5).
-		// Chamfers there are not made yet.
+		// rolling ball, whose end follows the curved face (roadmap 22.5);
+		// a chamfer's flat section follows it as a fillet's arc does.
 		var cp srf.SShell
 		cp.MakeFromCopyOf(sh)
 		rerr := filletOnCurvedEnd(&cp, picks[0], r, origin, flat)
@@ -240,13 +240,16 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 			return nil
 		}
 		if !errors.Is(rerr, errNotRolling) {
-			return rerr
+			return byRollingBall(rerr)
 		}
 	}
-	if (curvedEndRefusal(err) || rollingAloneRefusal(err)) && len(picks) > 1 && !flat {
+	if (curvedEndRefusal(err) || rollingAloneRefusal(err)) && len(picks) > 1 {
 		// Picks whose fillets don't meet, some of them the rolling
 		// ball's: one after another.
-		if aerr := filletApart(sh, picks, r, origin); !errors.Is(aerr, errNotApart) {
+		if aerr := filletApart(sh, picks, r, origin, flat); !errors.Is(aerr, errNotApart) {
+			if curvedEndRefusal(err) {
+				return byRollingBall(aerr)
+			}
 			return aerr
 		}
 	}
@@ -285,11 +288,15 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 	return filletErr(fx.At, "%s, and rounded one radius at a time they don't go on round each other's corners: %s", fx.Msg, why)
 }
 
+// curvedEndMsg is step 10's refusal of an edge that ends at a curved
+// face.
+const curvedEndMsg = "a face at the edge's end is curved"
+
 // curvedEndRefusal reports whether err is step 10's refusal of an edge
 // that ends at a curved face.
 func curvedEndRefusal(err error) bool {
 	var fx *FilletError
-	return errors.As(err, &fx) && fx.Msg == "a face at the edge's end is curved"
+	return errors.As(err, &fx) && fx.Msg == curvedEndMsg
 }
 
 // rollingAloneRefusal reports whether err refuses a rolling-ball edge
@@ -415,7 +422,7 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 					// Step 10's reason, of size, says more.
 					return err
 				}
-				return rerr
+				return byRollingBall(rerr)
 			}
 			return err
 		}
@@ -1230,7 +1237,7 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int)
 	if circular == 0 {
 		for _, f := range t.facesAt(v) {
 			if _, ok := t.planarNormal(f); !ok {
-				return nil, filletErr(p, "a face at the edge's end is curved")
+				return nil, filletErr(p, curvedEndMsg)
 			}
 		}
 	}
