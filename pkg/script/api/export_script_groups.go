@@ -411,6 +411,14 @@ func (w *scriptWriter) writeKindOptions(g *sketch.Group, v string) {
 		if len(g.Edges) > 0 {
 			w.line("%s.AsLoft().SetGuides(%s)", v, w.refs(g.Edges))
 		}
+		for _, h := range g.LoftThrough {
+			if t := g.LoftProfileTangency(h); t != 0 {
+				w.line("%s.AsLoft().SetProfileTangency(%s, %s)", v, w.groupVar[h], num(t))
+			}
+		}
+		if g.LoftClosed {
+			w.line("%s.AsLoft().SetClosed(true)", v)
+		}
 	case sketch.GroupSweep:
 		if g.ValC != 0 {
 			w.line("%s.AsSweep().SetTwist(%s)", v, num(g.ValC))

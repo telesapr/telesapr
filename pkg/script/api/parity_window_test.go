@@ -248,6 +248,8 @@ var windowActions = map[string]string{
 	"ScreenSameChamferDistances":     "ChamferGroup.SetSecondDistance",
 	"ScreenLoftNoGuides":             "LoftGroup.SetGuides",
 	"ScreenLoftAlongSides":           "LoftGroup.SetAlongSides",
+	"ScreenLoftClosed":               "LoftGroup.SetClosed",
+	"ScreenChangeLoftProfileTangency": "LoftGroup.SetProfileTangency",
 	"ScreenDraftAllSides":            "ExtrudeGroup.SetDraftFaces",
 	"ScreenChangeLoftStart":          "LoftGroup.SetTangency",
 	"ScreenChangePitchOption":        "Group.SetExpr",
@@ -498,6 +500,7 @@ var windowActions = map[string]string{
 	"editHelixPitch":               "Group.SetExpr FilletGroup.SetRadius ChamferGroup.SetDistance ShellGroup.SetThickness SweepGroup.SetCornerRadius LoftGroup.SetTangency",
 	"editEdgeRadius":               "FilletGroup.SetEdgeRadius FilletGroup.SetEdgeRadiusExpr",
 	"editGroupDraft":               "ExtrudeGroup.SetDraft SweepGroup.SetTwist LoftGroup.SetTangency Group.SetExpr",
+	"editLoftProfileTangency":      "LoftGroup.SetProfileTangency",
 	"editGroupExtent":              "ExtrudeGroup.SetDepth RevolveGroup.SetAngle Group.SetExpr",
 	"editChamferDistance2":         "ChamferGroup.SetSecondDistance",
 	"editThreadDesignation":        "Features.Thread ThreadGroup.Edit",
@@ -961,6 +964,10 @@ AlongSides     -q
 SetAlongSides  ScreenLoftAlongSides
 Guides       -q
 SetGuides    ScreenLoftNoGuides; menu:Features/Guide Loft by Selected Curves
+Closed       -q
+SetClosed    ScreenLoftClosed
+ProfileTangency     -q
+SetProfileTangency  ScreenChangeLoftProfileTangency; editLoftProfileTangency
 `,
 	"LinkGroup": `
 AsSolid         -q

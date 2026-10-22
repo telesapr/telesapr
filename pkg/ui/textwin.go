@@ -144,6 +144,9 @@ const (
 	editChamferDistance2 Edit = 805
 	// For an extrusion's depth or a revolve's angle (an extension)
 	editGroupExtent Edit = 806
+	// For how square a loft passes a profile between its ends (an
+	// extension)
+	editLoftProfileTangency Edit = 807
 	// For the screw thread (an extension)
 	editThreadDesignation Edit = 900
 	editThreadLength      Edit = 901

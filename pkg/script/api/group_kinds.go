@@ -770,13 +770,71 @@ func (v LoftGroup) AlongSides() (start, end bool) {
 // face that is the same; where they lean or curve, as a drafted or
 // turned body's do, the loft follows them. The profile must lie along
 // the edges of the solid before the loft. Tangency sets how far the
-// slope reaches, 1 where it is 0. A loft held by guides can't.
+// slope reaches, 1 where it is 0. A loft held by guides holds them
+// too.
 func (v LoftGroup) SetAlongSides(start, end bool) {
 	g := v.g
 	g.d.change(func(sk *sketch.Sketch) {
 		group := g.get(sk)
 		g.mustBe(group, sketch.GroupLoft, "SetAlongSides")
 		if err := sk.SetLoftAlongSides(group.H, start, end); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
+// Closed reports whether a smooth loft goes from its last profile back
+// to its first (see SetClosed).
+func (v LoftGroup) Closed() (closed bool) {
+	g := v.g
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLoft, "Closed")
+		closed = group.LoftClosed
+	})
+	return closed
+}
+
+// SetClosed has a smooth loft go from its last profile back to its
+// first, a ring with no caps, as a sweep round a closed path is, the
+// surface as smooth where it closes as elsewhere; false opens it again.
+// A closed loft goes through three profiles at least, and has no ends to
+// set, no turn, guides or profiles held square.
+func (v LoftGroup) SetClosed(closed bool) {
+	g := v.g
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLoft, "SetClosed")
+		if err := sk.SetLoftClosed(group.H, closed); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
+// ProfileTangency is how square a smooth loft passes profile, one of
+// the sketches between its ends, 0 for free (see SetProfileTangency).
+func (v LoftGroup) ProfileTangency(profile Group) (t float64) {
+	g := v.g
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLoft, "ProfileTangency")
+		t = group.LoftProfileTangency(profile.H)
+	})
+	return t
+}
+
+// SetProfileTangency holds a smooth loft square to the plane of
+// profile, one of the sketches it goes through between its ends, the
+// surface's slope across there t times the loft's length, as SetTangency
+// does at the ends; 0 leaves it free, shaped by the profiles about it.
+// The loft is then smooth through that profile but no longer bends as
+// one curve across it: a waist that runs straight through the middle.
+func (v LoftGroup) SetProfileTangency(profile Group, t float64) {
+	g := v.g
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLoft, "SetProfileTangency")
+		if err := sk.SetLoftProfileTangency(group.H, profile.H, t); err != nil {
 			fail("%v", err)
 		}
 	})

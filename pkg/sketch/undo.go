@@ -256,6 +256,8 @@ func (g *Group) defining() Group {
 		SolidEdges:             slices.Clone(g.SolidEdges),
 		SolidFaces:             slices.Clone(g.SolidFaces),
 		LoftThrough:            slices.Clone(g.LoftThrough),
+		LoftThroughTangency:    slices.Clone(g.LoftThroughTangency),
+		LoftClosed:             g.LoftClosed,
 		LoftAlongSides:         g.LoftAlongSides,
 		SweepUp:                g.SweepUp,
 		EdgeRadii:              slices.Clone(g.EdgeRadii),

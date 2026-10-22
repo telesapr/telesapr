@@ -295,6 +295,13 @@ type Group struct {
 	// LoftThrough are the profiles a smooth loft goes through between
 	// OpA and OpB, in order (roadmap E8).
 	LoftThrough []core.HGroup
+	// LoftThroughTangency holds a smooth loft square to the profiles
+	// LoftThrough, each by its own amount as an end's tangency, 0 or
+	// left out for free (loft.go).
+	LoftThroughTangency []float64
+	// LoftClosed has a smooth loft go from its last profile back to its
+	// first, a ring with no caps (loft.go).
+	LoftClosed bool
 	// SolidFaces are the faces of the solid a shell takes away, or the
 	// face a sketch on a face lies in, by identity (srf.FaceID).
 	SolidFaces []srf.FaceID

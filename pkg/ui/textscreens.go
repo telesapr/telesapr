@@ -1301,7 +1301,17 @@ func (tw *textWindow) showLoftInfo(g *sketch.Group) {
 		if i%2 == 1 {
 			bg = 'd'
 		}
-		tw.Printf(false, "%Bp   %Ft%d%E %s", bg, i+1, sk.GroupName(h))
+		if i == 0 || i == len(g.LoftThrough)+1 {
+			tw.Printf(false, "%Bp   %Ft%d%E %s", bg, i+1, sk.GroupName(h))
+			continue
+		}
+		// A profile between the ends: free, or held square to it.
+		how := "free"
+		if t := g.LoftProfileTangency(h); t != 0 {
+			how = fmt.Sprintf("square to it, %g", t)
+		}
+		tw.Printf(false, "%Bp   %Ft%d%E %s %Ftpassed%E %s %Fl%Ll%f%D[change]%E",
+			bg, i+1, sk.GroupName(h), how, lf(tw.ScreenChangeLoftProfileTangency), i-1)
 	}
 	bg := byte('a')
 	if len(g.LoftThrough)%2 == 1 {
@@ -1310,6 +1320,65 @@ func (tw *textWindow) showLoftInfo(g *sketch.Group) {
 	tw.Printf(false, "%Bp   %Ftturn those after the first by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
 		bg, int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
 	tw.showLoftEnds(g)
+	// Last, so the rows above stay where they were: whether the loft
+	// goes from its last profile back to its first.
+	closed, other := "open, from the first to the last", "[closed]"
+	if g.LoftClosed {
+		closed, other = "closed, back to the first", "[open]"
+	}
+	tw.Printf(false, "%Ba   %Ftring%E %s %Fl%Ll%f%D%s%E", closed, lf(tw.ScreenLoftClosed), 0, other)
+}
+
+// ScreenLoftClosed closes the smooth loft shown into a ring, or opens
+// it again.
+func (tw *textWindow) ScreenLoftClosed(link int, v uint32) {
+	ss := tw.ss
+	hg := tw.shown.group
+	err := ss.SK.UndoRememberFor(func() error {
+		g := ss.SK.Group(hg)
+		if g == nil {
+			return errors.New("the loft is gone")
+		}
+		return ss.SK.SetLoftClosed(hg, !g.LoftClosed)
+	})
+	if err != nil {
+		ss.Report(err)
+		return
+	}
+	ss.SK.Unsaved = true
+	ss.UndoEnableMenus()
+	ss.GW.ClearSuper()
+}
+
+// ScreenChangeLoftProfileTangency edits how square the loft shown passes
+// the profile v between its ends (0 the first after the first profile),
+// 0 for free.
+func (tw *textWindow) ScreenChangeLoftProfileTangency(link int, v uint32) {
+	g := tw.ss.SK.Group(tw.shown.group)
+	if g == nil || int(v) >= len(g.LoftThrough) {
+		return
+	}
+	tw.ShowEditControl(3, fmt.Sprintf("%g", g.LoftProfileTangency(g.LoftThrough[v])))
+	tw.edit.meaning = editLoftProfileTangency
+	tw.edit.group = g.H
+	tw.edit.i = int(v)
+}
+
+// loftProfileTangencyDone takes the edit of how square a loft passes a
+// profile between its ends.
+func (tw *textWindow) loftProfileTangencyDone(s string) {
+	ss := tw.ss
+	g := ss.SK.Group(tw.edit.group)
+	if g == nil || tw.edit.i >= len(g.LoftThrough) {
+		return
+	}
+	t, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	if err != nil {
+		ss.Error("A loft's tangency is a number: %s isn't one.", s)
+		return
+	}
+	profile := g.LoftThrough[tw.edit.i]
+	ss.parameterEdit(func() error { return ss.SK.SetLoftProfileTangency(g.H, profile, t) })
 }
 
 // showFilletInfo shows the settings of a sketch.GroupFillet group.
@@ -1956,6 +2025,9 @@ func (tw *textWindow) EditControlDone(s string) {
 		if e := ss.exprFromString(s); e != nil {
 			ss.setGroupText(tw.edit.group, sketch.GroupExtent, s)
 		}
+
+	case editLoftProfileTangency:
+		tw.loftProfileTangencyDone(s)
 
 	case editGroupDraft, editChamferDistance2:
 		if e := ss.exprFromString(s); e != nil {
