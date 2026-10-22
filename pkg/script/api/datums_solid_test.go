@@ -15,7 +15,9 @@ import (
 func saveRoundedPlate(t *testing.T, dir string) string {
 	t.Helper()
 	p := New()
-	p.Params.Set("w", "40")
+	if err := p.Params.Set("w", "40"); err != nil {
+		t.Fatal(err)
+	}
 	for _, l := range p.Sketch.Rect(V(0, 0, 0), V(40, 30, 0)) {
 		a, b := l.Start(), l.End()
 		switch {
@@ -94,7 +96,9 @@ func TestDatumsOnASolid(t *testing.T) {
 	// Wider by 10: the fillet's axis moves with the corner.
 	step := p.Host().(*SketchHost).BeginEval
 	step()
-	p.Params.Set("w", "50")
+	if err := p.Params.Set("w", "50"); err != nil {
+		t.Fatal(err)
+	}
 	if at, _ := frameOf(p.Datums.Get("rounded")); math.Abs(at.X-46) > 1e-6 || math.Abs(at.Y-26) > 1e-6 {
 		t.Errorf("after the edit the axis is at %v", at)
 	}
