@@ -236,7 +236,8 @@ func (sk *Sketch) redrawThreadOnce(hg core.HGroup, o ThreadOptions, try int) (Th
 	}
 	sk.Active = active
 	if sk.Group(active) == nil {
-		sk.Active = hg
+		all := tg.all()
+		sk.Active = all[len(all)-1]
 	}
 
 	sk.GenerateAllTyped(GenerateAll)

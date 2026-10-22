@@ -1,0 +1,60 @@
+# A screw thread with a run-out and level starts (an extension): a
+# triple-start thread made through its screen, its starts all from the
+# circle's plane, fading out 4 mm before its end; then made again with
+# no run-out from its helix group's [edit thread].
+answer ok
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 350 300
+down L 350 300
+up L 350 300
+key esc
+key x shift
+move 350 300
+down L 350 300
+up L 350 300
+menu Features|Screw Thread...
+# The designation, three starts, then the level starts and the run-out.
+twmove 172 110
+twdown L 172 110
+twup L 172 110
+edit M20xPh3P1
+tw
+dump
+twmove 454 130
+twdown L 454 130
+twup L 454 130
+twmove 427 170
+twdown L 427 170
+twup L 427 170
+edit 4
+tw
+dump
+twmove 37 260
+twdown L 37 260
+twup L 37 260
+tw
+dump
+params
+# The first helix group's [edit thread]: no run-out, then make it.
+twmove 150 210
+twdown L 150 210
+twup L 150 210
+twmove 427 170
+twdown L 427 170
+twup L 427 170
+edit 0
+tw
+dump
+twmove 37 260
+twdown L 37 260
+twup L 37 260
+tw
+dump
+save
+# Undo takes the edit back at once.
+key z ctrl
+tw
+dump

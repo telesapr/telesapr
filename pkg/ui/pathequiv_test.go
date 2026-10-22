@@ -82,6 +82,12 @@ func TestPathEquivalenceThreadEdit(t *testing.T) {
 	requireSamePaths(t, "path_thread_edit", "path_thread_edit")
 }
 
+// A screw thread with level starts and a run-out, made through its
+// screen, and by a script.
+func TestPathEquivalenceThreadRunOut(t *testing.T) {
+	requireSamePaths(t, "path_thread_runout", "path_thread_runout")
+}
+
 // A rectangle whose sides come from parameters, made through the
 // parameters screen and the dimension editor, and by a script.
 func TestPathEquivalenceParameters(t *testing.T) {

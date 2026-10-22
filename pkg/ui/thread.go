@@ -80,6 +80,15 @@ func (tw *textWindow) EditControlDoneForThread(s string) bool {
 			t.options.Clearance = ss.ExprToMm(e)
 		}
 
+	case editThreadRunOut:
+		if e := ss.exprFromString(s); e != nil {
+			if v := ss.ExprToMm(e); v < 0 {
+				ss.Error("A run-out cannot be negative.")
+			} else {
+				t.options.RunOut = v
+			}
+		}
+
 	default:
 		return false
 	}
@@ -104,6 +113,11 @@ func (tw *textWindow) ScreenChangeThread(link int, v uint32) {
 	case 'c':
 		tw.ShowEditControl(14, ss.MmToString(t.options.Clearance, true))
 		tw.edit.meaning = editThreadClearance
+	case 'b':
+		tw.ShowEditControl(14, ss.MmToString(t.options.RunOut, true))
+		tw.edit.meaning = editThreadRunOut
+	case 's':
+		t.options.LevelStarts = !t.options.LevelStarts
 	case 'e':
 		t.options.Internal = false
 	case 'i':
@@ -161,15 +175,22 @@ func (tw *textWindow) ScreenMakeThread(link int, v uint32) {
 		return
 	}
 	ss.afterGenerate()
-	g := sk.Group(res.Group)
-	ss.groupActivate(g)
-	tw.ScreenSelectGroup(0, g.H.V)
+	// The thread's last group is active, as after any feature; the
+	// screen shows its first helix, which edits it.
+	if hs, err := sk.ThreadGroups(res.Group); err == nil {
+		ss.groupActivate(sk.Group(hs[len(hs)-1]))
+	}
+	tw.ScreenSelectGroup(0, res.Group.V)
 	ss.ScheduleShowTW()
 	if !res.Sound {
-		ss.Message("The thread's solid model has naked edges or self-intersections " +
-			"at the current chord tolerance.\n\n" +
-			"A finer chord tolerance (in the configuration screen) usually " +
-			"puts that right; so may forcing the thread's group to a triangle mesh.")
+		hint := "A finer chord tolerance (in the configuration screen) usually " +
+			"puts that right; so may forcing the thread's group to a triangle mesh."
+		if t.options.RunOut > 0 {
+			hint = "Where the ridge runs into the run-out's cone the Boolean can fail; " +
+				"a run-out a little longer or shorter usually puts that right."
+		}
+		ss.Message("The thread's solid model has naked edges or self-intersections "+
+			"at the current chord tolerance.\n\n%s", hint)
 	}
 }
 
@@ -192,10 +213,18 @@ func (tw *textWindow) ShowThread() {
 	if n := o.Spec.NumStarts(); n > 1 {
 		starts = fmt.Sprintf(", %d starts", n)
 	}
-	tw.Printf(false, "%Bd             %s pitch, %s-hand%s", ss.MmToString(o.Spec.Pitch, false), hand, starts)
+	if o.Spec.NumStarts() > 1 {
+		tw.Printf(false, "%Bd             %s pitch, %s-hand%s    %Fd%f%Ls%s  starts level%E",
+			ss.MmToString(o.Spec.Pitch, false), hand, starts, lf(tw.ScreenChangeThread), checkMark(o.LevelStarts))
+	} else {
+		tw.Printf(false, "%Bd             %s pitch, %s-hand%s", ss.MmToString(o.Spec.Pitch, false), hand, starts)
+	}
 	tw.Printf(false, "%Ba   %Ftlength%E    %s%s %Fl%Ll%f[change]%E", ss.MmToString(o.Length, false),
 		exprNote(o.LengthExpr), lf(tw.ScreenChangeThread))
-	tw.Printf(false, "%Bd   %Ftclearance%E %s %Fl%Lc%f[change]%E", ss.MmToString(o.Clearance, false), lf(tw.ScreenChangeThread))
+	// The run-out and the level starts at the ends of rows, so that the
+	// rows below stay put.
+	tw.Printf(false, "%Bd   %Ftclearance%E %s %Fl%Lc%f[change]%E    %Ftrun-out%E %s %Fl%Lb%f[change]%E",
+		ss.MmToString(o.Clearance, false), lf(tw.ScreenChangeThread), ss.MmToString(o.RunOut, false), lf(tw.ScreenChangeThread))
 	// The crest at the end of a row, so that the rows below stay put.
 	tw.Printf(false, "%Ba   %f%Le%Fd%s external%E  %f%Li%Fd%s internal%E    %Ftcrest%E %f%Ln%Fd%s standard%E %f%Lu%Fd%s truncated%E %f%Lo%Fd%s rounded%E",
 		lf(tw.ScreenChangeThread), radioMark(!o.Internal), lf(tw.ScreenChangeThread), radioMark(o.Internal),

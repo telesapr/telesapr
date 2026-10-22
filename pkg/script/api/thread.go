@@ -38,6 +38,15 @@ type ThreadOptions struct {
 	// quarter of the ridge's height; or "rounded", an arc tangent to
 	// both flanks, which prints better.
 	Crest string
+	// RunOut is how far, in mm, the thread fades out before its
+	// shoulder: the turned or bored surface tapers from the root to
+	// about the crest, as a die leaves a thread. 0 is none; a Through
+	// thread has none.
+	RunOut float64
+	// LevelStarts begins every start of a thread of several at the
+	// circle's plane, each a ridge sketch and a helix of its own;
+	// otherwise one helix sweeps the ridges stacked a pitch apart.
+	LevelStarts bool
 }
 
 // sketchOptions are the options o gives a thread on a circle of the
@@ -61,6 +70,7 @@ func (o ThreadOptions) sketchOptions(sk *sketch.Sketch, diameter float64) sketch
 	opts.Crest = crest
 	opts.Internal, opts.Through, opts.Reverse = o.Internal, o.Through, o.Reverse
 	opts.Length, opts.Clearance = o.Length, o.Clearance
+	opts.RunOut, opts.LevelStarts = o.RunOut, o.LevelStarts
 	if o.LengthExpr != "" {
 		v, expr, err := sk.ThreadLengthText(o.LengthExpr)
 		if err != nil {
@@ -79,12 +89,13 @@ func threadOptionsOf(o sketch.ThreadOptions) ThreadOptions {
 	return ThreadOptions{
 		Designation: o.Spec.String(), Internal: o.Internal, Length: o.Length, Through: o.Through,
 		Reverse: o.Reverse, Clearance: o.Clearance, LengthExpr: o.LengthExpr, Crest: o.Crest.String(),
+		RunOut: o.RunOut, LevelStarts: o.LevelStarts,
 	}
 }
 
 // ThreadGroup is the view of a screw thread, by its helix group, the
-// last of the four that Features.Thread makes: what it was made with,
-// to read and to change as one.
+// fourth of the groups that Features.Thread makes: what it was made
+// with, to read and to change as one.
 type ThreadGroup struct{ g Group }
 
 // AsThread is the view of a thread's helix group.
@@ -119,9 +130,10 @@ func (v ThreadGroup) Options() (o ThreadOptions) {
 	return o
 }
 
-// Groups are the thread's four groups: the sketch and the lathe that
-// turn the part down or bore it, the sketch of the ridge, and the
-// helix that sweeps it.
+// Groups are the thread's groups: the sketch and the lathe that turn
+// the part down or bore it, the sketch of the ridge, and the helix that
+// sweeps it; then, with level starts, a ridge sketch and a helix for
+// each further start.
 func (v ThreadGroup) Groups() (groups []Group) {
 	g := v.g
 	g.d.read(func(sk *sketch.Sketch) {
@@ -137,8 +149,9 @@ func (v ThreadGroup) Groups() (groups []Group) {
 }
 
 // Edit makes the thread again with the options o, in one step, as the
-// thread's screen in the window does: its four groups are drawn again,
-// keeping their handles. A Designation of "" keeps the thread's, and a
+// thread's screen in the window does: its groups are drawn again,
+// keeping their handles (those of further level starts only while
+// there are as many). A Designation of "" keeps the thread's, and a
 // Length of 0 (with no LengthExpr) its length. Options gives what o
 // starts from:
 //

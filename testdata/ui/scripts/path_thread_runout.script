@@ -1,0 +1,31 @@
+# A triple-start screw thread made through its screen on an extruded
+# circle, its starts level and fading out 4 mm before its end. The same
+# model as path_thread_runout.go makes (TestPathEquivalenceThreadRunOut).
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 350 300
+down L 350 300
+up L 350 300
+key esc
+key x shift
+move 350 300
+down L 350 300
+up L 350 300
+menu Features|Screw Thread...
+# The designation, the level starts, the run-out, then make it.
+twmove 172 110
+twdown L 172 110
+twup L 172 110
+edit M20xPh3P1
+twmove 454 130
+twdown L 454 130
+twup L 454 130
+twmove 427 170
+twdown L 427 170
+twup L 427 170
+edit 4
+twmove 37 260
+twdown L 37 260
+twup L 37 260
