@@ -202,10 +202,20 @@ func (d *dxfImport) createBulge(p0, p1 geom.Vector, bulge float64) core.HRequest
 	sk.MustEntity(hr.Entity(1)).PointForceTo(sk, center)
 	sk.MustEntity(hr.Entity(2)).PointForceTo(sk, p0)
 	sk.MustEntity(hr.Entity(3)).PointForceTo(sk, p1)
+	d.arcNormal(hr, geom.Quaternion{W: 1})
 	d.processPoint(hr.Entity(1))
 	d.processPoint(hr.Entity(2))
 	d.processPoint(hr.Entity(3))
 	return hr
+}
+
+// arcNormal turns the normal of arc hr, drawn in 3d, to q, the plane it
+// was drawn in, as a circle's is. Left alone, its params are all zero,
+// no turn at all. In a workplane the arc's normal is the workplane's.
+func (d *dxfImport) arcNormal(hr core.HRequest, q geom.Quaternion) {
+	if !d.lockedInWorkplane() {
+		d.sk().MustEntity(hr.Entity(32)).NormalForceTo(d.sk(), q)
+	}
 }
 
 // untypedDimension is a dimension kept in a block: its type is lost in
@@ -678,6 +688,7 @@ func (d *dxfImport) AddArc(data *dxfread.Arc) {
 	sk.MustEntity(hr.Entity(1)).PointForceTo(sk, c)
 	sk.MustEntity(hr.Entity(2)).PointForceTo(sk, rvs)
 	sk.MustEntity(hr.Entity(3)).PointForceTo(sk, rve)
+	d.arcNormal(hr, q)
 	d.processPoint(hr.Entity(1))
 	d.processPoint(hr.Entity(2))
 	d.processPoint(hr.Entity(3))
