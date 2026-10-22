@@ -276,6 +276,22 @@ func BenchmarkFactorLeastSquares(b *testing.B) {
 	}
 }
 
+// BenchmarkStepFactor factors the Jacobian of an open chain as the
+// minimum-norm Newton step does: transposed, its rows matched to its
+// columns (rowmatch.go), the analysis kept.
+func BenchmarkStepFactor(b *testing.B) {
+	for _, n := range []int{100, 400} {
+		b.Run(fmt.Sprint(n), func(b *testing.B) {
+			a := jacobianOf(b, makeChain(n, false))
+			var c matchedCache
+			b.ResetTimer()
+			for b.Loop() {
+				factorLeastSquares(a, &c)
+			}
+		})
+	}
+}
+
 // BenchmarkFactorSquare factors the Jacobian of a closed chain, the
 // square system of a dimensioned sketch.
 func BenchmarkFactorSquare(b *testing.B) {
