@@ -93,6 +93,9 @@ func regenerate(part *sketch.Sketch, path string, sk *sketch.Sketch, cfg string,
 	part.Entities = part.Entities[:0]
 	part.ChordTolPct, part.MaxSegments, part.Mesher = sk.ChordTolPct, sk.MaxSegments, sk.Mesher
 	part.Fonts, part.Settings = sk.Fonts, sk.Settings
+	// The part is regenerated once and dropped: keeping copies of its
+	// solids would cost them for nothing.
+	part.NoSolidCache = true
 	ctx.open[abs] = true
 	defer delete(ctx.open, abs)
 	if !reloadAll(part, path, Options{Quiet: true}, ctx) {
