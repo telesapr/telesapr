@@ -296,7 +296,7 @@ working notes are at commit `1e84ca0c` (`git show 1e84ca0c:doc/notes/wrap-emboss
 | Datums (B4) | a datum names an entity, so faces made by no entity (a fillet's, a Boolean's) and edges of the solid can't be named; mating two names in the window is a selection from the datums screen, then the mate | A datum by `topo.Name`; a "mate these names" dialog |
 | Clearance and walls (D1) | thin spots between triangle middles are missed; gaps to parts made only of a mesh aren't followed onto surfaces; solids within one linked part aren't checked against each other; the MCP `measure` tool reports neither | |
 | Model to script (D5) | 267 of 296 fixtures come back (`scriptRoundTripKnown`, which may only shrink) | Not written: images, splines through more points (`AddSplinePoint` places a point in the nearest span), constraints on four entities (`Constrain.Raw` takes two), request styles, a face's own appearance; the MCP `export` tool doesn't write `.go` |
-| Regeneration (D4) | recommendations 3 and a solid cache taken up (`doc/notes/performance-study-2.md`, "Taken up") | 6 (the Jacobian kept between solves) open; 9 (drawing the last solids while a drag's are made off the thread) goes against 151fda16, the user's call; 11 to 13 move goldens |
+| Regeneration (D4) | recommendations 3, 6, 12 and 13 and a solid cache taken up, 9 behind a setting that is off, 11 in part (`doc/notes/performance-study-2.md`, "Taken up") | The rest of the list (1, 2, 4, 5, 7, 8, 10, 14 to 18) was not asked for; 2 (a rank test that is not a full QR) is now most of a drag step's solve |
 
 ## Waiting for the user
 
