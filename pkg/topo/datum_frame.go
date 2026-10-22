@@ -15,20 +15,86 @@ import (
 // sketch on it has (FaceFrame). A face round about an axis, as a
 // cylinder's, a cone's or a fillet's, and a circular edge give a frame
 // whose normal is the axis and whose origin is on it; a straight edge
-// one whose normal runs along it from its start. Each is found again
-// from the solid at every regeneration, so it follows the face or edge.
+// one whose normal runs along it from its start. Any other face, as a
+// loft's, a blend's or a sphere's, gives the plane touching it at its
+// middle (FacePointFrame), and any other edge, as a cubic's or a
+// helix's, the plane square to it at its middle (EdgePointFrame). Each
+// is found again from the solid at every regeneration, so it follows
+// the face or edge.
 
-// DatumFrame is the frame of the face with identity id as a datum: its
-// FaceFrame where it is flat, and otherwise its axis (AxisFrame).
-func (t *Topology) DatumFrame(id srf.FaceID) (FaceFrame, error) {
+// DatumKind is what the frame of a datum on a solid stands for, and so
+// which mates take it: a plane, an axis, or both.
+type DatumKind int
+
+const (
+	// DatumUnknown is a datum whose kind isn't known, as one named
+	// before kinds were kept: every mate takes it.
+	DatumUnknown DatumKind = iota
+	// DatumPlane is a flat face's: the plane of the face.
+	DatumPlane
+	// DatumAxis is a round face's or a circular edge's: the axis, and
+	// the plane square to it at its origin, as a circle's.
+	DatumAxis
+	// DatumLine is a straight edge's: the line of the edge.
+	DatumLine
+	// DatumFacePoint is any other face's: the plane touching it at a
+	// point, and the line square to the face there.
+	DatumFacePoint
+	// DatumEdgePoint is any other edge's: the line touching it at a
+	// point.
+	DatumEdgePoint
+)
+
+// datumKindWords are the kinds' names in a file and on screen.
+var datumKindWords = map[DatumKind]string{
+	DatumPlane:     "plane",
+	DatumAxis:      "axis",
+	DatumLine:      "line",
+	DatumFacePoint: "face-point",
+	DatumEdgePoint: "edge-point",
+}
+
+// String is the kind's word, as a file holds it; "" for DatumUnknown.
+func (k DatumKind) String() string { return datumKindWords[k] }
+
+// ParseDatumKind is the kind of word w, as String gives it.
+func ParseDatumKind(w string) (DatumKind, bool) {
+	for k, kw := range datumKindWords {
+		if kw == w {
+			return k, true
+		}
+	}
+	return DatumUnknown, false
+}
+
+// IsAxis reports whether a concentric mate takes the datum as an axis:
+// a round face's or a circle's axis, an edge's line, or the line square
+// to a face at its point. A flat face's normal runs through a corner of
+// the face, where no axis is.
+func (k DatumKind) IsAxis() bool { return k != DatumPlane }
+
+// IsPlane reports whether a flush mate takes the datum as a plane: a
+// flat face's, the plane square to a round face's axis, or the plane
+// touching a face. An edge's line has no one plane.
+func (k DatumKind) IsPlane() bool { return k != DatumLine && k != DatumEdgePoint }
+
+// DatumFrame is the frame of the face with identity id as a datum, and
+// its kind: its FaceFrame where it is flat, its axis where it is round
+// (AxisFrame), and otherwise the plane touching it (FacePointFrame).
+func (t *Topology) DatumFrame(id srf.FaceID) (FaceFrame, DatumKind, error) {
 	fs := t.FacesWithID(id)
 	if len(fs) == 0 {
-		return FaceFrame{}, fmt.Errorf("face %x is no longer in the solid", uint32(id))
+		return FaceFrame{}, DatumUnknown, fmt.Errorf("face %x is no longer in the solid", uint32(id))
 	}
 	if _, flat := t.planarNormal(fs[0]); flat {
-		return t.FaceFrame(id)
+		fr, err := t.FaceFrame(id)
+		return fr, DatumPlane, err
 	}
-	return t.AxisFrame(id)
+	if fr, err := t.AxisFrame(id); err == nil {
+		return fr, DatumAxis, nil
+	}
+	fr, err := t.FacePointFrame(id)
+	return fr, DatumFacePoint, err
 }
 
 // datumCircle is a circle of the solid: its centre, its unit normal and its
@@ -123,6 +189,14 @@ func (t *Topology) AxisFrame(id srf.FaceID) (FaceFrame, error) {
 			last = c
 		}
 	}
+	// Edges along circles of one axis don't make a face round about it,
+	// as a loft's side from a circle to a square has one: the surface
+	// must turn about the axis, its normals in planes through the axis.
+	for _, f := range fs {
+		if !t.turnsAbout(f, first.centre, n) {
+			return FaceFrame{}, fmt.Errorf("face %x is not round about one axis", uint32(id))
+		}
+	}
 	switch along := last.centre.Minus(first.centre).Dot(n); {
 	case along > geom.LengthEps:
 	case count > 0 && sum.ScaledBy(1/float64(count)).Minus(first.centre).Dot(n) < -geom.LengthEps:
@@ -131,14 +205,41 @@ func (t *Topology) AxisFrame(id srf.FaceID) (FaceFrame, error) {
 	return FaceFrame{Origin: first.centre, U: frameU(first.start.Minus(first.centre), n), N: n}, nil
 }
 
-// EdgeFrame is the frame of the edge named n: along it from its start
-// where it is straight, its first axis out of a flat face beside it;
-// about its axis where it is a circle or an arc, its first axis to its
-// start.
-func (t *Topology) EdgeFrame(n Name) (FaceFrame, error) {
+// turnsAbout reports whether face f's surface is one turned about the
+// axis through c along unit n: at each point of a grid over its
+// parameters, the normal lies in the plane through the axis and the
+// point.
+func (t *Topology) turnsAbout(f int, c, n geom.Vector) bool {
+	s := t.Surface(f)
+	if s == nil {
+		return false
+	}
+	const steps = 4
+	for i := range steps + 1 {
+		for j := range steps + 1 {
+			u, v := float64(i)/steps, float64(j)/steps
+			p, m := s.PointAt(u, v), s.NormalAt(u, v)
+			around := n.Cross(p.Minus(c))
+			if around.Magnitude() < geom.LengthEps || m.Magnitude() < geom.LengthEps {
+				continue
+			}
+			if math.Abs(m.WithMagnitude(1).Dot(around.WithMagnitude(1))) > 1e-6 {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// EdgeFrame is the frame of the edge named n, and its kind: along it
+// from its start where it is straight, its first axis out of a flat
+// face beside it; about its axis where it is a circle or an arc, its
+// first axis to its start; and otherwise square to it at its middle
+// (EdgePointFrame).
+func (t *Topology) EdgeFrame(n Name) (FaceFrame, DatumKind, error) {
 	e, err := t.Resolve(n)
 	if err != nil {
-		return FaceFrame{}, err
+		return FaceFrame{}, DatumUnknown, err
 	}
 	ed := &t.Edges[e]
 	a, b := t.Vertices[ed.V[0]].P, t.Vertices[ed.V[1]].P
@@ -154,12 +255,16 @@ func (t *Topology) EdgeFrame(n Name) (FaceFrame, error) {
 				break
 			}
 		}
-		return FaceFrame{Origin: a, U: frameU(u, dir), N: dir}, nil
+		return FaceFrame{Origin: a, U: frameU(u, dir), N: dir}, DatumLine, nil
 	}
 	if c, ok := polylineCircle(ed.Points); ok {
-		return FaceFrame{Origin: c.centre, U: frameU(c.start.Minus(c.centre), c.n), N: c.n}, nil
+		return FaceFrame{Origin: c.centre, U: frameU(c.start.Minus(c.centre), c.n), N: c.n}, DatumAxis, nil
 	}
-	return FaceFrame{}, fmt.Errorf("%s is neither straight nor round", n)
+	fr, err := t.edgePointFrame(e)
+	if err != nil {
+		return FaceFrame{}, DatumUnknown, fmt.Errorf("%s: %w", n, err)
+	}
+	return fr, DatumEdgePoint, nil
 }
 
 // frameU is d square to the unit normal n, or a direction square to n

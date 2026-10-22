@@ -104,7 +104,11 @@ func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *Fil
 		add(field("active-configuration", String(sk.ActiveConfiguration)))
 	}
 	for _, dt := range sk.Datums {
-		add(field("datum", Word(dt.Name), hex(dt.Entity.V)))
+		if dt.Kind == topo.DatumUnknown {
+			add(field("datum", Word(dt.Name), hex(dt.Entity.V)))
+		} else {
+			add(field("datum", Word(dt.Name), hex(dt.Entity.V), Word(dt.Kind.String())))
+		}
 	}
 	if d := sk.Drawing; d != nil {
 		n := block("drawing")

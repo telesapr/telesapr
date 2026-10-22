@@ -18,6 +18,11 @@ type DatumsMenu struct{ d *Doc }
 type Datum struct {
 	Name   string
 	Entity Entity
+	// Kind is what a datum on a face or an edge of a solid stands for:
+	// "plane", "axis", "line", "face-point" (the plane touching a face)
+	// or "edge-point" (the line along an edge); "" for a datum of any
+	// other entity.
+	Kind string
 }
 
 // List lists the drawing's own datums, in the order they were named.
@@ -25,7 +30,7 @@ func (m DatumsMenu) List() (ds []Datum) {
 	d := m.d
 	d.read(func(sk *sketch.Sketch) {
 		for _, dt := range sk.Datums {
-			ds = append(ds, Datum{Name: dt.Name, Entity: Entity{d: d, H: dt.Entity}})
+			ds = append(ds, Datum{Name: dt.Name, Entity: Entity{d: d, H: dt.Entity}, Kind: dt.Kind.String()})
 		}
 	})
 	return ds
@@ -59,12 +64,17 @@ func (m DatumsMenu) Name(name string, e Entity) {
 // need make, as a fillet's or a Boolean's: a workplane that follows the
 // face at each regeneration is added after the active group, and the
 // datum names it. In a flat face the workplane lies as a sketch on the
-// face does; on a face round about an axis, as a cylinder's, a cone's
-// or a fillet's, its normal runs along the axis and its origin is on it,
-// so that Assembly.Concentric takes it as an axis and Assembly.Flush a
-// flat one as a face. The new group becomes active, as any new group
-// does: groups after the active one are not regenerated, so a datum
-// after it would not follow its face.
+// face does, a plane; on a face round about an axis, as a cylinder's, a
+// cone's or a fillet's, its normal runs along the axis and its origin
+// is on it; on any other face, as a loft's, a blend's or a sphere's, it
+// touches the face at the face's middle, its normal out of the solid.
+// Assembly.Flush takes each as a plane, a round face's square to its
+// axis at its origin, and Assembly.Concentric each but a flat face's as
+// an axis. The new group
+// becomes active, as any new group does; while a group before it is
+// active it stays where it was, and follows its face again when it is
+// active or the model is saved, so a model linking this one finds it
+// where the face is.
 func (m DatumsMenu) NameFace(name string, f SolidFace) Group {
 	return m.nameSolid(name, f.s, f.id, nil)
 }
@@ -72,7 +82,9 @@ func (m DatumsMenu) NameFace(name string, f SolidFace) Group {
 // NameEdge names edge e of a solid as the datum name, as NameFace does
 // a face: the workplane follows the edge, its normal along it from its
 // start where it is straight, about its axis where it is a circle or an
-// arc.
+// arc, and along it at its middle where it is any other curve, as a
+// cubic's or a helix's. Assembly.Concentric takes it as an axis;
+// Assembly.Flush only a circle's, as the circle's plane.
 func (m DatumsMenu) NameEdge(name string, e SolidEdge) Group {
 	n := e.name
 	return m.nameSolid(name, e.s, 0, &n)

@@ -17,6 +17,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/persist/link"
 	"github.com/telesapr/telesapr/pkg/render"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/topo"
 	"github.com/telesapr/telesapr/pkg/version"
 )
 
@@ -1453,6 +1454,19 @@ func (tw *textWindow) showDatumWorkplaneInfo(g *sketch.Group) {
 	for _, n := range g.SolidEdges {
 		tw.Printf(false, "%Ba   %Ftfollows%E %s", sk.SolidEdgeName(n))
 	}
+	if words, ok := datumKindWords[g.DatumKind()]; ok {
+		tw.Printf(false, "%Bd   %Ftas%E %s", words)
+	}
+}
+
+// datumKindWords say what the workplane of a datum on the solid stands
+// for, by its kind.
+var datumKindWords = map[topo.DatumKind]string{
+	topo.DatumPlane:     "the face's plane",
+	topo.DatumAxis:      "the axis, normal along it",
+	topo.DatumLine:      "the edge's line, normal along it",
+	topo.DatumFacePoint: "the plane touching the face at its middle",
+	topo.DatumEdgePoint: "the line along the edge at its middle",
 }
 
 // showSweepInfo shows the settings of a sketch.GroupSweep group.

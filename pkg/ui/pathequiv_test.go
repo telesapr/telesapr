@@ -18,6 +18,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // requireSamePaths builds a model twice, through the interface and
@@ -341,6 +342,21 @@ func TestPathEquivalenceDatumSolidEdge(t *testing.T) {
 	}
 	if g := ui.Group(d.Entity.Group()); g.Subtype != sketch.GroupWorkplaneByDatum || len(g.SolidEdges) != 1 || g.Problem.Msg != "" {
 		t.Errorf("the datum's group: subtype %d, edges %v, problem %q", g.Subtype, g.SolidEdges, g.Problem.Msg)
+	}
+}
+
+// A side of a loft, neither flat nor round, picked on the model and
+// named as a datum on the datums screen, and the same made by a script:
+// a workplane touching the face at its middle.
+func TestPathEquivalenceDatumFreeForm(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_datum_freeform", "path_datum_freeform")
+	d := ui.Datum("side")
+	if d == nil {
+		t.Fatalf("datums %v", ui.Datums)
+	}
+	if g := ui.Group(d.Entity.Group()); g.Subtype != sketch.GroupWorkplaneByDatum || len(g.SolidFaces) != 1 ||
+		g.Problem.Msg != "" || d.Kind != topo.DatumFacePoint {
+		t.Errorf("the datum's group: subtype %d, faces %v, problem %q, kind %s", g.Subtype, g.SolidFaces, g.Problem.Msg, d.Kind)
 	}
 }
 

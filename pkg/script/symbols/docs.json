@@ -4295,7 +4295,7 @@
 					},
 					"Concentric": {
 						"decl": "func (m AssemblyMenu) Concentric(a, b Entity) []Constraint",
-						"text": "Concentric puts two circles or arcs on one axis. Drawing free in 3d,\ntheir axes are made parallel and the second's centre put on the\nfirst's axis, by its distance from the first's centre along two\ndirections square to the axis, each zero; one part may still turn\nabout the axis and slide along it, as a pin in a hole. The directions\nare lines or normals of the first circle's group, or the reference\naxes; with none square to the axis, the centres are put on each\nother. In a workplane, the centres are put on each other. A\nworkplane, or a normal with a point, is taken as an axis, the normal\nthrough its origin, as a datum on a round face or edge of a solid is\n(Datums.NameFace)."
+						"text": "Concentric puts two circles or arcs on one axis. Drawing free in 3d,\ntheir axes are made parallel and the second's centre put on the\nfirst's axis, by its distance from the first's centre along two\ndirections square to the axis, each zero; one part may still turn\nabout the axis and slide along it, as a pin in a hole. The directions\nare lines or normals of the first circle's group, or the reference\naxes; with none square to the axis, the centres are put on each\nother. In a workplane, the centres are put on each other. A\nworkplane, or a normal with a point, is taken as an axis, the normal\nthrough its origin, as a datum on a round face or edge of a solid is\n(Datums.NameFace); a datum on a flat face, whose normal runs through\na corner of the face, is refused."
 					},
 					"ExportBOM": {
 						"decl": "func (m AssemblyMenu) ExportBOM(path string) error",
@@ -4303,7 +4303,7 @@
 					},
 					"Flush": {
 						"decl": "func (m AssemblyMenu) Flush(faceA, faceB Entity) []Constraint",
-						"text": "Flush makes two faces parallel and puts a point of the first, one\nlying on it, on the second: the faces lie in one plane, facing as\nthey did, and one part may still slide and turn on the other. A\nworkplane, or a normal with a point, is taken as a face, as a datum\non a flat face of a solid is (Datums.NameFace): its origin is the\npoint that lies on it."
+						"text": "Flush makes two faces parallel and puts a point of the first, one\nlying on it, on the second: the faces lie in one plane, facing as\nthey did, and one part may still slide and turn on the other. A\nworkplane, or a normal with a point, is taken as a face, as a datum\non a flat face of a solid is (Datums.NameFace): its origin is the\npoint that lies on it. A datum on an edge, which is a line, is\nrefused."
 					},
 					"Hinge": {
 						"decl": "func (m AssemblyMenu) Hinge(a, b Entity) []Constraint",
@@ -4615,11 +4615,11 @@
 					},
 					"NameEdge": {
 						"decl": "func (m DatumsMenu) NameEdge(name string, e SolidEdge) Group",
-						"text": "NameEdge names edge e of a solid as the datum name, as NameFace does\na face: the workplane follows the edge, its normal along it from its\nstart where it is straight, about its axis where it is a circle or an\narc."
+						"text": "NameEdge names edge e of a solid as the datum name, as NameFace does\na face: the workplane follows the edge, its normal along it from its\nstart where it is straight, about its axis where it is a circle or an\narc, and along it at its middle where it is any other curve, as a\ncubic's or a helix's. Assembly.Concentric takes it as an axis;\nAssembly.Flush only a circle's, as the circle's plane."
 					},
 					"NameFace": {
 						"decl": "func (m DatumsMenu) NameFace(name string, f SolidFace) Group",
-						"text": "NameFace names face f of a solid as the datum name, a face no entity\nneed make, as a fillet's or a Boolean's: a workplane that follows the\nface at each regeneration is added after the active group, and the\ndatum names it. In a flat face the workplane lies as a sketch on the\nface does; on a face round about an axis, as a cylinder's, a cone's\nor a fillet's, its normal runs along the axis and its origin is on it,\nso that Assembly.Concentric takes it as an axis and Assembly.Flush a\nflat one as a face. The new group becomes active, as any new group\ndoes: groups after the active one are not regenerated, so a datum\nafter it would not follow its face."
+						"text": "NameFace names face f of a solid as the datum name, a face no entity\nneed make, as a fillet's or a Boolean's: a workplane that follows the\nface at each regeneration is added after the active group, and the\ndatum names it. In a flat face the workplane lies as a sketch on the\nface does, a plane; on a face round about an axis, as a cylinder's, a\ncone's or a fillet's, its normal runs along the axis and its origin\nis on it; on any other face, as a loft's, a blend's or a sphere's, it\ntouches the face at the face's middle, its normal out of the solid.\nAssembly.Flush takes each as a plane, a round face's square to its\naxis at its origin, and Assembly.Concentric each but a flat face's as\nan axis. The new group\nbecomes active, as any new group does; while a group before it is\nactive it stays where it was, and follows its face again when it is\nactive or the model is saved, so a model linking this one finds it\nwhere the face is."
 					},
 					"Names": {
 						"decl": "func (m DatumsMenu) Names() (names []string)",
@@ -7170,6 +7170,10 @@
 						"decl": "func (g *Group) CopyPlacements(sk *Sketch) (places []CopyPlacement, ofSolid bool, err error)",
 						"text": "CopyPlacements lists where a step and repeat (translate or rotate), a pattern along a path or a mirror puts the copies of its source's solid, the copies the kernel unites into the group's own solid (generateFor- StepAndRepeatShell, generatePatternShell, generateMirrorShell)."
 					},
+					"DatumKind": {
+						"decl": "func (g *Group) DatumKind() topo.DatumKind",
+						"text": "DatumKind is what the datum on a face or an edge of the solid that g makes stands for, as its frame was last found; DatumUnknown for any other group."
+					},
 					"DescriptionString": {
 						"decl": "func (g *Group) DescriptionString() string",
 						"text": "DescriptionString names the group as the property browser does: \"g003-extrude\"."
@@ -7932,6 +7936,10 @@
 					"Datum": {
 						"decl": "func (sk *Sketch) Datum(name string) *Datum",
 						"text": "Datum is the datum called name, or nil."
+					},
+					"DatumKindOf": {
+						"decl": "func (sk *Sketch) DatumKindOf(he core.HEntity) topo.DatumKind",
+						"text": "DatumKindOf is what the entity he stands for as a datum on a face or an edge of a solid, so that a mate can refuse a plane for an axis: he the workplane of such a datum or its normal, or the normal a link's datum answers with (ResolveDatum)."
 					},
 					"DatumNames": {
 						"decl": "func (sk *Sketch) DatumNames() []string",
