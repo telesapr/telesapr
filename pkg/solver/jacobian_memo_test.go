@@ -7,8 +7,10 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 )
 
-// A system kept and reseeded solves each step of a drag, and of a
-// sketch whose known values change, to the same bits as a new system,
+// A system kept and reseeded solves each step of a sketch moved a
+// little, as at each step of a drag but with nothing marked dragged
+// (TestKeptDragSteps has those), and of a sketch whose known values
+// change, to the same bits as a new system,
 // taking the Jacobians it wrote before where the equations and the
 // known values they read are the same, and writing them again where
 // they are not.
@@ -29,13 +31,11 @@ func TestKeptSystemSolvesAsNew(t *testing.T) {
 			}
 			before := snapshot(ch.sk)
 			s := ch.system()
-			s.Dragged = map[core.HParam]bool{ch.last: true}
 			how, dof, _ := s.Solve(ch.g, true, true, false)
 			fresh := snapshot(ch.sk)
 
 			restore(ch.sk, before)
 			kept.Reseed(ch.sk.get)
-			kept.Dragged = map[core.HParam]bool{ch.last: true}
 			howK, dofK, _ := kept.Solve(ch.g, true, true, false)
 			if how != howK || dof != dofK {
 				t.Fatalf("step %d: new %v %d, kept %v %d", step, how, dof, howK, dofK)

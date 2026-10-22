@@ -344,3 +344,36 @@ func BenchmarkSolveProfiles(b *testing.B) {
 		}
 	}
 }
+
+// BenchmarkSolveDragDimensioned drags a point of a chain of 300
+// segments whose first 50 have a length, which the drag pulls on: the
+// Newton steps factor the lengths' Jacobian, with a new system each
+// move or with one kept, whose steps take the factorisation kept from
+// the moves before (drag_step.go).
+func BenchmarkSolveDragDimensioned(b *testing.B) {
+	for _, keep := range []bool{false, true} {
+		name := "new"
+		if keep {
+			name = "kept"
+		}
+		b.Run(name, func(b *testing.B) {
+			ch := makeChainDimensioned(300, false, 50)
+			ch.last = ch.unknowns[41]
+			kept := ch.system()
+			kept.Solve(ch.g, true, false, true)
+			b.ResetTimer()
+			for b.Loop() {
+				ch.sk[ch.last].Val += 0.01
+				s := ch.system()
+				if keep {
+					kept.Reseed(ch.sk.get)
+					s = kept
+				}
+				s.Dragged = map[core.HParam]bool{ch.last: true}
+				if how, _, _ := s.Solve(ch.g, true, false, false); how != core.SolveOkay {
+					b.Fatalf("how %d", how)
+				}
+			}
+		})
+	}
+}

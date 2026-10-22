@@ -84,6 +84,9 @@ type System struct {
 		Anum [][]float64
 		Bnum []float64
 		X    []float64
+		// id names the Jacobian written, the same for one taken from
+		// the Jacobians kept (jacobian_memo.go).
+		id uint64
 	}
 	// rankSym and stepSym keep the symbolic analysis of the Jacobian
 	// as the rank test factors it and as the Newton step factors it,
@@ -92,6 +95,12 @@ type System struct {
 	// written keeps the Jacobians WriteJacobian wrote, by what they
 	// were written from (jacobian_memo.go).
 	written jacobianMemo
+	// kept are the Newton step's factorisations kept during a drag, by
+	// the Jacobian's id (drag_step.go).
+	kept map[uint64]keptStep
+	// keptSteps counts the steps taken with a kept factorisation, for
+	// the tests.
+	keptSteps int
 	// whole solves the system as one, not a component at a time; for a
 	// measure of what the components save.
 	whole bool
@@ -239,9 +248,10 @@ func (s *System) WriteJacobian(tag int) bool {
 
 	key := s.written.key(s, tag)
 	if w, ok := s.written.get(key); ok {
-		s.mat.A, s.mat.B = w.A, w.B
+		s.mat.A, s.mat.B, s.mat.id = w.A, w.B, w.id
 		return true
 	}
+	s.mat.id = s.written.newID()
 
 	s.mat.A = make([][]*core.Expr, s.mat.m)
 	seen := make(map[core.HParam]bool)
@@ -268,7 +278,7 @@ func (s *System) WriteJacobian(tag int) bool {
 		}
 		s.mat.B = append(s.mat.B, f)
 	}
-	s.written.put(key, s.mat.A, s.mat.B)
+	s.written.put(key, writtenJacobian{A: s.mat.A, B: s.mat.B, id: s.mat.id})
 	return true
 }
 
@@ -539,19 +549,34 @@ func (s *System) SolveLeastSquares() bool {
 		return true
 	}
 
-	s.mat.X = leastSquares(a, s.mat.Bnum, &s.stepSym)
+	sf := factorLeastSquares(a, &s.stepSym)
+	s.mat.X = sf.solve(s.mat.Bnum)
 	for c := range n {
 		s.mat.X[c] *= scale[c]
 	}
+	s.keepStep(sf, scale)
 	return true
 }
 
 // leastSquares returns the minimum-norm solution X of A X = B, once A
 // is scaled; cache keeps the analysis of the pattern factored.
 func leastSquares(a *spMat, b []float64, cache *symbolicCache) []float64 {
-	m, n := a.rows, a.cols
-	var z []float64
-	if m <= n {
+	return factorLeastSquares(a, cache).solve(b)
+}
+
+// stepFactor is A factored for its minimum-norm solutions, which are
+// A' z for the z it solves for.
+type stepFactor struct {
+	a *spMat
+	f *sparseQR
+	// wide is set where A' was factored: A has no more rows than
+	// columns.
+	wide bool
+}
+
+// factorLeastSquares factors a for leastSquares.
+func factorLeastSquares(a *spMat, cache *symbolicCache) *stepFactor {
+	if a.rows <= a.cols {
 		// We want the minimum norm solution of the underdetermined system
 		// A*x = B, which is x = A'*(A*A')^-1*B. Factor A' rather than
 		// forming A*A', which would square the condition number: as
@@ -559,7 +584,20 @@ func leastSquares(a *spMat, b []float64, cache *symbolicCache) []float64 {
 		//     z = (A*A')^-1*B = P*R^-1*R'^-1*P'*B,
 		// two triangular solves, with the rank decision taken on R.
 		at := a.transpose()
-		f := factorSparseQRAnalyzed(at, cache.analysis(at), false)
+		return &stepFactor{a: a, f: factorSparseQRAnalyzed(at, cache.analysis(at), false), wide: true}
+	}
+	// More equations than unknowns; A' is wide, which Eigen's sparse QR
+	// does not handle, so fall back to the normal equations. A system
+	// like that is redundant anyway, and gets reported as such.
+	return &stepFactor{a: a, f: factorSparseQR(a.mulSelfTransposed())}
+}
+
+// solve is the minimum-norm solution of A X = b.
+func (sf *stepFactor) solve(b []float64) []float64 {
+	m := sf.a.rows
+	var z []float64
+	if sf.wide {
+		f := sf.f
 		v := make([]float64, m)
 		if f.rank > 0 {
 			for k := range f.rank {
@@ -573,14 +611,9 @@ func leastSquares(a *spMat, b []float64, cache *symbolicCache) []float64 {
 			z[f.perm[k]] = v[k]
 		}
 	} else {
-		// More equations than unknowns; A' is wide, which Eigen's sparse
-		// QR does not handle, so fall back to the normal equations. A
-		// system like that is redundant anyway, and gets reported as
-		// such.
-		z = factorSparseQR(a.mulSelfTransposed()).solve(b)
+		z = sf.f.solve(b)
 	}
-
-	return a.mulTransposed(z)
+	return sf.a.mulTransposed(z)
 }
 
 // isReasonable is true for values that are clearly not, despite its
@@ -600,11 +633,21 @@ func (s *System) NewtonSolve() bool {
 	for i := range s.mat.m {
 		s.mat.Bnum[i] = s.mat.B[i].Eval(nil, nil)
 	}
+	// During a drag, steps are taken with a factorisation kept while
+	// they converge fast enough (drag_step.go).
+	fresh := false
+	left := residual(s.mat.Bnum)
 	for {
-		// And evaluate the Jacobian at our initial operating point.
-		s.EvalJacobian()
-		if !s.SolveLeastSquares() {
-			break
+		k, kept := s.keptStepFor()
+		if kept && !fresh {
+			s.takeKeptStep(k)
+		} else {
+			// And evaluate the Jacobian at our initial operating point.
+			kept = false
+			s.EvalJacobian()
+			if !s.SolveLeastSquares() {
+				break
+			}
 		}
 
 		// Take the Newton step;
@@ -634,6 +677,14 @@ func (s *System) NewtonSolve() bool {
 				converged = false
 				break
 			}
+		}
+		if now := residual(s.mat.Bnum); kept {
+			// A kept step that didn't halve what is left is the last:
+			// the next factors the Jacobian as it is now.
+			fresh = now > left/2
+			left = now
+		} else {
+			fresh, left = false, now
 		}
 		if iter >= 50 || converged {
 			break

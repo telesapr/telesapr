@@ -49,12 +49,15 @@ type jacobianMemo struct {
 	m   map[string]writtenJacobian
 	// hits counts the Jacobians taken from m.
 	hits int
+	// lastID is the id of the Jacobian last written.
+	lastID uint64
 }
 
 // writtenJacobian is what WriteJacobian leaves in mat.A and mat.B.
 type writtenJacobian struct {
-	A [][]*core.Expr
-	B []*core.Expr
+	A  [][]*core.Expr
+	B  []*core.Expr
+	id uint64
 }
 
 // key is what WriteJacobian(tag) would write from, as it now stands:
@@ -145,11 +148,17 @@ func (j *jacobianMemo) get(key []byte) (writtenJacobian, bool) {
 	return w, ok
 }
 
+// newID names a Jacobian written: no other the System wrote has it.
+func (j *jacobianMemo) newID() uint64 {
+	j.lastID++
+	return j.lastID
+}
+
 // put keeps a Jacobian under key; when maxWritten are kept, those kept
 // before are let go.
-func (j *jacobianMemo) put(key []byte, a [][]*core.Expr, b []*core.Expr) {
+func (j *jacobianMemo) put(key []byte, w writtenJacobian) {
 	if j.m == nil || len(j.m) >= maxWritten {
 		j.m = make(map[string]writtenJacobian)
 	}
-	j.m[string(key)] = writtenJacobian{A: a, B: b}
+	j.m[string(key)] = w
 }
