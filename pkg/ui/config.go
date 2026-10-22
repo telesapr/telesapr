@@ -49,7 +49,13 @@ type config struct {
 	Shaded bool
 	// UseOpenGL draws the windows with OpenGL where the platform has
 	// it.
-	UseOpenGL             bool
+	UseOpenGL bool
+	// DragSolidsLate has a drag of the geometry draw the solids as they
+	// were while a shell job makes them off the thread, each put in when
+	// its job ends, a frame or more behind the pointer; off, the solids
+	// are made on the thread at every frame, so linked parts follow the
+	// pointer, which holds the window on a large model.
+	DragSolidsLate        bool
 	ShowToolbar           bool
 	BackgroundColor       core.RGBA
 	ExportShadedTriangles bool
@@ -133,6 +139,7 @@ func (c *config) Thaw(s core.Settings) {
 	c.ColorByFreedom = core.ThawBool(s, "ColorByFreedom", true)
 	c.Shaded = core.ThawBool(s, "Shaded", false)
 	c.UseOpenGL = core.ThawBool(s, "UseOpenGL", true)
+	c.DragSolidsLate = core.ThawBool(s, "DragSolidsLate", false)
 	c.ShowContourAreas = core.ThawBool(s, "ShowContourAreas", false)
 	c.ExportShadedTriangles = core.ThawBool(s, "ExportShadedTriangles", true)
 	c.ExportPwlCurves = core.ThawBool(s, "ExportPwlCurves", false)
@@ -219,6 +226,7 @@ func (c *config) Freeze(s core.Settings) {
 	core.FreezeBool(s, "ColorByFreedom", c.ColorByFreedom)
 	core.FreezeBool(s, "Shaded", c.Shaded)
 	core.FreezeBool(s, "UseOpenGL", c.UseOpenGL)
+	core.FreezeBool(s, "DragSolidsLate", c.DragSolidsLate)
 	core.FreezeBool(s, "ExportShadedTriangles", c.ExportShadedTriangles)
 	core.FreezeBool(s, "ExportPwlCurves", c.ExportPwlCurves)
 	core.FreezeColor(s, "BackgroundColor", c.BackgroundColor)

@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
 	"github.com/telesapr/telesapr/pkg/sketch"
@@ -43,8 +44,8 @@ func TestSolidCacheSameAsMaking(t *testing.T) {
 				continue
 			}
 			t.Run(filepath.ToSlash(strings.TrimPrefix(f, filepath.Join("..", "..", "testdata")+string(filepath.Separator))), func(t *testing.T) {
-				made, _ := editedDigests(t, f, false)
-				kept, n := editedDigests(t, f, true)
+				made, _ := editedDigests(t, f, func(sk *sketch.Sketch) { sk.NoSolidCache = true }, false)
+				kept, n := editedDigests(t, f, nil, false)
 				hits.Add(int64(n))
 				for step := range min(len(made), len(kept)) {
 					if made[step] != kept[step] {
@@ -63,9 +64,11 @@ func TestSolidCacheSameAsMaking(t *testing.T) {
 	}
 }
 
-// editedDigests opens file, edits it and gives a digest of the model
-// after each step, and how many solids were taken from the cache.
-func editedDigests(t *testing.T, file string, keep bool) ([]string, int) {
+// editedDigests opens file, set sets its sketch up (nil for none), it
+// is edited, with points moved as a drag moves them where moves is
+// set, and gives a digest of the model after each step, and how many
+// solids were taken from the cache.
+func editedDigests(t *testing.T, file string, set func(*sketch.Sketch), moves bool) ([]string, int) {
 	t.Helper()
 	abs, err := filepath.Abs(file)
 	if err != nil {
@@ -81,7 +84,9 @@ func editedDigests(t *testing.T, file string, keep bool) ([]string, int) {
 		return nil, 0
 	}
 	sk := ss.SK
-	sk.NoSolidCache = !keep
+	if set != nil {
+		set(sk)
+	}
 	ss.AfterNewFile()
 	out := []string{modelDigest(sk)}
 	for i := 1; i < len(sk.GroupOrder); i += max(1, len(sk.GroupOrder)/3) {
@@ -106,6 +111,28 @@ func editedDigests(t *testing.T, file string, keep bool) ([]string, int) {
 			c := &sk.Constraints[ci]
 			c.ValA = v
 			sk.MarkGroupDirty(c.Group, false)
+			sk.Refresh()
+			out = append(out, modelDigest(sk))
+		}
+	}
+	// Points moved a little, a step at a time, as a drag moves them:
+	// the same equations solved from other values.
+	var points []core.HParam
+	for ei := range sk.Entities {
+		if !moves {
+			break
+		}
+		if e := &sk.Entities[ei]; e.IsPoint() && sk.Group(e.Group) != nil && e.Param[0].V != 0 && sk.Param(e.Param[0]) != nil {
+			points = append(points, e.Param[0])
+		}
+	}
+	for n, h := range points {
+		if n%max(1, len(points)/3) != 0 {
+			continue
+		}
+		for range 2 {
+			sk.Param(h).Val += 0.37
+			sk.MarkGroupDirty(sk.GroupOrder[0], false)
 			sk.Refresh()
 			out = append(out, modelDigest(sk))
 		}
@@ -142,5 +169,42 @@ func shellDigest(h hash.Hash, sh *srf.SShell) {
 	}
 	for _, c := range sh.Curve {
 		fmt.Fprintf(h, "c %d %v %v %d %d %d %v\n", c.H.V, c.Exact.Ctrl, c.Exact.Weight, c.SurfA.V, c.SurfB.V, c.Source, c.Points)
+	}
+}
+
+// Every model under testdata, opened and edited as
+// TestSolidCacheSameAsMaking edits it, with points moved as a drag
+// moves them, gives the same model at each step with each group's
+// written equations kept from one solve to the next as with them
+// written again. Under -short a sample of the models. Not parallel, as
+// TestSolidCacheSameAsMaking.
+func TestSolverCacheSameAsWriting(t *testing.T) {
+	var files []string
+	err := filepath.WalkDir(filepath.Join("..", "..", "testdata"), func(path string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() && strings.HasSuffix(path, ".tlspr") {
+			files = append(files, path)
+		}
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, f := range files {
+		if testing.Short() && i%20 != 7 {
+			continue
+		}
+		t.Run(filepath.ToSlash(strings.TrimPrefix(f, filepath.Join("..", "..", "testdata")+string(filepath.Separator))), func(t *testing.T) {
+			written, _ := editedDigests(t, f, func(sk *sketch.Sketch) { sk.NoSolverCache = true }, true)
+			kept, _ := editedDigests(t, f, nil, true)
+			for step := range min(len(written), len(kept)) {
+				if written[step] != kept[step] {
+					t.Errorf("at step %d the model with its equations kept differs from the one written again", step)
+					return
+				}
+			}
+			if len(written) != len(kept) {
+				t.Errorf("%d steps written, %d kept", len(written), len(kept))
+			}
+		})
 	}
 }

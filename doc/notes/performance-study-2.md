@@ -360,6 +360,57 @@ whatever tolerance it was made at, or the references group's first tolerance wou
 keys of a sketch and its `ShellJob` copy. A test reading a script's sketch through `Doc.With`
 records an undo step and marks the active group dirty: read through the host.
 
+## Taken up, 2026-10-23
+
+On branch `lo-perf`, the leftovers of the list above (ROADMAP, "Modelling upgrade leftovers").
+The host was shared by several other branches' tests throughout (load 150 on 32 threads), so
+times are not comparable; costs are counted in instructions (`perf stat -e instructions:u`, a
+benchmark run at two counts and the difference taken), which the load does not move.
+
+- **Recommendation 6, the Jacobian kept.** The sketch keeps the system that solved a group
+  (`solver_cache.go`), reseeded from the sketch at the next solve of the same params, and the
+  system keeps what `WriteJacobian` wrote under what it was written from, written out in full:
+  the tagged equations, which params are unknowns, and the value of every known param that
+  folding bakes in (`jacobian_memo.go`). Same bytes: the fixture hashes, and
+  `TestSolverCacheSameAsWriting` over every fixture edited and its points moved. Instructions
+  per solve, new system against kept: closed 400-chain 330 M → 252 M, `SolveDimensioning/50`
+  24.7 M → 14.4 M, `SolveDrag` 26.1 M → 13.8 M; an open 400-chain, all solved by substitution,
+  5.8 M → 6.0 M (the key costs more than the little it saves).
+- **Recommendation 9, behind a setting, off.** "while dragging, make solids off the thread (they
+  lag)", the configuration screen's last box (`DragSolidsLate`): a drag's frames leave the
+  solids to a shell job that the next frames don't stop, whose solids go in when it ends
+  (`Sketch.ApplyLate`), still out of date, and the next job starts for where the sketch is then.
+  Off, a drag makes them on the thread as 151fda16 has it.
+- **Recommendation 11, in part.** The scan for the next curve handle at every curve added is
+  gone from the Boolean's loops (`nextCurveID`, counted on); same bytes. The commits stay in
+  order: on one goroutine they are 2% of the 12x12 step and repeat. Instructions per
+  regeneration, every solid made again: 12x12 1.627 G → 1.590 G, text 125 M → 121 M.
+- **Recommendation 12, components.** The leftovers of a solve are split into connected
+  components, each solved alone (`components.go`); the rank test still counts the whole.
+  Sixteen profiles of 50 dimensioned segments from off their dimensions: 9.80 G → 1.26 G
+  instructions; four, 258 M → 144 M. Goldens: two fixtures of 296 regenerate otherwise, and the
+  DXF import goldens and four interface goldens, by at most 1.3e-14 in params that are zero or
+  whole.
+- **Recommendation 13, a drag's steps with a kept factorisation.** While something is dragged
+  the Newton step's factorisation is kept by the Jacobian it was made for, and steps are taken
+  with it (a chord method) for as long as each halves what is left (`drag_step.go`). A dragged
+  sketch comes to rest at another point of its solutions where it has freedom, within a 500th
+  of the move; no file regenerates otherwise and no golden moved. A drag of a 300-chain with 50
+  lengths: 25.2 M instructions a move with a new system, 16.1 M kept without the kept steps,
+  13.4 M with them.
+
+The rover regenerated from the command line is the same file and the same 33.0 G instructions:
+its time is the solids'. The window's drag of a zigzag held by horizontals and verticals, which
+substitution solves whole (`BenchmarkDrag150`, host quiet, 1000 steps, six runs of each
+interleaved), was 1.30 ms a step on `devel`, then 1.60 ms (+23%) with every group's system kept:
+the solve itself cost about the same, the rest was the collector's, scanning the systems kept.
+A group whose solve leaves nothing to solve together after substitution and the equations
+solved alone has no Jacobian worth keeping, so its system is let go (`Sketch.keepSystem`,
+`System.Unsolved`): 1.27 ms (−1.9% against `devel`), allocations −5.5%; the fixture hashes
+the same. Left: recommendations 1, 2, 4, 5, 7, 8, 10 and 14 to 18, none of
+which the modelling upgrades asked for; the two rank tests of each solve are now most of a drag
+step's solve, and 2 is what would take them down.
+
 ## Libraries and algorithms surveyed
 
 - **Sparse linear algebra.** gonum's `mat` has a dense QR, O(n³) and slower than the sparse one

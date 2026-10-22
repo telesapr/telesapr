@@ -274,22 +274,22 @@ value 0x30020 0.5
 value 0x30021 -0.5
 value 0x30022 -0.5
 value 0x30023 -0.5
-value 0x40010 1.870387574057979e-48
-value 0x40011 -1.6928912010327535e-33
+value 0x40010 0
+value 0x40011 0
 value 0x40013 10
-value 0x40014 -1.6928912010327535e-33
+value 0x40014 0
 value 0x50010 10
-value 0x50011 -1.6928912010327535e-33
+value 0x50011 0
 value 0x50013 10
 value 0x50014 10
 value 0x60010 10
 value 0x60011 10
-value 0x60013 1.870387574057979e-48
+value 0x60013 0
 value 0x60014 10
-value 0x70010 1.870387574057979e-48
+value 0x70010 0
 value 0x70011 10
-value 0x70013 1.870387574057979e-48
-value 0x70014 -1.6928912010327535e-33
+value 0x70013 0
+value 0x70014 0
 value 0x80010 2
 value 0x80011 2
 value 0x80013 7
@@ -312,7 +312,7 @@ value 0xb0040 2.5
 value 0xc0010 20
 value 0xc0011 1
 value 0xd0010 10
-value 0xd0011 -1.6928912010327535e-33
+value 0xd0011 0
 
 entity 0x10000 workplane {
   group 0x1
@@ -395,7 +395,6 @@ entity 0x40001 point-in-2d {
   group 0x2
   workplane 0x80020000
   style 0x100
-  act-point 1.870387574057979e-48 -1.6928912010327535e-33 0
   act-visible
 }
 
@@ -403,7 +402,7 @@ entity 0x40002 point-in-2d {
   group 0x2
   workplane 0x80020000
   style 0x100
-  act-point 10 -1.6928912010327535e-33 0
+  act-point 10 0 0
   act-visible
 }
 
@@ -419,7 +418,7 @@ entity 0x50001 point-in-2d {
   group 0x2
   workplane 0x80020000
   style 0x101
-  act-point 10 -1.6928912010327535e-33 0
+  act-point 10 0 0
   act-visible
 }
 
@@ -451,7 +450,7 @@ entity 0x60002 point-in-2d {
   group 0x2
   workplane 0x80020000
   style 0x102
-  act-point 1.870387574057979e-48 10 0
+  act-point 0 10 0
   act-visible
 }
 
@@ -467,7 +466,7 @@ entity 0x70001 point-in-2d {
   group 0x2
   workplane 0x80020000
   style 0x103
-  act-point 1.870387574057979e-48 10 0
+  act-point 0 10 0
   act-visible
 }
 
@@ -475,7 +474,6 @@ entity 0x70002 point-in-2d {
   group 0x2
   workplane 0x80020000
   style 0x103
-  act-point 1.870387574057979e-48 -1.6928912010327535e-33 0
   act-visible
 }
 
@@ -632,7 +630,7 @@ entity 0xc0000 point-in-2d {
 entity 0xd0000 point-in-2d {
   group 0x2
   workplane 0x80020000
-  act-point 10 -1.6928912010327535e-33 0
+  act-point 10 0 0
   act-visible
 }
 

@@ -7807,6 +7807,10 @@
 						"decl": "func (sk *Sketch) Apply(j *ShellJob) bool",
 						"text": "Apply moves the job's groups, with their solids, into the sketch if it is still defined as when the job was made and the job ran to the end, and reports whether it did."
 					},
+					"ApplyLate": {
+						"decl": "func (sk *Sketch) ApplyLate(j *ShellJob) bool",
+						"text": "ApplyLate puts the solids of a job that ran to the end into the groups whose solids are out of date, though the sketch has changed since the job was made, and reports whether it did."
+					},
 					"ApplySuggestion": {
 						"decl": "func (sk *Sketch) ApplySuggestion(s Suggestion) core.HConstraint",
 						"text": "ApplySuggestion adds the suggested constraint to the active group, unless it would be redundant; it returns the constraint, or none."

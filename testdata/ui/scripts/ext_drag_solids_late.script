@@ -1,0 +1,16 @@
+# Making solids off the thread during a drag (an extension): the last
+# box of the configuration screen, off by default, has a drag of the
+# geometry draw the solids a frame or more behind the pointer while
+# shell jobs make them (TestDragSolidsLate drags with it).
+twmove 217 202
+twdown L 217 202
+twup L 217 202
+tw
+twmove 28 1645
+twdown L 28 1645
+twup L 28 1645
+tw
+twmove 28 1645
+twdown L 28 1645
+twup L 28 1645
+tw

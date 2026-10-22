@@ -416,6 +416,7 @@ var windowActions = map[string]string{
 	"ScreenChangeBackFaces":                "- how the window draws; an application setting",
 	"ScreenChangeTurntableNav":             "- how the mouse turns the view",
 	"ScreenChangeUseOpenGL":                "- the window's renderer; File.Render takes its own",
+	"ScreenChangeDragSolidsLate":           "- how the window draws during a drag; an application setting",
 	"ScreenChangeAgentConfirm":             "- whether the window asks before a connected program's script runs",
 	"ScreenChangeCameraNav":                "- how the mouse turns the view",
 	"ScreenChangeImmediatelyEditDimension": "- whether a new dimension opens its edit box; a script gives the value",

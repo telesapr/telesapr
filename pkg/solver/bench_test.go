@@ -82,11 +82,24 @@ func benchmarkSolve(b *testing.B, n int, closed bool) {
 }
 
 func benchmarkSolveChain(b *testing.B, ch *chain) {
+	b.Run("new", func(b *testing.B) { benchmarkSolveSystem(b, ch, false) })
+	b.Run("kept", func(b *testing.B) { benchmarkSolveSystem(b, ch, true) })
+}
+
+// benchmarkSolveSystem solves ch over and over, with a new system each
+// time or with one kept and reseeded, as the sketch keeps one per
+// group.
+func benchmarkSolveSystem(b *testing.B, ch *chain, keep bool) {
 	// The first solve settles the sketch, as a regeneration does.
-	ch.system().Solve(ch.g, true, false, true)
+	kept := ch.system()
+	kept.Solve(ch.g, true, false, true)
 	b.ResetTimer()
 	for b.Loop() {
 		s := ch.system()
+		if keep {
+			kept.Reseed(ch.sk.get)
+			s = kept
+		}
 		if how, _, _ := s.Solve(ch.g, true, false, false); how != core.SolveOkay {
 			b.Fatalf("how %d", how)
 		}
@@ -125,12 +138,22 @@ func BenchmarkSolveDimensioning(b *testing.B) {
 // the point's x marked as dragged, as the window does on each mouse
 // move.
 func BenchmarkSolveDrag(b *testing.B) {
+	b.Run("new", func(b *testing.B) { benchmarkSolveDrag(b, false) })
+	b.Run("kept", func(b *testing.B) { benchmarkSolveDrag(b, true) })
+}
+
+func benchmarkSolveDrag(b *testing.B, keep bool) {
 	ch := makeChain(100, false)
-	ch.system().Solve(ch.g, true, false, true)
+	kept := ch.system()
+	kept.Solve(ch.g, true, false, true)
 	b.ResetTimer()
 	for b.Loop() {
 		ch.sk[ch.last].Val += 0.1
 		s := ch.system()
+		if keep {
+			kept.Reseed(ch.sk.get)
+			s = kept
+		}
 		s.Dragged = map[core.HParam]bool{ch.last: true}
 		if how, _, _ := s.Solve(ch.g, true, false, false); how != core.SolveOkay {
 			b.Fatalf("how %d", how)
@@ -262,6 +285,94 @@ func BenchmarkFactorSquare(b *testing.B) {
 			b.ResetTimer()
 			for b.Loop() {
 				factorSparseQR(a)
+			}
+		})
+	}
+}
+
+// makeProfiles is k closed chains of n segments each, every point
+// dimensioned, sharing no unknown: a sketch of k profiles. Each chain
+// starts a little off its dimensions, so that a solve takes Newton
+// steps.
+func makeProfiles(k, n int) *chain {
+	ch := &chain{sk: testSketch{}}
+	var eqs [][]*core.Expr
+	h := uint32(1)
+	for pr := range k {
+		xs := make([]core.HParam, n+1)
+		ys := make([]core.HParam, n+1)
+		for i := range n + 1 {
+			off := float64(pr*1000) + 0.01*float64(pr+1)*float64(i%3)
+			xs[i] = ch.sk.param(h, off+float64((i+1)/2*10))
+			ys[i] = ch.sk.param(h+1, float64(i/2*10))
+			h += 2
+			ch.unknowns = append(ch.unknowns, xs[i], ys[i])
+		}
+		eqs = append(eqs, []*core.Expr{p(xs[0]).Minus(c(float64(pr * 1000)))}, []*core.Expr{p(ys[0])})
+		for i := range n {
+			d := p(xs[i]).Minus(p(xs[i+1])).Square().Plus(p(ys[i]).Minus(p(ys[i+1])).Square())
+			eqs = append(eqs, []*core.Expr{d.Minus(c(100))})
+		}
+		ch.last = xs[n]
+	}
+	ch.g = testGroup(eqs)
+	return ch
+}
+
+// BenchmarkSolveProfiles solves k profiles of 50 segments each from
+// off their dimensions: whole, as one system, and a connected
+// component at a time.
+func BenchmarkSolveProfiles(b *testing.B) {
+	for _, k := range []int{1, 4, 16} {
+		for _, whole := range []bool{true, false} {
+			name := fmt.Sprintf("%d/components", k)
+			if whole {
+				name = fmt.Sprintf("%d/whole", k)
+			}
+			b.Run(name, func(b *testing.B) {
+				ch := makeProfiles(k, 50)
+				start := snapshot(ch.sk)
+				for b.Loop() {
+					restore(ch.sk, start)
+					s := ch.system()
+					s.whole = whole
+					if how, _, _ := s.Solve(ch.g, true, false, false); how != core.SolveOkay {
+						b.Fatalf("how %d", how)
+					}
+				}
+			})
+		}
+	}
+}
+
+// BenchmarkSolveDragDimensioned drags a point of a chain of 300
+// segments whose first 50 have a length, which the drag pulls on: the
+// Newton steps factor the lengths' Jacobian, with a new system each
+// move or with one kept, whose steps take the factorisation kept from
+// the moves before (drag_step.go).
+func BenchmarkSolveDragDimensioned(b *testing.B) {
+	for _, keep := range []bool{false, true} {
+		name := "new"
+		if keep {
+			name = "kept"
+		}
+		b.Run(name, func(b *testing.B) {
+			ch := makeChainDimensioned(300, false, 50)
+			ch.last = ch.unknowns[41]
+			kept := ch.system()
+			kept.Solve(ch.g, true, false, true)
+			b.ResetTimer()
+			for b.Loop() {
+				ch.sk[ch.last].Val += 0.01
+				s := ch.system()
+				if keep {
+					kept.Reseed(ch.sk.get)
+					s = kept
+				}
+				s.Dragged = map[core.HParam]bool{ch.last: true}
+				if how, _, _ := s.Solve(ch.g, true, false, false); how != core.SolveOkay {
+					b.Fatalf("how %d", how)
+				}
 			}
 		})
 	}

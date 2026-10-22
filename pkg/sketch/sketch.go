@@ -7,6 +7,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/solver"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/ttf"
 )
@@ -143,6 +144,11 @@ type Sketch struct {
 	// (solid_cache.go); for a measure of what keeping them saves.
 	NoSolidCache bool
 	solids       *solidCache
+	// NoSolverCache has every group's equations written out again at
+	// each solve (solver_cache.go); for a measure of what keeping them
+	// saves.
+	NoSolverCache bool
+	systems       map[core.HGroup]*solver.System
 
 	// Clipboard holds what was copied.
 	Clipboard Clipboard

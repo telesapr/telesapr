@@ -3,6 +3,7 @@ package ui
 import (
 	"math"
 	"testing"
+	"time"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
@@ -95,4 +96,87 @@ func meshX(t *testing.T, g *sketch.Group) float64 {
 		x += tr.A.X + tr.B.X + tr.C.X
 	}
 	return x
+}
+
+// With DragSolidsLate, a drag of the geometry leaves its solids to a
+// shell job, and the frames after don't stop it: when it ends its solids
+// go in, those of where the corner was when it started, still marked out
+// of date, and the next job makes them for where the corner is then.
+// When the pointer is let go, the last job makes the solids of where the
+// drag ended.
+func TestDragSolidsLate(t *testing.T) {
+	ss, p := newTestApp(t)
+	ss.BackgroundShells = true
+	ss.DragSolidsLate = true
+	doc := api.NewDoc(ss.ScriptHost())
+	sides := doc.Sketch.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
+	block := doc.Features.Extrude(5, "")
+	corner := sides[1].End()
+
+	w := ss.GW.window.(*headless.Window)
+	w.Width, w.Height = 800, 600
+	ss.GW.ZoomToFit(false, false)
+	w.Render()
+	ex := func() *sketch.Group { return ss.SK.Group(block.H) }
+
+	at := ss.GW.ProjectPoint(corner.Pos())
+	ss.GW.MouseLeftDown(at.U, at.V, false, false)
+	ss.GW.hover.Clear()
+	ss.GW.pending.operation = pendingDraggingPoints
+	ss.GW.pending.points = []core.HEntity{corner.H}
+	before := meshX(t, ex())
+
+	// The first frame starts a job and leaves the solid as it was.
+	ss.GW.orig.mouse = at
+	ss.GW.dragPoints(at.U+40, at.V, false, false)
+	ss.Refresh()
+	w.Render()
+	first := ss.shellJobs.job
+	if first == nil || !ex().ShellsStale {
+		t.Fatalf("the drag's frame made no job: stale %v", ex().ShellsStale)
+	}
+	if x := meshX(t, ex()); x != before {
+		t.Fatalf("the solid moved before its job ended: x %g then %g", before, x)
+	}
+
+	// The second frame moves on; the first job runs on.
+	ss.GW.dragPoints(at.U+80, at.V, false, false)
+	ss.Refresh()
+	if ss.shellJobs.job != first {
+		t.Fatal("the next frame stopped the drag's job")
+	}
+
+	// The first job ends: its solid goes in, a step behind, and the
+	// next job starts.
+	for range 5000 {
+		if ss.shellJobs.job != first {
+			break
+		}
+		// One round of the timers at a time, so that the next job is
+		// looked at only on the next round.
+		p.RunDueTimers(1)
+		time.Sleep(time.Millisecond)
+	}
+	w.Render()
+	late := meshX(t, ex())
+	if late == before {
+		t.Error("the first job's solid didn't go in")
+	}
+	if !ex().ShellsStale || ss.shellJobs.job == nil {
+		t.Errorf("after the first job: stale %v, job %v", ex().ShellsStale, ss.shellJobs.job != nil)
+	}
+
+	// Letting go: the last job makes the solid where the drag ended.
+	ss.GW.MouseLeftUp(at.U+80, at.V, false, false)
+	waitShells(t, ss, p)
+	w.Render()
+	if ex().ShellsStale {
+		t.Error("the solid is out of date after the drag's jobs")
+	}
+	if x := meshX(t, ex()); x == late || x == before {
+		t.Errorf("the solid didn't follow to where the drag ended: x %g, %g, then %g", before, late, x)
+	}
+	if v := block.Analyze().Check().Volume; v <= 1000 {
+		t.Errorf("volume %g, want the dragged block to be bigger than 1000", v)
+	}
 }
