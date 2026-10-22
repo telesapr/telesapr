@@ -284,6 +284,13 @@ func TestMeasureExportOpenFiles(t *testing.T) {
 	if res.IsError || !strings.Contains(text, "the model up to g003-plate") || !strings.Contains(text, "1000") {
 		t.Errorf("the plate measures as\n%s", text)
 	}
+	// A second plate beside the first, 2 off its side, assembled.
+	call(t, cs, ToolRun, map[string]any{"code": "doc.Features.SketchIn(doc.Workplane(\"XY\"), \"\")\n" +
+		"doc.Sketch.Rect(V(12, 0, 0), V(20, 20, 0))\ndoc.Features.Extrude(5, \"beside\").SetCombine(Assemble)"})
+	res, text = call(t, cs, ToolMeasure, map[string]any{"gaps": 3, "walls": 6})
+	if res.IsError || !strings.Contains(text, "  2 between g003-plate at ") || !strings.Contains(text, "The thinnest wall is 5 mm") {
+		t.Errorf("the plates' gaps and walls are\n%s", text)
+	}
 	if res, text = call(t, cs, ToolMeasure, map[string]any{"group": "g099"}); !res.IsError || !strings.Contains(text, "no group") {
 		t.Errorf("measuring a group that isn't there: error %v, %q", res.IsError, text)
 	}

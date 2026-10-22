@@ -3,7 +3,8 @@
 # across, and beside them a box hollowed to walls 1.2 thick. Analyze >
 # Clearance and Walls finds the pin 0.5 off the plate, and with walls
 # thinner than 1.5 sought, the box's walls, as the screen and the lines
-# drawn across them show.
+# drawn across them show. With the solids within parts checked too, the
+# gaps are the same: no part here is more than one solid.
 file $testdata/solid/clearance.tlspr
 menu File|Open...
 menu Analyze|Clearance and Walls...
@@ -19,4 +20,11 @@ edit 1.5
 twmove 204 145
 twdown L 204 145
 twup L 204 145
+tw
+twmove 330 145
+twdown L 330 145
+twup L 330 145
+twmove 60 145
+twdown L 60 145
+twup L 60 145
 tw

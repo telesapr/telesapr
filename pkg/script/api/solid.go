@@ -78,8 +78,8 @@ type Interference struct {
 
 // Clearance is the gap in mm between two parts of an assembly
 // (Assembly.Clearances), 0 where they touch or overlap, and the nearest
-// point of each. The gap is found on the parts' meshes, then, where
-// both parts have shells, followed onto their surfaces (Refined).
+// point of each. The gap is found on the parts' meshes, then followed
+// onto the surfaces of those that have shells (Refined).
 // Tolerance is how far the true gap may be from Gap: the two meshes'
 // chord tolerances, or, refined, the gap less the meshes' gap less
 // those tolerances.
@@ -89,4 +89,8 @@ type Clearance struct {
 	PA, PB    Vec
 	Tolerance float64
 	Refined   bool
+	// SolidA and SolidB are which solid of each part the gap is to,
+	// counted from 1, from Assembly.ClearancesWithin; 0 for the whole
+	// part.
+	SolidA, SolidB int
 }

@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
@@ -38,12 +40,32 @@ var ErrUnsaved = errors.New("the drawing open in TeleSAPR has changes that aren'
 // thousands of files would fill a model's context for nothing.
 const MaxEntries = 500
 
-// Measure is the solid up to group as Check Solid reports it, or what
-// the user has selected, measured.
-func (s *Session) Measure(_ context.Context, group string, selected bool) (text string, err error) {
+// Measuring is what Measure measures.
+type Measuring struct {
+	// Group is the group to measure the model up to, the active one for
+	// "".
+	Group string
+	// Selected measures what the user has selected instead.
+	Selected bool
+	// Gaps, more than 0, lists the gaps between parts less than it, in
+	// mm, as Analyze > Clearance and Walls does; Within has the gaps
+	// between the solids of a part of several, as a linked assembly,
+	// listed too.
+	Gaps   float64
+	Within bool
+	// Walls, more than 0, measures the walls of the parts and says
+	// where they are thinner than it, in mm.
+	Walls float64
+}
+
+// Measure is the solid up to m.Group as Check Solid reports it, with
+// the gaps and walls m asks about, or what the user has selected,
+// measured.
+func (s *Session) Measure(_ context.Context, m Measuring) (text string, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	doc := s.engine.Doc()
+	group, selected := m.Group, m.Selected
 	err = try(func() {
 		if selected {
 			es := doc.Edit.Selection()
@@ -64,8 +86,81 @@ func (s *Session) Measure(_ context.Context, group string, selected bool) (text 
 		}
 		r := g.Analyze().Check()
 		text = fmt.Sprintf("the model up to %s:\n%s", g.String(), r.Summary())
+		if m.Gaps > 0 {
+			text += "\n" + gapsText(g, m.Gaps, m.Within)
+		}
+		if m.Walls > 0 {
+			text += "\n" + wallsText(g, m.Walls)
+		}
 	})
 	return text, err
+}
+
+// mostListed is how many gaps or thin spots a measure lists: a thin
+// wall is thin at every point measured on it.
+const mostListed = 20
+
+// gapsText lists the gaps less than below between the parts up to g.
+func gapsText(g api.Group, below float64, within bool) string {
+	cs := g.Analyze().Clearances(below)
+	if within {
+		cs = g.Analyze().ClearancesWithin(below)
+	}
+	if len(cs) == 0 {
+		return fmt.Sprintf("No two parts are nearer than %g mm.", below)
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "Gaps less than %g mm, in mm, 0 where parts touch or overlap:\n", below)
+	tol := 0.0
+	for i, c := range cs {
+		tol = max(tol, c.Tolerance)
+		if i == mostListed {
+			fmt.Fprintf(&b, "  and %d more\n", len(cs)-i)
+			break
+		}
+		fmt.Fprintf(&b, "  %.6g between %s at %s and %s at %s\n", c.Gap, solidLabel(c.A, c.SolidA), point(c.PA), solidLabel(c.B, c.SolidB), point(c.PB))
+	}
+	fmt.Fprintf(&b, "Each gap is within %.3g mm of the true one.", tol)
+	return b.String()
+}
+
+// point is a point as a measure writes it, in mm.
+func point(v geom.Vector) string {
+	return fmt.Sprintf("(%.6g, %.6g, %.6g)", v.X, v.Y, v.Z)
+}
+
+// solidLabel names a part, and which of its solids where they were
+// taken apart.
+func solidLabel(g api.Group, solid int) string {
+	if solid == 0 {
+		return g.String()
+	}
+	return fmt.Sprintf("%s (solid %d)", g.String(), solid)
+}
+
+// wallsText says how thick the walls of the parts up to g are, and
+// where they are thinner than below.
+func wallsText(g api.Group, below float64) string {
+	r := g.Analyze().WallThickness(below)
+	if r.Samples == r.Unmeasured {
+		return "No wall could be measured."
+	}
+	var b strings.Builder
+	t := r.Thinnest
+	fmt.Fprintf(&b, "The thinnest wall is %.6g mm, from %s to %s.\n", t.Thickness, point(t.From), point(t.To))
+	if len(r.Thin) == 0 {
+		fmt.Fprintf(&b, "No wall is thinner than %g mm.\n", below)
+	} else {
+		fmt.Fprintf(&b, "%d of %d points measured are thinner than %g mm; the thinnest:\n", len(r.Thin), r.Samples, below)
+		for _, s := range r.Thin[:min(len(r.Thin), mostListed)] {
+			fmt.Fprintf(&b, "  %.6g at %s\n", s.Thickness, point(s.From))
+		}
+	}
+	fmt.Fprintf(&b, "Each is within %.3g mm, measured at points %.3g mm apart or closer.", r.Tolerance, r.Step)
+	if r.Unmeasured > 0 {
+		fmt.Fprintf(&b, "\n%d points could not be measured: the mesh is open there, or parts stand in each other.", r.Unmeasured)
+	}
+	return b.String()
 }
 
 // Export writes the drawing to a file.

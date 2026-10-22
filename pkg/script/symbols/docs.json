@@ -4289,6 +4289,10 @@
 						"decl": "func (m AssemblyMenu) Clearances(below float64) (found []Clearance)",
 						"text": "Clearances are the gaps between the parts of the assembly up to the\nactive group that are less than below mm, the nearest first (Analyze\n\u003e Clearance and Walls); a below of 0 lists every pair's. The parts\nare those Interferences checks, and a part with no shell, as a linked\nmesh, is taken by its triangles. Parts that touch or overlap have a\ngap of 0."
 					},
+					"ClearancesWithin": {
+						"decl": "func (m AssemblyMenu) ClearancesWithin(below float64) (found []Clearance)",
+						"text": "ClearancesWithin is Clearances with each part of several solids, as\na linked assembly, taken by its solids (Analyze \u003e Clearance and Walls,\n\"solids within parts\"): the gaps between the solids of one part are\nlisted too, and Clearance.SolidA and SolidB say which solid of a part\na gap is to."
+					},
 					"Concentric": {
 						"decl": "func (m AssemblyMenu) Concentric(a, b Entity) []Constraint",
 						"text": "Concentric puts two circles or arcs on one axis. Drawing free in 3d,\ntheir axes are made parallel and the second's centre put on the\nfirst's axis, by its distance from the first's centre along two\ndirections square to the axis, each zero; one part may still turn\nabout the axis and slide along it, as a pin in a hole. The directions\nare lines or normals of the first circle's group, or the reference\naxes; with none square to the axis, the centres are put on each\nother. In a workplane, the centres are put on each other."
@@ -4358,7 +4362,7 @@
 				}
 			},
 			"Clearance": {
-				"text": "Clearance is the gap in mm between two parts of an assembly\n(Assembly.Clearances), 0 where they touch or overlap, and the nearest\npoint of each. The gap is found on the parts' meshes, then, where\nboth parts have shells, followed onto their surfaces (Refined).\nTolerance is how far the true gap may be from Gap: the two meshes'\nchord tolerances, or, refined, the gap less the meshes' gap less\nthose tolerances.",
+				"text": "Clearance is the gap in mm between two parts of an assembly\n(Assembly.Clearances), 0 where they touch or overlap, and the nearest\npoint of each. The gap is found on the parts' meshes, then followed\nonto the surfaces of those that have shells (Refined).\nTolerance is how far the true gap may be from Gap: the two meshes'\nchord tolerances, or, refined, the gap less the meshes' gap less\nthose tolerances.",
 				"kind": "struct"
 			},
 			"ConstrainMenu": {
@@ -5646,6 +5650,14 @@
 					"Check": {
 						"decl": "func (v GroupAnalysis) Check() (r check.Report)",
 						"text": "Check checks the solid of the model up to and with this group: it\nreports naked and self-intersecting edges, whether the Boolean\nfailed, the face and triangle counts, and the volume, centre of mass\nand bounding box, in mm. Report.Sound() says whether the solid is\nclosed, does not cross itself, and came from a Boolean that worked,\nand is false too when the group added no solid for a Problem (as an\nextrusion of a sketch that crosses itself), which Report.Problem\nholds; Report.Summary() says it in words. Analyze \u003e Check Solid shows the\nsame report."
+					},
+					"Clearances": {
+						"decl": "func (v GroupAnalysis) Clearances(below float64) []Clearance",
+						"text": "Clearances are the gaps less than below mm between the parts of the\nassembly up to and with this group, the nearest first, as\nAssembly.Clearances finds them up to the active group; a below of 0\nlists every pair's."
+					},
+					"ClearancesWithin": {
+						"decl": "func (v GroupAnalysis) ClearancesWithin(below float64) []Clearance",
+						"text": "ClearancesWithin is Clearances with each part of several solids taken\nby its solids, as Assembly.ClearancesWithin."
 					},
 					"MassProperties": {
 						"decl": "func (v GroupAnalysis) MassProperties() (r sketch.MassReport)",
@@ -7816,6 +7828,10 @@
 					"Clearances": {
 						"decl": "func (sk *Sketch) Clearances(upTo core.HGroup, below float64) []Clearance",
 						"text": "Clearances are the gaps between the parts of the model up to group upTo that are less than below, the nearest first; a below of 0 or less lists every pair's."
+					},
+					"ClearancesWithin": {
+						"decl": "func (sk *Sketch) ClearancesWithin(upTo core.HGroup, below float64) []Clearance",
+						"text": "ClearancesWithin is Clearances with each part of several solids, as a linked assembly or a part a cut parted, taken by its solids: the gaps between the solids of one part are listed too, and a gap to such a part says which of its solids it is to."
 					},
 					"CommentConstraint": {
 						"decl": "func (sk *Sketch) CommentConstraint(base core.Constraint, pt core.HEntity, text string) (core.Constraint, error)",

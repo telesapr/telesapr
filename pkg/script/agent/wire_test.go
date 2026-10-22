@@ -97,10 +97,14 @@ func TestRemoteSession(t *testing.T) {
 	if res, err = r.Run(ctx, "doc.Features.Extrude(2, \"disc\")"); err != nil || res.Error != "" {
 		t.Fatalf("the extrusion gave %+v, %v", res, err)
 	}
-	if text, err = r.Measure(ctx, "", false); err != nil || !strings.Contains(text, "the model up to g003-disc") {
+	if text, err = r.Measure(ctx, Measuring{}); err != nil || !strings.Contains(text, "the model up to g003-disc") {
 		t.Errorf("the disc measures as %q, %v", text, err)
 	}
-	if _, err = r.Measure(ctx, "", true); err == nil || !strings.Contains(err.Error(), "nothing is selected") {
+	if text, err = r.Measure(ctx, Measuring{Gaps: 1, Walls: 3}); err != nil || !strings.Contains(text, "No two parts are nearer than 1 mm.") ||
+		!strings.Contains(text, "The thinnest wall is 2 mm") || !strings.Contains(text, "points measured are thinner than 3 mm") {
+		t.Errorf("the disc's gaps and walls are %q, %v", text, err)
+	}
+	if _, err = r.Measure(ctx, Measuring{Selected: true}); err == nil || !strings.Contains(err.Error(), "nothing is selected") {
 		t.Errorf("measuring no selection: %v", err)
 	}
 	files := t.TempDir()

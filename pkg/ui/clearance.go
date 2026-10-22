@@ -1,8 +1,10 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
@@ -16,7 +18,10 @@ import (
 
 // clearanceCheck is the screen's state.
 type clearanceCheck struct {
-	gap, wall  float64
+	gap, wall float64
+	// bySolid has the gaps between the solids of a part of several, as
+	// a linked assembly, checked too (Sketch.ClearancesWithin).
+	bySolid    bool
 	clearances []sketch.Clearance
 	walls      *sketch.WallReport
 	checked    bool
@@ -48,7 +53,9 @@ func (tw *textWindow) ShowClearance() {
 	tw.Printf(true, "%FtCLEARANCE AND WALLS%E")
 	tw.Printf(false, "%Ba   %Ftgaps less than%E   %s %Fl%Lg%f[change]%E", ss.MmToString(c.gap, true), lf(tw.ScreenChangeClearance))
 	tw.Printf(false, "%Bd   %Ftwalls thinner than%E %s %Fl%Lw%f[change]%E", ss.MmToString(c.wall, true), lf(tw.ScreenChangeClearance))
-	tw.Printf(true, "   %Fl%Lc%f[check gaps]%E   %Fl%Lt%f[check walls]%E", lf(tw.ScreenChangeClearance), lf(tw.ScreenChangeClearance))
+	// The box is at the end of the row, so that the rows below stay put.
+	tw.Printf(true, "   %Fl%Lc%f[check gaps]%E   %Fl%Lt%f[check walls]%E   %Fl%Ls%f%s solids within parts%E",
+		lf(tw.ScreenChangeClearance), lf(tw.ScreenChangeClearance), lf(tw.ScreenChangeClearance), checkMark(c.bySolid))
 	if c.err != "" {
 		tw.Printf(true, "   %Fx%s%E", c.err)
 	}
@@ -79,7 +86,7 @@ func (tw *textWindow) showClearances() {
 		if cl.Gap > 0 {
 			gap = ss.MmToString(cl.Gap, true)
 		}
-		tw.Printf(false, "%Bp   %s %s and %s", bg, pad(gap, 14), ss.SK.GroupName(cl.A), ss.SK.GroupName(cl.B))
+		tw.Printf(false, "%Bp   %s %s and %s", bg, pad(gap, 14), solidName(ss.SK, cl.A, cl.SolidA), solidName(ss.SK, cl.B, cl.SolidB))
 	}
 	tol := 0.0
 	for _, cl := range c.clearances {
@@ -105,16 +112,26 @@ func (tw *textWindow) showWalls() {
 	} else {
 		tw.Printf(false, "   No wall is thinner than %s.", ss.MmToString(tw.clearance.wall, true))
 	}
-	tw.Printf(false, "   Each is within %s, measured at the middle", ss.MmToString(r.Tolerance, true))
-	tw.Printf(false, "   of each triangle of the mesh.")
+	tw.Printf(false, "   Each is within %s, measured at points no more", ss.MmToString(r.Tolerance, true))
+	tw.Printf(false, "   than %s apart, closer about the thinnest.", ss.MmToString(r.Step, true))
 	if r.Unmeasured > 0 {
 		tw.Printf(false, "   %d points could not be measured: the mesh is", r.Unmeasured)
 		tw.Printf(false, "   open there, or parts stand in each other.")
 	}
 }
 
+// solidName is a part in the list of gaps: its group, and which of its
+// solids where the gaps between them were checked.
+func solidName(sk *sketch.Sketch, hg core.HGroup, solid int) string {
+	if solid == 0 {
+		return sk.GroupName(hg)
+	}
+	return fmt.Sprintf("%s solid %d", sk.GroupName(hg), solid)
+}
+
 // ScreenChangeClearance edits the gap ('g') or the wall thickness ('w')
-// to look for, or checks the gaps ('c') or the walls ('t').
+// to look for, checks the gaps ('c') or the walls ('t'), or turns the
+// gaps between the solids of a part on or off ('s').
 func (tw *textWindow) ScreenChangeClearance(link int, v uint32) {
 	ss := tw.ss
 	c := &tw.clearance
@@ -129,6 +146,9 @@ func (tw *textWindow) ScreenChangeClearance(link int, v uint32) {
 		ss.checkClearances()
 	case 't':
 		ss.checkWalls()
+	case 's':
+		c.bySolid = !c.bySolid
+		ss.ScheduleShowTW()
 	}
 }
 
@@ -138,7 +158,12 @@ func (ss *Application) checkClearances() {
 	c := &ss.TW.clearance
 	sk := ss.SK
 	sk.RemakeStaleMeshes()
-	c.clearances, c.checked, c.walls, c.err = sk.Clearances(ss.GW.activeGroupH(), c.gap), true, nil, ""
+	if c.bySolid {
+		c.clearances = sk.ClearancesWithin(ss.GW.activeGroupH(), c.gap)
+	} else {
+		c.clearances = sk.Clearances(ss.GW.activeGroupH(), c.gap)
+	}
+	c.checked, c.walls, c.err = true, nil, ""
 	ss.GW.nakedEdges.Clear()
 	for _, cl := range c.clearances {
 		ss.GW.nakedEdges.AddEdge(cl.PA, cl.PB, 0, 0, 0)

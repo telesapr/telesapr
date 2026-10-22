@@ -228,12 +228,12 @@ func (b consoleBackend) Render(ctx context.Context, p agent.Picture) ([]byte, er
 	return s.Render(ctx, p)
 }
 
-func (b consoleBackend) Measure(ctx context.Context, group string, selected bool) (string, error) {
+func (b consoleBackend) Measure(ctx context.Context, m agent.Measuring) (string, error) {
 	s, err := b.session()
 	if err != nil {
 		return "", err
 	}
-	return s.Measure(ctx, group, selected)
+	return s.Measure(ctx, m)
 }
 
 func (b consoleBackend) Files(ctx context.Context, dir string) (agent.Listing, error) {

@@ -51,6 +51,12 @@ func main() {
 	for _, c := range gaps {
 		fmt.Printf("%s and %s: %.4f mm (within %.4f)\n", c.A.Name(), c.B.Name(), c.Gap, c.Tolerance)
 	}
+	// With each part taken by its solids, the gaps between the solids of
+	// one part too: here every part is one solid, so they are the same.
+	if within := doc.Assembly.ClearancesWithin(0); len(within) != len(gaps) {
+		fmt.Fprintf(os.Stderr, "%d gaps by solids, %d by parts\n", len(within), len(gaps))
+		os.Exit(1)
+	}
 	walls := pin.Analyze().WallThickness(1.5)
 	fmt.Printf("thinnest wall %.4f mm, %d of %d points under 1.5 mm\n",
 		walls.Thinnest.Thickness, len(walls.Thin), walls.Samples)

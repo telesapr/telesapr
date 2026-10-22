@@ -52,6 +52,11 @@ type request struct {
 	Picture *Picture `json:"picture,omitempty"`
 	// Selected has measure measure the selection.
 	Selected bool `json:"selected,omitempty"`
+	// Gaps, Walls and Within are what else measure measures
+	// (Measuring).
+	Gaps   float64 `json:"gaps,omitempty"`
+	Walls  float64 `json:"walls,omitempty"`
+	Within bool    `json:"within,omitempty"`
 	// Path is the file export writes and open reads, or the directory
 	// files lists.
 	Path string `json:"path,omitempty"`
@@ -158,7 +163,8 @@ func answer(ctx context.Context, b Backend, req request) response {
 	case opHelp:
 		res.Text, err = b.Help(ctx, req.Name)
 	case opMeasure:
-		res.Text, err = b.Measure(ctx, req.Group, req.Selected)
+		res.Text, err = b.Measure(ctx, Measuring{Group: req.Group, Selected: req.Selected,
+			Gaps: req.Gaps, Walls: req.Walls, Within: req.Within})
 	case opExport:
 		res.Text, err = b.Export(ctx, req.Path)
 	case opOpen:
@@ -383,8 +389,9 @@ func (r *Remote) Render(ctx context.Context, p Picture) ([]byte, error) {
 	return res.PNG, err
 }
 
-func (r *Remote) Measure(ctx context.Context, group string, selected bool) (string, error) {
-	res, err := r.call(ctx, request{Op: opMeasure, Group: group, Selected: selected})
+func (r *Remote) Measure(ctx context.Context, m Measuring) (string, error) {
+	res, err := r.call(ctx, request{Op: opMeasure, Group: m.Group, Selected: m.Selected,
+		Gaps: m.Gaps, Walls: m.Walls, Within: m.Within})
 	return res.Text, err
 }
 

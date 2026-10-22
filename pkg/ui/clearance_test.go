@@ -31,12 +31,20 @@ func TestClearanceScreenMatchesScript(t *testing.T) {
 			t.Errorf("gap %d: the screen %+v, a script %+v", i, got, w)
 		}
 	}
+	// With the solids within parts, as a script's ClearancesWithin.
+	ss.TW.ScreenChangeClearance('s', 0)
+	ss.checkClearances()
+	within := doc.Assembly.ClearancesWithin(c.gap)
+	if !c.bySolid || len(c.clearances) != len(within) {
+		t.Fatalf("by solids: the screen found %d gaps, a script %d", len(c.clearances), len(within))
+	}
+	ss.TW.ScreenChangeClearance('s', 0)
 	ss.checkWalls()
 	r := doc.Active().Analyze().WallThickness(1.5)
 	if c.walls == nil || c.walls.Thinnest != r.Thinnest || len(c.walls.Thin) != len(r.Thin) || c.checked {
 		t.Fatalf("walls: the screen %+v, a script %+v", c.walls, r)
 	}
-	if math.Abs(r.Thinnest.Thickness-1.2) > 1e-6 || len(ss.GW.nakedEdges.Edges) != len(r.Thin)+1 {
+	if math.Abs(r.Thinnest.Thickness-1.2) > 1e-6 || len(ss.GW.nakedEdges.Edges) != min(len(r.Thin), maxWallLines)+1 {
 		t.Errorf("thinnest %g, %d lines drawn for %d thin spots", r.Thinnest.Thickness, len(ss.GW.nakedEdges.Edges), len(r.Thin))
 	}
 	// A limit of nothing is refused; the screen keeps what it had.

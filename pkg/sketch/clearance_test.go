@@ -134,6 +134,11 @@ func TestWallThicknessOfATurnedCup(t *testing.T) {
 	if r.Tolerance <= 0 || math.Abs(r.Thinnest.Thickness-1) > r.Tolerance+1e-9 || r.Unmeasured != 0 {
 		t.Fatalf("cup: thinnest %g within %g, %d of %d unmeasured", r.Thinnest.Thickness, r.Tolerance, r.Unmeasured, r.Samples)
 	}
+	// Followed onto the cup's surfaces, the thinnest is between two of
+	// them, the wall's two sides, 1 apart.
+	if !r.Thinnest.Refined || math.Abs(r.Thinnest.Thickness-1) > 1e-6 {
+		t.Fatalf("cup: thinnest %g within %g, %d of %d unmeasured", r.Thinnest.Thickness, r.Tolerance, r.Unmeasured, r.Samples)
+	}
 }
 
 // Parts are measured apart: a block assembled into another's side
@@ -156,5 +161,87 @@ func TestWallThicknessOfParts(t *testing.T) {
 	e.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
 	if !refused(func() { sk.Analyze().WallThickness(0) }) {
 		t.Error("a sketch with no solid was measured")
+	}
+}
+
+// A pin taken as a mesh in a bore: the pin's triangles are its
+// geometry, and the gap is followed from them onto the bore's cylinder,
+// so it comes to the pin's mesh's distance from the bore, not the
+// meshes' less both chord tolerances.
+func TestClearanceOfAMeshPinInABore(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	d.Sketch.Rect(api.V(-15, -15, 0), api.V(15, 15, 0))
+	d.Features.Extrude(10, "plate").SetCombine(api.Assemble)
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Circle(api.V(0, 0, 0), 5)
+	d.Features.Extrude(10, "bore").SetCombine(api.Difference)
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Circle(api.V(0, 0, 0), 4.5)
+	pin := d.Features.Extrude(10, "pin")
+	pin.SetCombine(api.Assemble)
+	pin.SetForceToMesh(true)
+	cs := d.Assembly.Clearances(0)
+	if len(cs) != 1 {
+		t.Fatalf("%d pairs: %+v", len(cs), cs)
+	}
+	c := cs[0]
+	if !c.Refined || math.Abs(math.Hypot(c.PA.X, c.PA.Y)-5) > 1e-6 {
+		t.Fatalf("the bore's point isn't on its cylinder: %+v", c)
+	}
+	// The pin's mesh lies inside its circle by no more than its chord
+	// tolerance, so the gap is 0.5 and a little more.
+	if c.Gap < 0.5-1e-9 || c.Gap > 0.5+c.Tolerance+1e-9 {
+		t.Errorf("gap %g within %g", c.Gap, c.Tolerance)
+	}
+}
+
+// One group assembled as two blocks 2 apart is one part to Clearances,
+// and two solids to ClearancesWithin, which finds the gap between them
+// and says which solid a gap to the part is to.
+func TestClearancesWithinAPart(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	block(d, 0, 0, 10, 10, 10)
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(13, 0, 0), api.V(20, 10, 0))
+	d.Sketch.Rect(api.V(22, 0, 0), api.V(30, 10, 0))
+	pair := d.Features.Extrude(10, "pair")
+	pair.SetCombine(api.Assemble)
+	if cs := d.Assembly.Clearances(0); len(cs) != 1 || math.Abs(cs[0].Gap-3) > 1e-9 || cs[0].SolidB != 0 {
+		t.Fatalf("by parts: %+v", cs)
+	}
+	cs := d.Assembly.ClearancesWithin(0)
+	if len(cs) != 3 {
+		t.Fatalf("by solids: %d pairs: %+v", len(cs), cs)
+	}
+	if c := cs[0]; c.A.H != pair.H || c.B.H != pair.H || math.Abs(c.Gap-2) > 1e-9 || c.SolidA == c.SolidB || c.SolidA == 0 {
+		t.Errorf("between the pair's solids: %+v", c)
+	}
+	if c := cs[1]; c.B.H != pair.H || math.Abs(c.Gap-3) > 1e-9 || c.SolidB == 0 {
+		t.Errorf("the block to the nearer of the pair: %+v", c)
+	}
+}
+
+// A cone turned to a point: its wall thins to nothing at the tip, which
+// the middles of the triangles about it, a step or more from it, miss;
+// the finer pieces measure it far thinner.
+func TestWallThicknessOfAConeTip(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 22))
+	axis.SetConstruction(true)
+	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(8, 0, 0), api.V(0, 0, 20))
+	lathe := d.Features.Lathe(axis, "")
+	r := lathe.Analyze().WallThickness(0)
+	// The middle of a triangle from the tip to the base's rim is a third
+	// of the way up from the base: there the cone is 2·8·2/3 across.
+	if r.Thinnest.Thickness > 1 || r.Unmeasured > r.Samples/100 {
+		t.Errorf("cone: thinnest %g at %v, %d of %d unmeasured", r.Thinnest.Thickness, r.Thinnest.From, r.Unmeasured, r.Samples)
+	}
+	// Its rim is as sharp as its tip.
+	if p := r.Thinnest.From; p.Z < 18 && (p.Z > 1 || math.Hypot(p.X, p.Y) < 7) {
+		t.Errorf("the thinnest is at %v, not by the tip or the rim", p)
 	}
 }

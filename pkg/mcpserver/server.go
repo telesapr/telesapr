@@ -54,6 +54,8 @@ With section ("XY", "YZ" or "ZX"), the solid is drawn cut by a plane parallel to
 
 	measureDescription = `Measures the drawing that is open in TeleSAPR, as Analyze > Check Solid does: the volume, the area of the surface, the centre of mass and the bounding box of the solid, in mm, and whether it is sound (closed, not crossing itself, its Boolean worked), with the faces and edges in trouble if not. With group, the model as it is up to that group; the active group's if left out.
 
+With gaps, it also lists the gaps between the parts of an assembly less than that many mm, as Analyze > Clearance and Walls does, each with the nearest points; within_parts takes a part made of several solids, as a linked assembly, by its solids. With walls, it also measures the thickness of the walls and lists where they are thinner than that many mm.
+
 With selected, it measures what the user has selected instead, as Analyze > Measure does: a line's length, a circle's radius, the distance between two points, from a point to a line or a face, or the angle between two lines or faces. To measure other things, use run_script with doc.Analyze.`
 
 	exportDescription = `Writes the drawing that is open in TeleSAPR to a file, in the format the file's extension names: a mesh of the solid (.stl, .3mf, .glb, .obj, .wrl), its exact surfaces (.step), a 2d view (.svg, .dxf, .pdf, .eps), or a picture (.png). It says where it wrote and how many bytes. A relative path is taken from the directory TeleSAPR works in; list_files shows which that is.
@@ -93,8 +95,11 @@ type RenderInput struct {
 
 // MeasureInput is what measure takes.
 type MeasureInput struct {
-	Group    string `json:"group,omitempty" jsonschema:"a group to measure the model up to, by its name or as g003; the active group if left out"`
-	Selected bool   `json:"selected,omitempty" jsonschema:"measure what the user has selected instead of the solid"`
+	Group    string  `json:"group,omitempty" jsonschema:"a group to measure the model up to, by its name or as g003; the active group if left out"`
+	Selected bool    `json:"selected,omitempty" jsonschema:"measure what the user has selected instead of the solid"`
+	Gaps     float64 `json:"gaps,omitempty" jsonschema:"also list the gaps between the parts of an assembly less than this, in mm"`
+	Within   bool    `json:"within_parts,omitempty" jsonschema:"with gaps, take a part of several solids, as a linked assembly, by its solids, and list the gaps between them too"`
+	Walls    float64 `json:"walls,omitempty" jsonschema:"also measure the thickness of the walls, and list where they are thinner than this, in mm"`
 }
 
 // PathInput is what export and open take.
@@ -234,7 +239,8 @@ func New(b agent.Backend, version string) *mcp.Server {
 		Description: measureDescription,
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, OpenWorldHint: &closed},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in MeasureInput) (*mcp.CallToolResult, any, error) {
-		s, err := b.Measure(ctx, in.Group, in.Selected)
+		s, err := b.Measure(ctx, agent.Measuring{Group: in.Group, Selected: in.Selected,
+			Gaps: in.Gaps, Within: in.Within, Walls: in.Walls})
 		if err != nil {
 			return nil, nil, err
 		}

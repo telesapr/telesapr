@@ -308,9 +308,29 @@ func (m AssemblyMenu) Clearances(below float64) (found []Clearance) {
 	d := m.d
 	d.readMesh(func(sk *sketch.Sketch) {
 		for _, c := range sk.Clearances(sk.ActiveGroup(), below) {
-			found = append(found, Clearance{A: Group{d, c.A}, B: Group{d, c.B}, Gap: c.Gap,
-				PA: c.PA, PB: c.PB, Tolerance: c.Tolerance, Refined: c.Refined})
+			found = append(found, clearanceOf(d, c))
 		}
 	})
 	return found
+}
+
+// ClearancesWithin is Clearances with each part of several solids, as
+// a linked assembly, taken by its solids (Analyze > Clearance and Walls,
+// "solids within parts"): the gaps between the solids of one part are
+// listed too, and Clearance.SolidA and SolidB say which solid of a part
+// a gap is to.
+func (m AssemblyMenu) ClearancesWithin(below float64) (found []Clearance) {
+	d := m.d
+	d.readMesh(func(sk *sketch.Sketch) {
+		for _, c := range sk.ClearancesWithin(sk.ActiveGroup(), below) {
+			found = append(found, clearanceOf(d, c))
+		}
+	})
+	return found
+}
+
+// clearanceOf is a sketch's clearance as a script sees it.
+func clearanceOf(d *Doc, c sketch.Clearance) Clearance {
+	return Clearance{A: Group{d, c.A}, B: Group{d, c.B}, Gap: c.Gap, PA: c.PA, PB: c.PB,
+		Tolerance: c.Tolerance, Refined: c.Refined, SolidA: c.SolidA, SolidB: c.SolidB}
 }

@@ -290,6 +290,7 @@ var windowActions = map[string]string{
 	"ScreenChangeClearance/w":        "GroupAnalysis.WallThickness",
 	"ScreenChangeClearance/c":        "Assembly.Clearances",
 	"ScreenChangeClearance/t":        "GroupAnalysis.WallThickness",
+	"ScreenChangeClearance/s":        "Assembly.ClearancesWithin",
 	"ScreenChangePasteTransformed/t": "Edit.Paste",
 	"ScreenChangePasteTransformed/r": "Edit.Paste",
 	"ScreenChangePasteTransformed/s": "Edit.Paste",
@@ -756,6 +757,8 @@ Bounds          menu:Analyze/Group Dependencies
 Check           menu:Analyze/Check Solid
 RayCheck        menu:Analyze/Ray-Cast Check
 WallThickness   menu:Analyze/Clearance and Walls...
+Clearances      menu:Analyze/Clearance and Walls...
+ClearancesWithin menu:Analyze/Clearance and Walls...
 Probe           -script-only: a ray cast at the group's solid
 `,
 	"Entity": `
