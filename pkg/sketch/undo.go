@@ -127,63 +127,8 @@ func (s *Sketch) PushFromCurrentOnto(uk *UndoStack) {
 func (s *Sketch) definingState() *UndoState {
 	ut := &UndoState{}
 	ut.Groups = make([]Group, 0, len(s.Groups))
-	for _, src := range s.Groups {
-		// Copy what defines the group; zero out all the dynamic stuff
-		// that will get regenerated.
-		dest := Group{
-			Tag:                    src.Tag,
-			H:                      src.H,
-			Type:                   src.Type,
-			Order:                  src.Order,
-			OpA:                    src.OpA,
-			OpB:                    src.OpB,
-			Visible:                src.Visible,
-			Suppress:               src.Suppress,
-			SuppressAll:            src.SuppressAll,
-			RelaxConstraints:       src.RelaxConstraints,
-			AllowRedundant:         src.AllowRedundant,
-			SuppressDofCalculation: src.SuppressDofCalculation,
-			AllDimsReference:       src.AllDimsReference,
-			Scale:                  src.Scale,
-			DofCheckOk:             src.DofCheckOk,
-			ActiveWorkplane:        src.ActiveWorkplane,
-			ValA:                   src.ValA,
-			ValB:                   src.ValB,
-			ValC:                   src.ValC,
-			ExprA:                  src.ExprA,
-			ExprB:                  src.ExprB,
-			ExprC:                  src.ExprC,
-			ExprScale:              src.ExprScale,
-			Extent:                 src.Extent,
-			ExprExtent:             src.ExprExtent,
-			Subtype:                src.Subtype,
-			SkipFirst:              src.SkipFirst,
-			MirrorSolid:            src.MirrorSolid,
-			DraftFaces:             slices.Clone(src.DraftFaces),
-			Appearance:             src.Appearance,
-			FaceAppearances:        slices.Clone(src.FaceAppearances),
-			Density:                src.Density,
-			BooleanFailed:          src.BooleanFailed,
-			MeshCombine:            src.MeshCombine,
-			ForceToMesh:            src.ForceToMesh,
-			Remap:                  maps.Clone(src.Remap),
-			LinkFile:               src.LinkFile,
-			LinkAsSolid:            src.LinkAsSolid,
-			LinkParts:              slices.Clone(src.LinkParts),
-			LinkConfiguration:      src.LinkConfiguration,
-			LinkParams:             slices.Clone(src.LinkParams),
-			Color:                  src.Color,
-			Predef:                 src.Predef,
-			Edges:                  slices.Clone(src.Edges),
-			SolidEdges:             slices.Clone(src.SolidEdges),
-			SolidFaces:             slices.Clone(src.SolidFaces),
-			LoftThrough:            slices.Clone(src.LoftThrough),
-			LoftAlongSides:         src.LoftAlongSides,
-			SweepUp:                src.SweepUp,
-			EdgeRadii:              slices.Clone(src.EdgeRadii),
-			Name:                   src.Name,
-		}
-		ut.Groups = append(ut.Groups, dest)
+	for i := range s.Groups {
+		ut.Groups = append(ut.Groups, s.Groups[i].defining())
 	}
 	ut.GroupOrder = append([]core.HGroup(nil), s.GroupOrder...)
 	ut.Requests = append([]Request(nil), s.Requests...)
@@ -256,4 +201,63 @@ func (s *Sketch) UndoClearStack(uk *UndoStack) {
 // UndoClearState forgets one state.
 func (s *Sketch) UndoClearState(ut *UndoState) {
 	*ut = UndoState{}
+}
+
+// defining is a copy of what defines the group, as undo keeps it, with
+// all that is made from it zero: what a regeneration makes the group
+// from, beside its entities and params.
+func (g *Group) defining() Group {
+	return Group{
+		Tag:                    g.Tag,
+		H:                      g.H,
+		Type:                   g.Type,
+		Order:                  g.Order,
+		OpA:                    g.OpA,
+		OpB:                    g.OpB,
+		Visible:                g.Visible,
+		Suppress:               g.Suppress,
+		SuppressAll:            g.SuppressAll,
+		RelaxConstraints:       g.RelaxConstraints,
+		AllowRedundant:         g.AllowRedundant,
+		SuppressDofCalculation: g.SuppressDofCalculation,
+		AllDimsReference:       g.AllDimsReference,
+		Scale:                  g.Scale,
+		DofCheckOk:             g.DofCheckOk,
+		ActiveWorkplane:        g.ActiveWorkplane,
+		ValA:                   g.ValA,
+		ValB:                   g.ValB,
+		ValC:                   g.ValC,
+		ExprA:                  g.ExprA,
+		ExprB:                  g.ExprB,
+		ExprC:                  g.ExprC,
+		ExprScale:              g.ExprScale,
+		Extent:                 g.Extent,
+		ExprExtent:             g.ExprExtent,
+		Subtype:                g.Subtype,
+		SkipFirst:              g.SkipFirst,
+		MirrorSolid:            g.MirrorSolid,
+		DraftFaces:             slices.Clone(g.DraftFaces),
+		Appearance:             g.Appearance,
+		FaceAppearances:        slices.Clone(g.FaceAppearances),
+		Density:                g.Density,
+		BooleanFailed:          g.BooleanFailed,
+		MeshCombine:            g.MeshCombine,
+		ForceToMesh:            g.ForceToMesh,
+		Remap:                  maps.Clone(g.Remap),
+		LinkFile:               g.LinkFile,
+		LinkAsSolid:            g.LinkAsSolid,
+		LinkParts:              slices.Clone(g.LinkParts),
+		LinkConfiguration:      g.LinkConfiguration,
+		LinkParams:             slices.Clone(g.LinkParams),
+		Color:                  g.Color,
+		Predef:                 g.Predef,
+		Edges:                  slices.Clone(g.Edges),
+		SolidEdges:             slices.Clone(g.SolidEdges),
+		SolidFaces:             slices.Clone(g.SolidFaces),
+		LoftThrough:            slices.Clone(g.LoftThrough),
+		LoftAlongSides:         g.LoftAlongSides,
+		SweepUp:                g.SweepUp,
+		EdgeRadii:              slices.Clone(g.EdgeRadii),
+		Name:                   g.Name,
+	}
 }
