@@ -27,6 +27,7 @@ func fullDocument() *Document {
 		ActiveWorkplane: core.HEntity{V: 0x80020000},
 		ValA:            3, ValB: -1.25, ValC: 1e-9, Extent: -720.5,
 		Subtype: sketch.GroupTwoSkewed, SkipFirst: true,
+		LoftThrough: []core.HGroup{{V: 3}, {V: 4}}, LoftThroughTangency: []float64{0, 1.25}, LoftClosed: true,
 		MeshCombine: sketch.CombineIntersection, ForceToMesh: true,
 		Remap:             core.EntityMap{{Input: core.HEntity{V: 0x40001}, CopyNumber: 2}: {V: 5}},
 		LinkFile:          "dir/part.tlspr",

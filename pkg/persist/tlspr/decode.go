@@ -659,6 +659,16 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			for _, v := range c.Args {
 				g.LoftThrough = append(g.LoftThrough, core.HGroup{V: d.handle(v)})
 			}
+		case "through-tangency":
+			d.plain(c)
+			if len(c.Args) == 0 {
+				d.fail(c.Pos, "through-tangency takes numbers")
+			}
+			for _, v := range c.Args {
+				g.LoftThroughTangency = append(g.LoftThroughTangency, d.real(v))
+			}
+		case "closed-loft":
+			g.LoftClosed = d.flag(c)
 		case "copies", "turn":
 			g.ValA, g.ExprA = d.expr(c, exprPlace{group: g.H, field: c.Name})
 		case "pitch", "distance", "radius", "thickness", "height", "draft-neutral", "start-tangency", "corner-radius":

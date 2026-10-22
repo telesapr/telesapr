@@ -3,6 +3,8 @@ package sketch
 import (
 	"errors"
 	"fmt"
+	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -18,7 +20,9 @@ import (
 // (topo.MatchCounts). With profiles LoftThrough between the two, the
 // loft is one smooth surface through them all, in order (topo.
 // MakeSmoothLoft), each profile after the first turned by ValA; guide
-// curves Edges hold it (loftguide.go). Its
+// curves Edges hold it (loftguide.go), and LoftThroughTangency holds it
+// square to profiles between the ends. A closed loft (LoftClosed) goes
+// from the last profile back to the first, a ring with no caps. Its
 // solid joins the solid so far by its combine, as an extrusion's does.
 
 // loftLoop is the one closed loop of a profile group, or why there is
@@ -111,8 +115,8 @@ func (sk *Sketch) SetLoftAlongSides(hg core.HGroup, start, end bool) error {
 	if g.Type != GroupLoft {
 		return fmt.Errorf("%s is not a loft", g.DescriptionString())
 	}
-	if (start || end) && len(g.Edges) > 0 {
-		return errors.New("a loft held by guides can't also follow a solid's sides")
+	if (start || end) && g.LoftClosed {
+		return errClosedEnds
 	}
 	g.LoftAlongSides = [2]bool{start, end}
 	sk.MarkGroupDirty(hg, false)
@@ -201,18 +205,29 @@ func (g *Group) loftShell(sk *Sketch, origin uint32) (*srf.SShell, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(guides) > 0 {
-		if g.LoftAlongSides != [2]bool{} {
-			return nil, errors.New("a loft held by guides can't also follow a solid's sides")
+	if g.LoftClosed {
+		if err := g.closedLoftConflict(guides); err != nil {
+			return nil, err
 		}
-		return topo.MakeGuidedLoft(loops, int(g.ValA), g.LoftEnds(), guides, g.Color, origin, sk.tol)
+		return topo.MakeClosedLoft(loops, g.Color, origin, sk.tol)
+	}
+	middle := g.loftMiddle()
+	if len(guides) > 0 {
+		if slices.ContainsFunc(middle, func(x float64) bool { return x != 0 }) {
+			return nil, errors.New("a loft held by guides can't also be held square to a profile between its ends")
+		}
+		sides, err := g.loftSides(sk, loops)
+		if err != nil {
+			return nil, err
+		}
+		return topo.MakeGuidedLoftSides(loops, int(g.ValA), g.loftEnds(), sides, guides, g.Color, origin, sk.tol)
 	}
 	if ends := g.loftEnds(); len(loops) > 2 || ends != (topo.LoftEnds{}) {
 		sides, err := g.loftSides(sk, loops)
 		if err != nil {
 			return nil, err
 		}
-		return topo.MakeSmoothLoftSides(loops, int(g.ValA), ends, sides, g.Color, origin, sk.tol)
+		return topo.MakeSmoothLoftThrough(loops, int(g.ValA), ends, sides, middle, g.Color, origin, sk.tol)
 	}
 	loops = topo.MatchCounts(loops)
 	a, b := loops[0], loops[1]
@@ -233,4 +248,99 @@ func (g *Group) generateLoftShell(sk *Sketch) {
 		return
 	}
 	g.ThisShell = *sh
+}
+
+// errClosedEnds is a setting of a loft's ends on a closed loft, which
+// has none.
+var errClosedEnds = errors.New("a closed loft has no ends to set")
+
+// closedLoftConflict is why the closed loft g can't be made as it is
+// set, or nil: a ring has no ends to be square to or to carry a solid's
+// sides on, nothing to turn its profiles against, and guides run from
+// its first profile to its last.
+func (g *Group) closedLoftConflict(guides []topo.LoftGuide) error {
+	switch {
+	case len(g.LoftThrough) == 0:
+		return errors.New("a closed loft needs three profiles at least")
+	case g.ValB != 0 || g.ValC != 0 || g.LoftAlongSides != [2]bool{}:
+		return errClosedEnds
+	case int(g.ValA) != 0:
+		return errors.New("a closed loft can't turn its profiles; draw them starting at the same side")
+	case len(guides) > 0:
+		return errors.New("a closed loft can't be held by guides")
+	case slices.ContainsFunc(g.LoftThroughTangency, func(x float64) bool { return x != 0 }):
+		return errors.New("a closed loft can't be held square to a profile")
+	}
+	return nil
+}
+
+// loftMiddle is LoftThroughTangency, one for each profile between the
+// ends.
+func (g *Group) loftMiddle() []float64 {
+	out := make([]float64, len(g.LoftThrough))
+	copy(out, g.LoftThroughTangency)
+	return out
+}
+
+// SetLoftClosed has the smooth loft hg go from its last profile back to
+// its first, a ring with no caps, or not: what the loft's screen and
+// LoftGroup.SetClosed set. A closed loft goes through three profiles at
+// least and has no ends to set. The caller remembers the undo state.
+func (sk *Sketch) SetLoftClosed(hg core.HGroup, closed bool) error {
+	g := sk.Group(hg)
+	if g == nil {
+		return fmt.Errorf("no group %08x", hg.V)
+	}
+	if g.Type != GroupLoft {
+		return fmt.Errorf("%s is not a loft", g.DescriptionString())
+	}
+	if closed && len(g.LoftThrough) == 0 {
+		return errors.New("a closed loft needs three profiles at least")
+	}
+	g.LoftClosed = closed
+	sk.MarkGroupDirty(hg, false)
+	return nil
+}
+
+// SetLoftProfileTangency holds the smooth loft hg square to the plane
+// of profile, one of those between its ends, the surface's slope
+// across there t times the loft's length, as an end's tangency; 0
+// leaves it free. What the loft's screen and
+// LoftGroup.SetProfileTangency set. The caller remembers the undo
+// state.
+func (sk *Sketch) SetLoftProfileTangency(hg, profile core.HGroup, t float64) error {
+	g := sk.Group(hg)
+	if g == nil {
+		return fmt.Errorf("no group %08x", hg.V)
+	}
+	if g.Type != GroupLoft {
+		return fmt.Errorf("%s is not a loft", g.DescriptionString())
+	}
+	if math.IsNaN(t) || math.IsInf(t, 0) {
+		return fmt.Errorf("a loft's tangency is a number, not %g", t)
+	}
+	i := slices.Index(g.LoftThrough, profile)
+	if i < 0 {
+		return fmt.Errorf("%s is not a profile between the loft's ends", sk.anyGroupName(profile))
+	}
+	if t != 0 && g.LoftClosed {
+		return errors.New("a closed loft can't be held square to a profile")
+	}
+	middle := g.loftMiddle()
+	middle[i] = t
+	if !slices.ContainsFunc(middle, func(x float64) bool { return x != 0 }) {
+		middle = nil
+	}
+	g.LoftThroughTangency = middle
+	sk.MarkGroupDirty(hg, false)
+	return nil
+}
+
+// LoftProfileTangency is how square the loft holds profile, one of
+// those between its ends, 0 for free.
+func (g *Group) LoftProfileTangency(profile core.HGroup) float64 {
+	if i := slices.Index(g.LoftThrough, profile); i >= 0 && i < len(g.LoftThroughTangency) {
+		return g.LoftThroughTangency[i]
+	}
+	return 0
 }

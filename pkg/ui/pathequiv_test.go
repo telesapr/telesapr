@@ -228,6 +228,23 @@ func TestPathEquivalenceLoftSides(t *testing.T) {
 	}
 }
 
+// A smooth loft closed into a ring on its screen, and by a script.
+func TestPathEquivalenceLoftRing(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_loft_ring", "path_loft_ring")
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupLoft || !g.LoftClosed || g.Problem.Msg != "" {
+		t.Errorf("the loft: type %d, closed %v, problem %q", g.Type, g.LoftClosed, g.Problem.Msg)
+	}
+}
+
+// A smooth loft held square to a profile between its ends on its
+// screen, and by a script.
+func TestPathEquivalenceLoftProfileTangency(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_loft_profile_tangency", "path_loft_profile_tangency")
+	if g := ui.Group(ui.Active); g.Type != sketch.GroupLoft || !slices.Equal(g.LoftThroughTangency, []float64{0, 1, 0, 0}) || g.Problem.Msg != "" {
+		t.Errorf("the loft: type %d, tangencies %v, problem %q", g.Type, g.LoftThroughTangency, g.Problem.Msg)
+	}
+}
+
 // A loft's guide picked with the mouse and set by Features > Guide
 // Loft by Selected Curves, and by a script (roadmap 28.3).
 func TestPathEquivalenceLoftGuides(t *testing.T) {

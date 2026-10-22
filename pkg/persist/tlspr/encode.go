@@ -334,6 +334,14 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 		}
 		n.add(field("loft-through", args...))
 	}
+	if len(g.LoftThroughTangency) > 0 {
+		args := make([]Value, len(g.LoftThroughTangency))
+		for i, t := range g.LoftThroughTangency {
+			args[i] = num(t)
+		}
+		n.add(field("through-tangency", args...))
+	}
+	n.flag("closed-loft", g.LoftClosed)
 	n.expr(g.FieldName(sketch.GroupCopies), g.ValA, g.ExprA)
 	valB := g.ValB
 	if g.IsLength(sketch.GroupPitch) {

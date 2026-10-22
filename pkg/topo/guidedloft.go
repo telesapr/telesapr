@@ -36,7 +36,15 @@ const guideTol = 1e-3
 // MakeGuidedLoft is MakeSmoothLoftEnds held to guides, one or two;
 // none is MakeSmoothLoftEnds.
 func MakeGuidedLoft(loops [][]srf.SBezier, turn int, ends LoftEnds, guides []LoftGuide, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
-	bs, err := GuidedLoftSurface(loops, turn, ends, guides)
+	return MakeGuidedLoftSides(loops, turn, ends, LoftSides{}, guides, color, origin, tol)
+}
+
+// MakeGuidedLoftSides is MakeGuidedLoft leaving and reaching its end
+// profiles the ways sides says, as MakeSmoothLoftSides does: a loft
+// drawn from a face of a solid carries on its sides and still holds the
+// guides.
+func MakeGuidedLoftSides(loops [][]srf.SBezier, turn int, ends LoftEnds, sides LoftSides, guides []LoftGuide, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
+	bs, err := GuidedLoftSidesSurface(loops, turn, ends, sides, guides)
 	if err != nil {
 		return nil, err
 	}
@@ -45,13 +53,22 @@ func MakeGuidedLoft(loops [][]srf.SBezier, turn int, ends LoftEnds, guides []Lof
 
 // GuidedLoftSurface is the surface of MakeGuidedLoft.
 func GuidedLoftSurface(loops [][]srf.SBezier, turn int, ends LoftEnds, guides []LoftGuide) (*srf.BSplineSurface, error) {
+	return GuidedLoftSidesSurface(loops, turn, ends, LoftSides{}, guides)
+}
+
+// GuidedLoftSidesSurface is the surface of MakeGuidedLoftSides.
+func GuidedLoftSidesSurface(loops [][]srf.SBezier, turn int, ends LoftEnds, sides LoftSides, guides []LoftGuide) (*srf.BSplineSurface, error) {
 	if len(guides) == 0 {
-		return SmoothLoftSurfaceEnds(loops, turn, ends)
+		if sides.Start == nil && sides.End == nil {
+			return SmoothLoftSurfaceEnds(loops, turn, ends)
+		}
+		b, err := smoothLoftBase(loops, turn, ends, sides)
+		return b.surface, err
 	}
 	if len(guides) > 2 {
 		return nil, fmt.Errorf("a loft takes two guides at most, not %d", len(guides))
 	}
-	base, err := smoothLoftBase(loops, turn, ends, LoftSides{})
+	base, err := smoothLoftBase(loops, turn, ends, sides)
 	if err != nil {
 		return nil, err
 	}

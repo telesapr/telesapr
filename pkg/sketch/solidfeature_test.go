@@ -236,6 +236,34 @@ func TestSolidGoldens(t *testing.T) {
 			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
 			d.Edit.Regen()
 		},
+		"loft-ring": func(d *api.Doc) {
+			ps := ringOfCircles(d, 6, 20, 3)
+			d.Features.LoftThrough(ps, "").AsLoft().SetClosed(true)
+			// The file keeps no chord tolerance (ringOfCircles sets one).
+			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+			d.Edit.Regen()
+		},
+		"loft-profile-tangency": func(d *api.Doc) {
+			var ps []api.Group
+			for i, x := range []float64{0, 6, 0} {
+				z := 10 * float64(i)
+				ps = append(ps, d.Features.SketchAt(above(d, z), api.V(1, 0, 0), api.V(0, 1, 0), ""))
+				d.Sketch.Circle(api.V(x, 0, z), 4)
+			}
+			d.Features.LoftThrough(ps, "").AsLoft().SetProfileTangency(ps[1], 1)
+		},
+		"loft-sides-guides": func(d *api.Doc) {
+			bottom, top, rTop := draftedPost(d, 10)
+			d.Features.Sketch3D("guide")
+			tan := math.Tan(10 * math.Pi / 180)
+			guide := d.Sketch.Cubic(api.V(rTop, 0, 10), api.V(rTop-3*tan, 0, 13), api.V(5, 0, 17), api.V(2, 0, 20))
+			l := d.Features.Loft(bottom, top, "")
+			l.AsLoft().SetGuides([]api.Entity{guide})
+			l.AsLoft().SetAlongSides(true, false)
+			// The file keeps no chord tolerance (draftedPost sets one).
+			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+			d.Edit.Regen()
+		},
 		"loft-guides": func(d *api.Doc) {
 			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.001 })
 			bottom := d.Features.SketchIn(d.Workplane("XY"), "bottom")
@@ -837,6 +865,26 @@ func BenchmarkSweepCorners(b *testing.B) {
 		d.Features.SketchIn(d.Workplane("XY"), "profile")
 		d.Sketch.Circle(api.V(0, 0, 0), 1)
 		d.Features.Sweep(path, "")
+	})
+}
+
+// A ring of eight circles closed by a loft.
+func BenchmarkLoftClosed(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.Features.LoftThrough(ringOfCircles(d, 8, 20, 4), "").AsLoft().SetClosed(true)
+	})
+}
+
+// Three circles lofted, held square to the middle one.
+func BenchmarkLoftProfileTangency(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		var ps []api.Group
+		for i, x := range []float64{0, 6, 0} {
+			z := 10 * float64(i)
+			ps = append(ps, d.Features.SketchAt(above(d, z), api.V(1, 0, 0), api.V(0, 1, 0), ""))
+			d.Sketch.Circle(api.V(x, 0, z), 4)
+		}
+		d.Features.LoftThrough(ps, "").AsLoft().SetProfileTangency(ps[1], 1)
 	})
 }
 
