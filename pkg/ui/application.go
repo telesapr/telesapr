@@ -207,12 +207,13 @@ func (ss *Application) Refresh() {
 	// GenerateAll must happen before updating displays.
 	if ss.scheduledGenerateAll {
 		ss.scheduledGenerateAll = false
-		if ss.BackgroundShells && !ss.GW.draggingGeometry() {
+		dragging := ss.GW.draggingGeometry()
+		if ss.BackgroundShells && (!dragging || ss.DragSolidsLate) {
 			ss.SK.DeferShells = true
 			ss.SK.Refresh()
 			ss.SK.DeferShells = false
 			if ss.SK.AnyShellsStale() {
-				ss.startShellJob()
+				ss.startShellJobFor(dragging)
 			}
 		} else {
 			ss.SK.Refresh()

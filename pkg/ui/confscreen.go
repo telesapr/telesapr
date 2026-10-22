@@ -118,6 +118,13 @@ func (tw *textWindow) ScreenChangeUseOpenGL(link int, v uint32) {
 	tw.ss.SetUseOpenGL(!tw.ss.UseGL())
 }
 
+// ScreenChangeDragSolidsLate turns making the solids off the thread
+// during a drag, drawn a frame or more behind the pointer, on or off
+// (an extension).
+func (tw *textWindow) ScreenChangeDragSolidsLate(link int, v uint32) {
+	tw.ss.DragSolidsLate = !tw.ss.DragSolidsLate
+}
+
 // ScreenChangeAgentConfirm turns asking before each script of a
 // program that connected through Script > Allow AI Connections on or
 // off (an extension).
@@ -443,6 +450,10 @@ func (tw *textWindow) ShowConfiguration() {
 	tw.Printf(false, "%Ft animation speed (in ms; 0 to disable)%E")
 	tw.Printf(false, "%Ba   %d %Fl%Ll%f[change]%E",
 		ss.AnimationSpeed, lf(tw.ScreenChangeAnimationSpeed))
+	// Last, so that the rows above stay where they were.
+	tw.Printf(false, "")
+	tw.Printf(false, "  %Fd%f%Ll%s  while dragging, make solids off the thread (they lag)%E",
+		lf(tw.ScreenChangeDragSolidsLate), checkMark(ss.DragSolidsLate))
 
 	if tw.canvas != nil {
 		vendor, renderer, version := tw.canvas.Ident()

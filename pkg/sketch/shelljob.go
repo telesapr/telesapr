@@ -128,6 +128,38 @@ func (sk *Sketch) Apply(j *ShellJob) bool {
 	return true
 }
 
+// ApplyLate puts the solids of a job that ran to the end into the
+// groups whose solids are out of date, though the sketch has changed
+// since the job was made, and reports whether it did. It is for a drag
+// that draws the solids a step behind the pointer (the window's
+// DragSolidsLate) rather than making them on the thread: the solids
+// are those of where the sketch was when the job was made, so the groups
+// stay marked ShellsStale, for the next job to make them for where it
+// is now. It is called on the goroutine that owns the sketch.
+func (sk *Sketch) ApplyLate(j *ShellJob) bool {
+	if j.Cancelled {
+		return false
+	}
+	applied := false
+	for i := range sk.Groups {
+		g := &sk.Groups[i]
+		c := j.clone.Group(g.H)
+		if c == nil || !g.ShellsStale || c.ShellsStale {
+			continue
+		}
+		// The job's copy is let go: its solids are moved, not copied.
+		g.ThisShell, g.RunningShell = c.ThisShell, c.RunningShell
+		g.ThisMesh, g.RunningMesh = c.ThisMesh, c.RunningMesh
+		g.BooleanFailed, g.Problem = c.BooleanFailed, c.Problem
+		g.solidTol, g.fittedPath, g.sweepClosed = c.solidTol, c.fittedPath, c.sweepClosed
+		g.solidKey = c.solidKey
+		g.forgetTopology()
+		g.DisplayDirty = true
+		applied = true
+	}
+	return applied
+}
+
 // sameDefinition reports whether two states define the same sketch:
 // the same everything, the solver's values to the bit, but whether a
 // value was taken as known, which a regeneration of other groups sets.
