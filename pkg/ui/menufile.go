@@ -386,7 +386,7 @@ func (ss *Application) MenuFile(id Command) {
 		ss.Report(ss.SaveToChosenFile(true))
 
 	case cmdExportImage, cmdExportView, cmdExportWireframe, cmdExportSection,
-		cmdExportMesh, cmdExportSurfaces, cmdImport:
+		cmdExportMesh, cmdExportSurfaces, cmdExportScript, cmdImport:
 		ss.menuExport(id)
 
 	case cmdExit:
@@ -443,6 +443,11 @@ func (ss *Application) menuExport(id Command) {
 	case cmdExportSurfaces:
 		if filename, ok := ss.exportDialog(platform.SurfaceFileFilters, "ExportSurfaces"); ok {
 			ss.Report(ss.ExportSurfacesTo(filename))
+		}
+
+	case cmdExportScript:
+		if filename, ok := ss.exportDialog(platform.ScriptFileFilters, "ExportScript"); ok {
+			ss.Report(ss.ExportScriptTo(filename))
 		}
 
 	case cmdImport:

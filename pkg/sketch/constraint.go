@@ -43,11 +43,13 @@ func (sk *Sketch) AddConstraintRemember(c *core.Constraint, rememberForUndo bool
 
 // equalConstraint returns the handle of a constraint other than skip
 // that has the same base as c: the same kind, entities and value. The
-// label and the offset are not compared.
+// label and the offset are not compared, but for a comment, whose
+// offset is where it is.
 func (sk *Sketch) equalConstraint(c *core.Constraint, skip core.HConstraint) (core.HConstraint, bool) {
 	for i := range sk.Constraints {
 		cc := &sk.Constraints[i]
-		if cc.H != skip && c.ConstraintBase.Equals(&cc.ConstraintBase) { //nolint:staticcheck // QF1008: the base is named on purpose
+		if cc.H != skip && c.ConstraintBase.Equals(&cc.ConstraintBase) && //nolint:staticcheck // QF1008: the base is named on purpose
+			(c.Type != core.ConstraintComment || c.Disp.Offset == cc.Disp.Offset) {
 			return cc.H, true
 		}
 	}

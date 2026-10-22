@@ -441,3 +441,15 @@ func (h *ScriptHost) SetChordTolerance(pct float64) {
 	h.ss.ChordTol = pct
 	h.ss.applyEngineSettings()
 }
+
+// FileName is the file the drawing was opened from or saved to, "" for
+// a new one.
+func (h *ScriptHost) FileName() string { return h.ss.SaveFile }
+
+// onLoop is the host for a call the window makes on its own thread
+// through the scripting interface, as a menu entry does: Run then runs
+// at once rather than posting to the loop it is on.
+func (h *ScriptHost) onLoop() *ScriptHost {
+	h.loop.Store(goid())
+	return h
+}

@@ -189,6 +189,7 @@ const (
 	cmdGroupWrap
 	cmdClearance
 	cmdDatums
+	cmdExportScript
 )
 
 // Pending is an operation to be completed by doing something with the

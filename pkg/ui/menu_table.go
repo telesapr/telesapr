@@ -70,6 +70,7 @@ var menuTable = []menuEntry{
 	{2, "3d &Wireframe (.step, .dxf)...", cmdExportWireframe, 0, kn, mFile},
 	{2, "Triangle &Mesh (.stl, .3mf, .glb, .obj, .html, .js, .wrl)...", cmdExportMesh, 0, kn, mFile},
 	{2, "Sur&faces (.step)...", cmdExportSurfaces, 0, kn, mFile},
+	{2, "S&cript (.go)...", cmdExportScript, 0, kn, mFile},
 	{2, "&Drawing (.pdf, .eps, .svg, .dxf, .plt, .ngc)...", cmdExportDrawing, 0, kn, func(ss *Application, c Command) { ss.MenuExportDrawing() }},
 	{1, "", cmdNone, 0, kn, nil},
 	{1, "E&xit", cmdExit, ctrl | 'q', kn, mFile},

@@ -85,6 +85,21 @@ package main
 The example is [`examples/scripts/library`](../../examples/scripts/library), with its library in
 `lib`.
 
+## A model as a script
+
+File > Export > Script writes the drawing as a Go program that builds it again on a new
+drawing: the parameters, every group in the order the model is built made by the call that
+makes one of its kind, the requests of each sketch where they are solved to, and the
+constraints with their values, names and expressions. Edit it, give it a form, and run it as
+any script. `telesapr-cli export-script model.tlspr` does the same without a window, and a
+script calls `doc.File.ExportScript(path)`, or `doc.Script()` for the text.
+
+What the script can't write yet is a comment in it starting `not written:`, and the window says
+so when it writes the file: images, splines through more than four points, constraints on four
+entities, arcs drawn in 3d and requests in a group that isn't a sketch. Handles are numbered
+afresh, so the script names what a group made by what it was made from (`g3.Made(r4, 1002)`)
+and a request's points by their number (`r4.Part(1)`).
+
 ## What it does not do yet
 
 - A form's fields are a flat list: no units that follow the document's, no bounds, no fields

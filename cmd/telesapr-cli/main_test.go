@@ -386,3 +386,25 @@ func TestExportMeshStrict(t *testing.T) {
 		t.Errorf("--strict left a file")
 	}
 }
+
+// export-script writes the model as the script File.ExportScript
+// writes, one that builds it again.
+func TestExportScript(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "board.go")
+	ok, msg := runTool(t, "export-script", "-o", out, testdata("tlspr/golden/group/translate_nd/normal.tlspr"))
+	if !ok {
+		t.Fatalf("failed: %s", msg)
+	}
+	got, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc, err := api.Open(testdata("tlspr/golden/group/translate_nd/normal.tlspr"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, _ := doc.Script()
+	if string(got) != want {
+		t.Errorf("export-script wrote\n%s\nwant\n%s", got, want)
+	}
+}

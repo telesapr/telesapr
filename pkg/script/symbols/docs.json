@@ -4671,6 +4671,10 @@
 						"decl": "func (d *Doc) ResetStyles()",
 						"text": "ResetStyles puts the program's own styles back to their factory\nsettings, as Load Factory Defaults does on the styles screen. The\nuser's own styles are kept. It is one step of undo."
 					},
+					"Script": {
+						"decl": "func (d *Doc) Script() (src string, notes []string)",
+						"text": "Script is the drawing as a Go program that builds it again on a new\ndocument through this package: the unit, the parameters and their\nconfigurations, every group in the order the model is built, made by\nthe Features or Assembly call that makes one of its kind, with its\noptions, the requests of a sketch where they are solved to, and the\nconstraints with their values, names and expressions. Run with\ntelesapr-cli run, Script \u003e Run File or the AI connection's run_script,\nit gives the model again, its handles numbered afresh. What it can't\nwrite yet is a comment in the program starting \"not written:\" and a\nline of notes."
+					},
 					"String": {
 						"decl": "func (d *Doc) String() (s string)",
 						"text": "String describes the document."
@@ -4931,6 +4935,10 @@
 					"Overlap": {
 						"decl": "func (e Entity) Overlap() (points, curves []Entity)",
 						"text": "Overlap is what lies where the point e is, in the groups up to the\nactive one: the other points at the same position, and the lines,\ncircles, arcs and cubics that pass through it without a point of\ntheir own there. A click on the drawing picks one of them; the\nproperty browser lists the rest under ALSO HERE, and Edit.Select\nselects one from a script."
+					},
+					"Part": {
+						"decl": "func (e Entity) Part(i int) (p Entity)",
+						"text": "Part is the entity number i of the request that drew e: 0 the\nrequest's own entity, then its points and its normal and distance as\nthe request makes them (a line's ends are 1 and 2, a circle's centre\n1), as Doc.Script names them."
 					},
 					"Points": {
 						"decl": "func (e Entity) Points() (points []Entity)",
@@ -5243,6 +5251,10 @@
 						"decl": "func (m FileMenu) ExportOptions() (o ExportOptions)",
 						"text": "ExportOptions are the settings that change what an export writes, as\nthe configuration screen shows them; see ExportOptions. In a script\nrun without the application only the mesh export (STL, 3MF, glTF) reads\nthem, and then only ChordTol, MaxSegments and Scale."
 					},
+					"ExportScript": {
+						"decl": "func (m FileMenu) ExportScript(path string) (notes []string, err error)",
+						"text": "ExportScript writes the drawing to path as the program Script gives,\nand returns what it couldn't write, as Script's notes."
+					},
 					"ExportSection": {
 						"decl": "func (m FileMenu) ExportSection(path string) error",
 						"text": "ExportSection writes the section of the active group's solid by a\nplane as a 2d file (.svg, .dxf, .pdf, ...), as File \u003e Export \u003e 2d\nSection does. The plane is the section view's (Doc.Group views'\nSetSection) when it is on, and otherwise the active workplane; its\nnormal is the section's, so a flipped section view lays the section\nout mirrored. It needs the application's export writers, as the other\n2d exports do."
@@ -5280,6 +5292,10 @@
 						"text": "Unsaved reports whether the sketch changed since it was saved."
 					}
 				}
+			},
+			"FileNamer": {
+				"text": "FileNamer is a Host that knows the file its sketch was opened from or\nsaved to, \"\" for none: what a link's relative path is relative to.",
+				"kind": "interface"
 			},
 			"FilletGroup": {
 				"text": "FilletGroup is the view of a fillet: its radius, and the radius of\neach edge that has its own.",
@@ -5472,6 +5488,10 @@
 					"LeftOut": {
 						"decl": "func (g Group) LeftOut() (why string)",
 						"text": "LeftOut says why the group is left out of the model, or \"\" if it is\nin: \"suppressed\" for a group suppressed whole, or \"uses g004-sketch,\nwhich is suppressed\" for one that uses such a group. A group left out\nhas no entities and no solid of its own, and can't be made active."
+					},
+					"Made": {
+						"decl": "func (g Group) Made(from Entity, n int) (e Entity)",
+						"text": "Made is the entity the group made from the entity from, its copy\nnumber n: the group's own record of what it made, kept as the\nmodel is edited, by which Doc.Script names what a group makes (an\nextrusion's faces, a copy of a point). from is Entity{} for what a\ngroup makes of no entity, as an extrusion's sides."
 					},
 					"Name": {
 						"decl": "func (g Group) Name() (name string)",
@@ -6100,6 +6120,10 @@
 					"ExportOptions": {
 						"decl": "func (h *SketchHost) ExportOptions() ExportOptions",
 						"text": "ExportOptions are the options set, or those of the settings store."
+					},
+					"FileName": {
+						"decl": "func (h *SketchHost) FileName() string",
+						"text": "FileName is the file the sketch was opened from or saved to."
 					},
 					"Hovered": {
 						"decl": "func (h *SketchHost) Hovered() sketch.Selection",

@@ -23,6 +23,7 @@ tw 1 unsaved 1 cursor 0 tooltip ""
     3d &Wireframe (.step, .dxf)... ind=0 en=1 act=0
     Triangle &Mesh (.stl, .3mf, .glb, .obj, .html, .js, .wrl)... ind=0 en=1 act=0
     Sur&faces (.step)... ind=0 en=1 act=0
+    S&cript (.go)... ind=0 en=1 act=0
     &Drawing (.pdf, .eps, .svg, .dxf, .plt, .ngc)... ind=0 en=1 act=0
   ---
   E&xit [Ctrl+Q] ind=0 en=1 act=0
@@ -404,6 +405,7 @@ row 21
     3d &Wireframe (.step, .dxf)... ind=0 en=1 act=0
     Triangle &Mesh (.stl, .3mf, .glb, .obj, .html, .js, .wrl)... ind=0 en=1 act=0
     Sur&faces (.step)... ind=0 en=1 act=0
+    S&cript (.go)... ind=0 en=1 act=0
     &Drawing (.pdf, .eps, .svg, .dxf, .plt, .ngc)... ind=0 en=1 act=0
   ---
   E&xit [Ctrl+Q] ind=0 en=1 act=0
