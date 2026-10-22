@@ -57,6 +57,23 @@ func (m ConstrainMenu) RawFour(t core.ConstraintType, ptA, ptB, entityA, entityB
 	})
 }
 
+// Again adds a second constraint equal to c, in its group and
+// workplane. Every other call keeps to one of a kind, returning the one
+// the drawing has; a DXF import makes pairs where its drawing meets the
+// same point twice, and File > Export > Script writes them with this.
+func (m ConstrainMenu) Again(c Constraint) (dup Constraint) {
+	d := m.d
+	d.change(func(sk *sketch.Sketch) {
+		c.get(sk)
+		h, err := sk.DuplicateConstraint(c.H)
+		if err != nil {
+			fail("%v", err)
+		}
+		dup = Constraint{d, h}
+	})
+	return dup
+}
+
 // Coincident puts two points at the same place.
 func (m ConstrainMenu) Coincident(a, b Entity) Constraint {
 	d := m.d

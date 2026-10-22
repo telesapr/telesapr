@@ -37,12 +37,7 @@ func (w *scriptWriter) writeRequests(g *sketch.Group) {
 		if call == "" {
 			continue
 		}
-		if r.Type == sketch.RequestWorkplane {
-			// A workplane is drawn in 3d.
-			w.drawIn(core.HEntity{})
-		} else {
-			w.drawIn(r.Workplane)
-		}
+		w.drawIn(r.Workplane)
 		v := fmt.Sprintf("r%d", r.H.V)
 		w.reqVar[r.H] = v
 		w.line("%s := %s", v, call)
@@ -100,6 +95,12 @@ func (w *scriptWriter) requestCall(r *sketch.Request) string {
 		}
 		return "doc.Sketch.Circle(" + at(1) + ", " + num(radius) + ")"
 	case sketch.RequestArcOfCircle:
+		if core.IsFreeIn3D(r.Workplane) {
+			// Drawn in 3d, as a DXF import draws an arc, about its own
+			// normal.
+			u, v := w.normalUV(r)
+			return "doc.Sketch.ArcIn3D(" + at(1) + ", " + at(2) + ", " + at(3) + ", " + vecText(u) + ", " + vecText(v) + ")"
+		}
 		return "doc.Sketch.Arc(" + at(1) + ", " + at(2) + ", " + at(3) + ")"
 	case sketch.RequestCubic:
 		if r.ExtraPoints != 0 {
@@ -110,17 +111,21 @@ func (w *scriptWriter) requestCall(r *sketch.Request) string {
 		return "doc.Sketch.PeriodicSpline(" + w.points(r, 3+r.ExtraPoints) + ")"
 	case sketch.RequestImage:
 		path := link.Path(w.file, r.File)
-		if _, err := os.Stat(path); err != nil {
-			w.notWritten("r%d, an image whose file %s isn't there", r.H.V, r.File)
-			return ""
-		}
 		height := pos(1).Minus(pos(2)).Magnitude()
+		if _, err := os.Stat(path); err != nil {
+			// Its frame and path, with no pixels, as the drawing has it.
+			w.notes = append(w.notes, fmt.Sprintf("r%d, an image whose file %s isn't there: its frame is written", r.H.V, r.File))
+			width := pos(3).Minus(pos(2)).Magnitude()
+			return fmt.Sprintf("doc.Sketch.ImageFrame(%q, %s, %s, %s)", path, at(2), num(height), num(width))
+		}
 		return fmt.Sprintf("doc.Sketch.Image(%q, %s, %s)", path, at(2), num(height))
 	case sketch.RequestWorkplane:
-		u, v := geom.Vector{X: 1}, geom.Vector{Y: 1}
-		if n := sk.Entity(r.H.Entity(32)); n != nil {
-			u, v = uvOf(n.NormalGetNum(sk))
+		if !core.IsFreeIn3D(r.Workplane) {
+			// Drawn in a workplane, as a DXF import draws one, and so
+			// parallel to it.
+			return "doc.Sketch.NewWorkplaneIn(" + at(1) + ")"
 		}
+		u, v := w.normalUV(r)
 		return "doc.Sketch.NewWorkplane(" + at(1) + ", " + vecText(snapVec(u)) + ", " + vecText(snapVec(v)) + ")"
 	case sketch.RequestTTFText:
 		height := pos(1).Minus(pos(2)).Magnitude()
@@ -128,6 +133,15 @@ func (w *scriptWriter) requestCall(r *sketch.Request) string {
 	}
 	w.notWritten("r%d, a request of a kind no call draws (%d)", r.H.V, int(r.Type))
 	return ""
+}
+
+// normalUV are the directions of the request's normal, which a
+// workplane and an arc in 3d have as their entity 32.
+func (w *scriptWriter) normalUV(r *sketch.Request) (u, v geom.Vector) {
+	if n := w.sk.Entity(r.H.Entity(32)); n != nil {
+		return uvOf(n.NormalGetNum(w.sk))
+	}
+	return geom.Vector{X: 1}, geom.Vector{Y: 1}
 }
 
 // points are the first n points of the request, as a call takes them.
@@ -160,15 +174,29 @@ func (w *scriptWriter) writeConstraint(c *core.Constraint) {
 	w.drawIn(c.Workplane)
 	v := fmt.Sprintf("c%d", c.H.V)
 	if c.Type == core.ConstraintComment {
-		if c.PtA.V != 0 {
+		switch first, ok := w.written(c); {
+		case ok:
+			// The same words at the same place, twice, as a DXF import
+			// writes them.
+			w.line("%s := doc.Constrain.Again(%s)", v, first)
+		case c.PtA.V != 0:
 			w.line("%s := doc.Constrain.CommentOn(%s, %q)", v, w.ref(c.PtA), c.Comment)
 			w.line("%s.SetLabelOffset(%s)", v, vecText(c.Disp.Offset))
-		} else {
+		default:
 			w.line("%s := doc.Constrain.Comment(%s, %q)", v, vecText(c.Disp.Offset), c.Comment)
 		}
+		w.conVar[c.H] = v
 		if st, ok := w.styleRef(c.Disp.Style); ok && c.Disp.Style.V != 0 {
 			w.line("%s.SetStyle(%s)", v, st)
 		}
+		return
+	}
+	if first, ok := w.written(c); ok {
+		// An equal constraint is written already: the drawing has it
+		// twice, as a DXF import makes it.
+		w.line("%s := doc.Constrain.Again(%s)", v, first)
+		w.conVar[c.H] = v
+		w.writeConstraintSettings(c, v)
 		return
 	}
 	name, ok := constraintTypeNames[c.Type]
@@ -188,6 +216,13 @@ func (w *scriptWriter) writeConstraint(c *core.Constraint) {
 		w.line("%s := doc.Constrain.Raw(core.%s, %s, %s, %s, %s, %v, %v)", v, name,
 			w.ref(c.PtA), w.ref(c.PtB), w.ref(c.EntityA), w.ref(c.EntityB), other, c.Other2)
 	}
+	w.conVar[c.H] = v
+	w.writeConstraintSettings(c, v)
+}
+
+// writeConstraintSettings writes what is set on constraint c, written
+// as v, after it is made: its value, label, limit, reference and name.
+func (w *scriptWriter) writeConstraintSettings(c *core.Constraint, v string) {
 	if c.HasLabel() {
 		if c.Type == core.ConstraintDiameter && c.Other {
 			w.line("%s.SetShowAsRadius(true)", v)
@@ -213,6 +248,24 @@ func (w *scriptWriter) writeConstraint(c *core.Constraint) {
 	if c.Name != "" {
 		w.line("%s.SetName(%q)", v, c.Name)
 	}
+}
+
+// written is the variable of a constraint written before c that equals
+// it, by the rule the sketch keeps one of a kind by: the same kind,
+// entities and value, and for a comment the same place.
+func (w *scriptWriter) written(c *core.Constraint) (string, bool) {
+	for i := range w.sk.Constraints {
+		cc := &w.sk.Constraints[i]
+		if cc.H == c.H {
+			break
+		}
+		v, ok := w.conVar[cc.H]
+		if ok && c.ConstraintBase.Equals(&cc.ConstraintBase) && //nolint:staticcheck // QF1008: the base is named on purpose
+			(c.Type != core.ConstraintComment || c.Disp.Offset == cc.Disp.Offset) {
+			return v, true
+		}
+	}
+	return "", false
 }
 
 // constraintSetValue is the value Constraint.Set takes to give c the

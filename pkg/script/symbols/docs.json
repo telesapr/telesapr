@@ -4369,6 +4369,10 @@
 				"text": "ConstrainMenu holds the calls of the Constrain menu: the dimensions\nand constraints that hold a sketch. A script reaches it as\ndoc.Constrain. As in the window, a constraint the sketch already has\nis not added twice (the call returns the old one), and a dimension\nthat would over-constrain the group is made a reference dimension\ninstead, silently, unless the group allows redundant constraints.",
 				"kind": "struct",
 				"methods": {
+					"Again": {
+						"decl": "func (m ConstrainMenu) Again(c Constraint) (dup Constraint)",
+						"text": "Again adds a second constraint equal to c, in its group and\nworkplane. Every other call keeps to one of a kind, returning the one\nthe drawing has; a DXF import makes pairs where its drawing meets the\nsame point twice, and File \u003e Export \u003e Script writes them with this."
+					},
 					"Angle": {
 						"decl": "func (m ConstrainMenu) Angle(a, b Entity, degrees float64) Constraint",
 						"text": "Angle sets the angle in degrees between two line segments or\nnormals. For two lines that share an end it is the angle at that\ncorner."
@@ -6270,6 +6274,10 @@
 						"decl": "func (m SketchMenu) Arc(center, start, end Vec) Entity",
 						"text": "Arc adds an arc of a circle around center, from start\ncounter-clockwise to end, in the active workplane. The end is put\nat the start's distance from the centre."
 					},
+					"ArcIn3D": {
+						"decl": "func (m SketchMenu) ArcIn3D(center, start, end, u, v Vec) Entity",
+						"text": "ArcIn3D adds an arc of a circle drawn in 3d, in no workplane: around\ncenter, from start counter-clockwise to end about the normal u cross\nv, as a DXF import draws one. The window draws an arc only in a\nworkplane, whose plane its clicks are in; here u and v give the\nplane, and the arc's normal turns as SetOrientation turns it."
+					},
 					"Circle": {
 						"decl": "func (m SketchMenu) Circle(center Vec, radius float64) Entity",
 						"text": "Circle adds a circle. In a workplane it lies in it; in 3d it is\nparallel to the XY plane."
@@ -6286,6 +6294,10 @@
 						"decl": "func (m SketchMenu) Image(path string, at Vec, height float64) Entity",
 						"text": "Image adds a picture from a file in the active workplane, for\ntracing: its bottom left corner at at, height high and as wide as\nthe picture's proportions make it. It is construction, as the\ninterface makes it."
 					},
+					"ImageFrame": {
+						"decl": "func (m SketchMenu) ImageFrame(path string, at Vec, height, width float64) Entity",
+						"text": "ImageFrame adds a picture as Image does, but sized by the caller: its\nbottom left corner at at, height high and width wide. Its pixels are\nread from path when the file is there, and then its own proportions\nhold; when it isn't, the frame stays width wide with the path, as\nopening a drawing whose picture has gone keeps it, and File \u003e Export\n\u003e Script writes such a picture with this."
+					},
 					"InWorkplane": {
 						"decl": "func (m SketchMenu) InWorkplane(wp Entity)",
 						"text": "InWorkplane makes wp the workplane that is drawn in, in the active\ngroup."
@@ -6297,6 +6309,10 @@
 					"NewWorkplane": {
 						"decl": "func (m SketchMenu) NewWorkplane(origin, u, v Vec) Entity",
 						"text": "NewWorkplane adds a workplane through origin, with u to its right\nand v up, to a group drawn freely in 3d."
+					},
+					"NewWorkplaneIn": {
+						"decl": "func (m SketchMenu) NewWorkplaneIn(origin Vec) Entity",
+						"text": "NewWorkplaneIn adds a workplane in the active workplane, as a DXF\nimport draws one: its origin is a point of the active workplane,\nwhich the solver keeps there, and it lies parallel to it, its normal\nthe active workplane's. The window draws a workplane only in 3d,\nwhere NewWorkplane draws one turned any way."
 					},
 					"PeriodicSpline": {
 						"decl": "func (m SketchMenu) PeriodicSpline(points ...Vec) Entity",
@@ -7980,6 +7996,10 @@
 					"DistanceLabelOffset": {
 						"decl": "func (sk *Sketch) DistanceLabelOffset(a, b geom.Vector) geom.Vector",
 						"text": "DistanceLabelOffset is where the label of a new distance between points at a and b goes, as Constrain \u003e Distance puts it: 50 pixels from the middle, across the line between them in the view."
+					},
+					"DuplicateConstraint": {
+						"decl": "func (sk *Sketch) DuplicateConstraint(hc core.HConstraint) (core.HConstraint, error)",
+						"text": "DuplicateConstraint adds a second constraint equal to hc, in its group and workplane, with a new handle."
 					},
 					"EditThread": {
 						"decl": "func (sk *Sketch) EditThread(hg core.HGroup, o ThreadOptions) (ThreadResult, error)",

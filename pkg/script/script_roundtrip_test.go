@@ -18,30 +18,10 @@ import (
 // scriptRoundTripKnown are the fixtures whose script doesn't build the
 // model again, with why. The list may only shrink.
 var scriptRoundTripKnown = map[string]string{
-	// Drawn by the DXF import as neither the window nor a script draws.
-	"importdxf/golden/basic.3d.tlspr":                         dxf3dArc,
-	"importdxf/golden/binary.3d.tlspr":                        dxf3dArc,
-	"importdxf/golden/negative_extrusion.3d.tlspr":            dxf3dArc,
-	"importdxf/golden/polylines.3d.tlspr":                     dxf3dArc,
-	"importdxf/golden/blocks.tlspr":                           dxfWorkplane,
-	"importdxf/golden/negative_extrusion.tlspr":               dxfWorkplane,
-	"importdxf/golden/ezdxf/3dface.3d.tlspr":                  dxfTwice,
-	"importdxf/golden/ezdxf/3dface.tlspr":                     dxfTwice,
-	"importdxf/golden/ezdxf/colors.3d.tlspr":                  dxfTwice,
-	"importdxf/golden/ezdxf/colors.tlspr":                     dxfTwice,
-	"importdxf/golden/ezdxf/text_negative_extrusion.3d.tlspr": dxfTwice,
-	"importdxf/golden/ezdxf/text_negative_extrusion.tlspr":    dxfTwice,
-	// The image the fixture names isn't beside it.
-	"tlspr/golden/request/image/normal.tlspr": "the image's file is missing",
-	// A file whose model doesn't regenerate.
+	// A file of every field set, whose references lead to entities it
+	// hasn't: it doesn't open as a model, so there is none to write.
 	"tlspr/v1/fields.tlspr": "every field set, not a model that regenerates",
 }
-
-const (
-	dxf3dArc     = "an arc drawn in 3d, which a script draws only in a workplane"
-	dxfWorkplane = "a workplane drawn in a workplane, which a script draws in 3d"
-	dxfTwice     = "the same constraint twice, which a script adds once"
-)
 
 // handlePrefix is the handle part of a group's name in Describe, which
 // a model made again numbers afresh.
