@@ -61,6 +61,7 @@ type scriptWriter struct {
 
 	groupVar map[core.HGroup]string
 	reqVar   map[core.HRequest]string
+	styleVar map[core.HStyle]string
 	// skip are groups written by another's call: a thread's sketches
 	// and lathe, written with its helix.
 	skip map[core.HGroup]bool
@@ -79,6 +80,7 @@ func newScriptWriter(sk *sketch.Sketch) *scriptWriter {
 		sk:       sk,
 		groupVar: map[core.HGroup]string{},
 		reqVar:   map[core.HRequest]string{},
+		styleVar: map[core.HStyle]string{},
 		skip:     map[core.HGroup]bool{},
 	}
 }
@@ -118,6 +120,7 @@ func (w *scriptWriter) write() {
 		w.line("doc.View.SetUnits(core.Unit(%d)) // %s", int(sk.Units), unitNames[sk.Units])
 	}
 	w.writeParameters()
+	w.writeStyles()
 	w.writeGroups()
 	if len(w.atEnd) > 0 {
 		w.b.WriteString("\n")
@@ -361,9 +364,7 @@ func (w *scriptWriter) writeOptions(g *sketch.Group, v string) {
 	if g.Appearance != "" {
 		w.line("%s.SetAppearance(%q)", v, g.Appearance)
 	}
-	if len(g.FaceAppearances) > 0 {
-		w.notWritten("%s's faces' own appearances", g.Name)
-	}
+	w.writeFaceAppearances(g, v)
 	if g.Density != 0 {
 		w.line("%s.SetDensity(%s)", v, num(g.Density))
 	}
@@ -389,6 +390,29 @@ func (w *scriptWriter) writeOptions(g *sketch.Group, v string) {
 		w.atEnd = append(w.atEnd, fmt.Sprintf("%s.SetSuppress(api.SuppressWhole)", v))
 	case g.Suppress:
 		w.atEnd = append(w.atEnd, fmt.Sprintf("%s.SetSuppress(api.SuppressSolid)", v))
+	}
+}
+
+// writeFaceAppearances gives the group's faces their own appearances
+// once everything is made, each face found by a point in it on the
+// group's solid.
+func (w *scriptWriter) writeFaceAppearances(g *sketch.Group, v string) {
+	if len(g.FaceAppearances) == 0 {
+		return
+	}
+	tp := topologyAt(w.sk, g)
+	if tp == nil {
+		w.notWritten("%s's faces' own appearances: the group has no solid with faces", g.Name)
+		return
+	}
+	mesh := displayMesh(w.sk, g)
+	for _, fa := range g.FaceAppearances {
+		p, ok := facePoint(tp, mesh, fa.Face)
+		if !ok {
+			w.notWritten("%s: the appearance %q of a face no point finds", g.Name, fa.Appearance)
+			continue
+		}
+		w.atEnd = append(w.atEnd, fmt.Sprintf("doc.View.SetFaceAppearance(%s.Solid().FaceAt(%s), %q)", v, vecText(p), fa.Appearance))
 	}
 }
 
