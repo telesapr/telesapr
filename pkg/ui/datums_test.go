@@ -19,7 +19,8 @@ import (
 // two of a linked model's names picked on the screen, as a script's
 // Assembly.Concentric does.
 func TestDatumScreenNamesTheSolidAndMates(t *testing.T) {
-	t.Parallel()
+	// Not parallel: the application sets the link hooks and the fonts
+	// for the whole process.
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	doc.Sketch.Rect(api.V(0, 0, 0), api.V(40, 30, 0))
@@ -104,7 +105,8 @@ func solidEdgeOf(t *testing.T, e api.SolidEdge) topo.Name {
 // the solids selected, as linked normals, in the order selected; a
 // straight edge's datum, a line, is refused as a plane, with the reason.
 func TestMateMenuTakesDatums(t *testing.T) {
-	t.Parallel()
+	// Not parallel: the application sets the link hooks and the fonts
+	// for the whole process.
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	doc.Sketch.Rect(api.V(0, 0, 0), api.V(40, 30, 0))

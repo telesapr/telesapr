@@ -12,7 +12,8 @@ import (
 // testdata/solid/clearance.tlspr (examples/scripts/clearance): the same
 // gaps and the same walls, and draws a line across each.
 func TestClearanceScreenMatchesScript(t *testing.T) {
-	t.Parallel()
+	// Not parallel: the application sets the link hooks and the fonts
+	// for the whole process.
 	ss, p := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	if err := doc.File.Load("../../testdata/solid/clearance.tlspr"); err != nil {
@@ -65,7 +66,8 @@ func TestClearanceScreenMatchesScript(t *testing.T) {
 
 // The wall check of a sketch with no solid says so on the screen.
 func TestClearanceScreenNoSolid(t *testing.T) {
-	t.Parallel()
+	// Not parallel: the application sets the link hooks and the fonts
+	// for the whole process.
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	doc.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
