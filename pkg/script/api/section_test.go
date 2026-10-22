@@ -136,3 +136,58 @@ func TestSectionMisuse(t *testing.T) {
 		t.Errorf("a refused section turned the view on: %+v", s)
 	}
 }
+
+// A plane through a turned solid's axis runs along the seams of its
+// surfaces' quarters, whose vertices lie a few ulps either side of it;
+// the cap still closes, and holds the profile's area once for each
+// side of the axis it cuts.
+func TestSectionThroughAxis(t *testing.T) {
+	turned := func(degrees float64) *Doc {
+		d := New()
+		d.Sketch.Rect(V(1, 0, 0), V(5, 10, 0))
+		axis := d.Sketch.Line(V(0, 0, 0), V(0, 10, 0))
+		axis.SetConstruction(true)
+		if degrees == 360 {
+			d.Features.Lathe(axis, "turned")
+		} else {
+			d.Features.Revolve(axis, degrees, "turned")
+		}
+		return d
+	}
+	for _, tc := range []struct {
+		name  string
+		doc   func() *Doc
+		plane string
+		loops int
+		area  float64
+	}{
+		{"lathe XY", func() *Doc { return turned(360) }, "XY", 2, 80},
+		{"lathe YZ", func() *Doc { return turned(360) }, "YZ", 2, 80},
+		{"revolve half YZ", func() *Doc { return turned(180) }, "YZ", 1, 40},
+		{"cylinder", func() *Doc {
+			d := New()
+			d.Sketch.Circle(V(0, 0, 0), 4)
+			d.Features.Extrude(30, "rod")
+			return d
+		}, "YZ", 1, 240},
+		{"thread", func() *Doc {
+			d := New()
+			rod := d.Sketch.Circle(V(0, 0, 0), 4)
+			d.Features.Extrude(30, "rod")
+			d.Features.Thread(rod, ThreadOptions{Designation: "M8", Length: 12})
+			return d
+		}, "YZ", 1, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			d := tc.doc()
+			d.View.SetSection(d.Workplane(tc.plane), "0", false)
+			s := d.View.Section()
+			if !s.Closed || s.Loops != tc.loops {
+				t.Errorf("cap in %d loops (closed %v), want %d closed", s.Loops, s.Closed, tc.loops)
+			}
+			if tc.area != 0 && math.Abs(s.Area-tc.area) > 1e-6*tc.area {
+				t.Errorf("cap %v mm², want %v", s.Area, tc.area)
+			}
+		})
+	}
+}

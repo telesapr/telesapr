@@ -1,6 +1,7 @@
 package srf
 
 import (
+	"math"
 	"slices"
 
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -12,19 +13,43 @@ import (
 // is h.N. It returns whether every loop closed, which it does for a
 // watertight mesh; a leaky one gives open contours too.
 //
-// A vertex counts as inside when it is in h, its plane included.
+// A vertex counts as inside when it is in h, its plane included, and a
+// vertex within LengthEps of the plane is on it, laid onto it. A plane
+// through a turned surface's axis passes along the seams of its
+// quarters, whose vertices the meshes on either side place a few
+// ulps apart, one just inside and the other just out: taken as they
+// are, neither side's triangles give the seam's segment, and the
+// section's contours come apart there.
 func (m *SMesh) MakeSectionPolygonInto(h HalfSpace, dest *SPolygon) bool {
 	dest.Clear()
 	dest.Normal = h.N
 
 	var el SEdgeList
-	dist := func(p geom.Vector) float64 { return h.N.Dot(p) - h.D }
+	nn := h.N.Dot(h.N)
+	eps := geom.LengthEps * math.Sqrt(nn)
+	dist := func(p geom.Vector) float64 {
+		if d := h.N.Dot(p) - h.D; math.Abs(d) >= eps {
+			return d
+		}
+		return 0
+	}
+	// onPlane lays a point a vertex gave onto the plane; the same
+	// vertex gives the same point in every triangle it belongs to.
+	onPlane := func(p geom.Vector) geom.Vector {
+		return p.Minus(h.N.ScaledBy((h.N.Dot(p) - h.D) / nn))
+	}
 	// cross is where the plane cuts edge a-b, computed from the edge's
 	// ends in one order whichever triangle it belongs to, so that the
 	// two triangles sharing it give the same point to the last bit.
 	cross := func(a, b geom.Vector, da, db float64) geom.Vector {
 		if b.X < a.X || (b.X == a.X && (b.Y < a.Y || (b.Y == a.Y && b.Z < a.Z))) {
 			a, b, da, db = b, a, db, da
+		}
+		switch {
+		case da == 0:
+			return onPlane(a)
+		case db == 0:
+			return onPlane(b)
 		}
 		return a.Plus(b.Minus(a).ScaledBy(da / (da - db)))
 	}

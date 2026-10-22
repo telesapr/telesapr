@@ -84,6 +84,35 @@ func TestMeshSection(t *testing.T) {
 	}
 }
 
+// Vertices on the plane that each triangle places a few ulps to one
+// side or the other, as the meshes of a turned surface's quarters do
+// along a seam in a plane through its axis, are taken as on it: the
+// loop closes and lies in the plane.
+func TestMeshSectionSeamOffPlane(t *testing.T) {
+	m := cubeMesh(geom.Vector{}, 10)
+	for i := range m.Triangles {
+		tr := &m.Triangles[i]
+		for k, p := range []*geom.Vector{&tr.A, &tr.B, &tr.C} {
+			if p.Z == 0 {
+				p.Z = float64(1-2*((i+k)%2)) * 1e-12
+			}
+		}
+	}
+	var p SPolygon
+	keep := plane(geom.Vector{Z: 1}, geom.Vector{})
+	if !m.MakeSectionPolygonInto(keep, &p) || len(p.Contours) != 1 {
+		t.Fatalf("%d contours, closed: want the bottom face's one", len(p.Contours))
+	}
+	if a := capArea(&p); math.Abs(a-100) > 1e-6 {
+		t.Errorf("area %v, want 100", a)
+	}
+	for _, sp := range p.Contours[0].Points {
+		if sp.P.Z != 0 {
+			t.Fatalf("cap point %v off the plane", sp.P)
+		}
+	}
+}
+
 // A mesh with a hole gives an open loop, and says so.
 func TestMeshSectionLeaky(t *testing.T) {
 	m := cubeMesh(geom.Vector{}, 10)

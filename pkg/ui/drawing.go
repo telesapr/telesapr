@@ -205,20 +205,6 @@ func (ss *Application) sectionEdges(g *sketch.Group, right, up geom.Vector, offs
 			return clipEdges(el, keep)
 		}
 		extra, always = notRoot(&extra), notRoot(&always)
-		// A plane through a thread's axis passes through the corners of
-		// its turned surfaces' quarters, where the section's contours
-		// come apart; a tenth of a micrometre off it they close, and are
-		// laid back on it.
-		capPoly.Clear()
-		nudged := keep
-		nudged.D += 1e-4
-		g.DisplayMesh.MakeSectionPolygonInto(nudged, &capPoly)
-		for ci := range capPoly.Contours {
-			for i := range capPoly.Contours[ci].Points {
-				p := &capPoly.Contours[ci].Points[i].P
-				*p = p.Minus(keep.N.WithMagnitude(1).ScaledBy(1e-4 / keep.N.Magnitude()))
-			}
-		}
 		threadCut(&capPoly, bands, keep.N)
 		threadCutRoots(&always, bands, keep)
 	}
