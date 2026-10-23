@@ -1,9 +1,9 @@
 # Script API renames in 0.5
 
 The calls of `pkg/script/api` that change a drawing moved from `Doc` to a field of it for each
-menu of the window, and what only one kind of group has moved to a view of the group
-(`doc/adr/0004-scripting-with-yaegi.md`, addendum). A script written for 0.4 is brought up to
-date with this table; `help("Features > Fillet Edges")` names the call of any menu entry.
+menu of the window, and what only one kind of group has moved to a view of the group.
+A script written for 0.4 is brought up to date with this table; `help("Features > Fillet Edges")`
+names the call of any menu entry.
 Calls not listed here kept their names: `doc.Group`, `doc.Active`, `g.Solved`, `e.Pos` and the
 rest of `Doc`'s lookups, `Group`'s common methods, `Entity`, `Constraint` and the `Solid` types.
 

@@ -119,7 +119,7 @@ not dense arithmetic.
   found first, so goldens, with nothing measured saying they would win.
 - Robust predicates: Shewchuk's are a few hundred lines to port in-tree if ever needed (17).
 - Mesh Booleans: the pure-Go ones are the same BSP; Manifold has no Go bindings. No pure-Go B-rep
-  kernel exists, and this project is its own kernel (`doc/adr/0001`).
+  kernel exists, and this project is its own kernel.
 - SIMD: `simd/archsimd` is still behind `GOEXPERIMENT` in Go 1.27, and no profile has a wide loop
   over contiguous floats. FMA is fused by the compiler on arm64 and at `GOAMD64=v3`, which the OS
   skip lists already meet.

@@ -148,7 +148,7 @@ cmd/telesapr/          The application
 cmd/telesapr-cli/      The command-line tool
 dist/freedesktop/      Desktop entry, icons and MIME type
 doc/                   The user's guide, the .tlspr format, the AI guide, the audit,
-                       decision records (adr/) and working notes (notes/)
+                       and working notes (notes/)
 examples/scripts/      Example scripts, one or more per feature
 pkg/
 ├── check/             Invariants of a sound solid: the test oracle, Analyze > Check Solid

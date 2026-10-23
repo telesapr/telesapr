@@ -1,15 +1,17 @@
 # TeleSAPR: how the code is written
 
 Read this before changing anything. `README.md` says what the program is; `ROADMAP.md` says
-what is being built; `doc/adr/` says why the big decisions were taken. This file is the
-conventions, for people and for coding agents alike (`CLAUDE.md` is the same file).
+what is being built. This file is the conventions, for people and for coding agents alike
+(`CLAUDE.md` is the same file).
 
 ## Layout
 
 - `cmd/telesapr` is the window, `cmd/telesapr-cli` the command-line tool. Both are thin.
-- `pkg/` holds the packages (a recorded deviation from the usual root layout: see
-  `doc/adr/0003-pkg-directory.md`; do not move them). Private helpers go under `pkg/internal/`
-  or a package's own `internal/`. There is no `util`, `common` or `helpers` package.
+- `pkg/` holds the packages, a deliberate deviation from the usual root layout: do not move
+  them. `github.com/telesapr/telesapr/pkg/script/api` is imported by every user script, the
+  examples and the generated symbol tables, and moving it would break them for a cosmetic gain.
+  Private helpers go under `pkg/internal/` or a package's own `internal/`. There is no `util`,
+  `common` or `helpers` package.
 - The layers, each importing only the ones above it: `geom`, `libm`, `ttf`, `dxf` → `core` →
   `srf`, `solver`, `thread` → `topo` → `sketch` → `persist/*`, `export`, `check`, `render` →
   `script/*`, `mcpserver`, `platform/*` → `ui` → `cmd/*`. The font and DXF libraries know nothing
@@ -47,7 +49,8 @@ conventions, for people and for coding agents alike (`CLAUDE.md` is the same fil
   identifiers have a doc comment that starts with their name; every package has a package
   comment.
 - Comments say why, in terms of this code. They do not describe the code by reference to
-  SolveSpace's C++ (`doc/adr/0001-separate-from-solvespace.md`).
+  SolveSpace's C++: since 2026-10-01 TeleSAPR tracks neither SolveSpace's behaviour nor its
+  file format, and the provenance is in `NOTICE`.
 - Lint is `golangci-lint` with `.golangci.yml`; the tree is clean. A `//nolint` carries a reason.
   `golangci-lint run --fix` is not run over `examples/`: the scripts there run in yaegi, which
   has no range over an integer or a function, so they keep the older forms. A range loop over a
