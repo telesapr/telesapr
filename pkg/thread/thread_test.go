@@ -26,6 +26,12 @@ func TestBasicDimensions(t *testing.T) {
 		{"1/4-20 UNC", 5.5245, 4.976, 0.002, 4.976, 6.35, 1.0 / 8, 3.0 / 4, 7.0 / 8},
 		{"Tr20x4", 18, 16, 1e-9, 15.5, 20.5, 0, 0, 0},
 		{"Tr40x7", 36.5, 33, 1e-9, 32, 41, 0, 0, 0},
+		// BS 84: effective and minor diameters 0.2180 and 0.1860 inch;
+		// the crest truncated a sixth of the sharp triangle's height.
+		{"1/4 BSW", 5.5368, 4.7237, 0.001, 4.7237, 6.35, 1.0 / 6, 0, 0},
+		// ASME B1.5: 0.450 inch pitch diameter, 0.380 and 0.520 inch at
+		// the external root and the internal one.
+		{"1/2-10 ACME", 11.43, 10.16, 1e-9, 9.652, 13.208, 0, 0, 0},
 	} {
 		s, err := Parse(tc.name)
 		if err != nil {
@@ -49,6 +55,8 @@ func TestBasicDimensions(t *testing.T) {
 		check("internal root radius", in.RootRadius, tc.intMajor/2)
 		if tc.crest != 0 {
 			check("external crest width", ext.CrestWidth, tc.crest*s.Pitch)
+		}
+		if tc.root != 0 {
 			check("external root width", ext.RootWidth, tc.root*s.Pitch)
 			check("internal crest width", in.CrestWidth, s.Pitch/4)
 			check("internal root width", in.RootWidth, tc.intRoot*s.Pitch)
@@ -129,6 +137,19 @@ func TestParse(t *testing.T) {
 		{"0.3-20", Spec{Form: FormUnified, Diameter: 0.3 * in, Pitch: in / 20}},
 		{"1/2-13 UNC-LH", Spec{Form: FormUnified, Diameter: in / 2, Pitch: in / 13, LeftHand: true}},
 		{"1/2-13 UNC (2 starts)", Spec{Form: FormUnified, Diameter: in / 2, Pitch: in / 13, Starts: 2}},
+		{"1/4 BSW", Spec{Form: FormWhitworth, Diameter: in / 4, Pitch: in / 20}},
+		{"1/4 bsf", Spec{Form: FormWhitworth, Diameter: in / 4, Pitch: in / 26}},
+		{"3/8-20 BSW", Spec{Form: FormWhitworth, Diameter: 3 * in / 8, Pitch: in / 20}},
+		{"1 1/2 BSW-LH", Spec{Form: FormWhitworth, Diameter: 1.5 * in, Pitch: in / 6, LeftHand: true}},
+		{"G1/2", Spec{Form: FormWhitworth, Diameter: 20.955, Pitch: in / 14}},
+		{"g 1 1/2", Spec{Form: FormWhitworth, Diameter: 47.803, Pitch: in / 11}},
+		{"G3/4 B", Spec{Form: FormWhitworth, Diameter: 26.441, Pitch: in / 14}},
+		{"G1/4 (2 starts)", Spec{Form: FormWhitworth, Diameter: 13.157, Pitch: in / 19, Starts: 2}},
+		{"1/2-10 ACME", Spec{Form: FormACME, Diameter: in / 2, Pitch: in / 10}},
+		{"1/2 acme", Spec{Form: FormACME, Diameter: in / 2, Pitch: in / 10}},
+		{"1/2-10 ACME-2G", Spec{Form: FormACME, Diameter: in / 2, Pitch: in / 10}},
+		{"1-4 ACME-3G-LH", Spec{Form: FormACME, Diameter: in, Pitch: in / 4, LeftHand: true}},
+		{"3/4-6 ACME (2 starts)", Spec{Form: FormACME, Diameter: 3 * in / 4, Pitch: in / 6, Starts: 2}},
 	} {
 		got, err := Parse(tc.text)
 		if err != nil {
@@ -149,6 +170,7 @@ func TestParseErrors(t *testing.T) {
 		"", "M", "Mx1", "M9", "M8x", "M8x0", "M8x-1", "M8x20", "M0", "M-8", "M8xPh3", "M16xPh4P1.5",
 		"Tr9", "Tr20x", "Tr20x8(P3)", "bolt", "1/4", "1/0-20", "#3/4", "#99-20", "1/4-0", "1/4-x",
 		"3 UNC", "1 3/4 UNF", "1/4-20 (0 starts)", "1/4-20 (two)", "M8LH", "NaN", "MInf",
+		"3/32 BSW", "5/32 BSF", "G5/16", "G", "Gx", "G1/2 (x starts)", "11/16 ACME", "1/2-0 ACME",
 	} {
 		if s, err := Parse(text); err == nil {
 			t.Errorf("%q: read as %+v, want an error", text, s)
@@ -165,6 +187,8 @@ func TestStringRoundTrip(t *testing.T) {
 		"Tr20x4", "Tr20x4-LH", "Tr40x14(P7)", "Tr9x2",
 		"1/4-20 UNC", "1/4-28 UNF", "1/4-32 UN", "#10-32 UNF", "#0-80 UNF", "1 1/8-7 UNC",
 		"2-4.5 UNC", "0.3-20 UN", "1/2-13 UNC-LH", "1/2-13 UNC (2 starts)",
+		"1/4 BSW", "1/4 BSF", "1 1/8 BSW", "0.3-20 BSW", "1/2-14 BSW", "G1/2", "G1 1/2-LH",
+		"G1/4 (2 starts)", "1/2-10 ACME", "1 1/2-6 ACME-LH", "3/4-6 ACME (2 starts)",
 	} {
 		s, err := Parse(text)
 		if err != nil {
@@ -238,6 +262,18 @@ func TestNearest(t *testing.T) {
 	}{{8, "M8"}, {8.1, "M8"}, {7.2, "M7"}, {0.5, "M1"}, {100, "M64"}, {6.8, "M7"}, {9, "M8"}} {
 		if got := Nearest(tc.d).String(); got != tc.want {
 			t.Errorf("Nearest(%g) = %s, want %s", tc.d, got, tc.want)
+		}
+	}
+}
+
+func TestNearestForHole(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		d    float64
+		want string
+	}{{10, "M10"}, {8.5, "M10"}, {8, "M8"}, {6.8, "M8"}, {5, "M5"}, {4.9, "M6"}, {100, "M64"}} {
+		if got := NearestForHole(tc.d).String(); got != tc.want {
+			t.Errorf("NearestForHole(%g) = %s, want %s", tc.d, got, tc.want)
 		}
 	}
 }

@@ -1,0 +1,15 @@
+# The top rims of thread_pair.tlspr's threaded bolt and of its nut's
+# threaded hole picked with the mouse and made a screw mate, which takes
+# the threads' lead and moves the nut to where the threads fit; the
+# same as path_mate_screw_threads.go makes
+# (TestPathEquivalenceMateScrewThreads).
+file $testdata/ui/thread_pair.tlspr
+menu File|Open...
+key f
+move 111 255
+down L 111 255
+up L 111 255
+move 429 285
+down L 429 285
+up L 429 285
+menu Assembly|Mate Screw

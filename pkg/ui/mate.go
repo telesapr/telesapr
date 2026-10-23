@@ -10,9 +10,12 @@ import (
 // constraints api.Doc.Concentric, Flush, Hinge or Screw make, as one
 // step of undo, in the active group. Concentric and Flush take datums
 // on a solid selected as their workplanes or, through a link, their
-// normals, as the datums screen's [mate] does. A screw's lead is the coarse pitch
-// of the ISO metric thread of the first circle's diameter, or 1 mm; it
-// is the parameter the screw makes, to be changed in the table.
+// normals, as the datums screen's [mate] does. A screw's lead is the
+// lead of the screw thread a circle carries, and the part is moved to
+// where the threads fit (api.AssemblyMenu.Screw); without threads it is
+// the coarse pitch of the ISO metric thread of the first circle's
+// diameter, or 1 mm. It is the parameter the screw makes, to be changed
+// in the table.
 func (ss *Application) MenuMate(id Command) {
 	gw := ss.GW
 	gw.GroupSelection()
@@ -34,9 +37,15 @@ func (ss *Application) MenuMate(id Command) {
 	case cmdMateScrew:
 		what, need = "screw", "two circles or arcs"
 		run = func(d *api.Doc, a, b api.Entity) {
-			lead, ok := thread.CoarsePitch(2 * a.Radius())
-			if !ok {
-				lead = 1
+			// A lead of 0 is the threads', which the mate also fits.
+			lead := 0.0
+			_, onA := ss.SK.ThreadOnCircle(a.H)
+			_, onB := ss.SK.ThreadOnCircle(b.H)
+			if !onA && !onB {
+				var ok bool
+				if lead, ok = thread.CoarsePitch(2 * a.Radius()); !ok {
+					lead = 1
+				}
 			}
 			d.Assembly.Screw(a, b, lead)
 		}

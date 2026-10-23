@@ -151,6 +151,7 @@ func (gw *graphicsWindow) drawGroup(g *sketch.Group, canvas render.Canvas) {
 			drawAs = render.EmphasizedWithoutContour
 		}
 		canvas.DrawOutlines(&g.DisplayOutlines, hcsEdge, drawAs)
+		gw.drawCosmeticThreads(g, canvas)
 
 		if gw.drawOccludedAs != occludedInvisible {
 			strokeHidden := ss.styleStroke(hstyle(core.StyleHiddenEdge))

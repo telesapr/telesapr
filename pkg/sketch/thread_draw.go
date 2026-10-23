@@ -11,30 +11,61 @@ import (
 )
 
 // threadGroups are the groups of a thread, in their order: four, then
-// a ridge's sketch and helix for each level start past the first.
+// a ridge's sketch and helix for each level start past the first, then
+// with a chamfer its sketch and its lathe. A cosmetic thread has only
+// its sketch, blank, and the lathe that turns or bores the part when it
+// must; its other handles are zero.
 type threadGroups struct {
 	blank, lathe, profile, helix core.HGroup
 	// starts are the sketch and the helix of each start past the first.
 	starts [][2]core.HGroup
+	// chamfer is the sketch and the lathe that cut the chamfers, none
+	// for a thread without.
+	chamfer [2]core.HGroup
 }
+
+// chamfered tells whether the thread has a chamfer's groups.
+func (tg threadGroups) chamfered() bool { return tg.chamfer[0] != (core.HGroup{}) }
 
 // all are the thread's groups in their order.
 func (tg threadGroups) all() []core.HGroup {
-	out := []core.HGroup{tg.blank, tg.lathe, tg.profile, tg.helix}
+	var out []core.HGroup
+	for _, h := range []core.HGroup{tg.blank, tg.lathe, tg.profile, tg.helix} {
+		if h != (core.HGroup{}) {
+			out = append(out, h)
+		}
+	}
+	for _, st := range tg.starts {
+		out = append(out, st[0], st[1])
+	}
+	if tg.chamfered() {
+		out = append(out, tg.chamfer[0], tg.chamfer[1])
+	}
+	return out
+}
+
+// extra are the groups after the first helix.
+func (tg threadGroups) extra() []core.HGroup {
+	var out []core.HGroup
 	for _, st := range tg.starts {
 		out = append(out, st[0], st[1])
 	}
 	return out
 }
 
-// extra are the groups after the first helix.
-func (tg threadGroups) extra() []core.HGroup { return tg.all()[4:] }
-
 // solids are the thread's groups that make solids.
 func (tg threadGroups) solids() []core.HGroup {
-	out := []core.HGroup{tg.lathe, tg.helix}
+	var out []core.HGroup
+	for _, h := range []core.HGroup{tg.lathe, tg.helix} {
+		if h != (core.HGroup{}) {
+			out = append(out, h)
+		}
+	}
 	for _, st := range tg.starts {
 		out = append(out, st[1])
+	}
+	if tg.chamfered() {
+		out = append(out, tg.chamfer[1])
 	}
 	return out
 }
@@ -61,6 +92,8 @@ type threadDrawer struct {
 	u, v geom.Vector
 	// start is the angle of the ridge sketch's plane.
 	start float64
+	// shift moves the ridges along the thread, by its phase.
+	shift float64
 	// reuse are requests of the groups being drawn again, by group,
 	// in the order they were drawn.
 	reuse map[core.HGroup][]core.HRequest
@@ -73,14 +106,22 @@ type threadDrawer struct {
 // CheckThread has passed.
 //
 // try picks among the planes for the ridges that keep their edges off
-// the joins, the best first (startTries).
-func (sk *Sketch) newThreadDrawer(he core.HEntity, o ThreadOptions, reuse map[core.HGroup][]core.HRequest, try int) *threadDrawer {
+// the joins, the best first (startTries), and then, for a chamfered
+// thread, among the ways of making the chamfer (chamferTries): all the
+// planes for each.
+func (sk *Sketch) newThreadDrawer(he core.HEntity, o ThreadOptions, try int) *threadDrawer {
 	circle := sk.MustEntity(he)
-	l, err := o.layout(circle.CircleGetRadiusNum(sk))
+	l, err := o.layoutTry(circle.CircleGetRadiusNum(sk), try/startTries)
 	if err != nil {
 		panic("sketch: thread laid out after its check failed: " + err.Error())
 	}
-	d := &threadDrawer{sk: sk, o: o, l: l, circle: circle, center: circle.Point[0], reuse: reuse,
+	// A class's clearance is kept as the thread's own too, which a
+	// reader of the file from before classes makes it with; a cosmetic
+	// thread's class sets none (FitClearance).
+	if !o.Cosmetic {
+		o.Clearance, _ = o.FitClearance()
+	}
+	d := &threadDrawer{sk: sk, o: o, l: l, circle: circle, center: circle.Point[0],
 		along: 1, hand: 1, first: map[core.HGroup]core.HEntity{}}
 	d.origin = sk.MustEntity(d.center).PointGetNum(sk)
 	d.q = sk.MustEntity(circle.Normal).NormalGetNum(sk)
@@ -105,17 +146,26 @@ func (sk *Sketch) newThreadDrawer(he core.HEntity, o ThreadOptions, reuse map[co
 	if past > quarter/2 {
 		start = (2*quarter - past) / 2
 	}
-	if o.levelStarts() || l.runOut {
-		start = startsClearOfJoins(d.crossings())[try]
+	if d.retries() {
+		start = startsClearOfJoins(d.crossings())[try%startTries]
 	}
 	d.start = start * d.along * d.hand
+	d.shift = phaseRange(o.Spec.Lead()*o.Phase/360, o.Spec.Pitch)
 	return d
 }
 
 // retries tells whether another plane for the ridges may make a
-// solid that failed: only one with level starts or a run-out picks
-// among several.
-func (d *threadDrawer) retries() bool { return d.o.levelStarts() || d.l.runOut }
+// solid that failed: only one with level starts, a run-out or a
+// chamfer picks among several.
+func (d *threadDrawer) retries() bool { return d.o.levelStarts() || d.l.runOut || d.l.chamfer }
+
+// tries is how many ways of drawing the thread there are to try.
+func (d *threadDrawer) tries() int {
+	if d.l.chamfer {
+		return startTries * len(chamferTries)
+	}
+	return startTries
+}
 
 // crossings are the angles, from the ridge sketch's plane and the way
 // the thread turns, where a ridge's edge would cross a join of the
@@ -287,6 +337,9 @@ func (d *threadDrawer) dimension(typ core.ConstraintType, val float64, ptA, ptB,
 		c.Other = true
 		c.ModifyToSatisfy(sk)
 	}
+	// A height past the circle's plane, as a chamfered thread's first
+	// ridge has, is a distance the other way.
+	val = math.Abs(val)
 	if math.Abs(math.Abs(c.ValA)-val) > 1e-6 {
 		panic(fmt.Sprintf("sketch: thread dimension is %v, drawn as %v", val, c.ValA))
 	}
@@ -320,6 +373,10 @@ func (d *threadDrawer) lengthDimension(typ core.ConstraintType, plus float64, pt
 // boring takes away: a rectangle, revolved; with a run-out, its side at
 // the root tapers to the crest at the thread's end.
 func (d *threadDrawer) drawBlank() {
+	if d.l.chamfer {
+		d.drawChamferedBlank()
+		return
+	}
 	if d.l.runOut {
 		d.drawTaperedBlank()
 		return
@@ -401,7 +458,7 @@ func (d *threadDrawer) drawProfile() {
 		n = 1
 	}
 	for i := range n {
-		z := d.l.ridgeBottom + float64(i)*d.o.Spec.Pitch + d.l.baseW/2
+		z := d.l.ridgeMiddle() + float64(i)*d.o.Spec.Pitch + d.shift
 		if d.l.profile.CrestRoundRadius > 0 {
 			d.drawRoundRidge(i, z)
 		} else {
@@ -575,4 +632,160 @@ func (d *threadDrawer) addStarts(tg *threadGroups) {
 		d.drawProfile()
 		tg.starts = append(tg.starts, [2]core.HGroup{p, d.addHelix(startName("thread", i), false).H})
 	}
+}
+
+// addChamfer adds, after the active group, the sketch of the thread's
+// chamfers and the lathe that cuts them, when it has them.
+func (d *threadDrawer) addChamfer(tg *threadGroups) {
+	tg.chamfer = [2]core.HGroup{}
+	if !d.l.chamfer {
+		return
+	}
+	sketch := d.addSketch("end", 0)
+	d.drawChamfer()
+	tg.chamfer = [2]core.HGroup{sketch, d.addSolid(Group{Type: GroupLathe}, "chamfer", CombineDifference).H}
+}
+
+// drawChamfer draws, in the active sketch, what the chamfers take
+// away, revolved: a triangle at each chamfered end, its long side on
+// the cone.
+func (d *threadDrawer) drawChamfer() {
+	d.drawChamferAt(false)
+	if d.l.farChamfer {
+		d.drawChamferAt(true)
+	}
+}
+
+// drawChamferAt draws what the chamfer takes away at the circle's end,
+// or at the far end: from the cone's crossing of the end's plane, at
+// 45° out past the crest, and back to where the cone runs on past the
+// end, beyond every ridge's end; where the cone would close in on the
+// axis there, a side parallel to the axis cuts it off.
+func (d *threadDrawer) drawChamferAt(far bool) {
+	l := d.l
+	out := 1.0
+	if d.o.Internal {
+		out = -1
+	}
+	past := l.chamferPast
+	// The cone is followed past the end by up to half the chamfer's
+	// radius on a screw, so that the side across it stays off the axis.
+	back := min(past/2, l.chamferR/2)
+	rIn, rOut := l.chamferR-out*back, l.chamferOut
+	reach := out * (rOut - l.chamferR)
+	z := func(h float64) float64 {
+		if far {
+			return d.o.Length - h
+		}
+		return h
+	}
+	d.drawLathePolygon([]rz{{rIn, z(-back)}, {rOut, z(reach)}, {rOut, z(-past)}, {rIn, z(-past)}})
+}
+
+// rz is a point of a thread's sketch: its radius, and its height along
+// the axis from the circle's plane.
+type rz struct{ r, z float64 }
+
+// drawLathePolygon draws, in the active sketch, the closed polygon of
+// pts and holds it: a side parallel to the axis by its radius, a side
+// across it by its height (from the far end when it is the blank's top
+// or a chamfer's at the far end, so that the length's expression moves
+// it), and a slanting side by its ends: at 45° where it meets a side
+// across the axis at a corner, else by the height of its end on a side
+// parallel to the axis and the length of the side across the axis it
+// ends on.
+func (d *threadDrawer) drawLathePolygon(pts []rz) {
+	none := core.NoEntity
+	const eps = 1e-9
+	n := len(pts)
+	sides := make([]core.HRequest, n)
+	for i, p := range pts {
+		q := pts[(i+1)%n]
+		sides[i] = d.line(p.r, p.z, q.r, q.z)
+	}
+	d.closeLoop(sides)
+	vertical := func(i int) bool { return math.Abs(pts[i].r-pts[(i+1)%n].r) < eps }
+	across := func(i int) bool { return math.Abs(pts[i].z-pts[(i+1)%n].z) < eps }
+	fromLength := func(z float64) bool { return z > d.o.Length/2 }
+	height := func(typ core.ConstraintType, z float64, ptA, ptB, entity core.HEntity) {
+		if fromLength(z) {
+			d.lengthDimension(typ, z-d.o.Length, ptA, ptB, entity, none)
+			return
+		}
+		d.dimension(typ, z, ptA, ptB, entity, none)
+	}
+	for i, side := range sides {
+		switch {
+		case vertical(i):
+			d.constrain(core.ConstraintVertical, none, none, side.Entity(0), none, false)
+			if pts[i].r == 0 {
+				d.constrain(core.ConstraintPtOnLine, d.center, none, side.Entity(0), none, false)
+			} else {
+				d.dimension(core.ConstraintPtLineDistance, pts[i].r, d.center, none, side.Entity(0), none)
+			}
+		case across(i):
+			d.constrain(core.ConstraintHorizontal, none, none, side.Entity(0), none, false)
+			height(core.ConstraintPtLineDistance, pts[i].z, d.center, none, side.Entity(0))
+		default:
+			// A slanting side: each end is held on the side it meets.
+			ends := [2]struct {
+				other, vertex int
+				at            core.HEntity
+			}{{(i + n - 1) % n, i, side.Entity(1)}, {(i + 1) % n, (i + 1) % n, side.Entity(2)}}
+			for _, end := range ends {
+				switch {
+				case vertical(end.other):
+					height(core.ConstraintProjPtDistance, pts[end.vertex].z, d.center, end.at, d.circle.Normal)
+				case across(end.other):
+					// The side across ends at a corner held by the
+					// sides on either side of it.
+					o := sides[end.other]
+					d.dimension(core.ConstraintPtPtDistance,
+						math.Abs(pts[end.other].r-pts[(end.other+1)%n].r), o.Entity(1), o.Entity(2), none, none)
+				}
+			}
+		}
+	}
+}
+
+// drawChamferedBlank is drawBlank at a chamfered end: the side at the
+// root turns, short of the end, into a cone at 45° that cuts the end
+// back inside the ridges' feet (layChamfer), at both ends with a
+// chamfered far end, and into the run-out's cone with a run-out; a
+// cosmetic thread's side, at the crest, into the chamfer's cone.
+func (d *threadDrawer) drawChamferedBlank() {
+	l, o := d.l, d.o
+	// A modelled thread's turning is at its root, its cone the
+	// turning's own, short of the chamfer's; a cosmetic thread's, at
+	// its crest, is the chamfer's.
+	root, cone := l.profile.RootRadius, l.turnR
+	if o.Cosmetic {
+		root, cone = l.profile.CrestRadius, l.chamferR
+	}
+	out := 1.0
+	if o.Internal {
+		out = -1
+	}
+	zb, zt := l.blankBottom, l.blankTop
+	zc := out * (root - cone)
+	// The side at the root, from the blank's bottom to its top.
+	side := []rz{{cone + out*zb, zb}, {root, zc}}
+	switch {
+	case l.runOut:
+		side = append(side, rz{root, l.runFrom}, rz{l.runTo, zt})
+	case l.farChamfer:
+		side = append(side, rz{root, o.Length - zc}, rz{cone + out*(o.Length-zt), zt})
+	default:
+		side = append(side, rz{root, zt})
+	}
+	var pts []rz
+	if o.Internal {
+		pts = []rz{{0, zb}, {0, zt}}
+		for _, p := range slices.Backward(side) {
+			pts = append(pts, p)
+		}
+	} else {
+		pts = append(slices.Clip(side), rz{l.blankOut, zt}, rz{l.blankOut, zb})
+	}
+	d.drawLathePolygon(pts)
 }

@@ -36,12 +36,6 @@ func check(g api.Group) {
 	}
 }
 
-// last is the last of a thread's groups, which holds its solid.
-func last(t api.ThreadGroup) api.Group {
-	gs := t.Groups()
-	return gs[len(gs)-1]
-}
-
 func main() {
 	write := len(os.Args) < 2 || os.Args[1] != "-"
 	doc := api.Current()
@@ -52,12 +46,12 @@ func main() {
 	doc.Constrain.Diameter(rod, 8)
 	doc.Features.Extrude(30, "screw")
 	screw := doc.Features.Thread(rod, api.ThreadOptions{Designation: "M8", Length: 12, RunOut: 3}).AsThread()
-	check(last(screw))
+	check(screw.Finished())
 	o := screw.Options()
 	o.RunOut = 2
 	screw.Edit(o)
 	fmt.Printf("screw %s, run-out %.1f mm\n", screw.Options().Designation, screw.Options().RunOut)
-	check(last(screw))
+	check(screw.Finished())
 
 	// A triple-start lead screw beside it: the three starts from its
 	// foot, each a ridge sketch and a helix of its own.
@@ -71,7 +65,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "want a ridge sketch and a helix per start")
 		os.Exit(1)
 	}
-	check(last(triple))
+	check(triple.Finished())
 
 	if write {
 		if err := doc.File.Save("threadrunout.tlspr"); err != nil {

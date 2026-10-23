@@ -138,9 +138,18 @@ def section(c):
         c.line(5 + 3 * k, 21, 5 + 3 * k + 5, 13, w=1.2)
 
 
+def thread(c):
+    # A shaft with the turns of a thread round it.
+    c.line(7, 2, 7, 22)
+    c.line(17, 2, 17, 22)
+    for y in (5, 10, 15):
+        c.line(5, y + 4, 19, y, w=1.4)
+
+
 ICONS = {
     "fillet": fillet, "chamfer": chamfer, "shell": shell, "sweep": sweep, "loft": loft,
     "mirror": mirror, "pattern": pattern, "measure": measure, "section": section,
+    "thread": thread,
 }
 
 

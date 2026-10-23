@@ -1,0 +1,47 @@
+# A screw thread on a face (an extension): the side of an extruded
+# circle, picked on the model, fills the thread screen in from the face.
+# The thread is started at the other end, made M20x1.5 and 25 long, and
+# undone in one step; the context menu on the side offers Screw
+# Thread... too.
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 350 300
+down L 350 300
+up L 350 300
+key esc
+key x shift
+view rotated
+move 336 207
+down L 336 207
+up L 336 207
+menu Features|Screw Thread...
+tw
+# From the other end, the designation, the length, then make it.
+twmove 60 250
+twdown L 60 250
+twup L 60 250
+twmove 172 130
+twdown L 172 130
+twup L 172 130
+edit M20x1.5
+twmove 220 170
+twdown L 220 170
+twup L 220 170
+edit 25
+tw
+twmove 37 280
+twdown L 37 280
+twup L 37 280
+dump
+save
+# Undo takes the datum and the thread away at once.
+key z ctrl
+dump
+key esc
+popup Screw Thread...
+move 336 207
+down R 336 207
+up R 336 207
+tw

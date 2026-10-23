@@ -64,11 +64,14 @@ part it links), and choose from the Assembly menu:
   turn about it tied to its travel along it, as a nut's on a screw. Two new parameters drive it
   (`turn2` and `lead2` for a second screw, and so on): `turn`, in degrees from where the part
   was, starting at 0, and `lead`, how far a whole turn moves it along the first circle's normal,
-  negative for a left-hand screw. The window takes the
+  negative for a left-hand screw. Without threads on the circles the window takes the
   lead as the coarse metric pitch of the first circle's diameter, or 1 where there is none; edit
   `lead` in the parameter table (Edit > Parameters). Assembly > Motion Study on `turn` screws the
   part in ([motion study](parameters-and-units.md#motion-study)). The mate is made in 3d, and the
-  second part needs a point off the axis. Example:
+  second part needs a point off the axis. Of two circles that carry screw threads, a bolt's and
+  its nut's, the lead is the threads' and the part is first moved to where the threads fit
+  ([fitting a nut to its bolt](threads.md#fitting-a-nut-to-its-bolt)); a lead of 0 from a script
+  is the threads'. Example:
   [`examples/scripts/screw`](../../examples/scripts/screw/screw.go), a nut run two turns up
   another's thread.
 
@@ -119,8 +122,11 @@ message lists each pair with the volume they share, and the shared solid is outl
 that cuts the assembly after a part cuts the part too, so a hole cut after a bracket is a hole in
 the bracket and the screw through it doesn't interfere. A part that is itself an assembly, as a
 linked model of parts, is checked solid by solid. Where the Boolean of two parts fails, as for a
-shank lying on its nut's hole, their meshes are intersected instead, and the volume is marked
-"about"; so is a volume summed over several solids of one part, which counts twice what they share.
+shank lying on its nut's hole or a screw's flanks on its nut's, their meshes are intersected
+instead, and the volume is marked "about". What the meshes share counts as touching when it is on
+average no thicker than the chord tolerance, as where faces lie on each other; a screw and a nut
+of clearance 0 put half a pitch out of their fit collide by tens of mm³ and are listed. A volume summed over
+several solids of one part is marked "about" too, as it counts twice what they share.
 A pair that can't be checked either way is listed as failed. A part
 linked from a mesh or a STEP file has no shell; with one in the model, the check falls back to
 the triangles of the whole model, as SolveSpace's does.

@@ -637,6 +637,16 @@ func (d *decoder) thread(n *Node, hg core.HGroup) sketch.GroupThread {
 			t.RunOut = d.realField(c)
 		case "level-starts":
 			t.LevelStarts = d.flag(c)
+		case "chamfer":
+			t.Chamfer = d.flag(c)
+		case "full-length":
+			t.FullLength = d.flag(c)
+		case "class":
+			t.Class = d.strField(c)
+		case "phase":
+			t.Phase = d.realField(c)
+		case "cosmetic":
+			t.Cosmetic = d.flag(c)
 		default:
 			d.unknownField(c, "thread")
 		}

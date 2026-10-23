@@ -22,30 +22,34 @@ twmove 172 110
 twdown L 172 110
 twup L 172 110
 edit M6x1
-twmove 190 150
-twdown L 190 150
-twup L 190 150
+twmove 220 150
+twdown L 220 150
+twup L 220 150
 edit 9
 twmove 181 190
 twdown L 181 190
 twup L 181 190
 tw
+# Flip the direction: against the circle's normal, down into the part.
+twmove 60 230
+twdown L 60 230
+twup L 60 230
 twmove 37 260
 twdown L 37 260
 twup L 37 260
 tw
 dump
 # The helix group's screen: edit the thread, rounded and 12 long.
-twmove 150 210
-twdown L 150 210
-twup L 150 210
+twmove 200 110
+twdown L 200 110
+twup L 200 110
 tw
 twmove 546 190
 twdown L 546 190
 twup L 546 190
-twmove 190 150
-twdown L 190 150
-twup L 190 150
+twmove 220 150
+twdown L 220 150
+twup L 220 150
 edit 12
 tw
 dump

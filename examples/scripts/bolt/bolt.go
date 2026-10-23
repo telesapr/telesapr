@@ -59,7 +59,9 @@ func main() {
 	doc.Sketch.Polyline(true, corners...)
 	doc.Features.Extrude(-height, "head")
 
-	// The thread, from the shank's free end towards the head.
+	// The thread, from the shank's free end towards the head, where it
+	// stops at a shoulder: not Through, which would turn the shank down
+	// past the thread too, a groove the drawing would show.
 	var end api.Entity
 	for _, e := range rod.Entities() {
 		if e.Kind() == "circle" && e.Center().Pos().Z > length/2 {
@@ -70,7 +72,6 @@ func main() {
 		Designation: designation,
 		Length:      0.6 * length,
 		Reverse:     true,
-		Through:     true,
 	})
 
 	r := thread.Analyze().Check()

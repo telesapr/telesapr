@@ -113,6 +113,10 @@ const (
 // every such call to be here, guarded by the engine, or in apiGuarded:
 // a new one has to be put in one of them.
 var fileless = map[string]string{
+	"github.com/telesapr/telesapr/pkg/script/api/api ThreadDesignation":                "a thread's designation",
+	"github.com/telesapr/telesapr/pkg/script/api/api ThreadPitches":                    "a thread's designation",
+	"github.com/telesapr/telesapr/pkg/script/api/api ThreadSizes":                      "the name of a series of threads",
+	"github.com/telesapr/telesapr/pkg/script/api/api ThreadClasses":                    "a thread's designation",
 	"github.com/telesapr/telesapr/pkg/check/check BaselineKey":                         "compares lines of a baseline, which ReadBaseline reads guarded",
 	"github.com/telesapr/telesapr/pkg/check/check CompareBaseline":                     "compares lines of a baseline, which ReadBaseline reads guarded",
 	"github.com/telesapr/telesapr/pkg/core/core CnfColor":                              "a setting's name, in a store the script was given",

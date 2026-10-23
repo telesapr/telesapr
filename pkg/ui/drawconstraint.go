@@ -9,6 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/libm"
 	"github.com/telesapr/telesapr/pkg/render"
 	"github.com/telesapr/telesapr/pkg/res"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // constraintDrawAs is how a constraint is drawn.
@@ -81,6 +82,11 @@ func (gw *graphicsWindow) constraintIsVisible(c *core.Constraint) bool {
 		if !g.Visible {
 			return false
 		}
+		// A thread's helix holds its length by a dimension the thread
+		// sets, not one to read or drag: the thread's screen says it.
+		if g.Type == sketch.GroupHelix && gw.inThread(g) {
+			return false
+		}
 		// And likewise if the group is not the active group; except for
 		// comments with an assigned style.
 		if g.H != gw.activeGroupH() && (c.Type != core.ConstraintComment || c.Disp.Style.V == 0) {
@@ -94,6 +100,16 @@ func (gw *graphicsWindow) constraintIsVisible(c *core.Constraint) bool {
 		return true
 	}
 	return false
+}
+
+// inThread reports whether helix group g is one of a thread's: the
+// helix that keeps it, or that of a further start.
+func (gw *graphicsWindow) inThread(g *sketch.Group) bool {
+	if g.Thread.IsThread() {
+		return true
+	}
+	_, ok := gw.sk().ThreadOfGroup(g.H)
+	return ok
 }
 
 func (gw *graphicsWindow) constraintShouldDrawExploded(c *core.Constraint) bool {

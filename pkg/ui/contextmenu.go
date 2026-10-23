@@ -261,6 +261,9 @@ func (gw *graphicsWindow) addModelItems(menu platform.Menu, gs *groupedSelection
 			}
 		}
 	}
+	if ss.threadSelected() {
+		menu.AddItem("Screw Thread...", func() { ss.MenuThread() }, true)
+	}
 	if edges || faces || gs.n > 0 {
 		menu.AddItem("Measure Selection", func() { ss.MenuMeasure() }, true)
 	}

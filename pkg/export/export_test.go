@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -363,5 +364,48 @@ func TestDxfLineType(t *testing.T) {
 	t.Parallel()
 	if DxfLineType(core.StippleDash) != "DASHED" || DxfLineType(core.StippleZigzag) != "CONTINUOUS" {
 		t.Error("line types")
+	}
+}
+
+// TestWidthsMm writes an SVG with a line width given for one style: it
+// is written as given, where the styles left to their own widths are
+// written at half the screen's.
+func TestWidthsMm(t *testing.T) {
+	t.Parallel()
+	sk := sketch.NewSketch()
+	// Getting a style the sketch hasn't used yet adds it, which a file
+	// then declares.
+	for _, v := range []uint32{core.StyleSolidEdge, core.StyleDimSolid} {
+		sk.StyleGet(core.HStyle{V: v})
+	}
+	var warnings []string
+	o := options(&warnings)
+	o.WidthsMm = map[core.HStyle]float64{{V: core.StyleSolidEdge}: 0.35}
+	path := filepath.Join(t.TempDir(), "view.svg")
+	out, err := NewWriter(path, sk, o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var edges srf.SEdgeList
+	edges.AddEdge(geom.Vector{}, geom.Vector{X: 10}, core.StyleSolidEdge, 0, 0)
+	edges.AddEdge(geom.Vector{}, geom.Vector{Y: 10}, core.StyleDimSolid, 0, 0)
+	u, v := geom.Vector{X: 1}, geom.Vector{Y: 1}
+	out.SetModelviewProjection(u, v, u.Cross(v), geom.Vector{}, 0, 1)
+	var beziers srf.SBezierList
+	var mesh srf.SMesh
+	if err := WriteCurves(&edges, &beziers, &mesh, srf.Tol(0.1, 64), out); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// SolidEdge (5) is 1 px wide on the screen and DimSolid (13) too,
+	// at 5 px to the mm.
+	for class, want := range map[string]string{"s5": "0.350000", "sd": "0.100000"} {
+		m := regexp.MustCompile(`\.` + class + ` \{[^}]*stroke-width:([0-9.]+);`).FindSubmatch(data)
+		if m == nil || string(m[1]) != want {
+			t.Errorf(".%s's width is %q, want %s", class, m, want)
+		}
 	}
 }

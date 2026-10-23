@@ -1,7 +1,7 @@
 // Package thread has the screw thread standards: the sizes and pitches
-// of the ISO metric, unified inch and ISO metric trapezoidal series,
-// their designations, and the profile of a thread in a plane through
-// its axis.
+// of the ISO metric, unified inch, ISO metric trapezoidal, Whitworth
+// (BSW, BSF, BSP) and ACME series, their designations, and the profile
+// of a thread in a plane through its axis.
 package thread
 
 import (
@@ -22,7 +22,27 @@ const (
 	// FormTrapezoidal is the ISO 2904 profile, with flanks at 30
 	// degrees, of the Tr threads.
 	FormTrapezoidal
+	// FormWhitworth is the BS 84 profile, with flanks at 55 degrees,
+	// of the BSW and BSF threads and of the parallel pipe thread
+	// (BSP, ISO 228 G). Its crest and root are rounded by the
+	// standard; here they are flat at the rounds' tops, and a rounded
+	// crest (CrestRounded) comes close to the standard's.
+	FormWhitworth
+	// FormACME is the ASME B1.5 general purpose profile, with flanks
+	// at 29 degrees, of the ACME threads.
+	FormACME
 )
+
+// trapezoid reports whether the form is a trapezoidal one, half a
+// pitch deep with a clearance at crest and root, as the Tr and the
+// ACME threads are.
+func (f Form) trapezoid() bool {
+	return f == FormTrapezoidal || f == FormACME
+}
+
+// whitworthDepth is the depth h of the Whitworth profile, in pitches:
+// two thirds of its sharp triangle's height H = 0.960491 P.
+const whitworthDepth = 0.640327
 
 // Spec is a thread: what its designation says.
 type Spec struct {
@@ -55,7 +75,12 @@ func (s Spec) fundamental() float64 {
 
 // crestClearance is ISO 2904's a_c: the gap between the crest of a
 // trapezoidal thread and the root of its mate.
+//
+// An ACME thread has the 0.010 inch of ASME B1.5 at every pitch.
 func (s Spec) crestClearance() float64 {
+	if s.Form == FormACME {
+		return 0.010 * mmPerInch
+	}
 	switch {
 	case s.Pitch <= 1.5:
 		return 0.15
@@ -70,8 +95,11 @@ func (s Spec) crestClearance() float64 {
 // PitchDiameter is the diameter where the ridge and the groove are
 // equally wide (d2, D2).
 func (s Spec) PitchDiameter() float64 {
-	if s.Form == FormTrapezoidal {
+	switch {
+	case s.Form.trapezoid():
 		return s.Diameter - 0.5*s.Pitch
+	case s.Form == FormWhitworth:
+		return s.Diameter - whitworthDepth*s.Pitch
 	}
 	return s.Diameter - 2*3.0/8*s.fundamental()
 }
@@ -80,25 +108,30 @@ func (s Spec) PitchDiameter() float64 {
 // the hole to make before tapping it. For the 60 degree profile it is
 // also the basic minor diameter of the external thread (d1).
 func (s Spec) MinorDiameter() float64 {
-	if s.Form == FormTrapezoidal {
+	switch {
+	case s.Form.trapezoid():
 		return s.Diameter - s.Pitch
+	case s.Form == FormWhitworth:
+		return s.Diameter - 2*whitworthDepth*s.Pitch
 	}
 	return s.Diameter - 2*5.0/8*s.fundamental()
 }
 
 // ExternalMinorDiameter is the diameter at the root of the external
-// thread: d1 for the 60 degree profile, d3 for the trapezoidal one.
+// thread: d1 for the 60 and 55 degree profiles, d3 for the
+// trapezoidal ones.
 func (s Spec) ExternalMinorDiameter() float64 {
-	if s.Form == FormTrapezoidal {
+	if s.Form.trapezoid() {
 		return s.Diameter - s.Pitch - 2*s.crestClearance()
 	}
 	return s.MinorDiameter()
 }
 
 // InternalMajorDiameter is the diameter at the root of the internal
-// thread: D for the 60 degree profile, D4 for the trapezoidal one.
+// thread: D for the 60 and 55 degree profiles, D4 for the
+// trapezoidal ones.
 func (s Spec) InternalMajorDiameter() float64 {
-	if s.Form == FormTrapezoidal {
+	if s.Form.trapezoid() {
 		return s.Diameter + 2*s.crestClearance()
 	}
 	return s.Diameter
@@ -107,8 +140,13 @@ func (s Spec) InternalMajorDiameter() float64 {
 // FlankAngle is the angle between the two flanks of a ridge, in
 // degrees.
 func (s Spec) FlankAngle() float64 {
-	if s.Form == FormTrapezoidal {
+	switch s.Form {
+	case FormTrapezoidal:
 		return 30
+	case FormACME:
+		return 29
+	case FormWhitworth:
+		return 55
 	}
 	return 60
 }
@@ -120,6 +158,8 @@ func (s Spec) Validate() error {
 		return errors.New("thread diameter must be positive")
 	case !(s.Pitch > 0) || math.IsInf(s.Pitch, 0):
 		return errors.New("thread pitch must be positive")
+	case s.Form < FormMetric || s.Form > FormACME:
+		return errors.New("unknown thread form")
 	case s.Starts < 0:
 		return errors.New("thread must have at least one start")
 	case s.ExternalMinorDiameter() <= 0:

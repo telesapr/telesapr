@@ -3,6 +3,8 @@ package api
 import (
 	"strings"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // A thread is read back and edited as one: its options come back as
@@ -24,6 +26,9 @@ func TestThreadEdit(t *testing.T) {
 	groups := th.Groups()
 	if len(groups) != 4 || groups[3].H != g.H || groups[1].Kind() != "lathe" {
 		t.Fatalf("groups %v", groups)
+	}
+	if f := th.Finished(); f.H != g.H {
+		t.Errorf("one helix: finished in %v, want the helix group %v", f, g)
 	}
 
 	// Made as a script's step, which is one step of undo.
@@ -62,6 +67,24 @@ func TestThreadEdit(t *testing.T) {
 	}
 }
 
+// With level starts, Finished is the last start's helix, which holds
+// the whole thread, and the group that is left active.
+func TestThreadFinished(t *testing.T) {
+	d := New()
+	rod := d.Sketch.Circle(V(0, 0, 0), 6)
+	d.Features.Extrude(20, "lead")
+	th := d.Features.Thread(rod, ThreadOptions{Designation: "M12xPh3P1", Length: 14, LevelStarts: true}).AsThread()
+	groups := th.Groups()
+	f := th.Finished()
+	if len(groups) != 8 || f.H != groups[7].H || f.H != d.Active().H {
+		t.Fatalf("finished in %v of %v, active %v", f, groups, d.Active())
+	}
+	first := groups[3].Analyze().Volume()
+	if whole := f.Analyze().Volume(); whole <= first {
+		t.Errorf("the finished solid has %g mm³, the first start's %g", whole, first)
+	}
+}
+
 // What can't be done to a thread panics with an error that says why.
 func TestThreadEditMisuse(t *testing.T) {
 	d := New()
@@ -85,5 +108,54 @@ func TestThreadEditMisuse(t *testing.T) {
 			}()
 			fn()
 		}()
+	}
+}
+
+// A thread that doesn't fit its part is refused, saying why, and one
+// whose part is made shorter afterwards says so as its problem.
+func TestThreadPastPart(t *testing.T) {
+	d := New()
+	rod := d.Sketch.Circle(V(0, 0, 0), 4)
+	ext := d.Features.Extrude(30, "rod")
+	groups := len(d.Groups())
+	for name, c := range map[string]struct {
+		o    ThreadOptions
+		want string
+	}{
+		"longer":    {ThreadOptions{Designation: "M8", Length: 40}, "thread is longer than its part, which reaches 30 mm along it"},
+		"other way": {ThreadOptions{Designation: "M8", Length: 12, Reverse: true}, "no part along the thread"},
+		"thick":     {ThreadOptions{Designation: "M12", Length: 12}, "part is thinner than the thread's root"},
+	} {
+		func() {
+			defer func() {
+				err, ok := recover().(error)
+				if !ok || !strings.Contains(err.Error(), c.want) {
+					t.Errorf("%s: %v, want %q", name, err, c.want)
+				}
+			}()
+			d.Features.Thread(rod, c.o)
+		}()
+	}
+	if n := len(d.Groups()); n != groups {
+		t.Errorf("refused threads left %d groups, want %d", n, groups)
+	}
+
+	th := d.Features.Thread(rod, ThreadOptions{Designation: "M8", Length: 12})
+	if p := th.Problem(); p != "" {
+		t.Errorf("problem %q", p)
+	}
+	func() {
+		defer func() {
+			if err, ok := recover().(error); !ok || !strings.Contains(err.Error(), "longer than its part") {
+				t.Errorf("an edit past the part: %v", err)
+			}
+		}()
+		th.AsThread().Edit(ThreadOptions{Length: 31})
+	}()
+	if err := ext.SetExpr(sketch.GroupExtent, "10"); err != nil {
+		t.Fatal(err)
+	}
+	if p := th.Problem(); !strings.Contains(p, "longer than its part, which reaches 10 mm") {
+		t.Errorf("a part shorter than its thread: problem %q", p)
 	}
 }

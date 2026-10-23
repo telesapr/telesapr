@@ -48,12 +48,30 @@ var threadCases = []threadCase{
 	{"oversize_m5", 4, 20, "M5", sketch.ThreadOptions{Length: 10}},
 	{"screw_m3", 1.5, 16, "M3", sketch.ThreadOptions{Length: 12}},
 	{"triple_m12", 6, 20, "M12xPh3P1", sketch.ThreadOptions{Length: 14}},
+	{"screw_bsw", 4.7625, 25, "3/8 BSW", sketch.ThreadOptions{Length: 15}},
+	{"nut_g", 16, 10, "G1/2", sketch.ThreadOptions{Length: 10, Through: true, Internal: true}},
+	{"screw_acme", 6.35, 30, "1/2-10 ACME", sketch.ThreadOptions{Length: 20}},
+	{"nut_acme_lh", 12, 12, "1/2-10 ACME-LH", sketch.ThreadOptions{Length: 12, Through: true, Internal: true}},
+	{"screw_m10_fine", 5, 25, "M10x1", sketch.ThreadOptions{Length: 15}},
+	// A class for the clearance, and a phase.
+	{"screw_m10_6g", 5, 25, "M10", sketch.ThreadOptions{Length: 15, Class: "6g", Phase: 120}},
+	{"nut_m10_6h", 10, 10, "M10", sketch.ThreadOptions{Length: 10, Through: true, Internal: true, Class: "6H", Phase: 300}},
 }
 
 // build makes the part and its thread, with the given chord tolerance
 // (0 for the default), and returns the sketch, the circle, and the
 // group of the thread.
 func (tc threadCase) build(t testing.TB, chordTolPct float64) (*sketch.Sketch, core.HEntity, sketch.ThreadResult) {
+	t.Helper()
+	sk, circle, res, err := tc.tryBuild(t, chordTolPct)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return sk, circle, res
+}
+
+// tryBuild is build, returning AddThread's error.
+func (tc threadCase) tryBuild(t testing.TB, chordTolPct float64) (*sketch.Sketch, core.HEntity, sketch.ThreadResult, error) {
 	t.Helper()
 	sk := sketch.NewSketch()
 	sk.ChordTolPct = chordTolPct
@@ -81,10 +99,7 @@ func (tc threadCase) build(t testing.TB, chordTolPct float64) (*sketch.Sketch, c
 	sk.GenerateAllTyped(sketch.GenerateAll)
 
 	res, err := sk.AddThread(circle.Entity(0), tc.options(t))
-	if err != nil {
-		t.Fatal(err)
-	}
-	return sk, circle.Entity(0), res
+	return sk, circle.Entity(0), res, err
 }
 
 func (tc threadCase) options(t testing.TB) sketch.ThreadOptions {
@@ -134,7 +149,11 @@ func TestThreadSolids(t *testing.T) {
 			}
 			o := tc.options(t)
 			s := o.Spec
-			p := s.Profile(o.Internal, o.Clearance)
+			clearance, err := o.FitClearance()
+			if err != nil {
+				t.Fatal(err)
+			}
+			p := s.Profile(o.Internal, clearance)
 
 			order := sk.Group(hel).Order
 			var names []string
@@ -201,6 +220,14 @@ func TestThreadSolids(t *testing.T) {
 			}
 			baseW := math.Abs(foot[1].Z - foot[0].Z)
 			sweep := o.Length - s.Pitch - float64(s.NumStarts()-1)*s.Pitch - baseW
+			// A phase moves the ridges by that part of the lead, within a
+			// quarter of a pitch down and three up, in a pitch more room.
+			shift := 0.0
+			if o.Phase != 0 {
+				sweep -= s.Pitch
+				shift = s.Lead() * o.Phase / 360
+				shift -= s.Pitch * math.Floor((shift+s.Pitch/4)/s.Pitch)
+			}
 			angle := sweep / s.Lead() * 2 * math.Pi
 			want += float64(s.NumStarts()) * area * centroid * angle
 			if got := mesh.CalculateVolume(); math.Abs(got-want) > 0.002*want {
@@ -209,7 +236,7 @@ func TestThreadSolids(t *testing.T) {
 
 			// A right-hand thread rises, along the axis, as it turns
 			// counterclockwise about it; the first ridge starts half a
-			// pitch from the circle's plane.
+			// pitch from the circle's plane, and a phase's shift past that.
 			along, hand := 1.0, 1.0
 			if o.Reverse {
 				along = -1
@@ -218,8 +245,8 @@ func TestThreadSolids(t *testing.T) {
 				hand = -1
 			}
 			z0 := (foot[0].Z + foot[1].Z) / 2
-			if math.Abs(z0-along*(s.Pitch/2+baseW/2)) > 1e-9 {
-				t.Errorf("first ridge at %g along the axis, want %g", z0, along*(s.Pitch/2+baseW/2))
+			if want := along * (s.Pitch/2 + baseW/2 + shift); math.Abs(z0-want) > 1e-9 {
+				t.Errorf("first ridge at %g along the axis, want %g", z0, want)
 			}
 			turned := math.Atan2(foot[0].Y, foot[0].X)
 			between := 2 * math.Pi / float64(s.NumStarts())
@@ -251,7 +278,7 @@ func TestThreadSolids(t *testing.T) {
 // threadGoldens are the cases that have a golden in testdata/thread:
 // enough kinds of thread to pin the generator and the kernel on.
 var threadGoldens = []string{"screw_m8", "nut_m8", "blind_m6", "screw_m8_lh", "screw_m6_down",
-	"lead_tr20", "screw_unc", "triple_m12"}
+	"lead_tr20", "screw_unc", "triple_m12", "screw_bsw", "nut_g", "screw_acme", "screw_m10_6g"}
 
 // TestThreadGoldens saves the file a thread makes, opens it and saves
 // it again, and requires the golden, testdata/thread/<name>.tlspr. Until

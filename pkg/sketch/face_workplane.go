@@ -101,6 +101,11 @@ func (sk *Sketch) solidFrameAt(solid *Group, g *Group) (topo.FaceFrame, topo.Dat
 		return topo.FaceFrame{}, topo.DatumUnknown, err
 	case len(g.SolidEdges) > 0:
 		return t.EdgeFrame(g.SolidEdges[0])
+	case len(g.SolidFaces) == 2:
+		// The end of a round face across from the second face, where a
+		// thread made on the face starts (thread_face.go).
+		fr, err := t.AxisEndFrame(g.SolidFaces[0], g.SolidFaces[1])
+		return fr, topo.DatumAxis, err
 	case len(g.SolidFaces) > 0:
 		return t.DatumFrame(g.SolidFaces[0])
 	}

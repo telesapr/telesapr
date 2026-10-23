@@ -1,0 +1,45 @@
+# A cosmetic screw thread (an extension) on the side of an extruded
+# circle, picked on the model: chosen on the thread screen, it makes the
+# datum and one sketch, no helix, and its group's screen edits it. Made
+# modelled from there, then undone in one step back to the cosmetic one.
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 350 300
+down L 350 300
+up L 350 300
+key esc
+key x shift
+view rotated
+move 336 207
+down L 336 207
+up L 336 207
+menu Features|Screw Thread...
+tw
+# Cosmetic, then make it.
+twmove 561 230
+twdown L 561 230
+twup L 561 230
+tw
+twmove 37 280
+twdown L 37 280
+twup L 37 280
+dump
+tw
+# Its group's screen edits it: modelled.
+twmove 228 110
+twdown L 228 110
+twup L 228 110
+tw
+twmove 453 230
+twdown L 453 230
+twup L 453 230
+twmove 37 260
+twdown L 37 260
+twup L 37 260
+dump
+tw
+# Undo takes the edit back at once: the cosmetic thread again.
+key z ctrl
+dump

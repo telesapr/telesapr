@@ -28,7 +28,8 @@ Scripting commands:
         Reads Go statements and expressions from standard input and runs each
         on the sketch, printing the values of the expressions.
     eval [--lib <dir>] [<sketch.tlspr>] <code> [<code>...]
-        Runs each <code> as a line given to repl.
+        Runs each <code> as a line given to repl. It exits with status 3 if
+        one of them failed.
 
     --lib <dir> is the script library: a script's import "gears" reads the
     package in <dir>/gears. Without it the library is
@@ -161,8 +162,15 @@ func runScript(ctx context.Context, args []string, stdin io.Reader, stdout, stde
 		}
 		if args[1] == "eval" {
 			err = e.REPL(ctx, strings.NewReader(strings.Join(rest, "\n")), stdout, false)
-			if err == nil && e.Pending() {
+			switch {
+			case err != nil:
+			case e.Pending():
 				err = errors.New("the code ends in the middle of a statement")
+			case e.Failed() > 0:
+				// The errors were shown where the values are; the
+				// status says there were some, for a shell that runs
+				// eval as a check.
+				return exitScript
 			}
 			break
 		}

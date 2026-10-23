@@ -17,6 +17,10 @@ import (
 //	1/4-20 UNC     unified inch, 20 threads per inch
 //	#10 UNF        unified inch, the fine thread of the size
 //	1/2-13 UNC (2 starts)
+//	1/4 BSW        Whitworth, the coarse (BSW) pitch of the size
+//	3/8-20 BSF     Whitworth, 20 threads per inch
+//	G1/2           parallel pipe thread (BSP), of ISO 228-1
+//	1/2-10 ACME    general purpose ACME, 10 threads per inch
 //
 // A designation ending in -LH is a left-hand thread. Letter case and
 // spaces don't matter, and the multiplication sign may stand for the x.
@@ -44,9 +48,12 @@ func Parse(text string) (Spec, error) {
 	case strings.HasPrefix(t, "M"):
 		s.Form = FormMetric
 		err = s.parseMetric(t[1:], text)
+	case strings.HasPrefix(t, "G") && len(t) > 1 && strings.ContainsAny(t[1:2], "0123456789 "):
+		s.Form = FormWhitworth
+		err = s.parsePipe(t[1:], text)
 	default:
 		s.Form = FormUnified
-		err = s.parseUnified(t, text)
+		err = s.parseInch(t, text)
 	}
 	if err != nil {
 		return Spec{}, err
@@ -73,9 +80,7 @@ func (s *Spec) parseMetric(t, text string) error {
 			s.Pitch, ok = CoarsePitch(s.Diameter)
 		}
 		if !ok {
-			prefix := map[Form]string{FormMetric: "M", FormTrapezoidal: "Tr"}[s.Form]
-			return fmt.Errorf("%s%s isn't a standard size; give its pitch, as in %s%sx1",
-				prefix, formatNumber(s.Diameter), prefix, formatNumber(s.Diameter))
+			return s.unknownSize()
 		}
 		return nil
 	}
@@ -111,22 +116,95 @@ func (s *Spec) parseMetric(t, text string) error {
 	return nil
 }
 
-// parseUnified reads an inch designation: a size, then the threads per
-// inch or the name of a series, or both.
-func (s *Spec) parseUnified(t, text string) error {
-	bad := fmt.Errorf("can't read '%s' as a thread designation", strings.TrimSpace(text))
-	if before, after, ok := strings.Cut(t, "("); ok {
-		n, isStarts := strings.CutSuffix(strings.TrimSpace(after), "STARTS)")
-		starts, err := strconv.Atoi(strings.TrimSpace(n))
-		if !isStarts || err != nil || starts < 1 {
-			return bad
+// unknownSize is the error for a metric or trapezoidal size that the
+// series lacks: a pitch to give it, which makes a thread that can be
+// made, and the nearest standard size.
+func (s *Spec) unknownSize() error {
+	near := nearestSize(s.Form, s.Diameter)
+	try := Spec{Form: s.Form, Diameter: s.Diameter, Pitch: near.Pitch}
+	for range 30 {
+		if try.Validate() == nil {
+			break
 		}
-		s.Starts, t = starts, strings.TrimSpace(before)
+		try.Pitch /= 2
+	}
+	prefix := map[Form]string{FormMetric: "M", FormTrapezoidal: "Tr"}[s.Form]
+	return fmt.Errorf("%s%s isn't a standard size; give its pitch, as in %s, or take the nearest, %s",
+		prefix, formatNumber(s.Diameter), try, near)
+}
+
+// parseStarts takes a trailing "(n starts)" off t.
+func (s *Spec) parseStarts(t string, bad error) (string, error) {
+	before, after, ok := strings.Cut(t, "(")
+	if !ok {
+		return t, nil
+	}
+	n, isStarts := strings.CutSuffix(strings.TrimSpace(after), "STARTS)")
+	starts, err := strconv.Atoi(strings.TrimSpace(n))
+	if !isStarts || err != nil || starts < 1 {
+		return "", bad
+	}
+	s.Starts = starts
+	return strings.TrimSpace(before), nil
+}
+
+// parsePipe reads what follows the G of a pipe thread's designation:
+// the name of a size of ISO 228-1.
+func (s *Spec) parsePipe(t, text string) error {
+	bad := fmt.Errorf("can't read '%s' as a thread designation", strings.TrimSpace(text))
+	t, err := s.parseStarts(t, bad)
+	if err != nil {
+		return err
+	}
+	// The tolerance class of an external pipe thread, A or B.
+	t = strings.TrimSpace(t)
+	for _, class := range []string{" A", " B"} {
+		t = strings.TrimSuffix(t, class)
+	}
+	size, ok := parseInches(t)
+	if !ok {
+		return bad
+	}
+	for _, p := range pipe {
+		if v, _ := parseInches(p.name); same(v, size) {
+			s.Diameter, s.Pitch = p.d, mmPerInch/p.tpi
+			return nil
+		}
+	}
+	return fmt.Errorf("no pipe thread size %s in ISO 228-1", strings.TrimSpace(t))
+}
+
+// inchSeries are the series an inch designation may name, with the
+// form each gives and the table of its sizes' threads per inch.
+var inchSeries = []struct {
+	name  string
+	form  Form
+	table []inchSize
+}{
+	{"UNC", FormUnified, nil}, {"UNF", FormUnified, nil}, {"UNEF", FormUnified, nil},
+	{"UNS", FormUnified, nil}, {"UN", FormUnified, nil},
+	{"BSW", FormWhitworth, bsw}, {"BSF", FormWhitworth, bsf}, {"ACME", FormACME, acme},
+}
+
+// parseInch reads an inch designation: a size, then the threads per
+// inch or the name of a series, or both.
+func (s *Spec) parseInch(t, text string) error {
+	bad := fmt.Errorf("can't read '%s' as a thread designation", strings.TrimSpace(text))
+	t, err := s.parseStarts(t, bad)
+	if err != nil {
+		return err
+	}
+	// The class of an ACME thread, as in 1/2-10 ACME-2G.
+	if i := strings.LastIndex(t, "ACME"); i >= 0 {
+		if class := strings.Trim(t[i+4:], "- "); len(class) == 2 && class[1] == 'G' && strings.ContainsAny(class[:1], "2345") {
+			t = t[:i+4]
+		}
 	}
 	series := ""
-	for _, name := range []string{"UNC", "UNF", "UNEF", "UNS", "UN"} {
-		if rest, ok := strings.CutSuffix(t, name); ok {
-			series, t = name, strings.TrimRight(rest, "- ")
+	var table []inchSize
+	for _, sr := range inchSeries {
+		if rest, ok := strings.CutSuffix(t, sr.name); ok {
+			series, t, table, s.Form = sr.name, strings.TrimRight(rest, "- "), sr.table, sr.form
 			break
 		}
 	}
@@ -158,8 +236,13 @@ func (s *Spec) parseUnified(t, text string) error {
 				}
 			}
 		}
+		for _, row := range table {
+			if same(row.d, inches) {
+				tpi = row.tpi
+			}
+		}
 		if tpi == 0 {
-			if series == "UNC" || series == "UNF" {
+			if series == "UNC" || series == "UNF" || table != nil {
 				return fmt.Errorf("the %s series has no size '%s'", series, strings.TrimSpace(size))
 			}
 			return fmt.Errorf("'%s' lacks its threads per inch, as in 1/4-20, or its series, as in 1/4 UNC",
@@ -252,12 +335,72 @@ func (s Spec) String() string {
 			}
 		}
 		b.WriteString(size + "-" + formatNumber(tpi) + " " + series)
-		if s.NumStarts() > 1 {
-			fmt.Fprintf(&b, " (%d starts)", s.NumStarts())
-		}
+		s.writeStarts(&b)
+	case FormWhitworth:
+		s.writeWhitworth(&b)
+		s.writeStarts(&b)
+	case FormACME:
+		b.WriteString(inchName(s.Diameter/mmPerInch, acme) + "-" + formatNumber(mmPerInch/s.Pitch) + " ACME")
+		s.writeStarts(&b)
 	}
 	if s.LeftHand {
 		b.WriteString("-LH")
 	}
 	return b.String()
+}
+
+// writeStarts writes the starts of an inch thread of several.
+func (s Spec) writeStarts(b *strings.Builder) {
+	if s.NumStarts() > 1 {
+		fmt.Fprintf(b, " (%d starts)", s.NumStarts())
+	}
+}
+
+// writeWhitworth writes a Whitworth thread: as a pipe thread for a
+// pipe size at its pitch, as BSW or BSF without the pitch for a size
+// at that series' pitch, and with the threads per inch otherwise.
+func (s Spec) writeWhitworth(b *strings.Builder) {
+	inches, tpi := s.Diameter/mmPerInch, mmPerInch/s.Pitch
+	if p, ok := pipeSize(s.Diameter); ok && same(p.tpi, tpi) {
+		b.WriteString("G" + p.name)
+		return
+	}
+	for _, sr := range []struct {
+		name  string
+		table []inchSize
+	}{{"BSW", bsw}, {"BSF", bsf}} {
+		for _, row := range sr.table {
+			if same(row.d, inches) && same(row.tpi, tpi) {
+				b.WriteString(row.name + " " + sr.name)
+				return
+			}
+		}
+	}
+	b.WriteString(inchName(inches, bsw, bsf) + "-" + formatNumber(tpi) + " BSW")
+}
+
+// inchName is the name of a size of the tables, or its decimal inches.
+func inchName(inches float64, tables ...[]inchSize) string {
+	for _, table := range tables {
+		for _, row := range table {
+			if same(row.d, inches) {
+				return row.name
+			}
+		}
+	}
+	return formatNumber(inches)
+}
+
+// Note says how a designation was read when it is written otherwise,
+// as M8x1.25 is written M8, so that the change isn't made quietly; ""
+// when text is s's designation but for letter case, spaces and dashes.
+func Note(text string, s Spec) string {
+	squeeze := func(t string) string {
+		t = strings.ToUpper(strings.ReplaceAll(t, "×", "X"))
+		return strings.NewReplacer(" ", "", "-", "").Replace(t)
+	}
+	if squeeze(text) == squeeze(s.String()) {
+		return ""
+	}
+	return fmt.Sprintf("'%s' is written %s", strings.TrimSpace(text), s)
 }

@@ -64,6 +64,7 @@ var toolbar = []toolIcon{
 	{"loft", cmdGroupLoft, "Loft active sketch to selected profiles", nil},
 	{"mirror", cmdGroupMirror, "Mirror in selected plane", nil},
 	{"pattern", cmdGroupPathPattern, "Pattern along selected path", nil},
+	{"thread", cmdGroupThread, "Screw thread on selected face, edge or circle", nil},
 	{"", cmdNone, "", nil},
 
 	{"in3d", cmdNearestIso, "Nearest isometric view", nil},

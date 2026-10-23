@@ -221,6 +221,12 @@ func (w *scriptWriter) writeGroups() {
 					}
 				}
 			}
+			// A thread made on a face makes its datum too.
+			if _, ok := sk.ThreadPlaceOf(hg); ok {
+				if c := sk.Entity(g.Thread.Circle); c != nil {
+					w.skip[c.Group] = true
+				}
+			}
 		}
 	}
 	first := true
@@ -308,6 +314,16 @@ func (w *scriptWriter) writeGroup(g *sketch.Group) {
 		w.line("must(%s.History().MoveToEnd())", v)
 	}
 	w.last = g.H
+	if g.Thread.IsThread() && g.Thread.Cosmetic {
+		// The thread's call draws its sketch and makes its lathe, and
+		// leaves the last of them active.
+		if hs, err := w.sk.ThreadGroups(g.H); err == nil {
+			w.last = hs[len(hs)-1]
+		}
+		w.wp = core.NoEntity
+		w.writeOptions(g, v)
+		return
+	}
 	// The workplane the new group draws in, as its call leaves it.
 	switch g.Type {
 	case sketch.GroupDrawingWorkplane:

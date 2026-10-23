@@ -1,0 +1,58 @@
+# A screw thread whose size and pitch are chosen from the list rather
+# than typed, and whose hand is a choice beside it.
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 350 300
+down L 350 300
+up L 350 300
+key esc
+key x shift
+move 350 300
+down L 350 300
+up L 350 300
+menu Features|Screw Thread...
+# A designation typed otherwise than it is written says so.
+twmove 172 110
+twdown L 172 110
+twup L 172 110
+edit M20x2.5
+tw
+# [choose] shows the series and the sizes of the thread's own.
+twmove 271 110
+twdown L 271 110
+twup L 271 110
+tw
+# Whitworth's sizes.
+twmove 478 140
+twdown L 478 140
+twup L 478 140
+tw
+# 1/2 BSW, then its fine pitch, BSF.
+twmove 388 190
+twdown L 388 190
+twup L 388 190
+tw
+twmove 253 260
+twdown L 253 260
+twup L 253 260
+tw
+# Back to the thread, whose designation is now the one chosen.
+twmove 55 290
+twdown L 55 290
+twup L 55 290
+tw
+# Left-handed by a choice beside it, then made.
+twmove 415 130
+twdown L 415 130
+twup L 415 130
+tw
+# Flip the direction: against the circle's normal, down into the part.
+twmove 60 230
+twdown L 60 230
+twup L 60 230
+twmove 37 260
+twdown L 37 260
+twup L 37 260
+dump

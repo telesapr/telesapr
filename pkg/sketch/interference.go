@@ -254,18 +254,28 @@ func boxesMeet(alo, ahi, blo, bhi geom.Vector) bool {
 // rather than their shells, and false if nothing is known.
 func pieceOverlap(a, b *piece) (v float64, m srf.SMesh, approximate, ok bool) {
 	v, m, ok = overlap(a.shell, b.shell)
+	if !ok {
+		// Surfaces that lie on each other, as a shank in its nut or a
+		// screw's flanks on its nut's, the Boolean can't always follow,
+		// moved a little or not: the meshes, within the chord tolerance
+		// of the shells, say instead, quickly where moving them cost two
+		// Booleans more, each as slow as the first and as likely to
+		// fail.
+		m, v, ok = meshOverlap(a, b)
+		return v, m, ok, ok
+	}
 	// Faces that lie on each other, as of a part placed twice at one
-	// place, can leave the Boolean with nothing: where the boxes share
+	// place, can also leave the Boolean with nothing: where the boxes share
 	// volume, again with the second part moved a ten-thousandth of a
 	// millimetre each way. A part placed twice overlaps itself either
 	// way; parts that only touch come apart one way, or share a sliver
 	// no thicker than the move, and a sliver is too thin for the
-	// Boolean to be sure of: the result moved apart stands, and the
-	// first one stands when both moved fail.
+	// Boolean to be sure of: the result moved apart stands, and
+	// nothing stands when both moved fail.
 	box := (math.Min(a.hi.X, b.hi.X) - math.Max(a.lo.X, b.lo.X)) *
 		(math.Min(a.hi.Y, b.hi.Y) - math.Max(a.lo.Y, b.lo.Y)) *
 		(math.Min(a.hi.Z, b.hi.Z) - math.Max(a.lo.Z, b.lo.Z))
-	if (!ok || v <= 0) && box > 1e-6*math.Min(a.volume, b.volume) {
+	if v <= 0 && box > 1e-6*math.Min(a.volume, b.volume) {
 		retried := false
 		var least float64
 		var leastMesh srf.SMesh
@@ -277,33 +287,44 @@ func pieceOverlap(a, b *piece) (v float64, m srf.SMesh, approximate, ok bool) {
 				least, leastMesh, retried = mv, mm, true
 			}
 		}
-		switch {
-		case retried && least > nudge.Magnitude()*math.Min(a.area, b.area):
-			v, m, ok = least, leastMesh, true
-		case retried || ok:
-			v, m, ok = 0, srf.SMesh{}, true
+		if retried && least > nudge.Magnitude()*math.Min(a.area, b.area) {
+			v, m = least, leastMesh
 		}
-	}
-	if !ok {
-		// Surfaces that lie on each other, as a shank in its nut, the
-		// Boolean can't always follow: their meshes, within the chord
-		// tolerance of them, share no more than that tolerance through
-		// the parts' faces where they only touch.
-		m.MakeFromIntersectionOf(&a.mesh, &b.mesh)
-		v = m.CalculateVolume()
-		if math.IsNaN(v) || v < -1e-9 {
-			return 0, srf.SMesh{}, false, false
-		}
-		if v <= 2*a.shell.Tol.Or(b.shell.Tol).ChordTolMm()*math.Min(a.area, b.area) {
-			return 0, srf.SMesh{}, true, true
-		}
-		return v, m, true, true
 	}
 	// Touching faces leave slivers of no volume.
 	if v <= 1e-6*math.Min(a.volume, b.volume) {
 		return 0, srf.SMesh{}, false, true
 	}
 	return v, m, false, true
+}
+
+// meshOverlap is the volume and the triangles the meshes of two pieces
+// share, within the chord tolerance of what their shells share, zero
+// where they only touch, and false if their Boolean failed too.
+//
+// Where surfaces lie on each other, as a shank in its nut or a screw's
+// flanks on its nut's, the meshes, each within the chord tolerance
+// inside or outside its surface, share a skin no thicker than twice
+// that tolerance over where the parts touch. What they share counts as
+// touching when it is no thicker on average, its volume no more than
+// the tolerance times its area; a whole part's area, the measure this
+// once was, is ten times a nut's flanks, and a nut in phase on its
+// screw, their ridges colliding, was found touching. A small overlap beside a large
+// touching skin of one pair of parts is lost so.
+func meshOverlap(a, b *piece) (m srf.SMesh, v float64, ok bool) {
+	m.MakeFromIntersectionOf(&a.mesh, &b.mesh)
+	v = m.CalculateVolume()
+	if math.IsNaN(v) || v < -1e-9 {
+		return srf.SMesh{}, 0, false
+	}
+	var area float64
+	for i := range m.Triangles {
+		area += m.Triangles[i].Area()
+	}
+	if v <= a.shell.Tol.Or(b.shell.Tol).ChordTolMm()*area {
+		return srf.SMesh{}, 0, true
+	}
+	return m, v, true
 }
 
 // overlap is the volume and the triangles a and b share, and false if

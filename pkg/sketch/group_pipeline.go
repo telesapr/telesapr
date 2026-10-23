@@ -210,6 +210,10 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		g.generateRevolveShell(sk)
 	case GroupHelix:
 		g.generateHelixShell(sk)
+		g.reportThreadPart(sk)
+	case GroupDrawingWorkplane:
+		// A cosmetic thread's sketch.
+		g.reportThreadPart(sk)
 	case GroupLinked:
 		g.generateLinkedShell(sk)
 	}

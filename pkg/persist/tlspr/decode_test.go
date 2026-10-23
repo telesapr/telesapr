@@ -38,7 +38,8 @@ func fullDocument() *Document {
 		Thread: sketch.GroupThread{Circle: core.HEntity{V: 0x30000}, ThreadOptions: sketch.ThreadOptions{
 			Spec:     thread.Spec{Form: thread.FormTrapezoidal, Diameter: 20, Pitch: 4, Starts: 2, LeftHand: true},
 			Internal: true, LengthExpr: "len * 2", Reverse: true, Through: true, Clearance: 12.7,
-			Crest: thread.CrestRounded,
+			Crest: thread.CrestRounded, FullLength: true, Class: "7H", Phase: 45, Cosmetic: true,
+			RunOut: 25.4, LevelStarts: true, Chamfer: true,
 		}},
 	}
 	g.Predef.Q = geom.Quaternion{W: 0.5, X: -0.5, Y: 0.25, Z: math.Copysign(0, -1)}

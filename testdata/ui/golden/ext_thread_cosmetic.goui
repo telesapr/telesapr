@@ -1,0 +1,537 @@
+row 0  home › screw thread   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 SCREW THREAD
+ 0-11 74 64 0
+ 12-99 64 64 0
+row 10    on        a shaft, 20.00 mm across and 80.00 mm long, from the part's end      chamfered end
+ 0-2 64 61 0
+ 3-4 74 61 0
+ 5-79 64 61 0
+ 80-95 64 61 120 0 1 0
+ 96-99 64 61 0
+row 12    thread    M20 [change] [choose]
+ 0-2 64 64 0
+ 3-8 74 64 0
+ 9-16 64 64 0
+ 17-24 6c 64 100 0 1 0
+ 25-25 64 64 0
+ 26-33 6c 64 109 0 1 0
+ 34-99 64 64 0
+row 14              2.50 pitch     right-hand   left-hand
+ 0-26 64 64 0
+ 27-38 64 64 104 0 1 0
+ 39-40 64 64 0
+ 41-51 64 64 107 0 1 0
+ 52-99 64 64 0
+row 16    length    30.00 mm [change]    phase 0° [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-21 64 61 0
+ 22-29 6c 61 108 0 1 0
+ 30-33 64 61 0
+ 34-38 74 61 0
+ 39-42 64 61 0
+ 43-50 6c 61 102 0 1 0
+ 51-99 64 61 0
+row 18    clearance 0.00 mm [change]    run-out 0.00 mm [change]    class none [choose]
+ 0-2 64 64 0
+ 3-11 74 64 0
+ 12-20 64 64 0
+ 21-28 6c 64 99 0 1 0
+ 29-32 64 64 0
+ 33-39 74 64 0
+ 40-48 64 64 0
+ 49-56 6c 64 98 0 1 0
+ 57-60 64 64 0
+ 61-65 74 64 0
+ 66-71 64 64 0
+ 72-79 6c 64 113 0 1 0
+ 80-99 64 64 0
+row 20    external, on a shaft    crest  standard  truncated  rounded
+ 0-2 64 61 0
+ 3-22 74 61 0
+ 23-26 64 61 0
+ 27-31 74 61 0
+ 32-32 64 61 0
+ 33-42 64 61 110 0 1 0
+ 43-43 64 61 0
+ 44-54 64 61 117 0 1 0
+ 55-55 64 61 0
+ 56-64 64 61 111 0 1 0
+ 65-99 64 61 0
+row 22      the face's full length, 80.00 mm    as  modelled   cosmetic
+ 0-2 64 64 0
+ 3-37 64 64 116 0 1 0
+ 38-41 64 64 0
+ 42-43 74 64 0
+ 44-44 64 64 0
+ 45-54 64 64 121 0 1 0
+ 55-56 64 64 0
+ 57-66 64 64 122 0 1 0
+ 67-99 64 64 0
+row 24      from the face's other end
+ 0-2 64 61 0
+ 3-30 64 61 114 0 1 0
+ 31-99 64 61 0
+row 27  make the thread now
+ 0-0 64 64 0
+ 1-19 6c 64 103 0 1 0
+ 20-99 64 64 0
+row 30 (or cancel operation)
+ 0-3 64 64 0
+ 4-19 6c 64 108 0 1 0
+ 20-99 64 64 0
+row 32 
+ 0-99 64 64 0
+row 0  home › screw thread   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 SCREW THREAD
+ 0-11 74 64 0
+ 12-99 64 64 0
+row 10    on        a shaft, 20.00 mm across and 80.00 mm long, from the part's end      chamfered end
+ 0-2 64 61 0
+ 3-4 74 61 0
+ 5-79 64 61 0
+ 80-95 64 61 120 0 1 0
+ 96-99 64 61 0
+row 12    thread    M20 [change] [choose]
+ 0-2 64 64 0
+ 3-8 74 64 0
+ 9-16 64 64 0
+ 17-24 6c 64 100 0 1 0
+ 25-25 64 64 0
+ 26-33 6c 64 109 0 1 0
+ 34-99 64 64 0
+row 14              2.50 pitch     right-hand   left-hand
+ 0-26 64 64 0
+ 27-38 64 64 104 0 1 0
+ 39-40 64 64 0
+ 41-51 64 64 107 0 1 0
+ 52-99 64 64 0
+row 16    length    30.00 mm [change]    phase 0° [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-21 64 61 0
+ 22-29 6c 61 108 0 1 0
+ 30-33 64 61 0
+ 34-38 74 61 0
+ 39-42 64 61 0
+ 43-50 6c 61 102 0 1 0
+ 51-99 64 61 0
+row 18    clearance 0.00 mm [change]    run-out 0.00 mm [change]    class none [choose]
+ 0-2 64 64 0
+ 3-11 74 64 0
+ 12-20 64 64 0
+ 21-28 6c 64 99 0 1 0
+ 29-32 64 64 0
+ 33-39 74 64 0
+ 40-48 64 64 0
+ 49-56 6c 64 98 0 1 0
+ 57-60 64 64 0
+ 61-65 74 64 0
+ 66-71 64 64 0
+ 72-79 6c 64 113 0 1 0
+ 80-99 64 64 0
+row 20    external, on a shaft    crest  standard  truncated  rounded
+ 0-2 64 61 0
+ 3-22 74 61 0
+ 23-26 64 61 0
+ 27-31 74 61 0
+ 32-32 64 61 0
+ 33-42 64 61 110 0 1 0
+ 43-43 64 61 0
+ 44-54 64 61 117 0 1 0
+ 55-55 64 61 0
+ 56-64 64 61 111 0 1 0
+ 65-99 64 61 0
+row 22      the face's full length, 80.00 mm    as  modelled   cosmetic
+ 0-2 64 64 0
+ 3-37 64 64 116 0 1 0
+ 38-41 64 64 0
+ 42-43 74 64 0
+ 44-44 64 64 0
+ 45-54 64 64 121 0 1 0
+ 55-56 64 64 0
+ 57-66 64 64 122 0 1 0
+ 67-99 64 64 0
+row 24      from the face's other end
+ 0-2 64 61 0
+ 3-30 64 61 114 0 1 0
+ 31-99 64 61 0
+row 27  make the thread now
+ 0-0 64 64 0
+ 1-19 6c 64 103 0 1 0
+ 20-99 64 64 0
+row 30 (or cancel operation)
+ 0-3 64 64 0
+ 4-19 6c 64 108 0 1 0
+ 20-99 64 64 0
+row 32 
+ 0-99 64 64 0
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 5 80050000
+camera 3.25 -4.5 2.25 1.5 0.8295613557843402 -0.51847584736521257 0.20739033894608505 0.22216001430660143 0.6471617808061868 0.72926439478906124
+counts 5 5 42 3 30
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""
+row 0  home › g005-M20-cosmetic   in plane: g005-M20-cosmetic
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-27 64 64 0
+ 28-37 74 64 0
+ 38-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g005-M20-cosmetic [rename/del] [active/hide/↑/↓]
+ 0-6 74 64 0
+ 7-25 64 64 0
+ 26-31 6c 64 108 5 1 0
+ 32-32 64 64 0
+ 33-35 6c 64 108 5 1 0
+ 36-38 64 64 0
+ 39-44 73 64 0
+ 45-45 64 64 0
+ 46-49 6c 64 115 5 1 0
+ 50-50 64 64 0
+ 51-51 6c 64 117 5 1 0
+ 52-52 64 64 0
+ 53-53 6c 64 100 5 1 0
+ 54-99 64 64 0
+row 10  cosmetic thread   [edit thread]
+ 0-0 64 64 0
+ 1-15 74 64 0
+ 16-18 64 64 0
+ 19-31 6c 64 101 5 1 0
+ 32-99 64 64 0
+row 12    M20, 2.50 mm pitch, right-hand, 30.00 mm long, external
+ 0-99 64 61 0
+row 14    crest standard, clearance 0.00 mm, run-out none
+ 0-99 64 64 0
+row 16    2 groups [show them in the group list]   [suppress the thread]   [delete the thread]
+ 0-11 64 61 0
+ 12-40 6c 61 111 5 1 0
+ 41-43 64 61 0
+ 44-64 6c 61 115 5 1 0
+ 65-67 64 61 0
+ 68-86 6c 61 120 5 1 0
+ 87-99 64 61 0
+row 18    made: the solid came out sound
+ 0-2 64 64 0
+ 3-32 73 64 0
+ 33-99 64 64 0
+row 21  sketch in new workplane
+ 0-0 64 64 0
+ 1-23 74 64 0
+ 24-99 64 64 0
+row 23 
+ 0-99 64 64 0
+row 25    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 27    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 29    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 32    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 34    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 36    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 38    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 40 
+ 0-99 64 64 0
+row 42  requests in group
+ 0-99 74 64 0
+row 44    (none)
+ 0-99 64 61 0
+row 46 
+ 0-99 64 64 0
+row 48  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 50    (none)
+ 0-99 64 61 0
+row 52 
+ 0-99 64 64 0
+row 0  home › screw thread   in plane: g005-M20-cosmetic
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-22 64 64 0
+ 23-32 74 64 0
+ 33-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 SCREW THREAD   (editing M20-cosmetic)
+ 0-11 74 64 0
+ 12-99 64 64 0
+row 10    on        a shaft, 20.00 mm across and 80.00 mm long, from the part's end      chamfered end
+ 0-2 64 61 0
+ 3-4 74 61 0
+ 5-79 64 61 0
+ 80-95 64 61 120 0 1 0
+ 96-99 64 61 0
+row 12    thread    M20 [change] [choose]
+ 0-2 64 64 0
+ 3-8 74 64 0
+ 9-16 64 64 0
+ 17-24 6c 64 100 0 1 0
+ 25-25 64 64 0
+ 26-33 6c 64 109 0 1 0
+ 34-99 64 64 0
+row 14              2.50 pitch     right-hand   left-hand
+ 0-26 64 64 0
+ 27-38 64 64 104 0 1 0
+ 39-40 64 64 0
+ 41-51 64 64 107 0 1 0
+ 52-99 64 64 0
+row 16    length    30.00 mm [change]    phase 0° [change]
+ 0-2 64 61 0
+ 3-8 74 61 0
+ 9-21 64 61 0
+ 22-29 6c 61 108 0 1 0
+ 30-33 64 61 0
+ 34-38 74 61 0
+ 39-42 64 61 0
+ 43-50 6c 61 102 0 1 0
+ 51-99 64 61 0
+row 18    clearance 0.00 mm [change]    run-out 0.00 mm [change]    class none [choose]
+ 0-2 64 64 0
+ 3-11 74 64 0
+ 12-20 64 64 0
+ 21-28 6c 64 99 0 1 0
+ 29-32 64 64 0
+ 33-39 74 64 0
+ 40-48 64 64 0
+ 49-56 6c 64 98 0 1 0
+ 57-60 64 64 0
+ 61-65 74 64 0
+ 66-71 64 64 0
+ 72-79 6c 64 113 0 1 0
+ 80-99 64 64 0
+row 20    external, on a shaft    crest  standard  truncated  rounded
+ 0-2 64 61 0
+ 3-22 74 61 0
+ 23-26 64 61 0
+ 27-31 74 61 0
+ 32-32 64 61 0
+ 33-42 64 61 110 0 1 0
+ 43-43 64 61 0
+ 44-54 64 61 117 0 1 0
+ 55-55 64 61 0
+ 56-64 64 61 111 0 1 0
+ 65-99 64 61 0
+row 22      the face's full length, 80.00 mm    as  modelled   cosmetic
+ 0-2 64 64 0
+ 3-37 64 64 116 0 1 0
+ 38-41 64 64 0
+ 42-43 74 64 0
+ 44-44 64 64 0
+ 45-54 64 64 121 0 1 0
+ 55-56 64 64 0
+ 57-66 64 64 122 0 1 0
+ 67-99 64 64 0
+row 25  make the thread again now
+ 0-0 64 64 0
+ 1-25 6c 64 103 0 1 0
+ 26-99 64 64 0
+row 28 (or cancel operation)
+ 0-3 64 64 0
+ 4-19 6c 64 108 0 1 0
+ 20-99 64 64 0
+row 30 
+ 0-99 64 64 0
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 8 0
+camera 3.25 -4.5 2.25 1.5 0.8295613557843402 -0.51847584736521257 0.20739033894608505 0.22216001430660143 0.6471617808061868 0.72926439478906124
+counts 8 13 146 28 70
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""
+row 0  home › g008-M20-thread   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-25 64 64 0
+ 26-53 74 64 0
+ 54-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g008-M20-thread [rename/del] [active/hide/↑/↓]
+ 0-6 74 64 0
+ 7-23 64 64 0
+ 24-29 6c 64 108 8 1 0
+ 30-30 64 64 0
+ 31-33 6c 64 108 8 1 0
+ 34-36 64 64 0
+ 37-42 73 64 0
+ 43-43 64 64 0
+ 44-47 6c 64 115 8 1 0
+ 48-48 64 64 0
+ 49-49 6c 64 117 8 1 0
+ 50-50 64 64 0
+ 51-51 6c 64 100 8 1 0
+ 52-99 64 64 0
+row 10  screw thread   [edit thread]
+ 0-0 64 64 0
+ 1-12 74 64 0
+ 13-15 64 64 0
+ 16-28 6c 64 101 8 1 0
+ 29-99 64 64 0
+row 12    M20, 2.50 mm pitch, right-hand, 30.00 mm long, external
+ 0-99 64 61 0
+row 14    crest standard, clearance 0.00 mm, run-out none
+ 0-99 64 64 0
+row 16    5 groups [show them in the group list]   [suppress the thread]   [delete the thread]
+ 0-11 64 61 0
+ 12-40 6c 61 111 8 1 0
+ 41-43 64 61 0
+ 44-64 6c 61 115 8 1 0
+ 65-67 64 61 0
+ 68-86 6c 61 120 8 1 0
+ 87-99 64 61 0
+row 18    made: the solid came out sound
+ 0-2 64 64 0
+ 3-32 73 64 0
+ 33-99 64 64 0
+row 20 
+ 0-99 64 64 0
+row 22  solid model as
+ 0-0 64 64 0
+ 1-99 74 64 0
+row 24     union   assemble
+ 0-2 64 61 0
+ 3-9 64 61 99 0 1 0
+ 10-11 64 61 0
+ 12-21 64 61 99 2 1 0
+ 22-99 64 61 0
+row 26     difference   intersection
+ 0-2 64 61 0
+ 3-14 64 61 99 1 1 0
+ 15-16 64 61 0
+ 17-30 64 61 99 3 1 0
+ 31-99 64 61 0
+row 28    appearance   matte   plastic   glossy   metal   density not set [change]
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-54 64 64 0
+ 55-61 74 64 0
+ 62-70 64 64 0
+ 71-78 6c 64 102 0 1 0
+ 79-99 64 64 0
+row 30    color      (0.39, 0.39, 0.39) [change]
+ 0-2 64 64 0
+ 3-10 74 64 0
+ 11-12 64 7a 646464ff 0
+ 13-32 64 64 0
+ 33-40 6c 64 102 1e 1 0
+ 41-99 64 64 0
+row 32    opacity 1.00 [change]
+ 0-2 64 64 0
+ 3-9 74 64 0
+ 10-15 64 64 0
+ 16-23 6c 64 102 0 1 0
+ 24-99 64 64 0
+row 34      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 36 
+ 0-99 64 64 0
+row 38    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 40    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 42    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 45    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 47    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 49    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 51    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 53 
+ 0-99 64 64 0
+row 55  requests in group
+ 0-99 74 64 0
+row 57    (none)
+ 0-99 64 61 0
+row 59 
+ 0-99 64 64 0
+row 61  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 63    c01c-proj-pt-pt-distance
+ 0-2 64 61 0
+ 3-26 6c 61 108 1c 1 1
+ 27-99 64 61 0
+row 65 
+ 0-99 64 64 0
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 5 80050000
+camera 3.25 -4.5 2.25 1.5 0.8295613557843402 -0.51847584736521257 0.20739033894608505 0.22216001430660143 0.6471617808061868 0.72926439478906124
+counts 5 5 42 3 30
+editor 0 "" 0 ""
+tw 0 unsaved 1 cursor 0 tooltip ""

@@ -16,7 +16,7 @@ func main() {
 			top = e
 		}
 	}
-	doc.Features.Thread(top, ThreadOptions{Designation: "M6x1", Length: 9, Internal: true})
+	doc.Features.Thread(top, ThreadOptions{Designation: "M6x1", Length: 9, Internal: true, Reverse: true})
 	d := doc.Drawing.Get()
 	d.ModelledThreads = true
 	doc.Drawing.Set(d)

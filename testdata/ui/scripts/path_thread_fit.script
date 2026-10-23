@@ -1,0 +1,50 @@
+# A screw thread made through its screen on an extruded circle, its
+# phase typed and its class chosen; the same model as
+# path_thread_fit.go makes (TestPathEquivalenceThreadFit).
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 350 300
+down L 350 300
+up L 350 300
+key esc
+key x shift
+move 350 300
+down L 350 300
+up L 350 300
+menu Features|Screw Thread...
+# The designation, the length, an internal thread, then make it.
+twmove 172 110
+twdown L 172 110
+twup L 172 110
+edit M6x1
+twmove 220 150
+twdown L 220 150
+twup L 220 150
+edit 9
+twmove 181 190
+twdown L 181 190
+twup L 181 190
+# The phase, then the class: 7H, the fifth of an internal metric
+# thread's, and back.
+twmove 426 150
+twdown L 426 150
+twup L 426 150
+edit 90
+twmove 687 170
+twdown L 687 170
+twup L 687 170
+twmove 356 140
+twdown L 356 140
+twup L 356 140
+twmove 57 190
+twdown L 57 190
+twup L 57 190
+# Flip the direction: against the circle's normal, down into the part.
+twmove 60 230
+twdown L 60 230
+twup L 60 230
+twmove 37 260
+twdown L 37 260
+twup L 37 260

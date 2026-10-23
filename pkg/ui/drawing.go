@@ -214,13 +214,18 @@ func (ss *Application) sectionEdges(g *sketch.Group, right, up geom.Vector, offs
 	m.Triangles = append(m.Triangles, capMesh.Triangles...)
 	out := ss.hiddenLineEdgesWith(sel, extra, always, &m, right, up, hidden)
 
+	// The cut's outline is a visible edge, its hatching thin.
 	n := right.Cross(up)
-	var front srf.SEdgeList
+	var front, hatching srf.SEdgeList
 	capPoly.MakeEdgesInto(&front)
-	hatchLines(&capPoly, keep.N, hatch, &front)
+	hatchLines(&capPoly, keep.N, hatch, &hatching)
 	for _, e := range front.Edges {
 		out.AddEdge(e.A.InPerspective(right, up, n, geom.Vector{}, 0), e.B.InPerspective(right, up, n, geom.Vector{}, 0),
 			core.StyleSolidEdge, 0, 0)
+	}
+	for _, e := range hatching.Edges {
+		out.AddEdge(e.A.InPerspective(right, up, n, geom.Vector{}, 0), e.B.InPerspective(right, up, n, geom.Vector{}, 0),
+			sheetThin, 0, 0)
 	}
 	return out
 }
@@ -286,11 +291,27 @@ func box(el *srf.SEdgeList) (lo, hi geom.Vector) {
 func vec(a [3]float64) geom.Vector { return geom.Vector{X: a[0], Y: a[1], Z: a[2]} }
 
 // sheetText adds text to el, its baseline from o, height mm high, in
-// the style of the solid's edges, which prints black.
+// the sheet's thin lines (sheetThin), which print black.
 func sheetText(el *srf.SEdgeList, text string, height float64, o geom.Vector) {
 	res.BuiltinVectorFont().Trace(height, o, geom.Vector{X: 1}, geom.Vector{Y: 1}, text, func(a, b geom.Vector) {
-		el.AddEdge(a, b, core.StyleSolidEdge, 0, 0)
+		el.AddEdge(a, b, sheetThin, 0, 0)
 	})
+}
+
+// The weights of a drawing's lines, as ISO 128 gives them: the
+// visible outlines of the views thick (SolidEdge) and the frame wider;
+// a thread's root, hatching, hidden edges, dimensions, text and the
+// title block's rows thin. sheetThin is the style of the thin solid
+// lines, the one the root of a thread is drawn in.
+const sheetThin = core.StyleDimSolid
+
+// sheetWidthsMm are the weights the sheet is written with, in mm: the
+// 0.35 mm line group, the frame a step up.
+var sheetWidthsMm = map[core.HStyle]float64{
+	{V: core.StyleSolidEdge}:  0.35,
+	{V: core.StyleOutline}:    0.5,
+	{V: core.StyleDimSolid}:   0.18,
+	{V: core.StyleHiddenEdge}: 0.18,
 }
 
 // rect adds a rectangle from lo to hi to el in style.
@@ -419,7 +440,7 @@ func (ss *Application) drawExtras(sheet *srf.SEdgeList, g *sketch.Group, d *sket
 			continue
 		}
 		dt := d.Details[i-len(d.Sections)]
-		circle(sheet, p, e.size[0]/2, core.StyleSolidEdge)
+		circle(sheet, p, e.size[0]/2, sheetThin)
 		label(sheet, "DETAIL "+letter+"  "+strings.ReplaceAll(sketch.ScaleText(e.k), ":", "/"), p.X, p.Y, e.size[1])
 		// Its circle on the view it enlarges, lettered.
 		if v, ok := placed[dt.View]; ok {
@@ -495,11 +516,11 @@ func (ss *Application) sheetFrame(el *srf.SEdgeList, d *sketch.Drawing, scale fl
 	row := th / 4
 	for i := 1; i < 4; i++ {
 		y := lo.Y + row*float64(i)
-		el.AddEdge(geom.Vector{X: lo.X, Y: y}, geom.Vector{X: w - b, Y: y}, core.StyleSolidEdge, 0, 0)
+		el.AddEdge(geom.Vector{X: lo.X, Y: y}, geom.Vector{X: w - b, Y: y}, sheetThin, 0, 0)
 	}
 	// The halves of the three rows below the title's.
 	mid := lo.X + tw/2
-	el.AddEdge(geom.Vector{X: mid, Y: lo.Y}, geom.Vector{X: mid, Y: lo.Y + 3*row}, core.StyleSolidEdge, 0, 0)
+	el.AddEdge(geom.Vector{X: mid, Y: lo.Y}, geom.Vector{X: mid, Y: lo.Y + 3*row}, sheetThin, 0, 0)
 	field := func(label, value string, x, y float64) {
 		sheetText(el, label, 1.8, geom.Vector{X: x + 1.5, Y: y + row - 3})
 		if value != "" {
@@ -539,6 +560,7 @@ func (ss *Application) ExportDrawingTo(filename string, d *sketch.Drawing) error
 	w, h := d.Size()
 	o.CanvasSizeAuto, o.Scale = false, 1
 	o.Canvas = export.Canvas{Width: w, Height: h}
+	o.WidthsMm = sheetWidthsMm
 	out, err := export.NewWriter(filename, ss.SK, o)
 	if err != nil {
 		return err

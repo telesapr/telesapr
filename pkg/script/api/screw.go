@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -33,10 +34,32 @@ type ScrewMate struct {
 // in mm, as the parameter's first value. The parameters are new, named
 // "turn" and "lead", or with a number after for a second screw. The
 // mate is made in 3d, and the second part needs a point off the axis.
+//
+// When the circles carry screw threads, a screw's and a nut's of one
+// size (made on them, or on their axis in the same part, as on the
+// other rim of a nut's hole), the part is first moved along the axis,
+// by less than half a pitch, to where its thread's ridges lie between
+// the other's; a lead of 0 is the threads' own, negative for left-hand
+// ones. With the threads' lead the two then fit at every turn.
 func (m AssemblyMenu) Screw(a, b Entity, lead float64) (mate ScrewMate) {
 	d := m.d
-	if math.IsNaN(lead) || math.IsInf(lead, 0) || lead == 0 {
+	if math.IsNaN(lead) || math.IsInf(lead, 0) {
 		fail("a screw's lead is a distance that is not zero, not %g", lead)
+	}
+	if lead == 0 {
+		d.read(func(sk *sketch.Sketch) {
+			o, ok := sk.ThreadOnCircle(a.H)
+			if !ok {
+				o, ok = sk.ThreadOnCircle(b.H)
+			}
+			if !ok {
+				fail("a screw's lead is a distance that is not zero, unless a thread on its circles gives it")
+			}
+			lead = o.Spec.Lead()
+			if o.Spec.LeftHand {
+				lead = -lead
+			}
+		})
 	}
 	d.read(func(sk *sketch.Sketch) {
 		if !core.IsFreeIn3D(sk.ActiveWorkplane()) {
@@ -79,6 +102,14 @@ func (m AssemblyMenu) Screw(a, b Entity, lead float64) (mate ScrewMate) {
 		angle = math.Atan2(off.Dot(n.NormalV(sk)), off.Dot(n.NormalU(sk))) * 180 / math.Pi
 		along = cb.get(sk).PointGetNum(sk).Minus(o).Dot(nn)
 		mmPer = sk.Units.MmPer()
+		move, err := sk.ThreadFitMove(a.H, b.H)
+		switch {
+		case errors.Is(err, sketch.ErrNoThreads):
+		case err != nil:
+			fail("%v", err)
+		default:
+			along += move
+		}
 	})
 	if err := d.Params.Set(mate.Turn, "0"); err != nil {
 		fail("%v", err)

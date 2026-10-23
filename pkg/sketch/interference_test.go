@@ -125,3 +125,29 @@ func TestInterferencesOfALinkedAssembly(t *testing.T) {
 		t.Errorf("the block shares %g with the link, want %g", found[0].Volume, want)
 	}
 }
+
+// An M8 screw and its nut, of clearance 0, linked side by side: in
+// phase their ridges collide, half a pitch along their flanks only
+// touch. The Boolean of their shells fails on the flanks lying on each
+// other, and their meshes tell the two apart by how thick what they
+// share is; the volume is checked against the oracles of the two in
+// pkg/check (TestInterferencesOfAThreadByOracle).
+func TestInterferencesOfAThread(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	if _, err := d.Assembly.Link("../../testdata/thread/screw_m8.tlspr", "screw"); err != nil {
+		t.Fatal(err)
+	}
+	nut, err := d.Assembly.Link("../../testdata/thread/nut_m8.tlspr", "nut")
+	if err != nil {
+		t.Fatal(err)
+	}
+	found, _ := d.Assembly.Interferences()
+	if len(found) != 1 || !found[0].Approximate || found[0].Volume < 15 || found[0].Volume > 30 {
+		t.Errorf("in phase: %+v, want about 20 mm³ by the meshes", found)
+	}
+	nut.AsLink().Move(api.V(0, 0, 1.25/2))
+	if found, _ := d.Assembly.Interferences(); len(found) != 0 {
+		t.Errorf("half a pitch along: %+v", found)
+	}
+}

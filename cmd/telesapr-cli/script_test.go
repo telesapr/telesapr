@@ -132,6 +132,7 @@ func TestScriptFailures(t *testing.T) {
 		{[]string{"run", bad}, exitScript, bad + ":3:16: undefined: y\n"},
 		{[]string{"eval", "os.Exit(9)"}, 9, ""},
 		{[]string{"eval", "if true {"}, exitScript, "the code ends in the middle of a statement\n"},
+		{[]string{"eval", "1 + 1", "doc.Sketch.Circle(V(0, 0, 0), 1).Start()", "2"}, exitScript, ""},
 	} {
 		status, _, stderr := runScripting(t, "", c.args...)
 		if status != c.status || !strings.Contains(stderr, c.stderr) {

@@ -19,13 +19,17 @@ twmove 172 110
 twdown L 172 110
 twup L 172 110
 edit M20xPh3P1
-twmove 454 130
-twdown L 454 130
-twup L 454 130
-twmove 427 170
-twdown L 427 170
-twup L 427 170
+twmove 640 130
+twdown L 640 130
+twup L 640 130
+twmove 487 170
+twdown L 487 170
+twup L 487 170
 edit 4
+# Flip the direction: against the circle's normal, down into the part.
+twmove 60 230
+twdown L 60 230
+twup L 60 230
 twmove 37 260
 twdown L 37 260
 twup L 37 260

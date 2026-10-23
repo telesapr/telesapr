@@ -50,6 +50,10 @@ type Options struct {
 	Constraints Constraints
 	// Warn, if set, is told what a file could not hold.
 	Warn func(msg string)
+	// WidthsMm are line widths in mm, by style, that take the place of
+	// the styles' own, which are a view's on the screen: a drawing's
+	// sheet is written with the weights drafting gives its lines.
+	WidthsMm map[core.HStyle]float64
 }
 
 // Margin is the space left around a 2d file's contents, in mm.
@@ -108,6 +112,9 @@ func (w *vectorWriter) styleExportFillColor(hs core.HStyle) core.RGBA {
 
 // styleWidthMm is a style's line width in mm.
 func (w *vectorWriter) styleWidthMm(hs core.HStyle) float64 {
+	if mm, ok := w.o.WidthsMm[hs]; ok {
+		return mm
+	}
 	return w.sk.StyleWidth(hs, w.o.ViewScale) / w.o.ViewScale
 }
 

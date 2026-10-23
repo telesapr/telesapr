@@ -63,6 +63,8 @@ var runOutCases = []threadCase{
 	{"screw_m3", 1.5, 16, "M3", sketch.ThreadOptions{Length: 12, RunOut: 1}},
 	{"rounded_m8", 4, 30, "M8", sketch.ThreadOptions{Length: 12, RunOut: 3, Crest: thread.CrestRounded}},
 	{"level_m12", 6, 20, "M12xPh3P1", sketch.ThreadOptions{Length: 14, RunOut: 3, LevelStarts: true}},
+	// A flank of the ridge's end on the run-out's circle (2026-10-23).
+	{"screw_m10_flank", 5, 30, "M10", sketch.ThreadOptions{Length: 20, RunOut: 2}},
 }
 
 // TestThreadRunOut makes threads with a run-out and requires sound
@@ -234,6 +236,8 @@ func TestEditThreadShape(t *testing.T) {
 	m12 := threadCase{"", 6, 20, "M12xPh3P1", sketch.ThreadOptions{Length: 14}}
 	m12Level := threadCase{"", 6, 20, "M12xPh3P1", sketch.ThreadOptions{Length: 14, LevelStarts: true}}
 	m8 := threadCase{"", 4, 30, "M8", sketch.ThreadOptions{Length: 12}}
+	m8Chamfer := threadCase{"", 4, 30, "M8", sketch.ThreadOptions{Length: 12, Chamfer: true}}
+	m12LevelChamfer := threadCase{"", 6, 20, "M12xPh3P1", sketch.ThreadOptions{Length: 14, LevelStarts: true, Chamfer: true}}
 	for _, c := range []struct {
 		name string
 		from threadCase
@@ -248,6 +252,13 @@ func TestEditThreadShape(t *testing.T) {
 		{"fewer level starts", m12Level, "M12xPh2P1", func(o *sketch.ThreadOptions) { o.LevelStarts = true }, false},
 		{"level kept", m12Level, "M12xPh3P1", func(o *sketch.ThreadOptions) { o.LevelStarts, o.Length = true, 16 }, true},
 		{"stacked again", m12Level, "M12xPh3P1", func(o *sketch.ThreadOptions) {}, false},
+		{"chamfer", m8, "M8", func(o *sketch.ThreadOptions) { o.Chamfer = true }, false},
+		{"chamfer and run-out", m8, "M8", func(o *sketch.ThreadOptions) { o.Chamfer, o.RunOut = true, 3 }, false},
+		{"no chamfer", m8Chamfer, "M8", func(o *sketch.ThreadOptions) {}, false},
+		{"chamfer kept", m8Chamfer, "M8", func(o *sketch.ThreadOptions) { o.Chamfer, o.Length = true, 14 }, true},
+		{"through with chamfer kept", m8Chamfer, "M8", func(o *sketch.ThreadOptions) { o.Chamfer, o.Through, o.Length = true, true, 28 }, true},
+		{"fewer level starts with chamfer", m12LevelChamfer, "M12xPh2P1", func(o *sketch.ThreadOptions) { o.LevelStarts, o.Chamfer = true, true }, false},
+		{"chamfer with level starts", m12, "M12xPh3P1", func(o *sketch.ThreadOptions) { o.LevelStarts, o.Chamfer = true, true }, false},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			sk, _, res := c.from.build(t, 0)
@@ -255,7 +266,7 @@ func TestEditThreadShape(t *testing.T) {
 			before, _ := sk.ThreadGroups(res.Group)
 			want := c.from
 			want.designation = c.to
-			want.o.LevelStarts, want.o.RunOut = false, 0
+			want.o.LevelStarts, want.o.RunOut, want.o.Chamfer = false, 0, false
 			o := want.options(t)
 			c.edit(&o)
 			want.o = o
@@ -266,13 +277,29 @@ func TestEditThreadShape(t *testing.T) {
 				sk.GenerateAll()
 				return string(tlspr.Encode(sk, tlspr.Options{}))
 			}
-			// A solve from a solved sketch may move its last bits once.
+			// A solve from a solved sketch may move its last bits once,
+			// and some params go on cycling through a few last bits from
+			// solve to solve (a chamfered thread's through four): any of
+			// those is the same file.
+			cycle := func() []string {
+				var out []string
+				for range 4 {
+					out = append(out, save())
+				}
+				return out
+			}
 			save()
-			was := save()
+			was := cycle()
 			sk.UndoRemember()
+			deleted := sk.Deleted
 			got, err := sk.EditThread(res.Group, o)
 			if err != nil {
 				t.Fatal(err)
+			}
+			// The groups the thread no longer has go with what they
+			// hold, which is no deletion of the user's to report.
+			if sk.Deleted != deleted {
+				t.Errorf("counted as deleted %+v, was %+v", sk.Deleted, deleted)
 			}
 			if got.Group != res.Group {
 				t.Fatalf("edited %v", got.Group)
@@ -300,14 +327,14 @@ func TestEditThreadShape(t *testing.T) {
 			}
 
 			save()
-			edited := save()
+			edited := cycle()
 			sk.UndoUndo()
-			if got := save(); got != was {
-				t.Errorf("undo did not bring the thread back:\n%s", firstDiff(got, was))
+			if got := save(); !slices.Contains(was, got) {
+				t.Errorf("undo did not bring the thread back:\n%s", firstDiff(got, was[0]))
 			}
 			sk.UndoRedo()
-			if save() != edited {
-				t.Error("redo did not make the edit again")
+			if got := save(); !slices.Contains(edited, got) {
+				t.Errorf("redo did not make the edit again:\n%s", firstDiff(got, edited[0]))
 			}
 		})
 	}
@@ -338,14 +365,15 @@ func TestThreadRunOutRefused(t *testing.T) {
 	}
 }
 
-// TestThreadShapeSaved saves a thread with a run-out and level starts,
+// TestThreadShapeSaved saves a thread with a run-out, level starts and
+// a chamfer,
 // opens it and requires its options and groups back, and the thread
 // edited from there.
 func TestThreadShapeSaved(t *testing.T) {
 	if testing.Short() {
 		t.Skip("thread solids")
 	}
-	tc := threadCase{"", 6, 20, "M12xPh3P1", sketch.ThreadOptions{Length: 14, LevelStarts: true, RunOut: 2.5}}
+	tc := threadCase{"", 6, 20, "M12xPh3P1", sketch.ThreadOptions{Length: 14, LevelStarts: true, RunOut: 2.5, Chamfer: true}}
 	sk, _, res := tc.build(t, 0)
 	doc, err := tlspr.Decode(tlspr.Encode(sk, tlspr.Options{}))
 	if err != nil {
@@ -357,7 +385,7 @@ func TestThreadShapeSaved(t *testing.T) {
 	if err != nil || o != tc.options(t) {
 		t.Fatalf("read back %+v (%v), want %+v", o, err, tc.options(t))
 	}
-	if gs, err := back.ThreadGroups(res.Group); err != nil || len(gs) != 8 {
+	if gs, err := back.ThreadGroups(res.Group); err != nil || len(gs) != 10 {
 		t.Fatalf("groups %v, %v", gs, err)
 	}
 	o.RunOut = 3
@@ -379,9 +407,11 @@ func firstDiff(a, b string) string {
 }
 
 // runOutSweepCases are the threads the run-out sweep makes, by name:
-// screws and a nut, coarse and fine, a rod as thick as its thread and
+// screws and nuts, coarse and fine, a rod as thick as its thread and
 // one thicker, either hand, either way along the axis.
 var runOutSweepCases = map[string]threadCase{
+	"M10":   {"", 5, 30, "M10", sketch.ThreadOptions{Length: 14}},
+	"M10n":  {"", 10, 24, "M10", sketch.ThreadOptions{Length: 14, Internal: true}},
 	"M8":    {"", 4, 30, "M8", sketch.ThreadOptions{Length: 12}},
 	"M8-LH": {"", 4, 30, "M8-LH", sketch.ThreadOptions{Length: 12}},
 	"M3":    {"", 1.5, 16, "M3", sketch.ThreadOptions{Length: 12}},
@@ -396,7 +426,9 @@ var runOutSweepCases = map[string]threadCase{
 // fail: none since 2026-10-22, when the Boolean took the crossings of
 // the turned surface's circle and seams with the ridge's flanks, at the
 // thread's helix angle, on the flank's patch they lie on (8 of 72
-// before).
+// before). The run-outs of 1.64 and 2 mm put a flank of an M8's and an
+// M10's ridge end on the run-out's circle, where the Boolean dropped a
+// quarter of the cone until the end was moved off it (2026-10-23).
 const threadRunOutMaxFail = 0.0
 
 // TestThreadRunOutSweep makes run-outs of several lengths on threads
@@ -407,9 +439,9 @@ func TestThreadRunOutSweep(t *testing.T) {
 	}
 	sweep.Grid{
 		Axes: []sweep.Axis{
-			sweep.Strings("thread", "M8", "M8-LH", "M3", "M5", "M6v", "M6n", "Tr20", "UNC"),
+			sweep.Strings("thread", "M8", "M8-LH", "M3", "M5", "M6v", "M6n", "Tr20", "UNC", "M10", "M10n"),
 			sweep.Floats("longer", 0, 0.3, 0.7),
-			sweep.Floats("run-out", 1, 2.2, 3.5),
+			sweep.Floats("run-out", 1, 1.64, 2, 2.2, 3.5),
 		},
 		MaxFailRate: threadRunOutMaxFail,
 		Sample:      8,

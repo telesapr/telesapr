@@ -91,6 +91,9 @@ type Engine struct {
 
 	// pending is the lines of a statement that isn't complete yet.
 	pending []string
+	// failed counts the statements REPL reported an error for, which
+	// telesapr-cli eval exits on.
+	failed int
 
 	// told guards what the interpreter's goroutine tells the engine:
 	// where a panic was, and the values of a console's expression. A
@@ -99,6 +102,14 @@ type Engine struct {
 	told sync.Mutex
 	// panicAt is where the interpreter said the last panic was.
 	panicAt struct{ line, col int }
+	// frames are where each function of a placed program running now
+	// is (placeStatements), innermost last; left is where the one left
+	// last was, and failedAt where that was when the interpreter first
+	// wrote of a panic, if it has (statement_place.go).
+	frames     []place
+	left       place
+	failedAt   place
+	failedSeen bool
 	// values are what the last expression of a console gave, from the
 	// interpreter of generation gen.
 	values []any
@@ -303,6 +314,11 @@ func (e *Engine) exports(gen uint64) interp.Exports {
 		"Show": reflect.ValueOf(func(values ...any) { e.setValues(gen, values) }),
 		"Take": reflect.ValueOf(func(i int) any { return e.shownValues()[i] }),
 		"Help": reflect.ValueOf(e.help),
+		// What a program's functions say of where they are, for the
+		// place of a panic (statement_place.go).
+		"Enter": reflect.ValueOf(e.enterFrame),
+		"At":    reflect.ValueOf(e.atStatement),
+		"Leave": reflect.ValueOf(e.leaveFrame),
 	}
 	return exports
 }
@@ -398,6 +414,15 @@ func (e *Engine) clearPanic() {
 	e.told.Lock()
 	defer e.told.Unlock()
 	e.panicAt.line = 0
+	e.frames, e.left, e.failedAt, e.failedSeen = nil, place{}, place{}, false
+}
+
+// failedStatement is where the statement a placed program panicked in
+// starts, or line 0 if that isn't known.
+func (e *Engine) failedStatement() place {
+	e.told.Lock()
+	defer e.told.Unlock()
+	return e.failedAt
 }
 
 // panicPlace is where the interpreter said the last panic was, or
@@ -801,6 +826,9 @@ func (f *panicFilter) Write(p []byte) (int, error) {
 		f.e.told.Lock()
 		f.e.panicAt.line, _ = strconv.Atoi(string(m[1]))
 		f.e.panicAt.col, _ = strconv.Atoi(string(m[2]))
+		if !f.e.failedSeen {
+			f.e.failedAt, f.e.failedSeen = f.e.left, true
+		}
 		f.e.told.Unlock()
 		return len(p), nil
 	}
@@ -1012,6 +1040,11 @@ func (e *Engine) show(ctx context.Context, src string) (string, error) {
 // Pending reports whether lines were fed that aren't complete yet.
 func (e *Engine) Pending() bool { return len(e.pending) > 0 }
 
+// Failed is how many statements REPL has reported an error for: it
+// goes on after one, as a console does, and a caller that runs code
+// not typed at a prompt says by its exit status that one failed.
+func (e *Engine) Failed() int { return e.failed }
+
 // Reset forgets the lines that aren't complete yet.
 func (e *Engine) Reset() { e.pending = nil }
 
@@ -1085,9 +1118,19 @@ func RunSource(ctx context.Context, opts Options, name, src string) error {
 		if err != nil {
 			return err
 		}
+		placed, inserts := placeStatements(src)
 		_, err = e.step(ctx, func(ctx context.Context) (reflect.Value, error) {
-			return e.eval(ctx, src)
+			return e.eval(ctx, placed)
 		})
+		var serr *Error
+		if errors.As(err, &serr) && serr.Line > 0 {
+			// A place is known only if the program panicked.
+			if at := e.failedStatement(); at.line > 0 {
+				serr.Line, serr.Col = at.line, at.col
+			} else {
+				serr.Line, serr.Col = unplace(src, inserts, serr.Line, serr.Col)
+			}
+		}
 		return named(name, 0, err)
 	}
 
@@ -1223,6 +1266,7 @@ func (e *Engine) REPL(ctx context.Context, in io.Reader, out io.Writer, prompt b
 		case errors.As(err, &exit):
 			return exit
 		case err != nil:
+			e.failed++
 			_, _ = fmt.Fprintln(out, "error:", err)
 		case shown != "":
 			_, _ = fmt.Fprintln(out, shown)

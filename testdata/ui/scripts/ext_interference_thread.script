@@ -1,0 +1,10 @@
+# Show Interfering Parts on a screw and its nut, of clearance 0, linked
+# in phase: their ridges collide, though the Boolean of their shells
+# fails on the helical flanks lying on each other, and the message
+# gives the volume their meshes share, marked as such.
+file $testdata/thread/screw_m8.tlspr
+menu Assembly|Link / Assemble...
+file $testdata/thread/nut_m8.tlspr
+menu Assembly|Link / Assemble...
+answer ok
+menu Assembly|Show Interfering Parts

@@ -456,10 +456,18 @@ func (m FeaturesMenu) SweepEdges(edges []SolidEdge, path []Entity, name string) 
 // and from its plane, as Features > Screw Thread does: four groups,
 // a sketch and a lathe that turn the part down (or bore it), and a
 // ridge sketch and a helix that sweeps it, then with LevelStarts a
-// ridge sketch and a helix per further start. It returns the helix
-// group, which keeps what made the thread (AsThread); the thread's last
-// group becomes active. Its Check says whether the solid came out sound
-// at the chord tolerance of the moment.
+// ridge sketch and a helix per further start; a Cosmetic thread, a
+// sketch and, where the part is cut, a lathe. It returns the helix
+// group (a cosmetic thread's sketch), which keeps what made the thread
+// (AsThread); the thread's last
+// group becomes active, and AsThread().Finished() is that group, whose
+// solid is the part with the whole thread (with level starts the helix
+// group's has the first start only). Its Check says whether the solid
+// came out sound at the chord tolerance of the moment. A thread longer
+// than the solid so far reaches along it, run off it the other way (see
+// Reverse), or on a rod thinner than its root, is refused, saying so;
+// one whose part is made shorter later says so as the Problem of the
+// group that keeps it.
 func (m FeaturesMenu) Thread(circle Entity, o ThreadOptions) (g Group) {
 	d := m.d
 	d.change(func(sk *sketch.Sketch) {

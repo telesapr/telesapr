@@ -152,6 +152,7 @@ const (
 	editThreadLength      Edit = 901
 	editThreadClearance   Edit = 902
 	editThreadRunOut      Edit = 903
+	editThreadPhase       Edit = 960
 	// For the parameter table (an extension)
 	editParameterAdd  Edit = 910
 	editParameterExpr Edit = 911
@@ -261,6 +262,11 @@ type textWindow struct {
 	hoveredButton textButton
 
 	shown shownState
+
+	// threadOpen holds the threads whose groups the group list shows one
+	// by one, by their helix groups; the others are folded into a row
+	// each. It is how the list is looked at, not part of the model.
+	threadOpen map[core.HGroup]bool
 
 	edit struct {
 		showAgain bool
@@ -419,7 +425,9 @@ func (tw *textWindow) ClearSuper() {
 	if t := tw.stepDim.timer; t != nil {
 		t.SetOnTimeout(nil)
 	}
-	*tw = textWindow{ss: tw.ss, window: tw.window, canvas: tw.canvas, buttons: tw.buttons}
+	// The threads open in the group list stay so: it is how the list is
+	// looked at, as the window's own size.
+	*tw = textWindow{ss: tw.ss, window: tw.window, canvas: tw.canvas, buttons: tw.buttons, threadOpen: tw.threadOpen}
 
 	tw.HideEditControl()
 

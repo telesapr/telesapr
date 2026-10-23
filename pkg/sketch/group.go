@@ -81,8 +81,11 @@ const (
 	// on its face SolidFaces[0] or its edge SolidEdges[0] that follows it
 	// at each regeneration (topo.DatumFrame, topo.EdgeFrame), in the
 	// face where it is flat, about the axis where it is round, along the
-	// edge where it is straight. Predef.Q and Predef.At hold where it was
-	// last found.
+	// edge where it is straight. With a second face, SolidFaces[1], it
+	// lies at the end of the round face SolidFaces[0] across from it, its
+	// normal along the axis into the face (topo.AxisEndFrame), as a thread
+	// made on a face starts. Predef.Q and Predef.At hold where it was last
+	// found.
 	GroupWorkplaneByDatum
 )
 
@@ -215,6 +218,9 @@ type Group struct {
 	// handles; Sketch.ResolveDatum finds them as placed here. Not saved;
 	// reloading the links fills them.
 	LinkDatums []Datum
+	// LinkThreads are the screw threads of the linked model, by the
+	// model's handles, which a screw mate fits (thread_fit.go).
+	LinkThreads []LinkedThread
 
 	Color core.RGBA
 

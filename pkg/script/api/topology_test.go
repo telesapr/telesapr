@@ -306,18 +306,17 @@ func TestNamesThroughThreadLength(t *testing.T) {
 			top = e
 		}
 	}
-	hel := d.Features.Thread(top, ThreadOptions{Designation: "M8", Length: 8})
+	hel := d.Features.Thread(top, ThreadOptions{Designation: "M8", Length: 8, Reverse: true})
 	var names []string
 	for _, e := range hel.Solid().Edges() {
 		names = append(names, e.Name())
 	}
-	cs := hel.Constraints()
-	if len(cs) != 1 {
-		t.Fatalf("the helix has %d constraints", len(cs))
-	}
-	if err := cs[0].SetExpr(fmt.Sprint(cs[0].Value() * 2)); err != nil {
-		t.Fatal(err)
-	}
+	// Twice as long, down the shank: a longer helix past the part's
+	// turning would run into the shank.
+	th := hel.AsThread()
+	o := th.Options()
+	o.Length *= 2
+	th.Edit(o)
 	if r := hel.Analyze().Check(); !r.Sound() {
 		t.Fatalf("the longer thread: %s", r.String())
 	}

@@ -113,9 +113,12 @@ type FilesInput struct {
 }
 
 // RunOutput is the part of run_script's result a program can read
-// without reading the text: whether the script failed and how the
-// groups came out.
+// without reading the text: what the script printed and came to,
+// whether it failed and how the groups came out. A client that shows
+// only the structured result shows the output too.
 type RunOutput struct {
+	Output           string              `json:"output,omitempty" jsonschema:"what the script printed, and what the program had to say while it ran"`
+	Value            string              `json:"value,omitempty" jsonschema:"the value of the script's last statement, if that is an expression"`
 	Error            string              `json:"error,omitempty" jsonschema:"why the script stopped, with its line and column; empty if it ran to its end"`
 	RolledBack       bool                `json:"rolledBack,omitempty" jsonschema:"whether what the script changed was taken back"`
 	Groups           []agent.GroupStatus `json:"groups" jsonschema:"the active group, then every group in trouble: not solved, or with a problem"`
@@ -190,7 +193,8 @@ func New(b agent.Backend, version string) *mcp.Server {
 		if groups == nil {
 			groups = []agent.GroupStatus{}
 		}
-		return out, RunOutput{Error: res.Error, RolledBack: res.RolledBack, Groups: groups, ExpressionErrors: res.ExpressionErrors}, nil
+		return out, RunOutput{
+			Output: res.Output, Value: res.Value, Error: res.Error, RolledBack: res.RolledBack, Groups: groups, ExpressionErrors: res.ExpressionErrors}, nil
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

@@ -39,6 +39,7 @@ type Report struct {
 	Parameters     []sketch.Parameter
 	Configurations []string
 	Datums         []sketch.Datum
+	Threads        []sketch.LinkedThread
 }
 
 // clone is a copy of r that shares nothing with it.
@@ -47,6 +48,7 @@ func (r Report) clone() Report {
 	r.Parameters = slices.Clone(r.Parameters)
 	r.Configurations = slices.Clone(r.Configurations)
 	r.Datums = slices.Clone(r.Datums)
+	r.Threads = slices.Clone(r.Threads)
 	return r
 }
 
@@ -209,6 +211,7 @@ func reloadAll(sk *sketch.Sketch, saveFile string, o Options, ctx *loadCtx) bool
 		g.ImpShell.Clear()
 		g.LinkInfo, g.LinkProblem, g.LinkParts = nil, "", nil
 		g.LinkModelRead, g.LinkPartParameters, g.LinkConfigurations, g.LinkDatums = false, nil, nil, nil
+		g.LinkThreads = nil
 		g.LinkLoaded = g.LinkOverridesKey()
 
 		if found, ok := linkMap[g.LinkFile]; ok {
@@ -241,6 +244,7 @@ func reloadAll(sk *sketch.Sketch, saveFile string, o Options, ctx *loadCtx) bool
 				g.LinkInfo, g.LinkProblem = rep.Info, rep.Problem
 				g.LinkModelRead, g.LinkPartParameters, g.LinkConfigurations = rep.Model, rep.Parameters, rep.Configurations
 				g.LinkDatums = rep.Datums
+				g.LinkThreads = rep.Threads
 				g.LinkParts = LinkedParts(saveFile, linkFile)
 				// We loaded the data, good. Now import its dependencies
 				// as well.

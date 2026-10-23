@@ -199,10 +199,33 @@ func (tw *textWindow) ShowListOfGroups() {
 	tw.Printf(false, "%Ft    shown dof group-name%E")
 	afterActive := false
 	backgroundParity := false
+	// A thread's groups are one row, unless the list is to show them one
+	// by one, under it.
+	threads := sk.ThreadOfGroups()
+	threadShown := map[core.HGroup]bool{}
 	for _, hg := range sk.GroupOrder {
 		g := sk.Group(hg)
 
 		s := groupDescription(g)
+		if helix, ok := threads[hg]; ok {
+			if !threadShown[helix] {
+				threadShown[helix] = true
+				members, _ := sk.ThreadMembers(helix)
+				bgc := byte('a')
+				if backgroundParity {
+					bgc = 'd'
+				}
+				tw.threadListRow(helix, members, bgc, afterActive)
+				backgroundParity = !backgroundParity
+				if !tw.threadOpen[helix] && slices.Contains(members, ss.GW.activeGroupH()) {
+					afterActive = true
+				}
+			}
+			if !tw.threadOpen[helix] {
+				continue
+			}
+			s = "  " + s
+		}
 		active := g.H == ss.GW.activeGroupH()
 		shown := g.Visible
 		ok := g.IsSolvedOkay()
@@ -876,34 +899,7 @@ func (tw *textWindow) ScreenDeleteGroup(link int, v uint32) {
 // active group goes, the last group before it that is left is made
 // active, rather than the first one.
 func (ss *Application) deleteGroup(hg core.HGroup) {
-	sk := ss.SK
-	order := slices.Clone(sk.GroupOrder)
-	was := ss.GW.activeGroupH()
-	if hg == was {
-		if prev := sk.Group(hg).PreviousGroup(sk); prev != nil {
-			sk.Active = prev.H
-		}
-	}
-
-	// Reset the text window, since we're displaying information about
-	// the group that's about to get deleted.
-	ss.TW.ClearSuper()
-
-	// This is a major change, so let's re-solve everything.
-	for i := range sk.Groups {
-		if sk.Groups[i].H == hg {
-			sk.Groups = append(sk.Groups[:i], sk.Groups[i+1:]...)
-			break
-		}
-	}
-	ss.GenerateAll(sketch.GenerateAll)
-	if sk.ActivateSurvivor(order, was) {
-		ss.groupActivate(sk.Group(sk.Active))
-	}
-
-	// Reset the graphics window. This will also recreate the default
-	// group if it was removed.
-	ss.GW.ClearSuper()
+	ss.deleteGroups([]core.HGroup{hg})
 }
 
 // relativePath names path relative to the folder of the sketch's file,
@@ -969,11 +965,21 @@ func (tw *textWindow) ShowGroupInfo() {
 		tw.Printf(false, " %Fxleft out of the model: %s%E", why)
 	}
 
+	// One of a thread's groups says so first; a thread's helix shows
+	// the thread in place of its own rows, which the thread sets.
+	helix, inThread := sk.ThreadOfGroup(g.H)
+	if inThread {
+		tw.showThreadSummary(g, helix)
+	}
+
 	switch g.Type {
 	case sketch.GroupLathe:
 		tw.Printf(true, " %Ftlathe plane sketch")
-	case sketch.GroupExtrude, sketch.GroupRotate, sketch.GroupTranslate, sketch.GroupRevolve,
-		sketch.GroupHelix:
+	case sketch.GroupHelix:
+		if !inThread {
+			tw.showExtrusionInfo(g)
+		}
+	case sketch.GroupExtrude, sketch.GroupRotate, sketch.GroupTranslate, sketch.GroupRevolve:
 		tw.showExtrusionInfo(g)
 	case sketch.GroupMirror:
 		tw.showMirrorInfo(g)
@@ -1009,7 +1015,7 @@ func (tw *textWindow) ShowGroupInfo() {
 	}
 	tw.Printf(false, "")
 
-	if g.Type == sketch.GroupHelix {
+	if g.Type == sketch.GroupHelix && !inThread {
 		tw.Printf(false, "%Ft pitch - length per turn%E")
 
 		if math.Abs(g.ValB) != 0.0 {
@@ -1021,13 +1027,7 @@ func (tw *textWindow) ShowGroupInfo() {
 					(sk.MustParam(g.H.Param(3)).Val*ss.MmPerUnit()),
 				lf(tw.ScreenChangeHelixPitch), g.H.V)
 		}
-		if g.Thread.IsThread() {
-			// At the end of a row, so that the rows below stay put.
-			tw.Printf(false, "   %Fd%f%LP%s  fixed%E   %Fl%Le%f%D[edit thread]%E",
-				lf(tw.ScreenChangePitchOption), checkMark(g.ValB != 0), lf(tw.ScreenEditThread), g.H.V)
-		} else {
-			tw.Printf(false, "   %Fd%f%LP%s  fixed", lf(tw.ScreenChangePitchOption), checkMark(g.ValB != 0))
-		}
+		tw.Printf(false, "   %Fd%f%LP%s  fixed", lf(tw.ScreenChangePitchOption), checkMark(g.ValB != 0))
 
 		tw.Printf(false, "") // blank line
 	}

@@ -1,0 +1,34 @@
+# A screw thread with a chamfered end, through its screen: the
+# chamfer's box at the end of the row of the circle's normal, the
+# thread made, then undone and made again.
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 350 300
+down L 350 300
+up L 350 300
+key esc
+key x shift
+move 350 300
+down L 350 300
+up L 350 300
+menu Features|Screw Thread...
+# Flip the direction: against the circle's normal, down into the part, and chamfered.
+twmove 60 230
+twdown L 60 230
+twup L 60 230
+twmove 606 230
+twdown L 606 230
+twup L 606 230
+tw
+twmove 37 260
+twdown L 37 260
+twup L 37 260
+tw
+dump
+# Undo takes the thread and its chamfer away at once; redo makes them.
+key z ctrl
+dump
+key y ctrl
+dump

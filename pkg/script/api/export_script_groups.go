@@ -25,6 +25,9 @@ func (w *scriptWriter) groupCall(g *sketch.Group) (call string, from core.HGroup
 	case sketch.GroupDrawing3D:
 		return "doc.Features.Sketch3D(" + name + ")", core.HGroup{}
 	case sketch.GroupDrawingWorkplane:
+		if g.Thread.IsThread() {
+			return w.threadCall(g)
+		}
 		return w.workplaneCall(g, name), core.HGroup{}
 	case sketch.GroupExtrude:
 		return "doc.Features.Extrude(" + num(w.extrudeDepth(g)) + ", " + name + ")", g.OpA
@@ -176,7 +179,7 @@ func paramVal(sk *sketch.Sketch, h core.HParam) float64 {
 	return 0
 }
 
-// threadCall is a thread written as one call on its circle; its four
+// threadCall is a thread written as one call on its circle; its
 // groups are made by it.
 func (w *scriptWriter) threadCall(g *sketch.Group) (string, core.HGroup) {
 	sk := w.sk
@@ -186,23 +189,36 @@ func (w *scriptWriter) threadCall(g *sketch.Group) (string, core.HGroup) {
 		return "", core.HGroup{}
 	}
 	t := threadOptionsOf(o)
+	// A thread made on a face is written on the rim it starts at, whose
+	// face sets which way it runs, a screw's or a nut's, and with
+	// FullLength its length and Through.
+	p, onFace := sk.ThreadPlaceOf(g.H)
 	var fields []string
 	fields = append(fields, fmt.Sprintf("Designation: %q", t.Designation))
-	if t.Internal {
+	if t.LeftHand {
+		fields = append(fields, "LeftHand: true")
+	}
+	if t.Internal && !onFace {
 		fields = append(fields, "Internal: true")
 	}
-	if t.LengthExpr != "" {
+	switch {
+	case onFace && t.FullLength:
+		fields = append(fields, "FullLength: true")
+	case t.LengthExpr != "":
 		fields = append(fields, fmt.Sprintf("LengthExpr: %q", t.LengthExpr))
-	} else {
+	default:
 		fields = append(fields, "Length: "+num(t.Length))
 	}
-	if t.Through {
+	if t.Through && !onFace {
 		fields = append(fields, "Through: true")
 	}
-	if t.Reverse {
+	if t.Reverse && !onFace {
 		fields = append(fields, "Reverse: true")
 	}
-	if t.Clearance != 0 {
+	switch {
+	case t.Class != "":
+		fields = append(fields, fmt.Sprintf("Class: %q", t.Class))
+	case t.Clearance != 0:
 		fields = append(fields, "Clearance: "+num(t.Clearance))
 	}
 	if t.Crest != "" && t.Crest != "standard" {
@@ -214,17 +230,62 @@ func (w *scriptWriter) threadCall(g *sketch.Group) (string, core.HGroup) {
 	if t.LevelStarts {
 		fields = append(fields, "LevelStarts: true")
 	}
-	// The thread is cut on the solid of the group before its sketch.
+	if t.Phase != 0 {
+		fields = append(fields, "Phase: "+num(t.Phase))
+	}
+	if t.Cosmetic {
+		fields = append(fields, "Cosmetic: true")
+	}
+	if t.Chamfer {
+		fields = append(fields, "Chamfer: true")
+	}
+	// The thread is cut on the solid of the group before its sketch, or
+	// before the datum at its face's end.
 	hs, _ := sk.ThreadGroups(g.H)
 	from := core.HGroup{}
 	if len(hs) > 0 {
-		if first := sk.Group(hs[0]); first != nil {
+		first := sk.Group(hs[0])
+		if onFace && first != nil {
+			first = first.PreviousGroup(sk)
+		}
+		if first != nil {
 			if prev := first.PreviousGroup(sk); prev != nil {
 				from = prev.H
 			}
 		}
 	}
-	return "doc.Features.Thread(" + w.ref(g.Thread.Circle) + ", api.ThreadOptions{" + strings.Join(fields, ", ") + "})", from
+	opts := "api.ThreadOptions{" + strings.Join(fields, ", ") + "}"
+	if onFace {
+		if at, ok := threadRimPoint(sk, sk.Group(from), p); ok {
+			return "doc.Features.ThreadOnEdge(doc.Active().Solid().EdgeAt(" + vecText(at) + "), " + opts + ")", from
+		}
+		w.notWritten("%s: the face it is on; written on its circle", g.Name)
+	}
+	return "doc.Features.Thread(" + w.ref(g.Thread.Circle) + ", " + opts + ")", from
+}
+
+// threadRimPoint is a point on the rim a thread made on a face starts
+// at, in the solid of group before: on an edge between the face and the
+// face across its end, at that end.
+func threadRimPoint(sk *sketch.Sketch, before *sketch.Group, p sketch.ThreadPlace) (geom.Vector, bool) {
+	tp := topologyAt(sk, before)
+	if tp == nil {
+		return geom.Vector{}, false
+	}
+	for e := range tp.Edges {
+		fs := tp.EdgeFaces(e)
+		if fs[0] < 0 || fs[1] < 0 {
+			continue
+		}
+		a, b := tp.Faces[fs[0]].ID, tp.Faces[fs[1]].ID
+		if (a != p.Face || b != p.At.End) && (a != p.At.End || b != p.Face) {
+			continue
+		}
+		if face, end, err := tp.AxisEndAt(e); err == nil && face == p.Face && end.Frame.Origin.Equals(p.At.Frame.Origin) {
+			return edgePoint(tp, e)
+		}
+	}
+	return geom.Vector{}, false
 }
 
 // solidEdges is a fillet's, chamfer's or sweep's edges of the solid

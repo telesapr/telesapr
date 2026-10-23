@@ -18,8 +18,9 @@ View > Drawing Sheet shows its screen:
 - **hidden edges**, drawn dashed in the orthographic views;
 - **threads as modelled**: a screw thread (Features > Screw Thread) is drawn by the drafting
   convention unless this is ticked: a plain cylinder at its crest with solid lines at its ends,
-  its root in thin lines along it in a view across the axis or askew to it (slanting out to the
-  crest over a run-out) and three quarters of a thin circle in a view along it; a nut's root, in
+  its root in thin lines along it in a view across the axis or askew to it (with a run-out, a
+  solid line across where the full thread ends and the root's lines slanting out from there to
+  the crest) and three quarters of a thin circle in a view along it; a nut's root, in
   the part, is hidden like any edge behind material. What another group made in the thread, as a
   hole across it, is drawn on the crest's cylinder. In a section the cut face reaches the crest,
   hatched to it, with the root a thin line on it. Ticked, the ridge is drawn turn by turn. In a
@@ -67,7 +68,9 @@ picks nothing in the model. It is a view, not saved with the file. From a script
 `doc.Drawing.Show(true)`, and `doc.File.Render(path, w, h, "window")` pictures it.
 
 File > Export > Drawing writes the sheet as PDF, SVG, DXF, EPS, PostScript or HPGL, the canvas the
-sheet's size in millimetres. `telesapr-cli export-drawing -o sheet.pdf model.tlspr` does the same
+sheet's size in millimetres, its lines weighted as ISO 128's 0.35 mm group has them: the views'
+visible edges 0.35 mm, the frame 0.5 mm, and 0.18 mm for a thread's root, hidden edges, hatching,
+dimensions, text and the title block's rows. `telesapr-cli export-drawing -o sheet.pdf model.tlspr` does the same
 without a window.
 
 From a script:

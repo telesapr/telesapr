@@ -4327,7 +4327,7 @@
 					},
 					"Screw": {
 						"decl": "func (m AssemblyMenu) Screw(a, b Entity, lead float64) (mate ScrewMate)",
-						"text": "Screw puts two circles or arcs on one axis, as Concentric does, and\ncouples the second part's turn about it to its travel along it, as a\nnut's on a screw: the part turns by the parameter Turn names and moves\nalong the first circle's normal by Turn/360 times the parameter Lead\nnames, from where it is, so that a motion study of Turn screws it in.\nThe turn is held by the half-plane through the axis that a point of\nthe second part lies in (an axis-angle constraint), which counts whole\nturns and either way; the travel by a distance along the axis. lead is\nin mm, as the parameter's first value. The parameters are new, named\n\"turn\" and \"lead\", or with a number after for a second screw. The\nmate is made in 3d, and the second part needs a point off the axis."
+						"text": "Screw puts two circles or arcs on one axis, as Concentric does, and\ncouples the second part's turn about it to its travel along it, as a\nnut's on a screw: the part turns by the parameter Turn names and moves\nalong the first circle's normal by Turn/360 times the parameter Lead\nnames, from where it is, so that a motion study of Turn screws it in.\nThe turn is held by the half-plane through the axis that a point of\nthe second part lies in (an axis-angle constraint), which counts whole\nturns and either way; the travel by a distance along the axis. lead is\nin mm, as the parameter's first value. The parameters are new, named\n\"turn\" and \"lead\", or with a number after for a second screw. The\nmate is made in 3d, and the second part needs a point off the axis.\n\nWhen the circles carry screw threads, a screw's and a nut's of one\nsize (made on them, or on their axis in the same part, as on the\nother rim of a nut's hole), the part is first moved along the axis,\nby less than half a pitch, to where its thread's ridges lie between\nthe other's; a lead of 0 is the threads' own, negative for left-hand\nones. With the threads' lead the two then fit at every turn."
 					}
 				}
 			},
@@ -5239,7 +5239,15 @@
 					},
 					"Thread": {
 						"decl": "func (m FeaturesMenu) Thread(circle Entity, o ThreadOptions) (g Group)",
-						"text": "Thread makes a screw thread on a circle or an arc, about its axis\nand from its plane, as Features \u003e Screw Thread does: four groups,\na sketch and a lathe that turn the part down (or bore it), and a\nridge sketch and a helix that sweeps it, then with LevelStarts a\nridge sketch and a helix per further start. It returns the helix\ngroup, which keeps what made the thread (AsThread); the thread's last\ngroup becomes active. Its Check says whether the solid came out sound\nat the chord tolerance of the moment."
+						"text": "Thread makes a screw thread on a circle or an arc, about its axis\nand from its plane, as Features \u003e Screw Thread does: four groups,\na sketch and a lathe that turn the part down (or bore it), and a\nridge sketch and a helix that sweeps it, then with LevelStarts a\nridge sketch and a helix per further start; a Cosmetic thread, a\nsketch and, where the part is cut, a lathe. It returns the helix\ngroup (a cosmetic thread's sketch), which keeps what made the thread\n(AsThread); the thread's last\ngroup becomes active, and AsThread().Finished() is that group, whose\nsolid is the part with the whole thread (with level starts the helix\ngroup's has the first start only). Its Check says whether the solid\ncame out sound at the chord tolerance of the moment. A thread longer\nthan the solid so far reaches along it, run off it the other way (see\nReverse), or on a rod thinner than its root, is refused, saying so;\none whose part is made shorter later says so as the Problem of the\ngroup that keeps it."
+					},
+					"ThreadOnEdge": {
+						"decl": "func (m FeaturesMenu) ThreadOnEdge(edge SolidEdge, o ThreadOptions) Group",
+						"text": "ThreadOnEdge is ThreadOnFace from the circular edge at one end of a\ncylindrical face, as Solid.EdgeAt gives it: the thread starts at\nthat end, so Reverse is not needed."
+					},
+					"ThreadOnFace": {
+						"decl": "func (m FeaturesMenu) ThreadOnFace(face SolidFace, o ThreadOptions) Group",
+						"text": "ThreadOnFace makes a screw thread on a cylindrical face of the solid\nso far, as Solid.FaceAt gives it, as Features \u003e Screw Thread does\nwith a face selected: the face says where the thread is and which\nway it runs, so no circle need be drawn and Reverse guessed. The\nthread starts at the end of the face that is the part's end (a\nshaft's tip, the mouth of a blind hole), or with both ends free at\nits upper end; Reverse starts it at the other end. It runs along the\nface into the part. A shaft's face carries a screw's thread and a\nhole's a nut's; Internal set on a shaft's face is an error. A\nDesignation of \"\" takes the standard thread nearest the shaft, or the\none a hole is drawn or drilled for (its nominal or tap drill size);\na Length of 0 one and a half diameters, or the face's length where\nthat is less. FullLength runs the thread the face's whole length,\nthrough where the face reaches the part's far end, and measures it\nagain whenever the thread is edited.\n\nThe thread is drawn on a construction circle in a datum at the face's\nend, which follows the face when the part changes upstream; the\ngroups are those Features.Thread makes, after that datum. It returns\nthe helix group (AsThread); the thread's last group becomes active."
 					},
 					"Translate": {
 						"decl": "func (m FeaturesMenu) Translate(n int, delta Vec, name string) Group",
@@ -5431,7 +5439,7 @@
 					},
 					"AsThread": {
 						"decl": "func (g Group) AsThread() ThreadGroup",
-						"text": "AsThread is the view of a thread's helix group."
+						"text": "AsThread is the view of the group that keeps a thread: its helix\ngroup, or a cosmetic thread's sketch."
 					},
 					"AsWrap": {
 						"decl": "func (g Group) AsWrap() WrapGroup",
@@ -5499,7 +5507,7 @@
 					},
 					"IsThread": {
 						"decl": "func (g Group) IsThread() (is bool)",
-						"text": "IsThread reports whether the group is a screw thread's helix group,\nwhich AsThread edits."
+						"text": "IsThread reports whether the group keeps a screw thread (a helix\ngroup, or a cosmetic thread's sketch), which AsThread edits."
 					},
 					"Kind": {
 						"decl": "func (g Group) Kind() string",
@@ -5620,6 +5628,10 @@
 					"Suppression": {
 						"decl": "func (g Group) Suppression() (mode SuppressMode)",
 						"text": "Suppression is the group's suppress mode, as SetSuppress set it."
+					},
+					"ThreadOf": {
+						"decl": "func (g Group) ThreadOf() (t ThreadGroup, ok bool)",
+						"text": "ThreadOf is the thread the group is one of the groups of, and whether\nit is one: the datum at a face's end for a thread made on a face, the\nsketches, the lathe and the helices that Features.Thread makes. The\nwindow's group list folds those groups into the thread's row."
 					},
 					"TwoSided": {
 						"decl": "func (g Group) TwoSided() (two bool)",
@@ -6678,20 +6690,52 @@
 				}
 			},
 			"ThreadGroup": {
-				"text": "ThreadGroup is the view of a screw thread, by its helix group, the\nfourth of the groups that Features.Thread makes: what it was made\nwith, to read and to change as one.",
+				"text": "ThreadGroup is the view of a screw thread, by the group that keeps\nit: the helix group, the fourth of the groups that Features.Thread\nmakes, or a cosmetic thread's sketch. It is what the thread was made\nwith, to read and to change as one.",
 				"kind": "struct",
 				"methods": {
+					"Delete": {
+						"decl": "func (v ThreadGroup) Delete()",
+						"text": "Delete deletes the whole thread, every one of its groups and what\nuses them, in one step: the part is left as it was before the thread."
+					},
 					"Edit": {
-						"decl": "func (v ThreadGroup) Edit(o ThreadOptions)",
-						"text": "Edit makes the thread again with the options o, in one step, as the\nthread's screen in the window does: its groups are drawn again,\nkeeping their handles (those of further level starts only while\nthere are as many). A Designation of \"\" keeps the thread's, and a\nLength of 0 (with no LengthExpr) its length. Options gives what o\nstarts from:\n\n\to := t.Options()\n\to.Designation, o.Crest = \"M8x1\", \"rounded\"\n\tt.Edit(o)"
+						"decl": "func (v ThreadGroup) Edit(o ThreadOptions) (edited ThreadGroup)",
+						"text": "Edit makes the thread again with the options o, in one step, as the\nthread's screen in the window does: its groups are drawn again,\nkeeping their handles (those of further level starts only while\nthere are as many). A Designation of \"\" keeps the thread's, hand\nand all, and a Length of 0 (with no LengthExpr) its length. Options gives what o\nstarts from:\n\n\to := t.Options()\n\to.Designation, o.Crest = \"M8x1\", \"rounded\"\n\tt.Edit(o)\n\nChanging Cosmetic keeps the thread's first sketch and lathe, and the\ngroup that keeps the thread is then another, the view of which Edit\nreturns: t = t.Edit(o)."
+					},
+					"Finished": {
+						"decl": "func (v ThreadGroup) Finished() Group",
+						"text": "Finished is the thread's last group, which holds the part with the\nwhole thread on it: the helix group itself for one helix, and the\nhelix of the last start with level starts, whose solid the helix\ngroup's own is only a part of; a cosmetic thread's lathe, or its\nsketch where the part is not cut."
+					},
+					"Group": {
+						"decl": "func (v ThreadGroup) Group() Group",
+						"text": "Group is the thread's helix group, which keeps what made the thread\nand is the thread's row in the window's group list."
 					},
 					"Groups": {
 						"decl": "func (v ThreadGroup) Groups() (groups []Group)",
 						"text": "Groups are the thread's groups: the sketch and the lathe that turn\nthe part down or bore it, the sketch of the ridge, and the helix that\nsweeps it; then, with level starts, a ridge sketch and a helix for\neach further start."
 					},
+					"MoveBefore": {
+						"decl": "func (v ThreadGroup) MoveBefore(other Group) (err error)",
+						"text": "MoveBefore moves the thread, all its groups together, to just before\nother in the history, as one undo step, as the arrows of its row in\nthe group list do. A move that would put a group ahead of a group it\nuses is refused with an error naming both, and nothing changes."
+					},
 					"Options": {
 						"decl": "func (v ThreadGroup) Options() (o ThreadOptions)",
 						"text": "Options are what the thread is made with now: its designation, its\nlength in mm (as its expression gives it, when it has one), and the\nrest as Features.Thread takes them."
+					},
+					"SetSuppressed": {
+						"decl": "func (v ThreadGroup) SetSuppressed(on bool)",
+						"text": "SetSuppressed leaves the whole thread out of the model, each of its\ngroups and what uses them, or brings it back, in one step: the part\nis then as it was before the thread."
+					},
+					"SetVisible": {
+						"decl": "func (v ThreadGroup) SetVisible(visible bool)",
+						"text": "SetVisible shows or hides every group of the thread, as the box of\nits row in the group list does."
+					},
+					"Suppressed": {
+						"decl": "func (v ThreadGroup) Suppressed() (on bool)",
+						"text": "Suppressed reports whether the thread is left out of the model, as\nSetSuppressed leaves it."
+					},
+					"Visible": {
+						"decl": "func (v ThreadGroup) Visible() (visible bool)",
+						"text": "Visible reports whether every group of the thread is shown."
 					}
 				}
 			},
@@ -6812,9 +6856,33 @@
 				"decl": "func SetCurrent(d *Doc)",
 				"text": "SetCurrent sets what Current returns in a compiled program."
 			},
+			"ThreadClasses": {
+				"decl": "func ThreadClasses(designation string, internal bool) []string",
+				"text": "ThreadClasses are the tolerance classes of a thread of the\ndesignation, a screw's or, internal, a nut's, the default first:\nThreadClasses(\"M8\", false) begins \"6g\". Whitworth and ACME threads\nhave none, and take a Clearance."
+			},
+			"ThreadDesignation": {
+				"decl": "func ThreadDesignation(text string) string",
+				"text": "ThreadDesignation is a designation as the thread is written, which\nOptions gives back: ThreadDesignation(\"m8x1.25\") is \"M8\", the coarse\npitch being M8's own. It fails for one that is not a thread."
+			},
 			"ThreadNearest": {
 				"decl": "func ThreadNearest(d float64) string",
 				"text": "ThreadNearest is the designation of the standard thread whose major\ndiameter is nearest d mm, as the screw thread screen first offers."
+			},
+			"ThreadNearestForHole": {
+				"decl": "func ThreadNearestForHole(d float64) string",
+				"text": "ThreadNearestForHole is the designation of the standard thread a hole\nof diameter d mm is likely drawn for, at its nominal or its tap drill\nsize, as the screw thread screen offers for a hole's face."
+			},
+			"ThreadPitches": {
+				"decl": "func ThreadPitches(designation string) []string",
+				"text": "ThreadPitches are the designations of the standard pitches of the\nsize of a designation, coarsest first, with its starts and hand:\nThreadPitches(\"M8\") is \"M8\", \"M8x1\", \"M8x0.75\". A size no series\nhas has none."
+			},
+			"ThreadSeries": {
+				"decl": "func ThreadSeries() []string",
+				"text": "ThreadSeries are the names of the series of standard threads, as\nthe screw thread screen's [choose] lists them: \"metric\", \"unified\",\n\"trapezoidal\", \"Whitworth\", \"pipe\" and \"ACME\"."
+			},
+			"ThreadSizes": {
+				"decl": "func ThreadSizes(series string) []string",
+				"text": "ThreadSizes are the designations of a series' standard sizes, each\nat its usual pitch, smallest first: ThreadSizes(\"metric\") begins\n\"M1\", \"M1.2\". The series is named as ThreadSeries gives it, in any\nletter case."
 			},
 			"V": {
 				"decl": "func V(x, y, z float64) Vec",
@@ -7416,12 +7484,12 @@
 				]
 			},
 			"GroupThread": {
-				"text": "GroupThread is what made a thread, kept on its helix group: the circle it is on and its options.",
+				"text": "GroupThread is what made a thread, kept on its helix group (on its sketch, for a cosmetic thread): the circle it is on and its options.",
 				"kind": "struct",
 				"methods": {
 					"IsThread": {
 						"decl": "func (t GroupThread) IsThread() bool",
-						"text": "IsThread reports whether the group is a thread's helix."
+						"text": "IsThread reports whether the group keeps a thread: a modelled thread's first helix, or a cosmetic thread's sketch."
 					}
 				}
 			},
@@ -7486,6 +7554,10 @@
 			},
 			"LinkParam": {
 				"text": "LinkParam is a value a link group passes to a parameter of the model it links.",
+				"kind": "struct"
+			},
+			"LinkedThread": {
+				"text": "LinkedThread is a screw thread of a model as a file linking it sees it: the circle it is on and the point that holds its first ridge (none for a cosmetic thread), by the model's handles, and its options.",
 				"kind": "struct"
 			},
 			"MassReport": {
@@ -7807,6 +7879,10 @@
 						"decl": "func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, error)",
 						"text": "AddThread makes a screw thread on the circle or arc he, along its normal, after the active group: a sketch and a lathe group that turn the part down to the root of the thread (or bore it out, for an internal thread), then a sketch of the ridge and a helix group that sweeps it; with level starts, a sketch and a helix for each further start."
 					},
+					"AddThreadOnFace": {
+						"decl": "func (sk *Sketch) AddThreadOnFace(p ThreadPlace, o ThreadOptions) (ThreadResult, error)",
+						"text": "AddThreadOnFace makes a screw thread on the round face of p, from its end p.At along the face, with o as p sets it (Options): a datum at the face's end, with a construction circle of the face's diameter on its axis, then the thread's groups on that circle, as AddThread makes them."
+					},
 					"AddedPending": {
 						"decl": "func (sk *Sketch) AddedPending() core.HGroup",
 						"text": "AddedPending is the group ScheduleAdded scheduled whose regeneration has not run yet, or zero."
@@ -7867,9 +7943,21 @@
 						"decl": "func (sk *Sketch) CheckMoveGroupWithSources(h, before core.HGroup) error",
 						"text": "CheckMoveGroupWithSources reports the error MoveGroupWithSources would give, without moving anything."
 					},
+					"CheckMoveThread": {
+						"decl": "func (sk *Sketch) CheckMoveThread(hg, before core.HGroup) error",
+						"text": "CheckMoveThread reports the error MoveThread would give, without moving anything."
+					},
 					"CheckThread": {
 						"decl": "func (sk *Sketch) CheckThread(he core.HEntity, o ThreadOptions) error",
-						"text": "CheckThread reports why AddThread would refuse to make the thread, without changing anything."
+						"text": "CheckThread reports why AddThread would refuse to make the thread, without changing anything: among others, a thread longer than the solid so far, which it is made on."
+					},
+					"CheckThreadEdit": {
+						"decl": "func (sk *Sketch) CheckThreadEdit(hg core.HGroup, o ThreadOptions) error",
+						"text": "CheckThreadEdit reports why EditThread would refuse to make the thread whose helix group is hg again with o, without changing anything."
+					},
+					"CheckThreadOnFace": {
+						"decl": "func (sk *Sketch) CheckThreadOnFace(p ThreadPlace, o ThreadOptions) error",
+						"text": "CheckThreadOnFace reports why AddThreadOnFace would refuse to make the thread, without changing anything."
 					},
 					"ChordTolPercent": {
 						"decl": "func (sk *Sketch) ChordTolPercent() float64",
@@ -7889,6 +7977,10 @@
 					"ClearSection": {
 						"decl": "func (sk *Sketch) ClearSection()",
 						"text": "ClearSection turns the section view off."
+					},
+					"ClearThreadItems": {
+						"decl": "func (sk *Sketch) ClearThreadItems(hg core.HGroup) ([]core.HGroup, error)",
+						"text": "ClearThreadItems takes the requests and constraints out of the groups of the thread whose helix group is hg, which are about to be deleted with it, and returns those groups: deleted as meant, a regeneration doesn't count them among what was deleted for want of what it used."
 					},
 					"Clearances": {
 						"decl": "func (sk *Sketch) Clearances(upTo core.HGroup, below float64) []Clearance",
@@ -8139,6 +8231,10 @@
 						"decl": "func (sk *Sketch) LinkLabel(g *Group) string",
 						"text": "LinkLabel names a link group in a datum's name: by its name, or when another group has the same name, as a part linked twice from the window has, by its handle and name, \"g004-tile\"."
 					},
+					"LinkThreads": {
+						"decl": "func (sk *Sketch) LinkThreads() []LinkedThread",
+						"text": "LinkThreads are the model's screw threads, for a file that links it: those whose groups are still a thread's."
+					},
 					"LoadFactoryDefaults": {
 						"decl": "func (sk *Sketch) LoadFactoryDefaults()",
 						"text": "LoadFactoryDefaults resets the default styles to their factory settings."
@@ -8198,6 +8294,10 @@
 					"MovePointsBy": {
 						"decl": "func (sk *Sketch) MovePointsBy(points []core.HEntity, d geom.Vector)",
 						"text": "MovePointsBy moves each point by d, as a drag would put it, and marks their groups to be solved again; a point named twice moves once."
+					},
+					"MoveThread": {
+						"decl": "func (sk *Sketch) MoveThread(hg, before core.HGroup) error",
+						"text": "MoveThread moves the thread whose helix group is hg, all its groups together, to just before group before in the history, or to the end for the zero handle, as MoveGroup moves one group: a move that would put a group ahead of one it refers to is refused with a *MoveError, and nothing moves."
 					},
 					"MustEntity": {
 						"decl": "func (s *Sketch) MustEntity(h core.HEntity) *core.Entity",
@@ -8596,6 +8696,14 @@
 						"decl": "func (sk *Sketch) SetTextString(hr core.HRequest, s string) error",
 						"text": "SetTextString changes the string of a text request."
 					},
+					"SetThreadSuppressed": {
+						"decl": "func (sk *Sketch) SetThreadSuppressed(hg core.HGroup, on bool) error",
+						"text": "SetThreadSuppressed leaves the thread whose helix group is hg out of the model, every one of its groups (and so what uses them), or brings it back."
+					},
+					"SetThreadVisible": {
+						"decl": "func (sk *Sketch) SetThreadVisible(hg core.HGroup, on bool) error",
+						"text": "SetThreadVisible shows or hides every group of the thread whose helix group is hg, as the group list's box for a folded thread does."
+					},
 					"SetUnits": {
 						"decl": "func (sk *Sketch) SetUnits(u core.Unit) []string",
 						"text": "SetUnits makes u the document's unit, keeping every size: a plain value is a number of millimetres and does not change, and a stored expression of a length is rewritten to give the same length in u, \"(1/4)*25.4\" from \"1/4\" in inches to millimetres, or back again without the factor."
@@ -8711,17 +8819,65 @@
 						"decl": "func (sk *Sketch) ThreadBands(hg core.HGroup) []ThreadBand",
 						"text": "ThreadBands are the threads of the solid of group hg: those whose helix group comes at or before it and is generated."
 					},
+					"ThreadFitMove": {
+						"decl": "func (sk *Sketch) ThreadFitMove(a, b core.HEntity) (float64, error)",
+						"text": "ThreadFitMove is how far, along the normal of the circle a, the part of circle b must move for the threads they carry to fit: b's ridges half a pitch from a's, a screw's in a nut's grooves."
+					},
 					"ThreadGroups": {
 						"decl": "func (sk *Sketch) ThreadGroups(hg core.HGroup) ([]core.HGroup, error)",
-						"text": "ThreadGroups returns the thread's groups, from its blank sketch to its last, hg being its first helix: four, then a sketch and a helix per further level start."
+						"text": "ThreadGroups returns the thread's groups, from its blank sketch to its last, hg being the group that keeps it: four, then a sketch and a helix per further level start, then a sketch and a lathe for a chamfer; for a cosmetic thread its sketch, and the lathe after it when it turns or bores the part."
 					},
 					"ThreadLengthText": {
 						"decl": "func (sk *Sketch) ThreadLengthText(text string) (float64, string, error)",
 						"text": "ThreadLengthText reads a thread's length as the user typed it, in the document's unit: a plain number, or an expression of the parameters, which it evaluates."
 					},
+					"ThreadMembers": {
+						"decl": "func (sk *Sketch) ThreadMembers(hg core.HGroup) ([]core.HGroup, error)",
+						"text": "ThreadMembers are all the groups of the thread whose helix group is hg, in history order: the datum at its face's end, for a thread made on a face, then its ThreadGroups."
+					},
+					"ThreadNeighbours": {
+						"decl": "func (sk *Sketch) ThreadNeighbours(hg core.HGroup) (prev, next core.HGroup, err error)",
+						"text": "ThreadNeighbours are the groups just before and just after the thread whose helix group is hg, the zero handle where there is none: the places one step earlier and later that the group list's arrows move it to."
+					},
 					"ThreadOf": {
 						"decl": "func (sk *Sketch) ThreadOf(hg core.HGroup) (ThreadOptions, error)",
-						"text": "ThreadOf returns the options of the thread whose helix group is hg, with its length as its expression now gives it."
+						"text": "ThreadOf returns the options of the thread that group hg keeps, with its length as its expression now gives it."
+					},
+					"ThreadOfGroup": {
+						"decl": "func (sk *Sketch) ThreadOfGroup(hg core.HGroup) (core.HGroup, bool)",
+						"text": "ThreadOfGroup is the helix group of the thread that group hg is one of the groups of, and whether it is one."
+					},
+					"ThreadOfGroups": {
+						"decl": "func (sk *Sketch) ThreadOfGroups() map[core.HGroup]core.HGroup",
+						"text": "ThreadOfGroups maps each group that is one of a thread's (ThreadMembers) to that thread's helix group."
+					},
+					"ThreadOnCircle": {
+						"decl": "func (sk *Sketch) ThreadOnCircle(he core.HEntity) (ThreadOptions, bool)",
+						"text": "ThreadOnCircle finds the screw thread the circle or arc he carries: the one made on it, or else one on its axis of the same part (the same link, or the model itself), as a nut's thread made on one rim of its hole, or on the hole's face, is found from either rim."
+					},
+					"ThreadPartBeyond": {
+						"decl": "func (sk *Sketch) ThreadPartBeyond(hg core.HGroup) float64",
+						"text": "ThreadPartBeyond is how far the part goes on past the end of the thread whose helix group is hg, along its root: what a thread made Through turns down or bores past its length as a groove, where the part doesn't end with the thread."
+					},
+					"ThreadPlaceAtEdge": {
+						"decl": "func (sk *Sketch) ThreadPlaceAtEdge(n topo.Name) (ThreadPlace, error)",
+						"text": "ThreadPlaceAtEdge is where a thread starts at the circular edge named n of the solid at the active group: the end of the cylindrical face the edge bounds."
+					},
+					"ThreadPlaceOf": {
+						"decl": "func (sk *Sketch) ThreadPlaceOf(hg core.HGroup) (ThreadPlace, bool)",
+						"text": "ThreadPlaceOf is where the thread whose helix group is hg was made, and whether it was made on a face (AddThreadOnFace) and that face is still there."
+					},
+					"ThreadPlaceOnFace": {
+						"decl": "func (sk *Sketch) ThreadPlaceOnFace(face srf.FaceID, other bool) (ThreadPlace, error)",
+						"text": "ThreadPlaceOnFace is where a thread on the cylindrical face face of the solid at the active group starts: at the end of the part where the face has one such end (a shaft's tip, the mouth of a blind hole), otherwise at its upper end, the axis read with its largest component up."
+					},
+					"ThreadSuppressed": {
+						"decl": "func (sk *Sketch) ThreadSuppressed(hg core.HGroup) bool",
+						"text": "ThreadSuppressed reports whether the thread whose helix group is hg is left out of the model as SetThreadSuppressed leaves it: each of its groups suppressed."
+					},
+					"ThreadVisible": {
+						"decl": "func (sk *Sketch) ThreadVisible(hg core.HGroup) bool",
+						"text": "ThreadVisible reports whether every group of the thread whose helix group is hg is shown."
 					},
 					"Tol": {
 						"decl": "func (sk *Sketch) Tol() srf.Tolerance",
@@ -8804,6 +8960,18 @@
 				"text": "ThreadBand is where a thread lies, for a drawing that shows it by the drafting convention rather than turn by turn: along Axis from Origin for Length, between the radii Inner and Outer that its ridge, the turning or boring and the ridge's foot reach, the crest at Crest and the root at Root.",
 				"kind": "struct",
 				"methods": {
+					"Along": {
+						"decl": "func (b ThreadBand) Along(p geom.Vector) float64",
+						"text": "Along is how far along the axis from the band's origin p lies."
+					},
+					"ChamferReach": {
+						"decl": "func (b ThreadBand) ChamferReach() float64",
+						"text": "ChamferReach is how far along the axis from a chamfered end its cone reaches the crest, 0 for a band with no chamfer."
+					},
+					"CrestAt": {
+						"decl": "func (b ThreadBand) CrestAt(t float64) float64",
+						"text": "CrestAt is the radius of the thread's surface at t along the axis from the band's origin: its crest, or a chamfer's cone at 45° where it runs in from the crest to a chamfered end."
+					},
 					"Holds": {
 						"decl": "func (b ThreadBand) Holds(p geom.Vector, tol float64) bool",
 						"text": "Holds reports whether p lies in the band, within tol."
@@ -8816,15 +8984,39 @@
 						"decl": "func (b ThreadBand) OnCylinder(p geom.Vector, r, tol float64) bool",
 						"text": "OnCylinder reports whether p lies within tol of the cylinder of radius r about the band's axis, at any height."
 					},
+					"RootSpan": {
+						"decl": "func (b ThreadBand) RootSpan() (from, to float64)",
+						"text": "RootSpan is where along the axis the thread's root lies inside its surface, which drawings draw it over: from where the root's cylinder leaves a chamfer's cone, or the end, to the end of the full thread short of a run-out, or where it meets the cone at a chamfered far end."
+					},
 					"ToCrest": {
 						"decl": "func (b ThreadBand) ToCrest(p geom.Vector) geom.Vector",
-						"text": "ToCrest is p moved straight away from the axis, or towards it, onto the crest's cylinder."
+						"text": "ToCrest is p moved straight away from the axis, or towards it, onto the crest's cylinder, or a chamfer's cone where it is short of it."
 					}
 				}
 			},
 			"ThreadOptions": {
 				"text": "ThreadOptions is a screw thread to make on a circle.",
-				"kind": "struct"
+				"kind": "struct",
+				"methods": {
+					"FitClearance": {
+						"decl": "func (o ThreadOptions) FitClearance() (float64, error)",
+						"text": "FitClearance is the clearance the thread is made with: its class's, or Clearance when it has none."
+					}
+				}
+			},
+			"ThreadPlace": {
+				"text": "ThreadPlace is where a thread made on a round face of the solid starts: the face, the end it starts at and the end it runs to.",
+				"kind": "struct",
+				"methods": {
+					"Diameter": {
+						"decl": "func (p ThreadPlace) Diameter() float64",
+						"text": "Diameter is the face's diameter."
+					},
+					"Options": {
+						"decl": "func (p ThreadPlace) Options(o ThreadOptions) ThreadOptions",
+						"text": "Options are o as the place sets them: a nut's thread in a hole and a screw's on a shaft, run along the face from its end, and with FullLength as long as the face, through where the face reaches the end of the part."
+					}
+				}
 			},
 			"ThreadResult": {
 				"text": "ThreadResult is what AddThread made.",
@@ -9082,6 +9274,10 @@
 				"decl": "var ErrBadDensity",
 				"text": "ErrBadDensity is a density that is not a positive number."
 			},
+			"ErrChamferRounded": {
+				"decl": "var ErrChamferRounded",
+				"text": "ErrChamferRounded is returned for a chamfered thread with a rounded crest, which the chamfer's cone would touch rather than cut."
+			},
 			"ErrConstraintSelection": {
 				"decl": "var ErrConstraintSelection",
 				"text": "ErrConstraintSelection is wrapped by the errors of the builders in this file for entities that the constraint does not take."
@@ -9126,6 +9322,10 @@
 				"decl": "var ErrNoSolidSuppress",
 				"text": "ErrNoSolidSuppress is a solid suppressed of a group that has none of its own to leave out (see HasSolidSuppress)."
 			},
+			"ErrNoThreads": {
+				"decl": "var ErrNoThreads",
+				"text": "ErrNoThreads is ThreadFitMove's error when either circle carries no screw thread."
+			},
 			"ErrNormalLocked": {
 				"decl": "var ErrNormalLocked",
 				"text": "ErrNormalLocked is what OrientNormal returns for a normal that nothing turns: one lying in a workplane, or copied from another group."
@@ -9133,6 +9333,10 @@
 			"ErrNotCopies": {
 				"decl": "var ErrNotCopies",
 				"text": "ErrNotCopies is CopyPlacements' error for a group that makes no copies: not a step and repeat, a pattern along a path or a mirror."
+			},
+			"ErrNotCylinder": {
+				"decl": "var ErrNotCylinder",
+				"text": "ErrNotCylinder is returned for a face or an edge a thread can't be made on."
 			},
 			"ErrNotPoint": {
 				"decl": "var ErrNotPoint",
@@ -9149,6 +9353,18 @@
 			"ErrSplinePointsFull": {
 				"decl": "var ErrSplinePointsFull",
 				"text": "ErrSplinePointsFull is returned when a spline has as many points as an entity holds."
+			},
+			"ErrThreadNoPart": {
+				"decl": "var ErrThreadNoPart",
+				"text": "ErrThreadNoPart is returned for a thread whose circle has no part along it: no solid at all, or a solid the other way."
+			},
+			"ErrThreadPastPart": {
+				"decl": "var ErrThreadPastPart",
+				"text": "ErrThreadPastPart is returned, wrapped with how far the part reaches, for a thread longer than the part it is made on."
+			},
+			"ErrThreadThinPart": {
+				"decl": "var ErrThreadThinPart",
+				"text": "ErrThreadThinPart is returned for a screw's thread on a part thinner than its root, where its ridges would stand on nothing."
 			},
 			"FreedomFixed": {
 				"decl": "const FreedomFixed"

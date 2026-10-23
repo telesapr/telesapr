@@ -2,7 +2,7 @@
 # Drawing Sheet shows the sheet's screen; the sheet goes to A2, the
 # scale to 1:2, first angle, a title, a section of the top view and a
 # detail of the front view; dimensioning with no edges selected says
-# what to select; and File > Export Drawing writes it.
+# what to select; and File > Export > Drawing writes it.
 key r
 move 200 200
 down L 200 200

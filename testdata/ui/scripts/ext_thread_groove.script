@@ -1,0 +1,41 @@
+# A screw thread "to the end of the part" on a part that goes on past it
+# (an extension): the boring is carried a pitch past the thread, and the
+# window says that left a groove there.
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 350 300
+down L 350 300
+up L 350 300
+key esc
+key x shift
+move 350 300
+down L 350 300
+up L 350 300
+menu Features|Screw Thread...
+twmove 172 110
+twdown L 172 110
+twup L 172 110
+edit M6x1
+twmove 220 150
+twdown L 220 150
+twup L 220 150
+edit 9
+twmove 181 190
+twdown L 181 190
+twup L 181 190
+twmove 60 230
+twdown L 60 230
+twup L 60 230
+# To the end of the part.
+twmove 60 210
+twdown L 60 210
+twup L 60 210
+tw
+answer ok
+twmove 37 260
+twdown L 37 260
+twup L 37 260
+tw
+dump

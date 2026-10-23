@@ -18,6 +18,7 @@ fixture has been done; its "Tried" notes say what not to try again.
 | 1 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
 | 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint needs the line-arc joint inside the sweep |
 | 2a | [Modelling upgrade leftovers](#modelling-upgrade-leftovers) | kernel and feature | ? | What the 2026-10-22 work packages left; each refuses with a message today |
+| 2b | [Thread leftovers](#thread-leftovers) | kernel and feature | ? | What the thread improvements of 2026-10-23 left: chamfer slivers, classes to check against the tables |
 | 3 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
 | 3a | [F7 Editing what a feature is built from](#f7-editing-what-a-feature-is-built-from) | feature | M | Today a fillet's edges or a shell's faces change only by making the feature again |
 | 4 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Since 2026-10-11 it mends the ear clipper's crossing faces; as the default it still costs 3 to 5 times the triangles |
@@ -312,6 +313,22 @@ working notes are at commit `1e84ca0c` (`git show 1e84ca0c:doc/notes/wrap-emboss
 | Model to script (D5) | 300 of 301 fixtures come back (`scriptRoundTripKnown`, which may only shrink); images, splines of any number of points, constraints on four entities, styles, kerned text, faces' own appearances and datum points in a group that isn't a sketch are written since 2026-10-22, and the MCP `export` tool writes `.go`; what the DXF import draws as the window can't (`Sketch.ArcIn3D`, `Sketch.NewWorkplaneIn`, `Constrain.Again`) and an image whose file is missing (`Sketch.ImageFrame`) since 2026-10-22 | Left: `tlspr/v1/fields.tlspr`, a file of every field set whose references lead nowhere, which opens as no model |
 | Regeneration (D4) | recommendations 1 to 4, 6, 10 and 12 to 14 and a solid cache taken up, 9 behind a setting that is off, 11 in part (`doc/notes/performance.md`) | 5, 7, 8 and 15 to 18 measured and not taken, each with why in the same note; 11's parallel commits (curve ids reserved in advance) left |
 
+### Thread leftovers
+
+What the thread improvements of 2026-10-23 (`doc/notes/thread-evaluation.md`, branch
+`thread-improvements`) left open. Code: `pkg/sketch/thread*.go`, `pkg/thread`, `pkg/ui/thread*.go`.
+
+| Item | State | Approach / tried |
+|---|---|---|
+| A chamfered thread at the coarsest chord tolerance | 4 of 660 unsound in `TestThreadChamferSweep`, all at 0.5% | The failing trims are the chamfer cone's and the core cylinder's: the kernel's, not the layout's |
+| A chamfered M8 through-stud 30 mm long | unsound at the default tolerance; 28 and 31 mm are sound | Every placement of the hidden cone and the ridge ends tried; cause not found |
+| A chamfer on a modelled thread with a rounded crest | refused (`ErrChamferRounded`) | The cone touches the rounded crest rather than cutting it; no placement built it soundly |
+| A phase with a run-out | refused on a modelled thread | The run-out's fix places the ridge end exactly; a phase moves it |
+| A full-length thread on a face whose length changes later | keeps its old length until edited | Measure the face at regeneration, as the part check does |
+| Tolerance classes | from the standards' formulas, not their tables | 1/4-20 UNC 2A comes out about 7% over the ASME table's pitch-diameter tolerance; check against ISO 965-2 and ASME B1.1 tables. ACME's 0.010 in clearance likewise |
+| Buttress threads | not offered | The ridge sketch ties its two flanks to equal length; an asymmetric profile needs it drawn otherwise |
+| `Solid.FaceAt` on a seam between a hole's quarter patches | finds no face | Pick off the seam; older than the thread work |
+
 ## Waiting for the user
 
 | Item | State |
@@ -335,7 +352,7 @@ Proposed on 2026-10-03; each stays out until its reason stops holding.
 | `make ai-eval` | Needs a model and an account, outside CI; take it when the primer next changes |
 | Tolerances per edge and vertex | 21.2 heals within a file's tolerance; more only if the measured rate asks |
 | Generated entities left out of `.tlspr` | Possible behind the version number; no need has come up |
-| Threads: tapered, variable pitch | Never asked for. A thread is edited as one, with shaped crests, a run-out and level starts, and drawn by the convention on drawings, since B1 and B2 of `doc/notes/modelling_upgrades.md` and their leftovers |
+| Threads: tapered (NPT, BSPT), variable pitch; a fastener library; a thread attribute in STEP | Never asked for. Since the thread evaluation (`doc/notes/thread-evaluation.md`) a thread starts on a face, is chosen from ISO, unified, Whitworth, pipe, trapezoidal and ACME tables, takes a class, a phase, a chamfer and a cosmetic form, and folds into one row of the history |
 | Scripting: a startup script, `--watch`, menu items made by scripts, zoom to fit | Never asked for |
 | The bit-exact scaffolding: `pkg/libm`, `CxxSort`, the FMA build rules | Harmless; replacing it moves every golden for nothing |
 | A mesh Boolean fallback with perturbation | Conflicts with "never silently wrong geometry"; only as an explicit approximate mode |

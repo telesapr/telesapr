@@ -318,6 +318,11 @@ func encodeThread(t sketch.GroupThread, mmPer float64) *Node {
 		n.real("run-out", t.RunOut/mmPer)
 	}
 	n.flag("level-starts", t.LevelStarts)
+	n.flag("chamfer", t.Chamfer)
+	n.flag("full-length", t.FullLength)
+	n.str("class", t.Class)
+	n.real("phase", t.Phase)
+	n.flag("cosmetic", t.Cosmetic)
 	return n
 }
 

@@ -320,12 +320,22 @@ func (sk *Sketch) movedOrderWithSources(h, before core.HGroup) (moved, newOrder 
 		return nil, nil, fmt.Errorf("the references group stays first")
 	}
 	moved = sk.OwnSources(h)
+	newOrder, err = sk.blockOrder(h, moved, before)
+	return moved, newOrder, err
+}
+
+// blockOrder is the history with the groups moved, which are in
+// history order and named by h in a message, put together just before
+// group before, or at the end for the zero handle; nil when that
+// changes nothing. It refuses, with a *MoveError, an order that puts a
+// group ahead of one it refers to.
+func (sk *Sketch) blockOrder(h core.HGroup, moved []core.HGroup, before core.HGroup) (newOrder []core.HGroup, err error) {
 	in := map[core.HGroup]bool{}
 	for _, hg := range moved {
 		in[hg] = true
 	}
 	if in[before] {
-		return moved, nil, fmt.Errorf("%s can't move before %s, which moves with it",
+		return nil, fmt.Errorf("%s can't move before %s, which moves with it",
 			sk.groupName(h), sk.groupName(before))
 	}
 	order := sk.orderedGroups()
@@ -342,7 +352,7 @@ func (sk *Sketch) movedOrderWithSources(h, before core.HGroup) (moved, newOrder 
 		newOrder = append(newOrder, moved...)
 	}
 	if slices.Equal(order, newOrder) {
-		return moved, nil, nil
+		return nil, nil
 	}
 	pos := make(map[core.HGroup]int, len(newOrder))
 	for i, hg := range newOrder {
@@ -363,10 +373,10 @@ func (sk *Sketch) movedOrderWithSources(h, before core.HGroup) (moved, newOrder 
 				e.msg = fmt.Sprintf("%s can't move after %s, which uses %s (%s)",
 					sk.groupName(h), sk.groupName(hg), sk.groupName(d.Group), d.Why)
 			}
-			return moved, nil, e
+			return nil, e
 		}
 	}
-	return moved, newOrder, nil
+	return newOrder, nil
 }
 
 // ActivateSurvivor makes the right group active after a change that

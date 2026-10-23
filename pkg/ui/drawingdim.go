@@ -6,7 +6,6 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/res"
 	"github.com/telesapr/telesapr/pkg/sketch"
@@ -358,7 +357,7 @@ func arrow(el *srf.SEdgeList, p, t geom.Vector) {
 	t = t.WithMagnitude(1)
 	n := geom.Vector{X: -t.Y, Y: t.X}
 	for _, s := range []float64{-1, 1} {
-		el.AddEdge(p, p.Minus(t.ScaledBy(3)).Plus(n.ScaledBy(s*0.9)), core.StyleSolidEdge, 0, 0)
+		el.AddEdge(p, p.Minus(t.ScaledBy(3)).Plus(n.ScaledBy(s*0.9)), sheetThin, 0, 0)
 	}
 }
 
@@ -369,7 +368,7 @@ func textAlong(el *srf.SEdgeList, text string, o, u geom.Vector) {
 	w := res.BuiltinVectorFont().Width(3, text)
 	start := o.Minus(u.ScaledBy(w / 2))
 	res.BuiltinVectorFont().Trace(3, start, u, v, text, func(a, b geom.Vector) {
-		el.AddEdge(a, b, core.StyleSolidEdge, 0, 0)
+		el.AddEdge(a, b, sheetThin, 0, 0)
 	})
 }
 
@@ -388,9 +387,9 @@ func linearDim(el *srf.SEdgeList, p, q geom.Vector, off float64, text string, ce
 	}
 	P, Q := p.Plus(n.ScaledBy(off)), q.Plus(n.ScaledBy(off))
 	for _, e := range [][2]geom.Vector{{p, P}, {q, Q}} {
-		el.AddEdge(e[0].Plus(n.ScaledBy(s*1.5)), e[1].Plus(n.ScaledBy(s*2)), core.StyleSolidEdge, 0, 0)
+		el.AddEdge(e[0].Plus(n.ScaledBy(s*1.5)), e[1].Plus(n.ScaledBy(s*2)), sheetThin, 0, 0)
 	}
-	el.AddEdge(P, Q, core.StyleSolidEdge, 0, 0)
+	el.AddEdge(P, Q, sheetThin, 0, 0)
 	arrow(el, P, d.ScaledBy(-1))
 	arrow(el, Q, d)
 	// The text above the line, read left to right.
@@ -406,11 +405,11 @@ func linearDim(el *srf.SEdgeList, p, q geom.Vector, off float64, text string, ce
 func leader(el *srf.SEdgeList, p geom.Vector, off float64, text string) {
 	t := geom.Vector{X: 1, Y: 1}.WithMagnitude(1)
 	q := p.Plus(t.ScaledBy(math.Abs(off)))
-	el.AddEdge(p, q, core.StyleSolidEdge, 0, 0)
+	el.AddEdge(p, q, sheetThin, 0, 0)
 	arrow(el, p, t.ScaledBy(-1))
 	w := res.BuiltinVectorFont().Width(3, text)
 	shelf := q.Plus(geom.Vector{X: w + 2})
-	el.AddEdge(q, shelf, core.StyleSolidEdge, 0, 0)
+	el.AddEdge(q, shelf, sheetThin, 0, 0)
 	sheetText(el, text, 3, q.Plus(geom.Vector{X: 1, Y: 1}))
 }
 

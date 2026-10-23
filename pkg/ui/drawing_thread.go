@@ -16,7 +16,11 @@ import (
 // along it in a view across the axis, and three quarters of a thin
 // circle in a view along it. A screw's root lies inside the crest's
 // cylinder and is shown all the same; a nut's lies in the part and is
-// hidden, like any edge behind material.
+// hidden, like any edge behind material. With a run-out a thick line
+// across marks where the full thread ends, and the root's lines slant
+// out to the crest beyond it. A chamfered end is the chamfer's cone,
+// its edges thick, the root's lines running to it; looking along the
+// axis its circle is left out, as drafting leaves it.
 
 // threadTol is how near the band of a thread a point is taken to lie
 // in it, in mm.
@@ -60,7 +64,7 @@ func threadConvention(sel *srf.SEdgeList, m *srf.SMesh, bands []sketch.ThreadBan
 		return corner{int64(math.Round(p.X * 1e6)), int64(math.Round(p.Y * 1e6)), int64(math.Round(p.Z * 1e6))}
 	}
 	own := map[corner]bool{}
-	for _, tr := range m.Triangles {
+	for _, tr := range beyondBands(m, bands) {
 		if threads(tr) {
 			continue
 		}
@@ -101,24 +105,64 @@ func threadConvention(sel *srf.SEdgeList, m *srf.SMesh, bands []sketch.ThreadBan
 			}
 		}
 		// The crest's cylinder, facing out of the material: away from
-		// the axis on a screw, towards it in a nut.
+		// the axis on a screw, towards it in a nut; with a chamfered end,
+		// its cone from the end to the crest.
+		ring := crestOut(b)
+		reach := b.ChamferReach()
+		near, far := 0.0, b.Length
+		if b.Chamfer != 0 {
+			near = reach
+			if b.ChamferFar {
+				far = b.Length - reach
+			}
+		}
+		stations := []float64{0, near, far, b.Length}
 		for i := range threadSides {
 			a0, a1 := 2*math.Pi*float64(i)/threadSides, 2*math.Pi*float64(i+1)/threadSides
-			p00, p01 := at(b.Crest, a0, 0), at(b.Crest, a1, 0)
-			p10, p11 := at(b.Crest, a0, b.Length), at(b.Crest, a1, b.Length)
 			out0 := at(b.Crest, (a0+a1)/2, 0).Minus(b.Origin)
 			if b.Internal {
 				out0 = out0.ScaledBy(-1)
 			}
-			out.AddTriangleN(srf.STriMeta{}, out0, p00, p01, p11)
-			out.AddTriangleN(srf.STriMeta{}, out0, p00, p11, p10)
+			for k := range len(stations) - 1 {
+				t0, t1 := stations[k], stations[k+1]
+				if t1-t0 < threadTol {
+					continue
+				}
+				r0, r1 := b.CrestAt(t0), b.CrestAt(t1)
+				p00, p01 := at(r0, a0, t0), at(r0, a1, t0)
+				p10, p11 := at(r1, a0, t1), at(r1, a1, t1)
+				out.AddTriangleN(srf.STriMeta{}, out0, p00, p01, p11)
+				out.AddTriangleN(srf.STriMeta{}, out0, p00, p11, p10)
+			}
 			// The thread's ends; looking along the axis, not where the
 			// solid has a circle of the crest's size already, as a rod
 			// as thick as its thread does at its far end, which would
-			// draw two outlines a chord apart.
-			if !endOn || !circled {
-				extra.AddEdge(p00, p01, core.StyleSolidEdge, 0, 0)
-				extra.AddEdge(p10, p11, core.StyleSolidEdge, 0, 0)
+			// draw two outlines a chord apart. They lie just off the
+			// cylinder's sides, as onCrest puts the part's own edges,
+			// where neither those sides nor a shoulder's face meshed
+			// with other chords hides a sliver of the line that lies
+			// on them. A chamfered end has two: the end's, at the cone's
+			// small end, and the cone's edge with the crest, which is
+			// the crest's circle looking along the axis.
+			for _, t := range []float64{0, b.Length} {
+				edge := far
+				if t == 0 {
+					edge = near
+				}
+				if edge != t && !endOn {
+					r := b.CrestAt(t) * ring
+					extra.AddEdge(at(r, a0, t), at(r, a1, t), core.StyleSolidEdge, 0, 0)
+				}
+				if !endOn || !circled {
+					r := b.Crest * ring
+					extra.AddEdge(at(r, a0, edge), at(r, a1, edge), core.StyleSolidEdge, 0, 0)
+				}
+			}
+			// With a run-out, the end of the full thread too: the limit
+			// of its useful length, past which the root lines slant out.
+			if !endOn && b.RunOut > 0 {
+				full := b.Length - b.RunOut
+				extra.AddEdge(at(b.Crest*ring, a0, full), at(b.Crest*ring, a1, full), core.StyleSolidEdge, 0, 0)
 			}
 		}
 
@@ -136,12 +180,12 @@ func threadConvention(sel *srf.SEdgeList, m *srf.SMesh, bands []sketch.ThreadBan
 			// two lines where the root's cylinder turns away; with a
 			// run-out they slant out to the crest at the thread's end.
 			side := n.Cross(b.Axis).WithMagnitude(1)
-			full := b.Length - b.RunOut
+			from, full := b.RootSpan()
 			for _, s := range []float64{-1, 1} {
 				at := func(r, t float64) geom.Vector {
 					return b.Origin.Plus(side.ScaledBy(s * r)).Plus(b.Axis.ScaledBy(t))
 				}
-				root.AddEdge(at(b.Root, 0), at(b.Root, full), core.StyleDimSolid, 0, 0)
+				root.AddEdge(at(b.Root, from), at(b.Root, full), core.StyleDimSolid, 0, 0)
 				if b.RunOut > 0 {
 					root.AddEdge(at(b.Root, full), at(b.Crest, b.Length), core.StyleDimSolid, 0, 0)
 				}
@@ -177,13 +221,49 @@ func within(b sketch.ThreadBand, p geom.Vector) bool {
 // screw and inside them in a nut, so that they hide no edge on it.
 func onCrest(b sketch.ThreadBand, p geom.Vector) geom.Vector {
 	q := b.ToCrest(p)
-	k := (1 + 1e-6) / math.Cos(math.Pi/threadSides)
-	if b.Internal {
-		k = (1 - 1e-6) * math.Cos(math.Pi/threadSides)
-	}
 	d := q.Minus(b.Origin)
 	along := b.Axis.ScaledBy(d.Dot(b.Axis))
-	return b.Origin.Plus(along).Plus(d.Minus(along).ScaledBy(k))
+	return b.Origin.Plus(along).Plus(d.Minus(along).ScaledBy(crestOut(b)))
+}
+
+// crestOut is what the crest's radius is scaled by to lie just off the
+// threadSides flat sides the drawing gives the crest's cylinder: just
+// outside their corners on a screw, inside their middles in a nut.
+func crestOut(b sketch.ThreadBand) float64 {
+	if b.Internal {
+		return (1 - 1e-6) * math.Cos(math.Pi/threadSides)
+	}
+	return (1 + 1e-6) / math.Cos(math.Pi/threadSides)
+}
+
+// beyondBands are the triangles of m with what of them lies across an
+// end of a thread's band, made by the thread, cut off at that end. A
+// thread carried through its far end turns or bores the part past it,
+// in faces that the mesh may span from inside the band to outside it:
+// the part inside, which the crest's cylinder takes the place of, would
+// stay and draw the turned surface over the thread.
+func beyondBands(m *srf.SMesh, bands []sketch.ThreadBand) []srf.STriangle {
+	tris := m.Triangles
+	for _, b := range bands {
+		var out []srf.STriangle
+		for _, tr := range tris {
+			ta, tb, tc := b.Along(tr.A), b.Along(tr.B), b.Along(tr.C)
+			lo, hi := min(ta, tb, tc), max(ta, tb, tc)
+			if !b.Makes(uint32(tr.Meta.Face)) || hi <= b.Length+threadTol && lo >= -threadTol ||
+				hi <= threadTol || lo >= b.Length-threadTol {
+				out = append(out, tr)
+				continue
+			}
+			one := srf.SMesh{Triangles: []srf.STriangle{tr}}
+			// Below the circle's plane, then past the band's far end.
+			o := b.Axis.Dot(b.Origin)
+			below := clipMesh(&one, srf.HalfSpace{N: b.Axis, D: o})
+			past := clipMesh(&one, srf.HalfSpace{N: b.Axis.ScaledBy(-1), D: -(o + b.Length)})
+			out = append(append(out, below.Triangles...), past.Triangles...)
+		}
+		tris = out
+	}
+	return tris
 }
 
 // threadCut gives a section's cut face, poly in the plane with normal
@@ -220,10 +300,11 @@ func crestInPlane(b sketch.ThreadBand, p, n geom.Vector) geom.Vector {
 	case along < 1e-6:
 		s := n.Cross(b.Axis).WithMagnitude(1)
 		x, h := w.Dot(s), w.Dot(n)
-		if b.Crest*b.Crest <= h*h {
+		crest := b.CrestAt(t)
+		if crest*crest <= h*h {
 			return p
 		}
-		x = math.Copysign(math.Sqrt(b.Crest*b.Crest-h*h), x)
+		x = math.Copysign(math.Sqrt(crest*crest-h*h), x)
 		return b.Origin.Plus(b.Axis.ScaledBy(t)).Plus(s.ScaledBy(x)).Plus(n.ScaledBy(h))
 	}
 	return p
@@ -268,7 +349,7 @@ func threadCutRoots(el *srf.SEdgeList, bands []sketch.ThreadBand, keep srf.HalfS
 		case math.Abs(along) < 1e-6:
 			s := n.Cross(b.Axis).WithMagnitude(1)
 			h := keep.D - n.Dot(b.Origin)
-			full := b.Length - b.RunOut
+			from, full := b.RootSpan()
 			for _, side := range []float64{-1, 1} {
 				on := func(r, t float64) (geom.Vector, bool) {
 					if r*r <= h*h {
@@ -276,7 +357,7 @@ func threadCutRoots(el *srf.SEdgeList, bands []sketch.ThreadBand, keep srf.HalfS
 					}
 					return b.Origin.Plus(n.ScaledBy(h)).Plus(s.ScaledBy(side * math.Sqrt(r*r-h*h))).Plus(b.Axis.ScaledBy(t)), true
 				}
-				p0, ok0 := on(b.Root, 0)
+				p0, ok0 := on(b.Root, from)
 				p1, ok1 := on(b.Root, full)
 				if !ok0 || !ok1 {
 					continue
@@ -288,7 +369,7 @@ func threadCutRoots(el *srf.SEdgeList, bands []sketch.ThreadBand, keep srf.HalfS
 			}
 		case math.Abs(along) > 1-1e-6:
 			t := (keep.D - n.Dot(b.Origin)) / along
-			if t < 0 || t > b.Length-b.RunOut {
+			if from, to := b.RootSpan(); t < from || t > to {
 				continue
 			}
 			c := b.Origin.Plus(b.Axis.ScaledBy(t))

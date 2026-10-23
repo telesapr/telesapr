@@ -77,6 +77,36 @@ func TestPathEquivalenceThread(t *testing.T) {
 	requireSamePaths(t, "path_thread", "path_thread")
 }
 
+// A screw thread hidden by its row's box in the group list and
+// suppressed whole from its screen, and the same by a script.
+func TestPathEquivalenceThreadWhole(t *testing.T) {
+	requireSamePaths(t, "path_thread_whole", "path_thread_whole")
+}
+
+// A screw thread whose size and pitch are chosen from the list and
+// whose hand is a choice, made through its screen, and by a script.
+func TestPathEquivalenceThreadChoose(t *testing.T) {
+	requireSamePaths(t, "path_thread_choose", "path_thread_choose")
+}
+
+// A screw thread with a chamfered end, made through its screen, and by
+// a script.
+func TestPathEquivalenceThreadChamfer(t *testing.T) {
+	requireSamePaths(t, "path_thread_chamfer", "path_thread_chamfer")
+}
+
+// A screw thread made on a face picked on the model, from its other
+// end, through its screen, and by a script.
+func TestPathEquivalenceThreadFace(t *testing.T) {
+	requireSamePaths(t, "path_thread_face", "path_thread_face")
+}
+
+// A cosmetic screw thread made on a face through its screen, and by a
+// script.
+func TestPathEquivalenceThreadCosmetic(t *testing.T) {
+	requireSamePaths(t, "path_thread_cosmetic", "path_thread_cosmetic")
+}
+
 // A screw thread made, then edited as one from its helix group's
 // screen, and by a script through ThreadGroup.Edit.
 func TestPathEquivalenceThreadEdit(t *testing.T) {
@@ -483,6 +513,35 @@ func TestPathEquivalenceMateScrew(t *testing.T) {
 	ui, _ := requireSamePaths(t, "path_mate_screw", "path_mate_screw")
 	if p := ui.Parameter("lead"); p == nil || p.Value != 0.7 || ui.Parameter("turn") == nil {
 		t.Errorf("the screw's parameters: %+v", ui.Parameters)
+	}
+}
+
+// A thread made with its class chosen and its phase typed on its
+// screen, and the same made by a script.
+func TestPathEquivalenceThreadFit(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_thread_fit", "path_thread_fit")
+	for i := range ui.Groups {
+		if o := ui.Groups[i].Thread; o.IsThread() {
+			if o.Class != "7H" || o.Phase != 90 || o.Clearance <= 0 {
+				t.Errorf("the thread: class %q, phase %g, clearance %g", o.Class, o.Phase, o.Clearance)
+			}
+			return
+		}
+	}
+	t.Error("no thread")
+}
+
+// A screw mate of the rims of a threaded bolt and nut, picked, and the
+// same made by a script: the threads' lead, and the nut moved to where
+// the threads fit.
+func TestPathEquivalenceMateScrewThreads(t *testing.T) {
+	ui, _ := requireSamePaths(t, "path_mate_screw_threads", "path_mate_screw_threads")
+	if p := ui.Parameter("lead"); p == nil || p.Value != 1.25 {
+		t.Errorf("the screw's lead: %+v", ui.Parameters)
+	}
+	move, err := ui.ThreadFitMove(core.HEntity{V: 0x8003002d}, core.HEntity{V: 0x8004005d})
+	if err != nil || math.Abs(math.Remainder(move, 1.25)) > 1e-6 {
+		t.Errorf("the nut is %g from where it fits (%v)", move, err)
 	}
 }
 

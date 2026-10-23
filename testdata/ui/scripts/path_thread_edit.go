@@ -1,7 +1,7 @@
 // The model of path_thread_edit.script, made by a script
 // (TestPathEquivalenceThreadEdit): a thread, then edited as one. The mouse puts the circle's centre on
 // the workplane's origin, which constrains it there, and picks the
-// extrusion's top circle to thread.
+// extrusion's top circle to thread down into it.
 package main
 
 import . "github.com/telesapr/telesapr/pkg/script/api"
@@ -17,7 +17,7 @@ func main() {
 			top = e
 		}
 	}
-	t := doc.Features.Thread(top, ThreadOptions{Designation: "M6x1", Length: 9, Internal: true}).AsThread()
+	t := doc.Features.Thread(top, ThreadOptions{Designation: "M6x1", Length: 9, Internal: true, Reverse: true}).AsThread()
 	o := t.Options()
 	o.Crest, o.Length = "rounded", 12
 	t.Edit(o)

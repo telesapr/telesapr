@@ -60,6 +60,7 @@ func (sk *Sketch) NewShellJob() *ShellJob {
 			c.Groups[i].LinkLoaded, c.Groups[i].LinkModelRead = g.LinkLoaded, g.LinkModelRead
 			c.Groups[i].LinkPartParameters, c.Groups[i].LinkConfigurations = g.LinkPartParameters, g.LinkConfigurations
 			c.Groups[i].LinkDatums = g.LinkDatums
+			c.Groups[i].LinkThreads = g.LinkThreads
 		}
 	}
 	return &ShellJob{state: st, clone: c}

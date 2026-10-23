@@ -347,7 +347,9 @@ an axis, and on a circular edge, its normal runs along the axis and its origin i
 straight edge its normal runs along the edge from its start. On any other face it touches the
 face at the middle of its outer loop in the surface's parameters, or the point of the face
 nearest that, its normal out of the solid; on any other edge its normal runs along the edge at
-the point half way along it.
+the point half way along it. With two `solid-face` lines, the first a cylindrical face and the
+second the face across one of its ends, it lies at that end, its origin on the axis and its normal
+along the axis into the cylinder: the datum a thread made on a face is drawn from.
 
 | Subtype | Name |
 |---|---|
@@ -369,13 +371,15 @@ the point half way along it.
 | Intersection | `intersection` |
 
 A screw thread's first helix group, the fourth of the groups a thread is made of (a sketch and a
-helix follow it for each further start when its starts are level), keeps what made the thread,
-which drawing the thread again from new options starts from:
+helix follow it for each further start when its starts are level, then a sketch and a lathe when
+it is chamfered), keeps what made the thread, which drawing the thread again from new options
+starts from. A cosmetic thread keeps it on its sketch, the first of its groups (a lathe that turns
+or bores the part may follow):
 
 ```
 thread {
   circle <handle>           # the circle or arc the thread is on
-  form <form>               # metric, unified or trapezoidal
+  form <form>               # metric, unified, trapezoidal, whitworth or acme
   diameter <real>           # the nominal diameter, in millimetres
   pitch <real>              # in millimetres
   starts <integer>          # left out for one
@@ -388,6 +392,11 @@ thread {
   crest <crest>             # truncated or rounded; left out for the standard crest
   run-out <real>            # how far the root tapers to the crest before the shoulder, a length; left out for none
   level-starts              # every start from the circle's plane, a ridge and a helix each
+  full-length               # made on a face: as long as the face, measured again at each edit
+  class "<class>"           # the tolerance class, as "6g", which sets the clearance in place of clearance
+  phase <real>              # turned about its axis, in degrees: the ridges moved along by that part of the lead
+  cosmetic                  # recorded on the part, not modelled: on the thread's sketch
+  chamfer                   # the free end cut at 45°, both ends of a through thread
 }
 ```
 
@@ -688,6 +697,17 @@ the group fields `density` (no mass), `depth` and `angle` (the extrusion or revo
 and the drawing field `modelled-threads`. The top-level `datum` line, a name for an entity that a
 linking model finds as `group.name`, is of the same day; a reader from before skips it. The
 constraint type `axis-angle` is too; a reader from before reports the unknown type.
+
+Version 2 gained the thread fields `class` and `phase` on 2026-10-23. A reader from before skips
+each with a report: it makes the thread with the clearance written beside the class, which is the
+class's, and its ridges where a thread without a phase starts them.
+
+Version 2 gained the thread field `cosmetic`, on a sketch group, on 2026-10-23. A reader from
+before skips it with a report; the thread's sketch is then a group that keeps a thread it cannot
+edit as one, and its drawings show the thread by the convention all the same.
+
+Version 2 gained the thread field `chamfer` on 2026-10-23; a reader from before skips it with a
+report, and reads a chamfered thread as one without, whose chamfer's two groups follow it.
 
 Version 2 gained the style field `z-index` on 2026-10-17. A reader from before skips it with a
 report, and draws the style at its default level.

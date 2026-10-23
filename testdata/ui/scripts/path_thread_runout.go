@@ -2,7 +2,7 @@
 // (TestPathEquivalenceThreadRunOut): a triple-start thread whose starts
 // all begin at the circle's plane, fading out before its end. The mouse
 // puts the circle's centre on the workplane's origin, which constrains
-// it there, and picks the extrusion's top circle to thread.
+// it there, and picks the extrusion's top circle to thread down into it.
 package main
 
 import . "github.com/telesapr/telesapr/pkg/script/api"
@@ -18,5 +18,5 @@ func main() {
 			top = e
 		}
 	}
-	doc.Features.Thread(top, ThreadOptions{Designation: "M20xPh3P1", Length: 30, RunOut: 4, LevelStarts: true})
+	doc.Features.Thread(top, ThreadOptions{Designation: "M20xPh3P1", Length: 30, RunOut: 4, LevelStarts: true, Reverse: true})
 }

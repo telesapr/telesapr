@@ -55,7 +55,7 @@ the entries had before the menus took this order are still taken.
 | [Loft](loft.md) | Two profiles joined by ruled faces | `loft` |
 | [Sweep](sweep.md) | A profile moved along a path | `sweep` |
 | [Pattern along a path](pattern.md) | A solid repeated along a path | `pattern` |
-| [Screw threads](threads.md) | Metric, unified and trapezoidal threads | `bolt` |
+| [Screw threads](threads.md) | Metric, unified, trapezoidal, Whitworth, pipe and ACME threads | `bolt` |
 | [Wrap and emboss](wrap.md) | A sketch rolled onto a cylinder or a cone, raised from it or sunk into it | `wrap` |
 | [Drawings](drawings.md) | A sheet of the standard views, sections and details with a title block, to PDF and DXF | `drawing` |
 | [STEP links](step-links.md) | A STEP file, or an STL or OBJ mesh, linked as a reference | `step` |

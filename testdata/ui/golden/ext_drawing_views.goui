@@ -8,11 +8,11 @@ row 2
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 DRAWING   (File > Export Drawing writes it)  [show it in the window]
+row 7 DRAWING   (File > Export > Drawing writes it)  [show it in the window]
  0-6 74 64 0
- 7-44 64 64 0
- 45-67 6c 64 119 0 1 0
- 68-99 64 64 0
+ 7-46 64 64 0
+ 47-69 6c 64 119 0 1 0
+ 70-99 64 64 0
 row 10    sheet      A3, 420 x 297 mm [next]
  0-2 64 61 0
  3-7 74 61 0
@@ -109,11 +109,11 @@ row 2
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 DRAWING   (File > Export Drawing writes it)  [show it in the window]
+row 7 DRAWING   (File > Export > Drawing writes it)  [show it in the window]
  0-6 74 64 0
- 7-44 64 64 0
- 45-67 6c 64 119 0 1 0
- 68-99 64 64 0
+ 7-46 64 64 0
+ 47-69 6c 64 119 0 1 0
+ 70-99 64 64 0
 row 10    sheet      A3, 420 x 297 mm [next]
  0-2 64 61 0
  3-7 74 61 0
@@ -246,11 +246,11 @@ row 2
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 DRAWING   (File > Export Drawing writes it)  [show it in the window]
+row 7 DRAWING   (File > Export > Drawing writes it)  [show it in the window]
  0-6 74 64 0
- 7-44 64 64 0
- 45-67 6c 64 119 0 1 0
- 68-99 64 64 0
+ 7-46 64 64 0
+ 47-69 6c 64 119 0 1 0
+ 70-99 64 64 0
 row 10    sheet      A3, 420 x 297 mm [next]
  0-2 64 61 0
  3-7 74 61 0
@@ -383,11 +383,11 @@ row 2
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 DRAWING   (File > Export Drawing writes it)  [show it in the window]
+row 7 DRAWING   (File > Export > Drawing writes it)  [show it in the window]
  0-6 74 64 0
- 7-44 64 64 0
- 45-67 6c 64 119 0 1 0
- 68-99 64 64 0
+ 7-46 64 64 0
+ 47-69 6c 64 119 0 1 0
+ 70-99 64 64 0
 row 10    sheet      A3, 420 x 297 mm [next]
  0-2 64 61 0
  3-7 74 61 0
@@ -526,11 +526,11 @@ row 2
  0-99 64 64 0
 row 4 
  0-99 64 64 0
-row 7 DRAWING   (File > Export Drawing writes it)  [show it in the window]
+row 7 DRAWING   (File > Export > Drawing writes it)  [show it in the window]
  0-6 74 64 0
- 7-44 64 64 0
- 45-67 6c 64 119 0 1 0
- 68-99 64 64 0
+ 7-46 64 64 0
+ 47-69 6c 64 119 0 1 0
+ 70-99 64 64 0
 row 10    sheet      A3, 420 x 297 mm [next]
  0-2 64 61 0
  3-7 74 61 0

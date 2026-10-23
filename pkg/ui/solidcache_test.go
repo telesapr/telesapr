@@ -40,7 +40,10 @@ func TestSolidCacheSameAsMaking(t *testing.T) {
 	var hits atomic.Int64
 	t.Run("models", func(t *testing.T) {
 		for i, f := range files {
-			if testing.Short() && i%20 != 0 {
+			// The sample keeps a thread, whose lathes come from the
+			// cache, so that a model added elsewhere doesn't leave it
+			// without a solid kept.
+			if testing.Short() && i%20 != 0 && !strings.HasSuffix(filepath.ToSlash(f), "thread/screw_m8.tlspr") {
 				continue
 			}
 			t.Run(filepath.ToSlash(strings.TrimPrefix(f, filepath.Join("..", "..", "testdata")+string(filepath.Separator))), func(t *testing.T) {

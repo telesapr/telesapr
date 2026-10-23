@@ -140,7 +140,7 @@ var MenuCalls = map[string]string{
 	"Features/Helix":                         "Features.Helix Features.HelixAbout",
 	"Features/Lathe":                         "Features.Lathe Features.LatheAbout",
 	"Features/Revolve":                       "Features.Revolve Features.RevolveAbout",
-	"Features/Screw Thread...":               "Features.Thread",
+	"Features/Screw Thread...":               "Features.Thread Features.ThreadOnFace Features.ThreadOnEdge",
 	"Features/Sweep Along Path":              "Features.Sweep",
 	"Features/Mirror":                        "Features.Mirror",
 	"Features/Chamfer Edges":                 "Features.Chamfer",

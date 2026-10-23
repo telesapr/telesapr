@@ -275,15 +275,36 @@ var windowActions = map[string]string{
 	"ScreenChangeThread/c":            "Features.Thread ThreadGroup.Edit",
 	"ScreenChangeThread/e":            "Features.Thread ThreadGroup.Edit",
 	"ScreenChangeThread/i":            "Features.Thread ThreadGroup.Edit",
-	"ScreenChangeThread/t":            "Features.Thread ThreadGroup.Edit",
-	"ScreenChangeThread/r":            "Features.Thread ThreadGroup.Edit",
+	"ScreenChangeThread/t":            "Features.Thread ThreadGroup.Edit Features.ThreadOnFace",
+	"ScreenChangeThread/r":            "Features.Thread ThreadGroup.Edit Features.ThreadOnFace",
 	"ScreenChangeThread/n":            "Features.Thread ThreadGroup.Edit",
 	"ScreenChangeThread/u":            "Features.Thread ThreadGroup.Edit",
 	"ScreenChangeThread/o":            "Features.Thread ThreadGroup.Edit",
 	"ScreenChangeThread/b":            "Features.Thread ThreadGroup.Edit",
 	"ScreenChangeThread/s":            "Features.Thread ThreadGroup.Edit",
+	"ScreenChangeThread/h":            "Features.Thread ThreadGroup.Edit",
+	"ScreenChangeThread/k":            "Features.Thread ThreadGroup.Edit",
+	"ScreenChangeThread/y":            "Features.Thread ThreadGroup.Edit Features.ThreadOnFace",
+	"ScreenChangeThread/z":            "Features.Thread ThreadGroup.Edit Features.ThreadOnFace",
+	"ScreenChangeThread/x":            "Features.Thread ThreadGroup.Edit Features.ThreadOnFace",
+	"ScreenChangeThread/m":            "- navigation: shows the sizes to choose from, which ThreadSizes and ThreadPitches give a script",
+	"ScreenPickThread/S":              "- navigation: shows another series' sizes, which ThreadSizes gives a script",
+	"ScreenPickThread/Z":              "Features.Thread ThreadGroup.Edit",
+	"ScreenPickThread/P":              "Features.Thread ThreadGroup.Edit",
+	"ScreenPickThread/B":              "- navigation",
+	"ScreenChangeThread/f":            "Features.Thread ThreadGroup.Edit",
+	"ScreenChangeThread/q":            "- navigation: shows the classes to choose from, which ThreadClasses gives a script",
+	"ScreenPickThreadClass/C":         "Features.Thread ThreadGroup.Edit",
+	"ScreenPickThreadClass/N":         "Features.Thread ThreadGroup.Edit",
+	"ScreenPickThreadClass/B":         "- navigation",
 	"ScreenMakeThread":                "Features.Thread ThreadGroup.Edit",
 	"ScreenEditThread":                "ThreadGroup.Edit",
+	"ScreenThreadAction/o":            "- navigation: shows a thread's groups in the group list or folds them, which ThreadGroup.Groups gives a script",
+	"ScreenThreadAction/v":            "ThreadGroup.SetVisible",
+	"ScreenThreadAction/u":            "ThreadGroup.MoveBefore",
+	"ScreenThreadAction/d":            "ThreadGroup.MoveBefore",
+	"ScreenThreadAction/s":            "ThreadGroup.SetSuppressed",
+	"ScreenThreadAction/x":            "ThreadGroup.Delete",
 	"ScreenChangeMotion/n":            "Assembly.MotionStudy",
 	"ScreenChangeMotion/f":            "Assembly.MotionStudy",
 	"ScreenChangeMotion/t":            "Assembly.MotionStudy",
@@ -513,6 +534,7 @@ var windowActions = map[string]string{
 	"editThreadDesignation":        "Features.Thread ThreadGroup.Edit",
 	"editThreadLength":             "Features.Thread ThreadGroup.Edit",
 	"editThreadClearance":          "Features.Thread ThreadGroup.Edit",
+	"editThreadPhase":              "Features.Thread ThreadGroup.Edit",
 	"editThreadRunOut":             "Features.Thread ThreadGroup.Edit",
 	"editParameterAdd":             "Params.Set",
 	"editParameterExpr":            "Params.Set",
@@ -539,6 +561,7 @@ var windowActions = map[string]string{
 
 	// The context menu: most entries run the menu entry of the same name.
 	"ctx:Assign to Style":                    "Request.SetStyle Constraint.SetStyle",
+	"ctx:Screw Thread...":                    "Features.Thread Features.ThreadOnFace Features.ThreadOnEdge",
 	"ctx:No Style":                           "Request.SetStyle Constraint.SetStyle",
 	"ctx:Newly Created Custom Style...":      "Doc.NewStyle Request.SetStyle",
 	"ctx:Group Info":                         "- shows the group's screen",
@@ -736,6 +759,7 @@ AsLink                -an accessor for the typed group
 AsRevolve             -an accessor for the typed group
 AsThread              -an accessor for the typed group
 IsThread              -q
+ThreadOf              -q
 SetExpr               ScreenChangeExprA; ScreenChangeGroupScale; ScreenChangeHelixPitch; ScreenChangeGroupDraft; ScreenChangeLoftStart; ScreenChangePitchOption; ScreenChangeGroupExtent
 Expr                  -q
 Value                 -q
@@ -913,7 +937,15 @@ FreeDepth        ScreenChangeExtentHeld
 	"ThreadGroup": `
 Options  -q
 Groups   -q
+Finished -q
 Edit     ScreenEditThread; ScreenMakeThread
+Group    -q
+Visible  -q
+SetVisible  ScreenThreadAction/v
+Suppressed  -q
+SetSuppressed  ScreenThreadAction/s
+MoveBefore  ScreenThreadAction/u; ScreenThreadAction/d
+Delete   ScreenThreadAction/x
 `,
 	"RevolveGroup": `
 Angle            -q

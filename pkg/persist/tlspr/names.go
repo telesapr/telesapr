@@ -70,6 +70,8 @@ var threadForms = newEnum("thread form", map[thread.Form]string{
 	thread.FormMetric:      "metric",
 	thread.FormUnified:     "unified",
 	thread.FormTrapezoidal: "trapezoidal",
+	thread.FormWhitworth:   "whitworth",
+	thread.FormACME:        "acme",
 })
 
 var threadCrests = newEnum("thread crest", map[thread.Crest]string{

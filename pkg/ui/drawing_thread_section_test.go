@@ -23,12 +23,13 @@ func byStyle(el srf.SEdgeList) map[int]srf.SEdgeList {
 }
 
 // sectionOf is the edges of the section of the drawing's view of kind
-// through the solid's middle, by style.
-func sectionOf(t *testing.T, ss *Application, kind string, d *sketch.Drawing) map[int]srf.SEdgeList {
+// through the solid's middle, by style, hatched hatch apart (0 for
+// none: the hatching is in the thin lines a thread's root is).
+func sectionOf(t *testing.T, ss *Application, kind string, d *sketch.Drawing, hatch float64) map[int]srf.SEdgeList {
 	t.Helper()
 	r, u, _ := sketch.ViewDirection(kind)
 	g := ss.SK.Group(ss.GW.activeGroupH())
-	return byStyle(ss.sectionEdges(g, vec(r), vec(u), 0, 0.5, d.Hidden, d.ModelledThreads))
+	return byStyle(ss.sectionEdges(g, vec(r), vec(u), 0, hatch, d.Hidden, d.ModelledThreads))
 }
 
 // TestDrawingThreadSection cuts a screw along its axis: by the
@@ -38,7 +39,7 @@ func sectionOf(t *testing.T, ss *Application, kind string, d *sketch.Drawing) ma
 func TestDrawingThreadSection(t *testing.T) {
 	ss, doc := threadedModel(t, false)
 	d := doc.Drawing.Get()
-	cut := sectionOf(t, ss, "top", &d)
+	cut := sectionOf(t, ss, "top", &d, 0)
 	thin := cut[core.StyleDimSolid]
 	if len(thin.Edges) != 2 {
 		t.Fatalf("%d thin edges, want the root's two lines", len(thin.Edges))
@@ -64,9 +65,9 @@ func TestDrawingThreadSection(t *testing.T) {
 	if n := teeth(cut[core.StyleSolidEdge]); n != 0 {
 		t.Errorf("%d ends of edges between the root and the crest", n)
 	}
-	// The hatch reaches the crest.
+	// The hatch, thin, reaches the crest.
 	reach := 0.0
-	for _, e := range cut[core.StyleSolidEdge].Edges {
+	for _, e := range sectionOf(t, ss, "top", &d, 0.5)[core.StyleDimSolid].Edges {
 		if e.A.Y < -1 && e.A.Y > -11 && e.B.Y < -1 && e.B.Y > -11 {
 			reach = math.Max(reach, math.Max(abs(e.A.X), abs(e.B.X)))
 		}
@@ -76,7 +77,7 @@ func TestDrawingThreadSection(t *testing.T) {
 	}
 
 	d.ModelledThreads = true
-	modelled := sectionOf(t, ss, "top", &d)
+	modelled := sectionOf(t, ss, "top", &d, 0)
 	if len(modelled[core.StyleDimSolid].Edges) != 0 || teeth(modelled[core.StyleSolidEdge]) < 20 {
 		t.Errorf("modelled: %d thin edges, %d teeth", len(modelled[core.StyleDimSolid].Edges), teeth(modelled[core.StyleSolidEdge]))
 	}
@@ -86,7 +87,7 @@ func TestDrawingThreadSection(t *testing.T) {
 	r, u, _ := sketch.ViewDirection("front")
 	g := ss.SK.Group(ss.GW.activeGroupH())
 	d.ModelledThreads = false
-	across := byStyle(ss.sectionEdges(g, vec(r), vec(u), -9, 0.5, false, false))
+	across := byStyle(ss.sectionEdges(g, vec(r), vec(u), -9, 0, false, false))
 	if n := len(across[core.StyleDimSolid].Edges); n != threadSides*3/4 {
 		t.Errorf("across: %d thin edges, want the root's three quarters", n)
 	}

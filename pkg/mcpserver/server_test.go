@@ -268,6 +268,21 @@ func TestSketchProblemShown(t *testing.T) {
 	if _, text = call(t, cs, ToolRun, map[string]any{"code": "doc.Active().Analyze().Check().Sound()"}); !strings.Contains(text, "value: false") {
 		t.Errorf("the solid that isn't there is sound:\n%s", text)
 	}
+	// A script that succeeds keeps what it printed and its value in
+	// the structured result, which some clients show in place of the
+	// text.
+	res, text = call(t, cs, ToolRun, map[string]any{"code": "fmt.Println(\"volume 42\")\n6 * 7"})
+	raw, err = json.Marshal(res.StructuredContent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out = RunOutput{}
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+	if res.IsError || out.Output != "volume 42\n" || out.Value != "42" || !strings.Contains(text, "output:\nvolume 42\n") {
+		t.Errorf("the structured result is %s, the text\n%s", raw, text)
+	}
 }
 
 // measure reports the solid, or says why it can't measure a selection

@@ -63,7 +63,7 @@ func (tw *textWindow) ShowDrawing() {
 	if tw.ss.GW.sheetShown {
 		show = "[show the model]"
 	}
-	tw.Printf(true, "%FtDRAWING%E   (File > Export Drawing writes it)  %Fl%Lw%f%s%E", lf(tw.ScreenChangeDrawing), show)
+	tw.Printf(true, "%FtDRAWING%E   (File > Export > Drawing writes it)  %Fl%Lw%f%s%E", lf(tw.ScreenChangeDrawing), show)
 	w, h := d.Size()
 	tw.Printf(true, "%Ba   %Ftsheet%E      %s, %s x %s mm %Fl%Ls%f[next]%E",
 		d.Sheet, strconv.FormatFloat(w, 'g', -1, 64), strconv.FormatFloat(h, 'g', -1, 64), lf(tw.ScreenChangeDrawing))

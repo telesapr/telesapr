@@ -11,7 +11,7 @@ import (
 )
 
 // The drawing sheet shown in the window (roadmap 29.1): View > Show
-// Drawing Sheet draws the sheet, as File > Export Drawing writes it, in
+// Drawing Sheet draws the sheet, as File > Export > Drawing writes it, in
 // place of the model, fitted to the window, until it is chosen again.
 // It is view state, not saved. While it is shown the mouse picks
 // nothing in the model; the drawing's screen still edits the sheet, and

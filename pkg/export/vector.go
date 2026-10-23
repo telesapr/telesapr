@@ -488,8 +488,14 @@ func (w *svgFileWriter) StartFile() {
 
 		w.printf(".s%x {\r\n", hs.V)
 		w.printf("stroke:#%02x%02x%02x;\r\n", strokeRgb.Red, strokeRgb.Green, strokeRgb.Blue)
-		// don't know why we have to take a half of the width
-		w.printf("stroke-width:%f;\r\n", w.styleWidthMm(hs)/2.0)
+		// A style's own width, a view's on the screen, is written at
+		// half; one the options give is a weight on paper, written as
+		// it is.
+		width := w.styleWidthMm(hs) / 2
+		if mm, ok := w.o.WidthsMm[hs]; ok {
+			width = mm
+		}
+		w.printf("stroke-width:%f;\r\n", width)
 		w.printf("stroke-linecap:round;\r\n")
 		w.printf("stroke-linejoin:round;\r\n")
 		patternStr := makeStipplePattern(pattern, stippleScale, ',', true)
