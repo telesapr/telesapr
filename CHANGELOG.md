@@ -9,6 +9,28 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-24
+
+### Added
+- Wrap Sketch Onto Face: emboss or engrave a sketch (text, shapes) on a cylinder, cone or turned face.
+- Closed lofts, lofts held square to a middle profile, and lofts that leave a profile along the sides of the solid it is drawn on.
+- Datums: named datums on any face or edge of a solid, found through links as `group.name`, and mates on them.
+- Mate Screw (a screw mate by a turn about an axis), Analyze > Clearance and Walls (clearance between parts, wall thickness), density per group and mass properties per part.
+- Thread run-out and level starts, threads edited as one block on their helix group, and screw threads drawn by the drafting convention in drawings.
+- Shell for lathes and revolves; extrusion depth and revolve angle held by a value; closed sweeps.
+- glTF (`.glb`) export, File > Export > Script (the model as the script that builds it), and relink for linked parts.
+- Scripting: forms a script declares, filled in a dialog, by `--set` or by MCP; a script library folder; file guard for AI programs; new MCP tools (measure, export, open, list_files).
+- Chamfers and fillets onto curved faces by the rolling ball, with fitted end sections.
+
+### Changed
+- Faster solving and regeneration: systems solved per connected component and kept between solves, solids kept by what they were made from, a faster software renderer.
+- A setting to draw a drag's solids late, off the thread.
+- DXF import: arcs in 3D get the normal of their plane.
+
+### Fixed
+- Deep wraps onto cones join without hair vertices; a section through a turned solid's axis closes.
+- Several fillet, chamfer and sweep cases that failed under the race detector or at twisted patches.
+
 ## [0.4.13] - 2026-10-21
 
 Earlier releases are listed on the [releases page](https://github.com/telesapr/telesapr/releases).
