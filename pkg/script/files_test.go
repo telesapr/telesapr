@@ -14,11 +14,23 @@ import (
 	"github.com/telesapr/telesapr/pkg/script/symbols"
 )
 
+// tempDir is t.TempDir() with its links followed, in the form the guard
+// reports: /private/var on macOS, the long names for the 8.3 ones
+// (RUNNER~1) of a Windows runner.
+func tempDir(t *testing.T) string {
+	t.Helper()
+	dir, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
 // guardDirs makes folders a script may read, write, and neither, with
 // a file in each, and in the writable one a link to the file outside.
 func guardDirs(t *testing.T) (read, write, outside string) {
 	t.Helper()
-	root := t.TempDir()
+	root := tempDir(t)
 	read, write, outside = filepath.Join(root, "read"), filepath.Join(root, "write"), filepath.Join(root, "outside")
 	for _, d := range []string{read, write, outside} {
 		if err := os.Mkdir(d, 0o755); err != nil {
@@ -37,7 +49,7 @@ func guardDirs(t *testing.T) (read, write, outside string) {
 func TestFilesCheck(t *testing.T) {
 	t.Parallel()
 	read, write, outside := guardDirs(t)
-	docDir := t.TempDir()
+	docDir := tempDir(t)
 	f := &Files{Read: []string{read, ""}, Write: []string{write, filepath.Join(outside, "none")}, Folder: func() string { return docDir }}
 	for _, c := range []struct {
 		path  string
@@ -157,7 +169,7 @@ func guardedRun(t *testing.T, e printing, src string) (string, error) {
 func TestGuardedScript(t *testing.T) {
 	t.Parallel()
 	read, write, outside := guardDirs(t)
-	temp := t.TempDir()
+	temp := tempDir(t)
 	e := newPrinting(t, Options{Host: newHost(), Files: &Files{Read: []string{read}, Write: []string{write}, Temp: temp}})
 	q := func(path string) string { return `"` + filepath.ToSlash(path) + `"` }
 	in, away := filepath.Join(write, "part"), filepath.Join(outside, "part")
@@ -219,7 +231,7 @@ func TestGuardedScript(t *testing.T) {
 		{"b, err := fs.ReadFile(os.DirFS(" + q(write) + "), \"g.txt\")\nfmt.Println(string(b), err)", "x <nil>"},
 		{"m, err := filepath.Glob(" + q(filepath.Join(write, "*.txt")) + ")\nfmt.Println(len(m), err)", "3 <nil>"},
 		{"fmt.Printf(\"%q %v\\n\", os.Getenv(\"HOME\"), len(os.Environ()))", `"" 0`},
-		{"f, err := os.CreateTemp(\"\", \"x\")\nfmt.Println(filepath.Dir(f.Name()) == " + q(temp) + ", err)", "true <nil>"},
+		{"f, err := os.CreateTemp(\"\", \"x\")\nfmt.Println(filepath.Dir(f.Name()) == " + q(temp) + ", err, f.Close())", "true <nil> <nil>"},
 		{"d, err := os.MkdirTemp(\"\", \"x\")\nfmt.Println(filepath.Dir(d) == " + q(temp) + ", err)", "true <nil>"},
 		{"d, err := Open(" + q(in+".tlspr") + ")\nfmt.Println(err, d.File.Save(" + q(away+".tlspr") + ") != nil)", "<nil> true"},
 	} {

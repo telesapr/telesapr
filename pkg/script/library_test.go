@@ -154,3 +154,22 @@ func TestDefaultLibrary(t *testing.T) {
 		t.Errorf("with no configuration directory DefaultLibrary() = %q, want none", got)
 	}
 }
+
+// The interpreter asks for a package by the path it makes with the
+// host's separator; on Windows that is src\gears, and the library
+// answers it as it does src/gears.
+func TestLibraryFSBackslashes(t *testing.T) {
+	t.Parallel()
+	e, err := New(Options{Host: newHost(), Library: writeLibrary(t)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{`src/shop/size/size.go`, `src\shop\size\size.go`} {
+		f, err := libraryFS{e}.Open(name)
+		if err != nil {
+			t.Errorf("Open(%q): %v", name, err)
+			continue
+		}
+		f.Close()
+	}
+}

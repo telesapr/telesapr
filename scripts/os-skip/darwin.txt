@@ -33,9 +33,3 @@ TestSoftText
 TestFonts
 TestSynthFonts
 TestTTF
-# The same fused multiply-add moves the last bit of a thread's cosmetic
-# goldens (act-point 0 -2.7755575615628914e-16 against -2.4959...e-16).
-TestCosmeticThreadGoldens
-# t.TempDir() is /var/... and the folders the guard names are the
-# resolved /private/var/..., so the message's paths differ by that prefix.
-TestFilesCheck

@@ -52,9 +52,28 @@ var lidUprights = []struct {
 }
 
 // lidStep is the lid read as a solid.
+var lidStepFile = filepath.Join("..", "..", "..", "testdata", "step", "degree", "lid_degree7.step")
+
+// sameVolume reports whether the folder and the file are on one drive: a
+// sketch saved in the folder links the file relative to it, which it
+// can't across drives on Windows (the runner's temporary folder is on
+// C: and the checkout on D:).
+func sameVolume(t *testing.T, dir, file string) bool {
+	t.Helper()
+	abs, err := filepath.Abs(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.VolumeName(abs) != filepath.VolumeName(dir) {
+		t.Logf("%s and %s are on different drives: not saved and loaded", dir, abs)
+		return false
+	}
+	return true
+}
+
 func lidStep(t *testing.T, d *Doc) Group {
 	t.Helper()
-	g, err := d.Assembly.LinkStep(filepath.Join("..", "..", "..", "testdata", "step", "degree", "lid_degree7.step"), "", true)
+	g, err := d.Assembly.LinkStep(lidStepFile, "", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,18 +116,20 @@ func TestChamferEndsOnCurvedFace(t *testing.T) {
 			if i != 0 || dist != 1 {
 				continue
 			}
-			path := filepath.Join(t.TempDir(), "lid.tlspr")
-			if err := d.File.Save(path); err != nil {
-				t.Fatal(err)
-			}
-			l := New()
-			if err := l.File.Load(path); err != nil {
-				t.Fatal(err)
-			}
-			l.Edit.SetChordTolerance(0.002)
-			gs := l.Groups()
-			if r2 := gs[len(gs)-1].Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-rep.Volume) > 1e-6*rep.Volume {
-				t.Errorf("loaded: %s, volume %g, saved %g", r2.Summary(), r2.Volume, rep.Volume)
+			if dir := t.TempDir(); sameVolume(t, dir, lidStepFile) {
+				path := filepath.Join(dir, "lid.tlspr")
+				if err := d.File.Save(path); err != nil {
+					t.Fatal(err)
+				}
+				l := New()
+				if err := l.File.Load(path); err != nil {
+					t.Fatal(err)
+				}
+				l.Edit.SetChordTolerance(0.002)
+				gs := l.Groups()
+				if r2 := gs[len(gs)-1].Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-rep.Volume) > 1e-6*rep.Volume {
+					t.Errorf("loaded: %s, volume %g, saved %g", r2.Summary(), r2.Volume, rep.Volume)
+				}
 			}
 			n := len(d.Groups())
 			if !d.Edit.Undo() || len(d.Groups()) >= n {

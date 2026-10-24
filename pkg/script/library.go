@@ -43,6 +43,10 @@ const libraryRoot = "."
 type libraryFS struct{ e *Engine }
 
 func (l libraryFS) Open(name string) (fs.File, error) {
+	// The interpreter joins libraryRoot/src/<import path> with the
+	// host's separator, so on Windows the name arrives with backslashes,
+	// which an fs.FS takes for part of a file name.
+	name = strings.ReplaceAll(name, `\`, "/")
 	rest, ok := strings.CutPrefix(name, "src/")
 	dir := l.e.Library()
 	if !ok || dir == "" {

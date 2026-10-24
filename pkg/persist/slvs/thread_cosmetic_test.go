@@ -1,7 +1,10 @@
 package slvs
 
 import (
+	"bytes"
 	"math"
+	"os"
+	"regexp"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/check"
@@ -235,6 +238,29 @@ var cosmeticGoldens = []threadCase{
 	{"cosmetic_nut_m8", 7, 6.5, "M8", sketch.ThreadOptions{Length: 6.5, Through: true, Internal: true, Cosmetic: true}},
 }
 
+// noise matches a number of magnitude below 1e-12 in the file's text: a
+// coordinate the solver left at zero to within its last bits, which a
+// fused multiply-add (arm64) leaves at another of them.
+var noise = regexp.MustCompile(`-?\d(?:\.\d+)?e-(?:1[3-9]|[2-9]\d|\d{3})\b`)
+
+// checkWithoutNoise is golden.Check with those numbers read as 0, so
+// that the platform's rounding of a zero is not a difference.
+func checkWithoutNoise(t *testing.T, path string, got []byte) {
+	t.Helper()
+	if golden.Regen() {
+		golden.Check(t, path, got)
+		return
+	}
+	want, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	zero := func(b []byte) []byte { return noise.ReplaceAll(b, []byte("0")) }
+	if !bytes.Equal(zero(want), zero(got)) {
+		t.Errorf("differs from %s: %s", path, golden.FirstDifference(zero(want), zero(got)))
+	}
+}
+
 // TestCosmeticThreadGoldens saves each cosmetic golden, opens and
 // saves it again, and compares it with its file in testdata/thread.
 func TestCosmeticThreadGoldens(t *testing.T) {
@@ -249,7 +275,7 @@ func TestCosmeticThreadGoldens(t *testing.T) {
 				t.Fatal(err)
 			}
 			doc.Sketch.GenerateAll()
-			golden.Check(t, fixture("thread/"+tc.name+".tlspr"), tlspr.Encode(doc.Sketch, tlspr.Options{}))
+			checkWithoutNoise(t, fixture("thread/"+tc.name+".tlspr"), tlspr.Encode(doc.Sketch, tlspr.Options{}))
 		})
 	}
 }
