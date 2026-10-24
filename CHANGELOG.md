@@ -9,6 +9,8 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-24
+
 ### Fixed
 - Windows: a script can import packages from the script library (the interpreter asked for `src\gears`, which the library did not answer).
 
