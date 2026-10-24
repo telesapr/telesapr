@@ -80,17 +80,19 @@ three reach the same `pkg/sketch` entry point. `doc/done-audit.md` keeps the tab
   under `examples/scripts` that a test executes.
 - Three tiers. `make test-fast` (`go test -short`) is the check before a commit: a test that
   takes more than a few seconds skips itself under `testing.Short()`, saying what it is.
-  `make test` runs every test, and `make ci` is what the GitHub workflow runs on `master`
-  (checks, test, race, lint, vuln); on a branch the workflow runs `make test-fast` in
-  place of `make test` and leaves out the race detector, both of which run on `master` and on
+  `make test` runs every test but the heavy ones, `make test-heavy` only those, and `make ci` is
+  what the GitHub workflow runs on `master` (checks, test, test-heavy, race, lint, vuln; the
+  workflow gives `test` and `test-heavy` a runner each); on a branch the workflow runs
+  `make test-fast` in place of them and leaves out the race detector, which run on `master` and on
   request (workflow_dispatch), so `make ci` before the merge is what catches the rest. The nightly workflow, on
   `master`, runs what is too slow or costs too many minutes for a push: `make coverage` (the 85%
   rule, several times slower than `make test`), `make test-sweeps`,
   `make fuzz`, `make bench`, govulncheck as a failing job, the race detector over `pkg/ui`
   and `pkg/script/api`, and the quick tests on Windows and macOS. `make lint-new` lints what a branch changed.
 - `scripts/go-test.sh` runs the slow packages (`SHARDED`) as several processes, their heaviest
-  tests (`HEAVY`) one each; every test target goes through it. A new test of a minute or more in
-  one of those packages goes into `HEAVY`.
+  tests (`HEAVY`) one each; every test target goes through it, and `TESTS=light|heavy|all` picks
+  whether `HEAVY` is left out, run alone or run with the rest. A new test of a minute or more in
+  one of those packages goes into `HEAVY`, which takes it out of `make test`.
 - On Windows and macOS the workflows run `scripts/test-os.sh`: the quick tests without those
   `scripts/os-skip/<GOOS>.txt` lists, each with why it fails there. A fix takes its test off the
   list; a new test that fails there for a reason of the platform goes on it, with the reason.

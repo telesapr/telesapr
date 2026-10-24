@@ -74,8 +74,8 @@ make build                                      # bin/telesapr and bin/telesapr-
 sudo make install                               # with the desktop entry, icons and MIME type
 ```
 
-`make help` lists the other targets. `make test-fast` runs the quick tests, `make test` all of
-them. `make ci` runs what the GitHub workflow does on a push to master: formatting, the
+`make help` lists the other targets. `make test-fast` runs the quick tests, `make test` all but
+the heavy ones, `make test-heavy` those. `make ci` runs what the GitHub workflow does on a push to master: formatting, the
 generated-symbol check, the build, every test (the GUI ones under Xvfb), the race
 detector on the engine packages, the linter and govulncheck. On a branch the workflow runs the
 quick tests in place of all of them and leaves out the race detector; both run on master and on

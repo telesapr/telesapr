@@ -6,6 +6,11 @@
 # set the chord tolerance or the Boolean mode, as every regeneration
 # does, need not run in one process, and t.Parallel is not needed.
 #
+# TESTS picks the part of the suite: "light" leaves out the HEAVY tests,
+# "heavy" runs only them, "all" (the default) runs everything. make test
+# is the light part and make test-heavy the heavy one; make ci runs both,
+# and the workflow gives each its own runner.
+#
 # With COVERPROFILE set, every process writes a profile, and they are
 # merged into that file; a block then appears once per process, which
 # scripts/coverage-check.sh already allows for.
@@ -28,6 +33,13 @@ TestThreadGoldens TestThreadSweep TestFreedomVsShowDof TestParallelFastSameShape
 TestFilletOnOtherSolids TestChamferOnOtherSolids TestFilletOnOtherSolidsVolumes TestEveryFacePicked TestFilletRimMitre TestSolidCacheSameAsMaking TestSolverCacheSameAsWriting \
 TestEditThreadShape TestThreadChamfer TestFixtures TestClosedLoftSweep}
 REST_SHARDS=${REST_SHARDS:-3}
+TESTS=${TESTS:-all}
+case $TESTS in
+all | light | heavy) ;;
+*) echo "go-test.sh: TESTS must be all, light or heavy, not $TESTS" >&2; exit 2 ;;
+esac
+# The heavy names as one regular expression, for -skip.
+heavy_re="^($(echo $HEAVY | tr ' ' '|'))\$"
 COVERPROFILE=${COVERPROFILE:-}
 # The processes below run side by side, so each is on the clock for the
 # whole run, not for its own tests: on a runner of four cores the suite
@@ -64,18 +76,29 @@ job() { # job <go test arguments...>
 		echo fail >"$tmp/status.$n" ) &
 }
 
-if [ -n "$others" ]; then
-	job "$@" $others
+if [ -n "$others" ] && [ "$TESTS" != heavy ]; then
+	if [ "$TESTS" = light ]; then
+		job -skip "$heavy_re" "$@" $others
+	else
+		job "$@" $others
+	fi
 fi
 for p in $sharded; do
 	tests=$(go test "$@" -list '.*' "$p" | grep -E '^(Test|Fuzz|Example)' || true)
 	rest=""
 	for name in $tests; do
 		case " $(echo $HEAVY) " in
-		*" $name "*) job "$@" -run "^$name\$" "$p" ;;
+		*" $name "*)
+			if [ "$TESTS" != light ]; then
+				job "$@" -run "^$name\$" "$p"
+			fi
+			;;
 		*) rest="$rest $name" ;;
 		esac
 	done
+	if [ "$TESTS" = heavy ]; then
+		continue
+	fi
 	i=0
 	while [ $i -lt "$REST_SHARDS" ]; do
 		k=0

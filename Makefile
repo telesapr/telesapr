@@ -6,7 +6,8 @@ help:
 	@echo ""
 	@echo "Development:"
 	@echo "  make test-fast    - Run the quick tests (go test -short)"
-	@echo "  make test         - Run all tests"
+	@echo "  make test         - Run the tests except the heavy ones"
+	@echo "  make test-heavy   - Run only the heavy tests (HEAVY in scripts/go-test.sh)"
 	@echo "  make test-sweeps  - Run the robustness sweeps over their whole grids"
 	@echo "  make bench        - Run every benchmark once"
 	@echo "  make test-gui     - Run the GUI backend tests under Xvfb"
@@ -43,7 +44,7 @@ help:
 	@echo "  make release      - Push master, wait for CI, tag v$(VERSION), make the GitHub release"
 	@echo ""
 
-.PHONY: test test-fast test-sweeps bench test-gui test-race coverage fuzz checks ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
+.PHONY: test test-heavy test-fast test-sweeps bench test-gui test-race coverage fuzz checks ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
 	dist dist-linux dist-windows dist-macos release release-notes
 
 # The version is pkg/version.Version; a release's tag is v$(VERSION).
@@ -56,7 +57,8 @@ FREEDESKTOP = dist/freedesktop
 ICON_SIZES = 16x16 24x24 32x32 48x48
 
 # The tiers: test-fast while working (the -short tests, under a minute
-# on a workstation), test for every test, ci for what the GitHub workflow runs;
+# on a workstation), test for the tests but the heavy ones, test-heavy for
+# those, ci for what the GitHub workflow runs;
 # the nightly workflow adds test-sweeps, fuzz, bench and the race detector
 # over pkg/ui and pkg/script/api. All of them go through scripts/go-test.sh,
 # which runs the slow packages as several processes, as CI does.
@@ -65,9 +67,15 @@ ICON_SIZES = 16x16 24x24 32x32 48x48
 # make ci runs beside it.
 XVFB := $(if $(shell command -v xvfb-run),xvfb-run -a -n 140 -s "-screen 0 1280x1024x24 -noreset" env TELESAPR_GUI_TESTS=1)
 
+# test leaves out the HEAVY tests of scripts/go-test.sh, which
+# test-heavy runs alone; make ci runs both, on two runners in the workflow.
 test:
-	@echo "==> go test ./..."
-	GOCACHE=$(PWD)/.gocache $(XVFB) scripts/go-test.sh
+	@echo "==> go test ./... (without the heavy tests)"
+	GOCACHE=$(PWD)/.gocache $(XVFB) env TESTS=light scripts/go-test.sh
+
+test-heavy:
+	@echo "==> go test, the heavy tests only"
+	GOCACHE=$(PWD)/.gocache $(XVFB) env TESTS=heavy scripts/go-test.sh
 
 # A test that takes more than a few seconds skips itself under -short
 # (testing.Short), so this is what is quick enough before every commit;
@@ -158,7 +166,7 @@ checks: fmt-check tidy-check generate-check build
 # Xvfb inside test. On a branch the workflow leaves out test-race,
 # which it runs on master and on request.
 ci: checks
-	@$(MAKE) --no-print-directory -j --output-sync=target test test-race lint vuln
+	@$(MAKE) --no-print-directory -j --output-sync=target test test-heavy test-race lint vuln
 
 fmt-check:
 	@echo "==> gofmt -l"

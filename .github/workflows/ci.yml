@@ -1,7 +1,8 @@
 # Every push to a branch: the checks, the quick tests (make test-fast),
 # the lint and the vulnerability report, as jobs side by side. On a push
 # to master, and on request (workflow_dispatch) for a branch, every test
-# in place of the quick ones, and the race detector in shards: make ci,
+# in place of the quick ones (make test and make test-heavy, on a runner
+# each), and the race detector in shards: make ci,
 # run before a merge, is the same locally, so a branch gets its answer in
 # minutes and master still checks it all. The nightly workflow
 # (nightly.yml) runs what is too slow or costs too many minutes for
@@ -126,9 +127,33 @@ jobs:
             gocache-tests-
       - name: Install X11 development packages, Xvfb and a font
         run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES xvfb fonts-dejavu-core
-      # Every test, the GUI ones under Xvfb.
+      # Every test but the heavy ones, the GUI ones under Xvfb.
       - name: Tests
         run: make test
+
+  # The heavy tests (HEAVY in scripts/go-test.sh) on a runner of their own,
+  # beside tests: make test is the rest, and make ci runs both.
+  heavy:
+    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - uses: actions/cache@v5
+        with:
+          path: .gocache
+          key: gocache-heavy-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            gocache-heavy-${{ hashFiles('go.sum') }}-
+            gocache-heavy-
+      - name: Install X11 development packages, Xvfb and a font
+        run: sudo apt-get update && sudo apt-get install -y $X11_PACKAGES xvfb fonts-dejavu-core
+      - name: Heavy tests
+        run: make test-heavy
 
   lint:
     # The whole tree, which is lint-clean since 2026-10-03, with the
