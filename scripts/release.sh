@@ -13,7 +13,7 @@
 #   3. the CI workflow run for HEAD is waited for (SKIP_CI=1 skips
 #      this, for when CI is known to be broken for a reason that is
 #      not the code);
-#   4. the notes are made: the commits since the previous tag, the
+#   4. the notes are made: the version's section of CHANGELOG.md, the
 #      compare link and the names of the packages (doc/releasing.md);
 #   5. the annotated tag carries the notes and is pushed;
 #   6. the GitHub release is created with the same notes;
@@ -36,20 +36,20 @@ repo=$(sed -n 's/^const Repository = "\(.*\)"$/\1/p' pkg/version/version.go)
     die "version $version is not X.Y.Z"
 tag=v$version
 
-# notes writes the release notes for the tag to stdout: the commits
-# since the previous tag, newest last, the compare link, and the
-# packages the Release workflow attaches.
+# notes writes the release notes for the tag to stdout: the version's
+# section of CHANGELOG.md, the compare link, and the packages the
+# Release workflow attaches.
 notes() {
-    local prev
+    local prev body
+    body=$(awk -v v="$version" '
+        /^## \[/ { if (on) exit; on = index($0, "## [" v "]") == 1; next }
+        on' CHANGELOG.md)
+    [[ -n ${body//[[:space:]]/} ]] || die "CHANGELOG.md has no entries under \"## [$version]\"; write them and rename Unreleased (doc/releasing.md)"
+    echo "$body" | cat -s
     prev=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
     if [[ -n $prev ]]; then
-        echo "## Changes since $prev"
-        echo
-        git log --no-merges --reverse --format='- %s' "$prev..HEAD"
         echo
         echo "Full diff: $repo/compare/$prev...$tag"
-    else
-        echo "The first release."
     fi
     cat <<EOF
 

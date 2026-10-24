@@ -6,13 +6,16 @@ version is bumped by hand, in a commit of its own; the rest is `make release`.
 
 ## The bump
 
-1. Set `Version` in `pkg/version/version.go`.
-2. Commit the bump as "Version X.Y.Z". No golden holds the version.
+1. In `CHANGELOG.md` rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` and add a new empty
+   `## [Unreleased]` above it. The entries are written along the way, in the commit that makes
+   each change.
+2. Set `Version` in `pkg/version/version.go`.
+3. Commit both as "Version X.Y.Z". No golden holds the version.
 
 ## The release
 
 ```
-make release-notes    # what the release will say, from the commits since the previous tag
+make release-notes    # what the release will say: the CHANGELOG.md section of the version
 make release
 ```
 
@@ -23,8 +26,8 @@ make release
 2. Pushes `master`.
 3. Waits for the CI workflow on that commit, and stops if it fails (`SKIP_CI=1` skips the wait;
    only for a CI failure that is not the code's).
-4. Writes the notes: one line per commit since the previous tag, the compare link, and the names
-   of the packages.
+4. Writes the notes: the version's section of `CHANGELOG.md` (it stops if the section is missing
+   or empty), the compare link, and the names of the packages.
 5. Makes the annotated tag with the notes as its message, and pushes it.
 6. Creates the GitHub release with the same notes.
 7. Waits for the Release workflow, which the tag push started, to attach the packages.

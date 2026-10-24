@@ -125,6 +125,11 @@ At run time, `TELESAPR_PARALLEL=off` generates solids on one goroutine and
   `devel` is merged into `master` when it is to be pushed or released.
 - A commit does one thing and says why in its message. Regenerated goldens are a commit of their
   own.
+- A change a user would notice (a feature, a changed behaviour, a fix, a removal) adds a line to
+  `## [Unreleased]` in `CHANGELOG.md`, in the same commit. Internal work (refactors, tests, docs,
+  dependency bumps) does not.
 - takigo is a public module, required in `go.mod` at a tagged version.
 - A release is `make release` on `master` (`doc/releasing.md`): the tag is `v` +
-  `version.Version`, bumped by hand in a commit of its own.
+  `version.Version`, bumped by hand in a commit of its own that also renames `Unreleased` in
+  `CHANGELOG.md` to the version: the release notes are that section, and `make release` stops
+  without it.
