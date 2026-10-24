@@ -9,6 +9,11 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-10-24
+
+### Fixed
+- The Windows and macOS packages build again: 0.5.0 and 0.5.1 were tagged, but their packages were not made because tests of the library and of path handling failed on those systems. Nothing in the program changed since 0.5.1.
+
 ## [0.5.1] - 2026-10-24
 
 ### Fixed
