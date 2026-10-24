@@ -27,3 +27,14 @@ TestFixturesRoundTrip
 # Unix-domain sockets and read-only directories behave otherwise.
 TestSockets
 TestReadOnlyDirectory
+# Temporary and library folders are compared as strings: t.TempDir() gives
+# the 8.3 form (RUNNER~1) where the program's own paths have the long
+# one, and the link of a test sketch to a testdata file on another
+# drive cannot be saved relative to it. Found by the Release run of
+# v0.5.0, 2026-10-24.
+TestScriptLibrary
+TestFilesCheck
+TestLibraryAfterRestart
+TestLibraryImports
+TestGuardedScript
+TestChamferEndsOnCurvedFace
