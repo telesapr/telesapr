@@ -170,6 +170,8 @@ func TestLibraryFSBackslashes(t *testing.T) {
 			t.Errorf("Open(%q): %v", name, err)
 			continue
 		}
-		f.Close()
+		if err := f.Close(); err != nil {
+			t.Errorf("Close(%q): %v", name, err)
+		}
 	}
 }
