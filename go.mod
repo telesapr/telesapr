@@ -8,7 +8,7 @@ require (
 	github.com/andybalholm/brotli v1.2.6
 	github.com/go-gl/gl v0.0.0-20260331235117-4566fea9a276
 	github.com/modelcontextprotocol/go-sdk v1.8.0
-	github.com/takigo/takigo v0.4.0
+	github.com/takigo/takigo v0.4.1
 	github.com/traefik/yaegi v0.16.1
 )
 
