@@ -29,6 +29,11 @@ TestFilletOnOtherSolids TestChamferOnOtherSolids TestFilletOnOtherSolidsVolumes 
 TestEditThreadShape TestThreadChamfer TestFixtures TestClosedLoftSweep}
 REST_SHARDS=${REST_SHARDS:-3}
 COVERPROFILE=${COVERPROFILE:-}
+# The processes below run side by side, so each is on the clock for the
+# whole run, not for its own tests: on a runner of four cores the suite
+# outgrew go test's default 10 minutes with every process still going.
+# A -timeout among the arguments of this script comes later and wins.
+TEST_TIMEOUT=${TEST_TIMEOUT:-30m}
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -55,7 +60,7 @@ job() { # job <go test arguments...>
 	if [ -n "$COVERPROFILE" ]; then
 		cover="-coverprofile=$tmp/cover.$n"
 	fi
-	( go test "$@" $cover >"$tmp/out.$n" 2>&1 && echo ok >"$tmp/status.$n" ||
+	( go test -timeout "$TEST_TIMEOUT" "$@" $cover >"$tmp/out.$n" 2>&1 && echo ok >"$tmp/status.$n" ||
 		echo fail >"$tmp/status.$n" ) &
 }
 
