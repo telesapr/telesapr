@@ -1,10 +1,10 @@
 package slvs
 
 import (
-	"bytes"
 	"math"
 	"os"
-	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/check"
@@ -238,14 +238,11 @@ var cosmeticGoldens = []threadCase{
 	{"cosmetic_nut_m8", 7, 6.5, "M8", sketch.ThreadOptions{Length: 6.5, Through: true, Internal: true, Cosmetic: true}},
 }
 
-// noise matches a number of magnitude below 1e-12 in the file's text: a
-// coordinate the solver left at zero to within its last bits, which a
-// fused multiply-add (arm64) leaves at another of them.
-var noise = regexp.MustCompile(`-?\d(?:\.\d+)?e-(?:1[3-9]|[2-9]\d|\d{3})\b`)
-
-// checkWithoutNoise is golden.Check with those numbers read as 0, so
-// that the platform's rounding of a zero is not a difference.
-func checkWithoutNoise(t *testing.T, path string, got []byte) {
+// checkNearly is golden.Check with the numbers of the file compared to
+// 1e-9 of their size and its other words exactly: a fused multiply-add
+// (arm64) moves the last bits of what the solver and the kernel
+// compute, and a coordinate left at zero is another tiny number there.
+func checkNearly(t *testing.T, path string, got []byte) {
 	t.Helper()
 	if golden.Regen() {
 		golden.Check(t, path, got)
@@ -255,10 +252,28 @@ func checkWithoutNoise(t *testing.T, path string, got []byte) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	zero := func(b []byte) []byte { return noise.ReplaceAll(b, []byte("0")) }
-	if !bytes.Equal(zero(want), zero(got)) {
-		t.Errorf("differs from %s: %s", path, golden.FirstDifference(zero(want), zero(got)))
+	wl, gl := strings.Split(string(want), "\n"), strings.Split(string(got), "\n")
+	if len(wl) != len(gl) {
+		t.Fatalf("differs from %s: %d lines, want %d", path, len(gl), len(wl))
 	}
+	for i := range wl {
+		ww, gw := strings.Fields(wl[i]), strings.Fields(gl[i])
+		same := len(ww) == len(gw)
+		for j := 0; same && j < len(ww); j++ {
+			same = ww[j] == gw[j] || nearly(ww[j], gw[j])
+		}
+		if !same {
+			t.Fatalf("differs from %s: line %d: want %q, got %q", path, i+1, wl[i], gl[i])
+		}
+	}
+}
+
+// nearly reports whether a and b are numbers within 1e-9 of the larger
+// of their sizes and 1.
+func nearly(a, b string) bool {
+	x, err1 := strconv.ParseFloat(a, 64)
+	y, err2 := strconv.ParseFloat(b, 64)
+	return err1 == nil && err2 == nil && math.Abs(x-y) <= 1e-9*max(1, math.Abs(x), math.Abs(y))
 }
 
 // TestCosmeticThreadGoldens saves each cosmetic golden, opens and
@@ -275,7 +290,7 @@ func TestCosmeticThreadGoldens(t *testing.T) {
 				t.Fatal(err)
 			}
 			doc.Sketch.GenerateAll()
-			checkWithoutNoise(t, fixture("thread/"+tc.name+".tlspr"), tlspr.Encode(doc.Sketch, tlspr.Options{}))
+			checkNearly(t, fixture("thread/"+tc.name+".tlspr"), tlspr.Encode(doc.Sketch, tlspr.Options{}))
 		})
 	}
 }

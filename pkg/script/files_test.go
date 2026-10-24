@@ -231,8 +231,8 @@ func TestGuardedScript(t *testing.T) {
 		{"b, err := fs.ReadFile(os.DirFS(" + q(write) + "), \"g.txt\")\nfmt.Println(string(b), err)", "x <nil>"},
 		{"m, err := filepath.Glob(" + q(filepath.Join(write, "*.txt")) + ")\nfmt.Println(len(m), err)", "3 <nil>"},
 		{"fmt.Printf(\"%q %v\\n\", os.Getenv(\"HOME\"), len(os.Environ()))", `"" 0`},
-		{"f, err := os.CreateTemp(\"\", \"x\")\nfmt.Println(filepath.Dir(f.Name()) == " + q(temp) + ", err, f.Close())", "true <nil> <nil>"},
-		{"d, err := os.MkdirTemp(\"\", \"x\")\nfmt.Println(filepath.Dir(d) == " + q(temp) + ", err)", "true <nil>"},
+		{"f, err := os.CreateTemp(\"\", \"x\")\nfmt.Println(filepath.ToSlash(filepath.Dir(f.Name())) == " + q(temp) + ", err, f.Close())", "true <nil> <nil>"},
+		{"d, err := os.MkdirTemp(\"\", \"x\")\nfmt.Println(filepath.ToSlash(filepath.Dir(d)) == " + q(temp) + ", err)", "true <nil>"},
 		{"d, err := Open(" + q(in+".tlspr") + ")\nfmt.Println(err, d.File.Save(" + q(away+".tlspr") + ") != nil)", "<nil> true"},
 	} {
 		got, err := guardedRun(t, e, c.src)
