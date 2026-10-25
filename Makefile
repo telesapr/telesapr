@@ -65,7 +65,10 @@ ICON_SIZES = 16x16 24x24 32x32 48x48
 # Every test, the OpenGL and GUI ones under Xvfb where xvfb-run is
 # installed; their display numbers start apart from test-gui's, which
 # make ci runs beside it.
-XVFB := $(if $(shell command -v xvfb-run),xvfb-run -a -n 140 -s "-screen 0 1280x1024x24 -noreset" env TELESAPR_GUI_TESTS=1)
+# make ci runs test and test-heavy at once: each searches from a number of
+# its own, since two xvfb-run -a started together can pick the same display.
+XVFB = $(if $(shell command -v xvfb-run),xvfb-run -a -n $(XVFB_N) -s "-screen 0 1280x1024x24 -noreset" env TELESAPR_GUI_TESTS=1)
+XVFB_N = 140
 
 # test leaves out the HEAVY tests of scripts/go-test.sh, which
 # test-heavy runs alone; make ci runs both, on two runners in the workflow.
@@ -73,6 +76,7 @@ test:
 	@echo "==> go test ./... (without the heavy tests)"
 	GOCACHE=$(PWD)/.gocache $(XVFB) env TESTS=light scripts/go-test.sh
 
+test-heavy: XVFB_N = 170
 test-heavy:
 	@echo "==> go test, the heavy tests only"
 	GOCACHE=$(PWD)/.gocache $(XVFB) env TESTS=heavy scripts/go-test.sh
