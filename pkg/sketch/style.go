@@ -202,6 +202,27 @@ func (sk *Sketch) NewCustomStyle() core.HStyle {
 	return hs
 }
 
+// SetStyleWidthUnits measures style h's line width and stipple width in
+// as, keeping what its lines look like on the screen: both numbers are
+// converted at the view's scale. It is what the style screen's pixels
+// and mm links and Style.SetWidthAs both do.
+func (sk *Sketch) SetStyleWidthUnits(h core.HStyle, as core.UnitsAs) {
+	s := sk.StyleGet(h)
+	if s.WidthAs == as {
+		return
+	}
+	scale := sk.view().Scale
+	switch as {
+	case core.UnitsMM:
+		s.Width /= scale
+		s.StippleScale /= scale
+	case core.UnitsPixels:
+		s.Width *= scale
+		s.StippleScale *= scale
+	}
+	s.WidthAs = as
+}
+
 // SetStyleTextHeightUnits measures style h's text height in as, keeping
 // the height it is drawn at on the screen: the number is converted at
 // the view's scale, so a switch of units changes what the style says

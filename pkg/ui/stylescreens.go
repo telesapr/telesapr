@@ -267,21 +267,12 @@ func (tw *textWindow) ScreenChangeStyleYesNo(link int, v uint32) {
 	ss := tw.ss
 	ss.UndoRemember()
 	s := ss.SK.StyleGet(core.HStyle{V: v})
-	scale := ss.GW.view.Scale
 	switch link {
 	// Units for the width
 	case 'w':
-		if s.WidthAs != core.UnitsMM {
-			s.WidthAs = core.UnitsMM
-			s.Width /= scale
-			s.StippleScale /= scale
-		}
+		ss.SK.SetStyleWidthUnits(s.H, core.UnitsMM)
 	case 'W':
-		if s.WidthAs != core.UnitsPixels {
-			s.WidthAs = core.UnitsPixels
-			s.Width *= scale
-			s.StippleScale *= scale
-		}
+		ss.SK.SetStyleWidthUnits(s.H, core.UnitsPixels)
 
 	// Units for the height
 	case 'g':

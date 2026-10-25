@@ -198,14 +198,19 @@ func (s Style) WidthAs() (as core.UnitsAs) {
 	return as
 }
 
-// SetWidthAs measures the width in pixels or in the document's unit.
+// SetWidthAs measures the width and the stipple width in pixels
+// (UnitsPixels) or in millimetres (UnitsMM). Both are converted at the
+// view's scale, so the lines keep the look they are drawn with, as the
+// style screen's pixels and mm links do: set the unit first, then the
+// numbers in it.
 func (s Style) SetWidthAs(as core.UnitsAs) {
-	s.change(func(style *core.Style) {
-		if as != core.UnitsPixels && as != core.UnitsMM {
-			fail("a width is in pixels (%d) or in millimetres (%d), not %d",
-				core.UnitsPixels, core.UnitsMM, as)
-		}
-		style.WidthAs = as
+	if as != core.UnitsPixels && as != core.UnitsMM {
+		fail("a width is in pixels (%d) or in millimetres (%d), not %d",
+			core.UnitsPixels, core.UnitsMM, as)
+	}
+	s.d.change(func(sk *sketch.Sketch) {
+		s.get(sk)
+		sk.SetStyleWidthUnits(s.H, as)
 	})
 }
 
