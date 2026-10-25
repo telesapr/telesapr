@@ -9,6 +9,8 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-10-25
+
 ### Changed
 - Scripting: `Style.SetWidthAs` converts the width and the stipple width to the new unit, as the styles screen does, so the lines keep their look; a script sets the unit before the numbers in it.
 - Colouring by freedom colours only lines in the active group's own style, and points: a construction line keeps the construction colour, and a line given a style keeps its style's colour.
