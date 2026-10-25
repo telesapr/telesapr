@@ -166,7 +166,9 @@ func (tw *textWindow) ScreenDeleteStyle(link int, v uint32) {
 		}
 	}
 	tw.GoToScreen(screenListOfStyles)
-	ss.GW.Invalidate(false)
+	// What was drawn in the style is drawn in the one made in its place,
+	// and nothing regenerates to say so: the saved frame is stale.
+	ss.GW.Invalidate(true)
 }
 
 // ScreenChangeStylePatternType sets a style's stipple pattern.

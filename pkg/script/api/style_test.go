@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 
@@ -224,11 +225,16 @@ func TestStyleUndoAndMisuse(t *testing.T) {
 		t.Error("the colour is still set after undo")
 	}
 	before := s.Name()
+	width, scale := s.Width(), s.StippleScale()
 	for name, fn := range map[string]func(){
 		"a colour out of range": func() { s.SetColor(0, 0, 300) },
 		"a stipple it has not":  func() { s.SetStipple(core.StipplePattern(99)) },
 		"a width as it is not":  func() { s.SetWidthAs(core.UnitsAs(7)) },
 		"an empty name":         func() { s.SetName("  ") },
+		"a negative width":      func() { s.SetWidth(-1) },
+		"a width not a number":  func() { s.SetWidth(math.NaN()) },
+		"a negative stipple":    func() { s.SetStippleScale(-2) },
+		"an infinite stipple":   func() { s.SetStippleScale(math.Inf(1)) },
 	} {
 		func() {
 			defer func() {
@@ -239,8 +245,8 @@ func TestStyleUndoAndMisuse(t *testing.T) {
 			fn()
 		}()
 	}
-	if s.Name() != before {
-		t.Errorf("the style is named %q", s.Name())
+	if s.Name() != before || s.Width() != width || s.StippleScale() != scale {
+		t.Errorf("the style is named %q, width %g, stipple scale %g", s.Name(), s.Width(), s.StippleScale())
 	}
 	if !strings.Contains(s.String(), s.Name()) {
 		t.Errorf("the style is %q", s)

@@ -6566,7 +6566,7 @@
 					},
 					"SetStippleScale": {
 						"decl": "func (s Style) SetStippleScale(scale float64)",
-						"text": "SetStippleScale sets how far apart the dashes are."
+						"text": "SetStippleScale sets how far apart the dashes are, zero or more. A\nscale too small for the dashes to be a pixel apart draws the line\ncontinuous."
 					},
 					"SetTextAlign": {
 						"decl": "func (s Style) SetTextAlign(horizontal, vertical string)",
@@ -6590,7 +6590,7 @@
 					},
 					"SetWidth": {
 						"decl": "func (s Style) SetWidth(width float64)",
-						"text": "SetWidth sets the line width."
+						"text": "SetWidth sets the line width, zero or more."
 					},
 					"SetWidthAs": {
 						"decl": "func (s Style) SetWidthAs(as core.UnitsAs)",

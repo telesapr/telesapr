@@ -430,12 +430,12 @@ func (r *Renderer) doPoint(p geom.Vector, d, lineWidthPx float64) {
 // phase into it.
 func (r *Renderer) doStippledLine(a, b geom.Vector, hcs render.HStroke, phase float64) {
 	s := r.selectStroke(hcs)
-	if s.StipplePattern == core.StippleContinuous {
+	scale := s.DashScaleMm(&r.camera)
+	if scale == 0 {
 		r.doLine(a, b, s)
 		return
 	}
 
-	scale := s.StippleScaleMm(&r.camera)
 	dashes := core.StipplePatternDashes(s.StipplePattern)
 	length := core.StipplePatternLength(s.StipplePattern) * scale
 
@@ -456,7 +456,7 @@ func (r *Renderer) doStippledLine(a, b geom.Vector, hcs render.HStroke, phase fl
 
 	cur := 0.0
 	curPos := a
-	width := s.WidthMm(&r.camera)
+	// A dot is as wide as the line, and doPoint takes it in pixels.
 	wpx := s.WidthPx(&r.camera)
 
 	curDashLen := (curPhase - phase) / scale
@@ -465,7 +465,7 @@ func (r *Renderer) doStippledLine(a, b geom.Vector, hcs render.HStroke, phase fl
 		nextPos := curPos.Plus(dir.ScaledBy(next - cur))
 		if curDash%2 == 0 {
 			if curDashLen <= geom.LengthEps {
-				r.doPoint(curPos, width, wpx)
+				r.doPoint(curPos, wpx, wpx)
 			} else {
 				r.doLine(curPos, nextPos, s)
 			}

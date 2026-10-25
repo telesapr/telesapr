@@ -9,6 +9,12 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+### Fixed
+- Line styles: zigzag lines are drawn (continuous, as they are exported) instead of not at all, and so is a dashed line whose stipple width is zero or too small for its dashes to be a pixel apart.
+- Line styles: a negative stipple width, from a script or a file, no longer freezes the window; a script that sets a negative width or stipple width is stopped with an error.
+- Line styles: the dots of the dot, dash-dot and dash-dot-dot patterns are as wide as the line, rather than a fraction of a pixel and nearly invisible.
+- Deleting a line style on the styles screen redraws what was drawn in it at once.
+
 ## [0.5.2] - 2026-10-24
 
 ### Fixed
