@@ -1,6 +1,6 @@
 # A screw thread made through its screen on the side of an extruded
 # circle, picked on the model, from its other end; the same model as
-# path_thread_face.go makes (TestPathEquivalenceThreadFace).
+# path_thread_face.go makes (TestPathEquivalence/thread_face).
 key c
 move 300 300
 down L 300 300

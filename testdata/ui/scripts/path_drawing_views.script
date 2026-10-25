@@ -1,5 +1,5 @@
 # The drawing of ext_drawing_views set on its screen; the same as
-# path_drawing_views.go makes (TestPathEquivalenceDrawingViews).
+# path_drawing_views.go makes (TestPathEquivalence/drawing_views).
 key r
 move 200 200
 down L 200 200

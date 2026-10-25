@@ -47,12 +47,14 @@ func loopsOf(sbl *SBezierList) *SBezierLoopSetSet {
 	var allClosed, allCoplanar bool
 	var notClosed SEdge
 	var notCoplanar geom.Vector
-	sblss.FindOuterFacesFrom(sbl, &poly, nil, Tol(0.1, MaxSegments()), &allClosed, &notClosed, &allCoplanar, &notCoplanar, nil)
+	sblss.FindOuterFacesFrom(sbl, &poly, nil, Tol(0.1, 20), &allClosed, &notClosed, &allCoplanar, &notCoplanar, nil)
 	return &sblss
 }
 
-func extrudedCurves(sbl *SBezierList, t0, t1 geom.Vector) *SShell {
-	sh := &SShell{}
+// extrudedCurves is the solid of sbl's loops extruded from t0 to t1 at
+// tol.
+func extrudedCurves(sbl *SBezierList, t0, t1 geom.Vector, tol Tolerance) *SShell {
+	sh := &SShell{Tol: tol}
 	sblss := loopsOf(sbl)
 	for i := range sblss.Sets {
 		sh.MakeFromExtrusionOf(&sblss.Sets[i], t0, t1, core.RGBA{})
@@ -64,34 +66,32 @@ func extrudedCurves(sbl *SBezierList, t0, t1 geom.Vector) *SShell {
 // IntersectAgainst's branches that the fixtures don't reach, at a chord
 // tolerance of 0.1, and pins the result's volume and counts.
 func TestIntersectionBranches(t *testing.T) {
-	old := ChordTolMm()
-	SetChordTolMm(0.1)
-	t.Cleanup(func() { SetChordTolMm(old) })
-
+	t.Parallel()
+	tol := Tol(0.1, 20)
 	x, y, z := geom.Vector{X: 1}, geom.Vector{Y: 1}, geom.Vector{Z: 1}
 	coaxial := func() (*SShell, *SShell) {
 		// Two parallel cylinders: their sides meet along lines.
-		a := extrudedCurves(circleCurves(geom.Vector{}, x, y, 10), geom.Vector{}, geom.Vector{Z: 10})
-		b := extrudedCurves(circleCurves(geom.Vector{X: 12}, x, y, 10), geom.Vector{Z: -5}, geom.Vector{Z: 15})
+		a := extrudedCurves(circleCurves(geom.Vector{}, x, y, 10), geom.Vector{}, geom.Vector{Z: 10}, tol)
+		b := extrudedCurves(circleCurves(geom.Vector{X: 12}, x, y, 10), geom.Vector{Z: -5}, geom.Vector{Z: 15}, tol)
 		return a, b
 	}
 	crossing := func() (*SShell, *SShell) {
 		// Two perpendicular cylinders: the general, marching case.
-		a := extrudedCurves(circleCurves(geom.Vector{Z: -20}, x, y, 10), geom.Vector{}, geom.Vector{Z: 40})
-		b := extrudedCurves(circleCurves(geom.Vector{X: -20}, y, z, 6), geom.Vector{}, geom.Vector{X: 40})
+		a := extrudedCurves(circleCurves(geom.Vector{Z: -20}, x, y, 10), geom.Vector{}, geom.Vector{Z: 40}, tol)
+		b := extrudedCurves(circleCurves(geom.Vector{X: -20}, y, z, 6), geom.Vector{}, geom.Vector{X: 40}, tol)
 		return a, b
 	}
 	seam := func() (*SShell, *SShell) {
 		// A lathed tube, cut by a box whose face is the plane of the
 		// tube's seams: the plane meets the revolved surfaces along
 		// their trim curves.
-		tube := &SShell{}
+		tube := &SShell{Tol: tol}
 		sblss := loopsOf(polylineCurves(geom.Vector{X: 1}, geom.Vector{X: 2}, geom.Vector{X: 2, Z: 1}, geom.Vector{X: 1, Z: 1}))
 		for i := range sblss.Sets {
 			tube.MakeFromRevolutionOf(&sblss.Sets[i], geom.Vector{}, z, core.RGBA{}, noFaces{})
 		}
 		box := extrudedCurves(polylineCurves(geom.Vector{X: -3, Z: -1}, geom.Vector{X: 3, Z: -1},
-			geom.Vector{X: 3, Y: 3, Z: -1}, geom.Vector{X: -3, Y: 3, Z: -1}), geom.Vector{}, geom.Vector{Z: 3})
+			geom.Vector{X: 3, Y: 3, Z: -1}, geom.Vector{X: -3, Y: 3, Z: -1}), geom.Vector{}, geom.Vector{Z: 3}, tol)
 		return tube, box
 	}
 
@@ -131,6 +131,7 @@ func TestIntersectionBranches(t *testing.T) {
 // TestIntersectAgainstTwoPlanes verifies that two intersecting
 // planes produce at least one intersection curve.
 func TestIntersectAgainstTwoPlanes(t *testing.T) {
+	t.Parallel()
 	s1 := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	s2 := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Z: 1})
 	s1.NewH = s1.H
@@ -147,6 +148,7 @@ func TestIntersectAgainstTwoPlanes(t *testing.T) {
 // TestAddExactIntersectionCurve verifies that AddExactIntersectionCurve
 // appends a curve to the result shell.
 func TestAddExactIntersectionCurve(t *testing.T) {
+	t.Parallel()
 	s1 := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	s2 := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Z: 1})
 	s1.NewH = s1.H

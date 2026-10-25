@@ -20,6 +20,7 @@ import (
 // script that would do the same; an open never replaces changes that
 // aren't saved.
 func TestAgentFiles(t *testing.T) {
+	t.Parallel()
 	a := newAgentApp(t)
 	ctx := context.Background()
 	dir := t.TempDir()

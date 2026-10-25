@@ -24,11 +24,11 @@ func guideXZ(x func(z float64) float64) topo.LoftGuide {
 	return g
 }
 
-// guidedSolid is the guided loft's solid, which must be sound, and its
-// volume.
+// guidedSolid is the guided loft's solid at a chord tolerance of 0.001,
+// which must be sound, and its volume.
 func guidedSolid(t *testing.T, loops [][]srf.SBezier, ends topo.LoftEnds, guides ...topo.LoftGuide) float64 {
 	t.Helper()
-	sh, err := topo.MakeGuidedLoft(loops, 0, ends, guides, core.NewRGBA(100, 100, 100, 255), 1<<30, srf.Tolerance{})
+	sh, err := topo.MakeGuidedLoft(loops, 0, ends, guides, core.NewRGBA(100, 100, 100, 255), 1<<30, srf.Tol(0.001, 20))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,9 +46,7 @@ func guidedSolid(t *testing.T, loops [][]srf.SBezier, ends topo.LoftEnds, guides
 // whatever the guide's bend (Cavalieri), and the surface holds the
 // guide.
 func TestGuidedLoftOneGuide(t *testing.T) {
-	old := srf.ChordTolMm()
-	srf.SetChordTolMm(0.001)
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	g := guideXZ(func(z float64) float64 { return 5 + 6*z/20 + 3*math.Sin(math.Pi*z/20) })
 	loops := [][]srf.SBezier{circleAt(5, 0, 0, 0), circleAt(5, 6, 0, 20)}
 	want := math.Pi * 25 * 20
@@ -89,9 +87,7 @@ func TestGuidedLoftOneGuide(t *testing.T) {
 // Two guides scale each section too: guides at ±r(z) make a solid of
 // revolution of radius r(z).
 func TestGuidedLoftTwoGuides(t *testing.T) {
-	old := srf.ChordTolMm()
-	srf.SetChordTolMm(0.001)
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	r := func(z float64) float64 { return 5 + 2*math.Sin(math.Pi*z/20) }
 	a := guideXZ(r)
 	b := guideXZ(func(z float64) float64 { return -r(z) })
@@ -113,9 +109,7 @@ func TestGuidedLoftTwoGuides(t *testing.T) {
 // Through three profiles, the guide passing the middle one, and with
 // the ends set square.
 func TestGuidedLoftThroughProfiles(t *testing.T) {
-	old := srf.ChordTolMm()
-	srf.SetChordTolMm(0.001)
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	g := guideXZ(func(z float64) float64 { return 5 + 2*math.Sin(math.Pi*z/10) })
 	loops := [][]srf.SBezier{circleAt(5, 0, 0, 0), circleAt(5, 0, 0, 10), circleAt(5, 0, 0, 20)}
 	want := math.Pi * 25 * 20
@@ -128,6 +122,7 @@ func TestGuidedLoftThroughProfiles(t *testing.T) {
 }
 
 func TestGuidedLoftRefusals(t *testing.T) {
+	t.Parallel()
 	loops := [][]srf.SBezier{circleAt(5, 0, 0, 0), circleAt(5, 0, 0, 10), circleAt(5, 0, 0, 20)}
 	on := guideXZ(func(z float64) float64 { return 5 })
 	for _, c := range []struct {
@@ -158,10 +153,9 @@ func TestGuidedLoftSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
 	}
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.002)
+	t.Parallel()
 	grid := sweep.Grid{
+		Parallel: true,
 		Axes: []sweep.Axis{
 			sweep.Floats("profiles", 2, 3),
 			sweep.Floats("guides", 1, 2),
@@ -200,7 +194,7 @@ func TestGuidedLoftSweep(t *testing.T) {
 		}
 		e := p.Float("ends")
 		sh, err := topo.MakeGuidedLoft(loops, 0, topo.LoftEnds{Start: e, End: e}, guides,
-			core.NewRGBA(1, 1, 1, 255), 1<<30, srf.Tolerance{})
+			core.NewRGBA(1, 1, 1, 255), 1<<30, srf.Tol(0.002, 20))
 		if err != nil {
 			return err
 		}

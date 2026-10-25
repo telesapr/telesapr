@@ -82,6 +82,7 @@ func newAgentApp(t *testing.T) *agentApp {
 // console shows them, each is one step of undo, and a picture is the
 // drawing's.
 func TestAgentDraws(t *testing.T) {
+	t.Parallel()
 	a := newAgentApp(t)
 	// Unguarded, the program's scripts run in the console's own
 	// interpreter (TestAgentGuarded has them guarded).
@@ -206,6 +207,7 @@ func TestAgentDraws(t *testing.T) {
 // With the setting, the user is asked before a program's script runs,
 // and one that is refused doesn't.
 func TestAgentConfirm(t *testing.T) {
+	t.Parallel()
 	a := newAgentApp(t)
 	ctx := context.Background()
 	script := "doc.Sketch.Circle(V(0, 0, 0), 5)\n" + strings.Repeat("// more\n", 40)
@@ -255,6 +257,7 @@ func TestAgentConfirm(t *testing.T) {
 // stops a program's script; and turning the menu item off ends the
 // connection.
 func TestAgentBusyStopAndOff(t *testing.T) {
+	t.Parallel()
 	a := newAgentApp(t)
 	ctx := context.Background()
 	// The program's script marks that it drew with a file there.
@@ -321,6 +324,7 @@ func TestAgentBusyStopAndOff(t *testing.T) {
 // The settings are kept: a program that was allowed is listened for
 // when the application starts again, but not by the command-line tool.
 func TestAgentSettings(t *testing.T) {
+	t.Parallel()
 	dir, err := os.MkdirTemp("", "ss")
 	if err != nil {
 		t.Fatal(err)
@@ -368,6 +372,7 @@ func TestAgentSettings(t *testing.T) {
 // in an interpreter of their own; turned off, they use any file, in the
 // console's interpreter.
 func TestAgentGuarded(t *testing.T) {
+	t.Parallel()
 	a := newAgentApp(t)
 	ctx := context.Background()
 	docDir, other, outside := t.TempDir(), t.TempDir(), t.TempDir()

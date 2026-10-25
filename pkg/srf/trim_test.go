@@ -11,6 +11,7 @@ import (
 // TestSSurfaceTriangulateIntoRespectsTrim verifies that a surface
 // with an SBspUv classifier skips cells outside the trim region.
 func TestSSurfaceTriangulateIntoRespectsTrim(t *testing.T) {
+	t.Parallel()
 	// Build a planar surface in the XY plane.
 	s := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	// Build a small BSP that classifies points with v > 0.5 as
@@ -47,6 +48,7 @@ func TestSSurfaceTriangulateIntoRespectsTrim(t *testing.T) {
 // walks each trim's curve from its start to its finish, in xyz and in
 // uv, honoring Backwards.
 func TestSSurfaceMakeEdgesIntoFromCurves(t *testing.T) {
+	t.Parallel()
 	shell := &SShell{}
 	pts := []SCurvePt{{P: geom.Vector{}}, {P: geom.Vector{X: 0.5, Y: 0.5}}, {P: geom.Vector{X: 1, Y: 1}}}
 	shell.Curve = append(shell.Curve, SCurve{H: core.HSCurve{V: 1}, Points: pts})
@@ -76,7 +78,8 @@ func TestSSurfaceMakeEdgesIntoFromCurves(t *testing.T) {
 // extruded circle at their bottom faces: the square comes out as four
 // pwl edges or four exact lines, the circle as its four exact arcs.
 func TestShellMakeSectionEdgesInto(t *testing.T) {
-	box := extrudedBox(geom.Vector{}, geom.Vector{X: 2, Y: 2, Z: 2})
+	t.Parallel()
+	box := extrudedBox(geom.Vector{}, geom.Vector{X: 2, Y: 2, Z: 2}, Tolerance{})
 	var sel SEdgeList
 	box.MakeSectionEdgesInto(geom.Vector{Z: 1}, 0, &sel, nil)
 	if len(sel.Edges) != 4 {
@@ -99,7 +102,7 @@ func TestShellMakeSectionEdgesInto(t *testing.T) {
 		t.Errorf("z = 1: %d edges, want 0", len(none.Edges))
 	}
 
-	cyl := extrudedCurves(circleCurves(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1}, 3), geom.Vector{}, geom.Vector{Z: 1})
+	cyl := extrudedCurves(circleCurves(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1}, 3), geom.Vector{}, geom.Vector{Z: 1}, Tolerance{})
 	var arcs SBezierList
 	cyl.MakeSectionEdgesInto(geom.Vector{Z: 1}, 0, &SEdgeList{}, &arcs)
 	if len(arcs.Curves) != 4 {

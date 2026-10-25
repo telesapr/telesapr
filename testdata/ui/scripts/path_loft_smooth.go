@@ -1,5 +1,5 @@
 // The loft of path_loft_smooth.script, made by a script
-// (TestPathEquivalenceSmoothLoft): the top circle of
+// (TestPathEquivalence/loft_smooth): the top circle of
 // testdata/ui/loft_sections.tlspr, the active sketch, lofted through
 // the middle square to the bottom circle.
 package main

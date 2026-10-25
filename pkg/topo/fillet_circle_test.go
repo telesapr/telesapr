@@ -15,10 +15,11 @@ import (
 )
 
 // cylinder is a cylinder of radius rad and height h on the XY plane,
-// about the z axis. The extrusion takes an outer loop running clockwise
-// about the loop set's normal.
-func cylinder(rad, h float64) *srf.SShell {
-	var sh srf.SShell
+// about the z axis, extruded at tol: its circle takes its points then.
+// The extrusion takes an outer loop running clockwise about the loop
+// set's normal.
+func cylinder(rad, h float64, tol srf.Tolerance) *srf.SShell {
+	sh := srf.SShell{Tol: tol}
 	var ls srf.SBezierLoopSet
 	ls.Outer.Curves = circle(rad, 0, 0)
 	ls.Normal = v(0, 0, -1)
@@ -27,13 +28,13 @@ func cylinder(rad, h float64) *srf.SShell {
 }
 
 // plateWithHole is a 40 x 40 x h plate with a hole of radius rad
-// through its middle.
-func plateWithHole(rad, h float64) *srf.SShell {
-	var plate, out srf.SShell
+// through its middle, built at tol.
+func plateWithHole(rad, h float64, tol srf.Tolerance) *srf.SShell {
+	plate, out := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
 	plate.MakePrism([]geom.Vector{v(-20, -20, 0), v(20, -20, 0), v(20, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, h),
 		core.NewRGBA(100, 100, 100, 255))
-	hole := cylinder(rad, h+2)
-	var moved srf.SShell
+	hole := cylinder(rad, h+2, tol)
+	moved := srf.SShell{Tol: tol}
 	moved.MakeFromTransformationOf(hole, v(0, 0, -1), geom.QuaternionIdentity, 1)
 	out.MakeFromDifferenceOf(&plate, &moved)
 	return &out
@@ -65,11 +66,9 @@ func sound(t *testing.T, sh *srf.SShell) float64 {
 // four arcs of its circle): a torus. By Pappus, the volume taken is the
 // spandrel's area times the length of the circle its centroid follows.
 func TestFilletCylinderTop(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	for _, c := range []struct{ rad, r float64 }{{5, 1}, {5, 4}, {20, 3}} {
-		srf.SetChordTolMm(0.001 * c.r)
-		sh := cylinder(c.rad, 10)
+		sh := cylinder(c.rad, 10, srf.Tol(0.001*c.r, 20))
 		at := v(c.rad*math.Cos(0.3), c.rad*math.Sin(0.3), 10)
 		if err := topo.FilletPicks(sh, []topo.FilletPick{{At: at, Arc: true}}, c.r, 1<<30, false); err != nil {
 			t.Fatalf("%+v: %v", c, err)
@@ -88,11 +87,9 @@ func TestFilletCylinderTop(t *testing.T) {
 
 // The same edge chamfered: a cone, taking a right triangle of side d.
 func TestChamferCylinderTop(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.001)
+	t.Parallel()
 	for _, d := range []float64{1, 3} {
-		sh := cylinder(5, 10)
+		sh := cylinder(5, 10, srf.Tol(0.001, 20))
 		if err := topo.FilletPicks(sh, []topo.FilletPick{{At: v(5, 0, 10), Arc: true}}, d, 1<<30, true); err != nil {
 			t.Fatal(err)
 		}
@@ -108,11 +105,9 @@ func TestChamferCylinderTop(t *testing.T) {
 // A hole's rim in a plate, filleted: the torus turns about the hole, so
 // the spandrel's centroid lies outside the circle.
 func TestFilletHoleRim(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.002)
+	t.Parallel()
 	for _, r := range []float64{1, 3} {
-		sh := plateWithHole(6, 10)
+		sh := plateWithHole(6, 10, srf.Tol(0.002, 20))
 		before := sound(t, sh)
 		if err := topo.FilletPicks(sh, []topo.FilletPick{{At: v(0, 6, 10), Arc: true}}, r, 1<<30, false); err != nil {
 			t.Fatal(err)
@@ -127,11 +122,12 @@ func TestFilletHoleRim(t *testing.T) {
 }
 
 func TestFilletCircleRefused(t *testing.T) {
+	t.Parallel()
 	// A boss on a plate.
 	var plate, boss, sh srf.SShell
 	plate.MakePrism([]geom.Vector{v(-20, -20, 0), v(20, -20, 0), v(20, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, 5),
 		core.NewRGBA(100, 100, 100, 255))
-	boss.MakeFromTransformationOf(cylinder(5, 10), v(0, 0, 5), geom.QuaternionIdentity, 1)
+	boss.MakeFromTransformationOf(cylinder(5, 10, srf.Tolerance{}), v(0, 0, 5), geom.QuaternionIdentity, 1)
 	sh.MakeFromUnionOf(&plate, &boss)
 	for _, c := range []struct {
 		at   geom.Vector
@@ -172,8 +168,7 @@ func TestFilletCircleRefused(t *testing.T) {
 // hole's rim over the circle's radius, the height and the size of the
 // cut, against Pappus's volumes; the rate allowed, 0, was set before.
 func TestFilletCircleSweep(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Strings("edge", "boss", "hole"),
@@ -184,6 +179,7 @@ func TestFilletCircleSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      24,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		rad, h := p.Float("radius"), p.Float("height")
@@ -196,12 +192,11 @@ func TestFilletCircleSweep(t *testing.T) {
 		}
 		r := p.Float("k") * room
 		tol := 0.002 * r
-		srf.SetChordTolMm(tol)
 		var sh *srf.SShell
 		if hole {
-			sh = plateWithHole(rad, h)
+			sh = plateWithHole(rad, h, srf.Tol(tol, 20))
 		} else {
-			sh = cylinder(rad, h)
+			sh = cylinder(rad, h, srf.Tol(tol, 20))
 		}
 		var m0 srf.SMesh
 		sh.TriangulateInto(&m0)

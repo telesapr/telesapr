@@ -3,7 +3,10 @@ package api
 import (
 	"math"
 	"path/filepath"
+	"sync"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 )
 
 // Chamfers on the solids of TestFilletOnOtherSolids, every edge alone at
@@ -20,19 +23,28 @@ func TestChamferOnOtherSolids(t *testing.T) {
 	}
 	minMade := map[string]int{"loft": 12, "sweep": 12, "box_hole": 14, "cylinder": 2, "blob_extruded": 1,
 		"sphere_bored": 2, "vase_revolved": 2, "lid_degree7": 12}
+	t.Parallel()
+	var mu sync.Mutex
 	total, made := 0, 0
-	for _, c := range otherSolids(t) {
-		tl := cutEveryEdge(t, c.build, c.r, edgesPerSolid(), true)
-		t.Logf("%s, d %g: %s", c.name, c.r, tl)
-		if tl.unsound > 0 {
-			t.Errorf("%s: %d chamfers made but not sound", c.name, tl.unsound)
+	t.Run("solids", func(t *testing.T) {
+		for _, c := range otherSolids() {
+			t.Run(c.name, func(t *testing.T) {
+				t.Parallel()
+				tl := cutEveryEdge(t, c.build, c.r, edgesPerSolid(), true)
+				t.Logf("d %g: %s", c.r, tl)
+				if tl.unsound > 0 {
+					t.Errorf("%d chamfers made but not sound", tl.unsound)
+				}
+				if !fixtures.RaceDetector && tl.sound < minMade[c.name] {
+					t.Errorf("%d chamfers made, %d were", tl.sound, minMade[c.name])
+				}
+				mu.Lock()
+				defer mu.Unlock()
+				total += tl.sound + tl.unsound + tl.refused
+				made += tl.sound
+			})
 		}
-		if !raceDetector && tl.sound < minMade[c.name] {
-			t.Errorf("%s: %d chamfers made, %d were", c.name, tl.sound, minMade[c.name])
-		}
-		total += tl.sound + tl.unsound + tl.refused
-		made += tl.sound
-	}
+	})
 	t.Logf("in all: %d of %d edges chamfered soundly (%.0f%%)", made, total, 100*float64(made)/float64(total))
 }
 
@@ -87,6 +99,7 @@ func lidStep(t *testing.T, d *Doc) Group {
 // within 1.2e-4 at this chord tolerance); the first comes back alike
 // after saving and loading and goes with one undo.
 func TestChamferEndsOnCurvedFace(t *testing.T) {
+	t.Parallel()
 	cases := lidUprights
 	if testing.Short() {
 		cases = cases[:1]
@@ -143,6 +156,7 @@ func TestChamferEndsOnCurvedFace(t *testing.T) {
 // another, as their chamfers don't meet (topo.filletApart), taking what
 // OpenCASCADE takes from each alone within 0.05%.
 func TestChamferEndsOnCurvedFaceApart(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("chamfers over curved faces, slow")
 	}
@@ -174,12 +188,13 @@ func TestChamferEndsOnCurvedFaceApart(t *testing.T) {
 // chamfer of 2 took 40.142 mm³; OpenCASCADE's own makeChamfer of the edge
 // takes 40.134 and leaves a solid it finds invalid.
 func TestChamferLoftFoot(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("rolling-ball chamfer of a loft, slow")
 	}
 	d := New()
 	d.Edit.SetChordTolerance(0.01)
-	g := otherSolids(t)[0].build(d)
+	g := otherSolids()[0].build(t, d)
 	f := d.Features.ChamferSolid([]SolidEdge{g.Solid().EdgeAt(V(0, -18, 0))}, 2, "")
 	if p := f.Problem(); p != "" {
 		t.Fatal(p)

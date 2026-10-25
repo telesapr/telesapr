@@ -6,8 +6,11 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
-func TestGlibcRandMatchesC(t *testing.T) {
-	// glibc: srand(0); rand() x 5.
+// TestGlibcRandSequence pins the first values of glibcRand(0), glibc's
+// srand(0) then rand(): the kd-tree and the BSP shuffle a mesh's
+// triangles in this order, and the goldens record what follows from it.
+func TestGlibcRandSequence(t *testing.T) {
+	t.Parallel()
 	want := []int{1804289383, 846930886, 1681692777, 1714636915, 1957747793}
 	r := newGlibcRand(0)
 	for i, w := range want {
@@ -36,6 +39,7 @@ func certainEdges(m *SMesh) (n int, inters, leaks bool) {
 }
 
 func TestMakeCertainEdgesNakedAndSelfInter(t *testing.T) {
+	t.Parallel()
 	var closed SMesh
 	tetrahedron(&closed, geom.Vector{}, 1)
 	if n, inters, leaks := certainEdges(&closed); n != 0 || inters || leaks {
@@ -63,6 +67,7 @@ func TestMakeCertainEdgesNakedAndSelfInter(t *testing.T) {
 // measuring the miss across the edge, which nearly lies in the plane,
 // rather than in the plane. An edge that does cross is still one.
 func TestEdgeNearlyInSliverPlane(t *testing.T) {
+	t.Parallel()
 	sliver := STriangle{
 		A: geom.Vector{X: 158.75, Y: 31.75, Z: 101.6},
 		B: geom.Vector{X: 158.75, Y: 31.75000089985327, Z: 101.59760958843633},

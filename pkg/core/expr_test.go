@@ -42,89 +42,69 @@ func TestExprEvalAndDerivative(t *testing.T) {
 
 func TestExprQuaternionRotate(t *testing.T) {
 	t.Parallel()
-	angle := math.Pi / 2
-	q := ExprQuaternion{
-		W: NewConstant(math.Cos(angle / 2)),
-		X: NewConstant(0),
-		Y: NewConstant(math.Sin(angle / 2)),
-		Z: NewConstant(0),
+	vec := func(x, y, z float64) ExprVector {
+		return ExprVector{X: NewConstant(x), Y: NewConstant(y), Z: NewConstant(z)}
 	}
-	vec := ExprVector{
-		X: NewConstant(1),
-		Y: NewConstant(0),
-		Z: NewConstant(0),
+	quat := func(w, x, y, z float64) ExprQuaternion {
+		return ExprQuaternion{W: NewConstant(w), X: NewConstant(x), Y: NewConstant(y), Z: NewConstant(z)}
 	}
-	res := q.Rotate(vec)
-
-	ctx := stubParamProvider{values: map[HParam]float64{}}
-	x := res.X.Eval(ctx, nil)
-	y := res.Y.Eval(ctx, nil)
-	z := res.Z.Eval(ctx, nil)
-	if math.Abs(x) > 1e-9 || math.Abs(y) > 1e-9 || math.Abs(z+1) > 1e-9 {
-		t.Fatalf("rotation: got (%f,%f,%f) want (0,0,-1)", x, y, z)
+	h := math.Sqrt2 / 2
+	cases := []struct {
+		name    string
+		q       ExprQuaternion
+		v       ExprVector
+		x, y, z float64
+		tol     float64 // 0: the rotation is exact
+	}{
+		{"90 about y", quat(math.Cos(math.Pi/4), 0, math.Sin(math.Pi/4), 0), vec(1, 0, 0), 0, 0, -1, 1e-9},
+		{"identity", quat(1, 0, 0, 0), vec(1, 2, 3), 1, 2, 3, 0},
+		{"180 about z", quat(0, 0, 0, 1), vec(1, 0, 0), -1, 0, 0, 0},
+		{"90 about z", quat(h, 0, 0, h), vec(1, 0, 0), 0, 1, 0, 1e-9},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			r := c.q.Rotate(c.v)
+			x, y, z := r.X.Eval(nil, nil), r.Y.Eval(nil, nil), r.Z.Eval(nil, nil)
+			if math.Abs(x-c.x) > c.tol || math.Abs(y-c.y) > c.tol || math.Abs(z-c.z) > c.tol {
+				t.Errorf("got (%v,%v,%v), want (%v,%v,%v)", x, y, z, c.x, c.y, c.z)
+			}
+		})
 	}
 }
 
-// TestExprConstantArithmetic verifies basic constant arithmetic.
+// TestExprConstantArithmetic checks the operators on constants, which need
+// no parameter provider.
 func TestExprConstantArithmetic(t *testing.T) {
 	t.Parallel()
-	ctx := stubParamProvider{values: map[HParam]float64{}}
-	// (2 + 3) * 4 = 20
-	e := NewConstant(2).Plus(NewConstant(3)).Times(NewConstant(4))
-	if v := e.Eval(ctx, nil); v != 20 {
-		t.Errorf("2+3*4 = %v, want 20", v)
+	c := NewConstant
+	cases := []struct {
+		name string
+		e    *Expr
+		want float64
+	}{
+		{"(2+3)*4", c(2).Plus(c(3)).Times(c(4)), 20},
+		{"3+4", c(3).Plus(c(4)), 7},
+		{"10-3", c(10).Minus(c(3)), 7},
+		{"7-3", c(7).Minus(c(3)), 4},
+		{"6*7", c(6).Times(c(7)), 42},
+		{"10/2", c(10).Div(c(2)), 5},
+		{"20/4", c(20).Div(c(4)), 5},
+		{"-(5)", c(5).Negate(), -5},
+		{"-(-3)", c(-3).Negate(), 3},
+		{"abs(-5)", c(-5).Abs(), 5},
+		{"abs(-7)", c(-7).Abs(), 7},
+		{"sqrt(16)", c(16).Sqrt(), 4},
+		{"7^2", c(7).Square(), 49},
+		{"5^2", c(5).Square(), 25},
+		{"floor(3.7)", c(3.7).Floor(), 3},
+		{"ceil(3.2)", c(3.2).Ceil(), 4},
+		{"round(3.5)", c(3.5).Round(), 4},
 	}
-	// 10 / 2 = 5
-	e = NewConstant(10).Div(NewConstant(2))
-	if v := e.Eval(ctx, nil); v != 5 {
-		t.Errorf("10/2 = %v, want 5", v)
-	}
-	// 7 - 3 = 4
-	e = NewConstant(7).Minus(NewConstant(3))
-	if v := e.Eval(ctx, nil); v != 4 {
-		t.Errorf("7-3 = %v, want 4", v)
-	}
-}
-
-// TestExprNegate verifies negation.
-func TestExprNegate(t *testing.T) {
-	t.Parallel()
-	ctx := stubParamProvider{values: map[HParam]float64{}}
-	if v := NewConstant(5).Negate().Eval(ctx, nil); v != -5 {
-		t.Errorf("-(5) = %v, want -5", v)
-	}
-	if v := NewConstant(-3).Negate().Eval(ctx, nil); v != 3 {
-		t.Errorf("-(-3) = %v, want 3", v)
-	}
-}
-
-// TestExprSqrtAndSquare verifies sqrt and square.
-func TestExprSqrtAndSquare(t *testing.T) {
-	t.Parallel()
-	ctx := stubParamProvider{values: map[HParam]float64{}}
-	if v := NewConstant(16).Sqrt().Eval(ctx, nil); v != 4 {
-		t.Errorf("sqrt(16) = %v, want 4", v)
-	}
-	if v := NewConstant(7).Square().Eval(ctx, nil); v != 49 {
-		t.Errorf("7^2 = %v, want 49", v)
-	}
-}
-
-// TestExprAbsFloorCeilRound verifies abs, floor, ceil, round.
-func TestExprAbsFloorCeilRound(t *testing.T) {
-	t.Parallel()
-	ctx := stubParamProvider{values: map[HParam]float64{}}
-	if v := NewConstant(-5).Abs().Eval(ctx, nil); v != 5 {
-		t.Errorf("abs(-5) = %v, want 5", v)
-	}
-	if v := NewConstant(3.7).Floor().Eval(ctx, nil); v != 3 {
-		t.Errorf("floor(3.7) = %v, want 3", v)
-	}
-	if v := NewConstant(3.2).Ceil().Eval(ctx, nil); v != 4 {
-		t.Errorf("ceil(3.2) = %v, want 4", v)
-	}
-	if v := NewConstant(3.5).Round().Eval(ctx, nil); v != 4 {
-		t.Errorf("round(3.5) = %v, want 4", v)
+	for _, tc := range cases {
+		if v := tc.e.Eval(nil, nil); v != tc.want {
+			t.Errorf("%s = %v, want %v", tc.name, v, tc.want)
+		}
 	}
 }
 
@@ -225,48 +205,6 @@ func TestExprVectorPlusMinus(t *testing.T) {
 	}
 }
 
-// TestExprQuaternionRotateIdentity checks identity rotation.
-func TestExprQuaternionRotateIdentity(t *testing.T) {
-	t.Parallel()
-	ctx := stubParamProvider{values: map[HParam]float64{}}
-	q := ExprQuaternion{W: NewConstant(1), X: NewConstant(0), Y: NewConstant(0), Z: NewConstant(0)}
-	v := q.Rotate(ExprVector{X: NewConstant(1), Y: NewConstant(2), Z: NewConstant(3)})
-	if v.X.Eval(ctx, nil) != 1 || v.Y.Eval(ctx, nil) != 2 || v.Z.Eval(ctx, nil) != 3 {
-		t.Errorf("identity rotation changed the vector")
-	}
-}
-
-// TestExprQuaternionRotate180AroundZ checks 180-degree rotation around Z.
-func TestExprQuaternionRotate180AroundZ(t *testing.T) {
-	t.Parallel()
-	ctx := stubParamProvider{values: map[HParam]float64{}}
-	q := ExprQuaternion{W: NewConstant(0), X: NewConstant(0), Y: NewConstant(0), Z: NewConstant(1)}
-	v := q.Rotate(ExprVector{X: NewConstant(1), Y: NewConstant(0), Z: NewConstant(0)})
-	if v.X.Eval(ctx, nil) != -1 {
-		t.Errorf("rotate x 180 around z: got x=%v, want -1", v.X.Eval(ctx, nil))
-	}
-}
-
-// TestExprQuaternionRotate90AroundZ checks 90-degree rotation around Z.
-func TestExprQuaternionRotate90AroundZ(t *testing.T) {
-	t.Parallel()
-	ctx := stubParamProvider{values: map[HParam]float64{}}
-	// Quaternion for 90-degree rotation around Z axis: (cos45, 0, 0, sin45).
-	q := ExprQuaternion{
-		W: NewConstant(0.7071067811865476),
-		X: NewConstant(0),
-		Y: NewConstant(0),
-		Z: NewConstant(0.7071067811865476),
-	}
-	v := q.Rotate(ExprVector{X: NewConstant(1), Y: NewConstant(0), Z: NewConstant(0)})
-	if v.X.Eval(ctx, nil) > 1e-9 {
-		t.Errorf("rotate x 90 around z: got x=%v, want 0", v.X.Eval(ctx, nil))
-	}
-	if v.Y.Eval(ctx, nil) < 1-1e-9 {
-		t.Errorf("rotate x 90 around z: got y=%v, want 1", v.Y.Eval(ctx, nil))
-	}
-}
-
 // TestExprSinCosSumToOne checks sin^2 + cos^2 = 1.
 func TestExprSinCosSumToOne(t *testing.T) {
 	t.Parallel()
@@ -291,88 +229,4 @@ func TestExprDivByZero(t *testing.T) {
 
 func isInf(f float64) bool {
 	return f > 1e308 || f < -1e308
-}
-
-// TestExprConstantAddConstant verifies Constant + Constant.
-func TestExprConstantAddConstant(t *testing.T) {
-	t.Parallel()
-	a := NewConstant(3)
-	b := NewConstant(4)
-	sum := a.Plus(b)
-	if sum.Eval(nil, nil) != 7 {
-		t.Errorf("3+4 = %v, want 7", sum.Eval(nil, nil))
-	}
-}
-
-// TestExprConstantMinusConstant verifies subtraction.
-func TestExprConstantMinusConstant(t *testing.T) {
-	t.Parallel()
-	a := NewConstant(10)
-	b := NewConstant(3)
-	diff := a.Minus(b)
-	if diff.Eval(nil, nil) != 7 {
-		t.Errorf("10-3 = %v, want 7", diff.Eval(nil, nil))
-	}
-}
-
-// TestExprConstantTimesConstant verifies multiplication.
-func TestExprConstantTimesConstant(t *testing.T) {
-	t.Parallel()
-	a := NewConstant(6)
-	b := NewConstant(7)
-	prod := a.Times(b)
-	if prod.Eval(nil, nil) != 42 {
-		t.Errorf("6*7 = %v, want 42", prod.Eval(nil, nil))
-	}
-}
-
-// TestExprConstantDivConstant verifies division.
-func TestExprConstantDivConstant(t *testing.T) {
-	t.Parallel()
-	a := NewConstant(20)
-	b := NewConstant(4)
-	q := a.Div(b)
-	if q.Eval(nil, nil) != 5 {
-		t.Errorf("20/4 = %v, want 5", q.Eval(nil, nil))
-	}
-}
-
-// TestExprConstantNegate verifies negation.
-func TestExprConstantNegate(t *testing.T) {
-	t.Parallel()
-	a := NewConstant(5)
-	neg := a.Negate()
-	if neg.Eval(nil, nil) != -5 {
-		t.Errorf("-5 = %v, want -5", neg.Eval(nil, nil))
-	}
-}
-
-// TestExprConstantAbs verifies absolute value.
-func TestExprConstantAbs(t *testing.T) {
-	t.Parallel()
-	a := NewConstant(-7)
-	abs := a.Abs()
-	if abs.Eval(nil, nil) != 7 {
-		t.Errorf("|-7| = %v, want 7", abs.Eval(nil, nil))
-	}
-}
-
-// TestExprConstantSqrt verifies square root.
-func TestExprConstantSqrt(t *testing.T) {
-	t.Parallel()
-	a := NewConstant(16)
-	sqrt := a.Sqrt()
-	if sqrt.Eval(nil, nil) != 4 {
-		t.Errorf("sqrt(16) = %v, want 4", sqrt.Eval(nil, nil))
-	}
-}
-
-// TestExprConstantSquare verifies square.
-func TestExprConstantSquare(t *testing.T) {
-	t.Parallel()
-	a := NewConstant(5)
-	sq := a.Square()
-	if sq.Eval(nil, nil) != 25 {
-		t.Errorf("5^2 = %v, want 25", sq.Eval(nil, nil))
-	}
 }

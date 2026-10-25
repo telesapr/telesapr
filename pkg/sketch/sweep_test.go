@@ -24,6 +24,7 @@ func pipePath(d *api.Doc, up, r, along float64) []api.Entity {
 }
 
 func TestSweepPipe(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	path := pipePath(d, 10, 8, 12)
 	d.Features.SketchIn(d.Workplane("XY"), "profile")
@@ -64,6 +65,7 @@ func TestSweepPipe(t *testing.T) {
 }
 
 func TestSweepProblems(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Features.SketchIn(d.Workplane("ZX"), "path")
 	up := d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 10))
@@ -109,6 +111,7 @@ func TestSweepProblems(t *testing.T) {
 // Pappus gives. The rate allowed was fixed at none before the sweep
 // was written; see sweepGridMaxFailRate for what it is.
 func TestSweepGrid(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("a sweep")
 	}
@@ -128,7 +131,7 @@ func TestSweepGrid(t *testing.T) {
 		th := p.Float("angle") * math.Pi / 180
 		tail := 5.0
 		d := api.New()
-		fineChord(d)
+		fineChord(d, 0.002)
 		// The path, in a workplane through the z axis, turned by tilt
 		// about it.
 		tilt := p.Float("tilt") * math.Pi / 180
@@ -207,6 +210,7 @@ func cubicLength(p0, p1, p2, p3 api.Vec) float64 {
 // the path, keeps its area times the path's length by the centroid
 // theorem. The end's copy of the profile faces along the path's end.
 func TestSweepAlongCubic(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.005 })
 	d.Features.Sketch3D("path")
@@ -251,6 +255,7 @@ func TestSweepAlongCubic(t *testing.T) {
 // its frames held to the axis keeps its area times the path's length,
 // as it does when they turn least, and both are saved.
 func TestSweepTwistAndUp(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.005 })
 	d.Features.SketchIn(d.Workplane("ZX"), "path")

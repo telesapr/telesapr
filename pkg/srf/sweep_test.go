@@ -16,11 +16,11 @@ func squareAt(cx, cy, a float64) *SBezierLoopSet {
 	}, geom.Vector{Z: 1})
 }
 
-// sweepCheck sweeps sbls along steps and checks the solid is
+// sweepCheck sweeps sbls along steps at tol and checks the solid is
 // watertight with the volume want.
-func sweepCheck(t *testing.T, name string, sbls *SBezierLoopSet, steps []SweepStep, want float64) *SShell {
+func sweepCheck(t *testing.T, name string, sbls *SBezierLoopSet, steps []SweepStep, want float64, tol Tolerance) *SShell {
 	t.Helper()
-	var s SShell
+	s := SShell{Tol: tol}
 	s.MakeFromSweepOf(sbls, steps, core.RGBA{}, 0, 0)
 	if !meshIsSound(&s) {
 		t.Errorf("%s: the sweep is not watertight", name)
@@ -32,25 +32,26 @@ func sweepCheck(t *testing.T, name string, sbls *SBezierLoopSet, steps []SweepSt
 }
 
 func TestSweepLine(t *testing.T) {
+	t.Parallel()
 	for _, dz := range []float64{5, -5} {
-		sweepCheck(t, "line", squareAt(0, 0, 2), []SweepStep{{Along: geom.Vector{Z: dz}}}, 20)
+		sweepCheck(t, "line", squareAt(0, 0, 2), []SweepStep{{Along: geom.Vector{Z: dz}}}, 20, Tolerance{})
 	}
 }
 
 // A square at distance R from an axis, turned about it, sweeps a
 // volume of its area times R times the angle (Pappus).
 func TestSweepArc(t *testing.T) {
-	fineChordTol(t)
+	t.Parallel()
 	for _, deg := range []float64{30, 60, 90, 135, 270, -60} {
 		th := deg * math.Pi / 180
 		st := SweepStep{Arc: true, Center: geom.Vector{X: 10}, Axis: geom.Vector{Y: 1}, Angle: th}
-		sweepCheck(t, "arc", squareAt(0, 0, 2), []SweepStep{st}, 4*10*math.Abs(th))
+		sweepCheck(t, "arc", squareAt(0, 0, 2), []SweepStep{st}, 4*10*math.Abs(th), fineTol())
 	}
 }
 
 // A pipe bend: up, a quarter turn, and along.
 func TestSweepBend(t *testing.T) {
-	fineChordTol(t)
+	t.Parallel()
 	a := 2.0
 	steps := []SweepStep{
 		{Along: geom.Vector{Z: 10}},
@@ -58,7 +59,7 @@ func TestSweepBend(t *testing.T) {
 		{Along: geom.Vector{X: 12}},
 	}
 	want := a*a*10 + a*a*8*math.Pi/2 + a*a*12
-	s := sweepCheck(t, "bend", squareAt(0, 0, a), steps, want)
+	s := sweepCheck(t, "bend", squareAt(0, 0, a), steps, want, fineTol())
 	if end := SweepEnd(steps).Apply(geom.Vector{}); end.Minus(geom.Vector{X: 20, Z: 18}).Magnitude() > 1e-9 {
 		t.Errorf("the path ends at %v", end)
 	}
@@ -69,6 +70,6 @@ func TestSweepBend(t *testing.T) {
 		in.Reverse()
 		return in
 	}())
-	sweepCheck(t, "ring", ring, steps, want*3/4)
+	sweepCheck(t, "ring", ring, steps, want*3/4, fineTol())
 	_ = s
 }

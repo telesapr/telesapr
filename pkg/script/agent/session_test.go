@@ -66,6 +66,7 @@ func saved(t *testing.T, s *Session) []byte {
 // The script the primer shows runs as it stands, and makes what it
 // says it makes.
 func TestPrimerExample(t *testing.T) {
+	t.Parallel()
 	s := newSession(t)
 	res := run(t, s, primerExample)
 	if res.Error != "" {
@@ -92,6 +93,7 @@ func TestPrimerExample(t *testing.T) {
 }
 
 func TestPrimerAndInstructions(t *testing.T) {
+	t.Parallel()
 	if n := len(Instructions); n > MaxInstructions {
 		t.Errorf("the instructions are %d bytes, over the %d clients keep", n, MaxInstructions)
 	}
@@ -138,6 +140,7 @@ func TestPrimerAndInstructions(t *testing.T) {
 // What a script prints and the value it ends with come back, and what
 // it defines stays for the next.
 func TestSessionRun(t *testing.T) {
+	t.Parallel()
 	s := newSession(t)
 	res := run(t, s, "l := doc.Sketch.Line(V(0, 0, 0), V(30, 40, 0))\nfmt.Println(\"drawn\")\nl.Length()")
 	if res.Output != "drawn\n" || res.Value != "50" || res.Error != "" || res.RolledBack {
@@ -186,6 +189,7 @@ func main() { fmt.Println(len(api.Current().Groups())) }
 // A script that fails leaves the drawing as it was, with nothing to
 // redo, and says where it failed.
 func TestSessionRollback(t *testing.T) {
+	t.Parallel()
 	s := newSession(t)
 	run(t, s, "doc.Sketch.Rect(V(0, 0, 0), V(40, 20, 0))")
 	before := saved(t, s)
@@ -224,6 +228,7 @@ func TestSessionRollback(t *testing.T) {
 // its own step of undo, as TangentArc and Split do, before or after
 // its first other change.
 func TestSessionRollbackOwnUndoSteps(t *testing.T) {
+	t.Parallel()
 	for name, code := range map[string]string{
 		"after a change":  "ls := doc.Sketch.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0))\ndoc.Sketch.TangentArc(ls[0].End(), 5, true)\nls[0].Radius()",
 		"first change":    "doc.Sketch.TangentArc(corner[0].End(), 5, true)\ndoc.Sketch.Circle(V(0, 0, 0), 1)\ndoc.Group(\"nothing\").Name()",
@@ -267,6 +272,7 @@ func TestSessionRollbackOwnUndoSteps(t *testing.T) {
 // A script that is stopped is rolled back like one that failed; one
 // that runs elsewhere in the engine is in the way.
 func TestSessionStopAndBusy(t *testing.T) {
+	t.Parallel()
 	s := newSession(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	// The script says when it has drawn by making a file.
@@ -305,6 +311,7 @@ func TestSessionStopAndBusy(t *testing.T) {
 }
 
 func TestSessionDescribeHelpRender(t *testing.T) {
+	t.Parallel()
 	s := newSession(t)
 	ctx := context.Background()
 	run(t, s, "doc.Sketch.Circle(V(0, 0, 0), 5)\ndoc.Features.Extrude(3, \"disc\")")

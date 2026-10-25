@@ -1,6 +1,6 @@
 # A rectangle whose sides come from three parameters, through the
 # parameters screen and the dimension editor, then extruded; the same
-# model as path_parameters.go makes (TestPathEquivalenceParameters).
+# model as path_parameters.go makes (TestPathEquivalence/parameters).
 key r
 move 200 200
 down L 200 200

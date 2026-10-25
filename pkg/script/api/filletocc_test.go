@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"math"
 	"path/filepath"
 	"testing"
@@ -39,25 +40,28 @@ func TestFilletOnOtherSolidsVolumes(t *testing.T) {
 		{"shapes/vase_revolved.step", V(5.05224268, -4.8441654, 14), 42.726909},
 		{"degree/lid_degree7.step", V(20.3125, 0, 9.59580796), 9.792331},
 	}
+	t.Parallel()
 	for _, c := range cases {
-		d := New()
-		d.Edit.SetChordTolerance(0.002)
-		g, err := d.Assembly.LinkStep(filepath.Join("..", "..", "..", "testdata", "step", c.file), "", true)
-		if err != nil {
-			t.Fatal(err)
-		}
-		before := g.Analyze().Check().Volume
-		f := d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(c.at)}, 1, "")
-		if p := f.Problem(); p != "" {
-			t.Errorf("%s at %v: %s", c.file, c.at, p)
-			continue
-		}
-		r := f.Analyze().Check()
-		took := before - r.Volume
-		t.Logf("%s at %v: took %.6f, want %.6f (%+.2f%%)", c.file, c.at, took, c.took, 100*(took/c.took-1))
-		if !r.Sound() || math.Abs(took-c.took) > math.Max(0.01*c.took, 0.02) {
-			t.Errorf("%s at %v: %s, took %g, want %g", c.file, c.at, r.Summary(), took, c.took)
-		}
+		t.Run(fmt.Sprintf("%s at %v", c.file, c.at), func(t *testing.T) {
+			t.Parallel()
+			d := New()
+			d.Edit.SetChordTolerance(0.002)
+			g, err := d.Assembly.LinkStep(filepath.Join("..", "..", "..", "testdata", "step", c.file), "", true)
+			if err != nil {
+				t.Fatal(err)
+			}
+			before := g.Analyze().Check().Volume
+			f := d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(c.at)}, 1, "")
+			if p := f.Problem(); p != "" {
+				t.Fatal(p)
+			}
+			r := f.Analyze().Check()
+			took := before - r.Volume
+			t.Logf("took %.6f, want %.6f (%+.2f%%)", took, c.took, 100*(took/c.took-1))
+			if !r.Sound() || math.Abs(took-c.took) > math.Max(0.01*c.took, 0.02) {
+				t.Errorf("%s, took %g, want %g", r.Summary(), took, c.took)
+			}
+		})
 	}
 }
 
@@ -67,6 +71,7 @@ func TestFilletOnOtherSolidsVolumes(t *testing.T) {
 // a round round the edge, until the rounds ran out (misfit 2.67e-5 at
 // 2.4e-5). The late rounds split the spans near the tolerance too.
 func TestFilletCylinderFineTolerance(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("STEP solids at a fine tolerance")
 	}

@@ -1,6 +1,6 @@
 # The extrusion of path_extrude with a sketch on its top face, picked
 # with the mouse; the same as path_sketch_on_face.go makes
-# (TestPathEquivalenceSketchOnFace).
+# (TestPathEquivalence/sketch_on_face).
 key r
 move 200 200
 down L 200 200

@@ -39,6 +39,7 @@ func mirrorSetup(d *Doc) (along, up, point Entity) {
 // A point as far from a line segment as that line segment is long: the
 // line's length, and the distance from the point to another line segment.
 func TestEqualLengthPointDistance(t *testing.T) {
+	t.Parallel()
 	for _, at := range []Vec{V(4, 3, 0), V(14, 3, 0), V(-30, -20, 0)} {
 		d := New()
 		along, up := crossedLines(d, 10)
@@ -62,6 +63,7 @@ func TestEqualLengthPointDistance(t *testing.T) {
 // Two points as far from a line segment as each other, measured from
 // one line segment or from one each.
 func TestEqualPointLineDistances(t *testing.T) {
+	t.Parallel()
 	d := New()
 	along, up, point := mirrorSetup(d)
 	second := d.Sketch.Point(V(0, -4, 0))
@@ -95,6 +97,7 @@ func TestEqualPointLineDistances(t *testing.T) {
 // Two angles as large as each other, as two pairs of line segments and
 // as two that share one.
 func TestEqualAngle(t *testing.T) {
+	t.Parallel()
 	d := New()
 	// Four rays from one point, the first and third of them horizontal:
 	// the second is at 30 degrees and the fourth at 60, so the equality
@@ -152,6 +155,7 @@ func rayAngle(l Entity) float64 {
 // A distance measured along a direction, which is how the gap between
 // two parallel faces is held.
 func TestProjectedDistance(t *testing.T) {
+	t.Parallel()
 	d := New()
 	along := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
 	d.Constrain.Horizontal(along)
@@ -174,6 +178,7 @@ func TestProjectedDistance(t *testing.T) {
 // What Equal is given, it cannot make equal; the misuse is an error and
 // nothing is added.
 func TestEqualMisuse(t *testing.T) {
+	t.Parallel()
 	d := New()
 	along, up, point := mirrorSetup(d)
 	for name, fn := range map[string]func(){

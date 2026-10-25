@@ -1,5 +1,5 @@
 // The model of path_thread_whole.script, made by a script
-// (TestPathEquivalenceThreadWhole). The mouse puts the circle's centre on
+// (TestPathEquivalence/thread_whole). The mouse puts the circle's centre on
 // the workplane's origin, which constrains it there, and picks the
 // extrusion's top circle to thread down into it; the thread is then
 // hidden and suppressed whole.

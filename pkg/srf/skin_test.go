@@ -24,6 +24,7 @@ func quarterArcs(r, z float64) []SBezier {
 }
 
 func TestChainCurve(t *testing.T) {
+	t.Parallel()
 	chain := quarterArcs(5, 0)
 	for _, deg := range []int{2, 3, 5} {
 		c, err := ChainCurve(chain, deg)
@@ -57,6 +58,7 @@ func TestChainCurve(t *testing.T) {
 // A skin goes through each of its sections at their parameters, and two
 // sections make it ruled.
 func TestSkin(t *testing.T) {
+	t.Parallel()
 	for _, k := range []int{2, 3, 4, 6} {
 		var secs []BSplineCurve
 		for s := range k {
@@ -96,6 +98,7 @@ func TestSkin(t *testing.T) {
 // A skin with its ends' derivatives given goes through its sections at
 // their parameters and leaves its ends along the derivatives.
 func TestSkinWithEnds(t *testing.T) {
+	t.Parallel()
 	for _, k := range []int{2, 3, 5} {
 		var secs []BSplineCurve
 		ts := make([]float64, k)

@@ -13,6 +13,7 @@ import (
 // third assembled touching the second face to face. Only the first two
 // interfere, by their shells, with the volume they share.
 func TestInterferences(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	block(d, 0, 0, 10, 10, 10)
 	d.Features.SketchIn(d.Workplane("XY"), "")

@@ -26,14 +26,9 @@ func readModel(t *testing.T, path string) *Model {
 	return ReadModel(f)
 }
 
-// fineMesh sets a fine chord tolerance for a test: a shell's trims take
-// their points at the tolerance in force when it is built.
-func fineMesh(t *testing.T, tol float64) {
-	old, oldSegs := srf.ChordTolMm(), srf.MaxSegments()
-	srf.SetChordTolMm(tol)
-	srf.SetMaxSegments(100)
-	t.Cleanup(func() { srf.SetChordTolMm(old); srf.SetMaxSegments(oldSegs) })
-}
+// fineMesh is a fine tolerance of chord tol for a test: a shell's trims
+// take their points at the tolerance it is built at.
+func fineMesh(tol float64) srf.Tolerance { return srf.Tol(tol, 100) }
 
 // solidReport meshes a shell and checks it.
 func solidReport(sh *srf.SShell) check.Report {
@@ -45,11 +40,12 @@ func solidReport(sh *srf.SShell) check.Report {
 // TestSolidShapes reads each shape of the analytic set as a solid: it
 // is sound, and its volume within the mesh's tolerance of the exact one.
 func TestSolidShapes(t *testing.T) {
+	t.Parallel()
 	const tol = 0.005
-	fineMesh(t, tol)
+	fine := fineMesh(tol)
 	for _, e := range readShapes(t) {
 		m := readModel(t, filepath.Join(shapesDir, e.name+".step"))
-		sh, err := m.ShellOf(0, srf.OriginFor(9, 0), srf.Tolerance{})
+		sh, err := m.ShellOf(0, srf.OriginFor(9, 0), fine)
 		if err != nil {
 			t.Errorf("%s: %v", e.name, err)
 			continue
@@ -71,13 +67,14 @@ func TestSolidShapes(t *testing.T) {
 // within lowDegreeTol. Each is sound and its volume the exact one
 // within the mesh's tolerance; read as a mesh, the same.
 func TestSolidHighDegree(t *testing.T) {
+	t.Parallel()
 	const tol = 0.005
-	fineMesh(t, tol)
+	fine := fineMesh(tol)
 	dir := filepath.Join("..", "..", "..", "testdata", "step", "degree")
 	for _, e := range readExpected(t, dir) {
 		path := filepath.Join(dir, e.name+".step")
 		m := readModel(t, path)
-		sh, err := m.ShellOf(0, srf.OriginFor(9, 0), srf.Tolerance{})
+		sh, err := m.ShellOf(0, srf.OriginFor(9, 0), fine)
 		if err != nil {
 			t.Errorf("%s: %v", e.name, err)
 			continue
@@ -105,12 +102,13 @@ func TestSolidHighDegree(t *testing.T) {
 // their curves exact Beziers. Each is sound and its volume the expected one
 // within the mesh's tolerance.
 func TestSolidOffsetsConics(t *testing.T) {
+	t.Parallel()
 	const tol = 0.005
-	fineMesh(t, tol)
+	fine := fineMesh(tol)
 	dir := filepath.Join("..", "..", "..", "testdata", "step", "offset")
 	for _, e := range readExpected(t, dir) {
 		m := readModel(t, filepath.Join(dir, e.name+".step"))
-		sh, err := m.ShellOf(0, srf.OriginFor(9, 0), srf.Tolerance{})
+		sh, err := m.ShellOf(0, srf.OriginFor(9, 0), fine)
 		if err != nil {
 			t.Errorf("%s: %v", e.name, err)
 			continue
@@ -130,6 +128,7 @@ func TestSolidOffsetsConics(t *testing.T) {
 // at points between its own, and neighbours sharing their sides. A base
 // that closes with a crease has an offset that doesn't.
 func TestOffsetCells(t *testing.T) {
+	t.Parallel()
 	pts := []geom.Vector{{X: 0, Y: 0}, {X: 5, Y: 3}, {X: 10, Y: 0}, {X: 12, Y: 6}, {X: 8, Y: 10}, {X: 2, Y: 9}, {X: 0, Y: 0}}
 	knots := []float64{0, 0, 0, 0, 1, 2, 3, 4, 4, 4, 4}
 	ws := make([]float64, len(pts))
@@ -210,6 +209,7 @@ func TestSolidCorpus(t *testing.T) {
 	if testing.Short() {
 		t.Skip("the corpus")
 	}
+	t.Parallel()
 	dir := filepath.Join("..", "..", "..", "testdata", "step", "corpus")
 	sound := 0
 	for _, e := range readReference(t, filepath.Join(dir, "reference.txt")) {
@@ -218,21 +218,21 @@ func TestSolidCorpus(t *testing.T) {
 		}
 		m := readModel(t, filepath.Join(dir, e.name))
 		tol := math.Max(1e-3, math.Cbrt(e.volume)*5e-4)
-		fineMesh(t, tol)
+		fine := fineMesh(tol)
 		vol := 0.0
 		var why string
 		for _, pl := range m.Placements {
-			sh, err := m.ShellOf(pl.Shape, srf.OriginFor(9, 0), srf.Tolerance{})
+			sh, err := m.ShellOf(pl.Shape, srf.OriginFor(9, 0), fine)
 			if err != nil {
 				why = err.Error()
 				break
 			}
-			if r := solidReport(sh); !r.Sound() {
+			r := solidReport(sh)
+			if !r.Sound() {
 				why = r.String()
 				break
 			}
-			sh2, _ := m.ShellOf(pl.Shape, srf.OriginFor(9, 0), srf.Tolerance{})
-			vol += solidReport(sh2).Volume
+			vol += r.Volume
 		}
 		allow := e.area*tol + 1e-6*e.volume
 		ok := why == "" && math.Abs(vol-e.volume) <= allow
@@ -259,8 +259,7 @@ func TestSolidCorpusCDT(t *testing.T) {
 	if testing.Short() {
 		t.Skip("the corpus")
 	}
-	old := srf.DefaultTolerance
-	t.Cleanup(func() { srf.DefaultTolerance = old })
+	t.Parallel()
 	dir := filepath.Join("..", "..", "..", "testdata", "step", "corpus")
 	for _, e := range readReference(t, filepath.Join(dir, "reference.txt")) {
 		if e.expect != "ok" {
@@ -268,12 +267,11 @@ func TestSolidCorpusCDT(t *testing.T) {
 		}
 		m := readModel(t, filepath.Join(dir, e.name))
 		tol := math.Max(1e-3, math.Cbrt(e.volume)*5e-4)
-		fineMesh(t, tol)
-		srf.SetMesher(srf.MesherCDT)
+		fine := fineMesh(tol).WithMesher(srf.MesherCDT)
 		vol := 0.0
 		var why string
 		for _, pl := range m.Placements {
-			sh, err := m.ShellOf(pl.Shape, srf.OriginFor(9, 0), srf.Tolerance{})
+			sh, err := m.ShellOf(pl.Shape, srf.OriginFor(9, 0), fine)
 			if err != nil {
 				why = err.Error()
 				break
@@ -302,6 +300,7 @@ func TestSolidSeamEdges(t *testing.T) {
 	if testing.Short() {
 		t.Skip("the corpus")
 	}
+	t.Parallel()
 	dir := filepath.Join("..", "..", "..", "testdata", "step", "corpus")
 	for _, e := range readReference(t, filepath.Join(dir, "reference.txt")) {
 		if e.name != "NIST_MBE_PMI_5.stp" && e.name != "NIST_MBE_PMI_6.stp" {
@@ -309,8 +308,8 @@ func TestSolidSeamEdges(t *testing.T) {
 		}
 		m := readModel(t, filepath.Join(dir, e.name))
 		tol := math.Max(1e-3, math.Cbrt(e.volume)*5e-4)
-		fineMesh(t, tol)
-		sh, err := m.ShellOf(m.Placements[0].Shape, srf.OriginFor(9, 0), srf.Tolerance{})
+		fine := fineMesh(tol)
+		sh, err := m.ShellOf(m.Placements[0].Shape, srf.OriginFor(9, 0), fine)
 		if err != nil {
 			t.Errorf("%s: %v", e.name, err)
 			continue
@@ -345,6 +344,7 @@ func TestSolidSchenkelClosed(t *testing.T) {
 	if testing.Short() {
 		t.Skip("the corpus")
 	}
+	t.Parallel()
 	dir := filepath.Join("..", "..", "..", "testdata", "step", "corpus")
 	for _, e := range readReference(t, filepath.Join(dir, "reference.txt")) {
 		if e.name != "Schenkel.stp" {
@@ -352,8 +352,8 @@ func TestSolidSchenkelClosed(t *testing.T) {
 		}
 		m := readModel(t, filepath.Join(dir, e.name))
 		tol := math.Max(1e-3, math.Cbrt(e.volume)*5e-4)
-		fineMesh(t, tol)
-		sh, err := m.ShellOf(m.Placements[0].Shape, srf.OriginFor(9, 0), srf.Tolerance{})
+		fine := fineMesh(tol)
+		sh, err := m.ShellOf(m.Placements[0].Shape, srf.OriginFor(9, 0), fine)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -371,6 +371,7 @@ func TestSolidSchenkelClosed(t *testing.T) {
 // TestTurnedLoopsAtPole: a bound through a pole of a closed surface is
 // taken as the file runs it, whichever way round its layout goes.
 func TestTurnedLoopsAtPole(t *testing.T) {
+	t.Parallel()
 	half := math.Pi / 2
 	// Up a meridian at u = pi to the pole, down another at u = 0: laid
 	// out clockwise when the second comes out at 2 pi.
@@ -395,12 +396,12 @@ func TestTurnedLoopsAtPole(t *testing.T) {
 // it, a little off the middle: the analytic shapes are symmetric about
 // their middles, where their patches meet, and a cut along a patch's
 // edge is coincident contact, which the kernel doesn't take in general
-// (roadmap F5).
-func cutters(lo, hi geom.Vector) []*srf.SShell {
+// (roadmap F5). They are built at tol.
+func cutters(lo, hi geom.Vector, tol srf.Tolerance) []*srf.SShell {
 	col := DefaultColor
 	d := hi.Minus(lo)
 	c := lo.Plus(hi).ScaledBy(0.5).Plus(geom.Vector{X: 0.0731 * d.X, Y: 0.0419 * d.Y})
-	var block srf.SShell
+	block := srf.SShell{Tol: tol}
 	x0, x1 := c.X, hi.X+d.X
 	y0, y1 := lo.Y-d.Y, hi.Y+d.Y
 	block.MakePrism([]geom.Vector{{X: x0, Y: y0, Z: lo.Z - d.Z}, {X: x1, Y: y0, Z: lo.Z - d.Z},
@@ -419,7 +420,7 @@ func cutters(lo, hi geom.Vector) []*srf.SShell {
 	// The caps lie in the plane through Point: at the loop, below the
 	// shape, not at z = 0 where they would lie in a face of it.
 	ls.Normal, ls.Point = geom.Vector{Z: -1}, ls.Outer.Curves[0].Start()
-	var cyl srf.SShell
+	cyl := srf.SShell{Tol: tol}
 	cyl.MakeFromExtrusionOf(&ls, geom.Vector{}, geom.Vector{Z: 3 * d.Z}, col)
 	return []*srf.SShell{&block, &cyl}
 }
@@ -431,8 +432,9 @@ func TestSolidBooleans(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
 	}
+	t.Parallel()
 	const tol = 0.01
-	fineMesh(t, tol)
+	fine := fineMesh(tol)
 	type part struct {
 		name string
 		sh   *srf.SShell
@@ -440,7 +442,7 @@ func TestSolidBooleans(t *testing.T) {
 	var parts []part
 	for _, e := range readShapes(t) {
 		m := readModel(t, filepath.Join(shapesDir, e.name+".step"))
-		if sh, err := m.ShellOf(0, srf.OriginFor(9, 0), srf.Tolerance{}); err == nil {
+		if sh, err := m.ShellOf(0, srf.OriginFor(9, 0), fine); err == nil {
 			parts = append(parts, part{e.name, sh})
 		}
 	}
@@ -458,9 +460,9 @@ func TestSolidBooleans(t *testing.T) {
 				growBox(q, &lo, &hi)
 			}
 		}
-		for ci, cut := range cutters(lo, hi) {
+		for ci, cut := range cutters(lo, hi, fine) {
 			points++
-			var kept, gone srf.SShell
+			kept, gone := srf.SShell{Tol: fine}, srf.SShell{Tol: fine}
 			kept.MakeFromDifferenceOf(p.sh, cut)
 			gone.MakeFromIntersectionOf(p.sh, cut)
 			rk, rg := solidReport(&kept), solidReport(&gone)
@@ -495,6 +497,7 @@ const solidBooleanMaxFail = 0
 // triangulated faces in a tessellated solid, a tetrahedron of strips
 // and fans; as solids they are refused, having no surfaces.
 func TestTessellated(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join("..", "..", "..", "testdata", "step", "tessellated.step")
 	res, err := ReadFile(path, Options{})
 	if err != nil {

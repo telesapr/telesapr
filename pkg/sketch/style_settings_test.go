@@ -43,6 +43,7 @@ func (m *mapSettings) ThawString(k, d string) string {
 // user's settings, that FreezeDefaultStyles saves them, and that
 // LoadFactoryDefaults restores the factory settings.
 func TestDefaultStylesFromSettings(t *testing.T) {
+	t.Parallel()
 	st := newMapSettings()
 
 	red := core.NewRGBA(255, 0, 0, 255)

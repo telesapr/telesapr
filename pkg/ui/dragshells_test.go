@@ -19,6 +19,7 @@ import (
 // pointer moved. The solid keeps its edges through the drag, as any other
 // regeneration.
 func TestDragMakesSolidsHere(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	sk := ss.SK
 	ss.BackgroundShells = true
@@ -105,6 +106,7 @@ func meshX(t *testing.T, g *sketch.Group) float64 {
 // When the pointer is let go, the last job makes the solids of where the
 // drag ended.
 func TestDragSolidsLate(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	ss.BackgroundShells = true
 	ss.DragSolidsLate = true

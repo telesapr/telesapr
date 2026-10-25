@@ -1,5 +1,5 @@
 // The chamfer of path_chamfer_two.script, made by a script
-// (TestPathEquivalenceChamferTwo): path_chamfer's chamfer with a second
+// (TestPathEquivalence/chamfer_two): path_chamfer's chamfer with a second
 // distance of 2, its distances then swapped.
 package main
 

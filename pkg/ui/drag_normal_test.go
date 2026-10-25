@@ -30,6 +30,7 @@ func normalDragApp(t *testing.T) (*Application, *api.Doc, api.Entity) {
 // quaternion from the vectors the drag's came to, so what is compared
 // is the quaternion, to a trillionth.
 func TestDragNormalMatchesSetOrientation(t *testing.T) {
+	t.Parallel()
 	ss, _, wp := normalDragApp(t)
 	ss.GW.pending.normal = wp.Normal().H
 	ss.GW.pending.operation = pendingDraggingNormal
@@ -54,6 +55,7 @@ func TestDragNormalMatchesSetOrientation(t *testing.T) {
 // A normal that lies in a workplane stays where it is when it is
 // dragged, and the window doesn't fail.
 func TestDragFixedNormalStays(t *testing.T) {
+	t.Parallel()
 	ss, doc, wp := normalDragApp(t)
 	doc.Features.SketchIn(wp, "")
 	c := doc.Sketch.Circle(api.V(1, 1, 0), 2)

@@ -83,6 +83,7 @@ func checkAgainst(t *testing.T, path string, e corpusEntry) {
 
 // TestCorpus reads the files of testdata/step/corpus.
 func TestCorpus(t *testing.T) {
+	t.Parallel()
 	dir := filepath.Join("..", "..", "..", "testdata", "step", "corpus")
 	for _, e := range readReference(t, filepath.Join(dir, "reference.txt")) {
 		t.Run(e.name, func(t *testing.T) { checkAgainst(t, filepath.Join(dir, e.name), e) })
@@ -92,6 +93,7 @@ func TestCorpus(t *testing.T) {
 // TestExternalCorpus reads the files external.txt lists that it finds
 // under $TELESAPR_STEP_CORPUS.
 func TestExternalCorpus(t *testing.T) {
+	t.Parallel()
 	root := os.Getenv("TELESAPR_STEP_CORPUS")
 	if root == "" {
 		t.Skip("TELESAPR_STEP_CORPUS is not set")
@@ -136,6 +138,7 @@ func BenchmarkReadNIST5(b *testing.B) {
 // (roadmap 13.5). The knife edge itself, shared by four faces, is what
 // the check still finds crossing.
 func TestKnifeEdgeReadBack(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join("..", "..", "..", "testdata", "export", "group", "boolean_knife_edge", "normal", "surfaces.step")
 	res, err := ReadFile(path, Options{})
 	if err != nil {

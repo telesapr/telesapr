@@ -1,6 +1,6 @@
 # Rotate the linked part by 90 degrees about the screen normal, with the
 # link group active and then with one of its points selected.
-load group/link/normal.slvs
+load tlspr/golden/group/link/normal.tlspr
 dump
 key 9
 dump

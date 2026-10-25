@@ -1,5 +1,5 @@
 // The loft of path_loft.script, made by a script
-// (TestPathEquivalenceLoft): the top square of
+// (TestPathEquivalence/loft): the top square of
 // testdata/ui/loft_profiles.tlspr, the active sketch, lofted to the
 // bottom one.
 package main

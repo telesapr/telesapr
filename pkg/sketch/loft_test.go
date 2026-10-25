@@ -32,6 +32,7 @@ func above(d *api.Doc, h float64) api.Entity {
 }
 
 func TestLoftFrustum(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	bottom, top := twoProfiles(d, 10, 4, 6)
 	step(d)
@@ -68,6 +69,7 @@ func TestLoftFrustum(t *testing.T) {
 }
 
 func TestLoftCircleToSquare(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.001 })
 	bottom := d.Features.SketchIn(d.Workplane("XY"), "circle")
@@ -99,6 +101,7 @@ func twistedVolume(h, a0, c, theta float64) float64 {
 // pairing their sides twist by an eighth of a turn, one way and the
 // other, and by three eighths, and all are sound.
 func TestLoftTwist(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.001 })
 	bottom := d.Features.SketchIn(d.Workplane("XY"), "square")
@@ -150,6 +153,7 @@ func ngon(d *api.Doc, n int, r, z float64) {
 // the two turns of the largest). The outer cells are halved since, and
 // the worst is 0.55%.
 func TestLoftSweep(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("a sweep")
 	}
@@ -189,6 +193,7 @@ func TestLoftSweep(t *testing.T) {
 	}
 	scales, heights := sweep.Floats("scale", 0.3, 1, 1.6), sweep.Floats("height", 1, 10, 50)
 	sweep.Grid{
+		Parallel:    true,
 		Axes:        []sweep.Axis{sweep.Floats("sides", 0, 4, 6), scales, heights, sweep.Floats("turn", -1, 0, 1)},
 		MaxFailRate: 0,
 		Sample:      20,
@@ -209,6 +214,7 @@ func TestLoftSweep(t *testing.T) {
 // a Boolean. Where the loft sits on the block, its volume adds to the
 // block's.
 func TestLoftOnBlock(t *testing.T) {
+	t.Parallel()
 	for _, z0 := range []float64{5, 3, 0, -2, 7} {
 		for _, kind := range []string{"flat", "twisted", "circle"} {
 			d := api.New()
@@ -249,6 +255,7 @@ func TestLoftOnBlock(t *testing.T) {
 // is undone and redone, saved and read back with its profiles, and a
 // profile deleted leaves it a problem.
 func TestSmoothLoftGroup(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.001 })
 	rs, zs := []float64{10, 14, 8}, []float64{0, 10, 25}
@@ -326,6 +333,7 @@ func circleLoop(r, z float64) []srf.SBezier {
 // (roadmap 20.1): a triangle to a square, ruled, and through a hexagon,
 // smooth; both sound. A loft refuses a profile twice, and one alone.
 func TestLoftUnequalCounts(t *testing.T) {
+	t.Parallel()
 	profiles := func() (*api.Doc, api.Group, api.Group, api.Group) {
 		d := api.New()
 		d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.01 })

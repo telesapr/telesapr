@@ -1,12 +1,12 @@
 package soft
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
-	"github.com/telesapr/telesapr/pkg/persist/slvs"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/render"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -15,7 +15,7 @@ import (
 // fixtureDisplay loads a fixture and returns its last group's display
 // mesh and outlines.
 func fixtureDisplay(t testing.TB, name string) (*srf.SMesh, *srf.SOutlineList) {
-	doc, err := slvs.LoadFile(filepath.Join("..", "..", "..", "testdata", name))
+	doc, err := tlspr.LoadFile(fixtures.Path("tlspr/golden/" + name))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +59,7 @@ func drawMeshScene(r *Renderer, m *srf.SMesh, ol *srf.SOutlineList) {
 
 func TestSoftMesh(t *testing.T) {
 	t.Parallel()
-	m, ol := fixtureDisplay(t, "group/boolean_tangent_fillet/normal.slvs")
+	m, ol := fixtureDisplay(t, "group/boolean_tangent_fillet/normal.tlspr")
 	r := New()
 	cam := fitCamera(isoCamera(300, 240), m)
 	checkGolden(t, "mesh_iso", frame(r, cam, func() { drawMeshScene(r, m, ol) }))
@@ -77,7 +77,7 @@ func TestSoftMesh(t *testing.T) {
 }
 
 func BenchmarkSoftMesh1080p(b *testing.B) {
-	m, ol := fixtureDisplay(b, "group/boolean_tangent_fillet/normal.slvs")
+	m, ol := fixtureDisplay(b, "group/boolean_tangent_fillet/normal.tlspr")
 	r := New()
 	cam := fitCamera(isoCamera(1920, 1080), m)
 	b.ReportMetric(float64(len(m.Triangles)), "triangles")

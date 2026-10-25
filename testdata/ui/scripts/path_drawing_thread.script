@@ -1,6 +1,6 @@
 # A screw thread made through its screen, then its drawing set to draw
 # the thread as modelled; the same as path_drawing_thread.go makes
-# (TestPathEquivalenceDrawingThread).
+# (TestPathEquivalence/drawing_thread).
 key c
 move 300 300
 down L 300 300

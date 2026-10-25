@@ -2,7 +2,7 @@
 # group's name in the group list move it one place; Edit > Move Group
 # Earlier and Later move the active group. A move that would put a group
 # ahead of a group it uses is refused, naming both, and is no undo step.
-load thread/bolt_m8x30.slvs
+load thread/bolt_m8x30.tlspr
 tw
 # The head can't go before the sketch it extrudes.
 answer ok

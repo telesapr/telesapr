@@ -11,6 +11,7 @@ import (
 // for a one-sided extrusion of a line: the remap numbering (which
 // fixes the copies' handles) and the copies' positions.
 func TestGroupGenerateExtrude(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	srcH := sk.AddGroup(Group{Type: GroupDrawing3D, Scale: 1})
 	extrH := sk.AddGroup(Group{Type: GroupExtrude, Subtype: GroupOneSided, OpA: srcH, Scale: 1})
@@ -94,6 +95,7 @@ func TestGroupGenerateExtrude(t *testing.T) {
 }
 
 func TestCopyAsEnum(t *testing.T) {
+	t.Parallel()
 	if CopyAsNumeric != 0 || CopyAsNTrans != 1 {
 		t.Fatalf("CopyAs enum values don't match SolveSpace convention")
 	}

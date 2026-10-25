@@ -1,5 +1,5 @@
 # The solve options of a group set on the group screen; the same as
-# path_group_solve.go makes (TestPathEquivalenceGroupSolve).
+# path_group_solve.go makes (TestPathEquivalence/group_solve).
 key r
 move 200 200
 down L 200 200

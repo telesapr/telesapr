@@ -1,5 +1,5 @@
 // The drawing of path_drawing.script, made by a script
-// (TestPathEquivalenceDrawing): the extrusion of path_extrude, its
+// (TestPathEquivalence/drawing): the extrusion of path_extrude, its
 // drawing on an A2 sheet at 1:2, first angle, titled PLATE (roadmap
 // 18.1).
 package main

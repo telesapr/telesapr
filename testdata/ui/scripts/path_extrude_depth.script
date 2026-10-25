@@ -1,6 +1,6 @@
 # The extrusion of path_extrude, its depth held and typed as 25 on its
 # group screen; the same as path_extrude_depth.go makes
-# (TestPathEquivalenceExtrudeDepth).
+# (TestPathEquivalence/extrude_depth).
 key r
 move 200 200
 down L 200 200

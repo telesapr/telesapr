@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -58,11 +59,8 @@ func segment(r, c float64) float64 {
 // arc at sharp corners, drafted all round, along the diameter only and
 // along the arc only.
 func TestDraftedPrismAngles(t *testing.T) {
-	old, oldSeg := srf.ChordTolMm(), srf.MaxSegments()
-	defer srf.SetChordTolMm(old)
-	defer srf.SetMaxSegments(oldSeg)
-	srf.SetChordTolMm(0.001)
-	srf.SetMaxSegments(200)
+	t.Parallel()
+	tol := srf.Tol(0.001, 200)
 	color := core.NewRGBA(100, 100, 100, 255)
 	rad := func(deg float64) float64 { return deg * math.Pi / 180 }
 	square := polyLoop(v(0, 0, 0), v(20, 0, 0), v(20, 10, 0), v(0, 10, 0))
@@ -93,7 +91,7 @@ func TestDraftedPrismAngles(t *testing.T) {
 			func(z float64) float64 { x := z * tanOf(-6); return segment(10-x, x) }, math.Pi * 10},
 	} {
 		for _, way := range []float64{1, -1} {
-			sh, err := topo.DraftedPrismAngles(c.loops, c.angles, v(0, 0, way*c.h), color, 1<<30, srf.Tolerance{})
+			sh, err := topo.DraftedPrismAngles(c.loops, c.angles, v(0, 0, way*c.h), color, 1<<30, tol)
 			if err != nil {
 				t.Errorf("%s (%g): %v", c.name, way, err)
 				continue
@@ -107,6 +105,7 @@ func TestDraftedPrismAngles(t *testing.T) {
 }
 
 func TestDraftedPrismAnglesRefused(t *testing.T) {
+	t.Parallel()
 	color := core.NewRGBA(100, 100, 100, 255)
 	rad := func(deg float64) float64 { return deg * math.Pi / 180 }
 	rounded := roundedLoop(20, 10, 3)
@@ -132,11 +131,8 @@ func TestDraftedPrismAnglesRefused(t *testing.T) {
 // several angles and heights. The rate allowed was fixed at none before
 // the sides were written.
 func TestDraftAnglesSweep(t *testing.T) {
-	old, oldSeg := srf.ChordTolMm(), srf.MaxSegments()
-	defer srf.SetChordTolMm(old)
-	defer srf.SetMaxSegments(oldSeg)
-	srf.SetChordTolMm(0.001)
-	srf.SetMaxSegments(200)
+	t.Parallel()
+	tol := srf.Tol(0.001, 200)
 	color := core.NewRGBA(100, 100, 100, 255)
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
@@ -146,6 +142,7 @@ func TestDraftAnglesSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      12,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		deg, h := p.Float("degrees"), p.Float("height")
@@ -164,15 +161,41 @@ func TestDraftAnglesSweep(t *testing.T) {
 			angles = []float64{a, a, 0}
 			area = func(z float64) float64 { return segment(10-z*tan, 0) }
 		}
-		sh, err := topo.DraftedPrismAngles([][]srf.SBezier{dShape(10)}, [][]float64{angles}, v(0, 0, h), color, 1<<30, srf.Tolerance{})
+		sh, err := topo.DraftedPrismAngles([][]srf.SBezier{dShape(10)}, [][]float64{angles}, v(0, 0, h), color, 1<<30, tol)
 		if err != nil {
 			return err
 		}
 		want := integrateTo(h, area)
-		got := sound(t, sh)
+		got, err := soundVolume(sh)
+		if err != nil {
+			return err
+		}
 		if math.Abs(got-want) > 0.001*math.Pi*10*h+1e-6*want {
 			return fmt.Errorf("volume %g, want %g", got, want)
 		}
 		return nil
 	}).Require(t)
+}
+
+// soundVolume is sound's check without a test to fail, for a sweep's
+// points, which run on goroutines of their own: the volume of sh's mesh,
+// or what is wrong with its topology or its mesh.
+func soundVolume(sh *srf.SShell) (float64, error) {
+	tp, err := topo.Build(sh)
+	if err != nil {
+		return 0, err
+	}
+	if probs := tp.Validate(); len(probs) > 0 {
+		return 0, fmt.Errorf("%s at %v", probs[0].Msg, probs[0].At)
+	}
+	var m srf.SMesh
+	sh.TriangulateInto(&m)
+	r := check.Solid(sh, &m)
+	if !r.Sound() {
+		return 0, fmt.Errorf("unsound: %s", r.String())
+	}
+	if e, me := tp.Euler(), topo.MeshEuler(&m); e != me {
+		return 0, fmt.Errorf("Euler %d, the mesh's %d", e, me)
+	}
+	return r.Volume, nil
 }

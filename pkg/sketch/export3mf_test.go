@@ -37,6 +37,7 @@ type model3mfXML struct {
 // triangles' colours from the table, the volume of the mesh it holds,
 // and the same bytes every time.
 func TestExport3mf(t *testing.T) {
+	t.Parallel()
 	var a, b srf.SShell
 	red, blue := core.NewRGBA(200, 0, 0, 255), core.NewRGBA(0, 0, 200, 255)
 	a.MakePrism([]geom.Vector{{}, {X: 10}, {X: 10, Y: 20}, {Y: 20}}, geom.Vector{}, geom.Vector{Z: 30}, red)

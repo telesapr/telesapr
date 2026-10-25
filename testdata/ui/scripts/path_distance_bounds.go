@@ -1,5 +1,5 @@
 // The bounds of path_distance_bounds.script, made by a script
-// (TestPathEquivalenceDistanceBounds): a line with the mouse's ends
+// (TestPathEquivalence/distance_bounds): a line with the mouse's ends
 // given a minimum length and a maximum, each made at the line's length
 // and then edited as the interface does, and a point put on the line
 // as a segment (F2).

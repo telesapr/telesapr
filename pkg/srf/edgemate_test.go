@@ -22,6 +22,7 @@ func outlinesOf(m *SMesh, kind EdgeKind) (int, float64) {
 // The outline edges of a closed solid are the edges its triangles share,
 // so a tetrahedron's are its six, each as long as its edges.
 func TestMateIndexClosed(t *testing.T) {
+	t.Parallel()
 	var m SMesh
 	tetrahedron(&m, geom.Vector{}, 10)
 	if n, total := outlinesOf(&m, EdgeSharp); n != 6 {
@@ -36,6 +37,7 @@ func TestMateIndexClosed(t *testing.T) {
 // curve between them, and the copies are within lengthEps. The edge is
 // shared all the same.
 func TestMateIndexNearMiss(t *testing.T) {
+	t.Parallel()
 	var m SMesh
 	tetrahedron(&m, geom.Vector{}, 10)
 	// Move one of a tetrahedron's corners by a hair, and add the sliver
@@ -55,6 +57,7 @@ func TestMateIndexNearMiss(t *testing.T) {
 // An edge that runs across a face where nothing else is has no mate, and
 // is not an outline.
 func TestMateIndexOpen(t *testing.T) {
+	t.Parallel()
 	var m SMesh
 	m.AddTriangle3(STriMeta{}, geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	if n, _ := outlinesOf(&m, EdgeSharp); n != 0 {
@@ -65,6 +68,7 @@ func TestMateIndexOpen(t *testing.T) {
 // A grid of triangles far apart in one direction and close in the other,
 // so that their cells are neighbours, still has all of its edges found.
 func TestMateIndexCrowded(t *testing.T) {
+	t.Parallel()
 	var m SMesh
 	const n = 20
 	for i := range n {

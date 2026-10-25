@@ -1,5 +1,5 @@
 // The model of path_thread_edit.script, made by a script
-// (TestPathEquivalenceThreadEdit): a thread, then edited as one. The mouse puts the circle's centre on
+// (TestPathEquivalence/thread_edit): a thread, then edited as one. The mouse puts the circle's centre on
 // the workplane's origin, which constrains it there, and picks the
 // extrusion's top circle to thread down into it.
 package main

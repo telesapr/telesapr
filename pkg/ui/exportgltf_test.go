@@ -15,6 +15,7 @@ import (
 // script with no window (api.New) write the same bytes, since all three
 // reach sketch.ExportMeshAsGlbTo.
 func TestScriptExportGlb(t *testing.T) {
+	t.Parallel()
 	build := func(doc *api.Doc) {
 		doc.Sketch.Rect(api.V(-10, -10, 0), api.V(10, 10, 0))
 		g := doc.Features.Extrude(5, "")

@@ -306,6 +306,10 @@ func readPacked(f *zip.File) ([]byte, error) {
 // its own, and its model opened there, its links made absolute so that
 // they hold wherever the model is saved.
 func LoadPacked(path string) (*Document, error) {
+	return loadPacked(path, link.Options{CanCancel: true})
+}
+
+func loadPacked(path string, o link.Options) (*Document, error) {
 	dir, err := os.MkdirTemp("", "telesapr-packed-")
 	if err != nil {
 		return nil, err
@@ -314,7 +318,7 @@ func LoadPacked(path string) (*Document, error) {
 	if err != nil {
 		return nil, err
 	}
-	doc, err := LoadFile(model)
+	doc, err := LoadFileWith(model, o)
 	if err != nil {
 		return nil, err
 	}

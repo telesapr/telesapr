@@ -17,6 +17,7 @@ import (
 // File > Export > Script writes what File.ExportScript writes in the
 // window and with no window, and the script builds the model again.
 func TestExportScriptMatchesScript(t *testing.T) {
+	t.Parallel()
 	build := func(doc *api.Doc) {
 		if err := doc.Params.Set("side", "20"); err != nil {
 			t.Fatal(err)

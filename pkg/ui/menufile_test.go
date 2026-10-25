@@ -37,6 +37,7 @@ func copyFile(t *testing.T, from, to string) {
 // TestSaveNewFile saves a new sketch through File > Save: the name the
 // user gives gets the .tlspr extension.
 func TestSaveNewFile(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	path := filepath.Join(t.TempDir(), "a")
 	p.FilePaths = []string{path}
@@ -74,6 +75,7 @@ func TestSaveNewFile(t *testing.T) {
 }
 
 func TestModelFileName(t *testing.T) {
+	t.Parallel()
 	for in, want := range map[string]string{
 		"a.tlspr": "a.tlspr", "a.TLSPR": "a.TLSPR", "a.slvs": "a.tlspr", "a": "a.tlspr", "a.b": "a.b.tlspr",
 	} {
@@ -109,6 +111,7 @@ func importFixture(t *testing.T, fixture string) string {
 // TestOpenAndUnsavedChanges opens a fixture, and checks the question
 // about unsaved changes before a new file.
 func TestOpenAndUnsavedChanges(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	path := importFixture(t, "group/translate_nd/normal.slvs")
 
@@ -145,6 +148,7 @@ func TestOpenAndUnsavedChanges(t *testing.T) {
 // TestAutosave writes an autosave for an unsaved sketch and offers it
 // when the file is opened again.
 func TestAutosave(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	path := importFixture(t, "group/translate_nd/normal.slvs")
 	if ss.Load(path) != nil {
@@ -181,6 +185,7 @@ func TestAutosave(t *testing.T) {
 // TestSaveAsKeepsLinks saves a sketch that links an STL into another
 // folder, and checks the link still resolves from there.
 func TestSaveAsKeepsLinks(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	src := importFixture(t, "group/link_stl/normal.slvs")
 	dir := filepath.Dir(filepath.Dir(src))
@@ -223,8 +228,9 @@ func TestSaveAsKeepsLinks(t *testing.T) {
 
 // TestAnalyzeVolume runs Analyze > Volume on an extrusion.
 func TestAnalyzeVolume(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
-	if !loadSlvs(t, ss, filepath.Join("..", "..", "testdata", "group", "translate_nd", "normal.slvs")) {
+	if !loadModel(t, ss, filepath.Join("..", "..", "testdata", "tlspr", "golden", "group", "translate_nd", "normal.tlspr")) {
 		t.Fatal("load failed")
 	}
 	p.DialogResponses = []platform.Response{platform.ResponseOK}
@@ -240,6 +246,7 @@ func TestAnalyzeVolume(t *testing.T) {
 // links must be found and read, and the user asked about none of them,
 // whatever chord tolerance is in effect.
 func TestLoadFindsLinks(t *testing.T) {
+	t.Parallel()
 	from := filepath.Join("..", "..", "testdata", "tlspr", "golden", "group", "link")
 	for _, tc := range []struct {
 		name string
@@ -290,6 +297,7 @@ func TestLoadFindsLinks(t *testing.T) {
 // the user is asked to locate it, and may decline, cancel the load, or
 // pick the file.
 func TestLoadMissingLinkAsks(t *testing.T) {
+	t.Parallel()
 	fixture := importFixture(t, "group/link/normal.slvs")
 	linked, err := filepath.Abs(filepath.Join(filepath.Dir(fixture), "rect_v20.tlspr"))
 	if err != nil {

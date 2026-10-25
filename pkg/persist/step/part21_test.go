@@ -9,6 +9,7 @@ import (
 )
 
 func TestParse(t *testing.T) {
+	t.Parallel()
 	text := `ISO-10303-21;
 HEADER;
 /* a comment */
@@ -79,6 +80,7 @@ trailing junk`
 }
 
 func TestParseErrors(t *testing.T) {
+	t.Parallel()
 	head := "ISO-10303-21;\nHEADER;\nENDSEC;\nDATA;\n"
 	tail := "ENDSEC;\nEND-ISO-10303-21;\n"
 	cases := map[string]string{
@@ -127,6 +129,7 @@ func TestParseErrors(t *testing.T) {
 }
 
 func TestProtocols(t *testing.T) {
+	t.Parallel()
 	for schema, want := range map[string]string{
 		"CONFIG_CONTROL_DESIGN": "AP203", "AP203_CONFIGURATION_CONTROLLED_3D_DESIGN_OF_MECHANICAL_PARTS_AND_ASSEMBLIES_MIM_LF": "AP203 edition 2",
 		"AUTOMOTIVE_DESIGN_CC2": "AP214", "AP209_MULTIDISCIPLINARY_ANALYSIS_AND_DESIGN_MIM_LF": "AP209",

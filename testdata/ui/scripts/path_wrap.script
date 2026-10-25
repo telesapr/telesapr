@@ -4,7 +4,7 @@
 # with the mouse, the lathe's construction circles hidden while the
 # rectangle is drawn, so that its corners take no point on a circle, and
 # the faces made selectable while sketching; the same as path_wrap.go makes
-# (TestPathEquivalenceWrap).
+# (TestPathEquivalence/wrap).
 key r
 move 250 200
 down L 250 200

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/internal/golden"
 	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
@@ -16,6 +17,7 @@ import (
 // requires the same file; a script can also cut where the section view
 // is.
 func TestExportSectionPaths(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	// A plane half way up the block, to cut by.
@@ -49,7 +51,7 @@ func TestExportSectionPaths(t *testing.T) {
 	}
 	if len(a) == 0 || string(a) != string(b) {
 		t.Fatalf("the window wrote %d bytes and the script %d, which differ at %s",
-			len(a), len(b), firstDiffLine(string(a), string(b)))
+			len(a), len(b), golden.FirstDifference(b, a))
 	}
 
 	// The section view's plane, 20 mm up from the workplane, cuts the

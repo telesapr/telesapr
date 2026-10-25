@@ -177,12 +177,12 @@ func TestMeshTreeRay(t *testing.T) {
 
 func TestTriangulateBySurface(t *testing.T) {
 	t.Parallel()
-	sh := lathedTube(2, 5, 0, 3)
+	sh := lathedTube(2, 5, 0, 3, Tolerance{})
 	var whole SMesh
 	sh.TriangulateInto(&whole)
 	// A second triangulation of one shell can differ in its last bits
 	// (the surfaces keep their last projection), so a fresh one.
-	ms := lathedTube(2, 5, 0, 3).TriangulateBySurface()
+	ms := lathedTube(2, 5, 0, 3, Tolerance{}).TriangulateBySurface()
 	if len(ms) != len(sh.Surface) {
 		t.Fatalf("%d meshes for %d surfaces", len(ms), len(sh.Surface))
 	}

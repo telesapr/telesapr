@@ -1,5 +1,5 @@
 // The model of path_mirror_solid.script, made by a script
-// (TestPathEquivalenceMirrorSolid).
+// (TestPathEquivalence/mirror_solid).
 package main
 
 import . "github.com/telesapr/telesapr/pkg/script/api"

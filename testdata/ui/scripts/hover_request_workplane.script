@@ -1,5 +1,5 @@
 # What the mouse hovers over request/workplane/normal.slvs, in two views.
-load request/workplane/normal.slvs
+load tlspr/golden/request/workplane/normal.tlspr
 view default
 hovergrid 20
 view rotated

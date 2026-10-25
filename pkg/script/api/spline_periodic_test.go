@@ -5,6 +5,7 @@ import "testing"
 // A spline drawn through its points is closed into a periodic one, as
 // the mouse does by clicking the first point again.
 func TestMakePeriodic(t *testing.T) {
+	t.Parallel()
 	d := New()
 	s := d.Sketch.Cubic(V(-30, 0, 0), V(-20, 15, 0), V(20, -15, 0), V(30, 0, 0))
 	for _, p := range []Vec{V(-20, 15, 0), V(0, 0, 0), V(20, -15, 0)} {
@@ -40,6 +41,7 @@ func TestMakePeriodic(t *testing.T) {
 // Only a spline with four points to go round can be closed, and
 // nothing else can be closed at all.
 func TestMakePeriodicMisuse(t *testing.T) {
+	t.Parallel()
 	d := New()
 	short := d.Sketch.Cubic(V(0, 0, 0), V(10, 0, 0), V(20, 0, 0), V(30, 0, 0))
 	line := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))

@@ -9,6 +9,7 @@ import (
 )
 
 func TestSShellAssembly(t *testing.T) {
+	t.Parallel()
 	// Build two non-overlapping shells.
 	a := &SShell{}
 	b := &SShell{}
@@ -26,6 +27,7 @@ func TestSShellAssembly(t *testing.T) {
 }
 
 func TestSShellUnion(t *testing.T) {
+	t.Parallel()
 	a := &SShell{}
 	b := &SShell{}
 	s1 := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
@@ -40,9 +42,10 @@ func TestSShellUnion(t *testing.T) {
 }
 
 func TestSShellDifference(t *testing.T) {
+	t.Parallel()
 	// a and b are disjoint boxes; a - b should equal a.
-	boxA := extrudedBox(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
-	boxB := extrudedBox(geom.Vector{X: 5, Y: 5, Z: 5}, geom.Vector{X: 6, Y: 6, Z: 6})
+	boxA := extrudedBox(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1}, Tolerance{})
+	boxB := extrudedBox(geom.Vector{X: 5, Y: 5, Z: 5}, geom.Vector{X: 6, Y: 6, Z: 6}, Tolerance{})
 	combined := &SShell{}
 	combined.MakeFromDifferenceOf(boxA, boxB)
 	if combined.BooleanFailed {
@@ -54,9 +57,10 @@ func TestSShellDifference(t *testing.T) {
 }
 
 func TestSShellDifferenceEmpty(t *testing.T) {
+	t.Parallel()
 	// a and b are the SAME box; a - b should be empty.
-	boxA := extrudedBox(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
-	boxB := extrudedBox(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
+	boxA := extrudedBox(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1}, Tolerance{})
+	boxB := extrudedBox(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1}, Tolerance{})
 	combined := &SShell{}
 	combined.MakeFromDifferenceOf(boxA, boxB)
 	if v := shellVolume(combined); math.Abs(v) > 1e-9 {
@@ -67,8 +71,9 @@ func TestSShellDifferenceEmpty(t *testing.T) {
 // TestSShellIntersectionOverlappingBoxes verifies intersection of
 // two overlapping boxes is non-empty.
 func TestSShellIntersectionOverlappingBoxes(t *testing.T) {
-	a := extrudedBox(geom.NewVector(0, 0, 0), geom.NewVector(2, 2, 2))
-	b := extrudedBox(geom.NewVector(1, 1, 1), geom.NewVector(3, 3, 3))
+	t.Parallel()
+	a := extrudedBox(geom.NewVector(0, 0, 0), geom.NewVector(2, 2, 2), Tolerance{})
+	b := extrudedBox(geom.NewVector(1, 1, 1), geom.NewVector(3, 3, 3), Tolerance{})
 	var out SShell
 	out.MakeFromIntersectionOf(a, b)
 	if len(out.Surface) != 6 || math.Abs(shellVolume(&out)-1) > 1e-9 {
@@ -79,21 +84,27 @@ func TestSShellIntersectionOverlappingBoxes(t *testing.T) {
 // TestSShellAssemblyOfThreeShells verifies that MakeFromAssemblyOf
 // concatenates multiple shells.
 func TestSShellAssemblyOfThreeShells(t *testing.T) {
-	var out SShell
+	t.Parallel()
+	// MakeFromAssemblyOf takes two shells other than its receiver, so
+	// each box goes into a new shell.
+	out := &SShell{}
 	for i := range 3 {
-		b := makeBoxShellForTest(
+		b := extrudedBox(
 			geom.NewVector(float64(i*2), 0, 0),
-			geom.NewVector(float64(i*2+1), 1, 1))
-		out.MakeFromAssemblyOf(&out, b)
+			geom.NewVector(float64(i*2+1), 1, 1), Tolerance{})
+		next := &SShell{}
+		next.MakeFromAssemblyOf(out, b)
+		out = next
 	}
-	if len(out.Surface) == 0 {
-		t.Fatalf("assembly of 3 boxes is empty")
+	if len(out.Surface) != 18 {
+		t.Fatalf("assembly of 3 boxes has %d surfaces, want 18", len(out.Surface))
 	}
 }
 
 // TestSShellDifferenceOnEmptyInputs verifies that booleanDifference
 // on two empty shells leaves the result empty (no surfaces).
 func TestSShellDifferenceOnEmptyInputs(t *testing.T) {
+	t.Parallel()
 	var a, b, out SShell
 	out.MakeFromDifferenceOf(&a, &b)
 	if len(out.Surface) != 0 {
@@ -104,6 +115,7 @@ func TestSShellDifferenceOnEmptyInputs(t *testing.T) {
 // TestSShellIntersectionOnEmptyInputs verifies that
 // booleanIntersection on two empty shells leaves the result empty.
 func TestSShellIntersectionOnEmptyInputs(t *testing.T) {
+	t.Parallel()
 	var a, b, out SShell
 	out.MakeFromIntersectionOf(&a, &b)
 	if len(out.Surface) != 0 {
@@ -114,6 +126,7 @@ func TestSShellIntersectionOnEmptyInputs(t *testing.T) {
 // TestSShellUnionOnEmptyInputs verifies that booleanUnion on two
 // empty shells leaves the result empty.
 func TestSShellUnionOnEmptyInputs(t *testing.T) {
+	t.Parallel()
 	var a, b, out SShell
 	out.MakeFromUnionOf(&a, &b)
 	if len(out.Surface) != 0 {

@@ -14,6 +14,7 @@ import (
 // One side of a block drafted (roadmap 28.2): only the front leans, the
 // rest stay upright; undo, redo, a round trip; all sides again.
 func TestDraftChosenSides(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 20, 10, 10)
 	ex.AsExtrude().SetDraft(10)
@@ -64,6 +65,7 @@ func TestDraftChosenSides(t *testing.T) {
 // An extrusion of a D, its diameter meeting its arc at sharp corners:
 // the arc's side a cone, the diameter's a plane, meeting in conics.
 func TestDraftSharpArc(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Edit.SetChordTolerance(0.002)
 	d.Sketch.Arc(api.V(0, 0, 0), api.V(10, 0, 0), api.V(-10, 0, 0))
@@ -95,6 +97,7 @@ func TestDraftSharpArc(t *testing.T) {
 // where two discs of radius 5 - z tan 4° overlap. Undo and a round trip
 // keep it.
 func TestDraftSharpArcs(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Edit.SetChordTolerance(0.002)
 	d.Sketch.Arc(api.V(0, 0, 0), api.V(5, 0, 0), api.V(0, 5, 0))
@@ -134,6 +137,7 @@ func TestDraftSharpArcs(t *testing.T) {
 // its foot; in the middle it narrows both ways; off the extrusion it is
 // a problem.
 func TestDraftNeutral(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 20, 10, 10)
 	ex.AsExtrude().SetDraft(5)
@@ -170,6 +174,7 @@ func TestDraftNeutral(t *testing.T) {
 }
 
 func TestDraftSidesMisuse(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 20, 10, 10)
 	ex.AsExtrude().SetDraft(5)
@@ -200,6 +205,7 @@ func TestDraftSidesMisuse(t *testing.T) {
 // from planes along it, and requires sound solids of the right volume.
 // The rate allowed was fixed at none before the sides were written.
 func TestDraftSidesSweep(t *testing.T) {
+	t.Parallel()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Strings("sides", "front", "front and right", "all"),

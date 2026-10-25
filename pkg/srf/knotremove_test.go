@@ -71,6 +71,7 @@ func distinctInner(deg int, knots []float64) int {
 // two, and takes the knots out again: the surface's own knots come
 // back, and its points stay where they were.
 func TestRemoveKnotsGivesBack(t *testing.T) {
+	t.Parallel()
 	r := rand.New(rand.NewSource(27))
 	for trial := range 40 {
 		du, dv := 1+r.Intn(4), 1+r.Intn(4)
@@ -103,6 +104,7 @@ func TestRemoveKnotsGivesBack(t *testing.T) {
 // TestRemoveKnotsKeepsCreases moves a control point beside a knot of
 // a refined surface: that knot stays, and the surface with it.
 func TestRemoveKnotsKeepsCreases(t *testing.T) {
+	t.Parallel()
 	r := rand.New(rand.NewSource(28))
 	s := randomSurface(r, 3, 2, 6, 4, true)
 	f := refined(s)
@@ -127,6 +129,7 @@ func TestRemoveKnotsKeepsCreases(t *testing.T) {
 // circles: the rational circle is smooth, but not its homogeneous
 // points, so no knot goes.
 func TestRemoveKnotsCircle(t *testing.T) {
+	t.Parallel()
 	w := math.Sqrt(0.5)
 	ring := [][2]float64{{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}, {1, 0}}
 	s := BSplineSurface{DegU: 2, DegV: 1,

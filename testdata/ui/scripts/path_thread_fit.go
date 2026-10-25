@@ -1,5 +1,5 @@
 // The model of path_thread_fit.script, made by a script
-// (TestPathEquivalenceThreadFit): a thread of class 7H, a quarter turn
+// (TestPathEquivalence/thread_fit): a thread of class 7H, a quarter turn
 // on. The mouse puts the circle's centre on
 // the workplane's origin, which constrains it there, and picks the
 // extrusion's top circle to thread down into it.

@@ -1,5 +1,5 @@
 // The model of path_lathe_point_axis.script, made by a script
-// (TestPathEquivalenceLathePointAxis): a rectangle turned about a
+// (TestPathEquivalence/lathe_point_axis): a rectangle turned about a
 // construction line through the point at its start.
 package main
 

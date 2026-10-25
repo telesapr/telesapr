@@ -1,5 +1,5 @@
 // The circles of path_auto_constrain.script, made by a script
-// (TestPathEquivalenceAutoConstrain): the second nearly as big as the
+// (TestPathEquivalence/auto_constrain): the second nearly as big as the
 // first, then given the constraint the window adds as it is drawn
 // (roadmap 29.4).
 package main

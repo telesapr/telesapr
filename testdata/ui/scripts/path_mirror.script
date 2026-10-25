@@ -1,5 +1,5 @@
 # The extrusion of path_extrude mirrored in the face clicked; the same
-# as path_mirror.go makes (TestPathEquivalenceMirror).
+# as path_mirror.go makes (TestPathEquivalence/mirror).
 key r
 move 200 200
 down L 200 200

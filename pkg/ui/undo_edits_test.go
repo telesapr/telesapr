@@ -44,6 +44,7 @@ func oneUndoStep(t *testing.T, ss *Application, state func() string, do func()) 
 // shown groups and the stipple pattern of a style are each one step of
 // undo.
 func TestScreenEditsAreUndoSteps(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	scriptConsole(t, ss,
 		`axis := doc.Sketch.Line(V(0, 0, 0), V(0, 10, 0))`,
@@ -91,6 +92,7 @@ func TestScreenEditsAreUndoSteps(t *testing.T) {
 
 // A DXF import that leaves the workplane is undone with the workplane.
 func TestImportDxfUndoRestoresWorkplane(t *testing.T) {
+	t.Parallel()
 	root := filepath.Join("..", "..", "testdata", "importdxf")
 	var path string
 	_ = filepath.WalkDir(root, func(p string, d os.DirEntry, err error) error {

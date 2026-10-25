@@ -1,5 +1,5 @@
 // The equal angles of path_equal.script, made by a script
-// (TestPathEquivalenceEqual): the two corners of a rectangle equal.
+// (TestPathEquivalence/equal): the two corners of a rectangle equal.
 package main
 
 import . "github.com/telesapr/telesapr/pkg/script/api"

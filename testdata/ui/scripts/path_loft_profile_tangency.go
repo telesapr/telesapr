@@ -1,5 +1,5 @@
 // The loft of path_loft_profile_tangency.script, made by a script
-// (TestPathEquivalenceLoftProfileTangency): loft_ring.tlspr's smooth
+// (TestPathEquivalence/loft_profile_tangency): loft_ring.tlspr's smooth
 // loft held square to its third profile.
 package main
 

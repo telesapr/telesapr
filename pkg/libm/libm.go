@@ -12,8 +12,8 @@
 // ports use math.FMA where GCC did. GCC fuses a product into each
 // addition or subtraction that uses it, provided every use of the
 // product is one; where one sum adds two products, only the first is
-// fused. The results are checked bit for bit against the system's libm
-// (see libm_test.go).
+// fused. The results are pinned bit for bit by a hash of a table of
+// values (libm_test.go), which matched glibc's when it was made.
 package libm
 
 import "math"

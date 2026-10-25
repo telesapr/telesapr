@@ -11,6 +11,7 @@ import (
 // each, comes back the same on redo, and is written to a script as one
 // call.
 func TestThreadCosmetic(t *testing.T) {
+	t.Parallel()
 	d := New()
 	rod := d.Sketch.Circle(V(0, 0, 0), 5)
 	d.Features.Extrude(30, "rod")
@@ -87,6 +88,7 @@ func TestThreadCosmetic(t *testing.T) {
 // A nut's cosmetic thread bores the part to the minor diameter, and a
 // hole already that wide is left as it is.
 func TestThreadCosmeticNut(t *testing.T) {
+	t.Parallel()
 	d := New()
 	c := d.Sketch.Circle(V(0, 0, 0), 8)
 	d.Features.Extrude(10, "block")

@@ -1,5 +1,5 @@
 # The extrusion of path_extrude drafted 5 degrees from its group screen;
-# the same as path_draft.go makes (TestPathEquivalenceDraft).
+# the same as path_draft.go makes (TestPathEquivalence/draft).
 key r
 move 200 200
 down L 200 200

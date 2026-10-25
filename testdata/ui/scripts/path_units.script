@@ -1,6 +1,6 @@
 # An inch document made through View > Dimension Units, with a
 # rectangle drawn in it; the same model as path_units.go makes
-# (TestPathEquivalenceUnits).
+# (TestPathEquivalence/units).
 menu View|Dimension Units|Dimensions in Inches
 key r
 move 200 200

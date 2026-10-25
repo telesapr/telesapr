@@ -65,6 +65,7 @@ func readShape(t *testing.T, name string, o Options) *Result {
 // every face is read, the mesh is closed and doesn't cross itself, and
 // its volume is within the chord tolerance of the exact one.
 func TestShapes(t *testing.T) {
+	t.Parallel()
 	for _, e := range readShapes(t) {
 		for _, pct := range []float64{0.5, 0.1, 0.02} {
 			res := readShape(t, e.name, Options{ChordTolPct: pct})
@@ -85,6 +86,7 @@ func TestShapes(t *testing.T) {
 
 // TestShapesConverge: halving the tolerance brings the volume nearer.
 func TestShapesConverge(t *testing.T) {
+	t.Parallel()
 	for _, name := range []string{"sphere", "torus", "cone_apex", "vase_revolved"} {
 		exact := 0.0
 		for _, e := range readShapes(t) {
@@ -132,6 +134,7 @@ func TestShapesDeterministic(t *testing.T) {
 // TestShapeVertices: the box's eight corners and the cylinder's circle
 // centres come back as points.
 func TestShapeVertices(t *testing.T) {
+	t.Parallel()
 	res := readShape(t, "box", Options{})
 	if len(res.Vertices) != 8 || len(res.Centers) != 0 {
 		t.Errorf("box: %d vertices, %d centres", len(res.Vertices), len(res.Centers))

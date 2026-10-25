@@ -1,6 +1,6 @@
 # A screw thread with a chamfered end made through its screen on an
 # extruded circle; the same model as path_thread_chamfer.go makes
-# (TestPathEquivalenceThreadChamfer).
+# (TestPathEquivalence/thread_chamfer).
 key c
 move 300 300
 down L 300 300

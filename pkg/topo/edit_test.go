@@ -14,9 +14,10 @@ import (
 
 func v(x, y, z float64) geom.Vector { return geom.Vector{X: x, Y: y, Z: z} }
 
-// box is a 10 x 20 x 30 box, each face given an identity from 1 up.
-func box() *srf.SShell {
-	var sh srf.SShell
+// box is a 10 x 20 x 30 box, each face given an identity from 1 up,
+// at the tolerance tol: an unset one resolves to srf.DefaultTolerance.
+func box(tol srf.Tolerance) *srf.SShell {
+	sh := srf.SShell{Tol: tol}
 	sh.MakePrism([]geom.Vector{v(0, 0, 0), v(10, 0, 0), v(10, 20, 0), v(0, 20, 0)}, v(0, 0, 0), v(0, 0, 30),
 		core.NewRGBA(100, 100, 100, 255))
 	for i := range sh.Surface {
@@ -86,7 +87,8 @@ func edgeBetween(t *testing.T, tp *topo.Topology, a, b geom.Vector) int {
 }
 
 func TestBox(t *testing.T) {
-	sh := box()
+	t.Parallel()
+	sh := box(srf.Tolerance{})
 	tp := build(t, sh)
 	if len(tp.Vertices) != 8 || len(tp.Edges) != 12 || len(tp.Faces) != 6 || tp.Euler() != 2 {
 		t.Errorf("V %d E %d F %d", len(tp.Vertices), len(tp.Edges), len(tp.Faces))
@@ -100,7 +102,8 @@ func TestBox(t *testing.T) {
 }
 
 func TestSplitEdge(t *testing.T) {
-	sh := box()
+	t.Parallel()
+	sh := box(srf.Tolerance{})
 	tp := build(t, sh)
 	e := edgeBetween(t, tp, v(0, 0, 0), v(0, 0, 30))
 	if err := topo.SplitEdge(sh, tp, e, v(0, 0, 12)); err != nil {
@@ -120,7 +123,8 @@ func TestSplitEdge(t *testing.T) {
 }
 
 func TestSplitFace(t *testing.T) {
-	sh := box()
+	t.Parallel()
+	sh := box(srf.Tolerance{})
 	tp := build(t, sh)
 	// Across the top from the middle of one long side to the other.
 	for _, p := range [][2]geom.Vector{{v(0, 0, 30), v(0, 20, 30)}, {v(10, 0, 30), v(10, 20, 30)}} {
@@ -151,8 +155,9 @@ func TestSplitFace(t *testing.T) {
 // edge and at its ends are cut along the chamfer's lines, the strips
 // along the edge taken out, and the chamfer's face put in.
 func TestLocalChamfer(t *testing.T) {
+	t.Parallel()
 	const d = 2.0
-	sh := box()
+	sh := box(srf.Tolerance{})
 	tp := build(t, sh)
 	// The chamfer's corners on the edges at the ends of the edge.
 	for _, s := range []struct{ a, b, at geom.Vector }{
@@ -229,7 +234,8 @@ func TestLocalChamfer(t *testing.T) {
 }
 
 func TestReplaceSurface(t *testing.T) {
-	sh := box()
+	t.Parallel()
+	sh := box(srf.Tolerance{})
 	tp := build(t, sh)
 	top := faceAt(t, tp, v(0, 0, 30), v(0, 0, 1))
 	// The same plane, its parameters the other way: it is turned to face

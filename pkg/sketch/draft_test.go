@@ -15,6 +15,7 @@ import (
 // of the far end hidden; a draft the sides can't take a problem, with
 // the extrusion made without it; undo, redo and a round trip.
 func TestDraft(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 20, 10, 10)
 	step(d)
@@ -73,6 +74,7 @@ func TestDraft(t *testing.T) {
 // A round boss with a hole drafted: the outside a cone narrowing, the
 // hole a cone widening; and a fillet on the drafted solid's top edge.
 func TestDraftRound(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Features.SketchIn(d.Workplane("XY"), "")
 	d.Sketch.Circle(api.V(0, 0, 0), 10)
@@ -92,6 +94,7 @@ func TestDraftRound(t *testing.T) {
 }
 
 func TestDraftMisuse(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Sketch.Line(api.V(0, 0, 0), api.V(10, 0, 0))
 	d.Sketch.Rect(api.V(20, 0, 0), api.V(30, 10, 0))

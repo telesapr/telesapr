@@ -1,5 +1,5 @@
 // The model of path_shell_loft.script, made by a script
-// (TestPathEquivalenceShellLoftFace).
+// (TestPathEquivalence/shell_loft).
 package main
 
 import . "github.com/telesapr/telesapr/pkg/script/api"

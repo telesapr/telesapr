@@ -7,6 +7,7 @@ import (
 )
 
 func TestSBsp3BuildFromMesh(t *testing.T) {
+	t.Parallel()
 	m := &SMesh{}
 	m.AddTriangle3(STriMeta{},
 		geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
@@ -22,6 +23,7 @@ func TestSBsp3BuildFromMesh(t *testing.T) {
 // through SPolygon.SelfIntersecting: a bowtie crosses itself, a square
 // doesn't, in any plane.
 func TestSelfIntersectingPolygon(t *testing.T) {
+	t.Parallel()
 	square := []geom.Vector{{}, {X: 10}, {X: 10, Y: 10}, {Y: 10}}
 	bowtie := []geom.Vector{{}, {X: 10, Y: 10}, {X: 10}, {Y: 10}}
 	// The same in the yz plane, where a test on x and y alone sees
@@ -65,6 +67,7 @@ func TestSelfIntersectingPolygon(t *testing.T) {
 
 // TestSBsp3InsertHowCoplanar tests InsertHow with coplanar classification.
 func TestSBsp3InsertHowCoplanar(t *testing.T) {
+	t.Parallel()
 	tri := STriangle{A: geom.Vector{}, B: geom.Vector{X: 1}, C: geom.Vector{Y: 1}}
 	root := &SBsp3{N: geom.Vector{Z: 1}, D: 0, Tri: tri}
 	root.InsertHow(BspCoplanar, &tri, nil)
@@ -75,6 +78,7 @@ func TestSBsp3InsertHowCoplanar(t *testing.T) {
 
 // TestSBsp3InsertHowPos tests InsertHow with positive classification.
 func TestSBsp3InsertHowPos(t *testing.T) {
+	t.Parallel()
 	tri := STriangle{A: geom.Vector{Z: 1}, B: geom.Vector{X: 1, Z: 1}, C: geom.Vector{Y: 1, Z: 1}}
 	root := &SBsp3{N: geom.Vector{Z: 1}, D: 0, Tri: tri}
 	root.InsertHow(BspPos, &tri, nil)
@@ -85,6 +89,7 @@ func TestSBsp3InsertHowPos(t *testing.T) {
 
 // TestSBsp3InsertHowNeg tests InsertHow with negative classification.
 func TestSBsp3InsertHowNeg(t *testing.T) {
+	t.Parallel()
 	tri := STriangle{A: geom.Vector{Z: -1}, B: geom.Vector{X: 1, Z: -1}, C: geom.Vector{Y: 1, Z: -1}}
 	root := &SBsp3{N: geom.Vector{Z: 1}, D: 0, Tri: tri}
 	root.InsertHow(BspNeg, &tri, nil)

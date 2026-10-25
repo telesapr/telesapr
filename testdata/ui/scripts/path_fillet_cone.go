@@ -1,5 +1,5 @@
 // The fillet of path_fillet_cone.script, made by a script
-// (TestPathEquivalenceFilletCone): the frustum of
+// (TestPathEquivalence/fillet_cone): the frustum of
 // testdata/topo/frustum.tlspr, the circle of its top's rim the mouse
 // picks rounded at the radius the menu starts with.
 package main

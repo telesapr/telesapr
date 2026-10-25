@@ -136,6 +136,7 @@ var noMenuEntry = map[string]string{
 }
 
 func TestEveryMenuCallHasAnEntry(t *testing.T) {
+	t.Parallel()
 	named := map[string]bool{}
 	for _, v := range api.MenuCalls {
 		for c := range strings.FieldsSeq(v) {
@@ -168,6 +169,7 @@ func TestEveryMenuCallHasAnEntry(t *testing.T) {
 }
 
 func TestEveryMenuCommandHasAMethod(t *testing.T) {
+	t.Parallel()
 	seen := map[string]bool{}
 	for _, item := range ui.MenuItems() {
 		key := strings.Join(item.Path, "/")
@@ -262,6 +264,7 @@ func constsOfType(t *testing.T, dir, typ string) []string {
 }
 
 func TestEveryGroupTypeHasAMethod(t *testing.T) {
+	t.Parallel()
 	types := constsOfType(t, filepath.Join("..", "..", "sketch"), "GroupType")
 	if len(types) < len(groupMethods) {
 		t.Fatalf("found only the group types %v", types)
@@ -282,6 +285,7 @@ func TestEveryGroupTypeHasAMethod(t *testing.T) {
 // docs.json read it, and requires a doc comment on every exported
 // type, function, method, constant and variable.
 func TestEveryExportedNameHasADoc(t *testing.T) {
+	t.Parallel()
 	fset := token.NewFileSet()
 	paths, err := filepath.Glob("*.go")
 	if err != nil {

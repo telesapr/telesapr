@@ -7,7 +7,7 @@ import "testing"
 // has an index that no longer fits its shell give none.
 func TestSurfacePlanesSameAsEach(t *testing.T) {
 	t.Parallel()
-	sh := lathedTube(10, 25, -15, 15)
+	sh := lathedTube(10, 25, -15, 15, Tolerance{})
 	for len(sh.Surface) < surfaceIndexMin {
 		sh.Surface = append(sh.Surface, sh.Surface...)
 	}

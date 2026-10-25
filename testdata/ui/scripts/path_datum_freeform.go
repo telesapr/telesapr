@@ -1,5 +1,5 @@
 // The datum of path_datum_freeform.script, made by a script
-// (TestPathEquivalenceDatumFreeForm): a side of the loft of
+// (TestPathEquivalence/datum_freeform): a side of the loft of
 // testdata/solid/loft-circle-to-square.tlspr, neither flat nor round,
 // by its identity, named "side": the plane touching it at its middle.
 package main

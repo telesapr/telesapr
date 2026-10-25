@@ -11,6 +11,7 @@ import (
 // curves (given in scrambled order and direction) are assembled into
 // loops, and that a hole is grouped with the outer loop containing it.
 func TestFindOuterFacesFromChaining(t *testing.T) {
+	t.Parallel()
 	square := func(bl *SBezierList, x0, y0, x1, y1 float64, reversed bool) {
 		p := []geom.Vector{{X: x0, Y: y0}, {X: x1, Y: y0}, {X: x1, Y: y1}, {X: x0, Y: y1}}
 		for i := range p {
@@ -32,7 +33,7 @@ func TestFindOuterFacesFromChaining(t *testing.T) {
 	var allClosed, allCoplanar bool
 	var notClosedAt SEdge
 	var notCoplanarAt geom.Vector
-	outer.FindOuterFacesFrom(bl, &poly, nil, Tol(0.1, MaxSegments()), &allClosed, &notClosedAt,
+	outer.FindOuterFacesFrom(bl, &poly, nil, Tol(0.1, 20), &allClosed, &notClosedAt,
 		&allCoplanar, &notCoplanarAt, &opens)
 	if !allClosed || !allCoplanar {
 		t.Fatalf("allClosed=%v allCoplanar=%v", allClosed, allCoplanar)
@@ -60,8 +61,9 @@ func TestFindOuterFacesFromChaining(t *testing.T) {
 // an edge must merge, leaving the six faces of a 2x1x1 box (plus the
 // two emptied shared faces, which carry no trim).
 func TestMergeCoincidentSurfacesJoinsCoplanarFaces(t *testing.T) {
-	a := extrudedBox(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
-	b := extrudedBox(geom.Vector{X: 1}, geom.Vector{X: 2, Y: 1, Z: 1})
+	t.Parallel()
+	a := extrudedBox(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1}, Tolerance{})
+	b := extrudedBox(geom.Vector{X: 1}, geom.Vector{X: 2, Y: 1, Z: 1}, Tolerance{})
 	var sh SShell
 	sh.MakeFromUnionOf(a, b)
 	sh.MergeCoincidentSurfaces()
@@ -84,6 +86,7 @@ func TestMergeCoincidentSurfacesJoinsCoplanarFaces(t *testing.T) {
 // surfaces is satisfied. All points lie on a flat plane, so any
 // intermediate point is redundant.
 func TestSCurveRemoveShortSegments(t *testing.T) {
+	t.Parallel()
 	c := &SCurve{
 		Points: []SCurvePt{
 			{P: geom.Vector{}},
@@ -105,6 +108,7 @@ func TestSCurveRemoveShortSegments(t *testing.T) {
 // RemoveShortSegments preserves a vertex when it is marked as a
 // curve vertex (the SolveSpace logic for SCurvePt::vertex).
 func TestSCurveRemoveShortSegmentsKeepsEssentialPoints(t *testing.T) {
+	t.Parallel()
 	c := &SCurve{
 		Points: []SCurvePt{
 			{P: geom.Vector{}},
@@ -122,6 +126,7 @@ func TestSCurveRemoveShortSegmentsKeepsEssentialPoints(t *testing.T) {
 // TestSCurveRemoveShortSegmentsNilSurfaces verifies that passing
 // nil surfaces is a no-op (used by legacy callers).
 func TestSCurveRemoveShortSegmentsNilSurfaces(t *testing.T) {
+	t.Parallel()
 	c := &SCurve{
 		Points: []SCurvePt{
 			{P: geom.Vector{}},
@@ -138,6 +143,7 @@ func TestSCurveRemoveShortSegmentsNilSurfaces(t *testing.T) {
 // TestSPolygonUvGridTriangulateIntoAdaptive verifies that the
 // adaptive grid path covers a (closed) unit uv square exactly.
 func TestSPolygonUvGridTriangulateIntoAdaptive(t *testing.T) {
+	t.Parallel()
 	p := &SPolygon{Normal: geom.Vector{Z: 1}}
 	c := SContour{}
 	for _, corner := range []geom.Vector{
@@ -169,6 +175,7 @@ func TestSPolygonUvGridTriangulateIntoAdaptive(t *testing.T) {
 // rounded corners exactly r from the square; clockwise shrinks, with
 // mitred corners.
 func TestSPolygonOffsetInto(t *testing.T) {
+	t.Parallel()
 	square := func(pts ...geom.Vector) *SPolygon {
 		p := &SPolygon{}
 		p.AddEmptyContour()

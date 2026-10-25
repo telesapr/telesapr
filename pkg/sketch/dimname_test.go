@@ -30,6 +30,7 @@ func secondLine(t *testing.T, sk *Sketch) (core.HRequest, core.HConstraint) {
 // are shared with the parameters, and a cycle through a name is an
 // error on the expression.
 func TestDimensionByName(t *testing.T) {
+	t.Parallel()
 	sk, hr, hw := lineSketch(t)
 	hr2, hh := secondLine(t, sk)
 	if err := sk.SetConstraintName(hw, "width"); err != nil {

@@ -1,7 +1,7 @@
 # The four top edges of the extrusion of path_extrude chamfered, picked
 # by clicking the top face and choosing Select Face Edges from its
 # context menu; the same as path_face_edges.go makes
-# (TestPathEquivalenceFaceEdges).
+# (TestPathEquivalence/face_edges).
 key r
 move 200 200
 down L 200 200

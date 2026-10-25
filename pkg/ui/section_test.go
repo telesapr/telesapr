@@ -38,6 +38,7 @@ func capPixels(t *testing.T, path string) int {
 // Render draws the section view: the cut solid with its cap, which
 // moves with the plane; turned off, there is no cap.
 func TestSectionRender(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	doc.Sketch.Rect(api.V(0, 0, 0), api.V(40, 40, 0))

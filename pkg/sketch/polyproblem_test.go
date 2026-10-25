@@ -9,6 +9,7 @@ import (
 
 // Each kind of contour error says what and where.
 func TestPolyProblem(t *testing.T) {
+	t.Parallel()
 	var g Group
 	if _, _, ok := g.PolyProblem(); ok {
 		t.Errorf("good contours have a problem")
@@ -35,6 +36,7 @@ func TestPolyProblem(t *testing.T) {
 
 // Which groups make a solid from a sketch's contours.
 func TestTakesProfile(t *testing.T) {
+	t.Parallel()
 	h := core.HGroup{V: 7}
 	for typ, want := range map[GroupType]bool{
 		GroupExtrude: true, GroupLathe: true, GroupRevolve: true, GroupHelix: true, GroupSweep: true,

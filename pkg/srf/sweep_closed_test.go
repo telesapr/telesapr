@@ -56,7 +56,7 @@ func TestClosedSweep(t *testing.T) {
 					sq = PolygonLoopSet([]geom.Vector{{X: -1, Y: -1}, {X: -1, Y: 1}, {X: 1, Y: 1}, {X: 1, Y: -1}}, geom.Vector{Z: -1})
 				}
 				var s SShell
-				s.SetTolerance(Tol(1e-3, MaxSegments()))
+				s.SetTolerance(Tol(1e-3, 20))
 				s.MakeFromClosedSweepOf(sq, c.steps, core.RGBA{})
 				var open SShell
 				open.MakeFromSweepOf(sq, c.steps, core.RGBA{}, 0, 0)

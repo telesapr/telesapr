@@ -16,20 +16,20 @@ import (
 
 // notch is a prism of height lean (an edge's direction and length) over
 // a block with a wedge of angle beta cut from its top: the wedge's edge
-// at the origin is concave, its faces 10 long.
-func notch(beta float64, lean geom.Vector) *srf.SShell {
+// at the origin is concave, its faces 10 long. It is built at tol.
+func notch(beta float64, lean geom.Vector, tol srf.Tolerance) *srf.SShell {
 	a := v(10*math.Cos(math.Pi/2-beta/2), 10*math.Sin(math.Pi/2-beta/2), 0)
 	b := v(10*math.Cos(math.Pi/2+beta/2), 10*math.Sin(math.Pi/2+beta/2), 0)
-	var sh srf.SShell
+	sh := srf.SShell{Tol: tol}
 	sh.MakePrism([]geom.Vector{v(0, 0, 0), b, v(b.X, -10, 0), v(a.X, -10, 0), a}, v(0, 0, 0), lean,
 		core.NewRGBA(100, 100, 100, 255))
 	return &sh
 }
 
 // pocketed is a 40 x 30 x 20 block with a 20 x 10 pocket 12 deep in its
-// top.
-func pocketed() *srf.SShell {
-	var block, pocket, out srf.SShell
+// top, built at tol.
+func pocketed(tol srf.Tolerance) *srf.SShell {
+	block, pocket, out := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
 	block.MakePrism([]geom.Vector{v(0, 0, 0), v(40, 0, 0), v(40, 30, 0), v(0, 30, 0)}, v(0, 0, 0), v(0, 0, 20),
 		core.NewRGBA(100, 100, 100, 255))
 	pocket.MakePrism([]geom.Vector{v(10, 10, 8), v(30, 10, 8), v(30, 20, 8), v(10, 20, 8)}, v(0, 0, 0), v(0, 0, 13),
@@ -39,23 +39,23 @@ func pocketed() *srf.SShell {
 }
 
 // bossOnPlate is a 40 x 40 x 5 plate with a cylinder of radius rad and
-// height h standing on its middle.
-func bossOnPlate(rad, h float64) *srf.SShell {
-	var plate, boss, out srf.SShell
+// height h standing on its middle, built at tol.
+func bossOnPlate(rad, h float64, tol srf.Tolerance) *srf.SShell {
+	plate, boss, out := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
 	plate.MakePrism([]geom.Vector{v(-20, -20, 0), v(20, -20, 0), v(20, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, 5),
 		core.NewRGBA(100, 100, 100, 255))
-	boss.MakeFromTransformationOf(cylinder(rad, h+1), v(0, 0, 4), geom.QuaternionIdentity, 1)
+	boss.MakeFromTransformationOf(cylinder(rad, h+1, tol), v(0, 0, 4), geom.QuaternionIdentity, 1)
 	out.MakeFromUnionOf(&plate, &boss)
 	return &out
 }
 
 // blindHole is a 40 x 40 x 10 plate with a hole of radius rad, depth
-// deep, in its top.
-func blindHole(rad, deep float64) *srf.SShell {
-	var plate, hole, out srf.SShell
+// deep, in its top, built at tol.
+func blindHole(rad, deep float64, tol srf.Tolerance) *srf.SShell {
+	plate, hole, out := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
 	plate.MakePrism([]geom.Vector{v(-20, -20, 0), v(20, -20, 0), v(20, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, 10),
 		core.NewRGBA(100, 100, 100, 255))
-	hole.MakeFromTransformationOf(cylinder(rad, deep+1), v(0, 0, 10-deep), geom.QuaternionIdentity, 1)
+	hole.MakeFromTransformationOf(cylinder(rad, deep+1, tol), v(0, 0, 10-deep), geom.QuaternionIdentity, 1)
 	out.MakeFromDifferenceOf(&plate, &hole)
 	return &out
 }
@@ -70,14 +70,12 @@ func meshVolume(sh *srf.SShell) float64 {
 // A concave edge's fillet fills the corner with the area a convex one
 // would take: the wedge's edge, square and leaning.
 func TestFilletConcaveEdge(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.001)
+	t.Parallel()
 	for _, c := range []struct {
 		beta, r float64
 		lean    geom.Vector
 	}{{math.Pi / 2, 2, v(0, 0, 10)}, {math.Pi / 3, 1, v(0, 0, 10)}, {2.5, 3, v(0, 3, 10)}} {
-		sh := notch(c.beta, c.lean)
+		sh := notch(c.beta, c.lean, srf.Tol(0.001, 20))
 		before := meshVolume(sh)
 		if err := topo.FilletEdges(sh, [][2]geom.Vector{{v(0, 0, 0), c.lean}}, c.r, 1<<30); err != nil {
 			t.Fatalf("%+v: %v", c, err)
@@ -98,8 +96,7 @@ func TestFilletConcaveEdge(t *testing.T) {
 // in concave spheres; the volume filled is what fillets of the pocket's
 // box would take from it.
 func TestFilletPocket(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	floor := [][2]geom.Vector{{v(10, 10, 8), v(30, 10, 8)}, {v(30, 10, 8), v(30, 20, 8)},
 		{v(30, 20, 8), v(10, 20, 8)}, {v(10, 20, 8), v(10, 10, 8)}}
 	var all [][2]geom.Vector
@@ -118,8 +115,7 @@ func TestFilletPocket(t *testing.T) {
 	} {
 		for _, r := range []float64{1, 3} {
 			tol := 0.003 * r
-			srf.SetChordTolMm(tol)
-			sh := pocketed()
+			sh := pocketed(srf.Tol(tol, 20))
 			before := meshVolume(sh)
 			if err := topo.FilletEdges(sh, c.segs, r, 1<<30); err != nil {
 				t.Errorf("%s at %g: %v", c.name, r, err)
@@ -139,21 +135,19 @@ func TestFilletPocket(t *testing.T) {
 // with a torus; by Pappus, the spandrel's area times the length of the
 // circle its centroid follows.
 func TestFilletConcaveCircle(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	for _, c := range []struct {
 		hole   bool
 		rad, r float64
 	}{{false, 5, 1}, {false, 8, 4}, {true, 6, 1}, {true, 6, 4}} {
 		tol := 0.002 * c.r
-		srf.SetChordTolMm(tol)
 		var sh *srf.SShell
 		// Off the cylinder's seams, which run up from its quarters.
 		at := v(c.rad*math.Cos(1), c.rad*math.Sin(1), 5)
 		if c.hole {
-			sh, at = blindHole(c.rad, 7), v(c.rad*math.Cos(1), c.rad*math.Sin(1), 3)
+			sh, at = blindHole(c.rad, 7, srf.Tol(tol, 20)), v(c.rad*math.Cos(1), c.rad*math.Sin(1), 3)
 		} else {
-			sh = bossOnPlate(c.rad, 10)
+			sh = bossOnPlate(c.rad, 10, srf.Tol(tol, 20))
 		}
 		before := meshVolume(sh)
 		if err := topo.FilletPicks(sh, []topo.FilletPick{{At: at, Arc: true}}, c.r, 1<<30, false); err != nil {
@@ -173,8 +167,9 @@ func TestFilletConcaveCircle(t *testing.T) {
 }
 
 func TestFilletConcaveRefused(t *testing.T) {
+	t.Parallel()
 	// The notch's concave edge and a convex top edge at one corner.
-	sh := notch(math.Pi/2, v(0, 0, 10))
+	sh := notch(math.Pi/2, v(0, 0, 10), srf.Tolerance{})
 	a := v(10*math.Cos(math.Pi/4), 10*math.Sin(math.Pi/4), 10)
 	err := topo.FilletEdges(sh, [][2]geom.Vector{{v(0, 0, 0), v(0, 0, 10)}, {v(0, 0, 10), a}}, 1, 1<<30)
 	if err == nil || !strings.Contains(err.Error(), "convex edge's fillet meets a concave") {
@@ -189,8 +184,7 @@ func TestFilletConcaveRefused(t *testing.T) {
 // circle's radius and the fillet's, against the volumes by formula; the
 // rate allowed, 0, was set before.
 func TestFilletConcaveSweep(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Strings("shape", "wedge", "pocket", "foot", "boss", "hole"),
@@ -200,6 +194,7 @@ func TestFilletConcaveSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      24,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		size, k, lean := p.Float("size"), p.Float("k"), p.Float("lean")
@@ -212,7 +207,6 @@ func TestFilletConcaveSweep(t *testing.T) {
 			// tangent lines reach k of its 10 long faces.
 			beta := (30 + size*145) * math.Pi / 180
 			l := v(0, 6*lean, 10)
-			sh = notch(beta, l)
 			e := l.WithMagnitude(1)
 			ua := v(math.Cos(math.Pi/2-beta/2), math.Sin(math.Pi/2-beta/2), 0)
 			ub := v(math.Cos(math.Pi/2+beta/2), math.Sin(math.Pi/2+beta/2), 0)
@@ -224,7 +218,7 @@ func TestFilletConcaveSweep(t *testing.T) {
 			want = filletLoss(r, b, l.Magnitude())
 			tol = 0.002 * r
 			area = r * (math.Pi - b) * l.Magnitude()
-			srf.SetChordTolMm(tol)
+			sh = notch(beta, l, srf.Tol(tol, 20))
 			before := meshVolume(sh)
 			if err := topo.FilletPicks(sh, picks, r, 1<<30, false); err != nil {
 				return err
@@ -234,7 +228,8 @@ func TestFilletConcaveSweep(t *testing.T) {
 			// The radius k of the pocket's half width; all its edges, or
 			// its floor's when it leans.
 			r := k * 5
-			sh = pocketed()
+			tol = 0.003 * r
+			sh = pocketed(srf.Tol(tol, 20))
 			for _, q := range [][2]geom.Vector{{v(10, 10, 8), v(30, 10, 8)}, {v(30, 10, 8), v(30, 20, 8)},
 				{v(30, 20, 8), v(10, 20, 8)}, {v(10, 20, 8), v(10, 10, 8)}} {
 				picks = append(picks, topo.FilletPick{A: q[0], B: q[1]})
@@ -246,9 +241,7 @@ func TestFilletConcaveSweep(t *testing.T) {
 				}
 				length, mitres, spheres = 108, 0, 4
 			}
-			tol = 0.003 * r
 			area = math.Pi/2*r*length + float64(spheres)*math.Pi*r*r/2
-			srf.SetChordTolMm(tol)
 			before := meshVolume(sh)
 			if err := topo.FilletPicks(sh, picks, r, 1<<30, false); err != nil {
 				return err
@@ -257,15 +250,14 @@ func TestFilletConcaveSweep(t *testing.T) {
 		case "foot":
 			l := 4 + size*30
 			r := k * 5
-			var block, boss srf.SShell
+			tol = 0.002 * r
+			block, boss := srf.SShell{Tol: srf.Tol(tol, 20)}, srf.SShell{Tol: srf.Tol(tol, 20)}
 			block.MakePrism([]geom.Vector{v(-40, -40, 0), v(40, -40, 0), v(40, 40, 0), v(-40, 40, 0)}, v(0, 0, 0), v(0, 0, 10),
 				core.NewRGBA(100, 100, 100, 255))
 			boss.MakePrism([]geom.Vector{v(0, 0, 9), v(l, 0, 9), v(l, 6, 9), v(0, 6, 9)}, v(0, 0, 0), v(0, 0, 6+6*lean),
 				core.NewRGBA(100, 100, 100, 255))
-			sh = &srf.SShell{}
+			sh = &srf.SShell{Tol: srf.Tol(tol, 20)}
 			sh.MakeFromUnionOf(&block, &boss)
-			tol = 0.002 * r
-			srf.SetChordTolMm(tol)
 			before := meshVolume(sh)
 			if err := topo.FilletEdges(sh, [][2]geom.Vector{{v(0, 0, 10), v(l, 0, 10)}}, r, 1<<30); err != nil {
 				return err
@@ -282,14 +274,13 @@ func TestFilletConcaveSweep(t *testing.T) {
 			}
 			r := k * math.Min(room, 5)
 			tol = 0.002 * r
-			srf.SetChordTolMm(tol)
 			ang := 1 + lean
 			at := v(rad*math.Cos(ang), rad*math.Sin(ang), 5)
 			if hole {
-				sh = blindHole(rad, 6)
+				sh = blindHole(rad, 6, srf.Tol(tol, 20))
 				at.Z = 4
 			} else {
-				sh = bossOnPlate(rad, 6)
+				sh = bossOnPlate(rad, 6, srf.Tol(tol, 20))
 			}
 			before := meshVolume(sh)
 			if err := topo.FilletPicks(sh, []topo.FilletPick{{At: at, Arc: true}}, r, 1<<30, false); err != nil {
@@ -326,11 +317,9 @@ func TestFilletConcaveSweep(t *testing.T) {
 // A chamfer at a boss's foot fills it with a cone: a right triangle of
 // side d turned about the axis.
 func TestChamferBossFoot(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.002)
+	t.Parallel()
 	for _, d := range []float64{1, 3} {
-		sh := bossOnPlate(5, 10)
+		sh := bossOnPlate(5, 10, srf.Tol(0.002, 20))
 		before := meshVolume(sh)
 		if err := topo.FilletPicks(sh, []topo.FilletPick{{At: v(5*math.Cos(1), 5*math.Sin(1), 5), Arc: true}}, d, 1<<30, true); err != nil {
 			t.Fatal(err)
@@ -346,10 +335,9 @@ func TestChamferBossFoot(t *testing.T) {
 // the boss's sides, which it ends on, the whole spandrel times the
 // edge's length.
 func TestFilletBossFootEdge(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.002)
-	var block, boss, sh srf.SShell
+	t.Parallel()
+	tol := srf.Tol(0.002, 20)
+	block, boss, sh := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
 	block.MakePrism([]geom.Vector{v(0, 0, 0), v(40, 0, 0), v(40, 30, 0), v(0, 30, 0)}, v(0, 0, 0), v(0, 0, 10),
 		core.NewRGBA(100, 100, 100, 255))
 	boss.MakePrism([]geom.Vector{v(10, 10, 9), v(30, 10, 9), v(30, 20, 9), v(10, 20, 9)}, v(0, 0, 0), v(0, 0, 11),

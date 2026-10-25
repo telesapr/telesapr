@@ -15,7 +15,7 @@ func paintFrame(t *testing.T, fixture string) []byte {
 	p := headless.New()
 	ss := New(p)
 	ss.Init()
-	if !loadSlvs(t, ss, filepath.Join("..", "..", "testdata", fixture)) {
+	if !loadModel(t, ss, filepath.Join("..", "..", "testdata", "tlspr", "golden", fixture)) {
 		t.Fatal("load failed")
 	}
 	w := ss.GW.window.(*headless.Window)
@@ -27,14 +27,15 @@ func paintFrame(t *testing.T, fixture string) []byte {
 
 // TestPaintParallelSameAsSerial checks that meshes rasterised in bands
 // at once give the same frame as one thread.
+// Not parallel: it sets GOMAXPROCS, which is the process's.
 func TestPaintParallelSameAsSerial(t *testing.T) {
 	if runtime.GOMAXPROCS(0) < 2 {
 		t.Skip("needs two threads")
 	}
 	for _, f := range []string{
-		"group/translate_nd/normal.slvs",
-		"request/ttf_text/extrude.slvs",
-		"group/boolean_tangent_fillet/normal.slvs",
+		"group/translate_nd/normal.tlspr",
+		"request/ttf_text/extrude.tlspr",
+		"group/boolean_tangent_fillet/normal.tlspr",
 	} {
 		par := paintFrame(t, f)
 		old := runtime.GOMAXPROCS(1)

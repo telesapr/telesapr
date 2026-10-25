@@ -1,7 +1,7 @@
 # A rectangle beside a construction line, turned about it by a lathe
 # into a ring, and the ring hollowed open at its outer side, picked
 # with the mouse: a channel round the ring. The same as
-# path_shell_lathe.go makes (TestPathEquivalenceShellLathe).
+# path_shell_lathe.go makes (TestPathEquivalence/shell_lathe).
 key r
 move 350 200
 down L 350 200

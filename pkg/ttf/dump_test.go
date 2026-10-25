@@ -25,8 +25,9 @@ func hexFloat(x float64) string {
 	return fmt.Sprintf("%sp%+d", s[:i], exp)
 }
 
-// dump is what the SolveSpace harness that recorded the first goldens printed,
-// for the fonts in files and the strings strs.
+// dump prints, for the fonts in files and the strings strs, everything
+// the text requests take from a font, with floats in hex so the golden
+// holds their bits.
 func dump(files []string, strs []string) string {
 	fl := NewFontList(files)
 

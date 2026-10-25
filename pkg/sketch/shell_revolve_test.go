@@ -23,6 +23,7 @@ func frustumIn() float64 {
 // the volume a frustum's. The shell is one undo step and comes back
 // from the file.
 func TestShellLathe(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Edit.SetChordTolerance(0.005)
 	d.Features.SketchIn(d.Workplane("ZX"), "")
@@ -60,6 +61,7 @@ func TestShellLathe(t *testing.T) {
 // A rectangle revolved a quarter turn, open at its top, its ends kept:
 // the inside is cut back by each end's plane moved in.
 func TestShellRevolveQuarter(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Edit.SetChordTolerance(0.005)
 	d.Features.SketchIn(d.Workplane("ZX"), "")
@@ -93,6 +95,7 @@ func TestShellRevolveQuarter(t *testing.T) {
 // A lathe after which another solid is added is no longer one
 // revolution: its shell is refused as a curved solid's.
 func TestShellLatheAndMore(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Features.SketchIn(d.Workplane("ZX"), "")
 	axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 12))

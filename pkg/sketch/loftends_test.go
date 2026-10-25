@@ -16,6 +16,7 @@ import (
 // so the volume is the area times the height; undo, redo, round trip,
 // expressions; free again.
 func TestLoftTangency(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.001 })
 	bottom := d.Features.SketchIn(d.Workplane("XY"), "bottom")

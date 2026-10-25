@@ -8,6 +8,7 @@ import (
 )
 
 func TestSTriangleNormalAndArea(t *testing.T) {
+	t.Parallel()
 	tri := STriangleFrom(STriMeta{}, geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	area := tri.Area()
 	if math.Abs(area-0.5) > 1e-12 {
@@ -20,6 +21,7 @@ func TestSTriangleNormalAndArea(t *testing.T) {
 }
 
 func TestSTriangleContainsPoint(t *testing.T) {
+	t.Parallel()
 	tri := STriangleFrom(STriMeta{},
 		geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	if !tri.ContainsPoint(geom.Vector{X: 0.25, Y: 0.25}) {
@@ -31,6 +33,7 @@ func TestSTriangleContainsPoint(t *testing.T) {
 }
 
 func TestSMeshGetBounding(t *testing.T) {
+	t.Parallel()
 	m := &SMesh{}
 	m.AddTriangle3(STriMeta{}, geom.Vector{}, geom.Vector{X: 2}, geom.Vector{Y: 1, Z: 3})
 	vmax, vmin := m.Bounding()
@@ -40,6 +43,7 @@ func TestSMeshGetBounding(t *testing.T) {
 }
 
 func TestSMeshRemoveDegenerate(t *testing.T) {
+	t.Parallel()
 	m := &SMesh{}
 	m.AddTriangle3(STriMeta{}, geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	m.AddTriangle3(STriMeta{}, geom.Vector{}, geom.Vector{}, geom.Vector{X: 1})
@@ -50,6 +54,7 @@ func TestSMeshRemoveDegenerate(t *testing.T) {
 }
 
 func TestSContourEar(t *testing.T) {
+	t.Parallel()
 	// Clockwise about +Z, as FixContourDirections leaves outer contours.
 	c := &SContour{}
 	c.AddPoint(geom.Vector{})
@@ -62,6 +67,7 @@ func TestSContourEar(t *testing.T) {
 }
 
 func TestSContourUvTriangulateSquare(t *testing.T) {
+	t.Parallel()
 	c := &SContour{}
 	c.AddPoint(geom.Vector{})
 	c.AddPoint(geom.Vector{Y: 1})
@@ -79,6 +85,7 @@ func TestSContourUvTriangulateSquare(t *testing.T) {
 // TestSPolygonUvTriangulateWithHole checks that a hole is bridged into
 // its outer contour, so the triangulated area excludes it.
 func TestSPolygonUvTriangulateWithHole(t *testing.T) {
+	t.Parallel()
 	square := func(x0, y0, x1, y1 float64) SContour {
 		var c SContour
 		for _, p := range []geom.Vector{{X: x0, Y: y0}, {X: x1, Y: y0}, {X: x1, Y: y1}, {X: x0, Y: y1}, {X: x0, Y: y0}} {
@@ -100,6 +107,7 @@ func TestSPolygonUvTriangulateWithHole(t *testing.T) {
 }
 
 func TestSPolygonFixDirections(t *testing.T) {
+	t.Parallel()
 	// A single (outer) contour, geometrically counterclockwise about +Z
 	// and stored closed. SolveSpace SPolygon::FixContourDirections makes outer
 	// contours "counterclockwise" in the sense of
@@ -127,6 +135,7 @@ func TestSPolygonFixDirections(t *testing.T) {
 }
 
 func TestSEdgeListAssemblePolygon(t *testing.T) {
+	t.Parallel()
 	el := &SEdgeList{}
 	el.AddEdge(geom.Vector{}, geom.Vector{X: 1}, 0, 0, 0)
 	el.AddEdge(geom.Vector{X: 1}, geom.Vector{X: 1, Y: 1}, 0, 0, 0)
@@ -155,6 +164,7 @@ func contourSizes(p *SPolygon) []int {
 }
 
 func TestSEdgeCrossing(t *testing.T) {
+	t.Parallel()
 	e := SEdgeFrom(geom.Vector{}, geom.Vector{X: 1})
 	t1, ok := e.Crossing(geom.Vector{X: 0.5, Y: -1}, geom.Vector{Y: 2})
 	if !ok {
@@ -166,6 +176,7 @@ func TestSEdgeCrossing(t *testing.T) {
 }
 
 func TestSPolygonContains(t *testing.T) {
+	t.Parallel()
 	p := &SPolygon{}
 	c := SContour{}
 	c.AddPoint(geom.Vector{})
@@ -186,6 +197,7 @@ func TestSPolygonContains(t *testing.T) {
 // side of a leaning prism: points project to the parameters they come
 // from.
 func TestClosestPointOnSkewPlane(t *testing.T) {
+	t.Parallel()
 	s := FromPlane(geom.Vector{X: 1, Y: 2, Z: 3}, geom.Vector{X: 10}, geom.Vector{X: 3, Z: 5})
 	for _, uv := range [][2]float64{{0.25, 0.5}, {0.9, 0.1}, {-0.5, 2}} {
 		p := s.PointAt(uv[0], uv[1])

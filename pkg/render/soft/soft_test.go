@@ -11,6 +11,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/golden"
 	"github.com/telesapr/telesapr/pkg/render"
 	"github.com/telesapr/telesapr/pkg/res"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -50,26 +51,23 @@ func defaultLighting() render.Lighting {
 }
 
 // checkGolden compares img with testdata/render/soft/<name>.png, or
-// writes it when UPDATE_GOLDENS is set.
+// writes it when the goldens are regenerated (scripts/regen-golden.sh
+// soft). The pixels are compared, not the PNG's bytes, which another
+// encoder may write differently.
 func checkGolden(t *testing.T, name string, img *image.RGBA) {
 	t.Helper()
 	path := filepath.Join("..", "..", "..", "testdata", "render", "soft", name+".png")
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, img); err != nil {
-		t.Fatal(err)
-	}
-	if os.Getenv("UPDATE_GOLDENS") != "" {
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if golden.Regen() {
+		var buf bytes.Buffer
+		if err := png.Encode(&buf, img); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(path, buf.Bytes(), 0o644); err != nil {
-			t.Fatal(err)
-		}
+		golden.Check(t, path, buf.Bytes())
 		return
 	}
 	f, err := os.Open(path)
 	if err != nil {
-		t.Fatalf("golden: %v (run with UPDATE_GOLDENS=1)", err)
+		t.Fatalf("golden: %v (record it with scripts/regen-golden.sh soft)", err)
 	}
 	defer func() { _ = f.Close() }()
 	want, err := png.Decode(f)

@@ -1,5 +1,5 @@
 // The model of path_suppress_all.script, made by a script
-// (TestPathEquivalenceSuppressAll).
+// (TestPathEquivalence/suppress_all).
 package main
 
 import . "github.com/telesapr/telesapr/pkg/script/api"

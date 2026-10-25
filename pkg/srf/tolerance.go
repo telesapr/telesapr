@@ -109,10 +109,9 @@ func (t Tolerance) Or(o Tolerance) Tolerance {
 
 // DefaultTolerance is what an unset tolerance resolves to: 0.1 mm and
 // 20 segments, as a new document's display tolerance would be. A
-// sketch gives every shell it builds a tolerance of its own, so the
-// program never writes this; tests that build shells with none set it
-// through SetChordTolMm and SetMaxSegments, and so cannot run in
-// parallel.
+// sketch gives every shell it builds a tolerance of its own, and a test
+// builds its shells at the tolerance it needs, so nothing writes this
+// after initialisation and the tests that build shells run in parallel.
 var DefaultTolerance = Tol(0.1, 20)
 
 // ChordTolMm is DefaultTolerance's chord tolerance in mm.
@@ -120,15 +119,6 @@ func ChordTolMm() float64 { return DefaultTolerance.chordTolMm }
 
 // MaxSegments is DefaultTolerance's segment limit.
 func MaxSegments() int { return DefaultTolerance.maxSegments }
-
-// SetChordTolMm sets DefaultTolerance's chord tolerance; for tests.
-func SetChordTolMm(t float64) { DefaultTolerance = Tol(t, DefaultTolerance.maxSegments) }
-
-// SetMesher sets DefaultTolerance's mesher; for tests.
-func SetMesher(m Mesher) { DefaultTolerance = DefaultTolerance.WithMesher(m) }
-
-// SetMaxSegments sets DefaultTolerance's segment limit; for tests.
-func SetMaxSegments(n int) { DefaultTolerance = Tol(DefaultTolerance.chordTolMm, n) }
 
 // resolved is t, or DefaultTolerance when t is unset.
 func (t Tolerance) resolved() Tolerance {

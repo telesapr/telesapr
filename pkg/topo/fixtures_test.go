@@ -3,13 +3,13 @@ package topo_test
 import (
 	"fmt"
 	"math"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 
-	"github.com/telesapr/telesapr/pkg/persist/slvs"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -18,56 +18,32 @@ import (
 
 var testdata = filepath.Join("..", "..", "testdata")
 
-// fixtures lists the models under testdata with a solid to check: the
-// .slvs fixtures, and the .tlspr goldens and solids that have no .slvs
-// beside them.
-func fixtures(t *testing.T) []string {
-	var files []string
-	err := filepath.WalkDir(testdata, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			if d.Name() == "v1" || d.Name() == "v2" || d.Name() == "ui" {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		rel, _ := filepath.Rel(testdata, path)
-		switch {
-		case strings.HasSuffix(path, ".slvs"):
-			files = append(files, filepath.ToSlash(rel))
-		case strings.HasSuffix(path, ".tlspr") && !strings.HasPrefix(filepath.ToSlash(rel), "tlspr/golden"):
-			if _, err := os.Stat(strings.TrimSuffix(path, ".tlspr") + ".slvs"); err != nil {
-				files = append(files, filepath.ToSlash(rel))
-			}
-		}
-		return nil
-	})
+// solidFixtures lists the models under testdata with a solid to check: the
+// .tlspr files, the corpus of testdata/tlspr/golden among them, but for
+// the old formats' and the interface scenarios' folders.
+func solidFixtures(t *testing.T) []string {
+	files, err := fixtures.Walk(".tlspr")
 	if err != nil {
 		t.Fatal(err)
 	}
-	slices.Sort(files)
-	return files
+	var out []string
+	for _, f := range files {
+		if dir := strings.Split(f, "/"); !slices.ContainsFunc(dir[:len(dir)-1], func(d string) bool {
+			return d == "v1" || d == "v2" || d == "ui"
+		}) {
+			out = append(out, f)
+		}
+	}
+	return out
 }
 
 // load reads and regenerates a fixture.
 func load(t *testing.T, rel string) *sketch.Sketch {
-	path := filepath.Join(testdata, filepath.FromSlash(rel))
-	var sk *sketch.Sketch
-	if strings.HasSuffix(rel, ".slvs") {
-		doc, err := slvs.LoadFile(path)
-		if err != nil {
-			return nil
-		}
-		sk = doc.Sketch
-	} else {
-		doc, err := tlspr.LoadFile(path)
-		if err != nil {
-			return nil
-		}
-		sk = doc.Sketch
+	doc, err := tlspr.LoadFile(filepath.Join(testdata, filepath.FromSlash(rel)))
+	if err != nil {
+		return nil
 	}
+	sk := doc.Sketch
 	sk.GenerateAll()
 	return sk
 }
@@ -88,7 +64,7 @@ func solidGroups(sk *sketch.Sketch) []*sketch.Group {
 
 // nonManifold are the fixtures whose solids have an edge where four
 // faces meet, on purpose.
-var nonManifold = map[string]bool{"group/boolean_knife_edge/normal.slvs": true}
+var nonManifold = map[string]bool{"tlspr/golden/group/boolean_knife_edge/normal.tlspr": true}
 
 // fixtureCounts is what the checks over the fixtures count, for the
 // summary.
@@ -101,6 +77,18 @@ type fixtureCounts struct {
 	lines                  []string
 }
 
+// add adds o's counts to c's.
+func (c *fixtureCounts) add(o *fixtureCounts) {
+	c.shells, c.sound, c.eulerOK = c.shells+o.shells, c.sound+o.sound, c.eulerOK+o.eulerOK
+	c.named, c.edges = c.named+o.named, c.edges+o.edges
+	c.patches, c.sheets = c.patches+o.patches, c.sheets+o.sheets
+	c.grids, c.merged, c.rings = c.grids+o.grids, c.merged+o.merged, c.rings+o.rings
+	for k, n := range o.reasons {
+		c.reasons[k] += n
+	}
+	c.lines = append(c.lines, o.lines...)
+}
+
 // TestFixtures regenerates every fixture and builds the topology of
 // each of its solids once, then checks it: that it validates and
 // Euler's formula agrees with the mesh made from the same shell (every
@@ -110,24 +98,36 @@ type fixtureCounts struct {
 // sheets; and that a face of several patches in a grid, written as one
 // B-spline, has its patches' points and normals.
 func TestFixtures(t *testing.T) {
+	t.Parallel()
 	c := fixtureCounts{reasons: map[string]int{}}
-	for _, f := range fixtures(t) {
-		sk := load(t, f)
-		if sk == nil {
-			continue
+	var mu sync.Mutex
+	t.Run("models", func(t *testing.T) {
+		for _, f := range solidFixtures(t) {
+			t.Run(f, func(t *testing.T) {
+				t.Parallel()
+				sk := load(t, f)
+				if sk == nil {
+					return
+				}
+				one := fixtureCounts{reasons: map[string]int{}}
+				for _, g := range solidGroups(sk) {
+					one.shells++
+					tp, err := topo.Build(&g.RunningShell)
+					checkSoundAndEuler(t, &one, f, sk, g, tp, err)
+					if err != nil {
+						continue
+					}
+					checkNames(t, &one, f, g, tp)
+					checkSheets(t, &one, f, g, tp)
+					checkSheetSplines(t, &one, f, g, tp)
+				}
+				mu.Lock()
+				defer mu.Unlock()
+				c.add(&one)
+			})
 		}
-		for _, g := range solidGroups(sk) {
-			c.shells++
-			tp, err := topo.Build(&g.RunningShell)
-			checkSoundAndEuler(t, &c, f, sk, g, tp, err)
-			if err != nil {
-				continue
-			}
-			checkNames(t, &c, f, g, tp)
-			checkSheets(t, &c, f, g, tp)
-			checkSheetSplines(t, &c, f, g, tp)
-		}
-	}
+	})
+	slices.Sort(c.lines)
 	for _, l := range c.lines {
 		t.Log(l)
 	}
@@ -286,7 +286,7 @@ func checkSheetSplines(t *testing.T, c *fixtureCounts, f string, g *sketch.Group
 // 270 faces, as a chamfer by name does on each regeneration.
 func BenchmarkBuildThread(b *testing.B) {
 	t := &testing.T{}
-	sk := load(t, "thread/bolt_m8x30.slvs")
+	sk := load(t, "thread/bolt_m8x30.tlspr")
 	gs := solidGroups(sk)
 	sh := &gs[len(gs)-1].RunningShell
 	for b.Loop() {

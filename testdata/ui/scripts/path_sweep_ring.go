@@ -1,5 +1,5 @@
 // The sweep of path_sweep_ring.script, made by a script
-// (TestPathEquivalenceSweepRing): a square in XY swept round a circle in
+// (TestPathEquivalence/sweep_ring): a square in XY swept round a circle in
 // ZX, from testdata/ui/sweep_ring.tlspr.
 package main
 

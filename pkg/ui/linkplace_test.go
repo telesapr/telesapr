@@ -12,6 +12,7 @@ import (
 // view's direction, and requires the same placement; the window's turn
 // is one step of undo.
 func TestRotateImportedPaths(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	g, err := doc.Assembly.Link(filepath.Join("..", "..", "testdata", "step", "shapes", "box.step"), "")

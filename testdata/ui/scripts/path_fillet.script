@@ -1,5 +1,5 @@
 # An edge of the extrusion of path_extrude rounded, picked with the
-# mouse; the same as path_fillet.go makes (TestPathEquivalenceFillet).
+# mouse; the same as path_fillet.go makes (TestPathEquivalence/fillet).
 key r
 move 200 200
 down L 200 200

@@ -5,6 +5,7 @@ import "testing"
 // A face of the solid may have an appearance of its own, which the
 // window's context menu sets too, and takes back with "".
 func TestFaceAppearance(t *testing.T) {
+	t.Parallel()
 	d := New()
 	d.Sketch.Rect(V(0, 0, 0), V(20, 10, 0))
 	box := d.Features.Extrude(10, "box")

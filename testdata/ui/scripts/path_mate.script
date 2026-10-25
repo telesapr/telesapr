@@ -1,6 +1,6 @@
 # Two circles drawn, picked on their circumferences, and made a
 # concentric mate, which in a workplane puts their centres on each
-# other; the same as path_mate.go makes (TestPathEquivalenceMate).
+# other; the same as path_mate.go makes (TestPathEquivalence/mate).
 key c
 move 290 265
 down L 290 265

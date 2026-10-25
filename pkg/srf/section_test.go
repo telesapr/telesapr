@@ -7,20 +7,6 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
-// boxMesh is the closed, outward-facing box from lo to hi.
-func boxMesh(lo, hi geom.Vector) *SMesh {
-	m := cubeMesh(geom.Vector{}, 1)
-	for i := range m.Triangles {
-		tr := &m.Triangles[i]
-		for _, p := range []*geom.Vector{&tr.A, &tr.B, &tr.C} {
-			p.X = lo.X + p.X*(hi.X-lo.X)
-			p.Y = lo.Y + p.Y*(hi.Y-lo.Y)
-			p.Z = lo.Z + p.Z*(hi.Z-lo.Z)
-		}
-	}
-	return m
-}
-
 // capArea is the area the cap fills with the odd winding rule.
 func capArea(p *SPolygon) float64 {
 	var c SPolygon
@@ -38,7 +24,8 @@ func plane(n geom.Vector, through geom.Vector) HalfSpace {
 }
 
 func TestMeshSection(t *testing.T) {
-	cube := cubeMesh(geom.Vector{}, 10)
+	t.Parallel()
+	cube := boxMesh(geom.Vector{}, geom.Vector{X: 10, Y: 10, Z: 10})
 	var holed SMesh
 	holed.MakeFromDifferenceOf(cube, boxMesh(geom.Vector{X: 3, Y: 3, Z: -1}, geom.Vector{X: 7, Y: 7, Z: 11}))
 
@@ -89,7 +76,8 @@ func TestMeshSection(t *testing.T) {
 // along a seam in a plane through its axis, are taken as on it: the
 // loop closes and lies in the plane.
 func TestMeshSectionSeamOffPlane(t *testing.T) {
-	m := cubeMesh(geom.Vector{}, 10)
+	t.Parallel()
+	m := boxMesh(geom.Vector{}, geom.Vector{X: 10, Y: 10, Z: 10})
 	for i := range m.Triangles {
 		tr := &m.Triangles[i]
 		for k, p := range []*geom.Vector{&tr.A, &tr.B, &tr.C} {
@@ -115,7 +103,8 @@ func TestMeshSectionSeamOffPlane(t *testing.T) {
 
 // A mesh with a hole gives an open loop, and says so.
 func TestMeshSectionLeaky(t *testing.T) {
-	m := cubeMesh(geom.Vector{}, 10)
+	t.Parallel()
+	m := boxMesh(geom.Vector{}, geom.Vector{X: 10, Y: 10, Z: 10})
 	// Drop a triangle of the -y side.
 	m.Triangles = append(m.Triangles[:4], m.Triangles[5:]...)
 	var p SPolygon
@@ -129,6 +118,7 @@ func TestMeshSectionLeaky(t *testing.T) {
 
 // The assembler finds ends that meet within LengthEps but not exactly.
 func TestAssembleLoopsNearEnds(t *testing.T) {
+	t.Parallel()
 	var el SEdgeList
 	pts := []geom.Vector{{}, {X: 1}, {X: 1, Y: 1}, {Y: 1}}
 	for i := range pts {
@@ -146,7 +136,8 @@ func TestAssembleLoopsNearEnds(t *testing.T) {
 
 // A face cut away by the section isn't hit.
 func TestFirstIntersectionIn(t *testing.T) {
-	m := cubeMesh(geom.Vector{}, 10)
+	t.Parallel()
+	m := boxMesh(geom.Vector{}, geom.Vector{X: 10, Y: 10, Z: 10})
 	for i := range m.Triangles {
 		m.Triangles[i].Meta.Face = FaceID(i/2 + 1)
 	}

@@ -8,6 +8,7 @@ import (
 // A radius is named a radius, so its name and the value it shows agree;
 // a diameter stays a diameter.
 func TestRadiusName(t *testing.T) {
+	t.Parallel()
 	d := New()
 	a := d.Sketch.Circle(V(0, 0, 0), 2)
 	b := d.Sketch.Circle(V(10, 0, 0), 2)

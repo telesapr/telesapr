@@ -81,10 +81,13 @@ func forceToMesh(d *api.Doc, g api.Group) {
 	d.Edit.Regen()
 }
 
-// fineChord makes the document's meshes fine enough for volumes to
-// come within a few parts in a thousand of the exact ones.
-func fineChord(d *api.Doc) {
-	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.002 })
+// fineChord sets the document's chord tolerance to pct, a percentage
+// of the model's size, as fine as a test's volumes need: at 0.002 they
+// come within a few parts in a thousand of the exact ones, and at 0.001
+// a fillet's arcs, whose chords cut inside by up to the tolerance, are
+// near its formula's.
+func fineChord(d *api.Doc, pct float64) {
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = pct })
 }
 
 // threeFeatures builds a model with a mirror, a chamfer and a sweep,
@@ -124,6 +127,7 @@ func TestSolidFeaturesParallel(t *testing.T) {
 // testdata/solid; scripts/regen-golden.sh solid rewrites them. Each
 // golden opens and saves to the same bytes.
 func TestSolidGoldens(t *testing.T) {
+	t.Parallel()
 	variants := map[string]func(d *api.Doc){
 		"mirror-apart": func(d *api.Doc) {
 			block(d, 10, 0, 20, 10, 5)
@@ -465,6 +469,7 @@ func TestSolidGoldens(t *testing.T) {
 	}
 	for name, build := range variants {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			d := api.New()
 			build(d)
 			if p := d.Active().Problem(); p != "" {

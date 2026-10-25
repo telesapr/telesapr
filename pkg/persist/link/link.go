@@ -127,16 +127,11 @@ const (
 	LocateGaveUp
 )
 
-// LocateMissingFile, when set, asks the user to find a linked file or
-// image that couldn't be read, named relative to the sketch's file, and
-// returns where it is now. Without it a missing file counts as
-// declined. canCancel says whether loading can be given up; it can when
-// a file is being opened, not when the sketch is regenerated or undone.
-var LocateMissingFile func(name string, isImage, canCancel bool) (path string, resp LocateResponse)
-
-// ImageCorrupted, when set, tells the user an image they chose can't be
-// read.
-var ImageCorrupted = func(file string) {}
+// LocateFunc asks the user to find a linked file or image that couldn't
+// be read, named relative to the sketch's file, and returns where it is
+// now. canCancel says whether loading can be given up; it can when a
+// file is being opened, not when the sketch is regenerated or undone.
+type LocateFunc func(name string, isImage, canCancel bool) (path string, resp LocateResponse)
 
 // ErrCancelled is a loader's error when the user cancelled loading at
 // a missing linked file.
@@ -167,9 +162,13 @@ func RelativeLink(saveFile, chosen string) string {
 type Options struct {
 	// CanCancel lets the user give up loading at a missing file.
 	CanCancel bool
-	// Quiet treats a missing file as declined without asking through
-	// LocateMissingFile, as a batch conversion must.
-	Quiet bool
+	// Locate, when set, asks the user to find a missing file; without
+	// it a missing file counts as declined, as a batch conversion and a
+	// script must take it.
+	Locate LocateFunc
+	// Corrupted, when set, tells the user that an image they found
+	// through Locate can't be read.
+	Corrupted func(file string)
 	// Fallback loads a link whose extension has no registered loader;
 	// without one such a link counts as unreadable.
 	Fallback Loader
@@ -177,7 +176,7 @@ type Options struct {
 
 // ReloadAll loads the entities, mesh and shell of every file the sketch
 // links, and the pictures of its image requests, asking the user to
-// find a missing one through LocateMissingFile. It is false when the
+// find a missing one through o.Locate. It is false when the
 // user cancelled.
 func ReloadAll(sk *sketch.Sketch, saveFile string, o Options) bool {
 	return reloadAll(sk, saveFile, o, &loadCtx{open: map[string]bool{}})
@@ -193,8 +192,8 @@ type loadCtx struct {
 
 func reloadAll(sk *sketch.Sketch, saveFile string, o Options, ctx *loadCtx) bool {
 	canCancel := o.CanCancel
-	locate := locateMissingFile
-	if o.Quiet {
+	locate := o.Locate
+	if locate == nil {
 		locate = func(string, bool, bool) (string, LocateResponse) { return "", LocateNo }
 	}
 	// If we prompted for this specific file before, don't ask again.
@@ -253,7 +252,7 @@ func reloadAll(sk *sketch.Sketch, saveFile string, o Options, ctx *loadCtx) bool
 					if e.Type != core.EntityImage {
 						continue
 					}
-					if !reloadLinkedImage(sk, linkFile, &e.File, canCancel, locate) {
+					if !reloadLinkedImage(sk, linkFile, &e.File, canCancel, locate, o.Corrupted) {
 						return false
 					}
 				}
@@ -291,7 +290,7 @@ func reloadAll(sk *sketch.Sketch, saveFile string, o Options, ctx *loadCtx) bool
 		if r.Type != sketch.RequestImage {
 			continue
 		}
-		if !reloadLinkedImage(sk, saveFile, &r.File, canCancel, locate) {
+		if !reloadLinkedImage(sk, saveFile, &r.File, canCancel, locate, o.Corrupted) {
 			return false
 		}
 	}
@@ -303,14 +302,6 @@ func reloadAll(sk *sketch.Sketch, saveFile string, o Options, ctx *loadCtx) bool
 // choice to cancel. Undo and regeneration call it.
 func ReloadAllLinked(sk *sketch.Sketch, saveFile string) {
 	ReloadAll(sk, saveFile, Options{})
-}
-
-// locateMissingFile asks LocateMissingFile, or declines without one.
-func locateMissingFile(name string, isImage, canCancel bool) (string, LocateResponse) {
-	if LocateMissingFile == nil {
-		return "", LocateNo
-	}
-	return LocateMissingFile(name, isImage, canCancel)
 }
 
 // readImage reads a PNG image file, or nil if it can't.
@@ -329,12 +320,13 @@ func readImage(path string) *sketch.Image {
 }
 
 // reloadLinkedImage loads the image *file, named relative to saveFile,
-// into the sketch's images, asking the user to find it through
-// LocateMissingFile when it can't be read, and renaming *file to where
+// into the sketch's images, asking the user to find it through locate
+// when it can't be read, telling them through corrupted (when set) that
+// the one they found can't be read either, and renaming *file to where
 // it was found. It is false when the user cancelled, which canCancel
 // allows.
 func reloadLinkedImage(sk *sketch.Sketch, saveFile string, file *string, canCancel bool,
-	locate func(name string, isImage, canCancel bool) (string, LocateResponse)) bool {
+	locate LocateFunc, corrupted func(file string)) bool {
 	if *file == "" {
 		return true
 	}
@@ -355,9 +347,8 @@ func reloadLinkedImage(sk *sketch.Sketch, saveFile string, file *string, canCanc
 				return true
 			}
 			img = readImage(Path(saveFile, *file))
-			if img == nil && LocateMissingFile != nil {
-				// The image is corrupted.
-				ImageCorrupted(*file)
+			if img == nil && corrupted != nil {
+				corrupted(*file)
 			}
 		case LocateCancel:
 			return false

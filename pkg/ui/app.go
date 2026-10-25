@@ -2,6 +2,7 @@ package ui
 
 import (
 	"path/filepath"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -13,14 +14,13 @@ import (
 // Init loads the settings, makes a new file and opens the windows.
 func (ss *Application) Init() {
 	ss.LoadSettings()
-	// A missing linked file is looked for through the dialogs.
-	link.LocateMissingFile = ss.locateMissingFile
-	link.ImageCorrupted = func(file string) { ss.Error("The image '%s' is corrupted.", file) }
 	// The platform's fonts, for the sketches the application edits and,
 	// through the default, for the linked parts read outside them; a
 	// platform with none, as the headless one in tests, keeps the
-	// default as it is.
-	if files := ss.Platform.FontFiles(); len(files) > 0 {
+	// default as it is, and so does one with the default's files, as a
+	// test's that set them first, so that applications made side by
+	// side don't write it.
+	if files := ss.Platform.FontFiles(); len(files) > 0 && !slices.Equal(files, ttf.DefaultFonts.Files()) {
 		ss.fonts = ttf.NewFontList(files)
 		ttf.DefaultFonts = ss.fonts
 	} else {
@@ -86,7 +86,7 @@ func (ss *Application) setSketch(sk *sketch.Sketch) {
 	sk.View = &ss.GW.view
 	sk.Show = &ss.GW.show
 	sk.Hooks = appHooks{ss}
-	sk.ReloadAllLinked = func(sk *sketch.Sketch) { link.ReloadAllLinked(sk, ss.SaveFile) }
+	sk.ReloadAllLinked = func(sk *sketch.Sketch) { link.ReloadAll(sk, ss.SaveFile, ss.linkOptions(false)) }
 	ss.pixmaps = nil
 	ss.applyEngineSettings()
 }
@@ -155,14 +155,6 @@ func (ss *Application) UpdateWindowTitles() {
 	} else {
 		ss.TW.window.SetTitle("Property Browser")
 	}
-}
-
-// LoadSketchForTest adopts an already loaded sketch after LoadFromFile,
-// then AfterNewFile.
-func (ss *Application) LoadSketchForTest(sk *sketch.Sketch, saveFile string) {
-	ss.SaveFile = saveFile
-	ss.setSketch(sk)
-	ss.AfterNewFile()
 }
 
 // MarkDraggedParams lists the params of what the graphics window is

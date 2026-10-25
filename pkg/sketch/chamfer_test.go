@@ -29,6 +29,7 @@ func lineAlong(t *testing.T, g api.Group, a, b api.Vec) api.Entity {
 }
 
 func TestChamferOneEdge(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 10, 10, 5)
 	top := lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))
@@ -67,6 +68,7 @@ func TestChamferOneEdge(t *testing.T) {
 
 // A corner where three chamfered edges meet.
 func TestChamferCorner(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 10, 10, 10)
 	edges := []api.Entity{
@@ -83,6 +85,7 @@ func TestChamferCorner(t *testing.T) {
 }
 
 func TestChamferRefused(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	// An L: the inner edge is concave.
 	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(20, 5, 0), api.V(5, 5, 0), api.V(5, 20, 0), api.V(0, 20, 0))
@@ -119,6 +122,7 @@ func TestChamferRefused(t *testing.T) {
 // edit, which fills it: the solid gains a prism of half the distance
 // squared along the edge (roadmap 15.1).
 func TestChamferConcave(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(20, 5, 0), api.V(5, 5, 0), api.V(5, 20, 0), api.V(0, 20, 0))
 	ex := d.Features.Extrude(5, "")
@@ -134,6 +138,7 @@ func TestChamferConcave(t *testing.T) {
 // An edge that stops being one, as when the solid under it is made
 // smaller, gives a problem on the group, and no solid of its own.
 func TestChamferProblem(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
 	width := d.Constrain.Length(sides[1], 10)
@@ -169,29 +174,38 @@ func trimmedFaces(g api.Group) int {
 }
 
 // TestChamferSweep chamfers the edge at a corner of angle angle of a
-// triangular prism of length length, at distance d, and requires a
-// sound solid of the closed-form volume. The rate allowed was fixed at
-// none before the chamfer was written.
+// triangular prism of length length, by d1 on one face and d2 on the
+// other, or d1 on both when d2 is "same" and no second distance is
+// set, and requires a sound solid of the closed-form volume. The rate
+// allowed was fixed at none before the chamfer was written, and again
+// before its second distance was.
 func TestChamferSweep(t *testing.T) {
+	t.Parallel()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
-			sweep.Floats("angle", 20, 45, 60, 90, 120, 150, 165),
-			sweep.Floats("d", 0.1, 1, 2.5, 4),
+			sweep.Floats("angle", 20, 30, 45, 60, 90, 120, 150, 165),
+			sweep.Floats("d1", 0.1, 0.2, 1, 2.5, 3, 4),
+			{Name: "d2", Values: []any{"same", 0.5, 2.0, 4.0}},
 			sweep.Floats("length", 0.5, 5, 40),
 		},
 		MaxFailRate: 0,
-		Sample:      20,
+		Sample:      24,
 	}
 	grid.Run(func(p sweep.Point) error {
 		th := p.Float("angle") * math.Pi / 180
-		dist, length := p.Float("d"), p.Float("length")
+		d1, length := p.Float("d1"), p.Float("length")
 		d := api.New()
 		d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(10*math.Cos(th), 10*math.Sin(th), 0))
 		ex := d.Features.Extrude(length, "")
 		edge := lineAlong(t, ex, api.V(0, 0, 0), api.V(0, 0, length))
-		c := d.Features.Chamfer([]api.Entity{edge}, dist, "")
+		c := d.Features.Chamfer([]api.Entity{edge}, d1, "")
+		d2 := d1
+		if v, ok := p.Value("d2").(float64); ok {
+			d2 = v
+			c.AsChamfer().SetSecondDistance(d2)
+		}
 		r := c.Analyze().Check()
-		want := (50*math.Sin(th) - 0.5*dist*dist*math.Sin(th)) * length
+		want := (50*math.Sin(th) - 0.5*d1*d2*math.Sin(th)) * length
 		switch {
 		case c.Problem() != "":
 			return fmt.Errorf("problem: %s", c.Problem())
@@ -208,6 +222,7 @@ func TestChamferSweep(t *testing.T) {
 // rounded corners, as a fillet does, by cones there: all the way round
 // the top (roadmap 15.1).
 func TestChamferRoundedOutline(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Edit.SetChordTolerance(0.005)
 	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(30, 20, 0))

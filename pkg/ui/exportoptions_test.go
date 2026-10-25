@@ -18,6 +18,7 @@ import (
 // from a script, and requires that the window's export writes the same
 // file as when the configuration screen's fields hold the same values.
 func TestScriptExportOptions(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	doc.Sketch.Rect(api.V(0, 0, 0), api.V(40, 20, 0))
@@ -85,6 +86,7 @@ func TestScriptExportOptions(t *testing.T) {
 // export chord tolerance and segment limit a script sets: the file is
 // not the display mesh the sketch cached.
 func TestScriptExportMeshTolerance(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	doc.Sketch.Circle(api.V(0, 0, 0), 10)
@@ -117,6 +119,7 @@ func TestScriptExportMeshTolerance(t *testing.T) {
 // TestExportMeshAngleTolerance has the window's mesh export follow the
 // angular tolerance in its settings: the STL has more facets.
 func TestExportMeshAngleTolerance(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	doc.Sketch.Circle(api.V(0, 0, 0), 10)
@@ -145,6 +148,7 @@ func TestExportMeshAngleTolerance(t *testing.T) {
 // crosses itself when its settings say strict. (Without it the export
 // reports the mesh in a dialog, which the headless platform can't answer.)
 func TestExportMeshStrict(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	doc.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
@@ -191,6 +195,7 @@ func TestExportQualitySettingsRoundTrip(t *testing.T) {
 // script's SetMeshQuality and SetExportOptions, and the two STL files
 // must be the same bytes, and finer than the standard preset's.
 func TestScriptExportMeshQuality(t *testing.T) {
+	t.Parallel()
 	build := func() (*Application, *api.Doc) {
 		ss, _ := newTestApp(t)
 		doc := api.NewDoc(ss.ScriptHost())
@@ -253,6 +258,7 @@ func TestScriptExportMeshQuality(t *testing.T) {
 // what is typed, write nothing when cancelled, and keep the settings it
 // was accepted with for the next time.
 func TestExportMeshDialog(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	doc.Sketch.Circle(api.V(0, 0, 0), 10)

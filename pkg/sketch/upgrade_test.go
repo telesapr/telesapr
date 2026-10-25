@@ -12,6 +12,7 @@ import (
 // none at all, and the answer is then the last group, stepping over
 // the references.
 func TestActiveGroup(t *testing.T) {
+	t.Parallel()
 	refs := core.HGroup{V: core.HGroupReferences}
 	one := core.HGroup{V: core.HGroupReferences + 1}
 	two := core.HGroup{V: core.HGroupReferences + 2}

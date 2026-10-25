@@ -10,6 +10,7 @@ import (
 // A named dimension keeps its name through undo, redo and a round trip,
 // and a script reads and changes it by the name (roadmap 16.1).
 func TestDimensionNameFile(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
 	w := d.Constrain.Length(sides[0], 30)

@@ -13,7 +13,7 @@ import (
 // disc's foot, 2 its rim, 3 the shoulder, 4 the shaft, 5 the shaft's
 // cap.
 func steppedShaft() *srf.SShell {
-	sh := lathed([]geom.Vector{v(0, 0, 0), v(10, 0, 0), v(10, 0, 5), v(4, 0, 5), v(4, 0, 20), v(0, 0, 20)})
+	sh := lathed([]geom.Vector{v(0, 0, 0), v(10, 0, 0), v(10, 0, 5), v(4, 0, 5), v(4, 0, 20), v(0, 0, 20)}, srf.Tolerance{})
 	for i := range sh.Surface {
 		s := &sh.Surface[i]
 		p, n := s.PointAt(0.5, 0.5), s.NormalAt(0.5, 0.5).WithMagnitude(1)
@@ -98,7 +98,7 @@ func TestAxisEndsRefused(t *testing.T) {
 	if _, err := tp.AxisEnds(3); err == nil {
 		t.Error("the shoulder has ends")
 	}
-	sh := frustum(10, 5, 8)
+	sh := frustum(10, 5, 8, srf.Tolerance{})
 	for i := range sh.Surface {
 		sh.Surface[i].Face = 1
 		if s := &sh.Surface[i]; math.Abs(s.NormalAt(0.5, 0.5).WithMagnitude(1).Z) < 1-1e-9 {
@@ -113,7 +113,7 @@ func TestAxisEndsRefused(t *testing.T) {
 // A hole through a plate is a hole, free at both ends.
 func TestAxisEndsHole(t *testing.T) {
 	t.Parallel()
-	sh := countersunk(4, 4)
+	sh := countersunk(4, 4, srf.Tolerance{})
 	// The plate's faces are named one by one, the hole's quarters as one.
 	const hole = srf.FaceID(100)
 	for i := range sh.Surface {

@@ -1,5 +1,5 @@
 // The fillet of path_fillet_circle.script, made by a script
-// (TestPathEquivalenceFilletCircle): the circle the mouse draws,
+// (TestPathEquivalence/fillet_circle): the circle the mouse draws,
 // extruded as Shift+X does, its top circle rounded at the radius the menu
 // starts with.
 package main

@@ -17,6 +17,7 @@ func block(d *api.Doc, x0, y0, x1, y1, depth float64) api.Group {
 }
 
 func TestMirrorApart(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	block(d, 10, 0, 20, 10, 5)
 	m := d.Features.Mirror(d.Workplane("YZ"), "")
@@ -40,6 +41,7 @@ func TestMirrorApart(t *testing.T) {
 // left by the union with no trim, and dropped (roadmap 13.3); before,
 // they made 8 patches for 6 faces.
 func TestMirrorTouching(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	block(d, 0, 0, 10, 10, 5)
 	m := d.Features.Mirror(d.Workplane("YZ"), "")
@@ -60,6 +62,7 @@ func TestMirrorTouching(t *testing.T) {
 
 // A mirrored pocket is cut too, and a hole's circle is reflected.
 func TestMirrorPocket(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	block(d, -20, 0, 20, 10, 5)
 	d.Features.SketchIn(d.Workplane("XY"), "")
@@ -92,6 +95,7 @@ func TestMirrorPocket(t *testing.T) {
 
 // The copies follow the plane when it moves.
 func TestMirrorFollowsPlane(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Sketch.Anywhere3D()
 	wp := d.Sketch.NewWorkplane(api.V(30, 0, 0), api.V(0, 1, 0), api.V(0, 0, 1))
@@ -113,6 +117,7 @@ func TestMirrorFollowsPlane(t *testing.T) {
 
 // A planar face of the solid can be the plane.
 func TestMirrorInFace(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 10, 10, 5)
 	var top api.Entity
@@ -132,6 +137,7 @@ func TestMirrorInFace(t *testing.T) {
 }
 
 func TestMirrorMisuse(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	line := d.Sketch.Line(api.V(0, 0, 0), api.V(1, 0, 0))
 	ex := block(d, 0, 0, 10, 10, 5)
@@ -155,6 +161,7 @@ func TestMirrorMisuse(t *testing.T) {
 // of twice the volume; the file comes back the same, and the mirror is
 // one undo step.
 func TestMirrorArcRoundTripUndo(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Sketch.Line(api.V(10, -5, 0), api.V(10, 5, 0))
 	d.Sketch.Arc(api.V(10, 0, 0), api.V(10, 5, 0), api.V(10, -5, 0))
@@ -176,6 +183,7 @@ func TestMirrorArcRoundTripUndo(t *testing.T) {
 
 // A mirror of a solid forced to a mesh mirrors the mesh.
 func TestMirrorMesh(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex := block(d, 10, 0, 20, 10, 5)
 	forceToMesh(d, ex)
@@ -188,6 +196,7 @@ func TestMirrorMesh(t *testing.T) {
 
 // A step and repeat of a mirror, and a mirror of a mirror.
 func TestMirrorChained(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	block(d, 10, 0, 20, 10, 5)
 	d.Features.Mirror(d.Workplane("YZ"), "")
@@ -209,6 +218,7 @@ func TestMirrorChained(t *testing.T) {
 // was fixed before the sweep was run (roadmap 12.8); a mirror in a
 // plane of the solid's own, whose faces coincide, is 13.4's.
 func TestMirrorSweep(t *testing.T) {
+	t.Parallel()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("gap", 0, 0.5, 5),
@@ -226,7 +236,7 @@ func TestMirrorSweep(t *testing.T) {
 		// The hole is in the block's profile: a mirror reflects its
 		// source group, the extrusion, and not the solid so far (15.5).
 		d := api.New()
-		fineChord(d)
+		fineChord(d, 0.002)
 		d.Sketch.Rect(api.V(gap, 0, 0), api.V(gap+w, h, 0))
 		want := w * h * depth
 		if p.Bool("hole") {
@@ -262,6 +272,7 @@ func TestMirrorSweep(t *testing.T) {
 // allowed, none, was set before (roadmap 13.4). An L whose bounding
 // box is symmetric but which is not, reflected, joins its reflection.
 func TestMirrorSymmetricSweep(t *testing.T) {
+	t.Parallel()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Strings("shape", "circle", "hole", "holes", "slot"),
@@ -275,7 +286,7 @@ func TestMirrorSymmetricSweep(t *testing.T) {
 	grid.Run(func(p sweep.Point) error {
 		s, depth := p.Float("size"), p.Float("depth")
 		d := api.New()
-		fineChord(d)
+		fineChord(d, 0.002)
 		// Symmetric about both x = 0 and y = 0.
 		var want float64
 		switch p.String("shape") {
@@ -328,6 +339,7 @@ func TestMirrorSymmetricSweep(t *testing.T) {
 // of the cut alone would not (roadmap 15.5); kept, the two halves; not
 // kept, the reflection alone. One undo step each way, and a round trip.
 func TestMirrorSolidSoFar(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	block(d, 5, 0, 15, 10, 5)
 	d.Features.SketchIn(d.Workplane("XY"), "")

@@ -51,6 +51,7 @@ func writeRect(t *testing.T, path string) {
 }
 
 func TestPlanAndRun(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	root := filepath.Join(dir, "asm.slvs")
 	writeLinking(t, root, "parts/rect.slvs")
@@ -76,7 +77,7 @@ func TestPlanAndRun(t *testing.T) {
 		t.Errorf("root %+v, existing %v, missing %v", p.Root(), p.Existing(), p.Missing())
 	}
 
-	r, err := convert.Run(p, convert.Options{Quiet: true})
+	r, err := convert.Run(p, convert.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,6 +115,7 @@ func TestPlanAndRun(t *testing.T) {
 }
 
 func TestPlanErrors(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	root := filepath.Join(dir, "a.slvs")
 	writeLinking(t, root, "b.slvs")
@@ -155,6 +157,7 @@ func TestPlanErrors(t *testing.T) {
 // missing, and the model linking it is converted with its link pointing
 // at the copy that would have been made.
 func TestMissingLink(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	root := filepath.Join(dir, "asm.slvs")
 	writeLinking(t, root, "gone.slvs")
@@ -166,7 +169,7 @@ func TestMissingLink(t *testing.T) {
 	if len(m) != 1 || m[0].Src != filepath.Join(dir, "gone.slvs") || m[0].LinkedFrom != root || m[0].Err == nil {
 		t.Fatalf("missing %+v", m)
 	}
-	r, err := convert.Run(p, convert.Options{Quiet: true})
+	r, err := convert.Run(p, convert.Options{})
 	if err != nil || len(r.Written) != 1 {
 		t.Fatalf("%v %+v", err, r)
 	}
@@ -184,6 +187,7 @@ func TestMissingLink(t *testing.T) {
 // TestReadOnlyDirectory: a linked model whose copy can't be written is
 // reported, and the rest is converted.
 func TestReadOnlyDirectory(t *testing.T) {
+	t.Parallel()
 	if os.Geteuid() == 0 {
 		t.Skip("permissions don't bind root")
 	}
@@ -215,6 +219,7 @@ func TestReadOnlyDirectory(t *testing.T) {
 // TestLoadErrorWarns: a model with lines SolveSpace doesn't know
 // converts what it can, and says so.
 func TestLoadErrorWarns(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	root := filepath.Join(dir, "odd.slvs")
 	writeLinking(t, root, "rect.slvs")
@@ -238,6 +243,7 @@ func TestLoadErrorWarns(t *testing.T) {
 // TestUnregenerable: a model that can't regenerate fails, and isn't
 // written.
 func TestUnregenerable(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	root := filepath.Join(dir, "bad.slvs")
 	// A line segment in a workplane that doesn't exist.

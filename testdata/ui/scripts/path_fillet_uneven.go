@@ -1,5 +1,5 @@
 // The fillet of path_fillet_uneven.script, made by a script
-// (TestPathEquivalenceFilletUneven): the ramp of testdata/topo/ramp.tlspr,
+// (TestPathEquivalence/fillet_uneven): the ramp of testdata/topo/ramp.tlspr,
 // the two edges the mouse picks at the top's front corner by their
 // entities, at the radius the menu starts with.
 package main

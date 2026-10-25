@@ -1,5 +1,5 @@
 // The appearance of path_appearance.script, made by a script
-// (TestPathEquivalenceAppearance): the extrusion of path_extrude made
+// (TestPathEquivalence/appearance): the extrusion of path_extrude made
 // metal (roadmap 19.2).
 package main
 

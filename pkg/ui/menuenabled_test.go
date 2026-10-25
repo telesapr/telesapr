@@ -9,6 +9,7 @@ import (
 )
 
 func TestMenuEnablement(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	gw := ss.GW
 	enabled := func(cmd Command) bool {

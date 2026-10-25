@@ -70,7 +70,7 @@ func (ss *Application) ImportSolveSpace(src string) error {
 		}
 	}
 
-	res, err := convert.Run(plan, convert.Options{Overwrite: overwrite, Units: ss.ViewUnits})
+	res, err := convert.Run(plan, convert.Options{Overwrite: overwrite, Units: ss.ViewUnits, Locate: ss.locateMissingFile})
 	if errors.Is(err, convert.ErrCancelled) {
 		return errDeclined
 	}

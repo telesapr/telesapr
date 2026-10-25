@@ -58,6 +58,9 @@ func NewFontList(files []string) *FontList {
 	return &FontList{files: append([]string(nil), files...)}
 }
 
+// Files are the font files the list was made of.
+func (fl *FontList) Files() []string { return slices.Clone(fl.files) }
+
 // FontFileBaseName is the basename of the font's file; that's how the
 // requests and entities that reference it store it.
 func (tf *Font) FontFileBaseName() string {

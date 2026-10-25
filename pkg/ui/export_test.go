@@ -8,47 +8,45 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/golden"
-	"github.com/telesapr/telesapr/pkg/persist/slvs"
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
-	"github.com/telesapr/telesapr/pkg/ttf"
 )
 
 // exportFixtures are the fixtures TestExport exports.
 var exportFixtures = []string{
-	"constraint/angle/normal.slvs",
-	"constraint/comment/normal.slvs",
-	"constraint/diameter/normal.slvs",
-	"constraint/diameter/reference.slvs",
-	"constraint/pt_face_distance/normal.slvs",
-	"constraint/pt_line_distance/normal.slvs",
-	"constraint/pt_pt_distance/normal.slvs",
-	"group/boolean_knife_edge/normal.slvs",
-	"group/link_stl/normal.slvs",
-	"group/translate_nd/normal.slvs",
-	"request/arc_of_circle/normal.slvs",
-	"request/circle/normal.slvs",
-	"request/cubic/normal.slvs",
-	"request/cubic_periodic/normal.slvs",
-	"request/ttf_text/normal.slvs",
+	"constraint/angle/normal.tlspr",
+	"constraint/comment/normal.tlspr",
+	"constraint/diameter/normal.tlspr",
+	"constraint/diameter/reference.tlspr",
+	"constraint/pt_face_distance/normal.tlspr",
+	"constraint/pt_line_distance/normal.tlspr",
+	"constraint/pt_pt_distance/normal.tlspr",
+	"group/boolean_knife_edge/normal.tlspr",
+	"group/link_stl/normal.tlspr",
+	"group/translate_nd/normal.tlspr",
+	"request/arc_of_circle/normal.tlspr",
+	"request/circle/normal.tlspr",
+	"request/cubic/normal.tlspr",
+	"request/cubic_periodic/normal.tlspr",
+	"request/ttf_text/normal.tlspr",
 }
 
 // TestExport exports each fixture in every format and compares the
-// files with the goldens (testdata/export, first recorded from SolveSpace),
-// byte for byte.
+// files with the goldens (testdata/export), byte for byte.
 func TestExport(t *testing.T) {
+	t.Parallel()
 	root := filepath.Join("..", "..", "testdata")
-	ttf.DefaultFonts = ttf.NewFontList([]string{filepath.Join(root, "Gentium-R.ttf")})
 	for _, f := range exportFixtures {
 		t.Run(f, func(t *testing.T) {
+			t.Parallel()
 			gotDir := t.TempDir()
-			exportAllFor(t, filepath.Join(root, f), gotDir)
-			golden.CheckDir(t, filepath.Join(root, "export", strings.TrimSuffix(f, ".slvs")), gotDir)
+			exportAllFor(t, filepath.Join(root, "tlspr", "golden", f), gotDir)
+			golden.CheckDir(t, filepath.Join(root, "export", strings.TrimSuffix(f, ".tlspr")), gotDir)
 		})
 	}
 }
 
-// exportAllFor runs the harness's exports on a fixture.
+// exportAllFor exports a model in every format into dir.
 func exportAllFor(t testing.TB, path, dir string) {
 	p := headless.New()
 	// Exports can report what didn't export; answer them all.
@@ -57,14 +55,10 @@ func exportAllFor(t testing.TB, path, dir string) {
 	}
 	ss := New(p)
 	ss.LoadSettings()
-	ss.NewFile()
-	ss.AfterNewFile()
-	doc, err := slvs.LoadFile(path)
-	if err != nil {
+	if err := ss.Load(path); err != nil {
 		t.Fatal(err)
 	}
-	ss.LoadSketchForTest(doc.Sketch, path)
-	// SolveSpace's headless build has no window: its camera is 297x210.
+	// The goldens are drawn by a camera of 297x210.
 	w := ss.GW.window.(*headless.Window)
 	w.Width, w.Height = 297, 210
 

@@ -22,6 +22,7 @@ func ring(d *Doc) Entity {
 
 // A revolve turns by the angle it is given.
 func TestRevolveAngle(t *testing.T) {
+	t.Parallel()
 	d := New()
 	g := d.Features.Revolve(ring(d), 90, "")
 	// Pappus: the square's area times the arc its centre runs.
@@ -36,6 +37,7 @@ func TestRevolveAngle(t *testing.T) {
 
 // A helix turns by its angle and moves along its axis by its length.
 func TestHelix(t *testing.T) {
+	t.Parallel()
 	d := New()
 	g := d.Features.Helix(ring(d), 270, 30, "spring")
 	if g.Kind() != "helix" || g.Name() != "spring" || d.Active().H != g.H {
@@ -58,6 +60,7 @@ func TestHelix(t *testing.T) {
 // Text is placed with its bottom left corner where it is asked, as
 // high as asked, and as wide as its font makes it.
 func TestText(t *testing.T) {
+	t.Parallel()
 	d := New()
 	text := d.Sketch.Text("Abc", "", V(5, 5, 0), 10)
 	if text.Kind() != "text" {
@@ -81,8 +84,9 @@ func TestText(t *testing.T) {
 // An image is construction, placed like text, as wide as its
 // proportions.
 func TestImage(t *testing.T) {
+	t.Parallel()
 	d := New()
-	path := filepath.Join("..", "..", "..", "testdata", "request", "line_segment", "normal.png")
+	path := filepath.Join("..", "..", "..", "testdata", "request", "image", "drawing.png") // 300 x 200
 	img := d.Sketch.Image(path, V(0, 0, 0), 30)
 	if img.Kind() != "image" || !img.Construction() {
 		t.Fatalf("the image is a %s, construction %t", img.Kind(), img.Construction())
@@ -93,6 +97,9 @@ func TestImage(t *testing.T) {
 			aspect = float64(im.Width) / float64(im.Height)
 		}
 	})
+	if !near(aspect, 1.5) {
+		t.Errorf("the image's proportions are %g, want 1.5", aspect)
+	}
 	if p := img.Points()[2].Pos(); !near(p.X, 30*aspect) || !near(p.Y, 0) {
 		t.Errorf("the image's bottom right corner is at %v, want (%g, 0)", p, 30*aspect)
 	}
@@ -100,6 +107,7 @@ func TestImage(t *testing.T) {
 
 // A corner is rounded with a tangent arc.
 func TestTangentArc(t *testing.T) {
+	t.Parallel()
 	d := New()
 	lines := d.Sketch.Polyline(false, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0))
 	d.Sketch.TangentArc(lines[0].End(), 5, true)
@@ -127,6 +135,7 @@ func TestTangentArc(t *testing.T) {
 
 // Two crossing lines are split into four.
 func TestSplit(t *testing.T) {
+	t.Parallel()
 	d := New()
 	a := d.Sketch.Line(V(-10, 0, 0), V(10, 0, 0))
 	b := d.Sketch.Line(V(0, -10, 0), V(0, 10, 0))
@@ -144,6 +153,7 @@ func TestSplit(t *testing.T) {
 
 // An angle can measure the other, supplementary angle.
 func TestOtherAngle(t *testing.T) {
+	t.Parallel()
 	d := New()
 	a := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
 	b := d.Sketch.Line(V(0, 0, 0), V(10, 10, 0))
@@ -162,6 +172,7 @@ func TestOtherAngle(t *testing.T) {
 
 // A screw thread on a rod is a sound solid, and its options reach it.
 func TestThread(t *testing.T) {
+	t.Parallel()
 	d := New()
 	rod := d.Sketch.Circle(V(0, 0, 0), 4)
 	d.Features.Extrude(30, "rod")
@@ -215,6 +226,7 @@ func sq(x float64) float64 { return x * x }
 
 // What can't be done panics with an error that says why.
 func TestMisuseMore(t *testing.T) {
+	t.Parallel()
 	d := New()
 	line := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
 	far := d.Sketch.Line(V(0, 5, 0), V(10, 5, 0))
@@ -250,6 +262,7 @@ func TestMisuseMore(t *testing.T) {
 // A bare sketch keeps the chord tolerance a script sets, and meshes
 // finer for a finer one.
 func TestChordTolerance(t *testing.T) {
+	t.Parallel()
 	d := New()
 	d.Sketch.Rect(V(0, 0, 0), V(10, 10, 0))
 	d.Features.Extrude(10, "")

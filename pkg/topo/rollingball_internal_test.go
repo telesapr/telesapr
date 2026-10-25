@@ -12,8 +12,8 @@ import (
 func rbv(x, y, z float64) geom.Vector { return geom.Vector{X: x, Y: y, Z: z} }
 
 // rbCylinder is a cylinder of radius rad along z from 0 to h, its side
-// four quarter patches.
-func rbCylinder(rad, h float64) *srf.SShell {
+// four quarter patches, extruded at tol.
+func rbCylinder(rad, h float64, tol srf.Tolerance) *srf.SShell {
 	var out []srf.SBezier
 	for k := range 4 {
 		a := float64(k) * math.Pi / 2
@@ -23,7 +23,7 @@ func rbCylinder(rad, h float64) *srf.SShell {
 		pm := rbv(rad*(math.Cos(a)+math.Cos(b)), rad*(math.Sin(a)+math.Sin(b)), 0)
 		out = append(out, arc(pa, pm, pb, math.Sqrt2/2))
 	}
-	var sh srf.SShell
+	sh := srf.SShell{Tol: tol}
 	var ls srf.SBezierLoopSet
 	ls.Outer.Curves = out
 	ls.Normal = rbv(0, 0, -1)
@@ -36,13 +36,12 @@ func rbCylinder(rad, h float64) *srf.SShell {
 // is fitted to; for a branch joined to a pipe and for a hole cut into
 // it.
 func TestRollingBallOnEnvelope(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.003)
+	t.Parallel()
+	tol := srf.Tol(0.003, 20)
 	for _, hole := range []bool{false, true} {
-		var mainT, brT, u srf.SShell
-		mainT.MakeFromTransformationOf(rbCylinder(10, 40), rbv(0, 0, -20), geom.QuaternionIdentity, 1)
-		brT.MakeFromTransformationOf(rbCylinder(5, 25), rbv(0, 0, 0), geom.QuaternionFromAxisAngle(rbv(0, 1, 0), math.Pi/2), 1)
+		mainT, brT, u := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
+		mainT.MakeFromTransformationOf(rbCylinder(10, 40, tol), rbv(0, 0, -20), geom.QuaternionIdentity, 1)
+		brT.MakeFromTransformationOf(rbCylinder(5, 25, tol), rbv(0, 0, 0), geom.QuaternionFromAxisAngle(rbv(0, 1, 0), math.Pi/2), 1)
 		if hole {
 			u.MakeFromDifferenceOf(&mainT, &brT)
 		} else {

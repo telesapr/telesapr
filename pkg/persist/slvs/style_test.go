@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 )
 
@@ -15,7 +16,8 @@ import (
 // gets a new custom style when saved; both as SolveSpace wrote them (checked
 // with a SolveSpace harness while the SolveSpace comparison ran).
 func TestStyleDefaults(t *testing.T) {
-	data, err := os.ReadFile(fixture("request/line_segment/normal.slvs"))
+	t.Parallel()
+	data, err := os.ReadFile(fixtures.Path("request/line_segment/normal.slvs"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,5 +1,5 @@
 // The sweep of path_sweep_corner.script, made by a script
-// (TestPathEquivalenceSweepCorner): a rectangle in XY swept along two
+// (TestPathEquivalence/sweep_corner): a rectangle in XY swept along two
 // lines in ZX that meet at a corner, from testdata/ui/sweep_corner.tlspr
 // (roadmap 28.4).
 package main

@@ -1,5 +1,5 @@
 // The fillet of path_fillet_radii.script, made by a script
-// (TestPathEquivalenceFilletRadii): the two top edges of the extrusion
+// (TestPathEquivalence/fillet_radii): the two top edges of the extrusion
 // of path_extrude that the mouse picks, at the radius the menu starts
 // with, the second at 3 of its own.
 package main

@@ -1,5 +1,5 @@
 // The model of path_thread_cosmetic.script, made by a script
-// (TestPathEquivalenceThreadCosmetic). The mouse puts the circle's
+// (TestPathEquivalence/thread_cosmetic). The mouse puts the circle's
 // centre on the workplane's origin, which constrains it there, and picks
 // the extrusion's side for a cosmetic thread.
 package main

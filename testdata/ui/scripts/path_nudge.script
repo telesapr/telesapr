@@ -1,6 +1,6 @@
 # A line drawn with the mouse, selected, and nudged a pixel right and
 # ten up with Shift; the same as path_nudge.go makes
-# (TestPathEquivalenceNudge).
+# (TestPathEquivalence/nudge).
 key s
 move 200 250
 down L 200 250

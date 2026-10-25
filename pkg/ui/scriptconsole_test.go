@@ -39,6 +39,7 @@ func after(w *headless.Console, n int) string {
 // and shows its values, a statement over several lines waits for its
 // end, and an error is shown without a dialog.
 func TestScriptConsole(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	w := shownConsole(t, ss, p)
 	if w.Prompt != ">>> " || !strings.HasPrefix(w.Text(), "Go on the sketch") {
@@ -116,6 +117,7 @@ func TestScriptConsole(t *testing.T) {
 // Script > Run File runs a program on the sketch and shows its output
 // in the console, which it opens.
 func TestScriptConsoleRunFile(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	dir := t.TempDir()
 	file := filepath.Join(dir, "disc.go")
@@ -169,6 +171,7 @@ func main() {
 // while the loop goes on; its calls, and what it shows, come to the
 // loop, and a script that doesn't end can be stopped.
 func TestScriptConsoleOnLoop(t *testing.T) {
+	t.Parallel()
 	p := &loopPlatform{Platform: headless.New(), posted: make(chan func(), 64), done: make(chan struct{})}
 	go func() {
 		for fn := range p.posted {

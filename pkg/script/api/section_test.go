@@ -20,6 +20,7 @@ func sectionBox(t *testing.T) (d *Doc, wp Entity, ext Group) {
 }
 
 func TestSection(t *testing.T) {
+	t.Parallel()
 	d, wp, ext := sectionBox(t)
 	if s := d.View.Section(); s.On {
 		t.Fatalf("the section view is on in a new sketch: %+v", s)
@@ -72,6 +73,7 @@ func TestSection(t *testing.T) {
 // An offset may be an expression in the document's unit, and follows
 // the parameters it names.
 func TestSectionOffsetExpression(t *testing.T) {
+	t.Parallel()
 	d, wp, _ := sectionBox(t)
 	if err := d.Params.Set("h", "10"); err != nil {
 		t.Fatal(err)
@@ -104,6 +106,7 @@ func TestSectionOffsetExpression(t *testing.T) {
 // A section on a face of a group that is deleted can't cut, and says
 // so.
 func TestSectionPlaneGone(t *testing.T) {
+	t.Parallel()
 	d, _, ext := sectionBox(t)
 	d.View.SetSection(ext.Faces()[0], "", false)
 	ext.Delete()
@@ -114,6 +117,7 @@ func TestSectionPlaneGone(t *testing.T) {
 }
 
 func TestSectionMisuse(t *testing.T) {
+	t.Parallel()
 	d, wp, ext := sectionBox(t)
 	face := ext.Faces()[0]
 	for name, fn := range map[string]func(){
@@ -142,6 +146,7 @@ func TestSectionMisuse(t *testing.T) {
 // the cap still closes, and holds the profile's area once for each
 // side of the axis it cuts.
 func TestSectionThroughAxis(t *testing.T) {
+	t.Parallel()
 	turned := func(degrees float64) *Doc {
 		d := New()
 		d.Sketch.Rect(V(1, 0, 0), V(5, 10, 0))

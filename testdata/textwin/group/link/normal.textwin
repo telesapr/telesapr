@@ -332,10 +332,10 @@ row 10  link geometry from file
  0-0 64 64 0
  1-23 74 64 0
  24-99 64 64 0
-row 12    'rect_v20.slvs' [relink]
- 0-18 64 61 0
- 19-26 6c 61 108 3 1 0
- 27-99 64 61 0
+row 12    'rect_v20.tlspr' [relink]
+ 0-19 64 61 0
+ 20-27 6c 61 108 3 1 0
+ 28-99 64 61 0
 row 14    scaled by 1.000 [change]
  0-2 64 64 0
  3-11 74 64 0
@@ -453,10 +453,10 @@ row 10  link geometry from file
  0-0 64 64 0
  1-23 74 64 0
  24-99 64 64 0
-row 12    'rect_v20.slvs' [relink]
- 0-18 64 61 0
- 19-26 6c 61 108 3 1 0
- 27-99 64 61 0
+row 12    'rect_v20.tlspr' [relink]
+ 0-19 64 61 0
+ 20-27 6c 61 108 3 1 0
+ 28-99 64 61 0
 row 14    scaled by 1.000 [change]
  0-2 64 64 0
  3-11 74 64 0
@@ -3788,10 +3788,12 @@ row 20 IN GROUP      g003-rect-v20
 row 22 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 25 (unselect all)
+row 24 CONSTRUCTION
+ 0-99 74 64 0
+row 27 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 27 
+row 29 
  0-99 64 64 0
 screen entity 80030003
 row 0         in plane: r001-#XY
@@ -3893,10 +3895,12 @@ row 20 IN GROUP      g003-rect-v20
 row 22 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 25 (unselect all)
+row 24 CONSTRUCTION
+ 0-99 74 64 0
+row 27 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 27 
+row 29 
  0-99 64 64 0
 screen entity 80030006
 row 0         in plane: r001-#XY
@@ -3998,10 +4002,12 @@ row 20 IN GROUP      g003-rect-v20
 row 22 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 25 (unselect all)
+row 24 CONSTRUCTION
+ 0-99 74 64 0
+row 27 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 27 
+row 29 
  0-99 64 64 0
 screen entity 80030009
 row 0         in plane: r001-#XY
@@ -4732,10 +4738,12 @@ row 20 IN GROUP      g003-rect-v20
 row 22 NOT LOCKED IN WORKPLANE
  0-22 74 64 0
  23-99 64 64 0
-row 25 (unselect all)
+row 24 CONSTRUCTION
+ 0-99 74 64 0
+row 27 (unselect all)
  0-13 6c 64 108 0 1 0
  14-99 64 64 0
-row 27 
+row 29 
  0-99 64 64 0
 screen entities 10000 10001
 row 0         in plane: r001-#XY

@@ -616,6 +616,7 @@ var windowActions = map[string]string{
 }
 
 func TestEveryWindowActionHasAScriptCall(t *testing.T) {
+	t.Parallel()
 	w := scanUI(t)
 	if len(w.screens) < 100 || len(w.edits) < 60 || len(w.context) < 30 || len(w.drags) < 6 {
 		t.Fatalf("found only %d link handlers, %d edit kinds, %d context entries, %d drags", len(w.screens), len(w.edits), len(w.context), len(w.drags))
@@ -1108,6 +1109,7 @@ func objectActions(t *testing.T) map[string]string {
 }
 
 func TestEveryObjectMethodHasAWindowAction(t *testing.T) {
+	t.Parallel()
 	actions := objectActions(t)
 	w := scanUI(t)
 	menuPaths := map[string]bool{}

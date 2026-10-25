@@ -1,5 +1,5 @@
 // The solve options of a group, the model of path_group_solve.script
-// (TestPathEquivalenceGroupSolve).
+// (TestPathEquivalence/group_solve).
 package main
 
 import . "github.com/telesapr/telesapr/pkg/script/api"

@@ -20,8 +20,9 @@ func boxLoopSet(x0, y0, x1, y1, z0 float64) *SBezierLoopSet {
 	return sbls
 }
 
-func extrudedBox(lo, hi geom.Vector) *SShell {
-	sh := &SShell{}
+// extrudedBox is the box from lo to hi, built at tol.
+func extrudedBox(lo, hi geom.Vector, tol Tolerance) *SShell {
+	sh := &SShell{Tol: tol}
 	sh.MakeFromExtrusionOf(boxLoopSet(lo.X, lo.Y, hi.X, hi.Y, 0),
 		geom.Vector{Z: lo.Z}, geom.Vector{Z: hi.Z}, core.RGBA{})
 	return sh
@@ -37,7 +38,8 @@ func shellVolume(sh *SShell) float64 {
 // overlapping 2x2x2 boxes offset by (1,1,1): union 15, difference 7,
 // intersection 1.
 func TestBooleanTwoBoxesVolume(t *testing.T) {
-	if v := shellVolume(extrudedBox(geom.Vector{}, geom.Vector{X: 2, Y: 2, Z: 2})); math.Abs(v-8) > 1e-9 {
+	t.Parallel()
+	if v := shellVolume(extrudedBox(geom.Vector{}, geom.Vector{X: 2, Y: 2, Z: 2}, Tolerance{})); math.Abs(v-8) > 1e-9 {
 		t.Fatalf("single box volume = %v, want 8", v)
 	}
 	cases := []struct {
@@ -50,8 +52,8 @@ func TestBooleanTwoBoxesVolume(t *testing.T) {
 		{"intersection", SurfaceInter, 1},
 	}
 	for _, c := range cases {
-		a := extrudedBox(geom.Vector{}, geom.Vector{X: 2, Y: 2, Z: 2})
-		b := extrudedBox(geom.Vector{X: 1, Y: 1, Z: 1}, geom.Vector{X: 3, Y: 3, Z: 3})
+		a := extrudedBox(geom.Vector{}, geom.Vector{X: 2, Y: 2, Z: 2}, Tolerance{})
+		b := extrudedBox(geom.Vector{X: 1, Y: 1, Z: 1}, geom.Vector{X: 3, Y: 3, Z: 3}, Tolerance{})
 		var r SShell
 		r.MakeFromBoolean(a, b, c.op)
 		v := shellVolume(&r)

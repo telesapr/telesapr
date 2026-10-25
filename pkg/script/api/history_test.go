@@ -15,6 +15,7 @@ func names(groups []Group) string {
 }
 
 func TestMoveGroup(t *testing.T) {
+	t.Parallel()
 	d := New()
 	sketch := d.Active()
 	d.Sketch.Rect(V(0, 0, 0), V(10, 10, 0))
@@ -80,6 +81,7 @@ func TestMoveGroup(t *testing.T) {
 }
 
 func TestMoveGroupMisuse(t *testing.T) {
+	t.Parallel()
 	d := New()
 	g := d.Active()
 	gone := d.Features.Sketch3D("gone")
@@ -103,6 +105,7 @@ func TestMoveGroupMisuse(t *testing.T) {
 }
 
 func TestSuppressWhole(t *testing.T) {
+	t.Parallel()
 	d := New()
 	sketch := d.Active()
 	d.Sketch.Rect(V(0, 0, 0), V(10, 10, 0))
@@ -149,6 +152,7 @@ func TestSuppressWhole(t *testing.T) {
 }
 
 func TestSuppressMisuse(t *testing.T) {
+	t.Parallel()
 	d := New()
 	sketch := d.Active()
 	d.Sketch.Line(V(0, 0, 0), V(5, 0, 0))
@@ -170,6 +174,7 @@ func TestSuppressMisuse(t *testing.T) {
 }
 
 func TestBrokenReferences(t *testing.T) {
+	t.Parallel()
 	d := New()
 	sketch := d.Active()
 	d.Sketch.Rect(V(0, 0, 0), V(10, 10, 0))
@@ -211,6 +216,7 @@ func TestBrokenReferences(t *testing.T) {
 // Deleting the active group, or a group it uses, leaves the last group
 // before it that is left active, so new groups come at the end.
 func TestDeleteActiveGroup(t *testing.T) {
+	t.Parallel()
 	d := New()
 	first := d.Active()
 	d.Sketch.Rect(V(0, 0, 0), V(10, 10, 0))
@@ -246,6 +252,7 @@ func TestDeleteActiveGroup(t *testing.T) {
 // An extrusion moves to the end with its own sketch; a sketch that
 // another group uses too stays.
 func TestMoveWithSources(t *testing.T) {
+	t.Parallel()
 	d := New()
 	first := d.Active()
 	d.Sketch.Rect(V(0, 0, 0), V(10, 10, 0))

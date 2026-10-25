@@ -56,6 +56,7 @@ func main() {
 // A script makes a part from its arguments, saves and exports it, and
 // another command reads what it saved.
 func TestRunScript(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	file := filepath.Join(dir, "block.go")
 	if err := os.WriteFile(file, []byte(blockScript), 0o644); err != nil {
@@ -95,6 +96,7 @@ func TestRunScript(t *testing.T) {
 }
 
 func TestRepl(t *testing.T) {
+	t.Parallel()
 	status, stdout, stderr := runScripting(t, "c := doc.Sketch.Circle(V(1, 2, 0), 3)\nc.Radius()\nc.Center().Pos()\nc.Start()\n", "repl")
 	want := "3\n(1, 2, 0)\nerror: circle r004-circle, radius 3.000 has no start\n"
 	if status != exitOK || stdout != want || stderr != "" {
@@ -103,6 +105,7 @@ func TestRepl(t *testing.T) {
 }
 
 func TestScriptFailures(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	bad := filepath.Join(dir, "bad.go")
 	if err := os.WriteFile(bad, []byte("x := 1\n\nfmt.Println(x, y)\n"), 0o644); err != nil {
@@ -143,6 +146,7 @@ func TestScriptFailures(t *testing.T) {
 
 // --lib names the folder a script's own packages are imported from.
 func TestScriptLibrary(t *testing.T) {
+	t.Parallel()
 	lib, err := filepath.Abs(filepath.Join("..", "..", "examples", "scripts", "library", "lib"))
 	if err != nil {
 		t.Fatal(err)

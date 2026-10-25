@@ -104,7 +104,7 @@ func TestSweepClosed(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			d := api.New()
-			fineChord(d)
+			fineChord(d, 0.002)
 			s := c.make(d)
 			if p := s.Problem(); p != "" {
 				t.Fatal(p)
@@ -191,10 +191,12 @@ func TestSweepClosedProblems(t *testing.T) {
 // requires a sound solid of the volume the centroid theorem gives. The
 // rate allowed was fixed at none before the feature was written.
 func TestSweepClosedSweep(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("a sweep round closed paths")
 	}
 	grid := sweep.Grid{
+		Parallel: true,
 		Axes: []sweep.Axis{
 			sweep.Strings("path", "ring", "frame", "rounded", "stadium"),
 			sweep.Strings("profile", "square", "circle"),

@@ -7,6 +7,7 @@ import (
 )
 
 func TestRequestGenerateWorkplane(t *testing.T) {
+	t.Parallel()
 	req := Request{
 		H:            core.HRequest{V: 0x10},
 		Type:         RequestWorkplane,
@@ -62,6 +63,7 @@ func TestRequestGenerateWorkplane(t *testing.T) {
 }
 
 func TestRequestGenerateDatumPoint(t *testing.T) {
+	t.Parallel()
 	req := Request{
 		H:         core.HRequest{V: 0x21},
 		Type:      RequestDatumPoint,
@@ -92,6 +94,7 @@ func TestRequestGenerateDatumPoint(t *testing.T) {
 }
 
 func TestRequestGenerateCircle(t *testing.T) {
+	t.Parallel()
 	req := Request{
 		H:         core.HRequest{V: 0x33},
 		Type:      RequestCircle,
@@ -149,6 +152,7 @@ func TestRequestGenerateCircle(t *testing.T) {
 }
 
 func TestRequestGenerateArcOfCircle(t *testing.T) {
+	t.Parallel()
 	req := Request{
 		H:         core.HRequest{V: 0x44},
 		Type:      RequestArcOfCircle,
@@ -198,6 +202,7 @@ func TestRequestGenerateArcOfCircle(t *testing.T) {
 }
 
 func TestRequestGenerateCubicWithExtraPoints(t *testing.T) {
+	t.Parallel()
 	req := Request{
 		H:           core.HRequest{V: 0x55},
 		Type:        RequestCubic,
@@ -238,6 +243,7 @@ func TestRequestGenerateCubicWithExtraPoints(t *testing.T) {
 }
 
 func TestRequestGenerateImageDefaultsAspectRatio(t *testing.T) {
+	t.Parallel()
 	req := Request{
 		H:         core.HRequest{V: 0x66},
 		Type:      RequestImage,
@@ -265,6 +271,7 @@ func TestRequestGenerateImageDefaultsAspectRatio(t *testing.T) {
 }
 
 func TestRequestDescriptionString(t *testing.T) {
+	t.Parallel()
 	ref := Request{H: HRequestReferenceXY, Type: RequestWorkplane}
 	if desc := ref.DescriptionString(); desc != "r001-#XY" {
 		t.Fatalf("unexpected description for reference: %s", desc)
@@ -282,6 +289,7 @@ func TestRequestDescriptionString(t *testing.T) {
 }
 
 func TestRequestIndexOfPoint(t *testing.T) {
+	t.Parallel()
 	req := Request{H: core.HRequest{V: 0x77}, Type: RequestLineSegment}
 
 	if got := req.IndexOfPoint(req.H.Entity(1)); got != 0 {
@@ -304,6 +312,7 @@ func TestRequestIndexOfPoint(t *testing.T) {
 }
 
 func TestRequestMappingHelpers(t *testing.T) {
+	t.Parallel()
 	for _, mapping := range entReqMappings {
 		extra := 0
 		if mapping.useExtraPoints {

@@ -1,5 +1,5 @@
 // The loft of path_loft_ring.script, made by a script
-// (TestPathEquivalenceLoftRing): loft_ring.tlspr's smooth loft through
+// (TestPathEquivalence/loft_ring): loft_ring.tlspr's smooth loft through
 // six circles round the z axis, closed into a ring.
 package main
 

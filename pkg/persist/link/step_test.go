@@ -14,6 +14,7 @@ import (
 var stepShapes = filepath.Join("..", "..", "..", "testdata", "step", "shapes")
 
 func TestLinkStep(t *testing.T) {
+	t.Parallel()
 	sk := &sketch.Sketch{}
 	var m srf.SMesh
 	var rep Report
@@ -49,6 +50,7 @@ func TestLinkStep(t *testing.T) {
 }
 
 func TestLinkStepProblems(t *testing.T) {
+	t.Parallel()
 	sk := &sketch.Sketch{}
 	var m srf.SMesh
 	var rep Report
@@ -78,6 +80,7 @@ func TestLinkStepProblems(t *testing.T) {
 }
 
 func TestLinkStepCache(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(stepShapes, "box.step")
 	a, err := readStep(path, 0)
 	if err != nil {
@@ -106,6 +109,7 @@ func TestLinkStepCache(t *testing.T) {
 }
 
 func TestReloadAllStep(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	data, err := os.ReadFile(filepath.Join(stepShapes, "box.step"))
 	if err != nil {
@@ -126,13 +130,14 @@ func TestReloadAllStep(t *testing.T) {
 	}
 	// A file another loader reads reports nothing.
 	g.LinkFile = "missing.stl"
-	ReloadAll(sk, filepath.Join(dir, "model.tlspr"), Options{Quiet: true})
+	ReloadAll(sk, filepath.Join(dir, "model.tlspr"), Options{})
 	if g.LinkInfo != nil || g.LinkProblem != "" {
 		t.Errorf("info %q problem %q left from before", g.LinkInfo, g.LinkProblem)
 	}
 }
 
 func TestPlural(t *testing.T) {
+	t.Parallel()
 	if plural(1, "face") != "1 face" || plural(3, "face") != "3 faces" {
 		t.Error(plural(1, "face"), plural(3, "face"))
 	}

@@ -59,6 +59,7 @@ func remote(dir string) *Remote {
 
 // A session reached through a socket does what it does when called.
 func TestRemoteSession(t *testing.T) {
+	t.Parallel()
 	dir := socketDir(t)
 	s := newSession(t)
 	serve(t, dir, s)
@@ -130,6 +131,7 @@ func TestRemoteSession(t *testing.T) {
 // The other program may start later, end, and start again; help
 // needs none.
 func TestRemoteConnectsWhenNeeded(t *testing.T) {
+	t.Parallel()
 	dir := socketDir(t)
 	r := remote(dir)
 	defer r.Close()
@@ -163,6 +165,7 @@ func TestRemoteConnectsWhenNeeded(t *testing.T) {
 
 // A request that is cancelled stops the script, which is rolled back.
 func TestRemoteCancel(t *testing.T) {
+	t.Parallel()
 	dir := socketDir(t)
 	s := newSession(t)
 	serve(t, dir, s)
@@ -202,6 +205,7 @@ func (slow) Run(ctx context.Context, _ string) (Result, error) {
 
 // A cancelled request doesn't wait for ever for what came of it.
 func TestRemoteCancelGivesUp(t *testing.T) {
+	t.Parallel()
 	dir := socketDir(t)
 	serve(t, dir, slow{})
 	r := remote(dir)
@@ -323,6 +327,7 @@ func exchange(t *testing.T, b Backend, lines ...string) []response {
 // What isn't a request is answered with an error, and the next one
 // is still served.
 func TestServeBadRequests(t *testing.T) {
+	t.Parallel()
 	got := exchange(t, newSession(t),
 		`{"id":1,"op":"hello","protocol":1}`,
 		`not json`,
@@ -345,6 +350,7 @@ func TestServeBadRequests(t *testing.T) {
 
 // A program that speaks another version of the protocol is told so.
 func TestRemoteProtocolMismatch(t *testing.T) {
+	t.Parallel()
 	dir := socketDir(t)
 	l, _, err := Listen(dir)
 	if err != nil {

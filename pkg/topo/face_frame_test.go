@@ -15,7 +15,7 @@ import (
 // on the side of u and v.
 func TestFaceFrameBox(t *testing.T) {
 	t.Parallel()
-	sh := box()
+	sh := box(srf.Tolerance{})
 	tp := build(t, sh)
 	centre := v(5, 10, 15)
 	for id := srf.FaceID(1); id <= 6; id++ {
@@ -49,7 +49,7 @@ func TestFaceFrameBox(t *testing.T) {
 // face's edges by name, not from where they are.
 func TestFaceFrameMoves(t *testing.T) {
 	t.Parallel()
-	sh := box()
+	sh := box(srf.Tolerance{})
 	var moved srf.SShell
 	moved.MakeFromTransformationOf(sh, v(3, -4, 7), geom.QuaternionIdentity, 1)
 	a, b := build(t, sh), build(t, &moved)
@@ -67,7 +67,7 @@ func TestFaceFrameMoves(t *testing.T) {
 // isn't there have none.
 func TestFaceFrameHoleCapAndRefusals(t *testing.T) {
 	t.Parallel()
-	plate := plateWithHole(5, 10)
+	plate := plateWithHole(5, 10, srf.Tolerance{})
 	tp := build(t, plate)
 	top, d := tp.FaceAt(v(15, 15, 10))
 	if top < 0 || d > 1e-9 {
@@ -79,7 +79,7 @@ func TestFaceFrameHoleCapAndRefusals(t *testing.T) {
 		t.Fatalf("plate's top: %+v, %v", fr, err)
 	}
 
-	cyl := build(t, named(cylinder(5, 10)))
+	cyl := build(t, named(cylinder(5, 10, srf.Tolerance{})))
 	fr, err = cyl.FaceFrame(1)
 	if err != nil || !fr.Origin.Equals(v(0, 0, 10)) || !fr.N.Equals(v(0, 0, 1)) || math.Abs(fr.U.Magnitude()-1) > 1e-12 {
 		t.Fatalf("cylinder's cap: %+v, %v", fr, err)

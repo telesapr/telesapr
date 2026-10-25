@@ -13,6 +13,7 @@ import (
 // TestImageAspectFromFile:, an image request takes its aspect ratio
 // from the image file when it can be read, over the saved one.
 func TestImageAspectFromFile(t *testing.T) {
+	t.Parallel()
 	_, thisFile, _, _ := runtime.Caller(0)
 	src := filepath.Join(filepath.Dir(thisFile), "../../../testdata/request/image")
 	data, err := os.ReadFile(filepath.Join(src, "normal.slvs"))

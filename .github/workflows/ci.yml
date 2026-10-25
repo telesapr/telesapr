@@ -198,13 +198,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: slvs
-            packages: ./pkg/persist/slvs
+          - name: sketch
+            packages: ./pkg/sketch/...
           - name: topo
             packages: ./pkg/topo ./pkg/thread ./pkg/ttf ./pkg/check
           - name: kernel
             packages: >-
-              ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/convert
+              ./pkg/srf/... ./pkg/solver/... ./pkg/persist/convert ./pkg/persist/slvs
               ./pkg/persist/dxf ./pkg/persist/link ./pkg/persist/step ./pkg/persist/tlspr
               ./pkg/script ./pkg/script/agent ./pkg/mcpserver ./pkg/platform/... ./pkg/render
               ./pkg/render/soft ./cmd/... ./pkg/core ./pkg/geom ./pkg/libm ./pkg/internal/...

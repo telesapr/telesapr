@@ -1,6 +1,6 @@
 # loft_ring.tlspr's smooth loft closed into a ring by [closed] on its
 # screen; the same as path_loft_ring.go makes
-# (TestPathEquivalenceLoftRing).
+# (TestPathEquivalence/loft_ring).
 file $testdata/ui/loft_ring.tlspr
 menu File|Open...
 view default

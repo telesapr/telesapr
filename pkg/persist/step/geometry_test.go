@@ -40,6 +40,7 @@ func planarFace(edges string) string {
 }
 
 func TestCurveZoo(t *testing.T) {
+	t.Parallel()
 	// A square whose sides are a trimmed line, a polyline, a Bezier
 	// curve and half an ellipse.
 	text := wrapData(planarFace(`#5 = EDGE_LOOP('',(#40,#41,#42,#43));
@@ -86,6 +87,7 @@ func TestCurveZoo(t *testing.T) {
 }
 
 func TestConics(t *testing.T) {
+	t.Parallel()
 	// A parabola x = y^2/4 closed by the line x = 4, and a hyperbola
 	// x^2 - y^2 = 1 closed by x = cosh 1, in two faces.
 	text := wrapData(`#1 = SHELL_BASED_SURFACE_MODEL('',(#2));
@@ -184,6 +186,7 @@ const seamlessCylinder = `#1 = MANIFOLD_SOLID_BREP('',#2);
 `
 
 func TestSeamlessCylinder(t *testing.T) {
+	t.Parallel()
 	res := mustRead(t, wrapData(seamlessCylinder))
 	if p := res.Report.Problem(); p != "" {
 		t.Fatal(p)
@@ -199,6 +202,7 @@ func TestSeamlessCylinder(t *testing.T) {
 }
 
 func TestOffsetAndTrimmedSurfaces(t *testing.T) {
+	t.Parallel()
 	// The seamless cylinder with its side an offset of a radius 3
 	// cylinder by 2, behind a rectangular trim.
 	text := strings.Replace(seamlessCylinder, "#10 = CYLINDRICAL_SURFACE('',#11,5.);",
@@ -216,6 +220,7 @@ func TestOffsetAndTrimmedSurfaces(t *testing.T) {
 }
 
 func TestUniformAndBezierSurfaces(t *testing.T) {
+	t.Parallel()
 	// One face on a Bezier patch and one on a uniform B-spline patch,
 	// both flat squares of 4 by 4 at z = 0 and 1, read as open shells.
 	pts := `#30 = CARTESIAN_POINT('',(0.,0.,0.));
@@ -277,6 +282,7 @@ func TestUniformAndBezierSurfaces(t *testing.T) {
 }
 
 func TestCurvesDirectly(t *testing.T) {
+	t.Parallel()
 	f := buildAxes(geom.Vector{X: 1, Y: 2, Z: 3}, geom.Vector{X: 1, Y: 1, Z: 1}, geom.Vector{X: 1}, true)
 	curves := map[string]Curve{
 		"line":      &line{p: geom.Vector{X: 1}, d: geom.Vector{Y: 2}},
@@ -312,6 +318,7 @@ func TestCurvesDirectly(t *testing.T) {
 }
 
 func TestSurfacesDirectly(t *testing.T) {
+	t.Parallel()
 	f := buildAxes(geom.Vector{X: 1, Y: -2, Z: 3}, geom.Vector{X: 0.3, Y: 1, Z: 0.2}, geom.Vector{}, false)
 	circ := &ellipse{f: buildAxes(geom.Vector{X: 4}, geom.Vector{Y: 1}, geom.Vector{X: 1}, true), a: 1, b: 1}
 	flat := &ellipse{f: buildAxes(geom.Vector{X: 4}, geom.Vector{Z: 1}, geom.Vector{X: 1}, true), a: 2, b: 1}
@@ -363,6 +370,7 @@ func TestSurfacesDirectly(t *testing.T) {
 }
 
 func TestTransform(t *testing.T) {
+	t.Parallel()
 	f := buildAxes(geom.Vector{X: 1, Y: 2, Z: 3}, geom.Vector{X: 1, Y: 1}, geom.Vector{Z: 1}, true)
 	tr := frameTransform(f)
 	p := geom.Vector{X: 0.5, Y: -2, Z: 7}
@@ -378,6 +386,7 @@ func TestTransform(t *testing.T) {
 }
 
 func TestBadSplines(t *testing.T) {
+	t.Parallel()
 	pts := []geom.Vector{{}, {X: 1}, {X: 2}}
 	if _, err := newBsplineCurve(0, []float64{0, 1}, pts, nil); err == nil {
 		t.Error("degree 0")
@@ -436,6 +445,7 @@ func TestBadSplines(t *testing.T) {
 }
 
 func TestUnitNames(t *testing.T) {
+	t.Parallel()
 	for mm, want := range map[float64]string{
 		1: "millimetres", 10: "centimetres", 1000: "metres", 25.4: "inches",
 		304.8: "feet", 1e-3: "micrometres", 3: "units of 3 mm",

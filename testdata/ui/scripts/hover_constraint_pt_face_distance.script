@@ -1,5 +1,5 @@
 # What the mouse hovers over constraint/pt_face_distance/normal.slvs, in two views.
-load constraint/pt_face_distance/normal.slvs
+load tlspr/golden/constraint/pt_face_distance/normal.tlspr
 view default
 hovergrid 20
 view rotated

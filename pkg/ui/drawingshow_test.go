@@ -44,6 +44,7 @@ func litBox(t *testing.T, path string) (image.Rectangle, int) {
 // item and the script call agree, and the mouse picks nothing while it
 // is shown. A group with no solid has no sheet to show, and says so.
 func TestShowDrawingSheet(t *testing.T) {
+	t.Parallel()
 	ss, doc := drawingModel(t)
 	dir := t.TempDir()
 	model := filepath.Join(dir, "model.png")

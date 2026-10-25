@@ -1,5 +1,5 @@
 // The model of path_sketch_on_lines.script, made by a script
-// (TestPathEquivalenceSketchOnLines): two line segments, from (-20, -4)
+// (TestPathEquivalence/sketch_on_lines): two line segments, from (-20, -4)
 // to (0, -4) and from (20, -10) to (20, 10), and a sketch in the
 // workplane through the first one's start parallel to both.
 package main

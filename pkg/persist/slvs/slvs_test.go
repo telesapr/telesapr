@@ -29,6 +29,7 @@ func fixturesRoot(t *testing.T) string {
 }
 
 func TestSLVSLoaderCapturesRequestTypes(t *testing.T) {
+	t.Parallel()
 	root := fixturesRoot(t)
 	reqRoot := filepath.Join(root, "request")
 	cases := map[string]sketch.RequestType{
@@ -64,6 +65,7 @@ func TestSLVSLoaderCapturesRequestTypes(t *testing.T) {
 }
 
 func TestSLVSRejectsLegacyFixtures(t *testing.T) {
+	t.Parallel()
 	tmp := t.TempDir()
 	legacy := `SolveSpaceREVa
 
@@ -82,6 +84,7 @@ AddGroup
 }
 
 func TestConstraintFixturesContainExpectedType(t *testing.T) {
+	t.Parallel()
 	root := filepath.Join(fixturesRoot(t), "constraint")
 	expected := map[string]core.ConstraintType{
 		"angle":               core.ConstraintAngle,

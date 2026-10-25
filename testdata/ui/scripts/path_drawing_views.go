@@ -1,5 +1,5 @@
 // The drawing of path_drawing_views.script, made by a script
-// (TestPathEquivalenceDrawingViews): the extrusion of path_extrude, its
+// (TestPathEquivalence/drawing_views): the extrusion of path_extrude, its
 // drawing with the front, top, right and back views placed, the
 // isometric one left out, and a section of the top view placed.
 package main

@@ -13,6 +13,7 @@ import (
 // Every field of a style is read back as it was set, and a style of the
 // user's own is made, named and deleted.
 func TestStyleFields(t *testing.T) {
+	t.Parallel()
 	d := New()
 	s := d.NewStyle()
 	if !s.Valid() || !s.Custom() {
@@ -169,6 +170,7 @@ func TestStyleReadsLeaveSketch(t *testing.T) {
 // The styles of the program's own are there to be changed, and not to
 // be renamed away or deleted.
 func TestBuiltinStyles(t *testing.T) {
+	t.Parallel()
 	d := New()
 	styles := d.Styles()
 	if len(styles) < 16 {
@@ -210,6 +212,7 @@ func TestBuiltinStyles(t *testing.T) {
 // A field of a style is one step of undo, and misuse is an error that
 // changes nothing.
 func TestStyleUndoAndMisuse(t *testing.T) {
+	t.Parallel()
 	d := New()
 	s := d.NewStyle()
 	step := d.Host().(*SketchHost).BeginEval

@@ -9,7 +9,8 @@ import (
 )
 
 func TestNames(t *testing.T) {
-	sh := box()
+	t.Parallel()
+	sh := box(srf.Tolerance{})
 	tp := build(t, sh)
 	top := faceAt(t, tp, v(0, 0, 30), v(0, 0, 1))
 	left := faceAt(t, tp, v(0, 0, 0), v(1, 0, 0))
@@ -91,7 +92,8 @@ func TestNames(t *testing.T) {
 }
 
 func TestAccessors(t *testing.T) {
-	sh := box()
+	t.Parallel()
+	sh := box(srf.Tolerance{})
 	tp := build(t, sh)
 	if tp.Shell() != sh {
 		t.Error("shell")

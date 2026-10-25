@@ -16,6 +16,7 @@ import (
 // where the root leaves the cone; along the axis no circle is drawn at
 // the chamfer's radius, as drafting leaves it out.
 func TestDrawingThreadChamfer(t *testing.T) {
+	t.Parallel()
 	ss, doc := boltModelWith(t, api.ThreadOptions{Chamfer: true})
 	bands := ss.SK.ThreadBands(ss.SK.ActiveGroup())
 	if len(bands) != 1 || bands[0].Chamfer == 0 {

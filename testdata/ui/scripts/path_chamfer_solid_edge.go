@@ -1,5 +1,5 @@
 // The chamfer of path_chamfer_solid_edge.script, made by a script
-// (TestPathEquivalenceChamferSolidEdge): the edge where the notch of
+// (TestPathEquivalence/chamfer_solid_edge): the edge where the notch of
 // testdata/topo/slot.tlspr meets the front, by its name, at the distance
 // the menu starts with.
 package main

@@ -43,6 +43,7 @@ func (gw *graphicsWindow) hiddenByScan(p geom.Vector) bool {
 // every point of every edge of the thread, in two views, orthographic
 // and in perspective (roadmap 24.5).
 func TestHoverGridSameAsScan(t *testing.T) {
+	t.Parallel()
 	ss := threadWindow(t)
 	gw := ss.GW
 	tp := gw.activeTopology()
@@ -100,6 +101,7 @@ func BenchmarkHoverHiddenScan(b *testing.B) {
 // orthographic ray once went away from the viewer, and an edge on a
 // face facing the viewer counted as hidden behind the solid.)
 func TestSolidEdgeHoverFacesViewer(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	scriptConsole(t, ss, `doc.Sketch.Rect(V(0, 0, 0), V(20, 10, 0))`, `doc.Features.Extrude(10, "block")`)
 	gw := ss.GW

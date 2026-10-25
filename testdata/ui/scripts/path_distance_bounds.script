@@ -1,6 +1,6 @@
 # A line given a minimum length of 40 and a maximum of 50, and a point
 # put on it as a segment, with the mouse; the same as
-# path_distance_bounds.go makes (TestPathEquivalenceDistanceBounds).
+# path_distance_bounds.go makes (TestPathEquivalence/distance_bounds).
 key s
 move 200 250
 down L 200 250

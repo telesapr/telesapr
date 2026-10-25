@@ -14,7 +14,7 @@ import (
 // Its circular edges give the axis too, at their centres.
 func TestDatumFrameFrustum(t *testing.T) {
 	t.Parallel()
-	sh := frustum(10, 5, 8)
+	sh := frustum(10, 5, 8, srf.Tolerance{})
 	// The foot, the top and the cone, each one face, as a lathe's
 	// profile names them.
 	for i := range sh.Surface {
@@ -78,7 +78,7 @@ func TestDatumFrameFrustum(t *testing.T) {
 // their starts, u out of a face beside them.
 func TestDatumFrameBox(t *testing.T) {
 	t.Parallel()
-	tp := build(t, box())
+	tp := build(t, box(srf.Tolerance{}))
 	if _, err := tp.AxisFrame(1); err == nil || !strings.Contains(err.Error(), "neither flat nor round") {
 		t.Errorf("a box's face as an axis: %v", err)
 	}
@@ -105,7 +105,7 @@ func TestDatumFrameBox(t *testing.T) {
 // them at their middles; a sphere's faces give the plane touching them.
 func TestDatumFrameFreeForm(t *testing.T) {
 	t.Parallel()
-	tp := build(t, eachFaceNamed(cubicPrism(lensCubics())))
+	tp := build(t, eachFaceNamed(cubicPrism(lensCubics(), srf.Tolerance{})))
 	centre := v(10, 0, 2.5)
 	seen := map[srf.FaceID]bool{}
 	sides := 0
@@ -170,7 +170,7 @@ func TestDatumFrameFreeForm(t *testing.T) {
 		t.Errorf("%d cubic edges", curves)
 	}
 
-	ball := build(t, eachFaceNamed(sphereShell(5)))
+	ball := build(t, eachFaceNamed(sphereShell(5, srf.Tolerance{})))
 	for _, face := range ball.Faces {
 		fr, kind, err := ball.DatumFrame(face.ID)
 		if err != nil {

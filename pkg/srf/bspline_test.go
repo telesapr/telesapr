@@ -71,6 +71,7 @@ func spanOf(bs []float64, t float64) (int, float64) {
 }
 
 func TestBSplineCurveBeziers(t *testing.T) {
+	t.Parallel()
 	r := rand.New(rand.NewSource(3))
 	for _, clamped := range []bool{true, false} {
 		for deg := 1; deg <= MaxDegree; deg++ {
@@ -108,6 +109,7 @@ func TestBSplineCurveBeziers(t *testing.T) {
 // TestBSplineCircle is the circle of radius 2 as a rational quadratic
 // B-spline of nine points: four pieces, each a quarter on the circle.
 func TestBSplineCircle(t *testing.T) {
+	t.Parallel()
 	w := math.Sqrt2 / 2
 	c := BSplineCurve{
 		Deg:   2,
@@ -137,6 +139,7 @@ func TestBSplineCircle(t *testing.T) {
 }
 
 func TestBSplineSurfacePatches(t *testing.T) {
+	t.Parallel()
 	r := rand.New(rand.NewSource(4))
 	for _, deg := range [][2]int{{1, 1}, {2, 3}, {3, 3}, {MaxDegree, 2}, {4, MaxDegree}} {
 		for _, clamped := range []bool{true, false} {
@@ -185,6 +188,7 @@ func TestBSplineSurfacePatches(t *testing.T) {
 }
 
 func TestBSplineErrors(t *testing.T) {
+	t.Parallel()
 	r := rand.New(rand.NewSource(5))
 	good := randomSurface(r, 3, 3, 5, 5, true)
 	high := randomSurface(r, MaxDegree+1, 2, MaxDegree+2, 3, true)

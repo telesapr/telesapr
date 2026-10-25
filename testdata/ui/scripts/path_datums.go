@@ -1,5 +1,5 @@
 // The datum of path_datums.script, made by a script
-// (TestPathEquivalenceDatums): the mouse's rectangle, its corner at
+// (TestPathEquivalence/datums): the mouse's rectangle, its corner at
 // (-20, 20) named "corner".
 package main
 

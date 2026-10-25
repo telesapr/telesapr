@@ -10,6 +10,7 @@ import (
 // TestSketchParamsToMap verifies the helper that converts a
 // sketch's param list to a handle-indexed map.
 func TestSketchParamsToMap(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	sk.AddParam(coreParam(1, 10))
 	sk.AddParam(coreParam(2, 20))
@@ -26,6 +27,7 @@ func TestSketchParamsToMap(t *testing.T) {
 // TestSketchEntitiesToMap verifies the helper that converts a
 // sketch's entity list to a handle-indexed map.
 func TestSketchEntitiesToMap(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	h1 := sk.AddEntity(coreEntityPoint(hentity(1)))
 	h2 := sk.AddEntity(coreEntityPoint(hentity(2)))
@@ -46,6 +48,7 @@ func TestSketchEntitiesToMap(t *testing.T) {
 // the three reference workplanes at the origin with their fixed
 // orientations.
 func TestGenerateAllNewSketch(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	sk.AddReferences()
 	sk.AddGroup(Group{Type: GroupDrawing3D, Order: 1, Scale: 1})
@@ -78,26 +81,26 @@ func TestGenerateAllNewSketch(t *testing.T) {
 	}
 }
 
-// TestGenerateAllTyped verifies GenerateAllTyped runs without panic.
+// TestGenerateAllTyped runs GenerateAllTyped of each kind on an empty
+// sketch, which has nothing to generate and must not panic.
 func TestGenerateAllTyped(t *testing.T) {
-	sk := NewSketch()
-	sk.GenerateAllTyped(GenerateDirty)
-}
-
-// TestGenerateAllTypedAll verifies the GenerateAll variant.
-func TestGenerateAllTypedAll(t *testing.T) {
-	sk := NewSketch()
-	sk.GenerateAllTyped(GenerateAll)
+	t.Parallel()
+	for _, gt := range []GenerateType{GenerateDirty, GenerateAll} {
+		sk := NewSketch()
+		sk.GenerateAllTyped(gt)
+	}
 }
 
 // TestScheduleGenerateAll verifies ScheduleGenerateAll runs.
 func TestScheduleGenerateAll(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	sk.ScheduleGenerateAll()
 }
 
 // TestGenerateTypeString verifies each type has a String method or default fmt.
 func TestGenerateTypeString(t *testing.T) {
+	t.Parallel()
 	cases := map[GenerateType]string{
 		GenerateAll:         "All",
 		GenerateDirty:       "Dirty",

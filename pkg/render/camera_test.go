@@ -13,8 +13,9 @@ import (
 )
 
 // TestCamera compares the camera's projections and the object picker
-// with the golden, bit for bit (testdata/render/camera.golden, first
-// recorded from SolveSpace render.cpp).
+// with the golden, bit for bit (testdata/render/camera.golden): picking
+// and the 2d exports go through these projections, so a change in
+// their last bits shows in what is picked and in the export goldens.
 func TestCamera(t *testing.T) {
 	t.Parallel()
 	var cams [3]Camera

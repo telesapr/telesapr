@@ -22,6 +22,7 @@ func openSlot(t *testing.T) *Doc {
 }
 
 func TestSolidTopology(t *testing.T) {
+	t.Parallel()
 	d := openSlot(t)
 	slot := d.Group("slot")
 	s := slot.Solid()
@@ -81,6 +82,7 @@ func TestSolidTopology(t *testing.T) {
 }
 
 func TestChamferSolidEdge(t *testing.T) {
+	t.Parallel()
 	d := openSlot(t)
 	s := d.Group("slot").Solid()
 	right := s.EdgeAt(V(32, 0, 10))
@@ -112,6 +114,7 @@ func TestChamferSolidEdge(t *testing.T) {
 // top's right piece of the front edge, by name, must stay on that
 // piece, or say it can't, never move to another edge.
 func TestNamingSweep(t *testing.T) {
+	t.Parallel()
 	d := openSlot(t)
 	right := d.Group("slot").Solid().EdgeAt(V(32, 0, 10))
 	ch := d.Features.ChamferSolid([]SolidEdge{right}, 1, "")
@@ -152,6 +155,7 @@ func TestNamingSweep(t *testing.T) {
 }
 
 func TestSolidMisuse(t *testing.T) {
+	t.Parallel()
 	d := openSlot(t)
 	s := d.Group("slot").Solid()
 	sketch := d.Group("slot-sketch")
@@ -199,6 +203,7 @@ func TestSolidMisuse(t *testing.T) {
 // patches, its rims one edge each of four pieces, and it has no
 // vertex.
 func TestSolidSheets(t *testing.T) {
+	t.Parallel()
 	d := New()
 	d.Edit.SetChordTolerance(0.01)
 	d.Sketch.Circle(V(0, 0, 0), 10)
@@ -253,6 +258,7 @@ func TestSolidSheets(t *testing.T) {
 // An extruded circle's side is one face of four patches, and each
 // patch's identity names it (roadmap 14.1).
 func TestFaceByAnyPatch(t *testing.T) {
+	t.Parallel()
 	d := New()
 	d.Sketch.Circle(V(0, 0, 0), 5)
 	ex := d.Features.Extrude(10, "")
@@ -297,6 +303,7 @@ func TestFaceByAnyPatch(t *testing.T) {
 // section met the thread's end, which now meets a later one: those say
 // their faces no longer meet, and name no other edge.
 func TestNamesThroughThreadLength(t *testing.T) {
+	t.Parallel()
 	d := New()
 	d.Sketch.Circle(V(0, 0, 0), 4)
 	d.Features.Extrude(30, "shank")

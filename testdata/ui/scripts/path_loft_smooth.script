@@ -1,6 +1,6 @@
 # The top circle of loft_sections.tlspr lofted smoothly through the
 # middle square to the bottom circle, both picked with the mouse; the
-# same as path_loft_smooth.go makes (TestPathEquivalenceSmoothLoft).
+# same as path_loft_smooth.go makes (TestPathEquivalence/loft_smooth).
 file $testdata/ui/loft_sections.tlspr
 menu File|Open...
 view default

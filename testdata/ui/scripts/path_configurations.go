@@ -1,5 +1,5 @@
 // The model of path_configurations.script, made by a script
-// (TestPathEquivalenceConfigurations): a parameter w driving the
+// (TestPathEquivalence/configurations): a parameter w driving the
 // bottom side of the mouse's rectangle, configurations "small" (w 30)
 // and "large" (w 50), and "small" chosen (roadmap 16.2).
 package main

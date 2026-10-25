@@ -1,6 +1,6 @@
 # An edge of the solid that no entity draws, picked on the model and
 # named "notch" on the datums screen; the same as path_datum_solid_edge.go
-# makes (TestPathEquivalenceDatumSolidEdge).
+# makes (TestPathEquivalence/datum_solid_edge).
 file $testdata/topo/slot.tlspr
 menu File|Open...
 view rotated

@@ -14,6 +14,7 @@ import (
 // model follows. Renames and deletions of parameters reach every
 // configuration; undo, redo and a round trip keep them.
 func TestConfigurations(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	must := func(err error) {
 		t.Helper()

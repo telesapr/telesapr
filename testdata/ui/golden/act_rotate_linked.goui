@@ -112,7 +112,7 @@ group 0x3 link "rect-v20" {
   color 100 100 100 255
   combine assemble
   visible
-  link "testdata/group/link/rect_v20.slvs"
+  link "testdata/tlspr/golden/group/link/rect_v20.tlspr"
   remap {
     map 1 0x10000 0
     map 2 0x10001 0
@@ -272,6 +272,7 @@ entity 0x80020002 point-n-copy {
 
 entity 0x80030002 point-n-rot-trans {
   group 0x3
+  construction
   act-point 10 10 0
   act-visible
 }
@@ -285,6 +286,7 @@ entity 0x80030003 normal-n-rot {
 
 entity 0x80030005 point-n-rot-trans {
   group 0x3
+  construction
   act-point 10 10 0
   act-visible
 }
@@ -298,6 +300,7 @@ entity 0x80030006 normal-n-rot {
 
 entity 0x80030008 point-n-rot-trans {
   group 0x3
+  construction
   act-point 10 10 0
   act-visible
 }
@@ -390,6 +393,7 @@ entity 0x80030017 normal-n-rot {
 
 entity 0x80030018 point-n-rot-trans {
   group 0x3
+  construction
   act-point 10 10 0
   act-visible
 }

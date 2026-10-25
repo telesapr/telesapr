@@ -1,5 +1,5 @@
 # Two edges of the extrusion of path_extrude chamfered, picked with the
-# mouse; the same as path_chamfer.go makes (TestPathEquivalenceChamfer).
+# mouse; the same as path_chamfer.go makes (TestPathEquivalence/chamfer).
 key r
 move 200 200
 down L 200 200

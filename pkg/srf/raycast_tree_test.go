@@ -12,9 +12,9 @@ import (
 // subdivides: a torus, a sphere's patches and a lathed tube.
 func rayTreeShells() []*SShell {
 	return []*SShell{
-		torusY(geom.Vector{}, 30, 8),
-		patchUpSphere(20, geom.Vector{X: 5, Y: -3, Z: 2}),
-		lathedTube(10, 25, -15, 15),
+		torusY(geom.Vector{}, 30, 8, Tolerance{}),
+		patchUpSphere(20, geom.Vector{X: 5, Y: -3, Z: 2}, Tolerance{}),
+		lathedTube(10, 25, -15, 15, Tolerance{}),
 	}
 }
 
@@ -126,7 +126,7 @@ func TestRayTreeSameAsRecursion(t *testing.T) {
 // back to the recursion, and a surface with no cell have no tree.
 func TestRayTreeStale(t *testing.T) {
 	t.Parallel()
-	sh := torusY(geom.Vector{}, 30, 8)
+	sh := torusY(geom.Vector{}, 30, 8, Tolerance{})
 	s := &sh.Surface[0]
 	if s.rayTreeFor() != nil {
 		t.Fatal("a surface with no cell has a tree")

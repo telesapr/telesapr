@@ -1,5 +1,5 @@
 // The model of path_shell_lathe.script, made by a script
-// (TestPathEquivalenceShellLathe): a rectangle turned about a
+// (TestPathEquivalence/shell_lathe): a rectangle turned about a
 // construction line into a ring, hollowed to walls of the thickness the
 // menu starts with, open at its outer side.
 package main

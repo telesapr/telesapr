@@ -1,5 +1,5 @@
 # A square swept round a circle, the path picked with the mouse; the
-# same as path_sweep_ring.go makes (TestPathEquivalenceSweepRing).
+# same as path_sweep_ring.go makes (TestPathEquivalence/sweep_ring).
 file $testdata/ui/sweep_ring.tlspr
 menu File|Open...
 view other

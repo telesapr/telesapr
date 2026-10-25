@@ -23,13 +23,13 @@ func roundFaceIn(t *testing.T, sh *SShell) RoundFace {
 
 func TestRoundFaceOf(t *testing.T) {
 	t.Parallel()
-	cyl := roundFaceIn(t, lathedTube(0, 5, 0, 20))
+	cyl := roundFaceIn(t, lathedTube(0, 5, 0, 20, Tolerance{}))
 	if cyl.IsCone() || math.Abs(cyl.Radius-5) > 1e-9 || math.Abs(math.Abs(cyl.Axis.Z)-1) > 1e-9 ||
 		math.Hypot(cyl.Point.X, cyl.Point.Y) > 1e-9 || cyl.Outward != 1 {
 		t.Fatalf("lathed cylinder: %+v", cyl)
 	}
 	// A tube's bore faces the axis.
-	sh := lathedTube(2, 5, 0, 20)
+	sh := lathedTube(2, 5, 0, 20, Tolerance{})
 	bores := 0
 	for i := range sh.Surface {
 		if f, ok := RoundFaceOf(&sh.Surface[i]); ok && f.Outward == -1 {
@@ -42,12 +42,12 @@ func TestRoundFaceOf(t *testing.T) {
 	if bores == 0 {
 		t.Fatal("no bore found in a tube")
 	}
-	cone := roundFaceIn(t, lathedCone(4, 8))
+	cone := roundFaceIn(t, lathedCone(4, 8, Tolerance{}))
 	if !cone.IsCone() || math.Abs(cone.HalfAngle-math.Atan(0.5)) > 1e-9 ||
 		cone.Point.Minus(geom.Vector{Z: 8}).Magnitude() > 1e-9 || math.Abs(cone.Axis.Z+1) > 1e-9 {
 		t.Fatalf("cone: %+v", cone)
 	}
-	box := extrudedBox(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
+	box := extrudedBox(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1}, Tolerance{})
 	for i := range box.Surface {
 		if _, ok := RoundFaceOf(&box.Surface[i]); ok {
 			t.Fatal("a box face taken for a cylinder")
@@ -118,14 +118,14 @@ func rectIn(y, x0, x1, z0, z1 float64) []SBezier {
 }
 
 // wrapBand is sbls wrapped onto face from h0 to h1, in a shell of its
-// own.
-func wrapBand(t *testing.T, face RoundFace, planePt, planeN geom.Vector, sbls *SBezierLoopSet, h0, h1 float64) (*SShell, *Wrap) {
+// own, built at tol.
+func wrapBand(t *testing.T, face RoundFace, planePt, planeN geom.Vector, sbls *SBezierLoopSet, h0, h1 float64, tol Tolerance) (*SShell, *Wrap) {
 	t.Helper()
 	w, err := NewWrap(face, planePt, planeN, []SBezierLoopSet{*sbls})
 	if err != nil {
 		t.Fatal(err)
 	}
-	var sh SShell
+	sh := SShell{Tol: tol}
 	if err := sh.MakeFromWrapOf(sbls, w, h0, h1, core.RGBA{}); err != nil {
 		t.Fatal(err)
 	}
@@ -139,15 +139,9 @@ func cylinderBand(a, r, h0, h1 float64) float64 {
 	return a * ((r+h1)*(r+h1) - (r+h0)*(r+h0)) / (2 * r)
 }
 
-// fineMesh meshes finely enough, chords and segments both, that the
+// fineMeshTol meshes finely enough, chords and segments both, that the
 // difference a band makes to a body's volume is measured to 1e-3 of it.
-// It sets the default tolerance, so its tests don't run in parallel.
-func fineMesh(t *testing.T) {
-	fineChordTol(t)
-	old := MaxSegments()
-	SetMaxSegments(2000)
-	t.Cleanup(func() { SetMaxSegments(old) })
-}
+func fineMeshTol() Tolerance { return Tol(1e-4, 2000) }
 
 // checkAdded compares what a Boolean added to body's volume (taken
 // away, if negative) against want, within rel of it.
@@ -160,12 +154,13 @@ func checkAdded(t *testing.T, name string, body, out *SShell, want, rel float64)
 }
 
 func TestWrapRectangleOnCylinder(t *testing.T) {
-	fineMesh(t)
-	body := lathedTube(0, 5, 0, 20)
+	t.Parallel()
+	tol := fineMeshTol()
+	body := lathedTube(0, 5, 0, 20, tol)
 	face := roundFaceIn(t, body)
 	for _, n := range []geom.Vector{{Y: -1}, {Y: 1}} {
 		sbls := sketchLoop(rectIn(-20, -3, 3, 5, 15), n)
-		band, w := wrapBand(t, face, geom.Vector{Y: -20}, n, sbls, -0.25, 1)
+		band, w := wrapBand(t, face, geom.Vector{Y: -20}, n, sbls, -0.25, 1, tol)
 		if !meshIsSound(band) {
 			t.Fatalf("normal %v: the band is not sound", n)
 		}
@@ -183,7 +178,7 @@ func TestWrapRectangleOnCylinder(t *testing.T) {
 		if p := w.onFace(geom.Vector{Y: -20, Z: 7}); p.Minus(geom.Vector{Y: -5, Z: 7}).Magnitude() > 1e-12 {
 			t.Fatalf("the sketch's origin line went to %v", p)
 		}
-		var out SShell
+		out := SShell{Tol: tol}
 		out.MakeFromUnionOf(body, band)
 		if out.BooleanFailed || !meshIsSound(&out) {
 			t.Fatalf("normal %v: the union is not sound", n)
@@ -193,12 +188,13 @@ func TestWrapRectangleOnCylinder(t *testing.T) {
 }
 
 func TestWrapCircleEngravedInCylinder(t *testing.T) {
-	fineMesh(t)
-	body := lathedTube(0, 5, 0, 20)
+	t.Parallel()
+	tol := fineMeshTol()
+	body := lathedTube(0, 5, 0, 20, tol)
 	face := roundFaceIn(t, body)
 	n := geom.Vector{Y: -1}
 	sbls := sketchLoop(circleArcs(geom.Vector{X: 1, Y: -20, Z: 10}, n, 2.5), n)
-	band, w := wrapBand(t, face, geom.Vector{Y: -20}, n, sbls, -1, 0.25)
+	band, w := wrapBand(t, face, geom.Vector{Y: -20}, n, sbls, -1, 0.25, tol)
 	if !meshIsSound(band) {
 		t.Fatal("the band is not sound")
 	}
@@ -220,7 +216,7 @@ func TestWrapCircleEngravedInCylinder(t *testing.T) {
 	}
 	a := math.Pi * 2.5 * 2.5
 	checkVolume(t, "band", shellVolume(band), cylinderBand(a, 5, -1, 0.25))
-	var out SShell
+	out := SShell{Tol: tol}
 	out.MakeFromDifferenceOf(body, band)
 	if out.BooleanFailed || !meshIsSound(&out) {
 		t.Fatal("the engraving is not sound")
@@ -252,13 +248,14 @@ func coneBand(w *Wrap, s0, s1, z0, z1, h0, h1 float64) float64 {
 }
 
 func TestWrapRectangleOnCone(t *testing.T) {
-	fineMesh(t)
+	t.Parallel()
+	tol := fineMeshTol()
 	// Apex up at z = 16, base radius 8 on z = 0.
-	body := lathedCone(8, 16)
+	body := lathedCone(8, 16, tol)
 	face := roundFaceIn(t, body)
 	n := geom.Vector{Y: -1}
 	sbls := sketchLoop(rectIn(-20, -2, 2, 3, 7), n)
-	band, w := wrapBand(t, face, geom.Vector{Y: -20}, n, sbls, -0.25, 1)
+	band, w := wrapBand(t, face, geom.Vector{Y: -20}, n, sbls, -0.25, 1, tol)
 	if !meshIsSound(band) {
 		t.Fatal("the band is not sound")
 	}
@@ -272,7 +269,7 @@ func TestWrapRectangleOnCone(t *testing.T) {
 	if testing.Short() {
 		t.Skip("the union with the cone, meshed finely, takes 15 s")
 	}
-	var out SShell
+	out := SShell{Tol: tol}
 	out.MakeFromUnionOf(body, band)
 	if out.BooleanFailed || !meshIsSound(&out) {
 		t.Fatal("the union is not sound")
@@ -283,15 +280,16 @@ func TestWrapRectangleOnCone(t *testing.T) {
 // A loop round 275° of a cylinder has caps of three patches, and of a
 // cone too; the seams between them cross it, and the hole in it.
 func TestWrapRoundMostOfTheWay(t *testing.T) {
-	fineMesh(t)
+	t.Parallel()
+	tol := fineMeshTol()
 	n := geom.Vector{Y: -1}
-	body := lathedTube(0, 5, 0, 20)
+	body := lathedTube(0, 5, 0, 20, tol)
 	face := roundFaceIn(t, body)
 	sbls := sketchLoop(rectIn(-20, -12, 12, 5, 15), n)
 	hole := sketchLoop(rectIn(-20, -10, 10, 8, 12), n)
 	hole.Outer.Reverse()
 	sbls.Holes = []SBezierLoop{hole.Outer}
-	band, w := wrapBand(t, face, geom.Vector{Y: -20}, n, sbls, -0.25, 1)
+	band, w := wrapBand(t, face, geom.Vector{Y: -20}, n, sbls, -0.25, 1, tol)
 	caps, seams, err := w.capPatches(sbls, -0.25, 1)
 	if err != nil || len(caps) != 3 || len(seams) != 2 {
 		t.Fatalf("%d caps, %d seams, %v", len(caps), len(seams), err)
@@ -300,17 +298,17 @@ func TestWrapRoundMostOfTheWay(t *testing.T) {
 		t.Fatal("the band is not sound")
 	}
 	checkVolume(t, "band", shellVolume(band), cylinderBand(240-80, 5, -0.25, 1))
-	var out SShell
+	out := SShell{Tol: tol}
 	out.MakeFromUnionOf(body, band)
 	if out.BooleanFailed || !meshIsSound(&out) {
 		t.Fatal("the union is not sound")
 	}
 	checkAdded(t, "embossed", body, &out, cylinderBand(160, 5, 0, 1), 1e-3)
 
-	cone := lathedCone(8, 16)
+	cone := lathedCone(8, 16, tol)
 	cface := roundFaceIn(t, cone)
 	csbls := sketchLoop(rectIn(-20, -12, 12, 3, 7), n)
-	cband, cw := wrapBand(t, cface, geom.Vector{Y: -20}, n, csbls, -0.25, 1)
+	cband, cw := wrapBand(t, cface, geom.Vector{Y: -20}, n, csbls, -0.25, 1, tol)
 	if _, seams, _ := cw.capPatches(csbls, -0.25, 1); len(seams) == 0 {
 		t.Fatal("the cone's band has caps of one patch")
 	}
@@ -323,7 +321,7 @@ func TestWrapRoundMostOfTheWay(t *testing.T) {
 	if testing.Short() {
 		t.Skip("the union with the cone, meshed finely, takes 15 s")
 	}
-	var cout SShell
+	cout := SShell{Tol: tol}
 	cout.MakeFromUnionOf(cone, cband)
 	if cout.BooleanFailed || !meshIsSound(&cout) {
 		t.Fatal("the union with the cone is not sound")
@@ -333,7 +331,7 @@ func TestWrapRoundMostOfTheWay(t *testing.T) {
 
 func TestWrapRefusals(t *testing.T) {
 	t.Parallel()
-	face := roundFaceIn(t, lathedTube(0, 5, 0, 20))
+	face := roundFaceIn(t, lathedTube(0, 5, 0, 20, Tolerance{}))
 	sbls := sketchLoop(rectIn(-20, -3, 3, 5, 15), geom.Vector{Y: -1})
 	if _, err := NewWrap(face, geom.Vector{}, geom.Vector{Y: -1, Z: 1}.WithMagnitude(1), nil); !errors.Is(err, ErrWrapPlane) {
 		t.Fatalf("a tilted plane: %v", err)
@@ -350,7 +348,7 @@ func TestWrapRefusals(t *testing.T) {
 	if err := sh.MakeFromWrapOf(long, w, 0, 1, core.RGBA{}); err == nil {
 		t.Fatal("a loop round 367° was taken")
 	}
-	cone := roundFaceIn(t, lathedCone(8, 16))
+	cone := roundFaceIn(t, lathedCone(8, 16, Tolerance{}))
 	high := sketchLoop(rectIn(-20, -2, 2, 12, 17), geom.Vector{Y: -1})
 	wc, err := NewWrap(cone, geom.Vector{Y: -20}, geom.Vector{Y: -1}, []SBezierLoopSet{*high})
 	if err != nil {

@@ -37,6 +37,7 @@ func sectionOf(t *testing.T, ss *Application, kind string, d *sketch.Drawing, ha
 // line there with no turn of the ridge, and the root is a thin line on
 // it each side; modelled, the cut shows the ridge's teeth.
 func TestDrawingThreadSection(t *testing.T) {
+	t.Parallel()
 	ss, doc := threadedModel(t, false)
 	d := doc.Drawing.Get()
 	cut := sectionOf(t, ss, "top", &d, 0)
@@ -97,6 +98,7 @@ func TestDrawingThreadSection(t *testing.T) {
 // thread: the hole's edges stay, on the crest's cylinder, where the
 // ridge's are gone.
 func TestDrawingThreadCrossHole(t *testing.T) {
+	t.Parallel()
 	ss, doc := threadedModel(t, false)
 	doc.Features.SketchIn(doc.Workplane("ZX"), "")
 	doc.Sketch.Circle(api.V(0, 0, 6), 1)
@@ -122,6 +124,7 @@ func TestDrawingThreadCrossHole(t *testing.T) {
 // two thin lines; with a run-out they slant out to the crest at the
 // thread's end.
 func TestDrawingThreadIsoRoot(t *testing.T) {
+	t.Parallel()
 	ss, doc := threadedModel(t, false)
 	d := doc.Drawing.Get()
 	if n := len(viewOf(t, ss, "iso", &d)[core.StyleDimSolid].Edges); n != 2 {

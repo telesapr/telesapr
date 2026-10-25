@@ -72,6 +72,7 @@ d 0.5
 // some exporters write, a text STL and an OBJ file of quads (roadmap
 // 16.6): the same box, and the same entities.
 func TestLinkMeshFiles(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	m := boxMesh()
 	var bin bytes.Buffer
@@ -131,6 +132,7 @@ func TestLinkMeshFiles(t *testing.T) {
 
 // What can't be read is a message, and counts as missing.
 func TestLinkMeshFilesRefused(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	for name, data := range map[string]string{
 		"empty.stl":    "solid nothing\nendsolid nothing\n",

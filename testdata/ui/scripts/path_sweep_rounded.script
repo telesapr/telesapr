@@ -1,6 +1,6 @@
 # The sweep of path_sweep_corner with its corner rounded at 3 on the
 # group's screen; the same as path_sweep_rounded.go makes
-# (TestPathEquivalenceSweepRounded, F4).
+# (TestPathEquivalence/sweep_rounded, F4).
 file $testdata/ui/sweep_corner.tlspr
 menu File|Open...
 view other

@@ -1,5 +1,5 @@
 // The sweep of path_sweep.script, made by a script
-// (TestPathEquivalenceSweep): a circle in XY swept along a line, a
+// (TestPathEquivalence/sweep): a circle in XY swept along a line, a
 // bend and a line drawn in ZX, from testdata/ui/sweep_path.tlspr.
 package main
 

@@ -9,6 +9,7 @@ import (
 // The toolbar is laid out from its table: SolveSpace's two columns when
 // they fit below the menu bar, three when the window is too short.
 func TestToolbarLayout(t *testing.T) {
+	t.Parallel()
 	rows2, spacers := toolbarRows(2)
 	rows3, _ := toolbarRows(3)
 	if spacers != 4 || rows3 >= rows2 {
@@ -34,6 +35,7 @@ func TestToolbarLayout(t *testing.T) {
 // Every button is hit at its place, in either layout, and runs its own
 // command.
 func TestToolbarHitTest(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	gw := ss.GW
 	win := gw.window.(*headless.Window)

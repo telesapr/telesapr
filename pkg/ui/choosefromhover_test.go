@@ -19,6 +19,7 @@ import (
 // These render, and the vector font's glyph cache is process-wide state,
 // so they can't run in parallel.
 func TestChooseFromHoverSkipsSolidEdgeAndFace(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	scriptConsole(t, ss, `doc.Sketch.Rect(V(0, 0, 0), V(20, 10, 0))`, `doc.Features.Extrude(10, "block")`)
 	gw := ss.GW
@@ -63,6 +64,7 @@ func TestChooseFromHoverSkipsSolidEdgeAndFace(t *testing.T) {
 // The same, where the edge or face is the only thing hovered: there is
 // nothing to choose, and saying so is what lets the caller carry on.
 func TestChooseFromHoverOnlySolidEdgeOrFace(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	gw := ss.GW
 	w := gw.window.(*headless.Window)
@@ -86,6 +88,7 @@ func TestChooseFromHoverOnlySolidEdgeOrFace(t *testing.T) {
 // model moved under a hover list built by an earlier hit test, is stale
 // rather than fatal.
 func TestChooseFromHoverSkipsStale(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	scriptConsole(t, ss, `doc.Sketch.Line(V(0, 0, 0), V(10, 0, 0))`)
 	gw := ss.GW
@@ -116,6 +119,7 @@ func TestChooseFromHoverSkipsStale(t *testing.T) {
 // no group into the hover list, and the mouse move that starts the drag
 // chooses from it.
 func TestChooseFromHoverDragOverFillet(t *testing.T) {
+	t.Parallel()
 	ss := New(headless.New())
 	ss.Init()
 	if ss.LoadFromFile(filepath.Join("..", "..", "testdata", "solid", "fillet-tee.tlspr")) != nil {

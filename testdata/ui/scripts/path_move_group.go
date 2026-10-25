@@ -1,5 +1,5 @@
 // The model of path_move_group.script, made by a script
-// (TestPathEquivalenceMoveGroup): the sketch in 3d moves before the
+// (TestPathEquivalence/move_group): the sketch in 3d moves before the
 // rectangle's sketch, as two moves one place earlier do. The mouse
 // puts the line's first point at z -0.
 package main

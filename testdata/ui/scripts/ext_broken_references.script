@@ -1,7 +1,7 @@
 # Broken references (an extension): deleting a group deletes the groups
 # that use it, and Edit > Broken References names each, with what it
 # used. The home screen links to the list while it isn't empty.
-load group/translate_nd/normal.slvs
+load tlspr/golden/group/translate_nd/normal.tlspr
 menu Features|Broken References...
 tw
 # The sketch on the extrusion's face, deleted from its screen.

@@ -1,5 +1,5 @@
 // The loft of path_loft_tangency.script, made by a script
-// (TestPathEquivalenceLoftTangency): path_loft's loft, leaving the top
+// (TestPathEquivalence/loft_tangency): path_loft's loft, leaving the top
 // square to it and reaching the bottom half as square (roadmap 28.3).
 package main
 

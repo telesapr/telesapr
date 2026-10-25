@@ -33,7 +33,7 @@ func TestTakeProfileFlags(t *testing.T) {
 // finds each written.
 func TestProfiles(t *testing.T) {
 	// runtime.MemProfileRate, which --memprofile sets, is the process's.
-	in := model(t, "group/force_to_mesh/union.slvs")
+	in := model(t, "group/force_to_mesh/union.tlspr")
 	dir := t.TempDir()
 	cpu, mem, tr := filepath.Join(dir, "cpu"), filepath.Join(dir, "mem"), filepath.Join(dir, "trace")
 	var stderr bytes.Buffer
@@ -60,6 +60,7 @@ func TestProfiles(t *testing.T) {
 // command on no model gives the run's figures alone, and a report that
 // can't be written fails the run.
 func TestProfileReport(t *testing.T) {
+	t.Parallel()
 	// Not parallel: a session's Init sets the link package's hooks,
 	// which are the process's.
 	in := filepath.Join("..", "..", "testdata", "solid", "fillet-tee.tlspr")

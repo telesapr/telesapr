@@ -10,6 +10,7 @@ import (
 
 // TestGroupSketchAccessorsViaSketchPackage verifies accessors work.
 func TestGroupSketchAccessorsViaSketchPackage(t *testing.T) {
+	t.Parallel()
 	g := &Group{H: core.HGroup{V: 1}}
 	if g.IsMeshGroup() {
 		t.Errorf("default group should not be mesh group")
@@ -21,6 +22,7 @@ func TestGroupSketchAccessorsViaSketchPackage(t *testing.T) {
 
 // TestGroupIsMeshGroupTrueForAllMeshTypes verifies all mesh group types.
 func TestGroupIsMeshGroupTrueForAllMeshTypes(t *testing.T) {
+	t.Parallel()
 	for _, gt := range []GroupType{
 		GroupExtrude, GroupLathe, GroupRevolve, GroupHelix,
 		GroupRotate, GroupTranslate,
@@ -35,6 +37,7 @@ func TestGroupIsMeshGroupTrueForAllMeshTypes(t *testing.T) {
 // TestGroupIsMeshGroupFalseForNonMeshTypes verifies drawing groups
 // are not mesh groups.
 func TestGroupIsMeshGroupFalseForNonMeshTypes(t *testing.T) {
+	t.Parallel()
 	for _, gt := range []GroupType{
 		GroupDrawing3D, GroupDrawingWorkplane, GroupLinked,
 	} {
@@ -48,6 +51,7 @@ func TestGroupIsMeshGroupFalseForNonMeshTypes(t *testing.T) {
 // TestGroupIsTriangleMeshAssemblyBasic checks SolveSpace's rule: a linked
 // group whose file brought a mesh and no shell.
 func TestGroupIsTriangleMeshAssemblyBasic(t *testing.T) {
+	t.Parallel()
 	g := &Group{Type: GroupLinked}
 	g.ImpMesh.AddTriangle3(srf.STriMeta{}, geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	if !g.IsTriangleMeshAssembly() {

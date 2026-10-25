@@ -1,7 +1,7 @@
 # A rectangle given its width and height, and then a diagonal, which the
 # group already holds: the diagonal becomes a reference dimension. The
 # same as path_redundant_dimension.go makes
-# (TestPathEquivalenceRedundantDimension).
+# (TestPathEquivalence/redundant_dimension).
 key r
 move 200 200
 down L 200 200

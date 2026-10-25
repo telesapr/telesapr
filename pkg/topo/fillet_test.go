@@ -25,10 +25,8 @@ func filletLoss(r, beta, l float64) float64 {
 }
 
 func TestFilletBoxEdge(t *testing.T) {
-	old := srf.ChordTolMm()
-	srf.SetChordTolMm(0.001)
-	defer srf.SetChordTolMm(old)
-	sh := box()
+	t.Parallel()
+	sh := box(srf.Tol(0.001, 20))
 	if err := topo.FilletEdge(sh, v(0, 0, 30), v(10, 0, 30), 2, 1<<30|0x77<<16); err != nil {
 		t.Fatal(err)
 	}
@@ -49,6 +47,7 @@ func TestFilletBoxEdge(t *testing.T) {
 }
 
 func TestFilletRefusals(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct {
 		name string
 		a, b geom.Vector
@@ -60,7 +59,7 @@ func TestFilletRefusals(t *testing.T) {
 		{"too wide", v(0, 0, 30), v(10, 0, 30), 25, "wider than a face"},
 		{"no radius", v(0, 0, 30), v(10, 0, 30), 0, "more than zero"},
 	} {
-		sh := box()
+		sh := box(srf.Tolerance{})
 		err := topo.FilletEdge(sh, c.a, c.b, c.r, 0)
 		if err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("%s: %v", c.name, err)
@@ -86,8 +85,7 @@ func cornerLoss(r, length float64, mitres, spheres int) float64 {
 // ear-clipped into slivers that crossed, until the ear clipper stopped
 // taking ears that fold over (roadmap 13.1 and 13.2).
 func TestFilletCorners(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	top := [][2]geom.Vector{{v(0, 0, 30), v(10, 0, 30)}, {v(10, 0, 30), v(10, 20, 30)},
 		{v(10, 20, 30), v(0, 20, 30)}, {v(0, 20, 30), v(0, 0, 30)}}
 	var all [][2]geom.Vector
@@ -113,8 +111,7 @@ func TestFilletCorners(t *testing.T) {
 	} {
 		for _, r := range []float64{1, 3} {
 			tol := 0.0002 * r
-			srf.SetChordTolMm(tol)
-			sh := box()
+			sh := box(srf.Tol(tol, 20))
 			if err := topo.FilletEdges(sh, c.segs, r, 1<<30); err != nil {
 				t.Errorf("%s at %g: %v", c.name, r, err)
 				continue
@@ -142,7 +139,8 @@ func TestFilletCorners(t *testing.T) {
 }
 
 func TestFilletEdges(t *testing.T) {
-	sh := box()
+	t.Parallel()
+	sh := box(srf.Tolerance{})
 	// Two parallel edges of the top, apart.
 	if err := topo.FilletEdges(sh, [][2]geom.Vector{{v(0, 0, 30), v(10, 0, 30)}, {v(0, 20, 30), v(10, 20, 30)}}, 3, 1<<30); err != nil {
 		t.Fatal(err)
@@ -169,9 +167,7 @@ func TestFilletEdges(t *testing.T) {
 // solid with the volume the formula gives; the rate allowed is 0, set
 // before the fillet was built.
 func TestFilletSweep(t *testing.T) {
-	old := srf.ChordTolMm()
-	srf.SetChordTolMm(0.001)
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("angle", 20, 45, 60, 90, 120, 150, 165),
@@ -181,6 +177,7 @@ func TestFilletSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      24,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		th := p.Float("angle") * math.Pi / 180
@@ -194,7 +191,7 @@ func TestFilletSweep(t *testing.T) {
 		u2 := d2.Minus(e.ScaledBy(d2.Dot(e))).WithMagnitude(1)
 		half := math.Acos(math.Max(-1, math.Min(1, u1.Dot(u2)))) / 2
 		r := p.Float("k") * 10 * math.Min(d1.Dot(u1), d2.Dot(u2)) * math.Tan(half)
-		var sh srf.SShell
+		sh := srf.SShell{Tol: srf.Tol(0.001, 20)}
 		sh.MakePrism([]geom.Vector{v(0, 0, 0), v(10, 0, 0), v(10*math.Cos(th), 10*math.Sin(th), 0)},
 			v(0, 0, 0), lean, core.NewRGBA(100, 100, 100, 255))
 		if err := topo.FilletEdge(&sh, v(0, 0, 0), lean, r, 1<<30); err != nil {
@@ -233,6 +230,7 @@ func TestFilletSweep(t *testing.T) {
 // testdata/topo/fillet-corners.txt (scripts/fillet-fixtures.py); the
 // rate allowed, 0, was set before.
 func TestFilletCornerSweep(t *testing.T) {
+	t.Parallel()
 	data, err := os.ReadFile(filepath.Join("..", "..", "testdata", "topo", "fillet-corners.txt"))
 	if err != nil {
 		t.Fatal(err)
@@ -251,8 +249,6 @@ func TestFilletCornerSweep(t *testing.T) {
 		}
 		want[c] = [2]float64{r, vol}
 	}
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("sides", 3, 4, 5, 6, 8),
@@ -262,6 +258,7 @@ func TestFilletCornerSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      20,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		c := key{int(p.Float("sides")), p.Float("height"), p.Float("k"), p.String("edges")}
@@ -270,8 +267,9 @@ func TestFilletCornerSweep(t *testing.T) {
 			return fmt.Errorf("no volume for %+v in the fixture", c)
 		}
 		r := w[0]
+		tol := 0.003 * r
 		pts := regular(c.n, 10)
-		var sh srf.SShell
+		sh := srf.SShell{Tol: srf.Tol(tol, 20)}
 		sh.MakePrism(pts, v(0, 0, 0), v(0, 0, c.h), core.NewRGBA(100, 100, 100, 255))
 		var segs [][2]geom.Vector
 		first := v(10, 0, c.h)
@@ -290,8 +288,6 @@ func TestFilletCornerSweep(t *testing.T) {
 		if c.edges == "corner" {
 			segs = append(segs, [2]geom.Vector{pts[0], first})
 		}
-		tol := 0.003 * r
-		srf.SetChordTolMm(tol)
 		if err := topo.FilletEdges(&sh, segs, r, 1<<30); err != nil {
 			return err
 		}
@@ -336,6 +332,7 @@ func TestFilletCornerSweep(t *testing.T) {
 // mm³). Those are checked for soundness only. The mesh is fine and its
 // segments many, so the chords lose little.
 func TestFilletUnevenMitreSweep(t *testing.T) {
+	t.Parallel()
 	data, err := os.ReadFile(filepath.Join("..", "..", "testdata", "topo", "fillet-mitres.txt"))
 	if err != nil {
 		t.Fatal(err)
@@ -356,8 +353,6 @@ func TestFilletUnevenMitreSweep(t *testing.T) {
 		}
 		want[c] = [3]float64{r, vol, exact}
 	}
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("sides", 3, 4, 5, 6),
@@ -368,6 +363,7 @@ func TestFilletUnevenMitreSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      16,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		c := key{int(p.Float("sides")), p.Float("lean"), p.String("dir"), p.Float("k"), p.String("edges")}
@@ -381,7 +377,8 @@ func TestFilletUnevenMitreSweep(t *testing.T) {
 		if c.dir == "xy" {
 			d.Y = c.lean / 2
 		}
-		var sh srf.SShell
+		tol := 0.0003 * r
+		sh := srf.SShell{Tol: srf.Tol(tol, 400)}
 		sh.MakePrism(pts, v(0, 0, 0), d, core.NewRGBA(100, 100, 100, 255))
 		var segs [][2]geom.Vector
 		first := v(10, 0, 0).Plus(d)
@@ -391,10 +388,6 @@ func TestFilletUnevenMitreSweep(t *testing.T) {
 				segs = append(segs, [2]geom.Vector{a, b})
 			}
 		}
-		tol := 0.0003 * r
-		srf.SetMaxSegments(400)
-		defer srf.SetMaxSegments(20)
-		srf.SetChordTolMm(tol)
 		if err := topo.FilletEdges(&sh, segs, r, 1<<30); err != nil {
 			return err
 		}

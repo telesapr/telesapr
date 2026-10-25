@@ -177,6 +177,12 @@ type MenuBar struct {
 	// keyPosted is the menu postByKey opened, until its first entry is
 	// made active.
 	keyPosted *menu.Menu
+	// lateEnter is that menu once the timer made its first entry active
+	// with no Enter come, until lateEnterBy: an Enter that comes after
+	// all deactivates the entry again, and the entry is then made active
+	// again.
+	lateEnter   *menu.Menu
+	lateEnterBy time.Time
 }
 
 type barMenu struct {
@@ -264,8 +270,13 @@ func (b *MenuBar) bindTraversal(m *Menu) {
 	// After takigo's own Enter, which activates the entry under the
 	// pointer, or none.
 	b.p.app.Dispatcher().Bind(win.PlatformID, event.EnterMask, func(ev *event.Event) {
-		if ev.Type == event.EnterType && b.keyPosted == m.m {
+		switch {
+		case ev.Type != event.EnterType:
+		case b.keyPosted == m.m:
 			b.activateFirst()
+		case b.lateEnter == m.m && time.Now().Before(b.lateEnterBy):
+			b.lateEnter = nil
+			b.sendDown(m.m)
 		}
 	})
 	b.p.app.Dispatcher().Bind(win.PlatformID, event.KeyPressMask, func(ev *event.Event) {
@@ -290,7 +301,9 @@ func (b *MenuBar) bindTraversal(m *Menu) {
 // takigo's Enter activates the entry under the pointer, or none. The
 // events are read on another goroutine, so on a busy machine that Enter
 // can come after the loop has gone idle. When the pointer is already in
-// the menu no Enter comes, and a timer sends Down instead.
+// the menu no Enter comes, and a timer sends Down instead; an Enter
+// that comes after the timer all the same, on a very busy machine,
+// gets a Down of its own.
 func (b *MenuBar) postByKey(i int) {
 	x, y, ok := b.entryCenter(i)
 	if !ok {
@@ -302,20 +315,32 @@ func (b *MenuBar) postByKey(i int) {
 		X: x, Y: y, RootX: rx, RootY: ry, Button: 1})
 	sub := b.menus[i].menu.m
 	b.keyPosted = sub
+	b.lateEnter = nil
 	b.p.app.After(keyPostTimeout, func() {
 		if b.keyPosted == sub {
 			b.activateFirst()
+			b.lateEnter, b.lateEnterBy = sub, time.Now().Add(lateEnterWait)
 		}
 	})
 }
 
-// keyPostTimeout is how long postByKey waits for the grab's Enter.
-const keyPostTimeout = 300 * time.Millisecond
+// keyPostTimeout is how long postByKey waits for the grab's Enter, and
+// lateEnterWait how long after that an Enter is still taken for it.
+const (
+	keyPostTimeout = 300 * time.Millisecond
+	lateEnterWait  = 5 * time.Second
+)
 
 // activateFirst activates the first entry of the menu postByKey opened.
 func (b *MenuBar) activateFirst() {
 	sub := b.keyPosted
 	b.keyPosted = nil
+	b.sendDown(sub)
+}
+
+// sendDown sends a posted menu Down, which makes its first entry active
+// when none is (Tk's tk::MenuFirst).
+func (b *MenuBar) sendDown(sub *menu.Menu) {
 	if sub.IsPosted() {
 		b.p.app.Dispatcher().Dispatch(&event.Event{Type: event.KeyPressType, Window: sub.Window().PlatformID,
 			KeySym: tkplatform.XK_Down})

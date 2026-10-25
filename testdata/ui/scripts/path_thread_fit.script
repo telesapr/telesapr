@@ -1,6 +1,6 @@
 # A screw thread made through its screen on an extruded circle, its
 # phase typed and its class chosen; the same model as
-# path_thread_fit.go makes (TestPathEquivalenceThreadFit).
+# path_thread_fit.go makes (TestPathEquivalence/thread_fit).
 key c
 move 300 300
 down L 300 300

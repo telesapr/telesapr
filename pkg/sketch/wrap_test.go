@@ -34,6 +34,7 @@ func wrappedBand(a, r, h0, h1 float64) float64 {
 const bandTol = 0.025
 
 func TestWrapEmbossRectangle(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex, face := cylinderBody(d, 10, 40)
 	base := ex.Analyze().Check().Volume
@@ -107,6 +108,7 @@ func tubeBody(d *api.Doc, r, wall, height float64) (api.Group, api.SolidFace) {
 // It reaches no further than half the wall, and where the wall is too
 // thin even for that the group says so.
 func TestWrapEmbossThinWall(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex, face := tubeBody(d, 10, 0.3, 40)
 	base := ex.Analyze().Check().Volume
@@ -132,6 +134,7 @@ func TestWrapEmbossThinWall(t *testing.T) {
 // A profile wider than half the face's way round has caps of several
 // patches, which meet at seams across it.
 func TestWrapRoundMostOfTheWay(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct {
 		name    string
 		engrave bool
@@ -179,6 +182,7 @@ func TestWrapRoundMostOfTheWay(t *testing.T) {
 }
 
 func TestWrapEngraveCircle(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	// The circle's pocket is small beside the cylinder's chords.
 	d.Edit.SetChordTolerance(0.005)
@@ -201,6 +205,7 @@ func TestWrapEngraveCircle(t *testing.T) {
 // sketch's middle lies on the generator at its own distance along the
 // axis from the apex.
 func TestWrapEmbossCone(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Features.SketchIn(d.Workplane("ZX"), "")
 	axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 32))
@@ -236,6 +241,7 @@ func TestWrapEmbossCone(t *testing.T) {
 }
 
 func TestWrapRefusals(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex, face := cylinderBody(d, 10, 40)
 	top := ex.Solid().FaceAt(api.V(0, 0, 40))
@@ -328,6 +334,7 @@ func wrapTextGrid(face string, maxFail, sampleMaxFail float64) sweep.Grid {
 // Text wrapped onto cylinders: none may fail, the rate fixed before the
 // group was built.
 func TestWrapTextCylinderSweep(t *testing.T) {
+	t.Parallel()
 	wrapTextGrid("cylinder", 0, 0).Run(wrapTextCase).Require(t)
 }
 
@@ -336,6 +343,7 @@ func TestWrapTextCylinderSweep(t *testing.T) {
 // band sunk deep reached less far along the cone than its letters, and
 // marched curves kept vertices a hair from their ends.
 func TestWrapTextConeSweep(t *testing.T) {
+	t.Parallel()
 	wrapTextGrid("cone", 0, 0).Run(wrapTextCase).Require(t)
 }
 

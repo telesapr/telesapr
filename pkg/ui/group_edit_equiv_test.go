@@ -24,6 +24,7 @@ func buildGroupEditDoc(t *testing.T) (*Application, api.Group, api.Group) {
 // reach Sketch.SetGroupCopies: both set the count, the window re-spaces
 // a rotate over one turn and the script keeps the angle it gave.
 func TestGroupCopiesMatchScript(t *testing.T) {
+	t.Parallel()
 	win, _, rot := buildGroupEditDoc(t)
 	win.TW.edit.meaning, win.TW.edit.group = editTimesRepeated, rot.H
 	win.TW.EditControlDone("5")
@@ -51,6 +52,7 @@ func TestGroupCopiesMatchScript(t *testing.T) {
 // The group screen's combine mode turns an unconstrained extrusion
 // round, which a script's SetCombine does not; the mode is the same.
 func TestGroupCombineWindowFlips(t *testing.T) {
+	t.Parallel()
 	win, ex, _ := buildGroupEditDoc(t)
 	g := win.SK.Group(ex.H)
 	before := g.ExtrusionGetVector(win.SK).Z

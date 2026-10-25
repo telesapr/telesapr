@@ -136,6 +136,7 @@ func fullDocument() *Document {
 }
 
 func TestEveryFieldRoundTrips(t *testing.T) {
+	t.Parallel()
 	doc := fullDocument()
 	data := doc.Encode()
 	got, err := Decode(data)
@@ -184,6 +185,7 @@ func TestEveryFieldRoundTrips(t *testing.T) {
 }
 
 func TestFormatReal(t *testing.T) {
+	t.Parallel()
 	tenth, fifth := 0.1, 0.2
 	for _, c := range []struct {
 		v    float64
@@ -208,6 +210,7 @@ func TestFormatReal(t *testing.T) {
 }
 
 func TestVersions(t *testing.T) {
+	t.Parallel()
 	_, err := Decode([]byte("telesapr 3\nunits mm\n"))
 	var ve *VersionError
 	if !errors.As(err, &ve) || ve.File != 3 || ve.Reader != Version {
@@ -228,6 +231,7 @@ func TestVersions(t *testing.T) {
 }
 
 func TestWarnings(t *testing.T) {
+	t.Parallel()
 	src := `telesapr 1
 units furlong
 future-thing 1 2
@@ -322,6 +326,7 @@ shell {
 }
 
 func TestMalformed(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct {
 		src, want string
 	}{
@@ -363,6 +368,7 @@ func TestMalformed(t *testing.T) {
 }
 
 func TestOverflowingNumbersRead(t *testing.T) {
+	t.Parallel()
 	doc, err := Decode([]byte("telesapr 1\nvalue 0x1 1e999\nconstraint 0x1 diameter {\n  value = -1e999\n}\n"))
 	if err != nil {
 		t.Fatal(err)
@@ -376,6 +382,7 @@ func TestOverflowingNumbersRead(t *testing.T) {
 }
 
 func TestDecodeSortsByHandle(t *testing.T) {
+	t.Parallel()
 	src := `telesapr 1
 group 0x3 sketch-3d "c" {
   order 1
@@ -404,6 +411,7 @@ value 0x4 2
 }
 
 func TestEnums(t *testing.T) {
+	t.Parallel()
 	if enumName(groupTypes, sketch.GroupType(1)) != "unknown" {
 		t.Error("an unknown value is not named unknown")
 	}
@@ -418,6 +426,7 @@ func TestEnums(t *testing.T) {
 // Parameters and stored expressions are read, evaluated and written
 // back as they were.
 func TestExpressions(t *testing.T) {
+	t.Parallel()
 	src := `telesapr 2
 
 units mm
@@ -484,6 +493,7 @@ constraint 0x2 angle {
 // Expressions a file holds that cannot be evaluated are kept, and
 // reported where they are.
 func TestExpressionErrors(t *testing.T) {
+	t.Parallel()
 	src := `telesapr 2
 
 units mm
@@ -534,6 +544,7 @@ constraint 0x1 pt-pt-distance {
 // A scale of 0, which the groups of a new file have, is not written,
 // and reads back as 1.
 func TestZeroScaleNotWritten(t *testing.T) {
+	t.Parallel()
 	sk := sketch.NewSketch()
 	sk.NewFile()
 	sk.GenerateAll()
@@ -556,6 +567,7 @@ func TestZeroScaleNotWritten(t *testing.T) {
 // unit; version 1 stored millimetres, and an expression read from it is
 // rewritten to give the same length in the file's unit.
 func TestUnitsInFiles(t *testing.T) {
+	t.Parallel()
 	body := `
 units inch
 

@@ -1,6 +1,6 @@
 # Two top edges of the extrusion of path_extrude that meet at a corner,
 # picked with the mouse and rounded, mitred where they meet; the same as
-# path_fillet_mitre.go makes (TestPathEquivalenceFilletMitre).
+# path_fillet_mitre.go makes (TestPathEquivalence/fillet_mitre).
 key r
 move 200 200
 down L 200 200

@@ -1,6 +1,6 @@
 # How far one point is from another along a line segment, made with the
 # mouse and the Constrain menu; the same as path_projected_distance.go
-# makes (TestPathEquivalenceProjectedDistance).
+# makes (TestPathEquivalence/projected_distance).
 key p
 move 200 300
 down L 200 300

@@ -40,25 +40,36 @@ func readLinkedSketch(path string) (*sketch.Sketch, error) {
 var ErrCancelled = link.ErrCancelled
 
 // LoadFile opens a document: it decodes the file, loads what the
-// sketch links, asking through link.LocateMissingFile for a missing
-// file, and regenerates the sketch without solving. The saved entities
-// are regenerated, not loaded. The sketch's ReloadAllLinked reloads its
-// links relative to path.
+// sketch links, a missing file counting as declined, and regenerates
+// the sketch without solving. The saved entities are regenerated, not
+// loaded. The sketch's ReloadAllLinked reloads its links relative to
+// path.
 func LoadFile(path string) (*Document, error) {
+	return LoadFileWith(path, link.Options{CanCancel: true})
+}
+
+// LoadFileWith is LoadFile with the options its links are loaded with,
+// which ask the user to find a missing file; the sketch's
+// ReloadAllLinked asks with them too, without the choice to cancel.
+func LoadFileWith(path string, o link.Options) (*Document, error) {
 	defer trace.StartRegion(context.Background(), "load").End()
 	if IsPacked(path) {
-		return LoadPacked(path)
+		return loadPacked(path, o)
 	}
 	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}
-	return Load(data, path)
+	return load(data, path, o)
 }
 
 // Load is LoadFile for a file's contents, data, with links relative to
 // path.
-func Load(data []byte, path string) (doc *Document, err error) {
+func Load(data []byte, path string) (*Document, error) {
+	return load(data, path, link.Options{CanCancel: true})
+}
+
+func load(data []byte, path string, o link.Options) (doc *Document, err error) {
 	doc, err = Decode(data)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
@@ -66,10 +77,12 @@ func Load(data []byte, path string) (doc *Document, err error) {
 	sk := doc.Sketch
 	sk.Entities = sk.Entities[:0]
 	doc.Mesh, doc.Shell = srf.SMesh{}, srf.SShell{}
-	if !link.ReloadAll(sk, path, link.Options{CanCancel: true}) {
+	if !link.ReloadAll(sk, path, o) {
 		return nil, ErrCancelled
 	}
-	sk.ReloadAllLinked = func(sk *sketch.Sketch) { link.ReloadAllLinked(sk, path) }
+	again := o
+	again.CanCancel = false
+	sk.ReloadAllLinked = func(sk *sketch.Sketch) { link.ReloadAll(sk, path, again) }
 	defer func() {
 		// A sketch that breaks regeneration, such as one missing the
 		// reference workplanes, is an error.

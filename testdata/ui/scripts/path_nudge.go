@@ -1,5 +1,5 @@
 // The line of path_nudge.script, made by a script
-// (TestPathEquivalenceNudge): drawn with the mouse's ends and moved by a
+// (TestPathEquivalence/nudge): drawn with the mouse's ends and moved by a
 // pixel of the view right, then ten up, as the arrow keys move it.
 package main
 

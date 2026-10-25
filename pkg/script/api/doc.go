@@ -125,7 +125,7 @@ func Import(src, dst string) (*Doc, error) {
 		}
 		return nil, fmt.Errorf("can't import %s: missing linked files: %s", src, strings.Join(names, ", "))
 	}
-	res, err := convert.Run(plan, convert.Options{Units: core.UnitMM, Quiet: true})
+	res, err := convert.Run(plan, convert.Options{Units: core.UnitMM})
 	if err != nil {
 		return nil, err
 	}

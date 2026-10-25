@@ -1,5 +1,5 @@
 // The chamfer of path_chamfer.script, made by a script
-// (TestPathEquivalenceChamfer): the two top edges of the extrusion of
+// (TestPathEquivalence/chamfer): the two top edges of the extrusion of
 // path_extrude that the mouse picks, at the distance the menu starts
 // with.
 package main

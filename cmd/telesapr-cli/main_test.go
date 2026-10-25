@@ -11,18 +11,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/telesapr/telesapr/pkg/persist/convert"
 	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
 func testdata(name string) string { return filepath.Join("..", "..", "testdata", name) }
 
-// model converts a fixture, and the files beside it, into a new
-// temporary directory and returns the .tlspr file.
+// model copies a model of the corpus, testdata/tlspr/golden, and the
+// files beside it, into a new temporary directory and returns its copy.
 func model(t *testing.T, fixture string) string {
 	t.Helper()
 	dir := t.TempDir()
-	from := testdata(filepath.Dir(fixture))
+	from := testdata(filepath.Join("tlspr", "golden", filepath.Dir(fixture)))
 	entries, err := os.ReadDir(from)
 	if err != nil {
 		t.Fatal(err)
@@ -39,12 +38,7 @@ func model(t *testing.T, fixture string) string {
 			t.Fatal(err)
 		}
 	}
-	src := filepath.Join(dir, filepath.Base(fixture))
-	dst := convert.SiblingPath(src)
-	if _, _, err := convert.File(src, dst, true); err != nil {
-		t.Fatal(err)
-	}
-	return dst
+	return filepath.Join(dir, filepath.Base(fixture))
 }
 
 func runTool(t *testing.T, args ...string) (bool, string) {
@@ -55,12 +49,12 @@ func runTool(t *testing.T, args ...string) (bool, string) {
 }
 
 // TestExportMesh requires the golden STL of export-mesh --chord-tol 0.1
-// (first written by SolveSpace solvespace-cli; TestExportStl in
-// pkg/persist/slvs regenerates it).
+// (TestExportStl in pkg/sketch regenerates it).
 func TestExportMesh(t *testing.T) {
+	t.Parallel()
 	out := filepath.Join(t.TempDir(), "mesh.stl")
 	ok, msg := runTool(t, "export-mesh", "--chord-tol", "0.1", "-o", out,
-		model(t, "group/boolean_knife_edge/normal.slvs"))
+		model(t, "group/boolean_knife_edge/normal.tlspr"))
 	if !ok {
 		t.Fatalf("failed: %s", msg)
 	}
@@ -80,10 +74,11 @@ func TestExportMesh(t *testing.T) {
 // TestExportMesh3mf exports the same model as 3MF (roadmap 16.5): a zip
 // whose model has as many triangles as the STL.
 func TestExportMesh3mf(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	for _, name := range []string{"mesh.stl", "mesh.3mf"} {
 		if ok, msg := runTool(t, "export-mesh", "--chord-tol", "0.1", "-o", filepath.Join(dir, name),
-			model(t, "group/boolean_knife_edge/normal.slvs")); !ok {
+			model(t, "group/boolean_knife_edge/normal.tlspr")); !ok {
 			t.Fatalf("%s: %s", name, msg)
 		}
 	}
@@ -112,8 +107,9 @@ func TestExportMesh3mf(t *testing.T) {
 // TestExportDrawing writes the default drawing of a model: an SVG on an
 // A3 sheet (roadmap 18.1).
 func TestExportDrawing(t *testing.T) {
+	t.Parallel()
 	out := filepath.Join(t.TempDir(), "sheet.svg")
-	if ok, msg := runTool(t, "export-drawing", "-o", out, model(t, "group/boolean_knife_edge/normal.slvs")); !ok {
+	if ok, msg := runTool(t, "export-drawing", "-o", out, model(t, "group/boolean_knife_edge/normal.tlspr")); !ok {
 		t.Fatalf("failed: %s", msg)
 	}
 	data, err := os.ReadFile(out)
@@ -123,6 +119,7 @@ func TestExportDrawing(t *testing.T) {
 }
 
 func TestOutputFor(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct{ pattern, in, want string }{
 		{"%-2d.png", "f/a.tlspr", "f/a-2d.png"},
 		{"%-2d.png", "a.tlspr", "a-2d.png"},
@@ -137,9 +134,10 @@ func TestOutputFor(t *testing.T) {
 }
 
 func TestThumbnail(t *testing.T) {
+	t.Parallel()
 	out := filepath.Join(t.TempDir(), "t.png")
 	ok, msg := runTool(t, "thumbnail", "--size", "64x48", "--view", "isometric", "-o", out,
-		model(t, "group/boolean_knife_edge/normal.slvs"))
+		model(t, "group/boolean_knife_edge/normal.tlspr"))
 	if !ok {
 		t.Fatalf("failed: %s", msg)
 	}
@@ -155,7 +153,8 @@ func TestThumbnail(t *testing.T) {
 }
 
 func TestBadCommandLines(t *testing.T) {
-	in := model(t, "request/line_segment/normal.slvs")
+	t.Parallel()
+	in := model(t, "request/line_segment/normal.tlspr")
 	for _, c := range []struct {
 		args []string
 		msg  string
@@ -189,8 +188,9 @@ func TestBadCommandLines(t *testing.T) {
 // TestExportErrorFails requires a failing export, such as a mesh of a
 // sketch without solids, to fail.
 func TestExportErrorFails(t *testing.T) {
+	t.Parallel()
 	out := filepath.Join(t.TempDir(), "x.stl")
-	ok, msg := runTool(t, "export-mesh", "-o", out, model(t, "request/line_segment/normal.slvs"))
+	ok, msg := runTool(t, "export-mesh", "-o", out, model(t, "request/line_segment/normal.tlspr"))
 	if ok || !strings.Contains(msg, "nothing to export") {
 		t.Errorf("ok=%v: %s", ok, msg)
 	}
@@ -200,7 +200,8 @@ func TestExportErrorFails(t *testing.T) {
 // the absolute chord tolerance, so the shell it holds for linking files
 // is finer than the default.
 func TestRegenerateWritesTlspr(t *testing.T) {
-	in := model(t, "group/translate_nd/normal.slvs")
+	t.Parallel()
+	in := model(t, "group/translate_nd/normal.tlspr")
 	if ok, msg := runTool(t, "regenerate", "--chord-tol", "0.05", in); !ok || !strings.Contains(msg, "Written '"+in+"'") {
 		t.Fatalf("ok=%v: %s", ok, msg)
 	}
@@ -241,6 +242,7 @@ func copyTestdata(t *testing.T, dir string) string {
 // TestConvert converts an assembly, and checks what is reused,
 // overwritten, and refused.
 func TestConvert(t *testing.T) {
+	t.Parallel()
 	dir := copyTestdata(t, "group/link")
 	src := filepath.Join(dir, "normal.slvs")
 	linked := filepath.Join(dir, "rect_v20.tlspr")
@@ -289,6 +291,7 @@ func TestConvert(t *testing.T) {
 // or its description; a group that isn't there fails, and a command
 // that draws the whole sheet doesn't take the option.
 func TestExportGroup(t *testing.T) {
+	t.Parallel()
 	// Not parallel: a session's Init sets the link package's hooks,
 	// which are the process's.
 	in := filepath.Join("..", "..", "testdata", "solid", "fillet-tee.tlspr")
@@ -320,6 +323,7 @@ func TestExportGroup(t *testing.T) {
 // TestExportMeshQuality exports a model with curves at several quality
 // settings: a preset, an explicit option over it, and the options alone.
 func TestExportMeshQuality(t *testing.T) {
+	t.Parallel()
 	// Not parallel: a session's Init sets the link package's hooks,
 	// which are the process's.
 	in := filepath.Join("..", "..", "testdata", "solid", "fillet-tee.tlspr")
@@ -358,6 +362,7 @@ func TestExportMeshQuality(t *testing.T) {
 // --strict the mesh is written, with it the export fails and no file is
 // left.
 func TestExportMeshStrict(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	d := api.New()
 	d.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
@@ -390,6 +395,7 @@ func TestExportMeshStrict(t *testing.T) {
 // export-script writes the model as the script File.ExportScript
 // writes, one that builds it again.
 func TestExportScript(t *testing.T) {
+	t.Parallel()
 	out := filepath.Join(t.TempDir(), "board.go")
 	ok, msg := runTool(t, "export-script", "-o", out, testdata("tlspr/golden/group/translate_nd/normal.tlspr"))
 	if !ok {

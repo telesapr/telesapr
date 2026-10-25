@@ -1,5 +1,5 @@
 // The link of path_link_step.script, made by a script
-// (TestPathEquivalenceLinkStep): a STEP file linked as a reference
+// (TestPathEquivalence/link_step): a STEP file linked as a reference
 // mesh.
 package main
 

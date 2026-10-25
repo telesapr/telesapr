@@ -14,6 +14,7 @@ import (
 // the sketch's own field a moment later; the window is drawn between
 // the read and that, which is what is asked here.
 func TestActiveGroupOfAReadFile(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	if err := ss.LoadFromFile(filepath.Join("..", "..", "testdata", "topo", "slot.tlspr")); err != nil {
 		t.Fatal(err)

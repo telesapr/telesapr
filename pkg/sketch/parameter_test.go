@@ -36,6 +36,7 @@ func lineLength(sk *Sketch, hr core.HRequest) float64 {
 }
 
 func TestParameterDrivesDimension(t *testing.T) {
+	t.Parallel()
 	sk, hr, hc := lineSketch(t)
 	if got := lineLength(sk, hr); math.Abs(got-10) > 1e-9 {
 		t.Fatalf("line is %v long before any parameter", got)
@@ -110,6 +111,7 @@ func TestParameterDrivesDimension(t *testing.T) {
 // already, and length expressions get the factor, which a change back
 // takes off again. Angles, counts and scales are not lengths.
 func TestSetUnits(t *testing.T) {
+	t.Parallel()
 	sk, hr, hc := lineSketch(t)
 	sk.Units = core.UnitInches
 	must := func(err error) {
@@ -180,6 +182,7 @@ func TestSetUnits(t *testing.T) {
 }
 
 func TestParameterTableErrors(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	sk.NewFile()
 	sk.GenerateAll()
@@ -249,6 +252,7 @@ func TestParameterTableErrors(t *testing.T) {
 // names and duplicates are reported, and every value keeps its last
 // good value.
 func TestEvaluateBrokenTable(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	sk.Parameters = []Parameter{
 		{Name: "a", Expr: "b", Value: 7},
@@ -281,6 +285,7 @@ func TestEvaluateBrokenTable(t *testing.T) {
 }
 
 func TestStoredExpressionErrors(t *testing.T) {
+	t.Parallel()
 	sk, _, hc := lineSketch(t)
 	if err := sk.AddParameter("w", "4"); err != nil {
 		t.Fatal(err)
@@ -322,6 +327,7 @@ func TestStoredExpressionErrors(t *testing.T) {
 }
 
 func TestSignedAndRadiusText(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	sk.NewFile()
 	sk.GenerateAll()
@@ -395,6 +401,7 @@ func TestSignedAndRadiusText(t *testing.T) {
 }
 
 func TestGroupText(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	sk.NewFile()
 	sk.GenerateAll()
@@ -475,6 +482,7 @@ func TestGroupText(t *testing.T) {
 
 // Undo and redo bring the table and the expressions back.
 func TestParameterUndo(t *testing.T) {
+	t.Parallel()
 	sk, hr, hc := lineSketch(t)
 	sk.UndoRemember()
 	if err := sk.AddParameter("w", "7"); err != nil {
@@ -521,6 +529,7 @@ func TestParameterUndo(t *testing.T) {
 // does, is picked up by the next regeneration, which dirties what the
 // change drives even when it regenerates only dirty groups.
 func TestRegenerationEvaluates(t *testing.T) {
+	t.Parallel()
 	sk, hr, hc := lineSketch(t)
 	if err := sk.AddParameter("w", "7"); err != nil {
 		t.Fatal(err)
@@ -543,6 +552,7 @@ func TestRegenerationEvaluates(t *testing.T) {
 }
 
 func TestSetConstraintValue(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		typ   core.ConstraintType
 		was   float64
@@ -570,6 +580,7 @@ func TestSetConstraintValue(t *testing.T) {
 }
 
 func TestTextIsOneLine(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	if err := sk.AddParameter("a", " 1 +\n\t2  "); err != nil {
 		t.Fatal(err)
@@ -581,6 +592,7 @@ func TestTextIsOneLine(t *testing.T) {
 
 // A refused edit leaves no undo step; a taken one leaves one.
 func TestUndoRememberFor(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	sk.NewFile()
 	sk.GenerateAll()

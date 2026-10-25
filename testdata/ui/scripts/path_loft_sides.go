@@ -1,5 +1,5 @@
 // The loft of path_loft_sides.script, made by a script
-// (TestPathEquivalenceLoftSides): from the top of the drafted post in
+// (TestPathEquivalence/loft_sides): from the top of the drafted post in
 // loft_sides.tlspr to the tip, leaving along the post's sides.
 package main
 

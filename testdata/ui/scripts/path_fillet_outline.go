@@ -1,5 +1,5 @@
 // The fillet of path_fillet_outline.script, made by a script
-// (TestPathEquivalenceFilletOutline): the rectangle of path_extrude with
+// (TestPathEquivalence/fillet_outline): the rectangle of path_extrude with
 // the corner the mouse picks rounded by a tangent arc (the sides kept as
 // construction, as the menu does), extruded, and the top side the mouse
 // picks rounded at the radius the menu starts with, which goes on round

@@ -14,6 +14,7 @@ import (
 // square, parallel to a line elsewhere, as long as one, and nothing
 // when it is none of them; horizontal and vertical first, as before.
 func TestSuggestLineConstraint(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	// An arc about the origin from 45 degrees to (-10, 0), and a line.

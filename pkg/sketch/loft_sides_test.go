@@ -150,10 +150,12 @@ func TestLoftAlongSidesProblems(t *testing.T) {
 // top at the draft's slope. The rate allowed was fixed at none before
 // the feature was written.
 func TestLoftAlongSidesSweep(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("a sweep of lofts along drafted sides")
 	}
 	grid := sweep.Grid{
+		Parallel: true,
 		Axes: []sweep.Axis{
 			sweep.Strings("profile", "circle", "square"),
 			sweep.Floats("draft", -8, 0, 5, 15),

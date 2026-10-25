@@ -10,8 +10,9 @@ import (
 // Two boxes assembled standing in each other are two pieces, each a
 // box of its own; their union is one piece, the shell itself.
 func TestShellPieces(t *testing.T) {
-	a := extrudedBox(geom.Vector{}, geom.Vector{X: 2, Y: 2, Z: 2})
-	b := extrudedBox(geom.Vector{X: 1}, geom.Vector{X: 3, Y: 2, Z: 2})
+	t.Parallel()
+	a := extrudedBox(geom.Vector{}, geom.Vector{X: 2, Y: 2, Z: 2}, Tolerance{})
+	b := extrudedBox(geom.Vector{X: 1}, geom.Vector{X: 3, Y: 2, Z: 2}, Tolerance{})
 	var asm, union SShell
 	asm.MakeFromAssemblyOf(a, b)
 	ps := asm.Pieces()
@@ -42,10 +43,11 @@ func TestShellPieces(t *testing.T) {
 // share and past a third box clear of it, are cut box by box (the cut
 // of the whole fails).
 func TestPiecewiseCut(t *testing.T) {
-	low := extrudedBox(geom.Vector{}, geom.Vector{X: 10, Y: 10, Z: 10})
-	high := extrudedBox(geom.Vector{Z: 10}, geom.Vector{X: 10, Y: 10, Z: 20})
-	apart := extrudedBox(geom.Vector{X: 20}, geom.Vector{X: 30, Y: 10, Z: 10})
-	bar := extrudedBox(geom.Vector{X: 2, Y: -1, Z: 5}, geom.Vector{X: 4, Y: 11, Z: 15})
+	t.Parallel()
+	low := extrudedBox(geom.Vector{}, geom.Vector{X: 10, Y: 10, Z: 10}, Tolerance{})
+	high := extrudedBox(geom.Vector{Z: 10}, geom.Vector{X: 10, Y: 10, Z: 20}, Tolerance{})
+	apart := extrudedBox(geom.Vector{X: 20}, geom.Vector{X: 30, Y: 10, Z: 10}, Tolerance{})
+	bar := extrudedBox(geom.Vector{X: 2, Y: -1, Z: 5}, geom.Vector{X: 4, Y: 11, Z: 15}, Tolerance{})
 	var two, asm SShell
 	two.MakeFromAssemblyOf(low, high)
 	asm.MakeFromAssemblyOf(&two, apart)

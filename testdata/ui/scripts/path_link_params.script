@@ -1,6 +1,6 @@
 # A plate linked, regenerated in its configuration "long" and passed L
 # = 60 from its group screen, then relinked to a block; the same as
-# path_link_params.go makes (TestPathEquivalenceLinkParams). An empty
+# path_link_params.go makes (TestPathEquivalence/link_params). An empty
 # model beside the parts is opened first, so that the screen names them
 # relative to it, the same on every machine.
 file $testdata/linkparams/host.tlspr

@@ -1,6 +1,6 @@
 # The draft of path_draft given two chosen sides by New Group > Draft
 # Selected Sides and its neutral plane at 10 on its screen; the same as
-# path_draft_sides.go makes (TestPathEquivalenceDraftSides, roadmap 28.2).
+# path_draft_sides.go makes (TestPathEquivalence/draft_sides, roadmap 28.2).
 key r
 move 200 200
 down L 200 200

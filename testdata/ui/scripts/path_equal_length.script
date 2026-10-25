@@ -1,6 +1,6 @@
 # A point as far from a line segment as another line segment is long,
 # made with the mouse and the Constrain menu; the same as
-# path_equal_length.go makes (TestPathEquivalenceEqualLength).
+# path_equal_length.go makes (TestPathEquivalence/equal_length).
 key r
 move 200 200
 down L 200 200

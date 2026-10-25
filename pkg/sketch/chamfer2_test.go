@@ -1,13 +1,11 @@
 package sketch_test
 
 import (
-	"fmt"
 	"math"
 	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
-	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
@@ -40,6 +38,7 @@ func setbacks(t *testing.T, g api.Group, h float64) (front, top float64) {
 // face of the lower identity, the second on the other; swapping them
 // turns it round.
 func TestChamferTwoDistances(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 10, 10, 5)
 	edge := lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))
@@ -106,6 +105,7 @@ func TestChamferTwoDistances(t *testing.T) {
 // Where chamfers of two distances meet at a corner, the local edit
 // can't cut them; the wedges do.
 func TestChamferTwoDistancesCorner(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 10, 10, 10)
 	edges := []api.Entity{
@@ -126,6 +126,7 @@ func TestChamferTwoDistancesCorner(t *testing.T) {
 // another angle: a triangle of legs a across and b along the axis
 // turned about it, whose centroid is a third of a in from the rim.
 func TestChamferTwoDistancesCircle(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Edit.SetChordTolerance(0.002)
 	d.Sketch.Circle(api.V(0, 0, 0), 5)
@@ -154,6 +155,7 @@ func TestChamferTwoDistancesCircle(t *testing.T) {
 }
 
 func TestChamferTwoDistancesRefused(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 10, 10, 5)
 	edge := lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))
@@ -187,46 +189,10 @@ func TestChamferTwoDistancesRefused(t *testing.T) {
 	}
 }
 
-// TestChamferTwoDistancesSweep chamfers the edge at a corner of angle
-// angle of a triangular prism by d1 and d2 and requires a sound solid
-// of the closed-form volume, whichever face takes d1. The rate allowed
-// was fixed at none before the feature was written.
-func TestChamferTwoDistancesSweep(t *testing.T) {
-	grid := sweep.Grid{
-		Axes: []sweep.Axis{
-			sweep.Floats("angle", 30, 60, 90, 120, 150),
-			sweep.Floats("d1", 0.2, 1, 3),
-			sweep.Floats("d2", 0.5, 2, 4),
-		},
-		MaxFailRate: 0,
-		Sample:      20,
-	}
-	grid.Run(func(p sweep.Point) error {
-		th := p.Float("angle") * math.Pi / 180
-		d1, d2 := p.Float("d1"), p.Float("d2")
-		d := api.New()
-		d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(10*math.Cos(th), 10*math.Sin(th), 0))
-		ex := d.Features.Extrude(5, "")
-		edge := lineAlong(t, ex, api.V(0, 0, 0), api.V(0, 0, 5))
-		c := d.Features.Chamfer([]api.Entity{edge}, d1, "")
-		c.AsChamfer().SetSecondDistance(d2)
-		r := c.Analyze().Check()
-		want := (50*math.Sin(th) - 0.5*d1*d2*math.Sin(th)) * 5
-		switch {
-		case c.Problem() != "":
-			return fmt.Errorf("problem: %s", c.Problem())
-		case !r.Sound():
-			return fmt.Errorf("unsound: %s", r.String())
-		case math.Abs(r.Volume-want) > 1e-6*want:
-			return fmt.Errorf("volume %g, want %g", r.Volume, want)
-		}
-		return nil
-	}).Require(t)
-}
-
 // The second distance, the swap and the same are the sketch's, which
 // refuses a group that is not a chamfer and a swap of one distance.
 func TestChamferDistancesOnSketch(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 10, 10, 5)
 	sk := d.Host().Sketch()

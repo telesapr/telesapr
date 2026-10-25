@@ -1,5 +1,5 @@
 # What the mouse hovers over request/arc_of_circle/normal.slvs, in two views.
-load request/arc_of_circle/normal.slvs
+load tlspr/golden/request/arc_of_circle/normal.tlspr
 view default
 hovergrid 20
 view rotated

@@ -1,5 +1,5 @@
 // The sweep of path_sweep_cubic.script, made by a script
-// (TestPathEquivalenceSweepCubic): the rectangle of
+// (TestPathEquivalence/sweep_cubic): the rectangle of
 // testdata/ui/sweep_cubic.tlspr, the active sketch, swept along the
 // cubic of its 3d sketch, twisted by 90 degrees, its frames held to x.
 package main

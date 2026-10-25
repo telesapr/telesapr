@@ -1,6 +1,6 @@
 # A screw thread made through its screen on an extruded circle, then
 # edited from its helix group's screen: rounded and 12 long. The same
-# model as path_thread_edit.go makes (TestPathEquivalenceThreadEdit).
+# model as path_thread_edit.go makes (TestPathEquivalence/thread_edit).
 key c
 move 300 300
 down L 300 300

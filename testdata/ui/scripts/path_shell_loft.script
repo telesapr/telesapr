@@ -1,6 +1,6 @@
 # A loft's side, a face no entity names, picked with the mouse on the
 # model and taken away by Shell Solid; the same as path_shell_loft.go
-# makes (TestPathEquivalenceShellLoftFace).
+# makes (TestPathEquivalence/shell_loft).
 file $testdata/ui/loft_profiles.tlspr
 menu File|Open...
 view default

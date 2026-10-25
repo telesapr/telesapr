@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/golden"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/script/api"
 )
@@ -20,6 +21,7 @@ func buildDiameterDoc(t *testing.T) (*Application, api.Constraint) {
 // Sketch.SetConstraintShowAsRadius: the same file results, and the
 // window's step is one undo that redo brings back.
 func TestShowAsRadiusMatchesScript(t *testing.T) {
+	t.Parallel()
 	win, wc := buildDiameterDoc(t)
 	win.TW.ScreenConstraintShowAsRadius(0, wc.H.V)
 
@@ -29,7 +31,7 @@ func TestShowAsRadiusMatchesScript(t *testing.T) {
 	got := string(tlspr.Encode(win.SK, tlspr.Options{}))
 	want := string(tlspr.Encode(scr.SK, tlspr.Options{}))
 	if got != want {
-		t.Errorf("the window and the script save different files, at %s", firstDiffLine(got, want))
+		t.Errorf("the window and the script save different files, at %s", golden.FirstDifference([]byte(want), []byte(got)))
 	}
 	if !win.SK.Constraint(wc.H).Other {
 		t.Fatal("the window didn't show the diameter as a radius")
@@ -47,6 +49,7 @@ func TestShowAsRadiusMatchesScript(t *testing.T) {
 // Dragging a dimension's label moves it by the mouse's travel, through
 // the same sketch call a script's SetLabelOffset reaches.
 func TestDragLabelUsesSketchCall(t *testing.T) {
+	t.Parallel()
 	ss, c := buildDiameterDoc(t)
 	before := c.LabelOffset()
 	gw := ss.GW

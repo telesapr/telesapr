@@ -28,6 +28,7 @@ func jobModel(t *testing.T) (*api.Doc, *sketch.Sketch, api.Group) {
 // makes the solids a regeneration in full makes, and Apply puts them in.
 // A sketch changed since, or a job cancelled, applies nothing.
 func TestShellJob(t *testing.T) {
+	t.Parallel()
 	d, sk, cut := jobModel(t)
 	want := sk.Group(cut.H).RunningShell
 
@@ -84,6 +85,7 @@ func TestShellJob(t *testing.T) {
 // A job makes the solids at the sketch's own settings: the most
 // segments a curve may have, and the mesher.
 func TestShellJobSettings(t *testing.T) {
+	t.Parallel()
 	_, sk, cut := jobModel(t)
 	sk.MaxSegments = 60
 	sk.Mesher = 1

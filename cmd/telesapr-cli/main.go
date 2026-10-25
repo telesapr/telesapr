@@ -550,7 +550,7 @@ func convertModels(o *options, stderr io.Writer) bool {
 			ok = false
 			continue
 		}
-		res, err := convert.Run(plan, convert.Options{Overwrite: o.overwrite, Quiet: true})
+		res, err := convert.Run(plan, convert.Options{Overwrite: o.overwrite})
 		for _, w := range res.Written {
 			say("Written '%s'.\n", w)
 		}

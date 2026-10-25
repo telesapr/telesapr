@@ -44,6 +44,7 @@ func cosmeticBolt(t *testing.T, nut bool) (*Application, *api.Doc) {
 // along the axis the root is three quarters of a thin circle. A nut's
 // cosmetic thread in a hole at its tap drill has its root hidden.
 func TestDrawingThreadCosmetic(t *testing.T) {
+	t.Parallel()
 	ss, doc := cosmeticBolt(t, false)
 	d := doc.Drawing.Get()
 	// The top view looks across the axis: the shank from its foot at
@@ -87,6 +88,7 @@ func TestDrawingThreadCosmetic(t *testing.T) {
 // thread's crest: as many turns as the thread has, and none for a
 // modelled thread, whose turns are its solid.
 func TestCosmeticThreadMarks(t *testing.T) {
+	t.Parallel()
 	ss, doc := cosmeticBolt(t, false)
 	g := ss.SK.Group(ss.GW.activeGroupH())
 	el := cosmeticThreadMarks(ss.SK, g)

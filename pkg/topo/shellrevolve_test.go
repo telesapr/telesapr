@@ -21,8 +21,8 @@ func (noGroup) EntityExists(core.HEntity) bool       { return false }
 // meridian is a closed profile in the XZ plane, (x, z) points joined by
 // lines, with an arc about a centre where arcs says so: arcs[i], when
 // set, is the centre of the arc from point i to point i+1, a quarter
-// turn at most.
-func meridian(t *testing.T, pts [][2]float64, arcs map[int][2]float64) *srf.SBezierLoopSetSet {
+// turn at most. Its loops are found at tol.
+func meridian(t *testing.T, pts [][2]float64, arcs map[int][2]float64, tol srf.Tolerance) *srf.SBezierLoopSetSet {
 	t.Helper()
 	var sbl srf.SBezierList
 	for i, p := range pts {
@@ -47,7 +47,7 @@ func meridian(t *testing.T, pts [][2]float64, arcs map[int][2]float64) *srf.SBez
 	allClosed, allCoplanar := false, false
 	var notClosed srf.SEdge
 	var notCoplanar geom.Vector
-	sets.FindOuterFacesFrom(&sbl, &poly, nil, srf.Tolerance{}, &allClosed, &notClosed, &allCoplanar, &notCoplanar, nil)
+	sets.FindOuterFacesFrom(&sbl, &poly, nil, tol, &allClosed, &notClosed, &allCoplanar, &notCoplanar, nil)
 	if !allClosed || len(sets.Sets) == 0 {
 		t.Fatal("the profile does not close")
 	}
@@ -55,10 +55,11 @@ func meridian(t *testing.T, pts [][2]float64, arcs map[int][2]float64) *srf.SBez
 }
 
 // turned is the solid of the profile turned about the Z axis from
-// start to end radians, or a whole turn when whole.
-func turned(profile *srf.SBezierLoopSetSet, start, end float64) (*srf.SShell, topo.Revolution) {
+// start to end radians, or a whole turn when whole, at tol: its curves
+// take their points then.
+func turned(profile *srf.SBezierLoopSetSet, start, end float64, tol srf.Tolerance) (*srf.SShell, topo.Revolution) {
 	rev := topo.Revolution{Profile: profile, Pt: v(0, 0, 0), Axis: v(0, 0, 1), Start: start, End: end}
-	sh := &srf.SShell{}
+	sh := &srf.SShell{Tol: tol}
 	for i := range profile.Sets {
 		if rev.Whole() {
 			sh.MakeFromRevolutionOf(&profile.Sets[i], rev.Pt, rev.Axis, core.NewRGBA(100, 100, 100, 255), noGroup{})
@@ -109,9 +110,8 @@ func strip(r, d float64) float64 { return (d*math.Sqrt(r*r-d*d) + r*r*math.Asin(
 // Solids of revolution hollowed: the profile offset into its material,
 // turned again and taken away. Volumes by Pappus or closed forms.
 func TestShellRevolved(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.001)
+	t.Parallel()
+	tol := srf.Tol(0.001, 20)
 	cone := func(r, h float64) float64 { return math.Pi * r * r * h / 3 }
 	// The cone's slant moved in by 1: 8x + 6z = 48 - 10.
 	rIn, hIn := 38.0/8, 38.0/6
@@ -151,7 +151,7 @@ func TestShellRevolved(t *testing.T) {
 			math.Pi*(100-25)*4/2 - (math.Pi*(81-36)*3/2 - 3*(strip(9, 1)-strip(6, 1)))},
 	}
 	for _, c := range cases {
-		sh, rev := turned(meridian(t, c.pts, c.arcs), c.start, c.end)
+		sh, rev := turned(meridian(t, c.pts, c.arcs, tol), c.start, c.end, tol)
 		tp := build(t, sh)
 		var open []int
 		for _, o := range c.open {
@@ -187,6 +187,7 @@ func TestShellRevolved(t *testing.T) {
 
 // What a revolved shell refuses, and says why.
 func TestShellRevolvedRefusals(t *testing.T) {
+	t.Parallel()
 	rect := [][2]float64{{0, 0}, {5, 0}, {5, 10}, {0, 10}}
 	top := [2]geom.Vector{v(0, 0, 10), v(0, 0, 1)}
 	cases := []struct {
@@ -200,7 +201,7 @@ func TestShellRevolvedRefusals(t *testing.T) {
 		{"too thick", rect, 0, 2 * math.Pi, 6, "thickness"},
 	}
 	for _, c := range cases {
-		sh, rev := turned(meridian(t, c.pts, nil), c.start, c.end)
+		sh, rev := turned(meridian(t, c.pts, nil, srf.Tolerance{}), c.start, c.end, srf.Tolerance{})
 		tp := build(t, sh)
 		_, err := topo.ShellRevolved(sh, rev, facesOn(t, tp, top[0], top[1]), c.thick, 1<<30)
 		if err == nil || !strings.Contains(err.Error(), c.want) {
@@ -209,7 +210,7 @@ func TestShellRevolvedRefusals(t *testing.T) {
 	}
 	// A curved face taken away between an inside corner and the top.
 	step := [][2]float64{{0, 0}, {10, 0}, {10, 5}, {6, 5}, {6, 10}, {0, 10}}
-	sh0, rev0 := turned(meridian(t, step, nil), 0, 2*math.Pi)
+	sh0, rev0 := turned(meridian(t, step, nil, srf.Tolerance{}), 0, 2*math.Pi, srf.Tolerance{})
 	tp0 := build(t, sh0)
 	var side []int
 	for k := range 4 {
@@ -221,8 +222,8 @@ func TestShellRevolvedRefusals(t *testing.T) {
 		t.Errorf("a side at an inside corner: %v", err)
 	}
 	// A solid that is not the revolution given.
-	sh := cylinder(5, 10)
-	_, rev := turned(meridian(t, [][2]float64{{0, 0}, {4, 0}, {4, 10}, {0, 10}}, nil), 0, 2*math.Pi)
+	sh := cylinder(5, 10, srf.Tolerance{})
+	_, rev := turned(meridian(t, [][2]float64{{0, 0}, {4, 0}, {4, 10}, {0, 10}}, nil, srf.Tolerance{}), 0, 2*math.Pi, srf.Tolerance{})
 	tp := build(t, sh)
 	if _, err := topo.ShellRevolved(sh, rev, facesOn(t, tp, top[0], top[1]), 1, 1<<30); !errors.Is(err, topo.ErrNotRevolution) {
 		t.Errorf("another solid: %v", err)

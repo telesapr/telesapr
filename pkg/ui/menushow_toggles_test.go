@@ -9,6 +9,7 @@ import (
 // View > Show > Reference Dimensions and Comments hide those alone, and
 // show them again; a dimension that isn't a reference stays shown.
 func TestShowReferencesAndComments(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	gw := ss.GW
 	hg := gw.activeGroupH()

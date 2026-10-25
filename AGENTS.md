@@ -39,7 +39,8 @@ what is being built. This file is the conventions, for people and for coding age
   initialisation. `init()` only for `runtime.LockOSThread` in `cmd/telesapr` and generated code.
   The tolerance a solid is followed at is `srf.Tolerance`, carried by every shell and surface
   and computed by the sketch per regeneration (`Sketch.Tol`); `srf.DefaultTolerance` is what a
-  shell with none resolves to, and only tests set it. `TELESAPR_PARALLEL` is read once at
+  shell with none resolves to, and nothing sets it: a test builds its shells at the tolerance it
+  needs. `TELESAPR_PARALLEL` is read once at
   startup by the binaries (`srf.SetParallelModeFromEnv`) and nowhere else.
 - `context.Context` first where a call can be cancelled (scripts, agent, background
   regeneration). Every goroutine has an owner that waits for it; fan-out goes through
@@ -89,10 +90,11 @@ three reach the same `pkg/sketch` entry point. `doc/done-audit.md` keeps the tab
   rule, several times slower than `make test`), `make test-sweeps`,
   `make fuzz`, `make bench`, govulncheck as a failing job, the race detector over `pkg/ui`
   and `pkg/script/api`, and the quick tests on Windows and macOS. `make lint-new` lints what a branch changed.
-- `scripts/go-test.sh` runs the slow packages (`SHARDED`) as several processes, their heaviest
-  tests (`HEAVY`) one each; every test target goes through it, and `TESTS=light|heavy|all` picks
-  whether `HEAVY` is left out, run alone or run with the rest. A new test of a minute or more in
-  one of those packages goes into `HEAVY`, which takes it out of `make test`.
+- `scripts/go-test.sh` runs the tests in one `go test`; every test target goes through it, and
+  `TESTS=light|heavy|all` picks whether its heaviest tests (`HEAVY`) are left out, run alone or
+  run with the rest. A new test of a minute or more goes into `HEAVY`, which takes it out of
+  `make test`. A test whose package's tests are parallel and that cannot be, because it sets
+  something of the process's, says so in a comment.
 - On Windows and macOS the workflows run `scripts/test-os.sh`: the quick tests without those
   `scripts/os-skip/<GOOS>.txt` lists, each with why it fails there. A fix takes its test off the
   list; a new test that fails there for a reason of the platform goes on it, with the reason.
@@ -105,8 +107,6 @@ three reach the same `pkg/sketch` entry point. `doc/done-audit.md` keeps the tab
 |---|---|
 | `TELESAPR_GUI_TESTS=1` | Runs the tests that open windows (`pkg/platform/tkgui`, `pkg/render/gl`); `make test-gui` sets it under Xvfb. They are skipped without it, and without `DISPLAY`. |
 | `TELESAPR_REGEN_GOLDEN=1` | The golden tests rewrite their goldens instead of comparing; set by `scripts/regen-golden.sh`. |
-| `UPDATE_GOLDENS=1` | The same for the software renderer's PNGs (`pkg/render/soft`). |
-| `TELESAPR_REGEN_INVARIANTS=1` | Rewrites `testdata/invariants.txt` (`pkg/persist/slvs`). |
 | `TELESAPR_SWEEP=1` | Robustness sweeps run their whole grid instead of a sample (`pkg/internal/sweep`). |
 | `TELESAPR_STEP_CORPUS=dir` | `TestExternalCorpus` reads the STEP files `external.txt` lists from `dir`. |
 | `TELESAPR_STEP_OUT=dir`, `TELESAPR_KEEP_STEP=1`, `TELESAPR_RENDER_DIR=dir`, `TELESAPR_PATHEQUIV_DIR=dir`, `TELESAPR_GL_DUMP=dir` | Tests in `pkg/ui` and `pkg/render/gl` keep what they produced there, for a diff. |

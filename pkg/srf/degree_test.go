@@ -10,6 +10,7 @@ import (
 )
 
 func TestBernsteinHighDegree(t *testing.T) {
+	t.Parallel()
 	for deg := 1; deg <= MaxDegree; deg++ {
 		for _, u := range []float64{0, 0.13, 0.5, 0.77, 1} {
 			sum, dsum := 0.0, 0.0
@@ -49,6 +50,7 @@ func randomBezier(r *rand.Rand, deg int) SBezier {
 }
 
 func TestCurveElevationAndSplit(t *testing.T) {
+	t.Parallel()
 	r := rand.New(rand.NewSource(1))
 	for deg := 1; deg < MaxDegree; deg++ {
 		b := randomBezier(r, deg)
@@ -84,6 +86,7 @@ func TestCurveElevationAndSplit(t *testing.T) {
 }
 
 func TestPatchElevationSplitAndClosest(t *testing.T) {
+	t.Parallel()
 	r := rand.New(rand.NewSource(2))
 	// A torus patch, rational quadratic both ways, raised to MaxDegree.
 	s := FromRevolutionOf(&SBezier{Degree: 2,
@@ -161,16 +164,17 @@ func elevatedShell(t *testing.T, sh *SShell, m, n, up int) *SShell {
 // checks their meshes and Booleans against the same solids of the
 // patches they were raised from.
 func TestElevatedSolids(t *testing.T) {
-	fineChordTol(t)
+	t.Parallel()
+	tol := fineTol()
 	type solid struct {
 		name string
 		sh   func() *SShell
 		vol  float64
 	}
 	solids := []solid{
-		{"box", func() *SShell { return extrudedBox(geom.Vector{}, geom.Vector{X: 2, Y: 3, Z: 1}) }, 6},
-		{"tube", func() *SShell { return lathedTube(1, 2, 0, 1) }, 3 * math.Pi},
-		{"cylinder", func() *SShell { return lathedTube(0, 2, -0.5, 1.5) }, 8 * math.Pi},
+		{"box", func() *SShell { return extrudedBox(geom.Vector{}, geom.Vector{X: 2, Y: 3, Z: 1}, tol) }, 6},
+		{"tube", func() *SShell { return lathedTube(1, 2, 0, 1, tol) }, 3 * math.Pi},
+		{"cylinder", func() *SShell { return lathedTube(0, 2, -0.5, 1.5, tol) }, 8 * math.Pi},
 	}
 	for _, deg := range [][2]int{{4, 4}, {MaxDegree, MaxDegree}, {MaxDegree, 2}} {
 		for _, s := range solids {
@@ -184,8 +188,8 @@ func TestElevatedSolids(t *testing.T) {
 		// A Boolean between raised solids: a tube through a box, so the
 		// intersection runs over raised planes and raised cylinders.
 		name := fmt.Sprintf("box less tube raised to %dx%d", deg[0], deg[1])
-		box := elevatedShell(t, extrudedBox(geom.Vector{X: -3, Y: -3, Z: 0}, geom.Vector{X: 3, Y: 3, Z: 1}), deg[0], deg[1], 2)
-		tube := elevatedShell(t, lathedTube(1, 2, -1, 2), deg[0], deg[1], 2)
+		box := elevatedShell(t, extrudedBox(geom.Vector{X: -3, Y: -3, Z: 0}, geom.Vector{X: 3, Y: 3, Z: 1}, tol), deg[0], deg[1], 2)
+		tube := elevatedShell(t, lathedTube(1, 2, -1, 2, tol), deg[0], deg[1], 2)
 		var diff SShell
 		diff.MakeFromBoolean(box, tube, SurfaceDiff)
 		if diff.BooleanFailed {
@@ -202,8 +206,8 @@ func TestElevatedSolids(t *testing.T) {
 // degree 5, which only the general intersection and mesher handle.
 func BenchmarkElevatedBoolean(b *testing.B) {
 	t := &testing.T{}
-	box := elevatedShell(t, extrudedBox(geom.Vector{X: -3, Y: -3, Z: 0}, geom.Vector{X: 3, Y: 3, Z: 1}), MaxDegree, MaxDegree, 2)
-	tube := elevatedShell(t, lathedTube(1, 2, -1, 2), MaxDegree, MaxDegree, 2)
+	box := elevatedShell(t, extrudedBox(geom.Vector{X: -3, Y: -3, Z: 0}, geom.Vector{X: 3, Y: 3, Z: 1}, Tolerance{}), MaxDegree, MaxDegree, 2)
+	tube := elevatedShell(t, lathedTube(1, 2, -1, 2, Tolerance{}), MaxDegree, MaxDegree, 2)
 	for b.Loop() {
 		var diff SShell
 		diff.MakeFromBoolean(box, tube, SurfaceDiff)

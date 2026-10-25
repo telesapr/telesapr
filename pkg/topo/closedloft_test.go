@@ -142,6 +142,7 @@ func TestClosedLoftSweep(t *testing.T) {
 	tol := srf.Tol(0.002, 100)
 	col := core.NewRGBA(1, 1, 1, 255)
 	grid := sweep.Grid{
+		Parallel: true,
 		Axes: []sweep.Axis{
 			sweep.Strings("kind", "ring", "middle"),
 			sweep.Strings("profile", "circle", "square", "blob"),

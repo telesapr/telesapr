@@ -24,6 +24,7 @@ func fixedRect(d *Doc) (Group, []Entity) {
 // Every solve option of a group is what the window's group screen
 // sets, and is read back as it was left.
 func TestGroupSolveOptions(t *testing.T) {
+	t.Parallel()
 	d := New()
 	g, _ := fixedRect(d)
 	for _, c := range []struct {
@@ -62,6 +63,7 @@ func TestGroupSolveOptions(t *testing.T) {
 // the redundancy is allowed, and reports the surplus to remove where it
 // is not.
 func TestGroupAllowRedundant(t *testing.T) {
+	t.Parallel()
 	d := New()
 	g, lines := fixedRect(d)
 	// The rectangle's diagonal is already known from its two sides, so
@@ -88,6 +90,7 @@ func TestGroupAllowRedundant(t *testing.T) {
 // A relaxed group drops the constraint it cannot use and solves, where
 // the group that requires it does not.
 func TestGroupRelaxConstraints(t *testing.T) {
+	t.Parallel()
 	d := New()
 	g, lines := fixedRect(d)
 	d.Constrain.Distance(lines[0].Start(), lines[1].End(), math.Hypot(20, 10))
@@ -101,6 +104,7 @@ func TestGroupRelaxConstraints(t *testing.T) {
 // the line without holding it, so the end of the line goes where it is
 // put.
 func TestGroupAllDimsReference(t *testing.T) {
+	t.Parallel()
 	d := New()
 	line := d.Sketch.Line(V(0, 0, 0), V(30, 0, 0))
 	d.Constrain.Lock(line.Start())
@@ -130,6 +134,7 @@ func TestGroupAllDimsReference(t *testing.T) {
 // A group left out of the freedom count is described as such, so the
 // count it does not give is not read as a sketch held.
 func TestGroupSuppressDof(t *testing.T) {
+	t.Parallel()
 	d := New()
 	g, _ := fixedRect(d)
 	if got := g.Dof(); got != 0 {

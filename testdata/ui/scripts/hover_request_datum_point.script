@@ -1,5 +1,5 @@
 # What the mouse hovers over request/datum_point/normal.slvs, in two views.
-load request/datum_point/normal.slvs
+load tlspr/golden/request/datum_point/normal.tlspr
 view default
 hovergrid 20
 view rotated

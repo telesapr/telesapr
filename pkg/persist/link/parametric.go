@@ -99,7 +99,7 @@ func regenerate(part *sketch.Sketch, path string, sk *sketch.Sketch, cfg string,
 	part.NoSolidCache = true
 	ctx.open[abs] = true
 	defer delete(ctx.open, abs)
-	if !reloadAll(part, path, Options{Quiet: true}, ctx) {
+	if !reloadAll(part, path, Options{}, ctx) {
 		return nil, nil, false
 	}
 	defer func() {

@@ -11,6 +11,7 @@ func near(a, b float64) bool { return math.Abs(a-b) < 1e-6 }
 // A plate with a hole is drawn, dimensioned and extruded, and comes
 // back from a file as it was.
 func TestPlate(t *testing.T) {
+	t.Parallel()
 	d := New()
 	if got := len(d.Groups()); got != 1 {
 		t.Fatalf("a new sketch has %d groups, want 1", got)
@@ -93,6 +94,7 @@ func TestPlate(t *testing.T) {
 
 // What can't be done panics with an error that says why.
 func TestMisuse(t *testing.T) {
+	t.Parallel()
 	d := New()
 	line := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
 	for name, fn := range map[string]func(){

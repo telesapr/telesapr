@@ -1,7 +1,7 @@
 # The ramp of testdata/topo/ramp.tlspr, its top's front edge and its edge
 # along the slope picked on the turned view and rounded, meeting in an
 # uneven mitre; the same as path_fillet_uneven.go makes
-# (TestPathEquivalenceFilletUneven).
+# (TestPathEquivalence/fillet_uneven).
 file $testdata/topo/ramp.tlspr
 menu File|Open...
 view rotated

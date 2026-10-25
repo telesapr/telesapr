@@ -1,6 +1,6 @@
 # A rectangle extruded, then its sketch suppressed whole through the
 # group screen's check box, which leaves out the extrusion too; the same
-# model as path_suppress_all.go makes (TestPathEquivalenceSuppressAll).
+# model as path_suppress_all.go makes (TestPathEquivalence/suppress_all).
 key r
 move 200 200
 down L 200 200

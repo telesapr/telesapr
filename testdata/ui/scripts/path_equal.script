@@ -1,5 +1,5 @@
 # Two angles of a rectangle made equal with the mouse and the Constrain
-# menu; the same as path_equal.go makes (TestPathEquivalenceEqual).
+# menu; the same as path_equal.go makes (TestPathEquivalence/equal).
 key r
 move 200 200
 down L 200 200

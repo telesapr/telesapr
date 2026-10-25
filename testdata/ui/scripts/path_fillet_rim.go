@@ -1,5 +1,5 @@
 // The fillet of path_fillet_rim.script, made by a script
-// (TestPathEquivalenceFilletRim): the circle at the foot of the boss of
+// (TestPathEquivalence/fillet_rim): the circle at the foot of the boss of
 // testdata/topo/boss.tlspr, found by a point on it, filled at the radius
 // the menu starts with.
 package main

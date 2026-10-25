@@ -40,6 +40,7 @@ func rimEdges(g Group, z float64) []SolidEdge {
 // alike after saving and loading. pkg/topo's TestFilletChainsMitred
 // holds the comparison with OpenCASCADE.
 func TestFilletChainMitre(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("fillets of several chains over curved faces, slow")
 	}

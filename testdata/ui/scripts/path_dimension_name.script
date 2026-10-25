@@ -1,6 +1,6 @@
 # A rectangle whose bottom side's dimension is named width in its
 # editor, and whose right side is width/2, then extruded; the same model
-# as path_dimension_name.go makes (TestPathEquivalenceDimensionName).
+# as path_dimension_name.go makes (TestPathEquivalence/dimension_name).
 key r
 move 200 200
 down L 200 200

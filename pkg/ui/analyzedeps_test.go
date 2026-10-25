@@ -11,6 +11,7 @@ import (
 // Analyze > Group Dependencies says what the script's DependsOn, UsedBy,
 // OwnSources and Bounds say of the active group.
 func TestAnalyzeGroupDependencies(t *testing.T) {
+	t.Parallel()
 	ss, doc := drawingModel(t)
 	g := doc.Active()
 	text := ss.groupDependenciesText(ss.GW.activeGroupH())

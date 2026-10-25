@@ -10,7 +10,7 @@
 # the same way, so this is the program's behaviour there and not only
 # a test's.
 TestNoFusedMultiplyAdd
-TestLibmVsGlibc
+TestLibmValues
 TestFixturesRoundTrip
 TestSolidGoldens
 TestSparseQRGolden

@@ -11,6 +11,7 @@ import (
 // is drawn; the corner stays where it was and the width follows the
 // string.
 func TestTextEdits(t *testing.T) {
+	t.Parallel()
 	d := New()
 	text := d.Sketch.Text("Abc", "", V(5, 5, 0), 10)
 	if text.Text() != "Abc" || text.Font() != ttf.EmbeddedFont || text.Kerning() {
@@ -42,6 +43,7 @@ func TestTextEdits(t *testing.T) {
 // corners and its height where they were: left to the solver, the four
 // corners all moved, and the text grew.
 func TestTextEditKeepsCorner(t *testing.T) {
+	t.Parallel()
 	d := New()
 	text := d.Sketch.Text("To", "", V(-5, -5, 0), 10)
 	text.SetKerning(true)
@@ -60,6 +62,7 @@ func TestTextEditKeepsCorner(t *testing.T) {
 // The fonts a text can take are listed, and the built-in one is among
 // them.
 func TestSketchFonts(t *testing.T) {
+	t.Parallel()
 	d := New()
 	fonts := d.Sketch.Fonts()
 	if !slices.Contains(fonts, ttf.EmbeddedFont) {
@@ -73,6 +76,7 @@ func TestSketchFonts(t *testing.T) {
 
 // What is not a text, and a font that is not there, fail with an error.
 func TestTextEditMisuse(t *testing.T) {
+	t.Parallel()
 	d := New()
 	line := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
 	text := d.Sketch.Text("x", "", V(0, 5, 0), 5)

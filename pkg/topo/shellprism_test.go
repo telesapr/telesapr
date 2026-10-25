@@ -16,10 +16,10 @@ import (
 )
 
 // roundedBox is a w x h x high box about the origin whose upright edges
-// are rounded to radius r.
-func roundedBox(w, h, r, high float64) *srf.SShell {
+// are rounded to radius r, built at tol.
+func roundedBox(w, h, r, high float64, tol srf.Tolerance) *srf.SShell {
 	l := roundedLoop(w, h, r)
-	var sh srf.SShell
+	sh := srf.SShell{Tol: tol}
 	var ls srf.SBezierLoopSet
 	ls.Outer.Curves = l
 	ls.Normal = v(0, 0, -1)
@@ -34,9 +34,8 @@ func roundedArea(w, h, r float64) float64 { return w*h - (4-math.Pi)*r*r }
 // end's outline offset by the thickness, arcs to smaller or larger
 // radii, extruded between the ends moved in.
 func TestShellCurvedSides(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.001)
+	t.Parallel()
+	tol := srf.Tol(0.001, 20)
 	top, bottom := v(0, 0, 1), v(0, 0, -1)
 	cases := []struct {
 		name  string
@@ -46,19 +45,19 @@ func TestShellCurvedSides(t *testing.T) {
 		want  float64
 		area  float64 // of the surfaces, for the chords' tolerance
 	}{
-		{"cup", cylinder(5, 10), []geom.Vector{v(0, 0, 10), top}, 1,
+		{"cup", cylinder(5, 10, tol), []geom.Vector{v(0, 0, 10), top}, 1,
 			math.Pi * (25*10 - 16*9), 2 * math.Pi * 5 * 20},
-		{"tube", cylinder(5, 10), []geom.Vector{v(0, 0, 10), top, v(0, 0, 0), bottom}, 1.5,
+		{"tube", cylinder(5, 10, tol), []geom.Vector{v(0, 0, 10), top, v(0, 0, 0), bottom}, 1.5,
 			math.Pi * (25 - 3.5*3.5) * 10, 2 * math.Pi * 5 * 20},
-		{"plate with a hole", plateWithHole(5, 10), []geom.Vector{v(19, 19, 10), top}, 1,
+		{"plate with a hole", plateWithHole(5, 10, tol), []geom.Vector{v(19, 19, 10), top}, 1,
 			(1600-25*math.Pi)*10 - (38*38-36*math.Pi)*9, 2 * math.Pi * 6 * 20},
-		{"rounded box", roundedBox(20, 10, 3, 10), []geom.Vector{v(0, 0, 10), top}, 1,
+		{"rounded box", roundedBox(20, 10, 3, 10, tol), []geom.Vector{v(0, 0, 10), top}, 1,
 			roundedArea(20, 10, 3)*10 - roundedArea(18, 8, 2)*9, 2 * math.Pi * 3 * 20},
-		{"rounded box closed at the top", roundedBox(20, 10, 3, 10), []geom.Vector{v(0, 0, 0), bottom}, 2,
+		{"rounded box closed at the top", roundedBox(20, 10, 3, 10, tol), []geom.Vector{v(0, 0, 0), bottom}, 2,
 			roundedArea(20, 10, 3)*10 - roundedArea(16, 6, 1)*8, 2 * math.Pi * 3 * 20},
 		// Walls thicker than the corners' radius: the inside's corners
 		// are sharp.
-		{"rounded box, thick walls", roundedBox(20, 10, 1, 10), []geom.Vector{v(0, 0, 10), top}, 2,
+		{"rounded box, thick walls", roundedBox(20, 10, 1, 10, tol), []geom.Vector{v(0, 0, 10), top}, 2,
 			roundedArea(20, 10, 1)*10 - 16*6*8, 2 * math.Pi * 1 * 20},
 	}
 	for _, c := range cases {
@@ -79,7 +78,8 @@ func TestShellCurvedSides(t *testing.T) {
 }
 
 func TestShellCurvedRefusals(t *testing.T) {
-	cyl := cylinder(5, 10)
+	t.Parallel()
+	cyl := cylinder(5, 10, srf.Tolerance{})
 	ct := build(t, cyl)
 	for name, c := range map[string]struct {
 		sh    *srf.SShell
@@ -87,13 +87,13 @@ func TestShellCurvedRefusals(t *testing.T) {
 		thick float64
 		want  string
 	}{
-		"walls past the axis": {cylinder(5, 10), func(tp *topo.Topology) []int {
+		"walls past the axis": {cylinder(5, 10, srf.Tolerance{}), func(tp *topo.Topology) []int {
 			return []int{faceAt(t, tp, v(0, 0, 10), v(0, 0, 1))}
 		}, 5, "radius"},
-		"bottom meets top": {cylinder(5, 2), func(tp *topo.Topology) []int {
+		"bottom meets top": {cylinder(5, 2, srf.Tolerance{}), func(tp *topo.Topology) []int {
 			return []int{faceAt(t, tp, v(0, 0, 0), v(0, 0, -1))}
 		}, 2, "meet"},
-		"a cone": {frustum(5, 3, 10), func(tp *topo.Topology) []int {
+		"a cone": {frustum(5, 3, 10, srf.Tolerance{}), func(tp *topo.Topology) []int {
 			return []int{faceAt(t, tp, v(0, 0, 10), v(0, 0, 1))}
 		}, 1, "curved"},
 	} {
@@ -120,9 +120,8 @@ func TestShellCurvedRefusals(t *testing.T) {
 // Prisms with curved sides, of several shapes and heights, hollowed to
 // walls of several thicknesses, open at one end or both.
 func TestShellCurvedSweep(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.001)
+	t.Parallel()
+	tol := srf.Tol(0.001, 20)
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Strings("shape", "cylinder", "rounded box", "sharp inside", "plate with a hole"),
@@ -132,6 +131,7 @@ func TestShellCurvedSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      20,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		h := p.Float("height")
@@ -144,22 +144,22 @@ func TestShellCurvedSweep(t *testing.T) {
 		var full, round float64          // round: the length of the arcs, inside and out
 		switch p.String("shape") {
 		case "cylinder":
-			sh = cylinder(5, h)
+			sh = cylinder(5, h, tol)
 			full = 25 * math.Pi
 			area = func(d float64) float64 { return (5 - d) * (5 - d) * math.Pi }
 			round = 2 * math.Pi * 10
 		case "rounded box":
-			sh = roundedBox(20, 10, 4, h)
+			sh = roundedBox(20, 10, 4, h, tol)
 			full = roundedArea(20, 10, 4)
 			area = func(d float64) float64 { return roundedArea(20-2*d, 10-2*d, 4-d) }
 			round = 2 * math.Pi * 8
 		case "sharp inside":
-			sh = roundedBox(20, 10, 0.5, h)
+			sh = roundedBox(20, 10, 0.5, h, tol)
 			full = roundedArea(20, 10, 0.5)
 			area = func(d float64) float64 { return roundedArea(20-2*d, 10-2*d, math.Max(0, 0.5-d)) }
 			round = 2 * math.Pi
 		default:
-			sh = plateWithHole(5, h)
+			sh = plateWithHole(5, h, tol)
 			full = 1600 - 25*math.Pi
 			area = func(d float64) float64 { return (40-2*d)*(40-2*d) - (5+d)*(5+d)*math.Pi }
 			round = 2 * math.Pi * 12

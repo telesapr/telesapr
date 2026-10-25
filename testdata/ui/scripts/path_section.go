@@ -1,5 +1,5 @@
 // The section view of path_section.script, set by a script
-// (TestPathEquivalenceSection): the extrusion of path_extrude, cut
+// (TestPathEquivalence/section): the extrusion of path_extrude, cut
 // parallel to its fifth face, the one the mouse clicks, 10 mm into the
 // solid, keeping the outer side.
 package main

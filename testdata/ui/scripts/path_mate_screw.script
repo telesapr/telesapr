@@ -1,6 +1,6 @@
 # The top circles of the holes of screw_pair.tlspr's two plates picked
 # with the mouse and made a screw mate; the same as path_mate_screw.go
-# makes (TestPathEquivalenceMateScrew).
+# makes (TestPathEquivalence/mate_screw).
 file $testdata/ui/screw_pair.tlspr
 menu File|Open...
 key f

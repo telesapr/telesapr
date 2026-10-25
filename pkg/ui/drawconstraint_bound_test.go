@@ -9,6 +9,7 @@ import (
 // A bound is labelled by which it is, on any dimension; the vector font
 // has no ≥ or ≤.
 func TestDistanceBoundLabels(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	for _, tc := range []struct {
 		c    core.Constraint

@@ -11,6 +11,7 @@ import (
 // made, an edit changes them in one step of undo, and a length can
 // follow a parameter.
 func TestThreadEdit(t *testing.T) {
+	t.Parallel()
 	d := New()
 	rod := d.Sketch.Circle(V(0, 0, 0), 4)
 	ext := d.Features.Extrude(30, "rod")
@@ -70,6 +71,7 @@ func TestThreadEdit(t *testing.T) {
 // With level starts, Finished is the last start's helix, which holds
 // the whole thread, and the group that is left active.
 func TestThreadFinished(t *testing.T) {
+	t.Parallel()
 	d := New()
 	rod := d.Sketch.Circle(V(0, 0, 0), 6)
 	d.Features.Extrude(20, "lead")
@@ -87,6 +89,7 @@ func TestThreadFinished(t *testing.T) {
 
 // What can't be done to a thread panics with an error that says why.
 func TestThreadEditMisuse(t *testing.T) {
+	t.Parallel()
 	d := New()
 	rod := d.Sketch.Circle(V(0, 0, 0), 4)
 	ext := d.Features.Extrude(30, "rod")
@@ -114,6 +117,7 @@ func TestThreadEditMisuse(t *testing.T) {
 // A thread that doesn't fit its part is refused, saying why, and one
 // whose part is made shorter afterwards says so as its problem.
 func TestThreadPastPart(t *testing.T) {
+	t.Parallel()
 	d := New()
 	rod := d.Sketch.Circle(V(0, 0, 0), 4)
 	ext := d.Features.Extrude(30, "rod")

@@ -1,7 +1,7 @@
 # The top circle of loft_guide_profiles.tlspr lofted to the bottom one,
 # picked with the mouse, and held to the guide sketch's cubic by New
 # Group > Guide Loft by Selected Curves; the same as path_loft_guides.go
-# makes (TestPathEquivalenceLoftGuides, roadmap 28.3).
+# makes (TestPathEquivalence/loft_guides, roadmap 28.3).
 file $testdata/ui/loft_guide_profiles.tlspr
 menu File|Open...
 view iso

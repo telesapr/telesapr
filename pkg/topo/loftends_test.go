@@ -17,9 +17,8 @@ import (
 // the second along their planes' normal; its horizontal sections are
 // the circle moved, so its volume is the area times the height.
 func TestSmoothLoftEnds(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.002)
+	t.Parallel()
+	tol := srf.Tol(0.002, 20)
 	loops := [][]srf.SBezier{circleAt(5, 0, 0, 0), circleAt(5, 10, 0, 20)}
 	bs, err := topo.SmoothLoftSurfaceEnds(loops, 0, topo.LoftEnds{Start: 1, End: 1})
 	if err != nil {
@@ -34,7 +33,7 @@ func TestSmoothLoftEnds(t *testing.T) {
 			}
 		}
 	}
-	sh, err := topo.MakeSmoothLoftEnds(loops, 0, topo.LoftEnds{Start: 1, End: 1}, core.NewRGBA(1, 1, 1, 255), 1<<30, srf.Tolerance{})
+	sh, err := topo.MakeSmoothLoftEnds(loops, 0, topo.LoftEnds{Start: 1, End: 1}, core.NewRGBA(1, 1, 1, 255), 1<<30, tol)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +43,7 @@ func TestSmoothLoftEnds(t *testing.T) {
 	// A square to a circle: sections of other weights.
 	sq := polyLoop(v(-4, -4, 0), v(4, -4, 0), v(4, 4, 0), v(-4, 4, 0))
 	sh, err = topo.MakeSmoothLoftEnds([][]srf.SBezier{sq, circleAt(4, 3, 0, 15)}, 0, topo.LoftEnds{Start: 1, End: 1},
-		core.NewRGBA(1, 1, 1, 255), 1<<30, srf.Tolerance{})
+		core.NewRGBA(1, 1, 1, 255), 1<<30, tol)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,9 +62,7 @@ func TestSmoothLoftEnds(t *testing.T) {
 // volume is the sections' area times the height. The rate allowed was
 // fixed at none before the ends were written.
 func TestSmoothLoftEndsSweep(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.002)
+	t.Parallel()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("profiles", 2, 3),
@@ -75,6 +72,7 @@ func TestSmoothLoftEndsSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      12,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		n := int(p.Float("profiles"))
@@ -85,7 +83,7 @@ func TestSmoothLoftEndsSweep(t *testing.T) {
 			loops = append(loops, circleAt(4, aside*f*f, 0, 15*f))
 		}
 		sh, err := topo.MakeSmoothLoftEnds(loops, 0, topo.LoftEnds{Start: p.Float("start"), End: p.Float("end")},
-			core.NewRGBA(1, 1, 1, 255), 1<<30, srf.Tolerance{})
+			core.NewRGBA(1, 1, 1, 255), 1<<30, srf.Tol(0.002, 20))
 		if err != nil {
 			return err
 		}

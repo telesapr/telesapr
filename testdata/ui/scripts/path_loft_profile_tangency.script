@@ -1,7 +1,7 @@
 # loft_ring.tlspr's smooth loft held square to its third profile by the
 # profile's [change] on its screen; the same as
 # path_loft_profile_tangency.go makes
-# (TestPathEquivalenceLoftProfileTangency).
+# (TestPathEquivalence/loft_profile_tangency).
 file $testdata/ui/loft_ring.tlspr
 menu File|Open...
 view default

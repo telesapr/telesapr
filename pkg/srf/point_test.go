@@ -8,6 +8,7 @@ import (
 
 // TestSPointBasic verifies SPoint construction.
 func TestSPointBasic(t *testing.T) {
+	t.Parallel()
 	p := SPoint{Tag: 5, P: geom.Vector{X: 1, Y: 2, Z: 3}}
 	if p.Tag != 5 {
 		t.Errorf("Tag = %d, want 5", p.Tag)
@@ -20,6 +21,7 @@ func TestSPointBasic(t *testing.T) {
 // TestSPointListIncrementTagFor verifies that points equal within
 // LENGTH_EPS share a tag.
 func TestSPointListIncrementTagFor(t *testing.T) {
+	t.Parallel()
 	var list SPointList
 	list.IncrementTagFor(geom.Vector{X: 1})
 	list.IncrementTagFor(geom.Vector{X: 2})

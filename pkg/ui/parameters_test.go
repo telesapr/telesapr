@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
-	"github.com/telesapr/telesapr/pkg/persist/slvs"
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
 	"github.com/telesapr/telesapr/pkg/sketch"
@@ -27,6 +26,7 @@ func shows(ss *Application, s string) bool {
 // could not be evaluated; its edits are undo steps, and a refused one
 // is none.
 func TestParametersScreen(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	tw := ss.TW
 	w := tw.window.(*headless.Window)
@@ -85,13 +85,10 @@ func TestParametersScreen(t *testing.T) {
 // The active group's entities that their constraints don't fix are
 // drawn in their own colours, when the setting is on.
 func TestColorByFreedom(t *testing.T) {
-	path := filepath.Join("..", "..", "testdata", "request", "line_segment", "normal.slvs")
+	t.Parallel()
+	path := filepath.Join("..", "..", "testdata", "tlspr", "golden", "request", "line_segment", "normal.tlspr")
 	ss, _ := newTestApp(t)
-	doc, err := slvs.LoadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	ss.LoadSketchForTest(doc.Sketch, path)
+	loadModel(t, ss, path)
 	draw := func() string {
 		var b strings.Builder
 		rc := newRecordingCanvas(&b)
@@ -133,13 +130,10 @@ func TestColorByFreedom(t *testing.T) {
 // The constraints a failed solve blames are drawn in their own colour,
 // and the failure screen shows each one.
 func TestConflictsShown(t *testing.T) {
-	path := filepath.Join("..", "..", "testdata", "request", "line_segment", "normal.slvs")
+	t.Parallel()
+	path := filepath.Join("..", "..", "testdata", "tlspr", "golden", "request", "line_segment", "normal.tlspr")
 	ss, _ := newTestApp(t)
-	doc, err := slvs.LoadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	ss.LoadSketchForTest(doc.Sketch, path)
+	loadModel(t, ss, path)
 	sk := ss.SK
 	hg := ss.GW.activeGroupH()
 	var line *core.Entity

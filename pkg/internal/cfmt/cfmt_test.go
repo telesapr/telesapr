@@ -2,14 +2,18 @@ package cfmt
 
 import (
 	"math"
-	"os"
 	"strings"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/internal/golden"
 )
 
-// TestSprintfVsGlibc compares Sprintf with glibc on the cases
-// scripts/cfmt-glibc.c prints.
-func TestSprintfVsGlibc(t *testing.T) {
+// TestSprintfGolden pins what Sprintf prints for values and verbs of
+// the kinds the file writers use, rounding, signs, NaNs and widths
+// among them, since the goldens record that output byte for byte
+// (testdata/sprintf.golden; scripts/regen-golden.sh sprintf rewrites
+// it).
+func TestSprintfGolden(t *testing.T) {
 	t.Parallel()
 	nan := math.NaN()
 	vals := []float64{0, math.Copysign(0, -1), 1, -1, 0.5, 1e-5, 123456789, 1.0 / 3, 2.5, 3.5, -2.675, 1e21, 1e-300, nan, math.Copysign(nan, -1), math.Inf(1), math.Inf(-1), 0.000123456, 99999.95, 12.3456789}
@@ -28,12 +32,5 @@ func TestSprintfVsGlibc(t *testing.T) {
 		}
 	}
 	b.WriteString(Sprintf("%c|%5s|%-5s|%.2s|%%\n", 65, "ab", "ab", "abcdef"))
-	want, _ := os.ReadFile("testdata/glibc.txt")
-	w := strings.Split(string(want), "\n")
-	g := strings.Split(b.String(), "\n")
-	for i := range w {
-		if i >= len(g) || w[i] != g[i] {
-			t.Errorf("line %d: C %q Go %q", i, w[i], g[min(i, len(g)-1)])
-		}
-	}
+	golden.Check(t, "testdata/sprintf.golden", []byte(b.String()))
 }

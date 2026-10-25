@@ -13,6 +13,7 @@ import (
 // that is not a change of tolerance, and must not read every linked
 // file again.
 func TestApplyEngineSettingsReloadsLinksOnAToleranceChange(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	reloads := 0
 	ss.SK.ReloadAllLinked = func(*sketch.Sketch) { reloads++ }

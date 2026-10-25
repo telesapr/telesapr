@@ -14,14 +14,15 @@ import (
 
 // cubicPrism is the prism of height 5 on the outline of cubics, each
 // given by its four control points in the plane z = 0, turning
-// anticlockwise; consecutive cubics meet at sharp corners.
-func cubicPrism(cubics [][4]geom.Vector) *srf.SShell {
+// anticlockwise; consecutive cubics meet at sharp corners. It is
+// extruded at tol.
+func cubicPrism(cubics [][4]geom.Vector, tol srf.Tolerance) *srf.SShell {
 	var ls srf.SBezierLoopSet
 	for _, c := range cubics {
 		ls.Outer.Curves = append(ls.Outer.Curves, srf.SBezierFrom4(c[0], c[1], c[2], c[3]))
 	}
 	ls.Normal = v(0, 0, -1)
-	var sh srf.SShell
+	sh := srf.SShell{Tol: tol}
 	sh.MakeFromExtrusionOf(&ls, v(0, 0, 0), v(0, 0, 5), core.NewRGBA(100, 100, 100, 255))
 	return &sh
 }
@@ -77,9 +78,10 @@ func TestFilletChainsMitred(t *testing.T) {
 	if testing.Short() {
 		t.Skip("rolling-ball fillets of several chains, slow")
 	}
-	fine(t, 0.002)
+	t.Parallel()
+	tol := fine(0.002)
 	lens := lensCubics()
-	sh := cubicPrism(lens)
+	sh := cubicPrism(lens, tol)
 	if err := topo.FilletPicks(sh, topPicks(lens), 1, 1<<30, false); err != nil {
 		t.Fatalf("lens: %v", err)
 	}
@@ -95,7 +97,7 @@ func TestFilletChainsMitred(t *testing.T) {
 		{v(20, 0, 0), v(18, 6, 0), v(14, 12, 0), v(10, 17, 0)},
 		{v(10, 17, 0), v(6, 12, 0), v(2, 6, 0), v(0, 0, 0)},
 	}
-	sh = cubicPrism(three)
+	sh = cubicPrism(three, tol)
 	if err := topo.FilletPicks(sh, topPicks(three), 0.5, 1<<30, false); err != nil {
 		t.Fatalf("three cubics: %v", err)
 	}
@@ -112,23 +114,24 @@ func TestFilletChainsMitred(t *testing.T) {
 // are those it has alone, and the two take what each takes alone,
 // within what the meshes' chords of the cut walls differ by. Chamfers that would meet in mitres are refused, saying so.
 func TestFilletChainsNotMitred(t *testing.T) {
-	fine(t, 0.002)
+	t.Parallel()
+	tol := fine(0.002)
 	lens := lensCubics()
 	two := topPicks(lens)
 	two[1].R = 0.5
-	sh := cubicPrism(lens)
+	sh := cubicPrism(lens, tol)
 	err := topo.FilletPicks(sh, two, 1, 1<<30, false)
 	if err == nil || !strings.Contains(err.Error(), "pick it alone") {
 		t.Errorf("two radii: %v", err)
 	}
 
 	bottom := []topo.FilletPick{two[0], {At: cubicMiddle(lens[1], 0), Arc: true}}
-	before := meshVolume(cubicPrism(lens))
+	before := meshVolume(cubicPrism(lens, tol))
 	took := 0.0
 	var made []geom.Vector
-	orig := build(t, cubicPrism(lens)).Vertices
+	orig := build(t, cubicPrism(lens, tol)).Vertices
 	for _, p := range bottom {
-		sh := cubicPrism(lens)
+		sh := cubicPrism(lens, tol)
 		if err := topo.FilletPicks(sh, []topo.FilletPick{p}, 1, 1<<30, false); err != nil {
 			t.Fatalf("alone at %v: %v", p.At, err)
 		}
@@ -139,7 +142,7 @@ func TestFilletChainsNotMitred(t *testing.T) {
 			}
 		}
 	}
-	sh = cubicPrism(lens)
+	sh = cubicPrism(lens, tol)
 	if err := topo.FilletPicks(sh, bottom, 1, 1<<30, false); err != nil {
 		t.Fatalf("top and bottom: %v", err)
 	}
@@ -157,7 +160,7 @@ func TestFilletChainsNotMitred(t *testing.T) {
 	}
 
 	// Chamfers: a mitre is found from the ball's centres.
-	sh = cubicPrism(lens)
+	sh = cubicPrism(lens, tol)
 	err = topo.FilletPicks(sh, topPicks(lens), 1, 1<<30, true)
 	if err == nil || !strings.Contains(err.Error(), "are not mitred") {
 		t.Errorf("chamfers: %v", err)

@@ -1,5 +1,5 @@
 # A custom line style made on the styles screen and drawn at a level of
-# its own; the same as path_style.go makes (TestPathEquivalenceStyle).
+# its own; the same as path_style.go makes (TestPathEquivalence/style).
 key r
 move 200 200
 down L 200 200

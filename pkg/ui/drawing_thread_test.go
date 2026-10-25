@@ -50,6 +50,7 @@ func viewOf(t *testing.T, ss *Application, kind string, d *sketch.Drawing) map[i
 // left; along the axis the root is three quarters of a thin circle. A
 // nut's root is hidden in the part. ModelledThreads draws the turns.
 func TestDrawingThreadConvention(t *testing.T) {
+	t.Parallel()
 	ss, doc := threadedModel(t, false)
 	d := doc.Drawing.Get()
 	d.Hidden = true

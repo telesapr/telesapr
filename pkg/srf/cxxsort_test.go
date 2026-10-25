@@ -7,12 +7,14 @@ import (
 	"testing"
 )
 
-// TestCxxSortVsLibstdcxx sorts 3000 random arrays with few distinct keys,
-// half with CxxSort and half with the heapsort cxxPartialSort, and
-// requires the permutations libstdc++ 16's std::sort and
-// std::partial_sort(first, last, last) give: the output of a SolveSpace
-// program with the same generator hashes to want.
-func TestCxxSortVsLibstdcxx(t *testing.T) {
+// TestCxxSortPermutations sorts 3000 random arrays with few distinct
+// keys, half with CxxSort and half with the heapsort cxxPartialSort,
+// and pins the order equal keys come out in by a hash: that order is
+// the order of a mesh's triangles, which the goldens and the exports
+// record. It matched libstdc++ 16's std::sort and
+// std::partial_sort(first, last, last) when the hash was taken.
+func TestCxxSortPermutations(t *testing.T) {
+	t.Parallel()
 	const want = "098d058e2fdca9b54ecfb3dc96f884eff33b6f7b3f54465f8c98562a023e2aa4"
 	type e struct{ key, id int32 }
 	s := uint64(12345)

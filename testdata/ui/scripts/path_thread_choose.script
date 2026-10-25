@@ -1,6 +1,6 @@
 # A screw thread chosen from the list of sizes, left-handed, on an
 # extruded circle; the same model as path_thread_choose.go makes
-# (TestPathEquivalenceThreadChoose).
+# (TestPathEquivalence/thread_choose).
 key c
 move 300 300
 down L 300 300

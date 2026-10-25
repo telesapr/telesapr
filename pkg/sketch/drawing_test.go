@@ -13,6 +13,7 @@ import (
 // through undo, redo and a round trip; a sheet or view there isn't is
 // refused.
 func TestDrawingSaved(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	block(d, 0, 0, 20, 10, 5)
 	step(d)

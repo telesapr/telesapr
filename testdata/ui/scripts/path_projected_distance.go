@@ -1,5 +1,5 @@
 // The projected distance of path_projected_distance.script, made by a
-// script (TestPathEquivalenceProjectedDistance).
+// script (TestPathEquivalence/projected_distance).
 package main
 
 import . "github.com/telesapr/telesapr/pkg/script/api"

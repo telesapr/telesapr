@@ -11,57 +11,58 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/golden"
-	"github.com/telesapr/telesapr/pkg/persist/slvs"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
 	"github.com/telesapr/telesapr/pkg/sketch"
-	"github.com/telesapr/telesapr/pkg/ttf"
 )
 
-// textwinFixtures are the fixtures TestTextWindow shows the screens
-// of.
+// textwinFixtures are the models TestTextWindow shows the screens of,
+// by their paths from testdata; a golden is named for the model's path
+// in the corpus, testdata/tlspr/golden.
 var textwinFixtures = []string{
-	"analysis/contour_area/normal.slvs",
-	"constraint/angle/normal.slvs",
-	"constraint/comment/normal.slvs",
-	"constraint/diameter/normal.slvs",
-	"constraint/diameter/reference.slvs",
-	"constraint/length_ratio/normal.slvs",
-	"constraint/parallel/normal.slvs",
-	"constraint/proj_pt_distance/normal.slvs",
-	"constraint/pt_face_distance/normal.slvs",
-	"constraint/pt_line_distance/normal.slvs",
-	"constraint/pt_on_circle/normal.slvs",
-	"constraint/pt_plane_distance/normal.slvs",
-	"constraint/same_orientation/normal.slvs",
-	"constraint/where_dragged/normal.slvs",
-	"edit/tangent_arc.slvs",
-	"group/boolean_knife_edge/normal.slvs",
-	"group/force_to_mesh/union.slvs",
-	"group/link/normal.slvs",
-	"group/link_stl/normal.slvs",
-	"group/translate_nd/normal.slvs",
-	"request/arc_of_circle/normal.slvs",
-	"request/circle/normal.slvs",
-	"request/cubic/normal.slvs",
-	"request/cubic_periodic/normal.slvs",
-	"request/datum_point/normal.slvs",
-	"request/image/linked.slvs",
-	"request/image/normal.slvs",
-	"request/line_segment/normal.slvs",
-	"request/ttf_text/extrude.slvs",
-	"request/ttf_text/normal.slvs",
-	"request/workplane/normal.slvs",
+	"tlspr/golden/analysis/contour_area/normal.tlspr",
+	"tlspr/golden/constraint/angle/normal.tlspr",
+	"tlspr/golden/constraint/comment/normal.tlspr",
+	"tlspr/golden/constraint/diameter/normal.tlspr",
+	"tlspr/golden/constraint/diameter/reference.tlspr",
+	"tlspr/golden/constraint/length_ratio/normal.tlspr",
+	"tlspr/golden/constraint/parallel/normal.tlspr",
+	"tlspr/golden/constraint/proj_pt_distance/normal.tlspr",
+	"tlspr/golden/constraint/pt_face_distance/normal.tlspr",
+	"tlspr/golden/constraint/pt_line_distance/normal.tlspr",
+	"tlspr/golden/constraint/pt_on_circle/normal.tlspr",
+	"tlspr/golden/constraint/pt_plane_distance/normal.tlspr",
+	"tlspr/golden/constraint/same_orientation/normal.tlspr",
+	"tlspr/golden/constraint/where_dragged/normal.tlspr",
+	"modify/tangent_arc.tlspr",
+	"tlspr/golden/group/boolean_knife_edge/normal.tlspr",
+	"tlspr/golden/group/force_to_mesh/union.tlspr",
+	"tlspr/golden/group/link/normal.tlspr",
+	"tlspr/golden/group/link_stl/normal.tlspr",
+	"tlspr/golden/group/translate_nd/normal.tlspr",
+	"tlspr/golden/request/arc_of_circle/normal.tlspr",
+	"tlspr/golden/request/circle/normal.tlspr",
+	"tlspr/golden/request/cubic/normal.tlspr",
+	"tlspr/golden/request/cubic_periodic/normal.tlspr",
+	"tlspr/golden/request/datum_point/normal.tlspr",
+	"tlspr/golden/request/image/linked.tlspr",
+	"tlspr/golden/request/image/normal.tlspr",
+	"tlspr/golden/request/line_segment/normal.tlspr",
+	"tlspr/golden/request/ttf_text/extrude.tlspr",
+	"tlspr/golden/request/ttf_text/normal.tlspr",
+	"tlspr/golden/request/workplane/normal.tlspr",
 }
 
 // TestTextWindow shows each text window screen for the fixtures, and
 // compares the rows, their text and each cell's colours and links with
-// the golden (testdata/textwin, first recorded from SolveSpace).
+// the golden (testdata/textwin).
 func TestTextWindow(t *testing.T) {
+	t.Parallel()
 	root := filepath.Join("..", "..", "testdata")
-	ttf.DefaultFonts = ttf.NewFontList([]string{filepath.Join(root, "Gentium-R.ttf")})
 	for _, f := range textwinFixtures {
 		t.Run(f, func(t *testing.T) {
-			goldenPath := filepath.Join(root, "textwin", strings.TrimSuffix(f, ".slvs")+".textwin")
+			t.Parallel()
+			name := strings.TrimSuffix(strings.TrimPrefix(f, "tlspr/golden/"), ".tlspr")
+			goldenPath := filepath.Join(root, "textwin", name+".textwin")
 			got := textwinScreensFor(t, filepath.Join(root, f))
 			if golden.Regen() {
 				golden.Check(t, goldenPath, []byte(got))
@@ -100,7 +101,7 @@ func compareTextwin(t *testing.T, want, got string) {
 	}
 }
 
-// cellKey is the harness's CellKey.
+// cellKey names a cell's colours and link, for the dump.
 func (tw *textWindow) cellKey(r, c int) string {
 	m := &tw.lines[r].meta[c]
 	key := fmt.Sprintf("%02x %02x", m.fg, m.bg)
@@ -133,7 +134,7 @@ func (tw *textWindow) sameCellKey(r, c0, c1 int) bool {
 	return a.link == 0 || (a.data == b.data && (a.f != nil) == (b.f != nil) && (a.h != nil) == (b.h != nil))
 }
 
-// dumpRows is the harness's DumpRows.
+// dumpRows writes the rows of the text window, with their cells.
 func (tw *textWindow) dumpRows(b *strings.Builder) {
 	for r := range tw.rows {
 		row := &tw.lines[r]
@@ -173,22 +174,19 @@ func (tw *textWindow) dumpRows(b *strings.Builder) {
 	}
 }
 
-// textwinScreensFor runs the harness's scenarios on a fixture.
+// textwinScreensFor shows each screen of the text window for a model
+// and dumps them.
 func textwinScreensFor(t testing.TB, path string) string {
 	p := headless.New()
 	ss := New(p)
 	ss.LoadSettings()
-	ss.NewFile()
-	ss.AfterNewFile()
-	doc, err := slvs.LoadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	ss.LoadSketchForTest(doc.Sketch, abs)
+	if err := ss.Load(abs); err != nil {
+		t.Fatal(err)
+	}
 	sk := ss.SK
 	tw := ss.TW
 	gw := ss.GW

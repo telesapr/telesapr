@@ -1,5 +1,5 @@
 // The loft of path_loft_guides.script, made by a script
-// (TestPathEquivalenceLoftGuides): the top circle lofted to the bottom
+// (TestPathEquivalence/loft_guides): the top circle lofted to the bottom
 // one, held to the guide sketch's cubic (roadmap 28.3).
 package main
 

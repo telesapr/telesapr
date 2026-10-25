@@ -34,6 +34,7 @@ func contextMenuFor(t *testing.T, ss *Application, p *headless.Platform, he core
 }
 
 func TestContextMenuSolid(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	if err := ss.LoadFromFile(filepath.Join("..", "..", "testdata", "topo", "slot.tlspr")); err != nil {
 		t.Fatal(err)
@@ -99,6 +100,7 @@ func TestContextMenuSolid(t *testing.T) {
 }
 
 func TestContextMenuEditValue(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	if err := ss.LoadFromFile(filepath.Join("..", "..", "testdata", "topo", "slot.tlspr")); err != nil {
 		t.Fatal(err)
@@ -134,6 +136,7 @@ func TestContextMenuEditValue(t *testing.T) {
 // away again, the coincidence of the line's start with its end deleted,
 // each one step of undo.
 func TestContextMenuSpline(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	if err := ss.LoadFromFile(filepath.Join("..", "..", "testdata", "ui", "spline_line.tlspr")); err != nil {
 		t.Fatal(err)
@@ -192,6 +195,7 @@ func TestContextMenuSpline(t *testing.T) {
 // appearance of its own, as View.SetFaceAppearance does for a script,
 // and takes it back with the group's own.
 func TestContextMenuFaceAppearance(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	if err := ss.LoadFromFile(filepath.Join("..", "..", "testdata", "topo", "slot.tlspr")); err != nil {
 		t.Fatal(err)

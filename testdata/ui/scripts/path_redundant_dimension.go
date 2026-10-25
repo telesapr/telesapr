@@ -1,5 +1,5 @@
 // The model of path_redundant_dimension.script, made by a script
-// (TestPathEquivalenceRedundantDimension): a rectangle with its width
+// (TestPathEquivalence/redundant_dimension): a rectangle with its width
 // and height, and a diagonal that the group already holds, which the
 // sketch makes a reference dimension as the interface does.
 package main

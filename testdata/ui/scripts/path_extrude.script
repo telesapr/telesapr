@@ -1,5 +1,5 @@
 # A rectangle drawn with the mouse and extruded; the same model as
-# path_extrude.go makes (TestPathEquivalenceExtrude).
+# path_extrude.go makes (TestPathEquivalence/extrude).
 key r
 move 200 200
 down L 200 200

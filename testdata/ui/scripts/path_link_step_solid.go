@@ -1,5 +1,5 @@
 // The link of path_link_step_solid.script, made by a script
-// (TestPathEquivalenceLinkStepSolid): a STEP file linked as a solid.
+// (TestPathEquivalence/link_step_solid): a STEP file linked as a solid.
 package main
 
 import . "github.com/telesapr/telesapr/pkg/script/api"

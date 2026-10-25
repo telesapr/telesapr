@@ -77,6 +77,7 @@ func covers(el srf.SEdgeList, x, lo, hi float64) bool {
 // thread ends at the shoulder; along the axis the root is three
 // quarters of a thin circle and nothing else is drawn at its radius.
 func TestDrawingThreadBolt(t *testing.T) {
+	t.Parallel()
 	ss, doc := boltModel(t, false, 0)
 	d := doc.Drawing.Get()
 	top := viewOf(t, ss, "top", &d)
@@ -125,6 +126,7 @@ func TestDrawingThreadBolt(t *testing.T) {
 // surface, which the mesh spans from the groove into the thread, is
 // not drawn over the thread.
 func TestDrawingThreadThrough(t *testing.T) {
+	t.Parallel()
 	ss, doc := boltModel(t, true, 0)
 	d := doc.Drawing.Get()
 	top := viewOf(t, ss, "top", &d)
@@ -157,6 +159,7 @@ func TestDrawingThreadThrough(t *testing.T) {
 // line across where the full thread ends, the root's lines slanting
 // out from there to the crest at the shoulder.
 func TestDrawingThreadRunOutEnd(t *testing.T) {
+	t.Parallel()
 	ss, doc := boltModel(t, false, 3)
 	d := doc.Drawing.Get()
 	top := viewOf(t, ss, "top", &d)
@@ -184,6 +187,7 @@ func TestDrawingThreadRunOutEnd(t *testing.T) {
 // weights of its lines: the outlines thick, a thread's root thin, as
 // ISO 6410 has them, in SVG and DXF alike.
 func TestDrawingThreadWeights(t *testing.T) {
+	t.Parallel()
 	_, doc := boltModel(t, false, 0)
 	dir := t.TempDir()
 	svg := filepath.Join(dir, "bolt.svg")

@@ -35,6 +35,7 @@ func scriptConsole(t *testing.T, ss *Application, lines ...string) string {
 // A script draws on the application's sketch; each of its lines is a
 // step of undo, and the windows follow.
 func TestScriptHostDraws(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	got := scriptConsole(t, ss,
 		`sides := doc.Sketch.Rect(V(0, 0, 0), V(30, 20, 0))`,
@@ -79,6 +80,7 @@ func TestScriptHostDraws(t *testing.T) {
 // What the application would say in a dialog goes to the script: as
 // the error of the call that failed, or else to its output.
 func TestScriptHostMessages(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	dir := t.TempDir()
 	got := scriptConsole(t, ss,
@@ -114,6 +116,7 @@ func TestScriptHostMessages(t *testing.T) {
 }
 
 func TestScriptHostSelection(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	got := scriptConsole(t, ss,
 		`a := doc.Sketch.Line(V(0, 0, 0), V(10, 0, 0))`,
@@ -136,6 +139,7 @@ func TestScriptHostSelection(t *testing.T) {
 // takes the edges, the menu's shell the face, and the script reads the
 // selection back.
 func TestScriptHostSelectsSolid(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	got := scriptConsole(t, ss,
 		`sides := doc.Sketch.Rect(V(0, 0, 0), V(20, 10, 0))`,
@@ -168,6 +172,7 @@ func TestScriptHostSelectsSolid(t *testing.T) {
 // menu's entry, are the same; they replace the faces selected, and the
 // menu's chamfer takes them.
 func TestScriptHostSelectsFaceEdges(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	got := scriptConsole(t, ss,
 		`doc.Sketch.Rect(V(0, 0, 0), V(20, 10, 0))`,
@@ -242,6 +247,7 @@ func (p *loopPlatform) stop() {
 // event loop, where a call made from inside another runs in place and
 // a panic comes back to the script.
 func TestScriptHostRunsOnLoop(t *testing.T) {
+	t.Parallel()
 	p := &loopPlatform{Platform: headless.New(), posted: make(chan func(), 16), done: make(chan struct{})}
 	stopped := make(chan struct{})
 	var ss *Application
@@ -305,6 +311,7 @@ func TestScriptHostRunsOnLoop(t *testing.T) {
 // regenerations after it keep: set on the sketch alone, the application
 // put its own back at the next one.
 func TestScriptHostChordTolerance(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	got := scriptConsole(t, ss,
 		`doc.Edit.SetChordTolerance(0.01)`,
@@ -322,6 +329,7 @@ func TestScriptHostChordTolerance(t *testing.T) {
 // that new groups come at the end. A tangent arc in a step is part of
 // the step's undo.
 func TestScriptHostDeleteActiveAndUndo(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	got := scriptConsole(t, ss,
 		`first := doc.Active()`,

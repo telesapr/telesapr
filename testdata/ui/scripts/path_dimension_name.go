@@ -1,5 +1,5 @@
 // The model of path_dimension_name.script, made by a script
-// (TestPathEquivalenceDimensionName): a rectangle with the mouse's
+// (TestPathEquivalence/dimension_name): a rectangle with the mouse's
 // corners, its bottom side's length named width and its right side's
 // width/2, extruded 80 mm as the interface does by default (roadmap
 // 16.1).

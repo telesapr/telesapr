@@ -9,6 +9,7 @@ import (
 // A point drawn in a 3d sketch is free in 3d as its file reads back,
 // so a save, a reload and a save agree.
 func TestRequestIn3DRoundTrips(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Features.Sketch3D("")
 	d.Sketch.Point(api.V(1, 2, 3))

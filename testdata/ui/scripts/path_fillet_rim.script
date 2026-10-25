@@ -3,7 +3,7 @@
 # pieces. The mouse picks it from below, where the block doesn't hide
 # it, on a piece whose name is not the lowest, and the fillet names the
 # edge by its lowest piece all the same; the same as path_fillet_rim.go
-# makes (TestPathEquivalenceFilletRim).
+# makes (TestPathEquivalence/fillet_rim).
 file $testdata/topo/boss.tlspr
 menu File|Open...
 view under

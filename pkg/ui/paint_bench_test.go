@@ -15,7 +15,7 @@ func benchmarkPaint(b *testing.B, fixture string) {
 	p := headless.New()
 	ss := New(p)
 	ss.Init()
-	if !loadSlvs(b, ss, filepath.Join("..", "..", "testdata", fixture)) {
+	if !loadModel(b, ss, filepath.Join("..", "..", "testdata", "tlspr", "golden", fixture)) {
 		b.Fatal("load failed")
 	}
 	w := ss.GW.window.(*headless.Window)
@@ -32,10 +32,10 @@ func benchmarkPaint(b *testing.B, fixture string) {
 	}
 }
 
-func BenchmarkPaintTranslate(b *testing.B) { benchmarkPaint(b, "group/translate_nd/normal.slvs") }
-func BenchmarkPaintText(b *testing.B)      { benchmarkPaint(b, "request/ttf_text/extrude.slvs") }
+func BenchmarkPaintTranslate(b *testing.B) { benchmarkPaint(b, "group/translate_nd/normal.tlspr") }
+func BenchmarkPaintText(b *testing.B)      { benchmarkPaint(b, "request/ttf_text/extrude.tlspr") }
 func BenchmarkPaintBoolean(b *testing.B) {
-	benchmarkPaint(b, "group/boolean_tangent_fillet/normal.slvs")
+	benchmarkPaint(b, "group/boolean_tangent_fillet/normal.tlspr")
 }
 
 // BenchmarkPaintHover times repainting as the mouse sweeps over a model
@@ -45,7 +45,7 @@ func BenchmarkPaintHover(b *testing.B) {
 	p := headless.New()
 	ss := New(p)
 	ss.Init()
-	if !loadSlvs(b, ss, filepath.Join("..", "..", "testdata", "group/translate_nd/normal.slvs")) {
+	if !loadModel(b, ss, filepath.Join("..", "..", "testdata", "tlspr", "golden", "group/translate_nd/normal.tlspr")) {
 		b.Fatal("load failed")
 	}
 	w := ss.GW.window.(*headless.Window)

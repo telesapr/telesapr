@@ -1,7 +1,7 @@
 # A block, a smaller block on its top through a workplane at its corner,
 # and the view turned: the smaller block's foot edge, picked with the
 # mouse, filled; the same as path_fillet_concave.go makes
-# (TestPathEquivalenceFilletConcave).
+# (TestPathEquivalence/fillet_concave).
 key r
 move 200 200
 down L 200 200

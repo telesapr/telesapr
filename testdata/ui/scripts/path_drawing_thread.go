@@ -1,5 +1,5 @@
 // The model of path_drawing_thread.script, made by a script
-// (TestPathEquivalenceDrawingThread): the thread of path_thread, its
+// (TestPathEquivalence/drawing_thread): the thread of path_thread, its
 // drawing set to draw the thread turn by turn, as modelled.
 package main
 

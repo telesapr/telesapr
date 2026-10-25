@@ -1,6 +1,6 @@
 // The cylinder of path_drawing_faces.script and its end face's
 // diameter on the front view of the drawing, made by a script
-// (TestPathEquivalenceDrawingFaces, roadmap 29.2).
+// (TestPathEquivalence/drawing_faces, roadmap 29.2).
 package main
 
 import . "github.com/telesapr/telesapr/pkg/script/api"

@@ -3,6 +3,7 @@ package ui
 import (
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/internal/golden"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/ttf"
@@ -24,6 +25,7 @@ func buildTextDoc(t *testing.T) (*Application, api.Entity) {
 // calls: the files they save are the same, and the window's edits are
 // each one undo step that redo brings back.
 func TestTextEditsMatchScript(t *testing.T) {
+	t.Parallel()
 	win, wtext := buildTextDoc(t)
 	hr := wtext.Request().H
 	fonts := win.Fonts().List()
@@ -54,7 +56,7 @@ func TestTextEditsMatchScript(t *testing.T) {
 	got := string(tlspr.Encode(win.SK, tlspr.Options{}))
 	want := string(tlspr.Encode(scr.SK, tlspr.Options{}))
 	if got != want {
-		t.Errorf("the window and the script save different files, at %s", firstDiffLine(got, want))
+		t.Errorf("the window and the script save different files, at %s", golden.FirstDifference([]byte(want), []byte(got)))
 	}
 
 	// Each window edit is one undo step, and redo brings it back.

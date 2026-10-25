@@ -1,5 +1,5 @@
 # What the mouse hovers over group/translate_nd/normal.slvs, in two views.
-load group/translate_nd/normal.slvs
+load tlspr/golden/group/translate_nd/normal.tlspr
 view default
 hovergrid 20
 view rotated

@@ -1,5 +1,5 @@
 # What the mouse hovers over constraint/equal_radius/normal.slvs, in two views.
-load constraint/equal_radius/normal.slvs
+load tlspr/golden/constraint/equal_radius/normal.tlspr
 view default
 hovergrid 20
 view rotated

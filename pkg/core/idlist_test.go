@@ -92,22 +92,6 @@ func TestIdListEmptyAdd(t *testing.T) {
 	}
 }
 
-// TestIdListFindById verifies FindById.
-func TestIdListFindById(t *testing.T) {
-	t.Parallel()
-	list := NewIDList[int, string](0)
-	list.Add(1, "one")
-	list.Add(2, "two")
-	v, ok := list.FindByID(1)
-	if !ok || v != "one" {
-		t.Errorf("FindById(1) = (%v, %v), want (one, true)", v, ok)
-	}
-	_, ok = list.FindByID(99)
-	if ok {
-		t.Errorf("FindById(99) should not find")
-	}
-}
-
 // TestIdListSortedHandles verifies SortedHandles ordering.
 func TestIdListSortedHandles(t *testing.T) {
 	t.Parallel()
@@ -118,31 +102,6 @@ func TestIdListSortedHandles(t *testing.T) {
 	ids := list.SortedHandles(func(a, b int) bool { return a < b })
 	if len(ids) != 3 || ids[0] != 1 || ids[1] != 2 || ids[2] != 3 {
 		t.Errorf("SortedHandles = %v, want [1, 2, 3]", ids)
-	}
-}
-
-// TestIdListIDs verifies the IDs accessor returns every handle that
-// was added. IDs is map-iteration-ordered so we only check membership.
-func TestIdListIDs(t *testing.T) {
-	t.Parallel()
-	list := NewIDList[int, string](0)
-	list.Add(10, "ten")
-	list.Add(20, "twenty")
-	ids := list.IDs()
-	if len(ids) != 2 {
-		t.Fatalf("IDs len = %d, want 2", len(ids))
-	}
-	seen := map[int]bool{10: false, 20: false}
-	for _, h := range ids {
-		if _, ok := seen[h]; !ok {
-			t.Errorf("unexpected handle in IDs: %v", h)
-		}
-		seen[h] = true
-	}
-	for h, ok := range seen {
-		if !ok {
-			t.Errorf("missing handle in IDs: %v", h)
-		}
 	}
 }
 

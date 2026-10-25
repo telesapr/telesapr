@@ -3,6 +3,7 @@ package topo_test
 import (
 	"fmt"
 	"math"
+	"sync/atomic"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/check"
@@ -57,10 +58,7 @@ func setbackSeams(t *testing.T, sh *srf.SShell) (float64, int) {
 // of the largest radius, more than a sphere's or a setback's corner
 // takes.
 func TestFilletSetback(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	const tol = 0.002
-	srf.SetChordTolMm(tol)
+	t.Parallel()
 	cases := []struct {
 		name  string
 		picks []topo.FilletPick
@@ -74,7 +72,7 @@ func TestFilletSetback(t *testing.T) {
 			30*1*(1-math.Pi/4) + 10*4*(1-math.Pi/4) + 20*9*(1-math.Pi/4) + 27},
 	}
 	for _, c := range cases {
-		sh := box()
+		sh := box(srf.Tol(0.002, 20))
 		if err := topo.FilletPicks(sh, c.picks, 1, 1<<30, false); err != nil {
 			t.Errorf("%s: %v", c.name, err)
 			continue
@@ -97,15 +95,13 @@ func TestFilletSetback(t *testing.T) {
 // At a corner of one radius the setback takes about what the sphere
 // does.
 func TestFilletSetbackAgainstSphere(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.002)
+	t.Parallel()
 	for _, r := range []float64{1, 2, 3} {
 		picks := []topo.FilletPick{
 			{A: v(10, 20, 30), B: v(10, 20, 0), R: r},
 			{A: v(10, 20, 30), B: v(0, 20, 30), R: r},
 			{A: v(10, 20, 30), B: v(10, 0, 30), R: r}}
-		sphere, setback := box(), box()
+		sphere, setback := box(srf.Tol(0.002, 20)), box(srf.Tol(0.002, 20))
 		if err := topo.FilletPicks(sphere, picks, 1, 1<<30, false); err != nil {
 			t.Fatal(err)
 		}
@@ -127,15 +123,16 @@ func TestFilletSetbackAgainstSphere(t *testing.T) {
 // hole of eight sides filled; sound, tangent all round, less than the
 // pyramid.
 func TestFilletSetbackApex(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.002)
+	t.Parallel()
 	apex := v(10, 10, 10)
 	// Clockwise seen from above.
 	base := []geom.Vector{v(0, 0, 0), v(0, 20, 0), v(20, 20, 0), v(20, 0, 0)}
 	whole := 20.0 * 20 * 10 / 3
 	for _, radii := range [][4]float64{{1, 1, 1, 1}, {1, 1.5, 2, 1.5}} {
-		sh, _ := pyramid(t, base, apex)
+		sh, _, err := pyramid(base, apex, srf.Tol(0.002, 20))
+		if err != nil {
+			t.Fatal(err)
+		}
 		if got := sound(t, sh); math.Abs(got-whole) > 1e-3*whole {
 			t.Fatalf("the pyramid's volume %g, want %g", got, whole)
 		}
@@ -161,13 +158,13 @@ func TestFilletSetbackApex(t *testing.T) {
 
 // setbackCase sets back the box's corner of radii r1, r2, r3, or the
 // pyramid's apex of r1, r2, r3, r2, and checks the solid: sound and
-// tangent all round. refused is whether the fillet was refused.
+// tangent all round, at a chord tolerance of 0.002. refused is whether
+// the fillet was refused.
 func setbackCase(t *testing.T, corner string, r1, r2, r3 float64) (refused bool, err error) {
-	srf.SetChordTolMm(0.002)
 	var sh *srf.SShell
 	var picks []topo.FilletPick
 	if corner == "box" {
-		sh = box()
+		sh = box(srf.Tol(0.002, 20))
 		picks = []topo.FilletPick{
 			{A: v(10, 20, 30), B: v(10, 20, 0), R: r1},
 			{A: v(10, 20, 30), B: v(0, 20, 30), R: r2},
@@ -175,7 +172,10 @@ func setbackCase(t *testing.T, corner string, r1, r2, r3 float64) (refused bool,
 	} else {
 		apex := v(10, 10, 10)
 		base := []geom.Vector{v(0, 0, 0), v(0, 20, 0), v(20, 20, 0), v(20, 0, 0)}
-		sh, _ = pyramid(t, base, apex)
+		sh, _, err = pyramid(base, apex, srf.Tol(0.002, 20))
+		if err != nil {
+			return true, err
+		}
 		for i, r := range []float64{r1, r2, r3, r2} {
 			picks = append(picks, topo.FilletPick{A: apex, B: base[i], R: r})
 		}
@@ -202,9 +202,9 @@ func TestFilletSetbackSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
 	}
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	grid := sweep.Grid{
+		Parallel: true,
 		Axes: []sweep.Axis{
 			sweep.Strings("corner", "box", "apex"),
 			sweep.Floats("r1", 0.75, 1.5, 2.25),
@@ -232,9 +232,9 @@ func TestFilletSetbackExtremeSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
 	}
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	grid := sweep.Grid{
+		Parallel: true,
 		Axes: []sweep.Axis{
 			sweep.Strings("corner", "box", "apex"),
 			sweep.Floats("r1", 0.5, 1.5, 3),
@@ -243,16 +243,17 @@ func TestFilletSetbackExtremeSweep(t *testing.T) {
 		},
 		MaxFailRate: 4.0 / 36,
 	}
-	bad := 0
+	// The points run side by side, so the count is atomic.
+	var bad atomic.Int32
 	grid.Run(func(p sweep.Point) error {
 		refused, err := setbackCase(t, p.String("corner"), p.Float("r1"), p.Float("r2"), p.Float("r3"))
 		if err != nil && !refused {
-			bad++
+			bad.Add(1)
 			t.Errorf("made but not right at %v: %v", p, err)
 		}
 		return err
 	}).Require(t)
-	if bad > 0 {
-		t.Errorf("%d corners made unsound or not tangent", bad)
+	if n := bad.Load(); n > 0 {
+		t.Errorf("%d corners made unsound or not tangent", n)
 	}
 }

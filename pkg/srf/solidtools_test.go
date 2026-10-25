@@ -9,8 +9,9 @@ import (
 )
 
 func TestWindingNumber(t *testing.T) {
+	t.Parallel()
 	var m SMesh
-	extrudedBox(geom.Vector{}, geom.Vector{X: 2, Y: 2, Z: 2}).TriangulateInto(&m)
+	extrudedBox(geom.Vector{}, geom.Vector{X: 2, Y: 2, Z: 2}, Tolerance{}).TriangulateInto(&m)
 	for _, c := range []struct {
 		p    geom.Vector
 		want float64
@@ -29,6 +30,7 @@ func TestWindingNumber(t *testing.T) {
 // A triangle swept either way, with its points either way round,
 // makes a sound prism of the right volume.
 func TestMakePrism(t *testing.T) {
+	t.Parallel()
 	tri := []geom.Vector{{X: 0, Y: 0}, {X: 2, Y: 0}, {X: 0, Y: 3}}
 	rev := []geom.Vector{tri[2], tri[1], tri[0]}
 	for _, pts := range [][]geom.Vector{tri, rev} {

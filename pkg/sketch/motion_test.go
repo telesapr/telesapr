@@ -16,6 +16,7 @@ import (
 // that width; the parameter gets its expression back after. Without a
 // window there are no pictures.
 func TestMotionStudy(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	if err := d.Params.Set("w", "15"); err != nil {
 		t.Fatal(err)

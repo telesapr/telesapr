@@ -2,7 +2,7 @@
 # threaded hole picked with the mouse and made a screw mate, which takes
 # the threads' lead and moves the nut to where the threads fit; the
 # same as path_mate_screw_threads.go makes
-# (TestPathEquivalenceMateScrewThreads).
+# (TestPathEquivalence/mate_screw_threads).
 file $testdata/ui/thread_pair.tlspr
 menu File|Open...
 key f

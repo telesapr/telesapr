@@ -9,6 +9,7 @@ import (
 )
 
 func TestSBezierLineSegmentEvaluation(t *testing.T) {
+	t.Parallel()
 	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
 	if b.PointAt(0).DistanceTo(geom.Vector{}) > 1e-12 {
 		t.Fatalf("PointAt(0) should be origin")
@@ -23,6 +24,7 @@ func TestSBezierLineSegmentEvaluation(t *testing.T) {
 }
 
 func TestSBezierQuadraticEvaluation(t *testing.T) {
+	t.Parallel()
 	// Quarter-circle from (1,0) to (0,1).
 	k := math.Cos(math.Pi / 4)
 	b := SBezier{
@@ -39,6 +41,7 @@ func TestSBezierQuadraticEvaluation(t *testing.T) {
 }
 
 func TestSBezierSplitAtMidpoint(t *testing.T) {
+	t.Parallel()
 	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 2})
 	var bef, aft SBezier
 	b.SplitAt(0.5, &bef, &aft)
@@ -54,6 +57,7 @@ func TestSBezierSplitAtMidpoint(t *testing.T) {
 }
 
 func TestSSurfacePointAtPlane(t *testing.T) {
+	t.Parallel()
 	u := geom.Vector{X: 1}
 	v := geom.Vector{Y: 1}
 	pt := geom.Vector{Z: 5}
@@ -67,6 +71,7 @@ func TestSSurfacePointAtPlane(t *testing.T) {
 }
 
 func TestSSurfaceExtrusionNormal(t *testing.T) {
+	t.Parallel()
 	profile := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
 	s := FromExtrusionOf(&profile, geom.Vector{}, geom.Vector{Z: 1})
 	n := s.NormalAt(0.5, 0.5)
@@ -79,6 +84,7 @@ func TestSSurfaceExtrusionNormal(t *testing.T) {
 }
 
 func TestSSurfaceRevolutionNormal(t *testing.T) {
+	t.Parallel()
 	// Revolving a vertical line about z gives a cylinder, whose normal
 	// is radial.
 	profile := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 1, Z: 1})
@@ -92,6 +98,7 @@ func TestSSurfaceRevolutionNormal(t *testing.T) {
 }
 
 func TestSShellExtrusion(t *testing.T) {
+	t.Parallel()
 	profile := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
 	set := &SBezierLoopSet{}
 	set.Outer.Curves = []SBezier{profile}
@@ -104,6 +111,7 @@ func TestSShellExtrusion(t *testing.T) {
 }
 
 func TestBernstein(t *testing.T) {
+	t.Parallel()
 	// B_{0,1}(t) = 1-t, B_{1,1}(t) = t.
 	if math.Abs(bernstein(0, 1, 0.3)-(1-0.3)) > 1e-12 {
 		t.Fatalf("B_{0,1}(0.3) = %f, want 0.7", bernstein(0, 1, 0.3))
@@ -121,6 +129,7 @@ func TestBernstein(t *testing.T) {
 }
 
 func TestSBspUvClassify(t *testing.T) {
+	t.Parallel()
 	// Add an edge along the X axis, directed toward +U.
 	root := bspUvInsertOrCreateEdge(nil, geom.Point2d{U: -1, V: 0}, geom.Point2d{U: 1, V: 0}, nil)
 	// As in SolveSpace SBspUv::ClassifyPoint, "inside" is the right-hand
@@ -134,6 +143,11 @@ func TestSBspUvClassify(t *testing.T) {
 
 // TestSBezierIsRational verifies rational/non-rational detection.
 func TestSBezierIsRational(t *testing.T) {
+	t.Parallel()
+	// The constructors give every weight 1.
+	if d := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1}); d.IsRational() {
+		t.Errorf("default SBezier should not be rational")
+	}
 	// Non-rational: all weights 1.
 	b := SBezierFrom3(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{X: 2})
 	b.Weight = [MaxDegree + 1]float64{1, 1, 1, 1}
@@ -149,6 +163,7 @@ func TestSBezierIsRational(t *testing.T) {
 
 // TestSBezierReverse verifies reversing a bezier swaps start and finish.
 func TestSBezierReverse(t *testing.T) {
+	t.Parallel()
 	b := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 5})
 	b.Reverse()
 	s := b.Start()
@@ -160,6 +175,7 @@ func TestSBezierReverse(t *testing.T) {
 
 // TestSBezierScaleSelfBy verifies scaling changes control points.
 func TestSBezierScaleSelfBy(t *testing.T) {
+	t.Parallel()
 	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 2})
 	b.ScaleSelfBy(3)
 	f := b.Finish()
@@ -170,6 +186,7 @@ func TestSBezierScaleSelfBy(t *testing.T) {
 
 // TestSBezierIsInPlane verifies the in-plane test.
 func TestSBezierIsInPlane(t *testing.T) {
+	t.Parallel()
 	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
 	n := geom.Vector{Z: 1}
 	if !b.IsInPlane(n, 0) {
@@ -184,6 +201,7 @@ func TestSBezierIsInPlane(t *testing.T) {
 // rational arcs, with the line y = 0.5: two points, at x = +-sqrt(3)/2,
 // each found once.
 func TestSBezierAllIntersectionsWith(t *testing.T) {
+	t.Parallel()
 	circle := circleCurves(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1}, 1)
 	line := &SBezierList{Curves: []SBezier{SBezierFrom2(geom.Vector{X: -2, Y: 0.5}, geom.Vector{X: 2, Y: 0.5})}}
 	var spl SPointList
@@ -201,6 +219,7 @@ func TestSBezierAllIntersectionsWith(t *testing.T) {
 
 // TestSBezierPointAtMidpoint verifies mid-t parameterization.
 func TestSBezierPointAtMidpoint(t *testing.T) {
+	t.Parallel()
 	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 10})
 	mid := b.PointAt(0.5)
 	if mid.X != 5 {
@@ -211,15 +230,18 @@ func TestSBezierPointAtMidpoint(t *testing.T) {
 // TestSBezierTangentAtMidpoint verifies the linear tangent, which is
 // the derivative, unnormalized, as SolveSpace returns it.
 func TestSBezierTangentAtMidpoint(t *testing.T) {
+	t.Parallel()
 	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 10})
-	tan := b.TangentAt(0.5)
-	if tan != (geom.Vector{X: 10}) {
-		t.Errorf("linear tangent: got %v, want (10, 0, 0)", tan)
+	for _, u := range []float64{0, 0.5} {
+		if tan := b.TangentAt(u); tan != (geom.Vector{X: 10}) {
+			t.Errorf("linear tangent at %v: got %v, want (10, 0, 0)", u, tan)
+		}
 	}
 }
 
 // TestSBezierListOperations verifies Add, Len, Clear.
 func TestSBezierListOperations(t *testing.T) {
+	t.Parallel()
 	var l SBezierList
 	if l.Len() != 0 {
 		t.Errorf("empty list len=%v, want 0", l.Len())
@@ -237,20 +259,21 @@ func TestSBezierListOperations(t *testing.T) {
 
 // TestSBezierListScaleSelfBy scales every curve.
 func TestSBezierListScaleSelfByExisting(t *testing.T) {
+	t.Parallel()
 	var l SBezierList
 	l.Add(SBezierFrom2(geom.Vector{}, geom.Vector{X: 1}))
 	l.Add(SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 2}))
 	l.ScaleSelfBy(2)
-	for _, c := range l.Curves {
-		f := c.Finish()
-		if math.Mod(f.X, 1) != 0 {
-			t.Errorf("scaled finish X=%v, want integer", f.X)
+	for i, want := range []float64{2, 4} {
+		if f := l.Curves[i].Finish(); math.Abs(f.X-want) > 1e-9 {
+			t.Errorf("curve %d: scaled finish X=%v, want %v", i, f.X, want)
 		}
 	}
 }
 
 // TestSBezierEquals verifies the Equals check.
 func TestSBezierEquals(t *testing.T) {
+	t.Parallel()
 	a := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 5})
 	b := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 5})
 	if !a.Equals(&b) {
@@ -268,6 +291,7 @@ func TestSBezierEquals(t *testing.T) {
 
 // TestSBezierEqualsWeightDifference verifies weight-sensitive equality.
 func TestSBezierEqualsWeightDifference(t *testing.T) {
+	t.Parallel()
 	a := SBezierFrom3(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{X: 2})
 	a.Weight[1] = 2.0
 	b := SBezierFrom3(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{X: 2})
@@ -279,6 +303,7 @@ func TestSBezierEqualsWeightDifference(t *testing.T) {
 
 // TestSBezierInPerspective verifies the perspective transformation.
 func TestSBezierInPerspective(t *testing.T) {
+	t.Parallel()
 	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1, Z: 1})
 	out := b.InPerspective(geom.Vector{X: 1}, geom.Vector{Y: 1}, geom.Vector{Z: 1},
 		geom.Vector{}, 0.5)
@@ -293,6 +318,7 @@ func TestSBezierInPerspective(t *testing.T) {
 
 // TestSBezierListGetPlaneContainingBeziersCoplanar verifies plane-finding for coplanar curves.
 func TestSBezierListGetPlaneContainingBeziersCoplanar(t *testing.T) {
+	t.Parallel()
 	list := &SBezierList{}
 	list.Add(SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 2}))
 	list.Add(SBezierFrom2(geom.Vector{X: 3, Y: 1}, geom.Vector{X: 4, Y: 1}))
@@ -305,6 +331,7 @@ func TestSBezierListGetPlaneContainingBeziersCoplanar(t *testing.T) {
 
 // TestSBezierListGetPlaneContainingBeziersEmpty verifies empty list handling.
 func TestSBezierListGetPlaneContainingBeziersEmpty(t *testing.T) {
+	t.Parallel()
 	list := &SBezierList{}
 	var p, u, v geom.Vector
 	ok := list.PlaneContainingBeziers(&p, &u, &v, nil)
@@ -318,6 +345,7 @@ func TestSBezierListGetPlaneContainingBeziersEmpty(t *testing.T) {
 
 // TestSBezierListGetPlaneContainingBeziers3D verifies 3D plane-finding.
 func TestSBezierListGetPlaneContainingBeziers3D(t *testing.T) {
+	t.Parallel()
 	list := &SBezierList{}
 	// Three non-colinear points in z=0 plane.
 	list.Add(SBezierFrom2(geom.Vector{}, geom.Vector{X: 1}))
@@ -337,6 +365,7 @@ func TestSBezierListGetPlaneContainingBeziers3D(t *testing.T) {
 
 // TestSSurfacePointIntersectingLineOnPlane verifies line-plane intersection.
 func TestSSurfacePointIntersectingLineOnPlane(t *testing.T) {
+	t.Parallel()
 	// Plane z=0 (XY plane), line from (0,0,0) to (2,2,0).
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	u, v := 0.5, 0.5
@@ -348,6 +377,7 @@ func TestSSurfacePointIntersectingLineOnPlane(t *testing.T) {
 
 // TestSSurfacePointIntersectingLineVertical verifies vertical line misses plane.
 func TestSSurfacePointIntersectingLineVertical(t *testing.T) {
+	t.Parallel()
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	u, v := 0.5, 0.5
 	ok := plane.PointIntersectingLine(geom.Vector{}, geom.Vector{Z: 5}, &u, &v)
@@ -357,6 +387,7 @@ func TestSSurfacePointIntersectingLineVertical(t *testing.T) {
 
 // TestSSurfaceEdgeCurveIntersection exercises the edge-curve fallback.
 func TestSSurfaceEdgeCurveIntersection(t *testing.T) {
+	t.Parallel()
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	u, v := 0.5, 0.5
 	// As in SolveSpace SSurface::FromPlane, the first parameter runs along
@@ -371,6 +402,7 @@ func TestSSurfaceEdgeCurveIntersection(t *testing.T) {
 
 // TestSSurfaceAllPointsIntersectingOnPlane verifies line-plane intersection.
 func TestSSurfaceAllPointsIntersectingOnPlane(t *testing.T) {
+	t.Parallel()
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	var inters []SInter
 	// No trim BSP, so ask for untrimmed hits.
@@ -383,6 +415,7 @@ func TestSSurfaceAllPointsIntersectingOnPlane(t *testing.T) {
 
 // TestSSurfaceAllPointsIntersectingOutsideBbox verifies early exit.
 func TestSSurfaceAllPointsIntersectingOutsideBbox(t *testing.T) {
+	t.Parallel()
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	var inters []SInter
 	// Line entirely above plane.
@@ -395,6 +428,7 @@ func TestSSurfaceAllPointsIntersectingOutsideBbox(t *testing.T) {
 
 // TestSShellClassifyRegion tests the ClassifyRegion logic.
 func TestSShellClassifyRegion(t *testing.T) {
+	t.Parallel()
 	shell := &SShell{}
 	edgeN := geom.Vector{Z: 1}
 	// Edge normal aligned with inter-surf normal -> dot=1, OUTSIDE.
@@ -420,6 +454,7 @@ func TestSShellClassifyRegion(t *testing.T) {
 
 // TestProbeTangentFace exercises the tangent-face probe.
 func TestProbeTangentFace(t *testing.T) {
+	t.Parallel()
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	var f geom.Vector
 	var flat bool
@@ -435,6 +470,7 @@ func TestProbeTangentFace(t *testing.T) {
 
 // TestRayIsInside tests the ray-in-triangle check.
 func TestRayIsInside(t *testing.T) {
+	t.Parallel()
 	a := geom.Vector{}
 	b := geom.Vector{X: 1}
 	c := geom.Vector{Y: 1}
@@ -451,6 +487,7 @@ func TestRayIsInside(t *testing.T) {
 // wound clockwise about +Z (the orientation FixContourDirections
 // gives outer contours).
 func TestSContourIsEar(t *testing.T) {
+	t.Parallel()
 	c := &SContour{}
 	c.AddPoint(geom.Vector{X: 0, Y: 0})
 	c.AddPoint(geom.Vector{X: 1, Y: 0})
@@ -467,6 +504,7 @@ func TestSContourIsEar(t *testing.T) {
 
 // TestSSurfaceMakeTriangulationGridIntoPlane verifies grid on a plane.
 func TestSSurfaceMakeTriangulationGridIntoPlane(t *testing.T) {
+	t.Parallel()
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	var l []float64
 	plane.MakeTriangulationGridInto(&l, 0, 1, false, 0)
@@ -477,6 +515,7 @@ func TestSSurfaceMakeTriangulationGridIntoPlane(t *testing.T) {
 
 // TestSSurfaceMakeTriangulationGridIntoPlaneMid tests depth-limited recursion.
 func TestSSurfaceMakeTriangulationGridIntoPlaneMid(t *testing.T) {
+	t.Parallel()
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	var l []float64
 	plane.MakeTriangulationGridInto(&l, 0, 1, false, 3)
@@ -488,6 +527,7 @@ func TestSSurfaceMakeTriangulationGridIntoPlaneMid(t *testing.T) {
 
 // TestSSurfaceCopyRowOrCol verifies row/column copy.
 func TestSSurfaceCopyRowOrCol(t *testing.T) {
+	t.Parallel()
 	src := FromPlane(geom.Vector{X: 1}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	dst := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	dst.CopyRowOrCol(true, 0, &src, 1)
@@ -498,6 +538,7 @@ func TestSSurfaceCopyRowOrCol(t *testing.T) {
 
 // TestSSurfaceBlendRowOrCol verifies row blending.
 func TestSSurfaceBlendRowOrCol(t *testing.T) {
+	t.Parallel()
 	a := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	b := FromPlane(geom.Vector{X: 2}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	dst := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
@@ -511,6 +552,7 @@ func TestSSurfaceBlendRowOrCol(t *testing.T) {
 // TestSSurfaceWeightControlPoints: weighting scales each control point
 // by its weight, and unweighting undoes it.
 func TestSSurfaceWeightControlPoints(t *testing.T) {
+	t.Parallel()
 	plane := FromPlane(geom.Vector{X: 1, Y: 2}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	plane.Weight[1][0] = 4.0
 	orig := plane.Ctrl
@@ -527,6 +569,7 @@ func TestSSurfaceWeightControlPoints(t *testing.T) {
 // TestSSurfaceSplitInHalf: the halves of a rational surface trace the
 // halves of the original.
 func TestSSurfaceSplitInHalf(t *testing.T) {
+	t.Parallel()
 	// A quarter cylinder: rational quadratic in u, linear in v.
 	w := math.Sqrt(2) / 2
 	s := SSurface{DegM: 2, DegN: 1}
@@ -559,6 +602,7 @@ func TestSSurfaceSplitInHalf(t *testing.T) {
 
 // TestSSurfaceAllPointsIntersectingUntrimmedPlane verifies subdivision finds intersection.
 func TestSSurfaceAllPointsIntersectingUntrimmedPlane(t *testing.T) {
+	t.Parallel()
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	cnt, level := 0, 0
 	var l []surfInter
@@ -570,6 +614,7 @@ func TestSSurfaceAllPointsIntersectingUntrimmedPlane(t *testing.T) {
 
 // TestSSurfaceAllPointsIntersectingUntrimmedOutsideBbox verifies early exit.
 func TestSSurfaceAllPointsIntersectingUntrimmedOutsideBbox(t *testing.T) {
+	t.Parallel()
 	plane := FromPlane(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{Y: 1})
 	cnt, level := 0, 0
 	var l []surfInter
@@ -581,6 +626,7 @@ func TestSSurfaceAllPointsIntersectingUntrimmedOutsideBbox(t *testing.T) {
 
 // TestSBezierFrom3ViaCtrl verifies SBezierFrom3 with 3 ctrl points.
 func TestSBezierFrom3ViaCtrl(t *testing.T) {
+	t.Parallel()
 	b := SBezierFrom3(geom.Vector{}, geom.Vector{X: 1, Y: 1}, geom.Vector{X: 2})
 	if b.Degree != 2 {
 		t.Errorf("Degree = %d, want 2", b.Degree)
@@ -589,23 +635,16 @@ func TestSBezierFrom3ViaCtrl(t *testing.T) {
 
 // TestSBezierFrom4Degree verifies SBezierFrom4 with 4 ctrl points.
 func TestSBezierFrom4Degree(t *testing.T) {
+	t.Parallel()
 	b := SBezierFrom4(geom.Vector{}, geom.Vector{X: 1}, geom.Vector{X: 2, Y: 1}, geom.Vector{X: 3, Y: 1})
 	if b.Degree != 3 {
 		t.Errorf("Degree = %d, want 3", b.Degree)
 	}
 }
 
-// TestSBezierPointAtMid verifies PointAt at t=0.5.
-func TestSBezierPointAtMid(t *testing.T) {
-	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 2})
-	mid := b.PointAt(0.5)
-	if math.Abs(mid.X-1) > 1e-9 {
-		t.Errorf("PointAt(0.5) X = %v, want 1", mid.X)
-	}
-}
-
 // TestSBezierPointAtEnd verifies PointAt at t=1.
 func TestSBezierPointAtEnd(t *testing.T) {
+	t.Parallel()
 	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 5})
 	end := b.PointAt(1)
 	if math.Abs(end.X-5) > 1e-9 {
@@ -613,84 +652,10 @@ func TestSBezierPointAtEnd(t *testing.T) {
 	}
 }
 
-// TestSBezierTangentAtStart verifies TangentAt at t=0.
-func TestSBezierTangentAtStart(t *testing.T) {
-	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 5})
-	tan := b.TangentAt(0)
-	if math.Abs(tan.X-5) > 1e-9 {
-		t.Errorf("TangentAt(0) X = %v, want 5", tan.X)
-	}
-}
-
-// TestSBezierScaleByLinear verifies scaling.
-func TestSBezierScaleByLinear(t *testing.T) {
-	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
-	b.ScaleSelfBy(2)
-	end := b.Finish()
-	if math.Abs(end.X-2) > 1e-9 {
-		t.Errorf("after scale, Finish X = %v, want 2", end.X)
-	}
-}
-
-// TestSBezierIsInPlaneOnXY verifies planar check.
-func TestSBezierIsInPlaneOnXY(t *testing.T) {
-	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
-	if !b.IsInPlane(geom.Vector{Z: 1}, 0) {
-		t.Errorf("XY plane line should be in XY plane")
-	}
-}
-
-// TestSBezierIsRationalFalse verifies non-rational check.
-func TestSBezierIsRationalFalse(t *testing.T) {
-	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
-	if b.IsRational() {
-		t.Errorf("default SBezier should not be rational")
-	}
-}
-
-// TestSBezierIsRationalTrue verifies rational check.
-func TestSBezierIsRationalTrue(t *testing.T) {
-	b := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
-	b.Weight[1] = 2.0
-	if !b.IsRational() {
-		t.Errorf("weight 2 should make SBezier rational")
-	}
-}
-
-// TestSBezierListAddTwice verifies adding curves.
-func TestSBezierListAddTwice(t *testing.T) {
-	list := &SBezierList{}
-	list.Add(SBezierFrom2(geom.Vector{}, geom.Vector{X: 1}))
-	list.Add(SBezierFrom2(geom.Vector{X: 1}, geom.Vector{X: 2}))
-	if list.Len() != 2 {
-		t.Errorf("Len = %d, want 2", list.Len())
-	}
-}
-
-// TestSBezierListScaleSelfBy verifies scaling a list.
-func TestSBezierListScaleSelfByBulk(t *testing.T) {
-	list := &SBezierList{}
-	list.Add(SBezierFrom2(geom.Vector{}, geom.Vector{X: 1}))
-	list.ScaleSelfBy(2)
-	end := list.Curves[0].Finish()
-	if math.Abs(end.X-2) > 1e-9 {
-		t.Errorf("after scale, end X = %v, want 2", end.X)
-	}
-}
-
-// TestSBezierListClear verifies clear.
-func TestSBezierListClear(t *testing.T) {
-	list := &SBezierList{}
-	list.Add(SBezierFrom2(geom.Vector{}, geom.Vector{X: 1}))
-	list.Clear()
-	if list.Len() != 0 {
-		t.Errorf("after clear, Len = %d, want 0", list.Len())
-	}
-}
-
 // TestCullIdenticalBeziers: a curve identical to an earlier one, either
 // way round, goes; with both, the earlier one goes too.
 func TestCullIdenticalBeziers(t *testing.T) {
+	t.Parallel()
 	a := SBezierFrom2(geom.Vector{}, geom.Vector{X: 1})
 	b := SBezierFrom2(geom.Vector{X: 1}, geom.Vector{}) // a reversed
 	c := SBezierFrom2(geom.Vector{}, geom.Vector{Y: 1})

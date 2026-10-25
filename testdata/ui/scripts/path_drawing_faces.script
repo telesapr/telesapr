@@ -1,6 +1,6 @@
 # A cylinder's end face picked with the mouse and dimensioned on the
 # front view of the drawing by its diameter (roadmap 29.2); the same as
-# path_drawing_faces.go makes (TestPathEquivalenceDrawingFaces).
+# path_drawing_faces.go makes (TestPathEquivalence/drawing_faces).
 key c
 move 300 300
 down L 300 300

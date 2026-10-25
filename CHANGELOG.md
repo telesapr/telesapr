@@ -9,6 +9,13 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+### Removed
+- Scripting: `srf.SetChordTolMm`, `srf.SetMaxSegments` and `srf.SetMesher`, which set the tolerance of shells built with none and were meant for tests; a document's chord tolerance and segments are set with `Edit.SetChordTolerance` and `Edit.SetMaxSegments`.
+
+### Fixed
+- A menu opened from the keyboard (Alt and a letter, F10, Left and Right) on a very busy machine keeps its first entry active, so Return runs it, instead of sometimes closing without running anything.
+- Text drawn in the vector font on two threads at once, as a drawing exported by a script while the window draws, no longer races on the font's glyphs.
+
 ## [0.5.3] - 2026-10-25
 
 ### Changed

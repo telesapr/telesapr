@@ -21,7 +21,6 @@ TestPlanErrors
 # backslashes and not found, so text extrudes to nothing.
 TestTTF
 TestSynthFonts
-TestInvariants
 TestFixtureGroupsSolve
 TestFixturesRoundTrip
 # Unix-domain sockets and read-only directories behave otherwise.

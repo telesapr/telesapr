@@ -11,6 +11,7 @@ import (
 // the face, through undo, redo and a round trip; a name there isn't is
 // refused.
 func TestAppearance(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 20, 10, 10)
 	top := ex.Solid().FaceAt(api.V(10, 5, 10))

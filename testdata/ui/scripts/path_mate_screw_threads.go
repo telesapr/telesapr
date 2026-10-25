@@ -1,5 +1,5 @@
 // The screw mate of path_mate_screw_threads.script, made by a script
-// (TestPathEquivalenceMateScrewThreads): the top rims of
+// (TestPathEquivalence/mate_screw_threads): the top rims of
 // thread_pair.tlspr's M8 bolt, 6g, and of its nut's hole, 6H, with the
 // threads' own lead, which the window takes when the circles carry
 // threads. The three files were saved without their solids, which the

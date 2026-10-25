@@ -14,12 +14,13 @@ import (
 
 // TestTTF requires the font list, cap heights, aspect ratios and
 // PlotString's Beziers to be the golden's, bit for bit, for Gentium and
-// the builtin font over testdata/ttf/strings.txt (golden data first
-// recorded from SolveSpace ttf.cpp).
+// the builtin font over testdata/ttf/strings.txt (testdata/ttf/dump.txt.gz):
+// text extrudes into solids from these outlines, so a change to them
+// moves every golden with text in it.
 func TestTTF(t *testing.T) {
 	root := filepath.Join("..", "..", "testdata")
 	testDumpVsGolden(t, []string{filepath.Join(root, "Gentium-R.ttf")},
-		filepath.Join(root, "ttf", "strings.txt"), filepath.Join(root, "ttf", "cpp-dump.txt.gz"))
+		filepath.Join(root, "ttf", "strings.txt"), filepath.Join(root, "ttf", "dump.txt.gz"))
 }
 
 // TestSynthFonts does the same for the test fonts in
@@ -32,7 +33,7 @@ func TestSynthFonts(t *testing.T) {
 		t.Fatal("no test fonts", err)
 	}
 	testDumpVsGolden(t, fonts, filepath.Join(root, "ttf", "synth-strings.txt"),
-		filepath.Join(root, "ttf", "cpp-synth-dump.txt.gz"))
+		filepath.Join(root, "ttf", "synth-dump.txt.gz"))
 }
 
 func testDumpVsGolden(t *testing.T, fonts []string, strsFile, goldenFile string) {

@@ -1,6 +1,6 @@
 # A rectangle with a corner rounded by a tangent arc, extruded, and one
 # top side picked with the mouse and rounded round the outline; the same
-# as path_fillet_outline.go makes (TestPathEquivalenceFilletOutline).
+# as path_fillet_outline.go makes (TestPathEquivalence/fillet_outline).
 key r
 move 200 200
 down L 200 200

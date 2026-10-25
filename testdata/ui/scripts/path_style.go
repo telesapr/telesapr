@@ -1,6 +1,6 @@
 // A custom line style drawn at a level of its own, as
 // path_style.script makes it on the styles screen
-// (TestPathEquivalenceStyle).
+// (TestPathEquivalence/style).
 package main
 
 import . "github.com/telesapr/telesapr/pkg/script/api"

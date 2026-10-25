@@ -21,8 +21,7 @@ import (
 )
 
 // uiScriptRunner runs the scripts in testdata/ui/scripts on the headless
-// platform, and prints what the SolveSpace harness that recorded the first
-// goldens printed.
+// platform, and prints what the interface shows at each dump.
 type uiScriptRunner struct {
 	t        testing.TB
 	p        *headless.Platform
@@ -83,14 +82,12 @@ func runUIScriptWith(t testing.TB, name string, setup func(r *uiScriptRunner)) s
 	return r.b.String()
 }
 
-// newUIScriptRunner starts the application, as the harness does.
+// newUIScriptRunner starts the application.
 func newUIScriptRunner(t testing.TB) *uiScriptRunner {
 	root := filepath.Join("..", "..", "testdata")
-	ttf.DefaultFonts = ttf.NewFontList([]string{filepath.Join(root, "Gentium-R.ttf")})
 
-	// The save goes where the harness's mktemp -d puts its own, one
-	// folder under the temporary directory: a linked file is saved
-	// relative to it.
+	// The save goes one folder under the temporary directory, the
+	// same depth for every run: a linked file is saved relative to it.
 	saveDir, err := os.MkdirTemp("", "telesapr-ui-")
 	if err != nil {
 		t.Fatal(err)
@@ -98,7 +95,7 @@ func newUIScriptRunner(t testing.TB) *uiScriptRunner {
 	t.Cleanup(func() { _ = os.RemoveAll(saveDir) })
 	r := &uiScriptRunner{t: t, dir: root, tmp: saveDir, savePath: filepath.Join(saveDir, "save.tlspr")}
 	r.p = headless.New()
-	r.p.Fonts = []string{filepath.Join(root, "Gentium-R.ttf")}
+	r.p.Fonts = ttf.DefaultFonts.Files()
 	r.p.PopUpHook = r.popUp
 	r.p.OnMessageDialog = func(d *headless.MessageDialog) {
 		fmt.Fprintf(&r.b, "dialog %d %s|%s\n", d.Type, escLine(r.unexpand(d.Message)), escLine(r.unexpand(d.Description)))
@@ -396,8 +393,8 @@ func (r *uiScriptRunner) setView(name string) {
 	r.ss.GW.Invalidate(false)
 }
 
-// step runs a script line; false stops the script, as the harness exits
-// on an unanswered dialog.
+// step runs a script line; false stops the script, as on an unanswered
+// dialog.
 func (r *uiScriptRunner) step(line string) (ok bool) {
 	t := strings.Fields(line)
 	if len(t) == 0 {
@@ -425,7 +422,7 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 	}()
 	switch op := t[0]; op {
 	case "load":
-		loadSlvs(r.t, r.ss, filepath.Join(r.dir, t[1]))
+		loadModel(r.t, r.ss, filepath.Join(r.dir, t[1]))
 	case "view":
 		r.setView(t[1])
 	case "move", "down", "up", "dbl", "scroll", "leave":
@@ -583,9 +580,8 @@ func uiScripts(t *testing.T, prefix string) []string {
 	return names
 }
 
-// linkRelToTestdata matches a saved link group's path up to testdata,
-// in a .slvs and in a .tlspr file.
-var linkRelToTestdata = regexp.MustCompile(`(?m)^(Group\.impFileRel=|  link ").*/testdata/`)
+// linkRelToTestdata matches a saved link group's path up to testdata.
+var linkRelToTestdata = regexp.MustCompile(`(?m)^(  link ").*/testdata/`)
 
 // linkPathsFromTestdata makes the paths of the linked files in a save
 // start at testdata. A script saves into a temporary directory, so the
@@ -598,8 +594,7 @@ func linkPathsFromTestdata(s string) string {
 
 // compareUIScripts runs the scripts with a prefix and compares each
 // output with its golden, testdata/ui/golden/<name>.goui, reporting the
-// first differing line. The goldens of the scripts that are not ext_
-// were first recorded from SolveSpace. TELESAPR_REGEN_GOLDEN=1 rewrites them
+// first differing line. TELESAPR_REGEN_GOLDEN=1 rewrites them
 // (scripts/regen-goui.sh); review the diff before committing.
 func compareUIScripts(t *testing.T, prefix string) {
 	names := uiScripts(t, prefix)
@@ -608,6 +603,7 @@ func compareUIScripts(t *testing.T, prefix string) {
 	}
 	for _, name := range names {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			compareUIScript(t, name, runUIScript(t, name))
 		})
 	}
@@ -628,26 +624,8 @@ func compareUIScript(t *testing.T, name, out string) {
 		t.Fatalf("%v (record it with scripts/regen-goui.sh %s)", err, name)
 	}
 	if want := linkPathsFromTestdata(string(wantB)); got != want {
-		t.Fatalf("output differs from the golden at %s", firstDiffLine(got, want))
+		t.Fatalf("output differs from the golden at %s", golden.FirstDifference([]byte(want), []byte(got)))
 	}
-}
-
-// firstDiffLine reports the first line where two outputs differ.
-func firstDiffLine(got, want string) string {
-	gl, wl := strings.Split(got, "\n"), strings.Split(want, "\n")
-	for i := range max(len(gl), len(wl)) {
-		var g, w string
-		if i < len(gl) {
-			g = gl[i]
-		}
-		if i < len(wl) {
-			w = wl[i]
-		}
-		if g != w {
-			return fmt.Sprintf("line %d:\n got: %q\nwant: %q", i+1, g, w)
-		}
-	}
-	return ""
 }
 
 // TestGoScripts replays the scripts of what only TeleSAPR has (ext_*).
@@ -665,12 +643,14 @@ func TestHover(t *testing.T) { compareUIScripts(t, "hover_") }
 // window presented to be the same: the cache must never show a stale
 // picture.
 func TestInteraction(t *testing.T) {
+	t.Parallel()
 	names := uiScripts(t, "act_")
 	if len(names) == 0 {
 		t.Fatal("no scripts act_*")
 	}
 	for _, name := range names {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			var cached, drawn []uint64
 			hits := 0
 			outCached := runUIScriptWith(t, name, func(r *uiScriptRunner) {
@@ -701,6 +681,7 @@ func TestInteraction(t *testing.T) {
 // TestUIScript prints the output of the script TELESAPR_UI_SCRIPT
 // names.
 func TestUIScript(t *testing.T) {
+	t.Parallel()
 	name := os.Getenv("TELESAPR_UI_SCRIPT")
 	if name == "" {
 		t.Skip("set TELESAPR_UI_SCRIPT to a script name")

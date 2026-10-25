@@ -28,7 +28,11 @@ type VectorGlyph struct {
 // VectorFont is the stroke font the graphics window labels with,
 // LibreCAD's LFF format.
 type VectorFont struct {
-	lffData          string
+	lffData string
+	// mu guards glyphs, which fills as glyphs are asked for: the
+	// builtin font is the process's, and text is drawn on several
+	// goroutines.
+	mu               sync.Mutex
 	glyphs           map[rune]*VectorGlyph
 	RightSideBearing float64
 	CapHeight        float64
@@ -168,6 +172,13 @@ func (f *VectorFont) IsEmpty() bool { return f == nil || f.lffData == "" }
 // Glyph returns the glyph, parsing it the first time; a missing one is
 // U+FFFD.
 func (f *VectorFont) Glyph(codepoint rune) *VectorGlyph {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.glyph(codepoint)
+}
+
+// glyph is Glyph with f.mu held.
+func (f *VectorFont) glyph(codepoint rune) *VectorGlyph {
 	if g, ok := f.glyphs[codepoint]; ok {
 		return g
 	}
@@ -226,7 +237,7 @@ func (f *VectorFont) Glyph(codepoint rune) *VectorGlyph {
 			}
 			if r.tryChar('C') {
 				// Another character is referenced in this one.
-				base := f.Glyph(rune(r.read16HexBits()))
+				base := f.glyph(rune(r.read16HexBits()))
 				for _, c := range base.Contours {
 					g.Contours = append(g.Contours, VectorContour{Points: append([]geom.Point2d(nil), c.Points...)})
 				}
@@ -263,7 +274,7 @@ func (f *VectorFont) Glyph(codepoint rune) *VectorGlyph {
 	if codepoint == 0xfffd {
 		panic("res: cannot parse replacement glyph")
 	}
-	return f.Glyph(0xfffd)
+	return f.glyph(0xfffd)
 }
 
 // GetCapHeight is the cap height text of that cap height has.

@@ -1,6 +1,6 @@
 # Analyze > Check Solid on a sound solid, in millimetres and in inches,
 # on a mesh with naked edges, and on a sketch with no solid.
-load group/boolean_tangent_edge/normal.slvs
+load tlspr/golden/group/boolean_tangent_edge/normal.tlspr
 answer ok
 key o ctrl shift
 dump
@@ -8,11 +8,11 @@ menu View|Dimension Units|Dimensions in Inches
 answer ok
 menu Analyze|Check Solid
 menu View|Dimension Units|Dimensions in Millimeters
-load group/force_to_mesh/fillet.slvs
+load tlspr/golden/group/force_to_mesh/fillet.tlspr
 answer ok
 key o ctrl shift
 dump
-load request/line_segment/normal.slvs
+load tlspr/golden/request/line_segment/normal.tlspr
 answer ok
 key o ctrl shift
 dump

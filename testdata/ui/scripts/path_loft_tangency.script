@@ -1,6 +1,6 @@
 # The top square of loft_profiles.tlspr lofted to the bottom one, picked
 # with the mouse, its ends set on its screen; the same as
-# path_loft_tangency.go makes (TestPathEquivalenceLoftTangency, roadmap
+# path_loft_tangency.go makes (TestPathEquivalence/loft_tangency, roadmap
 # 28.3).
 file $testdata/ui/loft_profiles.tlspr
 menu File|Open...

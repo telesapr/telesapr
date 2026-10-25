@@ -1,5 +1,5 @@
 // The held depth of path_extrude_depth.script, made by a script
-// (TestPathEquivalenceExtrudeDepth): the extrusion of path_extrude, its
+// (TestPathEquivalence/extrude_depth): the extrusion of path_extrude, its
 // depth held at 25.
 package main
 

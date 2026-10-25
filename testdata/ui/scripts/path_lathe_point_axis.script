@@ -1,7 +1,7 @@
 # A rectangle turned about a construction line, with the point at the
 # line's start chosen with it: the axis through the point parallel to the
 # line. The same as path_lathe_point_axis.go makes
-# (TestPathEquivalenceLathePointAxis).
+# (TestPathEquivalence/lathe_point_axis).
 key r
 move 350 200
 down L 350 200

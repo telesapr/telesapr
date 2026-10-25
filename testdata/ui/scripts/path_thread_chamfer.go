@@ -1,5 +1,5 @@
 // The model of path_thread_chamfer.script, made by a script
-// (TestPathEquivalenceThreadChamfer). The mouse puts the circle's
+// (TestPathEquivalence/thread_chamfer). The mouse puts the circle's
 // centre on the workplane's origin, which constrains it there, and
 // picks the extrusion's top circle to thread down into it, chamfered
 // at the top.

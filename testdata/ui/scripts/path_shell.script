@@ -1,6 +1,6 @@
 # The extrusion of path_extrude hollowed, open at the top face picked
 # with the mouse; the same as path_shell.go makes
-# (TestPathEquivalenceShell).
+# (TestPathEquivalence/shell).
 key r
 move 200 200
 down L 200 200

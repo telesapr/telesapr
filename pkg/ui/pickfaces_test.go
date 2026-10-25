@@ -49,6 +49,7 @@ func pickViews() [][2]geom.Vector {
 // the face in one of them: an entity's face by its entity, a face no
 // entity names by its identity (roadmap 14.1).
 func TestEveryFacePicked(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("every face of every fixture")
 	}
@@ -58,6 +59,7 @@ func TestEveryFacePicked(t *testing.T) {
 	}
 	for _, file := range files {
 		t.Run(strings.TrimSuffix(filepath.Base(file), ".tlspr"), func(t *testing.T) {
+			t.Parallel()
 			ss := New(headless.New())
 			ss.Init()
 			if _, err := os.Stat(file); err != nil || ss.LoadFromFile(file) != nil {

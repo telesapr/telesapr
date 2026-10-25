@@ -32,6 +32,7 @@ func patternPath(d *api.Doc, run, r, turn float64) []api.Entity {
 // at the path's far end; and after a change of count, undo, redo and a
 // round trip.
 func TestPathPattern(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	path := patternPath(d, 20, 10, 90)
 	d.Features.SketchIn(d.Workplane("XY"), "post-sketch")
@@ -62,6 +63,7 @@ func TestPathPattern(t *testing.T) {
 
 // TestPathPatternRefused: one copy, no path, a corner in the path.
 func TestPathPatternRefused(t *testing.T) {
+	t.Parallel()
 	for name, fn := range map[string]func(d *api.Doc, path []api.Entity){
 		"one copy": func(d *api.Doc, path []api.Entity) { d.Features.PatternAlongPath(path, 1, "") },
 		"no path":  func(d *api.Doc, path []api.Entity) { d.Features.PatternAlongPath(nil, 3, "") },
@@ -93,6 +95,7 @@ func TestPathPatternRefused(t *testing.T) {
 // sizes, apart and overlapping: a sound solid each time, of n posts'
 // volume when they stand apart. The rate allowed, none, was set before.
 func TestPathPatternSweep(t *testing.T) {
+	t.Parallel()
 	sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("copies", 2, 3, 7),
@@ -127,6 +130,7 @@ func TestPathPatternSweep(t *testing.T) {
 // A pattern round a circle (roadmap 28.5): the copies share the circle
 // out, each turned with it, the one after the last being the first.
 func TestPathPatternCircle(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Features.SketchIn(d.Workplane("XY"), "ring")
 	ring := d.Sketch.Circle(api.V(0, 0, 0), 20)
@@ -161,6 +165,7 @@ func TestPathPatternCircle(t *testing.T) {
 // A pattern round a rounded rectangle, a closed chain of lines and
 // arcs: the copies are spaced by length all round it.
 func TestPathPatternClosedChain(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Features.SketchIn(d.Workplane("XY"), "track")
 	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(40, 20, 0))
@@ -194,6 +199,7 @@ func TestPathPatternClosedChain(t *testing.T) {
 
 // A closed path with a corner, and a circle with another piece.
 func TestPathPatternClosedRefused(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Features.SketchIn(d.Workplane("XY"), "square")
 	sq := d.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
@@ -226,6 +232,7 @@ func TestPathPatternClosedRefused(t *testing.T) {
 // n posts' volume. The rate allowed was fixed at none before the
 // closed path was written.
 func TestPathPatternClosedSweep(t *testing.T) {
+	t.Parallel()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("copies", 2, 3, 5, 12),

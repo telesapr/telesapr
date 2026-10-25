@@ -1,6 +1,6 @@
 # Two line segments and a point, picked with the mouse, and a sketch
 # started in the workplane through the point parallel to the lines; the
-# same as path_sketch_on_lines.go makes (TestPathEquivalenceSketchOnLines).
+# same as path_sketch_on_lines.go makes (TestPathEquivalence/sketch_on_lines).
 key s
 move 200 320
 down L 200 320

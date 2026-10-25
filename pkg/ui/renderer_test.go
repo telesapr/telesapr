@@ -10,6 +10,7 @@ import (
 // is clicked, which saves the setting and gives both windows a new
 // renderer.
 func TestRendererSetting(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	if !ss.UseOpenGL || !ss.UseGL() {
 		t.Fatal("OpenGL is not the default")

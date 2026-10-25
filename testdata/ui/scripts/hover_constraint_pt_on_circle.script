@@ -1,5 +1,5 @@
 # What the mouse hovers over constraint/pt_on_circle/normal.slvs, in two views.
-load constraint/pt_on_circle/normal.slvs
+load tlspr/golden/constraint/pt_on_circle/normal.tlspr
 view default
 hovergrid 20
 view rotated

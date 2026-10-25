@@ -7,7 +7,8 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
-	"github.com/telesapr/telesapr/pkg/persist/slvs"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
@@ -15,7 +16,7 @@ import (
 // sketch, g005 shank, then the thread's g006 to g009 on the shank.
 func bolt(t *testing.T) *sketch.Sketch {
 	t.Helper()
-	doc, err := slvs.LoadFile(fixturesPath(t, "thread", "bolt_m8x30.slvs"))
+	doc, err := tlspr.LoadFile(fixtures.Path("thread/bolt_m8x30.tlspr"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,6 +36,7 @@ func orderOf(sk *sketch.Sketch) []uint32 {
 }
 
 func TestGroupDependencies(t *testing.T) {
+	t.Parallel()
 	sk := bolt(t)
 	got := sk.GroupDependencies(hg(7))
 	want := []sketch.Dependency{{Group: hg(5), Why: "origin"}, {Group: hg(6), Why: "operand"}}
@@ -82,6 +84,7 @@ func TestGroupDependencies(t *testing.T) {
 }
 
 func TestMoveGroup(t *testing.T) {
+	t.Parallel()
 	sk := bolt(t)
 	sk.GenerateAll()
 	before := orderOf(sk)
@@ -118,6 +121,7 @@ func TestMoveGroup(t *testing.T) {
 }
 
 func TestMoveGroupRefused(t *testing.T) {
+	t.Parallel()
 	sk := bolt(t)
 	sk.GenerateAll()
 	before := orderOf(sk)
@@ -171,6 +175,7 @@ func TestMoveGroupRefused(t *testing.T) {
 // TestMoveGroupSameOrders moves a group in a history whose file gave
 // two groups one order number.
 func TestMoveGroupSameOrders(t *testing.T) {
+	t.Parallel()
 	sk := bolt(t)
 	sk.Group(hg(4)).Order = sk.Group(hg(2)).Order
 	if got, want := orderOf(sk), []uint32{1, 2, 4, 3, 5, 6, 7, 8, 9}; !reflect.DeepEqual(got, want) {
@@ -194,6 +199,7 @@ func TestMoveGroupSameOrders(t *testing.T) {
 // A group moves with the groups only it needs; refusals name the
 // reference and move nothing.
 func TestMoveGroupWithSources(t *testing.T) {
+	t.Parallel()
 	sk := bolt(t)
 	sk.GenerateAll()
 	if got := sk.OwnSources(hg(3)); !reflect.DeepEqual(got, []core.HGroup{hg(2), hg(3)}) {
@@ -251,6 +257,7 @@ func TestMoveGroupWithSources(t *testing.T) {
 // After groups are deleted, the active group is the one that was, if
 // it is left, else the nearest one before it that is.
 func TestActivateSurvivor(t *testing.T) {
+	t.Parallel()
 	sk := bolt(t)
 	order := append([]core.HGroup(nil), sk.GroupOrder...)
 	sk.Active = hg(9)
@@ -289,6 +296,7 @@ func TestActivateSurvivor(t *testing.T) {
 // Steps of undo that a change remembered itself fold into the one
 // before them.
 func TestUndoDropNewest(t *testing.T) {
+	t.Parallel()
 	sk := bolt(t)
 	write := sk.Undo.Write
 	sk.UndoRemember()

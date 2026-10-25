@@ -31,6 +31,7 @@ func TestMain(m *testing.M) {
 // model, is only decoded: it must upgrade to a version 2 file that
 // holds the same lengths in its unit and encodes the same again.
 func TestCorpus(t *testing.T) {
+	t.Parallel()
 	for version, min := range map[int]int{1: 9, 2: 1} {
 		t.Run(fmt.Sprintf("v%d", version), func(t *testing.T) { corpus(t, version, min) })
 	}

@@ -17,7 +17,8 @@ import (
 // The 10 x 20 x 30 box open at the top, walls 1 thick: the inside is
 // 8 x 18 x 29, and the top a rim round a hole.
 func TestShellBoxOpenTop(t *testing.T) {
-	sh := box()
+	t.Parallel()
+	sh := box(srf.Tolerance{})
 	tp := build(t, sh)
 	top := faceAt(t, tp, v(0, 0, 30), v(0, 0, 1))
 	out, err := topo.ShellSolid(sh, []int{top}, 1, 1<<30)
@@ -136,6 +137,7 @@ func shellPrism(pts []geom.Vector, h, thick float64, top, bottom bool, side int)
 }
 
 func TestShellPrisms(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name        string
 		pts         []geom.Vector
@@ -157,7 +159,8 @@ func TestShellPrisms(t *testing.T) {
 }
 
 func TestShellRefusals(t *testing.T) {
-	sh := box()
+	t.Parallel()
+	sh := box(srf.Tolerance{})
 	tp := build(t, sh)
 	top := faceAt(t, tp, v(0, 0, 30), v(0, 0, 1))
 	var se *topo.ShellError
@@ -174,7 +177,10 @@ func TestShellRefusals(t *testing.T) {
 	// Four faces meet at the apex of a pyramid over a rectangle, off
 	// centre, and moved in don't meet in one point.
 	base := []geom.Vector{v(0, 0, 0), v(0, 10, 0), v(20, 10, 0), v(20, 0, 0)}
-	pyr, faces := pyramid(t, base, v(5, 3, 10))
+	pyr, faces, err := pyramid(base, v(5, 3, 10), srf.Tolerance{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	var pm srf.SMesh
 	pyr.TriangulateInto(&pm)
 	if pr := check.Solid(pyr, &pm); !pr.Sound() || math.Abs(pr.Volume-2000.0/3) > 1e-9 {
@@ -204,10 +210,10 @@ func TestShellRefusals(t *testing.T) {
 }
 
 // pyramid is the pyramid over base, a loop in z = 0 running clockwise
-// seen from above, to apex, and its faces' corners, the base first.
-func pyramid(t *testing.T, base []geom.Vector, apex geom.Vector) (*srf.SShell, [][]geom.Vector) {
-	t.Helper()
-	pyr := &srf.SShell{}
+// seen from above, to apex, built at tol, and its faces' corners, the
+// base first.
+func pyramid(base []geom.Vector, apex geom.Vector, tol srf.Tolerance) (*srf.SShell, [][]geom.Vector, error) {
+	pyr := &srf.SShell{Tol: tol}
 	faces := [][]geom.Vector{base}
 	for i := range base {
 		faces = append(faces, []geom.Vector{base[(i+1)%len(base)], base[i], apex})
@@ -222,14 +228,14 @@ func pyramid(t *testing.T, base []geom.Vector, apex geom.Vector) (*srf.SShell, [
 		s := srf.FromPlane(f[0].Minus(f[1].Minus(f[0])).Minus(f[len(f)-1].Minus(f[0])),
 			f[len(f)-1].Minus(f[0]).ScaledBy(3), f[1].Minus(f[0]).ScaledBy(3))
 		if _, err := topo.AddFace(pyr, s, [][]srf.SBezier{l}); err != nil {
-			t.Fatal(err)
+			return nil, nil, err
 		}
 	}
 	// AddFace makes the faces face in; turned out, the pyramid is sound.
 	for i := range pyr.Surface {
 		pyr.Surface[i].Reverse()
 	}
-	return pyr, faces
+	return pyr, faces, nil
 }
 
 // Pyramids over a rectangle with their apex here and there, hollowed
@@ -238,6 +244,7 @@ func pyramid(t *testing.T, base []geom.Vector, apex geom.Vector) (*srf.SShell, [
 // walls are sound, and hold about their area times the thickness, less
 // what the faces' corners take.
 func TestShellApexSweep(t *testing.T) {
+	t.Parallel()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("x", 2, 10, 15, 25),
@@ -247,12 +254,16 @@ func TestShellApexSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      30,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		base := []geom.Vector{v(0, 0, 0), v(0, 10, 0), v(20, 10, 0), v(20, 0, 0)}
 		h := p.Float("height")
 		thick := p.Float("k") * math.Min(h, 5)
-		pyr, faces := pyramid(t, base, v(p.Float("x"), p.Float("y"), h))
+		pyr, faces, err := pyramid(base, v(p.Float("x"), p.Float("y"), h), srf.Tolerance{})
+		if err != nil {
+			return err
+		}
 		pt, err := topo.Build(pyr)
 		if err != nil {
 			return err
@@ -292,6 +303,7 @@ func TestShellApexSweep(t *testing.T) {
 // top: its top and bottom have holes, and the hole's walls are walls of
 // the shell too.
 func TestShellHoledBlock(t *testing.T) {
+	t.Parallel()
 	var outer, hole, sh srf.SShell
 	c := core.NewRGBA(100, 100, 100, 255)
 	outer.MakePrism([]geom.Vector{v(0, 0, 0), v(30, 0, 0), v(30, 30, 0), v(0, 30, 0)}, v(0, 0, 0), v(0, 0, 10), c)
@@ -310,6 +322,7 @@ func TestShellHoledBlock(t *testing.T) {
 // side, or the top and a side, over thickness and height, against
 // insetArea; the rate allowed is 0, set before the phase began.
 func TestShellSweep(t *testing.T) {
+	t.Parallel()
 	shapes := map[string][]geom.Vector{
 		"triangle": regular(3, 10), "square": regular(4, 10), "hexagon": regular(6, 10),
 		"octagon": regular(8, 10), "L": lShape(),
@@ -323,6 +336,7 @@ func TestShellSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      30,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		pts := shapes[p.String("shape")]

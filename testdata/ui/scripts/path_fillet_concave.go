@@ -1,5 +1,5 @@
 // The fillet of path_fillet_concave.script, made by a script
-// (TestPathEquivalenceFilletConcave): a block, a smaller one on its top
+// (TestPathEquivalence/fillet_concave): a block, a smaller one on its top
 // sketched in a workplane through its corner, and the smaller block's
 // foot edge the mouse picks filled at the radius the menu starts with.
 package main

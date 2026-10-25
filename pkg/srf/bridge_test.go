@@ -7,6 +7,7 @@ import (
 )
 
 func TestBridgeToContourSharedVertex(t *testing.T) {
+	t.Parallel()
 	// Outer contour with a vertex at (2, 0); hole shares that vertex.
 	outer := &SContour{}
 	outer.AddPoint(geom.Vector{X: 0, Y: 0, Z: 0})
@@ -34,6 +35,7 @@ func TestBridgeToContourSharedVertex(t *testing.T) {
 }
 
 func TestBridgeToContourNonCrossingBridge(t *testing.T) {
+	t.Parallel()
 	// Outer 4x4 square; hole 1x1 square fully inside, no shared vertex.
 	outer := &SContour{}
 	outer.AddPoint(geom.Vector{X: 0, Y: 0, Z: 0})
@@ -60,6 +62,7 @@ func TestBridgeToContourNonCrossingBridge(t *testing.T) {
 }
 
 func TestBridgeToContourReturnsFalseOnEmptyContours(t *testing.T) {
+	t.Parallel()
 	outer := &SContour{}
 	hole := &SContour{}
 	el := &SEdgeList{}

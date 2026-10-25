@@ -1,6 +1,6 @@
 # The top circle of an extruded circle, picked with the mouse and
 # rounded; the same as path_fillet_circle.go makes
-# (TestPathEquivalenceFilletCircle).
+# (TestPathEquivalence/fillet_circle).
 key c
 move 290 265
 down L 290 265

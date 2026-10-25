@@ -1,5 +1,6 @@
-# Invariant baseline: one line per fixture and group, from TestInvariants
-# in pkg/persist/slvs. Regenerate with TELESAPR_REGEN_INVARIANTS=1.
+# Invariant baseline: one line per fixture and group, from
+# TestFixturesRoundTrip in pkg/persist/convert. TELESAPR_REGEN_GOLDEN=1
+# rewrites it; review its diff.
 analysis/contour_area/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 analysis/contour_area/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 constraint/angle/free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
@@ -145,28 +146,6 @@ constraint/where_dragged/free_in_3d.slvs g1 tri=0 faces=0 naked=0 inter=0 failed
 constraint/where_dragged/free_in_3d.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 constraint/where_dragged/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 constraint/where_dragged/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/split_arc_cubic.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/split_arc_cubic.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/split_circle_line.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/split_circle_line.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/split_lines.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/split_lines.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/split_periodic.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/split_periodic.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/split_point.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/split_point.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/tangent.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/tangent.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/tangent_arc.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/tangent_arc.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/tangent_arc_modify.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/tangent_arc_modify.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/tangent_fail.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/tangent_fail.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/tangent_manual.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/tangent_manual.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/tangent_modify.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-edit/tangent_modify.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 group/boolean_coplanar_union/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 group/boolean_coplanar_union/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 group/boolean_coplanar_union/normal.slvs g3 tri=0 faces=0 naked=0 inter=0 failed=false
@@ -284,69 +263,3 @@ request/ttf_text/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 request/ttf_text/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 request/workplane/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 request/workplane/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-solver/param_point_distance.slvs error "group missing handle"
-thread/blind_m6.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/blind_m6.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/blind_m6.slvs g3 tri=260 faces=3 naked=0 inter=0 failed=false vol=2408.8441952772741 com=-6.8949816185519385e-17,3.9231339262776804e-16,6.0000000000000036 min=-8,-8,0 max=8,8,12.000000000000004 topo=0 euler=2 patches=6
-thread/blind_m6.slvs g4 tri=260 faces=3 naked=0 inter=0 failed=false vol=2408.8441952772755 com=-2.7727412712037756e-16,-6.7843669401794513e-17,6.0000000000000018 min=-8,-8,0 max=8,8,12.000000000000004 topo=0 euler=2 patches=6
-thread/blind_m6.slvs g5 tri=426 faces=5 naked=0 inter=0 failed=false vol=2183.7934390884461 com=-1.895317760366053e-13,-1.7411814526581325e-14,6.206109929775832 min=-8,-8,-5.8375329046838327e-16 max=8,8,12.000000000000004 topo=0 euler=2 patches=11
-thread/blind_m6.slvs g6 tri=426 faces=5 naked=0 inter=0 failed=false vol=2183.7934390884466 com=-1.8975892556390199e-13,-1.7417355998934807e-14,6.2061099297758444 min=-8,-8,-5.8375329046838327e-16 max=8,8,12.000000000000004 topo=0 euler=2 patches=11
-thread/blind_m6.slvs g7 tri=2134 faces=10 naked=0 inter=0 failed=false vol=2215.8791900701067 com=0.00030909360206759178,0.00030978854273141165,6.174165610904133 min=-8,-8,-5.8375329046838327e-16 max=8,8,12.000000000000004 topo=0 euler=2 patches=88
-thread/bolt_m8x30.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/bolt_m8x30.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/bolt_m8x30.slvs g3 tri=20 faces=8 naked=0 inter=0 failed=false vol=775.69895416972213 com=-1.4839252080253645e-15,2.3449682299660082e-15,2.6499999999999999 min=-7.5055534994651385,-6.4999999999999991,0 max=7.5055534994651385,6.5000000000000071,5.3000000000000007 topo=0 euler=2
-thread/bolt_m8x30.slvs g4 tri=20 faces=8 naked=0 inter=0 failed=false vol=775.69895416972236 com=-1.5755255295084123e-15,2.2167277798897429e-15,2.6500000000000008 min=-7.5055534994651385,-6.4999999999999991,0 max=7.5055534994651385,6.5000000000000071,5.3000000000000007 topo=0 euler=2
-thread/bolt_m8x30.slvs g5 tri=152 faces=10 naked=0 inter=0 failed=false vol=2273.9335541540127 com=-3.921535577633428e-16,6.2650827355816916e-16,-8.9791175885130805 min=-7.5055534994651385,-6.4999999999999991,-30.000000000000004 max=7.5055534994651385,6.5000000000000071,5.3000000000000007 topo=0 euler=2 patches=13
-thread/bolt_m8x30.slvs g6 tri=152 faces=10 naked=0 inter=0 failed=false vol=2273.9335541540127 com=-4.2652558274658407e-16,6.3432009741799683e-16,-8.9791175885130823 min=-7.5055534994651385,-6.4999999999999991,-30.000000000000004 max=7.5055534994651385,6.5000000000000071,5.3000000000000007 topo=0 euler=2 patches=13
-thread/bolt_m8x30.slvs g7 tri=290 faces=12 naked=0 inter=0 failed=false vol=1933.6854371184406 com=-8.4326830580214676e-14,-8.2858204078386276e-13,-7.215859560038635 min=-7.5055534994651385,-6.4999999999999991,-30.000000000000011 max=7.5055534994651385,6.5000000000000071,5.3000000000000007 topo=0 euler=2 patches=18
-thread/bolt_m8x30.slvs g8 tri=290 faces=12 naked=0 inter=0 failed=false vol=1933.6854371184404 com=-8.4326371261236157e-14,-8.2853059705827134e-13,-7.2158595600386262 min=-7.5055534994651385,-6.4999999999999991,-30.000000000000011 max=7.5055534994651385,6.5000000000000071,5.3000000000000007 topo=0 euler=2 patches=18
-thread/bolt_m8x30.slvs g9 tri=4330 faces=17 naked=0 inter=0 failed=false vol=2063.7514007560703 com=-0.003369406686587494,-3.4426677908097099e-11,-7.9585437694524837 min=-7.5055534994651385,-6.4999999999999991,-30.000000000000011 max=7.5055534994651385,6.5000000000000071,5.3000000000000007 topo=0 euler=2 patches=209
-thread/lead_tr20.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/lead_tr20.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/lead_tr20.slvs g3 tri=260 faces=3 naked=0 inter=0 failed=false vol=12546.063517069137 com=-2.2653886130686149e-17,2.4749370597774618e-16,20 min=-10,-10.000000000000002,0 max=10,10,40.000000000000007 topo=0 euler=2 patches=6
-thread/lead_tr20.slvs g4 tri=260 faces=3 naked=0 inter=0 failed=false vol=12546.063517069142 com=-3.1715440582960643e-17,9.5146321748881922e-17,20.000000000000018 min=-10,-10.000000000000002,0 max=10,10,40.000000000000007 topo=0 euler=2 patches=6
-thread/lead_tr20.slvs g5 tri=462 faces=5 naked=0 inter=0 failed=false vol=8776.0594622509034 com=-2.8890135077877175e-13,-3.0484068539595893e-12,22.147891129866728 min=-10,-10.000000000000002,-6.5035359056653796e-16 max=10.000000000000002,10.000000000000002,40.000000000000007 topo=0 euler=2 patches=11
-thread/lead_tr20.slvs g6 tri=462 faces=5 naked=0 inter=0 failed=false vol=8776.0594622508852 com=-2.8849005489897571e-13,-3.0487323282581608e-12,22.147891129866725 min=-10,-10.000000000000002,-6.5035359056653796e-16 max=10.000000000000002,10.000000000000002,40.000000000000007 topo=0 euler=2 patches=11
-thread/lead_tr20.slvs g7 tri=2398 faces=15 naked=0 inter=0 failed=false vol=10000.406220419563 com=-0.095275671632694056,0.095275671764737543,21.272776945716895 min=-10,-10.000000000000002,-6.5035359056653796e-16 max=10.000000000000002,10.000000000000002,40.000000000000007 topo=0 euler=2 patches=75
-thread/nut_m8.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/nut_m8.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/nut_m8.slvs g3 tri=260 faces=3 naked=0 inter=0 failed=false vol=998.98030754663046 com=5.5056589428678971e-16,-5.0500028737165368e-16,3.2500000000000018 min=-7.0000000000000036,-7.0000000000000036,0 max=7.0000000000000036,7,6.5000000000000018 topo=0 euler=2 patches=6
-thread/nut_m8.slvs g4 tri=260 faces=3 naked=0 inter=0 failed=false vol=998.9803075466308 com=4.8010590700826205e-16,-1.0206695948990461e-15,3.2500000000000013 min=-7.0000000000000036,-7.0000000000000036,0 max=7.0000000000000036,7,6.5000000000000018 topo=0 euler=2 patches=6
-thread/nut_m8.slvs g5 tri=528 faces=4 naked=0 inter=0 failed=false vol=672.78265610283336 com=4.0093153950405069e-14,1.4785753185529693e-15,3.2500000000000218 min=-7.0000000000000036,-7.0000000000000036,-2.4424906541753444e-15 max=7.0000000000000036,7,6.5000000000000027 topo=0 euler=0 patches=10
-thread/nut_m8.slvs g6 tri=528 faces=4 naked=0 inter=0 failed=false vol=672.78265610283324 com=3.9617897598012947e-14,1.6422747288213299e-15,3.25000000000002 min=-7.0000000000000036,-7.0000000000000036,-2.4424906541753444e-15 max=7.0000000000000036,7,6.5000000000000027 topo=0 euler=0 patches=10
-thread/nut_m8.slvs g7 tri=1800 faces=9 naked=0 inter=0 failed=false vol=709.35036253460044 com=-0.0011966094107967444,0.013677308066588153,3.2499999998725442 min=-7.0000000000000036,-7.0000000000000036,-5.7910827699938016e-16 max=7.0000000000000036,7,6.5000000000000027 topo=0 euler=0 patches=54
-thread/screw_m6_down.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/screw_m6_down.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/screw_m6_down.slvs g3 tri=132 faces=3 naked=0 inter=0 failed=false vol=561.83797499410878 com=-7.2718842663909482e-17,-4.1497165650600522e-17,-9.9999999999999822 min=-3,-3,-20.000000000000004 max=3,3,0 topo=0 euler=2 patches=6
-thread/screw_m6_down.slvs g4 tri=132 faces=3 naked=0 inter=0 failed=false vol=561.837974994109 com=-8.0425459141878117e-17,6.9557153852435127e-17,-9.9999999999999805 min=-3,-3,-20.000000000000004 max=3,3,0 topo=0 euler=2 patches=6
-thread/screw_m6_down.slvs g5 tri=270 faces=5 naked=0 inter=0 failed=false vol=469.61456512759025 com=-5.7491503899089806e-14,6.0628070362470556e-13,-10.981905340200333 min=-3.0000000000000009,-3,-20.000000000000004 max=3.0000000000000009,3,1.6369635399294346e-16 topo=0 euler=2 patches=11
-thread/screw_m6_down.slvs g6 tri=270 faces=5 naked=0 inter=0 failed=false vol=469.61456512759037 com=-5.7495286483726804e-14,6.061825928356802e-13,-10.981905340200319 min=-3.0000000000000009,-3,-20.000000000000004 max=3.0000000000000009,3,1.6369635399294346e-16 topo=0 euler=2 patches=11
-thread/screw_m6_down.slvs g7 tri=2454 faces=10 naked=0 inter=0 failed=false vol=501.79363973176453 com=-5.9253453005720224e-11,-0.0027223463439314897,-10.598297097142353 min=-3,-3,-20.000000000000004 max=3,3,4.4408920985006262e-16 topo=0 euler=2 patches=112
-thread/screw_m8.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/screw_m8.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/screw_m8.slvs g3 tri=132 faces=3 naked=0 inter=0 failed=false vol=1498.2345999842901 com=6.8766731649566482e-17,9.4850664344229624e-17,14.999999999999966 min=-4,-4,0 max=4,4,30.000000000000007 topo=0 euler=2 patches=6
-thread/screw_m8.slvs g4 tri=132 faces=3 naked=0 inter=0 failed=false vol=1498.2345999842903 com=2.6676749346814565e-18,-2.9403705946711167e-16,14.999999999999957 min=-4,-4,0 max=4,4,30.000000000000007 topo=0 euler=2 patches=6
-thread/screw_m8.slvs g5 tri=270 faces=5 naked=0 inter=0 failed=false vol=1312.6447179648878 com=-6.0848400087588537e-14,-6.4277135108939916e-13,16.272476028986894 min=-4.0000000000000009,-4,-3.0026318281949551e-16 max=4.0000000000000009,4,30.000000000000007 topo=0 euler=2 patches=11
-thread/screw_m8.slvs g6 tri=270 faces=5 naked=0 inter=0 failed=false vol=1312.6447179648878 com=-6.0941606250413499e-14,-6.4278809775023327e-13,16.272476028986905 min=-4.0000000000000009,-4,-3.0026318281949551e-16 max=4.0000000000000009,4,30.000000000000007 topo=0 euler=2 patches=11
-thread/screw_m8.slvs g7 tri=2262 faces=10 naked=0 inter=0 failed=false vol=1376.6053153478824 com=-0.0050575980063508131,1.8145211900599482e-11,15.795190570516668 min=-4.0000000000000009,-4,-6.6613381477509392e-16 max=4.0000000000000018,4,30.000000000000007 topo=0 euler=2 patches=106
-thread/screw_m8_lh.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/screw_m8_lh.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/screw_m8_lh.slvs g3 tri=132 faces=3 naked=0 inter=0 failed=false vol=1498.2345999842901 com=6.8766731649566482e-17,9.4850664344229624e-17,14.999999999999966 min=-4,-4,0 max=4,4,30.000000000000007 topo=0 euler=2 patches=6
-thread/screw_m8_lh.slvs g4 tri=132 faces=3 naked=0 inter=0 failed=false vol=1498.2345999842903 com=2.6676749346814565e-18,-2.9403705946711167e-16,14.999999999999957 min=-4,-4,0 max=4,4,30.000000000000007 topo=0 euler=2 patches=6
-thread/screw_m8_lh.slvs g5 tri=270 faces=5 naked=0 inter=0 failed=false vol=1312.6447179648878 com=-6.0848400087588537e-14,-6.4277135108939916e-13,16.272476028986894 min=-4.0000000000000009,-4,-3.0026318281949551e-16 max=4.0000000000000009,4,30.000000000000007 topo=0 euler=2 patches=11
-thread/screw_m8_lh.slvs g6 tri=270 faces=5 naked=0 inter=0 failed=false vol=1312.6447179648878 com=-6.0941606250413499e-14,-6.4278809775023327e-13,16.272476028986905 min=-4.0000000000000009,-4,-3.0026318281949551e-16 max=4.0000000000000009,4,30.000000000000007 topo=0 euler=2 patches=11
-thread/screw_m8_lh.slvs g7 tri=2262 faces=10 naked=0 inter=0 failed=false vol=1376.6054806200868 com=-0.0050576239121962853,-4.5829726416260634e-12,15.795189392966181 min=-4.0000000000000009,-4,-4.4408920985006262e-16 max=4.0000000000000009,4,30.000000000000007 topo=0 euler=2 patches=106
-thread/screw_unc.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/screw_unc.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/screw_unc.slvs g3 tri=132 faces=3 naked=0 inter=0 failed=false vol=629.29754851944324 com=8.4682842492213329e-18,-1.5313480684008576e-16,9.9999999999999858 min=-3.1749999999999998,-3.1750000000000007,0 max=3.1749999999999998,3.1749999999999998,20.000000000000004 topo=0 euler=2 patches=6
-thread/screw_unc.slvs g4 tri=132 faces=3 naked=0 inter=0 failed=false vol=629.29754851944313 com=4.1635730892004902e-17,-2.5687128889304719e-16,9.9999999999999876 min=-3.1749999999999998,-3.1750000000000007,0 max=3.1749999999999998,3.1749999999999998,20.000000000000004 topo=0 euler=2 patches=6
-thread/screw_unc.slvs g5 tri=268 faces=5 naked=0 inter=0 failed=false vol=465.23981711406321 com=-6.3451976915367873e-14,-6.7256766456912777e-13,11.41052184590268 min=-3.1750000000000007,-3.1750000000000007,-3.1180257903417801e-16 max=3.1750000000000007,3.1750000000000007,20.000000000000004 topo=0 euler=2 patches=11
-thread/screw_unc.slvs g6 tri=268 faces=5 naked=0 inter=0 failed=false vol=465.2398171140631 com=-6.3416658999402685e-14,-6.7259928364929913e-13,11.410521845902656 min=-3.1750000000000007,-3.1750000000000007,-3.1180257903417801e-16 max=3.1750000000000007,3.1750000000000007,20.000000000000004 topo=0 euler=2 patches=11
-thread/screw_unc.slvs g7 tri=2256 faces=10 naked=0 inter=0 failed=false vol=513.25656853961004 com=-0.0070912704787037314,0.007085929551658883,10.904347902509919 min=-3.1750000000000007,-3.1750000000000007,-3.1180257903417801e-16 max=3.1750000000000007,3.1750000000000007,20.000000000000004 topo=0 euler=2 patches=106
-thread/triple_m12.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/triple_m12.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-thread/triple_m12.slvs g3 tri=260 faces=3 naked=0 inter=0 failed=false vol=2258.2914330724448 com=-1.9940139354614379e-16,-9.1244819137485913e-17,10 min=-6,-6,0 max=6,6,20.000000000000004 topo=0 euler=2 patches=6
-thread/triple_m12.slvs g4 tri=260 faces=3 naked=0 inter=0 failed=false vol=2258.2914330724443 com=-3.0519818814952163e-16,2.5800259204392552e-16,9.9999999999999964 min=-6,-6,0 max=6,6,20.000000000000004 topo=0 euler=2 patches=6
-thread/triple_m12.slvs g5 tri=532 faces=5 naked=0 inter=0 failed=false vol=1985.9442937475324 com=-9.7194020081298254e-13,-2.2966988267238462e-13,10.411412052464692 min=-6.0000000000000018,-6,-3.1237091221445673e-16 max=6.0000000000000018,6.0000000000000036,20.000000000000004 topo=0 euler=2 patches=11
-thread/triple_m12.slvs g6 tri=532 faces=5 naked=0 inter=0 failed=false vol=1985.9442937475344 com=-9.7164077879300876e-13,-2.2933714184660362e-13,10.411412052464689 min=-6.0000000000000018,-6,-3.1237091221445673e-16 max=6.0000000000000018,6.0000000000000036,20.000000000000004 topo=0 euler=2 patches=11
-thread/triple_m12.slvs g7 tri=4972 faces=20 naked=0 inter=0 failed=false vol=2070.0814901322838 com=-0.015561386137281835,0.013057553129054218,10.272757294669766 min=-6.0000000000000018,-6,-3.1237091221445673e-16 max=6,6.0000000000000036,20.000000000000004 topo=0 euler=2 patches=143

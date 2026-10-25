@@ -172,3 +172,27 @@ func TestFailures(t *testing.T) {
 		t.Error("an empty report has failures")
 	}
 }
+
+// A grid run in parallel fails at the same points, in the same order,
+// as run on one goroutine.
+func TestParallelFailsAtSamePoints(t *testing.T) {
+	t.Parallel()
+	g := grid()
+	fails := func(p Point) error {
+		if p.Float("r") != 2 && p.Bool("flip") {
+			return fmt.Errorf("at %s", p.Label())
+		}
+		return nil
+	}
+	serial := g.RunAll(fails)
+	g.Parallel = true
+	parallel := g.RunAll(fails)
+	if parallel.Runs != serial.Runs || len(parallel.Failed) != len(serial.Failed) {
+		t.Fatalf("parallel %s, serial %s", parallel, serial)
+	}
+	for i, f := range serial.Failed {
+		if p := parallel.Failed[i]; p.Point.Label() != f.Point.Label() || p.Err.Error() != f.Err.Error() {
+			t.Errorf("failure %d: parallel %s %v, serial %s %v", i, p.Point.Label(), p.Err, f.Point.Label(), f.Err)
+		}
+	}
+}

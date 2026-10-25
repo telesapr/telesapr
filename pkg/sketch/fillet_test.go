@@ -1,14 +1,12 @@
 package sketch_test
 
 import (
-	"fmt"
 	"math"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
-	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
@@ -25,15 +23,10 @@ func filletLoss(r, beta, l float64) float64 {
 	return l * (r*s - r*r*(math.Pi-beta)/2)
 }
 
-// fineChordFillet sets a fine chord tolerance, so volumes are near the
-// formula's: the arc's chords cut inside by up to the tolerance.
-func fineChordFillet(d *api.Doc) {
-	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.001 })
-}
-
 func TestFilletOneEdge(t *testing.T) {
+	t.Parallel()
 	d := api.New()
-	fineChordFillet(d)
+	fineChord(d, 0.001)
 	ex := block(d, 0, 0, 10, 10, 5)
 	top := lineAlong(t, ex, api.V(0, 0, 5), api.V(10, 0, 5))
 	step(d)
@@ -85,11 +78,12 @@ func TestFilletOneEdge(t *testing.T) {
 
 // A Boolean's edge, by name; and two parallel edges at once.
 func TestFilletSolidEdges(t *testing.T) {
+	t.Parallel()
 	d, err := api.Open("../../testdata/topo/slot.tlspr")
 	if err != nil {
 		t.Fatal(err)
 	}
-	fineChordFillet(d)
+	fineChord(d, 0.001)
 	s := d.Group("slot").Solid()
 	upright := s.EdgeAt(api.V(15, 0, 5))
 	f := d.Features.FilletSolid([]api.SolidEdge{upright}, 2, "")
@@ -118,6 +112,7 @@ func TestFilletSolidEdges(t *testing.T) {
 }
 
 func TestFilletRefused(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(20, 5, 0), api.V(5, 5, 0), api.V(5, 20, 0), api.V(0, 20, 0))
 	ex := d.Features.Extrude(5, "")
@@ -151,6 +146,7 @@ func TestFilletRefused(t *testing.T) {
 // A fillet that stops fitting, as when the solid is made thinner, is a
 // problem on the group, and the solid passes through.
 func TestFilletProblem(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
 	width := d.Constrain.Length(sides[1], 10)
@@ -165,47 +161,39 @@ func TestFilletProblem(t *testing.T) {
 	}
 }
 
-// TestFilletSweep rounds the edge at a corner of angle angle of a
-// triangular prism of length length, at a fraction k of the largest
-// radius that fits, and requires a sound solid of the formula's
-// volume. The rate allowed, 0, was fixed before the group was built.
-func TestFilletSweep(t *testing.T) {
-	grid := sweep.Grid{
-		Axes: []sweep.Axis{
-			sweep.Floats("angle", 20, 45, 60, 90, 120, 150, 165),
-			sweep.Floats("k", 0.05, 0.4, 0.8),
-			sweep.Floats("length", 0.5, 5, 40),
-		},
-		MaxFailRate: 0,
-		Sample:      20,
-	}
-	grid.Run(func(p sweep.Point) error {
-		th := p.Float("angle") * math.Pi / 180
-		length := p.Float("length")
-		r := p.Float("k") * 10 * math.Tan(th/2)
+// TestFilletPrismCorners rounds the edge at a corner of a triangular
+// prism, at a fraction k of the largest radius that fits, at a sharp,
+// a square and a nearly flat corner, and requires a sound solid of the
+// formula's volume: the fillet group reaches the kernel's fillet, whose
+// grid of angles, radii, lengths and leans is pkg/topo's TestFilletSweep.
+func TestFilletPrismCorners(t *testing.T) {
+	t.Parallel()
+	for _, c := range []struct{ angle, k, length float64 }{
+		{20, 0.8, 0.5},
+		{90, 0.4, 5},
+		{165, 0.05, 40},
+	} {
+		th := c.angle * math.Pi / 180
+		r := c.k * 10 * math.Tan(th/2)
 		d := api.New()
-		fineChordFillet(d)
+		fineChord(d, 0.001)
 		d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(10*math.Cos(th), 10*math.Sin(th), 0))
-		ex := d.Features.Extrude(length, "")
-		f := d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 0), api.V(0, 0, length))}, r, "")
+		ex := d.Features.Extrude(c.length, "")
+		f := d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 0), api.V(0, 0, c.length))}, r, "")
 		rep := f.Analyze().Check()
-		want := 50*math.Sin(th)*length - filletLoss(r, th, length)
-		allow := chordLoss(r, math.Pi-th, length) + 1e-9*want
-		switch {
-		case f.Problem() != "":
-			return fmt.Errorf("problem: %s", f.Problem())
-		case !rep.Sound():
-			return fmt.Errorf("unsound: %s", rep.String())
-		case math.Abs(rep.Volume-want) > allow:
-			return fmt.Errorf("volume %g, want %g", rep.Volume, want)
+		want := 50*math.Sin(th)*c.length - filletLoss(r, th, c.length)
+		allow := chordLoss(r, math.Pi-th, c.length) + 1e-9*want
+		if f.Problem() != "" || !rep.Sound() || math.Abs(rep.Volume-want) > allow {
+			t.Errorf("angle %g, k %g, length %g: %q, %s, want volume %g",
+				c.angle, c.k, c.length, f.Problem(), rep.String(), want)
 		}
-		return nil
-	}).Require(t)
+	}
 }
 
 // A fillet's faces join later Booleans: a boss on the top face over the
 // rounded edge, and a cut through the round.
 func TestFilletThenBoolean(t *testing.T) {
+	t.Parallel()
 	for _, cut := range []bool{false, true} {
 		d := api.New()
 		ex := block(d, 0, 0, 20, 10, 10)
@@ -232,8 +220,9 @@ func TestFilletThenBoolean(t *testing.T) {
 // away: the chords of the arcs the cut makes on the cylinder, not a
 // fault of the Boolean (roadmap 13.3).
 func TestFilletCutChords(t *testing.T) {
+	t.Parallel()
 	d := api.New()
-	fineChordFillet(d)
+	fineChord(d, 0.001)
 	ex := block(d, 0, 0, 20, 10, 10)
 	f := d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10))}, 2, "")
 	a := 4 * (1 - math.Pi/4)
@@ -261,9 +250,10 @@ func boxCornerLoss(r, length float64, mitres, spheres int) float64 {
 // Edges that meet at a block's corner: two (a mitre) and three (a
 // sphere), through the group, undone and redone and reopened.
 func TestFilletCorners(t *testing.T) {
+	t.Parallel()
 	for _, three := range []bool{false, true} {
 		d := api.New()
-		fineChordFillet(d)
+		fineChord(d, 0.001)
 		ex := block(d, 0, 0, 20, 10, 10)
 		edges := []api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10)),
 			lineAlong(t, ex, api.V(20, 0, 10), api.V(20, 10, 10))}
@@ -321,6 +311,7 @@ func spandrelLoss(rad, r float64, hole bool) float64 {
 // A cylinder's top circle rounded and chamfered, by its entity and by
 // one of its solid edges, through the groups; the loss by Pappus.
 func TestFilletCircle(t *testing.T) {
+	t.Parallel()
 	for _, flat := range []bool{false, true} {
 		for _, byName := range []bool{false, true} {
 			d := api.New()
@@ -368,6 +359,7 @@ func TestFilletCircle(t *testing.T) {
 // A boss on a block: its top circle and a top edge of the block
 // chamfered in one group, the circle by a cone, the edge by a wedge.
 func TestChamferCircleAndEdge(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Edit.SetChordTolerance(0.005)
 	block(d, -10, -10, 10, 10, 5)
@@ -391,6 +383,7 @@ func TestChamferCircleAndEdge(t *testing.T) {
 // block, its four edges by name meeting in mitres outside its corners,
 // and a round boss's foot by its circle entity, a torus by Pappus.
 func TestFilletConcave(t *testing.T) {
+	t.Parallel()
 	for _, round := range []bool{false, true} {
 		d := api.New()
 		d.Edit.SetChordTolerance(0.005)
@@ -445,6 +438,7 @@ func TestFilletConcave(t *testing.T) {
 // group, undone and redone and reopened; the loss along the centroid's
 // path.
 func TestFilletRoundedOutline(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Edit.SetChordTolerance(0.005)
 	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
@@ -481,6 +475,7 @@ func TestFilletRoundedOutline(t *testing.T) {
 // slope leans, the front doesn't); the volume as OpenCASCADE gives, whose
 // curves are exact here.
 func TestFilletUnevenMitre(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Edit.SetChordTolerance(0.005)
 	d.Features.SketchIn(d.Workplane("ZX"), "")
@@ -521,6 +516,7 @@ func TestFilletUnevenMitre(t *testing.T) {
 // over the floor beside the rib (pkg/topo's TestFilletRibFootSweep sums
 // the like): 0.0600158 mm³ a corner at 2 mm under a top at 35 degrees.
 func TestFilletRibFoot(t *testing.T) {
+	t.Parallel()
 	volume := func(sides, ends bool) float64 {
 		d := api.New()
 		d.Edit.SetChordTolerance(0.001)
@@ -581,6 +577,7 @@ func TestFilletRibFoot(t *testing.T) {
 // top's circle, where the flat top meets the cone, rounded by name
 // through the group; the volume by Pappus.
 func TestFilletCone(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Edit.SetChordTolerance(0.005)
 	d.Features.SketchIn(d.Workplane("ZX"), "")
@@ -626,8 +623,9 @@ func TestFilletCone(t *testing.T) {
 // own, and its foot's back edge from a parameter; undone, redone,
 // reopened, and the parameter changed.
 func TestFilletEdgeRadii(t *testing.T) {
+	t.Parallel()
 	d := api.New()
-	fineChordFillet(d)
+	fineChord(d, 0.001)
 	if err := d.Params.Set("r", "1.5"); err != nil {
 		t.Fatal(err)
 	}
@@ -714,6 +712,7 @@ func TestFilletEdgeRadii(t *testing.T) {
 // the faces meet smoothly there: their triangles carry other faces
 // (roadmap 14.1).
 func TestFilletBordersDrawn(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 20, 10, 10)
 	d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10))}, 2, "")
@@ -746,6 +745,7 @@ func near(a, b float64) bool { return math.Abs(a-b) < 1e-6 }
 // on round the corner, and says so, rather than naming a curved face at
 // the edge's end (roadmap 15.7).
 func TestFilletStoppedAtRoundedCorner(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(30, 20, 0))
 	for _, s := range sides {
@@ -790,6 +790,7 @@ func spandrelRevolved(p, g0, g1 [2]float64, r float64) float64 {
 // shaft from a cone's top, whose foot goes in; against Pappus, undone,
 // redone and reopened.
 func TestFilletConeOnCylinder(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct {
 		name    string
 		profile []api.Vec

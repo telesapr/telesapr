@@ -54,6 +54,7 @@ func TestThreadSizes(t *testing.T) {
 // hand apart from the designation, so that it can be changed alone,
 // and a model written as a script keeps it.
 func TestThreadLeftHand(t *testing.T) {
+	t.Parallel()
 	d := New()
 	rod := d.Sketch.Circle(V(0, 0, 0), 6.35)
 	d.Features.Extrude(30, "rod")

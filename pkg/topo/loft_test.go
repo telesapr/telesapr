@@ -39,9 +39,11 @@ func circle(r, z, start float64) []srf.SBezier {
 	return out
 }
 
-func loftVolume(t *testing.T, a, b []srf.SBezier) (float64, *topo.Topology) {
+// loftVolume is the volume and topology of the ruled loft from a to b,
+// made at tol, which must be sound.
+func loftVolume(t *testing.T, a, b []srf.SBezier, tol srf.Tolerance) (float64, *topo.Topology) {
 	t.Helper()
-	sh, err := topo.MakeRuledLoft(a, b, core.NewRGBA(100, 100, 100, 255), 1<<30, srf.Tolerance{})
+	sh, err := topo.MakeRuledLoft(a, b, core.NewRGBA(100, 100, 100, 255), 1<<30, tol)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,40 +58,41 @@ func loftVolume(t *testing.T, a, b []srf.SBezier) (float64, *topo.Topology) {
 }
 
 func TestLoftPrismAndFrustum(t *testing.T) {
-	vol, tp := loftVolume(t, square(10, 0), square(10, 20))
+	t.Parallel()
+	vol, tp := loftVolume(t, square(10, 0), square(10, 20), srf.Tolerance{})
 	if math.Abs(vol-2000) > 1e-9 || len(tp.Faces) != 6 || tp.Euler() != 2 {
 		t.Errorf("prism: volume %g, %d faces", vol, len(tp.Faces))
 	}
 	// A frustum: h/3 (A1 + A2 + sqrt(A1 A2)).
-	vol, _ = loftVolume(t, square(10, 0), square(4, 6))
+	vol, _ = loftVolume(t, square(10, 0), square(4, 6), srf.Tolerance{})
 	if want := 6.0 / 3 * (100 + 16 + 40); math.Abs(vol-want) > 1e-9 {
 		t.Errorf("frustum: volume %g, want %g", vol, want)
 	}
 	// Given either way round, and from the top down.
-	vol, _ = loftVolume(t, square(4, 6), square(10, 0))
+	vol, _ = loftVolume(t, square(4, 6), square(10, 0), srf.Tolerance{})
 	if want := 6.0 / 3 * (100 + 16 + 40); math.Abs(vol-want) > 1e-9 {
 		t.Errorf("frustum, the other way: volume %g", vol)
 	}
 }
 
 func TestLoftCircles(t *testing.T) {
-	old := srf.ChordTolMm()
-	srf.SetChordTolMm(0.0005)
-	defer srf.SetChordTolMm(old)
-	vol, tp := loftVolume(t, circle(5, 0, 0), circle(2, 9, 0))
+	t.Parallel()
+	tol := srf.Tol(0.0005, 20)
+	vol, tp := loftVolume(t, circle(5, 0, 0), circle(2, 9, 0), tol)
 	want := math.Pi * 9 / 3 * (25 + 4 + 10)
 	if math.Abs(vol-want) > 1e-3*want || len(tp.Faces) != 6 {
 		t.Errorf("cone frustum: volume %g, want %g, %d faces", vol, want, len(tp.Faces))
 	}
 	// A square to a circle: between the frustum of the inscribed and of
 	// the circumscribed polygons.
-	vol, _ = loftVolume(t, square(10, 0), circle(5, 10, -3*math.Pi/4))
+	vol, _ = loftVolume(t, square(10, 0), circle(5, 10, -3*math.Pi/4), tol)
 	if vol < 10*(100+math.Pi*25)/2*0.9 || vol > 1000 {
 		t.Errorf("square to circle: volume %g", vol)
 	}
 }
 
 func TestLoftRefusals(t *testing.T) {
+	t.Parallel()
 	cases := map[string][2][]srf.SBezier{
 		"counts":   {square(10, 0), circle(5, 10, 0)[:3]},
 		"open":     {square(10, 0)[:3], square(10, 10)[:3]},
@@ -109,10 +112,10 @@ func TestLoftRefusals(t *testing.T) {
 // those would make the frustum. Its volume is h (A0 + A1) / 3, the mixed
 // area of a loop and its quarter turn being zero.
 func TestLoftTwistedSides(t *testing.T) {
-	srf.SetChordTolMm(0.01)
+	t.Parallel()
 	a, b := square(40, 0), square(20, 30)
 	b = append(b[1:], b[:1]...)
-	vol, tp := loftVolume(t, a, b)
+	vol, tp := loftVolume(t, a, b, srf.Tol(0.01, 20))
 	want := 30 * (1600 + 400) / 3.0
 	if math.Abs(vol-want) > 0.005*want || len(tp.Faces) != 6 {
 		t.Errorf("volume %g, want %g within the mesh's error; %d faces", vol, want, len(tp.Faces))

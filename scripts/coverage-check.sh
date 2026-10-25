@@ -18,7 +18,6 @@ TIMEOUT=${TIMEOUT:-90m}
 LIST=scripts/coverage-packages.txt
 MODULE=$(go list -m)
 
-# Sharded as scripts/go-test.sh shards it; it merges the profiles.
 COVERPROFILE="$PROFILE" scripts/go-test.sh -coverpkg=./pkg/... -timeout "$TIMEOUT"
 
 # A block appears once per test binary that was built with it: it is

@@ -16,6 +16,7 @@ import (
 // fills the corner, the chamfer too, each sound and adding about what
 // its section's area along the edge gives.
 func TestFilletFlatOnConeOffAxis(t *testing.T) {
+	t.Parallel()
 	for _, what := range []string{"a fillet", "a chamfer"} {
 		d := New()
 		d.Edit.SetChordTolerance(0.002)
@@ -159,10 +160,12 @@ func TestChamferRunsOffBand(t *testing.T) {
 // to the plane's cut where conics can't follow it (topo's fitCuts): none
 // fails. A shell made unsound fails outright.
 func TestRunOffSweep(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("a sweep")
 	}
 	g := sweep.Grid{
+		Parallel: true,
 		Axes: []sweep.Axis{
 			sweep.Floats("y", 2, 2.5, 3),
 			sweep.Floats("top", 22, 25),
@@ -203,6 +206,7 @@ func TestRunOffSweep(t *testing.T) {
 // fitted to the planes' cuts then (topo's fitCuts), and the fillets are
 // made, and sound.
 func TestRunOffFittedCuts(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("fillets refined to a fine tolerance")
 	}
@@ -229,6 +233,7 @@ func TestRunOffFittedCuts(t *testing.T) {
 // away; at 3 six naked edges stay where the chamfer reaches the slot's
 // floor.
 func TestChamferSlotOnCone(t *testing.T) {
+	t.Parallel()
 	for _, r := range []float64{1, 1.5, 2, 2.5} {
 		d := New()
 		d.Edit.SetChordTolerance(0.003)

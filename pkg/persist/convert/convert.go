@@ -209,9 +209,10 @@ type Options struct {
 	Overwrite bool
 	// Units is the document unit of the files written.
 	Units core.Unit
-	// Quiet treats a linked file that can't be read as declined, where
-	// otherwise link.LocateMissingFile asks for it.
-	Quiet bool
+	// Locate, when set, asks the user to find a linked file that can't
+	// be read, and lets them give up the import; without it such a file
+	// counts as declined.
+	Locate link.LocateFunc
 }
 
 // Result is what Run did.
@@ -285,7 +286,7 @@ func convertOne(it Item, o Options) (data []byte, warnings []string, err error) 
 
 	// As tlspr.LoadFile: the saved entities are regenerated.
 	sk.Entities = sk.Entities[:0]
-	if !link.ReloadAll(sk, it.Dst, link.Options{CanCancel: !o.Quiet, Quiet: o.Quiet}) {
+	if !link.ReloadAll(sk, it.Dst, link.Options{CanCancel: o.Locate != nil, Locate: o.Locate}) {
 		return nil, warnings, ErrCancelled
 	}
 	defer func() {
@@ -320,7 +321,7 @@ func File(root, dst string, overwrite bool) (*Plan, *Result, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	r, err := Run(p, Options{Overwrite: overwrite, Quiet: true})
+	r, err := Run(p, Options{Overwrite: overwrite})
 	return p, r, err
 }
 

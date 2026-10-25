@@ -29,6 +29,7 @@ func deleteGroup(sk *sketch.Sketch, h core.HGroup) {
 }
 
 func TestBrokenReferencesDeleteGroup(t *testing.T) {
+	t.Parallel()
 	sk := translateND(t)
 	if len(sk.BrokenReferences) != 0 {
 		t.Fatalf("broken on load: %s", brokenLines(sk))
@@ -69,6 +70,7 @@ func TestBrokenReferencesDeleteGroup(t *testing.T) {
 // TestBrokenReferencesDeleteRequest deletes a line of the bolt head's
 // sketch that a constraint of the shank's sketch uses.
 func TestBrokenReferencesDeleteRequest(t *testing.T) {
+	t.Parallel()
 	sk := bolt(t)
 	sk.GenerateAll()
 	var shank core.HRequest
@@ -107,6 +109,7 @@ func TestBrokenReferencesDeleteRequest(t *testing.T) {
 // TestBrokenReferencesNames: what is gone is named as it was, or by its
 // handle if it was never seen.
 func TestBrokenReferencesNames(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct {
 		origin core.HEntity
 		want   string

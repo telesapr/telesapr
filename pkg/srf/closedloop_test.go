@@ -27,9 +27,9 @@ func sphereLoopSet(r float64) *SBezierLoopSet {
 
 // patchUpSphere is a lathed sphere of radius r about c, turned so that
 // the middle of its first curved patch faces +Z: a cap about the top
-// then lies inside that one patch.
-func patchUpSphere(r float64, c geom.Vector) *SShell {
-	var sh SShell
+// then lies inside that one patch. It is lathed at tol.
+func patchUpSphere(r float64, c geom.Vector, tol Tolerance) *SShell {
+	sh := SShell{Tol: tol}
 	sh.MakeFromRevolutionOf(sphereLoopSet(r), geom.Vector{}, geom.Vector{Z: 1}, core.RGBA{}, noFaces{})
 	var d geom.Vector
 	for i := range sh.Surface {
@@ -44,7 +44,7 @@ func patchUpSphere(r float64, c geom.Vector) *SShell {
 		u = geom.Vector{X: 1}
 	}
 	q := geom.QuaternionFromBasis(u, d.Cross(u)).Inverse()
-	var out SShell
+	out := SShell{Tol: tol}
 	out.MakeFromTransformationOf(&sh, c, q, 1)
 	return &out
 }
@@ -72,12 +72,11 @@ func meshIsSound(sh *SShell) bool {
 // trim edge of either surface, so only the search for closed loops
 // inside the patches finds it.
 func TestSphereThroughFace(t *testing.T) {
-	old := ChordTolMm()
-	SetChordTolMm(0.005)
-	t.Cleanup(func() { SetChordTolMm(old) })
+	t.Parallel()
+	tol := Tol(0.005, 20)
 	const r, top = 10.0, 9.3
-	box := extrudedBox(geom.Vector{X: -15, Y: -15, Z: -15}, geom.Vector{X: 15, Y: 15, Z: top})
-	sphere := patchUpSphere(r, geom.Vector{})
+	box := extrudedBox(geom.Vector{X: -15, Y: -15, Z: -15}, geom.Vector{X: 15, Y: 15, Z: top}, tol)
+	sphere := patchUpSphere(r, geom.Vector{}, tol)
 	boxV := 30 * 30 * (top + 15)
 	capVol := capVolume(r, r-top)
 	for _, c := range []struct {
@@ -109,15 +108,16 @@ func TestSphereThroughFace(t *testing.T) {
 // with a sphere of radius r at c, and checks each result: the Boolean
 // succeeds, the mesh is watertight, and the volumes add up as sets do,
 // union + intersection = box + sphere and difference + intersection =
-// box, to a small fraction of the sphere's volume.
-func sphereFaceCase(r, top float64, c geom.Vector) error {
+// box, to a small fraction of the sphere's volume. The solids are
+// built at tol.
+func sphereFaceCase(r, top float64, c geom.Vector, tol Tolerance) error {
 	box := func() *SShell {
-		return extrudedBox(geom.Vector{X: -20, Y: -20, Z: -20}, geom.Vector{X: 20, Y: 20, Z: top})
+		return extrudedBox(geom.Vector{X: -20, Y: -20, Z: -20}, geom.Vector{X: 20, Y: 20, Z: top}, tol)
 	}
 	vols := map[SurfaceCombineAs]float64{}
 	for _, op := range []SurfaceCombineAs{SurfaceUnion, SurfaceDiff, SurfaceInter} {
 		var out SShell
-		out.MakeFromBoolean(box(), patchUpSphere(r, c), op)
+		out.MakeFromBoolean(box(), patchUpSphere(r, c, tol), op)
 		if out.BooleanFailed {
 			return fmt.Errorf("%v: boolean failed", op)
 		}
@@ -126,12 +126,12 @@ func sphereFaceCase(r, top float64, c geom.Vector) error {
 		}
 		vols[op] = shellVolume(&out)
 	}
-	boxV, sphereV := shellVolume(box()), shellVolume(patchUpSphere(r, c))
-	tol := 1e-2 * sphereV
-	if d := vols[SurfaceUnion] + vols[SurfaceInter] - boxV - sphereV; math.Abs(d) > tol {
+	boxV, sphereV := shellVolume(box()), shellVolume(patchUpSphere(r, c, tol))
+	allow := 1e-2 * sphereV
+	if d := vols[SurfaceUnion] + vols[SurfaceInter] - boxV - sphereV; math.Abs(d) > allow {
 		return fmt.Errorf("union + intersection off by %.4g", d)
 	}
-	if d := vols[SurfaceDiff] + vols[SurfaceInter] - boxV; math.Abs(d) > tol {
+	if d := vols[SurfaceDiff] + vols[SurfaceInter] - boxV; math.Abs(d) > allow {
 		return fmt.Errorf("difference + intersection off by %.4g", d)
 	}
 	return nil
@@ -142,8 +142,10 @@ func sphereFaceCase(r, top float64, c geom.Vector) error {
 // the face: small caps lie inside one patch of the sphere, larger ones
 // cross its seams.
 func TestSphereThroughFaceSweep(t *testing.T) {
-	sweepChordTol(t)
+	t.Parallel()
+	tol := sweepTol()
 	grid := sweep.Grid{
+		Parallel: true,
 		Axes: []sweep.Axis{
 			sweep.Floats("r", 3, 7, 10),
 			sweep.Floats("bulge", 0.02, 0.05, 0.1, 0.2, 0.4),
@@ -156,7 +158,7 @@ func TestSphereThroughFaceSweep(t *testing.T) {
 	grid.Run(func(p sweep.Point) error {
 		r := p.Float("r")
 		c := geom.Vector{X: p.Float("dx"), Y: p.Float("dy")}
-		return sphereFaceCase(r, r*(1-p.Float("bulge")), c)
+		return sphereFaceCase(r, r*(1-p.Float("bulge")), c, tol)
 	}).Require(t)
 }
 
@@ -174,24 +176,24 @@ const sphereFaceMaxFailRate = 0
 // crossedCylinder is a solid cylinder of radius r, along x through the
 // point (0, dy, 0) turned by angle degrees about y, long enough to
 // pass through the solid cylinder of radius 5 and height 20 on the z
-// axis.
-func crossedCylinder(r, dy, angle float64) *SShell {
-	cyl := lathedTube(0, r, -30, 30)
+// axis. It is built at tol.
+func crossedCylinder(r, dy, angle float64, tol Tolerance) *SShell {
+	cyl := lathedTube(0, r, -30, 30, tol)
 	// Lay it along x, then turn it about y.
 	q := geom.QuaternionFromAxisAngle(geom.Vector{Y: 1}, (90+angle)*math.Pi/180)
-	var out SShell
+	out := SShell{Tol: tol}
 	out.MakeFromTransformationOf(cyl, geom.Vector{Y: dy, Z: 10}, q, 1)
 	return &out
 }
 
 // cylinderCase combines the upright cylinder with a crossed one and
-// checks the results as sphereFaceCase does.
-func cylinderCase(r, dy, angle float64) error {
-	upright := func() *SShell { return lathedTube(0, 5, 0, 20) }
+// checks the results as sphereFaceCase does, the solids built at tol.
+func cylinderCase(r, dy, angle float64, tol Tolerance) error {
+	upright := func() *SShell { return lathedTube(0, 5, 0, 20, tol) }
 	vols := map[SurfaceCombineAs]float64{}
 	for _, op := range []SurfaceCombineAs{SurfaceUnion, SurfaceDiff, SurfaceInter} {
 		var out SShell
-		out.MakeFromBoolean(upright(), crossedCylinder(r, dy, angle), op)
+		out.MakeFromBoolean(upright(), crossedCylinder(r, dy, angle, tol), op)
 		if out.BooleanFailed {
 			return fmt.Errorf("%v: boolean failed", op)
 		}
@@ -200,12 +202,12 @@ func cylinderCase(r, dy, angle float64) error {
 		}
 		vols[op] = shellVolume(&out)
 	}
-	a, b := shellVolume(upright()), shellVolume(crossedCylinder(r, dy, angle))
-	tol := 1e-2 * math.Min(a, b)
-	if d := vols[SurfaceUnion] + vols[SurfaceInter] - a - b; math.Abs(d) > tol {
+	a, b := shellVolume(upright()), shellVolume(crossedCylinder(r, dy, angle, tol))
+	allow := 1e-2 * math.Min(a, b)
+	if d := vols[SurfaceUnion] + vols[SurfaceInter] - a - b; math.Abs(d) > allow {
 		return fmt.Errorf("union + intersection off by %.4g", d)
 	}
-	if d := vols[SurfaceDiff] + vols[SurfaceInter] - a; math.Abs(d) > tol {
+	if d := vols[SurfaceDiff] + vols[SurfaceInter] - a; math.Abs(d) > allow {
 		return fmt.Errorf("difference + intersection off by %.4g", d)
 	}
 	return nil
@@ -216,11 +218,12 @@ func cylinderCase(r, dy, angle float64) error {
 // flat cap must not lay a triangle of three rim points flat on the
 // cap's face, which overlaps it (roadmap 13.2).
 func TestSphereCapNoFold(t *testing.T) {
-	sweepChordTol(t)
+	t.Parallel()
+	tol := sweepTol()
 	r := 7.0
-	box := extrudedBox(geom.Vector{X: -20, Y: -20, Z: -20}, geom.Vector{X: 20, Y: 20, Z: r * 0.6})
-	var out SShell
-	out.MakeFromBoolean(box, patchUpSphere(r, geom.Vector{}), SurfaceInter)
+	box := extrudedBox(geom.Vector{X: -20, Y: -20, Z: -20}, geom.Vector{X: 20, Y: 20, Z: r * 0.6}, tol)
+	out := SShell{Tol: tol}
+	out.MakeFromBoolean(box, patchUpSphere(r, geom.Vector{}, tol), SurfaceInter)
 	if out.BooleanFailed || !meshIsSound(&out) {
 		t.Fatalf("failed %v, sound %v", out.BooleanFailed, meshIsSound(&out))
 	}
@@ -232,17 +235,18 @@ func TestSphereCapNoFold(t *testing.T) {
 // that circle by an edge, which lies in the plane's face, inside its
 // outline, and crosses its triangles (roadmap 24.1).
 func TestSphereCutAlongAxis(t *testing.T) {
-	sweepChordTol(t)
+	t.Parallel()
+	tol := sweepTol()
 	const r = 7.0
 	sphere := func() *SShell {
-		var sh SShell
+		sh := SShell{Tol: tol}
 		sh.MakeFromRevolutionOf(sphereLoopSet(r), geom.Vector{}, geom.Vector{Z: 1}, core.RGBA{}, noFaces{})
 		return &sh
 	}
 	for _, x := range []float64{0.146 * r, 0.3 * r, 0.6 * r} {
-		box := extrudedBox(geom.Vector{X: x, Y: -20, Z: -20}, geom.Vector{X: 20, Y: 20, Z: 20})
+		box := extrudedBox(geom.Vector{X: x, Y: -20, Z: -20}, geom.Vector{X: 20, Y: 20, Z: 20}, tol)
 		for _, op := range []SurfaceCombineAs{SurfaceDiff, SurfaceInter} {
-			var out SShell
+			out := SShell{Tol: tol}
 			out.MakeFromBoolean(sphere(), box, op)
 			if out.BooleanFailed || !meshIsSound(&out) {
 				t.Errorf("x = %g, %v: failed %v, sound %v", x, op, out.BooleanFailed, meshIsSound(&out))
@@ -257,12 +261,13 @@ func TestSphereCutAlongAxis(t *testing.T) {
 // quarter must get its own part of the curve, split at the seam, or
 // neither quarter's trim closes and the union fails (roadmap 13.2).
 func TestCylinderAcrossEndSeam(t *testing.T) {
-	sweepChordTol(t)
-	if err := cylinderCase(4, 0.7, 60); err != nil {
+	t.Parallel()
+	tol := sweepTol()
+	if err := cylinderCase(4, 0.7, 60, tol); err != nil {
 		t.Fatal(err)
 	}
-	var out SShell
-	out.MakeFromBoolean(lathedTube(0, 5, 0, 20), crossedCylinder(4, 0.7, 45), SurfaceUnion)
+	out := SShell{Tol: tol}
+	out.MakeFromBoolean(lathedTube(0, 5, 0, 20, tol), crossedCylinder(4, 0.7, 45, tol), SurfaceUnion)
 	if out.BooleanFailed || !meshIsSound(&out) {
 		t.Fatalf("union: failed %v, sound %v", out.BooleanFailed, meshIsSound(&out))
 	}
@@ -271,7 +276,8 @@ func TestCylinderAcrossEndSeam(t *testing.T) {
 // TestCylinderThroughCylinderSweep crosses cylinders over the second's
 // radius, its offset from the first's axis and its angle to the first.
 func TestCylinderThroughCylinderSweep(t *testing.T) {
-	sweepChordTol(t)
+	t.Parallel()
+	tol := sweepTol()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("r", 1, 2.5, 4),
@@ -280,9 +286,10 @@ func TestCylinderThroughCylinderSweep(t *testing.T) {
 		},
 		MaxFailRate: cylinderMaxFailRate,
 		Sample:      10,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
-		return cylinderCase(p.Float("r"), p.Float("dy"), p.Float("angle"))
+		return cylinderCase(p.Float("r"), p.Float("dy"), p.Float("angle"), tol)
 	}).Require(t)
 }
 
@@ -296,24 +303,20 @@ func TestCylinderThroughCylinderSweep(t *testing.T) {
 // 24.1, 11 on 2026-10-03 and 19 on 2026-10-02.
 const cylinderMaxFailRate = 0
 
-// sweepChordTol sets the chord tolerance the sweeps run at: fine enough
-// that the volumes of the meshes add up as the solids' do.
-func sweepChordTol(t *testing.T) {
-	old := ChordTolMm()
-	SetChordTolMm(0.01)
-	t.Cleanup(func() { SetChordTolMm(old) })
-}
+// sweepTol is the tolerance the sweeps run at: fine enough that the
+// volumes of the meshes add up as the solids' do.
+func sweepTol() Tolerance { return Tol(0.01, 20) }
 
 // lathedCone is the solid cone of base radius r on z = 0 and apex at
 // height h on the z axis, lathed from a triangle: its curved patches
-// fold to a point at the apex.
-func lathedCone(r, h float64) *SShell {
+// fold to a point at the apex. It is lathed at tol.
+func lathedCone(r, h float64, tol Tolerance) *SShell {
 	p := []geom.Vector{{}, {X: r}, {Z: h}}
 	sbls := &SBezierLoopSet{Normal: geom.Vector{Y: 1}, Point: p[0]}
 	for i := range p {
 		sbls.Outer.Curves = append(sbls.Outer.Curves, SBezierFrom2(p[i], p[(i+1)%3]))
 	}
-	var sh SShell
+	sh := SShell{Tol: tol}
 	sh.MakeFromRevolutionOf(sbls, geom.Vector{}, geom.Vector{Z: 1}, core.RGBA{}, noFaces{})
 	return &sh
 }
@@ -340,15 +343,16 @@ func coneSegment(r, h, d float64) float64 {
 // no grid along its straight lines, must not be meshed by chords
 // across the cone (roadmap 24.2).
 func TestConeCutNearApex(t *testing.T) {
-	sweepChordTol(t)
+	t.Parallel()
+	tol := sweepTol()
 	const r, h = 6.0, 9.0
-	cone := lathedCone(r, h)
+	cone := lathedCone(r, h, tol)
 	whole := math.Pi * r * r * h / 3
 	for _, d := range []float64{0.4, 0.8772, 2} {
-		box := extrudedBox(geom.Vector{X: d, Y: -20, Z: -20}, geom.Vector{X: 20, Y: 20, Z: 20})
+		box := extrudedBox(geom.Vector{X: d, Y: -20, Z: -20}, geom.Vector{X: 20, Y: 20, Z: 20}, tol)
 		want := map[SurfaceCombineAs]float64{SurfaceDiff: whole - coneSegment(r, h, d), SurfaceInter: coneSegment(r, h, d)}
 		for _, op := range []SurfaceCombineAs{SurfaceDiff, SurfaceInter} {
-			var out SShell
+			out := SShell{Tol: tol}
 			out.MakeFromBoolean(cone, box, op)
 			if out.BooleanFailed || !meshIsSound(&out) {
 				t.Errorf("d = %g, %v: failed %v, sound %v", d, op, out.BooleanFailed, meshIsSound(&out))

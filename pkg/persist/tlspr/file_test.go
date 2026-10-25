@@ -29,6 +29,7 @@ func newPart(t *testing.T) *sketch.Sketch {
 }
 
 func TestSaveAndLoadFile(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	sk := newPart(t)
 	path := filepath.Join(dir, "part.tlspr")
@@ -61,6 +62,7 @@ func TestSaveAndLoadFile(t *testing.T) {
 }
 
 func TestLoadFileErrors(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	if _, err := tlspr.LoadFile(filepath.Join(dir, "missing.tlspr")); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("missing file: %v", err)
@@ -84,6 +86,7 @@ func TestLoadFileErrors(t *testing.T) {
 }
 
 func TestLinkedTlsprAndCancel(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	part := newPart(t)
 	if err := tlspr.SaveFile(part, "", filepath.Join(dir, "sub", "part.tlspr"), tlspr.Options{}); err == nil {
@@ -147,14 +150,14 @@ func TestLinkedTlsprAndCancel(t *testing.T) {
 	if err := os.Remove(filepath.Join(dir, "sub", "part.tlspr")); err != nil {
 		t.Fatal(err)
 	}
-	link.LocateMissingFile = func(string, bool, bool) (string, link.LocateResponse) { return "", link.LocateCancel }
-	defer func() { link.LocateMissingFile = nil }()
-	if _, err := tlspr.LoadFile(asmPath); !errors.Is(err, tlspr.ErrCancelled) {
+	cancel := func(string, bool, bool) (string, link.LocateResponse) { return "", link.LocateCancel }
+	if _, err := tlspr.LoadFileWith(asmPath, link.Options{CanCancel: true, Locate: cancel}); !errors.Is(err, tlspr.ErrCancelled) {
 		t.Errorf("cancelled load: %v", err)
 	}
 }
 
 func TestLinkError(t *testing.T) {
+	t.Parallel()
 	cause := errors.New("different volume")
 	e := &tlspr.LinkError{Link: "D:/part.tlspr", Err: cause}
 	if !errors.Is(e, cause) || !strings.Contains(e.Error(), "D:/part.tlspr") {

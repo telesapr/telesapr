@@ -9,6 +9,7 @@ import (
 // A curve's or patch's polynomial over another interval, within it or
 // past its ends, is the same curve point for point.
 func TestSub(t *testing.T) {
+	t.Parallel()
 	arcs := quarterArcs(5, 1)
 	c := arcs[1]
 	c3 := SBezierFrom4(geom.Vector{}, geom.Vector{X: 1, Y: 2}, geom.Vector{X: 3, Y: -1, Z: 1}, geom.Vector{X: 4})

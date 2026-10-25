@@ -13,6 +13,7 @@ import (
 // shading on, a metal block looks other than a matte one; with it off,
 // the appearance changes nothing.
 func TestShadedAppearance(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	doc.Sketch.Rect(api.V(0, 0, 0), api.V(20, 10, 0))

@@ -1,5 +1,5 @@
 # What the mouse hovers over group/force_to_mesh/union.slvs, in two views.
-load group/force_to_mesh/union.slvs
+load tlspr/golden/group/force_to_mesh/union.tlspr
 view default
 hovergrid 20
 view rotated

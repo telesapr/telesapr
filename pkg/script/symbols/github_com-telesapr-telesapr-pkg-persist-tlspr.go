@@ -22,6 +22,7 @@ func init() {
 		"IsPacked":        reflect.ValueOf(tlspr.IsPacked),
 		"Load":            reflect.ValueOf(tlspr.Load),
 		"LoadFile":        reflect.ValueOf(tlspr.LoadFile),
+		"LoadFileWith":    reflect.ValueOf(tlspr.LoadFileWith),
 		"LoadPacked":      reflect.ValueOf(tlspr.LoadPacked),
 		"MaxPackedFile":   reflect.ValueOf(constant.MakeFromLiteral("268435456", token.INT, 0)),
 		"MaxPackedFiles":  reflect.ValueOf(constant.MakeFromLiteral("10000", token.INT, 0)),

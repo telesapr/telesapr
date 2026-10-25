@@ -1,6 +1,6 @@
 # A STEP file linked from the menu and read as a solid on its group
 # screen; the same as path_link_step_solid.go makes
-# (TestPathEquivalenceLinkStepSolid).
+# (TestPathEquivalence/link_step_solid).
 file $testdata/step/shapes/box_hole.step
 menu Assembly|Link / Assemble...
 twmove 289 165

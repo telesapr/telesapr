@@ -55,6 +55,7 @@ func modelBounds(t *testing.T, path string) (image.Rectangle, image.Rectangle) {
 // view where the turn ends, not where it was when the script asked, and
 // the window is left there (roadmap 23.4).
 func TestRenderWindowAfterAlign(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	ss.AnimationSpeed = 300
 	scriptConsole(t, ss, `doc.Sketch.Rect(V(0, 0, 0), V(60, 30, 0))`)
@@ -93,6 +94,7 @@ func TestRenderWindowAfterAlign(t *testing.T) {
 // of it, from every named view, at every size, whatever the window
 // shows (roadmap 23.4).
 func TestRenderFits(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	// The window looks somewhere else and closer: a render must not
 	// start from its offset or scale.

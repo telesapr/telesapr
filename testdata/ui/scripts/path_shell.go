@@ -1,5 +1,5 @@
 // The shell of path_shell.script, made by a script
-// (TestPathEquivalenceShell): the extrusion of path_extrude hollowed to
+// (TestPathEquivalence/shell): the extrusion of path_extrude hollowed to
 // walls of the thickness the menu starts with, open at the face the
 // mouse picks.
 package main

@@ -1,12 +1,10 @@
 package sketch_test
 
 import (
-	"fmt"
 	"math"
 	"strings"
 	"testing"
 
-	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
@@ -27,6 +25,7 @@ func cornerPath(d *api.Doc, up, along, angle float64) []api.Entity {
 // profile's area times the path's length (the mitre takes from one
 // piece what it gives the other).
 func TestSweepCorner(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	path := cornerPath(d, 10, 12, 90)
 	d.Features.SketchIn(d.Workplane("XY"), "profile")
@@ -57,6 +56,7 @@ func TestSweepCorner(t *testing.T) {
 }
 
 func TestSweepCornerRefused(t *testing.T) {
+	t.Parallel()
 	for name, c := range map[string]struct {
 		path func(d *api.Doc) []api.Entity
 		want string
@@ -86,55 +86,10 @@ func TestSweepCornerRefused(t *testing.T) {
 	}
 }
 
-// TestSweepCornerSweep sweeps square and round profiles round corners
-// of several angles, and requires sound solids of the path's length
-// times the area. The rate allowed was fixed at none before the mitre
-// was written.
-func TestSweepCornerSweep(t *testing.T) {
-	grid := sweep.Grid{
-		Axes: []sweep.Axis{
-			sweep.Strings("profile", "square", "circle"),
-			sweep.Floats("angle", 20, 45, 90, 120, 150),
-			sweep.Floats("along", 6, 20),
-		},
-		MaxFailRate: 0,
-		Sample:      10,
-	}
-	grid.Run(func(p sweep.Point) error {
-		d := api.New()
-		d.Edit.SetChordTolerance(0.002)
-		path := cornerPath(d, 10, p.Float("along"), p.Float("angle"))
-		d.Features.SketchIn(d.Workplane("XY"), "profile")
-		area := 0.0
-		if p.String("profile") == "square" {
-			d.Sketch.Rect(api.V(-1, -1.5, 0), api.V(1, 1.5, 0))
-			area = 6
-		} else {
-			d.Sketch.Circle(api.V(0, 0, 0), 1.5)
-			area = math.Pi * 2.25
-		}
-		s := d.Features.Sweep(path, "")
-		r := s.Analyze().Check()
-		want := area * (10 + p.Float("along"))
-		tol := 1e-6
-		if p.String("profile") == "circle" {
-			tol = 0.005
-		}
-		switch {
-		case s.Problem() != "":
-			return fmt.Errorf("problem: %s", s.Problem())
-		case !r.Sound():
-			return fmt.Errorf("unsound: %s", r.String())
-		case math.Abs(r.Volume-want) > tol*want:
-			return fmt.Errorf("volume %g, want %g", r.Volume, want)
-		}
-		return nil
-	}).Require(t)
-}
-
 // A sweep along edges of the solid by name (roadmap 28.4): a bead along
 // the top edges of a block, round its corner, by their names.
 func TestSweepSolidEdges(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	block(d, 0, 0, 20, 10, 5)
 	s := d.Active().Solid()

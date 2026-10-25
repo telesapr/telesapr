@@ -1,5 +1,5 @@
 // The model of path_pattern_ring.script, made by a script
-// (TestPathEquivalencePatternRing): a post repeated round a circle.
+// (TestPathEquivalence/pattern_ring): a post repeated round a circle.
 package main
 
 import (

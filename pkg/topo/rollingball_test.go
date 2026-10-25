@@ -19,15 +19,15 @@ import (
 // branch of radius ratio*10 leaving its axis at (0, off, 0) at angle
 // alpha (radians) from it, 25 long: joined to it, or with hole cut out
 // of it. A point on the edge where the branch meets the cylinder's side
-// comes back too.
-func branched(ratio, alpha, off float64, hole bool) (*srf.SShell, geom.Vector) {
+// comes back too. It is built at tol.
+func branched(ratio, alpha, off float64, hole bool, tol srf.Tolerance) (*srf.SShell, geom.Vector) {
 	const big = 10.0
 	rho := ratio * big
-	var mainT, brT, out srf.SShell
-	mainT.MakeFromTransformationOf(cylinder(big, 40), v(0, 0, -20), geom.QuaternionIdentity, 1)
+	mainT, brT, out := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
+	mainT.MakeFromTransformationOf(cylinder(big, 40, tol), v(0, 0, -20), geom.QuaternionIdentity, 1)
 	q := geom.QuaternionFromAxisAngle(v(0, 1, 0), alpha)
 	base := v(0, off, 0)
-	brT.MakeFromTransformationOf(cylinder(rho, 25), base, q, 1)
+	brT.MakeFromTransformationOf(cylinder(rho, 25, tol), base, q, 1)
 	if hole {
 		out.MakeFromDifferenceOf(&mainT, &brT)
 	} else {
@@ -55,17 +55,9 @@ func filletVolume(t *testing.T, sh *srf.SShell, at geom.Vector, r float64) (floa
 	return sound(t, sh) - before, nil
 }
 
-// fine sets the chord tolerance and the segments for volumes to a small
-// share of a fillet's, until the test ends.
-func fine(t *testing.T, tol float64) {
-	old := srf.ChordTolMm()
-	srf.SetChordTolMm(tol)
-	srf.SetMaxSegments(2000)
-	t.Cleanup(func() {
-		srf.SetChordTolMm(old)
-		srf.SetMaxSegments(20)
-	})
-}
+// fine is the chord tolerance tol with segments enough for volumes to
+// a small share of a fillet's.
+func fine(tol float64) srf.Tolerance { return srf.Tol(tol, 2000) }
 
 // A branch joined to a pipe at right angles (a tee), its edge filled
 // round, and a hole cut into the pipe the same way, its rim rounded:
@@ -75,7 +67,7 @@ func fine(t *testing.T, tol float64) {
 // inside the balls it should touch (TestRollingBallOnEnvelope holds
 // ours to them).
 func TestRollingBallTee(t *testing.T) {
-	fine(t, 0.002)
+	t.Parallel()
 	for _, c := range []struct {
 		hole    bool
 		r, want float64
@@ -83,7 +75,7 @@ func TestRollingBallTee(t *testing.T) {
 		{false, 1, 3.9617}, {false, 2, 15.769}, {false, 3, 35.370},
 		{true, 1, -16.865}, {true, 2, -93.63},
 	} {
-		sh, at := branched(0.5, math.Pi/2, 0, c.hole)
+		sh, at := branched(0.5, math.Pi/2, 0, c.hole, fine(0.002))
 		got, err := filletVolume(t, sh, at, c.r)
 		if err != nil {
 			t.Errorf("hole %t r %g: %v", c.hole, c.r, err)
@@ -97,14 +89,15 @@ func TestRollingBallTee(t *testing.T) {
 
 // spout is a teapot's body, a cone narrowing from radius 30 to 20 over
 // 40, and its spout, a cylinder of radius 4 rising at 48 degrees from
-// a point inside, joined; and a point where they meet.
-func spout() (*srf.SShell, geom.Vector) {
-	var sp, u srf.SShell
+// a point inside, joined; and a point where they meet. It is built at
+// tol.
+func spout(tol srf.Tolerance) (*srf.SShell, geom.Vector) {
+	sp, u := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
 	alpha := 42 * math.Pi / 180
 	q := geom.QuaternionFromAxisAngle(v(0, 1, 0), alpha)
 	base := v(10, 0, 12)
-	sp.MakeFromTransformationOf(cylinder(4, 40), base, q, 1)
-	u.MakeFromUnionOf(frustum(30, 20, 40), &sp)
+	sp.MakeFromTransformationOf(cylinder(4, 40, tol), base, q, 1)
+	u.MakeFromUnionOf(frustum(30, 20, 40, tol), &sp)
 	// The spout's top line, y = 4, where it leaves the cone: radius
 	// 30 - z/4 from the z axis.
 	d := v(math.Sin(alpha), 0, math.Cos(alpha))
@@ -125,9 +118,9 @@ func spout() (*srf.SShell, geom.Vector) {
 // The teapot's spout filled round where it meets the pot, a cylinder
 // meeting a cone at 48 degrees, against OpenCASCADE's volumes.
 func TestRollingBallSpout(t *testing.T) {
-	fine(t, 0.003)
+	t.Parallel()
 	for _, c := range []struct{ r, want float64 }{{1, 7.3459}, {2, 29.926}, {3, 68.314}} {
-		sh, at := spout()
+		sh, at := spout(fine(0.003))
 		got, err := filletVolume(t, sh, at, c.r)
 		if err != nil {
 			t.Errorf("r %g: %v", c.r, err)
@@ -140,9 +133,9 @@ func TestRollingBallSpout(t *testing.T) {
 }
 
 // sphereShell is a ball of radius rad about the origin, turned from a
-// half circle about z.
-func sphereShell(rad float64) *srf.SShell {
-	var sh srf.SShell
+// half circle about z at tol.
+func sphereShell(rad float64, tol srf.Tolerance) *srf.SShell {
+	sh := srf.SShell{Tol: tol}
 	var ls srf.SBezierLoopSet
 	w := math.Sqrt2 / 2
 	a1 := srf.SBezierFrom3(v(0, 0, -rad), v(rad, 0, -rad), v(rad, 0, 0))
@@ -158,12 +151,13 @@ func sphereShell(rad float64) *srf.SShell {
 // A rod through a ball off its centre, joined, filled round where they
 // meet: the fill grows with the radius.
 func TestRollingBallSphere(t *testing.T) {
-	fine(t, 0.003)
+	t.Parallel()
+	tol := fine(0.003)
 	last := 0.0
 	for _, r := range []float64{1, 2, 3} {
-		var cy, u srf.SShell
-		cy.MakeFromTransformationOf(cylinder(4, 25), v(0, 3, 0), geom.QuaternionFromAxisAngle(v(0, 1, 0), math.Pi/2), 1)
-		u.MakeFromUnionOf(sphereShell(10), &cy)
+		cy, u := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
+		cy.MakeFromTransformationOf(cylinder(4, 25, tol), v(0, 3, 0), geom.QuaternionFromAxisAngle(v(0, 1, 0), math.Pi/2), 1)
+		u.MakeFromUnionOf(sphereShell(10, tol), &cy)
 		got, err := filletVolume(t, &u, v(math.Sqrt(75), 3, 4), r)
 		if err != nil {
 			t.Errorf("r %g: %v", r, err)
@@ -179,7 +173,8 @@ func TestRollingBallSphere(t *testing.T) {
 // What the rolling ball refuses, with the place: a radius the hole's
 // rim has no room for, and an edge picked with another that is refused.
 func TestRollingBallRefusals(t *testing.T) {
-	sh, at := branched(0.5, math.Pi/2, 0, true)
+	t.Parallel()
+	sh, at := branched(0.5, math.Pi/2, 0, true, srf.Tolerance{})
 	err := topo.FilletPicks(sh, []topo.FilletPick{{At: at, Arc: true}}, 3, 1<<30, false)
 	var fe *topo.FilletError
 	if !errors.As(err, &fe) || !strings.Contains(err.Error(), "doesn't touch the face") {
@@ -190,10 +185,10 @@ func TestRollingBallRefusals(t *testing.T) {
 	// With the pipe's top rim picked too, apart from the ball's edge: the
 	// rim is rounded first, and refused as it is alone, the pipe's wall
 	// holding the branch's curve, which isn't exact.
-	sh, at = branched(0.5, math.Pi/2, 0, false)
+	sh, at = branched(0.5, math.Pi/2, 0, false, srf.Tolerance{})
 	top := v(10*math.Cos(0.3), 10*math.Sin(0.3), 20)
 	alone := topo.FilletPicks(sh, []topo.FilletPick{{At: top, Arc: true}}, 1, 1<<30, false)
-	sh, _ = branched(0.5, math.Pi/2, 0, false)
+	sh, _ = branched(0.5, math.Pi/2, 0, false, srf.Tolerance{})
 	err = topo.FilletPicks(sh, []topo.FilletPick{{At: top, Arc: true}, {At: at, Arc: true}}, 1, 1<<30, false)
 	if err == nil || alone == nil || err.Error() != alone.Error() {
 		t.Errorf("the ball's edge with the rim: %v; the rim alone: %v", err, alone)
@@ -212,6 +207,7 @@ func TestRollingBallSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
 	}
+	t.Parallel()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Strings("kind", "joined", "hole"),
@@ -223,14 +219,12 @@ func TestRollingBallSweep(t *testing.T) {
 		MaxFailRate:       2.5 / 108,
 		SampleMaxFailRate: 0.10,
 		Sample:            16,
+		Parallel:          true,
 	}
 	grid.Run(func(p sweep.Point) error {
-		old := srf.ChordTolMm()
-		defer srf.SetChordTolMm(old)
-		srf.SetChordTolMm(0.01)
 		hole := p.String("kind") == "hole"
 		ratio := p.Float("ratio")
-		sh, at := branched(ratio, p.Float("angle")*math.Pi/180, p.Float("off")*10, hole)
+		sh, at := branched(ratio, p.Float("angle")*math.Pi/180, p.Float("off")*10, hole, srf.Tol(0.01, 20))
 		before := meshVolume(sh)
 		// The room a fillet has: the branch's radius; for a hole, no more
 		// than the wall beside it, between the hole's side and the pipe's.
@@ -269,8 +263,8 @@ func TestRollingBallSweep(t *testing.T) {
 // opens wider round the edge, so it adds between that ratio and twice
 // the fillet's volume times it.
 func TestRollingBallChamferTee(t *testing.T) {
-	fine(t, 0.002)
-	sh, at := branched(0.5, math.Pi/2, 0, false)
+	t.Parallel()
+	sh, at := branched(0.5, math.Pi/2, 0, false, fine(0.002))
 	before := meshVolume(sh)
 	if err := topo.FilletPicks(sh, []topo.FilletPick{{At: at, Arc: true}}, 1, 1<<30, true); err != nil {
 		t.Fatal(err)

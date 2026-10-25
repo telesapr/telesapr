@@ -9,6 +9,7 @@ import (
 )
 
 func TestFromTransformationOfSCurveTranslate(t *testing.T) {
+	t.Parallel()
 	exact := SBezier{Degree: 1}
 	exact.Ctrl[0] = geom.Vector{X: 0, Y: 0, Z: 0}
 	exact.Ctrl[1] = geom.Vector{X: 1, Y: 0, Z: 0}
@@ -37,6 +38,7 @@ func TestFromTransformationOfSCurveTranslate(t *testing.T) {
 }
 
 func TestFromTransformationOfSCurveScale(t *testing.T) {
+	t.Parallel()
 	c := &SCurve{
 		Points: []SCurvePt{
 			{P: geom.Vector{X: 1, Y: 0, Z: 0}},
@@ -50,6 +52,7 @@ func TestFromTransformationOfSCurveScale(t *testing.T) {
 }
 
 func TestQuaternionIsIdentity(t *testing.T) {
+	t.Parallel()
 	if !geom.QuaternionIdentity.IsIdentity() {
 		t.Errorf("QuaternionIdentity should be identity")
 	}

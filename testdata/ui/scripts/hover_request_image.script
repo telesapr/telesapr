@@ -1,5 +1,5 @@
 # What the mouse hovers over request/image/normal.slvs, in two views.
-load request/image/normal.slvs
+load tlspr/golden/request/image/normal.tlspr
 view default
 hovergrid 20
 view rotated

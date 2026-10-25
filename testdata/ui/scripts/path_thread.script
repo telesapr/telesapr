@@ -1,5 +1,5 @@
 # A screw thread made through its screen on an extruded circle; the
-# same model as path_thread.go makes (TestPathEquivalenceThread).
+# same model as path_thread.go makes (TestPathEquivalence/thread).
 key c
 move 300 300
 down L 300 300

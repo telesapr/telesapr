@@ -36,9 +36,9 @@ func boxStaged(rb, r float64) float64 {
 
 // squareBoss is a 40 x 30 x 10 block with a 20 x 10 boss 10 high on its
 // top, and the picks of the boss's upright edges at radius rb and of its
-// foot's edges at r.
-func squareBoss(rb, r float64) (*srf.SShell, []topo.FilletPick) {
-	var block, boss, sh srf.SShell
+// foot's edges at r. It is built at tol.
+func squareBoss(rb, r float64, tol srf.Tolerance) (*srf.SShell, []topo.FilletPick) {
+	block, boss, sh := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
 	block.MakePrism([]geom.Vector{v(0, 0, 0), v(40, 0, 0), v(40, 30, 0), v(0, 30, 0)}, v(0, 0, 0), v(0, 0, 10),
 		core.NewRGBA(100, 100, 100, 255))
 	boss.MakePrism([]geom.Vector{v(10, 10, 9), v(30, 10, 9), v(30, 20, 9), v(10, 20, 9)}, v(0, 0, 0), v(0, 0, 11),
@@ -68,11 +68,9 @@ func bossStaged(rb, r float64) float64 {
 // one radius and its top ring at a smaller one; a square boss's upright
 // edges, convex, and its foot, concave, at radii either way round.
 func TestFilletStages(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	const tol = 0.002
-	srf.SetChordTolMm(tol)
-	sh := box()
+	sh := box(srf.Tol(tol, 20))
 	if err := topo.FilletPicks(sh, append(boxUprights(3), boxRing(30, 1)...), 1, 1<<30, false); err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +78,7 @@ func TestFilletStages(t *testing.T) {
 		t.Errorf("box: volume %g, want %g", got, want)
 	}
 	for _, rr := range [][2]float64{{3, 1}, {2, 2}, {1, 3}} {
-		sh, picks := squareBoss(rr[0], rr[1])
+		sh, picks := squareBoss(rr[0], rr[1], srf.Tol(tol, 20))
 		if err := topo.FilletPicks(sh, picks, 1, 1<<30, false); err != nil {
 			t.Errorf("boss %v: %v", rr, err)
 			continue
@@ -96,8 +94,9 @@ func TestFilletStages(t *testing.T) {
 // sharp, where the blend would need a crease. A top ring larger than
 // the uprights it would go round is set back (TestFilletSetback).
 func TestFilletStagesRefused(t *testing.T) {
+	t.Parallel()
 	picks := []topo.FilletPick{{A: v(0, 0, 30), B: v(10, 0, 30), R: 2}, {A: v(10, 0, 30), B: v(10, 20, 30)}}
-	err := topo.FilletPicks(box(), picks, 1, 1<<30, false)
+	err := topo.FilletPicks(box(srf.Tolerance{}), picks, 1, 1<<30, false)
 	if err == nil || !strings.Contains(err.Error(), "left sharp") {
 		t.Errorf("a mitre of two radii: %v", err)
 	}
@@ -112,8 +111,7 @@ func TestFilletStagesRefused(t *testing.T) {
 // or foot's radius the smaller for the box; the volume is the formula's.
 // The rate allowed, 0, was set before the stages were built.
 func TestFilletStagesSweep(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Strings("shape", "box", "boss"),
@@ -122,20 +120,20 @@ func TestFilletStagesSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      8,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		R := p.Float("upright")
 		r := R * p.Float("share")
 		const tol = 0.002
-		srf.SetChordTolMm(tol)
 		var sh *srf.SShell
 		var picks []topo.FilletPick
 		var want, allow float64
 		if p.String("shape") == "box" {
-			sh, picks = box(), append(boxUprights(R), boxRing(30, r)...)
+			sh, picks = box(srf.Tol(tol, 20)), append(boxUprights(R), boxRing(30, r)...)
 			want, allow = boxStaged(R, r), tol*math.Pi/2*(4*R*30+r*60)*2
 		} else {
-			sh, picks = squareBoss(R, r)
+			sh, picks = squareBoss(R, r, srf.Tol(tol, 20))
 			want, allow = bossStaged(R, r), tol*math.Pi/2*(4*R*10+r*60)*2
 		}
 		if err := topo.FilletPicks(sh, picks, 1, 1<<30, false); err != nil {

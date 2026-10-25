@@ -20,19 +20,17 @@ func profileLoopSet(r0, r1, z0, z1 float64) *SBezierLoopSet {
 	return sbls
 }
 
-func lathedTube(r0, r1, z0, z1 float64) *SShell {
-	sh := &SShell{}
+// lathedTube is profileLoopSet's rectangle lathed a full turn about z
+// at tol: its curves take their points then.
+func lathedTube(r0, r1, z0, z1 float64, tol Tolerance) *SShell {
+	sh := &SShell{Tol: tol}
 	sh.MakeFromRevolutionOf(profileLoopSet(r0, r1, z0, z1), geom.Vector{}, geom.Vector{Z: 1}, core.RGBA{}, noFaces{})
 	return sh
 }
 
-// fineChordTol sets a chord tolerance fine enough for the meshes to
-// approach the analytic volumes, restoring the old one on cleanup.
-func fineChordTol(t *testing.T) {
-	old := ChordTolMm()
-	SetChordTolMm(1e-4)
-	t.Cleanup(func() { SetChordTolMm(old) })
-}
+// fineTol is a chord tolerance fine enough for the meshes to approach
+// the analytic volumes.
+func fineTol() Tolerance { return Tol(1e-4, 20) }
 
 // checkVolume compares a triangulated volume against the exact one,
 // which the mesh approaches as the chord tolerance shrinks.
@@ -44,12 +42,13 @@ func checkVolume(t *testing.T, name string, got, want float64) {
 }
 
 func TestRevolveVolumes(t *testing.T) {
-	fineChordTol(t)
+	t.Parallel()
+	tol := fineTol()
 	// A full lathe of a rectangle away from the axis: a tube.
-	checkVolume(t, "tube", shellVolume(lathedTube(1, 2, 0, 1)), 3*math.Pi)
+	checkVolume(t, "tube", shellVolume(lathedTube(1, 2, 0, 1, tol)), 3*math.Pi)
 	// A rectangle with an edge on the axis: that edge makes no
 	// surface, and the ends become planes (a solid cylinder).
-	cyl := lathedTube(0, 2, 0, 1)
+	cyl := lathedTube(0, 2, 0, 1, tol)
 	checkVolume(t, "cylinder", shellVolume(cyl), 4*math.Pi)
 	planes := 0
 	for _, s := range cyl.Surface {
@@ -69,14 +68,14 @@ func TestRevolveVolumes(t *testing.T) {
 	// A partial revolution (MakeFromHelicalRevolutionOf with no
 	// translation), in either direction: Pappus, area * rbar * angle.
 	for _, a := range []float64{math.Pi / 3, -2.5} {
-		var sh SShell
+		sh := SShell{Tol: tol}
 		sh.MakeFromHelicalRevolutionOf(profileLoopSet(1, 2, 0, 1), geom.Vector{}, geom.Vector{Z: 1},
 			core.RGBA{}, noFaces{}, 0, a, 0, 0)
 		checkVolume(t, "partial revolve", shellVolume(&sh), 1.5*math.Abs(a))
 	}
 
 	// A helix: the axial shear keeps Pappus' volume.
-	var hx SShell
+	hx := SShell{Tol: tol}
 	hx.MakeFromHelicalRevolutionOf(profileLoopSet(1, 2, 0, 1), geom.Vector{}, geom.Vector{Z: 1},
 		core.RGBA{}, noFaces{}, -math.Pi, math.Pi, -1, 1)
 	checkVolume(t, "helix", shellVolume(&hx), 1.5*2*math.Pi)
@@ -87,7 +86,8 @@ func TestRevolveVolumes(t *testing.T) {
 // (a plane through the cylinders) and then one cutting it with a
 // plane parallel to the axis (lines on the cylinders).
 func TestBooleanRevolveBoxVolume(t *testing.T) {
-	fineChordTol(t)
+	t.Parallel()
+	tol := fineTol()
 	tube := 3 * math.Pi
 	// Area of the part x > a of the disc of radius r.
 	seg := func(r, a float64) float64 { return r*r*math.Acos(a/r) - a*math.Sqrt(r*r-a*a) }
@@ -111,8 +111,8 @@ func TestBooleanRevolveBoxVolume(t *testing.T) {
 			{"difference", SurfaceDiff, tube - c.interVol},
 			{"intersection", SurfaceInter, c.interVol},
 		} {
-			a := lathedTube(1, 2, 0, 1)
-			b := extrudedBox(c.lo, c.hi)
+			a := lathedTube(1, 2, 0, 1, tol)
+			b := extrudedBox(c.lo, c.hi, tol)
 			var r SShell
 			r.MakeFromBoolean(a, b, op.op)
 			if r.BooleanFailed {

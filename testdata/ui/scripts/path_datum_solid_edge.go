@@ -1,5 +1,5 @@
 // The datum of path_datum_solid_edge.script, made by a script
-// (TestPathEquivalenceDatumSolidEdge): the edge where the notch of
+// (TestPathEquivalence/datum_solid_edge): the edge where the notch of
 // testdata/topo/slot.tlspr meets the front, by its name, named "notch".
 package main
 

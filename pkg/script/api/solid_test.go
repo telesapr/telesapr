@@ -10,6 +10,7 @@ import (
 
 // Mirror, Chamfer and Sweep, and what each reads and changes.
 func TestSolidFeatures(t *testing.T) {
+	t.Parallel()
 	d := New()
 	d.Features.SketchIn(d.Workplane("ZX"), "path")
 	up := d.Sketch.Line(V(20, 0, 0), V(20, 0, 10))
@@ -72,6 +73,7 @@ func TestSolidFeatures(t *testing.T) {
 
 // What can't be done panics with an error that says why.
 func TestSolidFeatureMisuse(t *testing.T) {
+	t.Parallel()
 	d := New()
 	line := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
 	d.Sketch.Rect(V(20, 0, 0), V(30, 10, 0))
@@ -104,6 +106,7 @@ func TestSolidFeatureMisuse(t *testing.T) {
 // A group whose Boolean failed says so in Problem and in its
 // description, though its input has nothing wrong (roadmap 24.3).
 func TestProblemOfFailedBoolean(t *testing.T) {
+	t.Parallel()
 	g := &sketch.Group{}
 	if msg := problemOf(sketch.NewSketch(), g); msg != "" {
 		t.Fatalf("problem %q", msg)

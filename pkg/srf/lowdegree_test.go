@@ -9,6 +9,7 @@ import (
 // degree 6 to 9 by degree 5: within the tolerance at the same
 // parameters, the ends the same, Beziers that kernel code can use.
 func TestLowDegreeCurve(t *testing.T) {
+	t.Parallel()
 	r := rand.New(rand.NewSource(272))
 	const tol = 1e-4
 	for trial := range 30 {
@@ -46,6 +47,7 @@ func TestLowDegreeCurve(t *testing.T) {
 // TestLowDegreeSurface approximates random rational B-spline surfaces
 // of a degree above 5 one way or both.
 func TestLowDegreeSurface(t *testing.T) {
+	t.Parallel()
 	r := rand.New(rand.NewSource(273))
 	const tol = 1e-4
 	for trial := range 12 {

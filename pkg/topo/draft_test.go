@@ -54,9 +54,8 @@ func simpson(h float64, area func(z float64) float64) float64 {
 // offset by the height times the angle's tangent, so the volume is the
 // integral of its area, a quadratic in the height.
 func TestDraftedPrism(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.001)
+	t.Parallel()
+	tol := srf.Tol(0.001, 20)
 	square := polyLoop(v(0, 0, 0), v(20, 0, 0), v(20, 10, 0), v(0, 10, 0))
 	hole := circle(3, 0, 0)
 	for i := range hole {
@@ -88,7 +87,7 @@ func TestDraftedPrism(t *testing.T) {
 		}, 2 * math.Pi * 3},
 	} {
 		tan := math.Tan(c.deg * math.Pi / 180)
-		sh, err := topo.DraftedPrism(c.loops, v(0, 0, c.h), c.deg*math.Pi/180, core.NewRGBA(100, 100, 100, 255), 1<<30, srf.Tolerance{})
+		sh, err := topo.DraftedPrism(c.loops, v(0, 0, c.h), c.deg*math.Pi/180, core.NewRGBA(100, 100, 100, 255), 1<<30, tol)
 		if err != nil {
 			t.Errorf("%s: %v", c.name, err)
 			continue
@@ -98,7 +97,7 @@ func TestDraftedPrism(t *testing.T) {
 			t.Errorf("%s: volume %g, want %g", c.name, got, want)
 		}
 		// Downwards, the same solid upside down.
-		sh, err = topo.DraftedPrism(c.loops, v(0, 0, -c.h), c.deg*math.Pi/180, core.NewRGBA(100, 100, 100, 255), 0, srf.Tolerance{})
+		sh, err = topo.DraftedPrism(c.loops, v(0, 0, -c.h), c.deg*math.Pi/180, core.NewRGBA(100, 100, 100, 255), 0, tol)
 		if err != nil {
 			t.Errorf("%s downwards: %v", c.name, err)
 			continue
@@ -110,6 +109,7 @@ func TestDraftedPrism(t *testing.T) {
 }
 
 func TestDraftRefused(t *testing.T) {
+	t.Parallel()
 	square := polyLoop(v(0, 0, 0), v(20, 0, 0), v(20, 10, 0), v(0, 10, 0))
 	spline := []srf.SBezier{srf.SBezierFrom4(v(0, 0, 0), v(5, 5, 0), v(10, 5, 0), v(15, 0, 0)), srf.SBezierFrom2(v(15, 0, 0), v(0, 0, 0))}
 	color := core.NewRGBA(100, 100, 100, 255)
@@ -148,9 +148,8 @@ func translatedBy(sb srf.SBezier, by geom.Vector) srf.SBezier {
 // sound, of the volume the sections give, or refused because the sides
 // meet when the offset reaches the profile's narrowest.
 func TestDraftSweep(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.001)
+	t.Parallel()
+	tol := srf.Tol(0.001, 20)
 	type shape struct {
 		loops [][]srf.SBezier
 		area  func(x float64) float64
@@ -187,6 +186,7 @@ func TestDraftSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      30,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		s := shapes[p.String("shape")]
@@ -196,7 +196,7 @@ func TestDraftSweep(t *testing.T) {
 		if p.String("way") == "down" {
 			along = v(0, 0, -h)
 		}
-		sh, err := topo.DraftedPrism(s.loops, along, deg*math.Pi/180, core.NewRGBA(100, 100, 100, 255), 0, srf.Tolerance{})
+		sh, err := topo.DraftedPrism(s.loops, along, deg*math.Pi/180, core.NewRGBA(100, 100, 100, 255), 0, tol)
 		meets := x >= s.limit-1e-9
 		if p.String("shape") == "block with a hole" {
 			// Between the hole and the long side, 3 wide at the

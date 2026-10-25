@@ -26,6 +26,7 @@ func linkGroups(file string, n int) *sketch.Sketch {
 // A file linked by three groups is read once; reloaded, not again;
 // changed, again. Each group has its own copy (roadmap 17.4).
 func TestLinkCache(t *testing.T) {
+	// Not parallel: it counts the files read, which every load counts.
 	dir := t.TempDir()
 	file := filepath.Join(dir, "box.obj")
 	if err := os.WriteFile(file, []byte(boxObj), 0o644); err != nil {
@@ -33,7 +34,7 @@ func TestLinkCache(t *testing.T) {
 	}
 	read := filesRead.Load()
 	sk := linkGroups(file, 3)
-	if !ReloadAll(sk, "", Options{Quiet: true}) {
+	if !ReloadAll(sk, "", Options{}) {
 		t.Fatal("not loaded")
 	}
 	if n := filesRead.Load() - read; n != 1 {
@@ -50,7 +51,7 @@ func TestLinkCache(t *testing.T) {
 	if sk.Groups[1].ImpMesh.Triangles[0].A.X == 99 || sk.Groups[1].ImpEntity[0].ActPoint.X == 99 {
 		t.Error("the groups share what they hold")
 	}
-	ReloadAll(sk, "", Options{Quiet: true})
+	ReloadAll(sk, "", Options{})
 	if n := filesRead.Load() - read; n != 1 {
 		t.Errorf("%d reads after a reload", n)
 	}
@@ -59,7 +60,7 @@ func TestLinkCache(t *testing.T) {
 	if err := os.Chtimes(file, later, later); err != nil {
 		t.Fatal(err)
 	}
-	ReloadAll(sk, "", Options{Quiet: true})
+	ReloadAll(sk, "", Options{})
 	if n := filesRead.Load() - read; n != 2 {
 		t.Errorf("%d reads after the file changed", n)
 	}
@@ -133,7 +134,7 @@ func BenchmarkReloadAssembly(b *testing.B) {
 					loadCache = map[loadKey]*loadEntry{}
 					loadMu.Unlock()
 				}
-				if !ReloadAll(sk, "", Options{Quiet: true}) || len(sk.Groups[19].ImpMesh.Triangles) != 50000 {
+				if !ReloadAll(sk, "", Options{}) || len(sk.Groups[19].ImpMesh.Triangles) != 50000 {
 					b.Fatal("not loaded")
 				}
 			}

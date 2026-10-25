@@ -61,7 +61,7 @@ ICON_SIZES = 16x16 24x24 32x32 48x48
 # those, ci for what the GitHub workflow runs;
 # the nightly workflow adds test-sweeps, fuzz, bench and the race detector
 # over pkg/ui and pkg/script/api. All of them go through scripts/go-test.sh,
-# which runs the slow packages as several processes, as CI does.
+# which picks the light or the heavy part, as CI does.
 # Every test, the OpenGL and GUI ones under Xvfb where xvfb-run is
 # installed; their display numbers start apart from test-gui's, which
 # make ci runs beside it.
@@ -91,7 +91,7 @@ test-fast:
 # The robustness sweeps over their whole grids (pkg/internal/sweep),
 # rather than the sample the ordinary run takes; the packages are those
 # with sweeps, and their other tests run too.
-SWEEP_PACKAGES = ./pkg/persist/slvs ./pkg/script/api ./pkg/sketch ./pkg/srf ./pkg/topo
+SWEEP_PACKAGES = ./pkg/script/api ./pkg/sketch ./pkg/srf ./pkg/topo
 
 test-sweeps:
 	@echo "==> TELESAPR_SWEEP=1 go test $(SWEEP_PACKAGES)"
@@ -111,10 +111,7 @@ test-gui:
 
 # The packages whose loops run on several goroutines, what loads and
 # regenerates through them, and the servers and platforms that hand
-# work between goroutines: every package with tests. pkg/ui and
-# pkg/script/api set process-wide state (the chord tolerance, the
-# parallel mode, the fonts), so their tests run one after another;
-# scripts/go-test.sh splits them over several processes. The GitHub
+# work between goroutines: every package with tests. The GitHub
 # workflow runs the set in shards, each a RACE_PACKAGES of its own, on
 # a push to master without pkg/ui and pkg/script/api, which the nightly
 # workflow runs.
@@ -123,9 +120,8 @@ RACE_PACKAGES ?= ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/.
 	./pkg/core ./pkg/geom ./pkg/libm ./pkg/internal/... ./pkg/check ./pkg/thread ./pkg/res ./pkg/ttf ./pkg/topo \
 	./pkg/ui ./pkg/script/api
 
-# The slow packages' tests run as several processes side by side
-# (scripts/go-test.sh), and the fixture loops take a sample under the
-# race detector (raceSample in pkg/persist/slvs).
+# The fixture loops take a sample under the race detector
+# (fixtures.Sample in pkg/internal/fixtures).
 # RACE_TIMEOUT bounds each go test process: pkg/script/api's
 # TestFilletOnOtherSolidsVolumes alone takes 14 minutes here under the
 # detector, and twice that on a runner, so the nightly workflow gives it

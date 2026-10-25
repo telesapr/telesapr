@@ -6,6 +6,7 @@ import (
 )
 
 func TestBreadcrumb(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	tw := ss.TW
 	g := ss.SK.Group(ss.GW.activeGroupH())

@@ -1,6 +1,6 @@
 # The extrusion of path_extrude mirrored in the face clicked, the mirror
 # set on its screen to reflect the whole solid so far; the same as
-# path_mirror_solid.go makes (TestPathEquivalenceMirrorSolid).
+# path_mirror_solid.go makes (TestPathEquivalence/mirror_solid).
 key r
 move 200 200
 down L 200 200

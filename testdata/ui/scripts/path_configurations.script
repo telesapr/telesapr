@@ -1,6 +1,6 @@
 # The configurations of ext_configurations made on the parameters
 # screen; the same as path_configurations.go makes
-# (TestPathEquivalenceConfigurations).
+# (TestPathEquivalence/configurations).
 key r
 move 200 200
 down L 200 200

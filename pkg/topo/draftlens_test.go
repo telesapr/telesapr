@@ -40,9 +40,7 @@ func discsOverlap(a, b, d float64) float64 {
 // each arc leans by its own angle, so the lens at height z is where
 // discs of radii 5 - z tan a and 5 - z tan b overlap.
 func TestDraftSharpArcs(t *testing.T) {
-	old := srf.ChordTolMm()
-	srf.SetChordTolMm(0.001)
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	color := core.NewRGBA(100, 100, 100, 255)
 	rad := func(deg float64) float64 { return deg * math.Pi / 180 }
 	d := 5 * math.Sqrt2
@@ -50,7 +48,7 @@ func TestDraftSharpArcs(t *testing.T) {
 		{5, 5, 5}, {2, 6, 5}, {0, 8, 4}, {-3, 4, 6},
 	} {
 		sh, err := topo.DraftedPrismAngles([][]srf.SBezier{lensLoop()}, [][]float64{{rad(c.a), rad(c.b)}},
-			v(0, 0, c.h), color, 0, srf.Tolerance{})
+			v(0, 0, c.h), color, 0, srf.Tol(0.001, 20))
 		if err != nil {
 			t.Fatalf("%v: %v", c, err)
 		}
@@ -68,9 +66,7 @@ func TestDraftSharpArcs(t *testing.T) {
 // overlapping discs' volume. The rate allowed was fixed at none before
 // the seam was written.
 func TestDraftSharpArcsSweep(t *testing.T) {
-	old := srf.ChordTolMm()
-	srf.SetChordTolMm(0.002)
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	color := core.NewRGBA(100, 100, 100, 255)
 	rad := func(deg float64) float64 { return deg * math.Pi / 180 }
 	grid := sweep.Grid{
@@ -81,10 +77,11 @@ func TestDraftSharpArcsSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      12,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		a, b, h := p.Float("a"), p.Float("b"), p.Float("h")
-		sh, err := topo.DraftedPrismAngles([][]srf.SBezier{lensLoop()}, [][]float64{{rad(a), rad(b)}}, v(0, 0, h), color, 0, srf.Tolerance{})
+		sh, err := topo.DraftedPrismAngles([][]srf.SBezier{lensLoop()}, [][]float64{{rad(a), rad(b)}}, v(0, 0, h), color, 0, srf.Tol(0.002, 20))
 		if err != nil {
 			return err
 		}

@@ -1,5 +1,5 @@
 // The mate of path_mate.script, made by a script
-// (TestPathEquivalenceMate): two circles where the mouse draws them,
+// (TestPathEquivalence/mate): two circles where the mouse draws them,
 // made concentric, which in a workplane is their centres on each other
 // (roadmap 16.9).
 package main

@@ -1,5 +1,5 @@
 // The link of path_link_params.script, made by a script
-// (TestPathEquivalenceLinkParams): a plate regenerated in its
+// (TestPathEquivalence/link_params): a plate regenerated in its
 // configuration "long" with L = 60, then relinked to a block.
 package main
 

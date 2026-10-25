@@ -8,6 +8,7 @@ import (
 )
 
 func TestLinkStep(t *testing.T) {
+	t.Parallel()
 	d := New()
 	g, err := d.Assembly.Link(filepath.Join("..", "..", "..", "testdata", "step", "shapes", "cylinder.step"), "")
 	if err != nil {
@@ -63,6 +64,7 @@ func TestLinkStep(t *testing.T) {
 // Linking a STEP file is one undo step: undo takes the link group and
 // its mesh away, and redo brings them back, loaded again.
 func TestLinkStepUndo(t *testing.T) {
+	t.Parallel()
 	d := New()
 	step := d.Host().(*SketchHost).BeginEval
 	step()
@@ -92,6 +94,7 @@ func TestLinkStepUndo(t *testing.T) {
 
 // TestLinkPlacement moves and turns a linked part and checks the orientation it reports.
 func TestLinkPlacement(t *testing.T) {
+	t.Parallel()
 	d := New()
 	g, err := d.Assembly.Link(filepath.Join("..", "..", "..", "testdata", "step", "shapes", "box.step"), "")
 	if err != nil {

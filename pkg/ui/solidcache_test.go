@@ -4,14 +4,14 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"hash"
-	"io/fs"
 	"math"
+	"os"
 	"path/filepath"
-	"strings"
 	"sync/atomic"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
 	"github.com/telesapr/telesapr/pkg/sketch"
@@ -20,44 +20,67 @@ import (
 
 // Every model under testdata, opened as the window opens it and edited
 // as a person would (groups made dirty, a dimension of a few groups
-// changed and changed back, a full regeneration), gives the same
-// params, entities, solids and meshes at each step with its solids kept
-// by what they were made from as with every solid made again: a solid
-// taken from the cache is the one making it would give. Under -short a
-// sample of the models. Not parallel: Application.Init sets the link
-// package's hooks, which are the process's.
-func TestSolidCacheSameAsMaking(t *testing.T) {
-	var files []string
-	err := filepath.WalkDir(filepath.Join("..", "..", "testdata"), func(path string, d fs.DirEntry, err error) error {
-		if err == nil && !d.IsDir() && strings.HasSuffix(path, ".tlspr") {
-			files = append(files, path)
-		}
-		return err
-	})
+// changed and changed back, a full regeneration, points moved a step at
+// a time as a drag moves them), gives the same params, entities, solids
+// and meshes at each step with its solids kept by what they were made
+// from and each group's written equations kept from one solve to the
+// next as with every solid made again and every equation written again:
+// what a cache gives is what making it again would give. Where the two
+// differ, the model is edited again with one cache off at a time, to say
+// which cache is at fault. Models saved twice under testdata are edited
+// once. Under -short a sample of the models. Not parallel:
+// Application.Init sets the link package's hooks, which are the
+// process's.
+func TestCachesSameAsWithout(t *testing.T) {
+	t.Parallel()
+	all, err := fixtures.Walk(".tlspr")
 	if err != nil {
 		t.Fatal(err)
 	}
+	var files []string
+	seen := map[[sha256.Size]byte]bool{}
+	for _, f := range all {
+		data, err := os.ReadFile(fixtures.Path(f))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if sum := sha256.Sum256(data); !seen[sum] {
+			seen[sum] = true
+			files = append(files, f)
+		}
+	}
+	noCaches := func(sk *sketch.Sketch) { sk.NoSolidCache, sk.NoSolverCache = true, true }
 	var hits atomic.Int64
 	t.Run("models", func(t *testing.T) {
 		for i, f := range files {
 			// The sample keeps a thread, whose lathes come from the
 			// cache, so that a model added elsewhere doesn't leave it
 			// without a solid kept.
-			if testing.Short() && i%20 != 0 && !strings.HasSuffix(filepath.ToSlash(f), "thread/screw_m8.tlspr") {
+			if testing.Short() && i%20 != 0 && f != "thread/screw_m8.tlspr" {
 				continue
 			}
-			t.Run(filepath.ToSlash(strings.TrimPrefix(f, filepath.Join("..", "..", "testdata")+string(filepath.Separator))), func(t *testing.T) {
-				made, _ := editedDigests(t, f, func(sk *sketch.Sketch) { sk.NoSolidCache = true }, false)
-				kept, n := editedDigests(t, f, nil, false)
+			t.Run(f, func(t *testing.T) {
+				t.Parallel()
+				path := fixtures.Path(f)
+				made, _ := editedDigests(t, path, noCaches, true)
+				kept, n := editedDigests(t, path, nil, true)
 				hits.Add(int64(n))
-				for step := range min(len(made), len(kept)) {
-					if made[step] != kept[step] {
-						t.Errorf("at step %d the model with its solids kept differs from the one made again", step)
-						return
+				if step, ok := sameDigests(made, kept); !ok {
+					for _, c := range []struct {
+						name string
+						off  func(*sketch.Sketch)
+					}{
+						{"solids kept", func(sk *sketch.Sketch) { sk.NoSolverCache = true }},
+						{"equations kept", func(sk *sketch.Sketch) { sk.NoSolidCache = true }},
+					} {
+						one, _ := editedDigests(t, path, c.off, true)
+						if s, ok := sameDigests(made, one); !ok {
+							t.Errorf("at step %d the model with its %s differs from the one made again", s, c.name)
+						}
 					}
-				}
-				if len(made) != len(kept) {
-					t.Errorf("%d steps made, %d kept", len(made), len(kept))
+					if !t.Failed() {
+						t.Errorf("at step %d the model with its caches differs from the one made again", step)
+					}
 				}
 			})
 		}
@@ -65,6 +88,17 @@ func TestSolidCacheSameAsMaking(t *testing.T) {
 	if hits.Load() == 0 {
 		t.Error("no solid was taken from a cache")
 	}
+}
+
+// sameDigests says whether the steps of two edits gave the same models,
+// and if not, the first step at which they differ.
+func sameDigests(a, b []string) (int, bool) {
+	for step := range min(len(a), len(b)) {
+		if a[step] != b[step] {
+			return step, false
+		}
+	}
+	return min(len(a), len(b)), len(a) == len(b)
 }
 
 // editedDigests opens file, set sets its sketch up (nil for none), it
@@ -172,42 +206,5 @@ func shellDigest(h hash.Hash, sh *srf.SShell) {
 	}
 	for _, c := range sh.Curve {
 		fmt.Fprintf(h, "c %d %v %v %d %d %d %v\n", c.H.V, c.Exact.Ctrl, c.Exact.Weight, c.SurfA.V, c.SurfB.V, c.Source, c.Points)
-	}
-}
-
-// Every model under testdata, opened and edited as
-// TestSolidCacheSameAsMaking edits it, with points moved as a drag
-// moves them, gives the same model at each step with each group's
-// written equations kept from one solve to the next as with them
-// written again. Under -short a sample of the models. Not parallel, as
-// TestSolidCacheSameAsMaking.
-func TestSolverCacheSameAsWriting(t *testing.T) {
-	var files []string
-	err := filepath.WalkDir(filepath.Join("..", "..", "testdata"), func(path string, d fs.DirEntry, err error) error {
-		if err == nil && !d.IsDir() && strings.HasSuffix(path, ".tlspr") {
-			files = append(files, path)
-		}
-		return err
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	for i, f := range files {
-		if testing.Short() && i%20 != 7 {
-			continue
-		}
-		t.Run(filepath.ToSlash(strings.TrimPrefix(f, filepath.Join("..", "..", "testdata")+string(filepath.Separator))), func(t *testing.T) {
-			written, _ := editedDigests(t, f, func(sk *sketch.Sketch) { sk.NoSolverCache = true }, true)
-			kept, _ := editedDigests(t, f, nil, true)
-			for step := range min(len(written), len(kept)) {
-				if written[step] != kept[step] {
-					t.Errorf("at step %d the model with its equations kept differs from the one written again", step)
-					return
-				}
-			}
-			if len(written) != len(kept) {
-				t.Errorf("%d steps written, %d kept", len(written), len(kept))
-			}
-		})
 	}
 }

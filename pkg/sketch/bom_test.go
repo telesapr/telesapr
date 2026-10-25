@@ -17,6 +17,7 @@ import (
 // at the original's place not counted), a nut linked and mirrored with
 // the original kept, and a washer linked and left out of the model.
 func TestBillOfMaterials(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	part := func(name string, w float64) string {
 		d := api.New()
@@ -80,6 +81,7 @@ func TestBillOfMaterials(t *testing.T) {
 // file's; a model comes in off the middle of the view, as before
 // (roadmap 16.13).
 func TestLinkPlacedAsDrawn(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	src := api.New()
 	src.Sketch.Rect(api.V(100, 0, 0), api.V(110, 10, 0))
@@ -125,6 +127,7 @@ func TestLinkPlacedAsDrawn(t *testing.T) {
 // four bolts; the bill survives saving, opening and undo; and a file
 // that links itself, by way of another, is counted without looping.
 func TestBillOfMaterialsNested(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	save := func(d *api.Doc, name string) string {
 		path := filepath.Join(dir, name+".tlspr")

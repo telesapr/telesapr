@@ -11,6 +11,7 @@ import (
 // through the script path, sound and of OpenCASCADE's volume; one step
 // of undo; and the same after saving and loading.
 func TestFilletBetweenCylinders(t *testing.T) {
+	t.Parallel()
 	d := New()
 	d.Edit.SetChordTolerance(0.002)
 	d.Features.SketchIn(d.Workplane("XY"), "")

@@ -34,8 +34,9 @@ func clickText(t *testing.T, ss *Application, s string) {
 // TestTextWindowLinks follows links in the property browser, and edits
 // a group's name through the edit control.
 func TestTextWindowLinks(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
-	if !loadSlvs(t, ss, filepath.Join("..", "..", "testdata", "group", "translate_nd", "normal.slvs")) {
+	if !loadModel(t, ss, filepath.Join("..", "..", "testdata", "tlspr", "golden", "group", "translate_nd", "normal.tlspr")) {
 		t.Fatal("load failed")
 	}
 	tw := ss.TW

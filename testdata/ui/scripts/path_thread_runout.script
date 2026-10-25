@@ -1,6 +1,6 @@
 # A triple-start screw thread made through its screen on an extruded
 # circle, its starts level and fading out 4 mm before its end. The same
-# model as path_thread_runout.go makes (TestPathEquivalenceThreadRunOut).
+# model as path_thread_runout.go makes (TestPathEquivalence/thread_runout).
 key c
 move 300 300
 down L 300 300

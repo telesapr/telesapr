@@ -1,5 +1,5 @@
 // The mirror of path_mirror.script, made by a script
-// (TestPathEquivalenceMirror): the extrusion of path_extrude reflected
+// (TestPathEquivalence/mirror): the extrusion of path_extrude reflected
 // in its fifth face, the one the mouse clicks.
 package main
 

@@ -12,6 +12,7 @@ import (
 // same size, an arc nearly as big as a circle too, and a line nearly
 // square to the line it starts on perpendicular; one step of undo each.
 func TestAutoConstrain(t *testing.T) {
+	t.Parallel()
 	d := New()
 	line := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
 	// From (10, 0), centre above it: the radius there is square to the line.
@@ -65,6 +66,7 @@ func TestAutoConstrain(t *testing.T) {
 
 // Arcs that meet end to end with their radii in line are made tangent.
 func TestAutoConstrainArcs(t *testing.T) {
+	t.Parallel()
 	d := New()
 	d.Sketch.Arc(V(0, 0, 0), V(10, 0, 0), V(0, 10, 0))
 	// Starts at (0, 10), its centre further along the first's radius.
@@ -77,6 +79,7 @@ func TestAutoConstrainArcs(t *testing.T) {
 
 // What can't be auto-constrained says why.
 func TestAutoConstrainMisuse(t *testing.T) {
+	t.Parallel()
 	d := New()
 	l := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
 	for name, f := range map[string]func(){

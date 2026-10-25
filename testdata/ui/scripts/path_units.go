@@ -1,5 +1,5 @@
 // The model of path_units.script, made by a script
-// (TestPathEquivalenceUnits).
+// (TestPathEquivalence/units).
 package main
 
 import (

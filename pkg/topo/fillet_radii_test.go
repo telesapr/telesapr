@@ -28,10 +28,8 @@ func boxRing(z, r float64) []topo.FilletPick {
 // radius and its foot at another, each ring mitred at its corners; the
 // volume each ring takes as it would alone.
 func TestFilletRadii(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.002)
-	sh := box()
+	t.Parallel()
+	sh := box(srf.Tol(0.002, 20))
 	picks := append(boxRing(30, 3), boxRing(0, 0)...)
 	if err := topo.FilletPicks(sh, picks, 1, 1<<30, false); err != nil {
 		t.Fatal(err)
@@ -43,18 +41,19 @@ func TestFilletRadii(t *testing.T) {
 }
 
 func TestFilletRadiiRefused(t *testing.T) {
-	sh := box()
+	t.Parallel()
+	sh := box(srf.Tolerance{})
 	picks := []topo.FilletPick{{A: v(0, 0, 30), B: v(10, 0, 30), R: 2}, {A: v(10, 0, 30), B: v(10, 20, 30)}}
 	err := topo.FilletPicks(sh, picks, 1, 1<<30, false)
 	if err == nil || !strings.Contains(err.Error(), "radius 1 and 2 meet") {
 		t.Errorf("a mitre of two radii: %v", err)
 	}
 	picks[1].R = -1
-	if err := topo.FilletPicks(box(), picks, 1, 1<<30, false); err == nil || !strings.Contains(err.Error(), "more than zero") {
+	if err := topo.FilletPicks(box(srf.Tolerance{}), picks, 1, 1<<30, false); err == nil || !strings.Contains(err.Error(), "more than zero") {
 		t.Errorf("a radius below zero: %v", err)
 	}
 	// A rounded outline's chain takes the radius of the edge picked.
-	ro := roundedPrism(30, 20, 5, 10, [4]bool{true, true, true, true})
+	ro := roundedPrism(30, 20, 5, 10, [4]bool{true, true, true, true}, srf.Tolerance{})
 	if err := topo.FilletPicks(ro, []topo.FilletPick{{A: v(5, 0, 10), B: v(25, 0, 10), R: 2}}, 1, 1<<30, false); err != nil {
 		t.Errorf("a chain at its own radius: %v", err)
 	}
@@ -66,8 +65,7 @@ func TestFilletRadiiRefused(t *testing.T) {
 // radii; the volume is the sum of each edge's. The rate allowed, 0, was
 // set before.
 func TestFilletRadiiSweep(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Strings("shape", "box", "cylinder"),
@@ -76,16 +74,16 @@ func TestFilletRadiiSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      12,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		top, foot := p.Float("top"), p.Float("foot")
 		tol := 0.002
-		srf.SetChordTolMm(tol)
 		var sh *srf.SShell
 		var picks []topo.FilletPick
 		var want, allow float64
 		if p.String("shape") == "box" {
-			sh = box()
+			sh = box(srf.Tol(tol, 20))
 			picks = []topo.FilletPick{
 				{A: v(0, 0, 30), B: v(0, 20, 30), R: top}, {A: v(10, 0, 30), B: v(10, 20, 30), R: top},
 				{A: v(0, 0, 0), B: v(10, 0, 0), R: foot}, {A: v(0, 20, 0), B: v(10, 20, 0), R: foot},
@@ -93,7 +91,7 @@ func TestFilletRadiiSweep(t *testing.T) {
 			want = 6000 - filletLoss(top, math.Pi/2, 20)*2 - filletLoss(foot, math.Pi/2, 10)*2
 			allow = tol * math.Pi / 2 * (2*top*20 + 2*foot*10) * 2
 		} else {
-			sh = cylinder(8, 12)
+			sh = cylinder(8, 12, srf.Tol(tol, 20))
 			picks = []topo.FilletPick{
 				{At: v(8*math.Cos(1), 8*math.Sin(1), 12), Arc: true, R: top},
 				{At: v(8*math.Cos(1), 8*math.Sin(1), 0), Arc: true, R: foot},

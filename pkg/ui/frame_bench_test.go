@@ -6,9 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/persist/convert"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
 	"github.com/telesapr/telesapr/pkg/render"
 	"github.com/telesapr/telesapr/pkg/render/gl"
@@ -19,8 +21,8 @@ import (
 // frameModels are the models BenchmarkFrame orbits, from small to the
 // largest example there is.
 var frameModels = []struct{ name, path string }{
-	{"boolean", "testdata/group/boolean_tangent_fillet/normal.slvs"},
-	{"bolt", "testdata/thread/bolt_m8x30.slvs"},
+	{"boolean", "testdata/tlspr/golden/group/boolean_tangent_fillet/normal.tlspr"},
+	{"bolt", "testdata/thread/bolt_m8x30.tlspr"},
 	{"ball_mill", "examples/designs/ball-mill/asm.slvs"},
 }
 
@@ -74,7 +76,21 @@ func benchmarkFrame(b *testing.B, path, renderer string) {
 	p := headless.New()
 	ss := New(p)
 	ss.Init()
-	if !loadSlvs(b, ss, filepath.Join("..", "..", path)) {
+	file := filepath.Join("..", "..", path)
+	if strings.HasSuffix(file, ".slvs") {
+		// An example drawn in SolveSpace: imported beside a copy of its
+		// folder, as File > Import would.
+		dir := b.TempDir()
+		if err := os.CopyFS(dir, os.DirFS(filepath.Dir(file))); err != nil {
+			b.Fatal(err)
+		}
+		src := filepath.Join(dir, filepath.Base(file))
+		file = convert.SiblingPath(src)
+		if _, _, err := convert.File(src, file, true); err != nil {
+			b.Fatal(err)
+		}
+	}
+	if !loadModel(b, ss, file) {
 		b.Fatal("load failed")
 	}
 	w := ss.GW.window.(*headless.Window)

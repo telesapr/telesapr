@@ -1,8 +1,7 @@
-// Package golden compares test output with recorded goldens. Most were
-// first recorded by the SolveSpace harnesses this project grew out of
-// (ADR 0001); since then the tests write them: TELESAPR_REGEN_GOLDEN=1,
-// which scripts/regen-golden.sh sets, makes Check, CheckDump and
-// CheckDir rewrite the golden instead of comparing with it.
+// Package golden compares test output with recorded goldens. The tests
+// write them: TELESAPR_REGEN_GOLDEN=1, which scripts/regen-golden.sh
+// sets, makes Check, CheckDump and CheckDir rewrite the golden instead
+// of comparing with it.
 package golden
 
 import (

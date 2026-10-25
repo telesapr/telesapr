@@ -27,6 +27,7 @@ func quarterCylinder(r, h float64) SSurface {
 // cylinder of the radius moved by the offset; of a bicubic bump, points
 // the offset's distance from the bump, wherever looked at.
 func TestOffsetSurface(t *testing.T) {
+	t.Parallel()
 	r := rand.New(rand.NewSource(7))
 	cyl := quarterCylinder(5, 10)
 	// Which way the patch's normal points: the offset's radius.

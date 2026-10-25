@@ -8,6 +8,7 @@ import (
 )
 
 func TestSBezierPointOnThisAndCurveIntersects(t *testing.T) {
+	t.Parallel()
 	// Two line segments that cross at (0.5, 0.5, 0): a vertical
 	// from (0.5, 0, 0) to (0.5, 1, 0) and a horizontal from (0, 0.5, 0)
 	// to (1, 0.5, 0). PointOnThisAndCurve should converge to (0.5, 0.5, 0).
@@ -31,6 +32,7 @@ func TestSBezierPointOnThisAndCurveIntersects(t *testing.T) {
 }
 
 func TestSBezierPointOnNonparallelCurveRejectsParallel(t *testing.T) {
+	t.Parallel()
 	// Two parallel line segments: should return false.
 	a := SBezier{Degree: 1}
 	a.Ctrl[0] = geom.Vector{X: 0, Y: 0, Z: 0}
@@ -49,6 +51,7 @@ func TestSBezierPointOnNonparallelCurveRejectsParallel(t *testing.T) {
 }
 
 func TestSBezierPointOnNonparallelCurveAcceptsCrossing(t *testing.T) {
+	t.Parallel()
 	a := SBezier{Degree: 1}
 	a.Ctrl[0] = geom.Vector{X: 0, Y: 0.5, Z: 0}
 	a.Ctrl[1] = geom.Vector{X: 1, Y: 0.5, Z: 0}

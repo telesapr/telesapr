@@ -19,6 +19,7 @@ import (
 // volume. TELESAPR_STEP_OUT=dir keeps the files, written both ways,
 // for checking in another reader, as FreeCAD.
 func TestExportStepSheets(t *testing.T) {
+	t.Parallel()
 	for _, model := range []string{
 		"topo/boss.tlspr", "topo/frustum.tlspr", "solid/fillet-circle.tlspr", "solid/sweep-pipe.tlspr",
 		"solid/fillet-cone.tlspr", "solid/chamfer-circle-and-edge.tlspr",

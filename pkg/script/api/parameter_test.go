@@ -52,6 +52,7 @@ func plate(t *testing.T, d *Doc) (Group, Group, Group) {
 }
 
 func TestParameters(t *testing.T) {
+	t.Parallel()
 	d := New()
 	sk, ex, rep := plate(t, d)
 	check := func(width, height, hole float64, copies int) {
@@ -156,6 +157,7 @@ func TestParameters(t *testing.T) {
 }
 
 func TestParameterMisuse(t *testing.T) {
+	t.Parallel()
 	d := New()
 	for _, tc := range []struct{ name, expr, want string }{
 		{"9", "1", "can't name"},
@@ -234,6 +236,7 @@ func TestParameterMisuse(t *testing.T) {
 // Entities tell how much of them their constraints fix, as the
 // drawing colours them.
 func TestEntityFree(t *testing.T) {
+	t.Parallel()
 	d := New()
 	line := d.Sketch.Line(V(0, 0, 0), V(10, 5, 0))
 	if f := line.Free(); f != sketch.FreedomFree {
@@ -266,6 +269,7 @@ func TestEntityFree(t *testing.T) {
 
 // A group that does not solve names the constraints to blame.
 func TestConflicts(t *testing.T) {
+	t.Parallel()
 	d := New()
 	line := d.Sketch.Line(V(0, 0, 0), V(10, 5, 0))
 	g := d.Active()
@@ -292,6 +296,7 @@ func TestConflicts(t *testing.T) {
 
 // Without a window there is no menu to run a command from.
 func TestRunCommandWithoutWindow(t *testing.T) {
+	t.Parallel()
 	d := New()
 	if err := d.Edit.RunCommand("View > Zoom To Fit"); err == nil || !strings.Contains(err.Error(), "no window") {
 		t.Errorf("RunCommand: %v", err)
@@ -305,6 +310,7 @@ func TestRunCommandWithoutWindow(t *testing.T) {
 }
 
 func TestMeasure(t *testing.T) {
+	t.Parallel()
 	d := New()
 	a := d.Sketch.Line(V(0, 0, 0), V(30, 40, 0))
 	b := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
@@ -361,6 +367,7 @@ func TestMeasure(t *testing.T) {
 // Typed text is in the document's unit; numbers the package takes are
 // millimetres whatever it is.
 func TestDocumentUnits(t *testing.T) {
+	t.Parallel()
 	d := New()
 	if d.View.Units() != core.UnitMM {
 		t.Fatalf("a new document is in %v", d.View.Units())
@@ -421,6 +428,7 @@ func TestDocumentUnits(t *testing.T) {
 // and opposite sides are at 180 degrees (roadmap 14.5). Drawn one way
 // round, the face entities' own normals point into the block.
 func TestMeasureFacesOutward(t *testing.T) {
+	t.Parallel()
 	for _, reverse := range []bool{false, true} {
 		d := New()
 		corners := []Vec{V(0, 0, 0), V(10, 0, 0), V(10, 10, 0), V(0, 10, 0)}
@@ -456,6 +464,7 @@ func TestMeasureFacesOutward(t *testing.T) {
 // loops pass through that corner twice, which the topology's sharpest
 // left turn sorts out: the edge is the only problem, every loop closes.
 func TestCheckTouchingHoles(t *testing.T) {
+	t.Parallel()
 	d := New()
 	d.Sketch.Rect(V(0, 0, 0), V(20, 20, 0))
 	d.Sketch.Rect(V(4, 4, 0), V(10, 10, 0))
@@ -477,6 +486,7 @@ func TestCheckTouchingHoles(t *testing.T) {
 // The fillet round an extruded circle's top is one face, not one per
 // quarter of the circle: its patches share a sheet (roadmap 14.1).
 func TestFilletCircleOneFace(t *testing.T) {
+	t.Parallel()
 	d := New()
 	d.Sketch.Circle(V(0, 0, 0), 10)
 	ex := d.Features.Extrude(10, "")

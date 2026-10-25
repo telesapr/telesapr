@@ -1,7 +1,7 @@
 # The top circle of a drafted post in loft_sides.tlspr lofted to the
 # tip, picked with the mouse, set on its screen to leave along the
 # post's sides; the same as path_loft_sides.go makes
-# (TestPathEquivalenceLoftSides).
+# (TestPathEquivalence/loft_sides).
 file $testdata/ui/loft_sides.tlspr
 menu File|Open...
 view default

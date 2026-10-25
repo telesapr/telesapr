@@ -30,6 +30,7 @@ func alsoHere(ss *Application) []string {
 // ALSO HERE lists what Entity.Overlap gives a script, in its order, and
 // a click on a row selects that entity, as Edit.Select does.
 func TestAlsoHereMatchesScript(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	a := doc.Sketch.Line(api.V(0, 0, 0), api.V(20, 0, 0))
@@ -80,6 +81,7 @@ func TestAlsoHereMatchesScript(t *testing.T) {
 // A hidden group's entities are no rows: the drawing doesn't show
 // them. The script's Overlap keeps in step.
 func TestAlsoHereHiddenGroup(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	doc.Sketch.Line(api.V(0, 0, 0), api.V(20, 0, 0))
@@ -106,6 +108,7 @@ func TestAlsoHereHiddenGroup(t *testing.T) {
 // its lines, and the group's faces carry it too. The copy is named by
 // its line, not by a face.
 func TestAlsoHereExtrudedCorner(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	doc.Sketch.Rect(api.V(0, 0, 0), api.V(20, 10, 0))

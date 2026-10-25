@@ -1,6 +1,6 @@
 # The chamfer of path_chamfer given a second distance of 2 on its group
 # screen and its distances swapped; the same as path_chamfer_two.go
-# makes (TestPathEquivalenceChamferTwo, roadmap 28.1).
+# makes (TestPathEquivalence/chamfer_two, roadmap 28.1).
 key r
 move 200 200
 down L 200 200

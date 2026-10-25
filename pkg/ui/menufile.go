@@ -120,7 +120,7 @@ func (ss *Application) LoadFromFile(filename string) error {
 			"convert, to convert it to a TeleSAPR model, which can then be opened", filename)
 	}
 
-	doc, err := tlspr.LoadFile(filename)
+	doc, err := tlspr.LoadFileWith(filename, ss.linkOptions(true))
 	var ve *tlspr.VersionError
 	switch {
 	case errors.Is(err, tlspr.ErrCancelled):
@@ -283,6 +283,17 @@ func (ss *Application) OkayToStartNewFile() bool {
 		return true
 	default:
 		return false
+	}
+}
+
+// linkOptions are the options the application loads links with: a
+// missing file is looked for through the dialogs, and loading can be
+// given up where canCancel says so.
+func (ss *Application) linkOptions(canCancel bool) link.Options {
+	return link.Options{
+		CanCancel: canCancel,
+		Locate:    ss.locateMissingFile,
+		Corrupted: func(file string) { ss.Error("The image '%s' is corrupted.", file) },
 	}
 }
 

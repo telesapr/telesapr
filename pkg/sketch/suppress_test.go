@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
-	"github.com/telesapr/telesapr/pkg/persist/slvs"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -17,7 +16,7 @@ import (
 // g007 step translating.
 func translateND(t *testing.T) *sketch.Sketch {
 	t.Helper()
-	doc, err := slvs.LoadFile(fixturesPath(t, "group", "translate_nd", "normal.slvs"))
+	doc, err := openCorpus("group/translate_nd/normal.tlspr")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,6 +31,7 @@ func volume(sk *sketch.Sketch, h core.HGroup) float64 {
 }
 
 func TestSuppressAll(t *testing.T) {
+	t.Parallel()
 	sk := translateND(t)
 	sk.Active = hg(7)
 	sk.GenerateAll()
@@ -103,6 +103,7 @@ func TestSuppressAll(t *testing.T) {
 }
 
 func TestSuppressAllUndo(t *testing.T) {
+	t.Parallel()
 	sk := translateND(t)
 	sk.UndoRemember()
 	if err := sk.SetSuppressAll(hg(5), true); err != nil {
@@ -127,6 +128,7 @@ func TestSuppressAllUndo(t *testing.T) {
 }
 
 func TestSuppressAllRefused(t *testing.T) {
+	t.Parallel()
 	sk := translateND(t)
 	if err := sk.SetSuppressAll(hg(1), true); err == nil || err.Error() != "the references can't be suppressed" {
 		t.Fatalf("suppressing the references: %v", err)
@@ -149,6 +151,7 @@ func TestSuppressAllRefused(t *testing.T) {
 // TestSuppressAllActive: the active group moves to the nearest group
 // still in the model, earlier if there is one but the references.
 func TestSuppressAllActive(t *testing.T) {
+	t.Parallel()
 	sk := bolt(t)
 	sk.Active = hg(3)
 	if err := sk.SetSuppressAll(hg(2), true); err != nil {

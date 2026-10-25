@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
@@ -110,34 +111,28 @@ func roundTrip(t *testing.T, path string) (string, []string) {
 // Every fixture's script builds its model again, but those listed in
 // scriptRoundTripKnown.
 func TestScriptRoundTrip(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("writes and runs a script for every .tlspr fixture, about a minute")
 	}
-	var paths []string
-	err := filepath.WalkDir("../../testdata", func(p string, de os.DirEntry, err error) error {
-		if err == nil && !de.IsDir() && strings.HasSuffix(p, ".tlspr") {
-			paths = append(paths, p)
-		}
-		return err
-	})
+	paths, err := fixtures.Walk(".tlspr")
 	if err != nil {
 		t.Fatal(err)
 	}
-	slices.Sort(paths)
 	type outcome struct{ path, diff string }
 	results := make([]outcome, len(paths))
 	t.Run("fixtures", func(t *testing.T) {
 		for i, p := range paths {
-			t.Run(strings.TrimPrefix(p, "../../testdata/"), func(t *testing.T) {
+			t.Run(p, func(t *testing.T) {
 				t.Parallel()
-				diff, _ := roundTrip(t, p)
+				diff, _ := roundTrip(t, fixtures.Path(p))
 				results[i] = outcome{p, diff}
 			})
 		}
 	})
 	ok := 0
 	for _, r := range results {
-		name := strings.TrimPrefix(r.path, "../../testdata/")
+		name := r.path
 		_, known := scriptRoundTripKnown[name]
 		switch {
 		case r.diff == "":

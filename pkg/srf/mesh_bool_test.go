@@ -7,10 +7,18 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
-// cubeMesh is the closed, outward-facing cube [o, o+s]^3 as twelve
+// boxMesh is the closed, outward-facing box from lo to hi as twelve
 // triangles.
-func cubeMesh(o geom.Vector, s float64) *SMesh {
-	p := func(x, y, z float64) geom.Vector { return o.Plus(geom.Vector{X: x * s, Y: y * s, Z: z * s}) }
+func boxMesh(lo, hi geom.Vector) *SMesh {
+	pick := func(i, a, b float64) float64 {
+		if i == 0 {
+			return a
+		}
+		return b
+	}
+	p := func(x, y, z float64) geom.Vector {
+		return geom.Vector{X: pick(x, lo.X, hi.X), Y: pick(y, lo.Y, hi.Y), Z: pick(z, lo.Z, hi.Z)}
+	}
 	quads := [][4]geom.Vector{
 		{p(0, 0, 0), p(0, 1, 0), p(1, 1, 0), p(1, 0, 0)}, // bottom, -z
 		{p(0, 0, 1), p(1, 0, 1), p(1, 1, 1), p(0, 1, 1)}, // top, +z
@@ -31,6 +39,7 @@ func cubeMesh(o geom.Vector, s float64) *SMesh {
 // mesh Booleans. After SnapToMesh, as the forced-to-mesh combine does
 // it, each result must have the exact volume and be watertight.
 func TestMeshBooleansOfCubes(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name string
 		op   func(m, a, b *SMesh)
@@ -40,8 +49,8 @@ func TestMeshBooleansOfCubes(t *testing.T) {
 		{"difference", (*SMesh).MakeFromDifferenceOf, 7},
 		{"intersection", (*SMesh).MakeFromIntersectionOf, 1},
 	} {
-		a := cubeMesh(geom.Vector{}, 2)
-		b := cubeMesh(geom.Vector{X: 1, Y: 1, Z: 1}, 2)
+		a := boxMesh(geom.Vector{}, geom.Vector{X: 2, Y: 2, Z: 2})
+		b := boxMesh(geom.Vector{X: 1, Y: 1, Z: 1}, geom.Vector{X: 3, Y: 3, Z: 3})
 		var out SMesh
 		tc.op(&out, a, b)
 		out.RemoveDegenerateTriangles()
@@ -63,8 +72,9 @@ func TestMeshBooleansOfCubes(t *testing.T) {
 // TestMeshBooleansOfDisjointCubes: a union of disjoint cubes keeps
 // every triangle of both, and a difference keeps the first cube.
 func TestMeshBooleansOfDisjointCubes(t *testing.T) {
-	a := cubeMesh(geom.Vector{}, 1)
-	b := cubeMesh(geom.Vector{X: 5, Y: 5, Z: 5}, 1)
+	t.Parallel()
+	a := boxMesh(geom.Vector{}, geom.Vector{X: 1, Y: 1, Z: 1})
+	b := boxMesh(geom.Vector{X: 5, Y: 5, Z: 5}, geom.Vector{X: 6, Y: 6, Z: 6})
 
 	var union SMesh
 	union.MakeFromUnionOf(a, b)

@@ -53,9 +53,10 @@ func roundedRect(w, l, rad float64, round [4]bool, z float64) []srf.SBezier {
 	return out
 }
 
-// roundedPrism is a prism of height h over a rounded rectangle.
-func roundedPrism(w, l, rad, h float64, round [4]bool) *srf.SShell {
-	var sh srf.SShell
+// roundedPrism is a prism of height h over a rounded rectangle, built
+// at tol.
+func roundedPrism(w, l, rad, h float64, round [4]bool, tol srf.Tolerance) *srf.SShell {
+	sh := srf.SShell{Tol: tol}
 	var ls srf.SBezierLoopSet
 	ls.Outer.Curves = roundedRect(w, l, rad, round, 0)
 	ls.Normal = v(0, 0, -1)
@@ -68,12 +69,10 @@ func roundedPrism(w, l, rad, h float64, round [4]bool) *srf.SShell {
 // takes the spandrel along the path of its centroid: the straight
 // lengths and a circle of radius rad less the centroid's distance.
 func TestFilletRoundedOutline(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	for _, c := range []struct{ rad, r float64 }{{5, 1}, {5, 3}, {3, 2.5}} {
 		tol := 0.002 * c.r
-		srf.SetChordTolMm(tol)
-		sh := roundedPrism(30, 20, c.rad, 10, [4]bool{true, true, true, true})
+		sh := roundedPrism(30, 20, c.rad, 10, [4]bool{true, true, true, true}, srf.Tol(tol, 20))
 		before := meshVolume(sh)
 		if err := topo.FilletPicks(sh, []topo.FilletPick{{A: v(c.rad, 0, 10), B: v(30-c.rad, 0, 10)}}, c.r, 1<<30, false); err != nil {
 			t.Fatalf("%+v: %v", c, err)
@@ -88,6 +87,7 @@ func TestFilletRoundedOutline(t *testing.T) {
 }
 
 func TestFilletOutlineRefused(t *testing.T) {
+	t.Parallel()
 	// A half disc: its arc meets its line at a corner.
 	var sh srf.SShell
 	var ls srf.SBezierLoopSet
@@ -105,8 +105,7 @@ func TestFilletOutlineRefused(t *testing.T) {
 // corners rounded, their radius and the cut's size, against the volume
 // along the centroid's path: the chain ends at sharp corners. The rate allowed, 0, was set before.
 func TestFilletOutlineSweep(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Strings("corners", "one", "two", "all"),
@@ -116,6 +115,7 @@ func TestFilletOutlineSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      18,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		rad, k := p.Float("rad"), p.Float("k")
@@ -129,19 +129,19 @@ func TestFilletOutlineSweep(t *testing.T) {
 		}
 		r := k * math.Min(rad, 4)
 		tol := 0.002 * r
-		srf.SetChordTolMm(tol)
+		at := srf.Tol(tol, 20)
 		var sh *srf.SShell
 		if pocket {
 			// The outline as a pocket's in a block: its floor is filled.
-			var block, cut srf.SShell
+			block, cut := srf.SShell{Tol: at}, srf.SShell{Tol: at}
 			block.MakePrism([]geom.Vector{v(-10, -10, 0), v(40, -10, 0), v(40, 30, 0), v(-10, 30, 0)}, v(0, 0, 0), v(0, 0, 15),
 				core.NewRGBA(100, 100, 100, 255))
-			var moved srf.SShell
-			moved.MakeFromTransformationOf(roundedPrism(30, 20, rad, 20, round), v(0, 0, 5), geom.QuaternionIdentity, 1)
+			moved := srf.SShell{Tol: at}
+			moved.MakeFromTransformationOf(roundedPrism(30, 20, rad, 20, round, at), v(0, 0, 5), geom.QuaternionIdentity, 1)
 			cut.MakeFromDifferenceOf(&block, &moved)
 			sh = &cut
 		} else {
-			sh = roundedPrism(30, 20, rad, 10, round)
+			sh = roundedPrism(30, 20, rad, 10, round, at)
 		}
 		z := 10.0
 		if pocket {

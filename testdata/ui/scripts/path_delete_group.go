@@ -1,5 +1,5 @@
 // The model of path_delete_group.script, made by a script
-// (TestPathEquivalenceDeleteGroup).
+// (TestPathEquivalence/delete_group).
 package main
 
 import . "github.com/telesapr/telesapr/pkg/script/api"

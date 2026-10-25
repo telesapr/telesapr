@@ -37,6 +37,7 @@ func copyTestdata(t *testing.T, dir string) string {
 // TestImport converts SolveSpace models, alone and with what they link,
 // and opens the result.
 func TestImport(t *testing.T) {
+	t.Parallel()
 	dir := copyTestdata(t, "group/translate_nd")
 	d, err := Import(filepath.Join(dir, "normal.slvs"), filepath.Join(dir, "part.tlspr"))
 	if err != nil {
@@ -86,6 +87,7 @@ func TestImport(t *testing.T) {
 // TestFileMisuse: what can't be opened, saved or imported returns an
 // error that says why.
 func TestFileMisuse(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	fixture := filepath.Join("..", "..", "..", "testdata", "group", "translate_nd", "normal.slvs")
 	d := New()

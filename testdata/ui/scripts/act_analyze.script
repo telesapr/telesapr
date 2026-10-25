@@ -1,6 +1,6 @@
 # Measure the fillet model and check its mesh, in each unit system and
 # with SI prefixes; show the underconstrained points.
-load group/boolean_tangent_fillet/normal.slvs
+load tlspr/golden/group/boolean_tangent_fillet/normal.tlspr
 answer ok
 key v ctrl shift
 answer ok

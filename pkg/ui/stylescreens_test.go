@@ -15,6 +15,7 @@ import (
 // The z-index edit of a style takes a whole number and refuses anything
 // else, with a message and no undo step.
 func TestStyleZIndexEdit(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	var msgs []string
 	ss.messageSink = func(text string, _ bool) { msgs = append(msgs, text) }
@@ -48,6 +49,7 @@ func TestStyleZIndexEdit(t *testing.T) {
 // in the next frame: nothing regenerates, so the frame the persistent
 // layer cache saved must not come back.
 func TestStyleDeleteRedraws(t *testing.T) {
+	t.Parallel()
 	for _, byScript := range []bool{false, true} {
 		ss, _ := newTestApp(t)
 		// The line is free; coloured by freedom it would hide its style.
@@ -111,6 +113,7 @@ func magentaPixels(img *image.RGBA) int {
 // menu does, its style's colour, width and dashes; a free line in the
 // active group's own style is still coloured by its freedom.
 func TestStyleColoursOverFreedom(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	if !ss.ColorByFreedom {
 		t.Fatal("the colouring by freedom is off by default")

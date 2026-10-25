@@ -9,6 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/par"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -142,6 +143,7 @@ func vAtHeight(bs *srf.BSplineSurface, z float64) float64 {
 // The loft goes through each section, and through nothing else at
 // their heights.
 func TestSmoothLoftThroughSections(t *testing.T) {
+	t.Parallel()
 	loops := [][]srf.SBezier{circleAt(10, 0, 0, 0), circleAt(14, 2, 0, 10), polygonAt(4, 9, 0, 1, 20, 0.3),
 		blobAt(12, 8, 6, 0, 0, 32)}
 	bs, err := topo.SmoothLoftSurface(loops, 0)
@@ -181,6 +183,7 @@ func TestSmoothLoftThroughSections(t *testing.T) {
 // A circle's loft stays round: circles about one axis interpolate to
 // circles, in homogeneous coordinates.
 func TestSmoothLoftCircles(t *testing.T) {
+	t.Parallel()
 	rs := []float64{10, 14, 8, 12}
 	zs := []float64{0, 10, 20, 35}
 	var loops [][]srf.SBezier
@@ -218,6 +221,7 @@ func TestSmoothLoftCircles(t *testing.T) {
 }
 
 func TestSmoothLoftRefusals(t *testing.T) {
+	t.Parallel()
 	col := core.NewRGBA(100, 100, 100, 255)
 	for _, c := range []struct {
 		name  string
@@ -236,6 +240,7 @@ func TestSmoothLoftRefusals(t *testing.T) {
 // Profiles of unequal counts are matched by splitting the longest
 // curves.
 func TestMatchCounts(t *testing.T) {
+	t.Parallel()
 	got := topo.MatchCounts([][]srf.SBezier{polygonAt(3, 10, 0, 0, 0, 0), square(10, 5), polygonAt(6, 10, 0, 0, 10, 0)})
 	for i, l := range got {
 		if len(l) != 6 {
@@ -274,74 +279,106 @@ func smoothLoftCase(r *rand.Rand) [][]srf.SBezier {
 
 // E8.4: smooth lofts on their own, cut by a block above a height,
 // joined to one there, and holed by a cylinder, against their volumes by
-// quadrature of the surface; rate 0.
+// quadrature of the surface; rate 0. The lofts are drawn in order, so
+// that the random numbers stay the same, and built side by side.
 func TestSmoothLoftSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
 	}
-	old, oldSegs := srf.ChordTolMm(), srf.MaxSegments()
-	srf.SetChordTolMm(0.005)
-	srf.SetMaxSegments(100)
-	defer func() { srf.SetChordTolMm(old); srf.SetMaxSegments(oldSegs) }()
+	t.Parallel()
+	tol := srf.Tol(0.005, 100)
 	r := rand.New(rand.NewSource(20))
-	col := core.NewRGBA(100, 100, 100, 255)
-	points, failed := 0, 0
-	for c := range 12 {
-		loops := smoothLoftCase(r)
-		top := loops[len(loops)-1][0].Start().Z
-		bs, err := topo.SmoothLoftSurface(loops, 0)
-		if err != nil {
-			t.Fatalf("case %d: %v", c, err)
-		}
-		whole := loftVolumeBelow(bs, loops[0], top)
-		zc := top * (0.3 + 0.4*r.Float64())
-		below := loftVolumeBelow(bs, loops[0], zc)
-		for op := range 4 {
-			points++
-			name := fmt.Sprintf("case %d (%d sections), op %d", c, len(loops), op)
-			sh, err := topo.MakeSmoothLoft(loops, 0, col, srf.OriginFor(9, 0), srf.Tolerance{})
-			if err != nil {
-				t.Fatalf("%s: %v", name, err)
+	const cases = 12
+	loops := make([][][]srf.SBezier, cases)
+	cut := make([]float64, cases) // the block's height, a share of the loft's
+	for c := range cases {
+		loops[c] = smoothLoftCase(r)
+		cut[c] = 0.3 + 0.4*r.Float64()
+	}
+	// What each case's four solids found wrong, logged in order
+	// afterwards.
+	found := make([][][]string, cases)
+	par.For(cases, func(c int) {
+		found[c] = smoothLoftPoint(loops[c], cut[c], tol)
+	})
+	failed := 0
+	for c := range cases {
+		for op, lines := range found[c] {
+			if len(lines) == 0 {
+				continue
 			}
-			var tool, out srf.SShell
-			want := whole
-			box := func(z0, z1 float64) {
-				tool.MakePrism([]geom.Vector{v(-30, -30, z0), v(30, -30, z0), v(30, 30, z0), v(-30, 30, z0)},
-					geom.Vector{}, v(0, 0, z1-z0), col)
-			}
-			switch op {
-			case 0:
-				out = *sh
-			case 1:
-				box(zc, top+5)
-				out.MakeFromDifferenceOf(sh, &tool)
-				want = below
-			case 2:
-				box(zc, top+5)
-				out.MakeFromUnionOf(sh, &tool)
-				want = below + 60*60*(top+5-zc)
-			case 3:
-				const hr = 2.0
-				tool.MakeFromTransformationOf(cylinder(hr, top+10), v(0, 0, -5), geom.QuaternionIdentity, 1)
-				out.MakeFromDifferenceOf(sh, &tool)
-				want = whole - math.Pi*hr*hr*top
-			}
-			var m srf.SMesh
-			out.TriangulateInto(&m)
-			rep := check.Solid(&out, &m)
-			// The mesh lies within the chord tolerance of the surface,
-			// about 12 mm round: 1e-3 of the volume is some 0.005 mm
-			// over the whole of it.
-			if !rep.Sound() || math.Abs(rep.Volume-want) > 1e-3*want {
-				failed++
-				t.Errorf("%s: %s, want volume %.4f", name, rep.String(), want)
-				for _, pr := range rep.Topology {
-					t.Logf("  %s at %v", pr.Msg, pr.At)
-				}
+			failed++
+			t.Errorf("case %d (%d sections), op %d: %s", c, len(loops[c]), op, lines[0])
+			for _, l := range lines[1:] {
+				t.Logf("  %s", l)
 			}
 		}
 	}
-	t.Logf("%d points, %d failed", points, failed)
+	t.Logf("%d points, %d failed", 4*cases, failed)
+}
+
+// smoothLoftPoint lofts loops at tol on its own (op 0), less a block
+// above the share cut of its height (1), with that block (2) and less a
+// cylinder along its axis (3), and gives for each op what is wrong: the
+// report and the volume wanted, then its problems; nothing when it is
+// sound with the volume wanted.
+func smoothLoftPoint(loops [][]srf.SBezier, cut float64, tol srf.Tolerance) [][]string {
+	col := core.NewRGBA(100, 100, 100, 255)
+	found := make([][]string, 4)
+	top := loops[len(loops)-1][0].Start().Z
+	bs, err := topo.SmoothLoftSurface(loops, 0)
+	if err != nil {
+		for op := range found {
+			found[op] = []string{err.Error()}
+		}
+		return found
+	}
+	whole := loftVolumeBelow(bs, loops[0], top)
+	zc := top * cut
+	below := loftVolumeBelow(bs, loops[0], zc)
+	for op := range 4 {
+		sh, err := topo.MakeSmoothLoft(loops, 0, col, srf.OriginFor(9, 0), tol)
+		if err != nil {
+			found[op] = []string{err.Error()}
+			continue
+		}
+		tool, out := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
+		want := whole
+		box := func(z0, z1 float64) {
+			tool.MakePrism([]geom.Vector{v(-30, -30, z0), v(30, -30, z0), v(30, 30, z0), v(-30, 30, z0)},
+				geom.Vector{}, v(0, 0, z1-z0), col)
+		}
+		switch op {
+		case 0:
+			out = *sh
+		case 1:
+			box(zc, top+5)
+			out.MakeFromDifferenceOf(sh, &tool)
+			want = below
+		case 2:
+			box(zc, top+5)
+			out.MakeFromUnionOf(sh, &tool)
+			want = below + 60*60*(top+5-zc)
+		case 3:
+			const hr = 2.0
+			tool.MakeFromTransformationOf(cylinder(hr, top+10, tol), v(0, 0, -5), geom.QuaternionIdentity, 1)
+			out.MakeFromDifferenceOf(sh, &tool)
+			want = whole - math.Pi*hr*hr*top
+		}
+		var m srf.SMesh
+		out.TriangulateInto(&m)
+		rep := check.Solid(&out, &m)
+		// The mesh lies within the chord tolerance of the surface,
+		// about 12 mm round: 1e-3 of the volume is some 0.005 mm over
+		// the whole of it.
+		if !rep.Sound() || math.Abs(rep.Volume-want) > 1e-3*want {
+			found[op] = []string{fmt.Sprintf("%s, want volume %.4f", rep.String(), want)}
+			for _, pr := range rep.Topology {
+				found[op] = append(found[op], fmt.Sprintf("%s at %v", pr.Msg, pr.At))
+			}
+		}
+	}
+	return found
 }
 
 func BenchmarkSmoothLoft(b *testing.B) {

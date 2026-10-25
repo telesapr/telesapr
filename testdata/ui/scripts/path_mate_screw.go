@@ -1,5 +1,5 @@
 // The screw mate of path_mate_screw.script, made by a script
-// (TestPathEquivalenceMateScrew): the top circles of the holes of
+// (TestPathEquivalence/mate_screw): the top circles of the holes of
 // screw_pair.tlspr's plates, the lead an M4's coarse pitch, as the
 // window takes it for a hole of that diameter.
 package main

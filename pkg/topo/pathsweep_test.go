@@ -9,6 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/par"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -123,6 +124,7 @@ func newPath(t testing.TB, path []srf.SBezier, opts topo.PathSweepOptions) *topo
 // about the tangent: the normal's angle to the principal normal grows
 // as the torsion's integral, and a frame kept to the axis faces it.
 func TestSweepFrames(t *testing.T) {
+	t.Parallel()
 	const r, pitch = 20.0, 15.0
 	path := helixPath(r, pitch, 1, 0)[1:]
 	sp := newPath(t, path, topo.PathSweepOptions{})
@@ -196,6 +198,7 @@ func TestSweepFrames(t *testing.T) {
 // profile at each section; a tighter tolerance takes more sections, once
 // the four a piece it starts with are not enough.
 func TestSweepFitting(t *testing.T) {
+	t.Parallel()
 	path := helixPath(20, 15, 1.5, 10)
 	loops, _ := profileAcross(path, 0)
 	prev := 0
@@ -270,6 +273,7 @@ func TestSweepFitting(t *testing.T) {
 // jumps, even by as little as between the cubics that make the helix,
 // the true sweep itself has a crease, and so has the fitted one.
 func TestSweepPiecesMeetTangent(t *testing.T) {
+	t.Parallel()
 	path := helixPath(15, 8, 1, 10)
 	loops, _ := profileAcross(path, 2)
 	sp := newPath(t, path, topo.PathSweepOptions{Tol: 2e-3})
@@ -311,86 +315,116 @@ func pathSweepCase(r *rand.Rand, c int) []srf.SBezier {
 // E10.4: profiles swept along helices and cubics, on their own, with a
 // block on the straight lead, and cut by it, against the centroid
 // theorem: a profile about the path keeps its area times the path's
-// length, planar or not, twisted or not; rate 0.
+// length, planar or not, twisted or not; rate 0. The paths are drawn in
+// order, so that the random numbers stay the same, and swept side by
+// side.
 func TestPathSweepSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
 	}
-	old, oldSegs := srf.ChordTolMm(), srf.MaxSegments()
-	srf.SetChordTolMm(0.005)
-	srf.SetMaxSegments(100)
-	defer func() { srf.SetChordTolMm(old); srf.SetMaxSegments(oldSegs) }()
+	t.Parallel()
+	tol := srf.Tol(0.005, 100)
 	r := rand.New(rand.NewSource(10))
-	col := core.NewRGBA(100, 100, 100, 255)
-	points, failed := 0, 0
-	for c := range 9 {
-		path := pathSweepCase(r, c)
-		kind := c % 3
-		loops, area := profileAcross(path, (c/3+kind)%3)
-		perimeter := 0.0
-		for _, l := range loops {
-			perimeter += pathLength(l)
-		}
+	const cases = 9
+	paths := make([][]srf.SBezier, cases)
+	sps := make([]*topo.SweepPath, cases)
+	for c := range cases {
+		paths[c] = pathSweepCase(r, c)
 		opts := topo.PathSweepOptions{Tol: 5e-4}
 		if c%2 == 1 {
 			opts.Twist = math.Pi / 2
 		}
-		sp := newPath(t, path, opts)
-		whole := area * pathLength(path)
-		// A block 14 across, from 6 behind the start to 5 along the lead.
-		t0 := path[0].TangentAt(0).WithMagnitude(1)
-		e1 := t0.NormalDir(0).WithMagnitude(1)
-		e2 := t0.Cross(e1)
-		o := path[0].Start().Minus(t0.ScaledBy(6))
-		var sq []geom.Vector
-		for _, xy := range [][2]float64{{-7, -7}, {7, -7}, {7, 7}, {-7, 7}} {
-			sq = append(sq, o.Plus(e1.ScaledBy(xy[0])).Plus(e2.ScaledBy(xy[1])))
-		}
-		const blockVol, inside = 14 * 14 * 11.0, 5.0
-		for op := range 4 {
-			points++
-			name := fmt.Sprintf("case %d, op %d", c, op)
-			sh, err := topo.MakePathSweep(sp, loops, col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2), srf.Tolerance{})
-			if err != nil {
-				t.Fatalf("%s: %v", name, err)
+		sps[c] = newPath(t, paths[c], opts)
+	}
+	// What each case's four solids found wrong, logged in order
+	// afterwards.
+	found := make([][][]string, cases)
+	par.For(cases, func(c int) {
+		found[c] = pathSweepPoint(sps[c], paths[c], c, tol)
+	})
+	failed := 0
+	for c := range cases {
+		for op, lines := range found[c] {
+			if len(lines) == 0 {
+				continue
 			}
-			var block, out srf.SShell
-			block.MakePrism(sq, geom.Vector{}, t0.ScaledBy(11), col)
-			want := whole
-			switch op {
-			case 0:
-				out = *sh
-			case 1:
-				out.MakeFromUnionOf(sh, &block)
-				want = whole + blockVol - area*inside
-			case 2:
-				out.MakeFromDifferenceOf(sh, &block)
-				want = whole - area*inside
-			case 3:
-				out.MakeFromDifferenceOf(&block, sh)
-				want = blockVol - area*inside
-			}
-			var m srf.SMesh
-			out.TriangulateInto(&m)
-			rep := check.Solid(&out, &m)
-			// The mesh lies within the chord tolerance of the surface,
-			// inside where it is convex: the volume within the
-			// tolerance times the surface's area, the profile's
-			// perimeter along the path and the block's faces.
-			allow := srf.ChordTolMm() * (perimeter*pathLength(path) + 6*14*14)
-			if !rep.Sound() || math.Abs(rep.Volume-want) > allow {
-				failed++
-				t.Errorf("%s: %s, want volume %.4f within %.3g", name, rep.String(), want, allow)
-				for _, pr := range rep.Topology {
-					t.Logf("  %s at %v", pr.Msg, pr.At)
-				}
+			failed++
+			t.Errorf("case %d, op %d: %s", c, op, lines[0])
+			for _, l := range lines[1:] {
+				t.Logf("  %s", l)
 			}
 		}
 	}
-	t.Logf("%d points, %d failed", points, failed)
+	t.Logf("%d points, %d failed", 4*cases, failed)
+}
+
+// pathSweepPoint sweeps case c's profile along path by sp at tol, on its
+// own (op 0), with a block on the straight lead (1), less it (2) and
+// the block less the sweep (3), and gives for each op what is wrong:
+// the report and the volume wanted, then its problems; nothing when it
+// is sound with the volume wanted.
+func pathSweepPoint(sp *topo.SweepPath, path []srf.SBezier, c int, tol srf.Tolerance) [][]string {
+	col := core.NewRGBA(100, 100, 100, 255)
+	kind := c % 3
+	loops, area := profileAcross(path, (c/3+kind)%3)
+	perimeter := 0.0
+	for _, l := range loops {
+		perimeter += pathLength(l)
+	}
+	whole := area * pathLength(path)
+	// A block 14 across, from 6 behind the start to 5 along the lead.
+	t0 := path[0].TangentAt(0).WithMagnitude(1)
+	e1 := t0.NormalDir(0).WithMagnitude(1)
+	e2 := t0.Cross(e1)
+	o := path[0].Start().Minus(t0.ScaledBy(6))
+	var sq []geom.Vector
+	for _, xy := range [][2]float64{{-7, -7}, {7, -7}, {7, 7}, {-7, 7}} {
+		sq = append(sq, o.Plus(e1.ScaledBy(xy[0])).Plus(e2.ScaledBy(xy[1])))
+	}
+	const blockVol, inside = 14 * 14 * 11.0, 5.0
+	found := make([][]string, 4)
+	for op := range 4 {
+		sh, err := topo.MakePathSweep(sp, loops, col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2), tol)
+		if err != nil {
+			found[op] = []string{err.Error()}
+			continue
+		}
+		block, out := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
+		block.MakePrism(sq, geom.Vector{}, t0.ScaledBy(11), col)
+		want := whole
+		switch op {
+		case 0:
+			out = *sh
+		case 1:
+			out.MakeFromUnionOf(sh, &block)
+			want = whole + blockVol - area*inside
+		case 2:
+			out.MakeFromDifferenceOf(sh, &block)
+			want = whole - area*inside
+		case 3:
+			out.MakeFromDifferenceOf(&block, sh)
+			want = blockVol - area*inside
+		}
+		var m srf.SMesh
+		out.TriangulateInto(&m)
+		rep := check.Solid(&out, &m)
+		// The mesh lies within the chord tolerance of the surface,
+		// inside where it is convex: the volume within the tolerance
+		// times the surface's area, the profile's perimeter along the
+		// path and the block's faces.
+		allow := tol.ChordTolMm() * (perimeter*pathLength(path) + 6*14*14)
+		if !rep.Sound() || math.Abs(rep.Volume-want) > allow {
+			found[op] = []string{fmt.Sprintf("%s, want volume %.4f within %.3g", rep.String(), want, allow)}
+			for _, pr := range rep.Topology {
+				found[op] = append(found[op], fmt.Sprintf("%s at %v", pr.Msg, pr.At))
+			}
+		}
+	}
+	return found
 }
 
 func TestPathSweepRefusals(t *testing.T) {
+	t.Parallel()
 	path := helixPath(20, 15, 1, 10)
 	loops, _ := profileAcross(path, 0)
 	if _, err := topo.NewSweepPath(nil, v(1, 0, 0), topo.PathSweepOptions{}); err == nil {

@@ -9,15 +9,9 @@ import (
 	"github.com/telesapr/telesapr/pkg/internal/cdt"
 )
 
-// cdtChordTol meshes with the constrained Delaunay mesher at a chord
-// tolerance of tol for the test; it sets DefaultTolerance, so the test
-// cannot run in parallel.
-func cdtChordTol(t *testing.T, tol float64) {
-	old := DefaultTolerance
-	SetChordTolMm(tol)
-	SetMesher(MesherCDT)
-	t.Cleanup(func() { DefaultTolerance = old })
-}
+// cdtTol meshes with the constrained Delaunay mesher at a chord
+// tolerance of chord.
+func cdtTol(chord float64) Tolerance { return Tol(chord, 20).WithMesher(MesherCDT) }
 
 // TestCDTShapes meshes lathed and revolved solids, a cone and a sphere
 // with patches folded to poles among them: each surface is meshed by
@@ -25,19 +19,20 @@ func cdtChordTol(t *testing.T, tol float64) {
 // closed, doesn't cross itself and holds the closed form's volume
 // within what the chord tolerance loses.
 func TestCDTShapes(t *testing.T) {
-	cdtChordTol(t, 0.01)
+	t.Parallel()
+	tol := cdtTol(0.01)
 	frustum := func(r0, r1, h float64) float64 { return math.Pi * h / 3 * (r0*r0 + r0*r1 + r1*r1) }
 	for _, c := range []struct {
 		name string
 		sh   *SShell
 		want float64
 	}{
-		{"pot", lathedProfile([]geom.Vector{{}, {X: 30}, {X: 20, Z: 40}, {Z: 40}}), frustum(30, 20, 40)},
-		{"spout", lathedProfile([]geom.Vector{{}, {X: 6}, {X: 3, Z: 20}, {Z: 20}}), frustum(6, 3, 20)},
-		{"cone", lathedCone(5, 10), frustum(5, 0, 10)},
-		{"rod", lathedTube(0, 1, -5, 20), math.Pi * 25},
-		{"torus", torusY(geom.Vector{}, 8, 2), 2 * math.Pi * math.Pi * 8 * 4},
-		{"sphere", patchUpSphere(10, geom.Vector{}), 4.0 / 3 * math.Pi * 1000},
+		{"pot", lathedProfile([]geom.Vector{{}, {X: 30}, {X: 20, Z: 40}, {Z: 40}}, tol), frustum(30, 20, 40)},
+		{"spout", lathedProfile([]geom.Vector{{}, {X: 6}, {X: 3, Z: 20}, {Z: 20}}, tol), frustum(6, 3, 20)},
+		{"cone", lathedCone(5, 10, tol), frustum(5, 0, 10)},
+		{"rod", lathedTube(0, 1, -5, 20, tol), math.Pi * 25},
+		{"torus", torusY(geom.Vector{}, 8, 2, tol), 2 * math.Pi * math.Pi * 8 * 4},
+		{"sphere", patchUpSphere(10, geom.Vector{}, tol), 4.0 / 3 * math.Pi * 1000},
 	} {
 		for i := range c.sh.Surface {
 			s := &c.sh.Surface[i]
@@ -67,9 +62,11 @@ func TestCDTShapes(t *testing.T) {
 // thin lens of the bore's wall where the bore breaks out through the
 // spout's side, and 20 of 80 failed.
 func TestCDTBoreToLathedTipSweep(t *testing.T) {
-	cdtChordTol(t, 0.01)
+	t.Parallel()
+	tol := cdtTol(0.01)
 	grid := boreTipGrid()
-	grid.Run(boreToLathedTip).Require(t)
+	grid.Parallel = true
+	grid.Run(boreToLathedTipAt(tol)).Require(t)
 }
 
 // TestCDTHandleOnPotSweep is TestHandleOnPotSweep meshed by the CDT
@@ -80,11 +77,13 @@ func TestCDTHandleOnPotSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
 	}
-	cdtChordTol(t, 0.01)
+	t.Parallel()
+	tol := cdtTol(0.01)
 	grid := handleGrid()
 	grid.MaxFailRate = 0
 	grid.SampleMaxFailRate = 2.0 / 24
-	grid.Run(handleOnPot).Require(t)
+	grid.Parallel = true
+	grid.Run(handleOnPotAt(tol)).Require(t)
 }
 
 // TestCDTFlatWithHole meshes a square with a square hole on a plane:
@@ -145,7 +144,7 @@ func TestCDTOverlapFallsBack(t *testing.T) {
 // where they were.
 func TestCDTPolarChart(t *testing.T) {
 	t.Parallel()
-	cone := lathedCone(5, 10)
+	cone := lathedCone(5, 10, Tolerance{})
 	for i := range cone.Surface {
 		s := &cone.Surface[i]
 		if s.flat() {

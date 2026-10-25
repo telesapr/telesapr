@@ -217,6 +217,7 @@ func TestMCPBracket(t *testing.T) {
 // A sketch file is the drawing served, and what is wrong with the
 // command line is said.
 func TestMCPCommandLine(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	model := filepath.Join(dir, "part.tlspr")
 	doc := api.New()
@@ -268,6 +269,7 @@ func TestMCPCommandLine(t *testing.T) {
 // Without --headless the drawing is the one of the program that
 // listens on the socket, which may not be there yet.
 func TestMCPThroughSocket(t *testing.T) {
+	t.Parallel()
 	dir, err := os.MkdirTemp("", "ss")
 	if err != nil {
 		t.Fatal(err)
@@ -327,6 +329,7 @@ func TestMCPThroughSocket(t *testing.T) {
 // A headless server's scripts write files in the sketch's folder and
 // those --allow names, and nowhere else unless --unguarded.
 func TestMCPGuardedFiles(t *testing.T) {
+	t.Parallel()
 	dir, other, outside := t.TempDir(), t.TempDir(), t.TempDir()
 	model := filepath.Join(dir, "part.tlspr")
 	if err := api.New().File.Save(model); err != nil {

@@ -6,9 +6,12 @@ import (
 	"math"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/internal/sweep"
 )
 
@@ -20,65 +23,77 @@ type filletTally struct {
 	reasons                         map[string]int
 }
 
-// filletEveryEdge fillets each of the edges of the solid build makes,
-// up to max, alone in a document of its own, with radius r, and tallies
-// how they fare.
-func filletEveryEdge(t *testing.T, build func(d *Doc) Group, r float64, limit int) filletTally {
-	return cutEveryEdge(t, build, r, limit, false)
-}
-
-// cutEveryEdge is filletEveryEdge, or with flat the same for chamfers
-// of distance r.
-func cutEveryEdge(t *testing.T, build func(d *Doc) Group, r float64, limit int, flat bool) filletTally {
+// cutEveryEdge fillets each of the edges of the solid build makes, up
+// to limit, alone in a document of its own, with radius r, or with flat
+// chamfers them at distance r, and tallies how they fare. The edges are
+// cut side by side, each in a subtest of its own.
+func cutEveryEdge(t *testing.T, build func(t *testing.T, d *Doc) Group, r float64, limit int, flat bool) filletTally {
 	tl := filletTally{reasons: map[string]int{}}
-	n := 0
 	var smooth []bool
 	{
 		d := New()
 		d.Edit.SetChordTolerance(0.01)
-		g := build(d)
+		g := build(t, d)
 		if p := g.Problem(); p != "" {
 			t.Fatal(p)
 		}
-		n = min(len(g.Solid().Edges()), limit)
-		for _, e := range g.Solid().Edges()[:n] {
+		edges := g.Solid().Edges()
+		for _, e := range edges[:min(len(edges), limit)] {
 			smooth = append(smooth, e.Smooth())
 		}
 	}
-	for i := range n {
-		if smooth[i] {
-			tl.smooth++
-			continue
-		}
-		func() {
-			defer func() {
-				if x := recover(); x != nil {
+	var mu sync.Mutex
+	t.Run("edges", func(t *testing.T) {
+		for i, sm := range smooth {
+			if sm {
+				tl.smooth++
+				continue
+			}
+			t.Run(strconv.Itoa(i), func(t *testing.T) {
+				t.Parallel()
+				outcome, reason := cutEdge(t, build, i, r, flat)
+				mu.Lock()
+				defer mu.Unlock()
+				switch outcome {
+				case "sound":
+					tl.sound++
+				case "unsound":
+					tl.unsound++
+				default:
 					tl.refused++
-					tl.reasons[reasonOf(fmt.Sprint(x))]++
+					tl.reasons[reason]++
 				}
-			}()
-			d := New()
-			d.Edit.SetChordTolerance(0.01)
-			g := build(d)
-			var f Group
-			if flat {
-				f = d.Features.ChamferSolid([]SolidEdge{g.Solid().Edges()[i]}, r, "")
-			} else {
-				f = d.Features.FilletSolid([]SolidEdge{g.Solid().Edges()[i]}, r, "")
-			}
-			if p := f.Problem(); p != "" {
-				tl.refused++
-				tl.reasons[reasonOf(p)]++
-				return
-			}
-			if rep := f.Analyze().Check(); rep.Sound() {
-				tl.sound++
-			} else {
-				tl.unsound++
-			}
-		}()
-	}
+			})
+		}
+	})
 	return tl
+}
+
+// cutEdge fillets, or with flat chamfers, edge i of the solid build
+// makes, in a document of its own, and says whether it was made sound,
+// made unsound, or refused, and why.
+func cutEdge(t *testing.T, build func(t *testing.T, d *Doc) Group, i int, r float64, flat bool) (outcome, reason string) {
+	defer func() {
+		if x := recover(); x != nil {
+			outcome, reason = "refused", reasonOf(fmt.Sprint(x))
+		}
+	}()
+	d := New()
+	d.Edit.SetChordTolerance(0.01)
+	g := build(t, d)
+	var f Group
+	if flat {
+		f = d.Features.ChamferSolid([]SolidEdge{g.Solid().Edges()[i]}, r, "")
+	} else {
+		f = d.Features.FilletSolid([]SolidEdge{g.Solid().Edges()[i]}, r, "")
+	}
+	if p := f.Problem(); p != "" {
+		return "refused", reasonOf(p)
+	}
+	if rep := f.Analyze().Check(); rep.Sound() {
+		return "sound", ""
+	}
+	return "unsound", ""
 }
 
 // reasonOf is a refusal's words up to its first colon.
@@ -106,19 +121,28 @@ func TestFilletOnOtherSolids(t *testing.T) {
 	if testing.Short() {
 		t.Skip("STEP solids at a fine tolerance")
 	}
+	t.Parallel()
+	var mu sync.Mutex
 	total, made := 0, 0
-	for _, c := range otherSolids(t) {
-		tl := filletEveryEdge(t, c.build, c.r, edgesPerSolid())
-		t.Logf("%s, r %g: %s", c.name, c.r, tl)
-		if tl.unsound > 0 {
-			t.Errorf("%s: %d fillets made but not sound", c.name, tl.unsound)
+	t.Run("solids", func(t *testing.T) {
+		for _, c := range otherSolids() {
+			t.Run(c.name, func(t *testing.T) {
+				t.Parallel()
+				tl := cutEveryEdge(t, c.build, c.r, edgesPerSolid(), false)
+				t.Logf("r %g: %s", c.r, tl)
+				if tl.unsound > 0 {
+					t.Errorf("%d fillets made but not sound", tl.unsound)
+				}
+				if !fixtures.RaceDetector && tl.sound < c.minMade {
+					t.Errorf("%d fillets made, %d were", tl.sound, c.minMade)
+				}
+				mu.Lock()
+				defer mu.Unlock()
+				total += tl.sound + tl.unsound + tl.refused
+				made += tl.sound
+			})
 		}
-		if !raceDetector && tl.sound < c.minMade {
-			t.Errorf("%s: %d fillets made, %d were", c.name, tl.sound, c.minMade)
-		}
-		total += tl.sound + tl.unsound + tl.refused
-		made += tl.sound
-	}
+	})
 	t.Logf("in all: %d of %d edges filleted soundly (%.0f%%)", made, total, 100*float64(made)/float64(total))
 }
 
@@ -127,7 +151,7 @@ func TestFilletOnOtherSolids(t *testing.T) {
 // ten times slower, only the first few: what is made must still be
 // sound, but the counts are the plain run's to hold.
 func edgesPerSolid() int {
-	if raceDetector {
+	if fixtures.RaceDetector {
 		return 4
 	}
 	return 16
@@ -137,17 +161,17 @@ func edgesPerSolid() int {
 // radius its edges are filleted at, and how many fillets were sound.
 type otherSolid struct {
 	name    string
-	build   func(d *Doc) Group
+	build   func(t *testing.T, d *Doc) Group
 	r       float64
 	minMade int
 }
 
 // otherSolids are the loft, the sweep and the STEP solids whose every
 // edge TestFilletOnOtherSolids fillets.
-func otherSolids(t *testing.T) []otherSolid {
+func otherSolids() []otherSolid {
 	type tcase = otherSolid
-	step := func(file string) func(d *Doc) Group {
-		return func(d *Doc) Group {
+	step := func(file string) func(t *testing.T, d *Doc) Group {
+		return func(t *testing.T, d *Doc) Group {
 			g, err := d.Assembly.LinkStep(filepath.Join("..", "..", "..", "testdata", "step", file), "", true)
 			if err != nil {
 				t.Fatal(err)
@@ -156,7 +180,7 @@ func otherSolids(t *testing.T) []otherSolid {
 		}
 	}
 	cases := []tcase{
-		{"loft", func(d *Doc) Group {
+		{"loft", func(_ *testing.T, d *Doc) Group {
 			d.Features.SketchIn(d.Workplane("XY"), "foot")
 			d.Sketch.Rect(V(-18, -18, 0), V(18, 18, 0))
 			var ps []Group
@@ -169,7 +193,7 @@ func otherSolids(t *testing.T) []otherSolid {
 			}
 			return d.Features.LoftThrough(ps, "vase")
 		}, 2, 12},
-		{"sweep", func(d *Doc) Group {
+		{"sweep", func(_ *testing.T, d *Doc) Group {
 			d.Features.SketchIn(d.Workplane("ZX"), "path")
 			up := d.Sketch.Line(V(0, 0, 0), V(0, 0, 30))
 			bend := d.Sketch.Arc(V(25, 0, 30), V(0, 0, 30), V(25, 0, 55))
@@ -200,6 +224,7 @@ func otherSolids(t *testing.T) []otherSolid {
 // STEP, 241.807 by its volumes (checked 2026-10-22). Our own meshes can't
 // tell: the side's chords change with its trims by more than that.
 func TestFilletLoftTopRing(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("rolling-ball fillet round a loft, slow")
 	}
@@ -237,18 +262,19 @@ func TestFilletLoftTopRing(t *testing.T) {
 // 8.519 and 45.066 by slices 0.1 mm apart. Our meshes can't tell: the
 // sides' chords change with their trims by more than the fillet.
 func TestFilletCreaseFades(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("rolling-ball fillets of a loft, slow")
 	}
 	var loft otherSolid
-	for _, c := range otherSolids(t) {
+	for _, c := range otherSolids() {
 		if c.name == "loft" {
 			loft = c
 		}
 	}
 	for _, flat := range []bool{false, true} {
 		d := New()
-		g := loft.build(d)
+		g := loft.build(t, d)
 		var e SolidEdge
 		for _, x := range g.Solid().Edges() {
 			if a, b := x.Ends(); a.Minus(V(18, -18, 0)).Magnitude() < 1e-6 && b.Minus(V(14, 0, 60)).Magnitude() < 1e-6 {
@@ -289,6 +315,7 @@ func TestFilletCreaseFades(t *testing.T) {
 // cells: by Pappus, the corner's r²(1 - π/4) turned about the axis at its
 // centroid, r(10 - 3π)/(12 - 3π) in from the side.
 func TestFilletStepCylinder(t *testing.T) {
+	t.Parallel()
 	d := New()
 	d.Edit.SetChordTolerance(0.005)
 	g, err := d.Assembly.LinkStep(filepath.Join("..", "..", "..", "testdata", "step", "shapes", "cylinder.step"), "", true)
@@ -312,6 +339,7 @@ func TestFilletStepCylinder(t *testing.T) {
 // smooth edges where the arc's face goes on into the lines' faces, and
 // creased ones round its top and foot.
 func TestSolidEdgeSmooth(t *testing.T) {
+	t.Parallel()
 	d := New()
 	d.Features.SketchIn(d.Workplane("XY"), "outline")
 	lines := d.Sketch.Polyline(true, V(0, 0, 0), V(20, 0, 0), V(20, 20, 0), V(0, 20, 0))
@@ -346,6 +374,7 @@ func TestSolidEdgeSmooth(t *testing.T) {
 // saving and loading, and gone with one undo. Ours take 0.1 to 0.2% more
 // at this chord tolerance.
 func TestFilletEndsOnCurvedFace(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("fillets over curved faces, slow")
 	}
@@ -404,6 +433,7 @@ func TestFilletEndsOnCurvedFace(t *testing.T) {
 // less what both would take at the corner, the integral over the
 // corner's cube of the square of 1 - sqrt(1 - a^2): 5/3 - pi/2.
 func TestFilletEndsOnCurvedFaceApart(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("fillets over curved faces, slow")
 	}
@@ -477,6 +507,7 @@ func TestFilletEndsOnCurvedFaceApart(t *testing.T) {
 // makeFillet takes within half a percent (ours 0.12 to 0.17% more at
 // this chord tolerance, as at radius 1).
 func TestFilletEndsOnCurvedFaceWide(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("fillets over curved faces, slow")
 	}
@@ -511,8 +542,10 @@ func TestFilletEndsOnCurvedFaceWide(t *testing.T) {
 // 3e-4 mm at degree 5, 2e-5 at 6). Their sections are now split in two
 // quintic spans (rollingBall.splitEnds).
 func TestFilletEndsOnCurvedFaceSweep(t *testing.T) {
+	t.Parallel()
 	lid := filepath.Join("..", "..", "..", "testdata", "step", "degree", "lid_degree7.step")
 	g := sweep.Grid{
+		Parallel: true,
 		Axes: []sweep.Axis{
 			sweep.Strings("corner", "0,0", "40,0", "40,30", "0,30"),
 			sweep.Floats("r", 0.5, 1, 1.5, 2, 2.5),
@@ -553,6 +586,7 @@ func TestFilletEndsOnCurvedFaceSweep(t *testing.T) {
 // 8e-5 mm of its result (sampled 2026-10-11). Both rims are sound and
 // take alike; the top one comes back alike after saving and loading.
 func TestFilletRimMitre(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("fillets over curved faces, slow")
 	}

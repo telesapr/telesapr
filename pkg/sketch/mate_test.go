@@ -69,6 +69,7 @@ func ends(g api.Group) (lo, hi api.Entity) {
 // in the plane of the first's top; a hinge puts one edge on another,
 // free to turn. Each leaves the group solved.
 func TestMates(t *testing.T) {
+	t.Parallel()
 	all := func(api.Entity) bool { return true }
 
 	d, a, b := matePart(t)

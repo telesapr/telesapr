@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -13,9 +12,9 @@ import (
 	"github.com/telesapr/telesapr/pkg/internal/golden"
 )
 
-// sparseQRDir holds the generated least-squares cases (cases.txt) and
-// what SparseQR gives for them (solutions.txt): the rank it finds for A,
-// then X as System::SolveLeastSquares computes it (A unscaled).
+// sparseQRDir holds what SparseQR gives for genLeastSquaresCases
+// (solutions.txt): the rank it finds for A, then X as
+// System::SolveLeastSquares computes it (A unscaled).
 var sparseQRDir = filepath.Join("..", "..", "testdata", "solver", "sparseqr")
 
 type lsCase struct {
@@ -89,80 +88,15 @@ func genLeastSquaresCases() []lsCase {
 	return cases
 }
 
-func writeLeastSquaresCases(path string, cases []lsCase) error {
-	var sb strings.Builder
-	for _, c := range cases {
-		nnz := 0
-		for j := range c.a.idx {
-			nnz += len(c.a.idx[j])
-		}
-		fmt.Fprintf(&sb, "%d %d %d\n", c.a.rows, c.a.cols, nnz)
-		for j := range c.a.idx {
-			for k, i := range c.a.idx[j] {
-				fmt.Fprintf(&sb, "%d %d %x\n", i, j, c.a.val[j][k])
-			}
-		}
-		for _, v := range c.b {
-			fmt.Fprintf(&sb, "%x\n", v)
-		}
-	}
-	return os.WriteFile(path, []byte(sb.String()), 0o644)
-}
-
-func readLeastSquaresCases(t *testing.T, path string) []lsCase {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	f := strings.Fields(string(data))
-	pos := 0
-	next := func() string { pos++; return f[pos-1] }
-	nextInt := func() int {
-		v, err := strconv.Atoi(next())
-		if err != nil {
-			t.Fatal(err)
-		}
-		return v
-	}
-	nextFloat := func() float64 {
-		v, err := strconv.ParseFloat(next(), 64)
-		if err != nil {
-			t.Fatal(err)
-		}
-		return v
-	}
-	var cases []lsCase
-	for pos < len(f) {
-		m, n, nnz := nextInt(), nextInt(), nextInt()
-		a := &spMat{rows: m, cols: n, idx: make([][]int, n), val: make([][]float64, n)}
-		for range nnz {
-			i, j := nextInt(), nextInt()
-			a.idx[j] = append(a.idx[j], i)
-			a.val[j] = append(a.val[j], nextFloat())
-		}
-		b := make([]float64, m)
-		for i := range b {
-			b[i] = nextFloat()
-		}
-		cases = append(cases, lsCase{a, b})
-	}
-	return cases
-}
-
 // TestSparseQRGolden requires, bit for bit, the rank SparseQR finds for
-// each case and the least-squares solution (solutions.txt, first
-// recorded from Eigen 3.4's SparseQR, which this one follows). With
-// TELESAPR_REGEN_GOLDEN=1 it rewrites both cases.txt and solutions.txt.
+// each of genLeastSquaresCases and the least-squares solution
+// (solutions.txt): the solver's results, and so the goldens of every
+// solved sketch, move with any change to its arithmetic. With
+// TELESAPR_REGEN_GOLDEN=1 it rewrites solutions.txt.
 func TestSparseQRGolden(t *testing.T) {
 	t.Parallel()
-	casesPath := filepath.Join(sparseQRDir, "cases.txt")
-	if golden.Regen() {
-		if err := writeLeastSquaresCases(casesPath, genLeastSquaresCases()); err != nil {
-			t.Fatal(err)
-		}
-	}
 	var sb strings.Builder
-	for _, c := range readLeastSquaresCases(t, casesPath) {
+	for _, c := range genLeastSquaresCases() {
 		fmt.Fprintf(&sb, "rank %d\n", factorSparseQR(c.a).rank)
 		for _, x := range leastSquares(c.a, c.b, &matchedCache{}) {
 			sb.WriteString(hexFloat(x) + "\n")

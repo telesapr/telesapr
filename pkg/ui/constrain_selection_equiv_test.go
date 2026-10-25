@@ -3,6 +3,7 @@ package ui
 import (
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/internal/golden"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/script/api"
 )
@@ -32,7 +33,7 @@ func requireSameConstraint(t *testing.T, cmd Command,
 	got := string(tlspr.Encode(win.SK, tlspr.Options{}))
 	want := string(tlspr.Encode(scr.SK, tlspr.Options{}))
 	if got != want {
-		t.Errorf("the window and the script save different files, at %s", firstDiffLine(got, want))
+		t.Errorf("the window and the script save different files, at %s", golden.FirstDifference([]byte(want), []byte(got)))
 	}
 	if len(win.SK.Constraints) == 0 {
 		t.Errorf("the window added no constraint")
@@ -45,6 +46,7 @@ func all(es []api.Entity) []api.Entity { return es }
 // end point selected with them, in the window, and the end point given
 // to Tangent in a script.
 func TestTangentAtEndMatchesScript(t *testing.T) {
+	t.Parallel()
 	build := func(doc *api.Doc) []api.Entity {
 		line := doc.Sketch.Line(api.V(0, 0, 0), api.V(10, 0, 0))
 		arc := doc.Sketch.Arc(api.V(20, 0, 0), api.V(30, 0, 0), api.V(20, 10, 0))
@@ -58,6 +60,7 @@ func TestTangentAtEndMatchesScript(t *testing.T) {
 // Two arcs with no shared end are tangent at the two end points
 // selected, and the two a script gives.
 func TestTangentCurvesAtEndsMatchesScript(t *testing.T) {
+	t.Parallel()
 	build := func(doc *api.Doc) []api.Entity {
 		a := doc.Sketch.Arc(api.V(0, 0, 0), api.V(10, 0, 0), api.V(0, 10, 0))
 		b := doc.Sketch.Arc(api.V(30, 0, 0), api.V(40, 0, 0), api.V(30, 10, 0))
@@ -71,6 +74,7 @@ func TestTangentCurvesAtEndsMatchesScript(t *testing.T) {
 // Two faces are made parallel and perpendicular alike by the window
 // and by a script.
 func TestFacesMatchScript(t *testing.T) {
+	t.Parallel()
 	build := func(doc *api.Doc) []api.Entity {
 		doc.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
 		ext := doc.Features.Extrude(5, "")
@@ -89,6 +93,7 @@ func TestFacesMatchScript(t *testing.T) {
 // A line segment's midpoint in a workplane, and the point at a middle
 // that drops its on-line constraint, are the same in both.
 func TestMidpointMatchesScript(t *testing.T) {
+	t.Parallel()
 	build := func(doc *api.Doc) []api.Entity {
 		line := doc.Sketch.Line(api.V(0, 0, 0), api.V(10, 0, 0))
 		return []api.Entity{line, doc.Workplane("XY")}
@@ -100,6 +105,7 @@ func TestMidpointMatchesScript(t *testing.T) {
 // A whole line segment is symmetric about the workplane's axis and
 // loses its horizontal constraint, in the window and in a script.
 func TestSymmetricLineMatchesScript(t *testing.T) {
+	t.Parallel()
 	build := func(doc *api.Doc) []api.Entity {
 		doc.Features.SketchIn(doc.Workplane("XY"), "")
 		line := doc.Sketch.Line(api.V(-5, 0, 0), api.V(5, 0, 0))
@@ -112,6 +118,7 @@ func TestSymmetricLineMatchesScript(t *testing.T) {
 
 // A comment on a selected point reads the same in both.
 func TestCommentOnPointMatchesScript(t *testing.T) {
+	t.Parallel()
 	build := func(doc *api.Doc) []api.Entity {
 		return []api.Entity{doc.Sketch.Point(api.V(1, 2, 0))}
 	}

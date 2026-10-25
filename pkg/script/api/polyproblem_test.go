@@ -9,6 +9,7 @@ import (
 // and where, and so does a solid made from it, which is then not sound
 // (roadmap 23.1).
 func TestSketchProblems(t *testing.T) {
+	t.Parallel()
 	t.Run("crossing", func(t *testing.T) {
 		d := New()
 		sk := d.Active()

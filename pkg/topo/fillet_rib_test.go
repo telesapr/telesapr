@@ -24,9 +24,10 @@ type rib struct{ h, lean float64 }
 
 const ribFoot, ribWide = 14.0, 10.0
 
-func (rb rib) shell() *srf.SShell {
+// shell is the rib on its plate, built at tol.
+func (rb rib) shell(tol srf.Tolerance) *srf.SShell {
 	gray := core.NewRGBA(100, 100, 100, 255)
-	var plate, wedge, out srf.SShell
+	plate, wedge, out := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
 	plate.MakePrism([]geom.Vector{v(-10, -8, -3), v(28, -8, -3), v(28, 18, -3), v(-10, 18, -3)}, v(0, 0, 0), v(0, 0, 3), gray)
 	// The wedge goes 1 into the plate, for the union.
 	wedge.MakePrism([]geom.Vector{v(0, 0, -1), v(ribFoot, 0, -1), v(ribFoot, 0, 0), v(0, 0, rb.h)},
@@ -127,8 +128,7 @@ func (rb rib) filled(r float64, sides, ends bool) float64 {
 // checked against the height summed over the plate (filled); the rate
 // allowed, 0, was set before.
 func TestFilletRibFootSweep(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("h", 5, 10, 20, 40),
@@ -138,6 +138,7 @@ func TestFilletRibFootSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      24,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		rb := rib{p.Float("h"), p.Float("lean")}
@@ -155,10 +156,7 @@ func TestFilletRibFootSweep(t *testing.T) {
 			length += sg[1].Minus(sg[0]).Magnitude()
 		}
 		tol := 0.0003 * r
-		srf.SetMaxSegments(400)
-		defer srf.SetMaxSegments(20)
-		srf.SetChordTolMm(tol)
-		sh := rb.shell()
+		sh := rb.shell(srf.Tol(tol, 400))
 		before := meshVolume(sh)
 		if err := topo.FilletEdges(sh, segs, r, 1<<30); err != nil {
 			return err
@@ -192,9 +190,8 @@ func TestFilletRibFootSweep(t *testing.T) {
 // mitre of two. A box cut through the fillet there, and the same box
 // kept, are sound and together hold what the rib held.
 func TestFilletGrownFaceCut(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
-	srf.SetChordTolMm(0.002)
+	t.Parallel()
+	tol := srf.Tol(0.002, 20)
 	rb := rib{10, 0}
 	sides, ends := rb.foot()
 	gray := core.NewRGBA(100, 100, 100, 255)
@@ -202,7 +199,7 @@ func TestFilletGrownFaceCut(t *testing.T) {
 		name string
 		segs [][2]geom.Vector
 	}{{"sides", sides}, {"all", append(append([][2]geom.Vector{}, sides...), ends...)}} {
-		sh := rb.shell()
+		sh := rb.shell(tol)
 		if err := topo.FilletEdges(sh, c.segs, 2, 1<<30); err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -210,7 +207,7 @@ func TestFilletGrownFaceCut(t *testing.T) {
 		// Across the side's fillet where it ends on the slope, and
 		// across the corner where the slope's foot begins.
 		for _, x := range [][2]float64{{10.5, 11.5}, {12.8, 15.5}} {
-			var box, cut, kept srf.SShell
+			box, cut, kept := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
 			box.MakePrism([]geom.Vector{v(x[0], -4, 0.4), v(x[1], -4, 0.4), v(x[1], 1.5, 0.4), v(x[0], 1.5, 0.4)},
 				v(0, 0, 0), v(0, 0, 8), gray)
 			cut.MakeFromDifferenceOf(sh, &box)

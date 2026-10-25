@@ -1,5 +1,5 @@
 // The draft of path_draft_sides.script, made by a script
-// (TestPathEquivalenceDraftSides): path_draft's extrusion with the
+// (TestPathEquivalence/draft_sides): path_draft's extrusion with the
 // draft on the two sides the mouse picks, leaning from its far end
 // (roadmap 28.2).
 package main

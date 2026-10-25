@@ -1,5 +1,5 @@
 # What the mouse hovers over request/ttf_text/normal.slvs, in two views.
-load request/ttf_text/normal.slvs
+load tlspr/golden/request/ttf_text/normal.tlspr
 view default
 hovergrid 20
 view rotated

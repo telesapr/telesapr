@@ -25,7 +25,8 @@ func named(sh *srf.SShell) *srf.SShell {
 }
 
 func TestSheetsOfCylinder(t *testing.T) {
-	sh := named(cylinder(5, 10))
+	t.Parallel()
+	sh := named(cylinder(5, 10, srf.Tolerance{}))
 	tp := build(t, sh)
 	if len(tp.Faces) != 6 || len(tp.Sheets) != 3 {
 		t.Fatalf("%d patches in %d sheets, want 6 in 3", len(tp.Faces), len(tp.Sheets))
@@ -88,7 +89,8 @@ func TestSheetsOfCylinder(t *testing.T) {
 }
 
 func TestSheetsOfPlateWithHole(t *testing.T) {
-	sh := plateWithHole(4, 5)
+	t.Parallel()
+	sh := plateWithHole(4, 5, srf.Tolerance{})
 	// The hole's patches come from the tool, with no identity; give
 	// them one, as the circle that cut it would.
 	for i := range sh.Surface {
@@ -125,7 +127,8 @@ func TestSheetsOfPlateWithHole(t *testing.T) {
 // TestNoSeamAtAngle gives every face of a box one identity: faces that
 // meet at an angle are not one sheet, whatever they carry.
 func TestNoSeamAtAngle(t *testing.T) {
-	sh := box()
+	t.Parallel()
+	sh := box(srf.Tolerance{})
 	for i := range sh.Surface {
 		sh.Surface[i].Face = 1
 	}

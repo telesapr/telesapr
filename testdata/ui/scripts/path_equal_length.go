@@ -1,6 +1,6 @@
 // A point as far from a line segment as another line segment is long,
 // as path_equal_length.script makes it with the mouse
-// (TestPathEquivalenceEqualLength).
+// (TestPathEquivalence/equal_length).
 package main
 
 import . "github.com/telesapr/telesapr/pkg/script/api"

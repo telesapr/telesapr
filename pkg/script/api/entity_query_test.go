@@ -8,6 +8,7 @@ import (
 // A point is coincident while a constraint says so, and not after the
 // constraint is taken away.
 func TestEntityIsCoincident(t *testing.T) {
+	t.Parallel()
 	d := New()
 	a := d.Sketch.Point(V(0, 0, 0))
 	b := d.Sketch.Point(V(3, 4, 0))
@@ -36,6 +37,7 @@ func TestEntityIsCoincident(t *testing.T) {
 // An entity is drawn while its group is shown and View > Show lets it
 // be, as the window draws it.
 func TestEntityVisible(t *testing.T) {
+	t.Parallel()
 	d := New()
 	line := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
 	if !line.Visible() {
@@ -55,6 +57,7 @@ func TestEntityVisible(t *testing.T) {
 // The section view names the plane it cuts by, as its screen does: a
 // workplane by its group, a face by the group it is of.
 func TestSectionPlaneName(t *testing.T) {
+	t.Parallel()
 	d := New()
 	d.Sketch.Rect(V(0, 0, 0), V(20, 10, 0))
 	d.Features.Extrude(10, "plate")

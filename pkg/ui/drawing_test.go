@@ -33,6 +33,7 @@ func drawingModel(t *testing.T) (*Application, *api.Doc) {
 // below and the left view on the right. The scale fitted is the largest
 // standard one at which the views fit above the title block.
 func TestDrawingLayout(t *testing.T) {
+	t.Parallel()
 	ss, _ := drawingModel(t)
 	for _, c := range []struct {
 		first bool
@@ -68,6 +69,7 @@ func TestDrawingLayout(t *testing.T) {
 // mm, the hole's hidden edges are dashed in the front view, the title
 // block holds its fields, and the same drawing writes the same bytes.
 func TestExportDrawing(t *testing.T) {
+	t.Parallel()
 	ss, doc := drawingModel(t)
 	d := doc.Drawing.Get()
 	d.Title, d.Number, d.Hidden = "BRACKET", "TS-001", true
@@ -123,6 +125,7 @@ func TestExportDrawing(t *testing.T) {
 // face is hatched, its plane drawn dashed on the front and right views,
 // the detail's circle on the front view and about the detail.
 func TestDrawingSectionDetail(t *testing.T) {
+	t.Parallel()
 	ss, _ := drawingModel(t)
 	plain := &sketch.Drawing{Sheet: "A2", Hidden: false}
 	base, _, _, err := ss.DrawingSheet(plain)
@@ -186,6 +189,7 @@ func TestDrawingSectionDetail(t *testing.T) {
 // edge's length with it. The hole taken away, its dimension can't be
 // measured, and says why; the others still can.
 func TestDrawingDimensions(t *testing.T) {
+	t.Parallel()
 	ss, doc := drawingModel(t)
 	var block, hole api.Group
 	for _, g := range doc.Groups() {
@@ -255,6 +259,7 @@ func TestDrawingDimensions(t *testing.T) {
 // an edge outside the detail refused. Faces seen face on, and faces not
 // parallel, are refused too. The faces are saved and read back.
 func TestDrawingDimensionsViewsFaces(t *testing.T) {
+	t.Parallel()
 	ss, doc := drawingModel(t)
 	var hole api.Group
 	for _, g := range doc.Groups() {

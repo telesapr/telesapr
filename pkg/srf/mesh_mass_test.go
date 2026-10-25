@@ -15,7 +15,7 @@ func TestMeshMassCube(t *testing.T) {
 	t.Parallel()
 	o := geom.Vector{X: 1e4, Y: -3e3, Z: 250}
 	const s = 2.0
-	mm := cubeMesh(o, s).Mass()
+	mm := boxMesh(o, o.Plus(geom.Vector{X: s, Y: s, Z: s})).Mass()
 	if math.Abs(mm.Volume-s*s*s) > 1e-9 {
 		t.Errorf("volume %g, want %g", mm.Volume, s*s*s)
 	}

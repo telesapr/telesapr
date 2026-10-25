@@ -11,16 +11,17 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
-	"github.com/telesapr/telesapr/pkg/persist/slvs"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// fixture loads a SolveSpace model from testdata, regenerated.
+// fixture opens a model of the corpus, testdata/tlspr/golden,
+// regenerated.
 func fixture(t *testing.T, path string) *sketch.Sketch {
 	t.Helper()
-	doc, err := slvs.LoadFile(filepath.Join("..", "..", "testdata", filepath.FromSlash(path)))
+	doc, err := tlspr.LoadFile(fixtures.Path("tlspr/golden/" + path))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +82,7 @@ func curvesOf(sk *sketch.Sketch) (srf.SEdgeList, srf.SBezierList) {
 // format, through NewWriter, and checks each file's shape.
 func TestVectorFormats(t *testing.T) {
 	t.Parallel()
-	sk := fixture(t, "constraint/diameter/normal.slvs")
+	sk := fixture(t, "constraint/diameter/normal.tlspr")
 	dir := t.TempDir()
 	for _, tc := range []struct {
 		ext   string
@@ -140,7 +141,7 @@ func TestVectorFormats(t *testing.T) {
 // formats that hold one.
 func TestVectorOptions(t *testing.T) {
 	t.Parallel()
-	sk := fixture(t, "group/translate_nd/normal.slvs")
+	sk := fixture(t, "group/translate_nd/normal.tlspr")
 	g := sk.Group(sk.ActiveGroup())
 	g.GenerateDisplayItems(sk)
 	dir := t.TempDir()
@@ -189,7 +190,7 @@ func TestVectorOptions(t *testing.T) {
 // TestMeshFormats writes a solid's mesh as OBJ, three.js and VRML.
 func TestMeshFormats(t *testing.T) {
 	t.Parallel()
-	sk := fixture(t, "group/translate_nd/normal.slvs")
+	sk := fixture(t, "group/translate_nd/normal.tlspr")
 	g := sk.Group(sk.ActiveGroup())
 	g.GenerateDisplayItems(sk)
 	m := &g.DisplayMesh
@@ -242,7 +243,7 @@ func TestMeshFormatsEmpty(t *testing.T) {
 // TestStep writes a solid as STEP, and refuses a group without one.
 func TestStep(t *testing.T) {
 	t.Parallel()
-	sk := fixture(t, "group/translate_nd/normal.slvs")
+	sk := fixture(t, "group/translate_nd/normal.tlspr")
 	g := sk.Group(sk.ActiveGroup())
 	var out bytes.Buffer
 	for _, one := range []bool{true, false} {
@@ -256,7 +257,7 @@ func TestStep(t *testing.T) {
 			t.Errorf("one surface per face %v: %d bytes", one, out.Len())
 		}
 	}
-	flat := fixture(t, "constraint/diameter/normal.slvs")
+	flat := fixture(t, "constraint/diameter/normal.tlspr")
 	if err := WriteStep(&out, flat, flat.Group(flat.ActiveGroup()), options(nil)); err == nil || !strings.Contains(err.Error(), "surfaces") {
 		t.Errorf("a sketch without a solid: %v", err)
 	}
@@ -268,7 +269,7 @@ func TestDxfDimensions(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	for _, name := range []string{"pt_pt_distance", "pt_line_distance", "diameter", "angle", "comment"} {
-		sk := fixture(t, "constraint/"+name+"/normal.slvs")
+		sk := fixture(t, "constraint/"+name+"/normal.tlspr")
 		if len(sk.Constraints) == 0 {
 			t.Fatalf("%s has no constraints", name)
 		}
@@ -298,7 +299,7 @@ func TestDxfDimensions(t *testing.T) {
 		}
 	}
 	// A diameter shown as a radius.
-	sk := fixture(t, "constraint/diameter/normal.slvs")
+	sk := fixture(t, "constraint/diameter/normal.tlspr")
 	sk.Constraints[0].Other = true
 	path := filepath.Join(dir, "radius.dxf")
 	out, err := NewWriter(path, sk, options(nil))

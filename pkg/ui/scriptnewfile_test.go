@@ -9,6 +9,7 @@ import (
 // rather than asking (nobody would answer) or dropping them; after
 // ForgetChanges it runs, as after "Don't Save".
 func TestScriptNewFileKeepsUnsavedChanges(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	got := scriptConsole(t, ss,
 		`doc.Sketch.Line(V(0, 0, 0), V(10, 0, 0))`,

@@ -1,5 +1,5 @@
 // The wrap of path_wrap.script, made by a script
-// (TestPathEquivalenceWrap): a rectangle lathed into a cylinder about its
+// (TestPathEquivalence/wrap): a rectangle lathed into a cylinder about its
 // lower edge, a sketch in a workplane through a corner of the
 // rectangle, and a small rectangle in it raised from the cylinder the
 // mouse picks by the height the menu starts with.

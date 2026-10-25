@@ -7,13 +7,13 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
-	"github.com/telesapr/telesapr/pkg/persist/slvs"
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 func TestFindCommands(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	labels := ss.CommandLabels()
 	if len(labels) < 100 || labels[0] != "File > New" {
@@ -56,6 +56,7 @@ func TestFindCommands(t *testing.T) {
 }
 
 func TestRunCommand(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	if err := ss.RunCommand("view > dimension units > dimensions in inches"); err != nil {
 		t.Fatal(err)
@@ -87,6 +88,7 @@ func TestRunCommand(t *testing.T) {
 // The search screen: Enter lists, Enter again runs the first; a single
 // match runs at once.
 func TestCommandSearchScreen(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	tw := ss.TW
 	w := tw.window.(*headless.Window)
@@ -135,13 +137,10 @@ func TestCommandSearchScreen(t *testing.T) {
 
 // The measure mode labels what the selection measures.
 func TestMeasureMode(t *testing.T) {
-	path := filepath.Join("..", "..", "testdata", "request", "line_segment", "normal.slvs")
+	t.Parallel()
+	path := filepath.Join("..", "..", "testdata", "tlspr", "golden", "request", "line_segment", "normal.tlspr")
 	ss, _ := newTestApp(t)
-	doc, err := slvs.LoadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	ss.LoadSketchForTest(doc.Sketch, path)
+	loadModel(t, ss, path)
 	var line *core.Entity
 	for i := range ss.SK.Entities {
 		if e := &ss.SK.Entities[i]; e.Type == core.EntityLineSegment {
@@ -194,6 +193,7 @@ func TestMeasureMode(t *testing.T) {
 // says which parameters now count in the new unit, sets the unit of new
 // documents, and a file opens in its own unit.
 func TestDocumentUnitsInterface(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	sk := ss.SK
 	if err := sk.AddParameter("w", "0.5"); err != nil {
@@ -265,6 +265,7 @@ func TestDocumentUnitsInterface(t *testing.T) {
 // first in the table would take it and the other's shortcut, though
 // shown in its menu, would do nothing.
 func TestAcceleratorsDistinct(t *testing.T) {
+	t.Parallel()
 	seen := map[int]string{}
 	check := func(accel int, label string) {
 		if accel == 0 {
@@ -284,6 +285,7 @@ func TestAcceleratorsDistinct(t *testing.T) {
 }
 
 func TestRedoCtrlShiftZ(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	ss.UndoRemember()
 	ss.SK.Groups[len(ss.SK.Groups)-1].Name = "changed"
@@ -302,6 +304,7 @@ func TestRedoCtrlShiftZ(t *testing.T) {
 // menus as they were still finds each entry that moved, and that no
 // former label is now the label of a different entry.
 func TestFormerCommandLabels(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	byCmd := map[Command]string{}
 	for _, e := range ss.commandEntries() {
@@ -326,6 +329,7 @@ func TestFormerCommandLabels(t *testing.T) {
 }
 
 func TestViewShowMenu(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	gw := ss.GW
 	item := func(cmd Command) bool {

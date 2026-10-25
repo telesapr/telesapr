@@ -11,13 +11,13 @@ import (
 )
 
 // lathedProfile is the solid lathed a full turn about the z axis from
-// the closed polygon p in the xz plane.
-func lathedProfile(p []geom.Vector) *SShell {
+// the closed polygon p in the xz plane, at tol.
+func lathedProfile(p []geom.Vector, tol Tolerance) *SShell {
 	sbls := &SBezierLoopSet{Normal: geom.Vector{Y: 1}, Point: p[0]}
 	for i := range p {
 		sbls.Outer.Curves = append(sbls.Outer.Curves, SBezierFrom2(p[i], p[(i+1)%len(p)]))
 	}
-	var sh SShell
+	sh := SShell{Tol: tol}
 	sh.MakeFromRevolutionOf(sbls, geom.Vector{}, geom.Vector{Z: 1}, core.RGBA{}, noFaces{})
 	return &sh
 }
@@ -36,13 +36,13 @@ func arcXZ(c geom.Vector, r, a0, a1 float64) SBezier {
 
 // arcBand is the slab between the arcs of radius r0 and r1 about c in
 // the xz plane, from angle a0 to a1, extruded w either side of y = 0:
-// a teapot's handle where it meets the pot.
-func arcBand(c geom.Vector, r0, r1, a0, a1, w float64) *SShell {
+// a teapot's handle where it meets the pot. It is built at tol.
+func arcBand(c geom.Vector, r0, r1, a0, a1, w float64, tol Tolerance) *SShell {
 	in, out := arcXZ(c, r0, a0, a1), arcXZ(c, r1, a0, a1)
 	out.Reverse()
 	sbls := &SBezierLoopSet{Normal: geom.Vector{Y: -1}, Point: in.Start()}
 	sbls.Outer.Curves = []SBezier{in, SBezierFrom2(in.Finish(), out.Start()), out, SBezierFrom2(out.Finish(), in.Start())}
-	var sh SShell
+	sh := SShell{Tol: tol}
 	sh.MakeFromExtrusionOf(sbls, geom.Vector{Y: -w}, geom.Vector{Y: w}, core.RGBA{})
 	return &sh
 }
@@ -52,7 +52,8 @@ func arcBand(c geom.Vector, r0, r1, a0, a1, w float64) *SShell {
 // the lathe's seam, the half plane y = 0, x > 0 (roadmap 24.3, from
 // drawing a teapot through the MCP server).
 func TestBandOverLatheSeamSweep(t *testing.T) {
-	sweepChordTol(t)
+	t.Parallel()
+	tol := sweepTol()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Floats("cz", 5, 12, 20),
@@ -62,12 +63,13 @@ func TestBandOverLatheSeamSweep(t *testing.T) {
 		},
 		MaxFailRate: latheSeamMaxFailRate,
 		Sample:      20,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
-		pot := lathedProfile([]geom.Vector{{X: 5}, {X: 8}, {X: 4, Z: 30}, {X: 1, Z: 30}})
+		pot := lathedProfile([]geom.Vector{{X: 5}, {X: 8}, {X: 4, Z: 30}, {X: 1, Z: 30}}, tol)
 		a := p.Float("angle") * math.Pi / 180
-		band := arcBand(geom.Vector{X: p.Float("cx"), Z: p.Float("cz")}, p.Float("r"), p.Float("r")+1.5, a-0.6, a+0.6, 1.5)
-		var out SShell
+		band := arcBand(geom.Vector{X: p.Float("cx"), Z: p.Float("cz")}, p.Float("r"), p.Float("r")+1.5, a-0.6, a+0.6, 1.5, tol)
+		out := SShell{Tol: tol}
 		out.MakeFromBoolean(pot, band, SurfaceUnion)
 		if out.BooleanFailed || !meshIsSound(&out) {
 			return errUnsound(out.BooleanFailed)
@@ -94,10 +96,12 @@ const latheSeamMaxFailRate = 0
 // circle crosses a seam that no surface crosses: every one of those
 // failed until the circle was split at the seams (fuseCoplanarSeam).
 func TestBoreToLathedTipSweep(t *testing.T) {
-	sweepChordTol(t)
+	t.Parallel()
+	tol := sweepTol()
 	grid := boreTipGrid()
 	grid.MaxFailRate = boreTipMaxFailRate
-	grid.Run(boreToLathedTip).Require(t)
+	grid.Parallel = true
+	grid.Run(boreToLathedTipAt(tol)).Require(t)
 }
 
 // boreTipGrid is TestBoreToLathedTipSweep's grid, its allowances unset.
@@ -113,21 +117,24 @@ func boreTipGrid() sweep.Grid {
 	}
 }
 
-// boreToLathedTip bores the spout of TestBoreToLathedTipSweep at p.
-func boreToLathedTip(p sweep.Point) error {
-	q := geom.QuaternionFromAxisAngle(geom.Vector{X: 0.3, Y: 1, Z: 0.1}.WithMagnitude(1), p.Float("tilt")*math.Pi/180)
-	at := geom.Vector{X: 3, Y: 1, Z: 2}
-	tip := p.Float("tip")
-	var spout, bore SShell
-	spout.MakeFromTransformationOf(lathedProfile([]geom.Vector{{}, {X: 6}, {X: tip, Z: 20}, {Z: 20}}), at, q, 1)
-	bore.MakeFromTransformationOf(lathedTube(0, math.Min(p.Float("bore"), tip*0.95), -5, 20),
-		at.Plus(q.Rotate(geom.Vector{X: p.Float("off")})), q, 1)
-	var out SShell
-	out.MakeFromBoolean(&spout, &bore, SurfaceDiff)
-	if out.BooleanFailed || !meshIsSound(&out) {
-		return errUnsound(out.BooleanFailed)
+// boreToLathedTipAt bores the spout of TestBoreToLathedTipSweep at a
+// point, the solids built at tol.
+func boreToLathedTipAt(tol Tolerance) func(p sweep.Point) error {
+	return func(p sweep.Point) error {
+		q := geom.QuaternionFromAxisAngle(geom.Vector{X: 0.3, Y: 1, Z: 0.1}.WithMagnitude(1), p.Float("tilt")*math.Pi/180)
+		at := geom.Vector{X: 3, Y: 1, Z: 2}
+		tip := p.Float("tip")
+		spout, bore := SShell{Tol: tol}, SShell{Tol: tol}
+		spout.MakeFromTransformationOf(lathedProfile([]geom.Vector{{}, {X: 6}, {X: tip, Z: 20}, {Z: 20}}, tol), at, q, 1)
+		bore.MakeFromTransformationOf(lathedTube(0, math.Min(p.Float("bore"), tip*0.95), -5, 20, tol),
+			at.Plus(q.Rotate(geom.Vector{X: p.Float("off")})), q, 1)
+		out := SShell{Tol: tol}
+		out.MakeFromBoolean(&spout, &bore, SurfaceDiff)
+		if out.BooleanFailed || !meshIsSound(&out) {
+			return errUnsound(out.BooleanFailed)
+		}
+		return nil
 	}
-	return nil
 }
 
 // TestMendCrossings bores the spout of TestBoreToLathedTipSweep where
@@ -135,13 +142,14 @@ func boreToLathedTip(p sweep.Point) error {
 // faces, each on its own, cross where the bore's wall is a thin lens,
 // and the shell's mesh, mended, is sound (roadmap K4).
 func TestMendCrossings(t *testing.T) {
-	sweepChordTol(t)
+	t.Parallel()
+	tol := sweepTol()
 	q := geom.QuaternionIdentity
 	at := geom.Vector{X: 3, Y: 1, Z: 2}
-	var spout, bore SShell
-	spout.MakeFromTransformationOf(lathedProfile([]geom.Vector{{}, {X: 6}, {X: 1.2, Z: 20}, {Z: 20}}), at, q, 1)
-	bore.MakeFromTransformationOf(lathedTube(0, 1, -5, 20), at.Plus(geom.Vector{X: 0.3}), q, 1)
-	var out SShell
+	spout, bore := SShell{Tol: tol}, SShell{Tol: tol}
+	spout.MakeFromTransformationOf(lathedProfile([]geom.Vector{{}, {X: 6}, {X: 1.2, Z: 20}, {Z: 20}}, tol), at, q, 1)
+	bore.MakeFromTransformationOf(lathedTube(0, 1, -5, 20, tol), at.Plus(geom.Vector{X: 0.3}), q, 1)
+	out := SShell{Tol: tol}
 	out.MakeFromBoolean(&spout, &bore, SurfaceDiff)
 	if out.BooleanFailed {
 		t.Fatal("the Boolean failed")

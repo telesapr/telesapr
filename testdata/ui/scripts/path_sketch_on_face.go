@@ -1,5 +1,5 @@
 // The sketch on a face of path_sketch_on_face.script, made by a script
-// (TestPathEquivalenceSketchOnFace): the extrusion of path_extrude with
+// (TestPathEquivalence/sketch_on_face): the extrusion of path_extrude with
 // a sketch on the top face the mouse picks.
 package main
 

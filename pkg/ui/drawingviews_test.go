@@ -8,6 +8,7 @@ import (
 // views, sections and details go, through the same Drawing calls a
 // script reaches, each change one step of undo.
 func TestDrawingScreenViews(t *testing.T) {
+	t.Parallel()
 	ss, doc := drawingModel(t)
 	tw := ss.TW
 	ss.MenuDrawingSheet()

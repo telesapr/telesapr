@@ -1,5 +1,5 @@
 // The model of path_pattern_path.script, made by a script
-// (TestPathEquivalencePathPattern).
+// (TestPathEquivalence/pattern_path).
 package main
 
 import . "github.com/telesapr/telesapr/pkg/script/api"

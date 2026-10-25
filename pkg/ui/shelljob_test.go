@@ -26,6 +26,7 @@ func waitShells(t *testing.T, ss *Application, p interface{ RunDueTimers(int) in
 // stays as it was until the job ends, then is the one a regeneration in
 // full makes; Esc stops a job, leaving the solid out of date.
 func TestBackgroundShells(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	ss.BackgroundShells = true
 	doc := api.NewDoc(ss.ScriptHost())

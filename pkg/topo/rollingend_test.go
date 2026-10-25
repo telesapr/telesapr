@@ -11,9 +11,9 @@ import (
 )
 
 // prism is the 10 x 20 profile at z = 0 moved along by: a box, or a
-// leaning prism whose side edges meet its ends at a slant.
-func prism(by geom.Vector) *srf.SShell {
-	var sh srf.SShell
+// leaning prism whose side edges meet its ends at a slant, built at tol.
+func prism(by geom.Vector, tol srf.Tolerance) *srf.SShell {
+	sh := srf.SShell{Tol: tol}
 	sh.MakePrism([]geom.Vector{v(0, 0, 0), v(10, 0, 0), v(10, 20, 0), v(0, 20, 0)}, v(0, 0, 0), by,
 		core.NewRGBA(100, 100, 100, 255))
 	return &sh
@@ -25,7 +25,7 @@ func prism(by geom.Vector) *srf.SShell {
 // ellipses. A fillet of radius r takes r²(1 - π/4) across the edge, a
 // chamfer at distance r takes r²/2, along the edge's whole length.
 func TestRollingBallOpenEdge(t *testing.T) {
-	fine(t, 0.002)
+	t.Parallel()
 	for _, c := range []struct {
 		by   geom.Vector
 		flat bool
@@ -35,7 +35,7 @@ func TestRollingBallOpenEdge(t *testing.T) {
 		{v(8, 6, 30), false}, {v(8, 6, 30), true},
 	} {
 		const r = 2.0
-		sh := prism(c.by)
+		sh := prism(c.by, fine(0.002))
 		before := meshVolume(sh)
 		a := v(10, 0, 0)
 		if err := topo.RollingBallAlong(sh, a, a.Plus(c.by), r, c.flat); err != nil {
@@ -58,7 +58,7 @@ func TestRollingBallOpenEdge(t *testing.T) {
 		// The mesh's chords cut into the round, by their sag over its arc.
 		allow := 1e-6 * want
 		if !c.flat {
-			allow = 2.0 / 3 * srf.ChordTolMm() * (math.Pi - phi) * r * c.by.Magnitude()
+			allow = 2.0 / 3 * 0.002 * (math.Pi - phi) * r * c.by.Magnitude()
 		}
 		t.Logf("along %v flat %t: took %.6g, want %.6g", c.by, c.flat, got, want)
 		if math.Abs(got-want) > allow {

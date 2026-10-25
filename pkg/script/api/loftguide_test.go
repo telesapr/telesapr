@@ -28,6 +28,7 @@ func guidedProfiles(d *Doc, bow float64) (bottom, top Group, guide Entity) {
 // it reaches out to the guide; undone with the loft; the same after
 // saving and loading.
 func TestLoftGuide(t *testing.T) {
+	t.Parallel()
 	d := New()
 	d.Edit.SetChordTolerance(0.005)
 	bottom, top, guide := guidedProfiles(d, 8)
@@ -84,6 +85,7 @@ func TestLoftGuide(t *testing.T) {
 // (the loft runs from the top, so the bottom is its last profile);
 // one drawn after the loft is refused.
 func TestLoftGuideProblems(t *testing.T) {
+	t.Parallel()
 	d := New()
 	bottom := d.Features.SketchIn(d.Workplane("XY"), "bottom")
 	d.Sketch.Circle(V(0, 0, 0), 10)
@@ -113,6 +115,7 @@ func TestLoftGuideProblems(t *testing.T) {
 }
 
 func TestLoftGuideMisuse(t *testing.T) {
+	t.Parallel()
 	d := New()
 	_, top, guide := guidedProfiles(d, 8)
 	bottom := d.Group("bottom")

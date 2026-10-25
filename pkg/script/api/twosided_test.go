@@ -8,6 +8,7 @@ import (
 // A two-sided extrusion keeps its depth and puts the sketch in its
 // middle; it comes back one-sided.
 func TestTwoSidedExtrusion(t *testing.T) {
+	t.Parallel()
 	d := New()
 	d.Sketch.Rect(V(0, 0, 0), V(10, 20, 0))
 	ex := d.Features.Extrude(6, "block")
@@ -37,6 +38,7 @@ func TestTwoSidedExtrusion(t *testing.T) {
 
 // A step and repeat lays its copies on both sides.
 func TestTwoSidedTranslate(t *testing.T) {
+	t.Parallel()
 	d := New()
 	d.Sketch.Circle(V(0, 0, 0), 1)
 	d.Features.Extrude(2, "")
@@ -51,6 +53,7 @@ func TestTwoSidedTranslate(t *testing.T) {
 }
 
 func TestTwoSidedMisuse(t *testing.T) {
+	t.Parallel()
 	d := New()
 	sketch := d.Active()
 	for name, fn := range map[string]func(){

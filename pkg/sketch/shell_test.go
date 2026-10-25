@@ -1,12 +1,10 @@
 package sketch_test
 
 import (
-	"fmt"
 	"math"
 	"strings"
 	"testing"
 
-	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
@@ -14,6 +12,7 @@ import (
 // A 20 x 10 x 10 block open at the top, walls 1 thick: the inside is
 // 18 x 8 x 9.
 func TestShellOpenBox(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 20, 10, 10)
 	top := ex.Solid().FaceAt(api.V(10, 5, 10))
@@ -67,6 +66,7 @@ func TestShellOpenBox(t *testing.T) {
 // hole's walls are walls of the shell too, and its faces come from the
 // Boolean, picked by where they are.
 func TestShellHoledBlock(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	block(d, 0, 0, 30, 30, 10)
 	d.Features.SketchIn(d.Workplane("XY"), "")
@@ -81,6 +81,7 @@ func TestShellHoledBlock(t *testing.T) {
 }
 
 func TestShellRefused(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	ex := block(d, 0, 0, 20, 10, 10)
 	top := ex.Solid().FaceAt(api.V(10, 5, 10))
@@ -140,6 +141,7 @@ func TestShellRefused(t *testing.T) {
 // A shell whose walls stop fitting, as when the solid is made thinner,
 // is a problem on the group, and the solid passes through.
 func TestShellProblem(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	sides := d.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
 	width := d.Constrain.Length(sides[1], 10)
@@ -154,35 +156,26 @@ func TestShellProblem(t *testing.T) {
 	}
 }
 
-// Boxes opened at the top over their sizes and the thickness, through
-// the group, against the inside's volume; the rate allowed, 0, was
-// fixed before the group was built.
-func TestShellGroupSweep(t *testing.T) {
-	grid := sweep.Grid{
-		Axes: []sweep.Axis{
-			sweep.Floats("width", 4, 20),
-			sweep.Floats("height", 3, 30),
-			sweep.Floats("k", 0.05, 0.3, 0.45),
-		},
-		MaxFailRate: 0,
-		Sample:      6,
-	}
-	grid.Run(func(p sweep.Point) error {
-		w, h := p.Float("width"), p.Float("height")
-		thick := p.Float("k") * math.Min(math.Min(w, 10), h)
+// Boxes opened at the top, narrow and thick-walled, tall and thin,
+// and wide and low, through the group, against the inside's volume: the
+// shell group reaches the kernel's, whose grids are pkg/topo's
+// TestShellSweep and TestShellApexSweep.
+func TestShellGroupBoxes(t *testing.T) {
+	t.Parallel()
+	for _, c := range []struct{ w, h, k float64 }{
+		{4, 3, 0.45},
+		{20, 30, 0.05},
+		{20, 3, 0.3},
+	} {
+		thick := c.k * math.Min(math.Min(c.w, 10), c.h)
 		d := api.New()
-		ex := block(d, 0, 0, w, 10, h)
-		sh := d.Features.Shell([]api.Entity{ex.Solid().FaceAt(api.V(w/2, 5, h)).Entity()}, thick, "")
+		ex := block(d, 0, 0, c.w, 10, c.h)
+		sh := d.Features.Shell([]api.Entity{ex.Solid().FaceAt(api.V(c.w/2, 5, c.h)).Entity()}, thick, "")
 		r := sh.Analyze().Check()
-		want := w*10*h - (w-2*thick)*(10-2*thick)*(h-thick)
-		switch {
-		case sh.Problem() != "":
-			return fmt.Errorf("problem: %s", sh.Problem())
-		case !r.Sound():
-			return fmt.Errorf("unsound: %s", r.String())
-		case math.Abs(r.Volume-want) > 1e-6*want:
-			return fmt.Errorf("volume %g, want %g", r.Volume, want)
+		want := c.w*10*c.h - (c.w-2*thick)*(10-2*thick)*(c.h-thick)
+		if sh.Problem() != "" || !r.Sound() || math.Abs(r.Volume-want) > 1e-6*want {
+			t.Errorf("width %g, height %g, thickness %g: %q, %s, want volume %g",
+				c.w, c.h, thick, sh.Problem(), r.String(), want)
 		}
-		return nil
-	}).Require(t)
+	}
 }

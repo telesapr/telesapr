@@ -1,7 +1,7 @@
 # A screw thread made through its screen, then its groups hidden by the box
 # of its row in the group list and the thread suppressed whole from its
 # screen; the same model as path_thread_whole.go makes
-# (TestPathEquivalenceThreadWhole).
+# (TestPathEquivalence/thread_whole).
 key c
 move 300 300
 down L 300 300

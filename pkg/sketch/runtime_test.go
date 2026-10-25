@@ -2,43 +2,26 @@ package sketch_test
 
 import (
 	"math"
-	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
-	"github.com/telesapr/telesapr/pkg/persist/slvs"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
-func fixturesPath(t *testing.T, sub ...string) string {
-	t.Helper()
-	_, file, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatalf("runtime.Caller failed")
-	}
-	dir := filepath.Dir(file)      // .../pkg/sketch
-	pkgDir := filepath.Dir(dir)    // .../pkg
-	goRoot := filepath.Dir(pkgDir) // .../go
-	parts := append([]string{goRoot, "testdata"}, sub...)
-	return filepath.Join(parts...)
-}
-
 func TestRuntimeLookup(t *testing.T) {
-	path := fixturesPath(t, "request", "line_segment", "normal.slvs")
-
-	doc, err := slvs.LoadFile(path)
+	t.Parallel()
+	doc, err := openCorpus("request/line_segment/normal.tlspr")
 	if err != nil {
 		t.Fatalf("load fixture: %v", err)
 	}
-	// The file's saved actPoint/actNormal are what SolveSpace computed; check
-	// the regenerated entities against them.
+	doc.Sketch.GenerateAll()
+	// What the runtime computes of each point and normal is what the
+	// regeneration put in the entity.
 	saved := make(map[core.HEntity]core.Entity, len(doc.Sketch.Entities))
 	for _, e := range doc.Sketch.Entities {
 		saved[e.H] = e
 	}
-	doc.Sketch.GenerateAll()
 
 	rt := sketch.NewRuntime(doc.Sketch)
 
@@ -59,7 +42,7 @@ func TestRuntimeLookup(t *testing.T) {
 	for _, e := range doc.Sketch.Entities {
 		ent, ok := saved[e.H]
 		if !ok {
-			t.Fatalf("entity %v not in the file", e.H)
+			t.Fatalf("entity %v not regenerated", e.H)
 		}
 		switch ent.Type {
 		case core.EntityPointIn3D, core.EntityPointIn2D:
@@ -96,9 +79,8 @@ func TestRuntimeLookup(t *testing.T) {
 }
 
 func TestRuntimeConstraintDistance(t *testing.T) {
-	path := fixturesPath(t, "constraint", "pt_pt_distance", "normal.slvs")
-
-	doc, err := slvs.LoadFile(path)
+	t.Parallel()
+	doc, err := openCorpus("constraint/pt_pt_distance/normal.tlspr")
 	if err != nil {
 		t.Fatalf("load fixture: %v", err)
 	}
@@ -131,9 +113,8 @@ func TestRuntimeConstraintDistance(t *testing.T) {
 }
 
 func TestRuntimeConstraintPointOnCircle(t *testing.T) {
-	path := fixturesPath(t, "constraint", "pt_on_circle", "normal.slvs")
-
-	doc, err := slvs.LoadFile(path)
+	t.Parallel()
+	doc, err := openCorpus("constraint/pt_on_circle/normal.tlspr")
 	if err != nil {
 		t.Fatalf("load fixture: %v", err)
 	}
@@ -177,6 +158,7 @@ func TestRuntimeConstraintPointOnCircle(t *testing.T) {
 }
 
 func TestRuntimeRecalculateEntities(t *testing.T) {
+	t.Parallel()
 	sk := sketch.NewSketch()
 
 	px := core.Param{H: core.HParam{V: 0x00010001}, Val: 3}
@@ -203,6 +185,7 @@ func TestRuntimeRecalculateEntities(t *testing.T) {
 
 // TestRuntimeParamValueMissing verifies ParamValue returns ok=false for missing.
 func TestRuntimeParamValueMissing(t *testing.T) {
+	t.Parallel()
 	sk := sketch.NewSketch()
 	rt := sketch.NewRuntime(sk)
 	_, ok := rt.ParamValue(core.HParam{V: 0x999})
@@ -213,6 +196,7 @@ func TestRuntimeParamValueMissing(t *testing.T) {
 
 // TestRuntimeEntityReturnsUnknown verifies Entity returns error for missing.
 func TestRuntimeEntityReturnsUnknown(t *testing.T) {
+	t.Parallel()
 	sk := sketch.NewSketch()
 	rt := sketch.NewRuntime(sk)
 	_, err := rt.Entity(core.HEntity{V: 0x999})
@@ -223,6 +207,7 @@ func TestRuntimeEntityReturnsUnknown(t *testing.T) {
 
 // TestRuntimeDistanceValueMissing verifies DistanceValue handles missing entity.
 func TestRuntimeDistanceValueMissing(t *testing.T) {
+	t.Parallel()
 	sk := sketch.NewSketch()
 	rt := sketch.NewRuntime(sk)
 	_, err := rt.DistanceValue(core.HEntity{V: 0x999})
@@ -233,6 +218,7 @@ func TestRuntimeDistanceValueMissing(t *testing.T) {
 
 // TestRuntimePointValueMissing verifies PointValue handles missing entity.
 func TestRuntimePointValueMissing(t *testing.T) {
+	t.Parallel()
 	sk := sketch.NewSketch()
 	rt := sketch.NewRuntime(sk)
 	_, err := rt.PointValue(core.HEntity{V: 0x999})
@@ -243,6 +229,7 @@ func TestRuntimePointValueMissing(t *testing.T) {
 
 // TestRuntimeRecalculateEmpty verifies Recalculate on empty sketch.
 func TestRuntimeRecalculateEmpty(t *testing.T) {
+	t.Parallel()
 	sk := sketch.NewSketch()
 	rt := sketch.NewRuntime(sk)
 	rt.RecalculateEntities(false)
@@ -253,6 +240,7 @@ func TestRuntimeRecalculateEmpty(t *testing.T) {
 
 // TestRuntimeGroupAccessors verifies Runtime's accessors on a group.
 func TestRuntimeGroupAccessors(t *testing.T) {
+	t.Parallel()
 	sk := sketch.NewSketch()
 	rt := sketch.NewRuntime(sk)
 	if _, err := rt.Group(core.HGroup{V: 0x999}); err == nil {
@@ -262,6 +250,7 @@ func TestRuntimeGroupAccessors(t *testing.T) {
 
 // TestRuntimeConstraintAccessors verifies Constraint accessors.
 func TestRuntimeConstraintAccessors(t *testing.T) {
+	t.Parallel()
 	sk := sketch.NewSketch()
 	rt := sketch.NewRuntime(sk)
 	if _, err := rt.Constraint(core.HConstraint{V: 0x999}); err == nil {
@@ -271,6 +260,7 @@ func TestRuntimeConstraintAccessors(t *testing.T) {
 
 // TestRuntimeRequestAccessors verifies Request accessors.
 func TestRuntimeRequestAccessors(t *testing.T) {
+	t.Parallel()
 	sk := sketch.NewSketch()
 	rt := sketch.NewRuntime(sk)
 	if _, err := rt.Request(core.HRequest{V: 0x999}); err == nil {
@@ -280,6 +270,7 @@ func TestRuntimeRequestAccessors(t *testing.T) {
 
 // TestRuntimeParamStringValue verifies StringValue for params.
 func TestRuntimeParamStringValue(t *testing.T) {
+	t.Parallel()
 	sk := sketch.NewSketch()
 	sk.Params = append(sk.Params, core.Param{H: core.HParam{V: 1}, Val: 5.0})
 	rt := sketch.NewRuntime(sk)
@@ -291,6 +282,7 @@ func TestRuntimeParamStringValue(t *testing.T) {
 
 // TestRuntimeParamStringValueMissing verifies StringValue for missing.
 func TestRuntimeParamStringValueMissing(t *testing.T) {
+	t.Parallel()
 	sk := sketch.NewSketch()
 	rt := sketch.NewRuntime(sk)
 	_, ok := rt.ParamValue(core.HParam{V: 0x999})

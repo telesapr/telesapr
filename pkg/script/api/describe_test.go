@@ -10,6 +10,7 @@ import (
 // The description of a drawing names every group, request and
 // constraint as the lookups take them, with where things are.
 func TestDescribe(t *testing.T) {
+	t.Parallel()
 	d := New()
 	if err := d.Params.Set("width", "40"); err != nil {
 		t.Fatal(err)
@@ -100,6 +101,7 @@ active group g002-sketch-in-plane, sketch-in-plane: solved, 6 DOF
 // What is wrong shows in the description: a group that didn't solve,
 // one that is left out, an expression without a value, the unit.
 func TestDescribeTrouble(t *testing.T) {
+	t.Parallel()
 	d := New()
 	line := d.Sketch.Line(V(0, 0, 0), V(10, 0, 0))
 	d.Constrain.Length(line, 10)

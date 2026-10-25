@@ -1,6 +1,6 @@
 # A rectangle extruded and copied, then the extrusion deleted from its
 # group screen, which deletes the copies with it; the same model as
-# path_delete_group.go makes (TestPathEquivalenceDeleteGroup).
+# path_delete_group.go makes (TestPathEquivalence/delete_group).
 key r
 move 200 200
 down L 200 200

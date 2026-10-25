@@ -15,6 +15,7 @@ import (
 // B-spline had, no more (package 27.1), and is the same surface.
 // Patches that meet at a crease keep their knot.
 func TestGridSplineSmooth(t *testing.T) {
+	t.Parallel()
 	r := rand.New(rand.NewSource(271))
 	for trial := range 24 {
 		du, dv := 1+r.Intn(4), 1+r.Intn(4)

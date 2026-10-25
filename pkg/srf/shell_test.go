@@ -9,6 +9,7 @@ import (
 
 // TestSShellFindCurveNull verifies nil-safe FindCurve.
 func TestSShellFindCurveNull(t *testing.T) {
+	t.Parallel()
 	var s *SShell
 	if s.FindCurve(core.HSCurve{V: 1}) != nil {
 		t.Errorf("nil shell should return nil")
@@ -17,6 +18,7 @@ func TestSShellFindCurveNull(t *testing.T) {
 
 // TestSShellFindCurveEmpty verifies FindCurve on empty shell.
 func TestSShellFindCurveEmpty(t *testing.T) {
+	t.Parallel()
 	s := &SShell{}
 	if s.FindCurve(core.HSCurve{V: 1}) != nil {
 		t.Errorf("empty shell should return nil")
@@ -25,6 +27,7 @@ func TestSShellFindCurveEmpty(t *testing.T) {
 
 // TestSShellFindCurveRoundTrip verifies FindCurve finds a curve by handle.
 func TestSShellFindCurveRoundTrip(t *testing.T) {
+	t.Parallel()
 	s := &SShell{}
 	s.Curve = append(s.Curve, SCurve{H: core.HSCurve{V: 7}})
 	got := s.FindCurve(core.HSCurve{V: 7})
@@ -38,6 +41,7 @@ func TestSShellFindCurveRoundTrip(t *testing.T) {
 
 // TestSShellFindSurfaceRoundTrip verifies FindSurface by handle.
 func TestSShellFindSurfaceRoundTrip(t *testing.T) {
+	t.Parallel()
 	s := &SShell{}
 	s.Surface = append(s.Surface, SSurface{H: core.HSSurface{V: 3}})
 	got := s.FindSurface(core.HSSurface{V: 3})
@@ -51,6 +55,7 @@ func TestSShellFindSurfaceRoundTrip(t *testing.T) {
 
 // TestSShellFindCurveBySurface verifies surface-to-curves lookup.
 func TestSShellFindCurveBySurface(t *testing.T) {
+	t.Parallel()
 	s := &SShell{}
 	s.Surface = append(s.Surface, SSurface{H: core.HSSurface{V: 5}})
 	s.Curve = append(s.Curve, SCurve{H: core.HSCurve{V: 1}, SurfA: core.HSSurface{V: 5}})
@@ -64,6 +69,7 @@ func TestSShellFindCurveBySurface(t *testing.T) {
 
 // TestSTrimByEntireCurveFromShellNull verifies nil-shell path.
 func TestSTrimByEntireCurveFromShellNull(t *testing.T) {
+	t.Parallel()
 	stb := STrimByEntireCurveFromShell(nil, core.HSCurve{V: 1}, false)
 	if stb.Start != 0 || stb.Finish != 1 {
 		t.Errorf("expected full range, got [%v, %v]", stb.Start, stb.Finish)
@@ -72,6 +78,7 @@ func TestSTrimByEntireCurveFromShellNull(t *testing.T) {
 
 // TestSTrimByEntireCurveFromShellEmpty verifies empty-shell path.
 func TestSTrimByEntireCurveFromShellEmpty(t *testing.T) {
+	t.Parallel()
 	shell := &SShell{}
 	stb := STrimByEntireCurveFromShell(shell, core.HSCurve{V: 1}, false)
 	if stb.Start != 0 || stb.Finish != 1 {
@@ -81,6 +88,7 @@ func TestSTrimByEntireCurveFromShellEmpty(t *testing.T) {
 
 // TestSTrimByEntireCurveFromShellForward verifies forward range.
 func TestSTrimByEntireCurveFromShellForward(t *testing.T) {
+	t.Parallel()
 	shell := &SShell{}
 	shell.Curve = append(shell.Curve, SCurve{
 		H: core.HSCurve{V: 1},
@@ -103,6 +111,7 @@ func TestSTrimByEntireCurveFromShellForward(t *testing.T) {
 
 // TestSTrimByEntireCurveFromShellBackward verifies backward range.
 func TestSTrimByEntireCurveFromShellBackward(t *testing.T) {
+	t.Parallel()
 	shell := &SShell{}
 	shell.Curve = append(shell.Curve, SCurve{
 		H: core.HSCurve{V: 1},

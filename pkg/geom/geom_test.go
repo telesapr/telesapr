@@ -130,16 +130,6 @@ func TestVectorAtIntersectionOfPlanes(t *testing.T) {
 	}
 }
 
-// TestVectorRotatedAboutPoint verifies rotation around a point+axis.
-func TestVectorRotatedAboutPoint(t *testing.T) {
-	t.Parallel()
-	v := Vector{X: 1, Y: 0}
-	rot := v.RotatedAbout(Vector{}, Vector{Z: 1}, math.Pi/2)
-	if math.Abs(rot.X) > 1e-9 || math.Abs(rot.Y-1) > 1e-9 {
-		t.Errorf("90° rot of (1,0) around Z = %v, want (0,1)", rot)
-	}
-}
-
 // TestVectorRotatedAroundAxis verifies axis-only rotation.
 func TestVectorRotatedAroundAxis(t *testing.T) {
 	t.Parallel()

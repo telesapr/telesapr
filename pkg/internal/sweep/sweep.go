@@ -15,6 +15,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/telesapr/telesapr/pkg/internal/par"
 )
 
 // Axis is a parameter and the values it takes.
@@ -93,6 +95,9 @@ type Grid struct {
 	// when a sample is too small to show the grid's rate; 0 is
 	// MaxFailRate.
 	SampleMaxFailRate float64
+	// Parallel runs the points on several goroutines (pkg/internal/par),
+	// for a function that shares nothing it writes between points.
+	Parallel bool
 }
 
 // Size is the number of points in the grid.
@@ -183,13 +188,21 @@ func (g Grid) run(full bool, fn func(p Point) error) Report {
 			stride++
 		}
 	}
-	for k := range n {
-		p := g.At(k * stride % size)
-		if err := call(fn, p); err != nil {
-			r.Failed = append(r.Failed, Failure{Point: p, Err: err})
+	errs := make([]error, n)
+	at := func(k int) { errs[k] = call(fn, g.At(k*stride%size)) }
+	if g.Parallel {
+		par.For(n, at)
+	} else {
+		for k := range n {
+			at(k)
 		}
-		r.Runs++
 	}
+	for k, err := range errs {
+		if err != nil {
+			r.Failed = append(r.Failed, Failure{Point: g.At(k * stride % size), Err: err})
+		}
+	}
+	r.Runs = n
 	r.Elapsed = time.Since(start)
 	return r
 }

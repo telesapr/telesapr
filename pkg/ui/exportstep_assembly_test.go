@@ -16,6 +16,7 @@ import (
 // occurrences of two products, which read back, with their placements,
 // as the model's three solids.
 func TestExportStepAssembly(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	dir := t.TempDir()
 	partDoc := api.New()

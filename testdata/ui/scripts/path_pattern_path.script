@@ -1,6 +1,6 @@
 # A circle and a construction line drawn in one sketch, the circle
 # extruded, and the post repeated along the line, picked with the mouse;
-# the same as path_pattern_path.go makes (TestPathEquivalencePathPattern).
+# the same as path_pattern_path.go makes (TestPathEquivalence/pattern_path).
 key c
 move 200 300
 down L 200 300

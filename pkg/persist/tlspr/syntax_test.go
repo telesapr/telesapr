@@ -7,6 +7,7 @@ import (
 )
 
 func TestParsePrintRoundTrip(t *testing.T) {
+	t.Parallel()
 	src := `telesapr 1
 
 units mm
@@ -44,6 +45,7 @@ value 0x2 -0
 }
 
 func TestParseLexicalDetails(t *testing.T) {
+	t.Parallel()
 	src := "# a comment before the header\r\n" +
 		"telesapr 1 # trailing comment\r\n" +
 		"\r\n" +
@@ -70,6 +72,7 @@ func TestParseLexicalDetails(t *testing.T) {
 }
 
 func TestParseErrors(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct {
 		src, want string
 		pos       Pos
@@ -104,6 +107,7 @@ func TestParseErrors(t *testing.T) {
 }
 
 func TestErrorString(t *testing.T) {
+	t.Parallel()
 	e := &Error{Pos{3, 7}, "boom"}
 	if e.Error() != "3:7: boom" {
 		t.Errorf("got %q", e.Error())
@@ -111,6 +115,7 @@ func TestErrorString(t *testing.T) {
 }
 
 func TestPrintSeparatesStatements(t *testing.T) {
+	t.Parallel()
 	f := &File{Nodes: []*Node{
 		field("telesapr", Word("1")),
 		field("value", Word("0x1"), Word("1")),

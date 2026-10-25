@@ -1,5 +1,5 @@
 // The model of path_insert_group.script, made by a script
-// (TestPathEquivalenceInsertGroup): a group made with an earlier group
+// (TestPathEquivalence/insert_group): a group made with an earlier group
 // active goes into the history after it (roadmap 16.4).
 package main
 

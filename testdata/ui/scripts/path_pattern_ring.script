@@ -1,6 +1,6 @@
 # A post and a construction circle through it drawn in one sketch, the
 # post extruded, and repeated round the circle, picked with the mouse;
-# the same as path_pattern_ring.go makes (TestPathEquivalencePatternRing,
+# the same as path_pattern_ring.go makes (TestPathEquivalence/pattern_ring,
 # roadmap 28.5).
 key c
 move 450 350

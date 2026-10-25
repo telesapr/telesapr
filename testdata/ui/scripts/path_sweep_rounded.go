@@ -1,5 +1,5 @@
 // The sweep of path_sweep_rounded.script, made by a script
-// (TestPathEquivalenceSweepRounded): path_sweep_corner's sweep with its
+// (TestPathEquivalence/sweep_rounded): path_sweep_corner's sweep with its
 // corner rounded at 3 (F4).
 package main
 

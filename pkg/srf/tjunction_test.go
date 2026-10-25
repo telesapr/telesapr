@@ -10,6 +10,7 @@ import (
 // one with a vertex in the middle of the edge they share: a T-junction,
 // which SnapTJunctions mends by splitting the left one's triangle.
 func TestSnapTJunctions(t *testing.T) {
+	t.Parallel()
 	v := func(x, y float64) geom.Vector { return geom.Vector{X: x, Y: y} }
 	up := geom.Vector{Z: 1}
 	tri := func(a, b, c geom.Vector) STriangle { return STriangle{A: a, B: b, C: c, NA: up, NB: up, NC: up} }

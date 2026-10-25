@@ -1,6 +1,6 @@
 # A rectangle's corner, picked with the mouse, named "corner" on the
 # datums screen; the same as path_datums.go makes
-# (TestPathEquivalenceDatums).
+# (TestPathEquivalence/datums).
 key r
 move 200 200
 down L 200 200

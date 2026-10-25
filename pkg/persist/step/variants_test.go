@@ -42,6 +42,7 @@ func mustRead(t *testing.T, text string) *Result {
 func volumeOf(res *Result) float64 { return check.Solid(nil, &res.Mesh).Volume }
 
 func TestInchUnit(t *testing.T) {
+	t.Parallel()
 	text := strings.Replace(shapeText(t, "box"), "#166 = ( LENGTH_UNIT() NAMED_UNIT(*) SI_UNIT(.MILLI.,.METRE.) );",
 		"#166 = ( CONVERSION_BASED_UNIT('INCH',#900) LENGTH_UNIT() NAMED_UNIT(#901) );\n"+
 			"#900 = LENGTH_MEASURE_WITH_UNIT(LENGTH_MEASURE(25.4),#902);\n"+
@@ -62,6 +63,7 @@ func TestInchUnit(t *testing.T) {
 }
 
 func TestMetreUnitAndAngleInDegrees(t *testing.T) {
+	t.Parallel()
 	// A frustum in metres, its half angle in degrees.
 	text := shapeText(t, "cone_frustum")
 	text = strings.Replace(text, "SI_UNIT(.MILLI.,.METRE.)", "SI_UNIT($,.METRE.)", 1)
@@ -121,6 +123,7 @@ const assemblyEntities = `
 `
 
 func TestAssembly(t *testing.T) {
+	t.Parallel()
 	res := mustRead(t, addEntities(shapeText(t, "box"), assemblyEntities))
 	if res.Report.Shapes != 1 || res.Report.Placements != 2 {
 		t.Fatalf("%d shapes placed %d times", res.Report.Shapes, res.Report.Placements)
@@ -154,6 +157,7 @@ func TestAssembly(t *testing.T) {
 }
 
 func TestMirroredPlacement(t *testing.T) {
+	t.Parallel()
 	// A mapped item whose target turns the axes over keeps the mesh's
 	// outside out.
 	text := addEntities(shapeText(t, "box"), `
@@ -175,6 +179,7 @@ func TestMirroredPlacement(t *testing.T) {
 }
 
 func TestColours(t *testing.T) {
+	t.Parallel()
 	text := addEntities(shapeText(t, "box"), `
 #1000 = STYLED_ITEM('',(#1001),#15);
 #1001 = PRESENTATION_STYLE_ASSIGNMENT((#1002));
@@ -209,6 +214,7 @@ func TestColours(t *testing.T) {
 }
 
 func TestUnsupportedSurface(t *testing.T) {
+	t.Parallel()
 	// One face of the box on a surface this reader doesn't know.
 	text := strings.Replace(shapeText(t, "box"), "#52 = PLANE('',#53);", "#52 = FOO_SURFACE('',#53);", 1)
 	res := mustRead(t, text)
@@ -225,6 +231,7 @@ func TestUnsupportedSurface(t *testing.T) {
 }
 
 func TestBadEntity(t *testing.T) {
+	t.Parallel()
 	// A circle with no radius: the faces on it are left out, and the
 	// report names the entity.
 	text := strings.ReplaceAll(shapeText(t, "cylinder"), "CIRCLE('',", "CIRCLE('',$,")
@@ -235,6 +242,7 @@ func TestBadEntity(t *testing.T) {
 }
 
 func TestNoShape(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join("..", "..", "..", "testdata", "step", "corpus", "ap203e2_csg.stp")
 	res, err := ReadFile(path, Options{})
 	if err != nil {
@@ -249,6 +257,7 @@ func TestNoShape(t *testing.T) {
 }
 
 func TestFacetedAndShellModel(t *testing.T) {
+	t.Parallel()
 	// A faceted tetrahedron as a shell based surface model, with no
 	// representation around it, the plane of every face wrong.
 	text := `ISO-10303-21;
@@ -293,6 +302,7 @@ END-ISO-10303-21;
 }
 
 func TestBrepWithVoids(t *testing.T) {
+	t.Parallel()
 	// A box with a box-shaped void: the inner shell is written turned
 	// inside out.
 	outer := shapeText(t, "box")
@@ -324,6 +334,7 @@ func TestBrepWithVoids(t *testing.T) {
 }
 
 func TestReadRecovers(t *testing.T) {
+	t.Parallel()
 	if _, err := Read([]byte("not step"), Options{}); err == nil {
 		t.Error("no error for a file that isn't STEP")
 	}

@@ -97,6 +97,7 @@ func TestPackedModel(t *testing.T) {
 
 // A pack whose file would be written outside its folder is refused.
 func TestPackedModelOutside(t *testing.T) {
+	t.Parallel()
 	var b bytes.Buffer
 	zw := zip.NewWriter(&b)
 	w, _ := zw.Create("../evil.tlspr")
@@ -115,6 +116,7 @@ func TestPackedModelOutside(t *testing.T) {
 // anything is read, and one that inflates to more than it declares is
 // refused by the zip reader when it is.
 func TestPackedModelTooLarge(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "big.tlsprz")
 	var b bytes.Buffer
 	zw := zip.NewWriter(&b)

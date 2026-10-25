@@ -10,6 +10,7 @@ import (
 
 // TestGroupGenerateLoopsNoError tests no-panic.
 func TestGroupGenerateLoopsNoError(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	g := &Group{H: core.HGroup{V: 1}, Type: GroupDrawing3D}
 	g.GenerateLoops(sk, NewRuntime(sk))
@@ -17,6 +18,7 @@ func TestGroupGenerateLoopsNoError(t *testing.T) {
 
 // TestGroupGenerateLinkedShell tests the Linked branch.
 func TestGroupGenerateLinkedShell(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	g := &Group{H: core.HGroup{V: 1}, Type: GroupLinked}
 	g.generateLinkedShell(sk)
@@ -29,6 +31,7 @@ func TestGroupGenerateLinkedShell(t *testing.T) {
 
 // TestGroupGenerateLinkedShellWithImportedMesh verifies LINKED group transforms mesh.
 func TestGroupGenerateLinkedShellWithImportedMesh(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	g := &Group{H: core.HGroup{V: 1}, Type: GroupLinked, Scale: 1.0}
 	// Add imported mesh with one triangle.
@@ -43,6 +46,7 @@ func TestGroupGenerateLinkedShellWithImportedMesh(t *testing.T) {
 
 // TestGroupGenerateLinkedShellWithImportedShell verifies LINKED group transforms shell.
 func TestGroupGenerateLinkedShellWithImportedShell(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	g := &Group{H: core.HGroup{V: 1}, Type: GroupLinked, Scale: 1.0}
 	g.ImpShell.Surface = append(g.ImpShell.Surface,
@@ -55,6 +59,7 @@ func TestGroupGenerateLinkedShellWithImportedShell(t *testing.T) {
 
 // TestGroupGenerateLinkedShellEmpty verifies LINKED group with no imported data.
 func TestGroupGenerateLinkedShellEmpty(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	g := &Group{H: core.HGroup{V: 1}, Type: GroupLinked, Scale: 1.0}
 	g.generateLinkedShell(sk)
@@ -65,6 +70,7 @@ func TestGroupGenerateLinkedShellEmpty(t *testing.T) {
 
 // TestGroupParamFloat verifies paramFloat lookup.
 func TestGroupParamFloat(t *testing.T) {
+	t.Parallel()
 	sk := NewSketch()
 	sk.Params = append(sk.Params, core.Param{H: core.HParam{V: 7}, Val: 42.0})
 	got := paramFloat(sk, core.HParam{V: 7})

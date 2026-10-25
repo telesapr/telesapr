@@ -17,6 +17,7 @@ import (
 // centroid riding on the path; sound and exact, a square profile and a
 // round one. The radius is a length in the file, and an undo step.
 func TestSweepRoundedCorner(t *testing.T) {
+	t.Parallel()
 	for _, round := range []bool{false, true} {
 		d := api.New()
 		if round {
@@ -71,6 +72,7 @@ func TestSweepRoundedCorner(t *testing.T) {
 // circle, the volume is the area times the path's length, within the
 // mesh's chords of the curved faces.
 func TestSweepRoundedBesideArc(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	d.Edit.SetChordTolerance(0.002)
 	d.Features.SketchIn(d.Workplane("ZX"), "path")
@@ -105,6 +107,7 @@ func TestSweepRoundedBesideArc(t *testing.T) {
 // for a short run, too small for the profile, which would reach the
 // arc's axis.
 func TestSweepRoundedRefused(t *testing.T) {
+	t.Parallel()
 	for name, c := range map[string]struct {
 		along, r float64
 		want     string
@@ -140,20 +143,23 @@ func TestSweepRoundedRefused(t *testing.T) {
 	}
 }
 
-// TestSweepRoundedSweep rounds corners of several angles with two
-// radii, square and round profiles, and requires sound solids of the
-// area times the rounded path's length. The rate allowed was fixed at
-// none before the rounding was written.
+// TestSweepRoundedSweep sweeps square and round profiles round corners
+// of several angles, mitred (r = 0) or rounded with two radii, and
+// requires sound solids of the area times the rounded path's length.
+// The rate allowed was fixed at none before the mitre was written, and
+// again before the rounding was.
 func TestSweepRoundedSweep(t *testing.T) {
+	t.Parallel()
 	grid := sweep.Grid{
+		Parallel: true,
 		Axes: []sweep.Axis{
 			sweep.Strings("profile", "square", "circle"),
 			sweep.Floats("angle", 20, 45, 90, 120, 150),
-			sweep.Floats("r", 2, 5),
+			sweep.Floats("r", 0, 2, 5),
 			sweep.Floats("along", 6, 20),
 		},
 		MaxFailRate: 0,
-		Sample:      12,
+		Sample:      16,
 	}
 	grid.Run(func(p sweep.Point) error {
 		d := api.New()
@@ -170,7 +176,9 @@ func TestSweepRoundedSweep(t *testing.T) {
 			area = math.Pi * 2.25
 		}
 		s := d.Features.Sweep(path, "")
-		s.AsSweep().SetCornerRadius(r)
+		if r > 0 {
+			s.AsSweep().SetCornerRadius(r)
+		}
 		cut := r * math.Tan(th/2)
 		if cut >= along-1e-6 || cut >= 10-1e-6 {
 			if !strings.Contains(s.Problem(), "too large") {
@@ -181,10 +189,13 @@ func TestSweepRoundedSweep(t *testing.T) {
 		rr := s.Analyze().Check()
 		want := area * (10 + along - 2*cut + r*th)
 		// The square's sides round the bend are curved, and their mesh
-		// is chords of them.
+		// is chords of them; at a mitre they are flat.
 		tol := 5e-4
-		if p.String("profile") == "circle" {
+		switch {
+		case p.String("profile") == "circle":
 			tol = 0.005
+		case r == 0:
+			tol = 1e-6
 		}
 		switch {
 		case s.Problem() != "":

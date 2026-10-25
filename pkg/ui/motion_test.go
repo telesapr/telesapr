@@ -13,6 +13,7 @@ import (
 // In the application a motion study saves a picture of each step, of
 // the view the window shows (roadmap 16.3).
 func TestMotionStudyPictures(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	if err := doc.Params.Set("w", "20"); err != nil {

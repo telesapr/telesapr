@@ -33,6 +33,7 @@ func fieldsOf(g *sketch.Group) optionFields {
 // density and suppress choices and the script's methods for them reach the same
 // Sketch entry points, so they leave the same group.
 func TestGroupOptionsMatchScript(t *testing.T) {
+	t.Parallel()
 	win, ex, rot := buildGroupEditDoc(t)
 	win.TW.shown.group = ex.H
 	win.TW.ScreenChangeGroupOption('w', 0)
@@ -76,6 +77,7 @@ func TestGroupOptionsMatchScript(t *testing.T) {
 // A refused edit of a group that has no such option is reported, and
 // changes nothing.
 func TestGroupOptionsRefused(t *testing.T) {
+	t.Parallel()
 	ss, p := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	doc.Sketch.Rect(api.V(4, -1, 0), api.V(6, 1, 0))
@@ -102,6 +104,7 @@ func TestGroupOptionsRefused(t *testing.T) {
 // them and no others: a step and repeat shows no combine mode, colour
 // or opacity, an extrusion all of them.
 func TestGroupScreenOptionsByKind(t *testing.T) {
+	t.Parallel()
 	ss, ex, rot := buildGroupEditDoc(t)
 	tw := ss.TW
 	show := func(h core.HGroup) {
@@ -131,6 +134,7 @@ func TestGroupScreenOptionsByKind(t *testing.T) {
 // a negative, and is one step of undo; Measure Volume then gives the
 // mass.
 func TestGroupScreenDensity(t *testing.T) {
+	t.Parallel()
 	ss, ex, _ := buildGroupEditDoc(t)
 	tw := ss.TW
 	set := func(text string) {
@@ -167,6 +171,7 @@ func TestGroupScreenDensity(t *testing.T) {
 // Measure Volume lists an assembly's parts with their masses, and says
 // where a density is taken for want of one.
 func TestMeasureVolumeParts(t *testing.T) {
+	t.Parallel()
 	ss, _ := newTestApp(t)
 	doc := api.NewDoc(ss.ScriptHost())
 	doc.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))

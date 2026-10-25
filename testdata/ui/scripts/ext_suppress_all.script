@@ -2,7 +2,7 @@
 # leaves out the shank's sketch, and with it every group that uses it,
 # with nothing deleted. The group list says what is left out and why;
 # a group left out can't be made active; undo brings it all back.
-load thread/bolt_m8x30.slvs
+load thread/bolt_m8x30.tlspr
 tw
 # The shank sketch's screen, and its check box.
 twmove 145 180

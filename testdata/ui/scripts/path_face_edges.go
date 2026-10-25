@@ -1,5 +1,5 @@
 // The chamfer of path_face_edges.script, made by a script
-// (TestPathEquivalenceFaceEdges): the edges of the top face of the
+// (TestPathEquivalence/face_edges): the edges of the top face of the
 // extrusion of path_extrude that the mouse picks, at the distance the
 // menu starts with. A script's document has no window to hold a
 // selection, so it takes the edges SolidFace.Edges gives, which Edit.

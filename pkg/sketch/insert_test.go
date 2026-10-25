@@ -17,6 +17,7 @@ import (
 // round trip keep the history, and the file the active group. Nothing earlier may refer to the
 // inserted group, or to anything after the active group.
 func TestInsertGroup(t *testing.T) {
+	t.Parallel()
 	d := api.New()
 	rect := d.Active()
 	d.Sketch.Rect(api.V(0, 0, 0), api.V(20, 10, 0))

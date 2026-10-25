@@ -4091,6 +4091,7 @@
 					"DecodeTree",
 					"Load",
 					"LoadFile",
+					"LoadFileWith",
 					"LoadPacked"
 				]
 			},
@@ -4184,12 +4185,16 @@
 				"text": "IsPacked reports whether path names a packed model."
 			},
 			"Load": {
-				"decl": "func Load(data []byte, path string) (doc *Document, err error)",
+				"decl": "func Load(data []byte, path string) (*Document, error)",
 				"text": "Load is LoadFile for a file's contents, data, with links relative to path."
 			},
 			"LoadFile": {
 				"decl": "func LoadFile(path string) (*Document, error)",
-				"text": "LoadFile opens a document: it decodes the file, loads what the sketch links, asking through link.LocateMissingFile for a missing file, and regenerates the sketch without solving."
+				"text": "LoadFile opens a document: it decodes the file, loads what the sketch links, a missing file counting as declined, and regenerates the sketch without solving."
+			},
+			"LoadFileWith": {
+				"decl": "func LoadFileWith(path string, o link.Options) (*Document, error)",
+				"text": "LoadFileWith is LoadFile with the options its links are loaded with, which ask the user to find a missing file; the sketch's ReloadAllLinked asks with them too, without the choice to cancel."
 			},
 			"LoadPacked": {
 				"decl": "func LoadPacked(path string) (*Document, error)",
@@ -11501,18 +11506,6 @@
 			"SameShell": {
 				"decl": "func SameShell(a, b *SShell) bool",
 				"text": "SameShell reports whether a and b bound the same solid patch for patch: each surface of b has a surface of a of its own with the same control points and weights, in any order, and trims that start and end at the same points."
-			},
-			"SetChordTolMm": {
-				"decl": "func SetChordTolMm(t float64)",
-				"text": "SetChordTolMm sets DefaultTolerance's chord tolerance; for tests."
-			},
-			"SetMaxSegments": {
-				"decl": "func SetMaxSegments(n int)",
-				"text": "SetMaxSegments sets DefaultTolerance's segment limit; for tests."
-			},
-			"SetMesher": {
-				"decl": "func SetMesher(m Mesher)",
-				"text": "SetMesher sets DefaultTolerance's mesher; for tests."
 			},
 			"SetParallelMode": {
 				"decl": "func SetParallelMode(m ParallelMode)",

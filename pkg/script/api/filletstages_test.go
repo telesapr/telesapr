@@ -17,6 +17,7 @@ import (
 // edges of different radii over an upright left sharp are refused,
 // saying why, marked at the corner.
 func TestFilletStagesScript(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("a long script")
 	}

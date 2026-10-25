@@ -14,9 +14,10 @@ import (
 )
 
 // lathed turns the outline pts, in the XZ plane at x >= 0, a full turn
-// about the z axis.
-func lathed(pts []geom.Vector) *srf.SShell {
-	var sh srf.SShell
+// about the z axis, at the tolerance tol: a lathe's curves take their
+// points when it is built.
+func lathed(pts []geom.Vector, tol srf.Tolerance) *srf.SShell {
+	sh := srf.SShell{Tol: tol}
 	var ls srf.SBezierLoopSet
 	for i := range pts {
 		ls.Outer.Curves = append(ls.Outer.Curves, srf.SBezierFrom2(pts[i], pts[(i+1)%len(pts)]))
@@ -26,20 +27,21 @@ func lathed(pts []geom.Vector) *srf.SShell {
 	return &sh
 }
 
-// frustum is a cone of radius r0 at its foot and r1 at its top, h high.
-func frustum(r0, r1, h float64) *srf.SShell {
-	return lathed([]geom.Vector{v(0, 0, 0), v(r0, 0, 0), v(r1, 0, h), v(0, 0, h)})
+// frustum is a cone of radius r0 at its foot and r1 at its top, h high,
+// lathed at tol.
+func frustum(r0, r1, h float64, tol srf.Tolerance) *srf.SShell {
+	return lathed([]geom.Vector{v(0, 0, 0), v(r0, 0, 0), v(r1, 0, h), v(0, 0, h)}, tol)
 }
 
 // countersunk is a 40 x 40 x 10 plate with a hole through it that
-// widens from radius r0 at its foot to r1 at its top.
-func countersunk(r0, r1 float64) *srf.SShell {
-	var plate, out srf.SShell
+// widens from radius r0 at its foot to r1 at its top, built at tol.
+func countersunk(r0, r1 float64, tol srf.Tolerance) *srf.SShell {
+	plate, out := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
 	plate.MakePrism([]geom.Vector{v(-20, -20, 0), v(20, -20, 0), v(20, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, 10),
 		core.NewRGBA(100, 100, 100, 255))
 	// The tool runs past the plate along the same cone.
 	k := (r1 - r0) / 10
-	tool := lathed([]geom.Vector{v(0, 0, -1), v(r0-k, 0, -1), v(r1+k, 0, 11), v(0, 0, 11)})
+	tool := lathed([]geom.Vector{v(0, 0, -1), v(r0-k, 0, -1), v(r1+k, 0, 11), v(0, 0, 11)}, tol)
 	out.MakeFromDifferenceOf(&plate, tool)
 	return &out
 }
@@ -84,28 +86,26 @@ func unit(x, y float64) [2]float64 {
 // A lathed frustum's top and foot, rounded and chamfered, and a
 // countersunk hole's rim: where a flat face meets a cone.
 func TestFilletCone(t *testing.T) {
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	for _, c := range []struct {
 		name   string
-		sh     func() *srf.SShell
+		sh     func(tol srf.Tolerance) *srf.SShell
 		at     geom.Vector
 		rad, r float64
 		f, g   [2]float64
 		flat   bool
 	}{
 		// The top: in the top's frame, the cone runs out and down.
-		{"top", func() *srf.SShell { return frustum(10, 6, 8) }, v(6*math.Cos(1), 6*math.Sin(1), 8), 6, 1.5, unit(-1, 0), unit(4, -8), false},
-		{"top chamfer", func() *srf.SShell { return frustum(10, 6, 8) }, v(6*math.Cos(1), 6*math.Sin(1), 8), 6, 1.5, unit(-1, 0), unit(4, -8), true},
-		{"overhang", func() *srf.SShell { return frustum(6, 10, 8) }, v(10*math.Cos(1), 10*math.Sin(1), 8), 10, 1, unit(-1, 0), unit(-4, -8), false},
+		{"top", func(tol srf.Tolerance) *srf.SShell { return frustum(10, 6, 8, tol) }, v(6*math.Cos(1), 6*math.Sin(1), 8), 6, 1.5, unit(-1, 0), unit(4, -8), false},
+		{"top chamfer", func(tol srf.Tolerance) *srf.SShell { return frustum(10, 6, 8, tol) }, v(6*math.Cos(1), 6*math.Sin(1), 8), 6, 1.5, unit(-1, 0), unit(4, -8), true},
+		{"overhang", func(tol srf.Tolerance) *srf.SShell { return frustum(6, 10, 8, tol) }, v(10*math.Cos(1), 10*math.Sin(1), 8), 10, 1, unit(-1, 0), unit(-4, -8), false},
 		// The foot, whose flat face looks down: the cone rises in, the axis
 		// pointing down.
-		{"foot", func() *srf.SShell { return frustum(10, 6, 8) }, v(10*math.Cos(1), 10*math.Sin(1), 0), 10, 2, unit(-1, 0), unit(-4, -8), false},
-		{"countersink", func() *srf.SShell { return countersunk(3, 8) }, v(8*math.Cos(1), 8*math.Sin(1), 10), 8, 1, unit(1, 0), unit(-5, -10), false},
+		{"foot", func(tol srf.Tolerance) *srf.SShell { return frustum(10, 6, 8, tol) }, v(10*math.Cos(1), 10*math.Sin(1), 0), 10, 2, unit(-1, 0), unit(-4, -8), false},
+		{"countersink", func(tol srf.Tolerance) *srf.SShell { return countersunk(3, 8, tol) }, v(8*math.Cos(1), 8*math.Sin(1), 10), 8, 1, unit(1, 0), unit(-5, -10), false},
 	} {
 		tol := 0.002 * c.r
-		srf.SetChordTolMm(tol)
-		sh := c.sh()
+		sh := c.sh(srf.Tol(tol, 20))
 		before := meshVolume(sh)
 		if err := topo.FilletPicks(sh, []topo.FilletPick{{At: c.at, Arc: true}}, c.r, 1<<30, c.flat); err != nil {
 			t.Errorf("%s: %v", c.name, err)
@@ -119,14 +119,15 @@ func TestFilletCone(t *testing.T) {
 	}
 }
 
-// onPlate is a frustum standing on a 40 x 40 x 5 plate, joined to it.
-func onPlate(r0, r1, h float64) *srf.SShell {
-	var plate, cone, out srf.SShell
+// onPlate is a frustum standing on a 40 x 40 x 5 plate, joined to it,
+// built at tol.
+func onPlate(r0, r1, h float64, tol srf.Tolerance) *srf.SShell {
+	plate, cone, out := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
 	plate.MakePrism([]geom.Vector{v(-20, -20, 0), v(20, -20, 0), v(20, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, 5),
 		core.NewRGBA(100, 100, 100, 255))
 	// From under the plate's top, along the same cone.
 	k := (r1 - r0) / h
-	cone.MakeFromTransformationOf(frustum(r0-k, r1, h+1), v(0, 0, 4), geom.QuaternionIdentity, 1)
+	cone.MakeFromTransformationOf(frustum(r0-k, r1, h+1, tol), v(0, 0, 4), geom.QuaternionIdentity, 1)
 	out.MakeFromUnionOf(&plate, &cone)
 	return &out
 }
@@ -140,8 +141,7 @@ func TestFilletConeSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
 	}
-	old := srf.ChordTolMm()
-	defer srf.SetChordTolMm(old)
+	t.Parallel()
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
 			sweep.Strings("edge", "top", "foot", "countersink", "on plate"),
@@ -151,6 +151,7 @@ func TestFilletConeSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      12,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		slope, k := p.Float("slope"), p.Float("k")
@@ -158,17 +159,17 @@ func TestFilletConeSweep(t *testing.T) {
 		// The cone's radius changes by slope times its height, 8.
 		r0, h := 8.0, 8.0
 		r1 := r0 + slope*h
-		var build func() *srf.SShell
+		var build func(tol srf.Tolerance) *srf.SShell
 		var at geom.Vector
 		var rad float64
 		var f, g [2]float64
 		sign := 1.0
 		switch p.String("edge") {
 		case "top":
-			build, rad, at = func() *srf.SShell { return frustum(r0, r1, h) }, r1, v(r1*math.Cos(1), r1*math.Sin(1), h)
+			build, rad, at = func(tol srf.Tolerance) *srf.SShell { return frustum(r0, r1, h, tol) }, r1, v(r1*math.Cos(1), r1*math.Sin(1), h)
 			f, g = unit(-1, 0), unit(-slope, -1)
 		case "foot":
-			build, rad, at = func() *srf.SShell { return frustum(r0, r1, h) }, r0, v(r0*math.Cos(1), r0*math.Sin(1), 0)
+			build, rad, at = func(tol srf.Tolerance) *srf.SShell { return frustum(r0, r1, h, tol) }, r0, v(r0*math.Cos(1), r0*math.Sin(1), 0)
 			f, g = unit(-1, 0), unit(slope, -1)
 		case "countersink":
 			// The hole widens upwards, or narrows for a negative slope.
@@ -176,10 +177,10 @@ func TestFilletConeSweep(t *testing.T) {
 			if slope < 0 {
 				lo, hi = hi, lo
 			}
-			build, rad, at = func() *srf.SShell { return countersunk(lo, hi) }, hi, v(hi*math.Cos(1), hi*math.Sin(1), 10)
+			build, rad, at = func(tol srf.Tolerance) *srf.SShell { return countersunk(lo, hi, tol) }, hi, v(hi*math.Cos(1), hi*math.Sin(1), 10)
 			f, g = unit(1, 0), unit(lo-hi, -10)
 		default:
-			build, rad, at = func() *srf.SShell { return onPlate(r0, r1, h) }, r0, v(r0*math.Cos(1), r0*math.Sin(1), 5)
+			build, rad, at = func(tol srf.Tolerance) *srf.SShell { return onPlate(r0, r1, h, tol) }, r0, v(r0*math.Cos(1), r0*math.Sin(1), 5)
 			f, g = unit(1, 0), unit(slope, 1)
 			sign = -1
 		}
@@ -196,11 +197,8 @@ func TestFilletConeSweep(t *testing.T) {
 		// The mesh fine and its segments many: the cone's own chords, before
 		// and after, would else count for more than a small cut.
 		tol := 0.0005
-		srf.SetChordTolMm(tol)
-		srf.SetMaxSegments(1000)
-		defer srf.SetMaxSegments(20)
 		// Built at the tolerance: a lathe's curves take their points then.
-		sh := build()
+		sh := build(srf.Tol(tol, 1000))
 		before := meshVolume(sh)
 		if err := topo.FilletPicks(sh, []topo.FilletPick{{At: at, Arc: true}}, r, 1<<30, flat); err != nil {
 			return err

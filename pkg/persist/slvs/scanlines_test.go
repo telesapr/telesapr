@@ -9,6 +9,7 @@ import (
 // reading: NUL, CR and LF end a line, empty lines don't count, and a
 // line it doesn't know is dropped and flagged.
 func TestScanLinesLikeLoadFromFile(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name       string
 		data       string

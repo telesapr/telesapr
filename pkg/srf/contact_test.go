@@ -53,6 +53,7 @@ func TestLeaningWedgeSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      40,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		h, depth := p.Float("h"), p.Float("depth")
@@ -103,7 +104,9 @@ func TestAlongTangents(t *testing.T) {
 // about the axis through c along y, turned from a circle of four arcs:
 // its seams run round the ring in the plane y = 0 (inside and outside)
 // and along its top and bottom, and across it every quarter turn.
-func torusY(c geom.Vector, big, r float64) *SShell {
+//
+// It is turned at tol.
+func torusY(c geom.Vector, big, r float64, tol Tolerance) *SShell {
 	ctr := c.Plus(geom.Vector{X: big})
 	at := func(a, s float64) geom.Vector {
 		return ctr.Plus(geom.Vector{X: s * math.Cos(a), Y: s * math.Sin(a)})
@@ -116,7 +119,7 @@ func torusY(c geom.Vector, big, r float64) *SShell {
 		b.Weight[1] = math.Cos(h)
 		sbls.Outer.Curves = append(sbls.Outer.Curves, b)
 	}
-	var sh SShell
+	sh := SShell{Tol: tol}
 	sh.MakeFromRevolutionOf(sbls, c, geom.Vector{Y: 1}, core.RGBA{}, noFaces{})
 	return &sh
 }
@@ -142,10 +145,12 @@ func torusY(c geom.Vector, big, r float64) *SShell {
 // than the classification's probe, or ends 1e-5 from the seam's vertex,
 // and three whose trims mesh crossing themselves (roadmap K4).
 func TestHandleOnPotSweep(t *testing.T) {
-	sweepChordTol(t)
+	t.Parallel()
+	tol := sweepTol()
 	grid := handleGrid()
 	grid.MaxFailRate = handleMaxFailRate
-	grid.Run(handleOnPot).Require(t)
+	grid.Parallel = true
+	grid.Run(handleOnPotAt(tol)).Require(t)
 }
 
 // handleGrid is TestHandleOnPotSweep's grid, its allowances unset.
@@ -162,19 +167,22 @@ func handleGrid() sweep.Grid {
 	}
 }
 
-// handleOnPot unites the pot and the ring of TestHandleOnPotSweep at p.
-func handleOnPot(p sweep.Point) error {
-	pot := lathedProfile([]geom.Vector{{}, {X: 30}, {X: 20, Z: 40}, {Z: 40}})
-	ring := torusY(geom.Vector{}, p.Float("big"), p.Float("r"))
-	var handle SShell
-	q := geom.QuaternionFromAxisAngle(geom.Vector{X: 1}, p.Float("tilt")*math.Pi/180)
-	handle.MakeFromTransformationOf(ring, geom.Vector{X: p.Float("cx"), Z: p.Float("z")}, q, 1)
-	var out SShell
-	out.MakeFromBoolean(pot, &handle, SurfaceUnion)
-	if out.BooleanFailed || !meshIsSound(&out) {
-		return errUnsound(out.BooleanFailed)
+// handleOnPotAt unites the pot and the ring of TestHandleOnPotSweep at
+// a point, the solids built at tol.
+func handleOnPotAt(tol Tolerance) func(p sweep.Point) error {
+	return func(p sweep.Point) error {
+		pot := lathedProfile([]geom.Vector{{}, {X: 30}, {X: 20, Z: 40}, {Z: 40}}, tol)
+		ring := torusY(geom.Vector{}, p.Float("big"), p.Float("r"), tol)
+		handle := SShell{Tol: tol}
+		q := geom.QuaternionFromAxisAngle(geom.Vector{X: 1}, p.Float("tilt")*math.Pi/180)
+		handle.MakeFromTransformationOf(ring, geom.Vector{X: p.Float("cx"), Z: p.Float("z")}, q, 1)
+		out := SShell{Tol: tol}
+		out.MakeFromBoolean(pot, &handle, SurfaceUnion)
+		if out.BooleanFailed || !meshIsSound(&out) {
+			return errUnsound(out.BooleanFailed)
+		}
+		return nil
 	}
-	return nil
 }
 
 // TestHandleOnPotSeam unites the pot with two rings of
@@ -183,13 +191,14 @@ func handleOnPot(p sweep.Point) error {
 // crosses both (fuseVertices), in the other the ring dips into the pot's
 // patch beside the seam by less than the chord tolerance (hasSame).
 func TestHandleOnPotSeam(t *testing.T) {
-	sweepChordTol(t)
+	t.Parallel()
+	tol := sweepTol()
 	for _, c := range []struct{ cx, big, r, z float64 }{{-35, 10, 2.5, 15}, {-31, 8, 2.5, 15}} {
-		pot := lathedProfile([]geom.Vector{{}, {X: 30}, {X: 20, Z: 40}, {Z: 40}})
-		var handle SShell
+		pot := lathedProfile([]geom.Vector{{}, {X: 30}, {X: 20, Z: 40}, {Z: 40}}, tol)
+		handle := SShell{Tol: tol}
 		q := geom.QuaternionFromAxisAngle(geom.Vector{X: 1}, 20*math.Pi/180)
-		handle.MakeFromTransformationOf(torusY(geom.Vector{}, c.big, c.r), geom.Vector{X: c.cx, Z: c.z}, q, 1)
-		var out SShell
+		handle.MakeFromTransformationOf(torusY(geom.Vector{}, c.big, c.r, tol), geom.Vector{X: c.cx, Z: c.z}, q, 1)
+		out := SShell{Tol: tol}
 		out.MakeFromBoolean(pot, &handle, SurfaceUnion)
 		if out.BooleanFailed || !meshIsSound(&out) {
 			t.Errorf("%+v: %v", c, errUnsound(out.BooleanFailed))
@@ -207,7 +216,7 @@ const handleMaxFailRate = 0
 // out, of volume 2 pi^2 big r^2.
 func TestTorusVolume(t *testing.T) {
 	t.Parallel()
-	ring := torusY(geom.Vector{X: -31, Z: 20}, 10, 2)
+	ring := torusY(geom.Vector{X: -31, Z: 20}, 10, 2, Tolerance{})
 	var m SMesh
 	ring.TriangulateInto(&m)
 	want := 2 * math.Pi * math.Pi * 10 * 4
@@ -220,7 +229,8 @@ func TestTorusVolume(t *testing.T) {
 // first comes along x to the plane x = 10 + k y, the second leaves it
 // along the first's direction mirrored in the plane. Both are extruded
 // from the same ellipse in that plane, so they share their outlines there.
-func mitredRuns(k float64) (a, b *SShell) {
+// They are extruded at tol.
+func mitredRuns(k float64, tol Tolerance) (a, b *SShell) {
 	at := func(t, s float64) geom.Vector {
 		y, z := s*math.Cos(t), s*math.Sin(t)
 		return geom.Vector{X: 10 + k*y, Y: y, Z: z}
@@ -240,7 +250,7 @@ func mitredRuns(k float64) (a, b *SShell) {
 	in := geom.Vector{X: 1}
 	back := in.ScaledBy(-1)
 	out := back.Minus(n.ScaledBy(2 * back.Dot(n)))
-	a, b = &SShell{}, &SShell{}
+	a, b = &SShell{Tol: tol}, &SShell{Tol: tol}
 	a.MakeFromExtrusionOf(mk(), geom.Vector{}, in.ScaledBy(-8), core.RGBA{})
 	b.MakeFromExtrusionOf(mk(), geom.Vector{}, out.ScaledBy(8), core.RGBA{})
 	return a, b
@@ -253,13 +263,14 @@ func mitredRuns(k float64) (a, b *SShell) {
 // half space and unioned; the cut left the cap a partial face, and caps
 // made whole from the same ellipse unite.
 func TestMitredBarsUnion(t *testing.T) {
-	sweepChordTol(t)
+	t.Parallel()
+	tol := sweepTol()
 	for _, k := range []float64{0, 0.2, 0.5, 1} {
-		a, b := mitredRuns(k)
+		a, b := mitredRuns(k, tol)
 		var ma, mb, m SMesh
 		a.TriangulateInto(&ma)
 		b.TriangulateInto(&mb)
-		var out SShell
+		out := SShell{Tol: tol}
 		out.MakeFromBoolean(a, b, SurfaceUnion)
 		out.TriangulateInto(&m)
 		want := ma.CalculateVolume() + mb.CalculateVolume()
