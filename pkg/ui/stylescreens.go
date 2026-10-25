@@ -166,7 +166,9 @@ func (tw *textWindow) ScreenDeleteStyle(link int, v uint32) {
 		}
 	}
 	tw.GoToScreen(screenListOfStyles)
-	ss.GW.Invalidate(false)
+	// What was drawn in the style is drawn in the one made in its place,
+	// and nothing regenerates to say so: the saved frame is stale.
+	ss.GW.Invalidate(true)
 }
 
 // ScreenChangeStylePatternType sets a style's stipple pattern.
@@ -265,21 +267,12 @@ func (tw *textWindow) ScreenChangeStyleYesNo(link int, v uint32) {
 	ss := tw.ss
 	ss.UndoRemember()
 	s := ss.SK.StyleGet(core.HStyle{V: v})
-	scale := ss.GW.view.Scale
 	switch link {
 	// Units for the width
 	case 'w':
-		if s.WidthAs != core.UnitsMM {
-			s.WidthAs = core.UnitsMM
-			s.Width /= scale
-			s.StippleScale /= scale
-		}
+		ss.SK.SetStyleWidthUnits(s.H, core.UnitsMM)
 	case 'W':
-		if s.WidthAs != core.UnitsPixels {
-			s.WidthAs = core.UnitsPixels
-			s.Width *= scale
-			s.StippleScale *= scale
-		}
+		ss.SK.SetStyleWidthUnits(s.H, core.UnitsPixels)
 
 	// Units for the height
 	case 'g':

@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 
@@ -24,8 +25,8 @@ func TestStyleFields(t *testing.T) {
 	s.SetColor(10, 20, 30)
 	s.SetFillColor(40, 50, 60)
 	s.SetFilled(true)
-	s.SetWidth(2.5)
 	s.SetWidthAs(core.UnitsMM)
+	s.SetWidth(2.5)
 	s.SetStipple(core.StippleDashDot)
 	s.SetStippleScale(3)
 	s.SetTextHeight(9)
@@ -224,11 +225,16 @@ func TestStyleUndoAndMisuse(t *testing.T) {
 		t.Error("the colour is still set after undo")
 	}
 	before := s.Name()
+	width, scale := s.Width(), s.StippleScale()
 	for name, fn := range map[string]func(){
 		"a colour out of range": func() { s.SetColor(0, 0, 300) },
 		"a stipple it has not":  func() { s.SetStipple(core.StipplePattern(99)) },
 		"a width as it is not":  func() { s.SetWidthAs(core.UnitsAs(7)) },
 		"an empty name":         func() { s.SetName("  ") },
+		"a negative width":      func() { s.SetWidth(-1) },
+		"a width not a number":  func() { s.SetWidth(math.NaN()) },
+		"a negative stipple":    func() { s.SetStippleScale(-2) },
+		"an infinite stipple":   func() { s.SetStippleScale(math.Inf(1)) },
 	} {
 		func() {
 			defer func() {
@@ -239,8 +245,8 @@ func TestStyleUndoAndMisuse(t *testing.T) {
 			fn()
 		}()
 	}
-	if s.Name() != before {
-		t.Errorf("the style is named %q", s.Name())
+	if s.Name() != before || s.Width() != width || s.StippleScale() != scale {
+		t.Errorf("the style is named %q, width %g, stipple scale %g", s.Name(), s.Width(), s.StippleScale())
 	}
 	if !strings.Contains(s.String(), s.Name()) {
 		t.Errorf("the style is %q", s)
@@ -268,6 +274,17 @@ func TestStyleTextUnitsAndAlignment(t *testing.T) {
 	s.SetTextHeightAs(core.UnitsPixels)
 	if got := s.TextHeight(); got < 19.999 || got > 20.001 {
 		t.Errorf("a round trip through mm gives %v, want 20", got)
+	}
+	s.SetWidthAs(core.UnitsPixels)
+	s.SetWidth(3)
+	s.SetStippleScale(15)
+	s.SetWidthAs(core.UnitsMM)
+	if s.WidthAs() != core.UnitsMM || s.Width() == 3 || s.StippleScale() == 15 {
+		t.Errorf("width %v, stipple %v as %v: want both converted to mm", s.Width(), s.StippleScale(), s.WidthAs())
+	}
+	s.SetWidthAs(core.UnitsPixels)
+	if w, st := s.Width(), s.StippleScale(); math.Abs(w-3) > 1e-9 || math.Abs(st-15) > 1e-9 {
+		t.Errorf("a round trip through mm gives width %v, stipple %v, want 3 and 15", w, st)
 	}
 	if h, v := s.TextAlign(); h != "center" || v != "center" {
 		t.Errorf("a new style aligns %s, %s", h, v)

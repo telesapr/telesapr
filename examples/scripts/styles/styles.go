@@ -42,8 +42,9 @@ func main() {
 	// goes on top.
 	dimension.SetZIndex(7)
 	dimension.SetColor(200, 30, 30)
-	dimension.SetWidth(0.6)
+	// The unit before the numbers in it: switching it converts them.
 	dimension.SetWidthAs(api.UnitsMM)
+	dimension.SetWidth(0.6)
 	dimension.SetStipple(api.StippleDash)
 	dimension.SetStippleScale(3)
 	// A style may be exported, and a comment in it left out of the

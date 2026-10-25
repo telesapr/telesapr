@@ -290,8 +290,11 @@ func (gw *graphicsWindow) drawEntity(e *core.Entity, how entityDrawAs, canvas re
 	}
 
 	stroke := ss.styleStroke(hs)
-	if (how == entityDrawDefault || how == entityDrawOverlay) && !e.IsNormal() &&
-		e.Type != core.EntityWorkplane && e.Group == gw.activeGroupH() {
+	// Freedom colours only what is drawn in the active group's own
+	// style, and points: a construction line or one given a style keeps
+	// the colour that tells it apart.
+	if (how == entityDrawDefault || how == entityDrawOverlay) && e.Group == gw.activeGroupH() &&
+		(e.IsPoint() || hs.V == core.StyleActiveGrp) {
 		if c, ok := ss.freedomColor(e); ok {
 			stroke.Color = c
 		}

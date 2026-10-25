@@ -6566,7 +6566,7 @@
 					},
 					"SetStippleScale": {
 						"decl": "func (s Style) SetStippleScale(scale float64)",
-						"text": "SetStippleScale sets how far apart the dashes are."
+						"text": "SetStippleScale sets how far apart the dashes are, zero or more. A\nscale too small for the dashes to be a pixel apart draws the line\ncontinuous."
 					},
 					"SetTextAlign": {
 						"decl": "func (s Style) SetTextAlign(horizontal, vertical string)",
@@ -6590,11 +6590,11 @@
 					},
 					"SetWidth": {
 						"decl": "func (s Style) SetWidth(width float64)",
-						"text": "SetWidth sets the line width."
+						"text": "SetWidth sets the line width, zero or more."
 					},
 					"SetWidthAs": {
 						"decl": "func (s Style) SetWidthAs(as core.UnitsAs)",
-						"text": "SetWidthAs measures the width in pixels or in the document's unit."
+						"text": "SetWidthAs measures the width and the stipple width in pixels\n(UnitsPixels) or in millimetres (UnitsMM). Both are converted at the\nview's scale, so the lines keep the look they are drawn with, as the\nstyle screen's pixels and mm links do: set the unit first, then the\nnumbers in it."
 					},
 					"SetZIndex": {
 						"decl": "func (s Style) SetZIndex(index int)",
@@ -8675,6 +8675,10 @@
 					"SetStyleTextVertical": {
 						"decl": "func (sk *Sketch) SetStyleTextVertical(h core.HStyle, o core.TextOrigin)",
 						"text": "SetStyleTextVertical aligns style h's text on the bottom of its anchor (core.TextOriginBot), on the top (core.TextOriginTop) or centred (core.TextOriginNone), leaving the horizontal alignment as it is."
+					},
+					"SetStyleWidthUnits": {
+						"decl": "func (sk *Sketch) SetStyleWidthUnits(h core.HStyle, as core.UnitsAs)",
+						"text": "SetStyleWidthUnits measures style h's line width and stipple width in as, keeping what its lines look like on the screen: both numbers are converted at the view's scale."
 					},
 					"SetSuppressAll": {
 						"decl": "func (sk *Sketch) SetSuppressAll(h core.HGroup, on bool) error",

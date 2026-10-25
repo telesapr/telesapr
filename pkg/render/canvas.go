@@ -2,6 +2,7 @@ package render
 
 import (
 	"image"
+	"math"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -100,6 +101,25 @@ func (s *Stroke) StippleScalePx(c *Camera) float64 {
 		return s.StippleScale * c.Scale
 	}
 	return s.StippleScale
+}
+
+// DashScaleMm is the stipple scale in model millimetres when the stroke
+// is drawn in dashes, and 0 when it is not: for the continuous pattern,
+// for the patterns drawn as a wave (Stroke.Wave), and for a scale whose
+// repeat is not at least a pixel. A file or a script can give any
+// scale, and the dash walk steps by the repeat, so a scale of zero or
+// less never ends it and a tiny one takes millions of steps to draw
+// what would look continuous anyway.
+func (s *Stroke) DashScaleMm(c *Camera) float64 {
+	length := core.StipplePatternLength(s.StipplePattern)
+	if _, wavy := waves[s.StipplePattern]; wavy || s.StipplePattern == core.StippleContinuous || length <= 0 {
+		return 0
+	}
+	scale := s.StippleScaleMm(c)
+	if !(length*scale*c.Scale >= 1) || math.IsInf(scale, 0) {
+		return 0
+	}
+	return scale
 }
 
 // FillPattern is solid, or one of two complementary checkerboards.

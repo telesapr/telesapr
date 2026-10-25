@@ -3,6 +3,7 @@ package api
 import (
 	"cmp"
 	"errors"
+	"math"
 	"slices"
 	"strings"
 
@@ -185,9 +186,9 @@ func (s Style) Width() (width float64) {
 	return width
 }
 
-// SetWidth sets the line width.
+// SetWidth sets the line width, zero or more.
 func (s Style) SetWidth(width float64) {
-	s.change(func(style *core.Style) { style.Width = width })
+	s.change(func(style *core.Style) { style.Width = nonNegative("width", width) })
 }
 
 // WidthAs is whether the width and the stipple width are in pixels or
@@ -197,14 +198,19 @@ func (s Style) WidthAs() (as core.UnitsAs) {
 	return as
 }
 
-// SetWidthAs measures the width in pixels or in the document's unit.
+// SetWidthAs measures the width and the stipple width in pixels
+// (UnitsPixels) or in millimetres (UnitsMM). Both are converted at the
+// view's scale, so the lines keep the look they are drawn with, as the
+// style screen's pixels and mm links do: set the unit first, then the
+// numbers in it.
 func (s Style) SetWidthAs(as core.UnitsAs) {
-	s.change(func(style *core.Style) {
-		if as != core.UnitsPixels && as != core.UnitsMM {
-			fail("a width is in pixels (%d) or in millimetres (%d), not %d",
-				core.UnitsPixels, core.UnitsMM, as)
-		}
-		style.WidthAs = as
+	if as != core.UnitsPixels && as != core.UnitsMM {
+		fail("a width is in pixels (%d) or in millimetres (%d), not %d",
+			core.UnitsPixels, core.UnitsMM, as)
+	}
+	s.d.change(func(sk *sketch.Sketch) {
+		s.get(sk)
+		sk.SetStyleWidthUnits(s.H, as)
 	})
 }
 
@@ -231,9 +237,11 @@ func (s Style) StippleScale() (scale float64) {
 	return scale
 }
 
-// SetStippleScale sets how far apart the dashes are.
+// SetStippleScale sets how far apart the dashes are, zero or more. A
+// scale too small for the dashes to be a pixel apart draws the line
+// continuous.
 func (s Style) SetStippleScale(scale float64) {
-	s.change(func(style *core.Style) { style.StippleScale = scale })
+	s.change(func(style *core.Style) { style.StippleScale = nonNegative("stipple scale", scale) })
 }
 
 // TextHeight is the height of the text of a dimension drawn in the
@@ -430,6 +438,15 @@ func (s Style) customStyle() bool { return s.H.V >= core.StyleFirstCustom }
 // the style screen's own edits are.
 func (s Style) change(set func(style *core.Style)) {
 	s.d.change(func(sk *sketch.Sketch) { set(s.get(sk)) })
+}
+
+// nonNegative is a length of a style, which must be a number, zero or
+// more, as the style screen keeps it.
+func nonNegative(what string, v float64) float64 {
+	if !(v >= 0) || math.IsInf(v, 1) {
+		fail("a style's %s is a number, zero or more, not %g", what, v)
+	}
+	return v
 }
 
 // rgb is one channel of a colour, which must be 0 to 255.
