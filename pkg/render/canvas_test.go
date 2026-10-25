@@ -22,6 +22,7 @@ func TestStrokeDashScaleMm(t *testing.T) {
 		{core.StippleDash, 3, UnitMM, 3},
 		{core.StippleContinuous, 15, UnitPX, 0},
 		{core.StippleZigzag, 15, UnitPX, 0},
+		{core.StippleFreehand, 15, UnitPX, 0},
 		{core.StippleDash, 0, UnitPX, 0},
 		{core.StippleDash, -15, UnitPX, 0},
 		{core.StippleDash, math.NaN(), UnitPX, 0},

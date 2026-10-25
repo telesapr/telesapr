@@ -9,8 +9,11 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+### Changed
+- Colouring by freedom colours only lines in the active group's own style, and points: a construction line keeps the construction colour, and a line given a style keeps its style's colour.
+
 ### Fixed
-- Line styles: zigzag lines are drawn (continuous, as they are exported) instead of not at all, and so is a dashed line whose stipple width is zero or too small for its dashes to be a pixel apart.
+- Line styles: freehand lines are drawn as a wave and zigzag lines as straight runs broken by a zigzag, as the styles screen shows them, instead of as short dashes and not at all. A dashed line whose stipple width is zero or too small for its dashes to be a pixel apart is drawn continuous instead of not at all.
 - Line styles: a negative stipple width, from a script or a file, no longer freezes the window; a script that sets a negative width or stipple width is stopped with an error.
 - Line styles: the dots of the dot, dash-dot and dash-dot-dot patterns are as wide as the line, rather than a fraction of a pixel and nearly invisible.
 - Deleting a line style on the styles screen redraws what was drawn in it at once.

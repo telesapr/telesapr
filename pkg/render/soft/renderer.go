@@ -430,6 +430,12 @@ func (r *Renderer) doPoint(p geom.Vector, d, lineWidthPx float64) {
 // phase into it.
 func (r *Renderer) doStippledLine(a, b geom.Vector, hcs render.HStroke, phase float64) {
 	s := r.selectStroke(hcs)
+	if pts := s.Wave(&r.camera, a, b, phase); pts != nil {
+		for i := 1; i < len(pts); i++ {
+			r.doLine(pts[i-1], pts[i], s)
+		}
+		return
+	}
 	scale := s.DashScaleMm(&r.camera)
 	if scale == 0 {
 		r.doLine(a, b, s)

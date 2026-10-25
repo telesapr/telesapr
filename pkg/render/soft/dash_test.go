@@ -9,11 +9,11 @@ import (
 	"github.com/telesapr/telesapr/pkg/render"
 )
 
-// A stroke with nothing to dash by is drawn continuous: zigzag, which
-// has no dash table, and a stipple scale a file or a script can give
-// that is zero, negative, not a number, infinite or under a pixel. The
-// dash walk steps by the scale, so a negative one never finished the
-// frame, and the others drew nothing.
+// A stroke with nothing to dash by is drawn continuous: a stipple scale
+// a file or a script can give that is zero, negative, not a number,
+// infinite or under a pixel, for dashes and waves alike. The dash walk
+// steps by the scale, so a negative one never finished the frame, and
+// the others drew nothing.
 func TestDashedLineWithNoDashes(t *testing.T) {
 	t.Parallel()
 	r := New()
@@ -24,7 +24,8 @@ func TestDashedLineWithNoDashes(t *testing.T) {
 				StipplePattern: p, StippleScale: scale})
 			r.DrawLine(v(-10, 0, 0), v(10, 0, 0), hcs)
 		})
-		return img.Pix
+		// The renderer reuses its frame.
+		return bytes.Clone(img.Pix)
 	}
 	want := draw(core.StippleContinuous, 6)
 	if countLit(want) == 0 {
@@ -34,7 +35,8 @@ func TestDashedLineWithNoDashes(t *testing.T) {
 		p     core.StipplePattern
 		scale float64
 	}{
-		{core.StippleZigzag, 6},
+		{core.StippleZigzag, 0},
+		{core.StippleFreehand, -1},
 		{core.StippleDash, 0},
 		{core.StippleDash, -1},
 		{core.StippleDot, -6},
@@ -46,6 +48,50 @@ func TestDashedLineWithNoDashes(t *testing.T) {
 		if got := draw(c.p, c.scale); !bytes.Equal(got, want) {
 			t.Errorf("%s at scale %g: %d pixels lit, the continuous line %d",
 				core.StipplePatternName(c.p), c.scale, countLit(got), countLit(want))
+		}
+	}
+}
+
+// Freehand is drawn as a wave all along the line and zigzag as straight
+// runs broken by a zigzag, as the styles screen shows them, swinging
+// twice the line's width across it; they were drawn as short dashes,
+// and as nothing.
+func TestWavyLines(t *testing.T) {
+	t.Parallel()
+	r := New()
+	cam := testCamera(140, 40)
+	for _, p := range []core.StipplePattern{core.StippleFreehand, core.StippleZigzag} {
+		img := frame(r, cam, func() {
+			hcs := r.InternStroke(render.Stroke{Color: green, Width: 1.5, Unit: render.UnitPX,
+				StipplePattern: p, StippleScale: 6})
+			r.DrawLine(v(-10, 0, 0), v(10, 0, 0), hcs)
+		})
+		b := img.Bounds()
+		rows, longest := 0, 0
+		for y := range b.Dy() {
+			lit, run := 0, 0
+			for x := range b.Dx() {
+				if img.Pix[img.PixOffset(x, y)+1] >= 100 {
+					lit++
+					run++
+					longest = max(longest, run)
+				} else {
+					run = 0
+				}
+			}
+			if lit > 0 {
+				rows++
+			}
+		}
+		// 3 px each way of a line 1.5 px wide.
+		if rows < 6 {
+			t.Errorf("%s: drawn over %d rows, want a wave across 6 or more",
+				core.StipplePatternName(p), rows)
+		}
+		// Zigzag's straight runs are two thirds of its period of 18 px;
+		// the wave has none.
+		if straight := longest >= 10; straight != (p == core.StippleZigzag) {
+			t.Errorf("%s: longest run along a row %d px", core.StipplePatternName(p), longest)
 		}
 	}
 }

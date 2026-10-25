@@ -2,6 +2,7 @@ package ui
 
 import (
 	"image"
+	"math"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -103,4 +104,101 @@ func magentaPixels(img *image.RGBA) int {
 		}
 	}
 	return n
+}
+
+// With the colouring by freedom on, a free construction line keeps the
+// construction colour and a free line assigned a style, as the context
+// menu does, its style's colour, width and dashes; a free line in the
+// active group's own style is still coloured by its freedom.
+func TestStyleColoursOverFreedom(t *testing.T) {
+	ss, p := newTestApp(t)
+	if !ss.ColorByFreedom {
+		t.Fatal("the colouring by freedom is off by default")
+	}
+	w := ss.GW.window.(*headless.Window)
+	sk := ss.SK
+	hg := ss.GW.activeGroupH()
+	line := func(y float64, construction bool) core.HRequest {
+		hr := sk.AddRequest(sketch.Request{Type: sketch.RequestLineSegment, Construction: construction,
+			Group: hg, Workplane: hg.Entity(0)})
+		sk.GenerateAll()
+		sk.MustEntity(hr.Entity(1)).PointForceTo(sk, geom.Vector{X: -40, Y: y})
+		sk.MustEntity(hr.Entity(2)).PointForceTo(sk, geom.Vector{X: 40, Y: y})
+		return hr
+	}
+	// Rows 100, 150 and 200 of the 600 pixel frame.
+	line(40, true)
+	styled := line(30, false)
+	line(20, false)
+	ss.GenerateAll(sketch.GenerateAll)
+
+	h := ss.CreateCustomStyle(true)
+	s := sk.StyleGet(core.HStyle{V: h})
+	s.Color = core.NewRGBA(255, 0, 255, 255)
+	s.Width = 5
+	s.StippleType = core.StippleDash
+	ss.GW.MakeSelectedEntity(styled.Entity(0))
+	ss.AssignSelectionToStyle(h)
+	// The regeneration the assignment schedules.
+	p.RunTimers(10)
+	w.Render()
+
+	construction := core.NewRGBA(25, 178, 25, 255)
+	magenta := core.NewRGBA(255, 0, 255, 255)
+	for _, c := range []struct {
+		what   string
+		row    int
+		color  core.RGBA
+		min    int
+		dashed bool
+	}{
+		{"the construction line", 100, construction, 300, false},
+		{"the styled line", 150, magenta, 200, true},
+		{"the line in the group's style", 200, colorFree, 300, false},
+	} {
+		// A continuous line is broken only where its end points and the
+		// axis cross it.
+		lit, runs := rowColor(w.Frame, c.row, c.color)
+		if lit < c.min || c.dashed != (runs >= 8) {
+			t.Errorf("%s: %d pixels of %v in %d runs along its row", c.what, lit, c.color, runs)
+		}
+	}
+	if lit, _ := rowColor(w.Frame, 150, colorFree); lit > 20 {
+		t.Errorf("the styled line has %d pixels coloured by freedom", lit)
+	}
+}
+
+// rowColor counts the pixels near colour c about row y, right of the
+// toolbar, and the runs of them along the row. A thin line is drawn at
+// a part of its colour, so the colour is matched by its hue.
+func rowColor(img *image.RGBA, y int, c core.RGBA) (lit, runs int) {
+	on := false
+	for x := 110; x < img.Bounds().Dx(); x++ {
+		hit := false
+		for dy := -3; dy <= 3; dy++ {
+			p := img.Pix[img.PixOffset(x, y+dy):]
+			if sameHue(p[0], p[1], p[2], c) {
+				hit = true
+			}
+		}
+		if hit {
+			lit++
+			if !on {
+				runs++
+			}
+		}
+		on = hit
+	}
+	return lit, runs
+}
+
+// sameHue reports whether a pixel is colour c drawn at some part of its
+// strength: each channel the same fraction of c's, give or take.
+func sameHue(r, g, b uint8, c core.RGBA) bool {
+	if r < 40 && g < 40 && b < 40 {
+		return false
+	}
+	f := float64(max(r, g, b)) / float64(max(c.Red, c.Green, c.Blue))
+	near := func(v, want uint8) bool { return math.Abs(float64(v)-f*float64(want)) <= 30 }
+	return near(r, c.Red) && near(g, c.Green) && near(b, c.Blue)
 }
