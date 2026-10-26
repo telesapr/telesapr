@@ -42,6 +42,7 @@ help:
 	@echo "  make dist-macos   - a universal TeleSAPR.app in a .dmg (on macOS only)"
 	@echo "  make release-notes - Print what the release of v$(VERSION) would say"
 	@echo "  make release      - Push master, wait for CI, tag v$(VERSION), make the GitHub release"
+	@echo "  make deploy-site  - Copy site/ to telesapr.sourceforge.io (SF_USER=<user>)"
 	@echo ""
 
 .PHONY: test test-heavy test-fast test-sweeps bench test-gui test-race coverage fuzz checks ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
@@ -305,6 +306,10 @@ release:
 
 release-notes:
 	scripts/release.sh --notes
+
+# The web site in site/, to the project's web space on SourceForge.
+deploy-site:
+	scripts/deploy-site.sh
 
 # Build output only; dist/ holds tracked sources and .gocache is kept.
 clean:
