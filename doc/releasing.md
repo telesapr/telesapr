@@ -69,4 +69,3 @@ fix is in the workflow file itself; a fix in a script needs the next version.
   `notarytool` go once there is a certificate.
 - The Windows programs are not signed.
 - Linux arm64: one more matrix entry with an arm64 runner, when the plan has one.
-- The Windows and macOS builds are compiled by the workflow, not tested by it.

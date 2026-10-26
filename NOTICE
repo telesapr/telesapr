@@ -77,6 +77,18 @@ under the FreeType License (FTL):
   Project (https://freetype.org). All rights reserved.
 
 ================================================================================
+pkg/dxf/dxfread: libdxfrw
+================================================================================
+
+The DXF reader, and its code page tables (generated from drw_cptables.h), are
+ported from libdxfrw, as SolveSpace vendors it:
+
+  Copyright (C) 2016-2021 A. Stebich (librecad@mail.lordofbikes.de)
+  Copyright (C) 2011-2015 José F. Soriano, rallazz@gmail.com
+
+  Licensed under the GNU General Public License, version 2 or later.
+
+================================================================================
 Fonts and web viewer resources
 ================================================================================
 

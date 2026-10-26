@@ -53,10 +53,11 @@ Each [release](https://github.com/telesapr/telesapr/releases) carries `telesapr`
   software.
 - **macOS 11 or later, Apple silicon and Intel**: a `.dmg` with `TeleSAPR.app`; drag it to
   Applications. The app is not notarized, so the first time Control-click it and choose Open.
-  `telesapr-cli` is inside, at `TeleSAPR.app/Contents/MacOS/telesapr-cli`.
+  `telesapr-cli` is inside, at `TeleSAPR.app/Contents/MacOS/telesapr-cli`. The window draws in
+  software.
 
-`SHA256SUMS` lists the checksums. The Windows and macOS packages are built by the release
-workflow and not tested by it; TeleSAPR is tested on Linux. `doc/releasing.md` says how a
+`SHA256SUMS` lists the checksums. The release workflow runs the quick tests on Windows and macOS
+before it packages them, but TeleSAPR is developed and used on Linux. `doc/releasing.md` says how a
 release is made.
 
 ## Build
@@ -153,11 +154,12 @@ examples/scripts/      Example scripts, one or more per feature
 pkg/
 ├── check/             Invariants of a sound solid: the test oracle, Analyze > Check Solid
 ├── core/              Handles, entities, constraints, expressions
-├── dxf/               DXF writing
+├── dxf/               DXF writing, and reading (dxfread)
 ├── export/            File > Export: vector, mesh and STEP files
 ├── geom/              Geometric primitives and algorithms
 ├── internal/          The constrained Delaunay triangulator, C's printf, UTF-8 as the
-│                      fonts read it, goldens, parallel loops and robustness sweeps
+│                      fonts read it, goldens, test fixtures, parallel loops and
+│                      robustness sweeps
 ├── libm/              Bit-exact libm functions, as glibc computes them
 ├── mcpserver/         The drawing as tools for an MCP client (telesapr-cli mcp)
 ├── persist/

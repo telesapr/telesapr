@@ -57,7 +57,7 @@ From a script, `group.SetSuppress(api.SuppressWhole)`, `api.SuppressSolid` or
 ## Broken references
 
 Deleting a group deletes the groups that use it, and a constraint goes with the entities it
-held. Edit > Broken References lists each thing a deletion took, with what it used; the home
+held. Features > Broken References lists each thing a deletion took, with what it used; the home
 screen links to the list while it is not empty. Undo brings them back.
 
 From a script, `doc.Features.BrokenReferences()` and `doc.Features.ClearBrokenReferences()`.

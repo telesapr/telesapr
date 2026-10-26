@@ -8,7 +8,7 @@
 //
 //	telesapr --script examples/scripts/plate/plate.go
 //
-// The plate's width, height, thickness and hole come from the
+// The plate's width, height, margin and hole come from the
 // parameter table (Edit > Parameters), so changing "width" there, or
 // with doc.SetParameter, resizes everything that depends on it. It
 // writes plate.tlspr where it is run, unless it is given "-" as a
