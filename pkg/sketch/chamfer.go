@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -52,10 +53,6 @@ func (sk *Sketch) newChamferTwo(edges []core.HEntity, solidEdges []topo.Name, di
 	if d2 < 0 || math.IsNaN(d2) || math.IsInf(d2, 0) {
 		return g, fmt.Errorf("a chamfer's second distance must be more than zero, or zero for the first again, not %g", d2)
 	}
-	solid := sk.solidAt(sk.Active)
-	if solid == nil {
-		return g, errors.New("there is no solid to chamfer at the active group")
-	}
 	seen := map[core.HEntity]bool{}
 	for _, he := range edges {
 		if seen[he] {
@@ -70,27 +67,70 @@ func (sk *Sketch) newChamferTwo(edges []core.HEntity, solidEdges []topo.Name, di
 		}
 		seenName[n] = true
 	}
+	if err := sk.chamferTrial(sk.solidAt(sk.Active), edges, solidEdges, distance, d2); err != nil {
+		return g, err
+	}
+	g.Edges = append([]core.HEntity(nil), edges...)
+	g.SolidEdges = append([]topo.Name(nil), solidEdges...)
+	return g, nil
+}
+
+// SetChamferEdges makes the chamfer hg cut edges and solidEdges, picked
+// on the solid before it, instead of the edges it cuts now: a
+// chamfer's edges can be changed after it is made (ROADMAP F7). The
+// chamfer is tried on a copy of the solid before it with its
+// distances, so an edge it can't cut is an error here and nothing
+// changes. The caller remembers the undo state.
+func (sk *Sketch) SetChamferEdges(hg core.HGroup, edges []core.HEntity, solidEdges []topo.Name) error {
+	g, err := sk.inputGroup(hg, GroupChamfer, "edges")
+	if err != nil {
+		return err
+	}
+	edges, solidEdges = dedup(edges), dedup(solidEdges)
+	if len(edges) == 0 && len(solidEdges) == 0 {
+		return errors.New("there are no edges to chamfer")
+	}
+	if slices.Equal(edges, g.Edges) && slices.Equal(solidEdges, g.SolidEdges) {
+		return nil
+	}
+	if err := sk.edgesBefore(hg, edges, solidEdges); err != nil {
+		return err
+	}
+	if err := sk.chamferTrial(sk.solidBefore(g), edges, solidEdges, g.ValB, g.ValC); err != nil {
+		return err
+	}
+	g.Edges, g.SolidEdges = edges, solidEdges
+	sk.MarkGroupDirty(hg, false)
+	return nil
+}
+
+// chamferTrial cuts edges and solidEdges of solid on a copy at distance
+// and d2, as generateChamferShell will, or says why it can't: by an
+// edit of the solid's faces, failing that by wedges and arcs. What
+// NewChamfer and SetChamferEdges check before the chamfer is made.
+func (sk *Sketch) chamferTrial(solid *Group, edges []core.HEntity, solidEdges []topo.Name, distance, d2 float64) error {
+	if solid == nil {
+		return errors.New("there is no solid to chamfer")
+	}
 	segs, err := sk.chamferSegments(solid, edges, solidEdges)
 	if err != nil {
-		return g, err
+		return err
 	}
 	if !solid.IsForcedToMesh(sk) && len(solid.RunningShell.Surface) > 0 {
 		_, err := chamferByEdit(&solid.RunningShell, segs, distance, d2, 1<<30)
 		if err == nil {
-			g.Edges = append([]core.HEntity(nil), edges...)
-			g.SolidEdges = append([]topo.Name(nil), solidEdges...)
-			return g, nil
+			return nil
 		}
 		if topo.RollingRefusal(err) {
 			// No wedge cuts there soundly (generateChamferShell).
-			return g, err
+			return err
 		}
 	}
 	var mesh srf.SMesh
 	solidMesh(solid, &mesh)
 	first, err := firstFaces(solid, segs, d2)
 	if err != nil {
-		return g, err
+		return err
 	}
 	var arcs []topo.FilletPick
 	for i, seg := range segs {
@@ -99,22 +139,20 @@ func (sk *Sketch) newChamferTwo(edges []core.HEntity, solidEdges []topo.Name, di
 			continue
 		}
 		if _, _, err := chamferWedge(&mesh, seg, distance, d2, first[i]); err != nil {
-			return g, err
+			return err
 		}
 	}
 	if len(arcs) > 0 {
 		if solid.IsForcedToMesh(sk) || len(solid.RunningShell.Surface) == 0 {
-			return g, errors.New("the solid at the active group is a triangle mesh, which has no circular edges to cut")
+			return errors.New("the solid is a triangle mesh, which has no circular edges to cut")
 		}
 		var sh srf.SShell
 		sh.MakeFromCopyOf(&solid.RunningShell)
 		if err := topo.FilletPicks(&sh, arcs, distance, 1<<30, true); err != nil {
-			return g, err
+			return err
 		}
 	}
-	g.Edges = append([]core.HEntity(nil), edges...)
-	g.SolidEdges = append([]topo.Name(nil), solidEdges...)
-	return g, nil
+	return nil
 }
 
 // chamferSegment is an edge a chamfer cuts or a fillet rounds: a

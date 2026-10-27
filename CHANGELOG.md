@@ -9,6 +9,9 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+### Added
+- What a feature is built from can be changed after it is made, without making it again: a fillet's or chamfer's edges, a shell's faces, a sweep's or pattern's path, a loft's profiles and a mirror's plane. On the group's screen, [change] takes the selection as the new inputs (with nothing selected it activates the group before the feature, whose solid the inputs are picked on, and the screen stays while they are) and [remove] on a row takes that one away; in scripts, `SetEdges`, `SetFaces`, `SetPath`, `SetProfiles` and `SetPlane` on the typed group. A change the kernel can't make is refused and nothing moves; a later group built on what the change takes away reports it, as when a group is deleted.
+
 ### Removed
 - Scripting: `srf.SetChordTolMm`, `srf.SetMaxSegments` and `srf.SetMesher`, which set the tolerance of shells built with none and were meant for tests; a document's chord tolerance and segments are set with `Edit.SetChordTolerance` and `Edit.SetMaxSegments`.
 

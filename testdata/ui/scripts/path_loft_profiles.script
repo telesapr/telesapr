@@ -1,0 +1,30 @@
+# The loft of ext_loft_profiles, through three profiles, then between
+# the square and the bottom circle by [change]; the same as
+# path_loft_profiles.go makes (TestPathEquivalence/loft_profiles, ROADMAP
+# F7).
+file $testdata/ui/loft_sections.tlspr
+menu File|Open...
+view default
+move 292.5 232.5
+down L 292.5 232.5
+up L 292.5 232.5
+move 292.5 217.5
+down L 292.5 217.5
+up L 292.5 217.5
+menu Features|Loft To Selected Profile
+answer ok
+twmove 303 105
+twdown L 303 105
+twup L 303 105
+move 292.5 232.5
+down L 292.5 232.5
+up L 292.5 232.5
+move 292.5 217.5
+down L 292.5 217.5
+up L 292.5 217.5
+twmove 303 105
+twdown L 303 105
+twup L 303 105
+twmove 303 75
+twdown L 303 75
+twup L 303 75

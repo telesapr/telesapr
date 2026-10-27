@@ -1,0 +1,37 @@
+# A mirror's plane changed on its screen (ROADMAP F7): the extrusion of
+# path_extrude mirrored in its top face, as in ext_mirror; [change] with
+# nothing selected activates the extrusion and says what to select;
+# with the YZ workplane picked in the isometric view, [take the
+# selection] reflects in it instead. Check Solid finds it sound.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 290 265
+down L 290 265
+up L 290 265
+menu Features|Mirror
+tw
+answer ok
+twmove 411 125
+twdown L 411 125
+twup L 411 125
+view iso
+move 168.75 431.25
+down L 168.75 431.25
+up L 168.75 431.25
+twmove 411 125
+twdown L 411 125
+twup L 411 125
+tw
+twmove 321 75
+twdown L 321 75
+twup L 321 75
+answer ok
+menu Analyze|Check Solid
+dump

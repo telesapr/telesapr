@@ -20,7 +20,6 @@ fixture has been done; its "Tried" notes say what not to try again.
 | 2a | [Modelling upgrade leftovers](#modelling-upgrade-leftovers) | kernel and feature | ? | What the 2026-10-22 work packages left; each refuses with a message today |
 | 2b | [Thread leftovers](#thread-leftovers) | kernel and feature | ? | What the thread improvements of 2026-10-23 left: chamfer slivers, classes to check against the tables |
 | 3 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
-| 3a | [F7 Editing what a feature is built from](#f7-editing-what-a-feature-is-built-from) | feature | M | Today a fillet's edges or a shell's faces change only by making the feature again |
 | 4 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Since 2026-10-11 it mends the ear clipper's crossing faces; as the default it still costs 3 to 5 times the triangles |
 | 5 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
 | 6 | [F8 TeleSAPR in a browser](#f8-telesapr-in-a-browser) | feature | ? | A spike is planned; sized after it |
@@ -44,15 +43,6 @@ From the neosolve survey; each is small and independent.
 ### F6 IGES import and export
 
 Neosolve reads and writes IGES. Low priority: STEP covers the exchange; take it when a user asks.
-
-### F7 Editing what a feature is built from
-
-A fillet's or chamfer's edges, a shell's faces, a sweep's or pattern's path, a loft's profiles, a
-mirror's plane and any feature's source are fixed when it is made. Drafted sides, loft guides and a
-link's file are the three inputs edited afterwards, and the pattern to follow.
-`doc/notes/feature-inputs.md` has what an edit must settle: radii carried with their edges, names
-taken from the solid before the feature, broken references in later groups, the move checks for a
-changed source, and a setter per typed group in `pkg/script/api`.
 
 ### F8 TeleSAPR in a browser
 

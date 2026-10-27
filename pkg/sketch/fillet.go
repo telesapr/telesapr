@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -40,20 +41,7 @@ func (sk *Sketch) NewFillet(edges []core.HEntity, solidEdges []topo.Name, radius
 	if radius <= 0 || math.IsNaN(radius) || math.IsInf(radius, 0) {
 		return g, fmt.Errorf("a fillet's radius must be more than zero, not %g", radius)
 	}
-	solid := sk.solidAt(sk.Active)
-	if solid == nil || len(solid.RunningShell.Surface) == 0 {
-		return g, errors.New("there is no solid with surfaces to fillet at the active group")
-	}
-	if solid.IsForcedToMesh(sk) {
-		return g, errors.New("the solid at the active group is a triangle mesh, which has no edges to round")
-	}
-	segs, err := sk.chamferSegments(solid, edges, solidEdges)
-	if err != nil {
-		return g, err
-	}
-	var sh srf.SShell
-	sh.MakeFromCopyOf(&solid.RunningShell)
-	if err := topo.FilletPicks(&sh, segmentPicks(segs), radius, 1<<30, false); err != nil {
+	if err := sk.filletTrial(sk.solidAt(sk.Active), edges, solidEdges, radius, nil); err != nil {
 		return g, err
 	}
 	g.Edges = append([]core.HEntity(nil), edges...)
@@ -61,10 +49,68 @@ func (sk *Sketch) NewFillet(edges []core.HEntity, solidEdges []topo.Name, radius
 	return g, nil
 }
 
-func segmentPicks(segs []chamferSegment) []topo.FilletPick {
+// SetFilletEdges makes the fillet hg round edges and solidEdges, picked
+// on the solid before it, instead of the edges it rounds now: a
+// fillet's edges can be changed after it is made (ROADMAP F7). An
+// edge's own radius stays with it; an edge taken away takes its
+// radius with it, and an edge added takes the fillet's. The fillet is
+// tried on a copy of the solid before it, so an edge it can't round is
+// an error here and nothing changes. The caller remembers the undo
+// state.
+func (sk *Sketch) SetFilletEdges(hg core.HGroup, edges []core.HEntity, solidEdges []topo.Name) error {
+	g, err := sk.inputGroup(hg, GroupFillet, "edges")
+	if err != nil {
+		return err
+	}
+	edges, solidEdges = dedup(edges), dedup(solidEdges)
+	if len(edges) == 0 && len(solidEdges) == 0 {
+		return errors.New("there are no edges to fillet")
+	}
+	if slices.Equal(edges, g.Edges) && slices.Equal(solidEdges, g.SolidEdges) {
+		return nil
+	}
+	if err := sk.edgesBefore(hg, edges, solidEdges); err != nil {
+		return err
+	}
+	radii := carryEdgeRadii(g, edges, solidEdges)
+	if err := sk.filletTrial(sk.solidBefore(g), edges, solidEdges, g.ValB, radii); err != nil {
+		return err
+	}
+	g.Edges, g.SolidEdges, g.EdgeRadii = edges, solidEdges, radii
+	sk.MarkGroupDirty(hg, false)
+	return nil
+}
+
+// filletTrial rounds edges and solidEdges of solid's running shell on a
+// copy, with radius and the edges' own radii, or says why it can't:
+// what NewFillet and SetFilletEdges check before the fillet is made.
+func (sk *Sketch) filletTrial(solid *Group, edges []core.HEntity, solidEdges []topo.Name, radius float64, radii []EdgeRadius) error {
+	if solid == nil || len(solid.RunningShell.Surface) == 0 {
+		return errors.New("there is no solid with surfaces to fillet")
+	}
+	if solid.IsForcedToMesh(sk) {
+		return errors.New("the solid is a triangle mesh, which has no edges to round")
+	}
+	segs, err := sk.chamferSegments(solid, edges, solidEdges)
+	if err != nil {
+		return err
+	}
+	var sh srf.SShell
+	sh.MakeFromCopyOf(&solid.RunningShell)
+	return topo.FilletPicks(&sh, filletPicks(segs, radii), radius, 1<<30, false)
+}
+
+// filletPicks are the segments as topo picks them, each with its own
+// radius where radii gives it one.
+func filletPicks(segs []chamferSegment, radii []EdgeRadius) []topo.FilletPick {
 	out := make([]topo.FilletPick, len(segs))
 	for i, s := range segs {
 		out[i] = s.pick(0)
+	}
+	for _, er := range radii {
+		if er.Edge >= 0 && er.Edge < len(out) {
+			out[er.Edge].R = er.Val
+		}
 	}
 	return out
 }
@@ -96,12 +142,7 @@ func (g *Group) generateFilletShell(sk *Sketch) {
 		g.setProblem(nil, "%v", err)
 		return
 	}
-	picks := segmentPicks(segs)
-	for _, er := range g.EdgeRadii {
-		if er.Edge < len(picks) {
-			picks[er.Edge].R = er.Val
-		}
-	}
+	picks := filletPicks(segs, g.EdgeRadii)
 	var sh srf.SShell
 	sh.MakeFromCopyOf(&prev.RunningShell)
 	if err := topo.FilletPicks(&sh, picks, g.ValB, srf.OriginFor(g.H.V, 0), false); err != nil {

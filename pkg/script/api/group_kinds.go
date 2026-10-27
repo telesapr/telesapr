@@ -7,6 +7,8 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // The views of a group of one kind hold what only that kind has, as the
@@ -886,5 +888,168 @@ func (v LoftGroup) SetTurn(n int) {
 		g.mustBe(group, sketch.GroupLoft, "SetTurn")
 		group.ValA, group.ExprA = float64(n), ""
 		sk.MarkGroupDirty(group.H, false)
+	})
+}
+
+// A feature's inputs, what it is built from, can be changed after it
+// is made (ROADMAP F7): the setters below reach the same checks as
+// the feature's constructor, including a trial on the solid before the
+// feature, so a change the kernel can't make fails and nothing moves.
+// Picks on the solid come from the group before the feature, as
+// doc.Group("box").Solid().EdgeAt(p) gives them. The feature's source
+// group is not changed this way.
+
+// entityHandles are the entities' handles in the sketch.
+func entityHandles(sk *sketch.Sketch, es []Entity) []core.HEntity {
+	hs := make([]core.HEntity, len(es))
+	for i, e := range es {
+		hs[i] = e.get(sk).H
+	}
+	return hs
+}
+
+// edgeNames are the solid edges' names.
+func edgeNames(es []SolidEdge) []topo.Name {
+	names := make([]topo.Name, len(es))
+	for i, e := range es {
+		names[i] = e.name
+	}
+	return names
+}
+
+// SetEdges makes the fillet round edges, line segments and circles as
+// Features.Fillet takes, and solid, edges of the solid before it as
+// Features.FilletSolid takes, instead of the edges it rounds now. An
+// edge's own radius stays with it, an edge taken away takes its
+// radius with it, and an edge added takes the fillet's. The fillet is
+// tried first, so an edge it can't round fails and nothing changes.
+func (v FilletGroup) SetEdges(edges []Entity, solid []SolidEdge) {
+	g := v.g
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupFillet, "SetEdges")
+		if err := sk.SetFilletEdges(group.H, entityHandles(sk, edges), edgeNames(solid)); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
+// SetEdges makes the chamfer cut edges, line segments and circles as
+// Features.Chamfer takes, and solid, edges of the solid before it as
+// Features.ChamferSolid takes, instead of the edges it cuts now. The
+// chamfer is tried first with its distances, so an edge it can't cut
+// fails and nothing changes.
+func (v ChamferGroup) SetEdges(edges []Entity, solid []SolidEdge) {
+	g := v.g
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupChamfer, "SetEdges")
+		if err := sk.SetChamferEdges(group.H, entityHandles(sk, edges), edgeNames(solid)); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
+// Faces are the faces of the solid before the shell that it takes
+// away.
+func (v ShellGroup) Faces() (faces []SolidFace) {
+	g := v.g
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupShell, "Faces")
+		s := Solid{d: g.d}
+		if prev := group.PreviousGroup(sk); prev != nil {
+			s.g = prev.H
+		}
+		for _, id := range group.SolidFaces {
+			faces = append(faces, SolidFace{s: s, id: id})
+		}
+	})
+	return faces
+}
+
+// SetFaces makes the shell open where faces, of the solid before it as
+// Features.ShellSolid takes them, are taken away, instead of the faces
+// it takes away now; a face entity's face is Solid.FaceAt a point on
+// it. The shell is tried first, so a face it can't open fails and
+// nothing changes.
+func (v ShellGroup) SetFaces(faces []SolidFace) {
+	g := v.g
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupShell, "SetFaces")
+		ids := make([]srf.FaceID, len(faces))
+		for i, f := range faces {
+			ids[i] = f.id
+		}
+		if err := sk.SetShellFaces(group.H, ids); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
+// SetPath makes the sweep follow path, line segments, arcs and cubics
+// as Features.Sweep takes, and solid, edges of the solid before it as
+// Features.SweepEdges takes, together one chain, instead of the path it
+// follows now. The path is tried first, so one the profile can't be
+// swept along fails and nothing changes.
+func (v SweepGroup) SetPath(path []Entity, solid []SolidEdge) {
+	g := v.g
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupSweep, "SetPath")
+		if err := sk.SetSweepPath(group.H, entityHandles(sk, path), edgeNames(solid)); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
+// SetPath makes a pattern along a path repeat its solid along path,
+// line segments and arcs as Features.PatternAlongPath takes, instead of
+// the path it follows now; a step and repeat has no path. The path is
+// tried first, so one the copies can't be placed along fails and
+// nothing changes.
+func (v RepeatGroup) SetPath(path []Entity) {
+	g := v.g
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupPathPattern, "SetPath")
+		if err := sk.SetPatternPath(group.H, entityHandles(sk, path)); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
+// SetProfiles makes the loft go through profiles, two or more sketches
+// in order as Features.LoftThrough takes them, instead of the profiles
+// it goes through now: the first and the last are its ends. A profile
+// kept between the ends keeps how square the loft is held to it; the
+// guides stay. The loft is tried first, so profiles it can't join fail
+// and nothing changes.
+func (v LoftGroup) SetProfiles(profiles []Group) {
+	g := v.g
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLoft, "SetProfiles")
+		hs := make([]core.HGroup, len(profiles))
+		for i, p := range profiles {
+			hs[i] = p.get(sk).H
+		}
+		if err := sk.SetLoftProfiles(group.H, hs); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
+// SetPlane makes the mirror reflect in plane, a workplane or a planar
+// face made before it, instead of the plane it reflects in now.
+func (v MirrorGroup) SetPlane(plane Entity) {
+	g := v.g
+	g.d.change(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupMirror, "SetPlane")
+		if err := sk.SetMirrorPlane(group.H, plane.get(sk).H); err != nil {
+			fail("%v", err)
+		}
 	})
 }

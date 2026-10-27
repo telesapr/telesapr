@@ -1,0 +1,19 @@
+# The sweep of ext_sweep_path with its last line removed on its screen;
+# the same as path_sweep_path.go makes (TestPathEquivalence/sweep_path,
+# ROADMAP F7).
+file $testdata/ui/sweep_path.tlspr
+menu File|Open...
+view other
+move 307.5 247.5
+down L 307.5 247.5
+up L 307.5 247.5
+move 322.5 187.5
+down L 322.5 187.5
+up L 322.5 187.5
+move 397.5 157.5
+down L 397.5 157.5
+up L 397.5 157.5
+menu Features|Sweep Along Path
+twmove 339 185
+twdown L 339 185
+twup L 339 185

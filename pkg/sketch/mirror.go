@@ -73,6 +73,29 @@ func (sk *Sketch) NewMirror(plane core.HEntity, name string) (Group, error) {
 	return g, nil
 }
 
+// SetMirrorPlane makes the mirror hg reflect in plane, a workplane or a
+// planar face made before it, instead of the plane it reflects in now:
+// a mirror's plane can be changed after it is made (ROADMAP F7). The
+// caller remembers the undo state.
+func (sk *Sketch) SetMirrorPlane(hg core.HGroup, plane core.HEntity) error {
+	g, err := sk.inputGroup(hg, GroupMirror, "plane")
+	if err != nil {
+		return err
+	}
+	if !sk.MirrorPlaneOK(plane) {
+		return errors.New("a mirror reflects in a plane: select a workplane or a planar face")
+	}
+	if plane == g.Predef.EntityB {
+		return nil
+	}
+	if err := sk.inputBefore(hg, sk.entityGroup(plane), sk.entityName(plane)); err != nil {
+		return err
+	}
+	g.Predef.EntityB = plane
+	sk.MarkGroupDirty(hg, false)
+	return nil
+}
+
 // generateMirror makes the group's parameters and the reflected copies
 // of its source group's entities.
 func (g *Group) generateMirror(sk *Sketch, entity *[]core.Entity, param *[]core.Param) {

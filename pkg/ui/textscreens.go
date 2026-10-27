@@ -1257,8 +1257,9 @@ func (tw *textWindow) showMirrorInfo(g *sketch.Group) {
 
 	tw.Printf(true, " %Ftmirror original sketch and solid%E")
 	pl := g.Predef.EntityB
-	tw.Printf(false, "%Ba   %Ftin plane%E %Fl%Ll%D%f%h%s%E",
-		pl.V, lf(tw.ScreenSelectEntity), lf(tw.ScreenHoverEntity), sk.EntityName(pl))
+	tw.Printf(false, "%Ba   %Ftin plane%E %Fl%Ll%D%f%h%s%E %Fl%Ll%f%D%s%E",
+		pl.V, lf(tw.ScreenSelectEntity), lf(tw.ScreenHoverEntity), sk.EntityName(pl),
+		lf(tw.ScreenChangeInputs), g.H.V, tw.changeInputsLabel(g))
 	tw.Printf(false, "%Bd   %Ftsolid  %f%LK%Fd%s with original%E  "+
 		"%f%Lk%Fd%s reflection only%E",
 		lf(tw.ScreenChangeGroupOption), radioMark(!g.SkipFirst),
@@ -1292,14 +1293,15 @@ func (tw *textWindow) showLoftInfo(g *sketch.Group) {
 
 	if len(g.LoftThrough) == 0 {
 		tw.Printf(true, " %Ftloft between two profiles%E")
-		tw.Printf(false, "%Ba   %Ftfrom%E %s", sk.GroupName(g.OpA))
+		tw.Printf(false, "%Ba   %Ftfrom%E %s %Fl%Ll%f%D%s%E", sk.GroupName(g.OpA), lf(tw.ScreenChangeInputs), g.H.V, tw.changeInputsLabel(g))
 		tw.Printf(false, "%Bd   %Ftto%E   %s", sk.GroupName(g.OpB))
 		tw.Printf(false, "%Ba   %Ftturn the second by%E %d %Fl%Ll%f%D[-1]%E %Fl%Ll%f%D[+1]%E",
 			int(g.ValA), lf(tw.ScreenChangeLoftTurn), -1, lf(tw.ScreenChangeLoftTurn), 1)
 		tw.showLoftEnds(g)
 		return
 	}
-	tw.Printf(true, " %Ftsmooth loft through %d profiles%E", len(g.LoftThrough)+2)
+	tw.Printf(true, " %Ftsmooth loft through %d profiles%E %Fl%Ll%f%D%s%E",
+		len(g.LoftThrough)+2, lf(tw.ScreenChangeInputs), g.H.V, tw.changeInputsLabel(g))
 	for i, h := range g.LoftProfiles() {
 		bg := byte('a')
 		if i%2 == 1 {
@@ -1421,13 +1423,13 @@ func (tw *textWindow) showShellInfo(g *sketch.Group) {
 	tw.Printf(true, " %Fthollow the solid to walls%E")
 	tw.Printf(false, "%Ba   %Ftthickness%E %s%s %Fl%Ll%f%D[change]%E",
 		ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
-	tw.Printf(false, "%Bd   %Ftfaces taken away%E")
+	tw.Printf(false, "%Bd   %Ftfaces taken away%E %Fl%Ll%f%D%s%E", lf(tw.ScreenChangeInputs), g.H.V, tw.changeInputsLabel(g))
 	for i, id := range g.SolidFaces {
 		bg := byte('a')
 		if i%2 == 1 {
 			bg = 'd'
 		}
-		tw.Printf(false, "%Bp     %s", bg, sk.FaceName(id))
+		tw.Printf(false, "%Bp     %s %Fl%Ll%f%D[remove]%E", bg, sk.FaceName(id), lf(tw.ScreenRemoveInput), uint32(i))
 	}
 }
 
@@ -1536,14 +1538,15 @@ func (tw *textWindow) showLinkedInfo(g *sketch.Group) {
 // each one hovered and selected from its row.
 func (tw *textWindow) showGroupEdges(g *sketch.Group, what string) {
 	sk := tw.ss.SK
-	tw.Printf(false, "%Ba   %Ft%s%E", what)
+	tw.Printf(false, "%Ba   %Ft%s%E %Fl%Ll%f%D%s%E", what, lf(tw.ScreenChangeInputs), g.H.V, tw.changeInputsLabel(g))
 	for i, he := range g.Edges {
 		bg := byte('d')
 		if i%2 == 1 {
 			bg = 'a'
 		}
-		tw.Printf(false, "%Bp     %Fl%Ll%D%f%h%s%E", bg, he.V,
-			lf(tw.ScreenSelectEntity), lf(tw.ScreenHoverEntity), sk.EntityName(he))
+		tw.Printf(false, "%Bp     %Fl%Ll%D%f%h%s%E %Fl%Ll%f%D[remove]%E", bg, he.V,
+			lf(tw.ScreenSelectEntity), lf(tw.ScreenHoverEntity), sk.EntityName(he),
+			lf(tw.ScreenRemoveInput), uint32(i))
 		tw.showEdgeRadius(g, i, bg)
 	}
 	for i, n := range g.SolidEdges {
@@ -1551,10 +1554,16 @@ func (tw *textWindow) showGroupEdges(g *sketch.Group, what string) {
 		if (len(g.Edges)+i)%2 == 1 {
 			bg = 'a'
 		}
-		for k, line := range wrapWords(sk.SolidEdgeName(n), maxCols-8) {
+		lines := wrapWords(sk.SolidEdgeName(n), maxCols-17)
+		for k, line := range lines {
 			indent := "     "
 			if k > 0 {
 				indent = "       "
+			}
+			if k == len(lines)-1 {
+				tw.Printf(false, "%Bp%s%s %Fl%Ll%f%D[remove]%E", bg, indent, line,
+					lf(tw.ScreenRemoveInput), uint32(len(g.Edges)+i))
+				continue
 			}
 			tw.Printf(false, "%Bp%s%s", bg, indent, line)
 		}

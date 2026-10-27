@@ -3,6 +3,7 @@ package sketch
 import (
 	"errors"
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -53,6 +54,37 @@ func (sk *Sketch) NewPathPattern(path []core.HEntity, copies int, name string) (
 		return g, err
 	}
 	return g, nil
+}
+
+// SetPatternPath makes the pattern hg repeat its solid along path, line
+// segments and arcs, instead of the path it follows now: a pattern's
+// path can be changed after it is made (ROADMAP F7). The path is tried
+// as NewPathPattern tries it, so one the copies can't be placed along
+// is an error here and nothing changes. The caller remembers the undo
+// state.
+func (sk *Sketch) SetPatternPath(hg core.HGroup, path []core.HEntity) error {
+	g, err := sk.inputGroup(hg, GroupPathPattern, "path")
+	if err != nil {
+		return err
+	}
+	path = dedup(path)
+	if len(path) == 0 {
+		return errors.New("there is no path to repeat along")
+	}
+	if slices.Equal(path, g.Edges) {
+		return nil
+	}
+	if err := sk.edgesBefore(hg, path, nil); err != nil {
+		return err
+	}
+	trial := *g
+	trial.Edges = path
+	if _, err := trial.patternMotions(sk); err != nil {
+		return err
+	}
+	g.Edges = path
+	sk.MarkGroupDirty(hg, false)
+	return nil
 }
 
 // patternMotions are the rigid motions that take the source to each

@@ -435,15 +435,10 @@ func (ss *Application) groupLoft(g *sketch.Group) bool {
 
 	// The active sketch and the others selected, in the order of the
 	// history from the active one, which is the first or the last.
-	others := map[core.HGroup]bool{}
-	for _, he := range append(append([]core.HEntity(nil), gs.entity...), gs.point...) {
-		if e := sk.Entity(he); e != nil && e.Group != sk.Active {
-			others[e.Group] = true
-		}
-	}
+	others := selectedSketchGroups(sk, gs, sk.Active)
 	var profiles []core.HGroup
 	for _, hg := range sk.GroupOrder {
-		if others[hg] || hg == sk.Active {
+		if slices.Contains(others, hg) || hg == sk.Active {
 			profiles = append(profiles, hg)
 		}
 	}

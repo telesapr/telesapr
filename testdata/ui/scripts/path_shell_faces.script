@@ -1,0 +1,31 @@
+# The shell of ext_shell_faces, open at the top, then at a side instead
+# by [take the selection] with the side picked; the same as
+# path_shell_faces.go makes (TestPathEquivalence/shell_faces, ROADMAP
+# F7).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 290 265
+down L 290 265
+up L 290 265
+menu Features|Shell Solid
+answer ok
+twmove 195 145
+twdown L 195 145
+twup L 195 145
+view iso
+move 243.75 206.25
+down L 243.75 206.25
+up L 243.75 206.25
+twmove 195 145
+twdown L 195 145
+twup L 195 145
+twmove 312 75
+twdown L 312 75
+twup L 312 75

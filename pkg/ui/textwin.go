@@ -211,6 +211,10 @@ type shownState struct {
 	}
 	thread   threadScreen
 	commands commandScreen
+	// inputsFor is the group whose screen's [change] was clicked with
+	// nothing to take: its screen stays while the inputs are picked, as
+	// the drawing's does (featureinputs.go).
+	inputsFor core.HGroup
 }
 
 // cellMeta is how one character cell is drawn and what clicking it
@@ -774,11 +778,12 @@ func (tw *textWindow) Show() {
 		tw.Printf(true, "%Fl%f%Ll(cancel operation)%E", linkFunction(tw.ScreenUnselectAll))
 
 	case (gs.n > 0 || gs.constraints > 0 || len(gs.solidEdge) > 0) && tw.shown.screen != screenPasteTransformed &&
-		tw.shown.screen != screenDrawing && tw.shown.screen != screenDatums:
+		tw.shown.screen != screenDrawing && tw.shown.screen != screenDatums && !tw.awaitingInputs():
 
 		// The drawing's screen stays while edges and faces are picked
-		// for its dimensions (roadmap 29.2), and the datums' while what
-		// they name is picked or selected from them.
+		// for its dimensions (roadmap 29.2), the datums' while what
+		// they name is picked or selected from them, and a feature's
+		// while what it is built from is picked (ROADMAP F7).
 		if tw.edit.meaning != editTTFText {
 			tw.HideEditControl()
 		}
@@ -1462,6 +1467,9 @@ func (tw *textWindow) ScrollbarEvent(newPos float64) {
 // GoToScreen shows another screen at the next Show.
 func (tw *textWindow) GoToScreen(screen Screen) {
 	tw.shown.screen = screen
+	if screen != screenGroupInfo {
+		tw.shown.inputsFor = core.HGroup{}
+	}
 }
 
 // checkMark is the box drawn for a setting that is on or off.

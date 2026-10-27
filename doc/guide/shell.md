@@ -19,7 +19,9 @@ cone gets a coned inside, a sphere a spherical one, each wall exactly the thickn
 can be open at any of its faces: a flat one, as a cup's top, or a curved one between outside
 corners, as a ring open all round its outer side, which leaves a channel. A revolve's flat ends
 are walls too, unless taken away; a revolve of more than half a turn must have both its ends
-taken away. The group's screen lists them and takes the thickness, as a number or an expression. A thickness
+taken away. The group's screen lists them and takes the thickness, as a number or an expression;
+"[change]" beside the faces takes the selected faces instead, and "[remove]" on a face's row
+keeps it as a wall again. A thickness
 at which the walls meet is a problem on the group, and the solid passes through.
 
 From a script:

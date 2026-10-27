@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -51,6 +53,44 @@ func (sk *Sketch) NewShell(faces []srf.FaceID, thick float64, name string) (Grou
 	}
 	g.SolidFaces = append([]srf.FaceID(nil), faces...)
 	return g, nil
+}
+
+// SetShellFaces makes the shell hg open where faces, picked on the
+// solid before it, are taken away, instead of the faces it takes away
+// now: a shell's faces can be changed after it is made (ROADMAP F7).
+// The shell is tried on a copy of the solid before it, so a face it
+// can't open is an error here and nothing changes. The caller remembers
+// the undo state.
+func (sk *Sketch) SetShellFaces(hg core.HGroup, faces []srf.FaceID) error {
+	g, err := sk.inputGroup(hg, GroupShell, "faces")
+	if err != nil {
+		return err
+	}
+	faces = dedup(faces)
+	if len(faces) == 0 {
+		return errors.New("there are no faces to take away: a shell is open where faces are taken away")
+	}
+	if slices.Equal(faces, g.SolidFaces) {
+		return nil
+	}
+	for _, id := range faces {
+		if err := sk.inputBefore(hg, faceGroup(id), sk.FaceName(id)); err != nil {
+			return err
+		}
+	}
+	solid := sk.solidBefore(g)
+	if solid == nil || len(solid.RunningShell.Surface) == 0 {
+		return errors.New("there is no solid with surfaces to hollow")
+	}
+	if solid.IsForcedToMesh(sk) {
+		return errors.New("the solid is a triangle mesh, which has no faces to move")
+	}
+	if _, err := shellOf(&solid.RunningShell, faces, g.ValB, 1<<30, sk.revolutionAt(solid)); err != nil {
+		return err
+	}
+	g.SolidFaces = faces
+	sk.MarkGroupDirty(hg, false)
+	return nil
 }
 
 // shellOf hollows sh, taking away the faces with identities faces. A

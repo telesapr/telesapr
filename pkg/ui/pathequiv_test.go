@@ -678,6 +678,54 @@ var pathEquivalences = map[string]pathCheck{
 			t.Errorf("the drawing: %+v", d)
 		}
 	},
+	// What a feature is built from changed on its screen, and by a
+	// script (ROADMAP F7): a fillet's and a chamfer's edges, a shell's
+	// faces, a sweep's and a pattern's path, a loft's profiles and a
+	// mirror's plane.
+	"fillet_edges": func(t *testing.T, ui, _ *sketch.Sketch) {
+		g := ui.Group(ui.Active)
+		if g.Type != sketch.GroupFillet || g.Problem.Msg != "" || len(g.Edges) != 1 || g.Edges[0].V != 0x8003001f {
+			t.Errorf("the fillet: type %d, problem %q, edges %v", g.Type, g.Problem.Msg, g.Edges)
+		}
+	},
+	"chamfer_edges": func(t *testing.T, ui, _ *sketch.Sketch) {
+		g := ui.Group(ui.Active)
+		if g.Type != sketch.GroupChamfer || g.Problem.Msg != "" || len(g.Edges) != 1 || g.Edges[0].V != 0x8003001f {
+			t.Errorf("the chamfer: type %d, problem %q, edges %v", g.Type, g.Problem.Msg, g.Edges)
+		}
+	},
+	"shell_faces": func(t *testing.T, ui, _ *sketch.Sketch) {
+		g := ui.Group(ui.Active)
+		if g.Type != sketch.GroupShell || g.Problem.Msg != "" || len(g.SolidFaces) != 1 || g.SolidFaces[0] != 0x80030019 {
+			t.Errorf("the shell: type %d, problem %q, faces %x", g.Type, g.Problem.Msg, g.SolidFaces)
+		}
+	},
+	"sweep_path": func(t *testing.T, ui, _ *sketch.Sketch) {
+		g := ui.Group(ui.Active)
+		if g.Type != sketch.GroupSweep || g.Problem.Msg != "" || len(g.Edges) != 2 {
+			t.Errorf("the sweep: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.Edges))
+		}
+	},
+	"pattern_path_changed": func(t *testing.T, ui, _ *sketch.Sketch) {
+		g := ui.Group(ui.Active)
+		if g.Type != sketch.GroupPathPattern || g.Problem.Msg != "" || len(g.Edges) != 1 || g.Edges[0].V != 0x80030016 {
+			t.Errorf("the pattern: type %d, problem %q, edges %v", g.Type, g.Problem.Msg, g.Edges)
+		}
+	},
+	"loft_profiles": func(t *testing.T, ui, _ *sketch.Sketch) {
+		g := ui.Group(ui.Active)
+		if g.Type != sketch.GroupLoft || g.Problem.Msg != "" || len(g.LoftThrough) != 0 ||
+			ui.Group(g.OpA).Name != "bottom" || ui.Group(g.OpB).Name != "middle" {
+			t.Errorf("the loft: type %d, problem %q, from %s to %s through %d", g.Type, g.Problem.Msg,
+				ui.GroupName(g.OpA), ui.GroupName(g.OpB), len(g.LoftThrough))
+		}
+	},
+	"mirror_plane": func(t *testing.T, ui, _ *sketch.Sketch) {
+		g := ui.Group(ui.Active)
+		if g.Type != sketch.GroupMirror || g.Problem.Msg != "" || g.Predef.EntityB.V != 0x20000 {
+			t.Errorf("the mirror: type %d, problem %q, plane %x", g.Type, g.Problem.Msg, g.Predef.EntityB.V)
+		}
+	},
 }
 
 // TestPathEquivalence runs every path pair of testdata/ui/scripts, and

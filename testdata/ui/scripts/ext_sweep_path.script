@@ -1,0 +1,49 @@
+# A sweep's path changed on its screen (ROADMAP F7): the circle of
+# testdata/ui/sweep_path.tlspr swept along a line, a bend and a line,
+# as in ext_sweep; [remove] on the last line's row sweeps along the line
+# and the bend; [change] with nothing selected activates the profile's
+# sketch and says what to select; with the three picked again, [change]
+# sweeps along all three. Check Solid finds each sound.
+file $testdata/ui/sweep_path.tlspr
+menu File|Open...
+view other
+move 307.5 247.5
+down L 307.5 247.5
+up L 307.5 247.5
+move 322.5 187.5
+down L 322.5 187.5
+up L 322.5 187.5
+move 397.5 157.5
+down L 397.5 157.5
+up L 397.5 157.5
+menu Features|Sweep Along Path
+tw
+twmove 339 185
+twdown L 339 185
+twup L 339 185
+tw
+answer ok
+menu Analyze|Check Solid
+answer ok
+twmove 87 125
+twdown L 87 125
+twup L 87 125
+move 307.5 247.5
+down L 307.5 247.5
+up L 307.5 247.5
+move 322.5 187.5
+down L 322.5 187.5
+up L 322.5 187.5
+move 397.5 157.5
+down L 397.5 157.5
+up L 397.5 157.5
+twmove 87 125
+twdown L 87 125
+twup L 87 125
+tw
+twmove 312 75
+twdown L 312 75
+twup L 312 75
+answer ok
+menu Analyze|Check Solid
+dump

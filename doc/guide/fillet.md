@@ -26,7 +26,10 @@ What it makes:
   edge, and where they turn by different angles, as below a sloping top, the face that slopes
   grows out to the mitre. The sharp edge is shortened to where the fillets reach up it.
 - The group's screen lists the edges; each has an "[own radius]" link that gives it a radius
-  of its own.
+  of its own, and a "[remove]" link that takes it out of the fillet. "[change]" beside the list
+  takes the selection as the fillet's edges instead; with nothing selected it activates the
+  group before the fillet, whose edges a fillet rounds, and says what to pick. An edge's own
+  radius stays with it through a change.
 - Where edges of different radii meet, or edges that stick out meet edges that go in, the
   fillet rounds them one radius and kind at a time, the larger first, and the later edges go
   on round the corners the earlier ones rounded. A block's upright edges at 8 mm and its top's

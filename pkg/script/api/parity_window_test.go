@@ -251,6 +251,8 @@ var windowActions = map[string]string{
 	"ScreenLoftClosed":                "LoftGroup.SetClosed",
 	"ScreenChangeLoftProfileTangency": "LoftGroup.SetProfileTangency",
 	"ScreenDraftAllSides":             "ExtrudeGroup.SetDraftFaces",
+	"ScreenChangeInputs":              "FilletGroup.SetEdges ChamferGroup.SetEdges ShellGroup.SetFaces SweepGroup.SetPath RepeatGroup.SetPath LoftGroup.SetProfiles MirrorGroup.SetPlane",
+	"ScreenRemoveInput":               "FilletGroup.SetEdges ChamferGroup.SetEdges ShellGroup.SetFaces SweepGroup.SetPath RepeatGroup.SetPath",
 	"ScreenChangeLoftStart":           "LoftGroup.SetTangency",
 	"ScreenChangePitchOption":         "Group.SetExpr",
 	"ScreenDeleteGroup":               "Group.Delete",
@@ -961,12 +963,14 @@ CornerRadius     -q
 SetCornerRadius  ScreenChangeHelixPitch; editHelixPitch
 SweepUp          -q
 SetSweepUp       ScreenChangeSweepUp/x; ScreenChangeSweepUp/y; ScreenChangeSweepUp/z
+SetPath          ScreenChangeInputs; ScreenRemoveInput
 `,
 	"RepeatGroup": `
 Copies        -q
 SkipFirst     -q
 SetSkipFirst  ScreenChangeGroupOption/k; ScreenChangeGroupOption/K
 SetCopies     ScreenChangeExprA; editTimesRepeated
+SetPath       ScreenChangeInputs; ScreenRemoveInput
 `,
 	"MirrorGroup": `
 KeepOriginal     -q
@@ -974,6 +978,7 @@ SetKeepOriginal  ScreenChangeGroupOption/k; ScreenChangeGroupOption/K
 MirrorSolid      -q
 SetMirrorSolid   ScreenChangeGroupOption/m
 Plane            -q
+SetPlane         ScreenChangeInputs
 `,
 	"ChamferGroup": `
 Distance           -q
@@ -981,6 +986,7 @@ SetDistance        ScreenChangeHelixPitch; editHelixPitch
 SecondDistance     -q
 SetSecondDistance  ScreenChangeChamferDistance2; editChamferDistance2; ScreenSameChamferDistances
 SwapDistances      ScreenSwapChamferDistances
+SetEdges           ScreenChangeInputs; ScreenRemoveInput
 `,
 	"FilletGroup": `
 Radius               -q
@@ -988,10 +994,13 @@ SetRadius            ScreenChangeHelixPitch; editHelixPitch
 EdgeRadius           -q
 SetEdgeRadius        ScreenChangeEdgeRadius; editEdgeRadius
 SetEdgeRadiusExpr    ScreenChangeEdgeRadius; ScreenResetEdgeRadius
+SetEdges             ScreenChangeInputs; ScreenRemoveInput
 `,
 	"ShellGroup": `
 Thickness     -q
 SetThickness  ScreenChangeHelixPitch; editHelixPitch
+Faces         -q
+SetFaces      ScreenChangeInputs; ScreenRemoveInput
 `,
 	"WrapGroup": `
 Height     -q
@@ -1012,6 +1021,7 @@ Closed       -q
 SetClosed    ScreenLoftClosed
 ProfileTangency     -q
 SetProfileTangency  ScreenChangeLoftProfileTangency; editLoftProfileTangency
+SetProfiles  ScreenChangeInputs
 `,
 	"LinkGroup": `
 AsSolid         -q

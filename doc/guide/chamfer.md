@@ -18,6 +18,9 @@ the edges it meets smoothly, round a rounded rectangle's corners by cones. Selec
   `Edit.SelectFaceEdges` in a script).
 
 The group's screen lists the edges and takes a new distance, as a number or an expression.
+"[change]" beside the edges takes the selection as the chamfer's edges instead, and "[remove]"
+on an edge's row takes it out; with nothing selected, "[change]" activates the group before the
+chamfer, whose edges it cuts, and says what to pick.
 Edges between curved faces, and edges that end on one, are chamfered as they are filleted:
 see [Fillet](fillet.md#between-two-curved-faces).
 

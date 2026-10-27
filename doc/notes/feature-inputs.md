@@ -7,43 +7,39 @@ another file, was built in work package B3 (`Sketch.SetLinkFile`, `LinkGroup.Set
 
 ## Editing what a feature is built from
 
-A feature takes its inputs when it is made, and nothing changes them afterwards: the only way is to
-delete the feature and make it again, which loses what later groups refer to in it.
+Built 2026-10-27 (ROADMAP F7). A feature's inputs are changed by a setter in `pkg/sketch` beside
+its constructor, each of which checks the new inputs as the constructor does, including the trial
+on a copy of the solid before the feature, and stores them only when the trial succeeds
+(`feature_inputs.go` has the shared checks):
 
-| Feature | Made by (`pkg/sketch`) | Inputs, in `sketch.Group` | Shown afterwards |
-|---|---|---|---|
-| Fillet | `NewFillet` (`fillet.go`) | `Edges` (sketch entities) and `SolidEdges` (`[]topo.Name`), with `EdgeRadii` in their order | read-only (`Group.Edges`) |
-| Chamfer | `NewChamfer` (`chamfer.go`) | `Edges`, `SolidEdges` | read-only |
-| Shell | `NewShell` (`shell.go`) | `SolidFaces` (`[]srf.FaceID`) | read-only |
-| Sweep | `NewSweepAlong` (`sweep.go`) | `Edges` as the path, `SolidEdges` for a path along the solid | read-only |
-| Path pattern | `NewPathPattern` (`pattern.go`) | `Edges` as the path | read-only |
-| Loft | `NewSmoothLoft` (`loft.go`) | `OpA`, `OpB` and the groups between them (`LoftProfiles`) | read-only (`LoftGroup.Profiles`) |
-| Mirror | `NewMirror` (`mirror.go`) | `Predef.EntityB`, the plane | read-only (`MirrorGroup.Plane`) |
-| Every feature on a source | its constructor | `OpA`, the group it works on | read-only |
+| Feature | Setter (`pkg/sketch`) | Typed group (`pkg/script/api`) |
+|---|---|---|
+| Fillet | `SetFilletEdges` | `FilletGroup.SetEdges` |
+| Chamfer | `SetChamferEdges` | `ChamferGroup.SetEdges` |
+| Shell | `SetShellFaces` | `ShellGroup.SetFaces`, `Faces` |
+| Sweep | `SetSweepPath` | `SweepGroup.SetPath` |
+| Path pattern | `SetPatternPath` | `RepeatGroup.SetPath` |
+| Loft | `SetLoftProfiles` | `LoftGroup.SetProfiles` |
+| Mirror | `SetMirrorPlane` | `MirrorGroup.SetPlane` |
 
-Three inputs can be edited afterwards, and they are the pattern to follow: an extrusion's drafted
-sides (`Sketch.SetDraftFaces`, `draft.go`), a loft's guide curves (`Sketch.SetLoftGuides`,
-`loftguide.go`) and a link's file (`Sketch.SetLinkFile`, `link_params.go`). Each checks the new
-inputs as the constructor would, stores them and marks the group dirty; the caller remembers the
-undo step; the group screen has a "[change]" link that takes the selection, and the typed group in
-`pkg/script/api` a setter reaching the same call.
+What was settled:
 
-What an edit of the others has to settle:
-
-- **Per-edge values.** `EdgeRadii` is kept in the order of `Edges` and then `SolidEdges`. Adding
-  or removing an edge must carry each radius with its own edge, not with its position.
-- **Names.** `SolidEdges` and `SolidFaces` are names in the solid so far (`pkg/topo`). An edit
-  takes new names from the solid as it is before the feature, as the constructor does. A name that
-  no longer resolves becomes a broken reference (`ClearBrokenReferences`, `broken.go`), not a
-  panic.
-- **Later groups.** A group after the feature may refer to edges or faces the feature made, as a
-  sketch on one of its faces or a chamfer of one of its edges does. When an edit removes those, the
-  later group gets the same broken-reference report as when an earlier group is deleted.
-- **Sources.** Changing `OpA` or a loft's profiles changes what the group depends on, and the same
-  cycle and order checks apply as for moving a group (`CheckMoveGroup`, `history.go`).
-- **Scripts.** A setter on each typed group, for example `FilletGroup.SetEdges`,
-  `ShellGroup.SetFaces`, `SweepGroup.SetPath`, `LoftGroup.SetProfiles` and `MirrorGroup.SetPlane`.
-  The parity test then wants a row for each one on both sides.
+- **Per-edge values.** `carryEdgeRadii` moves each of a fillet's own radii with its edge, by
+  identity (`HEntity` for sketch edges, `topo.Name` for the solid's), and drops the radius of an
+  edge taken away. A loft's tangency at a profile between the ends stays with the profile.
+- **Names.** Names and face identities are resolved against the solid before the feature
+  (`solidBefore`), never the active group's; an input made at or after the feature is refused
+  (`inputBefore`, through `GroupsInOrder` and `faceGroup`).
+- **Later groups.** Nothing is pruned at the edit: the next regeneration finds a name that no
+  longer resolves and reports it on the later group, as `TestFeatureInputsBreakLater` shows.
+- **The window.** The group's screen has [change] beside its inputs and [remove] on each row
+  (`pkg/ui/featureinputs.go`). Solid edges and faces are hovered on the active group's solid, so
+  [change] with nothing suitable selected activates the group before the feature, says what to
+  select, and the screen stays while it is picked (`shownState.inputsFor`), as the drawing's
+  does; the link then reads [take the selection].
+- **Not built.** A feature's source (`OpA`) is not changed this way: that makes the group another
+  feature, and the move and dependency checks of the history are the place for it if it is ever
+  asked for.
 
 ## A command-line section export
 
