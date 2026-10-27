@@ -48,18 +48,24 @@ row 14    second distance the same [change]
  18-27 64 64 0
  28-35 6c 64 108 4 1 0
  36-99 64 64 0
-row 16    edges
+row 16    edges [change]
  0-2 64 61 0
  3-7 74 61 0
- 8-99 64 61 0
-row 18      entity 80030004 of g003-extrude
+ 8-8 64 61 0
+ 9-16 6c 61 108 4 1 0
+ 17-99 64 61 0
+row 18      entity 80030004 of g003-extrude [remove]
  0-4 64 64 0
  5-35 6c 64 108 80030004 1 1
- 36-99 64 64 0
-row 20      entity 8003001f of g003-extrude
+ 36-36 64 64 0
+ 37-44 6c 64 108 0 1 0
+ 45-99 64 64 0
+row 20      entity 8003001f of g003-extrude [remove]
  0-4 64 61 0
  5-35 6c 61 108 8003001f 1 1
- 36-99 64 61 0
+ 36-36 64 61 0
+ 37-44 6c 61 108 1 1 0
+ 45-99 64 61 0
 row 22 
  0-99 64 64 0
 row 24    appearance   matte   plastic   glossy   metal
@@ -164,18 +170,24 @@ row 14    second distance the same [change]
  18-27 64 64 0
  28-35 6c 64 108 4 1 0
  36-99 64 64 0
-row 16    edges
+row 16    edges [change]
  0-2 64 61 0
  3-7 74 61 0
- 8-99 64 61 0
-row 18      entity 80030004 of g003-extrude
+ 8-8 64 61 0
+ 9-16 6c 61 108 4 1 0
+ 17-99 64 61 0
+row 18      entity 80030004 of g003-extrude [remove]
  0-4 64 64 0
  5-35 6c 64 108 80030004 1 1
- 36-99 64 64 0
-row 20      entity 8003001f of g003-extrude
+ 36-36 64 64 0
+ 37-44 6c 64 108 0 1 0
+ 45-99 64 64 0
+row 20      entity 8003001f of g003-extrude [remove]
  0-4 64 61 0
  5-35 6c 61 108 8003001f 1 1
- 36-99 64 61 0
+ 36-36 64 61 0
+ 37-44 6c 61 108 1 1 0
+ 45-99 64 61 0
 row 22 
  0-99 64 64 0
 row 24    appearance   matte   plastic   glossy   metal

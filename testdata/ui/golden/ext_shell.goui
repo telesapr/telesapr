@@ -42,12 +42,16 @@ row 12    thickness 1.00 [change]
  12-17 64 61 0
  18-25 6c 61 108 4 1 0
  26-99 64 61 0
-row 14    faces taken away
+row 14    faces taken away [change]
  0-2 64 64 0
  3-18 74 64 0
- 19-99 64 64 0
-row 16      face entity 8003002c of g003-extrude
- 0-99 64 61 0
+ 19-19 64 64 0
+ 20-27 6c 64 108 4 1 0
+ 28-99 64 64 0
+row 16      face entity 8003002c of g003-extrude [remove]
+ 0-41 64 61 0
+ 42-49 6c 61 108 0 1 0
+ 50-99 64 61 0
 row 18 
  0-99 64 64 0
 row 20    appearance   matte   plastic   glossy   metal
@@ -142,12 +146,16 @@ row 12    thickness 2.00 (= 1+1) [change]
  12-25 64 61 0
  26-33 6c 61 108 4 1 0
  34-99 64 61 0
-row 14    faces taken away
+row 14    faces taken away [change]
  0-2 64 64 0
  3-18 74 64 0
- 19-99 64 64 0
-row 16      face entity 8003002c of g003-extrude
- 0-99 64 61 0
+ 19-19 64 64 0
+ 20-27 6c 64 108 4 1 0
+ 28-99 64 64 0
+row 16      face entity 8003002c of g003-extrude [remove]
+ 0-41 64 61 0
+ 42-49 6c 61 108 0 1 0
+ 50-99 64 61 0
 row 18 
  0-99 64 64 0
 row 20    appearance   matte   plastic   glossy   metal
@@ -242,12 +250,16 @@ row 12    thickness 30.00 [change]
  12-18 64 61 0
  19-26 6c 61 108 4 1 0
  27-99 64 61 0
-row 14    faces taken away
+row 14    faces taken away [change]
  0-2 64 64 0
  3-18 74 64 0
- 19-99 64 64 0
-row 16      face entity 8003002c of g003-extrude
- 0-99 64 61 0
+ 19-19 64 64 0
+ 20-27 6c 64 108 4 1 0
+ 28-99 64 64 0
+row 16      face entity 8003002c of g003-extrude [remove]
+ 0-41 64 61 0
+ 42-49 6c 61 108 0 1 0
+ 50-99 64 61 0
 row 18 
  0-99 64 64 0
 row 20    appearance   matte   plastic   glossy   metal
