@@ -1,0 +1,46 @@
+# A chamfer's edges changed on its screen (ROADMAP F7): two top edges
+# of the extrusion of path_extrude chamfered, as in ext_chamfer;
+# [remove] on the second edge's row leaves the first alone; [change]
+# with nothing selected activates the extrusion and says what to
+# select; with the second edge picked, [change] cuts it instead. Check
+# Solid finds each sound.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 382.5 232.5
+down L 382.5 232.5
+up L 382.5 232.5
+move 247.5 202.5
+down L 247.5 202.5
+up L 247.5 202.5
+menu Features|Chamfer Edges
+tw
+twmove 348 205
+twdown L 348 205
+twup L 348 205
+tw
+answer ok
+menu Analyze|Check Solid
+answer ok
+twmove 96 165
+twdown L 96 165
+twup L 96 165
+move 247.5 202.5
+down L 247.5 202.5
+up L 247.5 202.5
+twmove 96 165
+twdown L 96 165
+twup L 96 165
+tw
+twmove 330 75
+twdown L 330 75
+twup L 330 75
+answer ok
+menu Analyze|Check Solid
+dump

@@ -28,10 +28,12 @@ row 10  loft between two profiles
  0-0 64 64 0
  1-25 74 64 0
  26-99 64 64 0
-row 12    from g006-top
+row 12    from g006-top [change]
  0-2 64 61 0
  3-6 74 61 0
- 7-99 64 61 0
+ 7-16 64 61 0
+ 17-24 6c 61 108 7 1 0
+ 25-99 64 61 0
 row 14    to   g003-bottom
  0-2 64 64 0
  3-4 74 64 0
@@ -198,10 +200,12 @@ row 10  loft between two profiles
  0-0 64 64 0
  1-25 74 64 0
  26-99 64 64 0
-row 12    from g006-top
+row 12    from g006-top [change]
  0-2 64 61 0
  3-6 74 61 0
- 7-99 64 61 0
+ 7-16 64 61 0
+ 17-24 6c 61 108 7 1 0
+ 25-99 64 61 0
 row 14    to   g003-bottom
  0-2 64 64 0
  3-4 74 64 0

@@ -1,0 +1,45 @@
+# A shell's faces changed on its screen (ROADMAP F7): the extrusion of
+# path_extrude hollowed open at its top, as in ext_shell; [change] with
+# nothing selected activates the extrusion, whose faces the shell takes
+# away, and says what to select; with the top and, in the isometric
+# view, a side picked, [take the selection] opens both; [remove] on the
+# top's row leaves the side open alone. Check Solid finds it sound.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 290 265
+down L 290 265
+up L 290 265
+menu Features|Shell Solid
+tw
+answer ok
+twmove 195 145
+twdown L 195 145
+twup L 195 145
+move 290 265
+down L 290 265
+up L 290 265
+view iso
+move 243.75 206.25
+down L 243.75 206.25
+up L 243.75 206.25
+twmove 195 145
+twdown L 195 145
+twup L 195 145
+tw
+twmove 393 165
+twdown L 393 165
+twup L 393 165
+tw
+twmove 312 75
+twdown L 312 75
+twup L 312 75
+answer ok
+menu Analyze|Check Solid
+dump

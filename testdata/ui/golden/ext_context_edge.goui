@@ -52,19 +52,25 @@ row 12    radius 1.00 [change]
  9-14 64 61 0
  15-22 6c 61 108 6 1 0
  23-99 64 61 0
-row 14    edges
+row 14    edges [change]
  0-2 64 61 0
  3-7 74 61 0
- 8-99 64 61 0
-row 16      the edge between face entity 80030010 of g003-block and face entity 80050019 of g005-slot
+ 8-8 64 61 0
+ 9-16 6c 61 108 6 1 0
+ 17-99 64 61 0
+row 16      the edge between face entity 80030010 of g003-block and face entity 80050019 of
  0-99 64 64 0
-row 18        [own radius]
+row 18        g005-slot [remove]
+ 0-16 64 64 0
+ 17-24 6c 64 108 0 1 0
+ 25-99 64 64 0
+row 20        [own radius]
  0-6 64 64 0
  7-18 6c 64 108 0 1 0
  19-99 64 64 0
-row 20 
+row 22 
  0-99 64 64 0
-row 22    appearance   matte   plastic   glossy   metal
+row 24    appearance   matte   plastic   glossy   metal
  0-2 64 64 0
  3-12 74 64 0
  13-14 64 64 0
@@ -76,48 +82,48 @@ row 22    appearance   matte   plastic   glossy   metal
  43-44 64 64 0
  45-51 64 64 97 3 1 0
  52-99 64 64 0
-row 24 
+row 26 
  0-99 64 64 0
-row 26    show entities from this group
+row 28    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 28    suppress this group and the groups that use it
+row 30    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 30    force NURBS surfaces to triangle mesh
+row 32    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 33    relax constraints and dimensions
+row 35    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 35    allow redundant constraints
+row 37    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 37    suppress dof calculation (improves solver performance)
+row 39    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 39    treat all dimensions as reference
+row 41    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 41 
+row 43 
  0-99 64 64 0
-row 43  requests in group
+row 45  requests in group
  0-99 74 64 0
-row 45    (none)
+row 47    (none)
  0-99 64 61 0
-row 47 
+row 49 
  0-99 64 64 0
-row 49  constraints in group (0 DOF)
+row 51  constraints in group (0 DOF)
  0-99 74 64 0
-row 51    (none)
+row 53    (none)
  0-99 64 61 0
-row 53 
+row 55 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 11\nTriangles: 46\nVolume: 10 cm³\nCenter of mass: (20.00, 16.00, 5.00)\nExtent: 40.00 x 30.00 x 10.00

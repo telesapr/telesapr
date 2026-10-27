@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -69,6 +70,39 @@ func (sk *Sketch) NewSweepAlong(path []core.HEntity, solidEdges []topo.Name, nam
 		return g, err
 	}
 	return g, nil
+}
+
+// SetSweepPath makes the sweep hg follow path, line segments and arcs,
+// and solidEdges, edges of the solid before it by name, instead of the
+// path it follows now: a sweep's path can be changed after it is made
+// (ROADMAP F7). The path is tried as NewSweepAlong tries it, so one the
+// profile can't be swept along is an error here and nothing changes.
+// The caller remembers the undo state.
+func (sk *Sketch) SetSweepPath(hg core.HGroup, path []core.HEntity, solidEdges []topo.Name) error {
+	g, err := sk.inputGroup(hg, GroupSweep, "path")
+	if err != nil {
+		return err
+	}
+	path, solidEdges = dedup(path), dedup(solidEdges)
+	if len(path) == 0 && len(solidEdges) == 0 {
+		return errors.New("there is no path to sweep along")
+	}
+	if slices.Equal(path, g.Edges) && slices.Equal(solidEdges, g.SolidEdges) {
+		return nil
+	}
+	if err := sk.edgesBefore(hg, path, solidEdges); err != nil {
+		return err
+	}
+	// The trial on a copy of the group: what the path's fitting writes
+	// lands on the copy.
+	trial := *g
+	trial.Edges, trial.SolidEdges = path, solidEdges
+	if _, err := trial.sweepPath(sk); err != nil && !errors.Is(err, errCornerBesideArc) {
+		return err
+	}
+	g.Edges, g.SolidEdges = path, solidEdges
+	sk.MarkGroupDirty(hg, false)
+	return nil
 }
 
 // pathPiece is one entity of a sweep's path, oriented along the

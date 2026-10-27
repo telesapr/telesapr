@@ -1,0 +1,37 @@
+# A loft's profiles changed on its screen (ROADMAP F7): the top circle
+# of testdata/ui/loft_sections.tlspr lofted through the middle square
+# to the bottom circle, as in ext_loft_smooth; [change] with nothing
+# selected activates the sketch before the loft and says what to
+# select; with the square and the bottom circle picked, [change] lofts
+# between those two. Check Solid finds it sound.
+file $testdata/ui/loft_sections.tlspr
+menu File|Open...
+view default
+move 292.5 232.5
+down L 292.5 232.5
+up L 292.5 232.5
+move 292.5 217.5
+down L 292.5 217.5
+up L 292.5 217.5
+menu Features|Loft To Selected Profile
+tw
+answer ok
+twmove 303 105
+twdown L 303 105
+twup L 303 105
+move 292.5 232.5
+down L 292.5 232.5
+up L 292.5 232.5
+move 292.5 217.5
+down L 292.5 217.5
+up L 292.5 217.5
+twmove 303 105
+twdown L 303 105
+twup L 303 105
+tw
+twmove 303 75
+twdown L 303 75
+twup L 303 75
+answer ok
+menu Analyze|Check Solid
+dump

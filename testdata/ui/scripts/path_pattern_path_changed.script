@@ -1,0 +1,57 @@
+# The pattern of ext_pattern_path_changed, along the second line by
+# [change]; the same as path_pattern_path_changed.go makes
+# (TestPathEquivalence/pattern_path_changed, ROADMAP F7).
+key c
+move 200 300
+down L 200 300
+up L 200 300
+move 210 300
+down L 210 300
+up L 210 300
+key esc
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 200
+down L 400 200
+up L 400 200
+key esc
+key esc
+move 300 200
+down L 300 200
+up L 300 200
+key g
+key esc
+key s
+move 200 250
+down L 200 250
+up L 200 250
+move 400 250
+down L 400 250
+up L 400 250
+key esc
+key esc
+move 300 250
+down L 300 250
+up L 300 250
+key g
+key esc
+key x shift
+move 300 200
+down L 300 200
+up L 300 200
+menu Features|Pattern Along Path
+answer ok
+twmove 96 145
+twdown L 96 145
+twup L 96 145
+move 300 250
+down L 300 250
+up L 300 250
+twmove 96 145
+twdown L 96 145
+twup L 96 145
+twmove 330 75
+twdown L 330 75
+twup L 330 75

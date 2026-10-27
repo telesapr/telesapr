@@ -1,0 +1,362 @@
+row 0  home › g004-chamfer   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g004-chamfer [rename/del] [active/hide/↑/↓]
+ 0-6 74 64 0
+ 7-20 64 64 0
+ 21-26 6c 64 108 4 1 0
+ 27-27 64 64 0
+ 28-30 6c 64 108 4 1 0
+ 31-33 64 64 0
+ 34-39 73 64 0
+ 40-40 64 64 0
+ 41-44 6c 64 115 4 1 0
+ 45-45 64 64 0
+ 46-46 6c 64 117 4 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 100 4 1 0
+ 49-99 64 64 0
+row 10  chamfer edges of the solid
+ 0-0 64 64 0
+ 1-26 74 64 0
+ 27-99 64 64 0
+row 12    distance 1.00 [change]
+ 0-2 64 61 0
+ 3-10 74 61 0
+ 11-16 64 61 0
+ 17-24 6c 61 108 4 1 0
+ 25-99 64 61 0
+row 14    second distance the same [change]
+ 0-2 64 64 0
+ 3-17 74 64 0
+ 18-27 64 64 0
+ 28-35 6c 64 108 4 1 0
+ 36-99 64 64 0
+row 16    edges [change]
+ 0-2 64 61 0
+ 3-7 74 61 0
+ 8-8 64 61 0
+ 9-16 6c 61 108 4 1 0
+ 17-99 64 61 0
+row 18      entity 80030004 of g003-extrude [remove]
+ 0-4 64 64 0
+ 5-35 6c 64 108 80030004 1 1
+ 36-36 64 64 0
+ 37-44 6c 64 108 0 1 0
+ 45-99 64 64 0
+row 20      entity 8003001f of g003-extrude [remove]
+ 0-4 64 61 0
+ 5-35 6c 61 108 8003001f 1 1
+ 36-36 64 61 0
+ 37-44 6c 61 108 1 1 0
+ 45-99 64 61 0
+row 22 
+ 0-99 64 64 0
+row 24    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 26      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 28 
+ 0-99 64 64 0
+row 30    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 32    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 34    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 37    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 39    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 41    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 43    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 45 
+ 0-99 64 64 0
+row 47  requests in group
+ 0-99 74 64 0
+row 49    (none)
+ 0-99 64 61 0
+row 51 
+ 0-99 64 64 0
+row 53  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 55    (none)
+ 0-99 64 61 0
+row 57 
+ 0-99 64 64 0
+row 0  home › g004-chamfer   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g004-chamfer [rename/del] [active/hide/↑/↓]
+ 0-6 74 64 0
+ 7-20 64 64 0
+ 21-26 6c 64 108 4 1 0
+ 27-27 64 64 0
+ 28-30 6c 64 108 4 1 0
+ 31-33 64 64 0
+ 34-39 73 64 0
+ 40-40 64 64 0
+ 41-44 6c 64 115 4 1 0
+ 45-45 64 64 0
+ 46-46 6c 64 117 4 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 100 4 1 0
+ 49-99 64 64 0
+row 10  chamfer edges of the solid
+ 0-0 64 64 0
+ 1-26 74 64 0
+ 27-99 64 64 0
+row 12    distance 1.00 [change]
+ 0-2 64 61 0
+ 3-10 74 61 0
+ 11-16 64 61 0
+ 17-24 6c 61 108 4 1 0
+ 25-99 64 61 0
+row 14    second distance the same [change]
+ 0-2 64 64 0
+ 3-17 74 64 0
+ 18-27 64 64 0
+ 28-35 6c 64 108 4 1 0
+ 36-99 64 64 0
+row 16    edges [change]
+ 0-2 64 61 0
+ 3-7 74 61 0
+ 8-8 64 61 0
+ 9-16 6c 61 108 4 1 0
+ 17-99 64 61 0
+row 18      entity 80030004 of g003-extrude [remove]
+ 0-4 64 64 0
+ 5-35 6c 64 108 80030004 1 1
+ 36-36 64 64 0
+ 37-44 6c 64 108 0 1 0
+ 45-99 64 64 0
+row 20 
+ 0-99 64 64 0
+row 22    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 24      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 26 
+ 0-99 64 64 0
+row 28    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 30    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 32    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 35    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 37    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 39    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 41    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 43 
+ 0-99 64 64 0
+row 45  requests in group
+ 0-99 74 64 0
+row 47    (none)
+ 0-99 64 61 0
+row 49 
+ 0-99 64 64 0
+row 51  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 53    (none)
+ 0-99 64 61 0
+row 55 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 7\nTriangles: 16\nVolume: 74.87 cm³\nCenter of mass: (-2.00, 7.00, 39.99)\nExtent: 36.00 x 26.00 x 80.00
+dialog 3 Select the edges to cut, line segments and circles of the sketch or edges of the solid before the chamfer, then click [take the selection].|
+row 0  home › g004-chamfer   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g004-chamfer [rename/del] [activate/hide/↑/↓]
+ 0-6 74 64 0
+ 7-20 64 64 0
+ 21-26 6c 64 108 4 1 0
+ 27-27 64 64 0
+ 28-30 6c 64 108 4 1 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 4 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 4 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 4 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 4 1 0
+ 51-99 64 64 0
+row 10  chamfer edges of the solid
+ 0-0 64 64 0
+ 1-26 74 64 0
+ 27-99 64 64 0
+row 12    distance 1.00 [change]
+ 0-2 64 61 0
+ 3-10 74 61 0
+ 11-16 64 61 0
+ 17-24 6c 61 108 4 1 0
+ 25-99 64 61 0
+row 14    second distance the same [change]
+ 0-2 64 64 0
+ 3-17 74 64 0
+ 18-27 64 64 0
+ 28-35 6c 64 108 4 1 0
+ 36-99 64 64 0
+row 16    edges [change]
+ 0-2 64 61 0
+ 3-7 74 61 0
+ 8-8 64 61 0
+ 9-16 6c 61 108 4 1 0
+ 17-99 64 61 0
+row 18      entity 8003001f of g003-extrude [remove]
+ 0-4 64 64 0
+ 5-35 6c 64 108 8003001f 1 1
+ 36-36 64 64 0
+ 37-44 6c 64 108 0 1 0
+ 45-99 64 64 0
+row 20 
+ 0-99 64 64 0
+row 22    appearance   matte   plastic   glossy   metal
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-99 64 64 0
+row 24      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 26 
+ 0-99 64 64 0
+row 28    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 30    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 32    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 35    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 37    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 39    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 41    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 43 
+ 0-99 64 64 0
+row 45  requests in group
+ 0-99 74 64 0
+row 47    (none)
+ 0-99 64 61 0
+row 49 
+ 0-99 64 64 0
+row 51  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 53    (none)
+ 0-99 64 61 0
+row 55 
+ 0-99 64 64 0
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 7\nTriangles: 16\nVolume: 74.86 cm³\nCenter of mass: (-2.00, 7.00, 39.99)\nExtent: 36.00 x 26.00 x 80.00
+pending 0 0 "" 0 0 0 0
+hover 0 0 0
+selection 0
+active 4 0
+camera 5 0 0 0 1 0 0 0 1 0
+counts 4 7 67 8 40
+editor 0 "" 0 ""
+tw 1 unsaved 1 cursor 0 tooltip ""

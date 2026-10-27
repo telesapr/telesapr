@@ -10,8 +10,9 @@ arcs joined end to end and meeting tangent, as a sweep's path. Make the group wh
 be repeated active, select the pieces of the path, and choose the menu entry. There are three
 copies to begin with: the first where the solid is, the last at the far end of the path, and the
 rest spaced evenly by length along it, each turned with the path as a sweep turns its profile.
-The path starts at its end nearest the solid. The group's screen lists the path and takes the
-number of copies, as a number or an expression. Copies that overlap are joined.
+The path starts at its end nearest the solid. The group's screen lists the path, with "[change]"
+to repeat along the selection instead and "[remove]" on each piece's row, and takes the number
+of copies, as a number or an expression. Copies that overlap are joined.
 
 The path is an ordinary sketch, often construction lines, so its dimensions drive the pattern.
 

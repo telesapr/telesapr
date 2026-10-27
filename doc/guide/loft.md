@@ -17,7 +17,8 @@ To Selected Profile (Shift+O).
 Loops need not have as many curves each: a circle counts as four arcs, and a loop with fewer
 curves has its longest split in two until the counts match, so a triangle lofts to a square.
 
-The group's screen lists the profiles and has "turn the second by [-1] [+1]" (for a smooth
+The group's screen lists the profiles, with "[change]" to loft through the sketches of the
+selected entities instead, in the order of the history, and has "turn the second by [-1] [+1]" (for a smooth
 loft, "turn those after the first"), which matches the loops' curves with an offset: a square
 turned a quarter has saddle faces. A smooth loft first turns each profile to start at the curve
 nearest where the one before it starts; the turn twists from there. A large twist can fold the

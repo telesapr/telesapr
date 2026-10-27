@@ -1,0 +1,36 @@
+# The fillet of ext_fillet_edges, its second edge removed on its screen
+# and the first then replaced by the second with [change]; the same as
+# path_fillet_edges.go makes (TestPathEquivalence/fillet_edges, ROADMAP
+# F7).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 382.5 232.5
+down L 382.5 232.5
+up L 382.5 232.5
+move 247.5 202.5
+down L 247.5 202.5
+up L 247.5 202.5
+menu Features|Fillet Edges
+twmove 348 205
+twdown L 348 205
+twup L 348 205
+answer ok
+twmove 96 145
+twdown L 96 145
+twup L 96 145
+move 247.5 202.5
+down L 247.5 202.5
+up L 247.5 202.5
+twmove 96 145
+twdown L 96 145
+twup L 96 145
+twmove 321 75
+twdown L 321 75
+twup L 321 75

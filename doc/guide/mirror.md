@@ -10,7 +10,8 @@ the solid. Select first:
 - a flat face of the solid.
 
 The reflection follows its group: change the half and the other half changes with it. The
-group's screen names the plane, and has "solid with original" or "reflection only", and the box
+group's screen names the plane, with "[change]" to reflect in the selected workplane or face
+instead, and has "solid with original" or "reflection only", and the box
 "the whole solid so far". A mirror reflects its source group, the active one when it was made;
 with that box checked it reflects the whole solid up to it, as a body made of several groups
 needs: a hole cut by a later group is reflected too. Entities are reflected too, so a circle's copy can be constrained and

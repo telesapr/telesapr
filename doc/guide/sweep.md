@@ -12,7 +12,8 @@ tangent; they may lie in a workplane or anywhere in 3d. The profile's workplane 
 
 The profile keeps its attitude to the path, turning with the path's direction and no more (by
 rotation-minimising frames), so a ring swept along a helix doesn't spin about the wire. The
-group's screen lists the path and has two settings:
+group's screen lists the path, with "[change]" to sweep along the selection instead and
+"[remove]" on each piece's row, and has two settings:
 
 - **twist** turns the profile about the path by that many degrees over the whole of it, evenly
   along its length: a square swept along a line and twisted by 90 is a twisted bar.

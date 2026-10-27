@@ -24,10 +24,12 @@ row 7 GROUP  g00f-ring [rename/del] [active/hide/↑/↓]
  44-44 64 64 0
  45-45 6c 64 100 f 1 0
  46-99 64 64 0
-row 10  smooth loft through 6 profiles
+row 10  smooth loft through 6 profiles [change]
  0-0 64 64 0
  1-30 74 64 0
- 31-99 64 64 0
+ 31-31 64 64 0
+ 32-39 6c 64 108 f 1 0
+ 40-99 64 64 0
 row 12    1 g004-p1
  0-2 64 61 0
  3-3 74 61 0

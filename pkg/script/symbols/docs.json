@@ -4356,6 +4356,10 @@
 						"decl": "func (v ChamferGroup) SetDistance(mm float64)",
 						"text": "SetDistance sets a chamfer's distance in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
 					},
+					"SetEdges": {
+						"decl": "func (v ChamferGroup) SetEdges(edges []Entity, solid []SolidEdge)",
+						"text": "SetEdges makes the chamfer cut edges, line segments and circles as\nFeatures.Chamfer takes, and solid, edges of the solid before it as\nFeatures.ChamferSolid takes, instead of the edges it cuts now. The\nchamfer is tried first with its distances, so an edge it can't cut\nfails and nothing changes."
+					},
 					"SetSecondDistance": {
 						"decl": "func (v ChamferGroup) SetSecondDistance(mm float64)",
 						"text": "SetSecondDistance makes a chamfer of two distances: Distance on each\nedge's first face and mm on the second; 0 makes it a chamfer of one\ndistance again. SetExpr with sketch.GroupValC gives it an expression\nin the document's unit. A chamfer of two distances can't have edges\nthat meet at a corner it cuts by its local edit; there it cuts each\nstraight edge by a wedge instead, and a circular edge not at all."
@@ -5350,6 +5354,10 @@
 						"decl": "func (v FilletGroup) SetEdgeRadiusExpr(i int, expr string) (err error)",
 						"text": "SetEdgeRadiusExpr gives a fillet's edge i, counted as EdgeRadius\ncounts, a radius of its own from an expression in the document's\nunit, which may name parameters; \"\" gives it the fillet's radius\nagain."
 					},
+					"SetEdges": {
+						"decl": "func (v FilletGroup) SetEdges(edges []Entity, solid []SolidEdge)",
+						"text": "SetEdges makes the fillet round edges, line segments and circles as\nFeatures.Fillet takes, and solid, edges of the solid before it as\nFeatures.FilletSolid takes, instead of the edges it rounds now. An\nedge's own radius stays with it, an edge taken away takes its\nradius with it, and an edge added takes the fillet's. The fillet is\ntried first, so an edge it can't round fails and nothing changes."
+					},
 					"SetRadius": {
 						"decl": "func (v FilletGroup) SetRadius(mm float64)",
 						"text": "SetRadius sets a fillet's radius in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
@@ -5886,6 +5894,10 @@
 						"decl": "func (v LoftGroup) SetProfileTangency(profile Group, t float64)",
 						"text": "SetProfileTangency holds a smooth loft square to the plane of\nprofile, one of the sketches it goes through between its ends, the\nsurface's slope across there t times the loft's length, as SetTangency\ndoes at the ends; 0 leaves it free, shaped by the profiles about it.\nThe loft is then smooth through that profile but no longer bends as\none curve across it: a waist that runs straight through the middle."
 					},
+					"SetProfiles": {
+						"decl": "func (v LoftGroup) SetProfiles(profiles []Group)",
+						"text": "SetProfiles makes the loft go through profiles, two or more sketches\nin order as Features.LoftThrough takes them, instead of the profiles\nit goes through now: the first and the last are its ends. A profile\nkept between the ends keeps how square the loft is held to it; the\nguides stay. The loft is tried first, so profiles it can't join fail\nand nothing changes."
+					},
 					"SetTangency": {
 						"decl": "func (v LoftGroup) SetTangency(start, end float64)",
 						"text": "SetTangency makes a loft leave its first profile square to its plane\nand reach its last square to its, the surface's slope across there\nstart and end times the loft's length; 0 leaves an end free, shaped\nby the profiles alone. A loft of two profiles with an end set is one\nsmooth surface, not ruled patches. SetExpr with sketch.GroupPitch and\nsketch.GroupValC gives them expressions."
@@ -5931,6 +5943,10 @@
 					"SetMirrorSolid": {
 						"decl": "func (v MirrorGroup) SetMirrorSolid(whole bool)",
 						"text": "SetMirrorSolid has a mirror reflect the whole solid so far, as a body\nmade of several groups needs, or only its source group's solid. With\nthe whole solid, the mirror's result is the solid so far: with its\nreflection when it keeps the original, or the reflection alone."
+					},
+					"SetPlane": {
+						"decl": "func (v MirrorGroup) SetPlane(plane Entity)",
+						"text": "SetPlane makes the mirror reflect in plane, a workplane or a planar\nface made before it, instead of the plane it reflects in now."
 					}
 				}
 			},
@@ -6034,6 +6050,10 @@
 						"decl": "func (v RepeatGroup) SetCopies(n int)",
 						"text": "SetCopies is how many copies a step and repeat or a pattern makes. A\nrotate keeps the angle the script gave it, where the window re-spaces\nthe copies over one turn, because a script states its angle itself."
 					},
+					"SetPath": {
+						"decl": "func (v RepeatGroup) SetPath(path []Entity)",
+						"text": "SetPath makes a pattern along a path repeat its solid along path,\nline segments and arcs as Features.PatternAlongPath takes, instead of\nthe path it follows now; a step and repeat has no path. The path is\ntried first, so one the copies can't be placed along fails and\nnothing changes."
+					},
 					"SetSkipFirst": {
 						"decl": "func (v RepeatGroup) SetSkipFirst(skip bool)",
 						"text": "SetSkipFirst has a one-sided step and repeat start with its first\ncopy and leave the original out of the solid, or start with the\noriginal again. A rotate keeps the angle the script gave it, where\nthe window re-spaces the copies when their count is typed. A\ntwo-sided repeat always has the original, and fails."
@@ -6124,6 +6144,14 @@
 				"text": "ShellGroup is the view of a shell: the thickness of its wall.",
 				"kind": "struct",
 				"methods": {
+					"Faces": {
+						"decl": "func (v ShellGroup) Faces() (faces []SolidFace)",
+						"text": "Faces are the faces of the solid before the shell that it takes\naway."
+					},
+					"SetFaces": {
+						"decl": "func (v ShellGroup) SetFaces(faces []SolidFace)",
+						"text": "SetFaces makes the shell open where faces, of the solid before it as\nFeatures.ShellSolid takes them, are taken away, instead of the faces\nit takes away now; a face entity's face is Solid.FaceAt a point on\nit. The shell is tried first, so a face it can't open fails and\nnothing changes."
+					},
 					"SetThickness": {
 						"decl": "func (v ShellGroup) SetThickness(mm float64)",
 						"text": "SetThickness sets a shell's wall thickness in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
@@ -6675,6 +6703,10 @@
 					"SetCornerRadius": {
 						"decl": "func (v SweepGroup) SetCornerRadius(mm float64)",
 						"text": "SetCornerRadius rounds a sweep's corners on its path by mm: at each\ncorner the pieces either side are cut back to where an arc of the\nradius, tangent to both, joins them, and the profile turns about the\narc's axis, so the solid is exact and needs no surface intersected.\nCorners beside an arc need one, which a mitre can't join; 0 mitres\nthe corners between lines again. A radius too large for a piece, too\nsmall for the profile to clear the arc's axis, or a corner out of an\narc's plane, is a problem on the group. SetExpr with\nsketch.GroupPitch gives it an expression."
+					},
+					"SetPath": {
+						"decl": "func (v SweepGroup) SetPath(path []Entity, solid []SolidEdge)",
+						"text": "SetPath makes the sweep follow path, line segments, arcs and cubics\nas Features.Sweep takes, and solid, edges of the solid before it as\nFeatures.SweepEdges takes, together one chain, instead of the path it\nfollows now. The path is tried first, so one the profile can't be\nswept along fails and nothing changes."
 					},
 					"SetSweepUp": {
 						"decl": "func (v SweepGroup) SetSweepUp(up Vec)",
@@ -8487,6 +8519,10 @@
 						"decl": "func (sk *Sketch) RemoveConstraintsForPointBeingDeleted(hpt core.HEntity)",
 						"text": "RemoveConstraintsForPointBeingDeleted deletes the constraints on hpt."
 					},
+					"RemoveFeatureInput": {
+						"decl": "func (sk *Sketch) RemoveFeatureInput(hg core.HGroup, i int) error",
+						"text": "RemoveFeatureInput takes input i away from group hg: of a fillet, chamfer, sweep or pattern its edge or path piece i, counting Edges and then SolidEdges, as the group's screen lists them; of a shell its face i."
+					},
 					"RemoveSplinePoint": {
 						"decl": "func (sk *Sketch) RemoveSplinePoint(hp core.HEntity) error",
 						"text": "RemoveSplinePoint takes point hp out of the cubic spline it belongs to."
@@ -8541,6 +8577,10 @@
 						"decl": "func (sk *Sketch) SegmentLimit() int",
 						"text": "SegmentLimit is MaxSegments, or its default."
 					},
+					"SetChamferEdges": {
+						"decl": "func (sk *Sketch) SetChamferEdges(hg core.HGroup, edges []core.HEntity, solidEdges []topo.Name) error",
+						"text": "SetChamferEdges makes the chamfer hg cut edges and solidEdges, picked on the solid before it, instead of the edges it cuts now: a chamfer's edges can be changed after it is made (ROADMAP F7)."
+					},
 					"SetChamferSecondDistance": {
 						"decl": "func (sk *Sketch) SetChamferSecondDistance(h core.HGroup, mm float64) error",
 						"text": "SetChamferSecondDistance makes chamfer h one of two distances: ValB on each edge's first face and mm on the second; 0 makes it of one distance again."
@@ -8576,6 +8616,14 @@
 					"SetFaceAppearance": {
 						"decl": "func (sk *Sketch) SetFaceAppearance(id srf.FaceID, name string) error",
 						"text": "SetFaceAppearance gives the face id of the model an appearance of its own, or with \"\" takes it away, so that it has its group's again."
+					},
+					"SetFeatureEdges": {
+						"decl": "func (sk *Sketch) SetFeatureEdges(hg core.HGroup, edges []core.HEntity, solidEdges []topo.Name) error",
+						"text": "SetFeatureEdges is SetFilletEdges, SetChamferEdges, SetSweepPath or SetPatternPath for group hg, whichever it is: what the group's screen calls with the selection."
+					},
+					"SetFilletEdges": {
+						"decl": "func (sk *Sketch) SetFilletEdges(hg core.HGroup, edges []core.HEntity, solidEdges []topo.Name) error",
+						"text": "SetFilletEdges makes the fillet hg round edges and solidEdges, picked on the solid before it, instead of the edges it rounds now: a fillet's edges can be changed after it is made (ROADMAP F7)."
 					},
 					"SetGroupAppearance": {
 						"decl": "func (sk *Sketch) SetGroupAppearance(hg core.HGroup, name string) error",
@@ -8657,13 +8705,29 @@
 						"decl": "func (sk *Sketch) SetLoftProfileTangency(hg, profile core.HGroup, t float64) error",
 						"text": "SetLoftProfileTangency holds the smooth loft hg square to the plane of profile, one of those between its ends, the surface's slope across there t times the loft's length, as an end's tangency; 0 leaves it free."
 					},
+					"SetLoftProfiles": {
+						"decl": "func (sk *Sketch) SetLoftProfiles(hg core.HGroup, profiles []core.HGroup) error",
+						"text": "SetLoftProfiles makes the loft hg go through profiles, two or more sketches in order, instead of the profiles it goes through now: a loft's profiles can be changed after it is made (ROADMAP F7)."
+					},
+					"SetMirrorPlane": {
+						"decl": "func (sk *Sketch) SetMirrorPlane(hg core.HGroup, plane core.HEntity) error",
+						"text": "SetMirrorPlane makes the mirror hg reflect in plane, a workplane or a planar face made before it, instead of the plane it reflects in now: a mirror's plane can be changed after it is made (ROADMAP F7)."
+					},
 					"SetParameterExpr": {
 						"decl": "func (sk *Sketch) SetParameterExpr(name, expr string) error",
 						"text": "SetParameterExpr gives a parameter a new expression."
 					},
+					"SetPatternPath": {
+						"decl": "func (sk *Sketch) SetPatternPath(hg core.HGroup, path []core.HEntity) error",
+						"text": "SetPatternPath makes the pattern hg repeat its solid along path, line segments and arcs, instead of the path it follows now: a pattern's path can be changed after it is made (ROADMAP F7)."
+					},
 					"SetSection": {
 						"decl": "func (sk *Sketch) SetSection(plane core.HEntity, offset string, flip bool) error",
 						"text": "SetSection turns the section view on, cutting parallel to plane, a workplane or a planar face, offset (typed, in the document's unit; \"\" is zero) along its normal, away from the side flip picks."
+					},
+					"SetShellFaces": {
+						"decl": "func (sk *Sketch) SetShellFaces(hg core.HGroup, faces []srf.FaceID) error",
+						"text": "SetShellFaces makes the shell hg open where faces, picked on the solid before it, are taken away, instead of the faces it takes away now: a shell's faces can be changed after it is made (ROADMAP F7)."
 					},
 					"SetSplinePoints": {
 						"decl": "func (sk *Sketch) SetSplinePoints(hr core.HRequest, pts []geom.Vector) error",
@@ -8688,6 +8752,10 @@
 					"SetSuppressAll": {
 						"decl": "func (sk *Sketch) SetSuppressAll(h core.HGroup, on bool) error",
 						"text": "SetSuppressAll suppresses group h whole, or brings it back, and has the model regenerated."
+					},
+					"SetSweepPath": {
+						"decl": "func (sk *Sketch) SetSweepPath(hg core.HGroup, path []core.HEntity, solidEdges []topo.Name) error",
+						"text": "SetSweepPath makes the sweep hg follow path, line segments and arcs, and solidEdges, edges of the solid before it by name, instead of the path it follows now: a sweep's path can be changed after it is made (ROADMAP F7)."
 					},
 					"SetSweepUp": {
 						"decl": "func (sk *Sketch) SetSweepUp(hg core.HGroup, up geom.Vector) error",

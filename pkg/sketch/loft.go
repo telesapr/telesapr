@@ -84,6 +84,60 @@ func (sk *Sketch) NewSmoothLoft(profiles []core.HGroup, name string) (Group, err
 	return g, nil
 }
 
+// SetLoftProfiles makes the loft hg go through profiles, two or more
+// sketches in order, instead of the profiles it goes through now: a
+// loft's profiles can be changed after it is made (ROADMAP F7). A
+// profile between the ends that the loft is held square to stays so
+// where it is kept; its guides stay. The loft is tried as NewSmoothLoft
+// tries it, so profiles it can't join are an error here and nothing
+// changes. The caller remembers the undo state.
+func (sk *Sketch) SetLoftProfiles(hg core.HGroup, profiles []core.HGroup) error {
+	g, err := sk.inputGroup(hg, GroupLoft, "profiles")
+	if err != nil {
+		return err
+	}
+	if len(profiles) < 2 {
+		return errors.New("a loft joins two profiles at least")
+	}
+	if g.LoftClosed && len(profiles) < 3 {
+		return errors.New("a closed loft needs three profiles at least")
+	}
+	if slices.Equal(profiles, g.LoftProfiles()) {
+		return nil
+	}
+	seen := map[core.HGroup]bool{}
+	for _, h := range profiles {
+		if seen[h] {
+			return fmt.Errorf("the loft takes %s twice", sk.anyGroupName(h))
+		}
+		seen[h] = true
+		if sk.Group(h) == nil {
+			return fmt.Errorf("there is no group %s", sk.anyGroupName(h))
+		}
+		if err := sk.inputBefore(hg, h, sk.anyGroupName(h)); err != nil {
+			return err
+		}
+	}
+	through := profiles[1 : len(profiles)-1]
+	middle := make([]float64, len(through))
+	for i, h := range through {
+		middle[i] = g.LoftProfileTangency(h)
+	}
+	if !slices.ContainsFunc(middle, func(x float64) bool { return x != 0 }) {
+		middle = nil
+	}
+	trial := *g
+	trial.OpA, trial.OpB = profiles[0], profiles[len(profiles)-1]
+	trial.LoftThrough, trial.LoftThroughTangency = slices.Clone(through), middle
+	if _, err := trial.loftShell(sk, 0); err != nil {
+		return err
+	}
+	g.OpA, g.OpB = trial.OpA, trial.OpB
+	g.LoftThrough, g.LoftThroughTangency = trial.LoftThrough, middle
+	sk.MarkGroupDirty(hg, false)
+	return nil
+}
+
 // LoftEnds is how the loft leaves its first profile and reaches its
 // last: ValB and ValC, square to each profile by that much, 0 free
 // (roadmap 28.3).
