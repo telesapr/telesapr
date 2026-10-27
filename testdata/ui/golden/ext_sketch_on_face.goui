@@ -39,7 +39,9 @@ row 10  sketch on face
 row 12    in face entity 8003002c of g003-extrude
  0-2 64 61 0
  3-4 74 61 0
- 5-99 64 61 0
+ 5-5 64 61 0
+ 6-41 6c 61 108 0 1 1
+ 42-99 64 61 0
 row 14 
  0-99 64 64 0
 row 16    show entities from this group

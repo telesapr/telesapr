@@ -40,7 +40,9 @@ row 14    faces taken away [change]
  20-27 6c 64 108 4 1 0
  28-99 64 64 0
 row 16      face entity 8003002c of g003-extrude [remove]
- 0-41 64 61 0
+ 0-4 64 61 0
+ 5-40 6c 61 108 0 1 1
+ 41-41 64 61 0
  42-49 6c 61 108 0 1 0
  50-99 64 61 0
 row 18 
@@ -144,11 +146,15 @@ row 14    faces taken away [change]
  20-27 6c 64 108 4 1 0
  28-99 64 64 0
 row 16      face entity 8003002c of g003-extrude [remove]
- 0-41 64 61 0
+ 0-4 64 61 0
+ 5-40 6c 61 108 0 1 1
+ 41-41 64 61 0
  42-49 6c 61 108 0 1 0
  50-99 64 61 0
 row 18      face entity 80030019 of g003-extrude [remove]
- 0-41 64 64 0
+ 0-4 64 64 0
+ 5-40 6c 64 108 1 1 1
+ 41-41 64 64 0
  42-49 6c 64 108 1 1 0
  50-99 64 64 0
 row 20 
@@ -251,7 +257,9 @@ row 14    faces taken away [change]
  20-27 6c 64 108 4 1 0
  28-99 64 64 0
 row 16      face entity 80030019 of g003-extrude [remove]
- 0-41 64 61 0
+ 0-4 64 61 0
+ 5-40 6c 61 108 0 1 1
+ 41-41 64 61 0
  42-49 6c 61 108 0 1 0
  50-99 64 61 0
 row 18 
