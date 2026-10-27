@@ -392,7 +392,8 @@ thread {
   crest <crest>             # truncated or rounded; left out for the standard crest
   run-out <real>            # how far the root tapers to the crest before the shoulder, a length; left out for none
   level-starts              # every start from the circle's plane, a ridge and a helix each
-  full-length               # made on a face: as long as the face, measured again at each edit
+  full-length               # made on a face: as long as the face, measured again at each regeneration
+  length-dimension <handle> # a dimension that carries the length of a full-length thread, one line each
   class "<class>"           # the tolerance class, as "6g", which sets the clearance in place of clearance
   phase <real>              # turned about its axis, in degrees: the ridges moved along by that part of the lead
   cosmetic                  # recorded on the part, not modelled: on the thread's sketch
@@ -708,6 +709,11 @@ edit as one, and its drawings show the thread by the convention all the same.
 
 Version 2 gained the thread field `chamfer` on 2026-10-23; a reader from before skips it with a
 report, and reads a chamfered thread as one without, whose chamfer's two groups follow it.
+
+Version 2 gained the thread field `length-dimension` on 2026-10-27, the dimensions a full-length
+thread follows its face by. A reader from before skips each with a report, and the thread keeps
+its length until it is edited, as before; a file written before has none, and a thread read from
+it follows its face once it has been edited.
 
 Version 2 gained the style field `z-index` on 2026-10-17. A reader from before skips it with a
 report, and draws the style at its default level.

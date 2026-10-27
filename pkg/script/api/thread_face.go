@@ -18,8 +18,8 @@ import (
 // one a hole is drawn or drilled for (its nominal or tap drill size);
 // a Length of 0 one and a half diameters, or the face's length where
 // that is less. FullLength runs the thread the face's whole length,
-// through where the face reaches the part's far end, and measures it
-// again whenever the thread is edited.
+// through where the face reaches the part's far end, and follows the
+// face's length when the part changes afterwards.
 //
 // The thread is drawn on a construction circle in a datum at the face's
 // end, which follows the face when the part changes upstream; the

@@ -132,12 +132,17 @@ func solidTopology(sk *Sketch, solid *Group) (*topo.Topology, error) {
 // otherwise where it was last found, with the reason kept for the
 // group's problem.
 func (g *Group) facePlane(sk *Sketch) (geom.Quaternion, geom.Vector) {
-	g.faceProblem = ""
+	g.faceProblem, g.threadMoved = "", false
 	var solid *Group
 	if prev := g.PreviousGroup(sk); prev != nil {
 		solid = sk.solidAt(prev.H)
 	}
 	fr, kind, err := sk.solidFrameAt(solid, g)
+	if g.Subtype == GroupWorkplaneByDatum && len(g.SolidFaces) == 2 {
+		// The end of a round face, where a thread made on the face
+		// starts: the thread is measured against the face as found.
+		g.threadMoved = sk.followThread(g, solid, err == nil)
+	}
 	if err != nil {
 		g.faceProblem = err.Error() + "; the workplane stays where it was"
 		return g.Predef.Q, g.Predef.At
@@ -155,7 +160,9 @@ func (g *Group) facePlane(sk *Sketch) (geom.Quaternion, geom.Vector) {
 func (g *Group) FaceProblem() string { return g.faceProblem }
 
 // facePlaneMoved reports whether g is a sketch on a face that no
-// longer lies where q and at put it.
+// longer lies where q and at put it, or a thread's datum whose thread
+// was given a new length (followThread): what follows it is solved
+// again either way.
 func (g *Group) facePlaneMoved(q geom.Quaternion, at geom.Vector) bool {
-	return g.followsSolid() && (g.Predef.Q != q || g.Predef.At != at)
+	return g.followsSolid() && (g.Predef.Q != q || g.Predef.At != at || g.threadMoved)
 }

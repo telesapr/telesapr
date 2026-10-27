@@ -100,6 +100,9 @@ type threadDrawer struct {
 	// first is, by ridge sketch, the point of its first ridge that the
 	// others and its helix's length are measured from.
 	first map[core.HGroup]core.HEntity
+	// lengthDims are the dimensions drawn that carry the thread's
+	// length, kept on a full-length thread's record (keepLengthDims).
+	lengthDims []core.HConstraint
 }
 
 // newThreadDrawer lays out the thread o on the circle he, which
@@ -352,6 +355,9 @@ func (d *threadDrawer) dimension(typ core.ConstraintType, val float64, ptA, ptB,
 // one.
 func (d *threadDrawer) lengthDimension(typ core.ConstraintType, plus float64, ptA, ptB, entityA, entityB core.HEntity) {
 	c := d.dimension(typ, d.o.Length+plus, ptA, ptB, entityA, entityB)
+	if d.o.FullLength {
+		d.lengthDims = append(d.lengthDims, c.H)
+	}
 	if d.o.LengthExpr == "" {
 		return
 	}
@@ -555,6 +561,13 @@ func (d *threadDrawer) setHelix(g *Group, hg core.HGroup, main bool) {
 	if main {
 		g.Thread = GroupThread{Circle: d.circle.H, ThreadOptions: d.o}
 	}
+}
+
+// keepLengthDims records on the group that keeps the thread, hg, which
+// dimensions carry its length, for a full-length thread to follow its
+// face (thread_follow.go); it is called once every dimension is drawn.
+func (d *threadDrawer) keepLengthDims(hg core.HGroup) {
+	d.sk.Group(hg).Thread.LengthDims = slices.Clone(d.lengthDims)
 }
 
 // dimensionHelix holds the helix's length, without which it could be
