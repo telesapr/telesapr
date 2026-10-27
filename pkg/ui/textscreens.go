@@ -1406,7 +1406,8 @@ func (tw *textWindow) showWrapInfo(g *sketch.Group) {
 
 	tw.Printf(true, " %Ftwrap the sketch onto a face%E")
 	if len(g.SolidFaces) > 0 {
-		tw.Printf(false, "%Bd   %Ftface%E %s", sk.FaceName(g.SolidFaces[0]))
+		tw.Printf(false, "%Bd   %Ftface%E %Fl%Ll%D%f%h%s%E", uint32(0),
+			lf(tw.ScreenSelectSolidFace), lf(tw.ScreenHoverSolidFace), sk.FaceName(g.SolidFaces[0]))
 	}
 	tw.Printf(false, "%Ba   %Ftheight%E %s%s %Fl%Ll%f%D[change]%E",
 		ss.MmToString(g.ValB, false), exprNote(g.ExprB), lf(tw.ScreenChangeHelixPitch), g.H.V)
@@ -1429,7 +1430,9 @@ func (tw *textWindow) showShellInfo(g *sketch.Group) {
 		if i%2 == 1 {
 			bg = 'd'
 		}
-		tw.Printf(false, "%Bp     %s %Fl%Ll%f%D[remove]%E", bg, sk.FaceName(id), lf(tw.ScreenRemoveInput), uint32(i))
+		tw.Printf(false, "%Bp     %Fl%Ll%D%f%h%s%E %Fl%Ll%f%D[remove]%E", bg, uint32(i),
+			lf(tw.ScreenSelectSolidFace), lf(tw.ScreenHoverSolidFace), sk.FaceName(id),
+			lf(tw.ScreenRemoveInput), uint32(i))
 	}
 }
 
@@ -1437,8 +1440,9 @@ func (tw *textWindow) showShellInfo(g *sketch.Group) {
 func (tw *textWindow) showSketchOnFaceInfo(g *sketch.Group) {
 	sk := tw.ss.SK
 	tw.Printf(true, " %Ftsketch on face%E")
-	for _, id := range g.SolidFaces {
-		tw.Printf(false, "%Ba   %Ftin%E %s", sk.FaceName(id))
+	for i, id := range g.SolidFaces {
+		tw.Printf(false, "%Ba   %Ftin%E %Fl%Ll%D%f%h%s%E", uint32(i),
+			lf(tw.ScreenSelectSolidFace), lf(tw.ScreenHoverSolidFace), sk.FaceName(id))
 	}
 }
 
@@ -1554,6 +1558,8 @@ func (tw *textWindow) showGroupEdges(g *sketch.Group, what string) {
 		if (len(g.Edges)+i)%2 == 1 {
 			bg = 'a'
 		}
+		// Each line of the name hovers and selects the edge, on the
+		// solid before the group (solidrows.go).
 		lines := wrapWords(sk.SolidEdgeName(n), maxCols-17)
 		for k, line := range lines {
 			indent := "     "
@@ -1561,11 +1567,13 @@ func (tw *textWindow) showGroupEdges(g *sketch.Group, what string) {
 				indent = "       "
 			}
 			if k == len(lines)-1 {
-				tw.Printf(false, "%Bp%s%s %Fl%Ll%f%D[remove]%E", bg, indent, line,
+				tw.Printf(false, "%Bp%s%Fl%Ll%D%f%h%s%E %Fl%Ll%f%D[remove]%E", bg, indent, uint32(i),
+					lf(tw.ScreenSelectSolidEdge), lf(tw.ScreenHoverSolidEdge), line,
 					lf(tw.ScreenRemoveInput), uint32(len(g.Edges)+i))
 				continue
 			}
-			tw.Printf(false, "%Bp%s%s", bg, indent, line)
+			tw.Printf(false, "%Bp%s%Fl%Ll%D%f%h%s%E", bg, indent, uint32(i),
+				lf(tw.ScreenSelectSolidEdge), lf(tw.ScreenHoverSolidEdge), line)
 		}
 		tw.showEdgeRadius(g, len(g.Edges)+i, bg)
 	}

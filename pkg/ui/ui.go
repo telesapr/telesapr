@@ -238,13 +238,18 @@ type Selection struct {
 	Edge topo.Name
 	// Face is a face of the solid that no entity names, as a fillet's
 	// or a Boolean tool's, by its identity (roadmap 14.1).
-	Face       srf.FaceID
+	Face srf.FaceID
+	// Solid is the group whose running solid Edge or Face is of, when
+	// it is not the active group's: a chamfer's edge picked from its
+	// screen is of the solid before the chamfer. Zero for the active
+	// group's.
+	Solid      core.HGroup
 	Emphasized bool
 }
 
 // Equals compares what is selected.
 func (s *Selection) Equals(b *Selection) bool {
-	return s.Entity == b.Entity && s.Constraint == b.Constraint && s.Edge == b.Edge && s.Face == b.Face
+	return s.Entity == b.Entity && s.Constraint == b.Constraint && s.Edge == b.Edge && s.Face == b.Face && s.Solid == b.Solid
 }
 
 // IsEmpty reports whether nothing is selected.
@@ -256,6 +261,7 @@ func (s *Selection) IsEmpty() bool {
 func (s *Selection) Clear() {
 	s.Entity, s.Constraint = core.HEntity{}, core.HConstraint{}
 	s.Edge = topo.Name{}
+	s.Face, s.Solid = 0, core.HGroup{}
 	s.Emphasized = false
 }
 

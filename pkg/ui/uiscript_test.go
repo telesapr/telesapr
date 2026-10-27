@@ -229,6 +229,12 @@ func (r *uiScriptRunner) dumpHover() {
 	if h.Edge.A != 0 {
 		fmt.Fprintf(&r.b, " %s", h.Edge)
 	}
+	if h.Face != 0 {
+		fmt.Fprintf(&r.b, " face %x", uint32(h.Face))
+	}
+	if h.Solid.V != 0 {
+		fmt.Fprintf(&r.b, " of g%03x", h.Solid.V)
+	}
 	fmt.Fprintf(&r.b, "\n")
 }
 
@@ -251,6 +257,12 @@ func (r *uiScriptRunner) dump() {
 		fmt.Fprintf(&r.b, " %x/%x", s.Entity.V, s.Constraint.V)
 		if s.Edge.A != 0 {
 			fmt.Fprintf(&r.b, "/%s", strings.ReplaceAll(s.Edge.String(), " ", "-"))
+		}
+		if s.Face != 0 {
+			fmt.Fprintf(&r.b, "/face-%x", uint32(s.Face))
+		}
+		if s.Solid.V != 0 {
+			fmt.Fprintf(&r.b, "/of-g%03x", s.Solid.V)
 		}
 	}
 	fmt.Fprintf(&r.b, "\n")

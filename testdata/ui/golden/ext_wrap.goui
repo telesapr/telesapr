@@ -39,7 +39,9 @@ row 10  wrap the sketch onto a face
 row 12    face face 4 of g003-lathe
  0-2 64 64 0
  3-6 74 64 0
- 7-99 64 64 0
+ 7-7 64 64 0
+ 8-27 6c 64 108 0 1 1
+ 28-99 64 64 0
 row 14    height 1.00 [change]
  0-2 64 61 0
  3-8 74 61 0
@@ -164,7 +166,9 @@ row 10  wrap the sketch onto a face
 row 12    face face 4 of g003-lathe
  0-2 64 64 0
  3-6 74 64 0
- 7-99 64 64 0
+ 7-7 64 64 0
+ 8-27 6c 64 108 0 1 1
+ 28-99 64 64 0
 row 14    height 2.00 (= 1+1) [change]
  0-2 64 61 0
  3-8 74 61 0
@@ -289,7 +293,9 @@ row 10  wrap the sketch onto a face
 row 12    face face 4 of g003-lathe
  0-2 64 64 0
  3-6 74 64 0
- 7-99 64 64 0
+ 7-7 64 64 0
+ 8-27 6c 64 108 0 1 1
+ 28-99 64 64 0
 row 14    height 2.00 (= 1+1) [change]
  0-2 64 61 0
  3-8 74 61 0
