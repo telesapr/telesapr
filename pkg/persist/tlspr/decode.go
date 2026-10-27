@@ -641,6 +641,8 @@ func (d *decoder) thread(n *Node, hg core.HGroup) sketch.GroupThread {
 			t.Chamfer = d.flag(c)
 		case "full-length":
 			t.FullLength = d.flag(c)
+		case "length-dimension":
+			t.LengthDims = append(t.LengthDims, core.HConstraint{V: d.handleField(c)})
 		case "class":
 			t.Class = d.strField(c)
 		case "phase":

@@ -71,7 +71,8 @@ type ThreadOptions struct {
 	// FullLength, for a thread made on a round face (AddThreadOnFace),
 	// gives it the face's length, through when the face reaches the end
 	// of the part: Length and Through are measured again from the face
-	// when the thread is made and each time it is edited.
+	// when the thread is made and each time it is edited, and Length
+	// follows the face at each regeneration (thread_follow.go).
 	FullLength bool
 	// Cosmetic records the thread on the part without modelling its
 	// turns (thread_cosmetic_build.go): a screw is left at, or turned
@@ -508,6 +509,7 @@ func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, err
 	tg.helix = d.addHelix("thread", true).H
 	d.addStarts(&tg)
 	d.addChamfer(&tg)
+	d.keepLengthDims(tg.helix)
 
 	sk.GenerateAllTyped(GenerateAll)
 	res := ThreadResult{Group: tg.helix, Sound: sk.threadIsSound(tg)}

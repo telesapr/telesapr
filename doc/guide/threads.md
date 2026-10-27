@@ -115,8 +115,11 @@ has:
 
 - **the face's full length**, on to begin with when one and a half diameters would reach past
   the face: the thread runs the whole face, through where the face reaches the part's far end.
-  Its length is measured again from the face each time the thread is edited; typing a length
-  turns it off;
+  The face is measured again at every regeneration, and the thread follows its length without
+  being edited: a rod made longer by a parameter carries a longer thread. A face come to reach
+  the part's end, or to stop short of it, changes the shape of the turning, which the thread
+  reports on its group and takes up when it is next edited; so does a face too short for the
+  thread. Typing a length turns it off;
 - **from the face's other end**, to start at the other end.
 
 The thread is drawn on a construction circle of the face's diameter in a datum at the face's

@@ -20,6 +20,13 @@ import (
 type GroupThread struct {
 	Circle core.HEntity
 	ThreadOptions
+	// LengthDims are the dimensions that carry the thread's length,
+	// kept for a full-length thread (FullLength): each is the length
+	// plus a fixed amount, and the thread's datum moves them by what
+	// the face's length changes by at each regeneration
+	// (thread_follow.go). A thread of a typed length keeps none, and
+	// one of an expression carries it in each dimension instead.
+	LengthDims []core.HConstraint
 }
 
 // IsThread reports whether the group keeps a thread: a modelled
@@ -279,6 +286,7 @@ func (sk *Sketch) redrawThreadOnce(hg core.HGroup, o ThreadOptions, try int) (Th
 		}
 		d.addChamfer(&tg)
 	}
+	d.keepLengthDims(hg)
 	sk.Active = active
 	if sk.Group(active) == nil {
 		all := tg.all()

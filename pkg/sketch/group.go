@@ -325,6 +325,14 @@ type Group struct {
 	// datumKind is what the frame of a datum on the solid stood for at
 	// the last regeneration (topo.DatumFrame, topo.EdgeFrame).
 	datumKind topo.DatumKind
+	// threadMoved is set on a thread's datum when the thread was given
+	// its face's new length as the datum's entities were last made: the
+	// groups after the datum are then solved again (facePlaneMoved).
+	threadMoved bool
+	// threadProblem is why the thread the group keeps did not follow
+	// its face at the last regeneration, which the solid's regeneration
+	// reports (thread_follow.go).
+	threadProblem string
 	// EdgeRadii are a fillet's edges that have a radius of their own,
 	// rather than ValB, in the order of Edges and then SolidEdges.
 	EdgeRadii []EdgeRadius

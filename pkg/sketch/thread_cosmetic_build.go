@@ -124,6 +124,7 @@ func (sk *Sketch) addCosmeticThread(he core.HEntity, o ThreadOptions) ThreadResu
 		tg.lathe = d.addSolid(Group{Type: GroupLathe}, d.latheName(), CombineDifference).H
 	}
 	sk.Group(tg.blank).Thread = GroupThread{Circle: he, ThreadOptions: o}
+	d.keepLengthDims(tg.blank)
 	sk.GenerateAllTyped(GenerateAll)
 	return ThreadResult{Group: tg.blank, Sound: sk.threadIsSound(tg)}
 }
@@ -222,6 +223,7 @@ func (sk *Sketch) reshapeThread(hg core.HGroup, o ThreadOptions) (ThreadResult, 
 		d.addChamfer(&tg)
 		keeper = tg.helix
 	}
+	d.keepLengthDims(keeper)
 	for _, h := range tg.all() {
 		sk.Group(h).Clean = false
 	}

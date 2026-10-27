@@ -73,8 +73,11 @@ type ThreadOptions struct {
 	Phase float64
 	// FullLength, for a thread made on a face (ThreadOnFace,
 	// ThreadOnEdge), runs it the face's whole length, through where the
-	// face reaches the part's end, in place of Length; the length is
-	// measured again whenever the thread is edited.
+	// face reaches the part's end, in place of Length; the face is
+	// measured again at every regeneration, and the thread's length
+	// follows it. A face come to reach the part's end or to stop short
+	// of it, or too short for the thread, is reported on the thread's
+	// group (Group.Problem) and taken up when the thread is edited.
 	FullLength bool
 	// Cosmetic records the thread on the part without modelling its
 	// turns, as drawings show a thread anyway: a screw's rod is left at

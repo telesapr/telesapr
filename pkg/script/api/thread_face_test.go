@@ -3,6 +3,7 @@ package api
 import (
 	"math"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/sketch"
@@ -174,5 +175,60 @@ func TestThreadOnFaceMisuse(t *testing.T) {
 	failsWith(t, "thread length", func() { d.Features.ThreadOnFace(s.FaceAt(V(4, 0, 5)), ThreadOptions{Length: 1}) })
 	if n := len(d.Groups()); n != groups {
 		t.Errorf("%d groups after the refusals, want %d", n, groups)
+	}
+}
+
+// A full-length thread in a blind hole follows the hole when it is
+// drilled deeper, and reports a hole come to go through the part: the
+// thread then stops at a shoulder that is no longer there until it is
+// edited to run through.
+func TestThreadOnFaceFollowsHole(t *testing.T) {
+	t.Parallel()
+	d := New()
+	d.Sketch.Rect(V(-15, -15, 0), V(15, 15, 0))
+	d.Features.Extrude(10, "plate")
+	d.Features.SketchIn(d.Workplane("XY"), "hole")
+	d.Sketch.Circle(V(0, 0, 0), 4.25)
+	hole := d.Features.Extrude(8, "drill")
+	hole.SetCombine(sketch.CombineDifference)
+	if err := hole.SetExpr(sketch.GroupExtent, "8"); err != nil {
+		t.Fatal(err)
+	}
+	g := d.Features.ThreadOnFace(d.Active().Solid().FaceAt(V(4.25, 0, 4)), ThreadOptions{FullLength: true})
+	if o := g.AsThread().Options(); o.Length != 8 || o.Through || !o.Internal {
+		t.Fatalf("options %+v", o)
+	}
+	if err := hole.SetExpr(sketch.GroupExtent, "9"); err != nil {
+		t.Fatal(err)
+	}
+	if o := g.AsThread().Options(); o.Length != 9 || o.Through {
+		t.Errorf("drilled to 9: options %+v", o)
+	}
+	if msg := g.Problem(); msg != "" {
+		t.Errorf("drilled to 9: problem %q", msg)
+	}
+	if r := g.Analyze().Check(); !r.Sound() {
+		t.Errorf("drilled to 9: not sound: %s", r.String())
+	}
+	if err := hole.SetExpr(sketch.GroupExtent, "12"); err != nil {
+		t.Fatal(err)
+	}
+	if o := g.AsThread().Options(); o.Length != 10 || o.Through {
+		t.Errorf("drilled through: options %+v", o)
+	}
+	if msg := g.Problem(); !strings.Contains(msg, "reaches the end of the part") {
+		t.Errorf("drilled through: problem %q", msg)
+	}
+	// Edited, the thread takes the face as it is now: through.
+	o := g.AsThread().Options()
+	g.AsThread().Edit(o)
+	if o := g.AsThread().Options(); o.Length != 10 || !o.Through {
+		t.Errorf("edited: options %+v", o)
+	}
+	if msg := g.Problem(); msg != "" {
+		t.Errorf("edited: problem %q", msg)
+	}
+	if r := g.Analyze().Check(); !r.Sound() {
+		t.Errorf("edited: not sound: %s", r.String())
 	}
 }

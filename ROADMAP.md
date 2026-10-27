@@ -324,10 +324,16 @@ What the thread improvements of 2026-10-23 (`doc/notes/thread-evaluation.md`, br
 | A chamfered M8 through-stud 30 mm long | unsound at the default tolerance; 28 and 31 mm are sound | Every placement of the hidden cone and the ridge ends tried; cause not found |
 | A chamfer on a modelled thread with a rounded crest | refused (`ErrChamferRounded`) | The cone touches the rounded crest rather than cutting it; no placement built it soundly |
 | A phase with a run-out | refused on a modelled thread | The run-out's fix places the ridge end exactly; a phase moves it |
-| A full-length thread on a face whose length changes later | keeps its old length until edited | Measure the face at regeneration, as the part check does |
 | Tolerance classes | from the standards' formulas, not their tables | 1/4-20 UNC 2A comes out about 7% over the ASME table's pitch-diameter tolerance; check against ISO 965-2 and ASME B1.1 tables. ACME's 0.010 in clearance likewise |
 | Buttress threads | not offered | The ridge sketch ties its two flanks to equal length; an asymmetric profile needs it drawn otherwise |
 | `Solid.FaceAt` on a seam between a hole's quarter patches | finds no face | Pick off the seam; older than the thread work |
+
+Done 2026-10-27: a full-length thread on a face follows the face's length at regeneration: the
+thread's datum, finding the face again, measures it and moves the dimensions that carry the
+length (`GroupThread.LengthDims`, `pkg/sketch/thread_follow.go`) by the difference before the
+thread's groups are solved, as a length's expression moves them. A face come to reach the part's
+end or to stop short of it changes the blank's shape, which is reported on the thread's group and
+taken up at the next edit, as is a face too short for the thread.
 
 ## Waiting for the user
 

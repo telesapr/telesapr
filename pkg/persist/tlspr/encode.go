@@ -320,6 +320,9 @@ func encodeThread(t sketch.GroupThread, mmPer float64) *Node {
 	n.flag("level-starts", t.LevelStarts)
 	n.flag("chamfer", t.Chamfer)
 	n.flag("full-length", t.FullLength)
+	for _, h := range t.LengthDims {
+		n.handle("length-dimension", h.V)
+	}
 	n.str("class", t.Class)
 	n.real("phase", t.Phase)
 	n.flag("cosmetic", t.Cosmetic)

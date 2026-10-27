@@ -223,10 +223,14 @@ func solidSpan(shell *srf.SShell, mesh *srf.SMesh) float64 {
 
 // reportThreadPart puts a problem on the group that keeps a thread when the
 // part it is made on no longer holds it, as when a parameter has made
-// the part shorter than the thread since.
+// the part shorter than the thread since, or when the thread could
+// not follow its face (thread_follow.go).
 func (g *Group) reportThreadPart(sk *Sketch) {
 	if !g.Thread.IsThread() {
 		return
+	}
+	if g.threadProblem != "" {
+		g.setProblem(nil, "%s", g.threadProblem)
 	}
 	tg, err := sk.threadGroupsOf(g.H)
 	circle := sk.Entity(g.Thread.Circle)
