@@ -163,6 +163,8 @@ group 0x8 helix "M8-thread" {
     length = 30
     through
     full-length
+    length-dimension 0xd
+    length-dimension 0x1b
   }
   predef {
     origin 0x50001
