@@ -1,0 +1,21 @@
+# A named edge's row on a chamfer's screen hovers and selects the edge
+# on the model: the chamfer of ext_chamfer_solid_edge, of the edge where
+# the notch of testdata/topo/slot.tlspr meets the front, picked on the
+# model; the mouse over the edge's row on the screen hovers it, and a
+# click selects it, both on the solid before the chamfer, where the
+# edge still is.
+file $testdata/topo/slot.tlspr
+menu File|Open...
+view rotated
+menu View|Zoom To Fit
+move 335 425
+down L 335 425
+up L 335 425
+menu Features|Chamfer Edges
+tw
+twmove 96 185
+dump
+twdown L 96 185
+twup L 96 185
+dump
+tw

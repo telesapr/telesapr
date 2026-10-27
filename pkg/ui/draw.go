@@ -32,7 +32,7 @@ func (gw *graphicsWindow) drawSelection(s *Selection, isHovered bool, canvas ren
 		}
 	}
 	if s.Edge.A != 0 {
-		gw.drawSolidEdge(s.Edge, isHovered, canvas)
+		gw.drawSolidEdge(s.Edge, s.Solid, isHovered, canvas)
 	}
 	if s.Constraint.V != 0 {
 		c := sk.Constraint(s.Constraint)

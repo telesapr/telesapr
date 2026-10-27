@@ -1,0 +1,24 @@
+# A face's row on a shell's screen hovers and selects the face on the
+# model: the extrusion of path_extrude hollowed open at its top, as in
+# ext_shell; the mouse over the face's row hovers the top face, and a
+# click selects it, on the solid before the shell.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 290 265
+down L 290 265
+up L 290 265
+menu Features|Shell Solid
+tw
+twmove 96 165
+dump
+twdown L 96 165
+twup L 96 165
+dump
+tw

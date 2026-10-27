@@ -31,6 +31,21 @@ func (gw *graphicsWindow) activeTopology() *topo.Topology {
 	return tp
 }
 
+// topologyOf is the topology of the running solid of group h, or of
+// the active group's solid when h is zero; nil when there is none.
+func (gw *graphicsWindow) topologyOf(h core.HGroup) *topo.Topology {
+	if h.V == 0 {
+		return gw.activeTopology()
+	}
+	sk := gw.sk()
+	g := sk.Group(h)
+	if g == nil || g.IsForcedToMesh(sk) || len(g.RunningShell.Surface) == 0 {
+		return nil
+	}
+	tp, _ := g.Topology()
+	return tp
+}
+
 // hoverSolidEdge is the named edge of the solid nearest mp on the
 // screen, within the pick radius and not hidden behind the solid.
 func (gw *graphicsWindow) hoverSolidEdge(mp geom.Point2d) (topo.Name, bool) {
@@ -248,8 +263,8 @@ func rayHit(o, d geom.Vector, t *srf.STriangle) (float64, bool) {
 
 // drawSolidEdge draws an edge of the solid hovered or selected, all of
 // it: every piece its seams cut it into.
-func (gw *graphicsWindow) drawSolidEdge(n topo.Name, hovered bool, canvas render.Canvas) {
-	tp := gw.activeTopology()
+func (gw *graphicsWindow) drawSolidEdge(n topo.Name, solid core.HGroup, hovered bool, canvas render.Canvas) {
+	tp := gw.topologyOf(solid)
 	if tp == nil {
 		return
 	}
