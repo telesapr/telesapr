@@ -3,6 +3,7 @@ package sketch_test
 import (
 	"math"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -44,7 +45,7 @@ func resize(sk *sketch.Sketch, part core.HGroup, height float64) {
 // checkFollowed requires the full-length thread on the rod of part to
 // be as long as the rod, height mm, sound and solved, as one made on
 // the rod at that height is.
-func checkFollowed(t *testing.T, sk *sketch.Sketch, part, hg core.HGroup, height float64) {
+func checkFollowed(t *testing.T, sk *sketch.Sketch, hg core.HGroup, height float64) {
 	t.Helper()
 	got, err := sk.ThreadOf(hg)
 	if err != nil {
@@ -73,7 +74,6 @@ func checkFollowed(t *testing.T, sk *sketch.Sketch, part, hg core.HGroup, height
 	if v, w := mesh.CalculateVolume(), refMesh.CalculateVolume(); math.Abs(v-w) > 1e-3*w {
 		t.Errorf("at %g: volume %g, made at that height %g", height, v, w)
 	}
-	_ = part
 }
 
 // threadMesh is the mesh of the whole thread that hg keeps, at its
@@ -102,9 +102,9 @@ func TestThreadFollowsFace(t *testing.T) {
 		t.Fatal("no length dimensions kept")
 	}
 	resize(sk, part, 25)
-	checkFollowed(t, sk, part, hg, 25)
+	checkFollowed(t, sk, hg, 25)
 	resize(sk, part, 15)
-	checkFollowed(t, sk, part, hg, 15)
+	checkFollowed(t, sk, hg, 15)
 	if got := sk.Group(hg).Thread.LengthDims; len(got) != len(dims) {
 		t.Errorf("length dimensions %v, were %v", got, dims)
 	}
@@ -119,7 +119,7 @@ func TestThreadFollowsFaceChamfered(t *testing.T) {
 	}
 	sk, part, hg := fullLengthThread(t, 20, sketch.ThreadOptions{Chamfer: true})
 	resize(sk, part, 24)
-	checkFollowed(t, sk, part, hg, 24)
+	checkFollowed(t, sk, hg, 24)
 }
 
 // A cosmetic thread's turning follows the face.
@@ -171,7 +171,7 @@ func TestThreadFollowsFaceRefused(t *testing.T) {
 		t.Errorf("problem %q", msg)
 	}
 	resize(sk, part, 22)
-	checkFollowed(t, sk, part, hg, 22)
+	checkFollowed(t, sk, hg, 22)
 }
 
 // A thread whose length dimension was deleted by hand doesn't follow,
@@ -183,7 +183,7 @@ func TestThreadFollowsFaceDimensionGone(t *testing.T) {
 	}
 	sk, part, hg := fullLengthThread(t, 20, sketch.ThreadOptions{})
 	gone := sk.Group(hg).Thread.LengthDims[0]
-	sk.Constraints = sliceWithout(sk.Constraints, func(c core.Constraint) bool { return c.H == gone })
+	sk.Constraints = slices.DeleteFunc(sk.Constraints, func(c core.Constraint) bool { return c.H == gone })
 	resize(sk, part, 25)
 	if got, _ := sk.ThreadOf(hg); got.Length != 20 {
 		t.Errorf("followed to %g", got.Length)
@@ -191,17 +191,6 @@ func TestThreadFollowsFaceDimensionGone(t *testing.T) {
 	if msg := sk.Group(hg).Problem.Msg; !strings.Contains(msg, "a dimension of its length is gone") {
 		t.Errorf("problem %q", msg)
 	}
-}
-
-// sliceWithout is s without the elements that match.
-func sliceWithout[E any](s []E, match func(E) bool) []E {
-	var out []E
-	for _, e := range s {
-		if !match(e) {
-			out = append(out, e)
-		}
-	}
-	return out
 }
 
 // Undoing the change to the part takes the thread back with it, and
@@ -265,5 +254,5 @@ func TestThreadFollowsFaceRoundTrip(t *testing.T) {
 	}
 	part := back.GroupOrder[2]
 	resize(back, part, 25)
-	checkFollowed(t, back, part, hg, 25)
+	checkFollowed(t, back, hg, 25)
 }
