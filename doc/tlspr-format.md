@@ -245,6 +245,8 @@ group <handle> <type> <name> {
   solid-face <face>         # shell: a face taken away; wrap, sketch on a face, datum: its face; by identity, one line each
   datum-at <u> [<v>]        # datum: where its face or edge was picked, as fractions of the face's outer loop's bounds in its surface's parameters, or one of the edge's length from its start; left out for the middle
   edge-radius <n> = <expression>  # fillet: edge n's own radius, a length, counting edges and then solid-edge lines from 1; one line each
+  edge-distance <n> = <expression>  # chamfer: edge n's own distance, counted as edge-radius counts; one line each
+  edge-second-distance <n> = <expression>  # chamfer: edge n's own second distance; one line each
   predef { ... }
   visible
   suppress                  # the solid is left out
@@ -322,7 +324,9 @@ segments, arcs and cubics that meet end to end and tangent, or at sharp corners 
 `corner-radius` rounds; a path that closes is swept round with no caps.
 
 A fillet rounds its `edges` and `solid-edge`s of the solid so far at its `radius`, or at an
-edge's own `edge-radius`. A shell hollows the solid so far to walls `thickness` thick, open where
+edge's own `edge-radius`. A chamfer cuts them at its `distance` and `second-distance`, or at an
+edge's own `edge-distance` and `edge-second-distance`; each an edge has none of is the group's.
+A shell hollows the solid so far to walls `thickness` thick, open where
 its `solid-face`s are taken away. A loft without `loft-through` joins `op-a` to `op-b` by ruled
 patches, the second profile's curves matched to the first's turned by `turn`; with it, one smooth
 surface goes through every profile.

@@ -1584,8 +1584,13 @@ func (tw *textWindow) showGroupEdges(g *sketch.Group, what string) {
 }
 
 // showEdgeRadius shows, under a fillet's edge i, the radius of its own
-// that it has, or a link to give it one.
+// that it has, or a link to give it one; under a chamfer's, its
+// distances (showEdgeDistances).
 func (tw *textWindow) showEdgeRadius(g *sketch.Group, i int, bg byte) {
+	if g.Type == sketch.GroupChamfer {
+		tw.showEdgeDistances(g, i, bg)
+		return
+	}
 	if g.Type != sketch.GroupFillet {
 		return
 	}
@@ -2088,6 +2093,11 @@ func (tw *textWindow) EditControlDone(s string) {
 	case editEdgeRadius:
 		if e := ss.exprFromString(s); e != nil {
 			ss.setEdgeRadiusText(tw.edit.group, tw.edit.i, s)
+		}
+
+	case editEdgeDistance, editEdgeSecond:
+		if e := ss.exprFromString(s); e != nil {
+			ss.setEdgeDistanceText(tw.edit.group, tw.edit.i, tw.edit.meaning == editEdgeSecond, s)
 		}
 
 	case editGroupColor:

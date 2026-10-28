@@ -636,18 +636,8 @@ func (v FilletGroup) EdgeRadius(i int) (mm float64) {
 // edges that meet at a corner must have one radius; one that ends where
 // no other rounded edge does may have any.
 func (v FilletGroup) SetEdgeRadius(i int, mm float64) {
-	g := v.g
-	text := ""
-	if mm != 0 {
-		if mm < 0 || math.IsNaN(mm) || math.IsInf(mm, 0) {
-			fail("a fillet's radius must be more than zero, not %g", mm)
-		}
-		// The text in the document's unit, as the screen takes it.
-		var per float64
-		g.d.read(func(sk *sketch.Sketch) { per = sk.Units.MmPer() })
-		text = strconv.FormatFloat(mm/per, 'g', -1, 64)
-	}
-	if err := g.AsFillet().SetEdgeRadiusExpr(i, text); err != nil {
+	text := v.g.edgeMmText(mm, "a fillet's radius must be more than zero")
+	if err := v.SetEdgeRadiusExpr(i, text); err != nil {
 		fail("%v", err)
 	}
 }

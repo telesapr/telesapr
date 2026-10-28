@@ -147,6 +147,9 @@ const (
 	// For how square a loft passes a profile between its ends (an
 	// extension)
 	editLoftProfileTangency Edit = 807
+	// For a chamfer's edge's own distances (an extension)
+	editEdgeDistance Edit = 808
+	editEdgeSecond   Edit = 809
 	// For the screw thread (an extension)
 	editThreadDesignation Edit = 900
 	editThreadLength      Edit = 901

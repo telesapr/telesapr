@@ -21,9 +21,9 @@ down L 247.5 202.5
 up L 247.5 202.5
 menu Features|Chamfer Edges
 tw
-twmove 348 205
-twdown L 348 205
-twup L 348 205
+twmove 348 225
+twdown L 348 225
+twup L 348 225
 tw
 answer ok
 menu Analyze|Check Solid

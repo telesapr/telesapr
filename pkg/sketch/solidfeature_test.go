@@ -377,6 +377,17 @@ func TestSolidGoldens(t *testing.T) {
 		"fillet-cone":    func(d *api.Doc) { filletCone(d) },
 		"fillet-tee":     func(d *api.Doc) { filletTee(d) },
 		"fillet-radii":   func(d *api.Doc) { filletRadii(t, d) },
+		"chamfer-edge-distances": func(d *api.Doc) {
+			// The top's edges at 1, the front at its own 2 and 1.5 (a
+			// distance and a second distance of its own).
+			ex := block(d, 0, 0, 20, 10, 10)
+			c := d.Features.Chamfer([]api.Entity{
+				lineAlong(t, ex, api.V(0, 0, 10), api.V(20, 0, 10)), lineAlong(t, ex, api.V(20, 0, 10), api.V(20, 10, 10)),
+				lineAlong(t, ex, api.V(20, 10, 10), api.V(0, 10, 10)), lineAlong(t, ex, api.V(0, 10, 10), api.V(0, 0, 10)),
+			}, 1, "")
+			c.AsChamfer().SetEdgeDistance(0, 2)
+			c.AsChamfer().SetEdgeSecondDistance(0, 1.5)
+		},
 		"fillet-boss-foot": func(d *api.Doc) {
 			block(d, -10, -10, 10, 10, 5)
 			d.Features.SketchAt(above(d, 5), api.V(1, 0, 0), api.V(0, 1, 0), "")

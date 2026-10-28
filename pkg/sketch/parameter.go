@@ -203,19 +203,32 @@ func (sk *Sketch) SetEdgeRadiusText(hg core.HGroup, i int, text string) error {
 	if g.Type != GroupFillet {
 		return fmt.Errorf("%s is not a fillet: only a fillet's edges have radii", g.Name)
 	}
+	return sk.setEdgeValueText(g, &g.EdgeRadii, i, text, EdgeRadiusField(i), "a fillet's radius must be more than zero")
+}
+
+// setEdgeValueText gives edge i of g a value of its own in list, from
+// what the user typed in the document's unit, field naming it; ""
+// takes it off, so the edge has the group's again. A value that isn't
+// more than zero is refused with refusal.
+func (sk *Sketch) setEdgeValueText(g *Group, list *[]EdgeRadius, i int, text, field, refusal string) error {
+	hg := g.H
 	if i < 0 || i >= len(g.Edges)+len(g.SolidEdges) {
-		return fmt.Errorf("the fillet has no edge %d", i+1)
+		kind := "fillet"
+		if g.Type == GroupChamfer {
+			kind = "chamfer"
+		}
+		return fmt.Errorf("the %s has no edge %d", kind, i+1)
 	}
 	text = cleanText(text)
 	at := -1
-	for k := range g.EdgeRadii {
-		if g.EdgeRadii[k].Edge == i {
+	for k := range *list {
+		if (*list)[k].Edge == i {
 			at = k
 		}
 	}
 	if text == "" {
 		if at >= 0 {
-			g.EdgeRadii = append(g.EdgeRadii[:at], g.EdgeRadii[at+1:]...)
+			*list = append((*list)[:at], (*list)[at+1:]...)
 		}
 		sk.MarkGroupDirty(hg, false)
 		return nil
@@ -224,30 +237,30 @@ func (sk *Sketch) SetEdgeRadiusText(hg core.HGroup, i int, text string) error {
 	if err != nil {
 		return err
 	}
-	old := append([]EdgeRadius(nil), g.EdgeRadii...)
+	old := append([]EdgeRadius(nil), *list...)
 	if at < 0 {
-		g.EdgeRadii = append(g.EdgeRadii, EdgeRadius{Edge: i})
-		slices.SortFunc(g.EdgeRadii, func(a, b EdgeRadius) int { return cmp.Compare(a.Edge, b.Edge) })
-		for k := range g.EdgeRadii {
-			if g.EdgeRadii[k].Edge == i {
+		*list = append(*list, EdgeRadius{Edge: i})
+		slices.SortFunc(*list, func(a, b EdgeRadius) int { return cmp.Compare(a.Edge, b.Edge) })
+		for k := range *list {
+			if (*list)[k].Edge == i {
 				at = k
 			}
 		}
 	}
-	er := &g.EdgeRadii[at]
+	er := &(*list)[at]
 	if v, plain := plainNumber(text, names); plain {
 		v *= sk.Units.MmPer()
 		if v <= 0 || math.IsNaN(v) || math.IsInf(v, 0) {
-			g.EdgeRadii = old
-			return errors.New("a fillet's radius must be more than zero")
+			*list = old
+			return errors.New(refusal)
 		}
 		er.Val, er.Expr = v, ""
 	} else {
 		er.Expr = text
 		sk.applyParameters()
 		for _, ee := range sk.ExprErrors {
-			if ee.Group == hg && ee.Constraint.V == 0 && ee.Field == EdgeRadiusField(i) {
-				g.EdgeRadii = old
+			if ee.Group == hg && ee.Constraint.V == 0 && ee.Field == field {
+				*list = old
 				sk.applyParameters()
 				return errors.New(ee.Err)
 			}
@@ -465,9 +478,11 @@ func (sk *Sketch) forEachExpr(fn func(expr *string, who string)) {
 				fn(expr, fmt.Sprintf("group %s %s", g.Name, g.FieldName(f)))
 			}
 		}
-		for k := range g.EdgeRadii {
-			if er := &g.EdgeRadii[k]; er.Expr != "" {
-				fn(&er.Expr, fmt.Sprintf("group %s %s", g.Name, EdgeRadiusField(er.Edge)))
+		for _, l := range g.edgeValueLists() {
+			for k := range *l.list {
+				if er := &(*l.list)[k]; er.Expr != "" {
+					fn(&er.Expr, fmt.Sprintf("group %s %s", g.Name, l.field(er.Edge)))
+				}
 			}
 		}
 		for k := range g.LinkParams {
@@ -586,26 +601,28 @@ func (sk *Sketch) evaluate() []core.HGroup {
 				mark(g.H)
 			}
 		}
-		for k := range g.EdgeRadii {
-			er := &g.EdgeRadii[k]
-			if er.Expr == "" {
-				continue
-			}
-			v, err := eval(er.Expr)
-			if err == nil {
-				v *= sk.Units.MmPer()
-				if !(v > 0) {
-					err = errors.New("a fillet's radius must be more than zero")
+		for _, l := range g.edgeValueLists() {
+			for k := range *l.list {
+				er := &(*l.list)[k]
+				if er.Expr == "" {
+					continue
 				}
-			}
-			if err != nil {
-				sk.ExprErrors = append(sk.ExprErrors, ExprError{
-					Group: g.H, Field: EdgeRadiusField(er.Edge), Expr: er.Expr, Err: err.Error()})
-				continue
-			}
-			if er.Val != v {
-				er.Val = v
-				mark(g.H)
+				v, err := eval(er.Expr)
+				if err == nil {
+					v *= sk.Units.MmPer()
+					if !(v > 0) {
+						err = errors.New(l.refusal)
+					}
+				}
+				if err != nil {
+					sk.ExprErrors = append(sk.ExprErrors, ExprError{
+						Group: g.H, Field: l.field(er.Edge), Expr: er.Expr, Err: err.Error()})
+					continue
+				}
+				if er.Val != v {
+					er.Val = v
+					mark(g.H)
+				}
 			}
 		}
 		for k := range g.LinkParams {
@@ -1019,6 +1036,9 @@ func (sk *Sketch) SetUnits(u core.Unit) []string {
 		}
 		for k := range g.EdgeRadii {
 			convert(&g.EdgeRadii[k].Expr)
+		}
+		for k := range g.EdgeSeconds {
+			convert(&g.EdgeSeconds[k].Expr)
 		}
 		convert(&g.Thread.LengthExpr)
 	}

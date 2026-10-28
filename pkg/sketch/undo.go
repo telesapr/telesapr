@@ -262,6 +262,7 @@ func (g *Group) defining() Group {
 		LoftAlongSides:         g.LoftAlongSides,
 		SweepUp:                g.SweepUp,
 		EdgeRadii:              slices.Clone(g.EdgeRadii),
+		EdgeSeconds:            slices.Clone(g.EdgeSeconds),
 		Name:                   g.Name,
 	}
 }

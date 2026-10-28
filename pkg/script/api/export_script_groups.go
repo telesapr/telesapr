@@ -465,6 +465,18 @@ func (w *scriptWriter) writeKindOptions(g *sketch.Group, v string) {
 		if g.ValC != 0 {
 			w.line("%s.AsChamfer().SetSecondDistance(%s)", v, num(g.ValC))
 		}
+		for _, l := range []struct {
+			method string
+			list   []sketch.EdgeRadius
+		}{{"SetEdgeDistance", g.EdgeRadii}, {"SetEdgeSecondDistance", g.EdgeSeconds}} {
+			for _, er := range l.list {
+				if er.Expr != "" {
+					w.line("must(%s.AsChamfer().%sExpr(%d, %q))", v, l.method, er.Edge, er.Expr)
+				} else {
+					w.line("%s.AsChamfer().%s(%d, %s)", v, l.method, er.Edge, num(er.Val))
+				}
+			}
+		}
 	case sketch.GroupFillet:
 		for _, er := range g.EdgeRadii {
 			if er.Expr != "" {

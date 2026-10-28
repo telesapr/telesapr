@@ -44,6 +44,29 @@ s := doc.Active().Solid()
 doc.Features.ChamferSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 2, 10))}, 1, "")
 ```
 
+## Distances of an edge's own
+
+An edge can be cut at a distance of its own, and a second distance of its own, where the rest
+take the chamfer's: under each edge on the group's screen, *[own distance]* and *[own second
+distance]* take one, as a number or an expression; the row then shows it with *[change]* and
+*[the chamfer's]*, which takes it off again. Edges are counted as the screen lists them, the
+line segments first, then the edges of the solid, from 0. Example:
+[`examples/scripts/chamferedges`](../../examples/scripts/chamferedges/chamferedges.go), a block
+whose front top edge is cut wider than the others.
+
+```go
+c := doc.Features.ChamferSolid(edges, 2, "")
+c.AsChamfer().SetEdgeDistance(0, 4)          // the first edge at 4, the rest at 2
+c.AsChamfer().SetEdgeSecondDistance(0, 1)    // and 1 on its second face
+must(c.AsChamfer().SetEdgeDistanceExpr(1, "w/2"))
+c.AsChamfer().SetEdgeDistance(0, 0)          // the chamfer's distance again
+```
+
+Swapping the chamfer's distances swaps each edge's own as well, and *[same]* takes the edges' own
+second distances off with the chamfer's. Where edges of different distances meet above an edge
+left sharp they meet in a mitre (below); at a corner of three chamfered edges of different
+distances that the chamfer can't make by its edit, each straight edge is cut by a wedge.
+
 ## Corners
 
 Where every edge at a corner is chamfered, three or more straight edges between flat faces, the

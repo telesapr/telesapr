@@ -594,20 +594,22 @@ func (sk *Sketch) PruneGroups(hg core.HGroup) bool {
 				sk.broke(hg, "edge of "+g.DescriptionString(), sk.entityName(he))
 			}
 		}
-		if dropped := len(g.Edges) - len(kept); dropped > 0 && len(g.EdgeRadii) > 0 {
-			radii := g.EdgeRadii[:0]
-			for _, er := range g.EdgeRadii {
-				switch {
-				case er.Edge >= len(at):
-					er.Edge -= dropped
-				case at[er.Edge] < 0:
-					continue
-				default:
-					er.Edge = at[er.Edge]
+		if dropped := len(g.Edges) - len(kept); dropped > 0 {
+			for _, l := range g.edgeValueLists() {
+				radii := (*l.list)[:0]
+				for _, er := range *l.list {
+					switch {
+					case er.Edge >= len(at):
+						er.Edge -= dropped
+					case at[er.Edge] < 0:
+						continue
+					default:
+						er.Edge = at[er.Edge]
+					}
+					radii = append(radii, er)
 				}
-				radii = append(radii, er)
+				*l.list = radii
 			}
-			g.EdgeRadii = radii
 		}
 		g.Edges = kept
 	}

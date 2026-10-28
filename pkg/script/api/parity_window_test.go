@@ -262,6 +262,10 @@ var windowActions = map[string]string{
 	"ScreenDeleteGroup":               "Group.Delete",
 	"ScreenChangeEdgeRadius":          "FilletGroup.SetEdgeRadius FilletGroup.SetEdgeRadiusExpr",
 	"ScreenResetEdgeRadius":           "FilletGroup.SetEdgeRadiusExpr",
+	"ScreenChangeEdgeDistance":        "ChamferGroup.SetEdgeDistance ChamferGroup.SetEdgeDistanceExpr",
+	"ScreenResetEdgeDistance":         "ChamferGroup.SetEdgeDistanceExpr",
+	"ScreenChangeEdgeSecond":          "ChamferGroup.SetEdgeSecondDistance ChamferGroup.SetEdgeSecondDistanceExpr",
+	"ScreenResetEdgeSecond":           "ChamferGroup.SetEdgeSecondDistanceExpr",
 	"ScreenAllowRedundant":            "Group.SetAllowRedundant",
 	"ScreenStepDimFinish":             "Constraint.Set",
 	"ScreenStepDimSteps":              "Constraint.Set",
@@ -534,6 +538,8 @@ var windowActions = map[string]string{
 	"editTangentArcRadius":         "Sketch.TangentArc",
 	"editHelixPitch":               "Group.SetExpr FilletGroup.SetRadius ChamferGroup.SetDistance ShellGroup.SetThickness SweepGroup.SetCornerRadius LoftGroup.SetTangency",
 	"editEdgeRadius":               "FilletGroup.SetEdgeRadius FilletGroup.SetEdgeRadiusExpr",
+	"editEdgeDistance":             "ChamferGroup.SetEdgeDistance ChamferGroup.SetEdgeDistanceExpr",
+	"editEdgeSecond":               "ChamferGroup.SetEdgeSecondDistance ChamferGroup.SetEdgeSecondDistanceExpr",
 	"editGroupDraft":               "ExtrudeGroup.SetDraft SweepGroup.SetTwist LoftGroup.SetTangency Group.SetExpr",
 	"editLoftProfileTangency":      "LoftGroup.SetProfileTangency",
 	"editGroupExtent":              "ExtrudeGroup.SetDepth RevolveGroup.SetAngle Group.SetExpr",
@@ -991,6 +997,12 @@ SetDistance        ScreenChangeHelixPitch; editHelixPitch
 SecondDistance     -q
 SetSecondDistance  ScreenChangeChamferDistance2; editChamferDistance2; ScreenSameChamferDistances
 SwapDistances      ScreenSwapChamferDistances
+EdgeDistance                -q
+SetEdgeDistance             ScreenChangeEdgeDistance; editEdgeDistance
+SetEdgeDistanceExpr         ScreenChangeEdgeDistance; ScreenResetEdgeDistance
+EdgeSecondDistance          -q
+SetEdgeSecondDistance       ScreenChangeEdgeSecond; editEdgeSecond
+SetEdgeSecondDistanceExpr   ScreenChangeEdgeSecond; ScreenResetEdgeSecond
 SetEdges           ScreenChangeInputs; ScreenRemoveInput
 `,
 	"FilletGroup": `
