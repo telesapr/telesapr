@@ -17,6 +17,7 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 - Scripting: `srf.SetChordTolMm`, `srf.SetMaxSegments` and `srf.SetMesher`, which set the tolerance of shells built with none and were meant for tests; a document's chord tolerance and segments are set with `Edit.SetChordTolerance` and `Edit.SetMaxSegments`.
 
 ### Fixed
+- Fillets of some of a rim's edges that turn at sharp corners of a curved wall, two or three of four cubics' top edges picked together, are made, mitred where the picked edges meet and ending on the unpicked edges' walls, where before they were refused as "can't be fitted" at fine chord tolerances.
 - A screw thread made on a face over its full length follows the face when the part changes afterwards: a rod made longer by a parameter, or a hole drilled deeper, carries a thread as long as it is at the next regeneration, where before the thread kept its old length until it was edited. A face come to reach the part's end, or to stop short of it, or too short for the thread, is reported on the thread's group, and the thread takes it up when edited.
 - A menu opened from the keyboard (Alt and a letter, F10, Left and Right) on a very busy machine keeps its first entry active, so Return runs it, instead of sometimes closing without running anything.
 - Text drawn in the vector font on two threads at once, as a drawing exported by a script while the window draws, no longer races on the font's glyphs.
