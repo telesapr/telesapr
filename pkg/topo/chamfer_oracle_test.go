@@ -218,7 +218,7 @@ func TestChamferCornerOracle(t *testing.T) {
 		want, _ := strconv.ParseFloat(f[len(f)-2], 64)
 		faces, _ := strconv.Atoi(f[len(f)-1])
 		var occ []geom.Vector
-		for _, c := range strings.Fields(corners) {
+		for c := range strings.FieldsSeq(corners) {
 			var p geom.Vector
 			if _, err := fmt.Sscanf(c, "%g,%g,%g", &p.X, &p.Y, &p.Z); err != nil {
 				t.Fatalf("%q: %v", line, err)
