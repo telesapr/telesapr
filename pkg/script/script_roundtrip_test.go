@@ -3,6 +3,7 @@ package script
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -41,6 +42,36 @@ func roundVolume(s string) string {
 		}
 		return "volume " + strconv.FormatFloat(v, 'g', 4, 64) + " mm³"
 	})
+}
+
+// bounds is a solid's bounds in Describe, which it prints to a
+// thousandth: a bound on a tie of that rounding, as a thread's crest at
+// 3.9565 mm, prints either way as the last bit falls, so two summaries
+// agree when their bounds are within a thousandth.
+var bounds = regexp.MustCompile(`bounds \(([^)]*)\) to \(([^)]*)\)`)
+
+// sameLine reports whether two lines of a summary agree.
+func sameLine(a, b string) bool {
+	if a == b {
+		return true
+	}
+	ma, mb := bounds.FindStringSubmatch(a), bounds.FindStringSubmatch(b)
+	if ma == nil || mb == nil || bounds.ReplaceAllString(a, "") != bounds.ReplaceAllString(b, "") {
+		return false
+	}
+	na := strings.Split(ma[1]+", "+ma[2], ", ")
+	nb := strings.Split(mb[1]+", "+mb[2], ", ")
+	if len(na) != len(nb) {
+		return false
+	}
+	for i := range na {
+		x, errX := strconv.ParseFloat(na[i], 64)
+		y, errY := strconv.ParseFloat(nb[i], 64)
+		if errX != nil || errY != nil || math.Abs(x-y) > 0.0011 {
+			return false
+		}
+	}
+	return true
 }
 
 // modelSummary is what the round trip compares: each group's kind,
@@ -87,7 +118,7 @@ func roundTrip(t *testing.T, path string) (string, []string) {
 	}
 	made := api.NewDoc(host)
 	want, got := modelSummary(orig), modelSummary(made)
-	if slices.Equal(want, got) {
+	if slices.EqualFunc(want, got, sameLine) {
 		return "", notes
 	}
 	if dir := os.Getenv("TELESAPR_SCRIPT_OUT"); dir != "" {
@@ -101,7 +132,7 @@ func roundTrip(t *testing.T, path string) (string, []string) {
 		if i < len(got) {
 			g = got[i]
 		}
-		if w != g {
+		if !sameLine(w, g) {
 			return fmt.Sprintf("differs at line %d:\n want %s\n  got %s", i, w, g), notes
 		}
 	}
