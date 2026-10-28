@@ -204,6 +204,8 @@ type filletCorner struct {
 	arcs       map[int]srf.SBezier
 	faceCurves map[int]srf.SBezier
 	quads      []srf.SSurface
+	// For a corner of chamfers: the faces that fill it.
+	plates []cornerPlate
 }
 
 // seam is the kind of a corner where two pieces of a circular edge meet.
@@ -485,7 +487,17 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 			if corners[v] != nil {
 				continue
 			}
-			c, err := t.filletCornerAt(v, edges, byEdge)
+			var c *filletCorner
+			var err error
+			if flat && t.chamferCornerTakes(v, edges, byEdge) {
+				c, err = t.chamferCornerAt(v, edges, byEdge)
+				if err != nil {
+					return err
+				}
+				corners[v] = c
+				continue
+			}
+			c, err = t.filletCornerAt(v, edges, byEdge)
 			if setback && forceSetback && err == nil && c.kind == 3 {
 				c, err = t.setbackCornerAt(v, edges, byEdge)
 			}
@@ -617,6 +629,12 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 			q.Origin = next
 			next++
 			patches = append(patches, patch{q, []srf.SBezier{e0, e1, e2, e3}, t.Vertices[v].P})
+		}
+		for _, pl := range c.plates {
+			pl.s.Color = color
+			pl.s.Origin = next
+			next++
+			patches = append(patches, patch{pl.s, pl.loop, t.Vertices[v].P})
 		}
 	}
 

@@ -78,9 +78,16 @@ func TestChamferCorner(t *testing.T) {
 	}
 	c := d.Features.Chamfer(edges, 1, "")
 	r := c.Analyze().Check()
-	// Three prisms of 0.5*10 each, less the overlaps at the corner.
-	if !r.Sound() || r.Volume > 1000-15+1 || r.Volume < 1000-15 {
+	// Three prisms of 0.5*10 each, less the overlaps at the corner, the
+	// corner cut by the plane through the three points where the
+	// strips' lines cross: OpenCASCADE's makeChamfer gives 985.6667.
+	if !r.Sound() || math.Abs(r.Volume-(1000-15+2.0/3)) > 1e-6 {
 		t.Fatalf("chamfered corner: %s", r.String())
+	}
+	for _, s := range c.Analyze().Shell().Surface {
+		if s.DegM != 1 || s.DegN != 1 {
+			t.Errorf("a face of degree %d by %d: the chamfered corner's faces are all planes", s.DegM, s.DegN)
+		}
 	}
 }
 
