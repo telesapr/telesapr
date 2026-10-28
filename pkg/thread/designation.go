@@ -21,6 +21,9 @@ import (
 //	3/8-20 BSF     Whitworth, 20 threads per inch
 //	G1/2           parallel pipe thread (BSP), of ISO 228-1
 //	1/2-10 ACME    general purpose ACME, 10 threads per inch
+//	S20x4          DIN 513 metric buttress
+//	S40x14(P7)     buttress, 7 mm pitch, 14 mm lead
+//	1-12 BUTT      ASME B1.9 buttress inch, 12 threads per inch
 //
 // A designation ending in -LH is a left-hand thread. Letter case and
 // spaces don't matter, and the multiplication sign may stand for the x.
@@ -48,6 +51,9 @@ func Parse(text string) (Spec, error) {
 	case strings.HasPrefix(t, "M"):
 		s.Form = FormMetric
 		err = s.parseMetric(t[1:], text)
+	case strings.HasPrefix(t, "S") && len(t) > 1 && strings.ContainsAny(t[1:2], "0123456789 "):
+		s.Form = FormButtress
+		err = s.parseMetric(t[1:], text)
 	case strings.HasPrefix(t, "G") && len(t) > 1 && strings.ContainsAny(t[1:2], "0123456789 "):
 		s.Form = FormWhitworth
 		err = s.parsePipe(t[1:], text)
@@ -74,9 +80,12 @@ func (s *Spec) parseMetric(t, text string) error {
 		return bad
 	}
 	if !hasPitch {
-		if s.Form == FormTrapezoidal {
+		switch s.Form {
+		case FormTrapezoidal:
 			s.Pitch, ok = TrapezoidalPitch(s.Diameter)
-		} else {
+		case FormButtress:
+			s.Pitch, ok = ButtressPitch(s.Diameter)
+		default:
 			s.Pitch, ok = CoarsePitch(s.Diameter)
 		}
 		if !ok {
@@ -86,7 +95,7 @@ func (s *Spec) parseMetric(t, text string) error {
 	}
 
 	// A lead and a pitch: Ph3P1.5 for the metric thread, 8(P4) or 8P4
-	// for the trapezoidal one.
+	// for the trapezoidal and buttress ones.
 	rest = strings.TrimSpace(rest)
 	lead := ""
 	if s.Form == FormMetric {
@@ -116,7 +125,7 @@ func (s *Spec) parseMetric(t, text string) error {
 	return nil
 }
 
-// unknownSize is the error for a metric or trapezoidal size that the
+// unknownSize is the error for a metric, trapezoidal or buttress size that the
 // series lacks: a pitch to give it, which makes a thread that can be
 // made, and the nearest standard size.
 func (s *Spec) unknownSize() error {
@@ -128,7 +137,7 @@ func (s *Spec) unknownSize() error {
 		}
 		try.Pitch /= 2
 	}
-	prefix := map[Form]string{FormMetric: "M", FormTrapezoidal: "Tr"}[s.Form]
+	prefix := map[Form]string{FormMetric: "M", FormTrapezoidal: "Tr", FormButtress: "S"}[s.Form]
 	return fmt.Errorf("%s%s isn't a standard size; give its pitch, as in %s, or take the nearest, %s",
 		prefix, formatNumber(s.Diameter), try, near)
 }
@@ -184,6 +193,7 @@ var inchSeries = []struct {
 	{"UNC", FormUnified, nil}, {"UNF", FormUnified, nil}, {"UNEF", FormUnified, nil},
 	{"UNS", FormUnified, nil}, {"UN", FormUnified, nil},
 	{"BSW", FormWhitworth, bsw}, {"BSF", FormWhitworth, bsf}, {"ACME", FormACME, acme},
+	{"BUTT", FormButtressInch, buttressInch},
 }
 
 // parseInch reads an inch designation: a size, then the threads per
@@ -315,8 +325,9 @@ func (s Spec) String() string {
 		case !ok || !same(coarse, s.Pitch):
 			b.WriteString("x" + formatNumber(s.Pitch))
 		}
-	case FormTrapezoidal:
-		b.WriteString("Tr" + formatNumber(s.Diameter) + "x" + formatNumber(s.Lead()))
+	case FormTrapezoidal, FormButtress:
+		b.WriteString(map[Form]string{FormTrapezoidal: "Tr", FormButtress: "S"}[s.Form] +
+			formatNumber(s.Diameter) + "x" + formatNumber(s.Lead()))
 		if s.NumStarts() > 1 {
 			b.WriteString("(P" + formatNumber(s.Pitch) + ")")
 		}
@@ -341,6 +352,9 @@ func (s Spec) String() string {
 		s.writeStarts(&b)
 	case FormACME:
 		b.WriteString(inchName(s.Diameter/mmPerInch, acme) + "-" + formatNumber(mmPerInch/s.Pitch) + " ACME")
+		s.writeStarts(&b)
+	case FormButtressInch:
+		b.WriteString(inchName(s.Diameter/mmPerInch, buttressInch) + "-" + formatNumber(mmPerInch/s.Pitch) + " BUTT")
 		s.writeStarts(&b)
 	}
 	if s.LeftHand {

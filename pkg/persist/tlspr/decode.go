@@ -637,6 +637,8 @@ func (d *decoder) thread(n *Node, hg core.HGroup) sketch.GroupThread {
 			t.RunOut = d.realField(c)
 		case "level-starts":
 			t.LevelStarts = d.flag(c)
+		case "load-flank-back":
+			t.LoadFlankBack = d.flag(c)
 		case "chamfer":
 			t.Chamfer = d.flag(c)
 		case "full-length":

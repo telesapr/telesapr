@@ -1,6 +1,6 @@
 // Package thread has the screw thread standards: the sizes and pitches
 // of the ISO metric, unified inch, ISO metric trapezoidal, Whitworth
-// (BSW, BSF, BSP) and ACME series, their designations, and the profile
+// (BSW, BSF, BSP), ACME and buttress series, their designations, and the profile
 // of a thread in a plane through its axis.
 package thread
 
@@ -31,6 +31,13 @@ const (
 	// FormACME is the ASME B1.5 general purpose profile, with flanks
 	// at 29 degrees, of the ACME threads.
 	FormACME
+	// FormButtress is the DIN 513 metric buttress profile (S threads),
+	// with a load flank at 3 degrees and a trailing flank at 30
+	// degrees to the plane square to the axis (buttress.go).
+	FormButtress
+	// FormButtressInch is the ASME B1.9 buttress profile (BUTT
+	// threads), with flanks at 7 and 45 degrees.
+	FormButtressInch
 )
 
 // trapezoid reports whether the form is a trapezoidal one, half a
@@ -104,6 +111,9 @@ func (s Spec) crestClearance() float64 {
 // PitchDiameter is the diameter where the ridge and the groove are
 // equally wide (d2, D2).
 func (s Spec) PitchDiameter() float64 {
+	if b, ok := s.buttress(); ok {
+		return s.Diameter - 2*b.pitchDepth*s.Pitch
+	}
 	switch {
 	case s.Form.trapezoid():
 		return s.Diameter - 0.5*s.Pitch
@@ -117,6 +127,9 @@ func (s Spec) PitchDiameter() float64 {
 // the hole to make before tapping it. For the 60 degree profile it is
 // also the basic minor diameter of the external thread (d1).
 func (s Spec) MinorDiameter() float64 {
+	if b, ok := s.buttress(); ok {
+		return s.Diameter - 2*b.engagement*s.Pitch
+	}
 	switch {
 	case s.Form.trapezoid():
 		return s.Diameter - s.Pitch
@@ -130,6 +143,9 @@ func (s Spec) MinorDiameter() float64 {
 // thread: d1 for the 60 and 55 degree profiles, d3 for the
 // trapezoidal ones.
 func (s Spec) ExternalMinorDiameter() float64 {
+	if b, ok := s.buttress(); ok {
+		return s.Diameter - 2*b.externalDepth*s.Pitch
+	}
 	if s.Form.trapezoid() {
 		return s.Diameter - s.Pitch - 2*s.crestClearance()
 	}
@@ -140,6 +156,9 @@ func (s Spec) ExternalMinorDiameter() float64 {
 // thread: D for the 60 and 55 degree profiles, D4 for the
 // trapezoidal ones.
 func (s Spec) InternalMajorDiameter() float64 {
+	if b, ok := s.buttress(); ok {
+		return s.Diameter + 2*b.internalRoot*s.Pitch
+	}
 	if s.Form.trapezoid() {
 		return s.Diameter + 2*s.crestClearance()
 	}
@@ -149,6 +168,9 @@ func (s Spec) InternalMajorDiameter() float64 {
 // FlankAngle is the angle between the two flanks of a ridge, in
 // degrees.
 func (s Spec) FlankAngle() float64 {
+	if b, ok := s.buttress(); ok {
+		return b.load + b.trailing
+	}
 	switch s.Form {
 	case FormTrapezoidal:
 		return 30
@@ -167,7 +189,7 @@ func (s Spec) Validate() error {
 		return errors.New("thread diameter must be positive")
 	case !(s.Pitch > 0) || math.IsInf(s.Pitch, 0):
 		return errors.New("thread pitch must be positive")
-	case s.Form < FormMetric || s.Form > FormACME:
+	case s.Form < FormMetric || s.Form > FormButtressInch:
 		return errors.New("unknown thread form")
 	case s.Starts < 0:
 		return errors.New("thread must have at least one start")
@@ -178,18 +200,26 @@ func (s Spec) Validate() error {
 }
 
 // Profile is one ridge of a thread, cut by a plane through the axis: a
-// trapezoid, symmetric about a line perpendicular to the axis, whose
-// parallel sides lie along the axis at the crest and at the root.
+// trapezoid whose parallel sides lie along the axis at the crest and at
+// the root, symmetric about a line perpendicular to the axis but for a
+// buttress thread's.
 type Profile struct {
 	// CrestRadius and RootRadius are the distances from the axis of the
 	// ridge's top and of its foot. The crest is the nearer of the two
 	// for an internal thread.
 	CrestRadius, RootRadius float64
+	// PitchRadius is where the ridge is half a pitch wide.
+	PitchRadius float64
 	// CrestWidth and RootWidth are the lengths along the axis of the
 	// ridge at those radii.
 	CrestWidth, RootWidth float64
 	// FlankAngle is the angle between the flanks, in degrees.
 	FlankAngle float64
+	// UpperFlank is the angle, in degrees, between the plane square to
+	// the axis and the flank that faces along the thread, away from
+	// where it starts; the other flank's is FlankAngle less it. Half
+	// FlankAngle but for a buttress thread.
+	UpperFlank float64
 	// CrestRoundRadius is the radius of a rounded crest's arc, 0 for a
 	// flat crest; the arc meets the flanks at RoundFootRadius from the
 	// axis, CrestWidth apart (WithCrest).
@@ -202,7 +232,13 @@ type Profile struct {
 // none, the 60 degree profiles of a screw and its nut touch all over.
 func (s Spec) Profile(internal bool, clearance float64) Profile {
 	pitchR := s.PitchDiameter() / 2
-	p := Profile{FlankAngle: s.FlankAngle()}
+	lower, upper := s.flanks()
+	if internal {
+		// A nut's ridge fills the screw's groove, whose flanks face the
+		// other way.
+		lower, upper = upper, lower
+	}
+	p := Profile{FlankAngle: lower + upper, UpperFlank: upper, PitchRadius: pitchR}
 	if internal {
 		p.CrestRadius = s.MinorDiameter() / 2
 		p.RootRadius = s.InternalMajorDiameter() / 2
@@ -211,16 +247,26 @@ func (s Spec) Profile(internal bool, clearance float64) Profile {
 		p.RootRadius = s.ExternalMinorDiameter() / 2
 	}
 	// The ridge is half a pitch wide at the pitch diameter.
-	slope := 2 * math.Tan(p.FlankAngle/2*math.Pi/180)
+	slope := p.Slope()
 	p.CrestWidth = s.Pitch/2 - slope*math.Abs(p.CrestRadius-pitchR)
 	p.RootWidth = s.Pitch/2 + slope*math.Abs(p.RootRadius-pitchR)
 	if internal {
 		p.CrestRadius += clearance
 		p.RootRadius += clearance
+		p.PitchRadius += clearance
 	} else {
 		p.CrestRadius -= clearance
 		p.RootRadius -= clearance
+		p.PitchRadius -= clearance
 	}
+	return p
+}
+
+// Turned is the ridge with its flanks swapped: a buttress ridge's load
+// flank facing the other way along the axis. A symmetric ridge is
+// returned as it is.
+func (p Profile) Turned() Profile {
+	p.UpperFlank = p.FlankAngle - p.UpperFlank
 	return p
 }
 
@@ -233,13 +279,48 @@ func (p Profile) Height() float64 {
 // may lie beyond the root, where the flanks are carried on.
 // A rounded crest's flanks end at its arc's feet.
 func (p Profile) WidthAt(r float64) float64 {
-	slope := 2 * math.Tan(p.FlankAngle/2*math.Pi/180)
+	return p.CrestWidth + p.Slope()*p.belowCrest(r)
+}
+
+// belowCrest is how far radius r lies from the crest's flat towards
+// the root, or from a rounded crest's feet.
+func (p Profile) belowCrest(r float64) float64 {
 	top := p.CrestRadius
 	if p.CrestRoundRadius > 0 {
 		top = p.RoundFootRadius
 	}
 	if p.RootRadius < p.CrestRadius {
-		return p.CrestWidth + slope*(top-r)
+		return top - r
 	}
-	return p.CrestWidth + slope*(r-top)
+	return r - top
+}
+
+// flankTans are the tangents of the lower and the upper flank's
+// angles: how far along the axis each moves out from the ridge's
+// middle for each millimetre towards the root.
+func (p Profile) flankTans() (lower, upper float64) {
+	return math.Tan((p.FlankAngle - p.UpperFlank) * math.Pi / 180), math.Tan(p.UpperFlank * math.Pi / 180)
+}
+
+// Slope is how much wider the ridge grows for each millimetre from its
+// crest towards its root.
+func (p Profile) Slope() float64 {
+	lower, upper := p.flankTans()
+	return lower + upper
+}
+
+// Symmetric tells whether the ridge's flanks lie at the same angle,
+// as every profile's but a buttress thread's do.
+func (p Profile) Symmetric() bool {
+	return math.Abs(2*p.UpperFlank-p.FlankAngle) < 1e-9
+}
+
+// MiddleShift is how far along the thread, towards the upper flank,
+// the middle of the ridge at radius r lies from the middle of its
+// crest: 0 for a symmetric ridge, and for a buttress thread's more the
+// further r is from the crest, as the trailing flank leans further
+// out than the load flank.
+func (p Profile) MiddleShift(r float64) float64 {
+	lower, upper := p.flankTans()
+	return p.belowCrest(r) * (upper - lower) / 2
 }

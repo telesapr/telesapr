@@ -19,15 +19,24 @@ takes:
   | `1/4 BSW`, `3/8 BSF`, `3/8-20 BSW` | Whitworth, 55° |
   | `G1/2`, `G1 1/2` | parallel pipe thread (BSP, ISO 228-1) |
   | `1/2-10 ACME`, `1/2 ACME-2G` | general purpose ACME, 29° |
+  | `S20x4`, `S40x14(P7)` | metric buttress (DIN 513), flanks at 3° and 30° |
+  | `1-12 BUTT`, `1 BUTT` | buttress inch (ASME B1.9), flanks at 7° and 45° |
 
-  **[choose]** lists the series (metric, unified, trapezoidal, Whitworth, pipe, ACME), the sizes
+  **[choose]** lists the series (metric, unified, trapezoidal, Whitworth, pipe, ACME, buttress,
+  and BUTT for buttress inch), the sizes
   of one, and the standard pitches of the thread's size (for M8: 1.25, the coarse one, then the
   ISO 261 fine 1 and 0.75); a click takes a size or a pitch, keeping the starts and the hand.
   **[change]** takes any designation typed; one written otherwise than typed says so beside it
   (`'M8x1.25' is written M8`), and a size the series lacks is refused with a pitch that makes a
   thread and the nearest standard size (`give its pitch, as in Tr21x4, or take the nearest,
   Tr20x4`). Whitworth crests and roots are flat at the height of the standard's rounds; the
-  rounded crest comes close to the standard's crest. Buttress and tapered threads are not made;
+  rounded crest comes close to the standard's crest. A buttress thread's ridge leans: its load
+  flank, nearly square to the axis, faces along the thread on a screw and back in a nut, so that
+  a screw and a nut whose threads run the same way mate; **load flank back**, beside the hand for
+  a buttress thread, turns it about. Its crest and root are flat (B1.9 rounds the root), its
+  crest can't be rounded, and it has no tolerance classes. The S series takes ISO 2902's
+  diameters and pitches from 10 mm; a buttress inch size without its threads per inch takes the
+  middle of those B1.9 recommends for its diameter. Tapered threads are not made;
 - **right-hand** or **left-hand**, beside the pitch; `-LH` at the end of a designation is the
   same;
 - **length**, in the document's unit, from the circle's plane, one and a half diameters to begin with; a plain number,
@@ -40,7 +49,7 @@ takes:
   **[choose]** lists the tolerance classes of the thread's form and side: 6g, 6h, 6f, 6e, 4h, 8g
   for an ISO metric screw and 6H, 4H, 5H, 7H, 6G for its nut (ISO 965-1); 1A, 2A, 3A and 1B, 2B,
   3B for unified threads (ASME B1.1); 7e, 8e and 7H, 8H for trapezoidal ones (ISO 2903).
-  Whitworth and ACME threads have none. A class sets the clearance to the middle of its zone:
+  Whitworth, ACME and buttress threads have none. A class sets the clearance to the middle of its zone:
   half the fundamental deviation plus half the pitch diameter tolerance, as a radius, so that a
   6g screw fits a 6H nut as their parts do on average (M10: 0.049 and 0.044 mm). The numbers
   come from the standards' formulas, within a few µm of their tables for the sizes checked; a
@@ -89,7 +98,9 @@ the two circles carry threads, a screw's and a nut's of one size, pitch, starts 
 on the circle, or on the same axis of the same part, as on the hole's face or its other rim),
 the mate takes the threads' lead and first moves the nut along the axis, by less than half a
 pitch, to where its ridges lie between the bolt's; turning it by the mate's `turn` then keeps
-them there. Mismatched threads (M8 on M10, two screws) are refused. A cosmetic thread gives the
+them there. Mismatched threads (M8 on M10, two screws) are refused, as are two buttress threads whose
+load flanks face the same way along the axis, which no move fits: make one with **load flank
+back**. A cosmetic thread gives the
 mate its lead but has no ridges to fit, so the part stays where it is. Example:
 [`examples/scripts/threadfit`](../../examples/scripts/threadfit/threadfit.go), a 6g bolt and a
 6H nut screwed down it, checked for interferences at each turn.

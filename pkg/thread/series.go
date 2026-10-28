@@ -24,12 +24,17 @@ const (
 	SeriesPipe
 	// SeriesACME is ASME B1.5's general purpose ACME threads.
 	SeriesACME
+	// SeriesButtress is DIN 513's metric buttress threads (S).
+	SeriesButtress
+	// SeriesButtressInch is ASME B1.9's buttress inch threads (BUTT).
+	SeriesButtressInch
 )
 
 // seriesNames are the series' names in scripts and on the screen.
 var seriesNames = [...]string{
 	SeriesMetric: "metric", SeriesUnified: "unified", SeriesTrapezoidal: "trapezoidal",
 	SeriesWhitworth: "Whitworth", SeriesPipe: "pipe", SeriesACME: "ACME",
+	SeriesButtress: "buttress", SeriesButtressInch: "BUTT",
 }
 
 func (sr Series) String() string {
@@ -41,7 +46,8 @@ func (sr Series) String() string {
 
 // AllSeries are the series, in the order a list shows them.
 func AllSeries() []Series {
-	return []Series{SeriesMetric, SeriesUnified, SeriesTrapezoidal, SeriesWhitworth, SeriesPipe, SeriesACME}
+	return []Series{SeriesMetric, SeriesUnified, SeriesTrapezoidal, SeriesWhitworth, SeriesPipe, SeriesACME,
+		SeriesButtress, SeriesButtressInch}
 }
 
 // ParseSeries is the series of a name, as Series.String writes it, in
@@ -65,6 +71,10 @@ func SeriesOf(s Spec) Series {
 		return SeriesTrapezoidal
 	case FormACME:
 		return SeriesACME
+	case FormButtress:
+		return SeriesButtress
+	case FormButtressInch:
+		return SeriesButtressInch
 	case FormWhitworth:
 		if _, ok := pipeSize(s.Diameter); ok {
 			return SeriesPipe
@@ -76,7 +86,8 @@ func SeriesOf(s Spec) Series {
 
 // Sizes are the series' standard sizes, smallest first, each at the
 // pitch a designation without one gives it: the coarse metric and
-// unified pitches, the preferred trapezoidal one, BSW's for Whitworth.
+// unified pitches, the preferred trapezoidal and buttress ones, BSW's
+// for Whitworth.
 func (sr Series) Sizes() []Spec {
 	var out []Spec
 	add := func(f Form, d, pitch float64) {
@@ -118,6 +129,14 @@ func (sr Series) Sizes() []Spec {
 		for _, a := range acme {
 			add(FormACME, a.d*mmPerInch, mmPerInch/a.tpi)
 		}
+	case SeriesButtress:
+		for _, m := range buttressMetric() {
+			add(FormButtress, m.d, m.pitch)
+		}
+	case SeriesButtressInch:
+		for _, b := range buttressInch {
+			add(FormButtressInch, b.d*mmPerInch, mmPerInch/b.tpi)
+		}
 	}
 	return out
 }
@@ -135,7 +154,8 @@ func compareFloat(a, b float64) int {
 
 // Pitches are the standard threads of s's size, coarsest first, each
 // with s's starts and hand: the coarse and fine metric pitches, UNC and
-// UNF, the trapezoidal pitches of ISO 2902, BSW and BSF. A size no
+// UNF, the trapezoidal pitches of ISO 2902 and the buttress ones of
+// DIN 513 and ASME B1.9, BSW and BSF. A size no
 // series has has none.
 func Pitches(s Spec) []Spec {
 	var pitches []float64
@@ -181,6 +201,16 @@ func Pitches(s Spec) []Spec {
 		pitches = append(pitches, mmPerInch/p.tpi)
 	case SeriesACME:
 		tpiOf(acme)
+	case SeriesButtress:
+		for _, m := range buttressMetric() {
+			if same(m.d, s.Diameter) {
+				pitches = append(append(pitches, m.pitch), m.others...)
+			}
+		}
+	case SeriesButtressInch:
+		for _, tpi := range buttressInchTPI(inches) {
+			pitches = append(pitches, mmPerInch/tpi)
+		}
 	}
 	slices.SortFunc(pitches, func(a, b float64) int { return compareFloat(b, a) })
 	pitches = slices.CompactFunc(pitches, same)

@@ -220,6 +220,8 @@ func (tw *textWindow) ScreenChangeThread(link int, v uint32) {
 		t.designation, t.note = t.options.Spec.String(), ""
 	case 's':
 		t.options.LevelStarts = !t.options.LevelStarts
+	case 'w':
+		t.options.LoadFlankBack = !t.options.LoadFlankBack
 	case 'y', 'z':
 		t.options.Cosmetic = link == 'z'
 	case 'x':
@@ -353,6 +355,9 @@ func (ss *Application) reportThread(err error) {
 	case errors.Is(err, sketch.ErrThreadThinPart):
 		ss.Error("The part is thinner than the thread's root: its ridges would stand on " +
 			"nothing.\n\nPick a smaller thread, or thread a thicker part.")
+	case errors.Is(err, sketch.ErrButtressRounded):
+		ss.Error("A buttress thread's crest can't be rounded: its flanks lean at different " +
+			"angles.\n\nTake a standard or truncated crest.")
 	case errors.Is(err, sketch.ErrChamferRounded):
 		ss.Error("A rounded crest can't be chamfered: the chamfer's cone would touch the " +
 			"crest rather than cut it.\n\nTake a standard or truncated crest, or no chamfer.")
@@ -401,13 +406,20 @@ func (tw *textWindow) ShowThread() {
 		starts = fmt.Sprintf(", %d starts", n)
 	}
 	right, left := radioMark(!o.Spec.LeftHand), radioMark(o.Spec.LeftHand)
+	// A buttress thread's load flank at the end of the row, so that the
+	// rows below stay put; only a buttress ridge has one.
+	load, loadArgs := "", []any{}
+	if o.Spec.Buttress() {
+		load, loadArgs = "    %Fd%f%Lw%s  load flank back%E", []any{lf(tw.ScreenChangeThread), checkMark(o.LoadFlankBack)}
+	}
 	if o.Spec.NumStarts() > 1 {
-		tw.Printf(false, "%Bd             %s pitch%s    %f%Lh%Fd%s right-hand%E  %f%Lk%Fd%s left-hand%E    %Fd%f%Ls%s  starts level%E",
-			ss.MmToString(o.Spec.Pitch, false), starts, lf(tw.ScreenChangeThread), right,
-			lf(tw.ScreenChangeThread), left, lf(tw.ScreenChangeThread), checkMark(o.LevelStarts))
+		tw.Printf(false, "%Bd             %s pitch%s    %f%Lh%Fd%s right-hand%E  %f%Lk%Fd%s left-hand%E    %Fd%f%Ls%s  starts level%E"+load,
+			append([]any{ss.MmToString(o.Spec.Pitch, false), starts, lf(tw.ScreenChangeThread), right,
+				lf(tw.ScreenChangeThread), left, lf(tw.ScreenChangeThread), checkMark(o.LevelStarts)}, loadArgs...)...)
 	} else {
-		tw.Printf(false, "%Bd             %s pitch    %f%Lh%Fd%s right-hand%E  %f%Lk%Fd%s left-hand%E",
-			ss.MmToString(o.Spec.Pitch, false), lf(tw.ScreenChangeThread), right, lf(tw.ScreenChangeThread), left)
+		tw.Printf(false, "%Bd             %s pitch    %f%Lh%Fd%s right-hand%E  %f%Lk%Fd%s left-hand%E"+load,
+			append([]any{ss.MmToString(o.Spec.Pitch, false), lf(tw.ScreenChangeThread), right,
+				lf(tw.ScreenChangeThread), left}, loadArgs...)...)
 	}
 	full := ""
 	if t.onFace && o.FullLength {

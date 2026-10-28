@@ -380,7 +380,7 @@ or bores the part may follow):
 ```
 thread {
   circle <handle>           # the circle or arc the thread is on
-  form <form>               # metric, unified, trapezoidal, whitworth or acme
+  form <form>               # metric, unified, trapezoidal, whitworth, acme, buttress or buttress-inch
   diameter <real>           # the nominal diameter, in millimetres
   pitch <real>              # in millimetres
   starts <integer>          # left out for one
@@ -393,6 +393,7 @@ thread {
   crest <crest>             # truncated or rounded; left out for the standard crest
   run-out <real>            # how far the root tapers to the crest before the shoulder, a length; left out for none
   level-starts              # every start from the circle's plane, a ridge and a helix each
+  load-flank-back           # a buttress thread's load flank faces back, to where a screw's thread starts
   full-length               # made on a face: as long as the face, measured again at each regeneration
   length-dimension <handle> # a dimension that carries the length of a full-length thread, one line each
   class "<class>"           # the tolerance class, as "6g", which sets the clearance in place of clearance
@@ -715,6 +716,11 @@ Version 2 gained the thread field `length-dimension` on 2026-10-27, the dimensio
 thread follows its face by. A reader from before skips each with a report, and the thread keeps
 its length until it is edited, as before; a file written before has none, and a thread read from
 it follows its face once it has been edited.
+
+Version 2 gained the thread forms `buttress` and `buttress-inch` and the thread field
+`load-flank-back` on 2026-10-28. A reader from before reports the unknown form and reads the thread as
+metric, its groups as saved until it is edited; it skips `load-flank-back` with a report, and
+draws the ridge again with its load flank ahead when the thread is edited.
 
 Version 2 gained the style field `z-index` on 2026-10-17. A reader from before skips it with a
 report, and draws the style at its default level.

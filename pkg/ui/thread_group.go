@@ -65,6 +65,9 @@ func (tw *textWindow) showThreadSummary(g *sketch.Group, helix core.HGroup) {
 	if o.Chamfer {
 		more += ", chamfered end"
 	}
+	if o.LoadFlankBack && o.Spec.Buttress() {
+		more += ", load flank back"
+	}
 	fit, err := o.FitClearance()
 	if err != nil {
 		fit = o.Clearance

@@ -18,7 +18,7 @@ fixture has been done; its "Tried" notes say what not to try again.
 | 1 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
 | 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint needs the line-arc joint inside the sweep |
 | 2a | [Modelling upgrade leftovers](#modelling-upgrade-leftovers) | kernel and feature | ? | What the 2026-10-22 work packages left; each refuses with a message today |
-| 2b | [Thread leftovers](#thread-leftovers) | kernel and feature | ? | What the thread improvements of 2026-10-23 left: chamfer slivers, buttress threads, ACME classes |
+| 2b | [Thread leftovers](#thread-leftovers) | kernel and feature | ? | What the thread improvements of 2026-10-23 left: chamfer slivers, ACME classes, buttress roots and classes |
 | 3 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
 | 4 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Since 2026-10-11 it mends the ear clipper's crossing faces; as the default it still costs 3 to 5 times the triangles |
 | 5 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
@@ -358,7 +358,15 @@ What the thread improvements of 2026-10-23 (`doc/notes/thread-evaluation.md`, br
 | A chamfer on a modelled thread with a rounded crest | refused (`ErrChamferRounded`) | The cone touches the rounded crest rather than cutting it; no placement built it soundly |
 | A phase with a run-out | refused on a modelled thread | The run-out's fix places the ridge end exactly; a phase moves it |
 | ACME tolerance classes (2G to 5G) | read from a designation and dropped; an ACME thread takes B1.5's crest clearance and a typed-in clearance | B1.5's pitch diameter allowances and tolerances were not to hand; metric, trapezoidal and unified classes follow their tables since 2026-10-28 (`pkg/thread/class_iso.go`, `class_unified.go`) |
-| Buttress threads | not offered | The ridge sketch ties its two flanks to equal length; an asymmetric profile needs it drawn otherwise |
+| Buttress threads, what was left | DIN 513 (S) and ASME B1.9 (BUTT) made since 2026-10-28; roots flat, no classes, no rounded crest (`ErrButtressRounded`) | B1.9 rounds the root (r = 0.07141 P) and designates the load's way (PUSH-BUTT, PULL-BUTT), which `LoadFlankBack` stands for today; DIN 513-2's and B1.9's tolerance classes; a rounded crest needs the arc tangent to flanks at different angles, its centre off the ridge's middle |
+
+Done 2026-10-28: buttress threads, DIN 513's metric S and ASME B1.9's inch BUTT (`pkg/thread/buttress.go`).
+The profile has a flank angle of its own on each side (`thread.Profile.UpperFlank`): the ridge is drawn
+with the angle between its flanks and the upper flank's to its foot in place of their equal lengths, its
+crest off its foot's middle (`Profile.MiddleShift`), and a screw mate fits ridges by their middles at the
+pitch line, where a nut's lies in the screw's groove. The load flank faces along a screw's thread and
+back in a nut's; `LoadFlankBack` turns it, and `ThreadFitMove` refuses two whose load flanks face the
+same way (`ErrLoadFlanksSameWay`).
 
 Done 2026-10-27: a full-length thread on a face follows the face's length at regeneration: the
 thread's datum, finding the face again, measures it and moves the dimensions that carry the

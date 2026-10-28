@@ -74,6 +74,14 @@ type ThreadOptions struct {
 	// when the thread is made and each time it is edited, and Length
 	// follows the face at each regeneration (thread_follow.go).
 	FullLength bool
+	// LoadFlankBack turns a buttress thread's ridge about: its load
+	// flank, the one nearly square to the axis, faces back towards
+	// where the thread starts on a screw, and away from it in a nut,
+	// rather than the other way. A screw and a nut mate when their load
+	// flanks face each other, which depends on which way each thread
+	// runs. Other threads' ridges are symmetric, and it leaves them as
+	// they are.
+	LoadFlankBack bool
 	// Cosmetic records the thread on the part without modelling its
 	// turns (thread_cosmetic_build.go): a screw is left at, or turned
 	// down to, its major diameter and a nut bored to its minor one, and
@@ -171,13 +179,18 @@ func (o ThreadOptions) layoutTry(circleR float64, try int) (threadLayout, error)
 		// Its crest is the standard's, where the part's surface is.
 		o.Crest = thread.CrestStandard
 	}
+	if o.Crest == thread.CrestRounded && s.Buttress() {
+		return threadLayout{}, ErrButtressRounded
+	}
 	l := threadLayout{profile: s.Profile(o.Internal, clearance)}
+	if o.LoadFlankBack {
+		l.profile = l.profile.Turned()
+	}
 	p := l.profile
 
 	// The ridge goes into the part by a tenth of the pitch, or by less
 	// where that would bring its turns too close.
-	slope := 2 * math.Tan(p.FlankAngle/2*math.Pi/180)
-	into := math.Min(0.1*s.Pitch, (s.Pitch-p.RootWidth)/(2*slope))
+	into := math.Min(0.1*s.Pitch, (s.Pitch-p.RootWidth)/(2*p.Slope()))
 	margin := s.Pitch
 	if o.Internal {
 		l.baseR = p.RootRadius + into
@@ -310,6 +323,11 @@ func (l *threadLayout) layChamfer(o ThreadOptions, try chamferTry) {
 	l.chamferPast = over + 0.25*pitch
 }
 
+// ErrButtressRounded is returned for a buttress thread with a rounded
+// crest: an arc tangent to flanks at different angles has no top where
+// the standard crest is, and is not offered.
+var ErrButtressRounded = errors.New("a buttress thread's crest can't be rounded")
+
 // ErrChamferRounded is returned for a chamfered thread with a rounded
 // crest, which the chamfer's cone would touch rather than cut.
 var ErrChamferRounded = errors.New("a rounded crest can't be chamfered")
@@ -408,7 +426,6 @@ const runOutClear = 0.1
 func (l *threadLayout) clearOfRunOut(o ThreadOptions) float64 {
 	s := o.Spec
 	m := runOutClear * s.Pitch
-	w := l.profile.WidthAt(l.profile.RootRadius) / 2
 	end := l.ridgeBottom + l.baseW/2 + l.ridgeSweep
 	var gaps []float64
 	for i := range s.NumStarts() {
@@ -416,7 +433,8 @@ func (l *threadLayout) clearOfRunOut(o ThreadOptions) float64 {
 		if !o.levelStarts() {
 			z += float64(i) * s.Pitch
 		}
-		gaps = append(gaps, z-w-l.runFrom, z+w-l.runFrom)
+		lo, hi := l.flanksAt(z, l.profile.RootRadius)
+		gaps = append(gaps, lo-l.runFrom, hi-l.runFrom)
 	}
 	clears := func(shift float64) bool {
 		return !slices.ContainsFunc(gaps, func(g float64) bool { return math.Abs(g+shift) < m })
@@ -432,6 +450,15 @@ func (l *threadLayout) clearOfRunOut(o ThreadOptions) float64 {
 		}
 	}
 	return 0
+}
+
+// flanksAt is where along the thread the flanks of a ridge whose foot's
+// middle is at z cross the radius r: a buttress ridge's middle lies
+// further from its crest's the further r is from the crest.
+func (l threadLayout) flanksAt(z, r float64) (lo, hi float64) {
+	p := l.profile
+	mid, half := z-p.MiddleShift(l.baseR)+p.MiddleShift(r), p.WidthAt(r)/2
+	return mid - half, mid + half
 }
 
 // CheckThread reports why AddThread would refuse to make the thread,

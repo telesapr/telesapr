@@ -65,13 +65,15 @@ type threadAt struct {
 }
 
 // markBelowCentre is how far along the thread the point that holds a
-// ridge in its sketch lies before the ridge's middle: a flat crest's
-// near end, or a rounded crest's centre, on it.
+// ridge in its sketch lies before the ridge's middle at its pitch
+// radius: a flat crest's near end, or a rounded crest's centre, on it,
+// and a buttress ridge's crest lies off that middle.
 func (l threadLayout) markBelowCentre() float64 {
-	if l.profile.CrestRoundRadius > 0 {
+	p := l.profile
+	if p.CrestRoundRadius > 0 {
 		return 0
 	}
-	return l.profile.CrestWidth / 2
+	return p.CrestWidth/2 + p.MiddleShift(p.PitchRadius)
 }
 
 // ridgeMiddle is how far along the thread the middle of the first
@@ -260,6 +262,9 @@ func (sk *Sketch) ThreadFitMove(a, b core.HEntity) (float64, error) {
 	if ta.o.Cosmetic || tb.o.Cosmetic {
 		return 0, nil
 	}
+	if ta.o.Spec.Buttress() && sk.loadFacing(ta).Dot(sk.loadFacing(tb)) > 0 {
+		return 0, ErrLoadFlanksSameWay
+	}
 	mate, err := sk.threadAtNow(ta)
 	if err != nil {
 		return 0, err
@@ -278,6 +283,23 @@ func (sk *Sketch) ThreadFitMove(a, b core.HEntity) (float64, error) {
 	move -= s.Pitch * math.Round(move/s.Pitch)
 	na := sk.MustEntity(sk.MustEntity(a).Normal).NormalGetNum(sk).RotationN()
 	return move * mate.along.Dot(na), nil
+}
+
+// ErrLoadFlanksSameWay is ThreadFitMove's error for two buttress
+// threads whose load flanks face the same way along their axis, which
+// no move fits: one of them must be made with its load flank turned
+// (ThreadOptions.LoadFlankBack).
+var ErrLoadFlanksSameWay = errors.New("the buttress threads' load flanks face the same way; turn one thread's load flank")
+
+// loadFacing is the way along its axis that a buttress thread's load
+// flank faces: along the thread on a screw and back in a nut, the
+// other way when it is turned.
+func (sk *Sketch) loadFacing(c threadCandidate) geom.Vector {
+	v := sk.threadAlong(sk.MustEntity(c.circle), c.o)
+	if c.o.Internal != c.o.LoadFlankBack {
+		v = v.ScaledBy(-1)
+	}
+	return v
 }
 
 // fitOffset is how far along mate's axis the ridges of own lie past
