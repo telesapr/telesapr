@@ -203,6 +203,7 @@ a concave one, as at a ledge, the side face grows out to the mitre. Against Open
 of faces: a box's corner, a pocket's, a rib's foot, a ledge, and a prism's foot at 60° and 120°.
 `TestChamferPairSweep` covers 45° to 135°. Before, the top corner was cut by wedges and the filled
 ones were refused.
+
 Done 2026-10-29: a rib rounded all over, its top's five edges and its foot's four picked together
 (`TestFilletRibAllOverOracle`). The stages round the top first, which leaves the foot one closed chain
 going round from the flat sides onto the uprights' fillets and the slope edges' leaning ones; the
