@@ -2,6 +2,7 @@ package topo
 
 import (
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -37,11 +38,15 @@ import (
 // fillet keeps, n's edges with side j's face and with the end face, and
 // p1 and p2.
 type rbRunOff struct {
-	j            int
-	w            int
-	n            int
-	np           geom.Vector
-	nd           float64
+	j  int
+	w  int
+	n  int
+	np geom.Vector
+	nd float64
+	// ns is the next face's surface when it is curved, in place of the
+	// plane, and sign turns its normal to point away from the part kept.
+	ns           *srf.SSurface
+	sign         float64
 	sideN, endN  int
 	p1, p2       geom.Vector
 	first, after int // the patches the next face's plane cuts, [first, after)
@@ -53,8 +58,30 @@ type rbRunOff struct {
 	p1At geom.Vector
 }
 
-// h is x's height over the next face's plane.
-func (ro *rbRunOff) h(x geom.Vector) float64 { return ro.np.Dot(x) - ro.nd }
+// runOffExt is how far past each of its sides, in its parameters, a
+// curved next face's surface is carried on: the fillet's cut and the
+// next face's growth by it lie past the face's edge with side j.
+const runOffExt = 1.0
+
+// near is the point of the next face's surface nearest x, and the
+// surface's unit normal there, pointing away from the part the fillet
+// keeps.
+func (ro *rbRunOff) near(x geom.Vector) (geom.Vector, geom.Vector) {
+	if ro.ns == nil {
+		return x.Minus(ro.np.ScaledBy(ro.h(x))), ro.np
+	}
+	u, v, p := nearestOnWithin(ro.ns, x, runOffExt)
+	return p, ro.ns.NormalAt(u, v).WithMagnitude(ro.sign)
+}
+
+// h is x's height over the next face's plane or surface.
+func (ro *rbRunOff) h(x geom.Vector) float64 {
+	if ro.ns == nil {
+		return ro.np.Dot(x) - ro.nd
+	}
+	p, n := ro.near(x)
+	return n.Dot(x.Minus(p))
+}
 
 // runOffAt is where end's section runs off side j's face past the far
 // end of its edge with the end face: the face there, which must be flat
@@ -101,14 +128,24 @@ func (rb *rollingBall) runOffAt(end *rbEnd, j int) (*rbRunOff, error) {
 	if ro.sideN < 0 || ro.endN < 0 || ro.n == end.face[1-j] {
 		return nil, errNotRolling
 	}
-	n, ok := t.planarNormal(ro.n)
-	if !ok {
+	if n, ok := t.planarNormal(ro.n); ok {
+		ro.np = n.WithMagnitude(1)
+		ro.nd = ro.np.Dot(t.Vertices[w].P)
+		if hv := ro.h(t.Vertices[end.v].P); hv > 0 {
+			ro.np, ro.nd = ro.np.ScaledBy(-1), -ro.nd
+		} else if hv == 0 {
+			return nil, errNotRolling
+		}
+		return ro, nil
+	}
+	s := t.Surface(ro.n)
+	if s == nil {
 		return nil, errNotRolling
 	}
-	ro.np = n.WithMagnitude(1)
-	ro.nd = ro.np.Dot(t.Vertices[w].P)
+	ns := *s
+	ro.ns, ro.sign = &ns, 1
 	if hv := ro.h(t.Vertices[end.v].P); hv > 0 {
-		ro.np, ro.nd = ro.np.ScaledBy(-1), -ro.nd
+		ro.sign = -1
 	} else if hv == 0 {
 		return nil, errNotRolling
 	}
@@ -160,6 +197,12 @@ func (rb *rollingBall) runOffCuts(sh *srf.SShell, row []srf.SSurface, k int, ro 
 	ro.p1At = ro.p1
 	if ro.p1.Minus(w).Magnitude() < 100*geom.LengthEps {
 		ro.p1 = w
+	} else if ro.ns != nil && ro.p1.Minus(w).Magnitude() < sh.Tol.ChordTolMm() {
+		// The end only just runs off onto the curved face: what that face
+		// grows by is a sliver thinner than the tolerance, which its mesh
+		// leaves open.
+		return filletErr(ro.p1, "the fillet's end only just runs off the face on side %d here onto a curved face: "+
+			"make it a little smaller or larger", ro.j+1)
 	}
 	switch alongFrom(ro.p1At, w, t.Edges[ro.endN].Points) {
 	case 1:
@@ -371,21 +414,32 @@ func acrossPatch(p *srf.SSurface, ro *rbRunOff, u0, v0, u1, v1 float64, a, b geo
 			var x, tu, tv geom.Vector
 			p.PointAndTangentsAt(u, v, &x, &tu, &tv, true)
 			hv := ro.h(x)
-			gu, gv := ro.np.Dot(tu), ro.np.Dot(tv)
+			_, g := ro.near(x)
+			gu, gv := g.Dot(tu), g.Dot(tv)
 			g2 := gu*gu + gv*gv
 			if g2 == 0 || math.Abs(hv) < 1e-13 {
 				break
 			}
 			u, v = clamp(u-hv*gu/g2), clamp(v-hv*gv/g2)
 		}
-		x := p.PointAt(u, v)
-		return x.Minus(ro.np.ScaledBy(ro.h(x))), ro.np.Cross(p.NormalAt(u, v))
+		x, g := ro.near(p.PointAt(u, v))
+		return x, g.Cross(p.NormalAt(u, v))
 	}
-	proj := func(x geom.Vector) geom.Vector { return x.Minus(ro.np.ScaledBy(ro.h(x))) }
+	proj := func(x geom.Vector) geom.Vector {
+		q, _ := ro.near(x)
+		return q
+	}
+	// off is how far x is from the patch, or from the next face's surface
+	// when that is curved: a cubic's control points on a curved surface
+	// leave its middle off it.
 	off := func(x geom.Vector) float64 {
 		var u, v float64
 		p.ClosestPointToUV(x, &u, &v, false)
-		return p.PointAt(u, v).Minus(x).Magnitude()
+		d := p.PointAt(u, v).Minus(x).Magnitude()
+		if ro.ns != nil {
+			d = math.Max(d, math.Abs(ro.h(x)))
+		}
+		return d
 	}
 	chord := b.Minus(a)
 	if chord.Magnitude() < geom.LengthEps {
@@ -566,24 +620,105 @@ func (rb *rollingBall) closeRunOff(sh *srf.SShell, cut rbEndCut, endSec srf.SBez
 			Start: 0, Finish: 1, Backwards: true})
 	}
 	forget(sideS)
+	// shared is the end face's and the next face's edge from p1 to w: a
+	// line, or on a curved next face the curve where the end face's plane
+	// meets its surface carried on.
+	shared := []srf.SBezier{srf.SBezierFrom2(ro.p1, w)}
+	var ns *srf.SSurface
+	if ro.ns != nil {
+		// The next face grows past its edge with side j: its surface is
+		// carried on to hold what it takes.
+		if ns = sh.FindSurface(t.Faces[ro.n].Surface); ns == nil {
+			return filletErr(w, "a face at the fillet's end is not in the shell")
+		}
+		pts := []geom.Vector{ro.p1, ro.p2, w}
+		for _, sb := range across {
+			for _, x := range []float64{0, 0.25, 0.5, 0.75, 1} {
+				pts = append(pts, sb.PointAt(x))
+			}
+		}
+		growSurface(ns, pts)
+		if !ro.p1.Equals(w) {
+			var err error
+			if shared, err = rb.sharedCurve(ns, cut.end, ro.p1, w); err != nil {
+				return err
+			}
+		}
+	}
 	if _, err := put(ro.n, [][2]geom.Vector{{w, ro.p2}}, across, ro.p2, ro.p1); err != nil {
 		return err
 	}
 	if ro.p1.Equals(w) {
 		return nil
 	}
-	// The line from p1 to w, the end face's and the next face's: the end
+	// The edge from p1 to w, the end face's and the next face's: the end
 	// face runs it on from the end section, the next face the other way.
 	es, ns := sh.FindSurface(t.Faces[cut.end.f].Surface), sh.FindSurface(t.Faces[ro.n].Surface)
-	line := srf.SBezierFrom2(ro.p1, w)
-	last := got[len(got)-1].sb
-	if !last.Finish().Equals(ro.p1) {
-		line.Reverse()
+	if !got[len(got)-1].sb.Finish().Equals(ro.p1) {
+		slices.Reverse(shared)
+		for i := range shared {
+			shared[i].Reverse()
+		}
 	}
-	lh := add(es, line, ns.H)
-	ns.Trim = append(ns.Trim, srf.STrimBy{Curve: lh, StartP: line.Finish(), FinishP: line.Start(), Start: 0, Finish: 1,
-		Backwards: true})
+	for _, sb := range shared {
+		lh := add(es, sb, ns.H)
+		ns.Trim = append(ns.Trim, srf.STrimBy{Curve: lh, StartP: sb.Finish(), FinishP: sb.Start(), Start: 0, Finish: 1,
+			Backwards: true})
+	}
 	forget(es)
 	forget(ns)
 	return nil
+}
+
+// sharedCurve is the edge a curved next face, ns, carried on, shares
+// with the flat end face from p1 to w: the line between them where it
+// lies on ns, as along a cylinder's ruling, or else cubics in the end
+// face's plane within a tenth of the chord tolerance of ns.
+func (rb *rollingBall) sharedCurve(ns *srf.SSurface, end *rbEnd, p1, w geom.Vector) ([]srf.SBezier, error) {
+	tol := math.Max(rb.t.shell.Tol.ChordTolMm()/10, 1e-6)
+	line := srf.SBezierFrom2(p1, w)
+	onNs := true
+	for _, x := range []float64{0.25, 0.5, 0.75} {
+		q := line.PointAt(x)
+		if _, _, y := nearestOnWithin(ns, q, 0); y.Minus(q).Magnitude() > tol {
+			onNs = false
+		}
+	}
+	if onNs {
+		return []srf.SBezier{line}, nil
+	}
+	if end.curved {
+		return nil, filletErr(p1, "the fillet's end runs off onto a curved face here, and the face it ends at is "+
+			"curved too: make it smaller")
+	}
+	plane := &rbRunOff{np: end.n, nd: end.d}
+	u0, v0, _ := nearestOnWithin(ns, p1, 0)
+	u1, v1, _ := nearestOnWithin(ns, w, 0)
+	cs, err := acrossPatch(ns, plane, u0, v0, u1, v1, p1, w, tol)
+	if err != nil {
+		return nil, filletErr(p1, "the fillet's end can't follow where the face it ends at meets the curved face "+
+			"it runs onto here: make it smaller")
+	}
+	return cs, nil
+}
+
+// growSurface carries patch s on past its sides, as its polynomial
+// does, until it holds the points pts, which lie on it carried on, with
+// a margin of a tenth of what it grows by. Its trims are curves in
+// space and stay as they are.
+func growSurface(s *srf.SSurface, pts []geom.Vector) {
+	u0, u1, v0, v1 := 0.0, 1.0, 0.0, 1.0
+	for _, x := range pts {
+		u, v, _ := nearestOnWithin(s, x, runOffExt)
+		u0, u1 = math.Min(u0, u), math.Max(u1, u)
+		v0, v1 = math.Min(v0, v), math.Max(v1, v)
+	}
+	if u0 == 0 && u1 == 1 && v0 == 0 && v1 == 1 {
+		return
+	}
+	u0, u1 = u0-(0-u0)/10, u1+(u1-1)/10
+	v0, v1 = v0-(0-v0)/10, v1+(v1-1)/10
+	g := s.Sub(u0, u1, v0, v1)
+	s.Ctrl, s.Weight = g.Ctrl, g.Weight
+	forget(s)
 }

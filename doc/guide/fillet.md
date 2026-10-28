@@ -88,10 +88,14 @@ above the band's end), the flat face grows by the fillet's section up to where t
 face. Where the fillet's end runs off one face past the end of its edge with the flat face, as a
 wide chamfer of the band's side does past the band's top, and the face it runs onto is flat, the
 fillet goes on to that face: its plane cuts the fillet too, and both the end face and that face
-grow by the fillet's end. Where the ball can't touch both faces (the radius too large for the
-room beside a hole), where the fillet's end runs off onto a curved face or off both faces, or
-where a fillet that takes material away runs off onto the next face, the fillet is refused at the
-place.
+grow by the fillet's end. The face it runs onto may be curved, as a band's rounded top: its
+surface is carried on past its edge with the face the fillet ran off, it cuts the fillet, and it
+grows over the fillet's end, sharing with the end face the line or the curve where the end
+face's plane meets that surface. Where the ball can't touch both faces (the radius too large
+for the room beside a hole), where the fillet's end runs off both faces, where it only just runs
+off onto a curved face (the face would grow by a sliver thinner than the chord tolerance: make
+the fillet a little smaller or larger), or where a fillet that takes material away runs off
+onto the next face, the fillet is refused at the place.
 
 The end face may be curved too, as a box's upright edge between flat walls ends at the top on a
 domed lid: the ball's sweep is cut by the dome, and the fillet's end is a curve of degree 5
@@ -99,8 +103,10 @@ fitted to where the two meet, the dome's edge too, keeping to both within half t
 tolerance; where the dome bends too much across a wide fillet for one such curve, the fillet is
 refused at the place ("make it smaller"). A chamfer ends on the curved face the same way, its end
 fitted to where it meets it, as does a chamfer of a loft's foot edge where the sides meet in
-creases. A face that goes on past the curved face, so that the fillet's end would stand out of
-it, is refused. Examples: [`examples/scripts/tee`](../../examples/scripts/tee/tee.go),
+creases. Where a side's face goes on past the curved face, as the cone past a band's rounded
+top, the curved face grows by the fillet's end up to where the side's face meets its surface
+carried on, as a flat end face does. A chamfer ending so is refused where its end can't be
+fitted. Examples: [`examples/scripts/tee`](../../examples/scripts/tee/tee.go),
 [`examples/scripts/bandfillet`](../../examples/scripts/bandfillet/bandfillet.go).
 
 ## Not yet
@@ -110,7 +116,7 @@ foot alone, or the top's edges alone), fillets between curved faces along an edg
 a curved face the side faces go on past, chamfers meeting at a crease or at a corner whose third
 edge stays sharp, mitres between fillets of different radii, corners where convex
 meets concave at a vertex that the stages can't round, and a
-blend that runs off its face onto a curved face, or that takes material away and runs off onto
-the next face, are refused with a message; they are the rest
+blend that takes material away and runs off onto the next face, or that runs off at both its
+ends, are refused with a message; they are the rest
 of roadmap 22. A crease that fades out is rounded only up to where it does. A fillet whose radius stops its chain at a rounded corner names the curved face rather than
 saying so (15.7).
