@@ -179,13 +179,12 @@ pole slivers grew.
 Code: `pkg/topo/rollingball.go`, `rollingend.go`, `rollingrunoff.go`, `rollingmitre.go`,
 `rollingchains.go`, `fillet_setback.go`, `fillet_network.go`. Every case below is refused with a message today, except where the State
 column says unsound. Measure: `TestFilletOnOtherSolids` (fillets on lofts, sweeps and STEP
-solids) at 59 of 59 sound since 2026-10-22. Chamfers: `TestChamferOnOtherSolids` at 57 of 59, the
-blob's 2 rims refused as not mitred (below).
+solids) at 59 of 59 sound since 2026-10-22. Chamfers: `TestChamferOnOtherSolids` at 59 of 59 since
+2026-10-28.
 
 | Item | State | Approach / tried |
 |---|---|---|
 | Run-offs onto a curved face; a run-off of a blend that takes material away; both ends running off | refused, naming the place | The setback patch is the means: where the ball runs off a face, cut the fillet as a setback is cut and fill the hole between it, the next face's fillet (or the face) and the faces round. A run-off taking material away was never reached by any test case (a slot cut from the cone never got that far) |
-| Chamfers meeting at a crease, of one chain or several, or at a corner whose third edge stays sharp (the lid's upright chamfered with the bottom edge it meets) | refused: "are not mitred" | The mitre is found from the ball's centres; a chamfer's would be where the two ruled surfaces, carried on, meet |
 | Mitres between chains of different radii | refused: "pick it alone" | The height against the other chain's centres less its own radius; the mitre is then no longer in the plane that halves the turn |
 | A rim's mitre below about 0.005% chord | refused: "the fillet's sections near its mitre can't be fitted" | At the cap the mitre runs nearly along the chain; tried: starting the fit from chord-length parameters (worse). More spans than two, or sections fitted against the mitre's own parameter |
 | A mitre of two radii over an edge left sharp | refused, naming the radii | Needs a crease in the blend, or the setback patch over the upright: the edges' cylinders meet tangentially where both touch the top face |
@@ -194,6 +193,19 @@ blob's 2 rims refused as not mitred (below).
 | Chamfers at setback corners; convex meeting concave at one vertex beyond what the stages round | refused | No setback for chamfers yet |
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
 | Slot chamfer at 3 | see K4 | The teapot handle and the run-off chamfers' crossings, listed here before, are sound since K4's mender |
+
+Done 2026-10-28: chamfers meeting in mitres, as fillets do: at a crease of a rim's wall, of one
+chain (the blob's 2 rims) or several, all picked or some, and at a corner whose third edge stays
+sharp (the lid's upright with the bottom edge it meets). A point's height over the mate's swept
+surface is over its line in the section through the point (`rollingBall.mateSurface`), and the
+mitre's foot on the face both share is a root there, where the lines cross it, as on the creased
+side. Two older faults of chamfers showed on the way: a chamfer's misfit between sections was its
+distance from the line at the span's arc length, not from its nearest line, so a surface slid along
+the edge was refused at fine tolerances (the blob's rims at chord 0.01%); and past an open end its
+distance was measured square to the tangent line, not from where the faces, carried on as their
+surfaces, meet (a chamfer ending on the next cubic's wall 0.046 mm off OpenCASCADE's, now 4.5e-4).
+Against OpenCASCADE's makeChamfer the mitres' vertices are within 4e-6 mm and the surfaces within
+2.4e-4 (`TestChamferChainsMitred`, `TestChamferRimMitre`).
 
 Done 2026-10-28: some of a rim's chains picked, a chain mitred where it meets another picked one
 and ending on the unpicked one's wall at its other end. They went the way of picks meeting at a
@@ -305,7 +317,7 @@ working notes are at commit `1e84ca0c` (`git show 1e84ca0c:doc/notes/wrap-emboss
 |---|---|---|
 | Lofts (C4) | closed lofts, a guided loft along a solid's sides and tangency at a profile between the ends done 2026-10-22 (branch `lo-loft`); a closed loft refuses profiles more than a quarter turn apart round the ring | Left: a closed loft held by guides or square to a profile (the guided loft's sections and the pieces would have to close round too); a ring of few profiles is thinner than the profiles between them, as any loft's blend of turned sections is: sections turned with the ring's frame, as a closed sweep's are, would keep them full |
 | Datums (B4) | since 2026-10-22 any face or edge of the solid no entity makes is named by a workplane that follows it (`Datums.NameFace`, `NameEdge`): a plane, an axis, a line, or on other faces and edges the plane touching the face or the line along the edge at its middle; mates refuse a flat face as an axis and an edge as a plane; the Assembly menu mates selected datums, the datums screen two names. Left: a point picked on a curved face or edge isn't kept, the datum is at its middle; a datum after the active group moves with its face only when that group is active or the model is saved (the screen says so) | |
-| Fillets onto curved faces (C3) | since 2026-10-22 `TestFilletOnOtherSolids` 59 of 59 sound and `TestChamferOnOtherSolids` 57 of 59, none unsound: picks meeting at a corner whose third edge stays sharp, one of them the rolling ball's, are mitred there (`filletCornerPicks`, a chain mitred at one end only); a fillet or chamfer ends where the crease it rounds fades out (`rbEnd.fade`, the loft's 4 creases, which OpenCASCADE refuses); a chamfer's end on a doubly curved face takes its ways from each foot's own ruling and its sections there are fitted to their cuts (the loft's 4 foot edges) | Left: chamfers picked together at such a corner (under [Fillet leftovers](#fillet-leftovers), not mitred); the blob's 2 rims' chamfers; a crease that fades out is rounded only up to where it does, never past where it turns the other way (the loft's creases turn back above the first ring by up to 5°); run-offs and the rest under [Fillet leftovers](#fillet-leftovers) |
+| Fillets onto curved faces (C3) | since 2026-10-22 `TestFilletOnOtherSolids` 59 of 59 sound and `TestChamferOnOtherSolids` 57 of 59 (59 since 2026-10-28), none unsound: picks meeting at a corner whose third edge stays sharp, one of them the rolling ball's, are mitred there (`filletCornerPicks`, a chain mitred at one end only); a fillet or chamfer ends where the crease it rounds fades out (`rbEnd.fade`, the loft's 4 creases, which OpenCASCADE refuses); a chamfer's end on a doubly curved face takes its ways from each foot's own ruling and its sections there are fitted to their cuts (the loft's 4 foot edges) | Left: a crease that fades out is rounded only up to where it does, never past where it turns the other way (the loft's creases turn back above the first ring by up to 5°); run-offs and the rest under [Fillet leftovers](#fillet-leftovers) |
 | Clearance and walls (D1) | since 2026-10-22 walls are measured at points no further apart than half the thickness asked about, finer about the thinnest, and followed onto the surfaces; gaps to mesh parts are followed onto the other's surfaces; `ClearancesWithin` takes a part by its solids; MCP `measure` reports both. Left: a spot thinner than the points about it can still be missed; a mesh part is not taken apart by its pieces | |
 | Model to script (D5) | 300 of 301 fixtures come back (`scriptRoundTripKnown`, which may only shrink); images, splines of any number of points, constraints on four entities, styles, kerned text, faces' own appearances and datum points in a group that isn't a sketch are written since 2026-10-22, and the MCP `export` tool writes `.go`; what the DXF import draws as the window can't (`Sketch.ArcIn3D`, `Sketch.NewWorkplaneIn`, `Constrain.Again`) and an image whose file is missing (`Sketch.ImageFrame`) since 2026-10-22 | Left: `tlspr/v1/fields.tlspr`, a file of every field set whose references lead nowhere, which opens as no model |
 | Regeneration (D4) | recommendations 1 to 4, 6, 10 and 12 to 14 and a solid cache taken up, 9 behind a setting that is off, 11 in part (`doc/notes/performance.md`) | 5, 7, 8 and 15 to 18 measured and not taken, each with why in the same note; 11's parallel commits (curve ids reserved in advance) left |

@@ -224,10 +224,13 @@ func (rb *rollingBall) beyond(k int) geom.Vector {
 	return rb.tan[len(rb.tan)-1]
 }
 
-// rbCentres are the ball's centres at arc lengths s near an end.
+// rbCentres are the ball's centres at arc lengths s near an end; for a
+// chamfer the middles of its lines, and u the lines' normals in their
+// sections, pointing to the edge.
 type rbCentres struct {
 	s []float64
 	c []geom.Vector
+	u []geom.Vector
 }
 
 // centresNear are the ball's centres within mitreZone radii of end k,
@@ -252,6 +255,14 @@ func (rb *rollingBall) centresNear(k int) *rbCentres {
 		}
 		cs.s = append(cs.s, s)
 		cs.c = append(cs.c, sec.c)
+		if rb.flat {
+			x, d := rb.along(s)
+			u := d.Cross(sec.foot[1].p.Minus(sec.foot[0].p))
+			if u.Dot(x.Minus(sec.c)) < 0 {
+				u = u.ScaledBy(-1)
+			}
+			cs.u = append(cs.u, u.WithMagnitude(1))
+		}
 	}
 	rb.mitreC[k] = cs
 	return cs
@@ -262,8 +273,19 @@ func (rb *rollingBall) centresNear(k int) *rbCentres {
 // through it and its neighbours.
 func (rb *rollingBall) nearestCentre(k int, p geom.Vector) (geom.Vector, bool) {
 	cs := rb.centresNear(k)
-	if len(cs.c) < 4 {
+	j, t, ok := cs.nearest(p)
+	if !ok {
 		return geom.Vector{}, false
+	}
+	return catmullRom(cs.c, j, t), true
+}
+
+// nearest is the span j and parameter t on it of the centres' curve's
+// point nearest p, the curve the Catmull-Rom spline through them: the
+// nearest sample, then the nearest point of the spans either side.
+func (cs *rbCentres) nearest(p geom.Vector) (int, float64, bool) {
+	if len(cs.c) < 4 {
+		return 0, 0, false
 	}
 	best, bd := 0, math.Inf(1)
 	for i, c := range cs.c {
@@ -272,17 +294,7 @@ func (rb *rollingBall) nearestCentre(k int, p geom.Vector) (geom.Vector, bool) {
 		}
 	}
 	i := min(max(best, 1), len(cs.c)-3)
-	// Catmull-Rom between samples i and i+1, and i-1 and i: the nearest
-	// point on either span.
-	at := func(j int, t float64) geom.Vector {
-		p0, p1, p2, p3 := cs.c[j-1], cs.c[j], cs.c[j+1], cs.c[min(j+2, len(cs.c)-1)]
-		t2, t3 := t*t, t*t*t
-		return p0.ScaledBy(-0.5*t3 + t2 - 0.5*t).
-			Plus(p1.ScaledBy(1.5*t3 - 2.5*t2 + 1)).
-			Plus(p2.ScaledBy(-1.5*t3 + 2*t2 + 0.5*t)).
-			Plus(p3.ScaledBy(0.5*t3 - 0.5*t2))
-	}
-	q, qd := cs.c[best], bd
+	bj, bt := best, 0.0
 	for _, j := range []int{i - 1, i} {
 		if j < 1 {
 			continue
@@ -291,44 +303,80 @@ func (rb *rollingBall) nearestCentre(k int, p geom.Vector) (geom.Vector, bool) {
 		g := (math.Sqrt(5) - 1) / 2
 		for range 60 {
 			a, b := hi-g*(hi-lo), lo+g*(hi-lo)
-			if at(j, a).Minus(p).MagSquared() < at(j, b).Minus(p).MagSquared() {
+			if catmullRom(cs.c, j, a).Minus(p).MagSquared() < catmullRom(cs.c, j, b).Minus(p).MagSquared() {
 				hi = b
 			} else {
 				lo = a
 			}
 		}
-		if c := at(j, (lo+hi)/2); c.Minus(p).MagSquared() < qd {
-			q, qd = c, c.Minus(p).MagSquared()
+		t := (lo + hi) / 2
+		if d := catmullRom(cs.c, j, t).Minus(p).MagSquared(); d < bd {
+			bj, bt, bd = j, t, d
 		}
 	}
-	return q, true
+	return bj, bt, true
 }
 
-// mateCentre is the point of the ball's centres' curve near end k's
-// mate, the end it meets in the mitre, nearest p.
-func (rb *rollingBall) mateCentre(k int, p geom.Vector) (geom.Vector, bool) {
-	end := rb.ends[k]
-	return end.mate.nearestCentre(end.mateK, p)
+// catmullRom is the point t of the way along the Catmull-Rom span
+// between ps[j] and ps[j+1]; at t 0, ps[j].
+func catmullRom(ps []geom.Vector, j int, t float64) geom.Vector {
+	if t == 0 {
+		return ps[j]
+	}
+	p0, p1, p2, p3 := ps[j-1], ps[j], ps[j+1], ps[min(j+2, len(ps)-1)]
+	t2, t3 := t*t, t*t*t
+	return p0.ScaledBy(-0.5*t3 + t2 - 0.5*t).
+		Plus(p1.ScaledBy(1.5*t3 - 2.5*t2 + 1)).
+		Plus(p2.ScaledBy(-1.5*t3 + 2*t2 + 0.5*t)).
+		Plus(p3.ScaledBy(0.5*t3 - 0.5*t2))
 }
 
 // mitreHeight is how far p lies outside the surface the ball sweeps near
-// end k's mate: its distance from the centres less the radius.
+// end k's mate: its distance from the centres less the mate's radius.
+// For a chamfer it is p's height over the mate's line in the section
+// through p, towards the edge.
 func (rb *rollingBall) mitreHeight(k int, p geom.Vector) float64 {
-	c, ok := rb.mateCentre(k, p)
+	h, _, ok := rb.mateSurface(k, p)
 	if !ok {
 		return math.NaN()
 	}
-	return p.Minus(c).Magnitude() - rb.r
+	return h
 }
 
 // mitreNormal is the way out of the mate's swept surface at q,
 // the normal of end k's end there: from the nearest of its centres.
 func (rb *rollingBall) mitreNormal(k int, q geom.Vector) geom.Vector {
-	c, ok := rb.mateCentre(k, q)
-	if !ok || q.Minus(c).Magnitude() == 0 {
+	_, n, ok := rb.mateSurface(k, q)
+	if !ok {
 		return geom.Vector{}
 	}
-	return q.Minus(c).WithMagnitude(1)
+	return n
+}
+
+// mateSurface is p's height over the surface end k's mate sweeps
+// (mitreHeight) and the way out of that surface nearest p.
+func (rb *rollingBall) mateSurface(k int, p geom.Vector) (float64, geom.Vector, bool) {
+	end := rb.ends[k]
+	mate := end.mate
+	cs := mate.centresNear(end.mateK)
+	j, t, ok := cs.nearest(p)
+	if !ok {
+		return 0, geom.Vector{}, false
+	}
+	c := catmullRom(cs.c, j, t)
+	if mate.flat {
+		u := catmullRom(cs.u, j, t)
+		if u.Magnitude() == 0 {
+			return 0, geom.Vector{}, false
+		}
+		u = u.WithMagnitude(1)
+		return p.Minus(c).Dot(u), u, true
+	}
+	d := p.Minus(c)
+	if d.Magnitude() == 0 {
+		return -mate.r, geom.Vector{}, true
+	}
+	return d.Magnitude() - mate.r, d.WithMagnitude(1), true
 }
 
 // mitreFoot is where the mitre meets side i's face near end k. On the
@@ -339,7 +387,9 @@ func (rb *rollingBall) mitreNormal(k int, q geom.Vector) geom.Vector {
 // where the curves they touch it along cross, and the height only comes
 // up to zero there: the arc length whose point comes nearest the other
 // end's centres, at the radius. Where that falls short the two curves
-// don't cross on the face, and the mitre would leave a gap: refused.
+// don't cross on the face, and the mitre would leave a gap: refused. A
+// chamfer's surfaces cut the face both share, and the height changes
+// sign there as on the creased side.
 func (rb *rollingBall) mitreFoot(k, i int) (float64, rbSection, error) {
 	at := rb.t.Vertices[rb.ends[k].v].P
 	zone := math.Min(rb.length/2, mitreZone*rb.r)
@@ -350,11 +400,8 @@ func (rb *rollingBall) mitreFoot(k, i int) (float64, rbSection, error) {
 		if err != nil {
 			return math.NaN(), sec, false
 		}
-		c, ok := rb.mateCentre(k, sec.foot[i].p)
-		if !ok {
-			return math.NaN(), sec, false
-		}
-		return sec.foot[i].p.Minus(c).Magnitude() - rb.r, sec, true
+		h, _, ok := rb.mateSurface(k, sec.foot[i].p)
+		return h, sec, ok
 	}
 	// From past the crease in along the chain.
 	from, step := -rb.r, rb.r/8
@@ -364,7 +411,9 @@ func (rb *rollingBall) mitreFoot(k, i int) (float64, rbSection, error) {
 		}
 		return x
 	}
-	if rb.ends[k].ban[i] >= 0 {
+	if rb.ends[k].ban[i] >= 0 || rb.flat {
+		// A chamfer's surfaces cross the face both share, not touching
+		// it: a root there too.
 		prev, prevG := math.NaN(), math.NaN()
 		for x := from; x <= zone; x += step {
 			g, _, ok := gap(arc(x))
@@ -600,10 +649,14 @@ func (rb *rollingBall) mitreSectionWithin(k int, lam, slack float64) (rbSection,
 	n := len(c.Ctrl) - 1
 	c.Ctrl[0], c.Ctrl[n] = first.foot[0].p, last.foot[1].p
 	// The ends turn anywhere in the faces' tangent planes: the swept
-	// surface meets the faces tangentially there.
+	// surface meets the faces tangentially there. A chamfer's meets them
+	// at an angle, and its ends turn any way.
 	var ways [2][]geom.Vector
 	for i, f := range []rbFoot{first.foot[0], last.foot[1]} {
 		ways[i] = []geom.Vector{f.n.NormalDir(0), f.n.NormalDir(1)}
+		if rb.flat {
+			ways[i] = []geom.Vector{{X: 1}, {Y: 1}, {Z: 1}}
+		}
 	}
 	fit, us, ok := fitThrough(c, c.Weight, ways, ts, xs)
 	at := rb.t.Vertices[rb.ends[k].v].P

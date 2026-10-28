@@ -18,25 +18,25 @@ import (
 // meet each other in mitres.
 var errNotMitred = errors.New("topo: the chains don't meet in mitres")
 
-// rollingBallFillets rounds the chains through edges with radius r, or
-// chamfers them where flat, where every end of every chain meets
-// another's in a mitre; errNotMitred where they don't. The chains'
-// patches get origins origin, origin+1, and so on.
-func rollingBallFillets(sh *srf.SShell, t *Topology, edges []int, r float64, origin uint32, flat bool) error {
-	return rollingBallFilletsAt(sh, t, edges, r, origin, flat, false)
+// rollingBallFillets rounds the chains through edges, each with its
+// radius of radii, or chamfers them where flat, where every end of every
+// chain meets another's in a mitre; errNotMitred where they don't. The
+// chains' patches get origins origin, origin+1, and so on.
+func rollingBallFillets(sh *srf.SShell, t *Topology, edges []int, radii []float64, origin uint32, flat bool) error {
+	return rollingBallFilletsAt(sh, t, edges, radii, origin, flat, false)
 }
 
 // rollingBallFilletsAt is rollingBallFillets; with partial, a chain's end
 // that meets no other chain ends at its face as a lone chain's does
 // (linkMitresAt).
-func rollingBallFilletsAt(sh *srf.SShell, t *Topology, edges []int, r float64, origin uint32, flat, partial bool) error {
+func rollingBallFilletsAt(sh *srf.SShell, t *Topology, edges []int, radii []float64, origin uint32, flat, partial bool) error {
 	var rbs []*rollingBall
 	taken := map[int]bool{}
-	for _, e := range edges {
+	for i, e := range edges {
 		if taken[e] {
 			continue
 		}
-		rb, err := t.newChain(e, r, flat)
+		rb, err := t.newChain(e, radii[i], flat)
 		if err != nil {
 			return err
 		}
@@ -47,12 +47,6 @@ func rollingBallFilletsAt(sh *srf.SShell, t *Topology, edges []int, r float64, o
 	}
 	if !linkMitresAt(rbs, partial) {
 		return errNotMitred
-	}
-	if flat {
-		// A mitre is where the swept surfaces meet, found from the ball's
-		// centres; a chamfer has no ball.
-		return filletErr(rbs[0].t.Vertices[rbs[0].ends[0].v].P, "chamfers that meet at a crease of the wall "+
-			"are not mitred: fillet the edges, or chamfer them one at a time")
 	}
 	// A mitre's plane halves the turn from one chain to the other: every
 	// chain is traced before any plane is set.
@@ -132,15 +126,13 @@ func blendMitred(rbs []*rollingBall, split, fitCuts bool) ([]*rbBlend, error) {
 }
 
 // filletMitredPicks rounds the picked edges as chains that meet in
-// mitres (rollingBallFillets), all of one radius and each one a rolling
-// ball's; errNotMitred where they aren't. The shell is changed only when
-// it succeeds.
+// mitres (rollingBallFillets), each of its pick's radius, r where it has
+// none, and each one a rolling ball's; errNotMitred where they aren't.
+// The shell is changed only when it succeeds.
 func filletMitredPicks(sh *srf.SShell, t *Topology, picks []FilletPick, r float64, origin uint32, flat bool) error {
 	edges := make([]int, 0, len(picks))
+	radii := pickRadii(picks, r)
 	for _, p := range picks {
-		if p.R != 0 && p.R != r {
-			return errNotMitred
-		}
 		var e int
 		var err error
 		if p.Arc {
@@ -157,16 +149,16 @@ func filletMitredPicks(sh *srf.SShell, t *Topology, picks []FilletPick, r float6
 	}
 	var cp srf.SShell
 	cp.MakeFromCopyOf(sh)
-	if err := rollingBallFillets(&cp, t, edges, r, origin, flat); err != nil {
+	if err := rollingBallFillets(&cp, t, edges, radii, origin, flat); err != nil {
 		return err
 	}
 	*sh = cp
 	return nil
 }
 
-// filletCornerPicks rounds picks, all of radius r, that meet at corners
-// where the third edge stays sharp, some of them the rolling ball's (an
-// edge ending on a curved face): every pick a rolling-ball chain, the
+// filletCornerPicks rounds picks, each of its own radius or r, that meet
+// at corners where the third edge stays sharp, some of them the rolling
+// ball's (an edge ending on a curved face): every pick a rolling-ball chain, the
 // chains meeting in mitres there (rollingmitre.go) and their other ends
 // at their faces, flat or curved, as a lone chain's. It is what
 // filletApart refuses, its picks' fillets meeting; errNotMitred where
@@ -178,9 +170,6 @@ func filletCornerPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uin
 	}
 	edges := make([]int, 0, len(picks))
 	for _, p := range picks {
-		if p.R != 0 && p.R != r {
-			return errNotMitred
-		}
 		e, err := t.pickEdge(p)
 		if err != nil {
 			return errNotMitred
@@ -189,9 +178,21 @@ func filletCornerPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uin
 	}
 	var cp srf.SShell
 	cp.MakeFromCopyOf(sh)
-	if err := rollingBallFilletsAt(&cp, t, edges, r, origin, flat, true); err != nil {
+	if err := rollingBallFilletsAt(&cp, t, edges, pickRadii(picks, r), origin, flat, true); err != nil {
 		return err
 	}
 	*sh = cp
 	return nil
+}
+
+// pickRadii are the picks' radii, r for a pick with none of its own.
+func pickRadii(picks []FilletPick, r float64) []float64 {
+	radii := make([]float64, len(picks))
+	for i, p := range picks {
+		radii[i] = r
+		if p.R != 0 {
+			radii[i] = p.R
+		}
+	}
+	return radii
 }

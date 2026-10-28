@@ -834,6 +834,18 @@ func (rb *rollingBall) chamferSection(s float64) (rbSection, error) {
 		return sec, filletErr(x, "the faces meet tangent here: a chamfer cuts an edge where they meet at an angle")
 	}
 	at := [2]rbFoot{a, b}
+	// The distance is from the edge, where the faces' tangent planes
+	// meet: past an open end the faces go on as their surfaces, and the
+	// edge they meet in turns from the tangent the section is square to.
+	along := d
+	if m := a.n.Cross(b.n); m.Magnitude() > 1e-9 && (s < 0 || s > rb.length) && !rb.closed {
+		if along = m.WithMagnitude(1); along.Dot(d) < 0 {
+			along = along.ScaledBy(-1)
+		}
+	}
+	// apart is the distance from the edge of a point of the section e
+	// from it, at unit length.
+	apart := func(e geom.Vector) float64 { return e.Minus(along.ScaledBy(e.Dot(along))).Magnitude() }
 	for k := range 2 {
 		dir := d.Cross(at[k].n)
 		if dir.Magnitude() < 1e-12 {
@@ -845,7 +857,7 @@ func (rb *rollingBall) chamferSection(s float64) (rbSection, error) {
 		if rb.sigma*dir.Dot(at[1-k].n) > 0 {
 			dir = dir.ScaledBy(-1)
 		}
-		q := p.Plus(dir.ScaledBy(rb.r))
+		q := p.Plus(dir.ScaledBy(rb.r / apart(dir)))
 		converged := false
 		for range 100 {
 			f := rb.footNear(k, q, near)
@@ -853,7 +865,8 @@ func (rb *rollingBall) chamferSection(s float64) (rbSection, error) {
 			if y.Minus(p).Magnitude() < 1e-12 {
 				break
 			}
-			qn := p.Plus(y.Minus(p).WithMagnitude(rb.r))
+			e := y.Minus(p).WithMagnitude(1)
+			qn := p.Plus(e.ScaledBy(rb.r / apart(e)))
 			moved := qn.Minus(q).Magnitude()
 			q = qn
 			if moved < 1e-11*math.Max(1, rb.r) {
@@ -1055,7 +1068,13 @@ func (rb *rollingBall) misfit(sf *srf.BSplineSurface, t, s float64, near bool) (
 			}
 			// Elsewhere near the ends a chamfer's rulings run between the
 			// points its oblique sections touch the faces: flat across.
-			if d := distanceToPolyline(p, line); d > e {
+			d := distanceToPolyline(p, line)
+			if nr.end >= 0 {
+				// Near a mitre, against sections fitted a few times the
+				// tolerance, as a fillet's are.
+				d /= 3
+			}
+			if d > e {
 				e, where = d, p
 			}
 		}
@@ -1082,7 +1101,10 @@ func (rb *rollingBall) misfit(sf *srf.BSplineSurface, t, s float64, near bool) (
 			}
 		}
 		su := s
-		if near {
+		if near || rb.flat {
+			// A chamfer is flat across, and a point of the surface slid
+			// along the edge lies off the line at s though on the chamfer:
+			// its nearest line.
 			su = rb.nearestSection(p, s)
 		}
 		sec, err := rb.section(su)

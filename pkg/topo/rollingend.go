@@ -1147,7 +1147,7 @@ func (rb *rollingBall) fitCut(k int, sec rbSection, mitre bool, tanAt func(q, n 
 	// way, anywhere in the face's tangent plane (mitreFreeEnd).
 	ways := [2][]geom.Vector{{t0}, {t1}}
 	for i := range 2 {
-		if mitre && rb.ends[k].ban[i] < 0 {
+		if mitre && rb.ends[k].ban[i] < 0 && !rb.flat {
 			nf := sec.foot[i].n
 			ways[i] = []geom.Vector{nf.NormalDir(0), nf.NormalDir(1)}
 		}
