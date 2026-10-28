@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -123,8 +124,18 @@ func shellOf(sh *srf.SShell, faces []srf.FaceID, thick float64, origin uint32, r
 // revolutionAt is how the solid at group g was made when it is one
 // lathe or revolve: the first group at or before g that makes or
 // changes a solid is that lathe or revolve, and there is no solid
-// before it. Otherwise nil.
+// before it; or when it is lathes about one axis joined
+// (joinedRevolutionAt). Otherwise nil.
 func (sk *Sketch) revolutionAt(g *Group) *topo.Revolution {
+	if rev := sk.oneRevolutionAt(g); rev != nil {
+		return rev
+	}
+	return sk.joinedRevolutionAt(g)
+}
+
+// oneRevolutionAt is how the solid at group g was made when it is one
+// lathe or revolve, or nil.
+func (sk *Sketch) oneRevolutionAt(g *Group) *topo.Revolution {
 	for ; g != nil; g = g.PreviousGroup(sk) {
 		if g.Suppress || g.SuppressedBy.V != 0 {
 			continue
@@ -150,6 +161,81 @@ func (sk *Sketch) revolutionAt(g *Group) *topo.Revolution {
 		angles, anglef = 0, 2*math.Pi
 	}
 	return &topo.Revolution{Profile: &src.BezierLoops, Pt: pt, Axis: axis, Start: angles, End: anglef}
+}
+
+// joinedRevolutionAt is how the solid at group g was made when every
+// group up to it that makes a solid is a lathe, or a revolve of a
+// whole turn, about one axis, joined to the ones before by a union, a
+// difference or an intersection: a solid of revolution whose profile
+// is theirs joined (topo.JoinedRevolution). Otherwise nil.
+func (sk *Sketch) joinedRevolutionAt(g *Group) *topo.Revolution {
+	if g == nil {
+		return nil
+	}
+	var parts []topo.RevolvedPart
+	var pt, axis geom.Vector
+	for _, gh := range sk.GroupOrder {
+		cur := sk.Group(gh)
+		if cur == nil {
+			continue
+		}
+		if cur.Suppress || cur.SuppressedBy.V != 0 {
+			if cur.H == g.H {
+				break
+			}
+			continue
+		}
+		turn := cur.Type == GroupLathe || cur.Type == GroupRevolve
+		if !turn {
+			if cur.IsMeshGroup() || cur.IsCopyGroup() || cur.Type == GroupLinked ||
+				len(cur.ThisShell.Surface) > 0 || len(cur.ThisMesh.Triangles) > 0 {
+				return nil
+			}
+			if cur.H == g.H {
+				break
+			}
+			continue
+		}
+		if _, _, whole := cur.revolveAngles(sk); !whole {
+			return nil
+		}
+		src := sk.Group(cur.OpA)
+		if src == nil || len(src.BezierLoops.Sets) == 0 {
+			return nil
+		}
+		p, a := cur.revolveAxis(sk)
+		var op srf.SurfaceCombineAs
+		switch cur.MeshCombine {
+		case CombineUnion:
+			op = srf.SurfaceUnion
+		case CombineDifference:
+			op = srf.SurfaceDiff
+		case CombineIntersection:
+			op = srf.SurfaceInter
+		default:
+			return nil
+		}
+		if len(parts) == 0 {
+			if op != srf.SurfaceUnion {
+				return nil
+			}
+			pt, axis = p, a
+		} else if axis.Cross(a).Magnitude() > 1e-9 || p.DistanceToLine(pt, axis) > geom.LengthEps {
+			return nil
+		}
+		parts = append(parts, topo.RevolvedPart{Profile: &src.BezierLoops, Combine: op})
+		if cur.H == g.H {
+			break
+		}
+	}
+	if len(parts) < 2 {
+		return nil
+	}
+	rev, err := topo.JoinedRevolution(pt, axis, parts, sk.tol)
+	if err != nil {
+		return nil
+	}
+	return &rev
 }
 
 // generateShellShell hollows the solid so far into the group's running

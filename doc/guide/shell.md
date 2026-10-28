@@ -13,13 +13,15 @@ their centres and lose or gain the thickness on their radius, and a round corner
 thickness becomes a sharp one inside.
 
 A solid made by one lathe or revolve of lines and arcs, with no other solid before or after it,
-is hollowed by its profile: the profile is offset into its material, each line moved square to
+or by lathes about one axis joined to each other (a cup and a flange round its foot, a groove
+turned out of a cylinder), drawn in any planes through the axis, is hollowed by its profile, the
+lathes' profiles joined: the profile is offset into its material, each line moved square to
 itself and each arc given a smaller or larger radius about its centre, and turned again. So a
 cone gets a coned inside, a sphere a spherical one, each wall exactly the thickness. Such a solid
 can be open at any of its faces: a flat one, as a cup's top, or a curved one between outside
 corners, as a ring open all round its outer side, which leaves a channel. A revolve's flat ends
-are walls too, unless taken away; a revolve of more than half a turn must have both its ends
-taken away. The group's screen lists them and takes the thickness, as a number or an expression;
+are walls too, unless taken away; where the ends of a revolve of more than half a turn meet at
+the axis, the inside keeps the thickness from each and is rounded about the axis. The group's screen lists them and takes the thickness, as a number or an expression;
 "[change]" beside the faces takes the selected faces instead, and "[remove]" on a face's row
 keeps it as a wall again. A thickness
 at which the walls meet is a problem on the group, and the solid passes through.
@@ -36,7 +38,8 @@ sh.AsShell().SetThickness(1.5)
 ## Not yet
 
 A solid with curved faces must be such a prism, its sides all running one way and open only at
-its ends, or one lathe or revolve; a lathe joined to other solids, a helix, or a cone made by an
+its ends, or one lathe or revolve, or lathes about one axis; a lathe joined to other solids, as
+an extruded block or a revolve of less than a whole turn, a helix, or a cone made by an
 extrusion's draft are refused. A revolve's curved face is opened only between outside corners. A
 profile of other curves than lines and arcs is refused. Beside a round hole, walls thinner than
 about twice the chord tolerance can come out unsound: the hole's chords and the wall's cross. Where four faces meet at a

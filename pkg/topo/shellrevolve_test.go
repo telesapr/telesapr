@@ -149,6 +149,21 @@ func TestShellRevolved(t *testing.T) {
 			// The end at x < 0 keeps a wall: the inside's strip 1 wide
 			// beside it, 3 high.
 			math.Pi*(100-25)*4/2 - (math.Pi*(81-36)*3/2 - 3*(strip(9, 1)-strip(6, 1)))},
+		// Three quarters of a turn: the ends meet at the axis in a reflex
+		// corner, so the inside keeps 1 from each end's half-plane and is
+		// rounded about the axis, where the two walls meet.
+		{"three quarters, ends kept", [][2]float64{{0, 0}, {5, 0}, {5, 10}, {0, 10}}, nil, 0, 1.5 * math.Pi,
+			[][2]geom.Vector{{v(0, 0, 10), v(0, 0, 1)}}, nil, 1,
+			math.Pi*25*10*3/4 - 9*(12*math.Pi-2*strip(4, 1)-math.Pi/4)},
+		{"three quarters, one end kept", [][2]float64{{0, 0}, {5, 0}, {5, 10}, {0, 10}}, nil, 0, 1.5 * math.Pi,
+			[][2]geom.Vector{{v(0, 0, 10), v(0, 0, 1)}, {v(1, 0, 0), v(0, 1, 0)}}, nil, 1,
+			math.Pi*25*10*3/4 - 9*(12*math.Pi-strip(4, 1)-math.Pi/2)},
+		{"three quarters of a ring, ends kept", [][2]float64{{5, 0}, {10, 0}, {10, 4}, {5, 4}}, nil, 0, 1.5 * math.Pi,
+			[][2]geom.Vector{{v(0, 0, 4), v(0, 0, 1)}}, nil, 1,
+			math.Pi*(100-25)*4*3/4 - 3*(math.Pi*(81-36)*3/4-2*(strip(9, 1)-strip(6, 1)))},
+		{"most of a turn, ends kept", [][2]float64{{0, 0}, {5, 0}, {5, 10}, {0, 10}}, nil, 0, 1.9 * math.Pi,
+			[][2]geom.Vector{{v(0, 0, 10), v(0, 0, 1)}}, nil, 1,
+			math.Pi*25*10*0.95 - 9*(8*1.9*math.Pi-2*strip(4, 1)-0.9*math.Pi/2)},
 	}
 	for _, c := range cases {
 		sh, rev := turned(meridian(t, c.pts, c.arcs, tol), c.start, c.end, tol)
@@ -197,7 +212,6 @@ func TestShellRevolvedRefusals(t *testing.T) {
 		thick      float64
 		want       string
 	}{
-		{"three quarters, ends kept", rect, 0, 1.5 * math.Pi, 1, "more than half a turn"},
 		{"too thick", rect, 0, 2 * math.Pi, 6, "thickness"},
 	}
 	for _, c := range cases {
