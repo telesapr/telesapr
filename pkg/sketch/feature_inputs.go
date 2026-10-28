@@ -119,6 +119,12 @@ func (sk *Sketch) edgesBefore(hg core.HGroup, edges []core.HEntity, names []topo
 // edges and then solidEdges: each radius stays with its own edge, by
 // identity, and the radius of an edge that is gone goes with it.
 func carryEdgeRadii(g *Group, edges []core.HEntity, solidEdges []topo.Name) []EdgeRadius {
+	return carryEdgeValues(g, g.EdgeRadii, edges, solidEdges)
+}
+
+// carryEdgeValues is carryEdgeRadii for any of g's lists of edges' own
+// values (edgeValueLists).
+func carryEdgeValues(g *Group, list []EdgeRadius, edges []core.HEntity, solidEdges []topo.Name) []EdgeRadius {
 	n := len(g.Edges) + len(g.SolidEdges)
 	at := make([]int, n)
 	for i := range at {
@@ -141,7 +147,7 @@ func carryEdgeRadii(g *Group, edges []core.HEntity, solidEdges []topo.Name) []Ed
 		}
 	}
 	var out []EdgeRadius
-	for _, er := range g.EdgeRadii {
+	for _, er := range list {
 		if er.Edge < 0 || er.Edge >= n || at[er.Edge] < 0 {
 			continue
 		}

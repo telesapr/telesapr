@@ -421,12 +421,21 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 		}
 		n.add(field("datum-at", args...))
 	}
-	for _, er := range g.EdgeRadii {
-		text := er.Expr
-		if text == "" {
-			text = FormatReal(er.Val / mmPer)
+	radius := "edge-radius"
+	if g.Type == sketch.GroupChamfer {
+		radius = "edge-distance"
+	}
+	for _, l := range []struct {
+		name string
+		list []sketch.EdgeRadius
+	}{{radius, g.EdgeRadii}, {"edge-second-distance", g.EdgeSeconds}} {
+		for _, er := range l.list {
+			text := er.Expr
+			if text == "" {
+				text = FormatReal(er.Val / mmPer)
+			}
+			n.add(&Node{Name: l.name, Args: []Value{Word(strconv.Itoa(er.Edge + 1))}, HasExpr: true, Expr: text})
 		}
-		n.add(&Node{Name: "edge-radius", Args: []Value{Word(strconv.Itoa(er.Edge + 1))}, HasExpr: true, Expr: text})
 	}
 
 	pd := block("predef")

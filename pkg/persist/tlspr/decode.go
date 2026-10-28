@@ -504,6 +504,9 @@ func (d *decoder) lengths() {
 		for k := range g.EdgeRadii {
 			length(&g.EdgeRadii[k].Val, &g.EdgeRadii[k].Expr)
 		}
+		for k := range g.EdgeSeconds {
+			length(&g.EdgeSeconds[k].Val, &g.EdgeSeconds[k].Expr)
+		}
 		if t := &g.Thread; t.IsThread() {
 			length(&t.Length, &t.LengthExpr)
 			noExpr := ""
@@ -751,25 +754,35 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			g.Density = d.realField(c)
 		case "thread":
 			g.Thread = d.thread(c, g.H)
-		case "edge-radius":
+		case "edge-radius", "edge-distance", "edge-second-distance":
 			// "edge-radius <n> = <expression>": the fillet's n-th edge,
-			// counting its entities and then its solid edges.
+			// counting its entities and then its solid edges; a
+			// chamfer's edge-distance and edge-second-distance alike.
+			list, what, field := &g.EdgeRadii, "radius", sketch.EdgeRadiusField
+			switch c.Name {
+			case "edge-distance":
+				what, field = "distance", sketch.EdgeDistanceField
+			case "edge-second-distance":
+				list, what, field = &g.EdgeSeconds, "second distance", sketch.EdgeSecondField
+			}
 			if !c.HasExpr || c.Block || len(c.Args) != 1 {
-				d.fail(c.Pos, "an edge's radius is written as 'edge-radius <n> = <expression>'")
+				d.fail(c.Pos, "an edge's %s is written as '%s <n> = <expression>'", what, c.Name)
 			}
 			i := d.int(c.Args[0]) - 1
 			if i < 0 {
 				d.fail(c.Args[0].Pos, "edges count from 1")
 			}
-			for _, er := range g.EdgeRadii {
-				if er.Edge == i {
-					d.fail(c.Pos, "a second radius for edge %d", i+1)
+			for _, er := range *list {
+				if er.Edge == i && list == &g.EdgeSeconds {
+					d.fail(c.Pos, "another second distance for edge %d", i+1)
+				} else if er.Edge == i {
+					d.fail(c.Pos, "a second %s for edge %d", what, i+1)
 				}
 			}
 			at := *c
 			at.Args = nil
-			val, expr := d.expr(&at, exprPlace{group: g.H, field: sketch.EdgeRadiusField(i)})
-			g.EdgeRadii = append(g.EdgeRadii, sketch.EdgeRadius{Edge: i, Val: val, Expr: expr})
+			val, expr := d.expr(&at, exprPlace{group: g.H, field: field(i)})
+			*list = append(*list, sketch.EdgeRadius{Edge: i, Val: val, Expr: expr})
 		case "solid-face":
 			d.plain(c)
 			if len(c.Args) != 1 {

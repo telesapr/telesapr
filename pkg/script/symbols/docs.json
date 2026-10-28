@@ -4348,6 +4348,14 @@
 						"decl": "func (v ChamferGroup) Distance() (mm float64)",
 						"text": "Distance is a chamfer's distance in mm."
 					},
+					"EdgeDistance": {
+						"decl": "func (v ChamferGroup) EdgeDistance(i int) (mm float64)",
+						"text": "EdgeDistance is the distance in mm a chamfer cuts its edge i at,\ncounting the entities Edges gives and then the edges SolidEdges\ngives, from 0: the edge's own, or the chamfer's."
+					},
+					"EdgeSecondDistance": {
+						"decl": "func (v ChamferGroup) EdgeSecondDistance(i int) (mm float64)",
+						"text": "EdgeSecondDistance is the distance in mm a chamfer cuts its edge i at\non the edge's second face, counted as EdgeDistance counts: the edge's\nown, or the chamfer's SecondDistance, 0 when that is the first\ndistance on both faces."
+					},
 					"SecondDistance": {
 						"decl": "func (v ChamferGroup) SecondDistance() (mm float64)",
 						"text": "SecondDistance is a chamfer's distance in mm on each edge's second\nface, or 0 when it is the first distance on both faces. An edge's\nfirst face is the one of the lower identity (SolidFace.ID), the one\nits name gives first."
@@ -4355,6 +4363,22 @@
 					"SetDistance": {
 						"decl": "func (v ChamferGroup) SetDistance(mm float64)",
 						"text": "SetDistance sets a chamfer's distance in mm; SetExpr with\nsketch.GroupPitch gives it an expression in the document's unit."
+					},
+					"SetEdgeDistance": {
+						"decl": "func (v ChamferGroup) SetEdgeDistance(i int, mm float64)",
+						"text": "SetEdgeDistance gives a chamfer's edge i, counted as EdgeDistance\ncounts, a distance of its own in mm, or with 0 the chamfer's again.\nChamfered edges of different distances that meet at a corner whose\nthird edge stays sharp meet in a mitre; at a corner the chamfer's\nlocal edit can't make, as one of three chamfered edges of different\ndistances, each straight edge is cut by a wedge instead."
+					},
+					"SetEdgeDistanceExpr": {
+						"decl": "func (v ChamferGroup) SetEdgeDistanceExpr(i int, expr string) (err error)",
+						"text": "SetEdgeDistanceExpr gives a chamfer's edge i, counted as EdgeDistance\ncounts, a distance of its own from an expression in the document's\nunit, which may name parameters; \"\" gives it the chamfer's distance\nagain."
+					},
+					"SetEdgeSecondDistance": {
+						"decl": "func (v ChamferGroup) SetEdgeSecondDistance(i int, mm float64)",
+						"text": "SetEdgeSecondDistance gives a chamfer's edge i, counted as\nEdgeDistance counts, a second distance of its own in mm, on the\nedge's second face, or with 0 the chamfer's again."
+					},
+					"SetEdgeSecondDistanceExpr": {
+						"decl": "func (v ChamferGroup) SetEdgeSecondDistanceExpr(i int, expr string) (err error)",
+						"text": "SetEdgeSecondDistanceExpr gives a chamfer's edge i a second distance\nof its own from an expression in the document's unit, as\nSetEdgeDistanceExpr gives it a first; \"\" gives it the chamfer's\nagain."
 					},
 					"SetEdges": {
 						"decl": "func (v ChamferGroup) SetEdges(edges []Entity, solid []SolidEdge)",
@@ -7315,6 +7339,10 @@
 						"decl": "func (g *Group) EdgeRadius(i int) (float64, string, bool)",
 						"text": "EdgeRadius is the radius a fillet gives its edge i, counting Edges and then SolidEdges, and its expression: the edge's own, or the group's."
 					},
+					"EdgeSecond": {
+						"decl": "func (g *Group) EdgeSecond(i int) (float64, string, bool)",
+						"text": "EdgeSecond is the second distance a chamfer gives its edge i, counting Edges and then SolidEdges, and its expression: the edge's own, or the group's, which is 0 for a chamfer of one distance."
+					},
 					"ExtrusionForceVectorTo": {
 						"decl": "func (g *Group) ExtrusionForceVectorTo(sk *Sketch, v geom.Vector)",
 						"text": "ExtrusionForceVectorTo sets the extrusion vector's parameters."
@@ -8559,7 +8587,7 @@
 					},
 					"SameChamferDistances": {
 						"decl": "func (sk *Sketch) SameChamferDistances(h core.HGroup) error",
-						"text": "SameChamferDistances makes the second distance of chamfer h its first again."
+						"text": "SameChamferDistances makes the second distance of chamfer h its first again, on every edge: the edges' own second distances go too."
 					},
 					"ScheduleAdded": {
 						"decl": "func (sk *Sketch) ScheduleAdded(hg core.HGroup)",
@@ -8617,9 +8645,17 @@
 						"decl": "func (sk *Sketch) SetDraftFaces(hg core.HGroup, es []core.HEntity) error",
 						"text": "SetDraftFaces makes the extrusion hg's draft lean the sides of the curves es of its sketch only, or every side when es is empty."
 					},
+					"SetEdgeDistanceText": {
+						"decl": "func (sk *Sketch) SetEdgeDistanceText(hg core.HGroup, i int, text string) error",
+						"text": "SetEdgeDistanceText gives a chamfer's edge i a distance of its own from what the user typed, in the document's unit, as SetGroupText does for the group's distance; \"\" gives it the group's again."
+					},
 					"SetEdgeRadiusText": {
 						"decl": "func (sk *Sketch) SetEdgeRadiusText(hg core.HGroup, i int, text string) error",
 						"text": "SetEdgeRadiusText gives a fillet's edge i a radius of its own from what the user typed, in the document's unit, as SetGroupText does for the group's radius; \"\" gives it the group's radius again."
+					},
+					"SetEdgeSecondText": {
+						"decl": "func (sk *Sketch) SetEdgeSecondText(hg core.HGroup, i int, text string) error",
+						"text": "SetEdgeSecondText gives a chamfer's edge i a second distance of its own, as SetEdgeDistanceText gives it a first; \"\" gives it the group's again."
 					},
 					"SetFaceAppearance": {
 						"decl": "func (sk *Sketch) SetFaceAppearance(id srf.FaceID, name string) error",
@@ -8882,7 +8918,7 @@
 					},
 					"SwapChamferDistances": {
 						"decl": "func (sk *Sketch) SwapChamferDistances(h core.HGroup) error",
-						"text": "SwapChamferDistances swaps the two distances of chamfer h, which chamfers each edge the other way round."
+						"text": "SwapChamferDistances swaps the two distances of chamfer h, which chamfers each edge the other way round, its own distances too."
 					},
 					"SymmetricConstraint": {
 						"decl": "func (sk *Sketch) SymmetricConstraint(base core.Constraint, a, b, about core.HEntity) (core.Constraint, []Implied, error)",
@@ -9215,9 +9251,17 @@
 				"decl": "func DefaultVisibility() Visibility",
 				"text": "DefaultVisibility is what GraphicsWindow::Init sets: points, normals, construction, edges, reference dimensions and comments shown, workplanes and outlines not."
 			},
+			"EdgeDistanceField": {
+				"decl": "func EdgeDistanceField(i int) string",
+				"text": "EdgeDistanceField names a chamfer's edge's own distance in messages and in the file."
+			},
 			"EdgeRadiusField": {
 				"decl": "func EdgeRadiusField(i int) string",
 				"text": "EdgeRadiusField names an edge's radius in messages and in the file."
+			},
+			"EdgeSecondField": {
+				"decl": "func EdgeSecondField(i int) string",
+				"text": "EdgeSecondField names a chamfer's edge's own second distance in messages and in the file."
 			},
 			"EntityPointCount": {
 				"decl": "func EntityPointCount(entity core.EntityType, extraPoints int) (pts int, ok bool)",

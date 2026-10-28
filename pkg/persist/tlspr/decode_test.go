@@ -50,8 +50,11 @@ func fullDocument() *Document {
 	g.Predef.EntityC = core.HEntity{V: 0x30001}
 	g.Predef.SwapUV, g.Predef.NegateU, g.Predef.NegateV = true, true, true
 	plain := sketch.Group{H: core.HGroup{V: 1}, Type: sketch.GroupDrawing3D, Name: "", Scale: 1, Remap: core.EntityMap{}}
-	sk.Groups = []sketch.Group{plain, g}
-	sk.GroupOrder = []core.HGroup{plain.H, g.H}
+	chamfer := sketch.Group{H: core.HGroup{V: 8}, Type: sketch.GroupChamfer, Order: 4, Name: "c", Scale: 1, Remap: core.EntityMap{},
+		ValB: 25.4, EdgeRadii: []sketch.EdgeRadius{{Edge: 0, Val: 12.7}},
+		EdgeSeconds: []sketch.EdgeRadius{{Edge: 0, Val: 50.8}, {Edge: 2, Val: 2.54}}}
+	sk.Groups = []sketch.Group{plain, g, chamfer}
+	sk.GroupOrder = []core.HGroup{plain.H, g.H, chamfer.H}
 
 	sk.Requests = []sketch.Request{
 		{H: core.HRequest{V: 1}, Type: sketch.RequestWorkplane, Group: plain.H, Workplane: core.FreeIn3D},
@@ -352,6 +355,9 @@ func TestMalformed(t *testing.T) {
 		{"telesapr 1\nparam a = (\n", `2:9: "(" is not a valid expression`},
 		{"telesapr 1\ngroup 0x1 sketch-3d \"a\" {\n  visible 1\n}\n", `3:3: "visible" takes 0 values, not 1`},
 		{"telesapr 1\ngroup 0x1 sketch-3d \"a\" {\n  datum-at 1 2 3\n}\n", "3:3: datum-at takes a place on an edge or on a face"},
+		{"telesapr 1\ngroup 0x1 chamfer \"a\" {\n  edge-distance 1 2\n}\n", "3:3: an edge's distance is written as 'edge-distance <n> = <expression>'"},
+		{"telesapr 1\ngroup 0x1 chamfer \"a\" {\n  edge-second-distance 0 = 2\n}\n", "3:24: edges count from 1"},
+		{"telesapr 1\ngroup 0x1 chamfer \"a\" {\n  edge-second-distance 1 = 2\n  edge-second-distance 1 = 3\n}\n", "4:3: another second distance for edge 1"},
 		{"telesapr 1\ngroup 0x1 sketch-3d \"a\" {\n  color 1 2 3 256\n}\n", "3:15: a colour component is 0 to 255, not 256"},
 		{"telesapr 1\ngroup 0x1 sketch-3d \"a\" {\n  remap {\n    map -1 0x1 0\n  }\n}\n", "4:9: a remap index is not negative"},
 		{"telesapr 1\nstyle 0x5 \"builtin\" {\n}\n", "2:7: style 0x5 is a built-in style, which is not saved"},

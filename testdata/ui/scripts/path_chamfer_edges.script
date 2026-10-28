@@ -18,9 +18,9 @@ move 247.5 202.5
 down L 247.5 202.5
 up L 247.5 202.5
 menu Features|Chamfer Edges
-twmove 348 205
-twdown L 348 205
-twup L 348 205
+twmove 348 225
+twdown L 348 225
+twup L 348 225
 answer ok
 twmove 96 165
 twdown L 96 165

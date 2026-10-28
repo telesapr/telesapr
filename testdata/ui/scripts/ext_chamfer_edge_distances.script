@@ -1,0 +1,34 @@
+# A chamfer's edges at distances of their own (an extension):
+# path_chamfer's chamfer, its second edge's [own distance] link taking
+# 2 for it alone, which the screen lists under it with links to change
+# it or give it the chamfer's again, then its [own second distance] 1.5;
+# Check Solid finds it sound.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 382.5 232.5
+down L 382.5 232.5
+up L 382.5 232.5
+move 247.5 202.5
+down L 247.5 202.5
+up L 247.5 202.5
+menu Features|Chamfer Edges
+tw
+twmove 95 245
+twdown L 95 245
+twup L 95 245
+edit 2
+tw
+twmove 113 265
+twdown L 113 265
+twup L 113 265
+edit 1.5
+tw
+answer ok
+menu Analyze|Check Solid

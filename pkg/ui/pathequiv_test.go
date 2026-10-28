@@ -626,6 +626,16 @@ var pathEquivalences = map[string]pathCheck{
 			t.Errorf("the fillet: type %d, problem %q, radii %+v", g.Type, g.Problem.Msg, g.EdgeRadii)
 		}
 	},
+	// Two edges picked with the mouse and chamfered, the second given a
+	// distance and a second distance of its own on the group's screen,
+	// and the same made by a script.
+	"chamfer_edge_distances": func(t *testing.T, ui, _ *sketch.Sketch) {
+		g := ui.Group(ui.Active)
+		if g.Type != sketch.GroupChamfer || g.Problem.Msg != "" ||
+			len(g.EdgeRadii) != 1 || g.EdgeRadii[0].Val != 2 || len(g.EdgeSeconds) != 1 || g.EdgeSeconds[0].Val != 1.5 {
+			t.Errorf("the chamfer: type %d, problem %q, distances %+v %+v", g.Type, g.Problem.Msg, g.EdgeRadii, g.EdgeSeconds)
+		}
+	},
 	// A circle of an extrusion picked with the mouse and rounded, and the
 	// same made by a script.
 	"fillet_circle": func(t *testing.T, ui, _ *sketch.Sketch) {

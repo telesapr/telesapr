@@ -67,7 +67,7 @@ func (sk *Sketch) newChamferTwo(edges []core.HEntity, solidEdges []topo.Name, di
 		}
 		seenName[n] = true
 	}
-	if err := sk.chamferTrial(sk.solidAt(sk.Active), edges, solidEdges, distance, d2); err != nil {
+	if err := sk.chamferTrial(sk.solidAt(sk.Active), edges, solidEdges, distance, d2, nil, nil); err != nil {
 		return g, err
 	}
 	g.Edges = append([]core.HEntity(nil), edges...)
@@ -80,7 +80,8 @@ func (sk *Sketch) newChamferTwo(edges []core.HEntity, solidEdges []topo.Name, di
 // chamfer's edges can be changed after it is made (ROADMAP F7). The
 // chamfer is tried on a copy of the solid before it with its
 // distances, so an edge it can't cut is an error here and nothing
-// changes. The caller remembers the undo state.
+// changes. An edge's own distances stay with it, as a fillet's edge's
+// radius does. The caller remembers the undo state.
 func (sk *Sketch) SetChamferEdges(hg core.HGroup, edges []core.HEntity, solidEdges []topo.Name) error {
 	g, err := sk.inputGroup(hg, GroupChamfer, "edges")
 	if err != nil {
@@ -96,19 +97,22 @@ func (sk *Sketch) SetChamferEdges(hg core.HGroup, edges []core.HEntity, solidEdg
 	if err := sk.edgesBefore(hg, edges, solidEdges); err != nil {
 		return err
 	}
-	if err := sk.chamferTrial(sk.solidBefore(g), edges, solidEdges, g.ValB, g.ValC); err != nil {
+	radii := carryEdgeValues(g, g.EdgeRadii, edges, solidEdges)
+	seconds := carryEdgeValues(g, g.EdgeSeconds, edges, solidEdges)
+	if err := sk.chamferTrial(sk.solidBefore(g), edges, solidEdges, g.ValB, g.ValC, radii, seconds); err != nil {
 		return err
 	}
-	g.Edges, g.SolidEdges = edges, solidEdges
+	g.Edges, g.SolidEdges, g.EdgeRadii, g.EdgeSeconds = edges, solidEdges, radii, seconds
 	sk.MarkGroupDirty(hg, false)
 	return nil
 }
 
 // chamferTrial cuts edges and solidEdges of solid on a copy at distance
-// and d2, as generateChamferShell will, or says why it can't: by an
-// edit of the solid's faces, failing that by wedges and arcs. What
-// NewChamfer and SetChamferEdges check before the chamfer is made.
-func (sk *Sketch) chamferTrial(solid *Group, edges []core.HEntity, solidEdges []topo.Name, distance, d2 float64) error {
+// and d2, or the edges' own (radii, seconds), as generateChamferShell
+// will, or says why it can't: by an edit of the solid's faces, failing
+// that by wedges and arcs. What NewChamfer and SetChamferEdges check
+// before the chamfer is made.
+func (sk *Sketch) chamferTrial(solid *Group, edges []core.HEntity, solidEdges []topo.Name, distance, d2 float64, radii, seconds []EdgeRadius) error {
 	if solid == nil {
 		return errors.New("there is no solid to chamfer")
 	}
@@ -116,8 +120,9 @@ func (sk *Sketch) chamferTrial(solid *Group, edges []core.HEntity, solidEdges []
 	if err != nil {
 		return err
 	}
+	picks := chamferPicks(segs, d2, radii, seconds)
 	if !solid.IsForcedToMesh(sk) && len(solid.RunningShell.Surface) > 0 {
-		_, err := chamferByEdit(&solid.RunningShell, segs, distance, d2, 1<<30)
+		_, err := chamferByEdit(&solid.RunningShell, picks, distance, 1<<30)
 		if err == nil {
 			return nil
 		}
@@ -128,17 +133,17 @@ func (sk *Sketch) chamferTrial(solid *Group, edges []core.HEntity, solidEdges []
 	}
 	var mesh srf.SMesh
 	solidMesh(solid, &mesh)
-	first, err := firstFaces(solid, segs, d2)
+	first, err := firstFaces(solid, segs, picks)
 	if err != nil {
 		return err
 	}
 	var arcs []topo.FilletPick
 	for i, seg := range segs {
 		if seg.arc {
-			arcs = append(arcs, seg.pick(d2))
+			arcs = append(arcs, picks[i])
 			continue
 		}
-		if _, _, err := chamferWedge(&mesh, seg, distance, d2, first[i]); err != nil {
+		if _, _, err := chamferWedge(&mesh, seg, pickDistance(picks[i], distance), picks[i].D2, first[i]); err != nil {
 			return err
 		}
 	}
@@ -171,12 +176,13 @@ func (s chamferSegment) pick(d2 float64) topo.FilletPick {
 	return topo.FilletPick{A: s.a, B: s.b, At: s.at, Arc: s.arc, D2: d2}
 }
 
-// firstFaces is, for each straight segment of a chamfer of two
-// distances, the outward normal of the face its first distance lies on
-// (topo.Topology.FirstFaceNormal); nil for a chamfer of one.
-func firstFaces(solid *Group, segs []chamferSegment, d2 float64) ([]geom.Vector, error) {
+// firstFaces is, for each straight segment of a chamfer cut with two
+// distances (its pick's D2), the outward normal of the face its first
+// distance lies on (topo.Topology.FirstFaceNormal); zero for one of
+// one distance.
+func firstFaces(solid *Group, segs []chamferSegment, picks []topo.FilletPick) ([]geom.Vector, error) {
 	out := make([]geom.Vector, len(segs))
-	if d2 == 0 {
+	if !slices.ContainsFunc(picks, func(p topo.FilletPick) bool { return p.D2 != 0 }) {
 		return out, nil
 	}
 	if len(solid.RunningShell.Surface) == 0 {
@@ -187,7 +193,7 @@ func firstFaces(solid *Group, segs []chamferSegment, d2 float64) ([]geom.Vector,
 		return nil, fmt.Errorf("the solid's topology is broken: %w", err)
 	}
 	for i, seg := range segs {
-		if seg.arc {
+		if seg.arc || picks[i].D2 == 0 {
 			continue
 		}
 		n, ok := tp.FirstFaceNormal(seg.a, seg.b)
@@ -448,6 +454,7 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 		g.setProblem(nil, "%v", err)
 		return false
 	}
+	picks := chamferPicks(segs, d2, g.EdgeRadii, g.EdgeSeconds)
 	// On a shell every edge is cut by the fillet's local edit, flat:
 	// straight ones as circular ones, so concave edges and chains through
 	// smooth joins come too (roadmap 15.1). Where that can't be done, as
@@ -455,7 +462,7 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 	// forced to a mesh, which has no faces to edit, straight edges are
 	// cut by wedges and a Boolean, as before.
 	if !prev.IsForcedToMesh(sk) && len(prev.RunningShell.Surface) > 0 {
-		sh, err := chamferByEdit(&prev.RunningShell, segs, d, d2, srf.OriginFor(g.H.V, 0))
+		sh, err := chamferByEdit(&prev.RunningShell, picks, d, srf.OriginFor(g.H.V, 0))
 		if err == nil {
 			g.RunningShell = sh
 			g.ThisShell.MakeFromCopyOf(&sh)
@@ -474,7 +481,7 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 			return true
 		}
 	}
-	first, err := firstFaces(prev, segs, d2)
+	first, err := firstFaces(prev, segs, picks)
 	if err != nil {
 		g.setProblem(nil, "%v", err)
 		return false
@@ -482,17 +489,19 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 	var arcs []topo.FilletPick
 	var straight []chamferSegment
 	var firstOf []geom.Vector
+	var pickOf []topo.FilletPick
 	for i, seg := range segs {
 		if seg.arc {
-			arcs = append(arcs, seg.pick(d2))
+			arcs = append(arcs, picks[i])
 		} else {
 			straight = append(straight, seg)
 			firstOf = append(firstOf, first[i])
+			pickOf = append(pickOf, picks[i])
 		}
 	}
 	var wedges []srf.SShell
 	for i, seg := range straight {
-		tri, along, err := chamferWedge(&mesh, seg, d, d2, firstOf[i])
+		tri, along, err := chamferWedge(&mesh, seg, pickDistance(pickOf[i], d), pickOf[i].D2, firstOf[i])
 		if err != nil {
 			m := seg.a.Plus(seg.b).ScaledBy(0.5)
 			g.setProblem(&m, "%v", err)
@@ -533,18 +542,23 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 	return true
 }
 
-// chamferByEdit cuts every segment of a copy of solid at distance d,
-// and d2 on the second face when it is not 0, by the fillet's edit,
-// flat.
-func chamferByEdit(solid *srf.SShell, segs []chamferSegment, d, d2 float64, origin uint32) (srf.SShell, error) {
-	picks := make([]topo.FilletPick, len(segs))
-	for i, seg := range segs {
-		picks[i] = seg.pick(d2)
-	}
+// chamferByEdit cuts every pick of a copy of solid at its own distance
+// or d, and its D2 on the second face when that is not 0, by the
+// fillet's edit, flat.
+func chamferByEdit(solid *srf.SShell, picks []topo.FilletPick, d float64, origin uint32) (srf.SShell, error) {
 	var sh srf.SShell
 	sh.MakeFromCopyOf(solid)
 	err := topo.FilletPicks(&sh, picks, d, origin, true)
 	return sh, err
+}
+
+// pickDistance is the distance a chamfer cuts pick p at: its own, or
+// the group's d.
+func pickDistance(p topo.FilletPick, d float64) float64 {
+	if p.R != 0 {
+		return p.R
+	}
+	return d
 }
 
 // unionAll joins shells a pair at a time.

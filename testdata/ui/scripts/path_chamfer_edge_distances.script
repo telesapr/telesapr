@@ -1,0 +1,29 @@
+# path_chamfer's chamfer, its second edge given a distance of 2 and a
+# second distance of 1.5 of its own through the screen's [own distance]
+# and [own second distance] links; the same as
+# path_chamfer_edge_distances.go makes
+# (TestPathEquivalence/chamfer_edge_distances).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+move 382.5 232.5
+down L 382.5 232.5
+up L 382.5 232.5
+move 247.5 202.5
+down L 247.5 202.5
+up L 247.5 202.5
+menu Features|Chamfer Edges
+twmove 95 245
+twdown L 95 245
+twup L 95 245
+edit 2
+twmove 113 265
+twdown L 113 265
+twup L 113 265
+edit 1.5

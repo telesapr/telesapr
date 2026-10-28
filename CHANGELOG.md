@@ -10,6 +10,7 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 ## [Unreleased]
 
 ### Added
+- A chamfer's edges can have distances of their own: each edge's row on the chamfer's screen has [own distance] and [own second distance], and scripts have `ChamferGroup.SetEdgeDistance` and `SetEdgeSecondDistance`. An edge with none takes the chamfer's, and swapping the chamfer's distances swaps each edge's too. Before, a chamfer had one distance and one second distance for all its edges.
 - Two chamfered edges meet at a corner whose third edge stays sharp with any distances: two distances on each, or a different distance on each edge. The chamfers meet along the line where their planes cross, and the one that reaches further down the sharp edge goes on past it. This works where the chamfers cut (a block's top corner) and where they fill (the foot of a block standing on a plate, whose side face grows out to the mitre), as OpenCASCADE's makeChamfer does.
 - A datum on a face neither flat nor round, or on an edge neither straight nor round, is taken where the face or edge was clicked, and follows that place as the model changes, rather than at its middle. Scripts name such a place with `Datums.NameFaceAt` and `Datums.NameEdgeAt`.
 - A revolve of more than half a turn is hollowed with one or both of its ends kept as walls: the inside keeps the thickness from each end and is rounded about the axis, where the ends meet. Before, such a shell was refused unless both ends were taken away.

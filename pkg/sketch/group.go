@@ -339,8 +339,12 @@ type Group struct {
 	// reports (thread_follow.go).
 	threadProblem string
 	// EdgeRadii are a fillet's edges that have a radius of their own,
-	// rather than ValB, in the order of Edges and then SolidEdges.
+	// or a chamfer's that have a distance of their own, rather than
+	// ValB, in the order of Edges and then SolidEdges.
 	EdgeRadii []EdgeRadius
+	// EdgeSeconds are a chamfer's edges that have a second distance of
+	// their own, rather than ValC, in the same order.
+	EdgeSeconds []EdgeRadius
 
 	// topology caches the topology of RunningShell, built on first use
 	// after a regeneration (Topology).
