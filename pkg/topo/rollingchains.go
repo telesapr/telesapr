@@ -2,6 +2,7 @@ package topo
 
 import (
 	"errors"
+	"math"
 	"slices"
 
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -61,6 +62,9 @@ func rollingBallFilletsAt(sh *srf.SShell, t *Topology, edges []int, radii []floa
 		}
 		rb.turn()
 	}
+	if err := setKinks(rbs); err != nil {
+		return err
+	}
 	for _, rb := range rbs[1:] {
 		if rb.sigma != rbs[0].sigma {
 			return filletErr(midpoint(rb.pts), "the edges meeting in a mitre are one convex and one concave: round them one at a time")
@@ -108,6 +112,20 @@ func blendMitred(rbs []*rollingBall, split, fitCuts bool) ([]*rbBlend, error) {
 		rb.splitEnds, rb.fitCuts = split, fitCuts
 		for _, end := range rb.ends {
 			end.shared = nil
+		}
+	}
+	// A kinked mitre is the larger end's to fit, and round a rim each
+	// chain's may copy the one before's: every one is fitted first.
+	for _, rb := range rbs {
+		for k := range rb.ends {
+			if !rb.kinkedEnd(k) {
+				continue
+			}
+			sec, _, err := rb.endSection(k, 0)
+			if err != nil {
+				return nil, err
+			}
+			rb.ends[k].shared = &sec
 		}
 	}
 	bls := make([]*rbBlend, 0, len(rbs))
@@ -196,3 +214,45 @@ func pickRadii(picks []FilletPick, r float64) []float64 {
 	}
 	return radii
 }
+
+// setKinks finds the kink of every chain's larger end at a mitre of two
+// radii (rollingkink.go) and gives each chain its kinks. A chain's two
+// kinks within kinkMerge of each other are one, both ends taking it.
+// Kinked sections can't share a mitre with an equal chain's, whose
+// sections aren't split alike: refused.
+func setKinks(rbs []*rollingBall) error {
+	for _, rb := range rbs {
+		rb.kinks = nil
+		for k := range rb.ends {
+			if !rb.kinkedEnd(k) {
+				continue
+			}
+			if err := rb.findKink(k); err != nil {
+				return err
+			}
+			kt := rb.ends[k].kink
+			if i := slices.IndexFunc(rb.kinks, func(x float64) bool { return math.Abs(x-kt) < kinkMerge }); i >= 0 {
+				rb.ends[k].kink = rb.kinks[i]
+				continue
+			}
+			rb.kinks = append(rb.kinks, kt)
+		}
+		if len(rb.kinks) > 0 && rb.copiesKink() {
+			return filletErr(midpoint(rb.pts), "the fillet meets a larger one at one end and a smaller at the other: pick it alone")
+		}
+		if len(rb.kinks) > 1 {
+			return filletErr(midpoint(rb.pts), "the fillet meets smaller ones at both its ends, differently: pick it alone")
+		}
+	}
+	for _, rb := range rbs {
+		for _, end := range rb.ends {
+			if end.mitre && end.mate != rb && end.mate.r == rb.r && (len(rb.kinks) > 0 || len(end.mate.kinks) > 0) {
+				return filletErr(rb.t.Vertices[end.v].P, "a mitre of one radius beside one of two radii is not made yet: pick them one at a time")
+			}
+		}
+	}
+	return nil
+}
+
+// kinkMerge is how near two kinks' arc parameters are taken as one.
+const kinkMerge = 1e-6

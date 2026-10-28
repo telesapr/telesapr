@@ -186,12 +186,26 @@ solids) at 59 of 59 sound since 2026-10-22. Chamfers: `TestChamferOnOtherSolids`
 |---|---|---|
 | Run-offs onto a curved face; a run-off of a blend that takes material away; both ends running off | refused, naming the place | The setback patch is the means: where the ball runs off a face, cut the fillet as a setback is cut and fill the hole between it, the next face's fillet (or the face) and the faces round. A run-off taking material away was never reached by any test case (a slot cut from the cone never got that far) |
 | A rim's mitre below about 0.005% chord | refused: "the fillet's sections near its mitre can't be fitted" | At the cap the mitre runs nearly along the chain; tried: starting the fit from chord-length parameters (worse). More spans than two, or sections fitted against the mitre's own parameter |
-| Mitres of two radii: chains of a rim, or edges at a corner whose third edge stays sharp, of different radii | refused: "pick it alone" | One problem: at the crease the smaller ball touches its wall at its own depth, the larger at its, so the curve where the swept surfaces meet doesn't reach the crease ("the mitre doesn't reach the crease"); one after the other fails where the two blends touch tangentially on the face both share. OpenCASCADE's makeFillet (the lens at 1 and 0.5, checked 2026-10-28) makes two faces: the smaller chain's end is a plain mitre against the larger's swept surface (`mateSurface` already takes the mate's radius, `pickRadii` each chain's), ending on its own wall at its depth; the larger's end is kinked, the mitre from the shared face down to that point, then on along the smaller's wall to the crease at its own depth. Needs, for the larger end: each arc point cut at the first of the two (mitre root, root over the wall), the kink's arc parameter solved, every section of the chain with a full knot there, the mitre section fitted in two spans and the smaller end copying the first; the end fitted before any copy (cyclic round a rim, so before blending); `cutBack` trimming the smaller's wall along the second span, which today only an end at a face does (`cutEnd`) |
+| Mitres of two radii left | refused, naming the place | A chain that meets smaller ones at both its ends with different kinks (the three cubics at 0.5, 1 and 0.75), or a larger one at one end and a smaller at the other: its sections would need two kinks, or a kink and the copied span split at it, and the mate's span is one quintic; a mitre of one radius beside one of two on the same chain (their sections split differently); chamfers of two distances (the line's height is the same; the kink, `onMateArc`, would be the line's foot) |
 | A rib rounded all over: its top's edges rounded as well as its foot filled | refused | The foot filled below a sharp top is made (uneven mitre). Top first: the foot's chain meets the arc where the floor cuts a leaning cylinder, which only the rolling ball rounds, and that edge must be picked alone. Foot first: the top's edge ends on the foot's fillet and the grown top |
 | Radii 5-6:1 side by side at a setback corner | 4 of 36 refused as folding (`TestFilletSetbackExtremeSweep`) | More patches, or a smaller setback for the small fillets. Tried and given up: one fitted patch over the hole (0.1 rad off at degree 9), a fan of quads, a star for even counts, stronger pulls, larger setbacks, net second differences as fairness |
 | Chamfers at setback corners; convex meeting concave at one vertex beyond what the stages round | refused | No setback for chamfers yet |
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
 | Slot chamfer at 3 | see K4 | The teapot handle and the run-off chamfers' crossings, listed here before, are sound since K4's mender |
+
+Done 2026-10-28: mitres of two radii, chains of a rim and edges at a corner whose third edge stays
+sharp (`pkg/topo/rollingkink.go`). The smaller end is a mitre against the larger's swept surface
+(`mateSurface` takes the mate's radius), ending on its own wall at its depth. The larger end is
+kinked as OpenCASCADE's is: each arc point is cut by the smaller's swept surface while the cut lies
+on the smaller's fillet, between its feet (`onMateArc`; past its foot on the wall the two surfaces
+still meet, on its ball), and by the smaller's wall after; every section of the chain has a full
+knot at the kink's arc parameter, its patches two rows, and the mitre's sections are fitted in two
+spans. The kinked ends are fitted before any chain is blended, the smaller end copies the first
+span reparametrized to its own arcs (weights scaled by cⁱ, `matchParams`), keeps its sections
+unsplit so the edge is shared whole, and is cut back after the larger, along the second span on its
+wall. The lens at 1 and 0.5, 0.7 and 0.25, the four cubics alternating 1 and 0.5, and the lid's
+upright with its bottom edge either way round: OpenCASCADE's vertices within 6.4e-6 mm, its surfaces
+within 5.3e-4 (`TestFilletChainsRadii`, `TestFilletCornerRadii`).
 
 Done 2026-10-28: chamfers meeting in mitres, as fillets do: at a crease of a rim's wall, of one
 chain (the blob's 2 rims) or several, all picked or some, and at a corner whose third edge stays

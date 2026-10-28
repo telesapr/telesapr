@@ -119,7 +119,8 @@ func (rb *rollingBall) markMitre() {
 // chains' faces on one side, is a crease: the two chains share their
 // other side's face, and each one's end face is the other's creased
 // face. It reports whether every end of every chain is linked so, and
-// to a chain of the same radius. With partial, an end at a vertex no
+// for chamfers to one of the same distance (fillets of two radii are
+// mitred too, rollingkink.go). With partial, an end at a vertex no
 // other chain's end shares may stay an end at a face, flat or curved,
 // and it reports whether every end that shares its vertex with another
 // chain's is linked, and at least one is.
@@ -134,7 +135,7 @@ func linkMitresAt(rbs []*rollingBall, partial bool) bool {
 				if end.mitre {
 					break
 				}
-				if o == rb || o.closed || o.r != rb.r || o.flat != rb.flat {
+				if o == rb || o.closed || o.flat != rb.flat || o.flat && o.r != rb.r {
 					continue
 				}
 				for ok, oe := range o.ends {
@@ -566,11 +567,18 @@ func (rb *rollingBall) mitreRoots(k int) ([]float64, error) {
 		return rb.mitreS[k], nil
 	}
 	end := rb.ends[k]
+	ts := rb.mitreTs(k)
 	ss := make([]float64, mitreGrid+1)
 	ss[0], ss[mitreGrid] = rb.endS[k][0], rb.endS[k][1]
 	for j := 1; j < mitreGrid; j++ {
-		tj := float64(j) / mitreGrid
-		s, _, err := rb.mitreRoot(k, func(x rbSection) float64 { return rb.endHeight(end, x.arc.PointAt(tj)) })
+		tj := ts[j]
+		var s float64
+		var err error
+		if rb.kinkedEnd(k) {
+			s, _, err = rb.kinkRoot(k, tj)
+		} else {
+			s, _, err = rb.mitreRoot(k, func(x rbSection) float64 { return rb.endHeight(end, x.arc.PointAt(tj)) })
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -610,6 +618,7 @@ func (rb *rollingBall) mitreSectionWithin(k int, lam, slack float64) (rbSection,
 	if err != nil {
 		return rbSection{}, 0, err
 	}
+	grid := rb.mitreTs(k)
 	ts := make([]float64, 0, mitreGrid-1)
 	xs := make([]geom.Vector, 0, mitreGrid-1)
 	var first, last rbSection
@@ -635,15 +644,25 @@ func (rb *rollingBall) mitreSectionWithin(k int, lam, slack float64) (rbSection,
 		case mitreGrid:
 			last = sec
 		default:
-			tj := float64(j) / mitreGrid
-			ts = append(ts, tj)
-			xs = append(xs, sec.arc.PointAt(tj))
+			ts = append(ts, grid[j])
+			xs = append(xs, sec.arc.PointAt(grid[j]))
 		}
 	}
 	mean := sum / (mitreGrid + 1)
 	ball, err := rb.section(mean)
 	if err != nil {
 		return rbSection{}, 0, err
+	}
+	at := rb.t.Vertices[rb.ends[k].v].P
+	if rb.kinkedEnd(k) {
+		// All grid points, the ends and the kink among them, in order.
+		kts := append(append([]float64{0}, ts...), 1)
+		kxs := append(append([]geom.Vector{first.foot[0].p}, xs...), last.foot[1].p)
+		fit, us, fxs, ok := rb.kinkedFit(k, ball.arc, first.foot[0], last.foot[1], kts, kxs)
+		if !ok {
+			return rbSection{}, 0, filletErr(at, "the fillet's sections near its mitre of two radii can't be fitted here")
+		}
+		return rb.mitreFitted(ball, mean, inner, fit, us, fxs, first, last, slack)
 	}
 	c := rb.splitSection(raised(ball.arc))
 	n := len(c.Ctrl) - 1
@@ -659,10 +678,18 @@ func (rb *rollingBall) mitreSectionWithin(k int, lam, slack float64) (rbSection,
 		}
 	}
 	fit, us, ok := fitThrough(c, c.Weight, ways, ts, xs)
-	at := rb.t.Vertices[rb.ends[k].v].P
 	if !ok {
 		return rbSection{}, 0, filletErr(at, "the fillet's sections near its mitre can't be fitted here")
 	}
+	return rb.mitreFitted(ball, mean, inner, fit, us, xs, first, last, slack)
+}
+
+// mitreFitted is the section near a mitre whose curve is fit, checked
+// against the points xs at its parameters us within slack times the
+// sections' tolerance: the ball's at arc length mean otherwise, its feet
+// first's and last's, with inner the innermost arc length.
+func (rb *rollingBall) mitreFitted(ball rbSection, mean, inner float64, fit srf.BSplineCurve, us []float64, xs []geom.Vector,
+	first, last rbSection, slack float64) (rbSection, float64, error) {
 	tol := slack * math.Max(rb.t.shell.Tol.ChordTolMm()/2, 1e-6)
 	for j, p := range xs {
 		if d := fit.PointAt(us[j]).Minus(p).Magnitude(); d > tol {
@@ -692,8 +719,15 @@ func (rb *rollingBall) fromMate(k int, sec rbSection) rbSection {
 		return sec
 	}
 	arc := m.arc
+	if rb.mateKinked(k) {
+		// The kinked mitre's first span, which runs to the face both share.
+		arc = rb.mateSpan(k)
+	}
 	if (end.ban[0] < 0) != (end.mate.ends[end.mateK].ban[0] < 0) {
 		arc = reversedCurve(arc)
+	}
+	if rb.mateKinked(k) {
+		arc = rb.splitSection(rb.matchParams(k, arc))
 	}
 	sec.arc = arc
 	sec.foot[0].p, sec.foot[1].p = arc.Ctrl[0], arc.Ctrl[len(arc.Ctrl)-1]

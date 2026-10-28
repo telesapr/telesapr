@@ -63,6 +63,12 @@ type rbEnd struct {
 	// shared is the mitre, the last section of both ends, once one of
 	// them is fitted: the other copies it.
 	shared *rbSection
+	// kink is, at the larger end of a mitre of two radii, the arc
+	// parameter of the ball's arcs where its mitre turns from the mate's
+	// swept surface onto the mate's wall, end face f, whose normal
+	// wallSign turns to point on past the end (rollingkink.go).
+	kink     float64
+	wallSign float64
 	// fade marks an end where the crease fades out part way along the
 	// edge, at p: the faces turn less and less, and the fillet narrows to
 	// nothing. It ends there with no face of its own, its last section
@@ -287,9 +293,14 @@ func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error
 		var s float64
 		var sec rbSection
 		var err error
-		if end.mitre {
+		switch {
+		case rb.kinkedEnd(k) && end.ban[i] >= 0:
+			// The larger end's foot on its creased side is where it
+			// crosses the mate's wall: at the crease.
+			s, sec, err = rb.wallRoot(k, func(x rbSection) float64 { return rb.wallHeight(k, x.foot[i].p) })
+		case end.mitre:
 			s, sec, err = rb.mitreFoot(k, i)
-		} else {
+		default:
 			s, sec, err = rb.planeRoot(func(x rbSection) float64 { return rb.endHeight(end, x.foot[i].p) }, s0, dir, at)
 		}
 		if err != nil {
@@ -301,15 +312,24 @@ func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error
 	var sm float64
 	var msec rbSection
 	var err error
-	if end.mitre {
+	switch {
+	case rb.kinkedEnd(k):
+		sm, msec, err = rb.kinkRoot(k, 0.5)
+	case end.mitre:
 		sm, msec, err = rb.mitreRoot(k, mid)
-	} else {
+	default:
 		sm, msec, err = rb.planeRoot(mid, s0, dir, at)
 	}
 	if err != nil {
 		return rbSection{}, 0, err
 	}
 	ss[2] = sm
+	if rb.kinkedEnd(k) {
+		// The kinked mitre is fitted through its cuts in two spans, as
+		// the sections near it are.
+		rb.endS[k] = ss
+		return rb.mitreSectionWithin(k, 0, 1)
+	}
 	m := msec.arc.PointAt(0.5)
 	if end.curved {
 		// On a curved face the three points lie on its surface, and the
@@ -515,8 +535,8 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		if quartic {
 			deriv[k] = elevateH(deriv[k])
 		}
-		if rb.splitEnds && len(deriv[k]) == endDeg+1 {
-			_, deriv[k] = srf.InsertKnotH(endDeg, bezierKnots(endDeg), deriv[k], 0.5)
+		if len(deriv[k]) == endDeg+1 {
+			deriv[k] = rb.splitDerivative(deriv[k])
 		}
 	}
 	if r1 < r0 {
@@ -593,6 +613,15 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		}
 		if err == nil && quartic {
 			switch {
+			case sp.end >= 0 && sp.lam == 0 && rb.kinkedEnd(sp.end):
+				// Fitted already, in two spans, before any chain was blended:
+				// the smaller end copies its first.
+				if sh := rb.ends[sp.end].shared; sh != nil {
+					sec.arc, sec.foot = sh.arc, sh.foot
+				} else {
+					shared := sec
+					rb.ends[sp.end].shared = &shared
+				}
 			case sp.end >= 0 && sp.lam == 0 && rb.ends[sp.end].mitre && rb.mateShared(sp.end) != nil:
 				// The mitre is both ends' last section, fitted by the end
 				// that came first.
@@ -1051,10 +1080,40 @@ func bezierKnots(deg int) []float64 {
 // into two spans when the fillet's sections are (splitEnds): the same
 // curve, so that it skins with the end sections fitted in two.
 func (rb *rollingBall) splitSection(c srf.BSplineCurve) srf.BSplineCurve {
-	if !rb.splitEnds || len(c.Ctrl) != endDeg+1 {
+	if len(c.Ctrl) != endDeg+1 {
+		return c
+	}
+	if len(rb.kinks) > 0 {
+		for _, t := range rb.kinks {
+			for range endDeg {
+				c = c.WithKnot(t)
+			}
+		}
+		return c
+	}
+	if !rb.splitEnds || rb.copiesKink() {
 		return c
 	}
 	return c.WithKnot(0.5)
+}
+
+// splitDerivative is d, the derivative across an end of one span's
+// homogeneous control points, split as splitSection splits a section.
+func (rb *rollingBall) splitDerivative(d []geom.Vector4) []geom.Vector4 {
+	knots := bezierKnots(endDeg)
+	if len(rb.kinks) > 0 {
+		for _, t := range rb.kinks {
+			for range endDeg {
+				knots, d = srf.InsertKnotH(endDeg, knots, d, t)
+			}
+		}
+		return d
+	}
+	if !rb.splitEnds || rb.copiesKink() {
+		return d
+	}
+	_, d = srf.InsertKnotH(endDeg, knots, d, 0.5)
+	return d
 }
 
 // curvedEndSection is end k's section on its curved face: sec, the

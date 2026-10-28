@@ -36,6 +36,16 @@ func lensCubics() [][4]geom.Vector {
 	}
 }
 
+// threeCubics is a profile of three cubics meeting at sharp corners at
+// (0, 0), (20, 0) and (10, 17).
+func threeCubics() [][4]geom.Vector {
+	return [][4]geom.Vector{
+		{v(0, 0, 0), v(6, -4, 0), v(14, -4, 0), v(20, 0, 0)},
+		{v(20, 0, 0), v(18, 6, 0), v(14, 12, 0), v(10, 17, 0)},
+		{v(10, 17, 0), v(6, 12, 0), v(2, 6, 0), v(0, 0, 0)},
+	}
+}
+
 // cubicMiddle is the point of the cubic halfway along, lifted to z.
 func cubicMiddle(c [4]geom.Vector, z float64) geom.Vector {
 	p := c[0].Plus(c[1].ScaledBy(3)).Plus(c[2].ScaledBy(3)).Plus(c[3]).ScaledBy(1.0 / 8)
@@ -92,11 +102,7 @@ func TestFilletChainsMitred(t *testing.T) {
 		}
 	}
 
-	three := [][4]geom.Vector{
-		{v(0, 0, 0), v(6, -4, 0), v(14, -4, 0), v(20, 0, 0)},
-		{v(20, 0, 0), v(18, 6, 0), v(14, 12, 0), v(10, 17, 0)},
-		{v(10, 17, 0), v(6, 12, 0), v(2, 6, 0), v(0, 0, 0)},
-	}
+	three := threeCubics()
 	sh = cubicPrism(three, tol)
 	if err := topo.FilletPicks(sh, topPicks(three), 0.5, 1<<30, false); err != nil {
 		t.Fatalf("three cubics: %v", err)
@@ -108,8 +114,9 @@ func TestFilletChainsMitred(t *testing.T) {
 }
 
 // Picks that don't make chains meeting in mitres are each a rolling
-// ball's alone: the lens's top edges at two radii meet at the creases,
-// and are refused; a top edge with a bottom one lie apart, and are
+// ball's alone: a chain that meets smaller ones of two radii at its two
+// ends, its sections kinked differently at each (rollingkink.go), is
+// refused; a top edge with a bottom one lie apart, and are
 // rounded one after the other (filletApart): each fillet's vertices
 // are those it has alone, and the two take what each takes alone,
 // within what the meshes' chords of the cut walls differ by.
@@ -117,13 +124,14 @@ func TestFilletChainsNotMitred(t *testing.T) {
 	t.Parallel()
 	tol := fine(0.002)
 	lens := lensCubics()
-	two := topPicks(lens)
-	two[1].R = 0.5
-	sh := cubicPrism(lens, tol)
-	err := topo.FilletPicks(sh, two, 1, 1<<30, false)
+	three := topPicks(threeCubics())
+	three[0].R, three[2].R = 0.5, 0.75
+	sh := cubicPrism(threeCubics(), tol)
+	err := topo.FilletPicks(sh, three, 1, 1<<30, false)
 	if err == nil || !strings.Contains(err.Error(), "pick it alone") {
-		t.Errorf("two radii: %v", err)
+		t.Errorf("three radii: %v", err)
 	}
+	two := topPicks(lens)
 
 	bottom := []topo.FilletPick{two[0], {At: cubicMiddle(lens[1], 0), Arc: true}}
 	before := meshVolume(cubicPrism(lens, tol))
@@ -262,6 +270,51 @@ func TestChamferChainsMitred(t *testing.T) {
 		for _, p := range c.ends {
 			if !slices.ContainsFunc(got, func(x topo.Vertex) bool { return x.P.Minus(p).Magnitude() < 1e-3 }) {
 				t.Errorf("%s: no vertex near %v", c.name, p)
+			}
+		}
+	}
+}
+
+// Chains of two radii meet in mitres too (rollingkink.go): the smaller
+// end is a mitre against the larger's swept surface, ending on its own
+// wall at its depth, and the larger end's mitre turns there onto that
+// wall, down to the crease at its depth. The lens's top edges at 1 and
+// 0.5, and the four cubics' at 1, 0.5, 1 and 0.5: every vertex of
+// OpenCASCADE's makeFillet of the same edges at those radii is one of
+// ours within 6.4e-6 mm, its Volume of our STEP export within 3.1e-5 of
+// its own, and every point of either solid lies within 2e-4 mm of the
+// other (sampled 2026-10-28).
+func TestFilletChainsRadii(t *testing.T) {
+	if testing.Short() {
+		t.Skip("rolling-ball fillets of several chains, slow")
+	}
+	t.Parallel()
+	for _, c := range []struct {
+		name  string
+		prof  [][4]geom.Vector
+		radii []float64
+		verts []geom.Vector
+	}{
+		{"lens", lensCubics(), []float64{1, 0.5}, []geom.Vector{v(0, 0, 4), v(20, 0, 4),
+			v(19.920511, 0.125852, 4.5), v(0.079489, 0.125852, 4.5), v(0.899091, 0.448841, 5), v(19.100909, 0.448841, 5)}},
+		{"four", fourCubics(), []float64{1, 0.5, 1, 0.5}, []geom.Vector{v(0, 0, 4), v(16, 0, 4), v(0, 13, 4), v(16, 13, 4),
+			v(-0.206827, 12.715949, 4.5), v(-0.206827, 0.284051, 4.5), v(16.206827, 0.284051, 4.5), v(16.206827, 12.715949, 4.5),
+			v(-0.334764, 1.405090, 5), v(16.334764, 1.405090, 5), v(16.334764, 11.594910, 5), v(-0.334764, 11.594910, 5)}},
+	} {
+		picks := topPicks(c.prof)
+		for i := range picks {
+			picks[i].R = c.radii[i]
+		}
+		for _, tol := range []float64{0.01, 0.002} {
+			sh := cubicPrism(c.prof, fine(tol))
+			if err := topo.FilletPicks(sh, picks, c.radii[0], 1<<30, false); err != nil {
+				t.Fatalf("%s at %g: %v", c.name, tol, err)
+			}
+			sound(t, sh)
+			for _, p := range c.verts {
+				if !hasVertex(t, sh, p) {
+					t.Errorf("%s at %g: no vertex at %v", c.name, tol, p)
+				}
 			}
 		}
 	}

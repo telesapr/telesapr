@@ -71,8 +71,10 @@ ends on a curved face (below), is rounded on its own: picked with other edges wh
 reach it, the others are rounded first and then each such edge alone, as the lid's four upright
 edges picked together are. Where its fillet meets another picked edge's at a corner whose third
 edge stays sharp, as a lid's upright edge and the bottom edge it meets, the two are mitred there,
-chamfers as fillets; other meetings at a vertex the two share, and fillets of different radii
-meeting so, are refused there ("pick it alone").
+chamfers as fillets. Fillets of different radii are mitred too: the smaller ends against the
+larger on its own wall, and the larger's end turns there onto that wall, down to the corner. Other
+meetings at a vertex the two share are refused there ("pick it alone"), as is a fillet that meets
+smaller ones of different radii at its two ends.
 
 An edge along a crease that fades out, as a loft's from a corner of its square foot up to where
 its sides meet smoothly, is rounded or chamfered up to where its faces turn by almost nothing,
