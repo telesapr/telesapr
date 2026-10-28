@@ -60,15 +60,27 @@ row 18      entity 80030004 of g003-extrude [remove]
  36-36 64 64 0
  37-44 6c 64 108 0 1 0
  45-99 64 64 0
-row 20      entity 8003001f of g003-extrude [remove]
+row 20        [own distance] [own second distance]
+ 0-6 64 64 0
+ 7-20 6c 64 108 0 1 0
+ 21-21 64 64 0
+ 22-42 6c 64 108 0 1 0
+ 43-99 64 64 0
+row 22      entity 8003001f of g003-extrude [remove]
  0-4 64 61 0
  5-35 6c 61 108 8003001f 1 1
  36-36 64 61 0
  37-44 6c 61 108 1 1 0
  45-99 64 61 0
-row 22 
+row 24        [own distance] [own second distance]
+ 0-6 64 61 0
+ 7-20 6c 61 108 1 1 0
+ 21-21 64 61 0
+ 22-42 6c 61 108 1 1 0
+ 43-99 64 61 0
+row 26 
  0-99 64 64 0
-row 24    appearance   matte   plastic   glossy   metal
+row 28    appearance   matte   plastic   glossy   metal
  0-2 64 64 0
  3-12 74 64 0
  13-14 64 64 0
@@ -80,53 +92,53 @@ row 24    appearance   matte   plastic   glossy   metal
  43-44 64 64 0
  45-51 64 64 97 3 1 0
  52-99 64 64 0
-row 26      suppress this group's solid model
+row 30      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 28 
+row 32 
  0-99 64 64 0
-row 30    show entities from this group
+row 34    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 32    suppress this group and the groups that use it
+row 36    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 34    force NURBS surfaces to triangle mesh
+row 38    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 37    relax constraints and dimensions
+row 41    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 39    allow redundant constraints
+row 43    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 41    suppress dof calculation (improves solver performance)
+row 45    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 43    treat all dimensions as reference
+row 47    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 45 
+row 49 
  0-99 64 64 0
-row 47  requests in group
+row 51  requests in group
  0-99 74 64 0
-row 49    (none)
+row 53    (none)
  0-99 64 61 0
-row 51 
+row 55 
  0-99 64 64 0
-row 53  constraints in group (0 DOF)
+row 57  constraints in group (0 DOF)
  0-99 74 64 0
-row 55    (none)
+row 59    (none)
  0-99 64 61 0
-row 57 
+row 61 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 18\nVolume: 74.85 cm³\nCenter of mass: (-2.00, 7.00, 39.98)\nExtent: 36.00 x 26.00 x 80.00
 row 0  home › g004-chamfer   drawing / constraining in 3d
@@ -182,15 +194,27 @@ row 18      entity 80030004 of g003-extrude [remove]
  36-36 64 64 0
  37-44 6c 64 108 0 1 0
  45-99 64 64 0
-row 20      entity 8003001f of g003-extrude [remove]
+row 20        [own distance] [own second distance]
+ 0-6 64 64 0
+ 7-20 6c 64 108 0 1 0
+ 21-21 64 64 0
+ 22-42 6c 64 108 0 1 0
+ 43-99 64 64 0
+row 22      entity 8003001f of g003-extrude [remove]
  0-4 64 61 0
  5-35 6c 61 108 8003001f 1 1
  36-36 64 61 0
  37-44 6c 61 108 1 1 0
  45-99 64 61 0
-row 22 
+row 24        [own distance] [own second distance]
+ 0-6 64 61 0
+ 7-20 6c 61 108 1 1 0
+ 21-21 64 61 0
+ 22-42 6c 61 108 1 1 0
+ 43-99 64 61 0
+row 26 
  0-99 64 64 0
-row 24    appearance   matte   plastic   glossy   metal
+row 28    appearance   matte   plastic   glossy   metal
  0-2 64 64 0
  3-12 74 64 0
  13-14 64 64 0
@@ -202,52 +226,52 @@ row 24    appearance   matte   plastic   glossy   metal
  43-44 64 64 0
  45-51 64 64 97 3 1 0
  52-99 64 64 0
-row 26      suppress this group's solid model
+row 30      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 28 
+row 32 
  0-99 64 64 0
-row 30    show entities from this group
+row 34    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 32    suppress this group and the groups that use it
+row 36    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 34    force NURBS surfaces to triangle mesh
+row 38    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 37    relax constraints and dimensions
+row 41    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 39    allow redundant constraints
+row 43    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 41    suppress dof calculation (improves solver performance)
+row 45    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 43    treat all dimensions as reference
+row 47    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 45 
+row 49 
  0-99 64 64 0
-row 47  requests in group
+row 51  requests in group
  0-99 74 64 0
-row 49    (none)
+row 53    (none)
  0-99 64 61 0
-row 51 
+row 55 
  0-99 64 64 0
-row 53  constraints in group (0 DOF)
+row 57  constraints in group (0 DOF)
  0-99 74 64 0
-row 55    (none)
+row 59    (none)
  0-99 64 61 0
-row 57 
+row 61 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 18\nVolume: 74.76 cm³\nCenter of mass: (-2.01, 6.99, 39.94)\nExtent: 36.00 x 26.00 x 80.00
