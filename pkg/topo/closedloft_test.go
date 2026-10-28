@@ -128,7 +128,9 @@ func TestClosedLoftRefusals(t *testing.T) {
 }
 
 // TestClosedLoftSweep closes rings of circles, squares and blobs, four
-// to twelve of them, of one size or swelling and narrowing by turns, and
+// to twelve of them, of one size or swelling and narrowing by turns,
+// free, held square to every third profile or guided over their tops,
+// and
 // lofts through circles stacked aside held square to the profiles
 // between their ends, and requires sound solids; a torus of eight or
 // more and a stack of one circle moved have the volumes Pappus and
@@ -144,7 +146,7 @@ func TestClosedLoftSweep(t *testing.T) {
 	grid := sweep.Grid{
 		Parallel: true,
 		Axes: []sweep.Axis{
-			sweep.Strings("kind", "ring", "middle"),
+			sweep.Strings("kind", "ring", "held ring", "guided ring", "middle"),
 			sweep.Strings("profile", "circle", "square", "blob"),
 			sweep.Floats("profiles", 4, 5, 8, 12),
 			sweep.Floats("swell", 0, 0.4),
@@ -165,9 +167,27 @@ func TestClosedLoftSweep(t *testing.T) {
 		}
 		var sh *srf.SShell
 		var err error
-		if p.String("kind") == "ring" {
+		switch p.String("kind") {
+		case "ring":
 			sh, err = topo.MakeClosedLoft(ringProfiles(n, 25, func(i int) []srf.SBezier { return shape(i, 0) }), col, 9, tol)
-		} else {
+		case "held ring":
+			held := make([]float64, n)
+			for j := 0; j < n; j += 3 {
+				held[j] = 0.6 + 0.2*float64(j%2)
+			}
+			sh, err = topo.MakeClosedLoftHeld(ringProfiles(n, 25, func(i int) []srf.SBezier { return shape(i, 0) }), held, col, 9, tol)
+		case "guided ring":
+			// Circles only, and an even count round, for which the guide
+			// over their tops, rising and falling with them, closes.
+			if p.String("profile") != "circle" || n%2 == 1 {
+				return nil
+			}
+			swell := p.Float("swell")
+			guide := ringGuide(25, 4, func(float64) float64 { return math.Pi / 2 }, func(a float64) float64 {
+				return 4*swell*(1-math.Cos(float64(n)*a/2))/2 + 1.2*math.Pow(math.Sin(float64(n)*a/2), 2)
+			})
+			sh, err = topo.MakeClosedGuidedLoft(ringProfiles(n, 25, func(i int) []srf.SBezier { return shape(i, 0) }), []topo.LoftGuide{guide}, col, 9, tol)
+		default:
 			var loops [][]srf.SBezier
 			for i := range n {
 				l := shape(i, 6*float64(i))
@@ -198,17 +218,102 @@ func TestClosedLoftSweep(t *testing.T) {
 		}
 		want := math.Pi * 16 * 6 * float64(n-1)
 		allow := 0.003
-		if p.String("kind") == "ring" {
+		if p.String("kind") != "middle" {
 			// Sections between profiles far apart shrink as the profiles
-			// turn: only a ring of many is close to a torus.
+			// turn: only a ring of many is close to a torus, and less
+			// close where it is held square with one slope across, or
+			// where its sections are moved up to a guide.
 			if n < 8 {
 				return nil
 			}
 			want, allow = 2*math.Pi*math.Pi*25*16, 0.01
+			if p.String("kind") != "ring" {
+				allow = 0.015
+			}
 		}
 		if math.Abs(r.Volume-want) > allow*want {
 			return fmt.Errorf("volume %g, want %g within %g of it", r.Volume, want, allow)
 		}
 		return nil
 	}).Require(t)
+}
+
+// Closed lofts held square to profiles: a ring of eight circles held at
+// one profile, at the seam's, at two and at every one is sound, one face
+// of a piece from each held profile round to the next, the slope across
+// at a held profile along the way round there and the same either side
+// of it, and the volume near Pappus's. Held at every profile it is
+// furthest off: one slope for the whole profile carries its inside as
+// fast as its outside, which the torus's own doesn't.
+func TestClosedLoftHeld(t *testing.T) {
+	t.Parallel()
+	tol := srf.Tol(0.005, 100)
+	col := core.NewRGBA(100, 100, 100, 255)
+	const n, big, r = 8, 20.0, 4.0
+	want := 2 * math.Pi * math.Pi * big * r * r
+	for _, c := range []struct {
+		name  string
+		held  []float64
+		allow float64
+	}{
+		{"one", []float64{0, 0, 1}, 0.01},
+		{"the seam's", []float64{1}, 0.01},
+		{"two", []float64{0, 0.8, 0, 0, 0, 1.2}, 0.03},
+		{"every one", []float64{1, 1, 1, 1, 1, 1, 1, 1}, 0.05},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			loops := ringProfiles(n, big, func(int) []srf.SBezier { return circle(r, 0, 0) })
+			bss, err := topo.ClosedLoftSurfaces(loops, c.held)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var at []int
+			for j, x := range c.held {
+				if x != 0 {
+					at = append(at, j)
+				}
+			}
+			if len(bss) != len(at) {
+				t.Fatalf("%d pieces, want %d", len(bss), len(at))
+			}
+			for p, bs := range bss {
+				a := 2 * math.Pi * float64(at[p]) / n
+				way := v(-math.Sin(a), math.Cos(a), 0)
+				prev := bss[(p+len(bss)-1)%len(bss)]
+				for _, u := range []float64{0.1, 0.4, 0.75} {
+					_, s0 := partials(bs, u, 0, 0, 1)
+					if d := s0.WithMagnitude(1).Minus(way).Magnitude(); d > 1e-4 {
+						t.Errorf("piece %d at u %g leaves along %v, not %v", p, u, s0, way)
+					}
+					// The piece before reaches it the same way, scaled
+					// by the ratio of their parameters' lengths.
+					_, s1 := partials(prev, u, 1, 0, 1)
+					if d := s1.WithMagnitude(1).Minus(way).Magnitude(); d > 1e-4 {
+						t.Errorf("piece %d at u %g reaches along %v, not %v", p, u, s1, way)
+					}
+				}
+			}
+			sh, err := topo.MakeClosedLoftHeld(loops, c.held, col, srf.OriginFor(9, 0), tol)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var m srf.SMesh
+			sh.TriangulateInto(&m)
+			rep := check.Solid(sh, &m)
+			if !rep.Sound() {
+				t.Fatalf("%s", rep.String())
+			}
+			if math.Abs(rep.Volume-want) > c.allow*want {
+				t.Errorf("volume %.4f, want %.4f within %g of it", rep.Volume, want, c.allow)
+			}
+		})
+	}
+	loops := ringProfiles(n, big, func(int) []srf.SBezier { return circle(r, 0, 0) })
+	if _, err := topo.ClosedLoftSurfaces(loops, make([]float64, n+1)); err == nil {
+		t.Error("held at more profiles than the ring has")
+	}
+	if _, err := topo.ClosedLoftSurfaces(loops, []float64{math.NaN()}); err == nil {
+		t.Error("held by NaN")
+	}
 }

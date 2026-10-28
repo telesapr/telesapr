@@ -801,7 +801,9 @@ func (v LoftGroup) Closed() (closed bool) {
 // first, a ring with no caps, as a sweep round a closed path is, the
 // surface as smooth where it closes as elsewhere; false opens it again.
 // A closed loft goes through three profiles at least, and has no ends to
-// set, no turn, guides or profiles held square.
+// set and no turn; profiles between its first and last can still be
+// held square (SetProfileTangency), or the ring held by guides that go
+// round it, closing on themselves (SetGuides).
 func (v LoftGroup) SetClosed(closed bool) {
 	g := v.g
 	g.d.change(func(sk *sketch.Sketch) {
@@ -831,6 +833,7 @@ func (v LoftGroup) ProfileTangency(profile Group) (t float64) {
 // does at the ends; 0 leaves it free, shaped by the profiles about it.
 // The loft is then smooth through that profile but no longer bends as
 // one curve across it: a waist that runs straight through the middle.
+// A closed loft is held so too, round the ring.
 func (v LoftGroup) SetProfileTangency(profile Group, t float64) {
 	g := v.g
 	g.d.change(func(sk *sketch.Sketch) {
@@ -859,8 +862,10 @@ func (v LoftGroup) Guides() (curves []Entity) {
 // SetGuides holds a loft to guide curves: line segments, arcs and
 // cubics drawn before it, each chain of them that joins end to end one
 // guide, from a point of the first profile through every profile to
-// the last. One guide moves the loft's sections across so that it runs
-// along the guide; two move, turn and scale them, so that the loft
+// the last; on a closed loft, from a point of the first profile round
+// the ring through every profile back to it, closing on itself. One
+// guide moves the loft's sections across so that it runs along the
+// guide; two move, turn and scale them, so that the loft
 // widens and narrows between them. None takes the guides away. A guide
 // that misses a profile is the group's problem, with how far.
 func (v LoftGroup) SetGuides(curves []Entity) {

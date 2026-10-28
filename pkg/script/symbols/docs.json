@@ -5884,15 +5884,15 @@
 					},
 					"SetClosed": {
 						"decl": "func (v LoftGroup) SetClosed(closed bool)",
-						"text": "SetClosed has a smooth loft go from its last profile back to its\nfirst, a ring with no caps, as a sweep round a closed path is, the\nsurface as smooth where it closes as elsewhere; false opens it again.\nA closed loft goes through three profiles at least, and has no ends to\nset, no turn, guides or profiles held square."
+						"text": "SetClosed has a smooth loft go from its last profile back to its\nfirst, a ring with no caps, as a sweep round a closed path is, the\nsurface as smooth where it closes as elsewhere; false opens it again.\nA closed loft goes through three profiles at least, and has no ends to\nset and no turn; profiles between its first and last can still be\nheld square (SetProfileTangency), or the ring held by guides that go\nround it, closing on themselves (SetGuides)."
 					},
 					"SetGuides": {
 						"decl": "func (v LoftGroup) SetGuides(curves []Entity)",
-						"text": "SetGuides holds a loft to guide curves: line segments, arcs and\ncubics drawn before it, each chain of them that joins end to end one\nguide, from a point of the first profile through every profile to\nthe last. One guide moves the loft's sections across so that it runs\nalong the guide; two move, turn and scale them, so that the loft\nwidens and narrows between them. None takes the guides away. A guide\nthat misses a profile is the group's problem, with how far."
+						"text": "SetGuides holds a loft to guide curves: line segments, arcs and\ncubics drawn before it, each chain of them that joins end to end one\nguide, from a point of the first profile through every profile to\nthe last; on a closed loft, from a point of the first profile round\nthe ring through every profile back to it, closing on itself. One\nguide moves the loft's sections across so that it runs along the\nguide; two move, turn and scale them, so that the loft\nwidens and narrows between them. None takes the guides away. A guide\nthat misses a profile is the group's problem, with how far."
 					},
 					"SetProfileTangency": {
 						"decl": "func (v LoftGroup) SetProfileTangency(profile Group, t float64)",
-						"text": "SetProfileTangency holds a smooth loft square to the plane of\nprofile, one of the sketches it goes through between its ends, the\nsurface's slope across there t times the loft's length, as SetTangency\ndoes at the ends; 0 leaves it free, shaped by the profiles about it.\nThe loft is then smooth through that profile but no longer bends as\none curve across it: a waist that runs straight through the middle."
+						"text": "SetProfileTangency holds a smooth loft square to the plane of\nprofile, one of the sketches it goes through between its ends, the\nsurface's slope across there t times the loft's length, as SetTangency\ndoes at the ends; 0 leaves it free, shaped by the profiles about it.\nThe loft is then smooth through that profile but no longer bends as\none curve across it: a waist that runs straight through the middle.\nA closed loft is held so too, round the ring."
 					},
 					"SetProfiles": {
 						"decl": "func (v LoftGroup) SetProfiles(profiles []Group)",

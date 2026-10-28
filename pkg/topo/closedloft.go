@@ -3,6 +3,7 @@ package topo
 import (
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -72,9 +73,39 @@ func ClosedLoftSections(loops [][]srf.SBezier) ([][]srf.SBezier, error) {
 // loops (see ClosedLoftSections), u along the sections, v across from
 // the first profile round to it again.
 func ClosedLoftSurface(loops [][]srf.SBezier) (*srf.BSplineSurface, error) {
-	loops, err := ClosedLoftSections(loops)
+	r, err := closedLoftRing(loops)
 	if err != nil {
 		return nil, err
+	}
+	k := len(r.loops)
+	// The slope across at the seam, in homogeneous coordinates, from the
+	// profile after the first to the one before it (the last), over the
+	// parameter between them through the seam: both ends take it, so the
+	// surface's derivative across is one there.
+	span := r.ts[1] + 1 - r.ts[k-1]
+	slope := make([]geom.Vector4, len(r.curves[0].Ctrl))
+	for i := range slope {
+		slope[i] = r.h(1, i).Minus(r.h(k-1, i)).ScaledBy(1 / span)
+	}
+	return srf.SkinThrough(r.curves, r.ts, slope, slope)
+}
+
+// closedRing is a closed loft's sections as it takes them: the loops
+// (ClosedLoftSections), each as one curve, the first again at the end,
+// and the parameter round the ring of each, 0 at the first and 1 at it
+// again.
+type closedRing struct {
+	loops  [][]srf.SBezier
+	curves []srf.BSplineCurve
+	ts     []float64
+}
+
+// closedLoftRing is the ring of sections a closed loft through loops
+// takes.
+func closedLoftRing(loops [][]srf.SBezier) (closedRing, error) {
+	loops, err := ClosedLoftSections(loops)
+	if err != nil {
+		return closedRing{}, err
 	}
 	deg := 1
 	for _, l := range loops {
@@ -86,7 +117,7 @@ func ClosedLoftSurface(loops [][]srf.SBezier) (*srf.BSplineSurface, error) {
 	curves := make([]srf.BSplineCurve, k+1)
 	for i, l := range loops {
 		if curves[i], err = srf.ChainCurve(l, deg); err != nil {
-			return nil, err
+			return closedRing{}, err
 		}
 	}
 	curves[k] = curves[0]
@@ -103,28 +134,102 @@ func ClosedLoftSurface(loops [][]srf.SBezier) (*srf.BSplineSurface, error) {
 		ts[s] /= ts[k]
 	}
 	ts[k] = 1
-	// The slope across at the seam, in homogeneous coordinates, from the
-	// profile after the first to the one before it (the last), over the
-	// parameter between them through the seam: both ends take it, so the
-	// surface's derivative across is one there.
-	h := func(s, i int) geom.Vector4 {
-		return geom.Vector4FromWeighted(curves[s].Weight[i], curves[s].Ctrl[i])
+	return closedRing{loops: loops, curves: curves, ts: ts}, nil
+}
+
+// h is control point i of section s in homogeneous coordinates.
+func (r *closedRing) h(s, i int) geom.Vector4 {
+	return geom.Vector4FromWeighted(r.curves[s].Weight[i], r.curves[s].Ctrl[i])
+}
+
+// ClosedLoftSurfaces are the surfaces of a closed loft through loops
+// held square to profiles: held[j], when not 0, makes the surface square
+// to the plane of profile j, its slope across there held[j] times the
+// length of the ring from profile to profile, as an open loft's middle
+// profiles are held (MakeSmoothLoftThrough). The ring is then one
+// surface from each held profile round to the next, meeting tangent
+// there; with none held it is ClosedLoftSurface. held is as long as
+// loops, or shorter, the rest free.
+func ClosedLoftSurfaces(loops [][]srf.SBezier, held []float64) ([]*srf.BSplineSurface, error) {
+	if len(held) > len(loops) {
+		return nil, fmt.Errorf("a closed loft of %d profiles can't be held at %d", len(loops), len(held))
 	}
-	span := ts[1] + 1 - ts[k-1]
-	slope := make([]geom.Vector4, len(curves[0].Ctrl))
-	for i := range slope {
-		slope[i] = h(1, i).Minus(h(k-1, i)).ScaledBy(1 / span)
+	var at []int
+	for j, x := range held {
+		if math.IsNaN(x) || math.IsInf(x, 0) {
+			return nil, fmt.Errorf("a loft's tangency at a profile is a number, not %g", x)
+		}
+		if x != 0 {
+			at = append(at, j)
+		}
 	}
-	return srf.SkinThrough(curves, ts, slope, slope)
+	if len(at) == 0 {
+		bs, err := ClosedLoftSurface(loops)
+		if err != nil {
+			return nil, err
+		}
+		return []*srf.BSplineSurface{bs}, nil
+	}
+	r, err := closedLoftRing(loops)
+	if err != nil {
+		return nil, err
+	}
+	k := len(r.loops)
+	length := 0.0
+	for i := range k {
+		length += centroid(r.loops[(i+1)%k]).Minus(centroid(r.loops[i])).Magnitude()
+	}
+	// The slope across at held profile s against the ring's parameter:
+	// square to its plane, which ClosedLoftSections turned to face the
+	// way round.
+	slope := func(s int, span float64) []geom.Vector4 {
+		n := newell(r.loops[s]).WithMagnitude(held[s] * length * span)
+		out := make([]geom.Vector4, len(r.curves[s].Ctrl))
+		for i := range out {
+			out[i] = geom.Vector4FromWeighted(r.curves[s].Weight[i], n)
+			out[i].W = 0
+		}
+		return out
+	}
+	// From each held profile round to the next, past the seam where it
+	// lies between: the parameter goes on past 1 there.
+	param := func(s int) float64 { return float64(s/k) + r.ts[s%k] }
+	var out []*srf.BSplineSurface
+	for c, from := range at {
+		to := at[(c+1)%len(at)]
+		if to <= from {
+			to += k
+		}
+		span := param(to) - param(from)
+		sections := make([]srf.BSplineCurve, 0, to-from+1)
+		ts := make([]float64, 0, to-from+1)
+		for s := from; s <= to; s++ {
+			sections = append(sections, r.curves[s%k])
+			ts = append(ts, (param(s)-param(from))/span)
+		}
+		ts[len(ts)-1] = 1
+		piece, err := srf.SkinThrough(sections, ts, slope(from, span), slope(to%k, span))
+		if err != nil {
+			return nil, fmt.Errorf("from profile %d to %d: %w", from+1, to%k+1, err)
+		}
+		out = append(out, piece)
+	}
+	return out, nil
 }
 
 // MakeClosedLoft is the shell of a closed loft through loops: one face
 // of the surface's patches, their identities from origin on, sheet
 // origin, and no caps.
 func MakeClosedLoft(loops [][]srf.SBezier, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
-	bs, err := ClosedLoftSurface(loops)
+	return MakeClosedLoftHeld(loops, nil, color, origin, tol)
+}
+
+// MakeClosedLoftHeld is MakeClosedLoft held square to profiles as
+// ClosedLoftSurfaces says: still one face, of every piece's patches.
+func MakeClosedLoftHeld(loops [][]srf.SBezier, held []float64, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
+	bss, err := ClosedLoftSurfaces(loops, held)
 	if err != nil {
 		return nil, err
 	}
-	return joinSkins([][]*srf.BSplineSurface{{bs}}, color, origin, tol)
+	return joinSkins([][]*srf.BSplineSurface{bss}, color, origin, tol)
 }

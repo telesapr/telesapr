@@ -1,0 +1,26 @@
+# loft_ring_guide.tlspr's closed loft held by the six cubics of its
+# guide sketch, picked with the mouse and set by Features > Guide Loft by
+# Selected Curves; the same as path_loft_ring_guide.go makes
+# (TestPathEquivalence/loft_ring_guide).
+file $testdata/ui/loft_ring_guide.tlspr
+menu File|Open...
+view default
+move 386.6 250.0
+down L 386.6 250.0
+up L 386.6 250.0
+move 300.0 200.0
+down L 300.0 200.0
+up L 300.0 200.0
+move 213.4 250.0
+down L 213.4 250.0
+up L 213.4 250.0
+move 213.4 350.0
+down L 213.4 350.0
+up L 213.4 350.0
+move 300.0 400.0
+down L 300.0 400.0
+up L 300.0 400.0
+move 386.6 350.0
+down L 386.6 350.0
+up L 386.6 350.0
+menu Features|Guide Loft by Selected Curves

@@ -1,0 +1,32 @@
+# A closed loft held by a guide: loft_ring_guide.tlspr's ring through six
+# circles round the z axis, and the guide sketch's six cubics going round
+# over their tops, rising between them; the cubics picked with the mouse
+# from above and made the ring's guide by Features > Guide Loft by
+# Selected Curves; the group list after it; the solid
+# checked, a ring of one face.
+file $testdata/ui/loft_ring_guide.tlspr
+menu File|Open...
+view default
+move 386.6 250.0
+down L 386.6 250.0
+up L 386.6 250.0
+move 300.0 200.0
+down L 300.0 200.0
+up L 300.0 200.0
+move 213.4 250.0
+down L 213.4 250.0
+up L 213.4 250.0
+move 213.4 350.0
+down L 213.4 350.0
+up L 213.4 350.0
+move 300.0 400.0
+down L 300.0 400.0
+up L 300.0 400.0
+move 386.6 350.0
+down L 386.6 350.0
+up L 386.6 350.0
+menu Features|Guide Loft by Selected Curves
+tw
+answer ok
+menu Analyze|Check Solid
+dump

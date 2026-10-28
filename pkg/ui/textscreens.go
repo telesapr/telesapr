@@ -754,7 +754,8 @@ func (ss *Application) loftGuidesFromSelection() {
 	gw.GroupSelection()
 	if len(gw.gs.entity) == 0 {
 		ss.Error("Select the guide curves: line segments, arcs and cubics drawn before the loft, " +
-			"each guide running from a point of the first profile through every profile to the last.")
+			"each guide running from a point of the first profile through every profile to the last, " +
+			"or round a closed loft back to where it started.")
 		return
 	}
 	err := ss.SK.UndoRememberFor(func() error {
