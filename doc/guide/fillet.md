@@ -109,7 +109,7 @@ A rib rounded all over, the edges of its top rounded as well as its foot filled 
 foot alone, or the top's edges alone), fillets between curved faces along an edge that ends at
 a curved face the side faces go on past, chamfers meeting at a crease or at a corner whose third
 edge stays sharp, mitres between fillets of different radii, corners where convex
-meets concave at a vertex that the stages can't round, setback corners of chamfers, and a
+meets concave at a vertex that the stages can't round, and a
 blend that runs off its face onto a curved face, or that takes material away and runs off onto
 the next face, are refused with a message; they are the rest
 of roadmap 22. A crease that fades out is rounded only up to where it does. A fillet whose radius stops its chain at a rounded corner names the curved face rather than

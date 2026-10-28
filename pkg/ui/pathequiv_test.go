@@ -241,6 +241,19 @@ var pathEquivalences = map[string]pathCheck{
 			t.Errorf("the chamfer's distances are %g and %g, want 2 and 1", g.ValB, g.ValC)
 		}
 	},
+	// The three edges at a corner picked with the mouse and chamfered at
+	// two distances, the corner filled, and by a script.
+	"chamfer_corner": func(t *testing.T, ui, _ *sketch.Sketch) {
+		g := ui.Group(ui.Active)
+		if g.Type != sketch.GroupChamfer || g.Problem.Msg != "" || len(g.Edges) != 3 || g.ValC != 2 {
+			t.Fatalf("the chamfer: type %d, problem %q, %d edges, second distance %g", g.Type, g.Problem.Msg, len(g.Edges), g.ValC)
+		}
+		var m srf.SMesh
+		g.RunningShell.TriangulateInto(&m)
+		if r := check.Solid(&g.RunningShell, &m); !r.Sound() {
+			t.Errorf("the chamfered corner: %s", r.String())
+		}
+	},
 	// A STEP file linked from the menu, and by a script.
 	"link_step": func(t *testing.T, ui, _ *sketch.Sketch) {
 		if g := ui.Group(ui.Active); len(g.ImpMesh.Triangles) == 0 || len(g.LinkInfo) == 0 {

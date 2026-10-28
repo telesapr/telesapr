@@ -9,6 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // lineAlong is the line of group g from a to b, either way round.
@@ -88,6 +89,64 @@ func TestChamferCorner(t *testing.T) {
 		if s.DegM != 1 || s.DegN != 1 {
 			t.Errorf("a face of degree %d by %d: the chamfered corner's faces are all planes", s.DegM, s.DegN)
 		}
+	}
+}
+
+// faceCount is the number of faces of g's solid.
+func faceCount(t *testing.T, g api.Group) int {
+	t.Helper()
+	tp, err := topo.Build(g.Analyze().Shell())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return len(tp.Faces)
+}
+
+// Corners where every edge is chamfered but the strips don't meet in
+// the triangle of a square corner of one distance are set back (the
+// roadmap's fillet leftovers): the edge's chamfers of two distances at
+// a block's corner, the strips cut and the hole filled by a patch, where
+// before the corner was refused by the face edit and cut by wedges into
+// a point; and the foot of an equilateral prism's upright edge, its
+// faces not all square, of OpenCASCADE's volume. Each is one undo step
+// and comes back from its file.
+func TestChamferCornerSetback(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	ex := block(d, 0, 0, 10, 10, 10)
+	edges := []api.Entity{
+		lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10)),
+		lineAlong(t, ex, api.V(10, 0, 10), api.V(10, 10, 10)),
+		lineAlong(t, ex, api.V(10, 0, 0), api.V(10, 0, 10)),
+	}
+	c := d.Features.Chamfer(edges, 1, "")
+	step(d)
+	before := saved(t, d)
+	c.AsChamfer().SetSecondDistance(2)
+	r := c.Analyze().Check()
+	// Three prisms of 1*2/2*10, less what the corner gives back.
+	if p := c.Problem(); p != "" || !r.Sound() || r.Volume < 1000-30 || r.Volume > 1000-30+2 || faceCount(t, c) != 10 {
+		t.Fatalf("the corner of two distances: %q, %s, %d faces", p, r.String(), faceCount(t, c))
+	}
+	undoRedo(t, d, before)
+	back := roundTrip(t, d).Group(c.Name())
+	if v := back.Analyze().Check().Volume; math.Abs(v-r.Volume) > 1e-9 {
+		t.Errorf("reopened, the volume is %g, was %g", v, r.Volume)
+	}
+
+	d = api.New()
+	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(20, 0, 0), api.V(10, 20*math.Sin(math.Pi/3), 0))
+	ex = d.Features.Extrude(20, "")
+	c = d.Features.Chamfer([]api.Entity{
+		lineAlong(t, ex, api.V(0, 0, 0), api.V(20, 0, 0)),
+		lineAlong(t, ex, api.V(0, 0, 0), api.V(10, 20*math.Sin(math.Pi/3), 0)),
+		lineAlong(t, ex, api.V(0, 0, 0), api.V(0, 0, 20)),
+	}, 1, "")
+	// FreeCAD's Part::Chamfer of the same edges, OpenCASCADE's, within
+	// what the corner patch's mesh strays at the document's tolerance.
+	const occ = 3436.447005377
+	if r := c.Analyze().Check(); c.Problem() != "" || !r.Sound() || math.Abs(r.Volume-occ) > 5e-3 {
+		t.Errorf("the prism's corner: %q, %s, OpenCASCADE's %.6f", c.Problem(), r.String(), occ)
 	}
 }
 

@@ -1,0 +1,30 @@
+# The three edges at a corner of the extrusion of path_extrude picked
+# with the mouse on the turned view and chamfered, then given a second
+# distance of 2 on the chamfer's screen: a corner of chamfers of two
+# distances, which the strips' cuts and a patch fill. The same as
+# path_chamfer_corner.go makes (TestPathEquivalence/chamfer_corner).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+view rotated
+menu View|Zoom To Fit
+move 450.8 84.6
+down L 450.8 84.6
+up L 450.8 84.6
+move 310.1 56
+down L 310.1 56
+up L 310.1 56
+move 353.2 219.4
+down L 353.2 219.4
+up L 353.2 219.4
+menu Features|Chamfer Edges
+twmove 263 145
+twdown L 263 145
+twup L 263 145
+edit 2
