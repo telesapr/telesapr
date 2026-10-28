@@ -61,9 +61,46 @@ func TestLoftClosed(t *testing.T) {
 	}
 }
 
+// A closed loft held square to a profile between its first and last:
+// sound, one face of a piece from the held profile round to it again,
+// the volume near the torus's. Holding it is one undo step, and saved;
+// the first profile, as an open loft's end, can't be held.
+func TestLoftClosedHeld(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	const big, r = 20.0, 4.0
+	ps := ringOfCircles(d, 8, big, r)
+	l := d.Features.LoftThrough(ps, "ring")
+	l.AsLoft().SetClosed(true)
+	step(d)
+	before := saved(t, d)
+	l.AsLoft().SetProfileTangency(ps[3], 1)
+	if p := l.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	rep := l.Analyze().Check()
+	want := 2 * math.Pi * math.Pi * big * r * r
+	if !rep.Sound() || math.Abs(rep.Volume-want) > 0.01*want {
+		t.Fatalf("%s, want volume %g", rep.String(), want)
+	}
+	if n := len(l.Solid().Faces()); n != 1 {
+		t.Errorf("%d faces, want the ring's one", n)
+	}
+	if !refused(func() { l.AsLoft().SetProfileTangency(ps[0], 1) }) {
+		t.Error("the first profile of a ring took a tangency")
+	}
+	undoRedo(t, d, before)
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+	back := roundTrip(t, d)
+	bl := back.Group("ring").AsLoft()
+	if !bl.Closed() || bl.ProfileTangency(bl.Profiles()[3]) != 1 {
+		t.Error("reopened, the ring isn't closed and held")
+	}
+}
+
 // A loft that can't close says why: two profiles; and once closed, its
-// ends, turn and middle profiles can't be set, each a problem on the
-// group or a refused call.
+// ends and turn can't be set, each a problem on the group or a refused
+// call.
 func TestLoftClosedProblems(t *testing.T) {
 	t.Parallel()
 	d := api.New()
@@ -81,9 +118,6 @@ func TestLoftClosedProblems(t *testing.T) {
 	}
 	if !refused(func() { l.AsLoft().SetAlongSides(true, false) }) {
 		t.Error("a closed loft took a solid's sides at its ends")
-	}
-	if !refused(func() { l.AsLoft().SetProfileTangency(ps[1], 1) }) {
-		t.Error("a closed loft was held square to a profile")
 	}
 	for _, c := range []struct {
 		set  func()

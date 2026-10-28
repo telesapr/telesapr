@@ -247,6 +247,15 @@ func TestSolidGoldens(t *testing.T) {
 			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
 			d.Edit.Regen()
 		},
+		"loft-ring-held": func(d *api.Doc) {
+			ps := ringOfCircles(d, 6, 20, 3)
+			l := d.Features.LoftThrough(ps, "")
+			l.AsLoft().SetClosed(true)
+			l.AsLoft().SetProfileTangency(ps[2], 1)
+			// The file keeps no chord tolerance (ringOfCircles sets one).
+			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+			d.Edit.Regen()
+		},
 		"loft-profile-tangency": func(d *api.Doc) {
 			var ps []api.Group
 			for i, x := range []float64{0, 6, 0} {

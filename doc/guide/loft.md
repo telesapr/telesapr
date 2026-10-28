@@ -117,13 +117,16 @@ loft.AsLoft().SetProfileTangency(waist, 0)   // free again
 
 A smooth loft, of three profiles or more, can go on from its last profile back to its first:
 [closed] on the last row of its screen ([open] undoes it). The ring has no caps, and is as smooth
-where it closes as anywhere else. It has no ends to set, nothing to turn its profiles against,
-no guides and no profiles held square; any of those set is the loft's problem. Profiles more
+where it closes as anywhere else. It has no ends to set, nothing to turn its profiles against
+and no guides; any of those set is the loft's problem. Profiles between its first and last can
+be held square as an open loft's are, the ring then one surface from each held profile round to
+the next, still one face. Profiles more
 than a quarter turn apart round the ring are refused: the sections between them would pinch, so
 draw more. Between profiles turned far apart the loft's sections shrink as the profiles' blend
 does, so a ring of few profiles is thinner between them than a torus; eight or more round a
 circle make one within a percent. Example:
-[`examples/scripts/ring`](../../examples/scripts/ring/ring.go), a ring that swells and narrows.
+[`examples/scripts/ring`](../../examples/scripts/ring/ring.go), a ring that swells and narrows,
+running straight through its narrow profiles.
 
 ```go
 ring := doc.Features.LoftThrough(profiles, "ring")
@@ -132,4 +135,5 @@ ring.AsLoft().SetClosed(true)
 
 ## Not yet
 
-Three guides or more are refused. A closed loft can't be held by guides or square to a profile.
+Three guides or more are refused. A closed loft can't be held by guides, nor square to its first or last profile (draw the
+profiles starting elsewhere round the ring).
