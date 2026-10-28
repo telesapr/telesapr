@@ -768,8 +768,8 @@ func (rb *rollingBall) cutEnd(sh *srf.SShell, end *rbEnd, arc srf.BSplineCurve) 
 			cut.off = ro
 			continue
 		case -1:
-			if end.curved {
-				return cut, filletErr(q, "the face on side %d goes on past the curved face the edge ends at here, "+
+			if end.mitre {
+				return cut, filletErr(q, "the face on side %d goes on past the crease the edge ends at here, "+
 					"and the fillet's end would stand out of it", k+1)
 			}
 			c, err := rb.planeCut(end, k, v, q)
@@ -818,9 +818,31 @@ func alongFrom(q, v geom.Vector, pts []geom.Vector) int {
 
 // planeCut is the curve where side k's face meets end's plane, from a
 // to b: cubics whose control points lie in the plane, each within a
-// tenth of the chord tolerance of the face.
+// tenth of the chord tolerance of the face. On a curved end face it is
+// where side k's face meets the end's surface carried on past the face,
+// which grows over what lies between it and the fillet's end; the
+// cubics' control points then lie on that surface, and the curve within
+// the tolerance of it too.
 func (rb *rollingBall) planeCut(end *rbEnd, k int, a, b geom.Vector) ([]srf.SBezier, error) {
-	proj := func(p geom.Vector) geom.Vector { return p.Minus(end.n.ScaledBy(end.n.Dot(p) - end.d)) }
+	// near is the end's point nearest p and its normal there.
+	near := func(p geom.Vector) (geom.Vector, geom.Vector) {
+		return p.Minus(end.n.ScaledBy(end.n.Dot(p) - end.d)), end.n
+	}
+	if end.curved {
+		s := rb.t.Surface(end.f)
+		near = func(p geom.Vector) (geom.Vector, geom.Vector) {
+			u, v, q := nearestOnWithin(s, p, runOffExt)
+			n := s.NormalAt(u, v)
+			if n.Magnitude() == 0 {
+				return q, end.n
+			}
+			return q, n.WithMagnitude(1)
+		}
+	}
+	proj := func(p geom.Vector) geom.Vector {
+		q, _ := near(p)
+		return q
+	}
 	// The point of the curve near x, and the curve's way there.
 	on := func(x geom.Vector) (geom.Vector, geom.Vector, bool) {
 		var f rbFoot
@@ -834,7 +856,8 @@ func (rb *rollingBall) planeCut(end *rbEnd, k int, a, b geom.Vector) ([]srf.SBez
 			}
 		}
 		f = rb.foot(k, x)
-		return x, end.n.Cross(f.n), f.p.Minus(x).Magnitude() < 1e-7*math.Max(1, rb.r)
+		_, n := near(x)
+		return x, n.Cross(f.n), f.p.Minus(x).Magnitude() < 1e-7*math.Max(1, rb.r)
 	}
 	chord := b.Minus(a)
 	if chord.Magnitude() < geom.LengthEps {
@@ -871,7 +894,7 @@ func (rb *rollingBall) planeCut(end *rbEnd, k int, a, b geom.Vector) ([]srf.SBez
 			sb := srf.SBezierFrom4(prev, c1, c2, p)
 			for _, u := range []float64{0.25, 0.5, 0.75} {
 				x := sb.PointAt(u)
-				if rb.foot(k, x).p.Minus(x).Magnitude() > tol {
+				if rb.foot(k, x).p.Minus(x).Magnitude() > tol || proj(x).Minus(x).Magnitude() > tol {
 					ok = false
 				}
 			}
@@ -958,6 +981,21 @@ func (rb *rollingBall) closeEnd(sh *srf.SShell, cut rbEndCut, h *core.HSCurve) e
 		return filletErr(v, "the fillet's end is not a curve")
 	}
 	fs.Trim = kept
+	if cut.end.curved && (cut.goes[0] != nil || cut.goes[1] != nil) {
+		// A curved end face grows past its edge with a side's face that
+		// goes on past it: its surface is carried on to hold the fillet's
+		// end and the side's curve on it.
+		var pts []geom.Vector
+		for _, b := range bz {
+			pts = append(pts, b.Start(), b.PointAt(0.5), b.Finish())
+		}
+		for k := range 2 {
+			for _, sb := range cut.goes[k] {
+				pts = append(pts, sb.PointAt(0.5), sb.Finish())
+			}
+		}
+		growSurface(fs, pts)
+	}
 	for _, b := range bz {
 		add(fs, core.HSSurface{}, b, forward)
 	}

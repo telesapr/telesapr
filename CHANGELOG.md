@@ -10,6 +10,7 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 ## [Unreleased]
 
 ### Added
+- A fillet or chamfer whose end runs off its face onto a curved face, such as a band's rounded top, is made: the curved face is carried on past its edge, cuts the blend and grows over its end. A fillet ending on a curved face that a side's face goes on past, as a cone past a band's rounded top, is made the same way. Before, both were refused.
 - Two chamfered edges meet at a corner whose third edge stays sharp with any distances: two distances on each, or a different distance on each edge. The chamfers meet along the line where their planes cross, and the one that reaches further down the sharp edge goes on past it. This works where the chamfers cut (a block's top corner) and where they fill (the foot of a block standing on a plate, whose side face grows out to the mitre), as OpenCASCADE's makeChamfer does.
 - A datum on a face neither flat nor round, or on an edge neither straight nor round, is taken where the face or edge was clicked, and follows that place as the model changes, rather than at its middle. Scripts name such a place with `Datums.NameFaceAt` and `Datums.NameEdgeAt`.
 - A revolve of more than half a turn is hollowed with one or both of its ends kept as walls: the inside keeps the thickness from each end and is rounded about the axis, where the ends meet. Before, such a shell was refused unless both ends were taken away.
