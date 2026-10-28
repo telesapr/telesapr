@@ -547,7 +547,11 @@ func (rb *rollingBall) footNear(k int, x geom.Vector, nr rbNear) rbFoot {
 // round the foot would touch the plane there, outside the face, rather
 // than the fillet.
 func (rb *rollingBall) trimmedFoot(best rbFoot, held []rbFoot, x geom.Vector) rbFoot {
-	if rb.onFaceNear(best) {
+	if _, flat := rb.t.planarNormal(best.f); !flat || rb.onFaceNear(best) {
+		// Only a flat face's patch reaches far past its face. A curved
+		// one's foot, judged by its trims in (u, v), can fall just off
+		// them where it meets the next patch (a cylinder's at chord
+		// 0.002%), and taking another patch's foot there lost the ball.
 		return best
 	}
 	bestD := math.Inf(1)
