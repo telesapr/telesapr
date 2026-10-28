@@ -79,7 +79,8 @@ loft.AsLoft().SetAlongSides(true, false) // leave the first profile along the si
 
 A loft can be held to guide curves: line segments, arcs and cubics drawn in a sketch before the
 loft, each chain of them that joins end to end one guide, running from a point of the first
-profile through every profile to the last. Activate the loft, select the curves and choose
+profile through every profile to the last (on a closed loft, round the ring; see below).
+Activate the loft, select the curves and choose
 Features > Guide Loft by Selected Curves; the loft's screen says how many curves guide it, and
 [none] takes them away.
 
@@ -117,23 +118,28 @@ loft.AsLoft().SetProfileTangency(waist, 0)   // free again
 
 A smooth loft, of three profiles or more, can go on from its last profile back to its first:
 [closed] on the last row of its screen ([open] undoes it). The ring has no caps, and is as smooth
-where it closes as anywhere else. It has no ends to set, nothing to turn its profiles against
-and no guides; any of those set is the loft's problem. Profiles between its first and last can
-be held square as an open loft's are, the ring then one surface from each held profile round to
-the next, still one face. Profiles more
+where it closes as anywhere else. It has no ends to set and nothing to turn its profiles
+against; either set is the loft's problem. Profiles between its first and last can be held
+square as an open loft's are, the ring then one surface from each held profile round to the
+next, still one face. Guides hold it as they hold an open loft, each going round the ring
+through every profile back to where it started, closing on itself; a guide with ends is the
+loft's problem. A ring can be held by guides or square to its profiles, not both. Profiles more
 than a quarter turn apart round the ring are refused: the sections between them would pinch, so
 draw more. Between profiles turned far apart the loft's sections shrink as the profiles' blend
 does, so a ring of few profiles is thinner between them than a torus; eight or more round a
-circle make one within a percent. Example:
+circle make one within a percent. Examples:
 [`examples/scripts/ring`](../../examples/scripts/ring/ring.go), a ring that swells and narrows,
-running straight through its narrow profiles.
+running straight through its narrow profiles;
+[`examples/scripts/wavering`](../../examples/scripts/wavering/wavering.go), a ring held by a
+guide waving up and down over it.
 
 ```go
 ring := doc.Features.LoftThrough(profiles, "ring")
 ring.AsLoft().SetClosed(true)
+ring.AsLoft().SetGuides(guide) // cubics round the ring, end to end
 ```
 
 ## Not yet
 
-Three guides or more are refused. A closed loft can't be held by guides, nor square to its first or last profile (draw the
-profiles starting elsewhere round the ring).
+Three guides or more are refused. A closed loft can't be held square to its first or last
+profile (draw the profiles starting elsewhere round the ring), nor by guides and square at once.

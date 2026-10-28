@@ -23,7 +23,8 @@ import (
 // curves Edges hold it (loftguide.go), and LoftThroughTangency holds it
 // square to profiles between the ends. A closed loft (LoftClosed) goes
 // from the last profile back to the first, a ring with no caps, held
-// square to those between its first and last as an open loft is. Its
+// square to those between its first and last, or by guides going round
+// it, as an open loft is. Its
 // solid joins the solid so far by its combine, as an extrusion's does.
 
 // loftLoop is the one closed loop of a profile group, or why there is
@@ -266,6 +267,9 @@ func (g *Group) loftShell(sk *Sketch, origin uint32) (*srf.SShell, error) {
 		}
 		// Round the ring the first and last profiles are as any other,
 		// but only those between them are held: a ring has no ends.
+		if len(guides) > 0 {
+			return topo.MakeClosedGuidedLoft(loops, guides, g.Color, origin, sk.tol)
+		}
 		held := append(append([]float64{0}, g.loftMiddle()...), 0)
 		return topo.MakeClosedLoftHeld(loops, held, g.Color, origin, sk.tol)
 	}
@@ -314,8 +318,9 @@ var errClosedEnds = errors.New("a closed loft has no ends to set")
 
 // closedLoftConflict is why the closed loft g can't be made as it is
 // set, or nil: a ring has no ends to be square to or to carry a solid's
-// sides on, nothing to turn its profiles against, and guides run from
-// its first profile to its last.
+// sides on and nothing to turn its profiles against. Profiles between
+// its first and last can be held square, or the ring held by guides
+// going round it, as an open loft is held, but not both.
 func (g *Group) closedLoftConflict(guides []topo.LoftGuide) error {
 	switch {
 	case len(g.LoftThrough) == 0:
@@ -324,8 +329,8 @@ func (g *Group) closedLoftConflict(guides []topo.LoftGuide) error {
 		return errClosedEnds
 	case int(g.ValA) != 0:
 		return errors.New("a closed loft can't turn its profiles; draw them starting at the same side")
-	case len(guides) > 0:
-		return errors.New("a closed loft can't be held by guides")
+	case len(guides) > 0 && slices.ContainsFunc(g.LoftThroughTangency, func(x float64) bool { return x != 0 }):
+		return errors.New("a loft held by guides can't also be held square to a profile between its ends")
 	}
 	return nil
 }

@@ -98,6 +98,74 @@ func TestLoftClosedHeld(t *testing.T) {
 	}
 }
 
+// ringGuide draws, in a 3D sketch after the ring's profiles, n cubics
+// from the top of each circle of ringOfCircles to the next, round the
+// axis, their handles lifted by lift: a guide closed on itself round the
+// ring, rising between the profiles.
+func ringGuide(d *api.Doc, n int, big, r, lift float64) []api.Entity {
+	d.Features.Sketch3D("guide")
+	top := func(a float64) api.Vec { return api.V(big*math.Cos(a), big*math.Sin(a), r) }
+	way := func(a float64) api.Vec { return api.V(-math.Sin(a), math.Cos(a), 0) }
+	th := 2 * math.Pi / float64(n)
+	k := 4.0 / 3 * math.Tan(th/4) * big
+	var out []api.Entity
+	for i := range n {
+		a, b := th*float64(i), th*float64(i+1)
+		up := api.V(0, 0, lift)
+		out = append(out, d.Sketch.Cubic(top(a), top(a).Plus(way(a).ScaledBy(k)).Plus(up),
+			top(b).Minus(way(b).ScaledBy(k)).Plus(up), top(b)))
+	}
+	return out
+}
+
+// A closed loft held by a guide going round the ring over the circles'
+// tops, rising between them: sound, one face, as high as the guide
+// between the profiles, its volume the free ring's within 2% (the
+// sections are moved up, not out). Setting the guide is one undo step,
+// and saved; an open guide on a closed loft is the loft's problem.
+func TestLoftClosedGuided(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	const big, r = 20.0, 4.0
+	ps := ringOfCircles(d, 8, big, r)
+	guide := ringGuide(d, 8, big, r, 2)
+	l := d.Features.LoftThrough(ps, "ring")
+	l.AsLoft().SetClosed(true)
+	free := l.Analyze().Check().Volume
+	step(d)
+	before := saved(t, d)
+	l.AsLoft().SetGuides(guide)
+	if p := l.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	rep := l.Analyze().Check()
+	if !rep.Sound() || math.Abs(rep.Volume-free) > 0.02*free {
+		t.Fatalf("%s, want volume %g", rep.String(), free)
+	}
+	if top := r + 0.75*2; math.Abs(rep.Max.Z-top) > 0.02 {
+		t.Errorf("the ring rises to %g, the guide to %g", rep.Max.Z, top)
+	}
+	if n := len(l.Solid().Faces()); n != 1 {
+		t.Errorf("%d faces, want the ring's one", n)
+	}
+	undoRedo(t, d, before)
+	l.AsLoft().SetGuides(guide[:3])
+	if p := l.Problem(); !strings.Contains(p, "closing on itself") {
+		t.Errorf("an open guide on a ring: %q", p)
+	}
+	l.AsLoft().SetGuides(guide)
+	l.AsLoft().SetProfileTangency(ps[2], 1)
+	if p := l.Problem(); !strings.Contains(p, "guides") {
+		t.Errorf("guided and held square: %q", p)
+	}
+	l.AsLoft().SetProfileTangency(ps[2], 0)
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+	back := roundTrip(t, d)
+	if bl := back.Group("ring"); len(bl.AsLoft().Guides()) != 8 || bl.Problem() != "" {
+		t.Errorf("reopened, %d guides, problem %q", len(bl.AsLoft().Guides()), bl.Problem())
+	}
+}
+
 // A loft that can't close says why: two profiles; and once closed, its
 // ends and turn can't be set, each a problem on the group or a refused
 // call.

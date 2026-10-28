@@ -87,46 +87,9 @@ func GuidedLoftSidesSurface(loops [][]srf.SBezier, turn int, ends LoftEnds, side
 		}
 	}
 
-	// The sections: the profiles themselves, and between each two
-	// guideSamples - 1 of the loft's own, moved.
-	var sections []srf.BSplineCurve
-	var vs []float64
-	var moved [][]geom.Vector // each section's control points' moves
-	for i := range k {
-		if i > 0 {
-			for s := 1; s < guideSamples; s++ {
-				v := base.ts[i-1] + (base.ts[i]-base.ts[i-1])*float64(s)/guideSamples
-				c := base.surface.IsoV(v)
-				n := curveNormal(c)
-				if n.Magnitude() < geom.LengthEps {
-					return nil, fmt.Errorf("the loft's section at %.3g of the way has no plane for a guide to cross", v)
-				}
-				n = n.WithMagnitude(1)
-				var from, to []geom.Vector
-				for _, g := range gs {
-					m := c.PointAt(g.uAt(v, base.ts))
-					p, ok := g.cross(m, n)
-					if !ok {
-						return nil, fmt.Errorf("guide %d doesn't cross the loft's section %.3g of the way from profile %d to %d",
-							g.number, (v-base.ts[i-1])/(base.ts[i]-base.ts[i-1]), i, i+1)
-					}
-					from, to = append(from, m), append(to, p)
-				}
-				move, err := guideMove(from, to, n)
-				if err != nil {
-					return nil, fmt.Errorf("%w between profiles %d and %d", err, i, i+1)
-				}
-				d := make([]geom.Vector, len(c.Ctrl))
-				for j, q := range c.Ctrl {
-					c.Ctrl[j] = move(q)
-					d[j] = c.Ctrl[j].Minus(q)
-				}
-				sections, vs, moved = append(sections, c), append(vs, v), append(moved, d)
-			}
-		}
-		sections = append(sections, base.curves[i])
-		vs = append(vs, base.ts[i])
-		moved = append(moved, make([]geom.Vector, len(base.curves[i].Ctrl)))
+	sections, vs, moved, err := guidedSections(base.surface, base.ts, base.curves, k, gs)
+	if err != nil {
+		return nil, err
 	}
 
 	// The derivatives across at the ends: the loft's own, and the
@@ -155,6 +118,52 @@ func GuidedLoftSidesSurface(loops [][]srf.SBezier, turn int, ends LoftEnds, side
 		}
 	}
 	return srf.SkinThrough(sections, vs, start, end)
+}
+
+// guidedSections are the sections a guided loft is skinned through: the
+// profiles' curves, at ts across surface, the loft without guides, and
+// between each two guideSamples - 1 of the surface's own, each moved to
+// hold the guides gs; with the parameter across of each, and each
+// section's control points' moves. A ring's curves end with its first
+// again, which profiles counts once.
+func guidedSections(surface *srf.BSplineSurface, ts []float64, curves []srf.BSplineCurve, profiles int, gs []*guideTrack) (sections []srf.BSplineCurve, vs []float64, moved [][]geom.Vector, err error) {
+	for i := range curves {
+		if i > 0 {
+			for s := 1; s < guideSamples; s++ {
+				v := ts[i-1] + (ts[i]-ts[i-1])*float64(s)/guideSamples
+				c := surface.IsoV(v)
+				n := curveNormal(c)
+				if n.Magnitude() < geom.LengthEps {
+					return nil, nil, nil, fmt.Errorf("the loft's section at %.3g of the way has no plane for a guide to cross", v)
+				}
+				n = n.WithMagnitude(1)
+				var from, to []geom.Vector
+				for _, g := range gs {
+					m := c.PointAt(g.uAt(v, ts))
+					p, ok := g.cross(m, n)
+					if !ok {
+						return nil, nil, nil, fmt.Errorf("guide %d doesn't cross the loft's section %.3g of the way from profile %d to %d",
+							g.number, (v-ts[i-1])/(ts[i]-ts[i-1]), i, i%profiles+1)
+					}
+					from, to = append(from, m), append(to, p)
+				}
+				move, err := guideMove(from, to, n)
+				if err != nil {
+					return nil, nil, nil, fmt.Errorf("%w between profiles %d and %d", err, i, i%profiles+1)
+				}
+				d := make([]geom.Vector, len(c.Ctrl))
+				for j, q := range c.Ctrl {
+					c.Ctrl[j] = move(q)
+					d[j] = c.Ctrl[j].Minus(q)
+				}
+				sections, vs, moved = append(sections, c), append(vs, v), append(moved, d)
+			}
+		}
+		sections = append(sections, curves[i])
+		vs = append(vs, ts[i])
+		moved = append(moved, make([]geom.Vector, len(curves[i].Ctrl)))
+	}
+	return sections, vs, moved, nil
 }
 
 // curveNormal is the normal of a closed curve's plane, by Newell's

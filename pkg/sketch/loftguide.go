@@ -13,7 +13,9 @@ import (
 // A loft's guide curves (roadmap 28.3) are the line segments, arcs and
 // cubics Edges, drawn in sketches before it: each chain of them that
 // joins end to end is one guide, from a point of the first profile
-// through every profile to the last (topo.MakeGuidedLoft). One guide
+// through every profile to the last (topo.MakeGuidedLoft), or on a
+// closed loft round the ring to where it started
+// (topo.MakeClosedGuidedLoft). One guide
 // moves the loft's sections; two move, turn and scale them.
 
 // guideSteps is how many points a guide takes along each of its Bezier
@@ -53,7 +55,8 @@ func (sk *Sketch) SetLoftGuides(hg core.HGroup, es []core.HEntity) error {
 }
 
 // loftGuides are the loft's guide curves as points along each, or why
-// they don't make guides.
+// they don't make guides. A closed loft's guides close on themselves,
+// round the ring; an open loft's run from its first profile to its last.
 func (g *Group) loftGuides(sk *Sketch) ([]topo.LoftGuide, error) {
 	if len(g.Edges) == 0 {
 		return nil, nil
@@ -104,17 +107,32 @@ func (g *Group) loftGuides(sk *Sketch) ([]topo.LoftGuide, error) {
 				break
 			}
 		}
+		if first >= 0 && g.LoftClosed {
+			x := curves[first].Start()
+			if degree(x) != 1 {
+				x = curves[first].Finish()
+			}
+			return nil, pathErr(&x, "a guide ends at (%g, %g, %g): a closed loft's guide goes round the ring, closing on itself", x.X, x.Y, x.Z)
+		}
 		if first < 0 {
 			for i, sb := range curves {
-				if !used[i] {
-					x := sb.Start()
+				if used[i] {
+					continue
+				}
+				x := sb.Start()
+				if !g.LoftClosed {
 					return nil, pathErr(&x, "a guide closes on itself at (%g, %g, %g): a guide runs from the first profile to the last", x.X, x.Y, x.Z)
 				}
+				// A closed chain: from any of its curves round to it.
+				first = i
+				break
 			}
-			break
+			if first < 0 {
+				break
+			}
 		}
 		at := curves[first].Start()
-		if degree(at) != 1 {
+		if degree(at) != 1 && !g.LoftClosed {
 			at = curves[first].Finish()
 		}
 		var pts topo.LoftGuide

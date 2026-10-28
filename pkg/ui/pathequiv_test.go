@@ -210,6 +210,14 @@ var pathEquivalences = map[string]pathCheck{
 			t.Errorf("the loft: type %d, closed %v, problem %q", g.Type, g.LoftClosed, g.Problem.Msg)
 		}
 	},
+	// A closed loft's guide, six cubics round the ring, picked with the
+	// mouse and set by Features > Guide Loft by Selected Curves, and by a
+	// script.
+	"loft_ring_guide": func(t *testing.T, ui, _ *sketch.Sketch) {
+		if g := ui.Group(ui.Active); g.Type != sketch.GroupLoft || !g.LoftClosed || len(g.Edges) != 6 || g.Problem.Msg != "" {
+			t.Errorf("the loft: closed %v, guides %v, problem %q", g.LoftClosed, g.Edges, g.Problem.Msg)
+		}
+	},
 	// A closed loft held square to a profile on its screen, and by a
 	// script.
 	"loft_ring_held": func(t *testing.T, ui, _ *sketch.Sketch) {

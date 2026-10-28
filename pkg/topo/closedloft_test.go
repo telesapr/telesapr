@@ -129,7 +129,8 @@ func TestClosedLoftRefusals(t *testing.T) {
 
 // TestClosedLoftSweep closes rings of circles, squares and blobs, four
 // to twelve of them, of one size or swelling and narrowing by turns,
-// free or held square to every third profile, and
+// free, held square to every third profile or guided over their tops,
+// and
 // lofts through circles stacked aside held square to the profiles
 // between their ends, and requires sound solids; a torus of eight or
 // more and a stack of one circle moved have the volumes Pappus and
@@ -145,7 +146,7 @@ func TestClosedLoftSweep(t *testing.T) {
 	grid := sweep.Grid{
 		Parallel: true,
 		Axes: []sweep.Axis{
-			sweep.Strings("kind", "ring", "held ring", "middle"),
+			sweep.Strings("kind", "ring", "held ring", "guided ring", "middle"),
 			sweep.Strings("profile", "circle", "square", "blob"),
 			sweep.Floats("profiles", 4, 5, 8, 12),
 			sweep.Floats("swell", 0, 0.4),
@@ -175,6 +176,17 @@ func TestClosedLoftSweep(t *testing.T) {
 				held[j] = 0.6 + 0.2*float64(j%2)
 			}
 			sh, err = topo.MakeClosedLoftHeld(ringProfiles(n, 25, func(i int) []srf.SBezier { return shape(i, 0) }), held, col, 9, tol)
+		case "guided ring":
+			// Circles only, and an even count round, for which the guide
+			// over their tops, rising and falling with them, closes.
+			if p.String("profile") != "circle" || n%2 == 1 {
+				return nil
+			}
+			swell := p.Float("swell")
+			guide := ringGuide(25, 4, func(float64) float64 { return math.Pi / 2 }, func(a float64) float64 {
+				return 4*swell*(1-math.Cos(float64(n)*a/2))/2 + 1.2*math.Pow(math.Sin(float64(n)*a/2), 2)
+			})
+			sh, err = topo.MakeClosedGuidedLoft(ringProfiles(n, 25, func(i int) []srf.SBezier { return shape(i, 0) }), []topo.LoftGuide{guide}, col, 9, tol)
 		default:
 			var loops [][]srf.SBezier
 			for i := range n {
@@ -209,12 +221,13 @@ func TestClosedLoftSweep(t *testing.T) {
 		if p.String("kind") != "middle" {
 			// Sections between profiles far apart shrink as the profiles
 			// turn: only a ring of many is close to a torus, and less
-			// close where it is held square with one slope across.
+			// close where it is held square with one slope across, or
+			// where its sections are moved up to a guide.
 			if n < 8 {
 				return nil
 			}
 			want, allow = 2*math.Pi*math.Pi*25*16, 0.01
-			if p.String("kind") == "held ring" {
+			if p.String("kind") != "ring" {
 				allow = 0.015
 			}
 		}
