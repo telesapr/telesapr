@@ -387,9 +387,7 @@ What the thread improvements of 2026-10-23 (`doc/notes/thread-evaluation.md`, br
 
 | Item | State | Approach / tried |
 |---|---|---|
-| A chamfered thread at the coarsest chord tolerance | 4 of 660 unsound in `TestThreadChamferSweep`, all at 0.5% | The failing trims are the chamfer cone's and the core cylinder's: the kernel's, not the layout's |
-| A chamfered M8 through-stud 30 mm long | unsound at the default tolerance; 28 and 31 mm are sound | Every placement of the hidden cone and the ridge ends tried; cause not found |
-| A chamfer on a modelled thread with a rounded crest | refused (`ErrChamferRounded`) | The cone touches the rounded crest rather than cutting it; no placement built it soundly |
+| A chamfered thread at the coarsest chord tolerance | 1 of 660 unsound in `TestThreadChamferSweep`, a 1/2 BSF nut at 0.5%; rounded crests chamfered, 6 of 120 unsound at 0.5% (screws, studs, nuts and tapped holes of ten sizes at 0.5%, 0.1% and the default), none finer | The nut's ridges united with the bore, before the chamfer, have crossing mesh edges at 0.5% at most planes for the ridges (the mesher's, K4); the chamfer cuts them away, but every group of the thread must be sound |
 | A phase with a run-out | refused on a modelled thread | The run-out's fix places the ridge end exactly; a phase moves it |
 | ACME tolerance classes (2G to 5G) | read from a designation and dropped; an ACME thread takes B1.5's crest clearance and a typed-in clearance | B1.5's pitch diameter allowances and tolerances were not to hand; metric, trapezoidal and unified classes follow their tables since 2026-10-28 (`pkg/thread/class_iso.go`, `class_unified.go`) |
 | Buttress threads, what was left | DIN 513 (S) and ASME B1.9 (BUTT) made since 2026-10-28; roots flat, no classes, no rounded crest (`ErrButtressRounded`) | B1.9 rounds the root (r = 0.07141 P) and designates the load's way (PUSH-BUTT, PULL-BUTT), which `LoadFlankBack` stands for today; DIN 513-2's and B1.9's tolerance classes; a rounded crest needs the arc tangent to flanks at different angles, its centre off the ridge's middle |
@@ -401,6 +399,18 @@ crest off its foot's middle (`Profile.MiddleShift`), and a screw mate fits ridge
 pitch line, where a nut's lies in the screw's groove. The load flank faces along a screw's thread and
 back in a nut's; `LoadFlankBack` turns it, and `ThreadFitMove` refuses two whose load flanks face the
 same way (`ErrLoadFlanksSameWay`).
+
+Done 2026-10-29: the chamfered M8 stud 30 mm long, the sweep's unsound cases at 0.5% from 4 of
+660 to 1, and chamfers on rounded crests, refused before (`ErrChamferRounded`, gone). All three were
+the kernel's, where a chamfer's cone meets a ridge's flank just past the crest at a shallow angle:
+the curve leaves the crest's edge nearly along it, the march from that seed took the wrong side,
+ran off along the surfaces' extensions and was dropped (`srf.marchFrom` now marches the other way
+when the first finds no seed); a long chord across a rounded crest was given the wrong side from
+the normals at its start (now its middle); and a sliver of the cut shorter than the trim's assembly
+tells from a point was left alone (culled). No golden moved. 28 and 31 mm, which needed later ways
+of making the chamfer, are sound at the first. Tried for the rounded crest and dropped: taking the
+seed and the split where the chord meets the cone, unrefined, wherever a curve's surfaces meet
+smoothly (it moved the last digits of every thread golden and fixed nothing).
 
 Done 2026-10-27: a full-length thread on a face follows the face's length at regeneration: the
 thread's datum, finding the face again, measures it and moves the dimensions that carry the

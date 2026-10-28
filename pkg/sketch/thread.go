@@ -271,7 +271,7 @@ type chamferTry struct{ turnInto, lower float64 }
 // the Boolean takes them least well depends on the thread, and the
 // Boolean that fails at one of these, at every plane for the ridges,
 // may not at another (found over the thread cases: 32 of 33 at the
-// first, all at the first two; a rounded crest at none).
+// first, all at the first two).
 var chamferTries = [...]chamferTry{{0.2, 0}, {0.2, 0.4}, {0.1, 0}, {0.05, 0}, {0.15, 0.2}, {0.25, 0.25}, {0.1, 0.4}}
 
 // layChamfer places the chamfers, as the try'th of chamferTries makes
@@ -328,9 +328,10 @@ func (l *threadLayout) layChamfer(o ThreadOptions, try chamferTry) {
 // the standard crest is, and is not offered.
 var ErrButtressRounded = errors.New("a buttress thread's crest can't be rounded")
 
-// ErrChamferRounded is returned for a chamfered thread with a rounded
-// crest, which the chamfer's cone would touch rather than cut.
-var ErrChamferRounded = errors.New("a rounded crest can't be chamfered")
+// ErrChamferTooFine is returned for a chamfered screw so small for its
+// pitch that the cones, which run on past the end by a pitch, would
+// reach the axis there (a Tr12x3).
+var ErrChamferTooFine = errors.New("thread is too fine for a chamfer")
 
 // chamferReach is how far along the axis from its end a chamfer cuts
 // the part: to where its cone leaves the crest.
@@ -340,21 +341,18 @@ func (l *threadLayout) chamferReach() float64 {
 
 // checkChamfer refuses chamfers that would meet each other, or the
 // run-out, or whose turning's cone would reach the axis past the end.
+// A rounded crest is chamfered as any other: the cone cuts it, meeting
+// its flanks just past their feet at a shallow angle.
 func (l *threadLayout) checkChamfer(o ThreadOptions) error {
 	if !l.chamfer {
 		return nil
-	}
-	if o.Crest == thread.CrestRounded && !o.Cosmetic {
-		// The cone touches a rounded crest along a line somewhere on
-		// every turn it crosses, where the Boolean fails.
-		return ErrChamferRounded
 	}
 	reach := l.chamferReach()
 	// The cones run on past the end to the blank's bottom: the
 	// chamfer's, which is the cosmetic thread's turning's, and the
 	// modelled thread's turning's, which is outside it.
 	if !o.Internal && l.chamferR+l.blankBottom <= 0 {
-		return errors.New("thread is too fine for a chamfer")
+		return ErrChamferTooFine
 	}
 	free := o.Length
 	if l.runOut {

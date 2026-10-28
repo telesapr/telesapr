@@ -498,90 +498,20 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 		start := spl.Points[0].P
 		startv := spl.Points[0].AuxV
 		spl.Points = spl.Points[1:]
-		for k := range spl.Points {
-			spl.Points[k].Tag = 0
-		}
-
-		// Our chord tolerance is whatever the user specified
 		maxtol := s.Tol.ChordTolMm()
-		maxsteps := max(300, s.Tol.MaxSegments()*3)
 
-		// The curve starts at our starting point.
-		padd := SCurvePt{Vertex: true, P: start}
-		sc.Points = append(sc.Points, padd)
-
-		var npc geom.Vector
-		fwd := false
-		// Better to start with a too-small step, so that we don't miss
-		// features of the curve entirely.
-		step := maxtol
-		for a := 0; a < maxsteps; a++ {
-			var pa, pb geom.Point2d
-			s.ClosestPointTo(start, &pa, true)
-			b.ClosestPointTo(start, &pb, true)
-
-			na := s.NormalAtUv(pa).WithMagnitude(1)
-			nb := b.NormalAtUv(pb).WithMagnitude(1)
-
-			if a == 0 {
-				dp := nb.Cross(na)
-				// We want to march in the more inward direction.
-				fwd = dp.Dot(startv) < 0
+		var reached bool
+		sc.Points, reached = s.marchFrom(b, start, startv, spl.Points, false)
+		if !reached && !marchOnBothPatches(s, b, sc.Points, maxtol) {
+			// The curve leaves the seed's edge at a grazing angle, as the
+			// cone of a thread's chamfer meets a ridge's flank just past
+			// the crest: the side the edge's normal picks is a guess, and
+			// the march went off along the surfaces' extensions past the
+			// edge and found no seed. It is marched again the other way,
+			// and kept only if that reaches a seed on both patches.
+			if back, ok := s.marchFrom(b, start, startv, spl.Points, true); ok && marchOnBothPatches(s, b, back, maxtol) {
+				sc.Points = back
 			}
-
-			dp := nb.Cross(na).WithMagnitude(1.0)
-			if !fwd {
-				dp = dp.ScaledBy(-1.0)
-			}
-			for range 20 {
-				np := start.Plus(dp.ScaledBy(step))
-				npc = s.ClosestPointOnThisAndSurface(b, np)
-				tol := npc.Minus(np).Magnitude()
-
-				if tol > maxtol*0.8 {
-					step *= 0.90
-				} else {
-					step /= 0.90
-				}
-
-				if tol < maxtol && tol > maxtol/2 {
-					// If we meet the chord tolerance test, and we're
-					// not too fine, then we break out.
-					break
-				}
-			}
-
-			// The step ends at the first seed it reaches, with any seed
-			// at the same place; one beyond is where a later curve
-			// starts. Where the curve runs nearly straight along a
-			// patch's edge, crossing it and back (a cone along the top
-			// of a ring), one long step can pass several.
-			near := -1
-			for k := range spl.Points {
-				sp := &spl.Points[k]
-				if sp.P.OnLineSegment(start, npc, 2*s.Tol.ChordTolMm()) &&
-					(near < 0 || sp.P.Minus(start).Magnitude() < spl.Points[near].P.Minus(start).Magnitude()) {
-					near = k
-				}
-			}
-			if near >= 0 {
-				end := spl.Points[near].P
-				for k := range spl.Points {
-					sp := &spl.Points[k]
-					if sp.P.OnLineSegment(start, npc, 2*s.Tol.ChordTolMm()) &&
-						sp.P.Minus(end).Magnitude() < 2*s.Tol.ChordTolMm() {
-						sp.Tag = 1
-					}
-				}
-				a = maxsteps
-				npc = end
-			}
-
-			padd.P = npc
-			padd.Vertex = a == maxsteps
-			sc.Points = append(sc.Points, padd)
-
-			start = npc
 		}
 
 		if !marchOnBothPatches(s, b, sc.Points, maxtol) {
@@ -609,6 +539,100 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 	}
 
 	s.intersectClosedLoops(b, agnstA, agnstB, into, marched)
+}
+
+// marchFrom marches along the curve where s meets b from start, a seed
+// whose edge has the normal startv within its surface, into the side
+// that normal points away from (or, back, towards), until it reaches
+// one of seeds or has taken as many steps as the tolerance allows. It
+// tags the seeds it reached, and tells whether it reached any.
+func (s *SSurface) marchFrom(b *SSurface, start, startv geom.Vector, seeds []SPoint, back bool) ([]SCurvePt, bool) {
+	for k := range seeds {
+		seeds[k].Tag = 0
+	}
+	// Our chord tolerance is whatever the user specified
+	maxtol := s.Tol.ChordTolMm()
+	maxsteps := max(300, s.Tol.MaxSegments()*3)
+
+	// The curve starts at our starting point.
+	padd := SCurvePt{Vertex: true, P: start}
+	pts := []SCurvePt{padd}
+
+	var npc geom.Vector
+	fwd, reached := false, false
+	// Better to start with a too-small step, so that we don't miss
+	// features of the curve entirely.
+	step := maxtol
+	for a := 0; a < maxsteps; a++ {
+		var pa, pb geom.Point2d
+		s.ClosestPointTo(start, &pa, true)
+		b.ClosestPointTo(start, &pb, true)
+
+		na := s.NormalAtUv(pa).WithMagnitude(1)
+		nb := b.NormalAtUv(pb).WithMagnitude(1)
+
+		if a == 0 {
+			dp := nb.Cross(na)
+			// We want to march in the more inward direction.
+			fwd = dp.Dot(startv) < 0 != back
+		}
+
+		dp := nb.Cross(na).WithMagnitude(1.0)
+		if !fwd {
+			dp = dp.ScaledBy(-1.0)
+		}
+		for range 20 {
+			np := start.Plus(dp.ScaledBy(step))
+			npc = s.ClosestPointOnThisAndSurface(b, np)
+			tol := npc.Minus(np).Magnitude()
+
+			if tol > maxtol*0.8 {
+				step *= 0.90
+			} else {
+				step /= 0.90
+			}
+
+			if tol < maxtol && tol > maxtol/2 {
+				// If we meet the chord tolerance test, and we're
+				// not too fine, then we break out.
+				break
+			}
+		}
+
+		// The step ends at the first seed it reaches, with any seed
+		// at the same place; one beyond is where a later curve
+		// starts. Where the curve runs nearly straight along a
+		// patch's edge, crossing it and back (a cone along the top
+		// of a ring), one long step can pass several.
+		near := -1
+		for k := range seeds {
+			sp := &seeds[k]
+			if sp.P.OnLineSegment(start, npc, 2*maxtol) &&
+				(near < 0 || sp.P.Minus(start).Magnitude() < seeds[near].P.Minus(start).Magnitude()) {
+				near = k
+			}
+		}
+		if near >= 0 {
+			end := seeds[near].P
+			for k := range seeds {
+				sp := &seeds[k]
+				if sp.P.OnLineSegment(start, npc, 2*maxtol) &&
+					sp.P.Minus(end).Magnitude() < 2*maxtol {
+					sp.Tag = 1
+				}
+			}
+			a = maxsteps
+			npc = end
+			reached = true
+		}
+
+		padd.P = npc
+		padd.Vertex = a == maxsteps
+		pts = append(pts, padd)
+
+		start = npc
+	}
+	return pts, reached
 }
 
 // seedOnPatch tells whether p, a hit of an edge of srfA (trimming it

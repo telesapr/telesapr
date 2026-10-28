@@ -101,8 +101,8 @@ type ThreadOptions struct {
 	// 45° to the axis from a little inside the minor diameter out past
 	// the crest: a screw's end chamfered, a nut's mouth countersunk, so
 	// that the thread starts clean. A Through thread is chamfered at
-	// both ends. A Cosmetic thread's part is cut so; a modelled thread
-	// with a "rounded" Crest can't be chamfered.
+	// both ends. A Cosmetic thread's part is cut so, and a "rounded"
+	// Crest as any other.
 	Chamfer bool
 }
 

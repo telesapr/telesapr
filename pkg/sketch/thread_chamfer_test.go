@@ -20,6 +20,10 @@ import (
 var chamferCases = []threadCase{
 	{"screw_m8", 4, 30, "M8", sketch.ThreadOptions{Length: 12, Chamfer: true}},
 	{"stud_m8", 4, 10, "M8", sketch.ThreadOptions{Length: 10, Through: true, Chamfer: true}},
+	// Its far chamfer's cone met a ridge's flank just past the crest at a
+	// grazing angle, at every plane for the ridges and every way of
+	// making the chamfer, where 28 and 31 mm were sound.
+	{"stud_m8_30", 4, 30, "M8", sketch.ThreadOptions{Length: 30, Through: true, Chamfer: true}},
 	{"nut_m8", 7, 6.5, "M8", sketch.ThreadOptions{Length: 6.5, Through: true, Internal: true, Chamfer: true}},
 	{"blind_m6", 8, 12, "M6", sketch.ThreadOptions{Length: 8, Internal: true, Chamfer: true}},
 	{"screw_m8_lh", 4, 30, "M8-LH", sketch.ThreadOptions{Length: 12, Chamfer: true}},
@@ -37,6 +41,10 @@ var chamferCases = []threadCase{
 	{"nut_acme_lh", 12, 12, "1/2-10 ACME-LH", sketch.ThreadOptions{Length: 12, Through: true, Internal: true, Chamfer: true}},
 	{"screw_m10_fine", 5, 25, "M10x1", sketch.ThreadOptions{Length: 15, Chamfer: true}},
 	{"truncated_m8", 4, 30, "M8", sketch.ThreadOptions{Length: 12, Crest: thread.CrestTruncated, Chamfer: true}},
+	{"rounded_m8", 4, 30, "M8", sketch.ThreadOptions{Length: 12, Crest: thread.CrestRounded, Chamfer: true}},
+	{"rounded_stud_m8", 4, 16, "M8", sketch.ThreadOptions{Length: 16, Through: true, Crest: thread.CrestRounded, Chamfer: true}},
+	{"rounded_nut_m10", 10, 10, "M10", sketch.ThreadOptions{Length: 10, Through: true, Internal: true, Crest: thread.CrestRounded, Chamfer: true}},
+	{"rounded_blind_m6", 8, 12, "M6", sketch.ThreadOptions{Length: 8, Internal: true, Crest: thread.CrestRounded, Chamfer: true}},
 	{"runout_m8", 4, 30, "M8", sketch.ThreadOptions{Length: 12, RunOut: 3, Chamfer: true}},
 	{"runout_m10", 5, 30, "M10", sketch.ThreadOptions{Length: 20, RunOut: 2, Chamfer: true}},
 	{"runout_blind_m6", 8, 12, "M6", sketch.ThreadOptions{Length: 8, Internal: true, RunOut: 2, Chamfer: true}},
@@ -83,6 +91,13 @@ func requireChamferCone(t *testing.T, sk *sketch.Sketch, keeper core.HGroup, o s
 		out = -1
 	}
 	reach := out * (b.Crest - b.Chamfer)
+	// A rounded crest's cut is a curve on it: the points of its mesh
+	// inside the trim's chords lie off the cone by up to their sag, the
+	// more as the cone meets the crest at a shallow angle.
+	slack := 1e-3
+	if o.Crest == thread.CrestRounded {
+		slack = max(slack, sk.Tol().ChordTolMm())
+	}
 	m, _ := meshStats(sk, lastOf(t, sk, keeper).H)
 	onEnd := map[bool]bool{}
 	for _, tr := range m.Triangles {
@@ -103,7 +118,7 @@ func requireChamferCone(t *testing.T, sk *sketch.Sketch, keeper core.HGroup, o s
 				if h > reach {
 					continue
 				}
-				if cone := b.Chamfer + out*h; out*(r-cone) > 1e-3 {
+				if cone := b.Chamfer + out*h; out*(r-cone) > slack {
 					t.Fatalf("a vertex at r %.4f, %.4f from the end, is past the chamfer's cone at %.4f", r, h, cone)
 				}
 				if math.Abs(h) < 1e-6 && math.Abs(r-b.Chamfer) < 1e-3 {
@@ -117,9 +132,8 @@ func requireChamferCone(t *testing.T, sk *sketch.Sketch, keeper core.HGroup, o s
 	}
 }
 
-// TestThreadChamferRefused requires a chamfer refused, saying why, on a
-// rounded crest and where the chamfers would meet or reach the
-// run-out.
+// TestThreadChamferRefused requires a chamfer refused, saying why,
+// where the chamfers would meet or reach the run-out.
 func TestThreadChamferRefused(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
@@ -127,7 +141,6 @@ func TestThreadChamferRefused(t *testing.T) {
 		tc   threadCase
 		want string
 	}{
-		{"rounded", threadCase{"", 4, 30, "M8", sketch.ThreadOptions{Length: 12, Crest: thread.CrestRounded, Chamfer: true}}, "rounded crest"},
 		{"short stud", threadCase{"", 4, 2.5, "M8", sketch.ThreadOptions{Length: 2.5, Through: true, Chamfer: true}}, "for its chamfers"},
 		{"run-out", threadCase{"", 4, 30, "M8", sketch.ThreadOptions{Length: 4, RunOut: 3, Chamfer: true}}, "for its chamfers"},
 	} {
@@ -185,6 +198,11 @@ func TestThreadChamferSweep(t *testing.T) {
 		}
 		tc.o.Length += p.Float("longer")
 		_, _, res, err := tc.tryBuild(t, p.Float("tol"))
+		if errors.Is(err, sketch.ErrChamferTooFine) {
+			// Refused, saying why: a Tr12x3 screw's cones would reach
+			// its axis.
+			return nil
+		}
 		if err != nil {
 			return err
 		}
@@ -196,11 +214,12 @@ func TestThreadChamferSweep(t *testing.T) {
 }
 
 // threadChamferMaxFail is the rate of the chamfer sweep allowed to
-// fail: 4 of 660 on 2026-10-23, all at the coarsest chord tolerance,
-// with the seven ways of making the chamfer tried (chamferTries); with
-// the first four, 3 of the 220 at "longer" 0 were unsound. Where they
-// fail, the chamfer's cone loses its trim against the ridges' flanks.
-const threadChamferMaxFail = 4.0 / 660
+// fail: 1 of 660 since 2026-10-29, a 1/2 BSF nut at the coarsest chord
+// tolerance, where the ridges' Boolean with the bore (before the
+// chamfer) has crossing mesh edges at most planes for the ridges. It
+// was 4 of 660 when a march from a seed whose curve leaves it grazing
+// took the wrong way and was dropped (srf.marchFrom).
+const threadChamferMaxFail = 1.0 / 660
 
 // TestCosmeticThreadChamfer makes chamfered cosmetic threads: the
 // part's end is cut by the chamfer's cone, by the thread's lathe, which

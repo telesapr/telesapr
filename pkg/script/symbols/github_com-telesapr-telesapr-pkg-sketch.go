@@ -43,7 +43,7 @@ func init() {
 		"EntityPointCount":             reflect.ValueOf(sketch.EntityPointCount),
 		"ErrBadDensity":                reflect.ValueOf(&sketch.ErrBadDensity).Elem(),
 		"ErrButtressRounded":           reflect.ValueOf(&sketch.ErrButtressRounded).Elem(),
-		"ErrChamferRounded":            reflect.ValueOf(&sketch.ErrChamferRounded).Elem(),
+		"ErrChamferTooFine":            reflect.ValueOf(&sketch.ErrChamferTooFine).Elem(),
 		"ErrConstraintSelection":       reflect.ValueOf(&sketch.ErrConstraintSelection).Elem(),
 		"ErrEqualSelection":            reflect.ValueOf(&sketch.ErrEqualSelection).Elem(),
 		"ErrFittedSweep":               reflect.ValueOf(&sketch.ErrFittedSweep).Elem(),
