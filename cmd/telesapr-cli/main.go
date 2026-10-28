@@ -66,6 +66,11 @@ Common options:
         group active, instead of up to the group active when it was saved.
         <group> is the group's name, or its description as the property
         browser shows it ("g004-extrude", or just "g004").
+    -p, --plane <plane>
+        For export-section: the plane the solid is cut by. <plane> is
+        "x=<d>", "y=<d>" or "z=<d>", the plane square to that axis at <d> mm
+        from the origin, or "<x>,<y>,<z>,<nx>,<ny>,<nz>", the plane through
+        the point (x, y, z) with the normal (nx, ny, nz).
 
 Commands:
     version
@@ -81,6 +86,11 @@ Commands:
     export-drawing --output <pattern> [--chord-tol <tolerance>]
         Exports the sketch's drawing (File > Drawing Sheet), or the default
         one, an A3 sheet of the standard views fitted, in a 2d vector format.
+    export-section --output <pattern> [--plane <plane>] [--chord-tol <tolerance>]
+                   [--group <group>]
+        Exports the section of the solid by a plane, in a 2d vector format,
+        as File > Export > 2d Section does. Without --plane the plane is the
+        workplane active when the model was saved.
     export-wireframe --output <pattern> [--chord-tol <tolerance>] [--group <group>]
         Exports a wireframe of the sketch, in a 3d vector format.
     export-mesh --output <pattern> [--chord-tol <tolerance>] [--angle-tol <degrees>]
@@ -117,7 +127,7 @@ Commands:
 	fmt.Fprintf(w, `
 File formats:
     thumbnail:%s
-    export-view, export-drawing:%s
+    export-view, export-drawing, export-section:%s
     export-wireframe:%s
     export-mesh:%s
     export-surfaces:%s
@@ -152,6 +162,7 @@ type options struct {
 	width, height uint
 	overwrite     bool
 	group         string
+	plane         *sectionPlane
 
 	angleTol    float64 // degrees, 0 for none
 	maxSegments int
@@ -223,6 +234,13 @@ func (o *options) parse(args []string, accepted []string, stderr io.Writer) bool
 				o.bgColor, ok = true, true
 			case "off":
 				o.bgColor, ok = false, true
+			}
+		case hasValue && takes("--plane", "-p", arg):
+			n++
+			if p, err := parsePlane(args[n]); err != nil {
+				fmt.Fprintf(stderr, "Bad plane '%s': %v\n", args[n], err)
+			} else {
+				o.plane, ok = p, true
 			}
 		case hasValue && takes("--group", "-g", arg):
 			n++
@@ -348,6 +366,24 @@ var fileCommands = map[string]fileCommand{
 			s.ss.ExportChordTol = o.chordTol
 			s.ss.ExportBackgroundColor = o.bgColor
 			return s.ss.ExportViewOrWireframeTo(output, false)
+		},
+	},
+	"export-section": {
+		accepted:    []string{"--output", "--plane", "--chord-tol", "--group"},
+		solidsLater: true,
+		run: func(s *session, o *options, output string) error {
+			// Where the plane cuts through, the section is the mesh's,
+			// made at the export tolerance.
+			s.ss.ExportChordTol = o.chordTol
+			s.ss.EnterExportMode()
+			s.ss.GenerateAll(sketch.GenerateAll)
+			if o.plane == nil {
+				if err := s.ss.ExportSectionHere(output); err != nil {
+					return fmt.Errorf("%w (or give --plane)", err)
+				}
+				return nil
+			}
+			return s.ss.ExportSectionByPlane(output, o.plane.origin, o.plane.normal)
 		},
 	},
 	"export-wireframe": {

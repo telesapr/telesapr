@@ -231,8 +231,9 @@ Still open: a sketch opened without the application (`api.Open`, `New`) writes o
 glTF meshes, so there the 2d options (scale, canvas, PWL curves, G-code) are kept and returned but
 nothing reads them; a script run by the application or `telesapr-cli run` is the way to a 2d
 file. The values are the session's, and the application saves them with its settings when it
-closes, as it does for the screen. `telesapr-cli` has no `export-section` command; the section
-export is `File.ExportSection` (or `File.ExportAs(ExportSection, path)`) in a script.
+closes, as it does for the screen. From the command line the section is
+`telesapr-cli export-section --plane`; in a script, `File.ExportSection` (or
+`File.ExportAs(ExportSection, path)`).
 
 ### Import, section export and placing a linked part
 
@@ -242,7 +243,12 @@ export is `File.ExportSection` (or `File.ExportAs(ExportSection, path)`) in a sc
   (same saved file), `TestImportDXF` (api, undo and the workplane).
 - 2d Section export is `ExportSection` of `ExportKind`, `File.ExportSection`. The plane is the
   section view's when it is on, otherwise the active workplane; the window's selection-driven
-  choice (a face, a point and two lines) stays the window's. Test: `TestExportSectionPaths`.
+  choice (a face, a point and two lines) stays the window's, and `telesapr-cli export-section`
+  takes the plane from `--plane` (`x=`, `y=`, `z=` a distance, or a point and a normal), or the
+  saved active workplane without it (`ui.Application.ExportSectionByPlane`). A plane along a face
+  gives that face's exact outline; one through the solid, where it cuts the triangles, as the
+  section view's cap. Tests: `TestExportSectionPaths` (window, script and plane write the same
+  file), `TestExportSection` and `TestParsePlane` (`cmd/telesapr-cli`).
 - Edit > Rotate Imported 90° is `LinkGroup.Rotate90(axis)` (the window uses the coordinate axis
   closest to the view's direction); dragging a part's normal is `LinkGroup.SetOrientation(u, v)`;
   also `Rotate`, `Move`, `Offset`, `Orientation`. Test: `TestRotateImportedPaths`. Example:

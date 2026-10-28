@@ -37,7 +37,6 @@ From the neosolve survey; each is small and independent.
 | Item | State |
 |---|---|
 | The ray-cast oracle (K2) for lofts | extrusions, lathes, revolves, and since 2026-10-10 step and repeats, patterns along a path and mirrors of them (`sketch.Group.CopyPlacements`), with moments of inertia; since 2026-10-11 drafted extrusions (`pkg/check/raycast_draft.go`), helices of a profile in a plane through the axis (`raycast_helix.go`: inside exact, crossings sampled along the ray at steps sized by how fast its image crosses the profile, the samples kept as cuts) and sweeps along lines and arcs, mitred or rounded (`raycast_sweep.go`, from `sketch.Group.SweepSteps`: prisms cut by the mitre planes, revolutions). Refused by name (`check.ErrUnsupported`): lofts, whose surfaces between sections are the kernel's own construction (rebuilding them would repeat it, not check it), sweeps fitted along cubics, twisted or held to a direction, and a profile leaning to a helix's or an arc's axis |
-| A section from the command line | `telesapr-cli` has no `export-section`: a section needs a plane, which no flag names. A `--plane` option or the section saved with the view (`doc/notes/feature-inputs.md`). Today `telesapr-cli run` with `File.ExportSection` |
 | Dockable property browser | takigo decides; lowest |
 
 ### F6 IGES import and export
