@@ -18,7 +18,7 @@ fixture has been done; its "Tried" notes say what not to try again.
 | 1 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
 | 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint needs the line-arc joint inside the sweep |
 | 2a | [Modelling upgrade leftovers](#modelling-upgrade-leftovers) | kernel and feature | ? | What the 2026-10-22 work packages left; each refuses with a message today |
-| 2b | [Thread leftovers](#thread-leftovers) | kernel and feature | ? | What the thread improvements of 2026-10-23 left: chamfer slivers, classes to check against the tables |
+| 2b | [Thread leftovers](#thread-leftovers) | kernel and feature | ? | What the thread improvements of 2026-10-23 left: chamfer slivers, buttress threads, ACME classes |
 | 3 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
 | 4 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Since 2026-10-11 it mends the ear clipper's crossing faces; as the default it still costs 3 to 5 times the triangles |
 | 5 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
@@ -346,7 +346,7 @@ What the thread improvements of 2026-10-23 (`doc/notes/thread-evaluation.md`, br
 | A chamfered M8 through-stud 30 mm long | unsound at the default tolerance; 28 and 31 mm are sound | Every placement of the hidden cone and the ridge ends tried; cause not found |
 | A chamfer on a modelled thread with a rounded crest | refused (`ErrChamferRounded`) | The cone touches the rounded crest rather than cutting it; no placement built it soundly |
 | A phase with a run-out | refused on a modelled thread | The run-out's fix places the ridge end exactly; a phase moves it |
-| Tolerance classes | from the standards' formulas, not their tables | 1/4-20 UNC 2A comes out about 7% over the ASME table's pitch-diameter tolerance; check against ISO 965-2 and ASME B1.1 tables. ACME's 0.010 in clearance likewise |
+| ACME tolerance classes (2G to 5G) | read from a designation and dropped; an ACME thread takes B1.5's crest clearance and a typed-in clearance | B1.5's pitch diameter allowances and tolerances were not to hand; metric, trapezoidal and unified classes follow their tables since 2026-10-28 (`pkg/thread/class_iso.go`, `class_unified.go`) |
 | Buttress threads | not offered | The ridge sketch ties its two flanks to equal length; an asymmetric profile needs it drawn otherwise |
 
 Done 2026-10-27: a full-length thread on a face follows the face's length at regeneration: the

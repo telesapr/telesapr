@@ -32,6 +32,9 @@ func TestBasicDimensions(t *testing.T) {
 		// ASME B1.5: 0.450 inch pitch diameter, 0.380 and 0.520 inch at
 		// the external root and the internal one.
 		{"1/2-10 ACME", 11.43, 10.16, 1e-9, 9.652, 13.208, 0, 0, 0},
+		// Finer than 10 threads per inch, half the clearance: 0.1775 and
+		// 0.2600 inch.
+		{"1/4-16 ACME", 5.55625, 4.7625, 1e-9, 4.5085, 6.604, 0, 0, 0},
 	} {
 		s, err := Parse(tc.name)
 		if err != nil {
