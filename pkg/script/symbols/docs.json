@@ -6915,7 +6915,7 @@
 			},
 			"ThreadSeries": {
 				"decl": "func ThreadSeries() []string",
-				"text": "ThreadSeries are the names of the series of standard threads, as\nthe screw thread screen's [choose] lists them: \"metric\", \"unified\",\n\"trapezoidal\", \"Whitworth\", \"pipe\" and \"ACME\"."
+				"text": "ThreadSeries are the names of the series of standard threads, as\nthe screw thread screen's [choose] lists them: \"metric\", \"unified\",\n\"trapezoidal\", \"Whitworth\", \"pipe\", \"ACME\", \"buttress\" (DIN 513's S\nthreads) and \"BUTT\" (ASME B1.9's buttress inch threads)."
 			},
 			"ThreadSizes": {
 				"decl": "func ThreadSizes(series string) []string",
@@ -9351,6 +9351,10 @@
 				"decl": "var ErrBadDensity",
 				"text": "ErrBadDensity is a density that is not a positive number."
 			},
+			"ErrButtressRounded": {
+				"decl": "var ErrButtressRounded",
+				"text": "ErrButtressRounded is returned for a buttress thread with a rounded crest: an arc tangent to flanks at different angles has no top where the standard crest is, and is not offered."
+			},
 			"ErrChamferRounded": {
 				"decl": "var ErrChamferRounded",
 				"text": "ErrChamferRounded is returned for a chamfered thread with a rounded crest, which the chamfer's cone would touch rather than cut."
@@ -9366,6 +9370,10 @@
 			"ErrFittedSweep": {
 				"decl": "var ErrFittedSweep",
 				"text": "ErrFittedSweep is SweepSteps' error for a sweep whose surface is fitted, not made of rigid steps: along a cubic, twisted, or held to a direction."
+			},
+			"ErrLoadFlanksSameWay": {
+				"decl": "var ErrLoadFlanksSameWay",
+				"text": "ErrLoadFlanksSameWay is ThreadFitMove's error for two buttress threads whose load flanks face the same way along their axis, which no move fits: one of them must be made with its load flank turned (ThreadOptions.LoadFlankBack)."
 			},
 			"ErrMeshNotSound": {
 				"decl": "var ErrMeshNotSound",

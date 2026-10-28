@@ -67,11 +67,13 @@ var combines = newEnum("combine", map[sketch.CombineAs]string{
 })
 
 var threadForms = newEnum("thread form", map[thread.Form]string{
-	thread.FormMetric:      "metric",
-	thread.FormUnified:     "unified",
-	thread.FormTrapezoidal: "trapezoidal",
-	thread.FormWhitworth:   "whitworth",
-	thread.FormACME:        "acme",
+	thread.FormMetric:       "metric",
+	thread.FormUnified:      "unified",
+	thread.FormTrapezoidal:  "trapezoidal",
+	thread.FormWhitworth:    "whitworth",
+	thread.FormACME:         "acme",
+	thread.FormButtress:     "buttress",
+	thread.FormButtressInch: "buttress-inch",
 })
 
 var threadCrests = newEnum("thread crest", map[thread.Crest]string{

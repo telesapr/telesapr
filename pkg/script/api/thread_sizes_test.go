@@ -11,7 +11,7 @@ import (
 func TestThreadSizes(t *testing.T) {
 	t.Parallel()
 	series := ThreadSeries()
-	if !slices.Equal(series, []string{"metric", "unified", "trapezoidal", "Whitworth", "pipe", "ACME"}) {
+	if !slices.Equal(series, []string{"metric", "unified", "trapezoidal", "Whitworth", "pipe", "ACME", "buttress", "BUTT"}) {
 		t.Errorf("series %v", series)
 	}
 	for _, sr := range series {

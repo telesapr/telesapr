@@ -195,8 +195,8 @@ func (d *threadDrawer) crossings() []float64 {
 		if !l.runOut {
 			continue
 		}
-		w := l.profile.WidthAt(l.profile.RootRadius) / 2
-		for _, flank := range []float64{z - w, z + w} {
+		lo, hi := l.flanksAt(z, l.profile.RootRadius)
+		for _, flank := range []float64{lo, hi} {
 			if at := (l.runFrom - flank) / o.Spec.Lead() * 2 * math.Pi; at > 0 && at < sweep {
 				out = append(out, turn+at)
 			}
@@ -473,16 +473,18 @@ func (d *threadDrawer) drawProfile() {
 	}
 }
 
-// drawFlatRidge draws the ridge i, centred at height z, with a flat
-// crest: a trapezoid.
+// drawFlatRidge draws the ridge i, its foot centred at height z, with a
+// flat crest: a trapezoid, whose crest lies off its foot's middle on a
+// buttress thread.
 func (d *threadDrawer) drawFlatRidge(i int, z float64) {
 	p, l, none := d.l.profile, d.l, core.NoEntity
 	base, crest := l.baseW/2, p.CrestWidth/2
+	zc := z - p.MiddleShift(l.baseR)
 	ridge := []core.HRequest{
 		d.line(l.baseR, z-base, l.baseR, z+base),
-		d.line(l.baseR, z+base, p.CrestRadius, z+crest),
-		d.line(p.CrestRadius, z+crest, p.CrestRadius, z-crest),
-		d.line(p.CrestRadius, z-crest, l.baseR, z-base),
+		d.line(l.baseR, z+base, p.CrestRadius, zc+crest),
+		d.line(p.CrestRadius, zc+crest, p.CrestRadius, zc-crest),
+		d.line(p.CrestRadius, zc-crest, l.baseR, z-base),
 	}
 	d.closeLoop(ridge)
 	d.constrain(core.ConstraintVertical, none, none, ridge[0].Entity(0), none, false)
@@ -491,8 +493,14 @@ func (d *threadDrawer) drawFlatRidge(i int, z float64) {
 	d.dimension(core.ConstraintPtLineDistance, p.CrestRadius, d.center, none, ridge[2].Entity(0), none)
 	d.dimension(core.ConstraintPtPtDistance, p.CrestWidth, ridge[2].Entity(1), ridge[2].Entity(2), none, none)
 	d.dimension(core.ConstraintAngle, p.FlankAngle, none, none, ridge[1].Entity(0), ridge[3].Entity(0))
-	d.constrain(core.ConstraintEqualLengthLines, none, none, ridge[1].Entity(0), ridge[3].Entity(0), false)
-	d.placeRidge(i, ridge[2], 2, z-crest)
+	if p.Symmetric() {
+		d.constrain(core.ConstraintEqualLengthLines, none, none, ridge[1].Entity(0), ridge[3].Entity(0), false)
+	} else {
+		// The upper flank's angle to the foot, which runs along the axis,
+		// leans the ridge.
+		d.dimension(core.ConstraintAngle, 90+p.UpperFlank, none, none, ridge[0].Entity(0), ridge[1].Entity(0))
+	}
+	d.placeRidge(i, ridge[2], 2, zc-crest)
 }
 
 // drawRoundRidge draws the ridge i, centred at height z, with a

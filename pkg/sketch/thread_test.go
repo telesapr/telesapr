@@ -57,6 +57,12 @@ var threadCases = []threadCase{
 	// A class for the clearance, and a phase.
 	{"screw_m10_6g", 5, 25, "M10", sketch.ThreadOptions{Length: 15, Class: "6g", Phase: 120}},
 	{"nut_m10_6h", 10, 10, "M10", sketch.ThreadOptions{Length: 10, Through: true, Internal: true, Class: "6H", Phase: 300}},
+	// Buttress threads, whose ridges lean: DIN 513 and ASME B1.9.
+	{"screw_s20", 10, 40, "S20x4", sketch.ThreadOptions{Length: 30}},
+	{"nut_s20", 16, 20, "S20x4", sketch.ThreadOptions{Length: 20, Through: true, Internal: true}},
+	{"nut_s20_back", 16, 20, "S20x4", sketch.ThreadOptions{Length: 20, Through: true, Internal: true, LoadFlankBack: true}},
+	{"screw_butt", 12.7, 40, "1-12 BUTT", sketch.ThreadOptions{Length: 25, Clearance: 0.05}},
+	{"nut_butt_lh", 20, 15, "1-12 BUTT-LH", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Clearance: 0.05}},
 }
 
 // build makes the part and its thread, with the given chord tolerance
@@ -157,6 +163,9 @@ func TestThreadSolids(t *testing.T) {
 				t.Fatal(err)
 			}
 			p := s.Profile(o.Internal, clearance)
+			if o.LoadFlankBack {
+				p = p.Turned()
+			}
 
 			order := sk.Group(hel).Order
 			var names []string
@@ -251,6 +260,8 @@ func TestThreadSolids(t *testing.T) {
 			if want := along * (s.Pitch/2 + baseW/2 + shift); math.Abs(z0-want) > 1e-9 {
 				t.Errorf("first ridge at %g along the axis, want %g", z0, want)
 			}
+			// A buttress ridge's crest lies off its foot's middle.
+			z0 -= along * p.MiddleShift(math.Hypot(foot[0].X, foot[0].Y))
 			turned := math.Atan2(foot[0].Y, foot[0].X)
 			between := 2 * math.Pi / float64(s.NumStarts())
 			// The kernel's helix is off a true one by up to half a percent
@@ -338,6 +349,10 @@ func TestThreadErrors(t *testing.T) {
 		{"too coarse a pitch", circle, func(o *sketch.ThreadOptions) { o.Spec.Pitch = 8 }},
 		{"a clearance that leaves nothing", circle, func(o *sketch.ThreadOptions) { o.Clearance = 4 }},
 		{"a clearance that isn't a number", circle, func(o *sketch.ThreadOptions) { o.Clearance = math.NaN() }},
+		{"a rounded buttress crest", circle, func(o *sketch.ThreadOptions) {
+			o.Spec = thread.Spec{Form: thread.FormButtress, Diameter: 8, Pitch: 1.5}
+			o.Crest = thread.CrestRounded
+		}},
 	} {
 		o := m8
 		c.edit(&o)

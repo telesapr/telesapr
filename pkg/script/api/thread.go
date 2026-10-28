@@ -13,7 +13,8 @@ import (
 // ending at a shoulder.
 type ThreadOptions struct {
 	// Designation is the thread, as "M8", "M8x1 LH", "1/4-20 UNC",
-	// "Tr20x4", "1/4 BSW", "G1/2" or "1/2-10 ACME"; "" takes the
+	// "Tr20x4", "1/4 BSW", "G1/2", "1/2-10 ACME", or the buttress
+	// threads "S20x4" (DIN 513) and "1-12 BUTT" (ASME B1.9); "" takes the
 	// standard one nearest the circle. ThreadSizes and ThreadPitches
 	// list the standard ones.
 	Designation string
@@ -53,7 +54,8 @@ type ThreadOptions struct {
 	// Crest is the shape of the ridge's top: "standard" (or ""), the
 	// flat crest the standards give; "truncated", cut lower by a
 	// quarter of the ridge's height; or "rounded", an arc tangent to
-	// both flanks, which prints better.
+	// both flanks, which prints better, and not offered for a buttress
+	// thread.
 	Crest string
 	// RunOut is how far, in mm, the thread fades out before its
 	// shoulder: the turned or bored surface tapers from the root to
@@ -64,6 +66,14 @@ type ThreadOptions struct {
 	// circle's plane, each a ridge sketch and a helix of its own;
 	// otherwise one helix sweeps the ridges stacked a pitch apart.
 	LevelStarts bool
+	// LoadFlankBack turns a buttress thread's ridge about: its load
+	// flank, nearly square to the axis, faces back, towards where the
+	// thread starts, on a screw, and away from it in a nut, rather than
+	// the other way. A screw and a nut mate when their load flanks face
+	// each other, which depends on which way each thread runs:
+	// Assembly.Screw refuses two that face the same way. Other threads'
+	// ridges are symmetric and stay as they are.
+	LoadFlankBack bool
 	// Phase turns the thread about its axis, in degrees: its ridges
 	// move along it, away from the circle, by that part of the lead,
 	// and are a pitch shorter, for the room. A thread with a run-out
@@ -120,7 +130,7 @@ func (o ThreadOptions) sketchOptions(sk *sketch.Sketch, diameter float64) sketch
 	opts.Length, opts.Clearance = o.Length, o.Clearance
 	opts.RunOut, opts.LevelStarts, opts.Cosmetic = o.RunOut, o.LevelStarts, o.Cosmetic
 	opts.FullLength, opts.Chamfer = o.FullLength, o.Chamfer
-	opts.Class, opts.Phase = o.Class, o.Phase
+	opts.Class, opts.Phase, opts.LoadFlankBack = o.Class, o.Phase, o.LoadFlankBack
 	if o.LengthExpr != "" {
 		v, expr, err := sk.ThreadLengthText(o.LengthExpr)
 		if err != nil {
@@ -146,7 +156,7 @@ func threadOptionsOf(o sketch.ThreadOptions) ThreadOptions {
 		Designation: right.String(), LeftHand: o.Spec.LeftHand, Internal: o.Internal, Length: o.Length, Through: o.Through,
 		Reverse: o.Reverse, Clearance: clearance, Class: o.Class, LengthExpr: o.LengthExpr, Crest: o.Crest.String(),
 		RunOut: o.RunOut, LevelStarts: o.LevelStarts, FullLength: o.FullLength, Cosmetic: o.Cosmetic, Phase: o.Phase,
-		Chamfer: o.Chamfer,
+		Chamfer: o.Chamfer, LoadFlankBack: o.LoadFlankBack,
 	}
 }
 
@@ -263,7 +273,8 @@ func ThreadNearest(d float64) string { return thread.Nearest(d).String() }
 
 // ThreadSeries are the names of the series of standard threads, as
 // the screw thread screen's [choose] lists them: "metric", "unified",
-// "trapezoidal", "Whitworth", "pipe" and "ACME".
+// "trapezoidal", "Whitworth", "pipe", "ACME", "buttress" (DIN 513's S
+// threads) and "BUTT" (ASME B1.9's buttress inch threads).
 func ThreadSeries() []string {
 	var names []string
 	for _, sr := range thread.AllSeries() {

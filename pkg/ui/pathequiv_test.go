@@ -86,6 +86,9 @@ var pathEquivalences = map[string]pathCheck{
 	// A screw thread whose size and pitch are chosen from the list and
 	// whose hand is a choice, made through its screen, and by a script.
 	"thread_choose": nil,
+	// A buttress screw thread typed in, its load flank turned back, made
+	// through its screen, and by a script.
+	"thread_buttress": nil,
 	// A screw thread with a chamfered end, made through its screen, and by
 	// a script.
 	"thread_chamfer": nil,
