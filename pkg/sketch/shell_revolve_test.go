@@ -139,6 +139,42 @@ func reflexConeShell() float64 {
 	return math.Pi*36*8/3*3/4 - in*h/n
 }
 
+// A cup and a flange about its foot, each a lathe about the Z axis, the
+// flange drawn in another plane: the solid is their profiles joined
+// turned, and is hollowed by that profile, open at the top. The inside
+// is the flange's ring 9 across and 2 high, the cup's 4 across and 7
+// high above it. A block added after is no revolution.
+func TestShellJoinedLathes(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	d.Edit.SetChordTolerance(0.005)
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 12))
+	axis.SetConstruction(true)
+	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(5, 0, 0), api.V(5, 0, 10), api.V(0, 0, 10))
+	cup := d.Features.Lathe(axis, "")
+	d.Features.SketchIn(d.Workplane("YZ"), "")
+	axis2 := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 12))
+	axis2.SetConstruction(true)
+	d.Sketch.Polyline(true, api.V(0, 5, 0), api.V(0, 10, 0), api.V(0, 10, 4), api.V(0, 5, 4))
+	flange := d.Features.Lathe(axis2, "")
+	if p := flange.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	step(d)
+	before := saved(t, d)
+	top := cup.Solid().FaceAt(api.V(1, 1, 10))
+	sh := d.Features.ShellSolid([]api.SolidFace{top}, 1, "")
+	if p := sh.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	want := math.Pi * (100*4 + 25*6 - 81*2 - 16*7)
+	if r := sh.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Fatalf("shelled cup and flange: %s, want volume %g", r.String(), want)
+	}
+	undoRedo(t, d, before)
+}
+
 // A lathe after which another solid is added is no longer one
 // revolution: its shell is refused as a curved solid's.
 func TestShellLatheAndMore(t *testing.T) {

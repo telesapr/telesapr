@@ -258,6 +258,14 @@ func ShellRevolved(sh *srf.SShell, rev Revolution, open []int, thick float64, or
 	out := &srf.SShell{Tol: sh.Tol}
 	out.MakeFromDifferenceOf(sh, inner)
 	if out.BooleanFailed {
+		again, err := revolvedAgain(sh, t, rev)
+		if err != nil {
+			return nil, err
+		}
+		out = &srf.SShell{Tol: sh.Tol}
+		out.MakeFromDifferenceOf(again, inner)
+	}
+	if out.BooleanFailed {
 		return nil, errors.New("the Boolean that takes the inside away failed")
 	}
 	return out, nil
