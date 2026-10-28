@@ -76,7 +76,18 @@ func (m DatumsMenu) Name(name string, e Entity) {
 // active or the model is saved, so a model linking this one finds it
 // where the face is.
 func (m DatumsMenu) NameFace(name string, f SolidFace) Group {
-	return m.nameSolid(name, f.s, f.id, nil)
+	return m.nameSolid(name, f.s, f.id, nil, nil)
+}
+
+// NameFaceAt names face f of a solid as the datum name, as NameFace
+// does, keeping where on the face it was picked: on a face neither flat
+// nor round, as a loft's, a blend's or a sphere's, the workplane touches
+// the face at the point nearest at rather than at its middle, and
+// follows that place on the face, as a share of its extent each way, at
+// every regeneration. A flat or round face's plane or axis is the same
+// wherever it is picked: there at changes nothing.
+func (m DatumsMenu) NameFaceAt(name string, f SolidFace, at Vec) Group {
+	return m.nameSolid(name, f.s, f.id, nil, &at)
 }
 
 // NameEdge names edge e of a solid as the datum name, as NameFace does
@@ -87,12 +98,24 @@ func (m DatumsMenu) NameFace(name string, f SolidFace) Group {
 // Assembly.Flush only a circle's, as the circle's plane.
 func (m DatumsMenu) NameEdge(name string, e SolidEdge) Group {
 	n := e.name
-	return m.nameSolid(name, e.s, 0, &n)
+	return m.nameSolid(name, e.s, 0, &n, nil)
+}
+
+// NameEdgeAt names edge e of a solid as the datum name, as NameEdge
+// does, keeping where on the edge it was picked: on an edge neither
+// straight nor round, as a cubic's or a helix's, the workplane's normal
+// runs along the edge at the point nearest at rather than at its
+// middle, and follows that place, as a share of the edge's length from
+// its start, at every regeneration. A straight or round edge's line or
+// axis is the same wherever it is picked: there at changes nothing.
+func (m DatumsMenu) NameEdgeAt(name string, e SolidEdge, at Vec) Group {
+	n := e.name
+	return m.nameSolid(name, e.s, 0, &n, &at)
 }
 
 // nameSolid adds the workplane of a datum on a face or edge of solid s,
-// and names it.
-func (m DatumsMenu) nameSolid(name string, s Solid, face srf.FaceID, edge *topo.Name) (g Group) {
+// at the point at where it isn't nil, and names it.
+func (m DatumsMenu) nameSolid(name string, s Solid, face srf.FaceID, edge *topo.Name, at *Vec) (g Group) {
 	d := m.d
 	d.change(func(sk *sketch.Sketch) {
 		if sk.RegenerationPending() {
@@ -107,7 +130,7 @@ func (m DatumsMenu) nameSolid(name string, s Solid, face srf.FaceID, edge *topo.
 			fail("the datum's solid comes after the active group %s", sk.GroupName(was))
 		}
 		sk.Active = was
-		ng, err := sk.NewDatumWorkplane(face, edge, name)
+		ng, err := sk.NewDatumWorkplane(face, edge, at, name)
 		if err != nil {
 			fail("%v", err)
 		}

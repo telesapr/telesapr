@@ -367,7 +367,15 @@ func (m *SMesh) FirstIntersectionWith(rayPoint, rayDir geom.Vector) uint32 {
 // the half space h, if it isn't nil: a face cut away by a section
 // isn't there to hit.
 func (m *SMesh) FirstIntersectionIn(rayPoint, rayDir geom.Vector, h *HalfSpace) uint32 {
+	face, _ := m.FirstHitIn(rayPoint, rayDir, h)
+	return face
+}
+
+// FirstHitIn is FirstIntersectionIn and the point where the ray meets
+// that face, as a point picked on the face.
+func (m *SMesh) FirstHitIn(rayPoint, rayDir geom.Vector, h *HalfSpace) (uint32, geom.Vector) {
 	var face uint32
+	var hit geom.Vector
 	faceT := veryNegative
 	for i := range m.Triangles {
 		tr := &m.Triangles[i]
@@ -383,12 +391,12 @@ func (m *SMesh) FirstIntersectionIn(rayPoint, rayDir geom.Vector, h *HalfSpace) 
 			continue
 		}
 		if t > faceT {
-			face = uint32(tr.Meta.Face)
+			face, hit = uint32(tr.Meta.Face), at
 			faceT = t
 		}
 	}
 
-	return face
+	return face, hit
 }
 
 // CenterOfMass is the centroid of the volume the mesh encloses.

@@ -12,8 +12,11 @@
 // A datum on a curved face that isn't round about an axis, as a loft's
 // or a lens's wall, is the plane touching the face at its middle, its
 // normal out of the solid; on a curved edge, the line along the edge at
-// its middle. The script saves a lens-shaped block, its wall named
-// "wall" and its top rim "rim", as parts/lens.tlspr where it runs,
+// its middle. Named with Datums.NameFaceAt or NameEdgeAt, the plane or
+// line is taken where the face or edge was picked instead, and follows
+// that place as the model changes. The script saves a lens-shaped block,
+// its wall named "wall", the same wall picked low down near one end
+// "foot" and its top rim "rim", as parts/lens.tlspr where it runs,
 // lists the datums' kinds, links the block twice, lays the second's
 // wall flush on the first's, checks that, and saves the assembly as
 // datums_freeform.tlspr unless given "-". A flush mate of the rims is
@@ -48,10 +51,13 @@ func lens() string {
 	p.Constrain.Coincident(pb[3], pa[0])
 	s := p.Features.Extrude(5, "lens").Solid()
 	p.Datums.NameFace("wall", s.FaceAt(api.V(10, 6, 2.5)))
+	p.Datums.NameFaceAt("foot", s.FaceAt(api.V(10, 6, 2.5)), api.V(4.53125, 4.5, 1.25))
 	p.Datums.NameEdge("rim", s.EdgeAt(api.V(10, 6, 5)))
 	for _, d := range p.Datums.List() {
 		fmt.Printf("%s: %s\n", d.Name, d.Kind)
 	}
+	at, _ := frame(p.Datums.Get("foot"))
+	fmt.Printf("the foot's plane touches the wall at (%.3g, %.3g, %.3g)\n", at.X, at.Y, at.Z)
 	path := filepath.Join("parts", "lens.tlspr")
 	must(p.File.Save(path))
 	return path

@@ -47,11 +47,12 @@ func (gw *graphicsWindow) topologyOf(h core.HGroup) *topo.Topology {
 }
 
 // hoverSolidEdge is the named edge of the solid nearest mp on the
-// screen, within the pick radius and not hidden behind the solid.
-func (gw *graphicsWindow) hoverSolidEdge(mp geom.Point2d) (topo.Name, bool) {
+// screen, within the pick radius and not hidden behind the solid, and
+// the point of it nearest mp.
+func (gw *graphicsWindow) hoverSolidEdge(mp geom.Point2d) (topo.Name, geom.Vector, bool) {
 	tp := gw.activeTopology()
 	if tp == nil {
-		return topo.Name{}, false
+		return topo.Name{}, geom.Vector{}, false
 	}
 	best, bestD := -1, solidEdgePickRadius
 	var bestP geom.Vector
@@ -70,15 +71,15 @@ func (gw *graphicsWindow) hoverSolidEdge(mp geom.Point2d) (topo.Name, bool) {
 		}
 	}
 	if best < 0 {
-		return topo.Name{}, false
+		return topo.Name{}, geom.Vector{}, false
 	}
 	// The piece of the edge that names it, for a circle the arc whose
 	// name is lowest, so that every piece picks the same edge.
 	n, err := tp.NameOf(tp.Lead(best))
 	if err != nil || gw.hiddenBySolid(bestP) {
-		return topo.Name{}, false
+		return topo.Name{}, geom.Vector{}, false
 	}
-	return n, true
+	return n, bestP, true
 }
 
 // segmentDistance2d is how far p is from the segment a-b on the

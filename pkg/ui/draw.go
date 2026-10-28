@@ -526,8 +526,8 @@ func (gw *graphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 	if gw.pending.operation == pendingNone && sel.IsEmpty() && gw.showShaded {
 		// Edges of the solid that no entity draws, as a Boolean makes:
 		// below entities and constraints, above faces.
-		if n, ok := gw.hoverSolidEdge(mp); ok {
-			sel = Selection{Edge: n}
+		if n, at, ok := gw.hoverSolidEdge(mp); ok {
+			sel = Selection{Edge: n, At: &at}
 			gw.hoverList = append(gw.hoverList, Hover{Selection: sel})
 		}
 	}
@@ -543,13 +543,13 @@ func (gw *graphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 			if h, ok := gw.sectionKeep(); ok {
 				keep = &h
 			}
-			if face := m.FirstIntersectionIn(rayPoint, rayDir, keep); face != 0 {
+			if face, at := m.FirstHitIn(rayPoint, rayDir, keep); face != 0 {
 				// A face entity, or for a face no entity names its
-				// identity.
+				// identity and where on it the mouse is.
 				if sk.Entity(core.HEntity{V: face}) != nil {
 					sel.Entity.V = face
 				} else {
-					sel.Face = srf.FaceID(face)
+					sel.Face, sel.At = srf.FaceID(face), &at
 				}
 				gw.hoverList = append(gw.hoverList, Hover{Selection: sel})
 			}
@@ -560,6 +560,9 @@ func (gw *graphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 		gw.hover = sel
 		gw.Invalidate(false)
 	}
+	// Where on a face or an edge of the solid the mouse is moves with
+	// the mouse; what is drawn doesn't.
+	gw.hover.At = sel.At
 }
 
 // DrawSnapGrid draws the grid in the active workplane.

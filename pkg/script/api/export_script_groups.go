@@ -539,11 +539,19 @@ func (w *scriptWriter) datumCall(g *sketch.Group) (string, bool) {
 		if !ok {
 			return "", false
 		}
+		if len(g.DatumAt) > 0 {
+			return fmt.Sprintf("doc.Datums.NameEdgeAt(%q, doc.Active().Solid().EdgeAt(%s), %s)", dt.Name, vecText(p), vecText(g.Predef.At)), true
+		}
 		return fmt.Sprintf("doc.Datums.NameEdge(%q, doc.Active().Solid().EdgeAt(%s))", dt.Name, vecText(p)), true
 	}
 	faces, ok := w.solidFaceList(g, g.PreviousGroup(sk))
 	if !ok || len(faces) != 1 {
 		return "", false
+	}
+	// Where the datum was picked is where its frame is, which names
+	// the same place again (topo.FacePlace).
+	if len(g.DatumAt) > 0 {
+		return fmt.Sprintf("doc.Datums.NameFaceAt(%q, %s, %s)", dt.Name, faces[0], vecText(g.Predef.At)), true
 	}
 	return fmt.Sprintf("doc.Datums.NameFace(%q, %s)", dt.Name, faces[0]), true
 }

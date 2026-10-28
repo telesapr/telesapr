@@ -243,7 +243,11 @@ type Selection struct {
 	// it is not the active group's: a chamfer's edge picked from its
 	// screen is of the solid before the chamfer. Zero for the active
 	// group's.
-	Solid      core.HGroup
+	Solid core.HGroup
+	// At is where on Edge or Face the mouse picked it, nil when it was
+	// picked otherwise, as from a list: a datum on a face or an edge
+	// neither flat nor round keeps the place (Datums.NameFaceAt).
+	At         *geom.Vector
 	Emphasized bool
 }
 
@@ -261,7 +265,7 @@ func (s *Selection) IsEmpty() bool {
 func (s *Selection) Clear() {
 	s.Entity, s.Constraint = core.HEntity{}, core.HConstraint{}
 	s.Edge = topo.Name{}
-	s.Face, s.Solid = 0, core.HGroup{}
+	s.Face, s.Solid, s.At = 0, core.HGroup{}, nil
 	s.Emphasized = false
 }
 

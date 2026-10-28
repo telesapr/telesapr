@@ -28,6 +28,14 @@ const datumGrid = 32
 // of the face nearest it on a grid over the loop. A face a Boolean cut
 // in pieces is taken by its first piece.
 func (t *Topology) FacePointFrame(id srf.FaceID) (FaceFrame, error) {
+	return t.facePointFrameAt(id, nil)
+}
+
+// facePointFrameAt is FacePointFrame at place (FacePlace) rather than at
+// the face's middle, where place isn't nil; a place the face no longer
+// covers, as after an edit opened a hole there, gives the point of the
+// face nearest it.
+func (t *Topology) facePointFrameAt(id srf.FaceID, place []float64) (FaceFrame, error) {
 	fs := t.FacesWithID(id)
 	if len(fs) == 0 {
 		return FaceFrame{}, fmt.Errorf("face %x is no longer in the solid", uint32(id))
@@ -50,7 +58,12 @@ func (t *Topology) FacePointFrame(id srf.FaceID) (FaceFrame, error) {
 	if len(outer) < 3 {
 		return FaceFrame{}, fmt.Errorf("face %x has no outer loop", uint32(id))
 	}
-	uv, ok := insideNear(polygonMiddle(outer), outer, holes)
+	want := polygonMiddle(outer)
+	if len(place) == 2 {
+		lo, hi := uvBounds(outer)
+		want = geom.Vector{X: lo.X + place[0]*(hi.X-lo.X), Y: lo.Y + place[1]*(hi.Y-lo.Y)}
+	}
+	uv, ok := insideNear(want, outer, holes)
 	if !ok {
 		return FaceFrame{}, fmt.Errorf("face %x has no point inside its loops", uint32(id))
 	}
@@ -117,11 +130,7 @@ func insideNear(uv geom.Vector, outer []geom.Vector, holes [][]geom.Vector) (geo
 	if inside(uv) {
 		return uv, true
 	}
-	lo, hi := outer[0], outer[0]
-	for _, p := range outer {
-		lo = geom.Vector{X: min(lo.X, p.X), Y: min(lo.Y, p.Y)}
-		hi = geom.Vector{X: max(hi.X, p.X), Y: max(hi.Y, p.Y)}
-	}
+	lo, hi := uvBounds(outer)
 	best, found := geom.Vector{}, false
 	for i := range datumGrid {
 		for j := range datumGrid {
@@ -140,10 +149,11 @@ func insideNear(uv geom.Vector, outer []geom.Vector, holes [][]geom.Vector) (geo
 // errNoLength is edgePointFrame's error for an edge of no length.
 var errNoLength = errors.New("the edge has no length")
 
-// edgePointFrame is the frame of edge e at the point half way along it:
+// edgePointFrame is the frame of edge e at the point half way along it,
+// or with place the fraction of its length from its start (EdgePlace):
 // the normal along the edge from its start, the first axis out of the
 // first face beside it, square to the edge.
-func (t *Topology) edgePointFrame(e int) (FaceFrame, error) {
+func (t *Topology) edgePointFrame(e int, place []float64) (FaceFrame, error) {
 	pts := t.Edges[e].Points
 	var total float64
 	for i := 1; i < len(pts); i++ {
@@ -151,6 +161,10 @@ func (t *Topology) edgePointFrame(e int) (FaceFrame, error) {
 	}
 	if len(pts) < 2 || total < geom.LengthEps {
 		return FaceFrame{}, errNoLength
+	}
+	reach := total / 2
+	if len(place) == 1 {
+		reach = total * min(max(place[0], 0), 1)
 	}
 	var at, dir geom.Vector
 	walked := 0.0
@@ -160,8 +174,8 @@ func (t *Topology) edgePointFrame(e int) (FaceFrame, error) {
 		if l < geom.LengthEps*geom.LengthEps {
 			continue
 		}
-		if walked+l >= total/2 || i == len(pts)-1 {
-			at, dir = pts[i-1].Plus(d.ScaledBy((total/2-walked)/l)), d.WithMagnitude(1)
+		if walked+l >= reach || i == len(pts)-1 {
+			at, dir = pts[i-1].Plus(d.ScaledBy(min((reach-walked)/l, 1))), d.WithMagnitude(1)
 			break
 		}
 		walked += l

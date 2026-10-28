@@ -319,15 +319,15 @@ var pathEquivalences = map[string]pathCheck{
 	},
 	// A side of a loft, neither flat nor round, picked on the model and
 	// named as a datum on the datums screen, and the same made by a script:
-	// a workplane touching the face at its middle.
+	// a workplane touching the face where it was picked.
 	"datum_freeform": func(t *testing.T, ui, _ *sketch.Sketch) {
 		d := ui.Datum("side")
 		if d == nil {
 			t.Fatalf("datums %v", ui.Datums)
 		}
 		if g := ui.Group(d.Entity.Group()); g.Subtype != sketch.GroupWorkplaneByDatum || len(g.SolidFaces) != 1 ||
-			g.Problem.Msg != "" || d.Kind != topo.DatumFacePoint {
-			t.Errorf("the datum's group: subtype %d, faces %v, problem %q, kind %s", g.Subtype, g.SolidFaces, g.Problem.Msg, d.Kind)
+			g.Problem.Msg != "" || d.Kind != topo.DatumFacePoint || len(g.DatumAt) != 2 {
+			t.Errorf("the datum's group: subtype %d, faces %v, problem %q, kind %s, place %v", g.Subtype, g.SolidFaces, g.Problem.Msg, d.Kind, g.DatumAt)
 		}
 	},
 	// An edge of an extrusion picked with the mouse and rounded, and the
