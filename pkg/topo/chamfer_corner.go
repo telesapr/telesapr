@@ -32,20 +32,17 @@ import (
 // more, the strips end between the points where their lines cross.
 
 // chamferCornerTakes reports whether the corner at vertex v is one
-// chamferCornerAt makes: every edge there chamfered, straight, three of
-// them of one distance, between as many flat faces, all convex or all
-// concave.
+// chamferCornerAt makes: every edge there chamfered, straight, three or
+// more, between as many flat faces, all convex or all concave, of any
+// distances, one or two to an edge.
 func (t *Topology) chamferCornerTakes(v int, edges []filletEdge, byEdge map[int]int) bool {
 	xs := t.Vertices[v].Edges
-	if len(xs) != 3 || len(t.facesAt(v)) != len(xs) {
+	if len(xs) < 3 || len(t.facesAt(v)) != len(xs) {
 		return false
 	}
 	for _, x := range xs {
 		j, ok := byEdge[x]
 		if !ok || edges[j].circ || edges[j].concave != edges[byEdge[xs[0]]].concave {
-			return false
-		}
-		if !edges[j].even() || math.Abs(edges[j].ss[0]-edges[byEdge[xs[0]]].ss[0]) > geom.LengthEps {
 			return false
 		}
 	}
@@ -94,8 +91,13 @@ func (t *Topology) chamferCornerAt(v int, edges []filletEdge, byEdge map[int]int
 			hole = append(hole, c.faceCurves[s.out])
 		}
 	}
-	if err := g.outside(hole); err != nil {
-		return nil, err
+	if n == 3 {
+		// Past four strips the hole's patch twists, and a corner of it may
+		// lie behind a strip that doesn't reach it (a pyramid's apex of a
+		// distance four times the others').
+		if err := g.outside(hole); err != nil {
+			return nil, err
+		}
 	}
 	plates, err := chamferPlates(hole)
 	if err != nil {
@@ -149,8 +151,13 @@ func (g *chamferGeom) crossings() error {
 		if !ok {
 			return filletErr(g.p, "two chamfers at the corner run along one another")
 		}
-		if x.Minus(g.p).Dot(g.away(s.fe)) < 10*geom.LengthEps || x.Minus(g.p).Dot(g.away(nx.fe)) < 10*geom.LengthEps {
-			return filletErr(g.p, "two chamfers' lines on a face at the corner cross behind it")
+		// Inside the face's corner: a sum of the two edges' directions
+		// away from it, each by more than nothing. At an obtuse corner the
+		// point may lie level with the vertex along one edge.
+		a, b, d := g.away(s.fe), g.away(nx.fe), x.Minus(g.p)
+		ab := a.Cross(b)
+		if d.Cross(b).Dot(ab) < 10*geom.LengthEps*ab.Magnitude() || a.Cross(d).Dot(ab) < 10*geom.LengthEps*ab.Magnitude() {
+			return filletErr(g.p, "two chamfers' lines on a face at the corner cross outside it")
 		}
 		g.cross[s.out] = x
 	}
@@ -256,7 +263,9 @@ func chamferPivot(strips []chamferStrip, along func(chamferStrip, int) float64) 
 	slices.SortStableFunc(order, func(a, b int) int { return cmp.Compare(most(strips[b]), most(strips[a])) })
 	for _, i := range order {
 		nx, pv := strips[(i+1)%3], strips[(i+2)%3]
-		if along(nx, nx.in) >= along(nx, nx.out)-geom.LengthEps && along(pv, pv.out) >= along(pv, pv.in)-geom.LengthEps {
+		dn, dp := along(nx, nx.in), along(pv, pv.out)
+		if dn > 10*geom.LengthEps && dp > 10*geom.LengthEps &&
+			dn >= along(nx, nx.out)-geom.LengthEps && dp >= along(pv, pv.in)-geom.LengthEps {
 			return i
 		}
 	}
