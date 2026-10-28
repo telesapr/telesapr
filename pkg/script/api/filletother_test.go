@@ -652,3 +652,53 @@ func TestFilletRimMitre(t *testing.T) {
 		t.Errorf("the rims take %g and %g", took[0], took[1])
 	}
 }
+
+// The lid's upright with the bottom edge it meets, of two radii (1 and
+// 0.5, and 0.5 and 1), each given its own (SetEdgeRadius): the smaller
+// fillet ends in a mitre against the larger's surface, on its own wall
+// at its depth, and the larger's mitre turns there onto that wall
+// (rollingkink.go). Every vertex of OpenCASCADE's fillet of the same
+// edges at those radii is ours within 4.6e-6 mm, its Volume of our STEP
+// export within 3e-5 of its own, and every point of either solid within
+// 3.3e-5 mm of the other (sampled 2026-10-28). The mesh's volume, at this
+// chord tolerance, takes within half a percent of it, as the uprights'
+// does (TestFilletEndsOnCurvedFaceApart).
+func TestFilletCornerRadii(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("fillets over curved faces, slow")
+	}
+	lid := filepath.Join("..", "..", "..", "testdata", "step", "degree", "lid_degree7.step")
+	for _, c := range []struct {
+		up, bottom float64
+		took       float64
+		kink       Vec
+	}{{1, 0.5, 3.751170, V(0.5, 0.133975, 0)}, {0.5, 1, 6.946362, V(0.5, 0, 0.133975)}} {
+		d := New()
+		d.Edit.SetChordTolerance(0.002)
+		g, err := d.Assembly.LinkStep(lid, "", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		before := g.Analyze().Check().Volume
+		f := d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(V(0, 0, 5)), g.Solid().EdgeAt(V(0, 15, 0))}, c.up, "")
+		f.AsFillet().SetEdgeRadius(1, c.bottom)
+		if p := f.Problem(); p != "" {
+			t.Fatalf("radii %g and %g: %s", c.up, c.bottom, p)
+		}
+		rep := f.Analyze().Check()
+		took := before - rep.Volume
+		t.Logf("radii %g and %g took %.6g, OpenCASCADE %g", c.up, c.bottom, took, c.took)
+		if !rep.Sound() || math.Abs(took-c.took) > 0.005*c.took {
+			t.Errorf("radii %g and %g: %s, took %g, OpenCASCADE %g", c.up, c.bottom, rep.Summary(), took, c.took)
+		}
+		found := false
+		for _, e := range f.Solid().Edges() {
+			a, b := e.Ends()
+			found = found || a.Minus(c.kink).Magnitude() < 1e-4 || b.Minus(c.kink).Magnitude() < 1e-4
+		}
+		if !found {
+			t.Errorf("radii %g and %g: no vertex at the kink %v", c.up, c.bottom, c.kink)
+		}
+	}
+}

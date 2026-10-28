@@ -1,6 +1,7 @@
 package topo
 
 import (
+	"cmp"
 	"errors"
 	"math"
 	"slices"
@@ -98,6 +99,11 @@ type rollingBall struct {
 	// quintic spans, split at the middle (splitSection), so that the end
 	// section on the curved face can follow it round a wide corner.
 	splitEnds bool
+	// kinks are the arc parameters at which every section of a chain
+	// whose end is the larger at a mitre of two radii has a corner
+	// (rollingkink.go): a knot of full multiplicity, where splitEnds'
+	// knot at the middle would be.
+	kinks []float64
 	// mitreC are the ball's centres near each end of a mitred chain, and
 	// mitreS the arc lengths of its mitre (mitreRoots).
 	mitreC [2]*rbCentres
@@ -1358,8 +1364,13 @@ func (rb *rollingBall) patches(sf *srf.BSplineSurface, secs []rbSection, cross [
 		return nil, filletErr(at, "the fillet's surface can't be cut into patches: %v", err)
 	}
 	// One row of patches along the edge, or two where the sections are
-	// split at their middles (splitEnds): side 0's half, then side 1's.
-	if len(all) != 1 && (!rb.splitEnds || len(all) != 2) {
+	// split at their middles (splitEnds): side 0's half, then side 1's;
+	// a row more than kinks where there are.
+	rows := len(all) == 1 || rb.splitEnds && len(all) == 2
+	if len(rb.kinks) > 0 {
+		rows = len(all) == len(rb.kinks)+1
+	}
+	if !rows {
 		return nil, filletErr(at, "the fillet's sections are not single arcs")
 	}
 	m := len(all[0])
@@ -1376,9 +1387,18 @@ func putBlends(sh *srf.SShell, bls []*rbBlend, origin uint32) error {
 	at := midpoint(bls[0].rb.pts)
 	t := bls[0].rb.t
 	loops := make([]map[int][]srf.SBezier, len(bls))
-	for i, bl := range bls {
+	// A kinked mitre's chain cuts the crease the smaller chain's wall
+	// then drops a piece of: it goes first.
+	order := make([]int, len(bls))
+	for i := range order {
+		order[i] = i
+	}
+	slices.SortStableFunc(order, func(a, b int) int {
+		return cmp.Compare(len(bls[b].rb.kinks), len(bls[a].rb.kinks))
+	})
+	for _, i := range order {
 		var err error
-		if loops[i], err = bl.cutBack(sh); err != nil {
+		if loops[i], err = bls[i].cutBack(sh); err != nil {
 			return err
 		}
 	}
@@ -1543,6 +1563,10 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 					return nil, err
 				}
 			}
+			if rb.mateKinked(k) {
+				// The larger end cut the crease, at its own depth.
+				q = rb.mateCreaseEnd(k)
+			}
 			drop = append(drop, pair{q, v})
 		}
 		for k, end := range rb.ends {
@@ -1689,6 +1713,28 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 				}
 				kept = append(kept, tb)
 				sh.Curve = append(sh.Curve, nc)
+				for ke := range rb.ends {
+					if !rb.mateKinked(ke) || b != ke*(m-1) || rb.ends[ke].ban[k] < 0 {
+						continue
+					}
+					// On this side's wall from the fillet's last foot, where
+					// the larger fillet's mitre meets it, along that mitre's
+					// second span down to the crease.
+					span := rb.mateWallSpan(ke)
+					if fwd != (ke == 1) {
+						span.Reverse()
+					}
+					var spts []geom.Vector
+					span.MakePwlIntoPoints(&spts, sh.Tol, 0)
+					spts[0], spts[len(spts)-1] = span.Start(), span.Finish()
+					wc := srf.SCurve{H: nextH, Exact: span, IsExact: true, Deg: span.Degree, SurfA: s.H}
+					nextH.V++
+					for _, p := range spts {
+						wc.Points = append(wc.Points, srf.SCurvePt{Vertex: true, P: p})
+					}
+					sh.Curve = append(sh.Curve, wc)
+					kept = append(kept, srf.STrimBy{Curve: wc.H, StartP: span.Start(), FinishP: span.Finish(), Start: 0, Finish: 1})
+				}
 				if fadeK >= 0 && b == fadeK*(m-1) {
 					// On from the fillet's last foot to where the crease
 					// fades out, which the fillet's last patch shares.
