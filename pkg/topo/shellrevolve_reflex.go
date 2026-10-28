@@ -81,7 +81,7 @@ func reflexEndsCut(rev Revolution, keep [2]bool, radial geom.Vector, thick float
 	}
 
 	base := rev.Pt.Minus(axis.ScaledBy(size))
-	at := func(p geom.Vector) geom.Vector { return base.Plus(p) }
+	at := base.Plus
 	dir := func(phi float64) geom.Vector { return uS.RotatedAroundAxis(axis, sigma*phi).ScaledBy(thick) }
 	var sbl srf.SBezierList
 	line := func(a, b geom.Vector) { sbl.Curves = append(sbl.Curves, srf.SBezierFrom2(at(a), at(b))) }
