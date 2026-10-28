@@ -1173,7 +1173,10 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 		what = "chamfer"
 	}
 	// The rounded edges here are all convex or all concave, of one radius.
+	// Chamfers of other distances meet only two at a time, above an edge
+	// left sharp (chamferPairAt).
 	sg, r, n := 1.0, 0.0, 0
+	var unlike []float64
 	for _, x := range t.Vertices[v].Edges {
 		i, ok := byEdge[x]
 		if !ok {
@@ -1184,12 +1187,15 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 			return nil, filletErr(p, "a convex edge's %s meets a concave one's here", what)
 		}
 		if n > 0 && math.Abs(fe.r-r) > geom.LengthEps {
-			if flat {
-				return nil, filletErr(p, "chamfers of distance %g and %g meet here above an edge left sharp", r, fe.r)
+			if !flat {
+				return nil, filletErr(p, "fillets of radius %g and %g meet here", r, fe.r)
 			}
-			return nil, filletErr(p, "fillets of radius %g and %g meet here", r, fe.r)
+			unlike = []float64{r, fe.r}
 		}
 		sg, r, n = fe.sign(), fe.r, n+1
+	}
+	if unlike != nil && n != 2 {
+		return nil, filletErr(p, "chamfers of distance %g and %g meet here; where three meet, every edge at the corner must be chamfered", unlike[0], unlike[1])
 	}
 	if n := len(t.Vertices[v].Edges); n != 3 || len(t.facesAt(v)) != 3 {
 		// Four, where two rounded edges meet smoothly, each face of one
@@ -1249,7 +1255,7 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 		}
 		return c, nil
 	}
-	if c.kind >= 2 {
+	if c.kind >= 3 {
 		for _, x := range round {
 			if fe := &edges[byEdge[x]]; !fe.even() {
 				return nil, filletErr(p, "a chamfer of two distances meets another chamfered edge here; "+
@@ -1340,6 +1346,12 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 			if q[i], err = t.pointAlong(z, v, fe.u[k], fe.ss[k], false); err != nil {
 				return nil, err
 			}
+		}
+		if flat {
+			if err := t.chamferPairAt(c, v, a, b, z, top, side, q); err != nil {
+				return nil, err
+			}
+			return c, nil
 		}
 		nt, _ := t.planarNormal(top)
 		n1, _ := t.planarNormal(side[0])
@@ -1504,7 +1516,7 @@ func (fe *filletEdge) connectors(t *Topology, v int, c *filletCorner, p, q geom.
 		}
 		return []srf.SBezier{sb}
 	}
-	if c.kind != 2 || c.long != fe.e || flat {
+	if c.kind != 2 || c.long != fe.e {
 		return []srf.SBezier{fe.connector(t, v, c, p, q, flat)}
 	}
 	chain := []srf.SBezier{c.shared, c.conic}

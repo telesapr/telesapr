@@ -60,6 +60,12 @@ by triangles about its middle past four sides. Example:
 [`examples/scripts/chamfercorner`](../../examples/scripts/chamfercorner/chamfercorner.go), a
 block with every edge chamfered at two distances.
 
+Where two chamfered edges meet at a corner whose third edge is left sharp, the two chamfers meet
+along the line where their planes cross, whatever their distances. The one that reaches further down
+the sharp edge goes on past that line to the sharp edge, along the line where it cuts the other's
+side face. Where the chamfers fill, as at the foot of a block standing on a plate, the side face
+grows out to meet them.
+
 OpenCASCADE parts from this in two places: at a corner of three where one crossing point lies
 close to the line between the other two it makes the triangle of the three points, where here the
 chamfers are cut as above (a few tenths of a cubic millimetre apart at distances of 1 to 3 mm);
@@ -79,7 +85,6 @@ find edges.
 
 A chamfer by a distance and an angle is not done, nor a distance of an edge's own as a fillet's
 own radius, and a chamfer of two distances can't take circular edges that meet other chamfered
-edges at a corner, nor straight edges that meet another chamfered edge at a corner whose third
-edge stays sharp. Where the edit that cuts a chamfer can't make a corner, as where a concave edge
+edges at a corner. Where the edit that cuts a chamfer can't make a corner, as where a concave edge
 meets the cut, the chamfer falls back to a wedge and a Boolean, which take edges that stick out
 only.

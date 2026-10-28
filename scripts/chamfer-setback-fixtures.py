@@ -22,6 +22,19 @@
 #   notch d1 d2 d3: the concave corner (10, 10, 10) of the 20 cube with
 #       the cube of 10 at its far corner taken away, its edges along x,
 #       y and z, chamfered so that they fill.
+#   pair, pocket and rib tx sx ty sy: two edges chamfered and the third
+#       left sharp, each at tx or ty on the face both share and sx or sy
+#       on its other face. pair: the box's corner at (10, 20, 30), its
+#       edges along x and y below the top. pocket: the notch's corner,
+#       its edges along x and y over the floor at z 10, the one along z
+#       sharp. rib: the plate (0, 0, 0) to (20, 20, 5) with the block
+#       (0, 0, 5) to (10, 10, 15) on it, the foot edges from (10, 10, 5)
+#       along x and y filled, the block's upright edge sharp.
+#   ledge tx sx ty sy: the notch's top edges from (10, 10, 20) along x
+#       and y chamfered, the concave upright edge below them sharp.
+#   prismpair deg tx sx ty sy: the prism's corner at the origin, its
+#       edges along x and along deg chamfered over the face both share,
+#       the bottom, its upright edge sharp.
 import math
 import os
 
@@ -140,6 +153,42 @@ for ds in ((1, 1, 1), (1, 2, 3), (2, 1, 1)):
         emit("notch %g %g %g" % ds, s, N, max(ds))
     except Exception as e:
         print("notch", ds, "refused:", e)
+
+
+
+def two(shape, a, b, dt, ds, top):
+    """The edge from a to b chamfered at dt on the face both chamfers
+    share, in the plane z = top, and ds on its other face, as
+    Part::Chamfer's (index, d1, d2): alone, at dt on the shared face, it
+    leaves a vertex in that plane dt from the edge's line."""
+    if dt == ds:
+        return (a, b, dt, ds)
+    u = (b - a).normalize()
+    for vx in chamfer(shape, [(a, b, dt, ds)]).Vertexes:
+        w = vx.Point - a
+        if abs(vx.Point.z - top) < 1e-6 and abs((w - u * w.dot(u)).Length - dt) < 1e-6:
+            return (a, b, dt, ds)
+    return (a, b, ds, dt)
+
+
+rib = Part.makeBox(20, 20, 5).fuse(Part.makeBox(5, 5, 10, V(5, 5, 5))).removeSplitter()
+pairs = ((1, 1, 1, 2), (1, 2, 1, 1), (1, 2, 2, 1), (2, 1, 1, 2), (1, 1, 2, 2), (0.5, 2, 1, 1.5), (2, 1, 1, 3), (1.5, 0.5, 0.5, 1.5))
+shapes = [
+    ("pair", box, C, X, Y, 30),
+    ("pocket", notch, N, V(20, 10, 10), V(10, 20, 10), 10),
+    ("rib", rib, V(10, 10, 5), V(5, 10, 5), V(10, 5, 5), 5),
+    ("ledge", notch, V(10, 10, 20), V(20, 10, 20), V(10, 20, 20), 20)]
+for deg in (60, 120):
+    th = math.radians(deg)
+    tri = [O, V(20, 0, 0), V(20 * math.cos(th), 20 * math.sin(th), 0)]
+    shapes.append(("prismpair %g" % deg, Part.Face(Part.makePolygon(tri + [tri[0]])).extrude(V(0, 0, 20)), O, tri[1], tri[2], 0))
+for name, shape, c, ex, ey, top in shapes:
+    for tx, sx, ty, sy in pairs:
+        try:
+            s = chamfer(shape, [two(shape, c, ex, tx, sx, top), two(shape, c, ey, ty, sy, top)])
+            emit("%s %g %g %g %g" % (name, tx, sx, ty, sy), s, c, max(tx, sx, ty, sy))
+        except Exception as e:
+            print(name, tx, sx, ty, sy, "refused:", e)
 
 with open(out, "w") as f:
     f.write("\n".join(lines) + "\n")
