@@ -8,8 +8,8 @@ import (
 // A chamfered thread is two groups more, the last of which holds the
 // finished part: sound, less than the thread without the chamfer. The
 // chamfer reads back, edits off and on in one step of undo each, comes
-// back on redo, is written to a script, and is refused on a rounded
-// crest.
+// back on redo, is written to a script, and is made on a rounded crest
+// too.
 func TestThreadChamfer(t *testing.T) {
 	t.Parallel()
 	d := New()
@@ -65,14 +65,16 @@ func TestThreadChamfer(t *testing.T) {
 		t.Errorf("script %s", src)
 	}
 
-	func() {
-		defer func() {
-			if err, ok := recover().(error); !ok || !strings.Contains(err.Error(), "rounded crest") {
-				t.Errorf("a rounded crest chamfered: %v", err)
-			}
-		}()
-		th.Edit(ThreadOptions{Crest: "rounded", Chamfer: true})
-	}()
+	d.Host().(*SketchHost).BeginEval()
+	o = g.AsThread().Options()
+	o.Crest = "rounded"
+	rounded := g.AsThread().Edit(o)
+	if o := rounded.Options(); !o.Chamfer || o.Crest != "rounded" {
+		t.Errorf("rounded options %+v", o)
+	}
+	if r := rounded.Finished().Analyze().Check(); !r.Sound() {
+		t.Errorf("a rounded crest chamfered isn't sound: %s", r.String())
+	}
 }
 
 // A cosmetic thread's chamfer cuts the rod's end, which it otherwise

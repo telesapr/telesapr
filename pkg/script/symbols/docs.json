@@ -9363,9 +9363,9 @@
 				"decl": "var ErrButtressRounded",
 				"text": "ErrButtressRounded is returned for a buttress thread with a rounded crest: an arc tangent to flanks at different angles has no top where the standard crest is, and is not offered."
 			},
-			"ErrChamferRounded": {
-				"decl": "var ErrChamferRounded",
-				"text": "ErrChamferRounded is returned for a chamfered thread with a rounded crest, which the chamfer's cone would touch rather than cut."
+			"ErrChamferTooFine": {
+				"decl": "var ErrChamferTooFine",
+				"text": "ErrChamferTooFine is returned for a chamfered screw so small for its pitch that the cones, which run on past the end by a pitch, would reach the axis there (a Tr12x3)."
 			},
 			"ErrConstraintSelection": {
 				"decl": "var ErrConstraintSelection",

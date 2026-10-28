@@ -69,8 +69,9 @@ takes:
   little inside the minor diameter (0.4 of a pitch inside the ridges' feet) out past the crest, as
   ISO 4753 chamfers a screw's end and a nut's mouth is countersunk at 90°, so that the thread
   starts clean rather than at a ridge's blunt end; a thread to the end of the part is chamfered at
-  both ends. A cosmetic thread's part is cut so too. A modelled thread with a rounded crest can't
-  be chamfered (the cone would touch the crest, not cut it), nor one too short for its chamfers;
+  both ends. A cosmetic thread's part is cut so too, and a rounded crest as any other. A thread
+  too short for its chamfers can't be chamfered, nor a screw so coarse for its size that the cone
+  would reach its axis past the end (a Tr12x3);
 - **crest**: **standard**, the flat crest the standards give; **truncated**, cut a quarter of the
   ridge's height lower; or **rounded**, an arc tangent to both flanks whose top is where the
   standard crest is. A printed thread is stronger and mates more easily without the point;
