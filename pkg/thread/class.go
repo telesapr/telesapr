@@ -34,7 +34,7 @@ var (
 )
 
 // Classes are the tolerance classes offered for a thread of the form
-// of s, of a screw or of a nut; none for Whitworth and ACME threads,
+// of s, of a screw or of a nut; none for Whitworth, ACME and buttress threads,
 // whose fit is a clearance typed in.
 func Classes(s Spec, internal bool) []string {
 	var ext, in []string
@@ -113,6 +113,8 @@ func formName(f Form) string {
 		return "unified"
 	case FormTrapezoidal:
 		return "trapezoidal"
+	case FormButtress, FormButtressInch:
+		return "buttress"
 	}
 	return "metric"
 }

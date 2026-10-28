@@ -51,7 +51,9 @@ const truncation = 0.25
 
 // WithCrest returns the profile with its crest shaped as c. A rounded
 // crest keeps CrestRadius as its top and sets CrestRoundRadius, with
-// CrestWidth and RoundFootRadius where the arc meets the flanks.
+// CrestWidth and RoundFootRadius where the arc meets the flanks; only a
+// symmetric ridge is rounded, and a buttress ridge is returned as it
+// is.
 func (p Profile) WithCrest(c Crest) Profile {
 	toRoot := 1.0 // the way from the crest to the root, along a radius
 	if p.RootRadius < p.CrestRadius {
@@ -62,6 +64,9 @@ func (p Profile) WithCrest(c Crest) Profile {
 		r := p.CrestRadius + toRoot*truncation*p.Height()
 		p.CrestRadius, p.CrestWidth = r, p.WidthAt(r)
 	case CrestRounded:
+		if !p.Symmetric() {
+			return p
+		}
 		half := p.FlankAngle / 2 * math.Pi / 180
 		sin := math.Sin(half)
 		// The flanks meet at an apex beyond the flat crest; the circle
