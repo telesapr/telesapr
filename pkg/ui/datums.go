@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -55,6 +56,18 @@ func (ss *Application) selectedSolidForDatum() (face srf.FaceID, edge *topo.Name
 		return 0, &n, true
 	}
 	return 0, nil, false
+}
+
+// selectedSolidAt is where on the one face or edge of the solid
+// selected the mouse picked it, or nil: picked from a list, as a
+// feature's screen's, it was picked nowhere in particular.
+func (ss *Application) selectedSolidAt() *geom.Vector {
+	for _, s := range ss.GW.selection {
+		if s.Face != 0 || s.Edge.A != 0 {
+			return s.At
+		}
+	}
+	return nil
 }
 
 // ShowDatums shows the datums screen.
@@ -195,6 +208,7 @@ func (ss *Application) nameSolidDatum(name string) {
 	if !ok {
 		return
 	}
+	at := ss.selectedSolidAt()
 	host := ss.ScriptHost()
 	host.BeginEval()
 	d := api.NewDoc(host)
@@ -209,9 +223,16 @@ func (ss *Application) nameSolidDatum(name string) {
 			}
 		}()
 		solid := d.Active().Solid()
-		if edge != nil {
+		// Where it was picked, which a face or an edge neither flat nor
+		// round keeps (Datums.NameFaceAt).
+		switch {
+		case edge != nil && at != nil:
+			d.Datums.NameEdgeAt(name, solid.Edge(edge.String()), *at)
+		case edge != nil:
 			d.Datums.NameEdge(name, solid.Edge(edge.String()))
-		} else {
+		case at != nil:
+			d.Datums.NameFaceAt(name, solid.Face(uint32(face)), *at)
+		default:
 			d.Datums.NameFace(name, solid.Face(uint32(face)))
 		}
 		return nil

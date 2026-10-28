@@ -1,6 +1,7 @@
 # A face of the solid neither flat nor round, a side of a loft from a
 # circle to a square, picked on the model and named "side" on the
-# datums screen; the same as path_datum_freeform.go makes
+# datums screen, the plane touching it where it was picked; the same as
+# path_datum_freeform.go makes
 # (TestPathEquivalence/datum_freeform).
 file $testdata/solid/loft-circle-to-square.tlspr
 menu File|Open...

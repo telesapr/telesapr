@@ -732,6 +732,14 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			}
 		case "solid-edge":
 			g.SolidEdges = append(g.SolidEdges, d.solidEdge(c))
+		case "datum-at":
+			d.plain(c)
+			if len(c.Args) != 1 && len(c.Args) != 2 {
+				d.fail(c.Pos, "datum-at takes a place on an edge or on a face, one or two numbers")
+			}
+			for _, v := range c.Args {
+				g.DatumAt = append(g.DatumAt, d.real(v))
+			}
 		case "appearance":
 			g.Appearance = d.word(d.fieldArgs(c, 1)[0])
 		case "face-appearance":

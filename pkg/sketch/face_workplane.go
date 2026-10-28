@@ -47,10 +47,14 @@ func (sk *Sketch) NewSketchOnFace(face srf.FaceID, name string) (Group, error) {
 
 // NewDatumWorkplane starts a workplane that follows a face or an edge
 // of the solid at the active group, as a datum names it: face, or with
-// edge set, the edge of that name (GroupWorkplaneByDatum). It is an
-// error when that solid has no such face or edge. It is what the interface and scripts add with
-// AddGroupAfterActive before naming its workplane (Group.Workplane).
-func (sk *Sketch) NewDatumWorkplane(face srf.FaceID, edge *topo.Name, name string) (Group, error) {
+// edge set, the edge of that name (GroupWorkplaneByDatum). With at set,
+// the point where the face or edge was picked, a face neither flat nor
+// round is touched there and an edge neither straight nor round is
+// followed there, now and at every regeneration (DatumAt); without, at
+// its middle. It is an error when that solid has no such face or edge.
+// It is what the interface and scripts add with AddGroupAfterActive
+// before naming its workplane (Group.Workplane).
+func (sk *Sketch) NewDatumWorkplane(face srf.FaceID, edge *topo.Name, at *geom.Vector, name string) (Group, error) {
 	g := NewGroup()
 	g.Type = GroupDrawingWorkplane
 	g.Subtype = GroupWorkplaneByDatum
@@ -60,9 +64,28 @@ func (sk *Sketch) NewDatumWorkplane(face srf.FaceID, edge *topo.Name, name strin
 	} else {
 		g.SolidFaces = []srf.FaceID{face}
 	}
-	fr, kind, err := sk.solidFrameAt(sk.solidAt(sk.Active), &g)
+	solid := sk.solidAt(sk.Active)
+	if at != nil {
+		t, err := solidTopology(sk, solid)
+		if err != nil {
+			return g, err
+		}
+		if edge != nil {
+			g.DatumAt, err = t.EdgePlace(*edge, *at)
+		} else {
+			g.DatumAt, err = t.FacePlace(face, *at)
+		}
+		if err != nil {
+			return g, err
+		}
+	}
+	fr, kind, err := sk.solidFrameAt(solid, &g)
 	if err != nil {
 		return g, err
+	}
+	if kind != topo.DatumFacePoint && kind != topo.DatumEdgePoint {
+		// A plane, an axis or a line is the same wherever it was picked.
+		g.DatumAt = nil
 	}
 	g.Predef.Q, g.Predef.At = fr.Quaternion(), fr.Origin
 	g.datumKind = kind
@@ -100,14 +123,14 @@ func (sk *Sketch) solidFrameAt(solid *Group, g *Group) (topo.FaceFrame, topo.Dat
 	case err != nil:
 		return topo.FaceFrame{}, topo.DatumUnknown, err
 	case len(g.SolidEdges) > 0:
-		return t.EdgeFrame(g.SolidEdges[0])
+		return t.EdgeFrameAt(g.SolidEdges[0], g.DatumAt)
 	case len(g.SolidFaces) == 2:
 		// The end of a round face across from the second face, where a
 		// thread made on the face starts (thread_face.go).
 		fr, err := t.AxisEndFrame(g.SolidFaces[0], g.SolidFaces[1])
 		return fr, topo.DatumAxis, err
 	case len(g.SolidFaces) > 0:
-		return t.DatumFrame(g.SolidFaces[0])
+		return t.DatumFrameAt(g.SolidFaces[0], g.DatumAt)
 	}
 	return topo.FaceFrame{}, topo.DatumUnknown, errors.New("the datum names no face or edge")
 }

@@ -206,6 +206,8 @@ var fileless = map[string]string{
 	"github.com/telesapr/telesapr/pkg/script/api/api DatumsMenu.Name":                  "a datum's name",
 	"github.com/telesapr/telesapr/pkg/script/api/api DatumsMenu.NameEdge":              "a datum's name",
 	"github.com/telesapr/telesapr/pkg/script/api/api DatumsMenu.NameFace":              "a datum's name",
+	"github.com/telesapr/telesapr/pkg/script/api/api DatumsMenu.NameEdgeAt":            "a datum's name",
+	"github.com/telesapr/telesapr/pkg/script/api/api DatumsMenu.NameFaceAt":            "a datum's name",
 	"github.com/telesapr/telesapr/pkg/script/api/api LinkGroup.Param":                  "a part's parameter's name",
 	"github.com/telesapr/telesapr/pkg/script/api/api LinkGroup.SetConfiguration":       "a part's configuration's name",
 	"github.com/telesapr/telesapr/pkg/script/api/api LinkGroup.SetParam":               "a part's parameter's name and an expression",

@@ -322,6 +322,11 @@ type Group struct {
 	// found when the group's entities were made, which the solid's
 	// regeneration, clearing Problem, then reports (face_workplane.go).
 	faceProblem string
+	// DatumAt is where on its face or edge a datum on the solid was
+	// picked (topo.FacePlace, topo.EdgePlace), so that the plane touching
+	// a face neither flat nor round, or the line along an edge neither
+	// straight nor round, is found there again; nil for the middle.
+	DatumAt []float64
 	// datumKind is what the frame of a datum on the solid stood for at
 	// the last regeneration (topo.DatumFrame, topo.EdgeFrame).
 	datumKind topo.DatumKind

@@ -82,6 +82,14 @@ func (k DatumKind) IsPlane() bool { return k != DatumLine && k != DatumEdgePoint
 // its kind: its FaceFrame where it is flat, its axis where it is round
 // (AxisFrame), and otherwise the plane touching it (FacePointFrame).
 func (t *Topology) DatumFrame(id srf.FaceID) (FaceFrame, DatumKind, error) {
+	return t.DatumFrameAt(id, nil)
+}
+
+// DatumFrameAt is DatumFrame with the plane touching a face neither
+// flat nor round taken at place (FacePlace) rather than at the face's
+// middle; nil for the middle. A flat or round face's frame takes no
+// place: its plane or axis is the same wherever it was picked.
+func (t *Topology) DatumFrameAt(id srf.FaceID, place []float64) (FaceFrame, DatumKind, error) {
 	fs := t.FacesWithID(id)
 	if len(fs) == 0 {
 		return FaceFrame{}, DatumUnknown, fmt.Errorf("face %x is no longer in the solid", uint32(id))
@@ -93,7 +101,7 @@ func (t *Topology) DatumFrame(id srf.FaceID) (FaceFrame, DatumKind, error) {
 	if fr, err := t.AxisFrame(id); err == nil {
 		return fr, DatumAxis, nil
 	}
-	fr, err := t.FacePointFrame(id)
+	fr, err := t.facePointFrameAt(id, place)
 	return fr, DatumFacePoint, err
 }
 
@@ -237,6 +245,13 @@ func (t *Topology) turnsAbout(f int, c, n geom.Vector) bool {
 // first axis to its start; and otherwise square to it at its middle
 // (EdgePointFrame).
 func (t *Topology) EdgeFrame(n Name) (FaceFrame, DatumKind, error) {
+	return t.EdgeFrameAt(n, nil)
+}
+
+// EdgeFrameAt is EdgeFrame with the line along an edge neither straight
+// nor round taken at place (EdgePlace) rather than half way along it;
+// nil for the middle. A straight or round edge's frame takes no place.
+func (t *Topology) EdgeFrameAt(n Name, place []float64) (FaceFrame, DatumKind, error) {
 	e, err := t.Resolve(n)
 	if err != nil {
 		return FaceFrame{}, DatumUnknown, err
@@ -260,7 +275,7 @@ func (t *Topology) EdgeFrame(n Name) (FaceFrame, DatumKind, error) {
 	if c, ok := polylineCircle(ed.Points); ok {
 		return FaceFrame{Origin: c.centre, U: frameU(c.start.Minus(c.centre), c.n), N: c.n}, DatumAxis, nil
 	}
-	fr, err := t.edgePointFrame(e)
+	fr, err := t.edgePointFrame(e, place)
 	if err != nil {
 		return FaceFrame{}, DatumUnknown, fmt.Errorf("%s: %w", n, err)
 	}

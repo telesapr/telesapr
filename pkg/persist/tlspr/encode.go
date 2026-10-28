@@ -413,6 +413,13 @@ func encodeGroup(g *sketch.Group, mmPer float64) *Node {
 	for _, f := range g.SolidFaces {
 		n.add(field("solid-face", hex(uint32(f))))
 	}
+	if len(g.DatumAt) > 0 {
+		args := make([]Value, len(g.DatumAt))
+		for i, v := range g.DatumAt {
+			args[i] = num(v)
+		}
+		n.add(field("datum-at", args...))
+	}
 	for _, er := range g.EdgeRadii {
 		text := er.Expr
 		if text == "" {

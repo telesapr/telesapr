@@ -123,7 +123,7 @@ func TestSolidEdgeHoverFacesViewer(t *testing.T) {
 			}
 			// The block's lines lie along its edges and win the hover;
 			// the edge of the solid is what hovers where there is none.
-			if n, ok := gw.hoverSolidEdge(gw.ProjectPoint(c.p)); ok == c.hidden {
+			if n, _, ok := gw.hoverSolidEdge(gw.ProjectPoint(c.p)); ok == c.hidden {
 				t.Errorf("perspective %v: at %v the edge hovered is %v, %v", perspective, c.p, n, ok)
 			}
 		}

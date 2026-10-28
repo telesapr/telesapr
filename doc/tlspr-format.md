@@ -243,6 +243,7 @@ group <handle> <type> <name> {
   density <real>            # the solid's density in g/cm³, for its mass; left out when none is set
   thread { ... }            # helix: what made a screw thread, for editing it as one; see below
   solid-face <face>         # shell: a face taken away; wrap, sketch on a face, datum: its face; by identity, one line each
+  datum-at <u> [<v>]        # datum: where its face or edge was picked, as fractions of the face's outer loop's bounds in its surface's parameters, or one of the edge's length from its start; left out for the middle
   edge-radius <n> = <expression>  # fillet: edge n's own radius, a length, counting edges and then solid-edge lines from 1; one line each
   predef { ... }
   visible
