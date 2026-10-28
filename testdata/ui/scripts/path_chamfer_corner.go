@@ -1,0 +1,15 @@
+// The chamfer of path_chamfer_corner.script, made by a script
+// (TestPathEquivalence/chamfer_corner): the three edges at a corner of
+// the extrusion of path_extrude chamfered at 1 and 2, the strips cut and
+// the corner filled.
+package main
+
+import . "github.com/telesapr/telesapr/pkg/script/api"
+
+func main() {
+	doc := Current()
+	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
+	doc.Features.Extrude(80, "")
+	c := doc.Features.Chamfer([]Entity{doc.Entity(0x80030004), doc.Entity(0x8003001f), doc.Entity(0x80030023)}, 1, "")
+	c.AsChamfer().SetSecondDistance(2)
+}

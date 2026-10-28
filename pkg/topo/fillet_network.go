@@ -204,6 +204,8 @@ type filletCorner struct {
 	arcs       map[int]srf.SBezier
 	faceCurves map[int]srf.SBezier
 	quads      []srf.SSurface
+	// For a corner of chamfers: the faces that fill it.
+	plates []cornerPlate
 }
 
 // seam is the kind of a corner where two pieces of a circular edge meet.
@@ -268,7 +270,10 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 		serr = e
 	}
 	// Else each corner the stages can't round gets a setback, the hole
-	// filled by patches (roadmap 22.4), which says why where it can't.
+	// filled by patches (roadmap 22.4), which says why where it can't. A
+	// chamfer's corner of chamfered edges only took its setback already,
+	// in the first stage (chamferCornerAt); one with an edge left sharp
+	// has none.
 	if !flat {
 		berr := filletPicksSetback(sh, picks, r, origin, false)
 		if berr == nil {
@@ -485,7 +490,17 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 			if corners[v] != nil {
 				continue
 			}
-			c, err := t.filletCornerAt(v, edges, byEdge)
+			var c *filletCorner
+			var err error
+			if flat && t.chamferCornerTakes(v, edges, byEdge) {
+				c, err = t.chamferCornerAt(v, edges, byEdge)
+				if err != nil {
+					return err
+				}
+				corners[v] = c
+				continue
+			}
+			c, err = t.filletCornerAt(v, edges, byEdge, flat)
 			if setback && forceSetback && err == nil && c.kind == 3 {
 				c, err = t.setbackCornerAt(v, edges, byEdge)
 			}
@@ -617,6 +632,12 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 			q.Origin = next
 			next++
 			patches = append(patches, patch{q, []srf.SBezier{e0, e1, e2, e3}, t.Vertices[v].P})
+		}
+		for _, pl := range c.plates {
+			pl.s.Color = color
+			pl.s.Origin = next
+			next++
+			patches = append(patches, patch{pl.s, pl.loop, t.Vertices[v].P})
 		}
 	}
 
@@ -1143,9 +1164,14 @@ func (t *Topology) facesAt(v int) []int {
 	return out
 }
 
-// filletCornerAt works out how the rounded edges meet at vertex v.
-func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int) (*filletCorner, error) {
+// filletCornerAt works out how the rounded edges meet at vertex v, or
+// with flat the chamfered ones, which its refusals name.
+func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int, flat bool) (*filletCorner, error) {
 	p := t.Vertices[v].P
+	what := "fillet"
+	if flat {
+		what = "chamfer"
+	}
 	// The rounded edges here are all convex or all concave, of one radius.
 	sg, r, n := 1.0, 0.0, 0
 	for _, x := range t.Vertices[v].Edges {
@@ -1155,9 +1181,12 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int)
 		}
 		fe := &edges[i]
 		if n > 0 && fe.sign() != sg {
-			return nil, filletErr(p, "a convex edge's fillet meets a concave one's here")
+			return nil, filletErr(p, "a convex edge's %s meets a concave one's here", what)
 		}
 		if n > 0 && math.Abs(fe.r-r) > geom.LengthEps {
+			if flat {
+				return nil, filletErr(p, "chamfers of distance %g and %g meet here above an edge left sharp", r, fe.r)
+			}
 			return nil, filletErr(p, "fillets of radius %g and %g meet here", r, fe.r)
 		}
 		sg, r, n = fe.sign(), fe.r, n+1
@@ -1172,7 +1201,7 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int)
 			}
 		}
 		if n != 4 || len(t.facesAt(v)) != 4 || len(round) != 2 || !t.smoothJoin(round[0], round[1], v) {
-			return nil, filletErr(p, "the edge ends where %d edges meet; a fillet's end needs a corner of three faces", n)
+			return nil, filletErr(p, "the edge ends where %d edges meet; a %s's end needs a corner of three faces", n, what)
 		}
 	}
 	var round, plain []int

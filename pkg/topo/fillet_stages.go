@@ -33,7 +33,9 @@ func mixedCorner(err error) bool {
 		return false
 	}
 	return strings.HasPrefix(fx.Msg, "fillets of radius") ||
-		strings.HasPrefix(fx.Msg, "a convex edge's fillet meets a concave one's")
+		strings.HasPrefix(fx.Msg, "chamfers of distance") ||
+		strings.HasPrefix(fx.Msg, "a convex edge's fillet meets a concave one's") ||
+		strings.HasPrefix(fx.Msg, "a convex edge's chamfer meets a concave one's")
 }
 
 // stageKey is what the edges rounded in one stage share.

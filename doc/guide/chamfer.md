@@ -31,8 +31,7 @@ A chamfer may cut back further on one face than on the other: its screen's *seco
 row, "the same" to begin with, takes a distance for each edge's second face. An edge's first
 face is the one of the lower identity, the one its name gives first; where that comes out the
 wrong way round, *[swap]* exchanges the two distances, and *[same]* makes the chamfer one of a
-single distance again. Where chamfers of two distances meet at a corner, the edit can't make it,
-and straight edges are cut by wedges instead.
+single distance again.
 
 From a script:
 
@@ -45,6 +44,28 @@ s := doc.Active().Solid()
 doc.Features.ChamferSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 2, 10))}, 1, "")
 ```
 
+## Corners
+
+Where every edge at a corner is chamfered, three or more straight edges between flat faces, the
+chamfers' lines on each face cross, and the corner is cut as OpenCASCADE's chamfers cut it. Where
+three chamfers of one distance meet at a square corner, the corner is the triangle between the
+three points where their lines cross. Otherwise, where the distances differ, an edge has two, or
+the faces don't all meet square, one chamfer, the one of the largest distance whose lines cross
+the others' furthest out, ends across between its two crossing points, the other two are cut
+square to their edges where their lines cross its own, and the face between them takes the line
+from one cut to the other; the hole left is a plane, or a twisted four-sided patch with straight
+sides where its corners don't lie in one. At a corner of four or more, as a pyramid's apex, the
+chamfers end between the points where their lines cross, and the hole is filled the same way, or
+by triangles about its middle past four sides. Example:
+[`examples/scripts/chamfercorner`](../../examples/scripts/chamfercorner/chamfercorner.go), a
+block with every edge chamfered at two distances.
+
+OpenCASCADE parts from this in two places: at a corner of three where one crossing point lies
+close to the line between the other two it makes the triangle of the three points, where here the
+chamfers are cut as above (a few tenths of a cubic millimetre apart at distances of 1 to 3 mm);
+and at a corner of four or more it fills the hole with a plate that bulges out past the plane of
+its corners, where here it is that plane.
+
 ## Edge names
 
 An edge of the solid is saved by name: the two faces it lies between, its place among their
@@ -56,7 +77,9 @@ find edges.
 
 ## Not yet
 
-A chamfer by a distance and an angle is not done, and a chamfer of two distances can't take
-circular edges that meet other chamfered edges at a corner. Where the edit that cuts a chamfer can't make a corner,
-as where a concave edge meets the cut, the chamfer falls back to a wedge and a Boolean, which
-take edges that stick out only.
+A chamfer by a distance and an angle is not done, nor a distance of an edge's own as a fillet's
+own radius, and a chamfer of two distances can't take circular edges that meet other chamfered
+edges at a corner, nor straight edges that meet another chamfered edge at a corner whose third
+edge stays sharp. Where the edit that cuts a chamfer can't make a corner, as where a concave edge
+meets the cut, the chamfer falls back to a wedge and a Boolean, which take edges that stick out
+only.
