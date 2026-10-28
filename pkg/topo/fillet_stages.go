@@ -134,6 +134,14 @@ func filletInStages(orig *srf.SShell, picks []FilletPick, r float64, origin uint
 		return false
 	}
 
+	// fresh reports whether edge x of the solid u is new, an earlier
+	// stage's: it lies along no edge of the solid as it was.
+	every := make([]int, len(t.Edges))
+	for i := range every {
+		every[i] = i
+	}
+	fresh := func(u *Topology, x int) bool { return !on(u, x, every) }
+
 	// The reason given is the first order's, the one most likely meant.
 	var firstErr, lastErr error
 	for _, order := range stageOrders(keys) {
@@ -173,7 +181,16 @@ func filletInStages(orig *srf.SShell, picks []FilletPick, r float64, origin uint
 				break
 			}
 			forbid := func(u *Topology, x int) bool { return on(u, x, sharp) || on(u, x, others) }
-			if err := filletPicks(&sh, stage, keys[k].r, origin+uint32(n)*stageOrigins, flat, forbid); err != nil {
+			err = filletPicks(&sh, stage, keys[k].r, origin+uint32(n)*stageOrigins, flat, forbid)
+			if (curvedEndRefusal(err) || rollingAloneRefusal(err)) && n > 0 {
+				// The stage's picks may go on round the corners an earlier
+				// stage rounded, onto its fillets, as one closed chain the
+				// rolling ball takes.
+				if cerr := filletOneChain(&sh, stage, keys[k].r, origin+uint32(n)*stageOrigins, flat, fresh); !errors.Is(cerr, errNotOneChain) {
+					err = cerr
+				}
+			}
+			if err != nil {
 				lastErr, ok = err, false
 				break
 			}
