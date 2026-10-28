@@ -246,6 +246,11 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 		}
 	}
 	if (curvedEndRefusal(err) || rollingAloneRefusal(err)) && len(picks) > 1 {
+		// Picks that are the pieces of one closed chain, some of them
+		// the rolling ball's: the chain at once.
+		if cerr := filletOneChain(sh, picks, r, origin, flat, nil); !errors.Is(cerr, errNotOneChain) {
+			return cerr
+		}
 		// Picks whose fillets don't meet, some of them the rolling
 		// ball's: one after another.
 		if aerr := filletApart(sh, picks, r, origin, flat); !errors.Is(aerr, errNotApart) {

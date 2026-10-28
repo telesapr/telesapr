@@ -232,6 +232,59 @@ func (t *Topology) blendChain(e int) ([]ChainPiece, []int, bool) {
 	return pieces, verts, false
 }
 
+// closeAtSquareSeam is the closed chain pieces through verts begun at
+// the vertex where the seams of the faces at its sides, the smooth edges
+// there other than the chain's, run most nearly square to it. The ball's
+// point crosses such a seam at the vertex itself, in the section through
+// it, and the fillet closes round there; a seam that leans along the
+// chain, as the fillet of a rib's slope rounded before its foot, is
+// crossed off the vertex, and closing there leaves the faces' trims open.
+func (t *Topology) closeAtSquareSeam(pieces []ChainPiece, verts []int) ([]ChainPiece, []int) {
+	n := len(pieces)
+	best, bestLean := 0, math.Inf(1)
+	for i := range n {
+		v := verts[i]
+		in, out := pieces[(i+n-1)%n], pieces[i]
+		dir := edgeDirAt(t, out.Edge, v).Minus(edgeDirAt(t, in.Edge, v))
+		if dir.Magnitude() < geom.LengthEps {
+			continue
+		}
+		dir = dir.WithMagnitude(1)
+		lean := 0.0
+		for _, x := range t.Vertices[v].Edges {
+			if x != in.Edge && x != out.Edge {
+				lean = math.Max(lean, math.Abs(edgeDirAt(t, x, v).Dot(dir)))
+			}
+		}
+		if i == 0 && lean <= squareSeam {
+			// The chain begins at a square seam already, as picked.
+			return pieces, verts
+		}
+		if lean < bestLean-1e-9 {
+			best, bestLean = i, lean
+		}
+	}
+	if best == 0 {
+		return pieces, verts
+	}
+	rp := append(append([]ChainPiece{}, pieces[best:]...), pieces[:best]...)
+	rv := append(append([]int{}, verts[best:n]...), verts[:best]...)
+	return rp, rv
+}
+
+// squareSeam is how far a seam may lean along a chain, as the cosine of
+// their angle, and still be square to it.
+const squareSeam = 1e-6
+
+// edgeDirAt is the direction edge x leaves vertex v along.
+func edgeDirAt(t *Topology, x, v int) geom.Vector {
+	pts := t.Edges[x].Points
+	if t.Edges[x].V[0] == v {
+		return pts[1].Minus(pts[0]).WithMagnitude(1)
+	}
+	return pts[len(pts)-2].Minus(pts[len(pts)-1]).WithMagnitude(1)
+}
+
 // blendChainBack goes on with an open chain before its first piece, as
 // far as it goes as one edge between the same two faces.
 func (t *Topology) blendChainBack(pieces []ChainPiece, verts []int) ([]ChainPiece, []int) {
@@ -310,6 +363,9 @@ func (t *Topology) newChain(e int, r float64, flat bool) (*rollingBall, error) {
 	if !closed {
 		// Walk back from e's start too: the chain may go on before it.
 		pieces, verts = t.blendChainBack(pieces, verts)
+	}
+	if closed {
+		pieces, verts = t.closeAtSquareSeam(pieces, verts)
 	}
 	rb := &rollingBall{t: t, r: r, flat: flat, pieces: pieces, verts: verts, closed: closed}
 	// Each piece's faces, side by side with the first's.
@@ -433,6 +489,7 @@ func (rb *rollingBall) footNear(k int, x geom.Vector, nr rbNear) rbFoot {
 		ext = 1
 	}
 	inside := 0
+	var held []rbFoot
 	for _, f := range rb.side[k] {
 		if f == ban || only >= 0 && f != only {
 			continue
@@ -451,6 +508,7 @@ func (rb *rollingBall) footNear(k int, x geom.Vector, nr rbNear) rbFoot {
 		d := p.Minus(x).Magnitude()
 		if out == 0 {
 			inside++
+			held = append(held, rbFoot{f: f, u: u, v: v, p: p})
 		}
 		if out < bestOut-1e-12 || out <= bestOut+1e-12 && d < bestD {
 			bestD, bestOut = d, out
@@ -470,12 +528,56 @@ func (rb *rollingBall) footNear(k int, x geom.Vector, nr rbNear) rbFoot {
 			}
 		}
 	}
+	if inside > 1 && rb.closed {
+		best = rb.trimmedFoot(best, held, x)
+	}
 	s := rb.t.Surface(best.f)
 	n := s.NormalAt(best.u, best.v)
 	if n.Magnitude() > 0 {
 		best.n = n.WithMagnitude(1)
 	}
 	return best
+}
+
+// trimmedFoot is the foot of a closed chain's side among the patches
+// that hold the point, held: best when its face holds it too, else the
+// nearest foot a face holds, within or on its trims. A flat face's patch
+// can reach far past its trims, as a rib's upright side does past the
+// fillet of its slope's edge rounded before its foot: the ball rolling
+// round the foot would touch the plane there, outside the face, rather
+// than the fillet.
+func (rb *rollingBall) trimmedFoot(best rbFoot, held []rbFoot, x geom.Vector) rbFoot {
+	if rb.onFaceNear(best) {
+		return best
+	}
+	bestD := math.Inf(1)
+	out := best
+	for _, h := range held {
+		if h.f == best.f || !rb.onFaceNear(h) {
+			continue
+		}
+		if d := h.p.Minus(x).Magnitude(); d < bestD {
+			bestD, out = d, h
+		}
+	}
+	return out
+}
+
+// onFaceNear reports whether foot ft lies on its face: inside its trims,
+// or on them within the chord tolerance.
+func (rb *rollingBall) onFaceNear(ft rbFoot) bool {
+	if rb.onFaceUV(ft.f, ft.u, ft.v) {
+		return true
+	}
+	tol := 2 * math.Max(rb.t.shell.Tol.ChordTolMm(), 10*geom.LengthEps)
+	for _, l := range rb.t.Faces[ft.f].Loops {
+		for _, ce := range rb.t.Loops[l].CoEdges {
+			if polylineDistance(rb.t.Edges[rb.t.CoEdges[ce].Edge].Points, ft.p) < tol {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // into is the direction from the edge into side k's face at dense point
@@ -1232,6 +1334,17 @@ func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, 
 	at, pairs, sides, err := rb.crossings(scan)
 	if err != nil {
 		return nil, nil, nil, err
+	}
+	// A crossing at the chain's start is where the fillet closes round
+	// (closeAtSquareSeam). Found past it, or short of its end, by more
+	// than a millionth of the chain but within the tolerance, as a foot
+	// on a trim within the tolerance is on the face (onFaceNear), it is
+	// put at the start; one found closer stays where it is.
+	snap := math.Max(1e-6*rb.length, 4*rb.t.shell.Tol.ChordTolMm())
+	for i, s := range at {
+		if off := math.Min(s, rb.length-s); off >= 1e-6*rb.length && off < snap {
+			at[i] = 0
+		}
 	}
 	start := 0.0
 	if len(at) > 0 {

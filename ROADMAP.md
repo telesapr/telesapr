@@ -186,7 +186,7 @@ solids) at 59 of 59 sound since 2026-10-22. Chamfers: `TestChamferOnOtherSolids`
 | Run-offs onto a curved face; a run-off of a blend that takes material away; both ends running off | refused, naming the place | The setback patch is the means: where the ball runs off a face, cut the fillet as a setback is cut and fill the hole between it, the next face's fillet (or the face) and the faces round. A run-off taking material away was never reached by any test case (a slot cut from the cone never got that far) |
 | A rim's mitre below about 0.005% chord | refused: "the fillet's sections near its mitre can't be fitted" | At the cap the mitre runs nearly along the chain; tried: starting the fit from chord-length parameters (worse). More spans than two, or sections fitted against the mitre's own parameter |
 | Mitres of two radii left | refused, naming the place | A chain that meets smaller ones at both its ends with different kinks (the three cubics at 0.5, 1 and 0.75), or a larger one at one end and a smaller at the other: its sections would need two kinks, or a kink and the copied span split at it, and the mate's span is one quintic; a mitre of one radius beside one of two on the same chain (their sections split differently); chamfers of two distances in the rolling ball's mitres (the line's height is the same; the kink, `onMateArc`, would be the line's foot; those between flat faces are made since 2026-10-28, `chamferPairAt`) |
-| A rib rounded all over: its top's edges rounded as well as its foot filled | refused | The foot filled below a sharp top is made (uneven mitre). Top first: the foot's chain meets the arc where the floor cuts a leaning cylinder, which only the rolling ball rounds, and that edge must be picked alone. Foot first: the top's edge ends on the foot's fillet and the grown top |
+| A rib rounded all over, foot first | the top first is made (below); two cases of 24 unsound: width leaning -4, r 0.5, h 5 and 10, at chord 0.015% 3 to 5 mesh edges cross at the front corners, where the foot's fillet passes from the slope edge's fillet onto the slope (sound at 0.01%) | Foot first, the top's edge ends on the foot's fillet and the grown top: a run-off onto a curved face (first row). Not needed while the stages take the top first |
 | Radii 5-6:1 side by side at a setback corner | 4 of 36 refused as folding (`TestFilletSetbackExtremeSweep`) | More patches, or a smaller setback for the small fillets. Tried and given up: one fitted patch over the hole (0.1 rad off at degree 9), a fan of quads, a star for even counts, stronger pulls, larger setbacks, net second differences as fairness |
 | Convex meeting concave at one vertex beyond what the stages round, fillets or chamfers | refused | Chamfer corners where every edge is chamfered are made since 2026-10-28 (`chamferCornerAt`: OpenCASCADE's pivot and square cuts, plane or bilinear patch), and so are two chamfers of any distances above a third edge left sharp (`chamferPairAt`). Left: chamfers of different distances where some edges at a corner of three or more are left sharp. A chamfer group has one distance and one second distance for all its edges (`pkg/sketch/chamfer.go`); different distances on different edges reach `topo.FilletPicks` only through `FilletPick.R` |
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
@@ -203,6 +203,20 @@ a concave one, as at a ledge, the side face grows out to the mitre. Against Open
 of faces: a box's corner, a pocket's, a rib's foot, a ledge, and a prism's foot at 60° and 120°.
 `TestChamferPairSweep` covers 45° to 135°. Before, the top corner was cut by wedges and the filled
 ones were refused.
+Done 2026-10-29: a rib rounded all over, its top's five edges and its foot's four picked together
+(`TestFilletRibAllOverOracle`). The stages round the top first, which leaves the foot one closed chain
+going round from the flat sides onto the uprights' fillets and the slope edges' leaning ones; the
+rolling ball fills it whole (`pkg/topo/fillet_onechain.go`), as it does picked in an edit after the top
+(its eight edges, or one). Three faults of closed rolling-ball chains showed on the way: a foot was
+taken on a flat face's patch far past its trims (the upright side past the slope edge's fillet), and
+is now taken on a face that holds it, within the tolerance (`trimmedFoot`); a chain closed where the
+seam it crosses leans along it (the leaning fillet's) left the trims open there, so a closed chain now
+begins at the vertex whose seams stand most square to it (`closeAtSquareSeam`), and the crossing found
+within the tolerance of its start is put at it. Against OpenCASCADE the foot's volume is within 0.03
+mm³ for upright widths; for leaning ones OpenCASCADE's fillet lies inside the balls' envelope beside
+the front corners (up to 0.009 mm at r 1, h 40, its volume 1.5% off), so the heights are checked
+against the balls themselves (`ballHeight`), which ours meet within 4 chord tolerances. OpenCASCADE
+refuses h 5 with the width leaning -4, which we make, checked by the balls alone.
 
 Done 2026-10-28: mitres of two radii, chains of a rim and edges at a corner whose third edge stays
 sharp (`pkg/topo/rollingkink.go`). The smaller end is a mitre against the larger's swept surface
