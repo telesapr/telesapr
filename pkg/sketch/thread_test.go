@@ -292,7 +292,8 @@ func TestThreadSolids(t *testing.T) {
 // threadGoldens are the cases that have a golden in testdata/thread:
 // enough kinds of thread to pin the generator and the kernel on.
 var threadGoldens = []string{"screw_m8", "nut_m8", "blind_m6", "screw_m8_lh", "screw_m6_down",
-	"lead_tr20", "screw_unc", "triple_m12", "screw_bsw", "nut_g", "screw_acme", "screw_m10_6g"}
+	"lead_tr20", "screw_unc", "triple_m12", "screw_bsw", "nut_g", "screw_acme", "screw_m10_6g",
+	"screw_s20", "nut_s20_back", "screw_butt"}
 
 // TestThreadGoldens saves the file a thread makes, opens it and saves
 // it again, and requires the golden, testdata/thread/<name>.tlspr.
