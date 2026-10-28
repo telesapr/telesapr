@@ -440,8 +440,26 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 			ta := geom.Vector{X: tap.U, Y: tap.V}
 			tb := geom.Vector{X: tbp.U, Y: tbp.V}
 
-			tn := ret.NormalAt(tap.U, tap.V)
-			sn := ss.NormalAt(auv.U, auv.V)
+			// The normals are taken at the chord's middle, where the
+			// curve runs nearly along it: at its end the chord can be
+			// turned from the curve far enough to flip the side, where
+			// the surfaces meet at a shallow angle and the chord is long,
+			// as a chamfer's cone across a thread's rounded crest.
+			// Their projections leave each surface's cache as it was,
+			// which the next segment's start is found from; the other
+			// shell's surface is written only if it changed, as it
+			// doesn't where Booleans run side by side with the cache off.
+			var tmid, smid geom.Point2d
+			mid := a.Plus(b).ScaledBy(0.5)
+			retCached, ssCached := ret.Cached, ss.Cached
+			ret.ClosestPointTo(mid, &tmid, true)
+			ss.ClosestPointTo(mid, &smid, true)
+			ret.Cached = retCached
+			if ss.Cached != ssCached {
+				ss.Cached = ssCached
+			}
+			tn := ret.NormalAt(tmid.U, tmid.V)
+			sn := ss.NormalAt(smid.U, smid.V)
 
 			// We are subtracting the portion of our surface that
 			// lies in the shell, so the in-plane edge normal should
@@ -579,9 +597,13 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	// length: a curve split a hair from where it crosses a patch's seam
 	// (a letter wrapped deep onto a cone across the seam of its patches)
 	// leaves a piece that bounds nothing, but whose point, kept, has two
-	// ways on, and the trim doesn't assemble.
+	// ways on, and the trim doesn't assemble. So does a piece shorter
+	// than the assembly can tell from a point, as where a cone crosses a
+	// thread's flank beside the rounded crest it meets smoothly, and the
+	// curve's chord grazes the crest: the next edge is taken from either
+	// of its ends, and the piece left alone.
 	final.CullExtraneousEdges(true)
-	final.Edges = slices.DeleteFunc(final.Edges, func(e SEdge) bool { return e.A == e.B })
+	final.Edges = slices.DeleteFunc(final.Edges, func(e SEdge) bool { return e.A.Equals(e.B) })
 
 	// Step 9: assemble the trim polygon from the kept edges; if it
 	// fails to close, the caller marks booleanFailed in `into`.

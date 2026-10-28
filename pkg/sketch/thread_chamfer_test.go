@@ -20,6 +20,10 @@ import (
 var chamferCases = []threadCase{
 	{"screw_m8", 4, 30, "M8", sketch.ThreadOptions{Length: 12, Chamfer: true}},
 	{"stud_m8", 4, 10, "M8", sketch.ThreadOptions{Length: 10, Through: true, Chamfer: true}},
+	// Its far chamfer's cone met a ridge's flank just past the crest at a
+	// grazing angle, at every plane for the ridges and every way of
+	// making the chamfer, where 28 and 31 mm were sound.
+	{"stud_m8_30", 4, 30, "M8", sketch.ThreadOptions{Length: 30, Through: true, Chamfer: true}},
 	{"nut_m8", 7, 6.5, "M8", sketch.ThreadOptions{Length: 6.5, Through: true, Internal: true, Chamfer: true}},
 	{"blind_m6", 8, 12, "M6", sketch.ThreadOptions{Length: 8, Internal: true, Chamfer: true}},
 	{"screw_m8_lh", 4, 30, "M8-LH", sketch.ThreadOptions{Length: 12, Chamfer: true}},
