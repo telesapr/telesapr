@@ -43,9 +43,8 @@ What was settled:
 
 ## A command-line section export
 
-A script exports a 2d section with `File.ExportSection`. `telesapr-cli` has `export-view`,
-`export-wireframe`, `export-drawing`, `export-mesh`, `export-surfaces` and `export-script`
-(`cmd/telesapr-cli/main.go`), but no `export-section`: a section needs a plane, which none of their
-flags names. Either a `--plane` option (a workplane by name, or a point and a normal) or the
-section saved with the view would give the command something to cut with. Until then,
-`telesapr-cli run` with a script that calls `File.ExportSection` is the way from the command line.
+Built 2026-10-28: `telesapr-cli export-section --plane <plane>`, where the plane is `x=<d>`,
+`y=<d>` or `z=<d>`, or six numbers, a point and a normal (`cmd/telesapr-cli/plane.go`); without
+`--plane` it is the workplane active when the model was saved, as `File.ExportSection` takes it.
+A workplane by name was left out: a point and a normal name any plane, and a workplane's name
+would need the entity found by its description, which no other flag does.

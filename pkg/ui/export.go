@@ -98,6 +98,10 @@ func (ss *Application) ExportSectionTo(filename string) error {
 var errNoSolidForSection = errors.New("no solid model present; draw one with extrudes and revolves, " +
 	"or use Export 2d View to export bare lines and curves")
 
+// errSectionMissesSolid is what a section by a plane that cuts nothing
+// says, rather than writing an empty file.
+var errSectionMissesSolid = errors.New("the section plane doesn't cut the solid")
+
 // ExportSectionHere exports the section of the active group's solid by
 // the plane a script means: the section view's, when it is on, and
 // otherwise the active workplane.
@@ -129,12 +133,34 @@ func (ss *Application) ExportSectionHere(filename string) error {
 	return ss.exportSectionIn(filename, origin, u, v, n)
 }
 
+// ExportSectionByPlane exports the section of the active group's solid
+// by the plane through origin with normal n, as the command line names
+// it.
+func (ss *Application) ExportSectionByPlane(filename string, origin, n geom.Vector) error {
+	if n.Magnitude() < core.LengthEps {
+		return errors.New("the section plane's normal has no length")
+	}
+	sk := ss.SK
+	g := sk.Group(sk.ActiveGroup())
+	g.GenerateDisplayItems(sk)
+	if g.DisplayMesh.IsEmpty() {
+		return errNoSolidForSection
+	}
+	n = n.WithMagnitude(1)
+	return ss.exportSectionIn(filename, origin, n.NormalDir(0), n.NormalDir(1), n)
+}
+
 // exportSectionIn writes the section of the active group's solid by the
 // plane through origin with normal n, laid out on u and v.
 func (ss *Application) exportSectionIn(filename string, origin, u, v, n geom.Vector) error {
 	sk := ss.SK
 	gw := ss.GW
-	g := sk.Group(gw.activeGroupH())
+	// A sketch drawn after the solid holds none of it: the section is of
+	// the solid as it is at the active group.
+	g := sk.SolidAt(gw.activeGroupH())
+	if g == nil {
+		return errNoSolidForSection
+	}
 
 	n = n.WithMagnitude(1)
 	d := origin.Dot(n)
@@ -151,6 +177,16 @@ func (ss *Application) exportSectionIn(filename string, origin, u, v, n geom.Vec
 		g.RunningShell.MakeSectionEdgesInto(n, d, &el, nil)
 	} else {
 		g.RunningShell.MakeSectionEdgesInto(n, d, &el, &bl)
+	}
+
+	// A plane along none of the solid's faces cuts through it: the
+	// section is where it cuts the triangles, as the section view's cap.
+	if len(el.Edges) == 0 && len(bl.Curves) == 0 {
+		shown := sk.Group(gw.activeGroupH())
+		shown.GenerateDisplayItems(sk)
+		var poly srf.SPolygon
+		shown.DisplayMesh.MakeSectionPolygonInto(srf.HalfSpace{N: n, D: d}, &poly)
+		poly.MakeEdgesInto(&el)
 	}
 
 	// All of these are solid model edges, so use the appropriate style.
@@ -192,6 +228,9 @@ func (ss *Application) exportSectionIn(filename string, origin, u, v, n geom.Vec
 	// Stick Fonts.
 	el.CullExtraneousEdges(false)
 	bl.CullIdenticalBeziers(false)
+	if len(el.Edges) == 0 && len(bl.Curves) == 0 {
+		return errSectionMissesSolid
+	}
 
 	// And write the edges.
 	out, err := export.NewWriter(filename, ss.SK, ss.exportOptions())

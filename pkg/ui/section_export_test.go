@@ -1,12 +1,14 @@
 package ui
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/golden"
 	"github.com/telesapr/telesapr/pkg/script/api"
 )
@@ -49,9 +51,35 @@ func TestExportSectionPaths(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(a) == 0 || string(a) != string(b) {
+	// The plane runs along no face: the section is where it cuts the
+	// block and its bore, two loops.
+	if got := strings.Count(string(a), "<path"); got != 2 {
+		t.Errorf("the section has %d paths, want the block's and the bore's", got)
+	}
+	if string(a) != string(b) {
 		t.Fatalf("the window wrote %d bytes and the script %d, which differ at %s",
 			len(a), len(b), golden.FirstDifference(b, a))
+	}
+
+	// The command line's plane, the workplane's own, draws the same.
+	cli := filepath.Join(dir, "cli.svg")
+	if err := ss.ExportSectionByPlane(cli, geom.Vector{Z: 15}, geom.Vector{Z: 2}); err != nil {
+		t.Fatal(err)
+	}
+	if c, err := os.ReadFile(cli); err != nil || string(c) != string(a) {
+		t.Errorf("by the plane z=15 (%v): differs at %s", err, golden.FirstDifference(a, c))
+	}
+	for _, c := range []struct {
+		origin, n geom.Vector
+		want      error
+	}{
+		{geom.Vector{Z: 100}, geom.Vector{Z: 1}, errSectionMissesSolid},
+		{geom.Vector{Z: 15}, geom.Vector{}, nil},
+	} {
+		err := ss.ExportSectionByPlane(filepath.Join(dir, "bad.svg"), c.origin, c.n)
+		if err == nil || (c.want != nil && !errors.Is(err, c.want)) {
+			t.Errorf("plane through %v with normal %v: %v", c.origin, c.n, err)
+		}
 	}
 
 	// The section view's plane, 20 mm up from the workplane, cuts the

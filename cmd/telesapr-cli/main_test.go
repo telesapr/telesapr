@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
@@ -118,6 +119,56 @@ func TestExportDrawing(t *testing.T) {
 	}
 }
 
+// TestExportSection cuts a model by planes the command line names,
+// through the solid and along its base: the section is drawn where the
+// plane meets the solid, and a plane that misses it writes no file.
+func TestExportSection(t *testing.T) {
+	t.Parallel()
+	in := model(t, "group/boolean_knife_edge/normal.tlspr")
+	dir := t.TempDir()
+	for _, plane := range []string{"z=0.5", "x=0.3", "0.2,0.2,0.5, 1,1,1", "z=0"} {
+		out := filepath.Join(dir, "s.svg")
+		if ok, msg := runTool(t, "export-section", "--plane", plane, "-o", out, in); !ok {
+			t.Fatalf("%s: %s", plane, msg)
+		}
+		data, err := os.ReadFile(out)
+		if err != nil || !bytes.Contains(data, []byte("<path")) {
+			t.Errorf("%s: no section drawn (%v): %.300s", plane, err, data)
+		}
+	}
+	out := filepath.Join(dir, "none.svg")
+	if ok, msg := runTool(t, "export-section", "-p", "z=1000", "-o", out, in); ok ||
+		!strings.Contains(msg, "doesn't cut the solid") {
+		t.Errorf("a plane missing the solid: ok=%v, %s", ok, msg)
+	}
+	if _, err := os.Stat(out); err == nil {
+		t.Error("a plane missing the solid wrote a file")
+	}
+}
+
+func TestParsePlane(t *testing.T) {
+	t.Parallel()
+	for _, c := range []struct {
+		spec           string
+		origin, normal geom.Vector
+	}{
+		{"z=15", geom.Vector{Z: 15}, geom.Vector{Z: 1}},
+		{"X = -2.5", geom.Vector{X: -2.5}, geom.Vector{X: 1}},
+		{"y=0", geom.Vector{}, geom.Vector{Y: 1}},
+		{"1,2,3,0,1,1", geom.Vector{X: 1, Y: 2, Z: 3}, geom.Vector{Y: 1, Z: 1}},
+	} {
+		p, err := parsePlane(c.spec)
+		if err != nil || p.origin != c.origin || p.normal != c.normal {
+			t.Errorf("parsePlane(%q) = %+v, %v", c.spec, p, err)
+		}
+	}
+	for _, spec := range []string{"", "w=1", "z=", "z=a", "1,2,3", "1,2,3,0,0,x", "1,2,3,0,0,0"} {
+		if _, err := parsePlane(spec); err == nil {
+			t.Errorf("parsePlane(%q) read a plane", spec)
+		}
+	}
+}
+
 func TestOutputFor(t *testing.T) {
 	t.Parallel()
 	for _, c := range []struct{ pattern, in, want string }{
@@ -174,6 +225,9 @@ func TestBadCommandLines(t *testing.T) {
 		{[]string{"export-mesh", "--max-segments", "x", "-o", "x.stl", in}, "Unrecognized option '--max-segments'"},
 		{[]string{"export-view", "--angle-tol", "10", "-v", "top", "-o", "x.svg", in}, "Unrecognized option '--angle-tol'"},
 		{[]string{"export-view", "--strict", "-v", "top", "-o", "x.svg", in}, "Unrecognized option '--strict'"},
+		{[]string{"export-section", "--plane", "w=1", "-o", "x.svg", in}, "Bad plane 'w=1'"},
+		{[]string{"export-mesh", "--plane", "z=1", "-o", "x.stl", in}, "Unrecognized option '--plane'"},
+		{[]string{"export-section", "-o", "x.svg", in}, "or give --plane"},
 		{[]string{"convert", "--view", "top", in}, "Unrecognized option '--view'"},
 		{[]string{"convert"}, "At least one input file"},
 		{[]string{"convert", "-o", "x.tlspr", in, in}, "must include a %"},
