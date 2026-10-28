@@ -166,3 +166,56 @@ func TestFilletChainsNotMitred(t *testing.T) {
 		t.Errorf("chamfers: %v", err)
 	}
 }
+
+// fourCubics is a profile of four cubics bulging out between sharp
+// corners at (0, 0), (16, 0), (16, 13) and (0, 13).
+func fourCubics() [][4]geom.Vector {
+	return [][4]geom.Vector{
+		{v(0, 0, 0), v(5, -3, 0), v(11, -3, 0), v(16, 0, 0)},
+		{v(16, 0, 0), v(19, 4, 0), v(19, 9, 0), v(16, 13, 0)},
+		{v(16, 13, 0), v(11, 16, 0), v(5, 16, 0), v(0, 13, 0)},
+		{v(0, 13, 0), v(-3, 9, 0), v(-3, 4, 0), v(0, 0, 0)},
+	}
+}
+
+// Some of a rim's chains picked: each is mitred where it meets another
+// picked one and ends on the wall of an unpicked one at its other end,
+// fitted there to its cuts along the curved edge as a lone chain is
+// (rollingBallFilletsAt, partial). Two and three of the four cubics'
+// top edges at radius 1, refused as "can't be fitted" before
+// 2026-10-28: every vertex OpenCASCADE's makeFillet of the same edges
+// makes is one of ours, within 7e-6 mm, its Volume of our STEP export
+// within 3e-5 of its own, and every point of either solid within
+// 5.4e-4 mm of the other (sampled 2026-10-28).
+func TestFilletChainsPartlyMitred(t *testing.T) {
+	if testing.Short() {
+		t.Skip("rolling-ball fillets of several chains, slow")
+	}
+	t.Parallel()
+	four := fourCubics()
+	all := topPicks(four)
+	for _, c := range []struct {
+		picks []int
+		verts []geom.Vector
+	}{
+		{[]int{0, 1}, []geom.Vector{v(0, 0, 4), v(16, 0, 4), v(16, 13, 4),
+			v(-1.259445, 2.094329, 5), v(15.315749, 0.757104, 5), v(13.529656, 14.210272, 5)}},
+		{[]int{1, 2, 3}, []geom.Vector{v(0, 0, 4), v(16, 0, 4), v(0, 13, 4), v(16, 13, 4),
+			v(2.470344, -1.210272, 5), v(13.529656, -1.210272, 5), v(0.684251, 12.242896, 5), v(15.315749, 12.242896, 5)}},
+	} {
+		var picks []topo.FilletPick
+		for _, i := range c.picks {
+			picks = append(picks, all[i])
+		}
+		sh := cubicPrism(four, fine(0.002))
+		if err := topo.FilletPicks(sh, picks, 1, 1<<30, false); err != nil {
+			t.Fatalf("%v: %v", c.picks, err)
+		}
+		sound(t, sh)
+		for _, p := range c.verts {
+			if !hasVertex(t, sh, p) {
+				t.Errorf("%v: no vertex at %v", c.picks, p)
+			}
+		}
+	}
+}

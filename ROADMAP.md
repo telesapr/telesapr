@@ -185,7 +185,6 @@ blob's 2 rims refused as not mitred (below).
 | Item | State | Approach / tried |
 |---|---|---|
 | Run-offs onto a curved face; a run-off of a blend that takes material away; both ends running off | refused, naming the place | The setback patch is the means: where the ball runs off a face, cut the fillet as a setback is cut and fill the hole between it, the next face's fillet (or the face) and the faces round. A run-off taking material away was never reached by any test case (a slot cut from the cone never got that far) |
-| Mitres where only some of a rim's chains are picked: a chain mitred at one end, ending on the unpicked chain's wall at the other | refused: "pick it alone" | A chain mitred at one end only exists since 2026-10-22 (`linkMitresAt` partial, for picks meeting at a corner); `filletMitredPicks` still asks every end of a rim's chains to be mitred. Try it partial, the other end a curved end (`curvedEndSection`), on a rim of three creases |
 | Chamfers meeting at a crease, of one chain or several, or at a corner whose third edge stays sharp (the lid's upright chamfered with the bottom edge it meets) | refused: "are not mitred" | The mitre is found from the ball's centres; a chamfer's would be where the two ruled surfaces, carried on, meet |
 | Mitres between chains of different radii | refused: "pick it alone" | The height against the other chain's centres less its own radius; the mitre is then no longer in the plane that halves the turn |
 | A rim's mitre below about 0.005% chord | refused: "the fillet's sections near its mitre can't be fitted" | At the cap the mitre runs nearly along the chain; tried: starting the fit from chord-length parameters (worse). More spans than two, or sections fitted against the mitre's own parameter |
@@ -195,6 +194,14 @@ blob's 2 rims refused as not mitred (below).
 | Chamfers at setback corners; convex meeting concave at one vertex beyond what the stages round | refused | No setback for chamfers yet |
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
 | Slot chamfer at 3 | see K4 | The teapot handle and the run-off chamfers' crossings, listed here before, are sound since K4's mender |
+
+Done 2026-10-28: some of a rim's chains picked, a chain mitred where it meets another picked one
+and ending on the unpicked one's wall at its other end. They went the way of picks meeting at a
+corner (`filletCornerPicks`, `linkMitresAt` partial) since 2026-10-22, but that end's conics along
+a curved edge strayed from the swept surface as a lone chain's do, and the mitred chains' blend
+never tried the sections fitted to their cuts (`fitCuts`): two of four cubics' top edges at r 1
+were refused at chord 0.002%. Every vertex of OpenCASCADE's makeFillet is ours within 7e-6 mm
+(`TestFilletChainsPartlyMitred`).
 
 Done 2026-10-22: the loft's top ring, four edges between the flat top and side patches that meet
 in creases fading out at the ring, refused as "meets the flat face almost along it": a chain now

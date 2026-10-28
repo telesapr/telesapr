@@ -2,6 +2,7 @@ package topo
 
 import (
 	"errors"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/srf"
 )
@@ -74,10 +75,23 @@ func rollingBallFilletsAt(sh *srf.SShell, t *Topology, edges []int, r float64, o
 	// As one chain's mitre (blend): split sections first, which follow it
 	// down to fine tolerances; every chain alike, as the chains share
 	// their mitres.
-	bls, err := blendMitred(rbs, true)
-	if err != nil {
-		if fbls, ferr := blendMitred(rbs, false); ferr == nil {
+	// A chain mitred at one end only ends at its face at the other, and
+	// along a curved edge that end's conics stray from the swept surface
+	// as a lone chain's do (blend): its sections fitted to their cuts
+	// come last, which leave the mitres' sections as they are.
+	var bls []*rbBlend
+	var err error
+	for _, try := range [][2]bool{{true, false}, {false, false}, {true, true}, {false, true}} {
+		if try[1] && !partlyMitred(rbs) {
+			break
+		}
+		fbls, ferr := blendMitred(rbs, try[0], try[1])
+		if ferr == nil {
 			bls, err = fbls, nil
+			break
+		}
+		if err == nil {
+			err = ferr
 		}
 	}
 	if err != nil {
@@ -86,12 +100,18 @@ func rollingBallFilletsAt(sh *srf.SShell, t *Topology, edges []int, r float64, o
 	return putBlends(sh, bls, origin)
 }
 
+// partlyMitred reports whether a chain of rbs is mitred at one end only.
+func partlyMitred(rbs []*rollingBall) bool {
+	return slices.ContainsFunc(rbs, func(rb *rollingBall) bool { return rb.anyMitre() && !rb.mitred() })
+}
+
 // blendMitred blends each of the chains rbs, which meet in mitres, its
-// sections split at their middles where split: an end fits the mitre
-// where the chain it meets there came later, and copies the other's.
-func blendMitred(rbs []*rollingBall, split bool) ([]*rbBlend, error) {
+// sections split at their middles where split, and an end that meets no
+// mitre fitted to its cuts where fitCuts: an end fits the mitre where
+// the chain it meets there came later, and copies the other's.
+func blendMitred(rbs []*rollingBall, split, fitCuts bool) ([]*rbBlend, error) {
 	for _, rb := range rbs {
-		rb.splitEnds = split
+		rb.splitEnds, rb.fitCuts = split, fitCuts
 		for _, end := range rb.ends {
 			end.shared = nil
 		}
