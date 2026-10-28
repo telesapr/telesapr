@@ -92,6 +92,53 @@ func TestShellRevolveQuarter(t *testing.T) {
 	}
 }
 
+// A cone revolved three quarters of a turn, open at its base, its ends
+// kept: they meet at the axis in a reflex corner, so the inside keeps
+// the thickness from each end and is rounded about the axis. (A
+// rectangle's revolve is a prism, which the prism's shell takes.)
+func TestShellRevolveThreeQuarters(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	d.Edit.SetChordTolerance(0.005)
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 12))
+	axis.SetConstruction(true)
+	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(6, 0, 0), api.V(0, 0, 8))
+	rev := d.Features.Revolve(axis, 270, "")
+	if p := rev.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	base := rev.Solid().FaceAt(api.V(-2, 0, 0))
+	sh := d.Features.ShellSolid([]api.SolidFace{base}, 1, "")
+	if p := sh.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	if r := sh.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-reflexConeShell()) > 0.002*r.Volume {
+		t.Fatalf("shelled three quarters: %s, want volume %g", r.String(), reflexConeShell())
+	}
+}
+
+// reflexConeShell is the volume of the walls of
+// TestShellRevolveThreeQuarters: three quarters of the cone of radius 6
+// and height 8, less the inside, the cone with its slant moved in by 1
+// (8x + 6z = 38), cut back by a strip 1 wide beside each end and three
+// quarters of a turn's disc of radius 1 about the axis between them,
+// summed over its height.
+func reflexConeShell() float64 {
+	strip := func(r float64) float64 { return (math.Sqrt(r*r-1) + r*r*math.Asin(1/r)) / 2 }
+	turn := 1.5 * math.Pi
+	h := 38.0 / 6
+	const n = 20000
+	in := 0.0
+	for i := range n {
+		r := 38.0 / 8 * (1 - (float64(i)+0.5)/n)
+		if r > 1 {
+			in += turn/2*r*r - 2*strip(r) - (turn-math.Pi)/2
+		}
+	}
+	return math.Pi*36*8/3*3/4 - in*h/n
+}
+
 // A lathe after which another solid is added is no longer one
 // revolution: its shell is refused as a curved solid's.
 func TestShellLatheAndMore(t *testing.T) {

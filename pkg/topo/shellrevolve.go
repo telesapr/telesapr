@@ -15,8 +15,10 @@ import (
 // material by the thickness, each piece but those on the axis and
 // those whose faces are taken away, turned as the solid was, and taken
 // away. A revolve's flat ends, kept, are walls too: the inside is cut
-// back by each end's plane moved in. The profile is the exact one, so
-// cones, spheres and tori come out with exact walls.
+// back by each end's plane moved in, or for more than half a turn by
+// what lies within the thickness of each (shellrevolve_reflex.go). The
+// profile is the exact one, so cones, spheres and tori come out with
+// exact walls.
 
 // Revolution is how a solid of revolution was made: Profile, closed
 // loops in a plane through the axis (Pt, Axis), turned about it from
@@ -171,9 +173,6 @@ func ShellRevolved(sh *srf.SShell, rev Revolution, open []int, thick float64, or
 			openEnd = openEnd || at == 1
 		}
 	}
-	if !rev.Whole() && (!openStart || !openEnd) && math.Abs(rev.End-rev.Start) > math.Pi+1e-9 {
-		return nil, shellErr(rev.Pt, "a revolve of more than half a turn is hollowed only when both its ends are taken away")
-	}
 
 	// The inside's profile.
 	var sbl srf.SBezierList
@@ -209,7 +208,20 @@ func ShellRevolved(sh *srf.SShell, rev Revolution, open []int, thick float64, or
 			inner.MakeFromHelicalRevolutionOf(&sets.Sets[i], rev.Pt, axis, color, noFaces{}, rev.Start, rev.End, 0, 0)
 		}
 	}
-	if !rev.Whole() {
+	reflex := !rev.Whole() && math.Abs(rev.End-rev.Start) > math.Pi+1e-9
+	if reflex && (!openStart || !openEnd) {
+		cut, err := reflexEndsCut(rev, [2]bool{!openStart, !openEnd}, radial, thick, sh.Tol, color)
+		if err != nil {
+			return nil, err
+		}
+		back := &srf.SShell{Tol: sh.Tol}
+		back.MakeFromDifferenceOf(inner, cut)
+		if back.BooleanFailed {
+			return nil, errors.New("the Boolean that cuts the inside back from the revolve's ends failed")
+		}
+		inner = back
+	}
+	if !rev.Whole() && !reflex {
 		for k, isOpen := range []bool{openStart, openEnd} {
 			if isOpen {
 				continue
@@ -408,19 +420,7 @@ func revolveEnd(t *Topology, f int, rev Revolution, radial geom.Vector) (int, bo
 // along the end's radial direction on (-Inf for the whole plane).
 func endSlab(rev Revolution, k int, radial geom.Vector, from, thick float64, tol srf.Tolerance, color core.RGBA) (*srf.SShell, error) {
 	axis := rev.Axis.WithMagnitude(1)
-	a := []float64{rev.Start, rev.End}[k]
-	u := radial.RotatedAroundAxis(axis, a)
-	// Into the solid from the end: the way the turn goes from Start,
-	// back from End.
-	step := math.Copysign(1e-3, rev.End-rev.Start)
-	if k == 1 {
-		step = -step
-	}
-	at := rev.Pt.Plus(u)
-	into := axis.Cross(u).WithMagnitude(1)
-	if rev.Pt.Plus(radial).RotatedAbout(rev.Pt, axis, a+step).Minus(at).Dot(into) < 0 {
-		into = into.ScaledBy(-1)
-	}
+	u, into := endFrame(rev, k, radial)
 	lo, hi := profileBox(rev.Profile)
 	size := hi.Minus(lo).Magnitude() + rev.Pt.Minus(lo).Magnitude() + thick + 1
 	from = math.Max(from, -size)
