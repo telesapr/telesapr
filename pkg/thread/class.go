@@ -2,7 +2,6 @@ package thread
 
 import (
 	"fmt"
-	"math"
 	"slices"
 	"strings"
 )
@@ -17,23 +16,11 @@ import (
 // a 6H nut a little outside it, and the two fit as their parts do on
 // average.
 //
-// The numbers come from the standards' formulas rather than their
-// tables, which were not to hand: for ISO metric (ISO 965-1) and
-// trapezoidal (ISO 2903) threads the deviations es = -(15 + 11P) µm
-// for g, -(30 + 11P) for f, -(50 + 11P) for e and +(15 + 11P) for G,
-// and the pitch diameter tolerance Td2 = 90 P^0.4 d^0.1 µm for grade
-// 6, scaled by grade, 1.32 times that for a nut; for unified threads
-// (ASME B1.1) Td2 = 0.0015 d^(1/3) + 0.0015 (9P)^(1/2) + 0.015 P^(2/3)
-// inch for class 2A, 1.5 and 0.75 times that for 1A and 3A, 1.95, 1.3
-// and 0.975 times it for 1B, 2B and 3B, and an allowance of 0.3 times
-// it for 1A and 2A. The standards take d as the geometric mean of the
-// diameter range a size falls in; here it is the size itself. For M10
-// the formulas give 6g's es and Td2 as 32 and 133 µm, and 6H's TD2 as
-// 175 µm, where ISO 965-2's table has 32, 132 and 180; for 1/4-20 UNC
-// 2A, Td2 as 0.0040 inch where ASME B1.1's has 0.0037.
-
-// classGrades scales the grade 6 tolerance to the other grades.
-var classGrades = map[byte]float64{3: 0.5, 4: 0.63, 5: 0.8, 6: 1, 7: 1.25, 8: 1.6, 9: 2}
+// The deviations and tolerances are the standards' tables: ISO 965-1's
+// for metric threads and ISO 2903's for trapezoidal ones, with the
+// formulae the tables come from for what they lack (class_iso.go), and
+// ASME B1.1's formulae, with the length of engagement and rounding its
+// tables use, for unified threads (class_unified.go).
 
 // metricClasses are the ISO 965-1 classes offered, external then
 // internal: the usual medium and fine ones.
@@ -133,36 +120,7 @@ func formName(f Form) string {
 // isoClearance is ClassClearance for ISO 965-1 and ISO 2903 classes:
 // a grade digit and a position letter.
 func isoClearance(s Spec, internal bool, class string) float64 {
-	grade, position := class[0]-'0', class[1]
-	p := s.Pitch
-	td2 := 90 * math.Pow(p, 0.4) * math.Pow(s.Diameter, 0.1) * classGrades[grade]
-	if internal {
-		td2 *= 1.32
-	}
-	var deviation float64
-	switch position {
-	case 'e':
-		deviation = 50 + 11*p
-	case 'f':
-		deviation = 30 + 11*p
-	case 'g', 'G':
-		deviation = 15 + 11*p
-	}
-	return (deviation + td2/2) / 2 / 1000
-}
-
-// unifiedScales scale class 2A's pitch diameter tolerance to each
-// unified class's.
-var unifiedScales = map[string]float64{"1A": 1.5, "2A": 1, "3A": 0.75, "1B": 1.95, "2B": 1.3, "3B": 0.975}
-
-// unifiedClearance is ClassClearance for ASME B1.1's classes, whose
-// formulas are in inches; the class says the side.
-func unifiedClearance(s Spec, class string) float64 {
-	d, p := s.Diameter/mmPerInch, s.Pitch/mmPerInch
-	td2 := 0.0015*math.Cbrt(d) + 0.0015*math.Sqrt(9*p) + 0.015*math.Pow(p, 2.0/3)
-	allowance := 0.0
-	if class == "1A" || class == "2A" {
-		allowance = 0.3 * td2
-	}
-	return (allowance + unifiedScales[class]*td2/2) / 2 * mmPerInch
+	grade, position := int(class[0]-'0'), class[1]
+	td2 := isoTolerance(s.Form, s.Diameter, s.Pitch, grade, internal)
+	return (isoDeviation(s.Form, s.Pitch, position) + td2/2) / 2 / 1000
 }

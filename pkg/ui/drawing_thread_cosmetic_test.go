@@ -28,8 +28,7 @@ func cosmeticBolt(t *testing.T, nut bool) (*Application, *api.Doc) {
 		doc.Sketch.Circle(api.V(28, 0, 0), 4.25)
 		hole := doc.Features.Extrude(10, "hole")
 		hole.SetCombine(sketch.CombineDifference)
-		c := 4.25 / math.Sqrt2
-		doc.Features.ThreadOnFace(hole.Solid().FaceAt(api.V(28+c, c, 4)), api.ThreadOptions{Designation: "M10", Cosmetic: true})
+		doc.Features.ThreadOnFace(hole.Solid().FaceAt(api.V(28+4.25, 0, 4)), api.ThreadOptions{Designation: "M10", Cosmetic: true})
 	}
 	d := doc.Drawing.Get()
 	d.Hidden = true

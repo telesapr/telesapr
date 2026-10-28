@@ -22,7 +22,6 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"os"
 
 	"github.com/telesapr/telesapr/pkg/script/api"
@@ -36,12 +35,6 @@ func check(g api.Group) {
 		fmt.Fprintf(os.Stderr, "%s: want a sound solid\n", g)
 		os.Exit(1)
 	}
-}
-
-// at45 is the point of a circle about (x, y) of radius r at 45
-// degrees, at height z: off the seams between a round face's quarters.
-func at45(x, y, r, z float64) api.Vec {
-	return api.V(x+r/math.Sqrt2, y+r/math.Sqrt2, z)
 }
 
 func main() {
@@ -62,11 +55,12 @@ func main() {
 	hole := doc.Features.Extrude(12, "drill")
 	hole.SetCombine(1) // difference
 
+	// Each face is picked on the seam between two of its quarter patches.
 	s := doc.Active().Solid()
-	stud := doc.Features.ThreadOnFace(s.FaceAt(at45(-8, 0, 4, -10)), api.ThreadOptions{Length: 12})
+	stud := doc.Features.ThreadOnFace(s.FaceAt(api.V(-4, 0, -10)), api.ThreadOptions{Length: 12})
 	check(stud)
 	s = doc.Active().Solid()
-	tapped := doc.Features.ThreadOnFace(s.FaceAt(at45(8, 0, 4.25, 5)), api.ThreadOptions{FullLength: true})
+	tapped := doc.Features.ThreadOnFace(s.FaceAt(api.V(12.25, 0, 5)), api.ThreadOptions{FullLength: true})
 	check(tapped)
 
 	for _, g := range []api.Group{stud, tapped} {

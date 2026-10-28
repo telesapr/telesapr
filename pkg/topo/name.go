@@ -254,8 +254,17 @@ func (t *Topology) EdgeAt(p geom.Vector, lead bool) (int, float64) {
 // FaceAt is the face nearest p that p lies over, its closest point on
 // the face's surface inside the face's outer loop and outside its
 // holes, and that distance; -1 when p lies over no face.
+//
+// A closest point on a face's boundary counts as over it: on the seam
+// between two of a hole's quarter patches the parameters of the point
+// fall a rounding error outside both patches, and the inside test,
+// which has no tolerance, would claim it for neither. A face p lies
+// inside wins over one whose boundary it is only on, unless that one
+// is nearer by more than LengthEps; of equals, the first face wins, so
+// a point always gives the same face.
 func (t *Topology) FaceAt(p geom.Vector) (int, float64) {
-	best, bestD := -1, math.Inf(1)
+	in, inD := -1, math.Inf(1)
+	on, onD := -1, math.Inf(1)
 	for f := range t.Faces {
 		s := t.Surface(f)
 		if s == nil {
@@ -263,23 +272,49 @@ func (t *Topology) FaceAt(p geom.Vector) (int, float64) {
 		}
 		var u, v float64
 		s.ClosestPointToUV(p, &u, &v, true)
-		d := s.PointAt(u, v).Minus(p).Magnitude()
-		if d >= bestD {
+		q := s.PointAt(u, v)
+		d := q.Minus(p).Magnitude()
+		if d >= inD && d >= onD {
 			continue
 		}
-		uv := geom.Vector{X: u, Y: v}
-		inside := true
-		for _, l := range t.Faces[f].Loops {
-			if pointInPolygon(uv, t.loopUV(s, t.Loops[l].CoEdges)) != t.Loops[l].Outer {
-				inside = false
-				break
+		switch {
+		case t.overFace(f, s, u, v):
+			if d < inD {
+				in, inD = f, d
 			}
-		}
-		if inside {
-			best, bestD = f, d
+		case d < onD && t.onBoundary(f, q):
+			on, onD = f, d
 		}
 	}
-	return best, bestD
+	if on >= 0 && (in < 0 || onD < inD-geom.LengthEps) {
+		return on, onD
+	}
+	return in, inD
+}
+
+// overFace reports whether the point (u, v) of face f's surface s lies
+// inside the face's outer loop and outside its holes.
+func (t *Topology) overFace(f int, s *srf.SSurface, u, v float64) bool {
+	uv := geom.Vector{X: u, Y: v}
+	for _, l := range t.Faces[f].Loops {
+		if pointInPolygon(uv, t.loopUV(s, t.Loops[l].CoEdges)) != t.Loops[l].Outer {
+			return false
+		}
+	}
+	return true
+}
+
+// onBoundary reports whether q lies within LengthEps of an edge of
+// face f's loops.
+func (t *Topology) onBoundary(f int, q geom.Vector) bool {
+	for _, l := range t.Faces[f].Loops {
+		for _, ce := range t.Loops[l].CoEdges {
+			if distanceToPolyline(q, t.Edges[t.CoEdges[ce].Edge].Points) < geom.LengthEps {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Straight reports whether an edge is a line segment.

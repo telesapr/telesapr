@@ -76,9 +76,18 @@ func (s Spec) fundamental() float64 {
 // crestClearance is ISO 2904's a_c: the gap between the crest of a
 // trapezoidal thread and the root of its mate.
 //
-// An ACME thread has the 0.010 inch of ASME B1.5 at every pitch.
+// An ACME thread has ASME B1.5's general purpose clearance: the screw's
+// minor diameter 0.020 inch under the nut's basic one and the nut's
+// major diameter 0.020 inch over the screw's at 10 threads per inch and
+// coarser, 0.010 inch at finer pitches, so 0.010 and 0.005 inch a side
+// (torqbolt.com's "Unified ACME threads dimensions and specifications",
+// quoting B1.5; Engineering ToolBox's table of ACME threads has the
+// 0.005 inch for its 14 and 16 threads per inch).
 func (s Spec) crestClearance() float64 {
 	if s.Form == FormACME {
+		if s.Pitch < mmPerInch/10-1e-9 {
+			return 0.005 * mmPerInch
+		}
 		return 0.010 * mmPerInch
 	}
 	switch {

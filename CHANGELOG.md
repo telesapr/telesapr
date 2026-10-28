@@ -14,6 +14,10 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 - On a group's screen, an edge of the solid named by the faces it lies between (a chamfer's, a fillet's or a sweep's picked on the model) and a face named by its identity (a shell's, a sketch on a face's, a wrap's) are hovered and selected from their rows, as an entity's row does, on the solid before the group, where the edge still is.
 - What a feature is built from can be changed after it is made, without making it again: a fillet's or chamfer's edges, a shell's faces, a sweep's or pattern's path, a loft's profiles and a mirror's plane. On the group's screen, [change] takes the selection as the new inputs (with nothing selected it activates the group before the feature, whose solid the inputs are picked on, and the screen stays while they are) and [remove] on a row takes that one away; in scripts, `SetEdges`, `SetFaces`, `SetPath`, `SetProfiles` and `SetPlane` on the typed group. A change the kernel can't make is refused and nothing moves; a later group built on what the change takes away reports it, as when a group is deleted.
 
+### Changed
+- Thread tolerance classes follow the standards' tables: ISO 965-1's for metric threads and ISO 2903's for trapezoidal ones, looked up by diameter range rather than computed from the size, and ASME B1.1's length of engagement and rounding for unified ones. A 1/4-20 UNC 2A screw is now 0.0037 inch on its pitch diameter, as the table has it, not 0.0040, and an M10 6H nut 180 µm, not 175; a thread made with a class keeps its old clearance until it is edited.
+- An ACME thread finer than 10 threads per inch has half the crest clearance, 0.005 inch a side, as ASME B1.5 gives it.
+
 ### Removed
 - Scripting: `srf.SetChordTolMm`, `srf.SetMaxSegments` and `srf.SetMesher`, which set the tolerance of shells built with none and were meant for tests; a document's chord tolerance and segments are set with `Edit.SetChordTolerance` and `Edit.SetMaxSegments`.
 
@@ -23,6 +27,7 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 - A screw thread made on a face over its full length follows the face when the part changes afterwards: a rod made longer by a parameter, or a hole drilled deeper, carries a thread as long as it is at the next regeneration, where before the thread kept its old length until it was edited. A face come to reach the part's end, or to stop short of it, or too short for the thread, is reported on the thread's group, and the thread takes it up when edited.
 - A menu opened from the keyboard (Alt and a letter, F10, Left and Right) on a very busy machine keeps its first entry active, so Return runs it, instead of sometimes closing without running anything.
 - Text drawn in the vector font on two threads at once, as a drawing exported by a script while the window draws, no longer races on the font's glyphs.
+- Scripting: `Solid.FaceAt` finds the face of a point on the seam between two quarters of a round face, as on a hole's wall at 0 or 90 degrees, instead of failing with "no face of the solid passes through".
 
 ## [0.5.3] - 2026-10-25
 

@@ -85,9 +85,8 @@ func plateWithHole(t *testing.T, dia float64) (*Doc, SolidFace) {
 	d.Sketch.Circle(V(0, 0, 0), dia/2)
 	hole := d.Features.Extrude(12, "drill")
 	hole.SetCombine(sketch.CombineDifference)
-	// Off the seams between the hole's quarters, where FaceAt finds none.
-	c := dia / 2 / math.Sqrt2
-	return d, hole.Solid().FaceAt(V(c, c, 5))
+	// On the seam between two of the hole's quarter patches.
+	return d, hole.Solid().FaceAt(V(dia/2, 0, 5))
 }
 
 // A hole's face carries a nut's thread, sized for the hole as drawn at
