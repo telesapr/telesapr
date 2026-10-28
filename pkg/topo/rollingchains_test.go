@@ -112,7 +112,7 @@ func TestFilletChainsMitred(t *testing.T) {
 // and are refused; a top edge with a bottom one lie apart, and are
 // rounded one after the other (filletApart): each fillet's vertices
 // are those it has alone, and the two take what each takes alone,
-// within what the meshes' chords of the cut walls differ by. Chamfers that would meet in mitres are refused, saying so.
+// within what the meshes' chords of the cut walls differ by.
 func TestFilletChainsNotMitred(t *testing.T) {
 	t.Parallel()
 	tol := fine(0.002)
@@ -157,13 +157,6 @@ func TestFilletChainsNotMitred(t *testing.T) {
 		if !slices.ContainsFunc(got, func(o topo.Vertex) bool { return o.P.Minus(p).Magnitude() < 1e-4 }) {
 			t.Errorf("top and bottom: no vertex at %v, which the fillet alone has", p)
 		}
-	}
-
-	// Chamfers: a mitre is found from the ball's centres.
-	sh = cubicPrism(lens, tol)
-	err = topo.FilletPicks(sh, topPicks(lens), 1, 1<<30, true)
-	if err == nil || !strings.Contains(err.Error(), "are not mitred") {
-		t.Errorf("chamfers: %v", err)
 	}
 }
 
@@ -215,6 +208,60 @@ func TestFilletChainsPartlyMitred(t *testing.T) {
 		for _, p := range c.verts {
 			if !hasVertex(t, sh, p) {
 				t.Errorf("%v: no vertex at %v", c.picks, p)
+			}
+		}
+	}
+}
+
+// Chamfers of a rim's chains meet in mitres as fillets do, where the
+// surfaces they sweep, carried on, meet: a point's height over the
+// mate's is over its line in the section through the point, and the
+// mitre's foot on the face both share is a root there too, where the
+// lines cross it. The lens's two top edges at distance 1, and three of
+// the four cubics' (two mitres, two ends on the unpicked one's wall):
+// OpenCASCADE's makeChamfer of the same edges has every vertex of ours
+// at the mitres within 4e-6 mm, takes 23.279179 mm³ from the lens
+// against our 23.279349 (its Volume of our STEP export), and every point
+// of either solid lies within 2.4e-4 mm of the other (sampled
+// 2026-10-28). Its ends on the wall are 4.5e-4 mm from ours, where the
+// faces are carried on 2.4 mm past the edge's end.
+func TestChamferChainsMitred(t *testing.T) {
+	if testing.Short() {
+		t.Skip("rolling-ball chamfers of several chains, slow")
+	}
+	t.Parallel()
+	for _, c := range []struct {
+		name  string
+		prof  [][4]geom.Vector
+		picks []int
+		verts []geom.Vector
+		ends  []geom.Vector
+	}{
+		{"lens", lensCubics(), []int{0, 1},
+			[]geom.Vector{v(0, 0, 4), v(20, 0, 4), v(1.19554, 0, 5), v(18.80446, 0, 5)}, nil},
+		{"four", fourCubics(), []int{1, 2, 3},
+			[]geom.Vector{v(0, 0, 4), v(16, 0, 4), v(0, 13, 4), v(16, 13, 4), v(0.68425, 12.24290, 5), v(15.31575, 12.24290, 5)},
+			[]geom.Vector{v(2.46653, -1.20879, 5), v(13.53347, -1.20879, 5)}},
+	} {
+		all := topPicks(c.prof)
+		var picks []topo.FilletPick
+		for _, i := range c.picks {
+			picks = append(picks, all[i])
+		}
+		sh := cubicPrism(c.prof, fine(0.002))
+		if err := topo.FilletPicks(sh, picks, 1, 1<<30, true); err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		sound(t, sh)
+		got := build(t, sh).Vertices
+		for _, p := range c.verts {
+			if !hasVertex(t, sh, p) {
+				t.Errorf("%s: no vertex at %v", c.name, p)
+			}
+		}
+		for _, p := range c.ends {
+			if !slices.ContainsFunc(got, func(x topo.Vertex) bool { return x.P.Minus(p).Magnitude() < 1e-3 }) {
+				t.Errorf("%s: no vertex near %v", c.name, p)
 			}
 		}
 	}

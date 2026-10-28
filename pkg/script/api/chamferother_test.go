@@ -16,12 +16,13 @@ import (
 // and a Boolean, which left the wedge's end open across the curved face
 // (the lid's 4 uprights, unsound with no word of it); it is now the
 // rolling ball's, flat, as its fillet is, and where the rolling ball
-// refuses, so does the chamfer.
+// refuses, so does the chamfer. Since 2026-10-28 the blob's two rims are
+// mitred at their creases, as their fillets are (TestChamferRimMitre).
 func TestChamferOnOtherSolids(t *testing.T) {
 	if testing.Short() {
 		t.Skip("STEP solids at a fine tolerance")
 	}
-	minMade := map[string]int{"loft": 12, "sweep": 12, "box_hole": 14, "cylinder": 2, "blob_extruded": 1,
+	minMade := map[string]int{"loft": 12, "sweep": 12, "box_hole": 14, "cylinder": 2, "blob_extruded": 3,
 		"sphere_bored": 2, "vase_revolved": 2, "lid_degree7": 12}
 	t.Parallel()
 	var mu sync.Mutex
@@ -201,5 +202,57 @@ func TestChamferLoftFoot(t *testing.T) {
 	}
 	if rep := f.Analyze().Check(); !rep.Sound() {
 		t.Errorf("%s", rep.Summary())
+	}
+}
+
+// The blob's rims chamfered at distance 1, each one closed edge turning
+// at its wall's crease: the chain runs from the crease round to it, and
+// its ends meet in a mitre where the chamfer's surfaces either way,
+// carried on, meet, as the fillet's do (TestFilletRimMitre). Its
+// vertices are OpenCASCADE's makeChamfer's within 3e-6 mm, and every
+// point of either solid lies within 4.2e-5 mm of the other (sampled
+// 2026-10-28; its Volume of our STEP export is 2% off, which surfaces
+// that close can't be). Both rims are sound.
+func TestChamferRimMitre(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("chamfers over curved faces, slow")
+	}
+	blob := filepath.Join("..", "..", "..", "testdata", "step", "shapes", "blob_extruded.step")
+	for _, z := range []float64{5, 0} {
+		d := New()
+		d.Edit.SetChordTolerance(0.01)
+		g, err := d.Assembly.LinkStep(blob, "", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var rim SolidEdge
+		for _, e := range g.Solid().Edges() {
+			if a, b := e.Ends(); a == b && math.Abs(a.Z-z) < 1e-9 {
+				rim = e
+			}
+		}
+		f := d.Features.ChamferSolid([]SolidEdge{rim}, 1, "")
+		if p := f.Problem(); p != "" {
+			t.Fatalf("rim at z %g: %s", z, p)
+		}
+		if rep := f.Analyze().Check(); !rep.Sound() {
+			t.Errorf("rim at z %g: %s", z, rep.Summary())
+		}
+		dz := 1.0
+		if z == 0 {
+			dz = -1
+		}
+		low, high := V(0, 0, z-dz), V(0.084219, 2.400768, z)
+		var ends [2]bool
+		for _, e := range f.Solid().Edges() {
+			a, b := e.Ends()
+			for i, q := range []Vec{low, high} {
+				ends[i] = ends[i] || a.Minus(q).Magnitude() < 1e-4 || b.Minus(q).Magnitude() < 1e-4
+			}
+		}
+		if !ends[0] || !ends[1] {
+			t.Errorf("rim at z %g: the mitre's ends %v and %v are not both vertices (%v)", z, low, high, ends)
+		}
 	}
 }
