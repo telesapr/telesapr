@@ -122,6 +122,45 @@ func TestChamferTwoDistancesCorner(t *testing.T) {
 	}
 }
 
+// Two edges chamfered by two distances meet above a third left sharp:
+// at a block's top corner, cutting, and at the foot of a block standing
+// on a plate, filling, where the block's upright edge stays sharp and a
+// side face grows out to the mitre.
+func TestChamferTwoDistancesPair(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	ex := block(d, 0, 0, 10, 10, 10)
+	c := d.Features.Chamfer([]api.Entity{
+		lineAlong(t, ex, api.V(0, 0, 10), api.V(10, 0, 10)),
+		lineAlong(t, ex, api.V(10, 0, 10), api.V(10, 10, 10)),
+	}, 1, "")
+	before := saved(t, d)
+	step(d)
+	c.AsChamfer().SetSecondDistance(2)
+	undoRedo(t, d, before)
+	// Two prisms of 1*2/2*10 less the pyramid both take at the corner.
+	if r := c.Analyze().Check(); c.Problem() != "" || !r.Sound() || math.Abs(r.Volume-(1000-20+4.0/3)) > 1e-6 {
+		t.Fatalf("top corner: %q %s", c.Problem(), r.String())
+	}
+
+	d = api.New()
+	plate := block(d, 0, 0, 20, 20, 5)
+	d.Features.SketchOnFace(plate.Solid().FaceAt(api.V(15, 15, 5)), "")
+	d.Sketch.Rect(api.V(5, 5, 5), api.V(10, 10, 5))
+	up := d.Features.Extrude(10, "")
+	c = d.Features.Chamfer([]api.Entity{
+		lineAlong(t, up, api.V(5, 10, 5), api.V(10, 10, 5)),
+		lineAlong(t, up, api.V(10, 5, 5), api.V(10, 10, 5)),
+	}, 1, "")
+	c.AsChamfer().SetSecondDistance(2)
+	// OpenCASCADE's makeChamfer of the same, either way round
+	// (testdata/topo/chamfer-corners.txt has the corner's other cases).
+	r := c.Analyze().Check()
+	if c.Problem() != "" || !r.Sound() || r.Volume < 2250+9 || r.Volume > 2250+12 {
+		t.Fatalf("foot: %q %s", c.Problem(), r.String())
+	}
+}
+
 // A circular edge chamfered by two distances is cut by a cone of
 // another angle: a triangle of legs a across and b along the axis
 // turned about it, whose centroid is a third of a in from the rim.

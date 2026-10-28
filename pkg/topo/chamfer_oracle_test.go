@@ -45,6 +45,22 @@ func cornerNotch(tol srf.Tolerance) *srf.SShell {
 	return out
 }
 
+// cornerRib is the plate (0, 0, 0) to (20, 20, 5) with the block (5, 5,
+// 5) to (10, 10, 15) on it, at the tolerance tol: two concave foot edges
+// meet at (10, 10, 5) below the block's convex upright edge.
+func cornerRib(tol srf.Tolerance) *srf.SShell {
+	var a, b srf.SShell
+	a.Tol, b.Tol = tol, tol
+	a.MakePrism([]geom.Vector{v(0, 0, 0), v(20, 0, 0), v(20, 20, 0), v(0, 20, 0)}, v(0, 0, 0), v(0, 0, 5), core.NewRGBA(100, 100, 100, 255))
+	b.MakePrism([]geom.Vector{v(5, 5, 5), v(10, 5, 5), v(10, 10, 5), v(5, 10, 5)}, v(0, 0, 0), v(0, 0, 10), core.NewRGBA(100, 100, 100, 255))
+	out := &srf.SShell{Tol: tol}
+	out.MakeFromUnionOf(&a, &b)
+	for i := range out.Surface {
+		out.Surface[i].Face = srf.FaceID(i + 1)
+	}
+	return out
+}
+
 // chamferOracleCase builds the shape a line of
 // testdata/topo/chamfer-corners.txt names and chamfers its corner as
 // the line says, at the tolerance tol.
@@ -78,6 +94,33 @@ func chamferOracleCase(shape string, d []float64, tol srf.Tolerance) (*srf.SShel
 			{A: v(0, 0, 0), B: v(20, 0, 0), R: d[1]},
 			{A: v(0, 0, 0), B: v(20*math.Cos(th), 20*math.Sin(th), 0), R: d[2]},
 			{A: v(0, 0, 0), B: v(0, 0, 20), R: d[3]}}
+	case "pair", "pocket", "rib", "ledge":
+		// Two edges, at d[0] and d[2] on the face both share, the top,
+		// and d[1] and d[3] on their other faces.
+		c, ex, ey := v(10, 20, 30), v(0, 20, 30), v(10, 0, 30)
+		switch shape {
+		case "pair":
+			sh = box(tol)
+		case "pocket":
+			sh = cornerNotch(tol)
+			c, ex, ey = v(10, 10, 10), v(20, 10, 10), v(10, 20, 10)
+		case "ledge":
+			sh = cornerNotch(tol)
+			c, ex, ey = v(10, 10, 20), v(20, 10, 20), v(10, 20, 20)
+		case "rib":
+			sh = cornerRib(tol)
+			c, ex, ey = v(10, 10, 5), v(5, 10, 5), v(10, 5, 5)
+		}
+		top := faceIDAt(sh, c, v(0, 0, 1))
+		picks = []topo.FilletPick{{A: c, B: ex, R: d[0], D2: d[1], First: top}, {A: c, B: ey, R: d[2], D2: d[3], First: top}}
+	case "prismpair":
+		th := d[0] * math.Pi / 180
+		sh = trianglePrism(th, tol)
+		c := v(0, 0, 0)
+		top := faceIDAt(sh, c, v(0, 0, 1))
+		picks = []topo.FilletPick{
+			{A: c, B: v(20, 0, 0), R: d[1], D2: d[2], First: top},
+			{A: c, B: v(20*math.Cos(th), 20*math.Sin(th), 0), R: d[3], D2: d[4], First: top}}
 	case "notch":
 		sh = cornerNotch(tol)
 		c := v(10, 10, 10)
@@ -174,6 +217,8 @@ func samePoints(a, b []geom.Vector) bool {
 // testdata/topo/chamfer-corners.txt chamfers.
 var chamferOracleCorner = map[string]geom.Vector{
 	"box": v(10, 20, 30), "uneven": v(10, 20, 30), "apex": v(10, 10, 10), "prism": v(0, 0, 0), "notch": v(10, 10, 10),
+	"pair": v(10, 20, 30), "pocket": v(10, 10, 10), "rib": v(10, 10, 5), "ledge": v(10, 10, 20),
+	"prismpair": v(0, 0, 0),
 }
 
 // TestChamferCornerOracle chamfers the corners of
@@ -181,10 +226,12 @@ var chamferOracleCorner = map[string]geom.Vector{
 // scripts/chamfer-setback-fixtures.py from OpenCASCADE's makeChamfer:
 // a box's corner of three distances, two on one edge, a pyramid's apex
 // of four, the foot of a prism's upright edge whose faces don't meet
-// square, and a concave corner. Each must be sound and of OpenCASCADE's
-// count of faces. Where the face that fills the corner has
-// OpenCASCADE's corners, the volume must be its, within what the
-// bilinear patches' meshes stray at this chord tolerance.
+// square, and a concave corner; and two edges of two distances each
+// meeting above a third left sharp, of either kind (chamferPairAt). Each
+// must be sound and of OpenCASCADE's count of faces. Where the face that
+// fills the corner has OpenCASCADE's corners, the volume must be its,
+// within what the bilinear patches' meshes stray at this chord
+// tolerance.
 //
 // OpenCASCADE parts from that in two ways, counted here and held to
 // what they were when the fixtures were first compared, 2026-10-28. At
@@ -236,7 +283,7 @@ func TestChamferCornerOracle(t *testing.T) {
 			t.Errorf("%s: %d faces, OpenCASCADE's %d", head, len(tp.Faces), faces)
 		}
 		dmax := slices.Max(d)
-		if f[0] == "prism" {
+		if f[0] == "prism" || f[0] == "prismpair" {
 			dmax = slices.Max(d[1:])
 		}
 		ours := cornerPoints(tp, chamferOracleCorner[f[0]], 3*dmax+0.5)
