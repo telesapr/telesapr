@@ -348,7 +348,6 @@ What the thread improvements of 2026-10-23 (`doc/notes/thread-evaluation.md`, br
 | A phase with a run-out | refused on a modelled thread | The run-out's fix places the ridge end exactly; a phase moves it |
 | Tolerance classes | from the standards' formulas, not their tables | 1/4-20 UNC 2A comes out about 7% over the ASME table's pitch-diameter tolerance; check against ISO 965-2 and ASME B1.1 tables. ACME's 0.010 in clearance likewise |
 | Buttress threads | not offered | The ridge sketch ties its two flanks to equal length; an asymmetric profile needs it drawn otherwise |
-| `Solid.FaceAt` on a seam between a hole's quarter patches | finds no face | Pick off the seam; older than the thread work |
 
 Done 2026-10-27: a full-length thread on a face follows the face's length at regeneration: the
 thread's datum, finding the face again, measures it and moves the dimensions that carry the

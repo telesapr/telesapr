@@ -37,12 +37,6 @@ func volume(doc *api.Doc) float64 {
 	return r.Volume
 }
 
-// at45 is the point of a circle about (x, y) of radius r at 45
-// degrees, at height z: off the seams between a round face's quarters.
-func at45(x, y, r, z float64) api.Vec {
-	return api.V(x+r/math.Sqrt2, y+r/math.Sqrt2, z)
-}
-
 func main() {
 	write := len(os.Args) < 2 || os.Args[1] != "-"
 	doc := api.Current()
@@ -59,10 +53,10 @@ func main() {
 	plain := volume(doc)
 
 	s := doc.Active().Solid()
-	stud := doc.Features.ThreadOnFace(s.FaceAt(at45(-8, 0, 4, -10)),
+	stud := doc.Features.ThreadOnFace(s.FaceAt(api.V(-4, 0, -10)),
 		api.ThreadOptions{Length: 12, Cosmetic: true}).AsThread()
 	s = doc.Active().Solid()
-	tapped := doc.Features.ThreadOnFace(s.FaceAt(at45(8, 0, 4.25, 5)),
+	tapped := doc.Features.ThreadOnFace(s.FaceAt(api.V(12.25, 0, 5)),
 		api.ThreadOptions{FullLength: true, Cosmetic: true}).AsThread()
 	cosmetic := volume(doc)
 	for _, t := range []api.ThreadGroup{stud, tapped} {

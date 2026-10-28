@@ -23,6 +23,7 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 - A screw thread made on a face over its full length follows the face when the part changes afterwards: a rod made longer by a parameter, or a hole drilled deeper, carries a thread as long as it is at the next regeneration, where before the thread kept its old length until it was edited. A face come to reach the part's end, or to stop short of it, or too short for the thread, is reported on the thread's group, and the thread takes it up when edited.
 - A menu opened from the keyboard (Alt and a letter, F10, Left and Right) on a very busy machine keeps its first entry active, so Return runs it, instead of sometimes closing without running anything.
 - Text drawn in the vector font on two threads at once, as a drawing exported by a script while the window draws, no longer races on the font's glyphs.
+- Scripting: `Solid.FaceAt` finds the face of a point on the seam between two quarters of a round face, as on a hole's wall at 0 or 90 degrees, instead of failing with "no face of the solid passes through".
 
 ## [0.5.3] - 2026-10-25
 
