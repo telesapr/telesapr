@@ -44,6 +44,7 @@ func init() {
 		"EdgeSharp":                   reflect.ValueOf(srf.EdgeSharp),
 		"EdgeSharpOrFace":             reflect.ValueOf(srf.EdgeSharpOrFace),
 		"EdgeTurning":                 reflect.ValueOf(srf.EdgeTurning),
+		"ErrCapsDiffer":               reflect.ValueOf(&srf.ErrCapsDiffer).Elem(),
 		"ErrCornerNoJoint":            reflect.ValueOf(&srf.ErrCornerNoJoint).Elem(),
 		"ErrCornerOutOfPlane":         reflect.ValueOf(&srf.ErrCornerOutOfPlane).Elem(),
 		"ErrCornerTooLong":            reflect.ValueOf(&srf.ErrCornerTooLong).Elem(),

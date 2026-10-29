@@ -11001,6 +11001,10 @@
 						"decl": "func (s *SShell) FindSurface(h core.HSSurface) *SSurface",
 						"text": "FindSurface returns the SSurface with the given handle, or nil if not found."
 					},
+					"JoinedAtCaps": {
+						"decl": "func (s *SShell) JoinedAtCaps(a, b uint32) (*SShell, error)",
+						"text": "JoinedAtCaps is s with its surfaces of origins a and b, planes with the same outline facing each other, taken out, each curve round b given up for the one round a it lies along, which then bounds the surface b's bounded on its other side."
+					},
 					"KeepClosestGuesses": {
 						"decl": "func (s *SShell) KeepClosestGuesses(keep bool)",
 						"text": "KeepClosestGuesses gives the shell's curved surfaces the grid of points ClosestPointTo starts its search from, as a Boolean's loops have (makeGuessGrids), or takes it away: for a caller that projects many points on them, as a fillet's rolling ball does, which without it evaluated the surface at every point of the grid for each."
@@ -11774,6 +11778,10 @@
 			},
 			"EdgeTurning": {
 				"decl": "const EdgeTurning"
+			},
+			"ErrCapsDiffer": {
+				"decl": "var ErrCapsDiffer",
+				"text": "ErrCapsDiffer is a join of two caps whose outlines are not the same curves."
 			},
 			"ErrCornerNoJoint": {
 				"decl": "var ErrCornerNoJoint",
