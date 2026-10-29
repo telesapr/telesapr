@@ -398,6 +398,7 @@ thread {
   run-out <real>            # how far the root tapers to the crest before the shoulder, a length; left out for none
   level-starts              # every start from the circle's plane, a ridge and a helix each
   load-flank-back           # a buttress thread's load flank faces back, to where a screw's thread starts
+  round-root                # a B1.9 buttress thread's roots rounded as the standard draws them
   full-length               # made on a face: as long as the face, measured again at each regeneration
   length-dimension <handle> # a dimension that carries the length of a full-length thread, one line each
   class "<class>"           # the tolerance class, as "6g", which sets the clearance in place of clearance
@@ -715,6 +716,10 @@ edit as one, and its drawings show the thread by the convention all the same.
 
 Version 2 gained the thread field `chamfer` on 2026-10-23; a reader from before skips it with a
 report, and reads a chamfered thread as one without, whose chamfer's two groups follow it.
+
+Version 2 gained the thread field `round-root` on 2026-10-29. A reader from before skips it with a
+report; the thread's groups, drawn with the rounded roots, are read as saved, and its roots are drawn
+flat when the thread is edited.
 
 Version 2 gained the thread field `length-dimension` on 2026-10-27, the dimensions a full-length
 thread follows its face by. A reader from before skips each with a report, and the thread keeps

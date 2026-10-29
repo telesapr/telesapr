@@ -9122,6 +9122,10 @@
 					"FitClearance": {
 						"decl": "func (o ThreadOptions) FitClearance() (float64, error)",
 						"text": "FitClearance is the clearance the thread is made with: its class's, or Clearance when it has none."
+					},
+					"LoadStated": {
+						"decl": "func (o ThreadOptions) LoadStated() ThreadOptions",
+						"text": "LoadStated is o with the way of the load its designation states, if it does, taken into LoadFlankBack, which keeps it in the thread's options: PULL-BUTT turns the ridge, PUSH-BUTT leaves it as drawn."
 					}
 				}
 			},
@@ -9486,6 +9490,10 @@
 			"ErrNotThread": {
 				"decl": "var ErrNotThread",
 				"text": "ErrNotThread is returned for a group that is not a thread's helix."
+			},
+			"ErrRootRoundCoarse": {
+				"decl": "var ErrRootRoundCoarse",
+				"text": "ErrRootRoundCoarse is returned for a rounded root (RoundRoot) on a part whose chord tolerance is coarser than rootChordLimit of the root's radius: the Booleans then fail where the root's arcs cross the turned or bored surface."
 			},
 			"ErrSplinePointsFull": {
 				"decl": "var ErrSplinePointsFull",

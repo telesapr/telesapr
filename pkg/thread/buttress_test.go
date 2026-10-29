@@ -110,6 +110,9 @@ func TestButtressDesignations(t *testing.T) {
 		{"1 butt", "1-12 BUTT", Spec{Form: FormButtressInch, Diameter: in, Pitch: in / 12}},
 		{"2-1/2-8 BUTT (2 starts)", "2 1/2-8 BUTT (2 starts)", Spec{Form: FormButtressInch, Diameter: 2.5 * in, Pitch: in / 8, Starts: 2}},
 		{"0.6-20 BUTT", "0.6-20 BUTT", Spec{Form: FormButtressInch, Diameter: 0.6 * in, Pitch: in / 20}},
+		{"1-12 PUSH-BUTT", "1-12 PUSH-BUTT", Spec{Form: FormButtressInch, Diameter: in, Pitch: in / 12, Load: LoadPush}},
+		{"1-12 pull butt-LH", "1-12 PULL-BUTT-LH", Spec{Form: FormButtressInch, Diameter: in, Pitch: in / 12, Load: LoadPull, LeftHand: true}},
+		{"1 PULL-BUTT", "1-12 PULL-BUTT", Spec{Form: FormButtressInch, Diameter: in, Pitch: in / 12, Load: LoadPull}},
 	} {
 		got, err := Parse(tc.text)
 		if err != nil {
@@ -117,7 +120,7 @@ func TestButtressDesignations(t *testing.T) {
 			continue
 		}
 		if math.Abs(got.Diameter-tc.want.Diameter) > 1e-9 || math.Abs(got.Pitch-tc.want.Pitch) > 1e-9 ||
-			got.Form != tc.want.Form || got.Starts != tc.want.Starts || got.LeftHand != tc.want.LeftHand {
+			got.Form != tc.want.Form || got.Starts != tc.want.Starts || got.LeftHand != tc.want.LeftHand || got.Load != tc.want.Load {
 			t.Errorf("%q: %+v, want %+v", tc.text, got, tc.want)
 		}
 		if s := got.String(); s != tc.written {
@@ -127,7 +130,7 @@ func TestButtressDesignations(t *testing.T) {
 			t.Errorf("%q: %q reads back as %+v, %v", tc.text, got.String(), back, err)
 		}
 	}
-	for _, bad := range []string{"S21", "5 BUTT", "S"} {
+	for _, bad := range []string{"S21", "5 BUTT", "S", "1-12 PUSH", "1-12 PUSH-ACME"} {
 		if _, err := Parse(bad); err == nil {
 			t.Errorf("%q read", bad)
 		}
@@ -202,5 +205,92 @@ func TestButtressTurned(t *testing.T) {
 	}
 	if tr := p.WithCrest(CrestTruncated); !(tr.CrestWidth > p.CrestWidth) || tr.UpperFlank != p.UpperFlank {
 		t.Errorf("a buttress crest truncated: %+v", tr)
+	}
+}
+
+// TestButtressRootArcs checks B1.9's rounded roots: each arc is of the
+// standard's radius, tangent to its flank, crosses the root into the
+// part and lies close to the standard's arc, the circle tangent to both
+// flanks of the groove whose bottom is at the root; DIN 513's roots are
+// flat.
+func TestButtressRootArcs(t *testing.T) {
+	t.Parallel()
+	s, _ := Parse("1-12 BUTT")
+	if r := (Spec{Form: FormButtress, Diameter: 20, Pitch: 4}).RootRound(); r != 0 {
+		t.Errorf("DIN 513's root rounded by %g", r)
+	}
+	if p := s.Profile(false, 0); p.RootRoundRadius != 0 {
+		t.Errorf("a profile's root rounded by %g", p.RootRoundRadius)
+	}
+	round := func(p Profile) Profile {
+		p.RootRoundRadius = s.RootRound()
+		return p
+	}
+	dist := func(a, b [2]float64) float64 { return math.Hypot(a[0]-b[0], a[1]-b[1]) }
+	for _, p := range []Profile{round(s.Profile(false, 0)), round(s.Profile(true, 0.05)), round(s.Profile(false, 0).Turned()),
+		round(s.Profile(true, 0)).WithCrest(CrestTruncated)} {
+		r := p.RootRoundRadius
+		if math.Abs(r-0.07141*s.Pitch) > 1e-12 {
+			t.Fatalf("root radius %g", r)
+		}
+		u := math.Copysign(1, p.CrestRadius-p.RootRadius)
+		lower, upper := p.RootArcs()
+		// flank is where the flank of side way crosses radius rr, from the
+		// crest's middle.
+		flank := func(way, rr float64) float64 {
+			lo, hi := ridgeSpan(p, rr, 0)
+			if way > 0 {
+				return hi
+			}
+			return lo
+		}
+		for i, a := range []RootArc{lower, upper} {
+			way := float64(2*i - 1)
+			for what, pt := range map[string][2]float64{"tangent": a.Tangent, "turn": a.Turn} {
+				if d := dist(pt, a.Centre); math.Abs(d-r) > 1e-12 {
+					t.Errorf("%s %d: %s %g from the centre, want %g", s, i, what, d, r)
+				}
+			}
+			if z := flank(way, a.Tangent[0]); math.Abs(z-a.Tangent[1]) > 1e-12 {
+				t.Errorf("arc %d leaves the flank at %g, which is at %g", i, a.Tangent[1], z)
+			}
+			// Tangent: the radius to the flank is square to it.
+			dr, dz := a.Tangent[0]-a.Centre[0], a.Tangent[1]-a.Centre[1]
+			fr, fz := 1.0, flank(way, a.Tangent[0]+1)-a.Tangent[1]
+			if c := (dr*fr + dz*fz) / (math.Hypot(dr, dz) * math.Hypot(fr, fz)); math.Abs(c) > 1e-9 {
+				t.Errorf("arc %d meets its flank at cos %g", i, c)
+			}
+			if a.Cross[0] != p.RootRadius || u*(a.End[0]-p.RootRadius) >= 0 || u*(a.Turn[0]-p.RootRadius) <= 0 ||
+				u*(a.Tangent[0]-a.Turn[0]) <= 0 {
+				t.Errorf("arc %d: %+v doesn't run from the flank across the root at %g", i, a, p.RootRadius)
+			}
+			// Turn, Cross and End lie on the arc's tangent at Turn.
+			tr, tz := a.Turn[0]-a.Centre[0], a.Turn[1]-a.Centre[1]
+			for what, pt := range map[string][2]float64{"crossing": a.Cross, "end": a.End} {
+				if c := (pt[0]-a.Turn[0])*tr + (pt[1]-a.Turn[1])*tz; math.Abs(c) > 1e-12 {
+					t.Errorf("arc %d: %s off its tangent by %g", i, what, c)
+				}
+			}
+			// The model keeps within a quarter of the radius of the
+			// standard's arc, which the crossing is furthest from.
+			if d := dist(a.Cross, a.Centre) - r; d < 0 || d > 0.26*r {
+				t.Errorf("arc %d crosses the root %g of the radius off the arc", i, d/r)
+			}
+			if z := flank(way, p.RootRadius); math.Abs(z-a.Foot[1]) > 1e-12 || way*(a.Cross[1]-a.Foot[1]) <= 0 {
+				t.Errorf("arc %d crosses the root at %g, its flank at %g", i, a.Cross[1], z)
+			}
+		}
+		// The standard's arc of the groove above the ridge is tangent to
+		// both flanks, its bottom at the root: the centres of the arcs
+		// either side of the groove are one.
+		if d := dist([2]float64{lower.Centre[0], lower.Centre[1] + s.Pitch}, upper.Centre); d > 2e-5*s.Pitch {
+			t.Errorf("the groove's arcs are %g apart", d)
+		}
+		if c := upper.Centre[0] - u*r; math.Abs(c-p.RootRadius) > 1e-12 {
+			t.Errorf("the arc's bottom at %g, the root at %g", c, p.RootRadius)
+		}
+		if !(upper.End[1] < lower.End[1]+s.Pitch) {
+			t.Errorf("the root arcs' ends cross: %g past %g", upper.End[1], lower.End[1]+s.Pitch)
+		}
 	}
 }

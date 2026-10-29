@@ -17,6 +17,9 @@ type buttressProfile struct {
 	// where the external thread's root is. internalRoot is how far the
 	// internal thread's root lies beyond the nominal diameter.
 	pitchDepth, engagement, externalDepth, internalRoot float64
+	// rootRound is the radius of the arc that rounds either root, in
+	// pitches; 0 for a flat root.
+	rootRound float64
 }
 
 // din513 is the S thread of DIN 513-1: H1 = 0.75 P of engagement, the
@@ -31,14 +34,16 @@ var din513 = buttressProfile{
 
 // asmeB19 is the buttress inch thread of ASME B1.9: a sharp triangle
 // H = 0.89064 P high, truncated by f = 0.14532 P at either crest for
-// h = 0.6 P of engagement and by s = 0.08261 P at either root, which is
-// rounded by the standard and flat here. The pitch line is half the
-// engagement deep, the external root 0.66271 P deep, and the internal
-// one 0.06271 P past the nominal diameter; either crest is then
-// 0.16316 P wide, B1.9's F.
+// h = 0.6 P of engagement and by s = 0.08261 P at either root. Either
+// root is rounded by an arc of r = 0.07141 P tangent to both flanks,
+// whose bottom is where the truncation's flat is (RootArcs). The pitch
+// line is half the engagement deep, the external root 0.66271 P deep,
+// and the internal one 0.06271 P past the nominal diameter; either crest
+// is then 0.16316 P wide, B1.9's F.
 var asmeB19 = buttressProfile{
 	load: 7, trailing: 45,
 	pitchDepth: 0.3, engagement: 0.6, externalDepth: 0.66271, internalRoot: 0.06271,
+	rootRound: 0.07141,
 }
 
 // buttress is the thread's buttress profile, if it has one.
@@ -68,6 +73,17 @@ func (s Spec) flanks() (lower, upper float64) {
 func (s Spec) Buttress() bool {
 	_, ok := s.buttress()
 	return ok
+}
+
+// RootRound is the radius of the arc that the thread's standard rounds
+// its roots with, in millimeters: ASME B1.9's 0.07141 P, and 0 for a
+// thread whose standard draws them flat, as this package does every
+// other.
+func (s Spec) RootRound() float64 {
+	if b, ok := s.buttress(); ok {
+		return b.rootRound * s.Pitch
+	}
+	return 0
 }
 
 // buttressMetric are the diameters of DIN 513-2's S threads with their
@@ -117,3 +133,22 @@ func buttressInchTPI(d float64) []float64 {
 	}
 	return []float64{4, 5, 6, 8, 10, 12, 16}
 }
+
+// Load is the way a buttress thread carries its load, as ASME B1.9's
+// designations name it.
+type Load int
+
+const (
+	// LoadUnstated is a designation that doesn't say: BUTT.
+	LoadUnstated Load = iota
+	// LoadPush is PUSH-BUTT: the screw pushes, at the end its thread
+	// starts from, what lies beyond it, the nut holding it back. The
+	// screw's load flank faces away from that end, as a thread is drawn.
+	LoadPush
+	// LoadPull is PULL-BUTT: the screw pulls, its load flank facing the
+	// end its thread starts from; the ridge is turned about.
+	LoadPull
+)
+
+// loadNames are the designations' words for each way, before BUTT.
+var loadNames = [...]string{LoadUnstated: "", LoadPush: "PUSH-", LoadPull: "PULL-"}

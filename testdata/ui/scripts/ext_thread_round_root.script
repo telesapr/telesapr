@@ -1,0 +1,43 @@
+# A B1.9 buttress thread with its roots rounded: the chord tolerance set
+# fine enough in the preferences, the designation typed with the load's
+# way, PULL-BUTT, which ticks the load flank turned back, and the rounded
+# root ticked at the end of the crest's row; then made.
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 350 300
+down L 350 300
+up L 350 300
+key esc
+key x shift
+key esc
+menu Edit|Preferences...
+# [change] the chord tolerance to 0.02%.
+twmove 110 295
+twdown L 110 295
+twup L 110 295
+edit 0.02
+move 350 300
+down L 350 300
+up L 350 300
+menu Features|Screw Thread...
+twmove 172 110
+twdown L 172 110
+twup L 172 110
+edit 1/2-16 PULL-BUTT
+tw
+# The rounded root, at the end of the crest's row.
+twmove 690 190
+twdown L 690 190
+twup L 690 190
+tw
+# Flip the direction, down into the part; then made.
+twmove 60 230
+twdown L 60 230
+twup L 60 230
+twmove 37 260
+twdown L 37 260
+twup L 37 260
+tw
+dump

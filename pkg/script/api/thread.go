@@ -72,8 +72,17 @@ type ThreadOptions struct {
 	// the other way. A screw and a nut mate when their load flanks face
 	// each other, which depends on which way each thread runs:
 	// Assembly.Screw refuses two that face the same way. Other threads'
-	// ridges are symmetric and stay as they are.
+	// ridges are symmetric and stay as they are. A designation that says
+	// which way the load goes sets it: "PUSH-BUTT" leaves the load flank
+	// ahead, "PULL-BUTT" turns it back.
 	LoadFlankBack bool
+	// RoundRoot rounds the roots of an ASME B1.9 buttress thread (BUTT)
+	// as the standard does, by an arc of 0.07141 pitches tangent to both
+	// flanks; otherwise they are flat. The arcs are small: a chord
+	// tolerance coarser than a fifth of their radius is refused, saying
+	// the tolerance to set (Edit.SetChordTolerance). Other threads'
+	// roots stay flat.
+	RoundRoot bool
 	// Phase turns the thread about its axis, in degrees: its ridges
 	// move along it, away from the circle, by that part of the lead,
 	// and are a pitch shorter, for the room; with a run-out, their end
@@ -131,7 +140,7 @@ func (o ThreadOptions) sketchOptions(sk *sketch.Sketch, diameter float64) sketch
 	opts.Length, opts.Clearance = o.Length, o.Clearance
 	opts.RunOut, opts.LevelStarts, opts.Cosmetic = o.RunOut, o.LevelStarts, o.Cosmetic
 	opts.FullLength, opts.Chamfer = o.FullLength, o.Chamfer
-	opts.Class, opts.Phase, opts.LoadFlankBack = o.Class, o.Phase, o.LoadFlankBack
+	opts.Class, opts.Phase, opts.LoadFlankBack, opts.RoundRoot = o.Class, o.Phase, o.LoadFlankBack, o.RoundRoot
 	if o.LengthExpr != "" {
 		v, expr, err := sk.ThreadLengthText(o.LengthExpr)
 		if err != nil {
@@ -157,7 +166,7 @@ func threadOptionsOf(o sketch.ThreadOptions) ThreadOptions {
 		Designation: right.String(), LeftHand: o.Spec.LeftHand, Internal: o.Internal, Length: o.Length, Through: o.Through,
 		Reverse: o.Reverse, Clearance: clearance, Class: o.Class, LengthExpr: o.LengthExpr, Crest: o.Crest.String(),
 		RunOut: o.RunOut, LevelStarts: o.LevelStarts, FullLength: o.FullLength, Cosmetic: o.Cosmetic, Phase: o.Phase,
-		Chamfer: o.Chamfer, LoadFlankBack: o.LoadFlankBack,
+		Chamfer: o.Chamfer, LoadFlankBack: o.LoadFlankBack, RoundRoot: o.RoundRoot,
 	}
 }
 

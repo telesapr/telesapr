@@ -142,8 +142,11 @@ func (tw *textWindow) EditControlDoneForThread(s string) bool {
 			ss.Report(err)
 			break
 		}
-		t.designation = spec.String()
+		// A designation that says which way the load goes sets the load
+		// flank, which then keeps it.
 		t.options.Spec = spec
+		t.options = t.options.LoadStated()
+		t.designation = t.options.Spec.String()
 		t.note = thread.Note(s, spec)
 
 	case editThreadLength:
@@ -222,6 +225,8 @@ func (tw *textWindow) ScreenChangeThread(link int, v uint32) {
 		t.options.LevelStarts = !t.options.LevelStarts
 	case 'w':
 		t.options.LoadFlankBack = !t.options.LoadFlankBack
+	case 'j':
+		t.options.RoundRoot = !t.options.RoundRoot
 	case 'y', 'z':
 		t.options.Cosmetic = link == 'z'
 	case 'x':
@@ -439,6 +444,13 @@ func (tw *textWindow) ShowThread() {
 	crest := fmt.Sprintf("%%Ftcrest%%E %%f%%Ln%%Fd%s standard%%E %%f%%Lu%%Fd%s truncated%%E %%f%%Lo%%Fd%s rounded%%E",
 		radioMark(o.Crest == thread.CrestStandard), radioMark(o.Crest == thread.CrestTruncated),
 		radioMark(o.Crest == thread.CrestRounded))
+	// A B1.9 thread's rounded root at the end of the crest's row, the
+	// only one its standard rounds.
+	crestLinks := []any{lf(tw.ScreenChangeThread), lf(tw.ScreenChangeThread), lf(tw.ScreenChangeThread)}
+	if o.Spec.RootRound() > 0 {
+		crest += "    %Fd%f%Lj%s  rounded root%E"
+		crestLinks = append(crestLinks, lf(tw.ScreenChangeThread), checkMark(o.RoundRoot))
+	}
 	// Modelled or cosmetic at the end of a row, so that the rows below
 	// stay put.
 	kind := fmt.Sprintf("%%Ftas%%E %%f%%Ly%%Fd%s modelled%%E  %%f%%Lz%%Fd%s cosmetic%%E",
@@ -450,8 +462,7 @@ func (tw *textWindow) ShowThread() {
 		if o.Internal {
 			side = "internal, in a hole"
 		}
-		tw.Printf(false, "%Ba   %Ft%s%E    "+crest, side,
-			lf(tw.ScreenChangeThread), lf(tw.ScreenChangeThread), lf(tw.ScreenChangeThread))
+		tw.Printf(false, "%Ba   %Ft%s%E    "+crest, append([]any{side}, crestLinks...)...)
 		tw.Printf(false, "%Bd   %Fd%f%Lt%s  the face's full length, %s %s%E    "+kind, lf(tw.ScreenChangeThread),
 			checkMark(o.FullLength), ss.MmToString(t.place.At.Length, true), unit,
 			lf(tw.ScreenChangeThread), lf(tw.ScreenChangeThread))
@@ -461,8 +472,8 @@ func (tw *textWindow) ShowThread() {
 		}
 	} else {
 		tw.Printf(false, "%Ba   %f%Le%Fd%s external%E  %f%Li%Fd%s internal%E    "+crest,
-			lf(tw.ScreenChangeThread), radioMark(!o.Internal), lf(tw.ScreenChangeThread), radioMark(o.Internal),
-			lf(tw.ScreenChangeThread), lf(tw.ScreenChangeThread), lf(tw.ScreenChangeThread))
+			append([]any{lf(tw.ScreenChangeThread), radioMark(!o.Internal), lf(tw.ScreenChangeThread), radioMark(o.Internal)},
+				crestLinks...)...)
 		// What through does, in the words of the part: a screw's is
 		// turned down, a nut's bored, past the thread with no shoulder.
 		through := "turned down past the thread"

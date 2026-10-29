@@ -233,6 +233,9 @@ func (w *scriptWriter) threadCall(g *sketch.Group) (string, core.HGroup) {
 	if t.LoadFlankBack {
 		fields = append(fields, "LoadFlankBack: true")
 	}
+	if t.RoundRoot {
+		fields = append(fields, "RoundRoot: true")
+	}
 	if t.Phase != 0 {
 		fields = append(fields, "Phase: "+num(t.Phase))
 	}

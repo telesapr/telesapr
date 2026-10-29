@@ -20,7 +20,7 @@ takes:
   | `G1/2`, `G1 1/2` | parallel pipe thread (BSP, ISO 228-1) |
   | `1/2-10 ACME`, `1/2 ACME-2G` | general purpose ACME, 29° |
   | `S20x4`, `S40x14(P7)` | metric buttress (DIN 513), flanks at 3° and 30° |
-  | `1-12 BUTT`, `1 BUTT` | buttress inch (ASME B1.9), flanks at 7° and 45° |
+  | `1-12 BUTT`, `1 BUTT`, `1-12 PULL-BUTT` | buttress inch (ASME B1.9), flanks at 7° and 45° |
 
   **[choose]** lists the series (metric, unified, trapezoidal, Whitworth, pipe, ACME, buttress,
   and BUTT for buttress inch), the sizes
@@ -33,8 +33,16 @@ takes:
   rounded crest comes close to the standard's crest. A buttress thread's ridge leans: its load
   flank, nearly square to the axis, faces along the thread on a screw and back in a nut, so that
   a screw and a nut whose threads run the same way mate; **load flank back**, beside the hand for
-  a buttress thread, turns it about. Its crest and root are flat (B1.9 rounds the root), its
-  crest can't be rounded, and it has no tolerance classes. The S series takes ISO 2902's
+  a buttress thread, turns it about. A B1.9 designation may say which way the load goes:
+  `PUSH-BUTT` leaves the load flank as it is drawn, the screw pushing at the end its thread starts
+  from; `PULL-BUTT` ticks **load flank back**. A buttress crest is flat and can't be rounded, and
+  buttress threads have no tolerance classes. Their roots are flat at the standard's truncation;
+  **rounded root**, at the end of the crest's row for a B1.9 thread, rounds them as B1.9 draws
+  them, by an arc of 0.07141 pitches tangent to both flanks. Its arcs are small, 0.15 mm on a
+  1-12 BUTT, and a chord tolerance coarser than a fifth of their radius is refused with the
+  tolerance to set (Edit > Preferences); near the root's flat the model leaves the standard's arc
+  along its tangent, by up to a quarter of its radius, so that the Booleans meet the root at an
+  angle. The S series takes ISO 2902's
   diameters and pitches from 10 mm; a buttress inch size without its threads per inch takes the
   middle of those B1.9 recommends for its diameter. Tapered threads are not made;
 - **right-hand** or **left-hand**, beside the pitch; `-LH` at the end of a designation is the
