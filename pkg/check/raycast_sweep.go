@@ -71,6 +71,13 @@ func sweepLeaves(sk *sketch.Sketch, g, src *sketch.Group) (union, error) {
 	if err != nil {
 		return nil, err
 	}
+	// A corner beside an arc is joined inside the sweep along curves no
+	// plane holds (srf's sweep joint), which these leaves can't cut.
+	for k, st := range steps {
+		if st.Corner && (k > 0 && steps[k-1].Arc || k+1 < len(steps) && steps[k+1].Arc) {
+			return nil, fmt.Errorf("%s: a corner beside an arc: %w", g.DescriptionString(), ErrUnsupported)
+		}
+	}
 	// The direction of the line before or after a corner, step k.
 	lineAt := func(k int) geom.Vector { return steps[k].Along.WithMagnitude(1) }
 	var leaves union

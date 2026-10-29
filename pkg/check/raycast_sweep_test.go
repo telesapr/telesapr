@@ -175,6 +175,29 @@ func TestOracleRefusesLoft(t *testing.T) {
 	}
 }
 
+// TestOracleRefusesArcCorner holds the oracle to refusing a sharp corner
+// beside an arc, which the sweep joins along curves its leaves can't cut.
+func TestOracleRefusesArcCorner(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	d.Features.SketchIn(d.Workplane("ZX"), "path")
+	top := api.V(0, 0, 30)
+	path := []api.Entity{
+		d.Sketch.Line(api.V(0, 0, 0), top),
+		d.Sketch.Arc(api.V(0, 0, 42), top, api.V(12, 0, 42)),
+	}
+	d.Features.SketchIn(d.Workplane("XY"), "bar")
+	d.Sketch.Circle(api.V(0, 0, 0), 2)
+	if p := d.Features.Sweep(path, "hook").Problem(); p != "" {
+		t.Fatal(p)
+	}
+	sk := d.Host().Sketch()
+	sk.GenerateAll()
+	if _, err := check.NewOracle(sk, sk.ActiveGroup()); !errors.Is(err, check.ErrUnsupported) {
+		t.Errorf("a corner beside an arc: %v", err)
+	}
+}
+
 // closedFrame sweeps a 2 by 2 square about the origin in XY round a
 // circle of radius 10 in ZX through the origin, with ring, or round a
 // 20 by 10 rectangle with its left side on the z axis about z = 0.
