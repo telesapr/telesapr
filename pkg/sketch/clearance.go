@@ -23,7 +23,7 @@ import (
 // followed on its triangles, which are its geometry. A part that is
 // several solids, as a linked assembly, is one part to Clearances and
 // its solids to ClearancesWithin, which also finds the gaps between
-// them.
+// them; a mesh's pieces are its solids there.
 
 // Clearance is the gap between two parts: the groups that made them,
 // the least distance between them, 0 where they touch or overlap, and
@@ -74,8 +74,8 @@ func newClearancePart(hg core.HGroup, sh *srf.SShell) *clearancePart {
 // clearanceParts are the parts of the model up to group upTo, with
 // shells or as meshes: a part with no shell is taken by its triangles,
 // which are its geometry, so its chord tolerance is 0.
-// With bySolid, a part of several solids is taken by its solids. A
-// mesh is taken whole.
+// With bySolid, a part of several solids is taken by its solids, and a
+// mesh by its pieces (meshPieces).
 func (sk *Sketch) clearanceParts(upTo core.HGroup, bySolid bool) []*clearancePart {
 	parts, meshOnly, _ := sk.assemblyParts(upTo)
 	var out []*clearancePart
@@ -102,6 +102,16 @@ func (sk *Sketch) clearanceParts(upTo core.HGroup, bySolid bool) []*clearancePar
 		for i := range mp.mesh.Triangles {
 			mp.mesh.Triangles[i].Tag = -1
 		}
+		if bySolid {
+			if pieces := meshPieces(&mp.mesh); len(pieces) > 1 {
+				for i := range pieces {
+					pp := &clearancePart{g: hg, solid: i + 1, mesh: pieces[i]}
+					pp.tree = srf.NewMeshTree(&pp.mesh)
+					out = append(out, pp)
+				}
+				continue
+			}
+		}
 		mp.tree = srf.NewMeshTree(&mp.mesh)
 		out = append(out, mp)
 	}
@@ -117,7 +127,8 @@ func (sk *Sketch) Clearances(upTo core.HGroup, below float64) []Clearance {
 }
 
 // ClearancesWithin is Clearances with each part of several solids, as a
-// linked assembly or a part a cut parted, taken by its solids: the gaps
+// linked assembly or a part a cut parted, taken by its solids, and a
+// mesh by its pieces: the gaps
 // between the solids of one part are listed too, and a gap to such a
 // part says which of its solids it is to.
 func (sk *Sketch) ClearancesWithin(upTo core.HGroup, below float64) []Clearance {

@@ -358,8 +358,9 @@ func (m AssemblyMenu) Clearances(below float64) (found []Clearance) {
 }
 
 // ClearancesWithin is Clearances with each part of several solids, as
-// a linked assembly, taken by its solids (Analyze > Clearance and Walls,
-// "solids within parts"): the gaps between the solids of one part are
+// a linked assembly, taken by its solids, and a part linked as a mesh
+// by its pieces (Analyze > Clearance and Walls, "solids within
+// parts"): the gaps between the solids of one part are
 // listed too, and Clearance.SolidA and SolidB say which solid of a part
 // a gap is to.
 func (m AssemblyMenu) ClearancesWithin(below float64) (found []Clearance) {

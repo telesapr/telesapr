@@ -20,7 +20,9 @@ import (
 // thickness asked about set, so that a thin spot narrower than the
 // mesh's triangles, as near the tip of a cone, isn't missed between
 // their middles; about the thinnest points found the pieces are cut
-// finer again. The two ends of each ray lie on the mesh, each within
+// finer again, and between them the corners of where the triangles the
+// rays joined cover each other are measured (wall_corners.go). The two
+// ends of each ray lie on the mesh, each within
 // the chord tolerance of the surface; where both ends are on surfaces
 // of a part with a shell, the thinnest spots are followed onto those
 // surfaces as the clearance between parts is (Clearance.refine).
@@ -50,7 +52,10 @@ type WallReport struct {
 	Thin []ThinSpot
 	// Samples is how many points were measured, and Unmeasured how many
 	// rays found no way out of the solid, or met a face the wrong way
-	// round: where a mesh is open or parts stand in each other.
+	// round: where a mesh is open or parts stand in each other. The
+	// corners measured between the points (measureCorners) are counted
+	// in Samples where their rays left the part; one whose didn't is
+	// left out, not counted as unmeasured.
 	Samples, Unmeasured int
 	// Step is the longest a piece of a triangle measured at its middle
 	// was; about the thinnest spots, the pieces were finer.
@@ -139,10 +144,11 @@ func wallStep(parts []*clearancePart, below float64) float64 {
 	return max(step, math.Sqrt(2*area/wallSamples))
 }
 
-// wallSample is a measured point: its spot and the triangle it is on.
+// wallSample is a measured point: its spot, the triangle it is on and
+// the one its ray left the part through.
 type wallSample struct {
-	spot ThinSpot
-	tri  int
+	spot     ThinSpot
+	tri, hit int
 }
 
 // measure casts rays into the part from the pieces of each of its
@@ -176,6 +182,7 @@ func (r *WallReport) measure(w *clearancePart, below float64) {
 		budget -= n * n
 		found = r.measureTriangle(w, i, n, found)
 	}
+	found = r.measureCorners(w, below, found)
 	slices.SortStableFunc(found, func(a, b wallSample) int { return cmp.Compare(a.spot.Thickness, b.spot.Thickness) })
 	// The thinnest are followed onto the surfaces, each of which may move
 	// it by the meshes' tolerance: the thinnest after is among them.
@@ -215,14 +222,14 @@ func (r *WallReport) measureTriangle(w *clearancePart, i, n int, found []wallSam
 	}
 	piece := func(p, q, s geom.Vector) {
 		r.Samples++
-		sp, ok := thicknessAt(w.tree, i, p, q, s, in)
+		sp, hit, ok := thicknessAt(w.tree, i, p, q, s, in)
 		if !ok {
 			r.Unmeasured++
 			return
 		}
 		sp.Group = w.g
 		sp.sa = tr.Tag
-		found = append(found, wallSample{spot: sp, tri: i})
+		found = append(found, wallSample{spot: sp, tri: i, hit: hit})
 	}
 	for a := range n {
 		for b := range n - a {
@@ -243,16 +250,27 @@ func (r *WallReport) measureTriangle(w *clearancePart, i, n int, found []wallSam
 var rayStarts = [][3]float64{{1.0 / 3, 1.0 / 3, 1.0 / 3}, {0.5, 0.3, 0.2}, {0.2, 0.5, 0.3}, {0.3, 0.2, 0.5}}
 
 // thicknessAt is the wall's thickness at the piece a, b, c of triangle
-// i of the tree's mesh, in along in, and false where no ray from it
-// leaves the solid through a face that faces out.
-func thicknessAt(tree *srf.MeshTree, i int, a, b, c, in geom.Vector) (ThinSpot, bool) {
+// i of the tree's mesh, in along in, with the triangle its ray left
+// through, and false where no ray from it leaves the solid through a
+// face that faces out.
+func thicknessAt(tree *srf.MeshTree, i int, a, b, c, in geom.Vector) (ThinSpot, int, bool) {
 	for _, wt := range rayStarts {
 		from := a.ScaledBy(wt[0]).Plus(b.ScaledBy(wt[1])).Plus(c.ScaledBy(wt[2]))
-		if h, ok := tree.Ray(from, in, 1e-9, i); ok && h.Cos > 0 {
-			return ThinSpot{Thickness: h.T, From: from, To: from.Plus(in.ScaledBy(h.T)), sb: tree.Triangle(h.Tri).Tag}, true
+		if s, hit, ok := thicknessFrom(tree, i, from, in); ok {
+			return s, hit, true
 		}
 	}
-	return ThinSpot{}, false
+	return ThinSpot{}, -1, false
+}
+
+// thicknessFrom is the wall's thickness from point from of triangle i,
+// in along in, and the triangle the ray left through.
+func thicknessFrom(tree *srf.MeshTree, i int, from, in geom.Vector) (ThinSpot, int, bool) {
+	h, ok := tree.Ray(from, in, 1e-9, i)
+	if !ok || h.Cos <= 0 {
+		return ThinSpot{}, -1, false
+	}
+	return ThinSpot{Thickness: h.T, From: from, To: from.Plus(in.ScaledBy(h.T)), sb: tree.Triangle(h.Tri).Tag}, h.Tri, true
 }
 
 // refineWall follows a thin spot's two ends onto the surfaces of the

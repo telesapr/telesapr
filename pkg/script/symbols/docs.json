@@ -4296,7 +4296,7 @@
 					},
 					"ClearancesWithin": {
 						"decl": "func (m AssemblyMenu) ClearancesWithin(below float64) (found []Clearance)",
-						"text": "ClearancesWithin is Clearances with each part of several solids, as\na linked assembly, taken by its solids (Analyze \u003e Clearance and Walls,\n\"solids within parts\"): the gaps between the solids of one part are\nlisted too, and Clearance.SolidA and SolidB say which solid of a part\na gap is to."
+						"text": "ClearancesWithin is Clearances with each part of several solids, as\na linked assembly, taken by its solids, and a part linked as a mesh\nby its pieces (Analyze \u003e Clearance and Walls, \"solids within\nparts\"): the gaps between the solids of one part are\nlisted too, and Clearance.SolidA and SolidB say which solid of a part\na gap is to."
 					},
 					"Concentric": {
 						"decl": "func (m AssemblyMenu) Concentric(a, b Entity) []Constraint",
@@ -5762,7 +5762,7 @@
 					},
 					"WallThickness": {
 						"decl": "func (v GroupAnalysis) WallThickness(below float64) (r sketch.WallReport)",
-						"text": "WallThickness measures the walls of the model up to and with this\ngroup, in mm, as Analyze \u003e Clearance and Walls does: from the middle\nof each triangle of each part's mesh, square to it, into the solid to\nwhere it leaves the part again. It lists the points thinner than\nbelow, the thinnest first, or with a below of 0 only the thinnest\n(WallReport.Thinnest). Each part is measured alone, as Assembly.\nInterferences takes them. A spot thinner than the triangles about it\ncan fall between them; WallReport.Tolerance is how far each\nthickness may be from the true one at its point."
+						"text": "WallThickness measures the walls of the model up to and with this\ngroup, in mm, as Analyze \u003e Clearance and Walls does: from the middle\nof each triangle of each part's mesh, square to it, into the solid to\nwhere it leaves the part again. It lists the points thinner than\nbelow, the thinnest first, or with a below of 0 only the thinnest\n(WallReport.Thinnest). Each part is measured alone, as Assembly.\nInterferences takes them. Between the points, the corners of where\none triangle covers another a ray joined them across are measured\ntoo, so a spot thinner than the points about it, as under a narrow\ngroove's tip, is found; WallReport.Tolerance is how far each\nthickness may be from the true one at its point."
 					}
 				}
 			},
@@ -8061,7 +8061,7 @@
 					},
 					"ClearancesWithin": {
 						"decl": "func (sk *Sketch) ClearancesWithin(upTo core.HGroup, below float64) []Clearance",
-						"text": "ClearancesWithin is Clearances with each part of several solids, as a linked assembly or a part a cut parted, taken by its solids: the gaps between the solids of one part are listed too, and a gap to such a part says which of its solids it is to."
+						"text": "ClearancesWithin is Clearances with each part of several solids, as a linked assembly or a part a cut parted, taken by its solids, and a mesh by its pieces: the gaps between the solids of one part are listed too, and a gap to such a part says which of its solids it is to."
 					},
 					"CommentConstraint": {
 						"decl": "func (sk *Sketch) CommentConstraint(base core.Constraint, pt core.HEntity, text string) (core.Constraint, error)",
