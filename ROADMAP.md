@@ -22,7 +22,7 @@ fixture has been done; its "Tried" notes say what not to try again.
 | 3 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
 | 4 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Since 2026-10-11 it mends the ear clipper's crossing faces; as the default it still costs 3 to 5 times the triangles |
 | 5 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
-| 6 | [F8 TeleSAPR in a browser](#f8-telesapr-in-a-browser) | feature | ? | A spike is planned; sized after it |
+| 6 | [F8 TeleSAPR in a browser](#f8-telesapr-in-a-browser) | feature | L | Spike done 2026-10-29: everything but the takigo window runs as js/wasm; needs a WebGL renderer and a `web` platform |
 
 K3 (contact) and K5 (STEP) are closed: every case they measured is sound, the last ones with K4's
 mender. Their notes stay below for the next case. K4, postponed as the default, would open the
@@ -45,10 +45,24 @@ Neosolve reads and writes IGES. Low priority: STEP covers the exchange; take it 
 
 ### F8 TeleSAPR in a browser
 
-Go to WebAssembly: the kernel and the software renderer are pure Go, and `pkg/ui` is written
-against `pkg/platform`, so a `web` platform would sit beside `tkgui` and `headless`. The spike is
-planned, not started (`doc/notes/browser-wasm-spike.md`): compile the kernel and `pkg/render/soft`
-for js/wasm, run yaegi there (the highest risk), measure a frame loop in a canvas, and settle fonts.
+Go to WebAssembly. The spike was done on 2026-10-29 (`doc/notes/browser-wasm-spike.md`,
+`cmd/telesapr-wasm`, `scripts/wasm-spike.sh`). Every package but `cmd/telesapr` and
+`pkg/platform/tkgui` (takigo) builds for js/wasm unchanged. Under node and in Chrome the application
+on the headless platform loads a model, regenerates it and draws it into a canvas, and yaegi runs
+scripts. Thumbnails and a script's `.tlspr`, `.stl`, `.step` and `.png` are byte-identical to the
+native build's. Files go through an in-memory `fs` the page provides (`web/memfs.js`), and fonts
+through the embedded ones. Wasm regenerates 2.5 to 5 times slower than one native thread. The
+module is 12 MB gzipped. The software renderer draws 1280×800 at 6 to 18 fps there, under the
+15 fps gate.
+
+| Item | Size |
+|---|---|
+| A WebGL 2 `render.ViewportCanvas` (`pkg/render/webgl`) after `pkg/render/gl`; the soft renderer kept for the text window and thumbnails | M |
+| `pkg/platform/web`: canvases, HTML menus and dialogs, file dialogs over memfs, timers, `localStorage` settings. Its event loop runs on its own goroutine, so the synchronous `RunModal`s block it, not the page | M |
+| `cmd/telesapr-web`, the page, memfs kept in IndexedDB, a `make wasm` target | S |
+| Regeneration off the event goroutine with progress; module size (`pkg/script/symbols`, icons) | S, then open |
+
+Not in it: threads in the browser, and the MCP agent (no sockets there).
 
 ## Kernel foundations
 
