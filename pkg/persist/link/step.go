@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -42,11 +43,21 @@ type stepEntry struct {
 	use int
 }
 
-var (
-	stepCacheMu sync.Mutex
-	stepCache   = map[stepKey]*stepEntry{}
-	stepUses    int
-)
+// stepMemo keeps the last stepCacheSize tessellations read. A read
+// holds the lock throughout, so a file read by two links at once is
+// read once.
+type stepMemo struct {
+	mu      sync.Mutex
+	entries map[stepKey]*stepEntry
+	uses    int
+}
+
+func newStepMemo() *stepMemo { return &stepMemo{entries: map[stepKey]*stepEntry{}} }
+
+// stepCache is what every link reads through; a test that counts what
+// is kept builds a stepMemo of its own, since the package's other
+// tests read STEP files through this one side by side.
+var stepCache = newStepMemo()
 
 // stepCacheSize is how many tessellations are kept.
 const stepCacheSize = 4
@@ -55,6 +66,10 @@ const stepCacheSize = 4
 // when the file and the chord tolerance are unchanged, in memory or on
 // disk (stepdisk.go).
 func readStep(path string, pct float64) (*step.Result, error) {
+	return stepCache.read(path, pct)
+}
+
+func (c *stepMemo) read(path string, pct float64) (*step.Result, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return nil, err
@@ -64,11 +79,11 @@ func readStep(path string, pct float64) (*step.Result, error) {
 		abs = path
 	}
 	key := stepKey{path: abs, size: info.Size(), mtime: info.ModTime(), pct: pct}
-	stepCacheMu.Lock()
-	defer stepCacheMu.Unlock()
-	stepUses++
-	if e, ok := stepCache[key]; ok {
-		e.use = stepUses
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.uses++
+	if e, ok := c.entries[key]; ok {
+		e.use = c.uses
 		return e.res, e.err
 	}
 	res, kept := readStepDisk(key)
@@ -81,14 +96,11 @@ func readStep(path string, pct float64) (*step.Result, error) {
 			writeStepDisk(key, res)
 		}
 	}
-	stepCache[key] = &stepEntry{res: res, err: err, use: stepUses}
-	if len(stepCache) > stepCacheSize {
-		keys := make([]stepKey, 0, len(stepCache))
-		for k := range stepCache {
-			keys = append(keys, k)
-		}
-		slices.SortFunc(keys, func(a, b stepKey) int { return cmp.Compare(stepCache[a].use, stepCache[b].use) })
-		delete(stepCache, keys[0])
+	c.entries[key] = &stepEntry{res: res, err: err, use: c.uses}
+	if len(c.entries) > stepCacheSize {
+		keys := slices.Collect(maps.Keys(c.entries))
+		slices.SortFunc(keys, func(a, b stepKey) int { return cmp.Compare(c.entries[a].use, c.entries[b].use) })
+		delete(c.entries, keys[0])
 	}
 	return res, err
 }
