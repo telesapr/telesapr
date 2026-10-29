@@ -164,6 +164,7 @@ func TestFilletMixedCornerOracle(t *testing.T) {
 			case "rib":
 				sh, picks = mixedRib(x[0], x[1], x[2], tol)
 			default:
+				var err error
 				sh, picks, err = mixedSaddle(x[0], x[1], [4]float64{x[2], x[3], x[4], x[5]}, tol)
 				if err != nil {
 					t.Fatal(err)
