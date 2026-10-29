@@ -120,10 +120,12 @@ loft.AsLoft().SetProfileTangency(waist, 0)   // free again
 
 A smooth loft, of three profiles or more, can go on from its last profile back to its first:
 [closed] on the last row of its screen ([open] undoes it). The ring has no caps, and is as smooth
-where it closes as anywhere else. It has no ends to set and nothing to turn its profiles
-against; either set is the loft's problem. Profiles between its first and last can be held
-square as an open loft's are, the ring then one surface from each held profile round to the
-next, still one face. Guides hold it as they hold an open loft, each going round the ring
+where it closes as anywhere else. It has no ends to carry a solid's sides on and nothing to
+turn its profiles against; either set is the loft's problem. Any of its profiles can be held
+square as an open loft's middle ones are, the ring then one surface from each held profile
+round to the next, still one face: the first and last by the rows that set an open loft's ends
+(`SetTangency` in a script, or `SetProfileTangency` with that profile), the ring meeting itself
+tangent there. Guides hold it as they hold an open loft, each going round the ring
 through every profile back to where it started, closing on itself; a guide with ends is the
 loft's problem. A ring can be held by guides and square to its profiles at once. Between
 profiles the loft's sections turn with the ring, as a closed sweep's do, so they keep the

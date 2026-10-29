@@ -5904,7 +5904,7 @@
 					},
 					"ProfileTangency": {
 						"decl": "func (v LoftGroup) ProfileTangency(profile Group) (t float64)",
-						"text": "ProfileTangency is how square a smooth loft passes profile, one of\nthe sketches between its ends, 0 for free (see SetProfileTangency)."
+						"text": "ProfileTangency is how square a smooth loft passes profile, one of\nthe sketches between its ends or any of a closed loft's, 0 for free\n(see SetProfileTangency)."
 					},
 					"Profiles": {
 						"decl": "func (v LoftGroup) Profiles() (out []Group)",
@@ -5916,7 +5916,7 @@
 					},
 					"SetClosed": {
 						"decl": "func (v LoftGroup) SetClosed(closed bool)",
-						"text": "SetClosed has a smooth loft go from its last profile back to its\nfirst, a ring with no caps, as a sweep round a closed path is, the\nsurface as smooth where it closes as elsewhere; false opens it again.\nA closed loft goes through three profiles at least, and has no ends to\nset and no turn; profiles between its first and last can still be\nheld square (SetProfileTangency), and the ring held by guides that go\nround it, closing on themselves (SetGuides), or both."
+						"text": "SetClosed has a smooth loft go from its last profile back to its\nfirst, a ring with no caps, as a sweep round a closed path is, the\nsurface as smooth where it closes as elsewhere; false opens it again.\nA closed loft goes through three profiles at least, and has no turn\nand no ends to carry a solid's sides on (SetAlongSides); any of its\nprofiles can be held square (SetProfileTangency, or SetTangency for\nthe first and last), and the ring held by guides that go round it,\nclosing on themselves (SetGuides), or both."
 					},
 					"SetGuides": {
 						"decl": "func (v LoftGroup) SetGuides(curves []Entity)",
@@ -5924,7 +5924,7 @@
 					},
 					"SetProfileTangency": {
 						"decl": "func (v LoftGroup) SetProfileTangency(profile Group, t float64)",
-						"text": "SetProfileTangency holds a smooth loft square to the plane of\nprofile, one of the sketches it goes through between its ends, the\nsurface's slope across there t times the loft's length, as SetTangency\ndoes at the ends; 0 leaves it free, shaped by the profiles about it.\nThe loft is then smooth through that profile but no longer bends as\none curve across it: a waist that runs straight through the middle.\nA closed loft is held so too, round the ring, and a loft held by guides\nstill holds them, leaving the profile square and turning onto a guide\nthat crosses it slanting."
+						"text": "SetProfileTangency holds a smooth loft square to the plane of\nprofile, one of the sketches it goes through between its ends, the\nsurface's slope across there t times the loft's length, as SetTangency\ndoes at the ends; 0 leaves it free, shaped by the profiles about it.\nThe loft is then smooth through that profile but no longer bends as\none curve across it: a waist that runs straight through the middle.\nA closed loft is held so too, round the ring, at its first and last\nprofiles as well (what SetTangency sets), and a loft held by guides\nstill holds them, leaving the profile square and turning onto a guide\nthat crosses it slanting."
 					},
 					"SetProfiles": {
 						"decl": "func (v LoftGroup) SetProfiles(profiles []Group)",
@@ -5932,7 +5932,7 @@
 					},
 					"SetTangency": {
 						"decl": "func (v LoftGroup) SetTangency(start, end float64)",
-						"text": "SetTangency makes a loft leave its first profile square to its plane\nand reach its last square to its, the surface's slope across there\nstart and end times the loft's length; 0 leaves an end free, shaped\nby the profiles alone. A loft of two profiles with an end set is one\nsmooth surface, not ruled patches. SetExpr with sketch.GroupPitch and\nsketch.GroupValC gives them expressions."
+						"text": "SetTangency makes a loft leave its first profile square to its plane\nand reach its last square to its, the surface's slope across there\nstart and end times the loft's length; 0 leaves an end free, shaped\nby the profiles alone. A loft of two profiles with an end set is one\nsmooth surface, not ruled patches. On a closed loft, which has no\nends, start and end hold the ring square to its first and last\nprofiles, as SetProfileTangency does those between. SetExpr with\nsketch.GroupPitch and sketch.GroupValC gives them expressions."
 					},
 					"SetTurn": {
 						"decl": "func (v LoftGroup) SetTurn(n int)",
@@ -7466,7 +7466,7 @@
 					},
 					"LoftProfileTangency": {
 						"decl": "func (g *Group) LoftProfileTangency(profile core.HGroup) float64",
-						"text": "LoftProfileTangency is how square the loft holds profile, one of those between its ends, 0 for free."
+						"text": "LoftProfileTangency is how square the loft holds profile, one of those between its ends, or on a closed loft any of its profiles, 0 for free."
 					},
 					"LoftProfiles": {
 						"decl": "func (g *Group) LoftProfiles() []core.HGroup",

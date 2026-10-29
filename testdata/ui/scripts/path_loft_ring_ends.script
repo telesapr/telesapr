@@ -1,0 +1,21 @@
+# loft_ring.tlspr's smooth loft closed into a ring by [closed] on its
+# screen, then held square at its first profile by 1 and at its last by
+# 0.5, by their rows' [change]; the same as path_loft_ring_ends.go makes
+# (TestPathEquivalence/loft_ring_ends).
+file $testdata/ui/loft_ring.tlspr
+menu File|Open...
+view default
+twmove 137 400
+twdown L 137 400
+twup L 137 400
+twmove 407 330
+twdown L 407 330
+twup L 407 330
+twmove 236 267
+twdown L 236 267
+twup L 236 267
+edit 1
+twmove 236 287
+twdown L 236 287
+twup L 236 287
+edit 0.5

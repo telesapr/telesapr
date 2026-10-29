@@ -727,8 +727,10 @@ func (v LoftGroup) Tangency() (start, end float64) {
 // and reach its last square to its, the surface's slope across there
 // start and end times the loft's length; 0 leaves an end free, shaped
 // by the profiles alone. A loft of two profiles with an end set is one
-// smooth surface, not ruled patches. SetExpr with sketch.GroupPitch and
-// sketch.GroupValC gives them expressions.
+// smooth surface, not ruled patches. On a closed loft, which has no
+// ends, start and end hold the ring square to its first and last
+// profiles, as SetProfileTangency does those between. SetExpr with
+// sketch.GroupPitch and sketch.GroupValC gives them expressions.
 func (v LoftGroup) SetTangency(start, end float64) {
 	g := v.g
 	g.d.change(func(sk *sketch.Sketch) {
@@ -794,10 +796,11 @@ func (v LoftGroup) Closed() (closed bool) {
 // SetClosed has a smooth loft go from its last profile back to its
 // first, a ring with no caps, as a sweep round a closed path is, the
 // surface as smooth where it closes as elsewhere; false opens it again.
-// A closed loft goes through three profiles at least, and has no ends to
-// set and no turn; profiles between its first and last can still be
-// held square (SetProfileTangency), and the ring held by guides that go
-// round it, closing on themselves (SetGuides), or both.
+// A closed loft goes through three profiles at least, and has no turn
+// and no ends to carry a solid's sides on (SetAlongSides); any of its
+// profiles can be held square (SetProfileTangency, or SetTangency for
+// the first and last), and the ring held by guides that go round it,
+// closing on themselves (SetGuides), or both.
 func (v LoftGroup) SetClosed(closed bool) {
 	g := v.g
 	g.d.change(func(sk *sketch.Sketch) {
@@ -810,7 +813,8 @@ func (v LoftGroup) SetClosed(closed bool) {
 }
 
 // ProfileTangency is how square a smooth loft passes profile, one of
-// the sketches between its ends, 0 for free (see SetProfileTangency).
+// the sketches between its ends or any of a closed loft's, 0 for free
+// (see SetProfileTangency).
 func (v LoftGroup) ProfileTangency(profile Group) (t float64) {
 	g := v.g
 	g.d.read(func(sk *sketch.Sketch) {
@@ -827,7 +831,8 @@ func (v LoftGroup) ProfileTangency(profile Group) (t float64) {
 // does at the ends; 0 leaves it free, shaped by the profiles about it.
 // The loft is then smooth through that profile but no longer bends as
 // one curve across it: a waist that runs straight through the middle.
-// A closed loft is held so too, round the ring, and a loft held by guides
+// A closed loft is held so too, round the ring, at its first and last
+// profiles as well (what SetTangency sets), and a loft held by guides
 // still holds them, leaving the profile square and turning onto a guide
 // that crosses it slanting.
 func (v LoftGroup) SetProfileTangency(profile Group, t float64) {

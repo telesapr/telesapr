@@ -66,6 +66,7 @@ func TestClosedGuidedLoftHeld(t *testing.T) {
 		{"one up, one held", up, []float64{0, 0, 1}, freeVol, 1e-3},
 		{"one up, two held", up, []float64{0, 0.8, 0, 0, 0, 1.2}, freeVol, 1e-3},
 		{"one up, the seam's held", up, []float64{1}, freeVol, 1e-3},
+		{"one up, the first and the last held", up, []float64{1, 0, 0, 0, 0, 0, 0, 0.8}, freeVol, 1e-3},
 		{"two out, every one held", out, []float64{1, 1, 1, 1, 1, 1, 1, 1}, 0, 1e-3},
 		{"winding, two held", winding, []float64{0, 1, 0, 0, 0, 1}, freeVol, 0.05},
 	} {

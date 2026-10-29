@@ -63,8 +63,7 @@ func TestLoftClosed(t *testing.T) {
 
 // A closed loft held square to a profile between its first and last:
 // sound, one face of a piece from the held profile round to it again,
-// the volume near the torus's. Holding it is one undo step, and saved;
-// the first profile, as an open loft's end, can't be held.
+// the volume near the torus's. Holding it is one undo step, and saved.
 func TestLoftClosedHeld(t *testing.T) {
 	t.Parallel()
 	d := api.New()
@@ -86,15 +85,83 @@ func TestLoftClosedHeld(t *testing.T) {
 	if n := len(l.Solid().Faces()); n != 1 {
 		t.Errorf("%d faces, want the ring's one", n)
 	}
-	if !refused(func() { l.AsLoft().SetProfileTangency(ps[0], 1) }) {
-		t.Error("the first profile of a ring took a tangency")
-	}
 	undoRedo(t, d, before)
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
 	back := roundTrip(t, d)
 	bl := back.Group("ring").AsLoft()
 	if !bl.Closed() || bl.ProfileTangency(bl.Profiles()[3]) != 1 {
 		t.Error("reopened, the ring isn't closed and held")
+	}
+}
+
+// A closed loft held square at its first and last profiles, which a
+// ring has as any other: SetTangency holds them, as it holds an open
+// loft's ends, and SetProfileTangency with the profile does the same.
+// The ring of equal circles held at its first is the ring held at its
+// fourth turned round, of the same volume; held at both it is sound, one
+// face. Holding both in one step is one undo step, and saved; opened
+// again, the loft leaves and reaches its ends square by the same.
+func TestLoftClosedEnds(t *testing.T) {
+	t.Parallel()
+	const big, r = 20.0, 4.0
+	volume := func(hold func(l api.LoftGroup, ps []api.Group)) float64 {
+		d := api.New()
+		ps := ringOfCircles(d, 8, big, r)
+		l := d.Features.LoftThrough(ps, "ring")
+		l.AsLoft().SetClosed(true)
+		hold(l.AsLoft(), ps)
+		if p := l.Problem(); p != "" {
+			t.Fatal(p)
+		}
+		rep := l.Analyze().Check()
+		if !rep.Sound() {
+			t.Fatal(rep.String())
+		}
+		return rep.Volume
+	}
+	fourth := volume(func(l api.LoftGroup, ps []api.Group) { l.SetProfileTangency(ps[3], 1) })
+	first := volume(func(l api.LoftGroup, ps []api.Group) { l.SetTangency(1, 0) })
+	if math.Abs(first-fourth) > 1e-4*fourth {
+		t.Errorf("held at the first %g, at the fourth %g", first, fourth)
+	}
+
+	d := api.New()
+	ps := ringOfCircles(d, 8, big, r)
+	l := d.Features.LoftThrough(ps, "ring")
+	l.AsLoft().SetClosed(true)
+	free := l.Analyze().Check().Volume
+	step(d)
+	before := saved(t, d)
+	l.AsLoft().SetProfileTangency(ps[0], 0.8)
+	l.AsLoft().SetProfileTangency(ps[7], 1.2)
+	if p := l.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	if s, e := l.AsLoft().Tangency(); s != 0.8 || e != 1.2 {
+		t.Errorf("the ends' tangencies %g, %g, want the first's and last's 0.8, 1.2", s, e)
+	}
+	if a, b := l.AsLoft().ProfileTangency(ps[0]), l.AsLoft().ProfileTangency(ps[7]); a != 0.8 || b != 1.2 {
+		t.Errorf("the first and last held by %g, %g", a, b)
+	}
+	rep := l.Analyze().Check()
+	if !rep.Sound() || math.Abs(rep.Volume-free) > 0.01*free {
+		t.Fatalf("%s, want the free ring's volume %g", rep.String(), free)
+	}
+	if n := len(l.Solid().Faces()); n != 1 {
+		t.Errorf("%d faces, want the ring's one", n)
+	}
+	undoRedo(t, d, before)
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+	back := roundTrip(t, d)
+	if bl := back.Group("ring").AsLoft(); !bl.Closed() || bl.ProfileTangency(bl.Profiles()[0]) != 0.8 {
+		t.Error("reopened, the ring isn't closed and held at its first profile")
+	}
+	l.AsLoft().SetClosed(false)
+	if p := l.Problem(); p != "" {
+		t.Errorf("opened, held at its ends: %q", p)
+	}
+	if s, e := l.AsLoft().Tangency(); s != 0.8 || e != 1.2 {
+		t.Errorf("opened, the ends' tangencies %g, %g", s, e)
 	}
 }
 
@@ -171,8 +238,8 @@ func TestLoftClosedGuided(t *testing.T) {
 }
 
 // A loft that can't close says why: two profiles; and once closed, its
-// ends and turn can't be set, each a problem on the group or a refused
-// call.
+// ends can't follow a solid's sides and its turn can't be set, each a
+// problem on the group or a refused call.
 func TestLoftClosedProblems(t *testing.T) {
 	t.Parallel()
 	d := api.New()
@@ -195,7 +262,6 @@ func TestLoftClosedProblems(t *testing.T) {
 		set  func()
 		want string
 	}{
-		{func() { l.AsLoft().SetTangency(1, 0) }, "no ends"},
 		{func() { l.AsLoft().SetTurn(1) }, "can't turn"},
 	} {
 		c.set()
