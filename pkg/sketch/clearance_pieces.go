@@ -18,8 +18,7 @@ func meshPieces(m *srf.SMesh) []srf.SMesh {
 	for i := range up {
 		up[i] = i
 	}
-	var root func(i int) int
-	root = func(i int) int {
+	root := func(i int) int {
 		for up[i] != i {
 			up[i] = up[up[i]]
 			i = up[i]
