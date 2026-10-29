@@ -198,7 +198,7 @@ row 77    (none)
  0-99 64 61 0
 row 79 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 1, of 24 patches\nTriangles: 3492\nVolume: 4.79 cm³\nCenter of mass: (0.11, -0.19, 0.00002)\nExtent: 47.00 x 46.52 x 8.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 1, of 72 patches\nTriangles: 4608\nVolume: 4.84 cm³\nCenter of mass: (0.005, -0.01, -0.00)\nExtent: 47.00 x 47.10 x 8.00
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0

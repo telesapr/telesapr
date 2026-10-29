@@ -256,7 +256,7 @@ row 49   parameters
  12-99 64 64 0
 row 51 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 1, of 288 patches\nTriangles: 18432\nVolume: 3.52 cm³\nCenter of mass: (-0.04, 0.00002, 0.74)\nExtent: 46.00 x 46.02 x 7.13
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 1, of 288 patches\nTriangles: 18432\nVolume: 3.53 cm³\nCenter of mass: (-0.00, 0.00001, 0.74)\nExtent: 46.00 x 46.00 x 7.13
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0
