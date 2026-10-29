@@ -487,6 +487,8 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 		}
 	}
 
+	// The seeds a march went on from, each once.
+	var passed []geom.Vector
 	for len(spl.Points) >= 2 {
 		sc := SCurve{
 			SurfA:   s.H,
@@ -526,6 +528,20 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 		}
 		kept := spl.Points[:0]
 		for _, sp := range spl.Points {
+			if sp.Tag != 0 && !slices.Contains(passed, sp.P) && s.passesThrough(b, sp.P) {
+				// The curve goes on past the seed it stopped at, where a
+				// trim inside both patches crosses it (a band's top
+				// dipping into a cone just past its end face, the face's
+				// arc across the curve the end face cuts from the cone,
+				// roadmap K3): the seed is where the rest starts, marched
+				// on the way this march arrived. Dropped, the rest had
+				// one seed left and no curve, and both faces' trims
+				// stayed open there.
+				n := len(sc.Points)
+				sp.AuxV = sc.Points[n-2].P.Minus(sc.Points[n-1].P).WithMagnitude(1)
+				sp.Tag = 0
+				passed = append(passed, sp.P)
+			}
 			if sp.Tag == 0 {
 				kept = append(kept, sp)
 			}
@@ -633,6 +649,19 @@ func (s *SSurface) marchFrom(b *SSurface, start, startv geom.Vector, seeds []SPo
 		start = npc
 	}
 	return pts, reached
+}
+
+// passesThrough tells whether the curve where s meets b goes on past p,
+// a seed: p lies inside both patches' squares of parameters, off every
+// side of either, where a seed is a crossing of a trim and no end.
+func (s *SSurface) passesThrough(b *SSurface, p geom.Vector) bool {
+	inside := func(sf *SSurface) bool {
+		var uv geom.Point2d
+		sf.ClosestPointTo(p, &uv, true)
+		const eps = 1e-6
+		return uv.U > eps && uv.U < 1-eps && uv.V > eps && uv.V < 1-eps && sf.PointAtUv(uv).Equals(p)
+	}
+	return inside(s) && inside(b)
 }
 
 // seedOnPatch tells whether p, a hit of an edge of srfA (trimming it
