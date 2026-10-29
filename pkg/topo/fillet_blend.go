@@ -276,25 +276,27 @@ var blendLegs = []float64{0.4, 0.2, 0}
 // ocut, the hole along m's and o's axes against am and ao, the face's
 // curve from those tries in a plane of normal nms. The curves and legs
 // are tried in turn, and with each the patch leaning into the hole by
-// less, then more, until one doesn't fold.
+// less, then more (blendLeans), until one doesn't fold.
 func blendFill(marc, ocut srf.SBezier, tries []func(leg float64) (srf.SBezier, error), am, ao, nms geom.Vector) (srf.SBezier, srf.SSurface, error) {
 	var first error
-	for _, curve := range tries {
-		for _, leg := range blendLegs {
-			fc, err := curve(leg)
-			if err != nil {
-				return srf.SBezier{}, srf.SSurface{}, fmt.Errorf("the corner's curve on a face can't be made: %w", err)
-			}
-			for _, lw := range blendLean {
-				patch, err := blendPatch(
-					setbackSide{ctrl: quinticCtrl(marc), arc: true, e: am.ScaledBy(-1)},
-					setbackSide{ctrl: quinticCtrl(ocut), arc: true, e: ao.ScaledBy(-1)},
-					setbackSide{ctrl: quinticCtrl(fc), e: nms}, lw)
-				if err == nil {
-					return fc, patch, nil
+	for _, ws := range blendLeans {
+		for _, curve := range tries {
+			for _, leg := range blendLegs {
+				fc, err := curve(leg)
+				if err != nil {
+					return srf.SBezier{}, srf.SSurface{}, fmt.Errorf("the corner's curve on a face can't be made: %w", err)
 				}
-				if first == nil {
-					first = err
+				for _, w := range ws {
+					patch, err := blendPatch(
+						setbackSide{ctrl: quinticCtrl(marc), arc: true, e: am.ScaledBy(-1)},
+						setbackSide{ctrl: quinticCtrl(ocut), arc: true, e: ao.ScaledBy(-1)},
+						setbackSide{ctrl: quinticCtrl(fc), e: nms}, w[0], w[1])
+					if err == nil {
+						return fc, patch, nil
+					}
+					if first == nil {
+						first = err
+					}
 				}
 			}
 		}
@@ -331,16 +333,27 @@ func (t *Topology) edgeLen(fe *filletEdge) float64 {
 	return t.Vertices[fe.v[1]].P.Minus(t.Vertices[fe.v[0]].P).Magnitude()
 }
 
-// blendLean are the weights, against fairness, of the patch's rows
-// leaning into the hole, tried in turn.
-var blendLean = []float64{0.1, 0.01, 0.3, 1}
+// blendLeans are the weights, against fairness, of the patch's rows
+// leaning into the hole and of the row beside o's cut, tried in turn,
+// each set with every curve and leg before the next. Where m's radius is
+// several times o's, the cut climbs nearly along o's axis to p and the
+// patch's normal beside p turns on the sign of that row's last lean
+// alone: fairness pulls it under the cut (by 0.02 of the hole on the
+// ledge at 105 degrees, 3 and 0.5) unless it is held harder than the
+// rest. With the other rows held hard too it then folds along the face's
+// curve, so they are held less, then more (10 makes every ledge of
+// TestFilletBlendSweep, 3 all but three).
+var blendLeans = [][][2]float64{
+	{{0.1, 0.1}, {0.01, 0.01}, {0.3, 0.3}, {1, 1}},
+	{{0.1, 3}, {1, 3}, {3, 3}, {10, 3}},
+}
 
 // blendPatch is the patch of a blend corner: bottom from s to q, a
 // fillet's section; right from q to p, a cut along a fillet; its top
 // folded to p; left from p back to s, a curve on a face. The fillets'
 // sides' e is their axis, pointing into the hole; w is the weight of the
-// rows leaning into it.
-func blendPatch(bottom, right, left setbackSide, w float64) (srf.SSurface, error) {
+// rows leaning into it, wr that of the row beside the right side.
+func blendPatch(bottom, right, left setbackSide, w, wr float64) (srf.SSurface, error) {
 	const n = patchDeg
 	p := right.ctrl[n]
 	var mid geom.Vector
@@ -440,17 +453,21 @@ func blendPatch(bottom, right, left setbackSide, w float64) (srf.SSurface, error
 	lu.ctrl = up
 	luSb := lu.bezier()
 	bSb := bu.bezier()
-	inFace := lu.e.Cross(luSb.TangentAt(0))
-	if inFace.Dot(bSb.TangentAt(0)) < 0 {
-		inFace = inFace.ScaledBy(-1)
+	// The face's curve can turn by more than a right angle (out round
+	// the sharp edge's vertex and back onto m's tangent line), so the
+	// hole's side of it is kept by the turn's hand, not by a direction.
+	hand := 1.0
+	if lu.e.Cross(luSb.TangentAt(0)).Dot(bSb.TangentAt(0)) < 0 {
+		hand = -1
 	}
 	for _, sd := range []struct {
 		side setbackSide
 		vars int
-	}{{bu, bv}, {ru, rv}} {
+		w    float64
+	}{{bu, bv, w}, {ru, rv, wr}} {
 		reach := sd.side.ctrl[n].Minus(sd.side.ctrl[0]).Magnitude() / n
 		for k := 1; k < n; k++ {
-			eq(map[int]float64{sd.vars + k: 1}, reach, w)
+			eq(map[int]float64{sd.vars + k: 1}, reach, sd.w)
 		}
 	}
 	reach := lu.ctrl[n].Minus(lu.ctrl[0]).Magnitude() / n
@@ -459,10 +476,7 @@ func blendPatch(bottom, right, left setbackSide, w float64) (srf.SSurface, error
 		if dir.Magnitude() < 1e-12 {
 			continue
 		}
-		dir = dir.WithMagnitude(1)
-		if dir.Dot(inFace) < 0 {
-			dir = dir.ScaledBy(-1)
-		}
+		dir = dir.WithMagnitude(hand)
 		for d := range 3 {
 			eq(map[int]float64{pv(1, k, d): 1, pv(0, k, d): -1}, comp(dir, d)*reach, w)
 		}

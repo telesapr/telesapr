@@ -61,8 +61,8 @@ def ledge(phi):
 
 
 lines = []
-radii = ((1, 1), (2, 2), (1, 2), (2, 1), (0.5, 3), (1, 0.5))
-for phi in (60, 75, 90, 105):
+radii = ((1, 1), (2, 2), (1, 2), (2, 1), (0.5, 3), (1, 0.5), (3, 0.5))
+for phi in (60, 75, 90, 105, 120):
     for c, k in radii:
         try:
             s = fillet(ledge(phi), [(V(20, 10, 10), V(10, 10, 10), c), (V(10, 10, 0), V(10, 10, 10), k)])
@@ -71,7 +71,7 @@ for phi in (60, 75, 90, 105):
             print("ledge", phi, c, k, "refused:", e)
 
 rib = Part.makeBox(25, 25, 5, V(-5, -5, 0)).fuse(Part.makeBox(10, 10, 11, V(0, 0, 4))).removeSplitter()
-for c, k in ((1, 1), (2, 2), (1, 2), (2, 1), (1, 0.5), (3, 0.5)):
+for c, k in ((1, 1), (2, 2), (1, 2), (2, 1), (1, 0.5), (3, 0.5), (0.5, 3)):
     try:
         s = fillet(rib, [(V(10, 10, 5), V(10, 10, 15), c), (V(10, 10, 5), V(0, 10, 5), k)])
         lines.append("rib %g %g %.9f %d" % (c, k, s.Volume, len(s.Faces)))
