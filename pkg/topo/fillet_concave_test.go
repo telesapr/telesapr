@@ -166,14 +166,20 @@ func TestFilletConcaveCircle(t *testing.T) {
 	}
 }
 
+// A corner where convex and concave fillets meet that neither the
+// stages nor a blend rounds is refused, saying so: the notch's two top
+// edges of different radii with the concave upright between them. One
+// top edge with the upright, the other left sharp, is a blend
+// (TestFilletBlendCornerOracle).
 func TestFilletConcaveRefused(t *testing.T) {
 	t.Parallel()
-	// The notch's concave edge and a convex top edge at one corner.
 	sh := notch(math.Pi/2, v(0, 0, 10), srf.Tolerance{})
 	a := v(10*math.Cos(math.Pi/4), 10*math.Sin(math.Pi/4), 10)
-	err := topo.FilletEdges(sh, [][2]geom.Vector{{v(0, 0, 0), v(0, 0, 10)}, {v(0, 0, 10), a}}, 1, 1<<30)
+	b := v(-a.X, a.Y, 10)
+	err := topo.FilletPicks(sh, []topo.FilletPick{{A: v(0, 0, 0), B: v(0, 0, 10)}, {A: v(0, 0, 10), B: a, R: 0.5},
+		{A: v(0, 0, 10), B: b}}, 1, 1<<30, false)
 	if err == nil || !strings.Contains(err.Error(), "convex edge's fillet meets a concave") {
-		t.Errorf("mixed corner: %v", err)
+		t.Errorf("mixed corner of two radii: %v", err)
 	}
 }
 

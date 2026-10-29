@@ -120,9 +120,6 @@ func TestFilletRefused(t *testing.T) {
 		fn   func()
 		want string
 	}{
-		"convex and concave": {func() {
-			d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(5, 5, 0), api.V(5, 5, 5)), lineAlong(t, ex, api.V(5, 5, 5), api.V(20, 5, 5))}, 1, "")
-		}, "a convex edge's fillet meets a concave"},
 		"no edges":          {func() { d.Features.Fillet(nil, 1, "") }, "no edges"},
 		"zero":              {func() { d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 0, "") }, "more than zero"},
 		"too large":         {func() { d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 50, "") }, "wider than a face"},
