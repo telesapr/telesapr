@@ -1,6 +1,7 @@
 package sketch_test
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -335,4 +336,37 @@ func TestSweepTwistAndUp(t *testing.T) {
 	if bar.Problem() == "" {
 		t.Error("a sweep held up along its path has no problem")
 	}
+}
+
+// A sweep's fitted path is there for the ray-cast oracle only when its
+// surface is fitted: none along a line, and the line once twisted, with
+// the twist in its options; and SweepSteps says it is fitted.
+func TestFittedSweepPath(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	d.Features.SketchIn(d.Workplane("ZX"), "path")
+	line := d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 30))
+	d.Features.SketchIn(d.Workplane("XY"), "square")
+	d.Sketch.Rect(api.V(-2, -2, 0), api.V(2, 2, 0))
+	bar := d.Features.Sweep([]api.Entity{line}, "bar")
+	d.With(func(sk *sketch.Sketch) {
+		g := sk.Group(sk.ActiveGroup())
+		if sp, err := g.FittedSweepPath(sk); err != nil || sp != nil {
+			t.Errorf("along a line: %v, %v", sp, err)
+		}
+		if _, err := sk.Group(g.OpA).FittedSweepPath(sk); err == nil {
+			t.Error("a sketch has a sweep's path")
+		}
+	})
+	bar.AsSweep().SetTwist(45)
+	d.With(func(sk *sketch.Sketch) {
+		g := sk.Group(sk.ActiveGroup())
+		sp, err := g.FittedSweepPath(sk)
+		if err != nil || sp == nil || len(sp.Pieces()) != 1 || math.Abs(sp.Options().Twist-math.Pi/4) > 1e-12 {
+			t.Errorf("twisted: %v, %v", sp, err)
+		}
+		if _, err := g.SweepSteps(sk); !errors.Is(err, sketch.ErrFittedSweep) {
+			t.Errorf("twisted steps: %v", err)
+		}
+	})
 }

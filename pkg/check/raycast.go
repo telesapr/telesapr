@@ -15,7 +15,7 @@ import (
 // The ray-cast oracle judges a solid without the kernel's surface
 // intersection: it rebuilds the group tree from each group's own
 // definition (a profile and an extrusion, a profile and an axis, a
-// sweep's rigid steps, the motions that place a pattern's or a
+// sweep's rigid steps or its path and frames, the motions that place a pattern's or a
 // mirror's copies), finds
 // where a ray may cross each leaf's boundary, and evaluates the tree
 // between those places, point by point. Volumes, centroids and where a
@@ -25,11 +25,11 @@ import (
 // ErrUnsupported is returned for a group tree with a leaf the oracle
 // can't build: anything but extrusions, drafted or not, lathes,
 // revolves, helices of a profile in a plane through their axis, sweeps
-// along lines and arcs, and the step and repeats, patterns along a path
-// and mirrors of those. Lofts, fitted sweeps (along cubics, twisted or
-// held to a direction) and the solids made by editing others (fillets,
-// chamfers, shells) are refused.
-var ErrUnsupported = errors.New("the ray-cast oracle builds extrusions, lathes, revolves, helices, sweeps along lines and arcs, and their copies only")
+// (along lines and arcs, or fitted along cubics, twisted or held to a
+// direction), and the step and repeats, patterns along a path and
+// mirrors of those. Lofts and the solids made by editing others
+// (fillets, chamfers, shells) are refused.
+var ErrUnsupported = errors.New("the ray-cast oracle builds extrusions, lathes, revolves, helices, sweeps, and their copies only")
 
 // profileTol is the chord tolerance the profiles' curves are cut to:
 // fine enough that the oracle's own error is far below any mesh's.

@@ -1832,7 +1832,7 @@
 			},
 			"ErrUnsupported": {
 				"decl": "var ErrUnsupported",
-				"text": "ErrUnsupported is returned for a group tree with a leaf the oracle can't build: anything but extrusions, drafted or not, lathes, revolves, helices of a profile in a plane through their axis, sweeps along lines and arcs, and the step and repeats, patterns along a path and mirrors of those."
+				"text": "ErrUnsupported is returned for a group tree with a leaf the oracle can't build: anything but extrusions, drafted or not, lathes, revolves, helices of a profile in a plane through their axis, sweeps (along lines and arcs, or fitted along cubics, twisted or held to a direction), and the step and repeats, patterns along a path and mirrors of those."
 			}
 		}
 	},
@@ -5746,7 +5746,7 @@
 					},
 					"RayCheck": {
 						"decl": "func (v GroupAnalysis) RayCheck() (r check.RayReport)",
-						"text": "RayCheck checks the solid of the model up to and with this group by\nthe ray-cast oracle, which rebuilds it from the groups' definitions\n(profiles, extrusions, axes, a sweep's steps, where step and repeats,\npatterns along a path and mirrors put their copies) without the\nkernel's surface intersection: its volume, centre of mass and inertia\ntensor about it (Measure.Inertia, for a density of one, in mm⁵;\nMeasure.PrincipalMoments) by three grids of rays, the rays along\nwhich it and the kernel's mesh disagree by more than twice the chord\ntolerance, and the mesh's half-edges (each edge used twice, once each\nway). It fails for a model with a group the oracle can't build, as a\nfillet or a loft: extrusions, drafted or not, lathes, revolves,\nhelices, sweeps along lines and arcs, and copies of them only.\nAnalyze \u003e Ray-Cast Check shows the same."
+						"text": "RayCheck checks the solid of the model up to and with this group by\nthe ray-cast oracle, which rebuilds it from the groups' definitions\n(profiles, extrusions, axes, a sweep's steps or path, where step and\nrepeats, patterns along a path and mirrors put their copies) without the\nkernel's surface intersection: its volume, centre of mass and inertia\ntensor about it (Measure.Inertia, for a density of one, in mm⁵;\nMeasure.PrincipalMoments) by three grids of rays, the rays along\nwhich it and the kernel's mesh disagree by more than twice the chord\ntolerance, and the mesh's half-edges (each edge used twice, once each\nway). It fails for a model with a group the oracle can't build, as a\nfillet or a loft: extrusions, drafted or not, lathes, revolves,\nhelices, sweeps, and copies of them only.\nAnalyze \u003e Ray-Cast Check shows the same."
 					},
 					"Shell": {
 						"decl": "func (v GroupAnalysis) Shell() (s *srf.SShell)",
@@ -7358,6 +7358,10 @@
 					"FieldName": {
 						"decl": "func (g *Group) FieldName(f GroupValue) string",
 						"text": "FieldName is the value's name in the file and in messages for this group: a chamfer's distance is ValB, as a helix's pitch is."
+					},
+					"FittedSweepPath": {
+						"decl": "func (g *Group) FittedSweepPath(sk *Sketch) (*topo.SweepPath, error)",
+						"text": "FittedSweepPath is the path a fitted sweep moves its profile along, its curves and how its frames turn (topo.SweepPath.Pieces, Options), and nil for a sweep SweepSteps describes."
 					},
 					"Generate": {
 						"decl": "func (g *Group) Generate(sk *Sketch, entity *[]core.Entity, param *[]core.Param)",

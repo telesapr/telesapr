@@ -197,6 +197,12 @@ func (sp *SweepPath) step(f frame, s float64) (frame, error) {
 // Length is the path's arc length.
 func (sp *SweepPath) Length() float64 { return sp.length }
 
+// Pieces are the path's curves, joined end to end, as it was made from.
+func (sp *SweepPath) Pieces() []srf.SBezier { return sp.pieces }
+
+// Options are how the path's frames turn, as it was made with.
+func (sp *SweepPath) Options() PathSweepOptions { return sp.opts }
+
 // End is the chain's last parameter.
 func (sp *SweepPath) End() float64 { return float64(len(sp.pieces)) }
 

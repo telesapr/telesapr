@@ -678,6 +678,20 @@ func (g *Group) SweepSteps(sk *Sketch) ([]srf.SweepStep, error) {
 	return steps, nil
 }
 
+// FittedSweepPath is the path a fitted sweep moves its profile along,
+// its curves and how its frames turn (topo.SweepPath.Pieces, Options),
+// and nil for a sweep SweepSteps describes. The ray-cast oracle
+// (pkg/check) places the profile along it by frames of its own.
+func (g *Group) FittedSweepPath(sk *Sketch) (*topo.SweepPath, error) {
+	if g.Type != GroupSweep {
+		return nil, fmt.Errorf("%s is not a sweep", g.DescriptionString())
+	}
+	if _, err := g.sweepPath(sk); err != nil {
+		return nil, err
+	}
+	return g.fittedPath, nil
+}
+
 // sweepFitted reports whether the sweep's surface is fitted along the
 // chain rather than exact: along a cubic, or twisted, or with its frames
 // held to a direction.

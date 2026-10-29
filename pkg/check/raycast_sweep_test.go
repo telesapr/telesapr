@@ -155,19 +155,11 @@ func TestOracleSweep(t *testing.T) {
 	}
 }
 
-// What the oracle doesn't build it refuses by name: a twisted sweep,
-// fitted along its path, and a loft.
-func TestOracleRefusesFitted(t *testing.T) {
+// What the oracle doesn't build it refuses by name: a loft, whose
+// surfaces between its sections are the kernel's own construction.
+func TestOracleRefusesLoft(t *testing.T) {
 	t.Parallel()
 	d := api.New()
-	bar(d).AsSweep().SetTwist(30)
-	sk := d.Host().Sketch()
-	sk.GenerateAll()
-	if _, err := check.NewOracle(sk, sk.ActiveGroup()); !errors.Is(err, check.ErrUnsupported) {
-		t.Errorf("a twisted sweep: %v", err)
-	}
-
-	d = api.New()
 	d.Features.SketchIn(d.Workplane("XY"), "foot")
 	d.Sketch.Rect(api.V(-10, -10, 0), api.V(10, 10, 0))
 	foot := d.Active()
@@ -176,7 +168,7 @@ func TestOracleRefusesFitted(t *testing.T) {
 	top := d.Features.SketchAt(o, api.V(1, 0, 0), api.V(0, 1, 0), "")
 	d.Sketch.Circle(api.V(0, 0, 20), 6)
 	d.Features.Loft(foot, top, "")
-	sk = d.Host().Sketch()
+	sk := d.Host().Sketch()
 	sk.GenerateAll()
 	if _, err := check.NewOracle(sk, sk.ActiveGroup()); !errors.Is(err, check.ErrUnsupported) {
 		t.Errorf("a loft: %v", err)

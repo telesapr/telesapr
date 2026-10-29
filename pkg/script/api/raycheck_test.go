@@ -46,3 +46,22 @@ func TestRayCheckUnsupported(t *testing.T) {
 		t.Skip("named otherwise")
 	}
 }
+
+// A sweep the kernel fits along its path is probed too: a 12 square
+// twisted a quarter turn along a line 60 long is the square turned by
+// 45 degrees half way, its diagonal along x there.
+func TestRayCheckFittedSweep(t *testing.T) {
+	t.Parallel()
+	d := New()
+	d.Features.SketchIn(d.Workplane("ZX"), "path")
+	path := d.Sketch.Line(V(0, 0, 0), V(0, 0, 60))
+	d.Features.SketchIn(d.Workplane("XY"), "square")
+	d.Sketch.Rect(V(-6, -6, 0), V(6, 6, 0))
+	sw := d.Features.Sweep([]Entity{path}, "")
+	sw.AsSweep().SetTwist(90)
+	in := sw.Analyze().Probe(V(-20, 0, 30), V(1, 0, 0))
+	half := 6 * math.Sqrt2
+	if len(in) != 1 || math.Abs(in[0].From-(20-half)) > 1e-6 || math.Abs(in[0].To-(20+half)) > 1e-6 {
+		t.Errorf("probe %v, want %g to %g", in, 20-half, 20+half)
+	}
+}
