@@ -39,13 +39,15 @@ import (
 // solid.
 
 // ShellPart is one of the solids a solid is made of: a revolution
-// (Rev), or else its own solid (Shell), of flat faces or a prism, and
-// how it is joined to the parts before it (srf.SurfaceUnion,
-// srf.SurfaceDiff or srf.SurfaceInter; zero is a union). The first
-// part is joined by a union.
+// (Rev), or else its own solid (Shell), of flat faces, a prism, or a
+// drafted extrusion when Draft says how it was drafted, and how it is
+// joined to the parts before it (srf.SurfaceUnion, srf.SurfaceDiff or
+// srf.SurfaceInter; zero is a union). The first part is joined by a
+// union.
 type ShellPart struct {
 	Rev     *Revolution
 	Shell   *srf.SShell
+	Draft   *DraftedSolid
 	Combine srf.SurfaceCombineAs
 }
 
@@ -159,18 +161,25 @@ func joinedInside(t *Topology, sh *srf.SShell, parts []ShellPart, opened map[int
 			modeAt = shrunkMode
 		}
 		var in *srf.SShell
-		if part.Rev != nil {
-			if op == srf.SurfaceDiff && !part.Rev.Whole() {
-				return nil, false, shellErr(part.Rev.Pt, "a revolve of less than a whole turn is taken away from the solid; "+
-					"a shell takes away lathes and whole turns only")
+		switch {
+		case part.Rev != nil && op == srf.SurfaceUnion:
+			in, err = joinedRevolvedInside(*part.Rev, modeAt, nil, 0, thick, sh.Tol, color)
+		case part.Rev != nil:
+			var openAt func(geom.Vector) bool
+			if openAt, err = openOnRevolution(*part.Rev, openPts, sh.Tol, color); err != nil {
+				return nil, false, err
 			}
-			if op != srf.SurfaceUnion {
-				if err := openOnRevolution(*part.Rev, openPts, sh.Tol, color); err != nil {
-					return nil, false, err
-				}
+			if op == srf.SurfaceDiff {
+				in, err = grownRevolution(*part.Rev, openAt, thick, sh.Tol, color)
+			} else {
+				// Intersected with, a piece is taken away where any of its
+				// faces is, as on a revolution alone: a curved face runs out
+				// past the solid's.
+				in, err = joinedRevolvedInside(*part.Rev, modeAt, openAt, openFace, thick, sh.Tol, color)
 			}
-			in, err = joinedRevolvedInside(*part.Rev, modeAt, thick, sh.Tol, color)
-		} else {
+		case part.Draft != nil:
+			in, err = joinedDraftedInside(part.Shell, *part.Draft, modeAt, openPts, openedAs[op], thick)
+		default:
 			in, err = joinedFlatInside(part.Shell, modeAt, openPts, openedAs[op], thick)
 		}
 		if err != nil {
@@ -231,9 +240,12 @@ func allUnions(parts []ShellPart) bool {
 
 // joinedRevolvedInside is the inside of the revolution rev, a part of a
 // solid, each piece of its profile moved as modeAt says of points of its
-// faces. Its ends must lie on the solid's faces.
-func joinedRevolvedInside(rev Revolution, modeAt func(geom.Vector) faceMode, thick float64, tol srf.Tolerance, color core.RGBA) (*srf.SShell, error) {
+// faces, but as opened says where openAt (if not nil) reports a face
+// taken away. Its ends must lie on the solid's faces, or be taken away.
+func joinedRevolvedInside(rev Revolution, modeAt func(geom.Vector) faceMode, openAt func(geom.Vector) bool, opened faceMode,
+	thick float64, tol srf.Tolerance, color core.RGBA) (*srf.SShell, error) {
 	axis := rev.Axis.WithMagnitude(1)
+	isOpen := func(p geom.Vector) bool { return openAt != nil && openAt(p) }
 	// An end's mode by points inside the profile turned onto it: taken
 	// away where any lies on a face taken away, a wall where any lies on
 	// one.
@@ -247,26 +259,42 @@ func joinedRevolvedInside(rev Revolution, modeAt func(geom.Vector) faceMode, thi
 			return mode, ErrNotRevolution
 		}
 		for k, a := range []float64{rev.Start, rev.End} {
-			wall, open := false, false
+			wall, open, probed := false, false, false
 			for _, q := range pts {
-				switch modeAt(q.RotatedAbout(rev.Pt, axis, a)) {
+				q = q.RotatedAbout(rev.Pt, axis, a)
+				if isOpen(q) {
+					open = true
+					continue
+				}
+				switch modeAt(q) {
 				case openFace:
 					open = true
 				case keptFace:
 					wall = true
+				case probedFace:
+					probed = true
 				}
 			}
 			switch {
 			case open:
 				mode[k] = openFace
-			case !wall:
-				return mode, shellErr(pts[0].RotatedAbout(rev.Pt, axis, a), "an end of a revolve lies inside another solid it is joined to; "+
-					"a shell hollows a revolve joined to others only where its ends are walls or taken away")
+			case wall:
+			case probed:
+				mode[k] = probedFace
+			default:
+				// Inside another part: moved out, so the insides meet.
+				mode[k] = buriedFace
 			}
 		}
 		return mode, nil
 	}
-	return revolvedInside(rev, func(p geom.Vector) (faceMode, bool) { return modeAt(p), true }, ends, thick, tol, color)
+	pieceAt := func(p geom.Vector) (faceMode, bool) {
+		if isOpen(p) {
+			return opened, true
+		}
+		return modeAt(p), true
+	}
+	return revolvedInside(rev, pieceAt, ends, thick, tol, color)
 }
 
 // profilePoints are points of a grid over the profile's box, in its
@@ -328,8 +356,38 @@ func joinedFlatInside(part *srf.SShell, modeAt func(geom.Vector) faceMode, open 
 	return inner, err
 }
 
-// faceModeOf is face f's mode, of a part's solid of topology t, by the
-// middles of its triangles on it: taken away where any lies on a face taken
+// joinedDraftedInside is the inside of part, the drafted extrusion d,
+// each face moved as modeAt says of points of it, or as opened says
+// where a face taken away (a point of open) lies on it.
+func joinedDraftedInside(part *srf.SShell, d DraftedSolid, modeAt func(geom.Vector) faceMode, open []openPoint, opened faceMode, thick float64) (*srf.SShell, error) {
+	pt, err := Build(part)
+	if err != nil {
+		return nil, err
+	}
+	if probs := pt.Validate(); len(probs) > 0 {
+		return nil, shellErr(probs[0].At, "a part of the solid is not closed: %s", probs[0].Msg)
+	}
+	mode := make([]faceMode, len(pt.Faces))
+	for f := range pt.Faces {
+		mode[f] = faceModeOf(pt, part, f, modeAt)
+	}
+	for _, o := range open {
+		if f := onFaceOf(pt, o); f >= 0 {
+			mode[f] = opened
+		}
+	}
+	inner, err := draftedInsideOf(pt, d, func(f int) faceMode { return mode[f] }, thick, part.Tol)
+	if err != nil {
+		return nil, err
+	}
+	for i := range inner.Surface {
+		inner.Surface[i].Color = part.Surface[0].Color
+	}
+	return inner, nil
+}
+
+// faceModeOf is face f's mode, of a part's solid of topology t, by
+// points of its triangles on it: taken away where any lies on a face taken
 // away, a wall where any lies on one, inside the others where none
 // lies on the solid (moved as modeAt says of such points).
 func faceModeOf(t *Topology, part *srf.SShell, f int, modeAt func(geom.Vector) faceMode) faceMode {
@@ -338,17 +396,28 @@ func faceModeOf(t *Topology, part *srf.SShell, f int, modeAt func(geom.Vector) f
 	s.TriangulateInto(part, &m)
 	wall, open := false, false
 	inside := buriedFace
+	// Points across each triangle of a flat face of few, not its middle
+	// alone: such a face is two or three large triangles, whose middles
+	// can all lie where another part stands on it. Other faces are asked
+	// at their triangles' middles, each put back on the face, a chord's
+	// sag off a curved one.
+	samples := triangleSamples[:1]
+	if _, flat := t.planarNormal(f); flat && len(m.Triangles) <= 32 {
+		samples = triangleSamples
+	}
 	for _, tr := range m.Triangles {
-		// The middle, a chord's sag off a curved face, put back on it.
-		var u, v float64
-		s.ClosestPointToUV(tr.A.Plus(tr.B).Plus(tr.C).ScaledBy(1.0/3), &u, &v, true)
-		switch modeAt(s.PointAt(u, v)) {
-		case openFace:
-			open = true
-		case keptFace:
-			wall = true
-		case probedFace:
-			inside = probedFace
+		for _, w := range samples {
+			var u, v float64
+			p := tr.A.ScaledBy(w[0]).Plus(tr.B.ScaledBy(w[1])).Plus(tr.C.ScaledBy(w[2]))
+			s.ClosestPointToUV(p, &u, &v, true)
+			switch modeAt(s.PointAt(u, v)) {
+			case openFace:
+				open = true
+			case keptFace:
+				wall = true
+			case probedFace:
+				inside = probedFace
+			}
 		}
 	}
 	switch {
@@ -359,6 +428,21 @@ func faceModeOf(t *Topology, part *srf.SShell, f int, modeAt func(geom.Vector) f
 	}
 	return inside
 }
+
+// triangleSamples are the barycentric weights of points inside a
+// triangle, a grid of sixths, the middle first.
+var triangleSamples = func() [][3]float64 {
+	out := [][3]float64{{1.0 / 3, 1.0 / 3, 1.0 / 3}}
+	for a := 1; a <= 4; a++ {
+		for b := 1; a+b <= 5; b++ {
+			if a == 2 && b == 2 {
+				continue
+			}
+			out = append(out, [3]float64{float64(a) / 6, float64(b) / 6, float64(6-a-b) / 6})
+		}
+	}
+	return out
+}()
 
 // insideOf is an error when inner, the insides of a solid's parts with
 // every face a wall and those inside the others moved out by twice the
@@ -379,25 +463,6 @@ func insideOf(inner, sh *srf.SShell, thick float64) error {
 		}
 		return shellErr(at, "a thickness of %g leaves a wall thinner than that, or none, beyond where a part's inside meets another's; "+
 			"the part it meets is thinner than twice that there", thick)
-	}
-	return nil
-}
-
-// openOnRevolution is an error when a face taken away lies on rev, a
-// part taken away or intersected with.
-func openOnRevolution(rev Revolution, open []openPoint, tol srf.Tolerance, color core.RGBA) error {
-	if len(open) == 0 {
-		return nil
-	}
-	rt, err := Build(rev.solid(tol, color))
-	if err != nil {
-		return err
-	}
-	for _, o := range open {
-		if onFaceOf(rt, o) >= 0 {
-			return shellErr(o.p, "a face taken away lies on a lathe or revolve taken away from the solid or intersected with it; "+
-				"a shell opens such a solid only at faces of the parts joined to it")
-		}
 	}
 	return nil
 }

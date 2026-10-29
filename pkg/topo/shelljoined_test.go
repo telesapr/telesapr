@@ -165,3 +165,27 @@ func TestShellDraftedCone(t *testing.T) {
 		t.Error("walls that meet: no error")
 	}
 }
+
+// A half ring revolved about an axis on a block's side, its two ends
+// standing on that side, open at the block's top: the ring's ends lie
+// inside the block, so they are moved out into it, and the ring's inside
+// meets the block's with no wall between them.
+func TestShellJoinedRevolveEndsInside(t *testing.T) {
+	t.Parallel()
+	tol := srf.Tol(0.001, 20)
+	body := &srf.SShell{Tol: tol}
+	body.MakePrism([]geom.Vector{v(-20, -20, 0), v(20, -20, 0), v(20, 0, 0), v(-20, 0, 0)}, v(0, 0, 0), v(0, 0, 10),
+		core.NewRGBA(100, 100, 100, 255))
+	ring, rev := turned(meridian(t, [][2]float64{{5, 0}, {10, 0}, {10, 10}, {5, 10}}, nil, tol), 0, math.Pi, tol)
+	sh := &srf.SShell{Tol: tol}
+	sh.MakeFromUnionOf(body, ring)
+	parts := []topo.ShellPart{{Shell: body}, {Rev: &rev}}
+	out, err := topo.ShellJoined(sh, parts, facesAt(t, sh, v(0, -10, 10)), 1, 1000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := 8000 + 375*math.Pi - (38*18*9 + 22.5*math.Pi*8 + 48)
+	if r := soundness(out); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Fatalf("a half ring on a block's side: %s, want %g", r.String(), want)
+	}
+}
