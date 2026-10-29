@@ -35,7 +35,9 @@ build tag added:
   IEEE doubles and `math.FMA` is software there, with the same results.
 - **Package tests under js/wasm** (`go test` through `go_js_wasm_exec`): `pkg/geom`,
   `pkg/render/soft` and `pkg/srf` pass in `-short` (srf takes 213 s).
-  `pkg/script`: see below.
+  `pkg/script`'s `-short` suite did not finish in 55 minutes and was killed without saying which
+  test it was in (slow or hung is not known; `go test -v -run` per test is the next step). yaegi
+  itself runs: the CLI's `run` and the page's console script above.
 - **In Chrome** (headless, `cmd/telesapr-wasm/web/index.html`): the application on the headless
   platform loads a model from an in-memory file system, regenerates it, draws frames into a 2D
   canvas through `putImageData`, and runs a console script through yaegi.
