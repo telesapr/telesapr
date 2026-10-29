@@ -135,7 +135,7 @@ func linkMitresAt(rbs []*rollingBall, partial bool) bool {
 				if end.mitre {
 					break
 				}
-				if o == rb || o.closed || o.flat != rb.flat || o.flat && o.r != rb.r {
+				if o == rb || o.closed || o.flat != rb.flat {
 					continue
 				}
 				for ok, oe := range o.ends {
@@ -415,27 +415,34 @@ func (rb *rollingBall) mitreFoot(k, i int) (float64, rbSection, error) {
 	if rb.ends[k].ban[i] >= 0 || rb.flat {
 		// A chamfer's surfaces cross the face both share, not touching
 		// it: a root there too.
-		prev, prevG := math.NaN(), math.NaN()
-		for x := from; x <= zone; x += step {
-			g, _, ok := gap(arc(x))
-			if !ok {
-				continue
+		// A chamfer's mitre with a smaller one, at a wide corner, can
+		// meet the face further past the crease: from twice as far after.
+		for _, start := range []float64{from, 2 * from} {
+			if start != from && !rb.flat {
+				break
 			}
-			if !math.IsNaN(prevG) && prevG >= 0 && g < 0 {
-				lo, hi := prev, x
-				for range 80 {
-					m := (lo + hi) / 2
-					if gm, _, _ := gap(arc(m)); gm >= 0 {
-						lo = m
-					} else {
-						hi = m
-					}
+			prev, prevG := math.NaN(), math.NaN()
+			for x := start; x <= zone; x += step {
+				g, _, ok := gap(arc(x))
+				if !ok {
+					continue
 				}
-				s := arc((lo + hi) / 2)
-				_, sec, _ := gap(s)
-				return s, sec, nil
+				if !math.IsNaN(prevG) && prevG >= 0 && g < 0 {
+					lo, hi := prev, x
+					for range 80 {
+						m := (lo + hi) / 2
+						if gm, _, _ := gap(arc(m)); gm >= 0 {
+							lo = m
+						} else {
+							hi = m
+						}
+					}
+					s := arc((lo + hi) / 2)
+					_, sec, _ := gap(s)
+					return s, sec, nil
+				}
+				prev, prevG = x, g
 			}
-			prev, prevG = x, g
 		}
 		return 0, rbSection{}, filletErr(at, "the fillet's mitre doesn't reach the crease here")
 	}
@@ -492,7 +499,17 @@ func (rb *rollingBall) mitreRoot(k int, g func(rbSection) float64) (float64, rbS
 		return g(sec), sec
 	}
 	lo, hi := -rb.r, zone
-	if gl, _ := h(lo); !(gl > 0) {
+	gl, _ := h(lo)
+	for range 2 {
+		if gl > 0 || !rb.flat {
+			break
+		}
+		// A chamfer's plane past the end of a smaller one's, at a wide
+		// corner, can lie under the larger's line a radius past its end.
+		lo *= 2
+		gl, _ = h(lo)
+	}
+	if !(gl > 0) {
 		return 0, rbSection{}, filletErr(at, "the fillet's mitre at the crease can't be found")
 	}
 	// Down to where the band is narrowest, near the shared face.
@@ -728,6 +745,15 @@ func (rb *rollingBall) fromMate(k int, sec rbSection) rbSection {
 	}
 	if rb.mateKinked(k) {
 		arc = rb.splitSection(rb.matchParams(k, arc))
+	} else if len(rb.kinks) > 0 {
+		// A mate of one radius split at the same kinks, which run the
+		// other way came back a rounding off: this chain's own.
+		arc.Knots = slices.Clone(arc.Knots)
+		for i, x := range arc.Knots {
+			if j := slices.IndexFunc(rb.kinks, func(t float64) bool { return math.Abs(t-x) < kinkMerge }); j >= 0 {
+				arc.Knots[i] = rb.kinks[j]
+			}
+		}
 	}
 	sec.arc = arc
 	sec.foot[0].p, sec.foot[1].p = arc.Ctrl[0], arc.Ctrl[len(arc.Ctrl)-1]

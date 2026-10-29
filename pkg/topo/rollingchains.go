@@ -223,8 +223,9 @@ func pickRadii(picks []FilletPick, r float64) []float64 {
 // setKinks finds the kink of every chain's larger end at a mitre of two
 // radii (rollingkink.go) and gives each chain its kinks. A chain's two
 // kinks within kinkMerge of each other are one, both ends taking it.
-// Kinked sections can't share a mitre with an equal chain's, whose
-// sections aren't split alike: refused.
+// Chains of one radius meeting in a mitre share its curve as it is, one
+// way or the other, so each takes the other's kinks: they go on along
+// such chains until none is new.
 func setKinks(rbs []*rollingBall) error {
 	for _, rb := range rbs {
 		rb.kinks = nil
@@ -242,19 +243,32 @@ func setKinks(rbs []*rollingBall) error {
 			}
 			rb.kinks = append(rb.kinks, kt)
 		}
-		if len(rb.kinks) > 0 && rb.copiesKink() {
-			return filletErr(midpoint(rb.pts), "the fillet meets a larger one at one end and a smaller at the other: pick it alone")
+	}
+	for range rbs {
+		changed := false
+		for _, rb := range rbs {
+			for _, end := range rb.ends {
+				if rb.closed || end == nil || !end.mitre || end.mate == rb || end.mate.r != rb.r {
+					continue
+				}
+				back := (end.ban[0] < 0) != (end.mate.ends[end.mateK].ban[0] < 0)
+				for _, t := range end.mate.kinks {
+					if back {
+						t = 1 - t
+					}
+					if !slices.ContainsFunc(rb.kinks, func(x float64) bool { return math.Abs(x-t) < kinkMerge }) {
+						rb.kinks = append(rb.kinks, t)
+						changed = true
+					}
+				}
+			}
 		}
-		if len(rb.kinks) > 1 {
-			return filletErr(midpoint(rb.pts), "the fillet meets smaller ones at both its ends, differently: pick it alone")
+		if !changed {
+			break
 		}
 	}
 	for _, rb := range rbs {
-		for _, end := range rb.ends {
-			if end.mitre && end.mate != rb && end.mate.r == rb.r && (len(rb.kinks) > 0 || len(end.mate.kinks) > 0) {
-				return filletErr(rb.t.Vertices[end.v].P, "a mitre of one radius beside one of two radii is not made yet: pick them one at a time")
-			}
-		}
+		slices.Sort(rb.kinks)
 	}
 	return nil
 }

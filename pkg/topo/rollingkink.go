@@ -133,20 +133,36 @@ func (rb *rollingBall) findKink(k int) error {
 
 // mitreTs are the parameters of the ball's arcs at which the mitre's arc
 // lengths near end k are found: mitreGrid steps across, or at a kinked
-// end half of them each side of the kink, the kink among them.
+// end half of them each side of the kink, the kink among them. At an end
+// that isn't kinked, of a chain whose sections are split at kinks all the
+// same (the other end's, or where a mate's mitre it copies is split),
+// each span between them takes its share of the steps, so that every
+// span has points to be fitted to.
 func (rb *rollingBall) mitreTs(k int) []float64 {
 	ts := make([]float64, mitreGrid+1)
-	if !rb.kinkedEnd(k) {
-		for j := range ts {
-			ts[j] = float64(j) / mitreGrid
+	if rb.kinkedEnd(k) {
+		kt, h := rb.ends[k].kink, mitreGrid/2
+		for j := range h + 1 {
+			ts[j] = kt * float64(j) / float64(h)
+			ts[h+j] = kt + (1-kt)*float64(j)/float64(h)
 		}
 		return ts
 	}
-	kt, h := rb.ends[k].kink, mitreGrid/2
-	for j := range h + 1 {
-		ts[j] = kt * float64(j) / float64(h)
-		ts[h+j] = kt + (1-kt)*float64(j)/float64(h)
+	bounds := append(append([]float64{0}, rb.kinks...), 1)
+	spans := len(bounds) - 1
+	j := 0
+	for i := range spans {
+		steps := mitreGrid / spans
+		if i == spans-1 {
+			steps = mitreGrid - j
+		}
+		a, b := bounds[i], bounds[i+1]
+		for q := range steps {
+			ts[j+q] = a + (b-a)*float64(q)/float64(steps)
+		}
+		j += steps
 	}
+	ts[mitreGrid] = 1
 	return ts
 }
 
@@ -224,20 +240,15 @@ func (rb *rollingBall) kinkedFit(k int, ball srf.BSplineCurve, f0, f1 rbFoot, ts
 
 // mateSpan is the first span of end k's kinked mate's mitre, from the
 // face both share to the kink, as a quintic run from this chain's side
-// 0 to its side 1.
+// 0 to its side 1. The mate's other kink, where it has one, may lie in
+// it, splitting it: the span is one curve all the same.
 func (rb *rollingBall) mateSpan(k int) srf.BSplineCurve {
 	end := rb.ends[k]
 	me := end.mate.ends[end.mateK]
-	arc := me.shared.arc
-	span := srf.BSplineCurve{Deg: endDeg, Knots: bezierKnots(endDeg)}
-	i := slices.IndexFunc(arc.Knots, func(x float64) bool { return math.Abs(x-me.kink) < 1e-12 }) - 1
 	if end.mate.sharedSide(end.mateK) == 0 {
-		span.Ctrl, span.Weight = slices.Clone(arc.Ctrl[:i+1]), slices.Clone(arc.Weight[:i+1])
-		span.Ctrl, span.Weight = span.Ctrl[len(span.Ctrl)-endDeg-1:], span.Weight[len(span.Weight)-endDeg-1:]
-	} else {
-		span.Ctrl, span.Weight = slices.Clone(arc.Ctrl[i:i+endDeg+1]), slices.Clone(arc.Weight[i:i+endDeg+1])
+		return spanOf(me.shared.arc, 0, me.kink)
 	}
-	return span
+	return spanOf(me.shared.arc, me.kink, 1)
 }
 
 // mateCreaseEnd is where end k's kinked mate's mitre meets the crease:
@@ -252,26 +263,119 @@ func (rb *rollingBall) mateCreaseEnd(k int) geom.Vector {
 	return arc.Ctrl[0]
 }
 
-// mateWallSpan is the second span of end k's kinked mate's mitre, on
-// this chain's wall, from the kink to the crease.
-func (rb *rollingBall) mateWallSpan(k int) srf.SBezier {
+// mateWallSpans are the second span of end k's kinked mate's mitre, on
+// this chain's wall, from the kink to the crease: in pieces where the
+// mate's sections are split by its other kinks, as its patches meet the
+// wall.
+func (rb *rollingBall) mateWallSpans(k int) []srf.SBezier {
 	end := rb.ends[k]
 	me := end.mate.ends[end.mateK]
 	arc := me.shared.arc
-	i := slices.IndexFunc(arc.Knots, func(x float64) bool { return math.Abs(x-me.kink) < 1e-12 }) - 1
-	var sb srf.SBezier
-	sb.Degree = endDeg
-	if end.mate.sharedSide(end.mateK) == 0 {
-		for j := range endDeg + 1 {
-			sb.Ctrl[j], sb.Weight[j] = arc.Ctrl[i+j], arc.Weight[i+j]
+	lo, hi := me.kink, 1.0
+	back := end.mate.sharedSide(end.mateK) == 1
+	if back {
+		// From the crease to the kink: run the other way.
+		lo, hi = 0, me.kink
+	}
+	cuts := []float64{lo}
+	for _, x := range arc.Knots {
+		if x > lo+kinkMerge && x < hi-kinkMerge && x != cuts[len(cuts)-1] {
+			cuts = append(cuts, x)
 		}
-		return sb
 	}
-	// From the crease to the kink: run the other way.
-	for j := range endDeg + 1 {
-		sb.Ctrl[j], sb.Weight[j] = arc.Ctrl[i-j], arc.Weight[i-j]
+	cuts = append(cuts, hi)
+	var out []srf.SBezier
+	for i := range len(cuts) - 1 {
+		c := spanOf(arc, cuts[i], cuts[i+1])
+		var sb srf.SBezier
+		sb.Degree = endDeg
+		for j := range endDeg + 1 {
+			sb.Ctrl[j], sb.Weight[j] = c.Ctrl[j], c.Weight[j]
+		}
+		if back {
+			sb.Reverse()
+		}
+		out = append(out, sb)
 	}
-	return sb
+	if back {
+		slices.Reverse(out)
+	}
+	return out
+}
+
+// spanOf is c from a to b as one span of degree endDeg. Every knot of c
+// inside it must have been put in without changing the curve, as the
+// other kinks are put in a kinked mitre (kinkedFit), so that c's
+// homogeneous points there are one polynomial: it is found again from
+// endDeg+1 of them, spread evenly.
+func spanOf(c srf.BSplineCurve, a, b float64) srf.BSplineCurve {
+	n := endDeg + 1
+	if i := slices.IndexFunc(c.Knots, func(x float64) bool { return x > a+kinkMerge }); i > 0 && c.Knots[i] >= b-kinkMerge {
+		// One span already: its own control points.
+		return srf.BSplineCurve{Deg: endDeg, Knots: bezierKnots(endDeg),
+			Ctrl: slices.Clone(c.Ctrl[i-n : i]), Weight: slices.Clone(c.Weight[i-n : i])}
+	}
+	var rhs [4][]float64
+	for d := range rhs {
+		rhs[d] = make([]float64, n)
+	}
+	m := make([][]float64, n)
+	for j := range n {
+		u := float64(j) / endDeg
+		m[j] = make([]float64, n)
+		for i := range n {
+			m[j][i] = binomial(endDeg, i) * math.Pow(u, float64(i)) * math.Pow(1-u, float64(endDeg-i))
+		}
+		bs := c.Basis(a + (b-a)*u)
+		for i, bi := range bs {
+			w := 1.0
+			if c.Weight != nil {
+				w = c.Weight[i]
+			}
+			p := c.Ctrl[i]
+			rhs[0][j] += bi * w * p.X
+			rhs[1][j] += bi * w * p.Y
+			rhs[2][j] += bi * w * p.Z
+			rhs[3][j] += bi * w
+		}
+	}
+	var sol [4][]float64
+	for d := range sol {
+		mc := make([][]float64, n)
+		for j := range m {
+			mc[j] = slices.Clone(m[j])
+		}
+		x, ok := solveDense(mc, rhs[d])
+		if !ok {
+			panic("topo: Bernstein interpolation singular")
+		}
+		sol[d] = x
+	}
+	out := srf.BSplineCurve{Deg: endDeg, Knots: bezierKnots(endDeg), Ctrl: make([]geom.Vector, n), Weight: make([]float64, n)}
+	for i := range n {
+		w := sol[3][i]
+		out.Weight[i] = w
+		out.Ctrl[i] = geom.Vector{X: sol[0][i] / w, Y: sol[1][i] / w, Z: sol[2][i] / w}
+	}
+	// The ends exactly: the curve's own points there.
+	out.Ctrl[0], out.Ctrl[endDeg] = knotPoint(c, a), knotPoint(c, b)
+	return out
+}
+
+// knotPoint is c's point at t: where t is a knot of full multiplicity,
+// as the ends and kinks are, the control point there, which the curves
+// the point ends are made from hold too.
+func knotPoint(c srf.BSplineCurve, t float64) geom.Vector {
+	switch {
+	case t == c.Knots[0]:
+		return c.Ctrl[0]
+	case t == c.Knots[len(c.Knots)-1]:
+		return c.Ctrl[len(c.Ctrl)-1]
+	}
+	if i := slices.Index(c.Knots, t); i > 0 && i+c.Deg <= len(c.Knots) && c.Knots[i+c.Deg-1] == t {
+		return c.Ctrl[i-1]
+	}
+	return c.PointAt(t)
 }
 
 // onMateArc reports whether p, on the surface end k's mate sweeps, lies
@@ -290,6 +394,12 @@ func (rb *rollingBall) onMateArc(k int, p geom.Vector) bool {
 	sec, err := end.mate.section(s)
 	if err != nil {
 		return false
+	}
+	if end.mate.flat {
+		// A chamfer's line: between its feet.
+		d := sec.foot[1].p.Minus(sec.foot[0].p)
+		l := p.Minus(sec.foot[0].p).Dot(d) / d.MagSquared()
+		return l >= 0 && l <= 1
 	}
 	a, b, x := sec.foot[0].p.Minus(sec.c), sec.foot[1].p.Minus(sec.c), p.Minus(sec.c)
 	n := a.Cross(b)

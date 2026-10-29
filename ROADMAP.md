@@ -184,11 +184,28 @@ solids) at 59 of 59 sound since 2026-10-22. Chamfers: `TestChamferOnOtherSolids`
 | Item | State | Approach / tried |
 |---|---|---|
 | A run-off of a blend that takes material away; both ends running off; a run-off onto a curved face only just past its edge, or with a curved end face | refused, naming the place | Run-offs onto a curved face are made since 2026-10-29 (below). For the rest the setback patch is the means: where the ball runs off a face, cut the fillet as a setback is cut and fill the hole between it, the next face's fillet (or the face) and the faces round. A run-off taking material away was never reached by any test case (a slot cut from the cone never got that far) |
-| Mitres of two radii left | refused, naming the place | A chain that meets smaller ones at both its ends with different kinks (the three cubics at 0.5, 1 and 0.75), or a larger one at one end and a smaller at the other: its sections would need two kinks, or a kink and the copied span split at it, and the mate's span is one quintic; a mitre of one radius beside one of two on the same chain (their sections split differently); chamfers of two distances in the rolling ball's mitres (the line's height is the same; the kink, `onMateArc`, would be the line's foot; those between flat faces are made since 2026-10-28, `chamferPairAt`) |
 | A rib rounded all over, foot first | the top first is made (below); two cases of 24 unsound: width leaning -4, r 0.5, h 5 and 10, at chord 0.015% 3 to 5 mesh edges cross at the front corners, where the foot's fillet passes from the slope edge's fillet onto the slope (sound at 0.01%) | Foot first, the top's edge ends on the foot's fillet and the grown top. Tried 2026-10-29, after run-offs onto curved faces were made: on a rib whose foot is filled, the edge across the back rounds alone, sound; the uprights at the back are refused as fillets meeting above an edge left sharp; the slope's edges are refused before their ends, the ball leaving the side face for the foot's fillet (three fillets meeting at a vertex: a vertex blend, not a run-off). Not needed while the stages take the top first. The blend patch of 2026-10-29 (two fillets above an edge left sharp, flat faces) is not that: there the three fillets meet on curved faces |
 | Convex meeting concave at one vertex beyond what the stages round, fillets or chamfers | refused | Chamfer corners where every edge is chamfered are made since 2026-10-28 (`chamferCornerAt`: OpenCASCADE's pivot and square cuts, plane or bilinear patch), and so are two chamfers of any distances above a third edge left sharp (`chamferPairAt`). Since 2026-10-29 a chamfer's edge takes a distance and a second distance of its own (`EdgeRadii`, `EdgeSeconds`, `pkg/sketch/chamfer_edge_distances.go`), from its screen and from scripts. Since 2026-10-29 (below) a corner of three of both kinds, every edge chamfered, takes OpenCASCADE's pivot too, and a corner of four or more with some edges sharp is cut by the chamfers' planes. Since 2026-10-29 (below) a convex and a concave chamfer with the third edge sharp meet in a three-sided face, and a convex and a concave fillet above a third edge left sharp are blended by one patch, as OpenCASCADE's are. Left: fillets at corners of three of both kinds where the two of one kind differ in radius (the stages refuse them; OpenCASCADE makes them); a blend where the convex fillet's radius is several times how far the concave one reaches along the face (16 of 80 in `TestFilletBlendSweep`, from 6 to 1 at a right angle and 1.7 to 1 at 120 degrees: the patch, a sliver along the convex fillet's end, folds); a corner of four or more of both kinds is refused |
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
 | Slot chamfer at 3 | see K4 | The teapot handle and the run-off chamfers' crossings, listed here before, are sound since K4's mender |
+
+Done 2026-10-29: the mitres of two radii left (`pkg/topo/rollingkink.go`, `TestFilletChainsRadii`,
+`TestChamferChainsRadii`). A chain that meets smaller ones at both its ends is kinked at both, its
+sections split at each; a chain that meets a larger one at one end and a smaller at the other copies the
+larger's first span and is kinked at its own other end; a mitre of one radius beside one of two radii
+has its two chains take each other's kinks, as they share the mitre's curve as it is. The two sides of
+a mitre of two radii are no longer split alike: the copy is the larger's span from the shared face to
+its kink found whole again (`spanOf`) where the larger's other kink splits it, and the patch sides along
+the mitre are split where a corner of a patch across it lies (`splitAtMitres`), as the smaller's wall is
+along the larger's pieces (`mateWallSpans`). Tried first and dropped: splitting each chain's sections at
+its mates' kinks carried across the mitres, which round a ring of chains (the three cubics) came back
+each time somewhere new and never closed. Chamfers of two distances mitre as fillets do, the kink where
+the cut leaves the smaller's line between its feet; at a wide corner their mitre lies past the larger's
+end further than a fillet's, and is looked for there. Against OpenCASCADE (Part::Fillet and
+Part::Chamfer with each edge's own radius): the three cubics at 0.5, 1 and 0.75 and at 1, 1 and 0.5,
+and the lens, four and three cubics chamfered at two distances, every vertex of its within 2.3e-6 mm of
+ours, but for the four cubics' chamfer mitres' feet on the top, past the larger's edge's end, 2.2e-4 mm
+off (the edge carried on along its tangent, `rollingBall.along`).
 
 Done 2026-10-29: a convex and a concave chamfer meeting above a third edge left sharp, a ledge's top
 edge with the upright below it, a rib's upright with one foot edge, made at once

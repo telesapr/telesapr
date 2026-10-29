@@ -1578,18 +1578,30 @@ func putBlends(sh *srf.SShell, bls []*rbBlend, origin uint32) error {
 	dropUnusedCurves(sh)
 
 	// The fillet's patches.
+	patchLoops := make([][][][]srf.SBezier, len(bls))
+	for i, bl := range bls {
+		patchLoops[i] = make([][][]srf.SBezier, len(bl.all))
+		for r, row := range bl.all {
+			patchLoops[i][r] = make([][]srf.SBezier, len(row))
+			for b := range row {
+				loop := patchLoop(&row[b])
+				if l, ok := loops[i][b]; ok {
+					loop = l
+				}
+				patchLoops[i][r][b] = loop
+			}
+		}
+	}
+	splitAtMitres(bls, patchLoops)
 	fa := NewFaceAdder(sh)
 	for i, bl := range bls {
 		color := t.Surface(bl.rb.side[0][0]).Color
-		for _, row := range bl.all {
+		for r, row := range bl.all {
 			for b := range row {
 				p := row[b]
-				loop := patchLoop(&p)
-				if l, ok := loops[i][b]; ok {
-					if len(l) == 0 {
-						continue
-					}
-					loop = l
+				loop := patchLoops[i][r][b]
+				if len(loop) == 0 {
+					continue
 				}
 				p.Color = color
 				p.Origin = origin + uint32(i)
@@ -1609,6 +1621,80 @@ func putBlends(sh *srf.SShell, bls []*rbBlend, origin uint32) error {
 	}
 	return nil
 }
+
+// splitAtMitres splits the sides of the patches at the chains' mitred
+// ends where a patch across the mitre has a corner on them. Chains of two
+// radii share their mitre's curve but not how it is split into patches:
+// each chain's rows end where its own kinks are, and the smaller copies
+// the larger's first span whole, so a corner of one side's patches can
+// lie inside a side of the other's, which must then be split there for
+// the two to share their edges.
+func splitAtMitres(bls []*rbBlend, loops [][][][]srf.SBezier) {
+	if len(bls) < 2 {
+		return
+	}
+	type at struct{ i, b int }
+	var ends []at
+	for i, bl := range bls {
+		m := len(bl.all[0])
+		for k, end := range bl.rb.ends {
+			if end != nil && end.mitre && end.mate != bl.rb {
+				ends = append(ends, at{i, k * (m - 1)})
+			}
+		}
+	}
+	var corners []geom.Vector
+	for _, e := range ends {
+		for r := range loops[e.i] {
+			for _, c := range loops[e.i][r][e.b] {
+				corners = append(corners, c.Start())
+			}
+		}
+	}
+	for _, e := range ends {
+		for r := range loops[e.i] {
+			loop := loops[e.i][r][e.b]
+			var out []srf.SBezier
+			for _, c := range loop {
+				out = append(out, splitAtPoints(c, corners)...)
+			}
+			loops[e.i][r][e.b] = out
+		}
+	}
+}
+
+// splitAtPoints is c split at those of pts that lie on it, short of its
+// ends, within mitreCornerTol.
+func splitAtPoints(c srf.SBezier, pts []geom.Vector) []srf.SBezier {
+	var ts []float64
+	for _, p := range pts {
+		if p.Minus(c.Start()).Magnitude() < mitreCornerTol || p.Minus(c.Finish()).Magnitude() < mitreCornerTol {
+			continue
+		}
+		t, _ := c.ClosestPointTo(p, true)
+		if t <= 0 || t >= 1 || c.PointAt(t).Minus(p).Magnitude() > mitreCornerTol {
+			continue
+		}
+		ts = append(ts, t)
+	}
+	if len(ts) == 0 {
+		return []srf.SBezier{c}
+	}
+	slices.Sort(ts)
+	var out []srf.SBezier
+	rest, done := c, 0.0
+	for _, t := range ts {
+		var bef, aft srf.SBezier
+		rest.SplitAt((t-done)/(1-done), &bef, &aft)
+		out = append(out, bef)
+		rest, done = aft, t
+	}
+	return append(out, rest)
+}
+
+// mitreCornerTol is how near a side a corner of a patch across a mitre
+// lies when the side is split at it: both are the same curve's.
+const mitreCornerTol = 1e-6
 
 // cutBack cuts the faces at the blend's edge back along the curves the
 // ball touches them, and its ends' faces to its ends; it gives the loops
@@ -1893,20 +1979,25 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 					// On this side's wall from the fillet's last foot, where
 					// the larger fillet's mitre meets it, along that mitre's
 					// second span down to the crease.
-					span := rb.mateWallSpan(ke)
+					spans := rb.mateWallSpans(ke)
 					if fwd != (ke == 1) {
-						span.Reverse()
+						slices.Reverse(spans)
+						for i := range spans {
+							spans[i].Reverse()
+						}
 					}
-					var spts []geom.Vector
-					span.MakePwlIntoPoints(&spts, sh.Tol, 0)
-					spts[0], spts[len(spts)-1] = span.Start(), span.Finish()
-					wc := srf.SCurve{H: nextH, Exact: span, IsExact: true, Deg: span.Degree, SurfA: s.H}
-					nextH.V++
-					for _, p := range spts {
-						wc.Points = append(wc.Points, srf.SCurvePt{Vertex: true, P: p})
+					for _, span := range spans {
+						var spts []geom.Vector
+						span.MakePwlIntoPoints(&spts, sh.Tol, 0)
+						spts[0], spts[len(spts)-1] = span.Start(), span.Finish()
+						wc := srf.SCurve{H: nextH, Exact: span, IsExact: true, Deg: span.Degree, SurfA: s.H}
+						nextH.V++
+						for _, p := range spts {
+							wc.Points = append(wc.Points, srf.SCurvePt{Vertex: true, P: p})
+						}
+						sh.Curve = append(sh.Curve, wc)
+						kept = append(kept, srf.STrimBy{Curve: wc.H, StartP: span.Start(), FinishP: span.Finish(), Start: 0, Finish: 1})
 					}
-					sh.Curve = append(sh.Curve, wc)
-					kept = append(kept, srf.STrimBy{Curve: wc.H, StartP: span.Start(), FinishP: span.Finish(), Start: 0, Finish: 1})
 				}
 				if fadeK >= 0 && b == fadeK*(m-1) {
 					// On from the fillet's last foot to where the crease
