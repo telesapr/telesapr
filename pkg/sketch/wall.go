@@ -83,15 +83,17 @@ const (
 
 // WallThickness measures the walls of the parts of the model up to group
 // upTo, and lists the points thinner than below; with a below of 0 or
-// less, only the thinnest. Each part is measured alone, as the
-// interference check takes them (assemblyParts); a model that
-// assembles nothing is one part. The model must have been generated.
+// less, only the thinnest. Each solid is measured alone, a part of
+// several taken by its solids as ClearancesWithin takes them, each
+// hollow's inside with the solid round it, so that a ray from one solid
+// doesn't stop on another standing on it; a model that assembles
+// nothing is one part. The model must have been generated.
 func (sk *Sketch) WallThickness(upTo core.HGroup, below float64) (WallReport, error) {
 	g := sk.Group(upTo)
 	if g == nil {
 		return WallReport{}, fmt.Errorf("g%03x doesn't exist", upTo.V)
 	}
-	parts := sk.clearanceParts(upTo, false)
+	parts := sk.clearanceParts(upTo, true)
 	if len(parts) == 0 && len(g.RunningShell.Surface) > 0 && !g.RunningShell.BooleanFailed {
 		parts = append(parts, newClearancePart(upTo, &g.RunningShell))
 	}

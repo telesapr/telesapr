@@ -46,6 +46,7 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 - Scripting: `srf.SetChordTolMm`, `srf.SetMaxSegments` and `srf.SetMesher`, which set the tolerance of shells built with none and were meant for tests; a document's chord tolerance and segments are set with `Edit.SetChordTolerance` and `Edit.SetMaxSegments`.
 
 ### Fixed
+- Analyze > Clearance and Walls measures each solid of a part alone, as two solids of a linked part standing one on the other, whose walls had thousands of points unmeasured where a ray met the other solid; and a hollow inside a solid is part of that solid, not a gap to it in the clearances within parts.
 - A shell of a solid joined from parts, as a plate with a post sunk part way into it, is refused where the post's foot, moved out to meet the plate's inside, would leave the wall below it thinner than the thickness; before, the shell was made with that thinner wall.
 - Analyze > Clearance and Walls finds a wall thinner than the points it measures about it, as under the tip of a narrow V-groove (0.2 thick where the points about it measured 0.65): the corners of where the triangles a ray joined cover each other are measured too. A sharp edge, as where a thread's ridge runs out of an end face, measures as thin as nothing there.
 - "Solids within parts" takes a part linked as a mesh by its pieces, the triangles joined by the corners they share, and lists the gaps between them, as it does a shell's solids. Before, a mesh was one part.
