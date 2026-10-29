@@ -14,8 +14,8 @@
 // path's start, is swept along it with Group.SetCornerRadius (8 mm
 // unless given), as the sweep's screen sets it: each corner becomes an
 // arc of that radius on the path, the runs cut back to meet it, so the
-// solid is exact; a corner beside an arc, which a mitre can't join, is
-// rounded the same way. The script checks the solid sound, and its
+// solid is exact; a corner beside an arc is rounded the same way (with
+// no radius it is joined, as examples/scripts/hook shows). The script checks the solid sound, and its
 // volume against the area times the rounded path's length, by
 // Pappus's theorem.
 package main

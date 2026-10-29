@@ -357,11 +357,12 @@ func (v SweepGroup) CornerRadius() (mm float64) {
 // corner the pieces either side are cut back to where an arc of the
 // radius, tangent to both, joins them, and the profile turns about the
 // arc's axis, so the solid is exact and needs no surface intersected.
-// Corners beside an arc need one, which a mitre can't join; 0 mitres
-// the corners between lines again. A radius too large for a piece, too
-// small for the profile to clear the arc's axis, or a corner out of an
-// arc's plane, is a problem on the group. SetExpr with
-// sketch.GroupPitch gives it an expression.
+// With none, corners between lines are mitred and corners beside an
+// arc joined where the profile's paths along the pieces cross; a corner
+// too sharp for that to join is a problem on the group until it has a
+// radius. A radius too large for a piece, too small for the profile to
+// clear the arc's axis, or a corner out of an arc's plane, is a problem
+// on the group. SetExpr with sketch.GroupPitch gives it an expression.
 func (v SweepGroup) SetCornerRadius(mm float64) {
 	g := v.g
 	g.d.change(func(sk *sketch.Sketch) {

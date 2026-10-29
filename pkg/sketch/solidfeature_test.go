@@ -206,6 +206,18 @@ func TestSolidGoldens(t *testing.T) {
 			d.Sketch.Circle(api.V(0, 0, 0), 2)
 			d.Features.Sweep(path, "")
 		},
+		"sweep-arc-corner": func(d *api.Doc) {
+			// A line meeting an arc at a right angle, joined with no
+			// corner radius.
+			d.Features.SketchIn(d.Workplane("ZX"), "path")
+			path := []api.Entity{
+				d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 10)),
+				d.Sketch.Arc(api.V(0, 0, 15), api.V(0, 0, 10), api.V(5, 0, 15)),
+			}
+			d.Features.SketchIn(d.Workplane("XY"), "profile")
+			d.Sketch.Circle(api.V(0, 0, 0), 1)
+			d.Features.Sweep(path, "")
+		},
 		"sweep-solid-edges": func(d *api.Doc) {
 			block(d, 0, 0, 20, 10, 5)
 			s := d.Active().Solid()
@@ -896,6 +908,22 @@ func BenchmarkSweepCorners(b *testing.B) {
 			d.Sketch.Line(api.V(0, 0, 10), api.V(10, 0, 15)),
 			d.Sketch.Line(api.V(10, 0, 15), api.V(20, 0, 10)),
 			d.Sketch.Line(api.V(20, 0, 10), api.V(20, 0, 0)),
+		}
+		d.Features.SketchIn(d.Workplane("XY"), "profile")
+		d.Sketch.Circle(api.V(0, 0, 0), 1)
+		d.Features.Sweep(path, "")
+	})
+}
+
+// A line into an arc at a right angle and on into a line at another,
+// joined beside the arc with no corner radius.
+func BenchmarkSweepCornersBesideArc(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.Features.SketchIn(d.Workplane("ZX"), "path")
+		path := []api.Entity{
+			d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 10)),
+			d.Sketch.Arc(api.V(0, 0, 15), api.V(0, 0, 10), api.V(-5, 0, 15)),
+			d.Sketch.Line(api.V(-5, 0, 15), api.V(-15, 0, 15)),
 		}
 		d.Features.SketchIn(d.Workplane("XY"), "profile")
 		d.Sketch.Circle(api.V(0, 0, 0), 1)
