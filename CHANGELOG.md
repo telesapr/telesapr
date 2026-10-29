@@ -42,6 +42,7 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 - Scripting: `srf.SetChordTolMm`, `srf.SetMaxSegments` and `srf.SetMesher`, which set the tolerance of shells built with none and were meant for tests; a document's chord tolerance and segments are set with `Edit.SetChordTolerance` and `Edit.SetMaxSegments`.
 
 ### Fixed
+- A DIN 513 buttress nut (S20x4) at a coarse chord tolerance, 0.4% or 0.5%, is a sound solid: where its ridges met the bore, two vertices of the cut a millionth of a millimetre apart were meshed as two points and left four edges open.
 - A corner where fillets of very different radii meet, as 3 beside 0.5 at a box's corner, is filled; before, with radii five or six to one side by side, it was refused as "the patches that would fill it fold". Corners of radii twelve to one apart are filled and tangent all round.
 - A fillet of a rim that meets itself in a mitre at a sharp crease of its wall, as round the top of an extruded blob, is made at chord tolerances down to 0.0005%; before, below about 0.005% it was refused with "the fillet's sections near its mitre can't be fitted".
 - A chamfered thread whose chamfer's cone meets a ridge just past its crest, as on an M8 stud 30 mm long chamfered at both ends, is sound; before, it came out with open edges at every way of placing its ridges. Where an intersection leaves an edge of a face at a grazing angle, the kernel now follows it the other way when the first way finds nothing.
