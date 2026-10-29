@@ -16,7 +16,7 @@ fixture has been done; its "Tried" notes say what not to try again.
 | # | Item | Kind | Size | Why here |
 |---|---|---|---|---|
 | 1 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
-| 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | The sweep joint needs the line-arc joint inside the sweep |
+| 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Shells of filleted and lofted solids; corners on twisted and fitted sweeps |
 | 2a | [Modelling upgrade leftovers](#modelling-upgrade-leftovers) | kernel and feature | ? | What the 2026-10-22 work packages left; each refuses with a message today |
 | 2b | [Thread leftovers](#thread-leftovers) | kernel and feature | ? | What the thread improvements of 2026-10-23 left: chamfer slivers, ACME classes, buttress roots and classes |
 | 3 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
@@ -102,8 +102,8 @@ multi-patch overlaps (libbrep): the overlap's boundary lies on isocurves at the 
 intersect those with the other surface and chain them into loops. Point-in-solid by several rays
 with explicit valid / grazing / coincident / failed results instead of a vote.
 
-The sweep corners beside an arc, once listed here, are no contact case: they need the joint inside
-`MakeFromSweepOf`, not a Boolean of cut runs (see [Solid feature leftovers](#solid-feature-leftovers)).
+The sweep corners beside an arc, once listed here, were no contact case: they are joined inside
+`MakeFromSweepOf` since 2026-10-29, not by a Boolean of cut runs (see [Solid feature leftovers](#solid-feature-leftovers)).
 
 A last resort, not recommended: BRL-CAD's mesh Boolean with deterministic perturbation of
 touching operands. It conflicts with "never silently wrong geometry" and could only be an
@@ -407,8 +407,33 @@ goldens take 17% longer.
 
 | Item | State | Approach / tried |
 |---|---|---|
-| Mitred sweep corners next to an arc or curve; corners on twisted or fitted sweeps | refused; corners between two lines are mitred, and any corner beside lines or arcs rounded with a corner radius (F4). Closed paths are swept since 2026-10-22 (WP-C4): started where the profile crosses the path, so the closing joint is smooth; exact round planar lines and arcs, mitres and corner radii included; fitted round cubics, twists of whole turns and paths out of a plane, the frames' turn taken out along the path | A plain mitre can't work: on the inside of the turn the halving plane cuts the arc's revolved sides. Tried twice and reverted: runs cut by a half-space box at the mitre plane and unioned (the union leaves a partial coplanar face with curved trims; 188 naked edges with a round profile); runs cut by a bent prism ("bent caps") and unioned (cuts sound, union fails on the touching faces, even between two lines; whole caps from one ellipse unite, `TestMitredBarsUnion`, so it is the cut caps, not contact). What would work: both runs and the joint in one shell with shared exact curves, which needs line-prism against arc-revolve side intersection inside `MakeFromSweepOf`. Fitted sweeps need the end frame of a fitted run and twist split by length. A corner radius (F4, done) rounds corners beside arcs, which is what users usually want |
+| Corners on twisted or fitted sweeps, next to a cubic; corners beside an arc too sharp to join | refused; corners between two lines are mitred, corners beside an arc joined since 2026-10-29 (below), and any corner beside lines or arcs rounded with a corner radius (F4). Closed paths are swept since 2026-10-22 (WP-C4): started where the profile crosses the path, so the closing joint is smooth; exact round planar lines and arcs, mitres, joints and corner radii included; fitted round cubics, twists of whole turns and paths out of a plane, the frames' turn taken out along the path | Fitted sweeps need the end frame of a fitted run and twist split by length. A corner beside an arc is refused where a point's paths along the two pieces don't cross: the line's wall, offset from the path, passes outside the arc's (a bar 2 wide round an arc of 12 at 150°), so the arc's wall would leave through the line's start cap; joining there would take that cap's piece as a face of the joint. A corner radius rounds it |
 | Shells of other curved solids (filleted, lofted) | prisms, and since 2026-10-22 (WP-C1) one lathe or revolve of lines and arcs, by its offset profile; since 2026-10-29 unions of lathes, revolves and extrusions, and drafted cones | Offsets of patches (22.1) are the first part; faces whose offsets do not cross themselves can be sized. The general shell is open-ended (E12, parked). Left from WP-C1: curved faces opened at an inside corner; solids joined by a difference or an intersection from parts other than lathes about one axis; a drafted extrusion joined to others, or open at a side; in a union, a prism's side or a revolve's end lying inside another part (refused by name: moving a curved side out is not a prism's offset, and an end moved out would touch the other part's inside); a part's face moved out into a wall thinner than the thickness, where the part it sinks into is thinner there than twice the thickness and yet the inside stays in the solid, is not caught (only one coming out of the solid is). Since 2026-10-29 unions of lathes, revolves and extrusions, each a part a shell hollows alone (`pkg/topo/shelljoined.go`: the parts' insides joined, a part's face lying inside the others moved out by the thickness instead of in, so the insides meet; each face's mode found by where its triangles' middles lie on the solid; an inside moved out of the solid refused by a Boolean of the parts' insides with every face a wall), and drafted extrusions of arcs (`shelldraft.go`: the same draft of the profile offset by t/cos α). Since 2026-10-28 revolves of more than half a turn with an end kept (`pkg/topo/shellrevolve_reflex.go`) and lathes about one axis joined (`shellrevolve_joined.go`: the profiles joined in 2D, each curve split where others meet it and kept where the parts' insides combined differ on its sides; the kernel's Boolean of the profiles' prisms leaves faces that touch, and taking the inside from the joined solid fails where taking it from that solid turned again from the profile does not, `shellrevolve_again.go`) |
+
+Done 2026-10-29: corners beside an arc swept with no corner radius, refused before ("a mitre can't
+join an arc's sides"). A plane through the corner cuts the arc's turned sides along curves the
+line's sides don't pass through. Tried before and reverted: runs cut by a half-space box at the
+mitre plane and unioned (a partial coplanar face with curved trims; 188 naked edges with a round
+profile), and runs cut by a bent prism ("bent caps") and unioned (the union failed on the touching
+faces, even between two lines).
+Each point of the profile runs along its own path through the corner, a line along a straight piece
+and a circle about an arc's axis, all in the plane square to the corner's axis (which must be the
+arc's); carried on past the corner, a point's two paths cross where the solid's sides meet, on the
+outside of the turn both pieces going on past the corner to fill it, on the inside each stopping
+where the other's side cuts it, as a mitre between lines does (`pkg/srf/sweep_joint.go`). Inside
+`MakeFromSweepOf`, each curve of the profile has a joint, the polyline of those crossings (at the
+turn's grid, refined to the chord tolerance where it bows, as on a cone), shared by the two pieces'
+surfaces, each carried on as far as the joint needs: an arc's surface turned on past its end, a
+line's extruded back; the seams run to where the curves' starts cross. An arc beside a joint is
+split so that its section there holds the joint within a quarter turn. No Boolean, so no contact
+case. `CheckSweepCorners` refuses by name the corners it can't join (`ErrCornerNoJoint`,
+`ErrCornerTooLong`, `ErrCornerTooWide`, `ErrCornerOutOfPlane`), which the sweep reports with the
+corner radius to set. Volumes against the region each piece and the overlap of both carried on
+sweep, integrated by rows and slices in the test: square, round, diamond and ring profiles, an arc
+before or after a line, arcs into arcs, an arc between two lines, within 2.5e-5 at a chord of
+1e-4 mm. `TestSweepJointedCornerSweep`: 240 points, none unsound, 96 refused (the corners of 150°
+and 170°, by the rule above). Closed paths take them too (a D). No golden moved; corners between
+lines keep the plane. Not tried: corners beside cubics, and twisted or fitted sweeps' corners.
 
 ### Modelling upgrade leftovers
 

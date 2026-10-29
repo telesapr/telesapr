@@ -241,15 +241,10 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 			return nil, err
 		}
 
-	} else {
-		for k := range chain {
-			if cornerAt(k) && (chain[k-1].arc || chain[k].arc) {
-				x := chain[k].start
-				return nil, &pathError{at: &x, kind: errCornerBesideArc, msg: fmt.Sprintf(
-					"the path has a corner at (%g, %g, %g) next to an arc: a mitre can't join an arc's sides; "+
-						"give the sweep a corner radius to round it", x.X, x.Y, x.Z)}
-			}
-		}
+	}
+	besideArc := false
+	for k := range chain {
+		besideArc = besideArc || cornerAt(k) && (chain[k-1].arc || chain[k].arc)
 	}
 
 	var steps []srf.SweepStep
@@ -284,7 +279,12 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 			frame = frame.Then(srf.SweepStep{Corner: true, Center: p.start, Axis: d1.Cross(d2).WithMagnitude(1),
 				Angle: math.Acos(math.Max(-1, math.Min(1, d1.Dot(d2))))}.Motion())
 		}
-		if !p.arc && !p.free && (cornerAt(k) || k+1 < len(chain) && cornerAt(k+1)) {
+		// A corner beside an arc is joined where the profile's paths
+		// cross, checked by the kernel below; between two lines, by the
+		// plane halving it.
+		mitreBefore := cornerAt(k) && !chain[k-1].arc
+		mitreAfter := k+1 < len(chain) && cornerAt(k+1) && !chain[k+1].arc
+		if !p.arc && !p.free && (mitreBefore || mitreAfter) {
 			d := p.end.Minus(p.start)
 			length := d.Magnitude()
 			d = d.ScaledBy(1 / length)
@@ -295,10 +295,10 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 			err := ctrls(func(q geom.Vector) error {
 				x := frame.Apply(q)
 				ts, te := 0.0, length
-				if cornerAt(k) {
+				if mitreBefore {
 					ts = at(p.start, x, chain[k-1].tangentAt(true), d)
 				}
-				if k+1 < len(chain) && cornerAt(k+1) {
+				if mitreAfter {
 					te = length + at(p.end, x.Plus(d.ScaledBy(length)), d, chain[k+1].tangentAt(false))
 				}
 				if te-ts <= sweepTol {
@@ -335,6 +335,13 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 			}
 		}
 		frame = frame.Then(p.step().Motion())
+	}
+	if besideArc {
+		for si := range sbls.Sets {
+			if err := srf.CheckSweepCorners(&sbls.Sets[si], steps, closed); err != nil {
+				return nil, cornerJointError(err)
+			}
+		}
 	}
 	if closed && !bringsBack(steps, ctrls) {
 		// Round lines and arcs out of a plane the profile comes back

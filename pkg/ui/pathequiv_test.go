@@ -199,6 +199,13 @@ var pathEquivalences = map[string]pathCheck{
 			t.Errorf("the sweep: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.Edges))
 		}
 	},
+	// A sweep round a corner beside an arc, joined with no corner radius,
+	// picked with the mouse, and by a script.
+	"sweep_arc_corner": func(t *testing.T, ui, _ *sketch.Sketch) {
+		if g := ui.Group(ui.Active); g.Type != sketch.GroupSweep || g.Problem.Msg != "" || len(g.Edges) != 2 || g.ValB != 0 {
+			t.Errorf("the sweep: type %d, problem %q, %d edges, corner radius %g", g.Type, g.Problem.Msg, len(g.Edges), g.ValB)
+		}
+	},
 	// A sweep round a closed path, picked with the mouse, and by a script.
 	"sweep_ring": func(t *testing.T, ui, _ *sketch.Sketch) {
 		if g := ui.Group(ui.Active); g.Type != sketch.GroupSweep || g.Problem.Msg != "" || len(g.Edges) != 1 {

@@ -53,17 +53,25 @@ line meets an arc, a twisted sweep has a crease, since the true one has.
 ## Corners and edges of the solid
 
 Two line segments of the path may meet at an angle: there the sweep is mitred, each piece cut by
-the plane that halves the corner, as a picture frame's moulding is. A corner next to a cubic is
-refused, as is a twisted sweep or one held to a direction with a corner, and a piece too short for
-the mitres at its ends.
+the plane that halves the corner, as a picture frame's moulding is. A line and an arc, or two
+arcs, may meet at an angle too, in the arc's plane. No plane can mitre them, since a plane through
+the corner cuts the arc's turned sides where the line's don't pass: instead each point of the
+profile is followed along both pieces, a line along the straight one and a circle round the arc,
+and the sides meet where those cross. On the outside of the turn both pieces go on past the corner
+to fill it, on the inside each stops where the other's side cuts it, as at a mitre between lines.
+A corner too sharp for the arc beside it, where the line's side passes outside the arc's (on a
+bar 2 wide round an arc of radius 12, a corner of 150°), or a piece too short for the joint, is a
+problem on the group, which a corner radius then rounds. Example:
+[`examples/scripts/hook`](../../examples/scripts/hook/hook.go), a round bar up a shank and round
+a bend that leaves it at a right angle. A corner next to a cubic is refused, as is a twisted
+sweep or one held to a direction with a corner, and a piece too short for the mitres at its ends.
 
 A corner radius, set on the sweep's screen ("corners mitred [round]"), rounds every corner on the
 path instead, as a pipe is bent: the pieces either side are cut back to where an arc of the
 radius, tangent to both, joins them, and the profile turns about that arc's axis. The solid is
-exact and no surface is intersected, so it works for any profile, and beside an arc, where a mitre
-can't join an arc's turned sides: a corner next to an arc needs a radius, and the sweep says so
-until it has one. A radius too large for a piece, too small for the profile to clear the arc's
-axis, or a corner out of the plane of the arc beside it, is a problem on the group. Example:
+exact and no surface is intersected, so it works for any profile, beside an arc as beside a line.
+A radius too large for a piece, too small for the profile to clear the arc's axis, or a corner out
+of the plane of the arc beside it, is a problem on the group. Example:
 [`examples/scripts/elbow`](../../examples/scripts/elbow/elbow.go), a duct with two rounded corners.
 
 ```go

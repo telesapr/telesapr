@@ -903,6 +903,22 @@ func BenchmarkSweepCorners(b *testing.B) {
 	})
 }
 
+// A line into an arc at a right angle and on into a line at another,
+// joined beside the arc with no corner radius.
+func BenchmarkSweepCornersBesideArc(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.Features.SketchIn(d.Workplane("ZX"), "path")
+		path := []api.Entity{
+			d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 10)),
+			d.Sketch.Arc(api.V(0, 0, 15), api.V(0, 0, 10), api.V(-5, 0, 15)),
+			d.Sketch.Line(api.V(-5, 0, 15), api.V(-15, 0, 15)),
+		}
+		d.Features.SketchIn(d.Workplane("XY"), "profile")
+		d.Sketch.Circle(api.V(0, 0, 0), 1)
+		d.Features.Sweep(path, "")
+	})
+}
+
 // A ring of eight circles closed by a loft.
 func BenchmarkLoftClosed(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {

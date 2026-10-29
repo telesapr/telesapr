@@ -6734,7 +6734,7 @@
 					},
 					"SetCornerRadius": {
 						"decl": "func (v SweepGroup) SetCornerRadius(mm float64)",
-						"text": "SetCornerRadius rounds a sweep's corners on its path by mm: at each\ncorner the pieces either side are cut back to where an arc of the\nradius, tangent to both, joins them, and the profile turns about the\narc's axis, so the solid is exact and needs no surface intersected.\nCorners beside an arc need one, which a mitre can't join; 0 mitres\nthe corners between lines again. A radius too large for a piece, too\nsmall for the profile to clear the arc's axis, or a corner out of an\narc's plane, is a problem on the group. SetExpr with\nsketch.GroupPitch gives it an expression."
+						"text": "SetCornerRadius rounds a sweep's corners on its path by mm: at each\ncorner the pieces either side are cut back to where an arc of the\nradius, tangent to both, joins them, and the profile turns about the\narc's axis, so the solid is exact and needs no surface intersected.\nWith none, corners between lines are mitred and corners beside an\narc joined where the profile's paths along the pieces cross; a corner\ntoo sharp for that to join is a problem on the group until it has a\nradius. A radius too large for a piece, too small for the profile to\nclear the arc's axis, or a corner out of an arc's plane, is a problem\non the group. SetExpr with sketch.GroupPitch gives it an expression."
 					},
 					"SetPath": {
 						"decl": "func (v SweepGroup) SetPath(path []Entity, solid []SolidEdge)",
@@ -9891,6 +9891,18 @@
 					"SurfCoincOpp"
 				]
 			},
+			"CornerError": {
+				"text": "CornerError is a corner of a sweep's path that can't be joined, at the corner's point.",
+				"kind": "struct",
+				"methods": {
+					"Error": {
+						"decl": "func (e *CornerError) Error() string"
+					},
+					"Unwrap": {
+						"decl": "func (e *CornerError) Unwrap() error"
+					}
+				}
+			},
 			"CurveSource": {
 				"text": "CurveSource tracks the provenance of a curve (used by SShell boolean operations to decide what to keep).",
 				"kind": "uint32",
@@ -11490,6 +11502,10 @@
 				"decl": "func CheckNormalAxisRelationship(sbls *SBezierLoopSet, pt, axis geom.Vector, da, dx float64) bool",
 				"text": "CheckNormalAxisRelationship reports whether the direction of revolution/extrusion ends up parallel to the normal of the sketch, on the side of the axis where the sketch is."
 			},
+			"CheckSweepCorners": {
+				"decl": "func CheckSweepCorners(sbls *SBezierLoopSet, steps []SweepStep, closed bool) error",
+				"text": "CheckSweepCorners says whether MakeFromSweepOf, or MakeFromClosedSweepOf with closed, can join the corners of steps that have an arc beside them: a *CornerError at the first that can't be, wrapping one of the ErrCorner errors."
+			},
 			"ChordTolMm": {
 				"decl": "func ChordTolMm() float64",
 				"text": "ChordTolMm is DefaultTolerance's chord tolerance in mm."
@@ -11758,6 +11774,22 @@
 			},
 			"EdgeTurning": {
 				"decl": "const EdgeTurning"
+			},
+			"ErrCornerNoJoint": {
+				"decl": "var ErrCornerNoJoint",
+				"text": "Errors CheckSweepCorners wraps, for a corner beside an arc."
+			},
+			"ErrCornerOutOfPlane": {
+				"decl": "var ErrCornerOutOfPlane",
+				"text": "Errors CheckSweepCorners wraps, for a corner beside an arc."
+			},
+			"ErrCornerTooLong": {
+				"decl": "var ErrCornerTooLong",
+				"text": "Errors CheckSweepCorners wraps, for a corner beside an arc."
+			},
+			"ErrCornerTooWide": {
+				"decl": "var ErrCornerTooWide",
+				"text": "Errors CheckSweepCorners wraps, for a corner beside an arc."
 			},
 			"ErrWrapPlane": {
 				"decl": "var ErrWrapPlane",

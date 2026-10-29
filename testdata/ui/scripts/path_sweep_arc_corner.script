@@ -1,0 +1,13 @@
+# A rectangle swept along a line and an arc that meet at a corner,
+# joined, the path picked with the mouse; the same as
+# path_sweep_arc_corner.go makes (TestPathEquivalence/sweep_arc_corner).
+file $testdata/ui/sweep_arc_corner.tlspr
+menu File|Open...
+view other
+move 296.25 243.75
+down L 296.25 243.75
+up L 296.25 243.75
+move 326.25 146.25
+down L 326.25 146.25
+up L 326.25 146.25
+menu Features|Sweep Along Path

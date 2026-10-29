@@ -63,8 +63,10 @@ func TestSweepRoundedCorner(t *testing.T) {
 	}
 }
 
-// A line meeting an arc at a right angle: no mitre can join them, and
-// the sweep says to round the corner. The arc runs three quarters of a
+// A line meeting an arc at a right angle: joined where the profile's
+// paths cross, sound, its volume near the area times the path's length
+// (the kernel's tests hold it to the slices'), or rounded. The arc runs
+// three quarters of a
 // turn from the line's top, over (0, 20), to (5, 15), turning the other
 // way from the corner, so the rounded path is an S: the line cut back,
 // the radius's arc tangent to the line and outside the arc's circle,
@@ -83,8 +85,12 @@ func TestSweepRoundedBesideArc(t *testing.T) {
 	d.Features.SketchIn(d.Workplane("XY"), "profile")
 	d.Sketch.Rect(api.V(-0.5, -1, 0), api.V(0.5, 1, 0))
 	s := d.Features.Sweep(path, "")
-	if p := s.Problem(); !strings.Contains(p, "corner radius") {
+	if p := s.Problem(); p != "" {
 		t.Fatalf("unrounded: %q", p)
+	}
+	joined := 2 * (10 + 5*3*math.Pi/2)
+	if v := s.Analyze().Check(); !v.Sound() || math.Abs(v.Volume-joined) > 0.01*joined {
+		t.Errorf("unrounded: %s, want about %g", v.String(), joined)
 	}
 	const r = 2.0
 	s.AsSweep().SetCornerRadius(r)

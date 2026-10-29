@@ -17,9 +17,11 @@ type SweepStep struct {
 	Axis   geom.Vector
 	Angle  float64
 	// Corner turns the profile where it is, about Axis through Center by
-	// Angle, between two straight pieces that meet at an angle there: the
+	// Angle, between two pieces that meet at an angle there: two straight
 	// pieces are mitred, each cut by the plane that halves the corner
-	// (roadmap 28.4).
+	// (roadmap 28.4); beside an arc, whose axis must be Axis, the pieces
+	// are joined where each point's paths along them cross
+	// (sweep_joint.go).
 	Corner bool
 }
 
@@ -128,7 +130,8 @@ func sweepStartDirection(st SweepStep, p geom.Vector) geom.Vector {
 // cap at each end, startFace at the profile and endFace where the
 // steps take it. The joints between pieces are shared curves, so no
 // Boolean is needed. The profile must cross the path, and stay off the
-// axis of every turn.
+// axis of every turn; CheckSweepCorners says whether a corner beside an
+// arc can be joined.
 func (s *SShell) MakeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color core.RGBA, startFace, endFace FaceID) {
 	s.makeFromSweepOf(sbls, steps, color, startFace, endFace, false)
 }
@@ -141,14 +144,16 @@ func (s *SShell) MakeFromClosedSweepOf(sbls *SBezierLoopSet, steps []SweepStep, 
 	s.makeFromSweepOf(sbls, steps, color, 0, 0, true)
 }
 
-func (s *SShell) makeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color core.RGBA, startFace, endFace FaceID, closed bool) {
-	if sbls == nil {
-		return
-	}
+// sweepPlan is the profile and steps makeFromSweepOf sweeps: arcs in
+// sections, made from the other end where the steps leave the sketch
+// along its normal, with reversed set then, and each arc beside a corner
+// split for its joint.
+func sweepPlan(sbls *SBezierLoopSet, steps []SweepStep, closed bool) (*SBezierLoopSet, []SweepStep, bool, error) {
 	steps = sweepSections(steps)
 	if len(steps) == 0 {
-		return
+		return sbls, nil, false, nil
 	}
+	reversed := false
 	// As for an extrusion, the motion has to leave the sketch against
 	// its normal; else the sweep is made from the other end.
 	if sweepStartDirection(steps[0], sbls.Point).Dot(sbls.Normal) > 0 {
@@ -163,7 +168,27 @@ func (s *SShell) makeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 			rev[len(steps)-1-i] = st
 		}
 		steps = rev
+		reversed = true
+	}
+	steps, err := jointedSteps(sbls, steps)
+	return sbls, steps, reversed, err
+}
+
+func (s *SShell) makeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color core.RGBA, startFace, endFace FaceID, closed bool) {
+	if sbls == nil {
+		return
+	}
+	sbls, steps, reversed, err := sweepPlan(sbls, steps, closed)
+	if err != nil || len(steps) == 0 {
+		// CheckSweepCorners has said why.
+		return
+	}
+	if reversed {
 		startFace, endFace = endFace, startFace
+	}
+	corners, err := sweepCorners(sbls, steps)
+	if err != nil {
+		return
 	}
 
 	// The frames: where each piece starts, and where the last ends. A
@@ -171,17 +196,19 @@ func (s *SShell) makeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 	frames := make([]Rigid, 0, len(steps)+1)
 	var pieces []SweepStep
 	// mitre[k] is the plane piece k's start is cut by, after a corner;
-	// mitre[k+1] its end's.
+	// mitre[k+1] its end's. Beside an arc the corner is joined where the
+	// points' paths cross (joint), not by a plane.
 	type plane struct {
 		at, n geom.Vector
 		ok    bool
+		joint *sweepCorner
 	}
 	var mitre []plane
 	f := RigidIdentity
 	var pending plane
-	for _, st := range steps {
+	for k, st := range steps {
 		if st.Corner {
-			pending = plane{at: st.Center, ok: true}
+			pending = plane{at: st.Center, ok: true, joint: corners[k]}
 			f = f.Then(st.Motion())
 			continue
 		}
@@ -194,7 +221,7 @@ func (s *SShell) makeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 	frames = append(frames, f)
 	mitre = append(mitre, plane{})
 	for k := range mitre {
-		if !mitre[k].ok {
+		if !mitre[k].ok || mitre[k].joint != nil {
 			continue
 		}
 		// The plane halving the corner between the piece before and this.
@@ -220,9 +247,14 @@ func (s *SShell) makeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 		if !mitre[j].ok {
 			return frames[j].Apply(p)
 		}
+		if c := mitre[j].joint; c != nil {
+			x, _, _, _ := c.cross(p)
+			return x
+		}
 		before := frames[j-1].Then(steps[j-1].Motion())
 		return projectPoint(before.Apply(p), steps[j-1].Along.WithMagnitude(1), mitre[j].at, mitre[j].n)
 	}
+	jointAt := func(j int) *sweepCorner { return mitre[j].joint }
 
 	// The caps, in the csys of the sketch as an extrusion's are.
 	n := sbls.Normal.ScaledBy(-1)
@@ -264,9 +296,38 @@ func (s *SShell) makeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 				b := transformedCopy(&loop.Curves[i], frames[k].T, frames[k].Q)
 				var ss SSurface
 				mitred := mitre[k].ok || mitre[k+1].ok
+				jointed := jointAt(k) != nil || jointAt(k+1) != nil
 				switch {
+				case st.Arc && jointed:
+					// Carried on round past each joint's points.
+					lo, hi := 0.0, st.Angle
+					if c := jointAt(k); c != nil {
+						lo = math.Min(0, c.bMin) - jointMargin
+					}
+					if c := jointAt(k + 1); c != nil {
+						hi = math.Max(st.Angle, st.Angle+c.aMax) + jointMargin
+					}
+					ss = FromRevolutionOf(&b, st.Center, st.Axis, lo, hi, 0, 0)
+
 				case st.Arc:
 					ss = FromRevolutionOf(&b, st.Center, st.Axis, 0, st.Angle, 0, 0)
+
+				case jointed:
+					// Carried on past each end as far as the joint or the
+					// mitre there needs, and a millimetre more.
+					back, fwd := 1.0, 1.0
+					if c := jointAt(k); c != nil {
+						back = math.Max(0, -c.bMin) + 1
+					} else if mitre[k].ok {
+						back = mitreReach(&b, st.Along, mitre[k].at, mitre[k].n)
+					}
+					if c := jointAt(k + 1); c != nil {
+						fwd = math.Max(0, c.aMax) + 1
+					} else if mitre[k+1].ok {
+						e := translatedCopy(b, st.Along)
+						fwd = mitreReach(&e, st.Along, mitre[k+1].at, mitre[k+1].n)
+					}
+					ss = FromExtrusionOf(&b, st.Along.WithMagnitude(-back), st.Along.Plus(st.Along.WithMagnitude(fwd)))
 
 				case mitred:
 					// Past each mitre, whose section leans out of the piece:
@@ -316,12 +377,17 @@ func (s *SShell) makeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 				last--
 			}
 			for j := 0; j <= last; j++ {
-				sc := SCurve{IsExact: true, Exact: section(&loop.Curves[i], j)}
-				if tValues == nil {
-					sc.Points = makePwlSCurvePoints(&sc.Exact, s.Tol, 0)
-				}
-				for x, t := range tValues {
-					sc.Points = append(sc.Points, SCurvePt{P: sc.Exact.PointAt(t), Vertex: x == 0 || x == len(tValues)-1})
+				var sc SCurve
+				if c := jointAt(j); c != nil {
+					sc = jointCurve(c, &loop.Curves[i], tValues, s.Tol)
+				} else {
+					sc = SCurve{IsExact: true, Exact: section(&loop.Curves[i], j)}
+					if tValues == nil {
+						sc.Points = makePwlSCurvePoints(&sc.Exact, s.Tol, 0)
+					}
+					for x, t := range tValues {
+						sc.Points = append(sc.Points, SCurvePt{P: sc.Exact.PointAt(t), Vertex: x == 0 || x == len(tValues)-1})
+					}
 				}
 				if j < len(steps) {
 					sc.SurfA = srfs[j][i]
@@ -341,9 +407,24 @@ func (s *SShell) makeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 			// And along each piece, the path of the curve's start,
 			// between this curve's surface and the one before's.
 			ip := (i - 1 + nc) % nc
+			q0 := loop.Curves[i].Start()
 			for k, st := range steps {
 				var sc SCurve
-				if st.Arc {
+				switch {
+				case st.Arc && (jointAt(k) != nil || jointAt(k+1) != nil):
+					// From where the start's paths cross at a joint, or the
+					// section, round to the next.
+					p, q := pointAt(q0, k), pointAt(q0, k+1)
+					if jointAt(k+1) == nil {
+						q = frames[k].Apply(q0).RotatedAbout(st.Center, st.Axis, st.Angle)
+					}
+					axis := st.Axis.WithMagnitude(1)
+					sc = SCurve{IsExact: true, Exact: arcThrough(st.Center, axis, p, q, turnAngle(st.Center, axis, p, q))}
+					sc.Points = makePwlSCurvePoints(&sc.Exact, s.Tol, 0.125)
+					sc.SurfA = srfs[k][i]
+					sc.SurfB = srfs[k][ip]
+					s.addCurveTrimming(sc, false)
+				case st.Arc:
 					ss := s.FindSurface(srfs[k][i])
 					sc = SCurve{IsExact: true, Exact: SBezierFrom3(ss.Ctrl[0][0], ss.Ctrl[0][1], ss.Ctrl[0][2])}
 					sc.Exact.Weight[1] = ss.Weight[0][1]
@@ -356,10 +437,10 @@ func (s *SShell) makeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 					sc.SurfA = srfs[k][i]
 					sc.SurfB = srfs[k][ip]
 					s.addCurveTrimming(sc, false)
-				} else {
-					p, q := pointAt(loop.Curves[i].Start(), k), pointAt(loop.Curves[i].Start(), k+1)
+				default:
+					p, q := pointAt(q0, k), pointAt(q0, k+1)
 					if !mitre[k+1].ok {
-						q = frames[k].Apply(loop.Curves[i].Start()).Plus(st.Along)
+						q = frames[k].Apply(q0).Plus(st.Along)
 					}
 					sc = SCurve{IsExact: true, Exact: SBezierFrom2(p, q)}
 					sc.Points = makePwlSCurvePoints(&sc.Exact, s.Tol, 0)

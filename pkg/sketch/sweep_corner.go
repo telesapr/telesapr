@@ -2,9 +2,11 @@ package sketch
 
 import (
 	"errors"
+	"fmt"
 	"math"
 
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // A sweep with a corner radius (ValB) rounds the corners of its path
@@ -14,14 +16,39 @@ import (
 // which the kernel sweeps exactly, an arc's piece of the solid the
 // profile turned about the bend's axis (srf.MakeFromSweepOf); no
 // surface is intersected, so it works for any profile, beside arcs as
-// beside lines, where a mitre cuts an arc's turned sides. The circle is
+// beside lines, and at corners too sharp for the kernel to join beside
+// an arc (srf.CheckSweepCorners). The circle is
 // found where the pieces' offsets by the radius toward the inside of
 // the turn cross: a line's offset is a line, an arc's a circle about
 // its centre.
 
 // errCornerBesideArc is a corner next to an arc on a path with no
-// corner radius: no mitre can join an arc's turned sides.
+// corner radius whose pieces the kernel can't join: a corner radius
+// rounds it.
 var errCornerBesideArc = errors.New("a corner next to an arc needs a corner radius")
+
+// cornerJointError is the path's error for err, srf.CheckSweepCorners'
+// for a corner beside an arc.
+func cornerJointError(err error) error {
+	ce, ok := errors.AsType[*srf.CornerError](err)
+	if !ok {
+		return pathErr(nil, "%v", err)
+	}
+	x := ce.At
+	why := "its pieces' sides don't meet"
+	switch {
+	case errors.Is(err, srf.ErrCornerOutOfPlane):
+		return pathErr(&x, "the path has a corner at (%g, %g, %g) out of the plane of the arc beside it: "+
+			"a sweep joins only a corner in an arc's plane", x.X, x.Y, x.Z)
+	case errors.Is(err, srf.ErrCornerTooLong):
+		why = "a piece beside it is too short for its joint"
+	case errors.Is(err, srf.ErrCornerTooWide):
+		why = "its joint goes too far round the arc"
+	}
+	return &pathError{at: &x, kind: errCornerBesideArc, msg: fmt.Sprintf(
+		"the path's corner at (%g, %g, %g) beside an arc can't be joined: %s; "+
+			"give the sweep a corner radius to round it", x.X, x.Y, x.Z, why)}
+}
 
 // roundCorners replaces each corner of chain by an arc of radius r
 // tangent to the pieces either side, cutting them back to it.

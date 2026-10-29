@@ -120,3 +120,97 @@ func TestSweepSolidEdges(t *testing.T) {
 	undoRedo(t, d, before)
 	roundTrip(t, d)
 }
+
+// A corner beside an arc with no corner radius: joined where the
+// profile's paths along the line and the arc cross, the outside of the
+// turn filled by both carried on, sound, one step of undo, and back from
+// the file. The kernel's tests hold its volume to the slices'; here it
+// is near the area times the path's length.
+func TestSweepCornerBesideArc(t *testing.T) {
+	t.Parallel()
+	for _, way := range []float64{1, -1} {
+		// At the default chord tolerance, which the file doesn't hold, so
+		// that it comes back the same.
+		d := api.New()
+		d.Features.SketchIn(d.Workplane("ZX"), "path")
+		// Up 10, then round the circle of radius 5 about (0, 0, 15), from
+		// the line's top at a right angle: three quarters of a turn one way
+		// (the corner turning with the arc), one quarter the other.
+		path := []api.Entity{
+			d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 10)),
+			d.Sketch.Arc(api.V(0, 0, 15), api.V(0, 0, 10), api.V(way*5, 0, 15)),
+		}
+		d.Features.SketchIn(d.Workplane("XY"), "profile")
+		d.Sketch.Rect(api.V(-1, -2, 0), api.V(1, 2, 0))
+		step(d)
+		before := saved(t, d)
+		s := d.Features.Sweep(path, "")
+		if p := s.Problem(); p != "" {
+			t.Fatalf("way %g: %s", way, p)
+		}
+		turn := 3 * math.Pi / 2
+		if way < 0 {
+			turn = math.Pi / 2
+		}
+		want := 8 * (10 + 5*turn)
+		if r := s.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-want) > 0.03*want {
+			t.Errorf("way %g: %s, want about %g", way, r.String(), want)
+		}
+		undoRedo(t, d, before)
+		roundTrip(t, d)
+	}
+}
+
+// A corner beside an arc that the kernel can't join is a problem on the
+// group naming the corner and the corner radius, which then rounds it:
+// up 10, then back down at 150° to an arc of radius 10 turning on the
+// way, whose outside the line's, carried back, never meets.
+func TestSweepCornerBesideArcRefused(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	d.Features.SketchIn(d.Workplane("ZX"), "path")
+	th := 150 * math.Pi / 180
+	top := api.V(0, 0, 10)
+	c := top.Plus(api.V(-math.Cos(th), 0, math.Sin(th)).ScaledBy(10))
+	end := c.Plus(top.Minus(c).RotatedAroundAxis(api.V(0, 1, 0), 1))
+	path := []api.Entity{
+		d.Sketch.Line(api.V(0, 0, 0), top),
+		d.Sketch.Arc(c, end, top),
+	}
+	d.Features.SketchIn(d.Workplane("XY"), "profile")
+	d.Sketch.Rect(api.V(-1, -2, 0), api.V(1, 2, 0))
+	s := d.Features.Sweep(path, "")
+	if p := s.Problem(); !strings.Contains(p, "can't be joined") || !strings.Contains(p, "corner radius") {
+		t.Fatalf("unrounded: %q", p)
+	}
+	s.AsSweep().SetCornerRadius(2)
+	if p := s.Problem(); p != "" {
+		t.Errorf("rounded: %q", p)
+	}
+}
+
+// A closed path whose corners are beside an arc: a line closed by half
+// a circle that meets it square at both ends, a D, swept from the
+// line's middle; both corners joined, the ring sound.
+func TestSweepClosedCornersBesideArc(t *testing.T) {
+	t.Parallel()
+	for name, area := range map[string]float64{"circle": math.Pi, "rect": 4} {
+		d := api.New()
+		d.Features.SketchIn(d.Workplane("ZX"), "path")
+		path := []api.Entity{
+			d.Sketch.Line(api.V(-4, 0, -6), api.V(-4, 0, 6)),
+			d.Sketch.Arc(api.V(-4, 0, 0), api.V(-4, 0, 6), api.V(-4, 0, -6)),
+		}
+		d.Features.SketchIn(d.Workplane("XY"), "profile")
+		if name == "circle" {
+			d.Sketch.Circle(api.V(-4, 0, 0), 1)
+		} else {
+			d.Sketch.Rect(api.V(-5, -1, 0), api.V(-3, 1, 0))
+		}
+		s := d.Features.Sweep(path, "")
+		want := area * (12 + 6*math.Pi)
+		if r := s.Analyze().Check(); s.Problem() != "" || !r.Sound() || math.Abs(r.Volume-want) > 0.02*want {
+			t.Errorf("%s: %q %s, want about %g", name, s.Problem(), r.String(), want)
+		}
+	}
+}
