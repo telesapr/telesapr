@@ -16,7 +16,8 @@ import (
 // one way or a trimmed corner, which pass a trim point on the wrong side
 // and cross the face beyond (roadmap K4); on a plane it clips slivers
 // along a straight trim, whose planes, turned anyhow, the face's own
-// edges cross; and where a trim runs up a
+// edges cross, and on a curved face fans slivers from a far grid point
+// to a trim along a row of the grid; and where a trim runs up a
 // meridian into a pole, or two faces fan from a corner along the curve
 // they share, it joins the curve's points to the pole or corner on both
 // faces, so slivers of both lie on each other, too thin to count as

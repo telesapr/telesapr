@@ -54,18 +54,23 @@ func (s *SSurface) earMeshStrays(tris []STriangle) bool {
 }
 
 // earSliverShare is how thin, as a share of its longest side, a
-// triangle of a plane's ear-clipped mesh is before the face is a
-// candidate for mendCrossings.
+// triangle of an ear-clipped mesh is before the face is a candidate for
+// mendCrossings.
 const earSliverShare = 1e-3
 
-// earMeshSlivers tells whether a plane's ear-clipped triangles, in xyz,
+// earMeshSlivers tells whether a face's ear-clipped triangles, in xyz,
 // hold a sliver: one far thinner than it is long. On a plane any ear is
 // taken, and three points along a trim that runs straight in xyz, a
 // fillet's foot along a flat face, make one; the points are off the
 // line in their last digits, so the sliver's own plane is turned
 // anyhow, and the face's edges beside its end cross it (a rib's foot
-// filleted round the front corner where its slope leans). Most slivers
-// cross nothing, so it only says which faces to look at.
+// filleted round the front corner where its slope leans). On a curved
+// face a trim lying along a row of its grid, within a fraction of the
+// row's spacing, leaves a strip the clipper fans from a far grid point
+// to the trim's points: its long chords cut under the surface by its
+// sag and pass through the face beyond the trim (a fillet's foot on a
+// rod, along its length). Most slivers cross nothing, so it only says
+// which faces to look at.
 func earMeshSlivers(tris []STriangle) bool {
 	for i := range tris {
 		t := &tris[i]
