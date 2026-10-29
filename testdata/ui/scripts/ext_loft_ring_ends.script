@@ -1,0 +1,27 @@
+# A closed loft held square at its first and last profiles:
+# loft_ring.tlspr's smooth loft through six circles, its screen shown
+# from the group list, closed into a ring by [closed] on its last row,
+# then how it leaves the first profile given 1 and how it reaches the
+# last 0.5 by their [change]; the screen, then the solid checked, a ring
+# with no caps.
+file $testdata/ui/loft_ring.tlspr
+menu File|Open...
+view default
+twmove 137 400
+twdown L 137 400
+twup L 137 400
+twmove 407 330
+twdown L 407 330
+twup L 407 330
+twmove 236 267
+twdown L 236 267
+twup L 236 267
+edit 1
+twmove 236 287
+twdown L 236 287
+twup L 236 287
+edit 0.5
+tw
+answer ok
+menu Analyze|Check Solid
+dump

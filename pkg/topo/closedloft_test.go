@@ -248,7 +248,9 @@ func TestClosedLoftSweep(t *testing.T) {
 }
 
 // Closed lofts held square to profiles: a ring of eight circles held at
-// one profile, at the seam's, at two and at every one is sound, one face
+// one profile, at the seam's, at the last, at the first and the last
+// (a ring's ends, as a loft's ends' tangencies hold them), at two and at
+// every one is sound, one face
 // of a piece from each held profile round to the next, the slope across
 // at a held profile along the way round there and the same either side
 // of it, and the volume near Pappus's. Held at every profile it is
@@ -267,6 +269,8 @@ func TestClosedLoftHeld(t *testing.T) {
 	}{
 		{"one", []float64{0, 0, 1}, 0.003},
 		{"the seam's", []float64{1}, 0.003},
+		{"the last", []float64{0, 0, 0, 0, 0, 0, 0, 1}, 0.003},
+		{"the first and the last", []float64{0.8, 0, 0, 0, 0, 0, 0, 1.2}, 0.003},
 		{"two", []float64{0, 0.8, 0, 0, 0, 1.2}, 0.003},
 		{"every one", []float64{1, 1, 1, 1, 1, 1, 1, 1}, 0.006},
 	} {

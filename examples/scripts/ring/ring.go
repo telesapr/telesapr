@@ -14,9 +14,9 @@
 // A smooth loft goes through them in order; closed
 // (LoftGroup.SetClosed), it goes from the last back to the first, a ring
 // with no caps, as smooth where it closes as anywhere else. The narrow
-// profiles between the first and the last are held square
-// (LoftGroup.SetProfileTangency), so the ring runs straight through
-// each waist. The script prints the volume, and whether the solid is
+// profiles are held square (LoftGroup.SetProfileTangency), the last of
+// them too where there is an even number, so the ring runs straight
+// through each waist. The script prints the volume, and whether the solid is
 // sound.
 package main
 
@@ -57,7 +57,7 @@ func main() {
 
 	ring := doc.Features.LoftThrough(profiles, "ring")
 	ring.AsLoft().SetClosed(true)
-	for i := 1; i < n-1; i += 2 {
+	for i := 1; i < n; i += 2 {
 		ring.AsLoft().SetProfileTangency(profiles[i], 0.8)
 	}
 	if msg := ring.Problem(); msg != "" {

@@ -23,9 +23,11 @@ import (
 // curves Edges hold it (loftguide.go), and LoftThroughTangency holds it
 // square to profiles between the ends. A closed loft (LoftClosed) goes
 // from the last profile back to the first, a ring with no caps, held
-// square to those between its first and last and by guides going round
-// it, as an open loft is. Its
-// solid joins the solid so far by its combine, as an extrusion's does.
+// square to any of its profiles and by guides going round it, as an
+// open loft is: there the ends' tangencies, ValB and ValC, hold it at
+// its first and last profiles, the ring's surface meeting itself tangent
+// there. Its solid joins the solid so far by its combine, as an
+// extrusion's does.
 
 // loftLoop is the one closed loop of a profile group, or why there is
 // none.
@@ -266,8 +268,8 @@ func (g *Group) loftShell(sk *Sketch, origin uint32) (*srf.SShell, error) {
 			return nil, err
 		}
 		// Round the ring the first and last profiles are as any other,
-		// but only those between them are held: a ring has no ends.
-		held := append(append([]float64{0}, g.loftMiddle()...), 0)
+		// held by the ends' tangencies.
+		held := append(append([]float64{g.ValB}, g.loftMiddle()...), g.ValC)
 		if len(guides) > 0 {
 			return topo.MakeClosedGuidedLoftHeld(loops, held, guides, g.Color, origin, sk.tol)
 		}
@@ -309,20 +311,20 @@ func (g *Group) generateLoftShell(sk *Sketch) {
 	g.ThisShell = *sh
 }
 
-// errClosedEnds is a setting of a loft's ends on a closed loft, which
-// has none.
-var errClosedEnds = errors.New("a closed loft has no ends to set")
+// errClosedEnds is a solid's sides set at a closed loft's ends, which
+// it has none of to carry them on.
+var errClosedEnds = errors.New("a closed loft has no ends to carry a solid's sides on")
 
 // closedLoftConflict is why the closed loft g can't be made as it is
-// set, or nil: a ring has no ends to be square to or to carry a solid's
-// sides on and nothing to turn its profiles against. Profiles between
-// its first and last can be held square, and the ring held by guides
-// going round it, as an open loft is held.
+// set, or nil: a ring has no ends to carry a solid's sides on and
+// nothing to turn its profiles against. Any of its profiles can be held
+// square, the first and last by the ends' tangencies, and the ring held
+// by guides going round it, as an open loft is held.
 func (g *Group) closedLoftConflict() error {
 	switch {
 	case len(g.LoftThrough) == 0:
 		return errors.New("a closed loft needs three profiles at least")
-	case g.ValB != 0 || g.ValC != 0 || g.LoftAlongSides != [2]bool{}:
+	case g.LoftAlongSides != [2]bool{}:
 		return errClosedEnds
 	case int(g.ValA) != 0:
 		return errors.New("a closed loft can't turn its profiles; draw them starting at the same side")
@@ -341,7 +343,9 @@ func (g *Group) loftMiddle() []float64 {
 // SetLoftClosed has the smooth loft hg go from its last profile back to
 // its first, a ring with no caps, or not: what the loft's screen and
 // LoftGroup.SetClosed set. A closed loft goes through three profiles at
-// least and has no ends to set. The caller remembers the undo state.
+// least and has no ends along a solid's sides; the ends' tangencies hold
+// it square to its first and last profiles. The caller remembers the
+// undo state.
 func (sk *Sketch) SetLoftClosed(hg core.HGroup, closed bool) error {
 	g := sk.Group(hg)
 	if g == nil {
@@ -361,7 +365,9 @@ func (sk *Sketch) SetLoftClosed(hg core.HGroup, closed bool) error {
 // SetLoftProfileTangency holds the smooth loft hg square to the plane
 // of profile, one of those between its ends, the surface's slope
 // across there t times the loft's length, as an end's tangency; 0
-// leaves it free. What the loft's screen and
+// leaves it free. On a closed loft profile may be the first or the
+// last too, which sets that end's tangency: a ring is held at its ends
+// as between them. What the loft's screen and
 // LoftGroup.SetProfileTangency set. The caller remembers the undo
 // state.
 func (sk *Sketch) SetLoftProfileTangency(hg, profile core.HGroup, t float64) error {
@@ -374,6 +380,15 @@ func (sk *Sketch) SetLoftProfileTangency(hg, profile core.HGroup, t float64) err
 	}
 	if math.IsNaN(t) || math.IsInf(t, 0) {
 		return fmt.Errorf("a loft's tangency is a number, not %g", t)
+	}
+	if g.LoftClosed && (profile == g.OpA || profile == g.OpB) {
+		if profile == g.OpA {
+			g.ValB, g.ExprB = t, ""
+		} else {
+			g.ValC, g.ExprC = t, ""
+		}
+		sk.MarkGroupDirty(hg, false)
+		return nil
 	}
 	i := slices.Index(g.LoftThrough, profile)
 	if i < 0 {
@@ -390,8 +405,17 @@ func (sk *Sketch) SetLoftProfileTangency(hg, profile core.HGroup, t float64) err
 }
 
 // LoftProfileTangency is how square the loft holds profile, one of
-// those between its ends, 0 for free.
+// those between its ends, or on a closed loft any of its profiles, 0
+// for free.
 func (g *Group) LoftProfileTangency(profile core.HGroup) float64 {
+	if g.LoftClosed {
+		switch profile {
+		case g.OpA:
+			return g.ValB
+		case g.OpB:
+			return g.ValC
+		}
+	}
 	if i := slices.Index(g.LoftThrough, profile); i >= 0 && i < len(g.LoftThroughTangency) {
 		return g.LoftThroughTangency[i]
 	}
