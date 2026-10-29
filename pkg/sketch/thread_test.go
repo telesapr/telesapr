@@ -293,7 +293,7 @@ func TestThreadSolids(t *testing.T) {
 // enough kinds of thread to pin the generator and the kernel on.
 var threadGoldens = []string{"screw_m8", "nut_m8", "blind_m6", "screw_m8_lh", "screw_m6_down",
 	"lead_tr20", "screw_unc", "triple_m12", "screw_bsw", "nut_g", "screw_acme", "screw_m10_6g",
-	"screw_s20", "nut_s20_back", "screw_butt"}
+	"screw_s20", "nut_s20_back", "screw_butt", "phased_runout_m8"}
 
 // TestThreadGoldens saves the file a thread makes, opens it and saves
 // it again, and requires the golden, testdata/thread/<name>.tlspr.
@@ -303,7 +303,16 @@ func TestThreadGoldens(t *testing.T) {
 	if testing.Short() {
 		t.Skip("thread solids")
 	}
-	for _, tc := range fixtures.Sample(threadCases) {
+	// And a run-out with a phase, of the run-out cases
+	// (thread_runout_test.go), whose names are taken by threads without.
+	cases := slices.Clone(threadCases)
+	for _, tc := range runOutCases {
+		if tc.name == "phased_m8" {
+			tc.name = "phased_runout_m8"
+			cases = append(cases, tc)
+		}
+	}
+	for _, tc := range fixtures.Sample(cases) {
 		if !slices.Contains(threadGoldens, tc.name) {
 			continue
 		}
