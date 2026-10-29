@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"math"
 	"path/filepath"
 	"sync"
@@ -28,7 +29,7 @@ func TestChamferOnOtherSolids(t *testing.T) {
 	var mu sync.Mutex
 	total, made := 0, 0
 	t.Run("solids", func(t *testing.T) {
-		for _, c := range otherSolids() {
+		for _, c := range raceSolids() {
 			t.Run(c.name, func(t *testing.T) {
 				t.Parallel()
 				tl := cutEveryEdge(t, c.build, c.r, edgesPerSolid(), true)
@@ -219,40 +220,45 @@ func TestChamferRimMitre(t *testing.T) {
 		t.Skip("chamfers over curved faces, slow")
 	}
 	blob := filepath.Join("..", "..", "..", "testdata", "step", "shapes", "blob_extruded.step")
+	// The two rims side by side: one after the other they were the
+	// longest test under the race detector, 19 minutes.
 	for _, z := range []float64{5, 0} {
-		d := New()
-		d.Edit.SetChordTolerance(0.01)
-		g, err := d.Assembly.LinkStep(blob, "", true)
-		if err != nil {
-			t.Fatal(err)
-		}
-		var rim SolidEdge
-		for _, e := range g.Solid().Edges() {
-			if a, b := e.Ends(); a == b && math.Abs(a.Z-z) < 1e-9 {
-				rim = e
+		t.Run(fmt.Sprint(z), func(t *testing.T) {
+			t.Parallel()
+			d := New()
+			d.Edit.SetChordTolerance(0.01)
+			g, err := d.Assembly.LinkStep(blob, "", true)
+			if err != nil {
+				t.Fatal(err)
 			}
-		}
-		f := d.Features.ChamferSolid([]SolidEdge{rim}, 1, "")
-		if p := f.Problem(); p != "" {
-			t.Fatalf("rim at z %g: %s", z, p)
-		}
-		if rep := f.Analyze().Check(); !rep.Sound() {
-			t.Errorf("rim at z %g: %s", z, rep.Summary())
-		}
-		dz := 1.0
-		if z == 0 {
-			dz = -1
-		}
-		low, high := V(0, 0, z-dz), V(0.084219, 2.400768, z)
-		var ends [2]bool
-		for _, e := range f.Solid().Edges() {
-			a, b := e.Ends()
-			for i, q := range []Vec{low, high} {
-				ends[i] = ends[i] || a.Minus(q).Magnitude() < 1e-4 || b.Minus(q).Magnitude() < 1e-4
+			var rim SolidEdge
+			for _, e := range g.Solid().Edges() {
+				if a, b := e.Ends(); a == b && math.Abs(a.Z-z) < 1e-9 {
+					rim = e
+				}
 			}
-		}
-		if !ends[0] || !ends[1] {
-			t.Errorf("rim at z %g: the mitre's ends %v and %v are not both vertices (%v)", z, low, high, ends)
-		}
+			f := d.Features.ChamferSolid([]SolidEdge{rim}, 1, "")
+			if p := f.Problem(); p != "" {
+				t.Fatalf("rim at z %g: %s", z, p)
+			}
+			if rep := f.Analyze().Check(); !rep.Sound() {
+				t.Errorf("rim at z %g: %s", z, rep.Summary())
+			}
+			dz := 1.0
+			if z == 0 {
+				dz = -1
+			}
+			low, high := V(0, 0, z-dz), V(0.084219, 2.400768, z)
+			var ends [2]bool
+			for _, e := range f.Solid().Edges() {
+				a, b := e.Ends()
+				for i, q := range []Vec{low, high} {
+					ends[i] = ends[i] || a.Minus(q).Magnitude() < 1e-4 || b.Minus(q).Magnitude() < 1e-4
+				}
+			}
+			if !ends[0] || !ends[1] {
+				t.Errorf("rim at z %g: the mitre's ends %v and %v are not both vertices (%v)", z, low, high, ends)
+			}
+		})
 	}
 }

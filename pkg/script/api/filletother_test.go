@@ -125,7 +125,7 @@ func TestFilletOnOtherSolids(t *testing.T) {
 	var mu sync.Mutex
 	total, made := 0, 0
 	t.Run("solids", func(t *testing.T) {
-		for _, c := range otherSolids() {
+		for _, c := range raceSolids() {
 			t.Run(c.name, func(t *testing.T) {
 				t.Parallel()
 				tl := cutEveryEdge(t, c.build, c.r, edgesPerSolid(), false)
@@ -144,6 +144,15 @@ func TestFilletOnOtherSolids(t *testing.T) {
 		}
 	})
 	t.Logf("in all: %d of %d edges filleted soundly (%.0f%%)", made, total, 100*float64(made)/float64(total))
+}
+
+// raceSolids are the solids the fillet and chamfer sweeps cut: under
+// the race detector a fifth of them (the loft and the bored sphere), for
+// each solid's edges go through the same goroutines, and the lid's and
+// the blob's alone took up to 14 minutes there, which with the other
+// packages' tests beside them came within minutes of make ci's limit.
+func raceSolids() []otherSolid {
+	return fixtures.Sample(otherSolids())
 }
 
 // edgesPerSolid is how many edges of each solid the fillet and chamfer
@@ -592,63 +601,70 @@ func TestFilletRimMitre(t *testing.T) {
 	}
 	blob := filepath.Join("..", "..", "..", "testdata", "step", "shapes", "blob_extruded.step")
 	var took [2]float64
-	for k, z := range []float64{5, 0} {
-		d := New()
-		d.Edit.SetChordTolerance(0.01)
-		g, err := d.Assembly.LinkStep(blob, "", true)
-		if err != nil {
-			t.Fatal(err)
+	// The two rims side by side: one after the other they took 11
+	// minutes under the race detector.
+	t.Run("rims", func(t *testing.T) {
+		for k, z := range []float64{5, 0} {
+			t.Run(fmt.Sprint(z), func(t *testing.T) {
+				t.Parallel()
+				d := New()
+				d.Edit.SetChordTolerance(0.01)
+				g, err := d.Assembly.LinkStep(blob, "", true)
+				if err != nil {
+					t.Fatal(err)
+				}
+				before := g.Analyze().Check().Volume
+				var rim SolidEdge
+				for _, e := range g.Solid().Edges() {
+					if a, b := e.Ends(); a == b && math.Abs(a.Z-z) < 1e-9 {
+						rim = e
+					}
+				}
+				f := d.Features.FilletSolid([]SolidEdge{rim}, 1, "")
+				if p := f.Problem(); p != "" {
+					t.Fatalf("rim at z %g: %s", z, p)
+				}
+				rep := f.Analyze().Check()
+				if !rep.Sound() {
+					t.Errorf("rim at z %g: %s", z, rep.Summary())
+				}
+				took[k] = before - rep.Volume
+				// The mitre: from the crease at the ball's height up to the cap.
+				dz := 1.0
+				if z == 0 {
+					dz = -1
+				}
+				low, high := V(0, 0, z-dz), V(0.0842189, 2.4007678, z)
+				var ends [2]bool
+				for _, e := range f.Solid().Edges() {
+					a, b := e.Ends()
+					for i, q := range []Vec{low, high} {
+						ends[i] = ends[i] || a.Minus(q).Magnitude() < 1e-4 || b.Minus(q).Magnitude() < 1e-4
+					}
+				}
+				if !ends[0] || !ends[1] {
+					t.Errorf("rim at z %g: the mitre's ends %v and %v are not both vertices (%v)", z, low, high, ends)
+				}
+				if k == 1 {
+					return
+				}
+				path := filepath.Join(t.TempDir(), "blob.tlspr")
+				if err := d.File.Save(path); err != nil {
+					t.Fatal(err)
+				}
+				l := New()
+				if err := l.File.Load(path); err != nil {
+					t.Fatal(err)
+				}
+				l.Edit.SetChordTolerance(0.01)
+				gs := l.Groups()
+				if r2 := gs[len(gs)-1].Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-rep.Volume) > 1e-6*rep.Volume {
+					t.Errorf("rim at z %g loaded: %s, volume %g, saved %g", z, r2.Summary(), r2.Volume, rep.Volume)
+				}
+			})
 		}
-		before := g.Analyze().Check().Volume
-		var rim SolidEdge
-		for _, e := range g.Solid().Edges() {
-			if a, b := e.Ends(); a == b && math.Abs(a.Z-z) < 1e-9 {
-				rim = e
-			}
-		}
-		f := d.Features.FilletSolid([]SolidEdge{rim}, 1, "")
-		if p := f.Problem(); p != "" {
-			t.Fatalf("rim at z %g: %s", z, p)
-		}
-		rep := f.Analyze().Check()
-		if !rep.Sound() {
-			t.Errorf("rim at z %g: %s", z, rep.Summary())
-		}
-		took[k] = before - rep.Volume
-		// The mitre: from the crease at the ball's height up to the cap.
-		dz := 1.0
-		if z == 0 {
-			dz = -1
-		}
-		low, high := V(0, 0, z-dz), V(0.0842189, 2.4007678, z)
-		var ends [2]bool
-		for _, e := range f.Solid().Edges() {
-			a, b := e.Ends()
-			for i, q := range []Vec{low, high} {
-				ends[i] = ends[i] || a.Minus(q).Magnitude() < 1e-4 || b.Minus(q).Magnitude() < 1e-4
-			}
-		}
-		if !ends[0] || !ends[1] {
-			t.Errorf("rim at z %g: the mitre's ends %v and %v are not both vertices (%v)", z, low, high, ends)
-		}
-		if k == 1 {
-			continue
-		}
-		path := filepath.Join(t.TempDir(), "blob.tlspr")
-		if err := d.File.Save(path); err != nil {
-			t.Fatal(err)
-		}
-		l := New()
-		if err := l.File.Load(path); err != nil {
-			t.Fatal(err)
-		}
-		l.Edit.SetChordTolerance(0.01)
-		gs := l.Groups()
-		if r2 := gs[len(gs)-1].Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-rep.Volume) > 1e-6*rep.Volume {
-			t.Errorf("rim at z %g loaded: %s, volume %g, saved %g", z, r2.Summary(), r2.Volume, rep.Volume)
-		}
-	}
-	if math.Abs(took[0]-took[1]) > 1e-4*took[0] {
+	})
+	if !t.Failed() && math.Abs(took[0]-took[1]) > 1e-4*took[0] {
 		t.Errorf("the rims take %g and %g", took[0], took[1])
 	}
 }
@@ -692,7 +708,20 @@ func TestFilletRimMitreFine(t *testing.T) {
 	for _, r := range []float64{0.5, 1} {
 		t.Run(fmt.Sprint(r), func(t *testing.T) {
 			t.Parallel()
-			if a, b := took(t, r, 0.002), took(t, r, 0.0005); math.Abs(a-b) > 1e-3*b {
+			// The two tolerances side by side: one after the other, r 1
+			// was the longest test under the race detector, 19 minutes.
+			var a, b float64
+			t.Run("chords", func(t *testing.T) {
+				t.Run("0.002", func(t *testing.T) {
+					t.Parallel()
+					a = took(t, r, 0.002)
+				})
+				t.Run("0.0005", func(t *testing.T) {
+					t.Parallel()
+					b = took(t, r, 0.0005)
+				})
+			})
+			if !t.Failed() && math.Abs(a-b) > 1e-3*b {
 				t.Errorf("r %g takes %g at 0.002%%, %g at 0.0005%%", r, a, b)
 			}
 		})
