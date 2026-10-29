@@ -51,6 +51,10 @@ type pathSweep struct {
 	// faster than a point along a ray its image in the profile's plane
 	// may move.
 	detail, speedUp float64
+	// prismed marks the straight pieces beside a sharp corner, which
+	// prisms stand for (raycast_pathcorner.go).
+	prismed []bool
+	prisms  []pathPrism
 }
 
 // pathChunk is a run of samples, from lo to hi, inside the ball about c
@@ -149,13 +153,14 @@ func newPathSweep(sbls *srf.SBezierLoopSet, sp *topo.SweepPath) *pathSweep {
 			verts = append(verts, ps.pr.origin.Plus(eu.ScaledBy(v[0])).Plus(ps.pr.ev.ScaledBy(v[1])))
 		}
 	}
+	ps.pathPrisms(verts)
 	sag, margin, bend := 0.0, 0.0, 0.0
 	for _, v := range verts {
 		var m0, m1 geom.Vector
 		for k := range ps.p {
 			m := ps.moveTo(k, v)
 			m.MakeMaxMin(&ps.hi, &ps.lo)
-			if k > 1 {
+			if k > 1 && !ps.inPrismed(k-2) && !ps.inPrismed(k-1) {
 				sag = math.Max(sag, m.Plus(m0).Minus(m1.ScaledBy(2)).Magnitude()/4)
 			}
 			m0, m1 = m1, m
@@ -164,7 +169,7 @@ func newPathSweep(sbls *srf.SBezierLoopSet, sp *topo.SweepPath) *pathSweep {
 	for k := 1; k < len(ps.p); k++ {
 		step := ps.p[k].Minus(ps.p[k-1]).Magnitude()
 		margin = math.Max(margin, step*(1+ps.reach))
-		if step > 0 {
+		if step > 0 && !ps.inPrismed(k-1) {
 			bend = math.Max(bend, math.Acos(math.Max(-1, math.Min(1, ps.t[k].Dot(ps.t[k-1]))))/step)
 		}
 	}
@@ -299,6 +304,11 @@ func (ps *pathSweep) heightAt(k int, s float64, x geom.Vector) (geom.Vector, flo
 }
 
 func (ps *pathSweep) inside(x geom.Vector) bool {
+	for i := range ps.prisms {
+		if ps.inPrism(&ps.prisms[i], x) {
+			return true
+		}
+	}
 	for _, ch := range ps.chunks {
 		far := x.Minus(ch.c).Magnitude()
 		if far > ch.rad {
@@ -312,7 +322,7 @@ func (ps *pathSweep) inside(x geom.Vector) bool {
 		for k := ch.lo; k < ch.hi; k++ {
 			ha := hb
 			hb = ps.height(k+1, x)
-			if ha != 0 && (ha > 0) == (hb > 0) {
+			if ha != 0 && (ha > 0) == (hb > 0) || ps.inPrismed(k) {
 				continue
 			}
 			// A root of the height between the samples, by regula
@@ -362,6 +372,18 @@ func (ps *pathSweep) crossings(o, d geom.Vector, out []float64) []float64 {
 		q := o.Minus(ch.c)
 		b := q.Dot(d) / dd
 		disc := b*b - (q.Dot(q)-ch.rad*ch.rad)/dd
+		if disc <= 0 {
+			continue
+		}
+		r := math.Sqrt(disc)
+		if a, z := math.Max(s0, -b-r), math.Min(s1, -b+r); a < z {
+			spans = append(spans, [2]float64{a, z})
+		}
+	}
+	for _, pp := range ps.prisms {
+		q := o.Minus(pp.center)
+		b := q.Dot(d) / dd
+		disc := b*b - (q.Dot(q)-pp.radius*pp.radius)/dd
 		if disc <= 0 {
 			continue
 		}

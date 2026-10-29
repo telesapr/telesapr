@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // cornerPath draws, in the ZX workplane, up from the origin by up, then
@@ -213,4 +214,72 @@ func TestSweepClosedCornersBesideArc(t *testing.T) {
 			t.Errorf("%s: %q %s, want about %g", name, s.Problem(), r.String(), want)
 		}
 	}
+}
+
+// A sweep along a cubic takes sharp corners between lines, mitred as a
+// rigid sweep's are: the volume is the profile's area times the path's
+// length. Twisted, its corner needs a radius, and held to a direction
+// it turns off the corner's axis, too; a corner beside the cubic is
+// refused as it was.
+func TestSweepFittedCorner(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.005 })
+	d.Features.Sketch3D("path")
+	c := []api.Vec{api.V(0, 0, 0), api.V(0, 0, 6), api.V(4, 0, 10), api.V(8, 0, 12)}
+	a := c[3].Plus(c[3].Minus(c[2]).WithMagnitude(8))
+	b := a.Plus(api.V(1, 0, -2).WithMagnitude(10))
+	path := []api.Entity{d.Sketch.Cubic(c[0], c[1], c[2], c[3]), d.Sketch.Line(c[3], a), d.Sketch.Line(a, b)}
+	d.Features.SketchIn(d.Workplane("XY"), "profile")
+	d.Sketch.Rect(api.V(-1, -1.5, 0), api.V(1, 1.5, 0))
+	step(d)
+	before := saved(t, d)
+	s := d.Features.Sweep(path, "bent")
+	if p := s.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	want := 6 * (cubicLength(c[0], c[1], c[2], c[3]) + 18)
+	if r := s.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Fatalf("a mitred corner after a cubic: %s, want %g", r.String(), want)
+	}
+	undoRedo(t, d, before)
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+	d.Edit.Regen()
+	roundTrip(t, d)
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.005 })
+	d.Edit.Regen()
+
+	sw := s.AsSweep()
+	sw.SetTwist(30)
+	if p := s.Problem(); !strings.Contains(p, "twisted") || !strings.Contains(p, "corner radius") {
+		t.Errorf("a twisted sweep's corner: %q", p)
+	}
+	sw.SetCornerRadius(3)
+	if r := s.Analyze().Check(); s.Problem() != "" || !r.Sound() {
+		t.Errorf("a twisted sweep's corner rounded: %q %s", s.Problem(), r.String())
+	}
+	sw.SetTwist(0)
+	sw.SetCornerRadius(0)
+	sw.SetSweepUp(api.V(1, 1, 0))
+	if p := s.Problem(); !strings.Contains(p, "held to a direction") {
+		t.Errorf("held off the corner's axis: %q", p)
+	}
+	sw.SetSweepUp(api.V(0, 1, 0))
+	if r := s.Analyze().Check(); s.Problem() != "" || !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Errorf("held to the corner's axis: %q %s, want %g", s.Problem(), r.String(), want)
+	}
+
+	// A corner straight off the cubic.
+	e := api.New()
+	e.Features.Sketch3D("path")
+	kinked := []api.Entity{e.Sketch.Cubic(c[0], c[1], c[2], c[3]), e.Sketch.Line(c[3], c[3].Plus(api.V(8, 0, 0)))}
+	e.Features.SketchIn(e.Workplane("XY"), "profile")
+	e.Sketch.Rect(api.V(-1, -1.5, 0), api.V(1, 1.5, 0))
+	defer func() {
+		err, ok := recover().(error)
+		if !ok || !strings.Contains(err.Error(), "next to a curve") {
+			t.Errorf("a corner beside a cubic: %v", err)
+		}
+	}()
+	e.Features.Sweep(kinked, "")
 }

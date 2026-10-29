@@ -931,6 +931,21 @@ func BenchmarkSweepCornersBesideArc(b *testing.B) {
 	})
 }
 
+// A rectangle along a cubic, on along a line and round a sharp corner
+// onto another, mitred though the sweep is fitted.
+func BenchmarkSweepFittedCorner(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.Features.Sketch3D("path")
+		c := []api.Vec{api.V(0, 0, 0), api.V(0, 0, 6), api.V(4, 0, 10), api.V(8, 0, 12)}
+		a := c[3].Plus(c[3].Minus(c[2]).WithMagnitude(8))
+		path := []api.Entity{d.Sketch.Cubic(c[0], c[1], c[2], c[3]), d.Sketch.Line(c[3], a),
+			d.Sketch.Line(a, a.Plus(api.V(1, 0, -2).WithMagnitude(10)))}
+		d.Features.SketchIn(d.Workplane("XY"), "profile")
+		d.Sketch.Rect(api.V(-1, -1.5, 0), api.V(1, 1.5, 0))
+		d.Features.Sweep(path, "")
+	})
+}
+
 // A ring of eight circles closed by a loft.
 func BenchmarkLoftClosed(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // A sweep with a corner radius (ValB) rounds the corners of its path
@@ -249,4 +250,77 @@ func circleCircle(c1 [2]float64, r1 float64, c2 [2]float64, r2 float64) [][2]flo
 	h := math.Sqrt(math.Max(0, r1*r1-along*along))
 	mx, my := c1[0]+along*dx/d, c1[1]+along*dy/d
 	return [][2]float64{{mx - h*dy/d, my + h*dx/d}, {mx + h*dy/d, my - h*dx/d}}
+}
+
+// A fitted sweep (twisted, held to a direction, or along a cubic) takes
+// a sharp corner between two line segments, which the kernel mitres
+// (topo.SweepPath), and rounds corners beside lines and arcs with a
+// corner radius as a rigid sweep does, the arcs then fitted with the
+// rest. A corner beside a cubic is refused before (pathChainAny).
+
+// fitCornered makes the fitted sweep's path along chain, rounding its
+// corners first when the sweep has a corner radius and the chain is open
+// (a closed one is rounded before it is cut where the profile is), and
+// refusing a sharp corner the kernel can't mitre.
+func (sk *Sketch) fitCornered(g *Group, chain []pathPiece, closed bool) error {
+	if g.ValB > 0 && !closed {
+		var err error
+		if chain, err = sk.roundCorners(chain, g.ValB); err != nil {
+			return err
+		}
+	}
+	for k := range chain {
+		if k == 0 || chain[k-1].tangentAt(true).Dot(chain[k].tangentAt(false)) >= sweepTangentCos {
+			continue
+		}
+		x := chain[k].start
+		if g.ValC != 0 {
+			return pathErr(&x, "a twisted sweep's path can't turn sharply, as it does at (%g, %g, %g): "+
+				"give the sweep a corner radius to round it", x.X, x.Y, x.Z)
+		}
+		for _, p := range []pathPiece{chain[k-1], chain[k]} {
+			if p.arc {
+				return pathErr(&x, "the path's corner at (%g, %g, %g) is beside %s: a sweep along a curve, or held to a "+
+					"direction, mitres only a corner between two line segments; give the sweep a corner radius to round it",
+					x.X, x.Y, x.Z, sk.entityName(p.h))
+			}
+		}
+	}
+	for k := range chain {
+		if chain[k].curves != nil {
+			continue
+		}
+		if chain[k].arc {
+			chain[k].curves = arcCurves(chain[k].center, chain[k].axis, chain[k].start, chain[k].angle)
+		} else {
+			chain[k].curves = []srf.SBezier{srf.SBezierFrom2(chain[k].start, chain[k].end)}
+		}
+	}
+	return g.fitPath(chain)
+}
+
+// fittedCornerError is the path's error for err when it is the kernel's
+// for a corner of a fitted sweep's path it can't mitre
+// (topo.ErrPathCornerHeld, ErrPathCornerShort, ErrPathCornerTwisted),
+// and nil for any other.
+func fittedCornerError(err error) *pathError {
+	ce, ok := errors.AsType[*srf.CornerError](err)
+	if !ok {
+		return nil
+	}
+	x := ce.At
+	var why string
+	switch {
+	case errors.Is(err, topo.ErrPathCornerHeld):
+		why = "the frames held to a direction turn otherwise than the path does there; hold them to the corner's axis"
+	case errors.Is(err, topo.ErrPathCornerShort):
+		why = "a line segment beside it is too short for the mitres at its ends"
+	case errors.Is(err, topo.ErrPathCornerTwisted):
+		why = "the closed path leaves its plane, so the profile is turned along it to meet itself"
+	default:
+		return nil
+	}
+	return &pathError{at: &x, kind: ce.Err, msg: fmt.Sprintf(
+		"the path's corner at (%g, %g, %g) can't be mitred: %s; give the sweep a corner radius to round it",
+		x.X, x.Y, x.Z, why)}
 }

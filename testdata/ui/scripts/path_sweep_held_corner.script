@@ -1,0 +1,16 @@
+# The sweep of path_sweep_corner with its frames held to y on the
+# group's screen, mitred at its corner though fitted; the same as
+# path_sweep_held_corner.go makes (TestPathEquivalence/sweep_held_corner).
+file $testdata/ui/sweep_corner.tlspr
+menu File|Open...
+view other
+move 347.5 217.5
+down L 347.5 217.5
+up L 347.5 217.5
+move 377.5 202.5
+down L 377.5 202.5
+up L 377.5 202.5
+menu Features|Sweep Along Path
+twmove 346 225
+twdown L 346 225
+twup L 346 225
