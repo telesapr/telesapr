@@ -150,10 +150,20 @@ As the default it would close these items, which the mender leaves open (none is
 | Open item | State today, with the ear clipper and the mender |
 |---|---|
 | A twisted swept bar | flat sides mesh within 1.6% of volume |
-| A chamfer of 3 where a slot meets a cone | 6 naked edges, on the slot's flat walls; with K4's mesher none, but one topology problem left |
 
 The band-on-cone fillet at r 1 and chord 0.001%, listed here before, is sound with the ear
-clipper at 0.001% to 0.005%.
+clipper at 0.001% to 0.005%. The chamfer of 3 where a slot meets a cone, listed here before, is
+sound from 2.75 to 3.25 at 0.002% to 0.005% (found so on 2026-10-29, before any change of rd6;
+`TestChamferSlotOnCone` takes 3 now).
+
+Done 2026-10-29 (rd6): a fillet of 2 between a plate and the rod of radius 8 it stands on, its foot on
+the rod at y = 4 within 0.03 mm of a row of the rod's grid, crossed at 0.002% to 0.005%. The ear
+clipper fanned the strip between the foot and the row from the grid's point at the rod's end, slivers
+12 mm long and 4.5e-5 thick whose chords cut under the cylinder through the fillet's mesh; they part
+from the surface by less than four chord tolerances, so the face was no candidate. A curved face's
+ear-clipped sliver (thinner than a thousandth of its length, `earMeshSlivers`, as a plane's since the
+rib's foot) now makes it one, and the CDT meshes it where it is unsound (`TestFilletFootAlongRodRow`);
+no golden moved.
 
 ### K5 STEP repair and accounting rules
 
@@ -186,7 +196,6 @@ solids) at 59 of 59 sound since 2026-10-22. Chamfers: `TestChamferOnOtherSolids`
 | A run-off of a blend that takes material away; both ends running off where their cuts share a patch; a run-off onto a curved face only just past its edge, or with a curved end face; a chamfer's end running off both its faces | refused, naming the place | Run-offs onto a curved face are made since 2026-10-29 (below), and chamfers ending on a curved face the cone goes on past since 2026-10-29 (rd5, below). Both ends running off onto flat faces are made where the fillet is long enough that their cuts don't share a patch: a plate with a gabled top on a rod, its side's edges with the ends 0.58 high, fillets and chamfers of 1 to 2 run off at both ends, sound, on plates 2 to 20 long (probed 2026-10-29, not kept as a test); shorter ones are refused as "the fillet runs off the face past the next one too". For the rest the setback patch is the means: where the ball runs off a face, cut the fillet as a setback is cut and fill the hole between it, the next face's fillet (or the face) and the faces round. A run-off taking material away was never reached by any test case (a slot cut from the cone never got that far; a band raised off the cone's base, its chamfer's end on the band's bottom, is no run-off). "Only just runs off" is a sliver of the next face thinner than the chord tolerance; snapping p1 to w as on a flat face would move the curves' ends by up to the chord tolerance, past an edge's |
 | A rib rounded all over, foot first | the top first is made (below), all 24 cases sound since 2026-10-29 (below) | Foot first, the top's edge ends on the foot's fillet and the grown top. Tried 2026-10-29, after run-offs onto curved faces were made: on a rib whose foot is filled, the edge across the back rounds alone, sound; the uprights at the back are refused as fillets meeting above an edge left sharp; the slope's edges are refused before their ends, the ball leaving the side face for the foot's fillet (three fillets meeting at a vertex: a vertex blend, not a run-off). Not needed while the stages take the top first. The blend patch of 2026-10-29 (two fillets above an edge left sharp, flat faces) is not that: there the three fillets meet on curved faces |
 | Convex meeting concave at one vertex beyond what the stages round, fillets or chamfers | refused | Chamfer corners where every edge is chamfered are made since 2026-10-28 (`chamferCornerAt`: OpenCASCADE's pivot and square cuts, plane or bilinear patch), and so are two chamfers of any distances above a third edge left sharp (`chamferPairAt`). Since 2026-10-29 a chamfer's edge takes a distance and a second distance of its own (`EdgeRadii`, `EdgeSeconds`, `pkg/sketch/chamfer_edge_distances.go`), from its screen and from scripts. Since 2026-10-29 (below) a corner of three of both kinds, every edge chamfered, takes OpenCASCADE's pivot too, and a corner of four or more with some edges sharp is cut by the chamfers' planes. Since 2026-10-29 (below) a convex and a concave chamfer with the third edge sharp meet in a three-sided face, and a convex and a concave fillet above a third edge left sharp are blended by one patch, as OpenCASCADE's are. Since 2026-10-29 (below) that blend is made whichever radius is the larger, fillets at corners of three of both kinds whose two of one kind differ in radius are made, the radius varying along the arc between them, and fillets at corners of four or more of both kinds, every edge rounded, are set back. Left: at a corner of four or more of both kinds, fillets with an edge left sharp (OpenCASCADE makes the saddle's with one vertex blend whatever is picked) and chamfers (OpenCASCADE: one B-spline patch; our cone cut takes convex cones only, and the setback's patches are tangent to fillets, not to a chamfer's plane) |
-| Slot chamfer at 3 | see K4 | The teapot handle and the run-off chamfers' crossings, listed here before, are sound since K4's mender |
 
 Done 2026-10-29: the vase's foot fillet, listed as 2.8% short of OpenCASCADE, is right: its surface
 lies on the balls' torus within 1e-5 mm, and the section it takes, integrated by Pappus, is 0.395502
@@ -214,11 +223,25 @@ sections fitted to their cuts (`fitCuts`); and then at the base, a flat end, the
 straight line between its edges, and the end section fitted to the base plane's cut is curved across
 (the chamfer's rulings along a curved edge lean out of that plane). Under `fitCuts` the surface near a flat
 end now keeps to the nearest ruling, as near a curved end (`rollingBall.misfit`). All four sizes are sound,
-adding 8.6, 19.0, 33.1 and 50.5 mm³ at 1, 1.5, 2 and 2.5. Seen on the way and left (the mesher's, K4): a
-fillet of 2 between a plate's side and a rod of 8 (its foot on the rod at y = 4, along a row of the rod's
-grid within 0.03 mm) has a mesh edge from the foot to the rod's end that crosses, at chord 0.002% and
-0.003% (sound at 1.9, 2.1, and at 0.005%); and a chamfer of 2.5 or 3 of a band raised 5 off the cone's base
-has naked and crossing edges on the cone along its foot, mid-edge.
+adding 8.6, 19.0, 33.1 and 50.5 mm³ at 1, 1.5, 2 and 2.5. Seen on the way: a fillet of 2 between a plate's side and a rod of 8 crossing at
+0.002% and 0.003%, and a chamfer of 2.5 or 3 of a band raised 5 off the cone's base open along its foot,
+both made sound in rd6 (below).
+
+Done 2026-10-29 (rd6): the chamfer of 2.5 or 3 of a band raised 5 off the cone's base, 20 high, its end
+running off onto the band's top: 5 naked edges at 2.5, 38 naked and 60 crossing at 3, with the CDT on
+every face too. Not the mesher: the chamfer's edge on the cone ran back on itself by 0.01 mm beside the
+first end section. An end section at share λ of the ramp takes each foot from the ball's section at
+arc length (1-λ) endS + λ target, so the feet go along the edge at paces of their own, which change at
+once where the ball's sections begin, the cone's foot there five times slower than the mean; the skin
+through them, spaced by the mean, overshot on that side and came back, along the surface, which the
+misfit doesn't see. Where a skin's side runs back between two sections (`feetRunBack`), the blend is
+made again with the ramp eased (`rollingBall.rampS`, `easeRamp`): each foot leaves the ball at the mean
+pace and takes its own over the first share q of the ramp, q the slowest's pace over the mean, the mean,
+and so the sections' spacing, as before, each foot going one way all along. Both sizes are sound
+(`TestChamferRaisedBand`); a blend whose sides don't run back is made as before, so no golden moved. Seen on the way and left: the closed
+fillet round a rod of radius 4 passing through a plate 12 wide and 4 thick, at r 2 and over, where the
+fillet's foot on the plate reaches the plate's sides (4 + r ≥ 6): made and unsound (69 naked edges at
+r 2, 72 and 6 crossing at 2.1) rather than refused, at chord tolerances from 0.003% to 0.005%.
 
 Done 2026-10-29: fillets at corners of three edges of both kinds, all rounded, whose two of one kind
 differ in radius: a ledge's two top edges at 1 and 2 over its concave upright, a rib's two foot edges

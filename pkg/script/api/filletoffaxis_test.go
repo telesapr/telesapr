@@ -229,12 +229,14 @@ func TestRunOffFittedCuts(t *testing.T) {
 // chamfer's edge on the slot's flat wall runs nearly straight, and the
 // wall's mesher, finding no corner of what was left there convex enough
 // to clip at its tolerance, left it out: naked edges along the whole
-// edge (11 to 63). Sound now at sizes 1 to 2.5, each taking material
-// away; at 3 six naked edges stay where the chamfer reaches the slot's
-// floor.
+// edge (11 to 63). Sound now at sizes 1 to 3, each taking material
+// away; at 3 six naked edges stayed where the chamfer reaches the slot's
+// floor, gone by 2026-10-29 (the mender's slivers, srf's
+// earMeshSlivers), sound from 2.75 to 3.25 at chord tolerances of
+// 0.002% to 0.005%.
 func TestChamferSlotOnCone(t *testing.T) {
 	t.Parallel()
-	for _, r := range []float64{1, 1.5, 2, 2.5} {
+	for _, r := range []float64{1, 1.5, 2, 2.5, 3} {
 		d := New()
 		d.Edit.SetChordTolerance(0.003)
 		d.Features.SketchIn(d.Workplane("ZX"), "")
@@ -255,6 +257,46 @@ func TestChamferSlotOnCone(t *testing.T) {
 		rep := g.Analyze().Check()
 		if !rep.Sound() || rep.Volume >= before {
 			t.Errorf("chamfer of %g: %s, volume %g, before %g", r, rep.Summary(), rep.Volume, before)
+		}
+	}
+}
+
+// A chamfer of the band's edge on the cone, the band raised 5 off the
+// cone's base and 20 high, its end running off onto the band's top.
+// Between the top's conic and the ball's own sections the end sections'
+// feet each went along the edge at a pace of its own, changing at once
+// where the ball's began, the foot on the cone five times slower than
+// the mean; the skin through them overshot along the edge there and came
+// back, so the chamfer's trim on the cone ran back on itself and the
+// meshes were open (5 naked edges at 2.5; at 3, 38 naked and 60
+// crossing). The feet are eased off the ball's pace where the skin's
+// sides run back (topo's rampS), and both are sound.
+func TestChamferRaisedBand(t *testing.T) {
+	t.Parallel()
+	for _, r := range []float64{2, 2.5, 3} {
+		d := New()
+		d.Edit.SetChordTolerance(0.003)
+		d.Features.SketchIn(d.Workplane("ZX"), "")
+		axis := d.Sketch.Line(V(0, 0, -2), V(0, 0, 32))
+		axis.SetConstruction(true)
+		d.Sketch.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(4, 0, 30), V(0, 0, 30))
+		d.Features.Lathe(axis, "")
+		d.Features.Sketch3D("raised")
+		d.Features.SketchIn(d.Sketch.NewWorkplane(V(0, 0, 5), V(1, 0, 0), V(0, 1, 0)), "")
+		d.Sketch.Rect(V(6, -3, 5), V(20, 3, 5))
+		band := d.Features.Extrude(20, "band")
+		before := band.Analyze().Check().Volume
+		g := d.Features.ChamferSolid([]SolidEdge{band.Solid().EdgeAt(V(math.Sqrt(64-9), 3, 10))}, r, "")
+		if p := g.Problem(); p != "" {
+			t.Errorf("chamfer of %g: %s", r, p)
+			continue
+		}
+		rep := g.Analyze().Check()
+		// It adds about its section's area along the edge, as on the band
+		// standing on the base (TestChamferRunsOffBand), less what the
+		// raised band's bottom leaves out.
+		if added := rep.Volume - before; !rep.Sound() || added <= 0 || added > 8*r*r {
+			t.Errorf("chamfer of %g: %s, added %g", r, rep.Summary(), added)
 		}
 	}
 }
