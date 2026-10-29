@@ -89,6 +89,11 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 			// A group put in before others: they are made again too,
 			// as what they refer to may have moved.
 			last = math.MaxInt
+		} else {
+			// A datum on the solid after the active group follows its
+			// face as one before it does: a model linking this one,
+			// or a mate, finds it where the face now is.
+			last = max(last, sk.lastSolidDatum())
 		}
 
 	case GenerateAll:
