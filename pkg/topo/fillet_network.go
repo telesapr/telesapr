@@ -548,6 +548,11 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 			if err != nil && setback && setbackRefusal(err) {
 				c, err = t.setbackCornerAt(v, edges, byEdge)
 			}
+			if err != nil && setback && t.blendCornerTakes(v, edges, byEdge) {
+				// A convex fillet and a concave one above an edge left
+				// sharp, which the stages don't round: one patch fills it.
+				c, err = t.blendCornerAt(v, edges, byEdge)
+			}
 			if err != nil {
 				if why := stopped[v]; why != nil {
 					var fx *FilletError
@@ -675,7 +680,15 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 			q.Color = color
 			q.Origin = next
 			next++
-			patches = append(patches, patch{q, []srf.SBezier{e0, e1, e2, e3}, t.Vertices[v].P})
+			// A blend's patch has a side folded to a point, which bounds
+			// nothing.
+			var loop []srf.SBezier
+			for _, ec := range []srf.SBezier{e0, e1, e2, e3} {
+				if !ec.Start().Equals(ec.Finish()) || ec.PointAt(0.5).Minus(ec.Start()).Magnitude() > geom.LengthEps {
+					loop = append(loop, ec)
+				}
+			}
+			patches = append(patches, patch{q, loop, t.Vertices[v].P})
 		}
 		for _, pl := range c.plates {
 			pl.s.Color = color

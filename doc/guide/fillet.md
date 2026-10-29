@@ -43,6 +43,11 @@ What it makes:
   are always filled; where radii 5 or 6 to 1 sit side by side the patches can fold, and the
   corner is refused at its point. Example:
   [`examples/scripts/setback`](../../examples/scripts/setback/setback.go).
+- An edge that sticks out and one that goes in, meeting at a corner whose third edge is left
+  sharp (a ledge's top edge with the inside upright below it, a rib's upright with one of its
+  foot's edges), are blended there by one patch, tangent to both fillets and the face, the
+  sharp edge ending in its corner. Where one fillet's radius is several times how far the
+  other reaches along the face, the patch would fold, and the corner is refused at its point.
 - Two top edges of different radii over an upright edge left sharp are refused, naming the
   radii: the blend would need a crease. Round the upright edge too, or give the two one
   radius.
