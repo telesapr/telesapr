@@ -179,7 +179,7 @@ func revolvedInside(rev Revolution, modeAt func(geom.Vector) (faceMode, bool), e
 			// is either: moved out, it meets that solid's inside.
 			ds[li][i] = -thick
 			m := p.mid
-			wall := false
+			wall, probed := false, false
 			for _, a := range probes {
 				mode, ok := modeAt(m.RotatedAbout(rev.Pt, axis, a))
 				if !ok {
@@ -190,10 +190,15 @@ func revolvedInside(rev Revolution, modeAt func(geom.Vector) (faceMode, bool), e
 					ds[li][i] = 0
 				case keptFace:
 					wall = true
+				case probedFace:
+					probed = true
 				}
 			}
-			if wall && ds[li][i] != 0 {
+			switch {
+			case wall && ds[li][i] != 0:
 				ds[li][i] = thick
+			case probed && ds[li][i] != 0:
+				ds[li][i] = -2 * thick
 			}
 			if ds[li][i] == 0 && !across(p, axis) {
 				// A curved face taken away: the inside's face on it would

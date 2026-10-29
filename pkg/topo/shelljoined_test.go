@@ -82,8 +82,50 @@ func TestShellJoinedThroughPlate(t *testing.T) {
 	sh.MakeFromUnionOf(plate, post)
 	parts := []topo.ShellPart{{Shell: plate}, {Shell: post}}
 	_, err := topo.ShellJoined(sh, parts, facesAt(t, sh, v(0, 0, 10.5)), 1, 1000)
-	if err == nil || !strings.Contains(err.Error(), "out of the solid") {
+	if err == nil || !strings.Contains(err.Error(), "thinner than twice that") {
 		t.Errorf("a post's foot through the plate: %v", err)
+	}
+}
+
+// A post sunk into a plate whose inside its own walls keep, its foot
+// moved out by the thickness staying in the plate but short of the
+// thickness from its bottom: the wall there would be thinner than the
+// thickness, and the shell is refused. Sunk less deep, the wall below the
+// foot keeps the thickness, down to exactly it.
+func TestShellJoinedThinWall(t *testing.T) {
+	t.Parallel()
+	tol := srf.Tol(0.001, 20)
+	shell := func(plateH, footZ float64) (*srf.SShell, error) {
+		plate := &srf.SShell{Tol: tol}
+		plate.MakePrism([]geom.Vector{v(-20, -20, 0), v(20, -20, 0), v(20, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, plateH),
+			core.NewRGBA(100, 100, 100, 255))
+		post := &srf.SShell{Tol: tol}
+		post.MakeFromTransformationOf(cylinder(3, 10, tol), v(0, 0, footZ), geom.QuaternionIdentity, 1)
+		sh := &srf.SShell{Tol: tol}
+		sh.MakeFromUnionOf(plate, post)
+		parts := []topo.ShellPart{{Shell: plate}, {Shell: post}}
+		return topo.ShellJoined(sh, parts, facesAt(t, sh, v(0, 0, footZ+10)), 1, 1000)
+	}
+	// The foot at 1.5 moved out to 0.5: half the thickness over the
+	// plate's bottom.
+	if _, err := shell(3, 1.5); err == nil || !strings.Contains(err.Error(), "wall thinner") {
+		t.Errorf("a wall of 0.5 below the post: %v", err)
+	}
+	for _, c := range []struct{ plateH, footZ float64 }{{4, 2.5}, {4, 2}} {
+		out, err := shell(c.plateH, c.footZ)
+		if err != nil {
+			t.Errorf("foot at %g in a plate of %g: %v", c.footZ, c.plateH, err)
+			continue
+		}
+		// The plate less its inside, and the post above it less its
+		// inside above the plate's: below that, down to where its foot
+		// moved out, the post's inside lies in the plate's.
+		plate := 40*40*c.plateH - 38*38*(c.plateH-2)
+		post := math.Pi * (9*(c.footZ+10-c.plateH) - 4*(c.footZ+10-(c.plateH-1)))
+		want := plate + post
+		if r := soundness(out); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+			t.Errorf("foot at %g in a plate of %g: %s, want %g", c.footZ, c.plateH, r.String(), want)
+		}
 	}
 }
 

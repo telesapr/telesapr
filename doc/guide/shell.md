@@ -61,8 +61,8 @@ its ends, or one lathe or revolve, or lathes about one axis; a solid joined from
 a difference or an intersection, or with a helix, a drafted extrusion or a feature after them, is
 refused, and so is a drafted extrusion open at a side. In a union, a prism's curved side lying
 wholly inside another part, and a revolve's end lying inside one, are refused; a face moved out
-that would come out of the solid, where a part joined to another is thinner than twice the
-thickness, is refused too. A revolve's curved face is opened only between outside corners. A
+that would come out of the solid, or leave a wall beyond it thinner than the thickness, where a
+part joined to another is thinner there than twice the thickness, is refused too. A revolve's curved face is opened only between outside corners. A
 profile of other curves than lines and arcs is refused. Beside a round hole, walls thinner than
 about twice the chord tolerance can come out unsound: the hole's chords and the wall's cross. Where four faces meet at a
 vertex and, moved in, don't meet at one point, as at an off-centre pyramid's apex, the inside gets

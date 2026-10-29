@@ -98,7 +98,7 @@ func prismInside(t *Topology, sh *srf.SShell, mode []faceMode, thick float64, or
 			return nil, true, shellErr(t.faceAnchor(f), "the solid's ends lie on more than two levels; a shell hollows prisms")
 		}
 	}
-	moved := map[faceMode]float64{keptFace: thick, openFace: 0, buriedFace: -thick}
+	moved := map[faceMode]float64{keptFace: thick, openFace: 0, buriedFace: -thick, probedFace: -2 * thick}
 	z0, z1 := lo+moved[lowMode], hi-moved[highMode]
 	if z1-z0 <= geom.LengthEps {
 		return nil, true, shellErr(t.faceAnchor(caps[0]), "a thickness of %g makes the walls meet, closing up the inside", thick)
@@ -142,7 +142,7 @@ func prismSide(t *Topology, f int, mode faceMode) error {
 	switch mode {
 	case openFace:
 		return shellErr(t.faceAnchor(f), "a shell of a solid with curved sides is open only at its ends")
-	case buriedFace:
+	case buriedFace, probedFace:
 		return shellErr(t.faceAnchor(f), "a side of a prism lies inside another solid it is joined to; "+
 			"a shell hollows a prism joined to others only where its ends do")
 	}
