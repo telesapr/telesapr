@@ -4366,7 +4366,7 @@
 					},
 					"SetEdgeDistance": {
 						"decl": "func (v ChamferGroup) SetEdgeDistance(i int, mm float64)",
-						"text": "SetEdgeDistance gives a chamfer's edge i, counted as EdgeDistance\ncounts, a distance of its own in mm, or with 0 the chamfer's again.\nChamfered edges of different distances that meet at a corner whose\nthird edge stays sharp meet in a mitre; at a corner the chamfer's\nlocal edit can't make, as one of three chamfered edges of different\ndistances, each straight edge is cut by a wedge instead."
+						"text": "SetEdgeDistance gives a chamfer's edge i, counted as EdgeDistance\ncounts, a distance of its own in mm, or with 0 the chamfer's again.\nChamfered edges of different distances that meet at a corner whose\nother edges stay sharp meet where their planes do, as at a corner of\nthree whose third edge stays sharp or a pyramid's apex; at a corner\nwhere every edge is chamfered, convex, concave or both, the hole they\nleave is filled by a face."
 					},
 					"SetEdgeDistanceExpr": {
 						"decl": "func (v ChamferGroup) SetEdgeDistanceExpr(i int, expr string) (err error)",

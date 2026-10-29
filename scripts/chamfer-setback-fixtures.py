@@ -35,6 +35,21 @@
 #   prismpair deg tx sx ty sy: the prism's corner at the origin, its
 #       edges along x and along deg chamfered over the face both share,
 #       the bottom, its upright edge sharp.
+#   ledgeall dx dy dz: the notch's corner at (10, 10, 20), its convex
+#       top edges along x and y and the concave upright edge below them
+#       chamfered.
+#   riball dx dy dz: the rib's corner at (10, 10, 5), its concave foot
+#       edges towards x and y and the block's convex upright edge
+#       chamfered.
+#   ledgeone d: the notch's top edge from (10, 10, 20) along x alone,
+#       ending at the corner inside the ledge.
+#   apexsome d1 d2 d3 d4: the pyramid's apex as for apex, an edge of
+#       distance 0 left sharp.
+#   pocketsome d1 d2 d3 d4: the concave apex (10, 10, 6) of the pocket
+#       the pyramid over (4, 4) to (16, 16) at z -1, to (10, 10, 6), cuts
+#       from the bottom of the 20 x 20 x 10 box: its edges towards the
+#       box's bottom, from (4 + 6/7, 4 + 6/7, 0) round as the apex's, an
+#       edge of distance 0 left sharp.
 import math
 import os
 
@@ -120,13 +135,20 @@ for dz1, dz2 in ((1, 2), (2, 1), (0.5, 1.5)):
         except Exception as e:
             print("uneven", dz1, dz2, dx, dy, "refused:", e)
 
+
+
+def pyramid_on(base, apex):
+    """The pyramid over the square base, in a plane of constant z, to apex."""
+    down = list(reversed(base))
+    faces = [Part.Face(Part.makePolygon(down + [down[0]]))]
+    for i in range(4):
+        faces.append(Part.Face(Part.makePolygon([base[i], base[(i + 1) % 4], apex, base[i]])))
+    return Part.Solid(Part.Shell(faces))
+
+
 apex = V(10, 10, 10)
 pts = [V(0, 0, 0), V(20, 0, 0), V(20, 20, 0), V(0, 20, 0)]
-down = list(reversed(pts))
-faces = [Part.Face(Part.makePolygon(down + [down[0]]))]
-for i in range(4):
-    faces.append(Part.Face(Part.makePolygon([pts[i], pts[(i + 1) % 4], apex, pts[i]])))
-pyramid = Part.Solid(Part.Shell(faces))
+pyramid = pyramid_on(pts, apex)
 for ds in ((1, 1, 1, 1), (2, 2, 2, 2), (1, 1.5, 2, 1.5), (1, 2, 1, 2), (1, 1, 1, 2), (0.5, 1, 1.5, 2), (0.5, 0.5, 2, 0.5)):
     try:
         emit("apex %g %g %g %g" % ds, chamfer(pyramid, [(apex, pts[i], ds[i], ds[i]) for i in range(4)]), apex, max(ds))
@@ -155,6 +177,34 @@ for ds in ((1, 1, 1), (1, 2, 3), (2, 1, 1)):
         print("notch", ds, "refused:", e)
 
 
+L = V(10, 10, 20)
+R = V(10, 10, 5)
+rib = Part.makeBox(20, 20, 5).fuse(Part.makeBox(5, 5, 10, V(5, 5, 5))).removeSplitter()
+for ds in ((1, 1, 1), (1, 0.5, 1.5), (0.5, 1, 1), (1, 1, 2), (2, 1, 1), (1, 2, 0.5)):
+    for name, shape, c, ends in (("ledgeall", notch, L, (V(20, 10, 20), V(10, 20, 20), V(10, 10, 10))),
+                                 ("riball", rib, R, (V(5, 10, 5), V(10, 5, 5), V(10, 10, 15)))):
+        try:
+            emit("%s %g %g %g" % ((name,) + ds), chamfer(shape, [(c, ends[i], ds[i], ds[i]) for i in range(3)]), c, max(ds))
+        except Exception as e:
+            print(name, ds, "refused:", e)
+
+for d in (0.5, 1, 2, 3):
+    try:
+        emit("ledgeone %g" % d, chamfer(notch, [(L, V(20, 10, 20), d, d)]), L, d)
+    except Exception as e:
+        print("ledgeone", d, "refused:", e)
+
+k = 6 / 7.0
+pocket = Part.makeBox(20, 20, 10).cut(pyramid_on([V(4, 4, -1), V(16, 4, -1), V(16, 16, -1), V(4, 16, -1)], V(10, 10, 6))).removeSplitter()
+P = V(10, 10, 6)
+pocket_ends = [V(4 + k, 4 + k, 0), V(16 - k, 4 + k, 0), V(16 - k, 16 - k, 0), V(4 + k, 16 - k, 0)]
+for ds in ((1, 0, 0, 0), (1, 1, 0, 0), (1, 0, 1, 0), (1, 1, 1, 0), (1, 0.5, 0, 0), (1, 0, 0.5, 0), (0.5, 1, 1.5, 0), (1.5, 0.5, 0, 0), (2, 0, 1, 0)):
+    for name, shape, c, ends in (("apexsome", pyramid, apex, pts), ("pocketsome", pocket, P, pocket_ends)):
+        try:
+            emit("%s %g %g %g %g" % ((name,) + ds), chamfer(shape, [(c, ends[i], ds[i], ds[i]) for i in range(4) if ds[i] > 0]), c, max(ds))
+        except Exception as e:
+            print(name, ds, "refused:", e)
+
 
 def two(shape, a, b, dt, ds, top):
     """The edge from a to b chamfered at dt on the face both chamfers
@@ -171,7 +221,6 @@ def two(shape, a, b, dt, ds, top):
     return (a, b, ds, dt)
 
 
-rib = Part.makeBox(20, 20, 5).fuse(Part.makeBox(5, 5, 10, V(5, 5, 5))).removeSplitter()
 pairs = ((1, 1, 1, 2), (1, 2, 1, 1), (1, 2, 2, 1), (2, 1, 1, 2), (1, 1, 2, 2), (0.5, 2, 1, 1.5), (2, 1, 1, 3), (1.5, 0.5, 0.5, 1.5))
 shapes = [
     ("pair", box, C, X, Y, 30),

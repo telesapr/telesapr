@@ -30,11 +30,19 @@ import (
 // distance whose lines cross the others' furthest along them, so that
 // no cut lies short of where the strip's lines cross. At a corner of
 // more, the strips end between the points where their lines cross.
+//
+// At a corner of three where convex edges meet a concave one, as at a
+// ledge's top above the concave edge between its walls or at a rib's
+// foot below its upright, OpenCASCADE's corner is the same: the edge of
+// the other kind is the pivot, and the two of one kind, whose lines on
+// the face they share cross outside it, are cut square where they cross
+// the pivot's; the face between them gets the line from one cut to the
+// other, across its corner.
 
 // chamferCornerTakes reports whether the corner at vertex v is one
 // chamferCornerAt makes: every edge there chamfered, straight, three or
 // more, between as many flat faces, all convex or all concave, of any
-// distances, one or two to an edge.
+// distances, one or two to an edge; or three of both kinds.
 func (t *Topology) chamferCornerTakes(v int, edges []filletEdge, byEdge map[int]int) bool {
 	xs := t.Vertices[v].Edges
 	if len(xs) < 3 || len(t.facesAt(v)) != len(xs) {
@@ -42,9 +50,12 @@ func (t *Topology) chamferCornerTakes(v int, edges []filletEdge, byEdge map[int]
 	}
 	for _, x := range xs {
 		j, ok := byEdge[x]
-		if !ok || edges[j].circ || edges[j].concave != edges[byEdge[xs[0]]].concave {
+		if !ok || edges[j].circ {
 			return false
 		}
+	}
+	if t.mixedAt(v, edges, byEdge) && len(xs) != 3 {
+		return false
 	}
 	for _, f := range t.facesAt(v) {
 		if _, ok := t.planarNormal(f); !ok {
@@ -69,9 +80,12 @@ func (t *Topology) chamferCornerAt(v int, edges []filletEdge, byEdge map[int]int
 	if err != nil {
 		return nil, err
 	}
-	g := &chamferGeom{p: t.Vertices[v].P, v: v, strips: strips}
+	g := &chamferGeom{p: t.Vertices[v].P, v: v, strips: strips, mixed: t.mixedAt(v, edges, byEdge)}
 	if err := g.crossings(); err != nil {
 		return nil, err
+	}
+	if g.mixed && chamferPivot(strips, g.along, true) < 0 {
+		return nil, filletErr(g.p, "the chamfers at the corner, convex and concave, have no strip to end the others on")
 	}
 	ends := g.ends()
 	n := len(strips)
@@ -91,7 +105,7 @@ func (t *Topology) chamferCornerAt(v int, edges []filletEdge, byEdge map[int]int
 			hole = append(hole, c.faceCurves[s.out])
 		}
 	}
-	if n == 3 {
+	if n == 3 && !g.mixed {
 		// Past four strips the hole's patch twists, and a corner of it may
 		// lie behind a strip that doesn't reach it (a pyramid's apex of a
 		// distance four times the others').
@@ -115,6 +129,29 @@ type chamferGeom struct {
 	v      int
 	strips []chamferStrip
 	cross  map[int]geom.Vector
+	// mixed: convex and concave edges meet here; the face between the
+	// two of one kind may have no crossing, which cross then lacks.
+	mixed bool
+}
+
+// mixedAt reports whether the chamfered edges at vertex v are convex
+// and concave both.
+func (t *Topology) mixedAt(v int, edges []filletEdge, byEdge map[int]int) bool {
+	var kinds [2]bool
+	for _, x := range t.Vertices[v].Edges {
+		if j, ok := byEdge[x]; ok {
+			kinds[b2i(edges[j].concave)] = true
+		}
+	}
+	return kinds[0] && kinds[1]
+}
+
+// b2i is 1 for true, 0 for false.
+func b2i(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 // away is the direction along fe's edge away from the corner.
@@ -135,9 +172,14 @@ func (g *chamferGeom) base(s chamferStrip, f int) geom.Vector {
 	return g.p.Plus(s.fe.u[k].ScaledBy(s.fe.ss[k]))
 }
 
-// along is how far along strip s's edge the lines on face f cross.
+// along is how far along strip s's edge the lines on face f cross; at
+// a mixed corner's face where they don't, no way along.
 func (g *chamferGeom) along(s chamferStrip, f int) float64 {
-	return g.cross[f].Minus(g.p).Dot(g.away(s.fe))
+	x, ok := g.cross[f]
+	if !ok {
+		return math.Inf(-1)
+	}
+	return x.Minus(g.p).Dot(g.away(s.fe))
 }
 
 // crossings finds where the lines of the two strips on each face cross,
@@ -157,6 +199,10 @@ func (g *chamferGeom) crossings() error {
 		a, b, d := g.away(s.fe), g.away(nx.fe), x.Minus(g.p)
 		ab := a.Cross(b)
 		if d.Cross(b).Dot(ab) < 10*geom.LengthEps*ab.Magnitude() || a.Cross(d).Dot(ab) < 10*geom.LengthEps*ab.Magnitude() {
+			if g.mixed && s.fe.concave == nx.fe.concave {
+				// The pivot's neighbours: cut square, they don't meet here.
+				continue
+			}
 			return filletErr(g.p, "two chamfers' lines on a face at the corner cross outside it")
 		}
 		g.cross[s.out] = x
@@ -177,14 +223,14 @@ func (g *chamferGeom) ends() [][2]geom.Vector {
 	if n != 3 {
 		return ends
 	}
-	piv := chamferPivot(g.strips, g.along)
+	piv := chamferPivot(g.strips, g.along, g.mixed)
 	if piv < 0 {
 		return ends
 	}
 	// The strip cut at near, its far end on face far.
 	cut := func(s chamferStrip, near, far int) geom.Vector {
 		d := g.along(s, near)
-		if math.Abs(d-g.along(s, far)) <= geom.LengthEps {
+		if _, ok := g.cross[far]; ok && math.Abs(d-g.along(s, far)) <= geom.LengthEps {
 			return g.cross[far]
 		}
 		return g.base(s, far).Plus(g.away(s.fe).ScaledBy(d))
@@ -256,13 +302,17 @@ func (t *Topology) chamferStrips(v int, edges []filletEdge, byEdge map[int]int) 
 // its lines cross the others', or -1 when none can: the strip of the
 // largest distance, and of those the first, whose neighbours' lines
 // cross its own no nearer the vertex than they cross each other's.
-// along is how far along a strip's edge the lines on a face cross.
-func chamferPivot(strips []chamferStrip, along func(chamferStrip, int) float64) int {
+// along is how far along a strip's edge the lines on a face cross. At
+// a mixed corner the pivot is the strip of the kind there is one of.
+func chamferPivot(strips []chamferStrip, along func(chamferStrip, int) float64, mixed bool) int {
 	order := []int{0, 1, 2}
 	most := func(s chamferStrip) float64 { return math.Max(s.fe.ss[0], s.fe.ss[1]) }
 	slices.SortStableFunc(order, func(a, b int) int { return cmp.Compare(most(strips[b]), most(strips[a])) })
 	for _, i := range order {
 		nx, pv := strips[(i+1)%3], strips[(i+2)%3]
+		if mixed && (nx.fe.concave == strips[i].fe.concave || pv.fe.concave == strips[i].fe.concave) {
+			continue
+		}
 		dn, dp := along(nx, nx.in), along(pv, pv.out)
 		if dn > 10*geom.LengthEps && dp > 10*geom.LengthEps &&
 			dn >= along(nx, nx.out)-geom.LengthEps && dp >= along(pv, pv.in)-geom.LengthEps {
