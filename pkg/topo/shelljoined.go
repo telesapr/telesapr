@@ -159,18 +159,23 @@ func joinedInside(t *Topology, sh *srf.SShell, parts []ShellPart, opened map[int
 			modeAt = shrunkMode
 		}
 		var in *srf.SShell
-		if part.Rev != nil {
-			if op == srf.SurfaceDiff && !part.Rev.Whole() {
-				return nil, false, shellErr(part.Rev.Pt, "a revolve of less than a whole turn is taken away from the solid; "+
-					"a shell takes away lathes and whole turns only")
+		switch {
+		case part.Rev != nil && op == srf.SurfaceUnion:
+			in, err = joinedRevolvedInside(*part.Rev, modeAt, nil, 0, thick, sh.Tol, color)
+		case part.Rev != nil:
+			var openAt func(geom.Vector) bool
+			if openAt, err = openOnRevolution(*part.Rev, openPts, sh.Tol, color); err != nil {
+				return nil, false, err
 			}
-			if op != srf.SurfaceUnion {
-				if err := openOnRevolution(*part.Rev, openPts, sh.Tol, color); err != nil {
-					return nil, false, err
-				}
+			if op == srf.SurfaceDiff {
+				in, err = grownRevolution(*part.Rev, openAt, thick, sh.Tol, color)
+			} else {
+				// Intersected with, a piece is taken away where any of its
+				// faces is, as on a revolution alone: a curved face runs out
+				// past the solid's.
+				in, err = joinedRevolvedInside(*part.Rev, modeAt, openAt, openFace, thick, sh.Tol, color)
 			}
-			in, err = joinedRevolvedInside(*part.Rev, modeAt, thick, sh.Tol, color)
-		} else {
+		default:
 			in, err = joinedFlatInside(part.Shell, modeAt, openPts, openedAs[op], thick)
 		}
 		if err != nil {
@@ -231,9 +236,12 @@ func allUnions(parts []ShellPart) bool {
 
 // joinedRevolvedInside is the inside of the revolution rev, a part of a
 // solid, each piece of its profile moved as modeAt says of points of its
-// faces. Its ends must lie on the solid's faces.
-func joinedRevolvedInside(rev Revolution, modeAt func(geom.Vector) faceMode, thick float64, tol srf.Tolerance, color core.RGBA) (*srf.SShell, error) {
+// faces, but as opened says where openAt (if not nil) reports a face
+// taken away. Its ends must lie on the solid's faces, or be taken away.
+func joinedRevolvedInside(rev Revolution, modeAt func(geom.Vector) faceMode, openAt func(geom.Vector) bool, opened faceMode,
+	thick float64, tol srf.Tolerance, color core.RGBA) (*srf.SShell, error) {
 	axis := rev.Axis.WithMagnitude(1)
+	isOpen := func(p geom.Vector) bool { return openAt != nil && openAt(p) }
 	// An end's mode by points inside the profile turned onto it: taken
 	// away where any lies on a face taken away, a wall where any lies on
 	// one.
@@ -249,7 +257,12 @@ func joinedRevolvedInside(rev Revolution, modeAt func(geom.Vector) faceMode, thi
 		for k, a := range []float64{rev.Start, rev.End} {
 			wall, open := false, false
 			for _, q := range pts {
-				switch modeAt(q.RotatedAbout(rev.Pt, axis, a)) {
+				q = q.RotatedAbout(rev.Pt, axis, a)
+				if isOpen(q) {
+					open = true
+					continue
+				}
+				switch modeAt(q) {
 				case openFace:
 					open = true
 				case keptFace:
@@ -266,7 +279,13 @@ func joinedRevolvedInside(rev Revolution, modeAt func(geom.Vector) faceMode, thi
 		}
 		return mode, nil
 	}
-	return revolvedInside(rev, func(p geom.Vector) (faceMode, bool) { return modeAt(p), true }, ends, thick, tol, color)
+	pieceAt := func(p geom.Vector) (faceMode, bool) {
+		if isOpen(p) {
+			return opened, true
+		}
+		return modeAt(p), true
+	}
+	return revolvedInside(rev, pieceAt, ends, thick, tol, color)
 }
 
 // profilePoints are points of a grid over the profile's box, in its
@@ -379,25 +398,6 @@ func insideOf(inner, sh *srf.SShell, thick float64) error {
 		}
 		return shellErr(at, "a thickness of %g leaves a wall thinner than that, or none, beyond where a part's inside meets another's; "+
 			"the part it meets is thinner than twice that there", thick)
-	}
-	return nil
-}
-
-// openOnRevolution is an error when a face taken away lies on rev, a
-// part taken away or intersected with.
-func openOnRevolution(rev Revolution, open []openPoint, tol srf.Tolerance, color core.RGBA) error {
-	if len(open) == 0 {
-		return nil
-	}
-	rt, err := Build(rev.solid(tol, color))
-	if err != nil {
-		return err
-	}
-	for _, o := range open {
-		if onFaceOf(rt, o) >= 0 {
-			return shellErr(o.p, "a face taken away lies on a lathe or revolve taken away from the solid or intersected with it; "+
-				"a shell opens such a solid only at faces of the parts joined to it")
-		}
 	}
 	return nil
 }

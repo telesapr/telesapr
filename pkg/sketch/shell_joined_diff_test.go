@@ -89,3 +89,63 @@ func TestShellConeCutFlat(t *testing.T) {
 		t.Fatalf("shelled cone cut flat: %s, want volume %g", r.String(), want)
 	}
 }
+
+// A block with a half turn revolved down into its top and taken away,
+// open at its bottom: the cutter is grown by the thickness, its ends'
+// plane moved out too, so a wall of the thickness stands round the cut.
+func TestShellBlockWithHalfTurnCut(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	d.Edit.SetChordTolerance(0.005)
+	body := block(d, -20, -20, 20, 20, 20)
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	axis := d.Sketch.Line(api.V(0, 0, 12), api.V(0, 0, 28))
+	axis.SetConstruction(true)
+	d.Sketch.Polyline(true, api.V(0, 0, 15), api.V(5, 0, 15), api.V(5, 0, 25), api.V(0, 0, 25))
+	cut := d.Features.Revolve(axis, 180, "")
+	cut.SetCombine(sketch.CombineDifference)
+	if p := cut.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	step(d)
+	before := saved(t, d)
+	bottom := body.Solid().FaceAt(api.V(15, 15, 0))
+	sh := d.Features.ShellSolid([]api.SolidFace{bottom}, 1, "")
+	if p := sh.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	want := 32000 - 62.5*math.Pi - (38*38*19 - 5*(18*math.Pi+chordArea(6, 1)))
+	if r := sh.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Fatalf("shelled block with a half turn cut: %s, want volume %g", r.String(), want)
+	}
+	undoRedo(t, d, before)
+}
+
+// A block with a round pocket turned into its bottom, open at the
+// pocket's floor, which lies on the lathe taken away: the lathe's floor
+// is moved into the pocket, and the inside reaches through it round a
+// ring of the thickness.
+func TestShellBlockOpenAtLathedFloor(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	d.Edit.SetChordTolerance(0.005)
+	block(d, -20, -20, 20, 20, 20)
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	axis := d.Sketch.Line(api.V(0, 0, -4), api.V(0, 0, 12))
+	axis.SetConstruction(true)
+	d.Sketch.Polyline(true, api.V(0, 0, -2), api.V(5, 0, -2), api.V(5, 0, 10), api.V(0, 0, 10))
+	pocket := d.Features.Lathe(axis, "")
+	pocket.SetCombine(sketch.CombineDifference)
+	if p := pocket.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	floor := pocket.Solid().FaceAt(api.V(1, 1, 10))
+	sh := d.Features.ShellSolid([]api.SolidFace{floor}, 1, "")
+	if p := sh.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	want := 32000 - 250*math.Pi - (38*38*18 - 36*math.Pi*8 - 25*math.Pi)
+	if r := sh.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Fatalf("shelled block open at a lathed pocket's floor: %s, want volume %g", r.String(), want)
+	}
+}

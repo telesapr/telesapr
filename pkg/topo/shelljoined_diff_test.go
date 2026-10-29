@@ -84,8 +84,7 @@ func TestShellJoinedIntersection(t *testing.T) {
 	}
 }
 
-// A partial revolve taken away is refused by name, and so is a first part
-// that is not a union.
+// A first part that is not a union is refused.
 func TestShellJoinedDiffRefusals(t *testing.T) {
 	t.Parallel()
 	tol := srf.Tol(0.001, 20)
@@ -95,27 +94,119 @@ func TestShellJoinedDiffRefusals(t *testing.T) {
 	sh := &srf.SShell{Tol: tol}
 	sh.MakeFromDifferenceOf(body, cut)
 	open := facesAt(t, sh, v(15, 15, 0))
-	if _, err := topo.ShellJoined(sh, []topo.ShellPart{{Shell: body}, {Rev: &rev, Combine: srf.SurfaceDiff}}, open, 1, 1000); err == nil {
-		t.Error("a half turn taken away: no error")
-	}
 	if _, err := topo.ShellJoined(sh, []topo.ShellPart{{Shell: body, Combine: srf.SurfaceDiff}, {Shell: cut}}, open, 1, 1000); err == nil {
 		t.Error("a first part taken away: no error")
 	}
-	// A pocket turned into the block's top, open at its floor: the floor
-	// lies on the lathe taken away.
+}
+
+// A pocket turned into a block's top, open at its floor, which lies on
+// the lathe taken away: the lathe's floor is moved up into the pocket,
+// and the inside reaches through it round a ring of the thickness, as a
+// pocket extruded does (TestShellJoinedPocket). Open at the block's top
+// it is made as before.
+func TestShellJoinedLathedPocketFloor(t *testing.T) {
+	t.Parallel()
+	tol := srf.Tol(0.001, 20)
+	body := block(20, tol)
 	_, pocket := turned(meridian(t, [][2]float64{{0, 10}, {5, 10}, {5, 25}, {0, 25}}, nil, tol), 0, 2*math.Pi, tol)
 	lathed, _ := turned(pocket.Profile, 0, 2*math.Pi, tol)
-	sh = &srf.SShell{Tol: tol}
+	sh := &srf.SShell{Tol: tol}
 	sh.MakeFromDifferenceOf(body, lathed)
-	_, err := topo.ShellJoined(sh, []topo.ShellPart{{Shell: body}, {Rev: &pocket, Combine: srf.SurfaceDiff}},
-		facesAt(t, sh, v(1, 1, 10)), 1, 1000)
-	if err == nil || !strings.Contains(err.Error(), "lies on a lathe or revolve taken away") {
-		t.Errorf("open at a lathed pocket's floor: %v", err)
+	parts := []topo.ShellPart{{Shell: body}, {Rev: &pocket, Combine: srf.SurfaceDiff}}
+	solid := 32000 - 250*math.Pi
+	for _, c := range []struct {
+		name string
+		at   geom.Vector
+		want float64
+	}{
+		{"floor", v(1, 1, 10), solid - (38*38*18 - 36*math.Pi*8 - 25*math.Pi)},
+		{"top", v(15, 15, 20), solid - (38*38*19 - 36*math.Pi*11)},
+	} {
+		out, err := topo.ShellJoined(sh, parts, facesAt(t, sh, c.at), 1, 1000)
+		if err != nil {
+			t.Errorf("open at the %s: %v", c.name, err)
+			continue
+		}
+		if r := soundness(out); !r.Sound() || math.Abs(r.Volume-c.want) > 0.002*c.want {
+			t.Errorf("open at the %s: %s, want %g", c.name, r.String(), c.want)
+		}
 	}
-	// Open at the block's top, it is made.
-	if _, err := topo.ShellJoined(sh, []topo.ShellPart{{Shell: body}, {Rev: &pocket, Combine: srf.SurfaceDiff}},
-		facesAt(t, sh, v(15, 15, 20)), 1, 1000); err != nil {
-		t.Errorf("a lathed pocket open at the top: %v", err)
+}
+
+// A cylinder turned from a lathe, intersected with a block larger than
+// it, open at its top, which lies on the lathe: the lathe's top is moved
+// out of it, so the inside runs up through the opening.
+func TestShellJoinedLatheIntersectedOpen(t *testing.T) {
+	t.Parallel()
+	tol := srf.Tol(0.001, 20)
+	box := &srf.SShell{Tol: tol}
+	box.MakePrism([]geom.Vector{v(-20, -20, -5), v(20, -20, -5), v(20, 20, -5), v(-20, 20, -5)}, v(0, 0, 0), v(0, 0, 30),
+		core.NewRGBA(100, 100, 100, 255))
+	lathe, rev := turned(meridian(t, [][2]float64{{0, 0}, {10, 0}, {10, 20}, {0, 20}}, nil, tol), 0, 2*math.Pi, tol)
+	sh := &srf.SShell{Tol: tol}
+	sh.MakeFromIntersectionOf(box, lathe)
+	parts := []topo.ShellPart{{Shell: box}, {Rev: &rev, Combine: srf.SurfaceInter}}
+	out, err := topo.ShellJoined(sh, parts, facesAt(t, sh, v(1, 1, 20)), 1, 1000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := math.Pi * (100*20 - 81*19)
+	if r := soundness(out); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Fatalf("a lathe intersected, open at its top: %s, want %g", r.String(), want)
+	}
+}
+
+// discArea is the area of the disc of radius r about the origin where in
+// holds, by rows.
+func discArea(r float64, in func(x, y float64) bool) float64 {
+	const n = 2000
+	h := 2 * r / n
+	a := 0.0
+	for i := range n {
+		for j := range n {
+			x, y := -r+(float64(i)+0.5)*h, -r+(float64(j)+0.5)*h
+			if x*x+y*y <= r*r && in(x, y) {
+				a += h * h
+			}
+		}
+	}
+	return a
+}
+
+// Revolves of less than a whole turn cut into a block's top, the block
+// open at its bottom: the cutter is grown by the thickness, its round
+// side moved out and its ends' planes moved out too, so a wall of the
+// thickness stands round the cut. A half turn is grown across its ends'
+// plane, a quarter turn past both its ends', and three quarters of a
+// turn everywhere but what lies past both.
+func TestShellJoinedPartialRevolveTakenAway(t *testing.T) {
+	t.Parallel()
+	tol := srf.Tol(0.001, 20)
+	body := block(20, tol)
+	profile := meridian(t, [][2]float64{{0, 15}, {5, 15}, {5, 25}, {0, 25}}, nil, tol)
+	for _, c := range []struct {
+		name string
+		turn float64
+		in   func(x, y float64) bool
+	}{
+		{"half", math.Pi, func(_, y float64) bool { return y >= -1 }},
+		{"quarter", math.Pi / 2, func(x, y float64) bool { return x >= -1 && y >= -1 }},
+		{"three quarters", 3 * math.Pi / 2, func(x, y float64) bool { return x <= 1 || y >= -1 }},
+	} {
+		cut, rev := turned(profile, 0, c.turn, tol)
+		sh := &srf.SShell{Tol: tol}
+		sh.MakeFromDifferenceOf(body, cut)
+		parts := []topo.ShellPart{{Shell: body}, {Rev: &rev, Combine: srf.SurfaceDiff}}
+		out, err := topo.ShellJoined(sh, parts, facesAt(t, sh, v(15, 15, 0)), 1, 1000)
+		if err != nil {
+			t.Errorf("%s turn: %v", c.name, err)
+			continue
+		}
+		solid := 32000 - 25*c.turn/2*5
+		want := solid - (38*38*19 - 5*discArea(6, c.in))
+		if r := soundness(out); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+			t.Errorf("%s turn: %s, want %g", c.name, r.String(), want)
+		}
 	}
 }
 
@@ -134,5 +225,38 @@ func TestShellJoinedHalfBuriedSide(t *testing.T) {
 	_, err := topo.ShellJoined(sh, []topo.ShellPart{{Shell: body}, {Shell: post}}, facesAt(t, sh, v(-10, 0, 10)), 1, 1000)
 	if err == nil || !strings.Contains(err.Error(), "a side of a prism lies inside") {
 		t.Errorf("a post half sunk: %v", err)
+	}
+}
+
+// A quarter turn cut into a block's top, open at the block's bottom and
+// at the cut's end in the plane y = 0: that end's plane is moved into the
+// cutter by the thickness, so the inside runs through it.
+func TestShellJoinedPartialRevolveOpenEnd(t *testing.T) {
+	t.Parallel()
+	tol := srf.Tol(0.001, 20)
+	body := block(20, tol)
+	cut, rev := turned(meridian(t, [][2]float64{{0, 15}, {5, 15}, {5, 25}, {0, 25}}, nil, tol), 0, math.Pi/2, tol)
+	sh := &srf.SShell{Tol: tol}
+	sh.MakeFromDifferenceOf(body, cut)
+	parts := []topo.ShellPart{{Shell: body}, {Rev: &rev, Combine: srf.SurfaceDiff}}
+	out, err := topo.ShellJoined(sh, parts, facesAt(t, sh, v(15, 15, 0), v(2, 0, 17)), 1, 1000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	solid := 32000 - 25*math.Pi/4*5
+	inside := 38*38*19 - 5*discArea(6, func(x, y float64) bool { return x >= -1 && y >= 1 })
+	inCutter := 4 * discArea(5, func(x, y float64) bool { return x >= 0 && y <= 1 && y >= 0 })
+	want := solid - (inside - inCutter)
+	if r := soundness(out); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Fatalf("a quarter turn open at an end: %s, want %g", r.String(), want)
+	}
+	// A half turn open at one end only is refused by name.
+	cut, rev = turned(rev.Profile, 0, math.Pi, tol)
+	sh = &srf.SShell{Tol: tol}
+	sh.MakeFromDifferenceOf(body, cut)
+	_, err = topo.ShellJoined(sh, []topo.ShellPart{{Shell: body}, {Rev: &rev, Combine: srf.SurfaceDiff}},
+		facesAt(t, sh, v(15, 15, 0), v(2, 0, 17)), 1, 1000)
+	if err == nil || !strings.Contains(err.Error(), "one end of a half turn") {
+		t.Errorf("a half turn open at one end: %v", err)
 	}
 }
