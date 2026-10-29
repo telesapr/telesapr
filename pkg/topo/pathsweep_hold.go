@@ -85,7 +85,7 @@ func (sp *SweepPath) holdTwist() error {
 	}
 	var holds [][2]float64
 	for i := range sp.pieces {
-		if !sp.prism[i] {
+		if !sp.prism[i] && !sp.rigid[i] {
 			continue
 		}
 		lo, hi := sp.samples[i*framesPerPiece].arc, sp.samples[(i+1)*framesPerPiece].arc

@@ -254,9 +254,12 @@ func circleCircle(c1 [2]float64, r1 float64, c2 [2]float64, r2 float64) [][2]flo
 
 // A fitted sweep (twisted, held to a direction, or along a cubic) takes
 // a sharp corner between two line segments, which the kernel mitres
-// (topo.SweepPath), holding a twist still beside it, and rounds corners beside lines and arcs with a
-// corner radius as a rigid sweep does, the arcs then fitted with the
-// rest. A corner beside a cubic is refused before (pathChainAny).
+// (topo.SweepPath), holding a twist still beside it; a sharp corner
+// beside an arc, in the arc's plane, which the kernel joins as a rigid
+// sweep's, the run of lines and arcs about it swept rigidly; and rounds
+// corners beside lines and arcs with a corner radius as a rigid sweep
+// does, the arcs then fitted with the rest. A corner beside a cubic is
+// refused before (pathChainAny).
 
 // fitCornered makes the fitted sweep's path along chain, rounding its
 // corners first when the sweep has a corner radius and the chain is open
@@ -267,19 +270,6 @@ func (sk *Sketch) fitCornered(g *Group, chain []pathPiece, closed bool, reach fl
 		var err error
 		if chain, err = sk.roundCorners(chain, g.ValB); err != nil {
 			return err
-		}
-	}
-	for k := range chain {
-		if k == 0 || chain[k-1].tangentAt(true).Dot(chain[k].tangentAt(false)) >= sweepTangentCos {
-			continue
-		}
-		x := chain[k].start
-		for _, p := range []pathPiece{chain[k-1], chain[k]} {
-			if p.arc {
-				return pathErr(&x, "the path's corner at (%g, %g, %g) is beside %s: a sweep along a curve, or held to a "+
-					"direction, mitres only a corner between two line segments; give the sweep a corner radius to round it",
-					x.X, x.Y, x.Z, sk.entityName(p.h))
-			}
 		}
 	}
 	for k := range chain {

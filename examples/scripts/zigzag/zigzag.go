@@ -12,8 +12,11 @@
 // length. The bar, a 3 mm square twisted by 90 degrees along a path up
 // 20 mm and over 20 mm, needs a corner radius: a twist turns the frames
 // along a line, so a mitre's two sides wouldn't meet. With a radius of 4
-// the corner is an arc the twist runs round. The script checks both
-// solids sound, and the bar's volume.
+// the corner is an arc the twist runs round. A second bar takes the same
+// corner sharp: the twist is held still along each line beside it, over
+// the stretch the mitre spans, and turns along the rest, so the corner
+// is mitred as an untwisted one. The script checks the solids sound, and
+// the bars' volumes.
 package main
 
 import (
@@ -65,6 +68,24 @@ func main() {
 	got, want := both.Volume-check.Volume, 9*(40-8+4*math.Pi/2)
 	fmt.Printf("bar: volume %.3f mm³, %.3f the area times the path; %s\n", got, want, both.Summary())
 	if !both.Sound() || math.Abs(got-want) > 0.02*want {
+		os.Exit(1)
+	}
+
+	doc.Features.SketchIn(doc.Workplane("ZX"), "sharp bar path")
+	top = api.V(70, 0, 20)
+	sharp := []api.Entity{doc.Sketch.Line(api.V(70, 0, 0), top), doc.Sketch.Line(top, api.V(90, 0, 20))}
+	doc.Features.SketchIn(doc.Workplane("XY"), "sharp bar")
+	doc.Sketch.Rect(api.V(68.5, -1.5, 0), api.V(71.5, 1.5, 0))
+	held := doc.Features.Sweep(sharp, "sharp bar")
+	held.AsSweep().SetTwist(90)
+	if p := held.Problem(); p != "" {
+		fmt.Fprintln(os.Stderr, p)
+		os.Exit(1)
+	}
+	all := held.Analyze().Check()
+	got, want = all.Volume-both.Volume, 9*40.0
+	fmt.Printf("sharp bar: volume %.3f mm³, %.3f the area times the path; %s\n", got, want, all.Summary())
+	if !all.Sound() || math.Abs(got-want) > 0.02*want {
 		os.Exit(1)
 	}
 }

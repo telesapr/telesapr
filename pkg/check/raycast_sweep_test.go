@@ -188,13 +188,24 @@ func TestOracleRefusesArcCorner(t *testing.T) {
 	}
 	d.Features.SketchIn(d.Workplane("XY"), "bar")
 	d.Sketch.Circle(api.V(0, 0, 0), 2)
-	if p := d.Features.Sweep(path, "hook").Problem(); p != "" {
+	hook := d.Features.Sweep(path, "hook")
+	if p := hook.Problem(); p != "" {
 		t.Fatal(p)
 	}
 	sk := d.Host().Sketch()
 	sk.GenerateAll()
 	if _, err := check.NewOracle(sk, sk.ActiveGroup()); !errors.Is(err, check.ErrUnsupported) {
 		t.Errorf("a corner beside an arc: %v", err)
+	}
+	// Held to the arc's axis the sweep is fitted, and the corner joined
+	// as the rigid sweep's: refused the same.
+	hook.AsSweep().SetSweepUp(api.V(0, 1, 0))
+	if p := hook.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	sk.GenerateAll()
+	if _, err := check.NewOracle(sk, sk.ActiveGroup()); !errors.Is(err, check.ErrUnsupported) {
+		t.Errorf("a fitted sweep's corner beside an arc: %v", err)
 	}
 }
 

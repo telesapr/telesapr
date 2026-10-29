@@ -76,7 +76,11 @@ mitre spans (the profile's reach from the path over the cosine of half the turn,
 and turns along the rest of the path, its rate climbing from nothing over the profile's reach so the
 twisted faces leave the mitred ones tangent. Where every piece is a line beside a corner and held
 whole, there is nowhere left to twist, and the corner is a problem on the group; a corner radius
-then rounds it, and the twist runs round the corner's arc. A corner beside an arc on such a sweep needs a corner radius too.
+then rounds it, and the twist runs round the corner's arc. A corner beside an arc, in the arc's
+plane, is joined on such a sweep as on a rigid one: the lines and arcs about it are swept rigidly
+(along an arc the frames turn about its axis, so held to a direction it must be that axis, and a
+twist is held still along them), the rest of the path fitted, and the two meet on the section
+between them.
 Example: [`examples/scripts/zigzag`](../../examples/scripts/zigzag/zigzag.go), a rail along a
 cubic and a sharp corner, and a twisted bar round a rounded one.
 

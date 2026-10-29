@@ -770,6 +770,13 @@ func (g *Group) generateFittedSweepShell(sk *Sketch, src *Group, start, end uint
 			g.setProblem(pe.at, "%s", pe.msg)
 			return
 		}
+		if _, ok := errors.AsType[*srf.CornerError](err); ok {
+			// A corner beside an arc, joined as a rigid sweep's.
+			if pe, ok := errors.AsType[*pathError](cornerJointError(err)); ok {
+				g.setProblem(pe.at, "%s", pe.msg)
+				return
+			}
+		}
 		if err != nil {
 			g.setProblem(nil, "%v", err)
 			return

@@ -62,6 +62,9 @@ func sweepLeaves(sk *sketch.Sketch, g, src *sketch.Group) (union, error) {
 		if err != nil {
 			return nil, err
 		}
+		if arcCorner(sp.Pieces()) {
+			return nil, fmt.Errorf("%s: a corner beside an arc: %w", g.DescriptionString(), ErrUnsupported)
+		}
 		var leaves union
 		for i := range src.BezierLoops.Sets {
 			leaves = append(leaves, newPathSweep(&src.BezierLoops.Sets[i], sp))

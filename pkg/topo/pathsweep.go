@@ -75,6 +75,9 @@ type SweepPath struct {
 	// them (pathsweep_corner.go).
 	corner []bool
 	prism  []bool
+	// rigid marks the pieces swept as a rigid sweep is, runs of lines
+	// and arcs about a corner beside an arc (pathsweep_joint.go).
+	rigid []bool
 	// law, when not nil, is how the twist is spread along the path when
 	// it is held still beside corners.
 	law *twistLaw
@@ -318,7 +321,8 @@ func (sp *SweepPath) Rigid(s float64) srf.Rigid {
 // would smooth over. The outer loop runs counter-clockwise about the
 // path's start, the holes the other way, so that each surface faces out
 // of the solid. The sections' parameters along the path come back too,
-// those of each piece.
+// those of each piece. A piece swept rigidly beside a corner at an arc
+// has no surfaces here (nil), nor sections.
 func (sp *SweepPath) SweptSurfaces(loops [][]srf.SBezier) ([][]*srf.BSplineSurface, [][]float64, error) {
 	if len(loops) == 0 {
 		return nil, nil, errors.New("there is no profile")
@@ -358,6 +362,14 @@ func (sp *SweepPath) SweptSurfaces(loops [][]srf.SBezier) ([][]*srf.BSplineSurfa
 	var all [][]float64
 	total := 0
 	for i := range sp.pieces {
+		if sp.rigid[i] {
+			// Made apart, by the rigid sweep.
+			for li := range out {
+				out[li] = append(out[li], nil)
+			}
+			all = append(all, nil)
+			continue
+		}
 		if sp.prism[i] {
 			surfs, ss, err := sp.prismSkins(curves, i)
 			if err != nil {
@@ -510,6 +522,9 @@ func (sp *SweepPath) strays(curves []srf.BSplineCurve, surfs []*srf.BSplineSurfa
 // caps, and startFace and endFace go unused.
 func MakePathSweep(sp *SweepPath, loops [][]srf.SBezier, color core.RGBA, startFace, endFace, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
 	sp.tol = tol
+	if slices.Contains(sp.rigid, true) {
+		return sp.makeJointed(loops, color, startFace, endFace, origin)
+	}
 	surfs, _, err := sp.SweptSurfaces(loops)
 	if err != nil {
 		return nil, err

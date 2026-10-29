@@ -73,6 +73,7 @@ func (sp *SweepPath) findCorners() error {
 	n := len(sp.pieces)
 	sp.corner = make([]bool, n+1)
 	sp.prism = make([]bool, n)
+	sp.rigid = make([]bool, n)
 	found := false
 	for k := 1; k < n; k++ {
 		d1, d2 := sp.tangentInto(k-1), sp.tangent(float64(k))
@@ -80,23 +81,32 @@ func (sp *SweepPath) findCorners() error {
 			continue
 		}
 		at := sp.pieces[k].Start()
-		if !straightPiece(&sp.pieces[k-1]) || !straightPiece(&sp.pieces[k]) {
+		sa, sb := straightPiece(&sp.pieces[k-1]), straightPiece(&sp.pieces[k])
+		_, _, _, aa := arcOf(&sp.pieces[k-1])
+		_, _, _, ab := arcOf(&sp.pieces[k])
+		switch {
+		case sa && sb:
+			sp.prism[k-1], sp.prism[k] = true, true
+		case (sa || aa) && (sb || ab):
+			// Beside an arc: joined as a rigid sweep is (pathsweep_joint.go).
+			sp.rigid[k-1], sp.rigid[k] = true, true
+		default:
 			return &srf.CornerError{At: at, Err: ErrPathCornerCurved}
 		}
-		sp.corner[k], sp.prism[k-1], sp.prism[k], found = true, true, true, true
+		sp.corner[k], found = true, true
 	}
 	if !found {
 		return nil
 	}
+	sp.growRigid()
 	for k := 1; k < n; k++ {
-		if !sp.corner[k] {
+		if !sp.corner[k] || sp.rigid[k] {
 			continue
 		}
 		// The frame on past the corner, against the one before it turned
-		// by the corner.
+		// by the corner. A twist is held still beside the corner
+		// (holdTwist), so the frames before it are compared.
 		d1, d2 := sp.tangentInto(k-1), sp.tangent(float64(k))
-		// A twist is held still beside the corner (holdTwist), so the
-		// frames before it are compared.
 		before, after := sp.untwistedAt(float64(k)-0.5), sp.untwistedAt(float64(k))
 		axis := d1.Cross(d2).WithMagnitude(1)
 		turned := before.r.RotatedAroundAxis(axis, math.Acos(math.Max(-1, math.Min(1, d1.Dot(d2)))))
@@ -104,7 +114,7 @@ func (sp *SweepPath) findCorners() error {
 			return &srf.CornerError{At: sp.pieces[k].Start(), Err: ErrPathCornerHeld}
 		}
 	}
-	return nil
+	return sp.checkRigid()
 }
 
 // mitred is p, on piece i's line, carried along it onto the plane
