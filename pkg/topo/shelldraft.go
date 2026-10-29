@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -41,82 +42,28 @@ type DraftedSet struct {
 var ErrNotDrafted = errors.New("the solid is not one drafted extrusion of its profile")
 
 // ShellDrafted hollows sh, which is d, to walls thick, taking away faces
-// open (indices into its topology), which must be its ends. The faces of
-// the cavity get origins from origin up.
+// open (indices into its topology). The faces of the cavity get origins
+// from origin up.
 func ShellDrafted(sh *srf.SShell, d DraftedSolid, open []int, thick float64, origin uint32) (*srf.SShell, error) {
 	if thick <= 0 || math.IsNaN(thick) || math.IsInf(thick, 0) {
 		return nil, fmt.Errorf("a shell's thickness must be more than zero, not %g", thick)
-	}
-	if len(d.Sets) == 0 || len(d.Sets[0].Loops) == 0 || len(d.Sets[0].Loops[0]) == 0 || d.Dir.Magnitude() == 0 {
-		return nil, ErrNotDrafted
 	}
 	t, opened, err := shellFaces(sh, open)
 	if err != nil {
 		return nil, err
 	}
-	dir := d.Dir.WithMagnitude(1)
-	level := d.Sets[0].Loops[0][0].Start().Dot(dir)
-	openLo, openHi := false, false
-	for f := range t.Faces {
-		n, flat := t.planarNormal(f)
-		if !flat || math.Abs(math.Abs(n.Dot(dir))-1) > 1e-9 {
-			if opened[f] {
-				return nil, shellErr(t.faceAnchor(f), "a shell of a drafted extrusion with curved sides is open only at its ends")
-			}
-			continue
+	modeOf := func(f int) faceMode {
+		if opened[f] {
+			return openFace
 		}
-		switch h := t.faceAnchor(f).Dot(dir) - level; {
-		case math.Abs(h-d.Lo) < geom.LengthEps:
-			openLo = openLo || opened[f]
-		case math.Abs(h-d.Hi) < geom.LengthEps:
-			openHi = openHi || opened[f]
-		case opened[f]:
-			return nil, shellErr(t.faceAnchor(f), "a shell of a drafted extrusion with curved sides is open only at its ends")
-		}
+		return keptFace
 	}
-	zlo, zhi := d.Lo+thick, d.Hi-thick
-	if openLo {
-		zlo = d.Lo
-	}
-	if openHi {
-		zhi = d.Hi
-	}
-	if zhi-zlo <= geom.LengthEps {
-		return nil, shellErr(t.faceAnchor(0), "a thickness of %g makes the walls meet, closing up the inside", thick)
-	}
-
-	color := sh.Surface[0].Color
-	inner := &srf.SShell{Tol: sh.Tol}
-	first := true
-	for _, set := range d.Sets {
-		// Each way from the neutral plane the inside reaches: where it
-		// starts and ends, as distances from that plane.
-		for _, way := range []float64{-1, 1} {
-			from, to := max(zlo, 0), zhi
-			if way < 0 {
-				from, to = -min(zhi, 0), -zlo
-			}
-			if to-from <= geom.LengthEps {
-				continue
-			}
-			part, err := draftedInside(set, dir, way, from, to, thick, sh.Tol)
-			if err != nil {
-				return nil, err
-			}
-			if first {
-				inner, first = part, false
-				continue
-			}
-			u := &srf.SShell{Tol: sh.Tol}
-			u.MakeFromUnionOf(inner, part)
-			if u.BooleanFailed {
-				return nil, errors.New("the Boolean that joins the inside's drafted parts failed")
-			}
-			inner = u
-		}
+	inner, err := draftedInsideOf(t, d, modeOf, thick, sh.Tol)
+	if err != nil {
+		return nil, err
 	}
 	for i := range inner.Surface {
-		inner.Surface[i].Color = color
+		inner.Surface[i].Color = sh.Surface[0].Color
 		inner.Surface[i].Origin = origin + uint32(i)
 	}
 	out := &srf.SShell{Tol: sh.Tol}
@@ -127,29 +74,218 @@ func ShellDrafted(sh *srf.SShell, d DraftedSolid, open []int, thick float64, ori
 	return out, nil
 }
 
+// draftedInsideOf is the inside of d, whose solid has topology t, each
+// face moved as modeOf says: a wall moved in square to itself, a face
+// taken away left where it is (a curved side, which the Boolean can't
+// take away where it lies on the solid's, run out past it), a face
+// lying inside another part moved out, and a face probed moved out by
+// twice the thickness. A side is moved as the most of its faces says:
+// taken away where any is, a wall where any is one.
+func draftedInsideOf(t *Topology, d DraftedSolid, modeOf func(f int) faceMode, thick float64, tol srf.Tolerance) (*srf.SShell, error) {
+	if len(d.Sets) == 0 || len(d.Sets[0].Loops) == 0 || len(d.Sets[0].Loops[0]) == 0 || d.Dir.Magnitude() == 0 {
+		return nil, ErrNotDrafted
+	}
+	dir := d.Dir.WithMagnitude(1)
+	level := d.Sets[0].Loops[0][0].Start().Dot(dir)
+	// The ends' modes, from the flat faces square to dir at their levels.
+	var ends [2][]faceMode
+	for f := range t.Faces {
+		n, flat := t.planarNormal(f)
+		if !flat || math.Abs(math.Abs(n.Dot(dir))-1) > 1e-9 {
+			continue
+		}
+		switch h := t.faceAnchor(f).Dot(dir) - level; {
+		case math.Abs(h-d.Lo) < geom.LengthEps:
+			ends[0] = append(ends[0], modeOf(f))
+		case math.Abs(h-d.Hi) < geom.LengthEps:
+			ends[1] = append(ends[1], modeOf(f))
+		}
+	}
+	zlo, zhi := d.Lo+endShift(ends[0], thick), d.Hi-endShift(ends[1], thick)
+	if zhi-zlo <= geom.LengthEps {
+		return nil, shellErr(t.faceAnchor(0), "a thickness of %g makes the walls meet, closing up the inside", thick)
+	}
+	sides, err := draftedSides(t, d, modeOf, thick)
+	if err != nil {
+		return nil, err
+	}
+
+	var inner *srf.SShell
+	for k, set := range d.Sets {
+		// Each way from the neutral plane the inside reaches: where it
+		// starts and ends, as distances from that plane. A solid on one
+		// side of the plane only has its inside carried on past it the
+		// way its sides go, where an end moves out.
+		type way struct{ way, from, to float64 }
+		var ways []way
+		switch {
+		case d.Lo > -geom.LengthEps:
+			ways = []way{{1, zlo, zhi}}
+		case d.Hi < geom.LengthEps:
+			ways = []way{{-1, -zhi, -zlo}}
+		default:
+			ways = []way{{-1, -min(zhi, 0), -zlo}, {1, max(zlo, 0), zhi}}
+		}
+		for _, w := range ways {
+			if w.to-w.from <= geom.LengthEps {
+				continue
+			}
+			part, err := draftedInside(set, sides[k], dir, w.way, w.from, w.to, thick, tol)
+			if err != nil {
+				return nil, err
+			}
+			if inner == nil {
+				inner = part
+				continue
+			}
+			u := &srf.SShell{Tol: tol}
+			u.MakeFromUnionOf(inner, part)
+			if u.BooleanFailed {
+				return nil, errors.New("the Boolean that joins the inside's drafted parts failed")
+			}
+			inner = u
+		}
+	}
+	if inner == nil {
+		return nil, ErrNotDrafted
+	}
+	return inner, nil
+}
+
+// endShift is how far an end whose faces have modes moves in: by the
+// thickness as a wall, not at all taken away, out by it lying inside
+// another part, by twice that probed.
+func endShift(modes []faceMode, thick float64) float64 {
+	switch strongest(modes) {
+	case openFace:
+		return 0
+	case buriedFace:
+		return -thick
+	case probedFace:
+		return -2 * thick
+	}
+	return thick
+}
+
+// strongest is the mode of a side or end of faces of modes: taken away
+// where any is, a wall where any is one, else probed where any is,
+// else inside another part. A wall with no faces.
+func strongest(modes []faceMode) faceMode {
+	if len(modes) == 0 {
+		return keptFace
+	}
+	has := map[faceMode]bool{}
+	for _, m := range modes {
+		has[m] = true
+	}
+	for _, m := range []faceMode{openFace, keptFace, probedFace} {
+		if has[m] {
+			return m
+		}
+	}
+	return buriedFace
+}
+
+// draftedSides is, of each set's loops' curves, how far in units of the
+// thickness its side moves in square to itself, found from the faces of
+// t its side lies on, at points between its ends and the solid's.
+func draftedSides(t *Topology, d DraftedSolid, modeOf func(f int) faceMode, thick float64) ([][][]float64, error) {
+	dir := d.Dir.WithMagnitude(1)
+	out := make([][][]float64, len(d.Sets))
+	for k, set := range d.Sets {
+		out[k] = make([][]float64, len(set.Loops))
+		for l, loop := range set.Loops {
+			if len(set.Angles) <= l || len(set.Angles[l]) != len(loop) {
+				return nil, ErrNotDrafted
+			}
+			// The material on the left going along dir, as draftedInside
+			// has it, for the way into it from each curve.
+			oriented := loop
+			flip := (newell(loop).Dot(dir) > 0) != (l == 0)
+			if flip {
+				oriented = reverseLoop(loop)
+			}
+			pieces, err := loopPieces(oriented, dir)
+			if err != nil {
+				return nil, err
+			}
+			ms := make([]float64, len(loop))
+			for i, sb := range loop {
+				pi := i
+				if flip {
+					pi = len(loop) - 1 - i
+				}
+				p := pieces[pi]
+				tan := math.Tan(set.Angles[l][i])
+				var modes []faceMode
+				for _, h := range []float64{0.25, 0.5, 0.75} {
+					s := d.Lo + (d.Hi-d.Lo)*h
+					for _, u := range []float64{0.25, 0.5, 0.75} {
+						q := sb.PointAt(u)
+						into := p.into
+						if p.arc {
+							into = q.Minus(p.centre).WithMagnitude(1)
+							if !p.outward {
+								into = into.ScaledBy(-1)
+							}
+						}
+						q = q.Plus(dir.ScaledBy(s)).Plus(into.ScaledBy(math.Abs(s) * tan))
+						f, dist := t.FaceAt(q)
+						if f < 0 || dist > 100*geom.LengthEps {
+							return nil, ErrNotDrafted
+						}
+						modes = append(modes, modeOf(f))
+					}
+				}
+				switch strongest(modes) {
+				case keptFace:
+					ms[i] = 1
+				case buriedFace:
+					ms[i] = -1
+				case probedFace:
+					ms[i] = -2
+				case openFace:
+					if p.arc {
+						// Run out past the solid's side, which it would lie
+						// on: not where it meets a neighbour at an inside
+						// corner, which running out would cut into.
+						p.mid = sb.PointAt(0.5)
+						pieces[pi] = p
+						if err := outsideCorners(pieces, pi, dir); err != nil {
+							return nil, err
+						}
+						ms[i] = -1
+					}
+				}
+			}
+			out[k][l] = ms
+		}
+	}
+	return out, nil
+}
+
 // draftedInside is the inside of set's drafted prism going way along
 // dir from the neutral plane, from distance from to distance to: the
-// profile offset by thick/cos α and by from·tan α, drafted at the same
-// angles.
-func draftedInside(set DraftedSet, dir geom.Vector, way, from, to, thick float64, tol srf.Tolerance) (*srf.SShell, error) {
+// profile offset by moves·thick/cos α and by from·tan α, drafted at the
+// same angles.
+func draftedInside(set DraftedSet, moves [][]float64, dir geom.Vector, way, from, to, thick float64, tol srf.Tolerance) (*srf.SShell, error) {
 	along := dir.ScaledBy(way)
 	what := fmt.Sprintf("a thickness of %g", thick)
 	var loops [][]srf.SBezier
 	var angles [][]float64
 	for k, loop := range set.Loops {
-		if len(set.Angles) <= k || len(set.Angles[k]) != len(loop) {
+		if len(set.Angles) <= k || len(set.Angles[k]) != len(loop) || len(moves) <= k || len(moves[k]) != len(loop) {
 			return nil, ErrNotDrafted
 		}
-		as := set.Angles[k]
+		as, ms := set.Angles[k], moves[k]
 		// As DraftedPrismAngles has them: the outer loop counter-clockwise
 		// about the way it goes, the holes clockwise, the material on the
 		// left of each.
 		if nl := newell(loop); (nl.Dot(along) > 0) != (k == 0) {
 			loop = reverseLoop(loop)
-			as = append([]float64(nil), as...)
-			for i, j := 0, len(as)-1; i < j; i, j = i+1, j-1 {
-				as[i], as[j] = as[j], as[i]
-			}
+			as, ms = slices.Clone(as), slices.Clone(ms)
+			slices.Reverse(as)
+			slices.Reverse(ms)
 		}
 		pieces, err := loopPieces(loop, along)
 		if err != nil {
@@ -157,7 +293,7 @@ func draftedInside(set DraftedSet, dir geom.Vector, way, from, to, thick float64
 		}
 		ds := make([]float64, len(pieces))
 		for i, a := range as {
-			ds[i] = thick/math.Cos(a) + from*math.Tan(a)
+			ds[i] = ms[i]*thick/math.Cos(a) + from*math.Tan(a)
 		}
 		keep, corner, err := offsetProfile(pieces, along, ds, what)
 		if err != nil {

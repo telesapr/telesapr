@@ -39,13 +39,15 @@ import (
 // solid.
 
 // ShellPart is one of the solids a solid is made of: a revolution
-// (Rev), or else its own solid (Shell), of flat faces or a prism, and
-// how it is joined to the parts before it (srf.SurfaceUnion,
-// srf.SurfaceDiff or srf.SurfaceInter; zero is a union). The first
-// part is joined by a union.
+// (Rev), or else its own solid (Shell), of flat faces, a prism, or a
+// drafted extrusion when Draft says how it was drafted, and how it is
+// joined to the parts before it (srf.SurfaceUnion, srf.SurfaceDiff or
+// srf.SurfaceInter; zero is a union). The first part is joined by a
+// union.
 type ShellPart struct {
 	Rev     *Revolution
 	Shell   *srf.SShell
+	Draft   *DraftedSolid
 	Combine srf.SurfaceCombineAs
 }
 
@@ -175,6 +177,8 @@ func joinedInside(t *Topology, sh *srf.SShell, parts []ShellPart, opened map[int
 				// past the solid's.
 				in, err = joinedRevolvedInside(*part.Rev, modeAt, openAt, openFace, thick, sh.Tol, color)
 			}
+		case part.Draft != nil:
+			in, err = joinedDraftedInside(part.Shell, *part.Draft, modeAt, openPts, openedAs[op], thick)
 		default:
 			in, err = joinedFlatInside(part.Shell, modeAt, openPts, openedAs[op], thick)
 		}
@@ -345,6 +349,36 @@ func joinedFlatInside(part *srf.SShell, modeAt func(geom.Vector) faceMode, open 
 		inner, err = flatInside(pt, part, mode, thick, 0)
 	}
 	return inner, err
+}
+
+// joinedDraftedInside is the inside of part, the drafted extrusion d,
+// each face moved as modeAt says of points of it, or as opened says
+// where a face taken away (a point of open) lies on it.
+func joinedDraftedInside(part *srf.SShell, d DraftedSolid, modeAt func(geom.Vector) faceMode, open []openPoint, opened faceMode, thick float64) (*srf.SShell, error) {
+	pt, err := Build(part)
+	if err != nil {
+		return nil, err
+	}
+	if probs := pt.Validate(); len(probs) > 0 {
+		return nil, shellErr(probs[0].At, "a part of the solid is not closed: %s", probs[0].Msg)
+	}
+	mode := make([]faceMode, len(pt.Faces))
+	for f := range pt.Faces {
+		mode[f] = faceModeOf(pt, part, f, modeAt)
+	}
+	for _, o := range open {
+		if f := onFaceOf(pt, o); f >= 0 {
+			mode[f] = opened
+		}
+	}
+	inner, err := draftedInsideOf(pt, d, func(f int) faceMode { return mode[f] }, thick, part.Tol)
+	if err != nil {
+		return nil, err
+	}
+	for i := range inner.Surface {
+		inner.Surface[i].Color = part.Surface[0].Color
+	}
+	return inner, nil
 }
 
 // faceModeOf is face f's mode, of a part's solid of topology t, by the

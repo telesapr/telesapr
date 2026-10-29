@@ -213,7 +213,12 @@ func translatedCurves(cs []srf.SBezier, by geom.Vector) []srf.SBezier {
 // profile on the neutral plane and how far it reaches either way.
 // Otherwise nil.
 func (sk *Sketch) draftedAt(g *Group) *topo.DraftedSolid {
-	g = sk.soleSolidAt(g)
+	return sk.draftedOf(sk.soleSolidAt(g))
+}
+
+// draftedOf is how the drafted extrusion g was made, or nil when g is
+// none or has a problem.
+func (sk *Sketch) draftedOf(g *Group) *topo.DraftedSolid {
 	if g == nil || !g.HasDraft() || g.Problem.Msg != "" {
 		return nil
 	}

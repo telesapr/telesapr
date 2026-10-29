@@ -260,3 +260,39 @@ func TestShellJoinedPartialRevolveOpenEnd(t *testing.T) {
 		t.Errorf("a half turn open at one end: %v", err)
 	}
 }
+
+// A block with a round pocket drafted wider going up cut into its top,
+// open at the block's bottom: the drafted cutter is grown by the
+// thickness, its cone moved out square to itself and its floor down, so a
+// wall of the thickness stands round the pocket and under its floor.
+func TestShellJoinedDraftedPocket(t *testing.T) {
+	t.Parallel()
+	tol := srf.Tol(0.001, 20)
+	body := block(20, tol)
+	loop := circle(6, 10, 0)
+	alpha := -5 * math.Pi / 180
+	angles := make([]float64, len(loop))
+	for i := range angles {
+		angles[i] = alpha
+	}
+	cutter, err := topo.DraftedPrismAngles([][]srf.SBezier{loop}, [][]float64{angles}, v(0, 0, 15), core.NewRGBA(100, 100, 100, 255), 0, tol)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sh := &srf.SShell{Tol: tol}
+	sh.MakeFromDifferenceOf(body, cutter)
+	draft := topo.DraftedSolid{Sets: []topo.DraftedSet{{Loops: [][]srf.SBezier{loop}, Angles: [][]float64{angles}}},
+		Dir: v(0, 0, 1), Lo: 0, Hi: 15}
+	parts := []topo.ShellPart{{Shell: body}, {Shell: cutter, Draft: &draft, Combine: srf.SurfaceDiff}}
+	out, err := topo.ShellJoined(sh, parts, facesAt(t, sh, v(15, 15, 0)), 1, 1000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tan, sec := math.Tan(-alpha), 1/math.Cos(alpha)
+	frustum := func(h, r1, r2 float64) float64 { return math.Pi * h / 3 * (r1*r1 + r1*r2 + r2*r2) }
+	solid := 32000 - frustum(10, 6, 6+10*tan)
+	want := solid - (38*38*19 - frustum(10, 6+sec-tan, 6+sec+9*tan))
+	if r := soundness(out); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Fatalf("a drafted pocket: %s, want %g", r.String(), want)
+	}
+}

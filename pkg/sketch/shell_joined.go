@@ -20,7 +20,7 @@ import (
 
 // unionPartsAt is the parts the solid at group g is made of, when every
 // group up to it that makes a solid is a lathe, a revolve or an
-// extrusion with no draft, the first joined by a union and the rest by a
+// extrusion, drafted or not, the first joined by a union and the rest by a
 // union, a difference or an intersection: revolutions for the lathes and
 // revolves, the extrusions' own solids. Otherwise nil.
 func (sk *Sketch) unionPartsAt(g *Group) []topo.ShellPart {
@@ -73,11 +73,17 @@ func (sk *Sketch) unionPartsAt(g *Group) []topo.ShellPart {
 			}
 			parts = append(parts, topo.ShellPart{Rev: rev, Combine: op})
 			cut = cut || op != srf.SurfaceUnion
-		case cur.Type == GroupExtrude && !cur.HasDraft():
+		case cur.Type == GroupExtrude:
 			if op == 0 || len(cur.ThisShell.Surface) == 0 || (len(parts) == 0 && op != srf.SurfaceUnion) {
 				return nil
 			}
-			parts = append(parts, topo.ShellPart{Shell: &cur.ThisShell, Combine: op})
+			part := topo.ShellPart{Shell: &cur.ThisShell, Combine: op}
+			if cur.HasDraft() {
+				if part.Draft = sk.draftedOf(cur); part.Draft == nil {
+					return nil
+				}
+			}
+			parts = append(parts, part)
 			cut = cut || op != srf.SurfaceUnion
 		case cur.IsMeshGroup() || cur.IsCopyGroup() || cur.Type == GroupLinked ||
 			len(cur.ThisShell.Surface) > 0 || len(cur.ThisMesh.Triangles) > 0:
