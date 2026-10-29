@@ -237,10 +237,9 @@ func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error
 	}
 	at := rb.t.Vertices[end.v].P
 	if lam != 0 {
-		var ss [3]float64
+		ss := rb.rampS(k, lam)
 		var secs [3]rbSection
 		for i := range ss {
-			ss[i] = (1-lam)*rb.endS[k][i] + lam*rb.target[k]
 			sec, err := rb.section(ss[i])
 			if err != nil {
 				return rbSection{}, 0, err
@@ -714,6 +713,16 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 			}
 		}
 		if len(more) == 0 {
+			if !rb.easeRamp && rb.rampable() && feetRunBack(sf, ts) {
+				// The surface keeps to the sections across, but along the
+				// edge its sides run back on themselves beside the ramp: the
+				// trims would fold there.
+				rb.easeRamp = true
+				if esf, esecs, ecross, eerr := rb.blendOpen(); eerr == nil {
+					return esf, esecs, ecross, nil
+				}
+				rb.easeRamp = false
+			}
 			return sf, secs, cross, nil
 		}
 		// Between conics the misfit that halving doesn't shrink is the
@@ -732,6 +741,94 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		}
 		slices.SortStableFunc(specs, func(a, b rbSpec) int { return cmp.Compare(cache[a].s, cache[b].s) })
 	}
+}
+
+// rampS are the arc lengths of the ball's sections an end section of
+// end k at share lam of the way from the flat face's conic (0) to the
+// ball's own (1) takes its feet and its middle from. Each goes evenly
+// from where it lies in the face's plane to where the ball takes over;
+// so the feet move along the edge at paces of their own, which change at
+// once where the ball's sections, whose feet keep together, begin. A
+// skin through both, its sections spaced by their mean arc length, may
+// then overshoot along the edge on the slower side and come back, its
+// side running back on itself (the chamfer of a band raised off a cone,
+// its end on the band's top). Eased (easeRamp), each leaves the ball at
+// the mean pace and takes its own over the first share q of the ramp,
+// q the slowest's pace over the mean: their mean, and so the sections'
+// spacing, is as before, and each still moves one way all along.
+func (rb *rollingBall) rampS(k int, lam float64) [3]float64 {
+	var ss [3]float64
+	r := rb.target[k]
+	if !rb.easeRamp {
+		for i := range ss {
+			ss[i] = (1-lam)*rb.endS[k][i] + lam*r
+		}
+		return ss
+	}
+	var d [3]float64
+	m := 0.0
+	for i := range d {
+		d[i] = rb.endS[k][i] - r
+		m += d[i] / 3
+	}
+	q := math.Inf(1)
+	for i := range d {
+		q = math.Min(q, d[i]/m)
+	}
+	mu := 1 - lam
+	h := mu
+	if q > 0 && q < 1 {
+		// h' rises evenly from 0 to c over [0, q] and stays at c, with
+		// h(1) = 1; a foot's pace m + (d - m) h' stays above 0 while
+		// d/m > 1 - 1/c = q/2.
+		c := 1 / (1 - q/2)
+		if mu <= q {
+			h = c * mu * mu / (2 * q)
+		} else {
+			h = c * (mu - q/2)
+		}
+	}
+	for i := range ss {
+		ss[i] = r + mu*m + (d[i]-m)*h
+	}
+	return ss
+}
+
+// rampable tells whether an end's sections between the flat face's
+// conic and the ball's may be eased (rampS): neither end is a mitre or
+// kinked, whose sections are fitted once and shared.
+func (rb *rollingBall) rampable() bool {
+	for k, end := range rb.ends {
+		if end == nil || end.mitre || rb.kinkedEnd(k) {
+			return false
+		}
+	}
+	return true
+}
+
+// feetRunBack tells whether a side of skin sf, whose sections lie at
+// ts, runs back along itself between two sections: a step along it
+// going against the chord from one section's foot to the next.
+func feetRunBack(sf *srf.BSplineSurface, ts []float64) bool {
+	const steps = 8
+	for i := 0; i+1 < len(ts); i++ {
+		for _, u := range []float64{0, 1} {
+			a, b := sf.PointAt(u, ts[i]), sf.PointAt(u, ts[i+1])
+			chord := b.Minus(a)
+			if chord.Magnitude() < geom.LengthEps {
+				continue
+			}
+			prev := a
+			for j := 1; j <= steps; j++ {
+				p := sf.PointAt(u, ts[i]+(ts[i+1]-ts[i])*float64(j)/steps)
+				if p.Minus(prev).Dot(chord) < 0 {
+					return true
+				}
+				prev = p
+			}
+		}
+	}
+	return false
 }
 
 // rbEndCut is where an open fillet's end meets the flat face: the end,

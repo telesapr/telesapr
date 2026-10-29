@@ -95,6 +95,10 @@ type rollingBall struct {
 	// where the swept surface meets their planes, not conics
 	// (planeCutSection).
 	fitCuts bool
+	// easeRamp has the feet of the end sections between the flat face's
+	// conic and the ball's own leave the ball's at the ball's pace
+	// (rampS), for a skin whose sides ran back on themselves there.
+	easeRamp bool
 	// spans is how many quintic spans of equal length every section is
 	// split into (splitSection), 0 or 1 for one: two so that the end
 	// section on a curved face can follow it round a wide corner, or a
