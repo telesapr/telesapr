@@ -206,6 +206,11 @@ type filletCorner struct {
 	quads      []srf.SSurface
 	// For a corner of chamfers: the faces that fill it.
 	plates []cornerPlate
+	// For a corner of chamfers cut from its cone: each chamfer's end
+	// across it, by edge, from its line on its first face to the other;
+	// each face's boundary there, by face, between its two edges' ends.
+	ends   map[int][]geom.Vector
+	chains map[int][]geom.Vector
 }
 
 // seam is the kind of a corner where two pieces of a circular edge meet.
@@ -497,8 +502,31 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 			}
 			var c *filletCorner
 			var err error
+			mixed := flat && t.mixedAt(v, edges, byEdge)
 			if flat && t.chamferCornerTakes(v, edges, byEdge) {
 				c, err = t.chamferCornerAt(v, edges, byEdge)
+				if err != nil && mixed {
+					// Else as before: in stages, by kinds.
+					c, err = nil, nil
+				}
+				if err != nil && t.chamferConeTakes(v, edges, byEdge) {
+					// Distances too unlike for a face to close the corner:
+					// the planes cut it as the wedges would.
+					if cc, cerr := t.chamferConeAt(v, edges, byEdge); cerr == nil {
+						c, err = cc, nil
+					}
+				}
+				if err != nil {
+					return err
+				}
+				if c != nil {
+					corners[v] = c
+					continue
+				}
+			}
+			if flat && len(t.Vertices[v].Edges) > 3 && t.chamferConeTakes(v, edges, byEdge) {
+				// Some edges at a corner of more than three left sharp.
+				c, err = t.chamferConeAt(v, edges, byEdge)
 				if err != nil {
 					return err
 				}
@@ -538,6 +566,9 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 	for _, c := range corners {
 		if c.kind == 1 {
 			redo[c.end] = true
+		}
+		for f := range c.chains {
+			redo[f] = true
 		}
 	}
 	faces := make([]int, 0, len(redo))
@@ -1297,7 +1328,7 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 		}
 		c.end = end
 		for k := range 2 {
-			q, err := t.pointAlong(along[k], v, fe.into(k, p), fe.ss[k], fe.concave)
+			q, err := t.pointAlong(along[k], v, fe.into(k, p), fe.ss[k], fe.concave || flat)
 			if err != nil {
 				return nil, err
 			}
@@ -1514,6 +1545,9 @@ func lineMeet(a, da, b, db geom.Vector) (geom.Vector, bool) {
 // from p to q: one, but for the strip that goes on past an uneven
 // mitre, which runs along the mitre and then the conic.
 func (fe *filletEdge) connectors(t *Topology, v int, c *filletCorner, p, q geom.Vector, flat bool) []srf.SBezier {
+	if c.kind == coneCorner {
+		return orientedLines(c.ends[fe.e], p)
+	}
 	if c.kind == setbackCorner {
 		sb := c.arcs[fe.e]
 		if !sb.Start().Equals(p) {
@@ -1634,6 +1668,12 @@ func (t *Topology) filletLoops(f int, edges []filletEdge, byEdge map[int]int, co
 						sb.Reverse()
 					}
 					loop = append(loop, sb)
+				}
+			}
+			if c := corners[vb]; c != nil && c.kind == coneCorner {
+				// The face's chain where the chamfers' planes cut it.
+				if p, q := point(x, vb), point(nx, vb); !p.Equals(q) {
+					loop = append(loop, orientedLines(c.chains[f], p)...)
 				}
 			}
 			if c := corners[vb]; c != nil && c.kind == 1 && c.end == f {

@@ -26,9 +26,10 @@ func (v ChamferGroup) EdgeDistance(i int) (mm float64) {
 // SetEdgeDistance gives a chamfer's edge i, counted as EdgeDistance
 // counts, a distance of its own in mm, or with 0 the chamfer's again.
 // Chamfered edges of different distances that meet at a corner whose
-// third edge stays sharp meet in a mitre; at a corner the chamfer's
-// local edit can't make, as one of three chamfered edges of different
-// distances, each straight edge is cut by a wedge instead.
+// other edges stay sharp meet where their planes do, as at a corner of
+// three whose third edge stays sharp or a pyramid's apex; at a corner
+// where every edge is chamfered, convex, concave or both, the hole they
+// leave is filled by a face.
 func (v ChamferGroup) SetEdgeDistance(i int, mm float64) {
 	text := v.g.edgeMmText(mm, "a chamfer's distance must be more than zero")
 	if err := v.SetEdgeDistanceExpr(i, text); err != nil {

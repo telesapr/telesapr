@@ -61,6 +61,27 @@ func cornerRib(tol srf.Tolerance) *srf.SShell {
 	return out
 }
 
+// pyramidPocket is the 20 x 20 x 10 box less the pyramid over (4, 4) to
+// (16, 16) at z -1 to (10, 10, 6), at the tolerance tol: four concave
+// edges meet at the pocket's apex.
+func pyramidPocket(tol srf.Tolerance) (*srf.SShell, error) {
+	var a srf.SShell
+	a.Tol = tol
+	a.MakePrism([]geom.Vector{v(0, 0, 0), v(20, 0, 0), v(20, 20, 0), v(0, 20, 0)}, v(0, 0, 0), v(0, 0, 10), core.NewRGBA(100, 100, 100, 255))
+	pyr, _, err := pyramid([]geom.Vector{v(4, 4, 0), v(4, 16, 0), v(16, 16, 0), v(16, 4, 0)}, v(10, 10, 7), tol)
+	if err != nil {
+		return nil, err
+	}
+	var b srf.SShell
+	b.MakeFromTransformationOf(pyr, v(0, 0, -1), geom.Quaternion{W: 1}, 1)
+	out := &srf.SShell{Tol: tol}
+	out.MakeFromDifferenceOf(&a, &b)
+	for i := range out.Surface {
+		out.Surface[i].Face = srf.FaceID(i + 1)
+	}
+	return out, nil
+}
+
 // chamferOracleCase builds the shape a line of
 // testdata/topo/chamfer-corners.txt names and chamfers its corner as
 // the line says, at the tolerance tol.
@@ -125,6 +146,48 @@ func chamferOracleCase(shape string, d []float64, tol srf.Tolerance) (*srf.SShel
 		sh = cornerNotch(tol)
 		c := v(10, 10, 10)
 		picks = []topo.FilletPick{{A: c, B: v(20, 10, 10), R: d[0]}, {A: c, B: v(10, 20, 10), R: d[1]}, {A: c, B: v(10, 10, 20), R: d[2]}}
+	case "ledgeall":
+		sh = cornerNotch(tol)
+		c := v(10, 10, 20)
+		picks = []topo.FilletPick{{A: c, B: v(20, 10, 20), R: d[0]}, {A: c, B: v(10, 20, 20), R: d[1]}, {A: c, B: v(10, 10, 10), R: d[2]}}
+	case "riball":
+		sh = cornerRib(tol)
+		c := v(10, 10, 5)
+		picks = []topo.FilletPick{{A: c, B: v(5, 10, 5), R: d[0]}, {A: c, B: v(10, 5, 5), R: d[1]}, {A: c, B: v(10, 10, 15), R: d[2]}}
+	case "ledgeone", "ledgetwo":
+		// The top edge along x, and the concave upright edge below at
+		// d[1].
+		sh = cornerNotch(tol)
+		c := v(10, 10, 20)
+		picks = []topo.FilletPick{{A: c, B: v(20, 10, 20), R: d[0]}}
+		if shape == "ledgetwo" {
+			picks = append(picks, topo.FilletPick{A: c, B: v(10, 10, 10), R: d[1]})
+		}
+	case "ribtwo":
+		// The upright edge, and the foot edge towards x at d[1].
+		sh = cornerRib(tol)
+		c := v(10, 10, 5)
+		picks = []topo.FilletPick{{A: c, B: v(10, 10, 15), R: d[0]}, {A: c, B: v(5, 10, 5), R: d[1]}}
+	case "apexsome", "pocketsome":
+		c, ends := v(10, 10, 10), []geom.Vector{v(0, 0, 0), v(20, 0, 0), v(20, 20, 0), v(0, 20, 0)}
+		if shape == "apexsome" {
+			var err error
+			if sh, _, err = pyramid([]geom.Vector{v(0, 0, 0), v(0, 20, 0), v(20, 20, 0), v(20, 0, 0)}, c, tol); err != nil {
+				return nil, err
+			}
+		} else {
+			var err error
+			if sh, err = pyramidPocket(tol); err != nil {
+				return nil, err
+			}
+			k := 6.0 / 7
+			c, ends = v(10, 10, 6), []geom.Vector{v(4+k, 4+k, 0), v(16-k, 4+k, 0), v(16-k, 16-k, 0), v(4+k, 16-k, 0)}
+		}
+		for i, b := range ends {
+			if d[i] > 0 {
+				picks = append(picks, topo.FilletPick{A: c, B: b, R: d[i]})
+			}
+		}
 	}
 	return sh, topo.FilletPicks(sh, picks, 1, 1<<30, true)
 }
@@ -218,7 +281,9 @@ func samePoints(a, b []geom.Vector) bool {
 var chamferOracleCorner = map[string]geom.Vector{
 	"box": v(10, 20, 30), "uneven": v(10, 20, 30), "apex": v(10, 10, 10), "prism": v(0, 0, 0), "notch": v(10, 10, 10),
 	"pair": v(10, 20, 30), "pocket": v(10, 10, 10), "rib": v(10, 10, 5), "ledge": v(10, 10, 20),
-	"prismpair": v(0, 0, 0),
+	"prismpair": v(0, 0, 0), "ledgeall": v(10, 10, 20), "riball": v(10, 10, 5),
+	"apexsome": v(10, 10, 10), "pocketsome": v(10, 10, 6),
+	"ledgeone": v(10, 10, 20), "ledgetwo": v(10, 10, 20), "ribtwo": v(10, 10, 5),
 }
 
 // TestChamferCornerOracle chamfers the corners of
@@ -227,8 +292,11 @@ var chamferOracleCorner = map[string]geom.Vector{
 // a box's corner of three distances, two on one edge, a pyramid's apex
 // of four, the foot of a prism's upright edge whose faces don't meet
 // square, and a concave corner; and two edges of two distances each
-// meeting above a third left sharp, of either kind (chamferPairAt). Each
-// must be sound and of OpenCASCADE's count of faces. Where the face that
+// meeting above a third left sharp, of either kind (chamferPairAt); the
+// corners of three where convex edges meet a concave one, at a ledge's
+// top and a rib's foot; and the apexes of a pyramid and of a pyramid's
+// pocket with some edges left sharp (chamferConeAt). Each must be sound
+// and, but for the last, of OpenCASCADE's count of faces. Where the face that
 // fills the corner has OpenCASCADE's corners, the volume must be its,
 // within what the bilinear patches' meshes stray at this chord
 // tolerance.
@@ -243,14 +311,19 @@ var chamferOracleCorner = map[string]geom.Vector{
 // held to within half a cubic millimetre. At a corner of four it fills the hole
 // with a plate that bulges out of the plane of its corners, where here
 // it is that plane, or the bilinear patch: the same corners, a little
-// less volume.
+// less volume. And at an apex with some edges left sharp, where two
+// chamfers meet, it fills a plate between them where here their planes
+// meet, as the chamfers' wedges cut: a face fewer, and less taken away
+// (or filled) by up to 0.3 mm³, 14 of the 18
+// lines; where no two chamfers meet, or two of one distance across the
+// apex, its volume.
 func TestChamferCornerOracle(t *testing.T) {
 	t.Parallel()
 	data, err := os.ReadFile(filepath.Join("..", "..", "testdata", "topo", "chamfer-corners.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	triangles, plates := 0, 0
+	triangles, plates, meets := 0, 0, 0
 	for line := range strings.SplitSeq(strings.TrimSpace(string(data)), "\n") {
 		head, corners, _ := strings.Cut(line, "|")
 		f := strings.Fields(head)
@@ -279,6 +352,21 @@ func TestChamferCornerOracle(t *testing.T) {
 		}
 		got := sound(t, sh)
 		tp := build(t, sh)
+		if strings.HasSuffix(f[0], "some") {
+			// Less taken from the pyramid, less filled in the pocket.
+			less := want - got
+			if f[0] == "pocketsome" {
+				less = -less
+			}
+			switch {
+			case len(tp.Faces) == faces && math.Abs(got-want) <= 0.005:
+			case len(tp.Faces) == faces-1 && less < 0 && less > -0.3:
+				meets++
+			default:
+				t.Errorf("%s: %d faces, OpenCASCADE's %d; volume %.6f, %+.3g", head, len(tp.Faces), faces, got, got-want)
+			}
+			continue
+		}
 		if len(tp.Faces) != faces {
 			t.Errorf("%s: %d faces, OpenCASCADE's %d", head, len(tp.Faces), faces)
 		}
@@ -303,7 +391,7 @@ func TestChamferCornerOracle(t *testing.T) {
 			t.Errorf("%s: corners %v, OpenCASCADE's %v; volume %.6f, %+.3g", head, ours, occ, got, got-want)
 		}
 	}
-	if triangles > 9 || plates != 7 {
-		t.Errorf("%d of OpenCASCADE's triangles, 9 when this was written; %d apexes, 7", triangles, plates)
+	if triangles > 9 || plates != 7 || meets != 14 {
+		t.Errorf("%d of OpenCASCADE's triangles, 9 when this was written; %d apexes, 7; %d planes meeting where it fills, 14", triangles, plates, meets)
 	}
 }

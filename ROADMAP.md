@@ -188,9 +188,30 @@ solids) at 59 of 59 sound since 2026-10-22. Chamfers: `TestChamferOnOtherSolids`
 | Mitres of two radii left | refused, naming the place | A chain that meets smaller ones at both its ends with different kinks (the three cubics at 0.5, 1 and 0.75), or a larger one at one end and a smaller at the other: its sections would need two kinks, or a kink and the copied span split at it, and the mate's span is one quintic; a mitre of one radius beside one of two on the same chain (their sections split differently); chamfers of two distances in the rolling ball's mitres (the line's height is the same; the kink, `onMateArc`, would be the line's foot; those between flat faces are made since 2026-10-28, `chamferPairAt`) |
 | A rib rounded all over, foot first | the top first is made (below); two cases of 24 unsound: width leaning -4, r 0.5, h 5 and 10, at chord 0.015% 3 to 5 mesh edges cross at the front corners, where the foot's fillet passes from the slope edge's fillet onto the slope (sound at 0.01%) | Foot first, the top's edge ends on the foot's fillet and the grown top. Tried 2026-10-29, after run-offs onto curved faces were made: on a rib whose foot is filled, the edge across the back rounds alone, sound; the uprights at the back are refused as fillets meeting above an edge left sharp; the slope's edges are refused before their ends, the ball leaving the side face for the foot's fillet (three fillets meeting at a vertex: a vertex blend, not a run-off). Not needed while the stages take the top first |
 | Radii 5-6:1 side by side at a setback corner | 4 of 36 refused as folding (`TestFilletSetbackExtremeSweep`) | More patches, or a smaller setback for the small fillets. Tried and given up: one fitted patch over the hole (0.1 rad off at degree 9), a fan of quads, a star for even counts, stronger pulls, larger setbacks, net second differences as fairness |
-| Convex meeting concave at one vertex beyond what the stages round, fillets or chamfers | refused | Chamfer corners where every edge is chamfered are made since 2026-10-28 (`chamferCornerAt`: OpenCASCADE's pivot and square cuts, plane or bilinear patch), and so are two chamfers of any distances above a third edge left sharp (`chamferPairAt`). Since 2026-10-29 a chamfer's edge takes a distance and a second distance of its own (`EdgeRadii`, `EdgeSeconds`, `pkg/sketch/chamfer_edge_distances.go`), from its screen and from scripts. Left: chamfers of different distances where some edges at a corner of three or more are left sharp; a corner of three chamfered edges of different distances that the edit can't make is cut by wedges |
+| Convex meeting concave at one vertex beyond what the stages round, fillets or chamfers | refused | Chamfer corners where every edge is chamfered are made since 2026-10-28 (`chamferCornerAt`: OpenCASCADE's pivot and square cuts, plane or bilinear patch), and so are two chamfers of any distances above a third edge left sharp (`chamferPairAt`). Since 2026-10-29 a chamfer's edge takes a distance and a second distance of its own (`EdgeRadii`, `EdgeSeconds`, `pkg/sketch/chamfer_edge_distances.go`), from its screen and from scripts. Since 2026-10-29 (below) a corner of three of both kinds, every edge chamfered, takes OpenCASCADE's pivot too, and a corner of four or more with some edges sharp is cut by the chamfers' planes. Left: fillets at such corners; a convex and a concave chamfer with the third edge sharp (a ledge's top edge with the upright below it, a rib's upright with one foot edge) are made in stages, the convex first, its plane running on over the concave one's fill, where OpenCASCADE fills a three-sided patch (rib, d 1: ours 2246.83 mm³, its 2247.47; on the ledge its volumes come out below what the convex chamfer alone leaves, so it is no reference there); a corner of four or more of both kinds is refused |
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
 | Slot chamfer at 3 | see K4 | The teapot handle and the run-off chamfers' crossings, listed here before, are sound since K4's mender |
+
+Done 2026-10-29: chamfers at more corners (`pkg/topo/chamfer_cone.go`, `chamfer_corner.go`). Where
+convex and concave edges meet at a corner of three, every edge chamfered (a ledge's top above the
+concave edge between its walls, a rib's foot below its upright), the edge of the kind there is one
+of is the pivot and the other two are cut square where they cross its lines; the face between those
+two, whose lines cross outside it, takes the line from one cut to the other, and a plane or bilinear
+patch fills the hole: OpenCASCADE's corner, its volume within 0.005 mm³ and its count of faces on 12
+lines of `testdata/topo/chamfer-corners.txt`. Before, the ledge was refused and the rib made in
+stages, a cubic millimetre off. Where every face at a corner is flat and its edges all convex, or all
+concave, and some of four or more stay sharp, the solid's cone (or the outside's) is cut by the
+chamfers' planes (`chamferConeAt`): each face's wedge and each chamfer's strip clipped by the others'
+planes, their chains sharing their points. That is what the chamfers' wedges cut, to 1e-6 mm³
+(`TestChamferConeAsWedges`), and OpenCASCADE's apex where one chamfer reaches it, or two of one
+distance across it (`apexsome`, `pocketsome`); where two meet, OpenCASCADE fills a plate between
+them and takes up to 0.3 mm³ more, 14 of 18 lines. A corner of three chamfered edges that
+`chamferCornerAt` can't close falls back to the same cut. And a convex chamfer whose end face lies
+past an inside corner, its other edge on the face running back along it, stops where the end face's
+plane cuts it, the face growing over its end (`pointAlong` back, as a concave fillet's): an L-shaped
+block's inside top edge, OpenCASCADE's to the digit (`ledgeone`). The chamfer-solid-edge golden moved
+with it: its edge ends at a notch's inside corner, where the wedge went 2 mm on past it into the
+block (1.5 mm³). `TestChamferConeSweep` (504 cases, none failing) covers the new corners.
 
 Done 2026-10-29: blends that run off their face onto a curved one, as a fillet of a band's side on
 the cone past the band's rounded top (`TestFilletRunsOffOntoCylinder`). The run-off's plane is
