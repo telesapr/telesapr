@@ -18,7 +18,7 @@ fixture has been done; its "Tried" notes say what not to try again.
 | 1 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
 | 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Shells of filleted and lofted solids; corners on twisted and fitted sweeps |
 | 2a | [Modelling upgrade leftovers](#modelling-upgrade-leftovers) | kernel and feature | ? | What the 2026-10-22 work packages left; each refuses with a message today |
-| 2b | [Thread leftovers](#thread-leftovers) | kernel and feature | ? | What the thread improvements of 2026-10-23 left: chamfer slivers, ACME classes, buttress roots and classes |
+| 2b | [Thread leftovers](#thread-leftovers) | kernel and feature | ? | What the thread improvements of 2026-10-23 left: ACME classes, buttress classes and rounded crests |
 | 3 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
 | 4 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Since 2026-10-11 it mends the ear clipper's crossing faces; as the default it still costs 3 to 5 times the triangles |
 | 5 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
@@ -496,9 +496,26 @@ What the thread improvements of 2026-10-23 (`doc/notes/thread-evaluation.md`, br
 
 | Item | State | Approach / tried |
 |---|---|---|
-| A chamfered thread at the coarsest chord tolerance | 1 of 660 unsound in `TestThreadChamferSweep`, a 1/2 BSF nut at 0.5%; rounded crests chamfered, 6 of 120 unsound at 0.5% (screws, studs, nuts and tapped holes of ten sizes at 0.5%, 0.1% and the default), none finer | The nut's ridges united with the bore, before the chamfer, have crossing mesh edges at 0.5% at most planes for the ridges (the mesher's, K4); the chamfer cuts them away, but every group of the thread must be sound |
 | ACME tolerance classes (2G to 5G) | read from a designation and dropped; an ACME thread takes B1.5's crest clearance and a typed-in clearance | B1.5's pitch diameter allowances and tolerances were not to hand; metric, trapezoidal and unified classes follow their tables since 2026-10-28 (`pkg/thread/class_iso.go`, `class_unified.go`) |
 | Buttress threads, what was left | DIN 513 (S) and ASME B1.9 (BUTT) made since 2026-10-28, B1.9's rounded root and PUSH-/PULL-BUTT since 2026-10-29 (below); no classes, no rounded crest (`ErrButtressRounded`); a rounded root refused at chord tolerances coarser than a fifth of its radius (`ErrRootRoundCoarse`) | DIN 513-2's and B1.9's tolerance classes; a rounded crest needs the arc tangent to flanks at different angles, its centre off the ridge's middle. A rounded root at coarse tolerances: grooves cut from a blank at the crest (the groove's arc then meets nothing) were sound for every nut at 0.5% in a spike, but screws turned down failed at 0.2% and 0.5%, and the cut would need its own chamfer and run-out |
+
+Done 2026-10-29: chamfered threads at 0.5% chord, the last unsound row of `TestThreadChamferSweep`
+(a 1/2 BSF nut, 1 of 660, now none) and 4 of the rounded-crest chamfers' 114 (6 of 120 when last
+counted; the Tr12x3 screw and stud are refused by name). It was not the mesher: the faces whose edges
+crossed were no candidates of K4's mender (their ear-clipped chords part from the surface by less than
+four chord tolerances), and meshed by the CDT they crossed as much, since the crossing edges are the
+trims' own segments. Where a ridge's foot crosses the circle at which the bore turns into the
+chamfer's cone, the two curves leave their vertex 2° apart on the bore, each chorded to the tolerance
+on its own, and the circle's chord sagged into the hole by twice as far as the curves were apart,
+through the ridge's flank; with rounded crests the cone's curves across a crest and the flank it runs
+into smoothly leave their vertex along each other, and sag through the flank the same way. The Boolean
+now halves a curve's segments beside a vertex where two curves on one surface leave it at under 30°,
+until each sags off that surface by less than half of how far the two are apart at its middle, or by
+less than an eighth of the chord tolerance (`srf.SShell.refineGrazingMeets`, `pkg/srf/boolean_graze.go`).
+No golden moved: a sag along the surface (a cubic leaving a line tangentially in a plane), curves lying
+on each other, and curves along which their surfaces meet tangentially are left alone, and the
+projections leave the operands' closest-point caches as they were; each of those moved goldens when it
+wasn't. `TestThreadChamferCoarse`.
 
 Done 2026-10-29: ASME B1.9's rounded roots, asked for by **rounded root** (`RoundRoot`), and the
 load's way in a B1.9 designation (`1-12 PUSH-BUTT`, `1-12 PULL-BUTT`, `thread.Spec.Load`), which
