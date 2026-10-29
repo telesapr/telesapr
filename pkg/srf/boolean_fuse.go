@@ -20,10 +20,11 @@ const fuseVertexTol = 0.01
 // segment between them and the mesh of one side does without a vertex
 // the other side has. Made one, both sides share it.
 //
-// Vertices closer than splitEndTol are left as they are, as a split
-// that close to a curve's end is none (MakeCopySplitAgainst): the
-// threads' helices meet in such pairs, and mesh as they are. The ends of
-// a and b's own trims stay where they are: the trims find
+// Vertices closer than splitEndTol are made one too, though a split
+// that close to a curve's end is none (MakeCopySplitAgainst): a DIN 513
+// nut's ridges met its bore at 0.5% chord in a pair 1.2e-6 mm apart, past
+// LengthEps, and the mesh took them as two points, four edges naked. The
+// ends of a and b's own trims stay where they are: the trims find
 // their part of a curve by them. A curve all of whose vertices would
 // become one point is left as it is.
 func (s *SShell) fuseVertices(a, b *SShell) {
@@ -100,7 +101,7 @@ func (s *SShell) fuseVertices(a, b *SShell) {
 				add(pt.P)
 				continue
 			}
-			if !q.EqualsTol(pt.P, splitEndTol) {
+			if !q.Equals(pt.P) {
 				moved[k] = q
 				changed = true
 			}

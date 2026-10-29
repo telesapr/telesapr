@@ -81,28 +81,30 @@ func TestLinkStepProblems(t *testing.T) {
 
 func TestLinkStepCache(t *testing.T) {
 	t.Parallel()
+	// A memo of its own: the package's other tests read STEP files
+	// through stepCache side by side, and queued behind the first read
+	// they used to push box.step out of it before the second.
+	memo := newStepMemo()
 	path := filepath.Join(stepShapes, "box.step")
-	a, err := readStep(path, 0)
+	a, err := memo.read(path, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, _ := readStep(path, 0)
+	b, _ := memo.read(path, 0)
 	if a != b {
 		t.Error("the same file was read twice")
 	}
-	c, _ := readStep(path, 0.5)
+	c, _ := memo.read(path, 0.5)
 	if c == a {
 		t.Error("another tolerance gave the cached mesh")
 	}
 	// The cache keeps a few files only.
 	for _, name := range []string{"sphere", "torus", "cone_apex", "cylinder", "box_hole"} {
-		if _, err := readStep(filepath.Join(stepShapes, name+".step"), 0); err != nil {
+		if _, err := memo.read(filepath.Join(stepShapes, name+".step"), 0); err != nil {
 			t.Fatal(err)
 		}
 	}
-	stepCacheMu.Lock()
-	n := len(stepCache)
-	stepCacheMu.Unlock()
+	n := len(memo.entries)
 	if n > stepCacheSize {
 		t.Errorf("%d files cached", n)
 	}

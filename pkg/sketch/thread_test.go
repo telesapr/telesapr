@@ -641,6 +641,25 @@ func TestThreadSweep(t *testing.T) {
 	}).Require(t)
 }
 
+// TestThreadNutCoarse is the DIN 513 nut at the sweep's coarsest chord
+// tolerances, which its sample leaves out: its ridges met the bore at
+// two vertices 1.2e-6 mm apart, which the mesh took as two points, four
+// edges naked (SShell.fuseVertices).
+func TestThreadNutCoarse(t *testing.T) {
+	t.Parallel()
+	for _, tc := range threadSweepCases() {
+		if tc.name != "nut_s20" && tc.name != "nut_s20_back" {
+			continue
+		}
+		for _, tol := range []float64{0.5, 0.4} {
+			_, _, res, err := tc.tryBuild(t, tol)
+			if err != nil || !res.Sound {
+				t.Errorf("%s at %g%%: sound %v, %v", tc.name, tol, res.Sound, err)
+			}
+		}
+	}
+}
+
 // threadSweepMaxFailRate is the fraction of TestThreadSweep's grid
 // allowed to be unsound: none, as the whole grid gave on 2026-10-03.
 // On 2026-10-02, after the raycast fix, it was 3 of 400, at 0.03% and

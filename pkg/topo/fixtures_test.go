@@ -102,7 +102,8 @@ func TestFixtures(t *testing.T) {
 	c := fixtureCounts{reasons: map[string]int{}}
 	var mu sync.Mutex
 	t.Run("models", func(t *testing.T) {
-		for _, f := range solidFixtures(t) {
+		// A fifth of them under the race detector (fixtures.Sample).
+		for _, f := range fixtures.Sample(solidFixtures(t)) {
 			t.Run(f, func(t *testing.T) {
 				t.Parallel()
 				sk := load(t, f)

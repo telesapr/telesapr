@@ -5,7 +5,8 @@
 // "Definition of done"), and a sweep over it fails the test.
 //
 // By default a sweep runs an even sample of its grid, so that it fits
-// in the ordinary test run; TELESAPR_SWEEP=1 runs all of it.
+// in the ordinary test run, and under the race detector a fifth of that
+// (fixtures.Thin); TELESAPR_SWEEP=1 runs all of it.
 package sweep
 
 import (
@@ -16,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/internal/par"
 )
 
@@ -161,17 +163,22 @@ func (r Report) String() string {
 }
 
 // Run calls fn on the sample, or on the whole grid when Full; an error
-// or a panic is a failure.
+// or a panic is a failure. Under the race detector, which needs the code
+// that runs on several goroutines rather than every point, it takes
+// every fifth point of those (fixtures.Thin).
 func (g Grid) Run(fn func(p Point) error) Report {
-	return g.run(Full(), fn)
+	return g.run(Full(), !Full() && fixtures.RaceDetector, fn)
 }
 
 // RunAll calls fn on every point of the grid.
 func (g Grid) RunAll(fn func(p Point) error) Report {
-	return g.run(true, fn)
+	return g.run(true, false, fn)
 }
 
-func (g Grid) run(full bool, fn func(p Point) error) Report {
+// run calls fn on the sample, or the whole grid when full, thinned by
+// fixtures.Thin when thin. A thinned run is held to as many failures
+// as the run it thins allows: its points are some of that run's.
+func (g Grid) run(full, thin bool, fn func(p Point) error) Report {
 	size := g.Size()
 	r := Report{Full: full || g.Sample == 0 || g.Sample >= size, GridSize: size, MaxFailRate: g.MaxFailRate}
 	if !r.Full && g.SampleMaxFailRate > 0 {
@@ -188,21 +195,32 @@ func (g Grid) run(full bool, fn func(p Point) error) Report {
 			stride++
 		}
 	}
-	errs := make([]error, n)
-	at := func(k int) { errs[k] = call(fn, g.At(k*stride%size)) }
+	ks := make([]int, n)
+	for k := range n {
+		ks[k] = k * stride % size
+	}
+	if thin {
+		ks = fixtures.Thin(ks)
+	}
+	if len(ks) < n {
+		r.Full = false
+		r.MaxFailRate *= float64(n) / float64(len(ks))
+	}
+	errs := make([]error, len(ks))
+	at := func(k int) { errs[k] = call(fn, g.At(ks[k])) }
 	if g.Parallel {
-		par.For(n, at)
+		par.For(len(ks), at)
 	} else {
-		for k := range n {
+		for k := range ks {
 			at(k)
 		}
 	}
 	for k, err := range errs {
 		if err != nil {
-			r.Failed = append(r.Failed, Failure{Point: g.At(k * stride % size), Err: err})
+			r.Failed = append(r.Failed, Failure{Point: g.At(ks[k]), Err: err})
 		}
 	}
-	r.Runs = n
+	r.Runs = len(ks)
 	r.Elapsed = time.Since(start)
 	return r
 }

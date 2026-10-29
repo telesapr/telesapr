@@ -12,6 +12,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
 	"github.com/telesapr/telesapr/pkg/sketch"
@@ -57,7 +58,8 @@ func TestEveryFacePicked(t *testing.T) {
 	if err != nil || len(files) == 0 {
 		t.Fatal("no solid goldens", err)
 	}
-	for _, file := range files {
+	// A fifth of them under the race detector (fixtures.Sample).
+	for _, file := range fixtures.Sample(files) {
 		t.Run(strings.TrimSuffix(filepath.Base(file), ".tlspr"), func(t *testing.T) {
 			t.Parallel()
 			ss := New(headless.New())

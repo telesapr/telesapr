@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync/atomic"
 	"testing"
 
@@ -52,11 +53,14 @@ func TestCachesSameAsWithout(t *testing.T) {
 	noCaches := func(sk *sketch.Sketch) { sk.NoSolidCache, sk.NoSolverCache = true, true }
 	var hits atomic.Int64
 	t.Run("models", func(t *testing.T) {
+		// Under the race detector a fifth of them (fixtures.Sample): the
+		// models went on for 20 of its 30 minutes.
+		sampled := fixtures.Sample(files)
 		for i, f := range files {
 			// The sample keeps a thread, whose lathes come from the
 			// cache, so that a model added elsewhere doesn't leave it
 			// without a solid kept.
-			if testing.Short() && i%20 != 0 && f != "thread/screw_m8.tlspr" {
+			if (testing.Short() && i%20 != 0 || !slices.Contains(sampled, f)) && f != "thread/screw_m8.tlspr" {
 				continue
 			}
 			t.Run(f, func(t *testing.T) {

@@ -71,14 +71,11 @@ func TestLinkCache(t *testing.T) {
 func TestStepDiskCache(t *testing.T) {
 	t.Setenv("TELESAPR_CACHE_DIR", t.TempDir())
 	path := filepath.Join(stepShapes, "cylinder.step")
-	forget := func() {
-		stepCacheMu.Lock()
-		stepCache = map[stepKey]*stepEntry{}
-		stepCacheMu.Unlock()
-	}
+	var memo *stepMemo
+	forget := func() { memo = newStepMemo() }
 	forget()
 	writes, hits := stepDiskWrites.Load(), stepDiskHits.Load()
-	first, err := readStep(path, 0.5)
+	first, err := memo.read(path, 0.5)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +83,7 @@ func TestStepDiskCache(t *testing.T) {
 		t.Fatal("the tessellation wasn't kept")
 	}
 	forget()
-	again, err := readStep(path, 0.5)
+	again, err := memo.read(path, 0.5)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +96,7 @@ func TestStepDiskCache(t *testing.T) {
 	}
 	// Another tolerance is another tessellation.
 	forget()
-	if _, err := readStep(path, 0.2); err != nil || stepDiskHits.Load() != hits+1 {
+	if _, err := memo.read(path, 0.2); err != nil || stepDiskHits.Load() != hits+1 {
 		t.Errorf("another tolerance hit the cache (%v)", err)
 	}
 }

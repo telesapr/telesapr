@@ -53,6 +53,13 @@ func Sample[T any](xs []T) []T {
 	return sample(xs, RaceDetector)
 }
 
+// Thin is every raceEvery-th of xs, for a loop that decides itself when
+// to thin, as a sweep does under the race detector unless its whole
+// grid is asked for.
+func Thin[T any](xs []T) []T {
+	return sample(xs, true)
+}
+
 // sample is every raceEvery-th of xs when thin, else all of them.
 func sample[T any](xs []T, thin bool) []T {
 	if !thin {
