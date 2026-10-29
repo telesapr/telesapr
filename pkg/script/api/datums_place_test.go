@@ -96,3 +96,72 @@ func TestDatumsKeepWherePickedMisuse(t *testing.T) {
 	failsWith(t, "can't name a datum", func() { d.Datums.NameFaceAt("bad name", g.Solid().FaceAt(V(10, 6, 2.5)), V(0, 0, 0)) })
 	failsWith(t, "can't name a datum", func() { d.Datums.NameEdgeAt("bad name", rimEdges(g, 5)[0], V(0, 0, 0)) })
 }
+
+// A datum on the lens's rim picked near one end stays near that end
+// when the profile's cubics are bent the other way: the loop then winds
+// the other way and the rim's edge runs from its other end, which a
+// place counted from the edge's start would follow to the far end. It
+// stays there through the file and undo.
+func TestDatumsKeepWherePickedTurnedRound(t *testing.T) {
+	t.Parallel()
+	d := New()
+	d.Edit.SetChordTolerance(0.01)
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	a := d.Sketch.Cubic(V(0, 0, 0), V(5, 8, 0), V(15, 8, 0), V(20, 0, 0))
+	b := d.Sketch.Cubic(V(20, 0, 0), V(15, -8, 0), V(5, -8, 0), V(0, 0, 0))
+	pa, pb := a.Points(), b.Points()
+	d.Constrain.Coincident(pa[3], pb[0])
+	d.Constrain.Coincident(pb[3], pa[0])
+	g := d.Features.Extrude(5, "")
+	var rim SolidEdge
+	for _, e := range rimEdges(g, 5) {
+		if e.Points()[1].Y > 0 {
+			rim = e
+		}
+	}
+	start, _ := rim.Ends()
+	d.Datums.NameEdgeAt("rim", rim, V(1.7, 2.2, 5))
+	was, _ := frameOf(d.Datums.Get("rim"))
+	if was.X > 2 {
+		t.Fatalf("the rim's datum at %v", was)
+	}
+
+	d.Activate(d.Group("rim"))
+	d.Host().(*SketchHost).BeginEval()
+	pa[1].MoveTo(V(5, -8, 0))
+	pa[2].MoveTo(V(15, -8, 0))
+	pb[1].MoveTo(V(15, 8, 0))
+	pb[2].MoveTo(V(5, 8, 0))
+	var turned SolidEdge
+	for _, e := range rimEdges(g, 5) {
+		if e.Name() == rim.Name() {
+			turned = e
+		}
+	}
+	if now, _ := turned.Ends(); now.Minus(start).Magnitude() < 1 {
+		t.Fatalf("the edge still starts at %v: the test turns nothing round", now)
+	}
+	mirrored := V(was.X, -was.Y, was.Z)
+	at, _ := frameOf(d.Datums.Get("rim"))
+	if at.Minus(mirrored).Magnitude() > 1e-6 {
+		t.Errorf("bent the other way, the rim's datum at %v, not %v", at, mirrored)
+	}
+
+	path := filepath.Join(t.TempDir(), "lens.tlspr")
+	if err := d.File.Save(path); err != nil {
+		t.Fatal(err)
+	}
+	back := New()
+	if err := back.File.Load(path); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := frameOf(back.Datums.Get("rim")); got.Minus(mirrored).Magnitude() > 1e-6 {
+		t.Errorf("loaded, the rim's datum at %v, saved at %v", got, mirrored)
+	}
+	if !d.Edit.Undo() {
+		t.Fatal("no undo")
+	}
+	if got, _ := frameOf(d.Datums.Get("rim")); got.Minus(was).Magnitude() > 1e-6 {
+		t.Errorf("undone, the rim's datum at %v, was %v", got, was)
+	}
+}
