@@ -3,6 +3,7 @@ package topo
 import (
 	"errors"
 	"math"
+	"slices"
 	"sort"
 	"strings"
 
@@ -59,7 +60,9 @@ func filletInStages(orig *srf.SShell, picks []FilletPick, r float64, origin uint
 	// Each pick's edge in the solid as it is, and its stage.
 	edgeOf := make([]int, len(picks))
 	keyOf := make([]int, len(picks))
+	kindOf := make([]int, len(picks))
 	var keys []stageKey
+	kinds := []stageKey{{concave: false}, {concave: true}}
 	for i, p := range picks {
 		var e int
 		if p.Arc {
@@ -90,10 +93,30 @@ func filletInStages(orig *srf.SShell, picks []FilletPick, r float64, origin uint
 			keys = append(keys, k)
 		}
 		edgeOf[i] = e
+		if fe.concave {
+			kindOf[i] = 1
+		}
 	}
 	if len(keys) < 2 || len(keys) > 4 {
 		return srf.SShell{}, filletErr(geom.Vector{}, "the corners can't be rounded in stages")
 	}
+	sh, err := roundInStages(orig, t, picks, edgeOf, keyOf, keys, r, origin, flat, false)
+	if err == nil || !slices.Contains(kindOf, 0) || !slices.Contains(kindOf, 1) {
+		return sh, err
+	}
+	// Else a stage of each kind, the picks keeping their radii: where two
+	// of one kind meet across an arc an earlier stage left, its fillet's
+	// radius goes from one's to the other's along it (fillet_vary.go).
+	// Where that fails too, the reason by radii says more.
+	if ksh, kerr := roundInStages(orig, t, picks, edgeOf, kindOf, kinds, r, origin, flat, true); kerr == nil {
+		return ksh, nil
+	}
+	return sh, err
+}
+
+// roundInStages rounds the picks in stages keys, pick i in stage
+// keyOf[i], with the stage's radius, or with own each with its own.
+func roundInStages(orig *srf.SShell, t *Topology, picks []FilletPick, edgeOf, keyOf []int, keys []stageKey, r float64, origin uint32, flat, own bool) (srf.SShell, error) {
 	// The edges no one picked that end where picks of more than one
 	// stage meet: no stage rounds them.
 	picked := map[int]int{}
@@ -165,7 +188,9 @@ func filletInStages(orig *srf.SShell, picks []FilletPick, r float64, origin uint
 					continue
 				}
 				q := p
-				q.R = 0
+				if !own {
+					q.R = 0
+				}
 				if !p.Arc {
 					a, b, found := u.edgeAlong(p.A, p.B, tol)
 					if !found {
@@ -181,12 +206,16 @@ func filletInStages(orig *srf.SShell, picks []FilletPick, r float64, origin uint
 				break
 			}
 			forbid := func(u *Topology, x int) bool { return on(u, x, sharp) || on(u, x, others) }
-			err = filletPicks(&sh, stage, keys[k].r, origin+uint32(n)*stageOrigins, flat, forbid)
+			sr := keys[k].r
+			if own {
+				sr = r
+			}
+			err = filletPicks(&sh, stage, sr, origin+uint32(n)*stageOrigins, flat, forbid)
 			if (curvedEndRefusal(err) || rollingAloneRefusal(err)) && n > 0 {
 				// The stage's picks may go on round the corners an earlier
 				// stage rounded, onto its fillets, as one closed chain the
 				// rolling ball takes.
-				if cerr := filletOneChain(&sh, stage, keys[k].r, origin+uint32(n)*stageOrigins, flat, fresh); !errors.Is(cerr, errNotOneChain) {
+				if cerr := filletOneChain(&sh, stage, sr, origin+uint32(n)*stageOrigins, flat, fresh); !errors.Is(cerr, errNotOneChain) {
 					err = cerr
 				}
 			}

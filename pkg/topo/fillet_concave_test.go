@@ -3,7 +3,6 @@ package topo_test
 import (
 	"fmt"
 	"math"
-	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/check"
@@ -166,20 +165,24 @@ func TestFilletConcaveCircle(t *testing.T) {
 	}
 }
 
-// A corner where convex and concave fillets meet that neither the
-// stages nor a blend rounds is refused, saying so: the notch's two top
-// edges of different radii with the concave upright between them. One
-// top edge with the upright, the other left sharp, is a blend
-// (TestFilletBlendCornerOracle).
-func TestFilletConcaveRefused(t *testing.T) {
+// The notch's two top edges of different radii with the concave
+// upright between them, refused before 2026-10-29 as a corner neither
+// the stages nor a blend rounds: the upright's fillet is made first, and
+// the top edges' fillets go on round the arc it leaves in the top with
+// a radius going from one's to the other's (TestFilletMixedCornerOracle).
+func TestFilletConcaveNotchRadii(t *testing.T) {
 	t.Parallel()
-	sh := notch(math.Pi/2, v(0, 0, 10), srf.Tolerance{})
+	sh := notch(math.Pi/2, v(0, 0, 10), srf.Tol(0.002, 20))
 	a := v(10*math.Cos(math.Pi/4), 10*math.Sin(math.Pi/4), 10)
 	b := v(-a.X, a.Y, 10)
 	err := topo.FilletPicks(sh, []topo.FilletPick{{A: v(0, 0, 0), B: v(0, 0, 10)}, {A: v(0, 0, 10), B: a, R: 0.5},
 		{A: v(0, 0, 10), B: b}}, 1, 1<<30, false)
-	if err == nil || !strings.Contains(err.Error(), "convex edge's fillet meets a concave") {
-		t.Errorf("mixed corner of two radii: %v", err)
+	if err != nil {
+		t.Fatalf("mixed corner of two radii: %v", err)
+	}
+	sound(t, sh)
+	if n := len(varyingFaces(build(t, sh))); n != 1 {
+		t.Errorf("%d faces of a varying radius, want 1", n)
 	}
 }
 
