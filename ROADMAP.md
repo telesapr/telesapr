@@ -388,9 +388,15 @@ What the thread improvements of 2026-10-23 (`doc/notes/thread-evaluation.md`, br
 | Item | State | Approach / tried |
 |---|---|---|
 | A chamfered thread at the coarsest chord tolerance | 1 of 660 unsound in `TestThreadChamferSweep`, a 1/2 BSF nut at 0.5%; rounded crests chamfered, 6 of 120 unsound at 0.5% (screws, studs, nuts and tapped holes of ten sizes at 0.5%, 0.1% and the default), none finer | The nut's ridges united with the bore, before the chamfer, have crossing mesh edges at 0.5% at most planes for the ridges (the mesher's, K4); the chamfer cuts them away, but every group of the thread must be sound |
-| A phase with a run-out | refused on a modelled thread | The run-out's fix places the ridge end exactly; a phase moves it |
 | ACME tolerance classes (2G to 5G) | read from a designation and dropped; an ACME thread takes B1.5's crest clearance and a typed-in clearance | B1.5's pitch diameter allowances and tolerances were not to hand; metric, trapezoidal and unified classes follow their tables since 2026-10-28 (`pkg/thread/class_iso.go`, `class_unified.go`) |
 | Buttress threads, what was left | DIN 513 (S) and ASME B1.9 (BUTT) made since 2026-10-28; roots flat, no classes, no rounded crest (`ErrButtressRounded`) | B1.9 rounds the root (r = 0.07141 P) and designates the load's way (PUSH-BUTT, PULL-BUTT), which `LoadFlankBack` stands for today; DIN 513-2's and B1.9's tolerance classes; a rounded crest needs the arc tangent to flanks at different angles, its centre off the ridge's middle |
+
+Done 2026-10-29: a phase with a run-out on a modelled thread, refused before because the run-out
+keeps the ridges' end off the circle where the root turns into its cone and a phase moves the end.
+The end is now cleared of the circle where the phase has moved it (`ThreadOptions.phaseShift`,
+`clearOfRunOut`), and the planes tried for the ridges take the moved flanks' crossings
+(`threadDrawer.crossings`). `TestThreadPhasedRunOutSweep`, ten threads at six phases and three
+run-outs, is sound in all 180.
 
 Done 2026-10-28: buttress threads, DIN 513's metric S and ASME B1.9's inch BUTT (`pkg/thread/buttress.go`).
 The profile has a flank angle of its own on each side (`thread.Profile.UpperFlank`): the ridge is drawn

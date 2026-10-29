@@ -10,6 +10,7 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 ## [Unreleased]
 
 ### Added
+- A modelled screw thread can have a phase and a run-out together: the ridges are moved along the thread by the phase and still fade out into the run-out's cone. Before, a thread with a run-out refused a phase ("a thread with a run-out can't be phased").
 - A chamfer's edges can have distances of their own: each edge's row on the chamfer's screen has [own distance] and [own second distance], and scripts have `ChamferGroup.SetEdgeDistance` and `SetEdgeSecondDistance`. An edge with none takes the chamfer's, and swapping the chamfer's distances swaps each edge's too. Before, a chamfer had one distance and one second distance for all its edges.
 - A fillet or chamfer whose end runs off its face onto a curved face, such as a band's rounded top, is made: the curved face is carried on past its edge, cuts the blend and grows over its end. A fillet ending on a curved face that a side's face goes on past, as a cone past a band's rounded top, is made the same way. Before, both were refused.
 - Two chamfered edges meet at a corner whose third edge stays sharp with any distances: two distances on each, or a different distance on each edge. The chamfers meet along the line where their planes cross, and the one that reaches further down the sharp edge goes on past it. This works where the chamfers cut (a block's top corner) and where they fill (the foot of a block standing on a plate, whose side face grows out to the mitre), as OpenCASCADE's makeChamfer does.

@@ -1,0 +1,33 @@
+# An M20 screw thread made through its screen on an extruded circle,
+# turned 120° about its axis and fading out 4 mm before its end. The
+# same model as path_thread_runout_phase.go makes
+# (TestPathEquivalence/thread_runout_phase).
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 350 300
+down L 350 300
+up L 350 300
+key esc
+key x shift
+move 350 300
+down L 350 300
+up L 350 300
+menu Features|Screw Thread...
+# The phase, the run-out, then flip the direction, down into the part,
+# and make it.
+twmove 426 150
+twdown L 426 150
+twup L 426 150
+edit 120
+twmove 487 170
+twdown L 487 170
+twup L 487 170
+edit 4
+twmove 60 230
+twdown L 60 230
+twup L 60 230
+twmove 37 260
+twdown L 37 260
+twup L 37 260

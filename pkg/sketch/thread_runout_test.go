@@ -66,6 +66,12 @@ var runOutCases = []threadCase{
 	{"level_m12", 6, 20, "M12xPh3P1", sketch.ThreadOptions{Length: 14, RunOut: 3, LevelStarts: true}},
 	// A flank of the ridge's end on the run-out's circle (2026-10-23).
 	{"screw_m10_flank", 5, 30, "M10", sketch.ThreadOptions{Length: 20, RunOut: 2}},
+	// Phased: the ridges' end is cleared of the circle where the phase
+	// moves it (2026-10-29).
+	{"phased_m8", 4, 30, "M8", sketch.ThreadOptions{Length: 12, RunOut: 3, Phase: 120}},
+	{"phased_blind_m6", 8, 12, "M6", sketch.ThreadOptions{Length: 8, Internal: true, RunOut: 2, Phase: 300}},
+	{"phased_m10_flank", 5, 30, "M10", sketch.ThreadOptions{Length: 20, RunOut: 2, Phase: 45}},
+	{"phased_chamfer_m8", 4, 30, "M8", sketch.ThreadOptions{Length: 12, RunOut: 3, Phase: 200, Chamfer: true}},
 }
 
 // TestThreadRunOut makes threads with a run-out and requires sound
@@ -254,6 +260,7 @@ func TestEditThreadShape(t *testing.T) {
 	}{
 		{"run-out", m8, "M8", func(o *sketch.ThreadOptions) { o.RunOut = 3 }, true},
 		{"level", m12, "M12xPh3P1", func(o *sketch.ThreadOptions) { o.LevelStarts = true }, false},
+		{"phase and run-out", m8, "M8", func(o *sketch.ThreadOptions) { o.Phase, o.RunOut = 90, 3 }, true},
 		{"level and run-out", m12, "M12xPh3P1", func(o *sketch.ThreadOptions) { o.LevelStarts, o.RunOut = true, 3 }, false},
 		{"fewer level starts", m12Level, "M12xPh2P1", func(o *sketch.ThreadOptions) { o.LevelStarts = true }, false},
 		{"level kept", m12Level, "M12xPh3P1", func(o *sketch.ThreadOptions) { o.LevelStarts, o.Length = true, 16 }, true},
@@ -445,6 +452,34 @@ func TestThreadRunOutSweep(t *testing.T) {
 	}.Run(func(p sweep.Point) error {
 		tc := runOutSweepCases[p.String("thread")]
 		tc.o.Length += p.Float("longer")
+		tc.o.RunOut = p.Float("run-out")
+		_, _, res := tc.build(t, 0)
+		if !res.Sound {
+			return errors.New("the solid isn't sound")
+		}
+		return nil
+	}).Require(t)
+}
+
+// TestThreadPhasedRunOutSweep makes run-outs on phased threads, the
+// phase moving the ridges' end along the thread towards and past the
+// run-out's circle, and requires sound solids but at the rate fixed.
+func TestThreadPhasedRunOutSweep(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("thread solids")
+	}
+	sweep.Grid{
+		Axes: []sweep.Axis{
+			sweep.Strings("thread", "M8", "M8-LH", "M3", "M5", "M6v", "M6n", "Tr20", "UNC", "M10", "M10n"),
+			sweep.Floats("phase", 30, 90, 150, 210, 270, 330),
+			sweep.Floats("run-out", 1.64, 2, 3.5),
+		},
+		MaxFailRate: threadRunOutMaxFail,
+		Sample:      8,
+	}.Run(func(p sweep.Point) error {
+		tc := runOutSweepCases[p.String("thread")]
+		tc.o.Phase = p.Float("phase")
 		tc.o.RunOut = p.Float("run-out")
 		_, _, res := tc.build(t, 0)
 		if !res.Sound {

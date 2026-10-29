@@ -76,9 +76,10 @@ type ThreadOptions struct {
 	LoadFlankBack bool
 	// Phase turns the thread about its axis, in degrees: its ridges
 	// move along it, away from the circle, by that part of the lead,
-	// and are a pitch shorter, for the room. A thread with a run-out
-	// takes none, and a Cosmetic one, with no ridges, keeps it for when
-	// it is modelled. Assembly.Screw fits a screw and a nut in an
+	// and are a pitch shorter, for the room; with a run-out, their end
+	// is kept off the circle where the root turns into the run-out's
+	// cone where the phase has moved it. A Cosmetic thread, with no
+	// ridges, keeps it for when it is modelled. Assembly.Screw fits a screw and a nut in an
 	// assembly without it.
 	Phase float64
 	// FullLength, for a thread made on a face (ThreadOnFace,

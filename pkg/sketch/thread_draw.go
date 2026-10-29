@@ -153,7 +153,7 @@ func (sk *Sketch) newThreadDrawer(he core.HEntity, o ThreadOptions, try int) *th
 		start = startsClearOfJoins(d.crossings())[try%startTries]
 	}
 	d.start = start * d.along * d.hand
-	d.shift = phaseRange(o.Spec.Lead()*o.Phase/360, o.Spec.Pitch)
+	d.shift = o.phaseShift()
 	return d
 }
 
@@ -183,7 +183,7 @@ func (d *threadDrawer) crossings() []float64 {
 	for i := range n {
 		// The start's turn about the axis and its ridge's middle along
 		// it: level starts are turned, stacked ones raised a pitch.
-		turn, z := 0.0, l.ridgeBottom+l.baseW/2
+		turn, z := 0.0, l.ridgeMiddle()+o.phaseShift()
 		if o.levelStarts() {
 			turn = float64(i) * 2 * math.Pi / float64(n)
 		} else {
