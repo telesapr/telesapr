@@ -40,6 +40,14 @@ boss's foot sunk into the body, is moved out by the thickness, so the boss's ins
 body's with no wall between them and the walls round the joint keep the thickness. Lathes about
 one axis are joined by their profiles first, as above.
 
+Such parts can also be taken away from the solid before them or intersected with it, as a round
+pocket or a groove lathed into a block, or a cone or a ball cut flat by a block. A part taken away
+takes away from the inside that part grown by the thickness, every face moved out, so a wall of the
+thickness stands round the pocket and over its floor; a part intersected with cuts the inside by
+that part moved in. The parts are taken in the order they were made. A face taken away that lies on
+a part taken away (a pocket's floor) or intersected with (the flat cut down a cone's side) opens
+the inside through it.
+
 The group's screen lists the faces taken away and takes the thickness, as a number or an expression;
 "[change]" beside the faces takes the selected faces instead, and "[remove]" on a face's row
 keeps it as a wall again. A thickness
@@ -57,10 +65,12 @@ sh.AsShell().SetThickness(1.5)
 ## Not yet
 
 A solid with curved faces must be such a prism, its sides all running one way and open only at
-its ends, or one lathe or revolve, or lathes about one axis; a solid joined from other parts by
-a difference or an intersection, or with a helix, a drafted extrusion or a feature after them, is
-refused, and so is a drafted extrusion open at a side. In a union, a prism's curved side lying
-wholly inside another part, and a revolve's end lying inside one, are refused; a face moved out
+its ends, or one lathe or revolve, or lathes about one axis, or a solid joined from such parts; a
+solid with a helix, a drafted extrusion joined to others or a feature after them is refused, and so
+is a drafted extrusion open at a side. A revolve of less than a whole turn taken away, and a face
+taken away that lies on a lathe taken away or intersected with, are refused. In a union, a prism's
+curved side lying partly inside another part and partly a wall, and a revolve's end lying inside
+one, are refused; a face moved out
 that would come out of the solid, or leave a wall beyond it thinner than the thickness, where a
 part joined to another is thinner there than twice the thickness, is refused too. A revolve's curved face is opened only between outside corners. A
 profile of other curves than lines and arcs is refused. Beside a round hole, walls thinner than

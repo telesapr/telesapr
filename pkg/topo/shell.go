@@ -14,7 +14,7 @@ import (
 // whose sides are flat or extrusions of arcs (shellprism.go); solids of
 // revolution, given how they were turned, ShellRevolved takes
 // (shellrevolve.go), drafted extrusions ShellDrafted (shelldraft.go), and
-// unions of such parts ShellJoined (shelljoined.go). Of flat
+// solids joined from such parts ShellJoined (shelljoined.go). Of flat
 // faces, the inner solid has the outer one's topology, each face moved in by the
 // thickness but those taken away, and each vertex where its faces'
 // moved planes meet. The shell is the solid less the inner one, by a

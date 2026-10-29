@@ -1,6 +1,7 @@
 package topo
 
 import (
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
 )
@@ -17,16 +18,7 @@ import (
 // surfaces with the identity and colour of the face of sh (of topology
 // t) it lies on.
 func revolvedAgain(sh *srf.SShell, t *Topology, rev Revolution) (*srf.SShell, error) {
-	axis := rev.Axis.WithMagnitude(1)
-	color := sh.Surface[0].Color
-	again := &srf.SShell{Tol: sh.Tol}
-	for i := range rev.Profile.Sets {
-		if rev.Whole() {
-			again.MakeFromRevolutionOf(&rev.Profile.Sets[i], rev.Pt, axis, color, noFaces{})
-		} else {
-			again.MakeFromHelicalRevolutionOf(&rev.Profile.Sets[i], rev.Pt, axis, color, noFaces{}, rev.Start, rev.End, 0, 0)
-		}
-	}
+	again := rev.solid(sh.Tol, sh.Surface[0].Color)
 	for i := range again.Surface {
 		s := &again.Surface[i]
 		f, d := t.FaceAt(s.PointAt(0.5, 0.5))
@@ -37,4 +29,19 @@ func revolvedAgain(sh *srf.SShell, t *Topology, rev Revolution) (*srf.SShell, er
 		s.Face, s.Origin, s.Color = from.Face, from.Origin, from.Color
 	}
 	return again, nil
+}
+
+// solid is the solid r makes, at tolerance tol, its faces of colour
+// color named by no entity.
+func (r Revolution) solid(tol srf.Tolerance, color core.RGBA) *srf.SShell {
+	axis := r.Axis.WithMagnitude(1)
+	out := &srf.SShell{Tol: tol}
+	for i := range r.Profile.Sets {
+		if r.Whole() {
+			out.MakeFromRevolutionOf(&r.Profile.Sets[i], r.Pt, axis, color, noFaces{})
+		} else {
+			out.MakeFromHelicalRevolutionOf(&r.Profile.Sets[i], r.Pt, axis, color, noFaces{}, r.Start, r.End, 0, 0)
+		}
+	}
+	return out
 }

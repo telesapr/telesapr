@@ -175,10 +175,10 @@ func TestShellJoinedLathes(t *testing.T) {
 	undoRedo(t, d, before)
 }
 
-// A lathe out of which a block is cut is no longer one revolution, nor
-// a union of parts a shell hollows alone: its shell is refused as a
-// curved solid's. (A block added to it is hollowed with it,
-// shell_joined_test.go.)
+// A lathe out of which a block is cut is no longer one revolution, but
+// it is a lathe less a block, each of which a shell hollows alone: its
+// inside is the lathe's less the block grown by the thickness
+// (shell_joined.go).
 func TestShellLatheAndMore(t *testing.T) {
 	t.Parallel()
 	d := api.New()
@@ -190,11 +190,21 @@ func TestShellLatheAndMore(t *testing.T) {
 	d.Features.SketchIn(d.Workplane("XY"), "")
 	cut := block(d, 2, -2, 4, 2, 5)
 	cut.SetCombine(api.Difference)
-	defer func() {
-		err, ok := recover().(error)
-		if !ok || !strings.Contains(err.Error(), "curved") {
-			t.Errorf("%v, want an error saying the solid is curved", err)
-		}
-	}()
-	d.Features.ShellSolid([]api.SolidFace{lathe.Solid().FaceAt(api.V(1, 1, 8))}, 1, "")
+	sh := d.Features.ShellSolid([]api.SolidFace{lathe.Solid().FaceAt(api.V(1, 1, 8))}, 1, "")
+	if p := sh.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	// The frustum less the block, less the frustum moved in (its side
+	// √5/2 in across, from 1 up) but the block grown by 1.
+	const n = 20000
+	inside := 0.0
+	for i := range n {
+		z := 1 + 7*(float64(i)+0.5)/n
+		r := 10 - z/2 - math.Sqrt(5)/2
+		inside += math.Pi * r * r * 7 / n
+	}
+	want := math.Pi*8/3*(100+60+36) - 40 - (inside - 4*6*5)
+	if r := sh.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Fatalf("shelled lathe less a block: %s, want volume %g", r.String(), want)
+	}
 }
