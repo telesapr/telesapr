@@ -383,11 +383,6 @@ func chamferPlates(hole []srf.SBezier) ([]cornerPlate, error) {
 // which on the patch's own are straight and on these are parabolas. nm
 // is the way the patch faces, which its normal must keep all over it.
 func bilinearPatch(pts []geom.Vector, nm geom.Vector) (srf.SSurface, error) {
-	bil := func(a, b float64) geom.Vector {
-		p := pts[0].ScaledBy(1 - a).Plus(pts[1].ScaledBy(a))
-		q := pts[3].ScaledBy(1 - a).Plus(pts[2].ScaledBy(a))
-		return p.ScaledBy(1 - b).Plus(q.ScaledBy(b))
-	}
 	sign := 0.0
 	const g = 8
 	for i := 0; i <= g; i++ {
@@ -401,6 +396,17 @@ func bilinearPatch(pts []geom.Vector, nm geom.Vector) (srf.SSurface, error) {
 			}
 			sign = d
 		}
+	}
+	return bilinearSurface(pts), nil
+}
+
+// bilinearSurface is the bilinear patch through the four corners pts as
+// bilinearPatch makes it, unchecked.
+func bilinearSurface(pts []geom.Vector) srf.SSurface {
+	bil := func(a, b float64) geom.Vector {
+		p := pts[0].ScaledBy(1 - a).Plus(pts[1].ScaledBy(a))
+		q := pts[3].ScaledBy(1 - a).Plus(pts[2].ScaledBy(a))
+		return p.ScaledBy(1 - b).Plus(q.ScaledBy(b))
 	}
 	// (a, b) over the diamond about the patch's middle of half-diagonal
 	// k, more than 1, which holds its square.
@@ -426,5 +432,5 @@ func bilinearPatch(pts []geom.Vector, nm geom.Vector) (srf.SSurface, error) {
 			s.Ctrl[i][j], s.Weight[i][j] = col[i], 1
 		}
 	}
-	return s, nil
+	return s
 }

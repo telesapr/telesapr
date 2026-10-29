@@ -43,6 +43,10 @@
 #       chamfered.
 #   ledgeone d: the notch's top edge from (10, 10, 20) along x alone,
 #       ending at the corner inside the ledge.
+#   ledgetwo d1 d2: the same top edge at d1 and the concave upright edge
+#       below it at d2, the other top edge sharp.
+#   ribtwo d1 d2: the rib's convex upright edge at (10, 10, 5) at d1 and
+#       its concave foot edge towards x at d2, the other foot edge sharp.
 #   apexsome d1 d2 d3 d4: the pyramid's apex as for apex, an edge of
 #       distance 0 left sharp.
 #   pocketsome d1 d2 d3 d4: the concave apex (10, 10, 6) of the pocket
@@ -193,6 +197,14 @@ for d in (0.5, 1, 2, 3):
         emit("ledgeone %g" % d, chamfer(notch, [(L, V(20, 10, 20), d, d)]), L, d)
     except Exception as e:
         print("ledgeone", d, "refused:", e)
+
+for d1, d2 in ((1, 1), (1, 2), (2, 1), (0.5, 1), (1, 0.5), (2, 2), (1.5, 1), (1, 1.5), (0.5, 2)):
+    for name, shape, c, ends in (("ledgetwo", notch, L, (V(20, 10, 20), V(10, 10, 10))),
+                                 ("ribtwo", rib, R, (V(10, 10, 15), V(5, 10, 5)))):
+        try:
+            emit("%s %g %g" % (name, d1, d2), chamfer(shape, [(c, ends[0], d1, d1), (c, ends[1], d2, d2)]), c, max(d1, d2))
+        except Exception as e:
+            print(name, d1, d2, "refused:", e)
 
 k = 6 / 7.0
 pocket = Part.makeBox(20, 20, 10).cut(pyramid_on([V(4, 4, -1), V(16, 4, -1), V(16, 16, -1), V(4, 16, -1)], V(10, 10, 6))).removeSplitter()

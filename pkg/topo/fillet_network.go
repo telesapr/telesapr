@@ -533,6 +533,14 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 				corners[v] = c
 				continue
 			}
+			if mixed && t.chamferMixedPairTakes(v, edges, byEdge) {
+				// A convex and a concave chamfer above an edge left sharp;
+				// where they can't meet so, in stages, by kinds, as before.
+				if cc, cerr := t.chamferMixedPairAt(v, edges, byEdge); cerr == nil {
+					corners[v] = cc
+					continue
+				}
+			}
 			c, err = t.filletCornerAt(v, edges, byEdge, flat)
 			if setback && forceSetback && err == nil && c.kind == 3 {
 				c, err = t.setbackCornerAt(v, edges, byEdge)

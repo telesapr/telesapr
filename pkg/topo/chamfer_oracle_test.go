@@ -317,13 +317,23 @@ var chamferOracleCorner = map[string]geom.Vector{
 // (or filled) by up to 0.3 mm³, 14 of the 18
 // lines; where no two chamfers meet, or two of one distance across the
 // apex, its volume.
+//
+// Where a convex and a concave chamfer meet above an edge left sharp
+// (chamferMixedPairAt), OpenCASCADE fills the hole with a plate of
+// degree 8 whose side on the face the sharp edge bounds leaves its ends
+// as the parabola here does but bulges less: the same corners, within
+// 0.15 d³ of its volume, d the largest distance, 9 of the 12 lines,
+// from 0.04 mm³ to 1.1 at a ledge of 2 and 2. Where the ledge's top
+// chamfer is the wider, OpenCASCADE's corner has no patch and takes
+// more than the top chamfer alone takes, where ours fills the upright's
+// chamfer on top of it: 3 lines.
 func TestChamferCornerOracle(t *testing.T) {
 	t.Parallel()
 	data, err := os.ReadFile(filepath.Join("..", "..", "testdata", "topo", "chamfer-corners.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	triangles, plates, meets := 0, 0, 0
+	triangles, plates, meets, curved, below := 0, 0, 0, 0, 0
 	for line := range strings.SplitSeq(strings.TrimSpace(string(data)), "\n") {
 		head, corners, _ := strings.Cut(line, "|")
 		f := strings.Fields(head)
@@ -375,6 +385,27 @@ func TestChamferCornerOracle(t *testing.T) {
 			dmax = slices.Max(d[1:])
 		}
 		ours := cornerPoints(tp, chamferOracleCorner[f[0]], 3*dmax+0.5)
+		if f[0] == "ledgetwo" || f[0] == "ribtwo" {
+			switch {
+			case len(occ) == 0 && f[0] == "ledgetwo":
+				// OpenCASCADE's corner without its patch, which takes more
+				// than the convex chamfer alone does.
+				alone, err := chamferOracleCase("ledgeone", d[:1], srf.Tol(0.002, 20))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if lone := sound(t, alone); got <= lone || want >= lone {
+					t.Errorf("%s: volume %.6f, the convex chamfer alone %.6f", head, got, lone)
+				}
+				below++
+			case samePoints(ours, occ) && math.Abs(got-want) <= 0.15*dmax*dmax*dmax:
+				t.Logf("%s: OpenCASCADE's plate, %+.3g", head, got-want)
+				curved++
+			default:
+				t.Errorf("%s: corners %v, OpenCASCADE's %v; volume %.6f, %+.3g", head, ours, occ, got, got-want)
+			}
+			continue
+		}
 		switch {
 		case f[0] == "apex":
 			if !samePoints(ours, occ) || got > want || got < want-0.003*want {
@@ -393,5 +424,8 @@ func TestChamferCornerOracle(t *testing.T) {
 	}
 	if triangles > 9 || plates != 7 || meets != 14 {
 		t.Errorf("%d of OpenCASCADE's triangles, 9 when this was written; %d apexes, 7; %d planes meeting where it fills, 14", triangles, plates, meets)
+	}
+	if curved != 9 || below != 3 {
+		t.Errorf("%d convex and concave pairs with OpenCASCADE's corners, 9 when this was written; %d below the convex chamfer alone, 3", curved, below)
 	}
 }
