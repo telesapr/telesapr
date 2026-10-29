@@ -808,7 +808,8 @@ func (s *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
 // triangulate is TriangulateInto, by the constrained Delaunay mesher
 // where the tolerance says so or cdt is set, and the ear clipper where
 // it refuses. It tells whether the ear clipper's mesh of a curved
-// surface strays (earMeshStrays), and may cross the faces beyond.
+// surface strays (earMeshStrays), or of a plane holds a sliver
+// (earMeshSlivers), and may cross the faces beyond.
 func (s *SSurface) triangulate(shell *SShell, mesh *SMesh, cdt bool) (strays bool) {
 	if len(s.Trim) == 0 && !s.TrimBuilt {
 		// See SSurface.TrimBuilt: a constructor that doesn't build
@@ -874,6 +875,9 @@ func (s *SSurface) triangulate(shell *SShell, mesh *SMesh, cdt bool) (strays boo
 		kept = append(kept, t)
 	}
 	mesh.Triangles = kept
+	if s.flat() && !cdt {
+		strays = earMeshSlivers(mesh.Triangles[start:])
+	}
 	return strays
 }
 
