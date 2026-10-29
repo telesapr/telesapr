@@ -214,12 +214,47 @@ func TestThreadChamferSweep(t *testing.T) {
 }
 
 // threadChamferMaxFail is the rate of the chamfer sweep allowed to
-// fail: 1 of 660 since 2026-10-29, a 1/2 BSF nut at the coarsest chord
-// tolerance, where the ridges' Boolean with the bore (before the
-// chamfer) has crossing mesh edges at most planes for the ridges. It
-// was 4 of 660 when a march from a seed whose curve leaves it grazing
-// took the wrong way and was dropped (srf.marchFrom).
-const threadChamferMaxFail = 1.0 / 660
+// fail: none since 2026-10-29, when the Boolean's curves were refined
+// beside grazing meets (srf.SShell.refineGrazingMeets). It was 1 of 660
+// before, a 1/2 BSF nut at the coarsest chord tolerance, and 4 of 660
+// when a march from a seed whose curve leaves it grazing took the wrong
+// way and was dropped (srf.marchFrom).
+const threadChamferMaxFail = 0
+
+// TestThreadChamferCoarse makes the chamfered threads that were unsound
+// at the coarsest chord tolerance the sweeps try, 0.5%: where a ridge's
+// foot crosses the circle at which the bore or core turns into the
+// chamfer's cone, the two curves leave their meeting 2° apart, and each
+// chorded on its own, the circle's chord passed through the ridge's
+// flank beside it (srf.SShell.refineGrazingMeets).
+func TestThreadChamferCoarse(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("thread solids")
+	}
+	rounded := sketch.ThreadOptions{Crest: thread.CrestRounded, Chamfer: true}
+	with := func(o sketch.ThreadOptions, length float64, through, internal bool) sketch.ThreadOptions {
+		o.Length, o.Through, o.Internal = length, through, internal
+		return o
+	}
+	// The sizes of TestThreadChamferSweep: r the thread's radius.
+	bsf, m8, m8x1 := 6.35, 4.0, 4.0
+	for _, tc := range []threadCase{
+		{"bsf_nut", 2 * bsf, 1.6*bsf + 1.41, "1/2 BSF", sketch.ThreadOptions{Length: 1.6*bsf + 1.41, Through: true, Internal: true, Chamfer: true}},
+		{"rounded_nut_m8", 2 * m8, 1.6 * m8, "M8", with(rounded, 1.6*m8, true, true)},
+		{"rounded_screw_bsf", bsf, 6 * bsf, "1/2 BSF", with(rounded, 3*bsf, false, false)},
+		{"rounded_tapped_bsf", 2 * bsf, 4 * bsf, "1/2 BSF", with(rounded, 2.4*bsf, false, true)},
+		{"rounded_tapped_m8x1", 2 * m8x1, 4 * m8x1, "M8x1", with(rounded, 2.4*m8x1, false, true)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			_, _, res, err := tc.tryBuild(t, 0.5)
+			if err != nil || !res.Sound {
+				t.Errorf("sound %v, %v", res.Sound, err)
+			}
+		})
+	}
+}
 
 // TestCosmeticThreadChamfer makes chamfered cosmetic threads: the
 // part's end is cut by the chamfer's cone, by the thread's lathe, which
