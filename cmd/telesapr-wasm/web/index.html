@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>TeleSAPR wasm spike</title>
+<style>body { font: 14px sans-serif; margin: 16px; } canvas { border: 1px solid #888; } pre { white-space: pre-wrap; }</style>
+</head>
+<body>
+<canvas id="view" width="1280" height="800"></canvas>
+<pre id="log">loading telesapr.wasm…</pre>
+<!-- memfs.js first: wasm_exec.js keeps a globalThis.fs that is already there. -->
+<script src="memfs.js"></script>
+<script src="wasm_exec.js"></script>
+<script>
+"use strict";
+// ?model=<path under this folder>&frames=<n>
+const params = new URLSearchParams(location.search);
+const model = params.get("model") || "model.tlspr";
+const frames = Number(params.get("frames") || 60);
+const log = (s) => { document.getElementById("log").textContent += "\n" + s; console.log("spike: " + s); };
+const canvas = document.getElementById("view");
+const ctx = canvas.getContext("2d");
+const image = ctx.createImageData(canvas.width, canvas.height);
+
+globalThis.telesaprReady = async () => {
+	const bytes = new Uint8Array(await (await fetch(model)).arrayBuffer());
+	memfs.put("/model.tlspr", bytes);
+	const opened = telesaprOpen("/model.tlspr", canvas.width, canvas.height);
+	if (opened.error) { log("open: " + opened.error); return; }
+	log(`load and regenerate ${opened.ms.toFixed(0)} ms`);
+	let i = 0, draw = 0, worst = 0;
+	const start = performance.now();
+	const step = () => {
+		const ms = telesaprFrame(i * 2 * Math.PI / frames, image.data);
+		ctx.putImageData(image, 0, 0);
+		draw += ms; worst = Math.max(worst, ms);
+		if (++i < frames) { requestAnimationFrame(step); return; }
+		const wall = performance.now() - start;
+		log(`${frames} frames ${canvas.width}x${canvas.height}: draw mean ${(draw / frames).toFixed(1)} ms, worst ${worst.toFixed(1)} ms, ${(1000 * frames / wall).toFixed(1)} fps on the page`);
+		const t = performance.now();
+		const out = telesaprRun(`doc.Features.SketchIn(doc.Workplane("XY"), "spike-sketch")
+doc.Sketch.Rect(V(0, 0, 0), V(20, 10, 0))
+p := doc.Features.Extrude(5, "spike")
+fmt.Printf("%s: %.1f mm³\\n", p, p.Analyze().Volume())`);
+		log(`script (${(performance.now() - t).toFixed(0)} ms): ${out}`);
+		log("done");
+	};
+	requestAnimationFrame(step);
+};
+
+const t0 = performance.now();
+const go = new Go();
+WebAssembly.instantiateStreaming(fetch("telesapr.wasm"), go.importObject).then((r) => {
+	log(`instantiate ${(performance.now() - t0).toFixed(0)} ms`);
+	go.run(r.instance);
+}).catch((e) => log("error: " + e));
+</script>
+</body>
+</html>
