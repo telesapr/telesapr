@@ -1,0 +1,18 @@
+# Sweep Along Path round a corner beside an arc: a rectangle swept along
+# a line that meets a three-quarter arc at a right angle, joined where
+# the profile's paths along the two cross, with no corner radius; the
+# group screen, then the solid checked.
+file $testdata/ui/sweep_arc_corner.tlspr
+menu File|Open...
+view other
+move 296.25 243.75
+down L 296.25 243.75
+up L 296.25 243.75
+move 326.25 146.25
+down L 326.25 146.25
+up L 326.25 146.25
+menu Features|Sweep Along Path
+tw
+answer ok
+menu Analyze|Check Solid
+dump

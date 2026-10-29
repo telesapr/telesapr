@@ -206,6 +206,18 @@ func TestSolidGoldens(t *testing.T) {
 			d.Sketch.Circle(api.V(0, 0, 0), 2)
 			d.Features.Sweep(path, "")
 		},
+		"sweep-arc-corner": func(d *api.Doc) {
+			// A line meeting an arc at a right angle, joined with no
+			// corner radius.
+			d.Features.SketchIn(d.Workplane("ZX"), "path")
+			path := []api.Entity{
+				d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 10)),
+				d.Sketch.Arc(api.V(0, 0, 15), api.V(0, 0, 10), api.V(5, 0, 15)),
+			}
+			d.Features.SketchIn(d.Workplane("XY"), "profile")
+			d.Sketch.Circle(api.V(0, 0, 0), 1)
+			d.Features.Sweep(path, "")
+		},
 		"sweep-solid-edges": func(d *api.Doc) {
 			block(d, 0, 0, 20, 10, 5)
 			s := d.Active().Solid()
