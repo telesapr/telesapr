@@ -80,8 +80,17 @@ type ThreadOptions struct {
 	// rather than the other way. A screw and a nut mate when their load
 	// flanks face each other, which depends on which way each thread
 	// runs. Other threads' ridges are symmetric, and it leaves them as
-	// they are.
+	// they are. A designation that says which way the load goes
+	// (thread.Spec.Load: PUSH-BUTT, PULL-BUTT) sets it.
 	LoadFlankBack bool
+	// RoundRoot rounds the roots of an ASME B1.9 buttress thread as its
+	// standard does, by an arc tangent to both flanks
+	// (thread.Profile.RootArcs); otherwise they are flat, at the
+	// standard's truncation. The arcs are small, 0.07 of a pitch, and
+	// the Booleans that put them on the part need a chord tolerance of
+	// at most a fifth of their radius (ErrRootRoundCoarse). Other
+	// threads' roots are flat, and it leaves them so.
+	RoundRoot bool
 	// Cosmetic records the thread on the part without modelling its
 	// turns (thread_cosmetic_build.go): a screw is left at, or turned
 	// down to, its major diameter and a nut bored to its minor one, and
@@ -108,6 +117,22 @@ func (o ThreadOptions) FitClearance() (float64, error) {
 	return c, err
 }
 
+// LoadStated is o with the way of the load its designation states, if
+// it does, taken into LoadFlankBack, which keeps it in the thread's
+// options: PULL-BUTT turns the ridge, PUSH-BUTT leaves it as drawn.
+// AddThread and EditThread take it so; the thread's screen takes it to
+// show the load flank as a designation typed in sets it.
+func (o ThreadOptions) LoadStated() ThreadOptions {
+	switch o.Spec.Load {
+	case thread.LoadPush:
+		o.LoadFlankBack = false
+	case thread.LoadPull:
+		o.LoadFlankBack = true
+	}
+	o.Spec.Load = thread.LoadUnstated
+	return o
+}
+
 // phased tells whether the thread's ridges are moved along it from
 // where a thread starts them; a cosmetic thread has none to move, and
 // keeps its phase only for when it is modelled.
@@ -126,6 +151,9 @@ type threadLayout struct {
 	// baseR is the radius of the ridge's foot, which lies past the root
 	// so that the ridge and the part overlap.
 	baseR, baseW float64
+	// footShift is how far along the thread, towards the upper flank,
+	// the middle of the ridge's foot lies from the middle of its crest.
+	footShift float64
 	// blankIn and blankOut are the radii that the turning or the boring
 	// takes away between; blankBottom and blankTop the heights.
 	blankIn, blankOut       float64
@@ -155,6 +183,7 @@ func (o ThreadOptions) layout(circleR float64) (threadLayout, error) { return o.
 // layoutTry is layout with a chamfer made the try'th way of
 // chamferTries.
 func (o ThreadOptions) layoutTry(circleR float64, try int) (threadLayout, error) {
+	o = o.LoadStated()
 	s := o.Spec
 	if err := s.Validate(); err != nil {
 		return threadLayout{}, err
@@ -185,6 +214,9 @@ func (o ThreadOptions) layoutTry(circleR float64, try int) (threadLayout, error)
 	l := threadLayout{profile: s.Profile(o.Internal, clearance)}
 	if o.LoadFlankBack {
 		l.profile = l.profile.Turned()
+	}
+	if o.RoundRoot && !o.Cosmetic {
+		l.profile.RootRoundRadius = s.RootRound()
 	}
 	p := l.profile
 
@@ -217,6 +249,17 @@ func (o ThreadOptions) layoutTry(circleR float64, try int) (threadLayout, error)
 	// The crest is shaped once the ridge's foot is placed, which it
 	// leaves where it was.
 	l.profile = p.WithCrest(o.Crest)
+	l.footShift = l.profile.MiddleShift(l.baseR)
+	if l.profile.RootRoundRadius > 0 {
+		// A rounded root's foot is under its tangents' ends, which lie in
+		// the part, clear of the next turn's.
+		lower, upper := l.profile.RootArcs()
+		if !(upper.End[1] < lower.End[1]+s.Pitch) || (upper.End[0]-l.baseR)*(upper.End[0]-p.RootRadius) >= 0 {
+			return threadLayout{}, errors.New("the thread's rounded roots don't fit its pitch")
+		}
+		l.baseW = upper.End[1] - lower.End[1]
+		l.footShift = (upper.End[1] + lower.End[1]) / 2
+	}
 
 	l.blankBottom, l.blankTop = -margin, o.Length
 	if o.Through {
@@ -321,6 +364,30 @@ func (l *threadLayout) layChamfer(o ThreadOptions, try chamferTry) {
 		l.ridgeTop = -top
 	}
 	l.chamferPast = over + 0.25*pitch
+}
+
+// ErrRootRoundCoarse is returned for a rounded root (RoundRoot) on a
+// part whose chord tolerance is coarser than rootChordLimit of the
+// root's radius: the Booleans then fail where the root's arcs cross
+// the turned or bored surface.
+var ErrRootRoundCoarse = errors.New("the thread's rounded root is too fine for the chord tolerance")
+
+// rootChordLimit is the coarsest chord tolerance, as a part of a
+// rounded root's radius, at which every B1.9 thread came out sound
+// (sizes 1/2 to 4 inches, 4 to 20 threads per inch, screws and nuts;
+// all of them at 0.17, most at 0.24).
+const rootChordLimit = 0.2
+
+// checkRoundRoot refuses a rounded root too fine for the chord
+// tolerance, saying what tolerance it needs.
+func (sk *Sketch) checkRoundRoot(l threadLayout) error {
+	r := l.profile.RootRoundRadius
+	chord := sk.Tol().ChordTolMm()
+	if r == 0 || chord <= rootChordLimit*r {
+		return nil
+	}
+	return fmt.Errorf("%w: make the chord tolerance %.2g%% or less", ErrRootRoundCoarse,
+		sk.ChordTolPercent()*rootChordLimit*r/chord)
 }
 
 // ErrButtressRounded is returned for a buttress thread with a rounded
@@ -455,7 +522,7 @@ func (l *threadLayout) clearOfRunOut(o ThreadOptions) float64 {
 // further from its crest's the further r is from the crest.
 func (l threadLayout) flanksAt(z, r float64) (lo, hi float64) {
 	p := l.profile
-	mid, half := z-p.MiddleShift(l.baseR)+p.MiddleShift(r), p.WidthAt(r)/2
+	mid, half := z-l.footShift+p.MiddleShift(r), p.WidthAt(r)/2
 	return mid - half, mid + half
 }
 
@@ -494,6 +561,9 @@ func (sk *Sketch) checkThread(he core.HEntity, o ThreadOptions, part *Group) err
 	if err != nil {
 		return err
 	}
+	if err := sk.checkRoundRoot(l); err != nil {
+		return err
+	}
 	return sk.checkThreadPart(he, o, l, part)
 }
 
@@ -517,6 +587,7 @@ type ThreadResult struct {
 // the part must be turned or bored (addCosmeticThread). It generates the
 // sketch, and says whether the solid came out sound.
 func (sk *Sketch) AddThread(he core.HEntity, o ThreadOptions) (ThreadResult, error) {
+	o = o.LoadStated()
 	if err := sk.CheckThread(he, o); err != nil {
 		return ThreadResult{}, err
 	}

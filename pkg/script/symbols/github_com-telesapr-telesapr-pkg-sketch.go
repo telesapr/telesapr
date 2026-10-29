@@ -63,6 +63,7 @@ func init() {
 		"ErrNotPoint":                  reflect.ValueOf(&sketch.ErrNotPoint).Elem(),
 		"ErrNotTextRequest":            reflect.ValueOf(&sketch.ErrNotTextRequest).Elem(),
 		"ErrNotThread":                 reflect.ValueOf(&sketch.ErrNotThread).Elem(),
+		"ErrRootRoundCoarse":           reflect.ValueOf(&sketch.ErrRootRoundCoarse).Elem(),
 		"ErrSplinePointsFull":          reflect.ValueOf(&sketch.ErrSplinePointsFull).Elem(),
 		"ErrThreadNoPart":              reflect.ValueOf(&sketch.ErrThreadNoPart).Elem(),
 		"ErrThreadPastPart":            reflect.ValueOf(&sketch.ErrThreadPastPart).Elem(),

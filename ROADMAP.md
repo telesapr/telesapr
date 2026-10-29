@@ -390,7 +390,22 @@ What the thread improvements of 2026-10-23 (`doc/notes/thread-evaluation.md`, br
 | A chamfered thread at the coarsest chord tolerance | 1 of 660 unsound in `TestThreadChamferSweep`, a 1/2 BSF nut at 0.5%; rounded crests chamfered, 6 of 120 unsound at 0.5% (screws, studs, nuts and tapped holes of ten sizes at 0.5%, 0.1% and the default), none finer | The nut's ridges united with the bore, before the chamfer, have crossing mesh edges at 0.5% at most planes for the ridges (the mesher's, K4); the chamfer cuts them away, but every group of the thread must be sound |
 | A phase with a run-out | refused on a modelled thread | The run-out's fix places the ridge end exactly; a phase moves it |
 | ACME tolerance classes (2G to 5G) | read from a designation and dropped; an ACME thread takes B1.5's crest clearance and a typed-in clearance | B1.5's pitch diameter allowances and tolerances were not to hand; metric, trapezoidal and unified classes follow their tables since 2026-10-28 (`pkg/thread/class_iso.go`, `class_unified.go`) |
-| Buttress threads, what was left | DIN 513 (S) and ASME B1.9 (BUTT) made since 2026-10-28; roots flat, no classes, no rounded crest (`ErrButtressRounded`) | B1.9 rounds the root (r = 0.07141 P) and designates the load's way (PUSH-BUTT, PULL-BUTT), which `LoadFlankBack` stands for today; DIN 513-2's and B1.9's tolerance classes; a rounded crest needs the arc tangent to flanks at different angles, its centre off the ridge's middle |
+| Buttress threads, what was left | DIN 513 (S) and ASME B1.9 (BUTT) made since 2026-10-28, B1.9's rounded root and PUSH-/PULL-BUTT since 2026-10-29 (below); no classes, no rounded crest (`ErrButtressRounded`); a rounded root refused at chord tolerances coarser than a fifth of its radius (`ErrRootRoundCoarse`) | DIN 513-2's and B1.9's tolerance classes; a rounded crest needs the arc tangent to flanks at different angles, its centre off the ridge's middle. A rounded root at coarse tolerances: grooves cut from a blank at the crest (the groove's arc then meets nothing) were sound for every nut at 0.5% in a spike, but screws turned down failed at 0.2% and 0.5%, and the cut would need its own chamfer and run-out |
+
+Done 2026-10-29: ASME B1.9's rounded roots, asked for by **rounded root** (`RoundRoot`), and the
+load's way in a B1.9 designation (`1-12 PUSH-BUTT`, `1-12 PULL-BUTT`, `thread.Spec.Load`), which
+sets `LoadFlankBack` when the thread is made or edited (`ThreadOptions.LoadStated`). The standard's
+arc, of 0.07141 P tangent to both flanks, touches the root at its bottom: drawn so it would lie on
+the turned surface along a helix. Each side keeps the arc from its flank to 80° short of the
+bottom, or nine tenths of the way beside the 45° flank, and goes on along its tangent into the part
+(`thread.Profile.RootArcs`, `pkg/thread/root.go`), within a quarter of the radius of the standard's
+arc; the flat root's corners were 1.6 radii off it. The ridge's sketch has two arcs and two tangents
+more, 0 dof. Tried first: one arc per flank moved along it to cross the root at 18° (unsound at
+the default tolerance for every nut), and turning 60° short (sound only up to 0.12 of the radius,
+where these are to 0.2). Every B1.9 size tried (1/2 to 4 inches, 4 to 20 tpi) is sound at a chord
+tolerance of 0.17 of the radius and most at 0.24; above 0.2 it is refused, naming the tolerance to
+set. The flat root stays the default: at 0.5% and 0.2% the rounded root's flat between the arcs is
+narrower than the chord tolerance, and `TestThreadSweep` holds every thread sound there.
 
 Done 2026-10-28: buttress threads, DIN 513's metric S and ASME B1.9's inch BUTT (`pkg/thread/buttress.go`).
 The profile has a flank angle of its own on each side (`thread.Profile.UpperFlank`): the ridge is drawn

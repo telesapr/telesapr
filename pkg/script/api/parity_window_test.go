@@ -293,6 +293,7 @@ var windowActions = map[string]string{
 	"ScreenChangeThread/b":            "Features.Thread ThreadGroup.Edit",
 	"ScreenChangeThread/s":            "Features.Thread ThreadGroup.Edit",
 	"ScreenChangeThread/w":            "Features.Thread ThreadGroup.Edit",
+	"ScreenChangeThread/j":            "Features.Thread ThreadGroup.Edit",
 	"ScreenChangeThread/h":            "Features.Thread ThreadGroup.Edit",
 	"ScreenChangeThread/k":            "Features.Thread ThreadGroup.Edit",
 	"ScreenChangeThread/y":            "Features.Thread ThreadGroup.Edit Features.ThreadOnFace",

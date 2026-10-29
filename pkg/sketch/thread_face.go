@@ -142,6 +142,9 @@ func (sk *Sketch) CheckThreadOnFace(p ThreadPlace, o ThreadOptions) error {
 	if err != nil {
 		return err
 	}
+	if err := sk.checkRoundRoot(l); err != nil {
+		return err
+	}
 	// The ridges reach past the root into the part; a hole wider, or a
 	// shaft thinner, than half way there leaves them barely touching it.
 	root, reach := l.profile.RootRadius, math.Abs(l.baseR-l.profile.RootRadius)/2

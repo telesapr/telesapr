@@ -24,6 +24,7 @@ import (
 //	S20x4          DIN 513 metric buttress
 //	S40x14(P7)     buttress, 7 mm pitch, 14 mm lead
 //	1-12 BUTT      ASME B1.9 buttress inch, 12 threads per inch
+//	1-12 PULL-BUTT the same, the screw pulling (PUSH-BUTT, pushing)
 //
 // A designation ending in -LH is a left-hand thread. Letter case and
 // spaces don't matter, and the multiplication sign may stand for the x.
@@ -215,6 +216,9 @@ func (s *Spec) parseInch(t, text string) error {
 	for _, sr := range inchSeries {
 		if rest, ok := strings.CutSuffix(t, sr.name); ok {
 			series, t, table, s.Form = sr.name, strings.TrimRight(rest, "- "), sr.table, sr.form
+			if s.Form == FormButtressInch {
+				t = s.parseLoad(t)
+			}
 			break
 		}
 	}
@@ -354,7 +358,8 @@ func (s Spec) String() string {
 		b.WriteString(inchName(s.Diameter/mmPerInch, acme) + "-" + formatNumber(mmPerInch/s.Pitch) + " ACME")
 		s.writeStarts(&b)
 	case FormButtressInch:
-		b.WriteString(inchName(s.Diameter/mmPerInch, buttressInch) + "-" + formatNumber(mmPerInch/s.Pitch) + " BUTT")
+		b.WriteString(inchName(s.Diameter/mmPerInch, buttressInch) + "-" + formatNumber(mmPerInch/s.Pitch) + " " +
+			loadNames[s.Load] + "BUTT")
 		s.writeStarts(&b)
 	}
 	if s.LeftHand {
@@ -417,4 +422,18 @@ func Note(text string, s Spec) string {
 		return ""
 	}
 	return fmt.Sprintf("'%s' is written %s", strings.TrimSpace(text), s)
+}
+
+// parseLoad takes the way of the load, PUSH or PULL, off the end of t,
+// what comes before BUTT in a designation, and returns the rest.
+func (s *Spec) parseLoad(t string) string {
+	for l, name := range loadNames {
+		if word := strings.TrimSuffix(name, "-"); word != "" {
+			if rest, ok := strings.CutSuffix(t, word); ok {
+				s.Load = Load(l)
+				return strings.TrimRight(rest, "- ")
+			}
+		}
+	}
+	return t
 }

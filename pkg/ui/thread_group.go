@@ -68,6 +68,9 @@ func (tw *textWindow) showThreadSummary(g *sketch.Group, helix core.HGroup) {
 	if o.LoadFlankBack && o.Spec.Buttress() {
 		more += ", load flank back"
 	}
+	if o.RoundRoot && o.Spec.RootRound() > 0 {
+		more += ", rounded root"
+	}
 	fit, err := o.FitClearance()
 	if err != nil {
 		fit = o.Clearance

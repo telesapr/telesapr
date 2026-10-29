@@ -8,6 +8,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/thread"
 )
 
 // threadGroups are the groups of a thread, in their order: four, then
@@ -465,9 +466,12 @@ func (d *threadDrawer) drawProfile() {
 	}
 	for i := range n {
 		z := d.l.ridgeMiddle() + float64(i)*d.o.Spec.Pitch + d.shift
-		if d.l.profile.CrestRoundRadius > 0 {
+		switch {
+		case d.l.profile.CrestRoundRadius > 0:
 			d.drawRoundRidge(i, z)
-		} else {
+		case d.l.profile.RootRoundRadius > 0:
+			d.drawRoundRootRidge(i, z)
+		default:
 			d.drawFlatRidge(i, z)
 		}
 	}
@@ -479,7 +483,7 @@ func (d *threadDrawer) drawProfile() {
 func (d *threadDrawer) drawFlatRidge(i int, z float64) {
 	p, l, none := d.l.profile, d.l, core.NoEntity
 	base, crest := l.baseW/2, p.CrestWidth/2
-	zc := z - p.MiddleShift(l.baseR)
+	zc := z - l.footShift
 	ridge := []core.HRequest{
 		d.line(l.baseR, z-base, l.baseR, z+base),
 		d.line(l.baseR, z+base, p.CrestRadius, zc+crest),
@@ -501,6 +505,90 @@ func (d *threadDrawer) drawFlatRidge(i int, z float64) {
 		d.dimension(core.ConstraintAngle, 90+p.UpperFlank, none, none, ridge[0].Entity(0), ridge[1].Entity(0))
 	}
 	d.placeRidge(i, ridge[2], 2, zc-crest)
+}
+
+// drawRoundRootRidge draws the ridge i, its foot centred at height z,
+// with a flat crest and a rounded root (thread.Profile.RootArcs): each
+// flank runs into an arc tangent to it, the arc into its tangent, which
+// crosses the root into the part, and a line square to the axis from
+// the tangent's end to the foot closes the ridge there, inside the part.
+func (d *threadDrawer) drawRoundRootRidge(i int, z float64) {
+	p, l, none := d.l.profile, d.l, core.NoEntity
+	crest := p.CrestWidth / 2
+	zc := z - l.footShift
+	lower, upper := p.RootArcs()
+	at := func(pt [2]float64) (float64, float64) { return pt[0], zc + pt[1] }
+	_, lowZ := at(lower.End)
+	_, upZ := at(upper.End)
+	b := d.line(l.baseR, lowZ, l.baseR, upZ)
+	top := d.line(p.CrestRadius, zc+crest, p.CrestRadius, zc-crest)
+	// side draws the root on one side and its flank, from the foot to
+	// the crest's end at crestZ: the line from the foot, the tangent,
+	// the arc and the flank, as requests in that order.
+	side := func(a thread.RootArc, footZ, crestZ float64) [4]core.HRequest {
+		er, ez := at(a.End)
+		ar, az := at(a.Turn)
+		tr, tz := at(a.Tangent)
+		cr, cz := at(a.Centre)
+		var arc core.HRequest
+		// Anticlockwise, a screw's upper arc runs from its turn to the
+		// flank, its lower one from the flank; a nut's the other way.
+		if (crestZ > zc) == (p.RootRadius < p.CrestRadius) {
+			arc = d.arc(cr, cz, ar, az, tr, tz)
+		} else {
+			arc = d.arc(cr, cz, tr, tz, ar, az)
+		}
+		return [4]core.HRequest{d.line(l.baseR, footZ, er, ez), d.line(er, ez, ar, az), arc,
+			d.line(tr, tz, p.CrestRadius, crestZ)}
+	}
+	ups := side(upper, upZ, zc+crest)
+	downs := side(lower, lowZ, zc-crest)
+	up, down := ups[3], downs[3]
+
+	// The arc's ends: at its turn, and at the flank.
+	ends := func(arc core.HRequest, upper bool) (turn, flank core.HEntity, flankAtEnd bool) {
+		fromTurn := upper == (p.RootRadius < p.CrestRadius)
+		if fromTurn {
+			return arc.Entity(2), arc.Entity(3), true
+		}
+		return arc.Entity(3), arc.Entity(2), false
+	}
+	d.coincident(top.Entity(2), down.Entity(2))
+	d.coincident(up.Entity(2), top.Entity(1))
+	for _, s := range []struct {
+		reqs   [4]core.HRequest
+		corner core.HEntity
+		upper  bool
+		arc    thread.RootArc
+	}{{ups, b.Entity(2), true, upper}, {downs, b.Entity(1), false, lower}} {
+		foot, tangent, arc, flank := s.reqs[0], s.reqs[1], s.reqs[2], s.reqs[3]
+		turn, onFlank, flankAtEnd := ends(arc, s.upper)
+		d.coincident(s.corner, foot.Entity(1))
+		d.coincident(foot.Entity(2), tangent.Entity(1))
+		d.coincident(tangent.Entity(2), turn)
+		d.coincident(onFlank, flank.Entity(1))
+		d.constrain(core.ConstraintHorizontal, none, none, foot.Entity(0), none, false)
+		d.dimension(core.ConstraintPtLineDistance, math.Abs(s.arc.End[0]-l.baseR), foot.Entity(2), none, b.Entity(0), none)
+		slope := math.Atan2(math.Abs(s.arc.Turn[0]-s.arc.End[0]), math.Abs(s.arc.Turn[1]-s.arc.End[1])) * 180 / math.Pi
+		d.dimension(core.ConstraintAngle, slope, none, none, b.Entity(0), tangent.Entity(0))
+		d.constrain(core.ConstraintArcLineTangent, none, none, arc.Entity(0), tangent.Entity(0), !flankAtEnd)
+		d.constrain(core.ConstraintArcLineTangent, none, none, arc.Entity(0), flank.Entity(0), flankAtEnd)
+		d.dimension(core.ConstraintDiameter, 2*p.RootRoundRadius, none, none, arc.Entity(0), none)
+		d.dimension(core.ConstraintPtLineDistance, math.Abs(s.arc.Centre[0]-l.baseR), arc.Entity(1), none, b.Entity(0), none)
+	}
+
+	d.constrain(core.ConstraintVertical, none, none, b.Entity(0), none, false)
+	d.dimension(core.ConstraintPtLineDistance, l.baseR, d.center, none, b.Entity(0), none)
+	d.constrain(core.ConstraintVertical, none, none, top.Entity(0), none, false)
+	d.dimension(core.ConstraintPtLineDistance, p.CrestRadius, d.center, none, top.Entity(0), none)
+	d.dimension(core.ConstraintPtPtDistance, p.CrestWidth, top.Entity(1), top.Entity(2), none, none)
+	d.dimension(core.ConstraintAngle, p.FlankAngle, none, none, up.Entity(0), down.Entity(0))
+	if p.Symmetric() {
+		d.constrain(core.ConstraintEqualLengthLines, none, none, up.Entity(0), down.Entity(0), false)
+	} else {
+		d.dimension(core.ConstraintAngle, 90+p.UpperFlank, none, none, b.Entity(0), up.Entity(0))
+	}
+	d.placeRidge(i, top, 2, zc-crest)
 }
 
 // drawRoundRidge draws the ridge i, centred at height z, with a

@@ -146,7 +146,7 @@ func (sk *Sketch) EditThread(hg core.HGroup, o ThreadOptions) (ThreadResult, err
 	if _, err := sk.threadGroupsOf(hg); err != nil {
 		return ThreadResult{}, err
 	}
-	o = sk.followFace(sk.Group(hg).Thread.Circle, o)
+	o = sk.followFace(sk.Group(hg).Thread.Circle, o.LoadStated())
 	if err := sk.CheckThreadEdit(hg, o); err != nil {
 		return ThreadResult{}, err
 	}

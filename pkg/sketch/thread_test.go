@@ -63,6 +63,11 @@ var threadCases = []threadCase{
 	{"nut_s20_back", 16, 20, "S20x4", sketch.ThreadOptions{Length: 20, Through: true, Internal: true, LoadFlankBack: true}},
 	{"screw_butt", 12.7, 40, "1-12 BUTT", sketch.ThreadOptions{Length: 25, Clearance: 0.05}},
 	{"nut_butt_lh", 20, 15, "1-12 BUTT-LH", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Clearance: 0.05}},
+	// B1.9's rounded roots, and the load's way in the designation.
+	// A coarse pitch on a short part, which the default chord tolerance
+	// takes.
+	{"screw_butt_round", 9.525, 20, "3/4-10 PULL-BUTT", sketch.ThreadOptions{Length: 12, Clearance: 0.05, RoundRoot: true}},
+	{"nut_butt_round", 20, 15, "1-12 BUTT", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Clearance: 0.05, RoundRoot: true}},
 }
 
 // build makes the part and its thread, with the given chord tolerance
@@ -163,8 +168,11 @@ func TestThreadSolids(t *testing.T) {
 				t.Fatal(err)
 			}
 			p := s.Profile(o.Internal, clearance)
-			if o.LoadFlankBack {
+			if o.LoadFlankBack || s.Load == thread.LoadPull {
 				p = p.Turned()
+			}
+			if o.RoundRoot {
+				p.RootRoundRadius = s.RootRound()
 			}
 
 			order := sk.Group(hel).Order
@@ -186,7 +194,11 @@ func TestThreadSolids(t *testing.T) {
 			if o.Internal {
 				what = "bore"
 			}
-			d := s.String()
+			// The groups are named for the thread, the load's way kept in
+			// its load flank.
+			named := s
+			named.Load = thread.LoadUnstated
+			d := named.String()
 			if want := []string{d + "-blank", d + "-" + what, d + "-profile", d + "-thread"}; strings.Join(names, " ") != strings.Join(want, " ") {
 				t.Errorf("groups %q, want %q", names, want)
 			}
@@ -231,6 +243,16 @@ func TestThreadSolids(t *testing.T) {
 				}
 			}
 			baseW := math.Abs(foot[1].Z - foot[0].Z)
+			// A rounded root is two arcs a ridge, of the standard's radius.
+			arcs := 0
+			for i := range sk.Requests {
+				if r := &sk.Requests[i]; r.Group == profile && r.Type == sketch.RequestArcOfCircle {
+					arcs++
+				}
+			}
+			if want := 2 * s.NumStarts(); p.RootRoundRadius > 0 && arcs != want {
+				t.Errorf("%d arcs round the roots, want %d", arcs, want)
+			}
 			sweep := o.Length - s.Pitch - float64(s.NumStarts()-1)*s.Pitch - baseW
 			// A phase moves the ridges by that part of the lead, within a
 			// quarter of a pitch down and three up, in a pitch more room.
@@ -242,6 +264,13 @@ func TestThreadSolids(t *testing.T) {
 			}
 			angle := sweep / s.Lead() * 2 * math.Pi
 			want += float64(s.NumStarts()) * area * centroid * angle
+			if p.RootRoundRadius > 0 {
+				lower, upper := p.RootArcs()
+				for _, a := range []thread.RootArc{lower, upper} {
+					fa, fc := filletArea(a)
+					want += float64(s.NumStarts()) * fa * fc * angle
+				}
+			}
 			if got := mesh.CalculateVolume(); math.Abs(got-want) > 0.002*want {
 				t.Errorf("volume %.4f, want %.4f", got, want)
 			}
@@ -260,8 +289,14 @@ func TestThreadSolids(t *testing.T) {
 			if want := along * (s.Pitch/2 + baseW/2 + shift); math.Abs(z0-want) > 1e-9 {
 				t.Errorf("first ridge at %g along the axis, want %g", z0, want)
 			}
-			// A buttress ridge's crest lies off its foot's middle.
-			z0 -= along * p.MiddleShift(math.Hypot(foot[0].X, foot[0].Y))
+			// A buttress ridge's crest lies off its foot's middle; a rounded
+			// root's foot is under the ends of its tangents.
+			footShift := p.MiddleShift(math.Hypot(foot[0].X, foot[0].Y))
+			if p.RootRoundRadius > 0 {
+				lower, upper := p.RootArcs()
+				footShift = (lower.End[1] + upper.End[1]) / 2
+			}
+			z0 -= along * footShift
 			turned := math.Atan2(foot[0].Y, foot[0].X)
 			between := 2 * math.Pi / float64(s.NumStarts())
 			// The kernel's helix is off a true one by up to half a percent
@@ -289,11 +324,39 @@ func TestThreadSolids(t *testing.T) {
 	}
 }
 
+// filletArea is the area that a rounded root adds to a ridge beyond
+// the root, between its flank, the arc and the arc's tangent, and the
+// distance of its centroid from the axis.
+func filletArea(a thread.RootArc) (area, centroid float64) {
+	pts := [][2]float64{a.Foot, a.Cross, a.Turn}
+	from := math.Atan2(a.Turn[1]-a.Centre[1], a.Turn[0]-a.Centre[0])
+	to := math.Atan2(a.Tangent[1]-a.Centre[1], a.Tangent[0]-a.Centre[0])
+	if to-from > math.Pi {
+		to -= 2 * math.Pi
+	} else if from-to > math.Pi {
+		to += 2 * math.Pi
+	}
+	r := math.Hypot(a.Turn[0]-a.Centre[0], a.Turn[1]-a.Centre[1])
+	const n = 200
+	for i := 1; i <= n; i++ {
+		t := from + (to-from)*float64(i)/n
+		pts = append(pts, [2]float64{a.Centre[0] + r*math.Cos(t), a.Centre[1] + r*math.Sin(t)})
+	}
+	var moment float64
+	for i, p := range pts {
+		q := pts[(i+1)%len(pts)]
+		c := p[0]*q[1] - q[0]*p[1]
+		area += c / 2
+		moment += (p[0] + q[0]) * c / 6
+	}
+	return math.Abs(area), moment / area
+}
+
 // threadGoldens are the cases that have a golden in testdata/thread:
 // enough kinds of thread to pin the generator and the kernel on.
 var threadGoldens = []string{"screw_m8", "nut_m8", "blind_m6", "screw_m8_lh", "screw_m6_down",
 	"lead_tr20", "screw_unc", "triple_m12", "screw_bsw", "nut_g", "screw_acme", "screw_m10_6g",
-	"screw_s20", "nut_s20_back", "screw_butt"}
+	"screw_s20", "nut_s20_back", "screw_butt", "screw_butt_round"}
 
 // TestThreadGoldens saves the file a thread makes, opens it and saves
 // it again, and requires the golden, testdata/thread/<name>.tlspr.
@@ -354,6 +417,12 @@ func TestThreadErrors(t *testing.T) {
 			o.Spec = thread.Spec{Form: thread.FormButtress, Diameter: 8, Pitch: 1.5}
 			o.Crest = thread.CrestRounded
 		}},
+		// The part, 30 mm long, has a chord tolerance of 0.03 mm at 0.1%,
+		// coarser than a fifth of the root's 0.071 mm.
+		{"a rounded root at a coarse chord tolerance", circle, func(o *sketch.ThreadOptions) {
+			o.Spec = thread.Spec{Form: thread.FormButtressInch, Diameter: 7.9375, Pitch: 25.4 / 24}
+			o.RoundRoot = true
+		}},
 	} {
 		o := m8
 		c.edit(&o)
@@ -363,6 +432,33 @@ func TestThreadErrors(t *testing.T) {
 		if len(sk.Groups) != groups {
 			t.Fatalf("%s: groups were added", c.what)
 		}
+	}
+}
+
+// TestThreadRoundRootTolerance checks that a rounded root is refused at
+// a chord tolerance coarser than its arcs take, naming the tolerance
+// to set, and made at that one.
+func TestThreadRoundRootTolerance(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("a thread with rounded roots")
+	}
+	tc := threadCase{"", 12.7, 40, "1-12 BUTT", sketch.ThreadOptions{Length: 25, Clearance: 0.05, RoundRoot: true}}
+	_, _, _, err := tc.tryBuild(t, 0)
+	if !errors.Is(err, sketch.ErrRootRoundCoarse) {
+		t.Fatalf("at the default chord tolerance: %v", err)
+	}
+	msg := err.Error()
+	words := strings.Fields(msg)
+	if !strings.HasSuffix(msg, "% or less") || len(words) < 3 {
+		t.Fatalf("%q names no tolerance", msg)
+	}
+	pct, perr := strconv.ParseFloat(strings.TrimSuffix(words[len(words)-3], "%"), 64)
+	if perr != nil || !(pct > 0 && pct < 0.1) {
+		t.Fatalf("%q: tolerance %g, %v", msg, pct, perr)
+	}
+	if _, _, res, err := tc.tryBuild(t, pct); err != nil || !res.Sound {
+		t.Errorf("at %g%%: %v, sound %v", pct, err, res.Sound)
 	}
 }
 
@@ -521,7 +617,14 @@ func TestThreadSweep(t *testing.T) {
 		Sample:      16,
 	}
 	grid.Run(func(p sweep.Point) error {
-		_, _, res := byName[p.String("case")].build(t, p.Float("tol"))
+		_, _, res, err := byName[p.String("case")].tryBuild(t, p.Float("tol"))
+		switch {
+		case errors.Is(err, sketch.ErrRootRoundCoarse):
+			// Refused by name, as a rounded root is at coarse tolerances.
+			return nil
+		case err != nil:
+			return err
+		}
 		if !res.Sound {
 			return errors.New("not sound")
 		}

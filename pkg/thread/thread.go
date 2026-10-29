@@ -36,7 +36,8 @@ const (
 	// degrees to the plane square to the axis (buttress.go).
 	FormButtress
 	// FormButtressInch is the ASME B1.9 buttress profile (BUTT
-	// threads), with flanks at 7 and 45 degrees.
+	// threads), with flanks at 7 and 45 degrees; its roots are
+	// rounded by the standard (Spec.RootRound).
 	FormButtressInch
 )
 
@@ -62,6 +63,9 @@ type Spec struct {
 	// Starts is the number of ridges; 0 stands for 1.
 	Starts   int
 	LeftHand bool
+	// Load is the way a buttress inch thread carries its load, when its
+	// designation says (PUSH-BUTT, PULL-BUTT).
+	Load Load
 }
 
 // NumStarts is the number of ridges.
@@ -224,6 +228,10 @@ type Profile struct {
 	// flat crest; the arc meets the flanks at RoundFootRadius from the
 	// axis, CrestWidth apart (WithCrest).
 	CrestRoundRadius, RoundFootRadius float64
+	// RootRoundRadius is the radius of a rounded root's arcs, 0 for a
+	// flat root (RootArcs). Profile leaves the root flat; a thread made
+	// with its standard's rounded root sets it to Spec.RootRound.
+	RootRoundRadius float64
 }
 
 // Profile returns the ridge of the external or the internal thread.

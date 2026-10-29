@@ -89,6 +89,10 @@ var pathEquivalences = map[string]pathCheck{
 	// A buttress screw thread typed in, its load flank turned back, made
 	// through its screen, and by a script.
 	"thread_buttress": nil,
+	// A B1.9 buttress thread with rounded roots and PULL-BUTT typed, at a
+	// chord tolerance set fine enough, made through its screen, and by a
+	// script.
+	"thread_round_root": nil,
 	// A screw thread with a chamfered end, made through its screen, and by
 	// a script.
 	"thread_chamfer": nil,
