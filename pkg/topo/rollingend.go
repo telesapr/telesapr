@@ -1114,9 +1114,9 @@ func bezierKnots(deg int) []float64 {
 	return k
 }
 
-// splitSection is c, a section of degree endDeg, split at its middle
-// into two spans when the fillet's sections are (splitEnds): the same
-// curve, so that it skins with the end sections fitted in two.
+// splitSection is c, a section of degree endDeg, split into the spans
+// the fillet's sections are (spans): the same curve, so that it skins
+// with the end sections fitted in as many.
 func (rb *rollingBall) splitSection(c srf.BSplineCurve) srf.BSplineCurve {
 	if len(c.Ctrl) != endDeg+1 {
 		return c
@@ -1129,10 +1129,13 @@ func (rb *rollingBall) splitSection(c srf.BSplineCurve) srf.BSplineCurve {
 		}
 		return c
 	}
-	if !rb.splitEnds || rb.copiesKink() {
+	if rb.spans < 2 || rb.copiesKink() {
 		return c
 	}
-	return c.WithKnot(0.5)
+	for i := 1; i < rb.spans; i++ {
+		c = c.WithKnot(float64(i) / float64(rb.spans))
+	}
+	return c
 }
 
 // splitDerivative is d, the derivative across an end of one span's
@@ -1147,10 +1150,12 @@ func (rb *rollingBall) splitDerivative(d []geom.Vector4) []geom.Vector4 {
 		}
 		return d
 	}
-	if !rb.splitEnds || rb.copiesKink() {
+	if rb.spans < 2 || rb.copiesKink() {
 		return d
 	}
-	_, d = srf.InsertKnotH(endDeg, knots, d, 0.5)
+	for i := 1; i < rb.spans; i++ {
+		knots, d = srf.InsertKnotH(endDeg, knots, d, float64(i)/float64(rb.spans))
+	}
 	return d
 }
 
@@ -1223,7 +1228,7 @@ func (rb *rollingBall) fitCut(k int, sec rbSection, mitre bool, tanAt func(q, n 
 	}
 	w := rb.splitSection(raised(ball.arc)).Weight
 	c.Weight = w
-	// The last control point: endDeg, or one more for two spans.
+	// The last control point: endDeg, and one more for each span after the first.
 	n := len(c.Ctrl) - 1
 	q0, q1 := c.Ctrl[0], c.Ctrl[n]
 	way := func(q, n, toward geom.Vector) geom.Vector {

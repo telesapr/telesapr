@@ -95,14 +95,15 @@ type rollingBall struct {
 	// where the swept surface meets their planes, not conics
 	// (planeCutSection).
 	fitCuts bool
-	// splitEnds makes every section of a fillet with a curved end two
-	// quintic spans, split at the middle (splitSection), so that the end
-	// section on the curved face can follow it round a wide corner.
-	splitEnds bool
+	// spans is how many quintic spans of equal length every section is
+	// split into (splitSection), 0 or 1 for one: two so that the end
+	// section on a curved face can follow it round a wide corner, or a
+	// section near a mitre the mitre; four for a mitre at fine tolerances.
+	spans int
 	// kinks are the arc parameters at which every section of a chain
 	// whose end is the larger at a mitre of two radii has a corner
-	// (rollingkink.go): a knot of full multiplicity, where splitEnds'
-	// knot at the middle would be.
+	// (rollingkink.go): a knot of full multiplicity, where spans'
+	// knots would be.
 	kinks []float64
 	// mitreC are the ball's centres near each end of a mitred chain, and
 	// mitreS the arc lengths of its mitre (mitreRoots).
@@ -871,10 +872,48 @@ func (rb *rollingBall) along(s float64) (geom.Vector, geom.Vector) {
 		i = len(rb.pts) - 1
 	}
 	j := (i + 1) % len(rb.pts)
-	f := (s - rb.arcl[i]) / (rb.arcl[i+1] - rb.arcl[i])
-	p := rb.pts[i].Plus(rb.pts[j].Minus(rb.pts[i]).ScaledBy(f))
-	d := rb.tan[i].ScaledBy(1 - f).Plus(rb.tan[j].ScaledBy(f)).WithMagnitude(1)
+	l := rb.arcl[i+1] - rb.arcl[i]
+	f := (s - rb.arcl[i]) / l
+	if !rb.anyMitre() {
+		p := rb.pts[i].Plus(rb.pts[j].Minus(rb.pts[i]).ScaledBy(f))
+		d := rb.tan[i].ScaledBy(1 - f).Plus(rb.tan[j].ScaledBy(f)).WithMagnitude(1)
+		return p, d
+	}
+	// Near a mitre the sections run along the chain across many of the
+	// dense points, and a quintic can't follow the corner the planes
+	// they lie in would turn by at each: cubic Hermite pieces, the
+	// point's with the tangents, the tangent's with its turn at the
+	// points. Elsewhere a section is at one arc length, and the pieces
+	// stay straight, as every other fillet was made.
+	f2, f3 := f*f, f*f*f
+	h00, h10, h01, h11 := 2*f3-3*f2+1, f3-2*f2+f, 3*f2-2*f3, f3-f2
+	p := rb.pts[i].ScaledBy(h00).Plus(rb.tan[i].ScaledBy(h10 * l)).
+		Plus(rb.pts[j].ScaledBy(h01)).Plus(rb.tan[j].ScaledBy(h11 * l))
+	d := rb.tan[i].ScaledBy(h00).Plus(rb.turnAt(i).ScaledBy(h10 * l)).
+		Plus(rb.tan[j].ScaledBy(h01)).Plus(rb.turnAt(j).ScaledBy(h11 * l)).WithMagnitude(1)
 	return p, d
+}
+
+// turnAt is the derivative along the edge of its tangent at its dense
+// point i: from the tangents either side, weighted by how near they are;
+// at an open edge's ends, from the one beside it.
+func (rb *rollingBall) turnAt(i int) geom.Vector {
+	n := len(rb.pts)
+	slope := func(a int) geom.Vector { // from point a to the next
+		b := (a + 1) % n
+		return rb.tan[b].Minus(rb.tan[a]).ScaledBy(1 / (rb.arcl[a+1] - rb.arcl[a]))
+	}
+	if !rb.closed {
+		switch i {
+		case 0:
+			return slope(0)
+		case n - 1:
+			return slope(n - 2)
+		}
+	}
+	prev := (i + n - 1) % n
+	hp, hn := rb.arcl[prev+1]-rb.arcl[prev], rb.arcl[i+1]-rb.arcl[i]
+	return slope(prev).ScaledBy(hn).Plus(slope(i).ScaledBy(hp)).ScaledBy(1 / (hp + hn))
 }
 
 // section is the ball at arc length s along the edge: in the plane
@@ -1272,6 +1311,17 @@ func (rb *rollingBall) nearestSection(p geom.Vector, s float64) float64 {
 	return s
 }
 
+// mitreSpans are the spans a mitred chain's sections are tried in, in
+// turn, the first's refusal the one given. Four come last: where two or
+// one do, what they make is kept as it was.
+var mitreSpans = []int{2, 1, 4}
+
+// withSpans is the blend of the open chain with its sections in spans.
+func (rb *rollingBall) withSpans(spans int) (*srf.BSplineSurface, []rbSection, []rbCrossing, error) {
+	rb.spans = spans
+	return rb.blendOpen()
+}
+
 // refineNear is how near the tolerance, as a share of it, a span's
 // misfit is split in blend's late rounds.
 const refineNear = 0.75
@@ -1282,15 +1332,21 @@ func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, 
 	if rb.anyMitre() {
 		// A mitre runs nearly along the chain where it meets the face both
 		// sides share: one quintic follows it only at coarse tolerances,
-		// two spans do down to fine ones.
-		rb.splitEnds = true
-		sf, secs, cross, err := rb.blendOpen()
-		if err != nil {
-			rb.splitEnds = false
-			if fsf, fsecs, fcross, ferr := rb.blendOpen(); ferr == nil {
+		// two spans do down to fine ones, four finer still (mitreSpans).
+		var sf *srf.BSplineSurface
+		var secs []rbSection
+		var cross []rbCrossing
+		var err error
+		for i, spans := range mitreSpans {
+			fsf, fsecs, fcross, ferr := rb.withSpans(spans)
+			if ferr == nil {
 				return fsf, fsecs, fcross, nil
 			}
+			if i == 0 {
+				sf, secs, cross, err = fsf, fsecs, fcross, ferr
+			}
 		}
+		rb.spans = 0
 		return sf, secs, cross, err
 	}
 	if !rb.closed {
@@ -1310,7 +1366,7 @@ func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, 
 		if err != nil && rb.anyCurvedEnd() {
 			// Round a corner wide for its dome the face's height is no
 			// quintic within the tolerance; two spans follow it.
-			rb.splitEnds = true
+			rb.spans = 2
 			if fsf, fsecs, fcross, ferr := rb.blendOpen(); ferr == nil {
 				return fsf, fsecs, fcross, nil
 			}
@@ -1322,7 +1378,7 @@ func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, 
 				return fsf, fsecs, fcross, nil
 			}
 			rb.fitCuts = false
-			rb.splitEnds = false
+			rb.spans = 0
 		}
 		return sf, secs, cross, err
 	}
@@ -1481,9 +1537,9 @@ func (rb *rollingBall) patches(sf *srf.BSplineSurface, secs []rbSection, cross [
 		return nil, filletErr(at, "the fillet's surface can't be cut into patches: %v", err)
 	}
 	// One row of patches along the edge, or two where the sections are
-	// split at their middles (splitEnds): side 0's half, then side 1's;
-	// a row more than kinks where there are.
-	rows := len(all) == 1 || rb.splitEnds && len(all) == 2
+	// split (spans): side 0's first, on to side 1's; a row more than
+	// kinks where there are.
+	rows := len(all) == 1 || len(all) == rb.spans
 	if len(rb.kinks) > 0 {
 		rows = len(all) == len(rb.kinks)+1
 	}

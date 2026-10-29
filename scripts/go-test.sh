@@ -22,7 +22,7 @@ PACKAGES=${PACKAGES:-./...}
 # time between them, so that make test and make test-heavy, on a runner
 # each, take about as long; a new test of a minute or more goes here.
 HEAVY=${HEAVY:-TestFixtures TestClosedLoftSweep TestSmoothLoftSweep TestBSplineSweep TestPathSweepSweep \
-TestFilletOnOtherSolids TestChamferOnOtherSolids TestFilletOnOtherSolidsVolumes TestFilletRimMitre \
+TestFilletOnOtherSolids TestChamferOnOtherSolids TestFilletOnOtherSolidsVolumes TestFilletRimMitre TestFilletRimMitreFine \
 TestCachesSameAsWithout \
 TestParallelSameAsSerial TestThreadSolids TestThreadGoldens TestThreadSweep TestEditThreadShape TestThreadChamfer \
 TestFreedomVsShowDof TestMoveGroupSweep TestSuppressAllSweep}

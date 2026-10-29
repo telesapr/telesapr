@@ -70,29 +70,34 @@ func rollingBallFilletsAt(sh *srf.SShell, t *Topology, edges []int, radii []floa
 			return filletErr(midpoint(rb.pts), "the edges meeting in a mitre are one convex and one concave: round them one at a time")
 		}
 	}
-	// As one chain's mitre (blend): split sections first, which follow it
-	// down to fine tolerances; every chain alike, as the chains share
-	// their mitres.
+	// As one chain's mitre (blend): sections in two spans first, which
+	// follow it down to fine tolerances, then whole, then in four, finer
+	// still; every chain alike, as the chains share their mitres.
 	// A chain mitred at one end only ends at its face at the other, and
 	// along a curved edge that end's conics stray from the swept surface
 	// as a lone chain's do (blend): its sections fitted to their cuts
 	// come last, which leave the mitres' sections as they are.
 	var bls []*rbBlend
 	var err error
-	for _, try := range [][2]bool{{true, false}, {false, false}, {true, true}, {false, true}} {
-		if try[1] && !partlyMitred(rbs) {
+	for _, fitCuts := range []bool{false, true} {
+		if fitCuts && !partlyMitred(rbs) {
 			break
 		}
-		fbls, ferr := blendMitred(rbs, try[0], try[1])
-		if ferr == nil {
-			bls, err = fbls, nil
-			break
+		for _, spans := range mitreSpans {
+			fbls, ferr := blendMitred(rbs, spans, fitCuts)
+			if ferr == nil {
+				bls, err = fbls, nil
+				break
+			}
+			if err == nil {
+				err = ferr
+			}
 		}
-		if err == nil {
-			err = ferr
+		if bls != nil {
+			break
 		}
 	}
-	if err != nil {
+	if bls == nil {
 		return err
 	}
 	return putBlends(sh, bls, origin)
@@ -104,12 +109,12 @@ func partlyMitred(rbs []*rollingBall) bool {
 }
 
 // blendMitred blends each of the chains rbs, which meet in mitres, its
-// sections split at their middles where split, and an end that meets no
+// sections split into spans, and an end that meets no
 // mitre fitted to its cuts where fitCuts: an end fits the mitre where
 // the chain it meets there came later, and copies the other's.
-func blendMitred(rbs []*rollingBall, split, fitCuts bool) ([]*rbBlend, error) {
+func blendMitred(rbs []*rollingBall, spans int, fitCuts bool) ([]*rbBlend, error) {
 	for _, rb := range rbs {
-		rb.splitEnds, rb.fitCuts = split, fitCuts
+		rb.spans, rb.fitCuts = spans, fitCuts
 		for _, end := range rb.ends {
 			end.shared = nil
 		}
