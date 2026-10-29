@@ -97,6 +97,10 @@ type filletEdge struct {
 	// gen is, for each face, the direction into it from the edge in the
 	// half plane through the axis: along the radius and along the axis.
 	gen [2][2]float64
+	// r1 is, for a circular edge whose radius varies along it, the
+	// radius at v[1]; r is the one at v[0]. 0 where it doesn't vary
+	// (fillet_vary.go).
+	r1 float64
 }
 
 // fits checks that a circular edge's tangent curves lie on their faces:
@@ -484,6 +488,9 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 					}
 				}
 				if err == nil && t.smoothJoin(&edges[i], &fe, v) {
+					if vfe, ok := t.varyingArc(&edges[i], fe, v, edges, byEdge, flat); ok {
+						fe = vfe
+					}
 					if t.Lead(x) == t.Lead(edges[i].e) {
 						fe.sheet = edges[i].sheet
 					}
@@ -1124,7 +1131,7 @@ func (t *Topology) smoothJoin(a, b *filletEdge, v int) bool {
 		for ka := range 2 {
 			kb := ka ^ swap
 			da, db := a.into(ka, p), b.into(kb, p)
-			if !da.Equals(db) && da.Minus(db).Magnitude() > 1e-9 || math.Abs(a.ss[ka]-b.ss[kb]) > geom.LengthEps {
+			if !da.Equals(db) && da.Minus(db).Magnitude() > 1e-9 || math.Abs(a.ssAt(ka, v)-b.ssAt(kb, v)) > geom.LengthEps {
 				ok = false
 			}
 		}
@@ -1160,6 +1167,9 @@ func (fe *filletEdge) tangentCurve(k int, p, q geom.Vector) srf.SBezier {
 	if !fe.circ {
 		return srf.SBezierFrom2(p, q)
 	}
+	if fe.varies() {
+		return fe.varyingTangentCurve(k, p, q)
+	}
 	sb := fe.curve
 	scale := (fe.radius + fe.ss[k]*fe.gen[k][0]) / fe.radius
 	lift := fe.axis.ScaledBy(fe.ss[k] * fe.gen[k][1])
@@ -1192,6 +1202,9 @@ func (fe *filletEdge) surface(a, b geom.Vector, flat bool) srf.SSurface {
 		p0 := a.Minus(fe.dir.ScaledBy(margin))
 		section := fe.section(p0, flat)
 		return srf.FromExtrusionOf(&section, geom.Vector{}, fe.dir.ScaledBy(l+2*margin))
+	}
+	if fe.varies() {
+		return fe.varyingSurface(flat)
 	}
 	section := fe.section(fe.curve.Start(), flat)
 	// The angle from the arc's start to its end about the axis; an arc
@@ -1243,13 +1256,13 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 		if n > 0 && fe.sign() != sg {
 			return nil, filletErr(p, "a convex edge's %s meets a concave one's here", what)
 		}
-		if n > 0 && math.Abs(fe.r-r) > geom.LengthEps {
+		if n > 0 && math.Abs(fe.rAt(v)-r) > geom.LengthEps {
 			if !flat {
-				return nil, filletErr(p, "fillets of radius %g and %g meet here", r, fe.r)
+				return nil, filletErr(p, "fillets of radius %g and %g meet here", r, fe.rAt(v))
 			}
-			unlike = []float64{r, fe.r}
+			unlike = []float64{r, fe.rAt(v)}
 		}
-		sg, r, n = fe.sign(), fe.r, n+1
+		sg, r, n = fe.sign(), fe.rAt(v), n+1
 	}
 	if unlike != nil && n != 2 {
 		return nil, filletErr(p, "chamfers of distance %g and %g meet here; where three meet, every edge at the corner must be chamfered", unlike[0], unlike[1])
@@ -1287,7 +1300,7 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 		c.kind = seam
 		for _, fe := range []*filletEdge{a, b} {
 			for k := range 2 {
-				c.at[[2]int{fe.e, fe.f[k]}] = p.Plus(fe.into(k, p).ScaledBy(fe.ss[k]))
+				c.at[[2]int{fe.e, fe.f[k]}] = p.Plus(fe.into(k, p).ScaledBy(fe.ssAt(k, v)))
 			}
 		}
 		// Each other edge is cut back to the tangent point on its faces,
@@ -1299,7 +1312,7 @@ func (t *Topology) filletCornerAt(v int, edges []filletEdge, byEdge map[int]int,
 			for _, fe := range []*filletEdge{a, b} {
 				for k := range 2 {
 					if fe.f[k] == fx[0] || fe.f[k] == fx[1] {
-						q, found = p.Plus(fe.into(k, p).ScaledBy(fe.ss[k])), true
+						q, found = p.Plus(fe.into(k, p).ScaledBy(fe.ssAt(k, v))), true
 					}
 				}
 			}

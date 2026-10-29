@@ -13,7 +13,8 @@ import (
 
 // Setback corners (roadmap 22.4). Where rounded edges of different radii
 // meet at a corner of flat faces, or more than three rounded edges meet,
-// no sphere fits them all. Each fillet is cut instead at a plane square
+// or convex and concave ones that the stages can't round one kind at a
+// time (a saddle's four), no sphere fits them all. Each fillet is cut instead at a plane square
 // to its edge, set back from the corner past where the fillets'
 // tangent lines cross on its faces, and the hole left is filled by
 // patches tangent to everything round it.
@@ -91,18 +92,24 @@ func (s setbackSide) bezier() srf.SBezier {
 }
 
 // setbackRefusal reports whether err refuses a corner a setback can
-// fill: fillets of different radii, or more than three faces.
+// fill: fillets of different radii, more than three faces, or convex
+// and concave fillets, as at a saddle's four edges, where no stage's
+// fillet goes on round another's corner.
 func setbackRefusal(err error) bool {
 	var fx *FilletError
 	if !errors.As(err, &fx) {
 		return false
 	}
 	return strings.HasPrefix(fx.Msg, "fillets of radius") ||
-		strings.HasPrefix(fx.Msg, "the edge ends where")
+		strings.HasPrefix(fx.Msg, "the edge ends where") ||
+		strings.HasPrefix(fx.Msg, "a convex edge's fillet meets a concave one's")
 }
 
 // setbackCornerAt works out a setback corner at vertex v, where every
-// edge is rounded, all convex or all concave, between flat faces.
+// edge is rounded, between flat faces. The edges may be of both kinds:
+// each face's tangent lines lie in it whichever way its edges go, and
+// the patches are tangent to the fillets and faces round the hole as
+// they are at a corner of one kind.
 func (t *Topology) setbackCornerAt(v int, edges []filletEdge, byEdge map[int]int) (*filletCorner, error) {
 	p := t.Vertices[v].P
 	var round []*filletEdge
@@ -129,6 +136,12 @@ func (t *Topology) setbackCornerAt(v int, edges []filletEdge, byEdge map[int]int
 		for i, r := range radii {
 			names[i] = strconv.FormatFloat(r, 'g', -1, 64)
 		}
+		if len(radii) == 1 {
+			// Of one radius they are convex and concave, or meet at a
+			// corner of more than three edges.
+			return nil, filletErr(p, "fillets of radius %s meet here above an edge left sharp; round that edge too",
+				names[0])
+		}
 		return nil, filletErr(p, "fillets of radius %s meet here above an edge left sharp; "+
 			"round that edge too, or give the fillets one radius", strings.Join(names, " and "))
 	}
@@ -138,9 +151,6 @@ func (t *Topology) setbackCornerAt(v int, edges []filletEdge, byEdge map[int]int
 		fe := &edges[i]
 		if fe.circ {
 			return nil, filletErr(p, "a circular edge's fillet meets other fillets of other radii here")
-		}
-		if len(round) > 0 && fe.concave != round[0].concave {
-			return nil, filletErr(p, "a convex edge's fillet meets a concave one's here")
 		}
 		round = append(round, fe)
 		rmax = math.Max(rmax, fe.r)

@@ -48,6 +48,13 @@ What it makes:
   foot's edges), are blended there by one patch, tangent to both fillets and the face, the
   sharp edge ending in its corner. Where one fillet's radius is several times how far the
   other reaches along the face, the patch would fold, and the corner is refused at its point.
+- Where all three edges at such a corner are rounded and the two of one kind differ in radius,
+  as a ledge's two top edges at 1 and 2 mm over the inside upright, or a rib's two foot edges
+  under its upright, the edge of the other kind is rounded first, and the two go on round the
+  arc it leaves with a radius that goes from one's to the other's along it, tangent all round.
+- At a corner of four or more edges of both kinds, as the middle of a saddle where two ridges
+  and two valleys meet, all of them rounded, each fillet is set back and the hole filled by
+  patches, as at a corner of three radii.
 - Two top edges of different radii over an upright edge left sharp are refused, naming the
   radii: the blend would need a crease. Round the upright edge too, or give the two one
   radius.
@@ -120,7 +127,7 @@ A rib rounded all over, the edges of its top rounded as well as its foot filled 
 foot alone, or the top's edges alone), fillets between curved faces along an edge that ends at
 a curved face the side faces go on past, chamfers meeting at a crease or at a corner whose third
 edge stays sharp, mitres between fillets of different radii, corners where convex
-meets concave at a vertex that the stages can't round, and a
+meets concave at a vertex that the stages can't round with some edge there left sharp, and a
 blend that takes material away and runs off onto the next face, or that runs off at both its
 ends, are refused with a message; they are the rest
 of roadmap 22. A crease that fades out is rounded only up to where it does. A fillet whose radius stops its chain at a rounded corner names the curved face rather than
