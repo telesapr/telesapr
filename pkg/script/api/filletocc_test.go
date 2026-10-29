@@ -19,8 +19,13 @@ import (
 // of the same edge, scripts/fillet-step-volumes.py), a degree-7 lid's
 // edge where a wall meets its dome (the same). The mesh's chords at the
 // chord tolerance below count for about half a percent, and for the
-// vase's foot, whose section is small, steep and turned about the axis,
-// for about 0.01 mm³.
+// vase's foot, whose section is small, for about 0.01 mm³ (3%): there
+// the fillet lies on the balls' torus within 1e-5 mm, and OpenCASCADE's
+// 0.395511 is the section's own (0.395502, by Pappus), but the curve cap
+// of 20 segments leaves the side's rows 0.13 mm apart in the solid
+// before it, its chords 0.013 mm³ short across the band the fillet
+// takes, where the fillet's own mesh is fine. With 1000 segments the
+// foot takes 0.3972, and 0.3959 at a chord of 0.0005%.
 func TestFilletOnOtherSolidsVolumes(t *testing.T) {
 	if testing.Short() {
 		t.Skip("STEP solids at a fine tolerance")
