@@ -90,3 +90,31 @@ func TestOracleFittedCorner(t *testing.T) {
 		t.Errorf("%d rays disagree with the mesh, as %+v", len(diffs), diffs[0])
 	}
 }
+
+// Twisted, the same sweep holds its twist still along the lines beside
+// the corner and turns along the rest: the profile still about the path,
+// the volume is its area times the path's length, and the kernel's mesh
+// agrees with the oracle's, whose frames twist as the path spreads it.
+func TestOracleFittedTwistedCorner(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("rays through a fitted sweep, tens of seconds")
+	}
+	d := api.New()
+	d.Edit.SetChordTolerance(0.01)
+	slantCorner(d, true).SetTwist(60)
+	if p := d.Active().Problem(); p != "" {
+		t.Fatalf("the kernel refused it: %s", p)
+	}
+	top := api.V(0, 0, 30)
+	end := top.Plus(api.V(math.Sin(math.Pi/3), 0, math.Cos(math.Pi/3)).ScaledBy(25))
+	dir := end.Minus(top).WithMagnitude(1)
+	want := 80 * (55 + cubicLength(slantCubic(end, dir)))
+	o := oracleOf(t, d)
+	if m := o.Measure(1e-3, 256); !near(m.Volume, want, 2e-3) {
+		t.Errorf("volume %g, want %g (spread %g at %d rays)", m.Volume, want, m.Spread(), m.Rays)
+	}
+	if diffs := o.Diff(meshOf(d), 16, 0.05); len(diffs) != 0 {
+		t.Errorf("%d rays disagree with the mesh, as %+v", len(diffs), diffs[0])
+	}
+}

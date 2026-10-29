@@ -250,9 +250,10 @@ func TestSweepFittedCorner(t *testing.T) {
 	d.Edit.Regen()
 
 	sw := s.AsSweep()
+	// Twisted, the twist is held still along the lines beside the corner.
 	sw.SetTwist(30)
-	if p := s.Problem(); !strings.Contains(p, "twisted") || !strings.Contains(p, "corner radius") {
-		t.Errorf("a twisted sweep's corner: %q", p)
+	if r := s.Analyze().Check(); s.Problem() != "" || !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Errorf("a twisted sweep's corner: %q %s, want %g", s.Problem(), r.String(), want)
 	}
 	sw.SetCornerRadius(3)
 	if r := s.Analyze().Check(); s.Problem() != "" || !r.Sound() {

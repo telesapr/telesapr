@@ -70,9 +70,13 @@ A sweep along a cubic, or held to a direction, is mitred at a corner between two
 a line its frames don't turn, so the two straight runs are prisms cut by the plane that halves the
 corner. Held to a direction, the frames must turn at the corner as the path does, so the
 direction must be the corner's axis (across the path's plane); held otherwise, the corner is a
-problem on the group. A twisted sweep takes no sharp corner, since the twist turns the frames
-along a line and the mitre's two sides wouldn't meet: give it a corner radius, and the twist runs
-round the corner's arc. A corner beside an arc on such a sweep needs a corner radius too.
+problem on the group. A twist would turn the frames along a line and the mitre's two sides wouldn't
+meet, so a twisted sweep holds its twist still along each line beside a corner, over the stretch the
+mitre spans (the profile's reach from the path over the cosine of half the turn, and a tenth more),
+and turns along the rest of the path, its rate climbing from nothing over the profile's reach so the
+twisted faces leave the mitred ones tangent. Where every piece is a line beside a corner and held
+whole, there is nowhere left to twist, and the corner is a problem on the group; a corner radius
+then rounds it, and the twist runs round the corner's arc. A corner beside an arc on such a sweep needs a corner radius too.
 Example: [`examples/scripts/zigzag`](../../examples/scripts/zigzag/zigzag.go), a rail along a
 cubic and a sharp corner, and a twisted bar round a rounded one.
 

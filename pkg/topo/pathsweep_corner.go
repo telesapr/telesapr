@@ -17,7 +17,8 @@ import (
 // sides' sections, carried along their lines onto that plane, are the
 // one curve, and the pieces' surfaces share it with no Boolean between
 // them. A twist turns the frames along a line, which makes its sides no
-// prism and the two sides' cuts by the plane different curves.
+// prism and the two sides' cuts by the plane different curves, so it is
+// held still beside a corner (pathsweep_hold.go).
 
 // pathCornerCos is the cosine of the least turn between two pieces'
 // tangents that is a corner rather than a smooth join, as the sketch's.
@@ -29,7 +30,9 @@ var (
 	// straight.
 	ErrPathCornerCurved = errors.New("a corner of the path has a curved piece beside it")
 	// ErrPathCornerTwisted is a corner on a twisted path, or a closed one
-	// whose frames are turned to meet round it.
+	// whose frames are turned to meet round it, where the twist can't be
+	// held still beside it: no reach is given, or every piece is beside
+	// a corner, leaving nowhere to twist.
 	ErrPathCornerTwisted = errors.New("a corner of the path turns frames that are twisted along it")
 	// ErrPathCornerHeld is a corner where frames held to a direction
 	// turn otherwise than the corner turns the path.
@@ -85,13 +88,6 @@ func (sp *SweepPath) findCorners() error {
 	if !found {
 		return nil
 	}
-	if sp.opts.Twist != 0 || math.Abs(sp.closure) > 1e-9 {
-		for k := 1; k < n; k++ {
-			if sp.corner[k] {
-				return &srf.CornerError{At: sp.pieces[k].Start(), Err: ErrPathCornerTwisted}
-			}
-		}
-	}
 	for k := 1; k < n; k++ {
 		if !sp.corner[k] {
 			continue
@@ -99,7 +95,9 @@ func (sp *SweepPath) findCorners() error {
 		// The frame on past the corner, against the one before it turned
 		// by the corner.
 		d1, d2 := sp.tangentInto(k-1), sp.tangent(float64(k))
-		before, after := sp.frameAt(float64(k)-0.5), sp.frameAt(float64(k))
+		// A twist is held still beside the corner (holdTwist), so the
+		// frames before it are compared.
+		before, after := sp.untwistedAt(float64(k)-0.5), sp.untwistedAt(float64(k))
 		axis := d1.Cross(d2).WithMagnitude(1)
 		turned := before.r.RotatedAroundAxis(axis, math.Acos(math.Max(-1, math.Min(1, d1.Dot(d2)))))
 		if turned.Minus(after.r).Magnitude() > 1e-7 {
