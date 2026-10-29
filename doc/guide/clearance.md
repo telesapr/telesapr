@@ -11,7 +11,8 @@ the active group for two things before it is printed or machined:
   made before the first of them. [check gaps] lists each pair nearer than the distance, the
   nearest first, and draws a line across each gap. Parts that touch or overlap have a gap of 0;
   Show Interfering Parts says which overlap. With **solids within parts** checked, a part made of
-  several solids, as a linked assembly, is taken by its solids: the gaps between them are listed
+  several solids, as a linked assembly, is taken by its solids, and a part linked as a mesh by
+  its pieces (the triangles joined by the corners they share): the gaps between them are listed
   too, as "g004-tile solid 2".
 - **walls thinner** than a thickness. [check walls] casts rays from points of each triangle of
   each part's mesh, square to it, into the solid to where it leaves the part again, says what the
@@ -19,7 +20,11 @@ the active group for two things before it is printed or machined:
   are no further apart than half the thickness asked about, or a fiftieth of the model's size,
   and closer again about the thinnest, so that a spot thinner than the triangles about it, as
   near the tip of a cone, isn't missed between their middles. The screen says how far apart they
-  were.
+  were. Between the points the mesh's wall can be thinner still, as under the tip of a narrow
+  groove: a ray from a flat triangle to the one it leaves through grows or shrinks evenly as it
+  moves, so the corners of where one triangle covers the other are measured too, and the
+  thinnest is among them. A sharp edge, as where a thread's ridge runs out of an end face, is as
+  thin as nothing there, and is listed so.
 
 A gap is found on the parts' meshes, then followed onto the surfaces the nearest triangles stand
 for, so that a pin in a bore comes out at its true gap though the meshes' chords are a little
@@ -47,6 +52,7 @@ The MCP `measure` tool reports both with `gaps` and `walls` ([AI](../ai.md)).
 
 ## What it does not do yet
 
-- A spot thinner than the points measured about it can still fall between them; the
-  measurement says how far apart they were.
-- A mesh part is one part: its pieces are not taken apart by "solids within parts".
+- A wall between two triangles no measured ray joined, narrower than the points measured about
+  it, can still be missed.
+- Walls are measured part by part, not by the solids or pieces within a part: a hollow's inside
+  is a piece of its own, and measured apart it would have no wall.

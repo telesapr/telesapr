@@ -245,3 +245,62 @@ func TestWallThicknessOfAConeTip(t *testing.T) {
 		t.Errorf("the thinnest is at %v, not by the tip or the rim", p)
 	}
 }
+
+// A block cut by a narrow V-groove from its top, its tip 0.2 above the
+// floor: the wall under the tip is 0.2 thick, and it thickens by eleven
+// times the distance from the tip's line, so the middles of the pieces
+// the floor is cut into, none on that line, measure it a good deal
+// thicker. The thinnest is found where the floor meets the groove's
+// tip, a vertex of where the rays from one floor triangle meet one of
+// the groove's.
+func TestWallThicknessUnderAGroove(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	block(d, 0, 0, 30, 10, 10)
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	w := 9.8 * math.Tan(5*math.Pi/180)
+	d.Sketch.Polyline(true, api.V(15-w, 0, 10), api.V(15+w, 0, 10), api.V(15, 0, 0.2))
+	cut := d.Features.Extrude(10, "groove")
+	cut.SetCombine(api.Difference)
+	if p := cut.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	r := cut.Analyze().WallThickness(0.5)
+	if math.Abs(r.Thinnest.Thickness-0.2) > 1e-6 {
+		t.Fatalf("thinnest %g at %v, want 0.2 under the groove's tip", r.Thinnest.Thickness, r.Thinnest.From)
+	}
+	if p := r.Thinnest.From; math.Abs(p.X-15) > 1e-6 {
+		t.Errorf("the thinnest is at %v, not under the tip", p)
+	}
+	if len(r.Thin) == 0 {
+		t.Error("no spot listed thinner than 0.5")
+	}
+}
+
+// The pair of TestClearancesWithinAPart taken as a mesh: its triangles
+// fall in two pieces, joined by the corners they share, which
+// ClearancesWithin takes apart as it takes a shell's solids.
+func TestClearancesWithinAMeshPart(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	block(d, 0, 0, 10, 10, 10)
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(13, 0, 0), api.V(20, 10, 0))
+	d.Sketch.Rect(api.V(22, 0, 0), api.V(30, 10, 0))
+	pair := d.Features.Extrude(10, "pair")
+	pair.SetCombine(api.Assemble)
+	pair.SetForceToMesh(true)
+	if cs := d.Assembly.Clearances(0); len(cs) != 1 || math.Abs(cs[0].Gap-3) > 1e-9 || cs[0].SolidB != 0 {
+		t.Fatalf("by parts: %+v", cs)
+	}
+	cs := d.Assembly.ClearancesWithin(0)
+	if len(cs) != 3 {
+		t.Fatalf("by pieces: %d pairs: %+v", len(cs), cs)
+	}
+	if c := cs[0]; c.A.H != pair.H || c.B.H != pair.H || math.Abs(c.Gap-2) > 1e-9 || c.SolidA == c.SolidB || c.SolidA == 0 {
+		t.Errorf("between the mesh's pieces: %+v", c)
+	}
+	if c := cs[1]; c.B.H != pair.H || math.Abs(c.Gap-3) > 1e-9 || c.SolidB == 0 {
+		t.Errorf("the block to the nearer piece: %+v", c)
+	}
+}
