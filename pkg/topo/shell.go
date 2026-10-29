@@ -13,7 +13,8 @@ import (
 // faces are taken away. It takes solids of planar faces, and prisms
 // whose sides are flat or extrusions of arcs (shellprism.go); solids of
 // revolution, given how they were turned, ShellRevolved takes
-// (shellrevolve.go). Of flat
+// (shellrevolve.go), drafted extrusions ShellDrafted (shelldraft.go), and
+// unions of such parts ShellJoined (shelljoined.go). Of flat
 // faces, the inner solid has the outer one's topology, each face moved in by the
 // thickness but those taken away, and each vertex where its faces'
 // moved planes meet. The shell is the solid less the inner one, by a
@@ -38,30 +39,45 @@ func ShellSolid(sh *srf.SShell, open []int, thick float64, origin uint32) (*srf.
 	if thick <= 0 || math.IsNaN(thick) || math.IsInf(thick, 0) {
 		return nil, fmt.Errorf("a shell's thickness must be more than zero, not %g", thick)
 	}
-	t, err := Build(sh)
+	t, opened, err := shellFaces(sh, open)
 	if err != nil {
 		return nil, err
 	}
-	if probs := t.Validate(); len(probs) > 0 {
-		return nil, shellErr(probs[0].At, "the solid is not closed: %s", probs[0].Msg)
+	mode := make([]faceMode, len(t.Faces))
+	for f := range opened {
+		mode[f] = openFace
 	}
-	if len(open) == 0 {
-		return nil, errors.New("there are no faces to take away: a shell is open where faces are taken away")
+	inner, ok, err := prismInside(t, sh, mode, thick, origin)
+	if !ok {
+		inner, err = flatInside(t, sh, mode, thick, origin)
 	}
-	opened := map[int]bool{}
-	for _, f := range open {
-		if f < 0 || f >= len(t.Faces) {
-			return nil, fmt.Errorf("there is no face %d of the solid", f)
-		}
-		opened[f] = true
+	if err != nil {
+		return nil, err
 	}
-	if len(opened) == len(t.Faces) {
-		return nil, errors.New("every face is taken away, which leaves no wall")
+	out := &srf.SShell{Tol: sh.Tol}
+	out.MakeFromDifferenceOf(sh, inner)
+	if out.BooleanFailed {
+		return nil, errors.New("the Boolean that takes the inside away failed")
 	}
-	if out, ok, err := shellPrism(t, sh, opened, thick, origin); ok {
-		return out, err
-	}
+	return out, nil
+}
 
+// faceMode is what a shell does with a face of a solid: moves it in by
+// the thickness, a wall; leaves it where it is, taken away; or, a face
+// of a part of a solid lying inside another part (shelljoined.go),
+// moves it out by the thickness, so the part's inside meets the
+// others'.
+type faceMode int
+
+const (
+	keptFace faceMode = iota
+	openFace
+	buriedFace
+)
+
+// flatInside is the inside of sh, a solid of flat faces of topology t,
+// each face moved as mode says: the faces' planes moved and met again.
+func flatInside(t *Topology, sh *srf.SShell, mode []faceMode, thick float64, origin uint32) (*srf.SShell, error) {
 	// Each face's plane, moved in by the thickness.
 	normal := make([]geom.Vector, len(t.Faces))
 	offset := make([]float64, len(t.Faces))
@@ -76,8 +92,11 @@ func ShellSolid(sh *srf.SShell, open []int, thick float64, origin uint32) (*srf.
 		// a face does. Moved out, it would slide its neighbours' corners
 		// along, turning short edges round outside the solid.
 		d := -thick
-		if opened[f] {
+		switch mode[f] {
+		case openFace:
 			d = 0
+		case buriedFace:
+			d = thick
 		}
 		normal[f] = n
 		offset[f] = n.Dot(t.Surface(f).Ctrl[0][0]) + d
@@ -159,12 +178,7 @@ func ShellSolid(sh *srf.SShell, open []int, thick float64, origin uint32) (*srf.
 		return nil, shellErr(probs[0].At, "the inner surface is not closed: %s", probs[0].Msg)
 	}
 
-	out := &srf.SShell{Tol: sh.Tol}
-	out.MakeFromDifferenceOf(sh, inner)
-	if out.BooleanFailed {
-		return nil, errors.New("the Boolean that takes the inside away failed")
-	}
-	return out, nil
+	return inner, nil
 }
 
 // outerFirst are a face's loops, its outer one first.

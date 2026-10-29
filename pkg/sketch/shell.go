@@ -49,7 +49,7 @@ func (sk *Sketch) NewShell(faces []srf.FaceID, thick float64, name string) (Grou
 	if solid.IsForcedToMesh(sk) {
 		return g, errors.New("the solid at the active group is a triangle mesh, which has no faces to move")
 	}
-	if _, err := shellOf(&solid.RunningShell, faces, thick, 1<<30, sk.revolutionAt(solid)); err != nil {
+	if _, err := shellOf(&solid.RunningShell, faces, thick, 1<<30, sk.madeAt(solid)); err != nil {
 		return g, err
 	}
 	g.SolidFaces = append([]srf.FaceID(nil), faces...)
@@ -86,7 +86,7 @@ func (sk *Sketch) SetShellFaces(hg core.HGroup, faces []srf.FaceID) error {
 	if solid.IsForcedToMesh(sk) {
 		return errors.New("the solid is a triangle mesh, which has no faces to move")
 	}
-	if _, err := shellOf(&solid.RunningShell, faces, g.ValB, 1<<30, sk.revolutionAt(solid)); err != nil {
+	if _, err := shellOf(&solid.RunningShell, faces, g.ValB, 1<<30, sk.madeAt(solid)); err != nil {
 		return err
 	}
 	g.SolidFaces = faces
@@ -94,10 +94,25 @@ func (sk *Sketch) SetShellFaces(hg core.HGroup, faces []srf.FaceID) error {
 	return nil
 }
 
+// solidMade is how a solid was made, when a shell can hollow it by
+// that: a revolution, a drafted extrusion, or a union of parts a shell
+// hollows alone. All nil when none.
+type solidMade struct {
+	rev   *topo.Revolution
+	draft *topo.DraftedSolid
+	parts []topo.ShellPart
+}
+
+// madeAt is how the solid at group g was made (revolutionAt,
+// draftedAt, unionPartsAt).
+func (sk *Sketch) madeAt(g *Group) solidMade {
+	return solidMade{rev: sk.revolutionAt(g), draft: sk.draftedAt(g), parts: sk.unionPartsAt(g)}
+}
+
 // shellOf hollows sh, taking away the faces with identities faces. A
-// solid of flat faces or a prism is hollowed as such; failing that, a
-// solid that is rev (when not nil) by its profile.
-func shellOf(sh *srf.SShell, faces []srf.FaceID, thick float64, origin uint32, rev *topo.Revolution) (*srf.SShell, error) {
+// solid of flat faces or a prism is hollowed as such; failing that, by
+// how it was made.
+func shellOf(sh *srf.SShell, faces []srf.FaceID, thick float64, origin uint32, made solidMade) (*srf.SShell, error) {
 	t, err := topo.Build(sh)
 	if err != nil {
 		return nil, err
@@ -111,14 +126,25 @@ func shellOf(sh *srf.SShell, faces []srf.FaceID, thick float64, origin uint32, r
 		open = append(open, fs...)
 	}
 	out, err := topo.ShellSolid(sh, open, thick, origin)
-	if err == nil || rev == nil {
-		return out, err
+	if err == nil {
+		return out, nil
 	}
-	out, rerr := topo.ShellRevolved(sh, *rev, open, thick, origin)
-	if errors.Is(rerr, topo.ErrNotRevolution) {
-		return nil, err
+	if made.rev != nil {
+		out, rerr := topo.ShellRevolved(sh, *made.rev, open, thick, origin)
+		if !errors.Is(rerr, topo.ErrNotRevolution) {
+			return out, rerr
+		}
 	}
-	return out, rerr
+	if made.draft != nil {
+		out, derr := topo.ShellDrafted(sh, *made.draft, open, thick, origin)
+		if !errors.Is(derr, topo.ErrNotDrafted) {
+			return out, derr
+		}
+	}
+	if made.rev == nil && made.draft == nil && len(made.parts) > 1 {
+		return topo.ShellJoined(sh, made.parts, open, thick, origin)
+	}
+	return nil, err
 }
 
 // revolutionAt is how the solid at group g was made when it is one
@@ -136,21 +162,16 @@ func (sk *Sketch) revolutionAt(g *Group) *topo.Revolution {
 // oneRevolutionAt is how the solid at group g was made when it is one
 // lathe or revolve, or nil.
 func (sk *Sketch) oneRevolutionAt(g *Group) *topo.Revolution {
-	for ; g != nil; g = g.PreviousGroup(sk) {
-		if g.Suppress || g.SuppressedBy.V != 0 {
-			continue
-		}
-		if g.IsMeshGroup() || g.IsCopyGroup() || g.Type == GroupLinked {
-			break
-		}
-	}
-	if g == nil || (g.Type != GroupLathe && g.Type != GroupRevolve) || g.MeshCombine != CombineUnion {
+	g = sk.soleSolidAt(g)
+	if g == nil || (g.Type != GroupLathe && g.Type != GroupRevolve) {
 		return nil
 	}
-	if before := g.PreviousGroup(sk); before != nil &&
-		(len(before.RunningShell.Surface) > 0 || len(before.RunningMesh.Triangles) > 0) {
-		return nil
-	}
+	return sk.revolutionOf(g)
+}
+
+// revolutionOf is how the lathe or revolve g turns its sketch, or nil
+// when the sketch has no loops.
+func (sk *Sketch) revolutionOf(g *Group) *topo.Revolution {
 	src := sk.Group(g.OpA)
 	if src == nil || len(src.BezierLoops.Sets) == 0 {
 		return nil
@@ -161,6 +182,28 @@ func (sk *Sketch) oneRevolutionAt(g *Group) *topo.Revolution {
 		angles, anglef = 0, 2*math.Pi
 	}
 	return &topo.Revolution{Profile: &src.BezierLoops, Pt: pt, Axis: axis, Start: angles, End: anglef}
+}
+
+// soleSolidAt is the group that made the solid at group g when that
+// group alone made it: the first group at or before g that makes or
+// changes a solid, a union with no solid before it. Otherwise nil.
+func (sk *Sketch) soleSolidAt(g *Group) *Group {
+	for ; g != nil; g = g.PreviousGroup(sk) {
+		if g.Suppress || g.SuppressedBy.V != 0 {
+			continue
+		}
+		if g.IsMeshGroup() || g.IsCopyGroup() || g.Type == GroupLinked {
+			break
+		}
+	}
+	if g == nil || g.MeshCombine != CombineUnion {
+		return nil
+	}
+	if before := g.PreviousGroup(sk); before != nil &&
+		(len(before.RunningShell.Surface) > 0 || len(before.RunningMesh.Triangles) > 0) {
+		return nil
+	}
+	return g
 }
 
 // joinedRevolutionAt is how the solid at group g was made when every
@@ -260,7 +303,7 @@ func (g *Group) generateShellShell(sk *Sketch) {
 		g.setProblem(nil, "the solid so far is a triangle mesh, which has no faces to move")
 		return
 	}
-	sh, err := shellOf(&prev.RunningShell, g.SolidFaces, g.ValB, srf.OriginFor(g.H.V, 0), sk.revolutionAt(prev))
+	sh, err := shellOf(&prev.RunningShell, g.SolidFaces, g.ValB, srf.OriginFor(g.H.V, 0), sk.madeAt(prev))
 	if err != nil {
 		if se, ok := errors.AsType[*topo.ShellError](err); ok {
 			at := se.At
