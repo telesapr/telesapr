@@ -51,18 +51,18 @@ func blendRib(c, k float64, tol srf.Tolerance) (*srf.SShell, []topo.FilletPick) 
 // the two fill the same hole with different patches, OpenCASCADE's of
 // degree 7 with its fillet's end cut where the angle round the concave
 // fillet runs evenly, and the hole is a few square millimetres at these
-// radii. Measured 2026-10-29: within 0.15 mm³ on every line.
-const blendAllow = 0.2
+// radii. Measured 2026-10-29: within 0.15 mm³ on every line but the
+// ledges at 105 and 120 degrees, 3 and 0.5, whose holes are the longest
+// (0.24 and 0.21, ours the less).
+const blendAllow = 0.25
 
 // Convex and concave fillets meeting above an edge left sharp, against
 // OpenCASCADE's makeFillet (testdata/topo/fillet-blend-corners.txt,
 // scripts/fillet-blend-fixtures.py): a ledge's top edge with the
-// concave upright below it, at corners of 60 to 105 degrees, and a
+// concave upright below it, at corners of 60 to 120 degrees, and a
 // rib's upright with one of its foot's edges. Each is sound, has
 // OpenCASCADE's count of faces, one patch filling the corner, and its
-// volume within blendAllow. Where the radii are far apart one way the
-// patch folds and the corner is refused (TestFilletBlendSweep), which
-// OpenCASCADE makes: the rib's 0.5 and 3 is left out.
+// volume within blendAllow, radii far apart either way included.
 func TestFilletBlendCornerOracle(t *testing.T) {
 	t.Parallel()
 	data, err := os.ReadFile(filepath.Join("..", "..", "testdata", "topo", "fillet-blend-corners.txt"))
@@ -106,11 +106,13 @@ func TestFilletBlendCornerOracle(t *testing.T) {
 
 // TestFilletBlendSweep rounds a ledge's top edge, convex, and the
 // concave upright below it over the corner's angle and the two radii:
-// each is sound, or refused by name. The rate is what the blend left
-// refused when it was built, 2026-10-29: 16 of 80, where the convex
-// fillet's radius is several times how far the concave one reaches
-// along the top (at 120 degrees that is from about 1.7 times), its
-// patch a long sliver along the convex fillet's end that folds.
+// each is made and sound. When the blend was built, 2026-10-29, 16 of
+// 80 were refused as folding, where the convex fillet's radius is
+// several times how far the concave one reaches along the top (at 120
+// degrees from about 1.7 times): the row beside the concave fillet's
+// cut leaned under it next to the sharp edge, and the face's curve,
+// turning by more than a right angle, had its lean turned over with it
+// (blendLeans, blendPatch).
 func TestFilletBlendSweep(t *testing.T) {
 	t.Parallel()
 	grid := sweep.Grid{
@@ -120,7 +122,7 @@ func TestFilletBlendSweep(t *testing.T) {
 			sweep.Floats("c", 0.5, 1, 2, 3),
 			sweep.Floats("k", 0.5, 1, 2, 3),
 		},
-		MaxFailRate: 16.0 / 80,
+		MaxFailRate: 0,
 		Sample:      16,
 	}
 	var bad atomic.Int32
