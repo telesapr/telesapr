@@ -84,9 +84,9 @@ reach it, the others are rounded first and then each such edge alone, as the lid
 edges picked together are. Where its fillet meets another picked edge's at a corner whose third
 edge stays sharp, as a lid's upright edge and the bottom edge it meets, the two are mitred there,
 chamfers as fillets. Fillets of different radii are mitred too: the smaller ends against the
-larger on its own wall, and the larger's end turns there onto that wall, down to the corner. Other
-meetings at a vertex the two share are refused there ("pick it alone"), as is a fillet that meets
-smaller ones of different radii at its two ends.
+larger on its own wall, and the larger's end turns there onto that wall, down to the corner, at
+each of its ends, whatever the radii beyond; chamfers of different distances are mitred alike.
+Other meetings at a vertex the two share are refused there ("pick it alone").
 
 An edge along a crease that fades out, as a loft's from a corner of its square foot up to where
 its sides meet smoothly, is rounded or chamfered up to where its faces turn by almost nothing,
@@ -126,7 +126,7 @@ fitted. Examples: [`examples/scripts/tee`](../../examples/scripts/tee/tee.go),
 A rib rounded all over, the edges of its top rounded as well as its foot filled (round the
 foot alone, or the top's edges alone), fillets between curved faces along an edge that ends at
 a curved face the side faces go on past, chamfers meeting at a crease or at a corner whose third
-edge stays sharp, mitres between fillets of different radii, corners where convex
+edge stays sharp, corners where convex
 meets concave at a vertex that the stages can't round with some edge there left sharp, and a
 blend that takes material away and runs off onto the next face, or that runs off at both its
 ends, are refused with a message; they are the rest

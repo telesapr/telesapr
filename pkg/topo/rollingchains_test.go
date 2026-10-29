@@ -3,7 +3,6 @@ package topo_test
 import (
 	"math"
 	"slices"
-	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -114,9 +113,7 @@ func TestFilletChainsMitred(t *testing.T) {
 }
 
 // Picks that don't make chains meeting in mitres are each a rolling
-// ball's alone: a chain that meets smaller ones of two radii at its two
-// ends, its sections kinked differently at each (rollingkink.go), is
-// refused; a top edge with a bottom one lie apart, and are
+// ball's alone: a top edge with a bottom one lie apart, and are
 // rounded one after the other (filletApart): each fillet's vertices
 // are those it has alone, and the two take what each takes alone,
 // within what the meshes' chords of the cut walls differ by.
@@ -124,13 +121,6 @@ func TestFilletChainsNotMitred(t *testing.T) {
 	t.Parallel()
 	tol := fine(0.002)
 	lens := lensCubics()
-	three := topPicks(threeCubics())
-	three[0].R, three[2].R = 0.5, 0.75
-	sh := cubicPrism(threeCubics(), tol)
-	err := topo.FilletPicks(sh, three, 1, 1<<30, false)
-	if err == nil || !strings.Contains(err.Error(), "pick it alone") {
-		t.Errorf("three radii: %v", err)
-	}
 	two := topPicks(lens)
 
 	bottom := []topo.FilletPick{two[0], {At: cubicMiddle(lens[1], 0), Arc: true}}
@@ -150,7 +140,7 @@ func TestFilletChainsNotMitred(t *testing.T) {
 			}
 		}
 	}
-	sh = cubicPrism(lens, tol)
+	sh := cubicPrism(lens, tol)
 	if err := topo.FilletPicks(sh, bottom, 1, 1<<30, false); err != nil {
 		t.Fatalf("top and bottom: %v", err)
 	}
@@ -283,7 +273,14 @@ func TestChamferChainsMitred(t *testing.T) {
 // OpenCASCADE's makeFillet of the same edges at those radii is one of
 // ours within 6.4e-6 mm, its Volume of our STEP export within 3.1e-5 of
 // its own, and every point of either solid lies within 2e-4 mm of the
-// other (sampled 2026-10-28).
+// other (sampled 2026-10-28). The three cubics at 0.5, 1 and 0.75 have a
+// chain that meets smaller ones at both its ends, kinked at two places,
+// and one that meets a larger at one end and a smaller at the other; at
+// 1, 1 and 0.5 a mitre of one radius lies beside two of two radii, the
+// equal chains taking each other's kinks: every vertex of OpenCASCADE's
+// (Part::Fillet with an edge's own radius, 2026-10-29) is one of ours
+// within 1.5e-6 mm, and the meshes' volumes come to its own as the
+// chord tolerance does.
 func TestFilletChainsRadii(t *testing.T) {
 	if testing.Short() {
 		t.Skip("rolling-ball fillets of several chains, slow")
@@ -300,6 +297,12 @@ func TestFilletChainsRadii(t *testing.T) {
 		{"four", fourCubics(), []float64{1, 0.5, 1, 0.5}, []geom.Vector{v(0, 0, 4), v(16, 0, 4), v(0, 13, 4), v(16, 13, 4),
 			v(-0.206827, 12.715949, 4.5), v(-0.206827, 0.284051, 4.5), v(16.206827, 0.284051, 4.5), v(16.206827, 12.715949, 4.5),
 			v(-0.334764, 1.405090, 5), v(16.334764, 1.405090, 5), v(16.334764, 11.594910, 5), v(-0.334764, 11.594910, 5)}},
+		{"three", threeCubics(), []float64{0.5, 1, 0.75}, []geom.Vector{v(0, 0, 4.25), v(0.037013, -0.024608, 4.5),
+			v(19.884258, -0.076503, 4.5), v(20, 0, 4), v(10, 17, 4), v(9.979671, 16.97458, 4.25), v(0.816112, 0.071241, 5),
+			v(9.841378, 15.589126, 5), v(18.964969, -0.060909, 5)}},
+		{"three equal", threeCubics(), []float64{1, 1, 0.5}, []geom.Vector{v(0, 0, 4), v(20, 0, 4), v(10, 17, 4),
+			v(9.914273, 16.892687, 4.5), v(0.044188, 0.131604, 4.5), v(0.770595, 0.690535, 5), v(18.795553, 0.42032, 5),
+			v(9.682331, 15.791699, 5)}},
 	} {
 		picks := topPicks(c.prof)
 		for i := range picks {
@@ -315,6 +318,61 @@ func TestFilletChainsRadii(t *testing.T) {
 				if !hasVertex(t, sh, p) {
 					t.Errorf("%s at %g: no vertex at %v", c.name, tol, p)
 				}
+			}
+		}
+	}
+}
+
+// Chamfers of two distances meet in mitres as fillets of two radii do,
+// the smaller's line in place of its arc: the larger end turns onto the
+// smaller's wall where its cut leaves that line. The lens at 1 and 0.5,
+// the four cubics at 1, 0.5, 1 and 0.5 and the three at 0.5, 1 and 0.75:
+// every vertex of OpenCASCADE's (Part::Chamfer with an edge's own
+// distance, 2026-10-29) is one of ours within 2.3e-6 mm, but for the
+// four cubics' mitres' feet on the top, where the larger chamfer's
+// meets the smaller's past its edge's end: there the edge is carried on
+// along its tangent (rollingBall.along), and the foot lies 2.2e-4 mm
+// from OpenCASCADE's and 2.7e-4 from where the cubics' own offsets,
+// carried on, cross.
+func TestChamferChainsRadii(t *testing.T) {
+	if testing.Short() {
+		t.Skip("rolling-ball chamfers of several distances, slow")
+	}
+	t.Parallel()
+	for _, c := range []struct {
+		name  string
+		prof  [][4]geom.Vector
+		radii []float64
+		verts []geom.Vector
+		loose []geom.Vector
+	}{
+		{"lens", lensCubics(), []float64{1, 0.5}, []geom.Vector{v(0, 0, 4), v(20, 0, 4), v(19.698338, 0.464103, 4.5),
+			v(0.301662, 0.464103, 4.5), v(0.899091, 0.448841, 5), v(19.100909, 0.448841, 5)}, nil},
+		{"four", fourCubics(), []float64{1, 0.5, 1, 0.5}, []geom.Vector{v(0, 0, 4), v(16, 0, 4), v(0, 13, 4), v(16, 13, 4),
+			v(-0.709846, 11.943045, 4.5), v(-0.709846, 1.056955, 4.5), v(16.709846, 1.056955, 4.5), v(16.709846, 11.943045, 4.5)},
+			[]geom.Vector{v(-0.334743, 1.405051, 5), v(16.334743, 1.405051, 5), v(16.334743, 11.594949, 5), v(-0.334743, 11.594949, 5)}},
+		{"three", threeCubics(), []float64{0.5, 1, 0.75}, []geom.Vector{v(0, 0, 4.25), v(0.216294, -0.141909, 4.5),
+			v(19.566064, -0.280173, 4.5), v(20, 0, 4), v(10, 17, 4), v(9.840126, 16.799621, 4.25), v(0.816112, 0.071241, 5),
+			v(9.841377, 15.589126, 5), v(18.964969, -0.060909, 5)}, nil},
+	} {
+		picks := topPicks(c.prof)
+		for i := range picks {
+			picks[i].R = c.radii[i]
+		}
+		sh := cubicPrism(c.prof, fine(0.002))
+		if err := topo.FilletPicks(sh, picks, c.radii[0], 1<<30, true); err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		sound(t, sh)
+		for _, p := range c.verts {
+			if !hasVertex(t, sh, p) {
+				t.Errorf("%s: no vertex at %v", c.name, p)
+			}
+		}
+		got := build(t, sh).Vertices
+		for _, p := range c.loose {
+			if !slices.ContainsFunc(got, func(x topo.Vertex) bool { return x.P.Minus(p).Magnitude() < 3e-4 }) {
+				t.Errorf("%s: no vertex near %v", c.name, p)
 			}
 		}
 	}
