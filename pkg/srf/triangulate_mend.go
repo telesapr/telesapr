@@ -9,11 +9,14 @@ import (
 
 // mendCrossings meshes again, by the constrained Delaunay mesher, each
 // surface whose ear-clipped mesh strays from it (strays[i], its mesh
-// ms[i]) and is unsound in the shell's, an edge of its triangles
-// crossing the shell's mesh or having no mate there, and each whose
-// triangles lie on another's (stackedFaces). The ear clipper fans long chords across a patch ruled one
-// way or a trimmed corner, which pass a trim point on the wrong side and
-// cross the face beyond (roadmap K4); and where a trim runs up a
+// ms[i]) or holds a sliver (earMeshSlivers) and is unsound in the
+// shell's, an edge of its triangles crossing the shell's mesh or having
+// no mate there, and each whose triangles lie on another's
+// (stackedFaces). The ear clipper fans long chords across a patch ruled
+// one way or a trimmed corner, which pass a trim point on the wrong side
+// and cross the face beyond (roadmap K4); on a plane it clips slivers
+// along a straight trim, whose planes, turned anyhow, the face's own
+// edges cross; and where a trim runs up a
 // meridian into a pole, or two faces fan from a corner along the curve
 // they share, it joins the curve's points to the pole or corner on both
 // faces, so slivers of both lie on each other, too thin to count as

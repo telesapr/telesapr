@@ -52,3 +52,32 @@ func (s *SSurface) earMeshStrays(tris []STriangle) bool {
 	}
 	return false
 }
+
+// earSliverShare is how thin, as a share of its longest side, a
+// triangle of a plane's ear-clipped mesh is before the face is a
+// candidate for mendCrossings.
+const earSliverShare = 1e-3
+
+// earMeshSlivers tells whether a plane's ear-clipped triangles, in xyz,
+// hold a sliver: one far thinner than it is long. On a plane any ear is
+// taken, and three points along a trim that runs straight in xyz, a
+// fillet's foot along a flat face, make one; the points are off the
+// line in their last digits, so the sliver's own plane is turned
+// anyhow, and the face's edges beside its end cross it (a rib's foot
+// filleted round the front corner where its slope leans). Most slivers
+// cross nothing, so it only says which faces to look at.
+func earMeshSlivers(tris []STriangle) bool {
+	for i := range tris {
+		t := &tris[i]
+		ab, bc, ca := t.B.Minus(t.A), t.C.Minus(t.B), t.A.Minus(t.C)
+		long := max(ab.MagSquared(), bc.MagSquared(), ca.MagSquared())
+		if long < geom.LengthEps*geom.LengthEps {
+			continue
+		}
+		// Twice the area over the longest side is the height.
+		if ab.Cross(ca).MagSquared() < earSliverShare*earSliverShare*long*long {
+			return true
+		}
+	}
+	return false
+}

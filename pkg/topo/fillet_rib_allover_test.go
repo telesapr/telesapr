@@ -72,14 +72,6 @@ func readRibOracle(t *testing.T) []ribOracle {
 	return out
 }
 
-// ribAllOverKnown are the cases of TestFilletRibAllOverOracle that are
-// unsound today, with why; the list may only shrink.
-var ribAllOverKnown = map[string]string{
-	"h10_lean-4_r0.5": "three mesh edges cross at the front corners, where the foot's fillet " +
-		"passes from the slope edge's fillet onto the slope; sound at chord 0.0001",
-	"h5_lean-4_r0.5": "five mesh edges cross, as h10_lean-4_r0.5's",
-}
-
 // TestFilletRibAllOverOracle rounds a rib all over: its top's edges and
 // its foot's picked together, in one edit. The top's convex edges are
 // rounded first (filletInStages), which leaves its foot one closed chain
@@ -102,9 +94,6 @@ func TestFilletRibAllOverOracle(t *testing.T) {
 		name := fmt.Sprintf("h%g_lean%g_r%g", o.h, o.lean, o.r)
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			if why, ok := ribAllOverKnown[name]; ok {
-				t.Skip(why)
-			}
 			rb := rib{o.h, o.lean}
 			sides, ends := rb.foot()
 			tol := srf.Tol(0.0003*o.r, 400)
