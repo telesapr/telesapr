@@ -202,6 +202,9 @@ type filletCorner struct {
 	shared  srf.SBezier
 	conic   srf.SBezier
 	cutFace int
+	// For two of unlike radii (radiiPairAt): the curves the two strips
+	// share, in place of shared, which a quartic needs more than one of.
+	chain []srf.SBezier
 	// For a setback corner: each fillet's section where it is cut, by
 	// edge; each face's curve between two fillets, by face; and the
 	// patches that fill the hole.
@@ -554,6 +557,11 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 			}
 			if err != nil && setback && setbackRefusal(err) {
 				c, err = t.setbackCornerAt(v, edges, byEdge)
+			}
+			if err != nil && setback && t.radiiPairTakes(v, edges, byEdge) {
+				// Two fillets of unlike radii above an edge left sharp:
+				// the smaller ends on the larger's cylinder.
+				c, err = t.radiiPairAt(v, edges, byEdge)
 			}
 			if err != nil && setback && t.blendCornerTakes(v, edges, byEdge) {
 				// A convex fillet and a concave one above an edge left
@@ -1506,35 +1514,11 @@ func (t *Topology) unevenMitre(c *filletCorner, v int, fes [2]*filletEdge, top i
 	// The conic in A's side face on B's cylinder, from qa to w: tangent at
 	// qa to both, and at w to the third edge, where B's cylinder touches
 	// its own side face.
-	radial := func(x geom.Vector) geom.Vector {
-		d := x.Minus(c.centre)
-		return d.Minus(B.dir.ScaledBy(d.Dot(B.dir)))
-	}
-	t0 := na.Cross(radial(qa)).WithMagnitude(1)
-	t1 := na.Cross(nb).WithMagnitude(1)
-	ctrl, ok := lineMeet(qa, t0, w, t1)
-	if !ok {
+	conic, err := cylinderConic(c.centre, B.dir, sr, na, nb, qa, w)
+	if err != nil {
 		return filletErr(p, "the mitre between the two fillets is degenerate")
 	}
-	// The weight from the conic's middle, on the line from the chord's
-	// middle to the control point: B's cylinder there.
-	mc := qa.Plus(w).ScaledBy(0.5)
-	d0, d1 := radial(mc), radial(ctrl).Minus(radial(mc))
-	qa2, qb2, qc2 := d1.Dot(d1), 2*d0.Dot(d1), d0.Dot(d0)-sr*sr
-	disc := qb2*qb2 - 4*qa2*qc2
-	if qa2 < 1e-18 || disc < 0 {
-		return filletErr(p, "the mitre between the two fillets is degenerate")
-	}
-	k := -1.0
-	for _, x := range []float64{(-qb2 - math.Sqrt(disc)) / (2 * qa2), (-qb2 + math.Sqrt(disc)) / (2 * qa2)} {
-		if x > 1e-9 && x < 1-1e-9 {
-			k = x
-		}
-	}
-	if k < 0 {
-		return filletErr(p, "the mitre between the two fillets is degenerate")
-	}
-	c.conic = arc(qa, ctrl, w, k/(1-k))
+	c.conic = conic
 	c.long, c.cutFace = B.e, side[ia]
 	c.at[[2]int{A.e, top}], c.at[[2]int{B.e, top}] = tt, tt
 	c.at[[2]int{A.e, side[ia]}] = qa
@@ -1588,6 +1572,12 @@ func (fe *filletEdge) connectors(t *Topology, v int, c *filletCorner, p, q geom.
 			sb.Reverse()
 		}
 		return []srf.SBezier{sb}
+	}
+	if c.kind == 2 && c.chain != nil {
+		if c.long != fe.e {
+			return orientChain(c.chain, p)
+		}
+		return orientChain(append(slices.Clone(c.chain), c.conic), p)
 	}
 	if c.kind != 2 || c.long != fe.e {
 		return []srf.SBezier{fe.connector(t, v, c, p, q, flat)}

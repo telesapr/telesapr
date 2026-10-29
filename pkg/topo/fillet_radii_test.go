@@ -42,13 +42,7 @@ func TestFilletRadii(t *testing.T) {
 
 func TestFilletRadiiRefused(t *testing.T) {
 	t.Parallel()
-	sh := box(srf.Tolerance{})
-	picks := []topo.FilletPick{{A: v(0, 0, 30), B: v(10, 0, 30), R: 2}, {A: v(10, 0, 30), B: v(10, 20, 30)}}
-	err := topo.FilletPicks(sh, picks, 1, 1<<30, false)
-	if err == nil || !strings.Contains(err.Error(), "radius 1 and 2 meet") {
-		t.Errorf("a mitre of two radii: %v", err)
-	}
-	picks[1].R = -1
+	picks := []topo.FilletPick{{A: v(0, 0, 30), B: v(10, 0, 30), R: 2}, {A: v(10, 0, 30), B: v(10, 20, 30), R: -1}}
 	if err := topo.FilletPicks(box(srf.Tolerance{}), picks, 1, 1<<30, false); err == nil || !strings.Contains(err.Error(), "more than zero") {
 		t.Errorf("a radius below zero: %v", err)
 	}

@@ -3,10 +3,7 @@ package api
 import (
 	"math"
 	"path/filepath"
-	"strings"
 	"testing"
-
-	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // A block's upright edges rounded at one radius and its top edges at a
@@ -109,7 +106,8 @@ func TestFilletStagesScript(t *testing.T) {
 		}
 	}
 
-	// Two top edges of different radii over an upright left sharp.
+	// Two top edges of different radii over an upright left sharp: the
+	// smaller ends on the larger's cylinder.
 	g2 := New()
 	_, edges, n = build(g2)
 	var two []SolidEdge
@@ -122,15 +120,9 @@ func TestFilletStagesScript(t *testing.T) {
 	if len(two) != 2 {
 		t.Fatalf("%d top edges at the corner", len(two))
 	}
-	wrong := g2.Features.FilletSolid(two, top, "rounded")
-	wrong.AsFillet().SetEdgeRadius(1, upright)
-	p := wrong.Problem()
-	if !strings.Contains(p, "left sharp") {
+	pair := g2.Features.FilletSolid(two, top, "rounded")
+	pair.AsFillet().SetEdgeRadius(1, upright)
+	if p := pair.Problem(); p != "" {
 		t.Errorf("a mitre of two radii: %q", p)
 	}
-	wrong.d.read(func(sk *sketch.Sketch) {
-		if pr := wrong.get(sk).Problem; !pr.HasPoint || !near(pr.At.Z, h) {
-			t.Errorf("the refusal is marked at %v (%v), not at a top corner", pr.At, pr.HasPoint)
-		}
-	})
 }
