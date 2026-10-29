@@ -122,6 +122,15 @@ func (sk *Sketch) solidFrameAt(solid *Group, g *Group) (topo.FaceFrame, topo.Dat
 	switch {
 	case err != nil:
 		return topo.FaceFrame{}, topo.DatumUnknown, err
+	case len(g.SolidEdges) > 0 && g.datumKind == topo.DatumEdgePoint:
+		// Found before: an edit may have turned the edge round, and the
+		// place is kept by where it was (EdgeFrameNear).
+		last := topo.FaceFrame{Origin: g.Predef.At, U: g.Predef.Q.RotationU(), N: g.Predef.Q.RotationN()}
+		fr, kind, place, err := t.EdgeFrameNear(g.SolidEdges[0], g.DatumAt, last)
+		if err == nil {
+			g.DatumAt = place
+		}
+		return fr, kind, err
 	case len(g.SolidEdges) > 0:
 		return t.EdgeFrameAt(g.SolidEdges[0], g.DatumAt)
 	case len(g.SolidFaces) == 2:

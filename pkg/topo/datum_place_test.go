@@ -87,3 +87,42 @@ func TestDatumFrameAtPlace(t *testing.T) {
 		t.Error("a place on an edge not in the solid")
 	}
 }
+
+// A place on a cubic edge whose frame was last found at the place's
+// mirror along the edge, as after an edit that turned the edge round,
+// is counted from the other end: the frame comes back where it was last
+// found and the place is returned as the edge now counts it. Found
+// where it was, the place stays. A straight edge's frame takes no place.
+func TestEdgeFrameNear(t *testing.T) {
+	t.Parallel()
+	tp := build(t, eachFaceNamed(cubicPrism(lensCubics(), srf.Tolerance{})))
+	checked := 0
+	for e := range tp.Edges {
+		n, err := tp.NameOf(e)
+		if err != nil {
+			continue
+		}
+		if _, kind, _ := tp.EdgeFrame(n); kind != topo.DatumEdgePoint {
+			if fr, _, place, err := tp.EdgeFrameNear(n, []float64{0.2}, topo.FaceFrame{}); err != nil || len(place) != 1 || place[0] != 0.2 {
+				t.Errorf("edge %s: %+v %v %v", n, fr, place, err)
+			}
+			continue
+		}
+		checked++
+		here, _, _ := tp.EdgeFrameAt(n, []float64{0.2})
+		there, _, _ := tp.EdgeFrameAt(n, []float64{0.8})
+		fr, _, place, err := tp.EdgeFrameNear(n, []float64{0.2}, there)
+		if err != nil || place[0] != 0.8 || fr.Origin != there.Origin {
+			t.Errorf("edge %s turned round: %v at %v, not %v", n, place, fr.Origin, there.Origin)
+		}
+		if _, _, place, _ := tp.EdgeFrameNear(n, []float64{0.2}, here); place[0] != 0.2 {
+			t.Errorf("edge %s where it was: %v", n, place)
+		}
+	}
+	if checked != 4 {
+		t.Errorf("%d cubic edges", checked)
+	}
+	if _, _, _, err := tp.EdgeFrameNear(topo.Name{A: 0x7fff, B: 0x7ffe}, []float64{0.2}, topo.FaceFrame{}); err == nil {
+		t.Error("a frame on an edge not in the solid")
+	}
+}
