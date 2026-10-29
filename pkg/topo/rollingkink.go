@@ -214,7 +214,7 @@ func (rb *rollingBall) kinkedFit(k int, ball srf.BSplineCurve, f0, f1 rbFoot, ts
 			}
 		}
 		ctrl[0], ctrl[endDeg] = ends[0], ends[1]
-		span := srf.BSplineCurve{Deg: endDeg, Knots: bezierKnots(endDeg), Ctrl: ctrl, Weight: w}
+		span := srf.BSplineCurve{Deg: endDeg, Knots: endSpanKnots(), Ctrl: ctrl, Weight: w}
 		fit, fu, ok := fitThrough(span, w, ways, sts, sxs)
 		if !ok {
 			return fit, nil, nil, false
@@ -312,7 +312,7 @@ func spanOf(c srf.BSplineCurve, a, b float64) srf.BSplineCurve {
 	n := endDeg + 1
 	if i := slices.IndexFunc(c.Knots, func(x float64) bool { return x > a+kinkMerge }); i > 0 && c.Knots[i] >= b-kinkMerge {
 		// One span already: its own control points.
-		return srf.BSplineCurve{Deg: endDeg, Knots: bezierKnots(endDeg),
+		return srf.BSplineCurve{Deg: endDeg, Knots: endSpanKnots(),
 			Ctrl: slices.Clone(c.Ctrl[i-n : i]), Weight: slices.Clone(c.Weight[i-n : i])}
 	}
 	var rhs [4][]float64
@@ -351,7 +351,7 @@ func spanOf(c srf.BSplineCurve, a, b float64) srf.BSplineCurve {
 		}
 		sol[d] = x
 	}
-	out := srf.BSplineCurve{Deg: endDeg, Knots: bezierKnots(endDeg), Ctrl: make([]geom.Vector, n), Weight: make([]float64, n)}
+	out := srf.BSplineCurve{Deg: endDeg, Knots: endSpanKnots(), Ctrl: make([]geom.Vector, n), Weight: make([]float64, n)}
 	for i := range n {
 		w := sol[3][i]
 		out.Weight[i] = w

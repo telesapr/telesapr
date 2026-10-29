@@ -82,14 +82,15 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 				last = i
 			}
 		}
-		if first == math.MaxInt || last == 0 {
+		switch {
+		case first == math.MaxInt || last == 0:
 			// All clean; so just regenerate the entities, and don't solve anything.
 			first, last = -1, -1
-		} else if typ == GenerateNew {
+		case typ == GenerateNew:
 			// A group put in before others: they are made again too,
 			// as what they refer to may have moved.
 			last = math.MaxInt
-		} else {
+		default:
 			// A datum on the solid after the active group follows its
 			// face as one before it does: a model linking this one,
 			// or a mate, finds it where the face now is.

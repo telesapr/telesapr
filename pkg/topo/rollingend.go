@@ -1105,10 +1105,10 @@ func raised(c srf.BSplineCurve) srf.BSplineCurve {
 	return fromHomog(elevateH(homog(c)))
 }
 
-// bezierKnots are the knots of one Bézier span of degree deg on [0, 1].
-func bezierKnots(deg int) []float64 {
-	k := make([]float64, 2*(deg+1))
-	for i := deg + 1; i < len(k); i++ {
+// endSpanKnots are the knots of one Bézier span of degree endDeg on [0, 1].
+func endSpanKnots() []float64 {
+	k := make([]float64, 2*(endDeg+1))
+	for i := endDeg + 1; i < len(k); i++ {
 		k[i] = 1
 	}
 	return k
@@ -1141,7 +1141,7 @@ func (rb *rollingBall) splitSection(c srf.BSplineCurve) srf.BSplineCurve {
 // splitDerivative is d, the derivative across an end of one span's
 // homogeneous control points, split as splitSection splits a section.
 func (rb *rollingBall) splitDerivative(d []geom.Vector4) []geom.Vector4 {
-	knots := bezierKnots(endDeg)
+	knots := endSpanKnots()
 	if len(rb.kinks) > 0 {
 		for _, t := range rb.kinks {
 			for range endDeg {
