@@ -53,14 +53,14 @@ func ClosedLoftSections(loops [][]srf.SBezier) ([][]srf.SBezier, error) {
 			loops[i] = reverseLoop(loops[i])
 		}
 	}
-	// Sections between profiles turned far apart are the profiles'
-	// blend, which shrinks across as they turn: past a quarter turn from
-	// one to the next it pinches, and a wide profile's surface crosses
-	// itself.
+	// Sections between profiles are turned with the ring's frame
+	// (ringSections), on a curve leaving each profile square to it: past
+	// a third of a turn from one to the next that curve swings wide of
+	// the chord between them and loops on itself near half a turn.
 	for i := range loops {
 		a, b := newell(loops[i]).WithMagnitude(1), newell(loops[(i+1)%k]).WithMagnitude(1)
-		if a.Dot(b) < -1e-6 {
-			return nil, fmt.Errorf("profiles %d and %d turn by more than a quarter turn from one to the other; a closed loft needs profiles between them", i+1, (i+1)%k+1)
+		if a.Dot(b) < -0.5-1e-6 {
+			return nil, fmt.Errorf("profiles %d and %d turn by more than a third of a turn from one to the other; a closed loft needs profiles between them", i+1, (i+1)%k+1)
 		}
 	}
 	for i := 1; i < k; i++ {
@@ -77,17 +77,19 @@ func ClosedLoftSurface(loops [][]srf.SBezier) (*srf.BSplineSurface, error) {
 	if err != nil {
 		return nil, err
 	}
-	k := len(r.loops)
+	curves, ts, _ := ringSections(r)
+	last := len(curves) - 1
 	// The slope across at the seam, in homogeneous coordinates, from the
-	// profile after the first to the one before it (the last), over the
+	// section after the first to the one before it (the last), over the
 	// parameter between them through the seam: both ends take it, so the
 	// surface's derivative across is one there.
-	span := r.ts[1] + 1 - r.ts[k-1]
-	slope := make([]geom.Vector4, len(r.curves[0].Ctrl))
+	span := ts[1] + 1 - ts[last-1]
+	h := func(c srf.BSplineCurve, i int) geom.Vector4 { return geom.Vector4FromWeighted(c.Weight[i], c.Ctrl[i]) }
+	slope := make([]geom.Vector4, len(curves[0].Ctrl))
 	for i := range slope {
-		slope[i] = r.h(1, i).Minus(r.h(k-1, i)).ScaledBy(1 / span)
+		slope[i] = h(curves[1], i).Minus(h(curves[last-1], i)).ScaledBy(1 / span)
 	}
-	return srf.SkinThrough(r.curves, r.ts, slope, slope)
+	return srf.SkinThrough(curves, ts, slope, slope)
 }
 
 // closedRing is a closed loft's sections as it takes them: the loops
@@ -135,11 +137,6 @@ func closedLoftRing(loops [][]srf.SBezier) (closedRing, error) {
 	}
 	ts[k] = 1
 	return closedRing{loops: loops, curves: curves, ts: ts}, nil
-}
-
-// h is control point i of section s in homogeneous coordinates.
-func (r *closedRing) h(s, i int) geom.Vector4 {
-	return geom.Vector4FromWeighted(r.curves[s].Weight[i], r.curves[s].Ctrl[i])
 }
 
 // ClosedLoftSurfaces are the surfaces of a closed loft through loops
@@ -193,19 +190,22 @@ func ClosedLoftSurfaces(loops [][]srf.SBezier, held []float64) ([]*srf.BSplineSu
 	}
 	// From each held profile round to the next, past the seam where it
 	// lies between: the parameter goes on past 1 there.
-	param := func(s int) float64 { return float64(s/k) + r.ts[s%k] }
+	curves, cts, idx := ringSections(r)
+	d := len(curves) - 1
+	param := func(s int) float64 { return float64(s/d) + cts[s%d] }
 	var out []*srf.BSplineSurface
 	for c, from := range at {
 		to := at[(c+1)%len(at)]
 		if to <= from {
 			to += k
 		}
-		span := param(to) - param(from)
-		sections := make([]srf.BSplineCurve, 0, to-from+1)
-		ts := make([]float64, 0, to-from+1)
-		for s := from; s <= to; s++ {
-			sections = append(sections, r.curves[s%k])
-			ts = append(ts, (param(s)-param(from))/span)
+		span := float64(to/k) + r.ts[to%k] - r.ts[from]
+		lo, hi := idx[from], idx[to%k]+to/k*d
+		sections := make([]srf.BSplineCurve, 0, hi-lo+1)
+		ts := make([]float64, 0, hi-lo+1)
+		for s := lo; s <= hi; s++ {
+			sections = append(sections, curves[s%d])
+			ts = append(ts, (param(s)-param(lo))/span)
 		}
 		ts[len(ts)-1] = 1
 		piece, err := srf.SkinThrough(sections, ts, slope(from, span), slope(to%k, span))
