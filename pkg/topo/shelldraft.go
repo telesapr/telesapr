@@ -105,7 +105,7 @@ func draftedInsideOf(t *Topology, d DraftedSolid, modeOf func(f int) faceMode, t
 	if zhi-zlo <= geom.LengthEps {
 		return nil, shellErr(t.faceAnchor(0), "a thickness of %g makes the walls meet, closing up the inside", thick)
 	}
-	sides, err := draftedSides(t, d, modeOf, thick)
+	sides, err := draftedSides(t, d, modeOf)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func strongest(modes []faceMode) faceMode {
 // draftedSides is, of each set's loops' curves, how far in units of the
 // thickness its side moves in square to itself, found from the faces of
 // t its side lies on, at points between its ends and the solid's.
-func draftedSides(t *Topology, d DraftedSolid, modeOf func(f int) faceMode, thick float64) ([][][]float64, error) {
+func draftedSides(t *Topology, d DraftedSolid, modeOf func(f int) faceMode) ([][][]float64, error) {
 	dir := d.Dir.WithMagnitude(1)
 	out := make([][][]float64, len(d.Sets))
 	for k, set := range d.Sets {
