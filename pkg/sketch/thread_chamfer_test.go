@@ -239,13 +239,15 @@ func TestThreadChamferCoarse(t *testing.T) {
 	}
 	// The sizes of TestThreadChamferSweep: r the thread's radius.
 	bsf, m8, m8x1 := 6.35, 4.0, 4.0
-	for _, tc := range []threadCase{
+	// Under the race detector a fifth of them: each took up to 13 minutes
+	// there, through the same goroutines.
+	for _, tc := range fixtures.Sample([]threadCase{
 		{"bsf_nut", 2 * bsf, 1.6*bsf + 1.41, "1/2 BSF", sketch.ThreadOptions{Length: 1.6*bsf + 1.41, Through: true, Internal: true, Chamfer: true}},
 		{"rounded_nut_m8", 2 * m8, 1.6 * m8, "M8", with(rounded, 1.6*m8, true, true)},
 		{"rounded_screw_bsf", bsf, 6 * bsf, "1/2 BSF", with(rounded, 3*bsf, false, false)},
 		{"rounded_tapped_bsf", 2 * bsf, 4 * bsf, "1/2 BSF", with(rounded, 2.4*bsf, false, true)},
 		{"rounded_tapped_m8x1", 2 * m8x1, 4 * m8x1, "M8x1", with(rounded, 2.4*m8x1, false, true)},
-	} {
+	}) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			_, _, res, err := tc.tryBuild(t, 0.5)

@@ -5,6 +5,8 @@ import (
 	"math"
 	"path/filepath"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 )
 
 // Fillets of radius 1 on edges of STEP solids (roadmap 22.5) take the
@@ -46,7 +48,9 @@ func TestFilletOnOtherSolidsVolumes(t *testing.T) {
 		{"degree/lid_degree7.step", V(20.3125, 0, 9.59580796), 9.792331},
 	}
 	t.Parallel()
-	for _, c := range cases {
+	// Under the race detector a fifth of the cases: the lid's alone took
+	// 17 minutes there, and it runs through no goroutine the others don't.
+	for _, c := range fixtures.Sample(cases) {
 		t.Run(fmt.Sprintf("%s at %v", c.file, c.at), func(t *testing.T) {
 			t.Parallel()
 			d := New()

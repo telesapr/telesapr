@@ -123,11 +123,11 @@ RACE_PACKAGES ?= ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/.
 
 # The fixture loops and the sweeps take a fifth under the race detector
 # (fixtures.Sample in pkg/internal/fixtures, sweep.Grid.Run), which needs
-# the code that runs on several goroutines, not every model.
-# RACE_TIMEOUT bounds each go test process: pkg/script/api's
-# TestFilletOnOtherSolidsVolumes alone takes 14 minutes here under the
-# detector, and twice that on a runner, so the nightly workflow gives it
-# more.
+# the code that runs on several goroutines, not every model; so do the
+# slowest single cases of pkg/script/api and pkg/sketch, whose packages
+# came within five minutes of the limit below inside make ci.
+# RACE_TIMEOUT bounds each go test process; a runner is about twice as
+# slow, so the nightly workflow gives pkg/ui and pkg/script/api more.
 RACE_TIMEOUT ?= 30m
 
 test-race:

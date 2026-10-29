@@ -250,7 +250,9 @@ func TestEditThreadShape(t *testing.T) {
 	m8 := threadCase{"", 4, 30, "M8", sketch.ThreadOptions{Length: 12}}
 	m8Chamfer := threadCase{"", 4, 30, "M8", sketch.ThreadOptions{Length: 12, Chamfer: true}}
 	m12LevelChamfer := threadCase{"", 6, 20, "M12xPh3P1", sketch.ThreadOptions{Length: 14, LevelStarts: true, Chamfer: true}}
-	for _, c := range []struct {
+	// Under the race detector a fifth of the edits: each rebuilds threads
+	// several times, some ten minutes there, through the same goroutines.
+	for _, c := range fixtures.Sample([]struct {
 		name string
 		from threadCase
 		to   string
@@ -272,7 +274,7 @@ func TestEditThreadShape(t *testing.T) {
 		{"through with chamfer kept", m8Chamfer, "M8", func(o *sketch.ThreadOptions) { o.Chamfer, o.Through, o.Length = true, true, 28 }, true},
 		{"fewer level starts with chamfer", m12LevelChamfer, "M12xPh2P1", func(o *sketch.ThreadOptions) { o.LevelStarts, o.Chamfer = true, true }, false},
 		{"chamfer with level starts", m12, "M12xPh3P1", func(o *sketch.ThreadOptions) { o.LevelStarts, o.Chamfer = true, true }, false},
-	} {
+	}) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			sk, _, res := c.from.build(t, 0)
