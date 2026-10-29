@@ -207,3 +207,44 @@ func translatedCurves(cs []srf.SBezier, by geom.Vector) []srf.SBezier {
 	}
 	return out
 }
+
+// draftedAt is how the solid at group g was made when it is one drafted
+// extrusion alone (soleSolidAt), as generateDraftShell makes it: its
+// profile on the neutral plane and how far it reaches either way.
+// Otherwise nil.
+func (sk *Sketch) draftedAt(g *Group) *topo.DraftedSolid {
+	g = sk.soleSolidAt(g)
+	if g == nil || !g.HasDraft() || g.Problem.Msg != "" {
+		return nil
+	}
+	src := sk.Group(g.OpA)
+	if src == nil || len(src.BezierLoops.Sets) == 0 {
+		return nil
+	}
+	translate := geom.Vector{
+		X: paramFloat(sk, g.H.Param(0)),
+		Y: paramFloat(sk, g.H.Param(1)),
+		Z: paramFloat(sk, g.H.Param(2)),
+	}
+	tbot, ttop := translate.ScaledBy(-1), translate.ScaledBy(1)
+	if g.Subtype == GroupOneSided || g.Subtype == GroupOneSkewed {
+		tbot, ttop = geom.Vector{}, translate.ScaledBy(2)
+	}
+	dir := ttop.Minus(tbot)
+	if dir.Magnitude() < core.LengthEps {
+		return nil
+	}
+	dir = dir.WithMagnitude(1)
+	s0 := g.ValB
+	neutral := dir.ScaledBy(s0)
+	d := &topo.DraftedSolid{Dir: dir, Lo: tbot.Dot(dir) - s0, Hi: ttop.Dot(dir) - s0}
+	for k := range src.BezierLoops.Sets {
+		set := &src.BezierLoops.Sets[k]
+		loops := [][]srf.SBezier{translatedCurves(set.Outer.Curves, neutral)}
+		for _, h := range set.Holes {
+			loops = append(loops, translatedCurves(h.Curves, neutral))
+		}
+		d.Sets = append(d.Sets, topo.DraftedSet{Loops: loops, Angles: g.draftAngles(loops, g.ValC*math.Pi/180)})
+	}
+	return d
+}

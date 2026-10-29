@@ -21,7 +21,16 @@ cone gets a coned inside, a sphere a spherical one, each wall exactly the thickn
 can be open at any of its faces: a flat one, as a cup's top, or a curved one between outside
 corners, as a ring open all round its outer side, which leaves a channel. A revolve's flat ends
 are walls too, unless taken away; where the ends of a revolve of more than half a turn meet at
-the axis, the inside keeps the thickness from each and is rounded about the axis. The group's screen lists them and takes the thickness, as a number or an expression;
+the axis, the inside keeps the thickness from each and is rounded about the axis.
+
+An extrusion with a draft whose sides are cones, as a drafted cylinder, ring or slot, with no
+other solid before or after it, is hollowed by its profile too: each side, plane or cone, is moved
+in square to itself, so the inside is the same draft of the profile offset across by the thickness
+over the cosine of the draft angle, between the ends moved in. It can be open at its ends; a
+two-sided draft's inside leans both ways from its neutral plane, as the solid does. (A drafted
+extrusion of lines only has flat faces, and is hollowed as any solid of flat faces is.)
+
+The group's screen lists the faces taken away and takes the thickness, as a number or an expression;
 "[change]" beside the faces takes the selected faces instead, and "[remove]" on a face's row
 keeps it as a wall again. A thickness
 at which the walls meet is a problem on the group, and the solid passes through.
@@ -39,8 +48,8 @@ sh.AsShell().SetThickness(1.5)
 
 A solid with curved faces must be such a prism, its sides all running one way and open only at
 its ends, or one lathe or revolve, or lathes about one axis; a lathe joined to other solids, as
-an extruded block or a revolve of less than a whole turn, a helix, or a cone made by an
-extrusion's draft are refused. A revolve's curved face is opened only between outside corners. A
+an extruded block or a revolve of less than a whole turn, and a helix are refused, and so is a
+drafted extrusion joined to another solid or open at a side. A revolve's curved face is opened only between outside corners. A
 profile of other curves than lines and arcs is refused. Beside a round hole, walls thinner than
 about twice the chord tolerance can come out unsound: the hole's chords and the wall's cross. Where four faces meet at a
 vertex and, moved in, don't meet at one point, as at an off-centre pyramid's apex, the inside gets
