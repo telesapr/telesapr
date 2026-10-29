@@ -35,8 +35,10 @@ takes:
   a screw and a nut whose threads run the same way mate; **load flank back**, beside the hand for
   a buttress thread, turns it about. A B1.9 designation may say which way the load goes:
   `PUSH-BUTT` leaves the load flank as it is drawn, the screw pushing at the end its thread starts
-  from; `PULL-BUTT` ticks **load flank back**. A buttress crest is flat and can't be rounded, and
-  buttress threads have no tolerance classes. Their roots are flat at the standard's truncation;
+  from; `PULL-BUTT` ticks **load flank back**. A buttress thread's rounded crest is the arc
+  tangent to both flanks and to the standard crest, which its top touches off the crest's
+  middle, towards the steeper flank; it goes with a rounded root too. Buttress threads have no
+  tolerance classes. Their roots are flat at the standard's truncation;
   **rounded root**, at the end of the crest's row for a B1.9 thread, rounds them as B1.9 draws
   them, by an arc of 0.07141 pitches tangent to both flanks. Its arcs are small, 0.15 mm on a
   1-12 BUTT, and a chord tolerance coarser than a fifth of their radius is refused with the

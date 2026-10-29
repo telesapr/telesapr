@@ -599,7 +599,25 @@ What the thread improvements of 2026-10-23 (`doc/notes/thread-evaluation.md`, br
 | Item | State | Approach / tried |
 |---|---|---|
 | ACME tolerance classes (2G to 5G) | read from a designation and dropped; an ACME thread takes B1.5's crest clearance and a typed-in clearance | B1.5's pitch diameter allowances and tolerances were not to hand; metric, trapezoidal and unified classes follow their tables since 2026-10-28 (`pkg/thread/class_iso.go`, `class_unified.go`) |
-| Buttress threads, what was left | DIN 513 (S) and ASME B1.9 (BUTT) made since 2026-10-28, B1.9's rounded root and PUSH-/PULL-BUTT since 2026-10-29 (below); no classes, no rounded crest (`ErrButtressRounded`); a rounded root refused at chord tolerances coarser than a fifth of its radius (`ErrRootRoundCoarse`) | DIN 513-2's and B1.9's tolerance classes; a rounded crest needs the arc tangent to flanks at different angles, its centre off the ridge's middle. A rounded root at coarse tolerances: grooves cut from a blank at the crest (the groove's arc then meets nothing) were sound for every nut at 0.5% in a spike, but screws turned down failed at 0.2% and 0.5%, and the cut would need its own chamfer and run-out |
+| Buttress threads, what was left | DIN 513 (S) and ASME B1.9 (BUTT) made since 2026-10-28, B1.9's rounded root and PUSH-/PULL-BUTT since 2026-10-29 (below), rounded crests since 2026-10-29 (below); no classes; a rounded root refused at chord tolerances coarser than a fifth of its radius (`ErrRootRoundCoarse`) | DIN 513-2's and B1.9's tolerance classes (the user's tables). A rounded root at coarse tolerances: grooves cut from a blank at the crest (the groove's arc then meets nothing) were sound for every nut at 0.5% in a spike, but screws turned down failed at 0.2% and 0.5%, and the cut would need its own chamfer and run-out |
+
+Done 2026-10-29: rounded crests on buttress threads, refused before (`ErrButtressRounded`, gone). The
+circle tangent to the crest's line and to a flank at angle a from the plane square to the axis has its
+centre r·tan(45° − a/2) in from the flank's end, so the arc tangent to both flanks whose top is the
+standard crest has r = CrestWidth / (tan(45° − a_l/2) + tan(45° − a_u/2)), its top off the crest's
+middle towards the steeper flank and its feet at two radii (`thread.Profile.CrestArc`,
+`withLeaningRound`). The flat crest's width and radius stay the frame the arc is measured from, so the
+flanks, the foot and the screw mate's middle are those of the flat ridge; the mate holds the ridge by
+the arc's centre, off the middle (`markBelowCentre`). It goes with B1.9's rounded root
+(`drawRoundRootRidge` takes the arc in place of the flat top), a chamfer and a run-out.
+`TestThreadButtressCrestSweep` (S10 to S40, 1/2 to 2 inch BUTT, screws and nuts either way round,
+with and without rounded roots, chamfered and run out, chord 0.5% to 0.01%: 204 points) has none
+unsound; `TestThreadCrests` measures what the arc takes off against the flat crest's twin at the same
+tolerance, within a quarter, as the meshes of a 1-12 BUTT nut miss 1.7 mm³ of its ridges at 0.003%
+whatever its crest; `TestScrewFitsRoundedButtressThreads` fits them. Seen on the way, unsound with a
+flat crest alike and left out of the sweep: the 2-8 BUTT nut at chord 0.2% and coarser (774 naked
+edges), a chamfered 1-12 BUTT nut 20 long at 0.3% and coarser, and the 1-12 BUTT nut on a Ø40 part
+15 long at 0.01% and finer (70 naked edges).
 
 Done 2026-10-29: chamfered threads at 0.5% chord, the last unsound row of `TestThreadChamferSweep`
 (a 1/2 BSF nut, 1 of 660, now none) and 4 of the rounded-crest chamfers' 114 (6 of 120 when last

@@ -217,9 +217,6 @@ func (o ThreadOptions) layoutTry(circleR float64, try int) (threadLayout, error)
 		// Its crest is the standard's, where the part's surface is.
 		o.Crest = thread.CrestStandard
 	}
-	if o.Crest == thread.CrestRounded && s.Buttress() {
-		return threadLayout{}, ErrButtressRounded
-	}
 	l := threadLayout{profile: s.Profile(o.Internal, clearance)}
 	if o.LoadFlankBack {
 		l.profile = l.profile.Turned()
@@ -398,11 +395,6 @@ func (sk *Sketch) checkRoundRoot(l threadLayout) error {
 	return fmt.Errorf("%w: make the chord tolerance %.2g%% or less", ErrRootRoundCoarse,
 		sk.ChordTolPercent()*rootChordLimit*r/chord)
 }
-
-// ErrButtressRounded is returned for a buttress thread with a rounded
-// crest: an arc tangent to flanks at different angles has no top where
-// the standard crest is, and is not offered.
-var ErrButtressRounded = errors.New("a buttress thread's crest can't be rounded")
 
 // ErrChamferTooFine is returned for a chamfered screw so small for its
 // pitch that the cones, which run on past the end by a pitch, would

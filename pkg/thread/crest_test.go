@@ -1,6 +1,7 @@
 package thread
 
 import (
+	"fmt"
 	"math"
 	"testing"
 )
@@ -71,5 +72,77 @@ func TestParseCrest(t *testing.T) {
 	}
 	if s := Crest(7).String(); s != "Crest(7)" {
 		t.Errorf("unknown crest %q", s)
+	}
+}
+
+// TestCrestArc checks a rounded crest's arc against the flanks it sits
+// on, on symmetric ridges and on buttress ones, either way round, of a
+// screw and of a nut: each foot lies on its flank, with the radius to
+// it square to the flank, the arc's top touches the standard crest, and
+// the feet lie between the crest and the root.
+func TestCrestArc(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"M8", "Tr20x4", "S20x4", "1-12 BUTT", "S40x7"} {
+		s, err := Parse(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, internal := range []bool{false, true} {
+			for _, turned := range []bool{false, true} {
+				std := s.Profile(internal, 0.05)
+				if turned {
+					std = std.Turned()
+				}
+				what := fmt.Sprintf("%s internal %v turned %v", name, internal, turned)
+				ro := std.WithCrest(CrestRounded)
+				r := ro.CrestRoundRadius
+				if !(r > 0) {
+					t.Fatalf("%s: radius %g", what, r)
+				}
+				toRoot := math.Copysign(1, std.RootRadius-std.CrestRadius)
+				centre, lower, upper := ro.CrestArc()
+				if got := centre[0] - toRoot*r; math.Abs(got-std.CrestRadius) > 1e-12 {
+					t.Errorf("%s: the arc's top at %g, the crest at %g", what, got, std.CrestRadius)
+				}
+				// The flanks of the flat crest, in the frame of its middle:
+				// z along the axis at radius x.
+				tl, tu := std.flankTans()
+				shift := ro.MiddleShift(ro.CrestRadius)
+				al, au := std.flankAngles()
+				for _, f := range []struct {
+					side  string
+					foot  [2]float64
+					z     func(x float64) float64
+					angle float64
+					way   float64
+				}{
+					{"lower", lower, func(x float64) float64 {
+						return -std.CrestWidth/2 - tl*toRoot*(x-std.CrestRadius)
+					}, al, -1},
+					{"upper", upper, func(x float64) float64 {
+						return std.CrestWidth/2 + tu*toRoot*(x-std.CrestRadius)
+					}, au, 1},
+				} {
+					z := f.foot[1] + shift
+					if got := f.z(f.foot[0]); math.Abs(got-z) > 1e-12 {
+						t.Errorf("%s: %s foot at %g, the flank at %g", what, f.side, z, got)
+					}
+					to := [2]float64{f.foot[0] - centre[0], f.foot[1] - centre[1]}
+					if d := math.Hypot(to[0], to[1]); math.Abs(d-r) > 1e-12 {
+						t.Errorf("%s: %s foot %g from the centre, radius %g", what, f.side, d, r)
+					}
+					flank := [2]float64{toRoot * math.Cos(f.angle), f.way * math.Sin(f.angle)}
+					if dot := to[0]*flank[0] + to[1]*flank[1]; math.Abs(dot) > 1e-12 {
+						t.Errorf("%s: the arc crosses the %s flank (%g)", what, f.side, dot)
+					}
+					if b := toRoot * (f.foot[0] - std.CrestRadius); !(b > 0 && b < std.Height()) {
+						t.Errorf("%s: %s foot %g below the crest, of %g", what, f.side, b, std.Height())
+					}
+				}
+				if std.Symmetric() && (math.Abs(centre[1]) > 1e-12 || math.Abs(lower[0]-upper[0]) > 1e-12) {
+					t.Errorf("%s: a symmetric arc leans: %v %v %v", what, centre, lower, upper)
+				}
+			}
+		}
 	}
 }

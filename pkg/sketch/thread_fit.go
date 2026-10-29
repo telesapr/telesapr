@@ -67,11 +67,16 @@ type threadAt struct {
 // markBelowCentre is how far along the thread the point that holds a
 // ridge in its sketch lies before the ridge's middle at its pitch
 // radius: a flat crest's near end, or a rounded crest's centre, on it,
-// and a buttress ridge's crest lies off that middle.
+// and a buttress ridge's crest, and its rounded crest's centre, lie off
+// that middle.
 func (l threadLayout) markBelowCentre() float64 {
 	p := l.profile
-	if p.CrestRoundRadius > 0 {
+	switch {
+	case p.CrestRoundRadius > 0 && p.Symmetric():
 		return 0
+	case p.CrestRoundRadius > 0:
+		centre, _, _ := p.CrestArc()
+		return p.MiddleShift(p.PitchRadius) - centre[1]
 	}
 	return p.CrestWidth/2 + p.MiddleShift(p.PitchRadius)
 }

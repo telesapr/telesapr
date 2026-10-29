@@ -360,9 +360,6 @@ func (ss *Application) reportThread(err error) {
 	case errors.Is(err, sketch.ErrThreadThinPart):
 		ss.Error("The part is thinner than the thread's root: its ridges would stand on " +
 			"nothing.\n\nPick a smaller thread, or thread a thicker part.")
-	case errors.Is(err, sketch.ErrButtressRounded):
-		ss.Error("A buttress thread's crest can't be rounded: its flanks lean at different " +
-			"angles.\n\nTake a standard or truncated crest.")
 	case errors.Is(err, sketch.ErrThreadNoPart):
 		ss.Error("There is no part along the thread from its circle.\n\nThe thread " +
 			"may run the other way: check \"flip the direction\".")

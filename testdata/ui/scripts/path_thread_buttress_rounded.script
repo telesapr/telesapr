@@ -1,0 +1,34 @@
+# A buttress screw thread typed in, its crest rounded by the choice at
+# the end of the crest's row, on an extruded circle; the same model as
+# path_thread_buttress_rounded.go makes
+# (TestPathEquivalence/thread_buttress_rounded).
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 350 300
+down L 350 300
+up L 350 300
+key esc
+key x shift
+move 350 300
+down L 350 300
+up L 350 300
+menu Features|Screw Thread...
+# [change] the designation to a DIN 513 buttress thread.
+twmove 172 110
+twdown L 172 110
+twup L 172 110
+edit S20x4
+# The rounded crest.
+twmove 546 190
+twdown L 546 190
+twup L 546 190
+# Flip the direction: against the circle's normal, down into the part;
+# then made.
+twmove 60 230
+twdown L 60 230
+twup L 60 230
+twmove 37 260
+twdown L 37 260
+twup L 37 260

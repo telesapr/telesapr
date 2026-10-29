@@ -54,8 +54,8 @@ type ThreadOptions struct {
 	// Crest is the shape of the ridge's top: "standard" (or ""), the
 	// flat crest the standards give; "truncated", cut lower by a
 	// quarter of the ridge's height; or "rounded", an arc tangent to
-	// both flanks, which prints better, and not offered for a buttress
-	// thread.
+	// both flanks, which prints better (on a buttress thread its top
+	// lies off the crest's middle, towards the steeper flank).
 	Crest string
 	// RunOut is how far, in mm, the thread fades out before its
 	// shoulder: the turned or bored surface tapers from the root to

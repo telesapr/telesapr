@@ -178,7 +178,7 @@ func TestButtressSeries(t *testing.T) {
 
 // TestButtressTurned checks that turning a buttress ridge swaps its
 // flanks and keeps its widths, that its pitch radius moves with the
-// clearance, and that it isn't rounded.
+// clearance, and that rounding its crest leaves its flanks.
 func TestButtressTurned(t *testing.T) {
 	t.Parallel()
 	s, _ := Parse("S20x4")
@@ -200,8 +200,9 @@ func TestButtressTurned(t *testing.T) {
 	if mp := m.Profile(true, 0); mp.Turned() != mp {
 		t.Error("a symmetric ridge turned changed")
 	}
-	if r := p.WithCrest(CrestRounded); r != p {
-		t.Errorf("a buttress crest rounded: %+v", r)
+	if r := p.WithCrest(CrestRounded); r.CrestWidth != p.CrestWidth || r.UpperFlank != p.UpperFlank ||
+		r.WidthAt(r.RootRadius) != p.WidthAt(p.RootRadius) || r.MiddleShift(r.RootRadius) != p.MiddleShift(p.RootRadius) {
+		t.Errorf("a buttress crest rounded moved its flanks: %+v", r)
 	}
 	if tr := p.WithCrest(CrestTruncated); !(tr.CrestWidth > p.CrestWidth) || tr.UpperFlank != p.UpperFlank {
 		t.Errorf("a buttress crest truncated: %+v", tr)

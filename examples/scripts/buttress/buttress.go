@@ -1,7 +1,8 @@
 // Buttress threads, which carry their load on one flank: a screw jack's
 // S20x4 spindle (DIN 513) threaded down from its top, its nut with the
 // load flank turned back to mate it, and a 1-12 BUTT (ASME B1.9) ring,
-// then its roots rounded as B1.9 draws them, made by a script.
+// then its roots rounded as B1.9 draws them and its crests rounded for
+// printing, made by a script.
 //
 // Without a window:
 //
@@ -99,6 +100,13 @@ func main() {
 	inch = inch.Edit(api.ThreadOptions{Designation: "1-12 PULL-BUTT", Length: 20, RoundRoot: true})
 	o = inch.Options()
 	fmt.Printf("ring %s, load flank back %v, rounded root %v\n", o.Designation, o.LoadFlankBack, o.RoundRoot)
+	check(last(inch))
+
+	// And its crests rounded too, as prints better: the arc, tangent to
+	// flanks at 7° and 45°, has its top off the ridge's middle, towards
+	// the steeper flank.
+	inch = inch.Edit(api.ThreadOptions{Designation: "1-12 PULL-BUTT", Length: 20, RoundRoot: true, Crest: "rounded"})
+	fmt.Printf("ring crest %s\n", inch.Options().Crest)
 	check(last(inch))
 
 	if write {
