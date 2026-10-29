@@ -938,6 +938,20 @@ func BenchmarkLoftClosed(b *testing.B) {
 	})
 }
 
+// A ring of six circles closed, held by a guide over their tops and
+// square to the third: the held ring's sections moved to the guide and
+// skinned piece by piece.
+func BenchmarkLoftClosedGuidedHeld(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		ps := ringOfCircles(d, 6, 20, 3)
+		guide := ringGuide(d, 6, 20, 3, 1.5)
+		l := d.Features.LoftThrough(ps, "").AsLoft()
+		l.SetClosed(true)
+		l.SetGuides(guide)
+		l.SetProfileTangency(ps[2], 1)
+	})
+}
+
 // Three circles lofted, held square to the middle one.
 func BenchmarkLoftProfileTangency(b *testing.B) {
 	benchRegen(b, func(d *api.Doc) {

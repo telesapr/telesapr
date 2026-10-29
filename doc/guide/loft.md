@@ -104,8 +104,10 @@ be: each such profile's row on the loft's screen says how the loft *passes* it, 
 to it by a number, and [change] sets the number (0 frees it). The slope across there is that many
 times the loft's length, so the loft runs straight through the profile for a stretch, where free
 it would bend through it as the profiles about it shape it. The loft is then one surface from
-each held profile to the next, meeting there with one slope, still one face. A guided loft can't
-also hold a profile between its ends. Example:
+each held profile to the next, meeting there with one slope, still one face. A guided loft can
+hold profiles between its ends too: the guides move the sections of the loft held square, and it
+still leaves each held profile square to it, turning onto a guide that crosses the profile
+slanting within the dozenth of the way to the next section. Example:
 [`examples/scripts/waist`](../../examples/scripts/waist/waist.go), a column running straight up
 through its waist.
 
@@ -123,14 +125,16 @@ against; either set is the loft's problem. Profiles between its first and last c
 square as an open loft's are, the ring then one surface from each held profile round to the
 next, still one face. Guides hold it as they hold an open loft, each going round the ring
 through every profile back to where it started, closing on itself; a guide with ends is the
-loft's problem. A ring can be held by guides or square to its profiles, not both. Between
+loft's problem. A ring can be held by guides and square to its profiles at once. Between
 profiles the loft's sections turn with the ring, as a closed sweep's do, so they keep the
 profiles' size: three circles round a circle make a torus within a fifth of a percent.
 Profiles more than a third of a turn apart round the ring are refused, so draw more. Examples:
 [`examples/scripts/ring`](../../examples/scripts/ring/ring.go), a ring that swells and narrows,
 running straight through its narrow profiles;
 [`examples/scripts/wavering`](../../examples/scripts/wavering/wavering.go), a ring held by a
-guide waving up and down over it.
+guide waving up and down over it;
+[`examples/scripts/billow`](../../examples/scripts/billow/billow.go), a ring held by a guide
+swelling up between its profiles and square to every other one.
 
 ```go
 ring := doc.Features.LoftThrough(profiles, "ring")
@@ -141,4 +145,4 @@ ring.AsLoft().SetGuides(guide) // cubics round the ring, end to end
 ## Not yet
 
 Three guides or more are refused. A closed loft can't be held square to its first or last
-profile (draw the profiles starting elsewhere round the ring), nor by guides and square at once.
+profile (draw the profiles starting elsewhere round the ring).

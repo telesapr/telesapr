@@ -51,7 +51,7 @@ func ClosedGuidedLoftSurface(loops [][]srf.SBezier, guides []LoftGuide) (*srf.BS
 			}
 		}
 	}
-	sections, vs, _, err := guidedSections(free, r.ts, r.curves, k, gs)
+	sections, vs, _, err := guidedSections(free.IsoV, r.ts, r.curves, k, gs)
 	if err != nil {
 		return nil, err
 	}
