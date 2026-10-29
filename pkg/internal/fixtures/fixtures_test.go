@@ -34,7 +34,7 @@ func TestSample(t *testing.T) {
 	if !slices.Equal(got, want) {
 		t.Errorf("sample %v, want %v", got, want)
 	}
-	if got := sample(xs, true); !slices.Equal(got, []int{0, 5, 10}) {
+	if got := Thin(xs); !slices.Equal(got, []int{0, 5, 10}) {
 		t.Errorf("thinned %v", got)
 	}
 	if got := sample(xs, false); !slices.Equal(got, xs) {

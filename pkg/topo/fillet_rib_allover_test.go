@@ -13,6 +13,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -91,7 +92,9 @@ var ribAllOverKnown = map[string]string{
 // that roll round the foot (ballHeight).
 func TestFilletRibAllOverOracle(t *testing.T) {
 	t.Parallel()
-	for _, o := range readRibOracle(t) {
+	// Under the race detector a fifth of the rows (fixtures.Sample): the
+	// 24 took half of the package's time there.
+	for _, o := range fixtures.Sample(readRibOracle(t)) {
 		if testing.Short() && (o.h != 10 || o.lean != 2 || o.r != 1) {
 			// Each case takes 10 to 20 s; the short run keeps one.
 			continue

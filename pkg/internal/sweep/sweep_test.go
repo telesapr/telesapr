@@ -3,6 +3,7 @@ package sweep
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -49,7 +50,8 @@ func TestSampleAndAll(t *testing.T) {
 	t.Setenv("TELESAPR_SWEEP", "")
 	g := grid()
 	var labels []string
-	r := g.Run(func(p Point) error { labels = append(labels, p.Label()); return nil })
+	// run as Run is without the race detector, which thins it.
+	r := g.run(false, false, func(p Point) error { labels = append(labels, p.Label()); return nil })
 	if r.Runs != 4 || r.Full || len(labels) != 4 || r.GridSize != 12 {
 		t.Fatalf("sample: %+v %v", r, labels)
 	}
@@ -74,8 +76,38 @@ func TestSampleAndAll(t *testing.T) {
 		t.Errorf("full: %+v", r)
 	}
 	g.Sample = 0
-	if r := g.run(false, func(Point) error { return nil }); r.Runs != 12 {
+	if r := g.run(false, false, func(Point) error { return nil }); r.Runs != 12 {
 		t.Errorf("no sample size runs %d", r.Runs)
+	}
+}
+
+// Under the race detector a sweep takes a fifth of its points, some of
+// those it takes without, and is allowed as many failures as they are.
+func TestSweepThinned(t *testing.T) {
+	t.Parallel()
+	g := Grid{Axes: []Axis{Floats("i", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9)}, MaxFailRate: 0.1}
+	var plain, thinned []string
+	g.run(true, false, func(p Point) error { plain = append(plain, p.Label()); return nil })
+	r := g.run(true, true, func(p Point) error {
+		thinned = append(thinned, p.Label())
+		return errors.New("fails")
+	})
+	if r.Runs != 2 || r.Full || len(thinned) != 2 {
+		t.Fatalf("thinned: %+v %v", r, thinned)
+	}
+	for _, l := range thinned {
+		if !slices.Contains(plain, l) {
+			t.Errorf("%s is no point of the plain run %v", l, plain)
+		}
+	}
+	// One failure of ten allowed, so one of the two, not both.
+	if r.MaxFailRate != 0.5 {
+		t.Errorf("allowed %g", r.MaxFailRate)
+	}
+	rec := &recorder{TB: t}
+	r.Require(rec)
+	if !rec.failed {
+		t.Error("two failures passed where one is allowed")
 	}
 }
 
@@ -100,7 +132,7 @@ func (r *recorder) Errorf(format string, args ...any) {
 func TestSampleSpread(t *testing.T) {
 	g := Grid{Axes: []Axis{Floats("a", 1, 2, 3, 4, 5, 6, 7, 8), Floats("b", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9)}, Sample: 16}
 	seen, bs := map[string]bool{}, map[float64]bool{}
-	g.run(false, func(p Point) error {
+	g.run(false, false, func(p Point) error {
 		seen[p.Label()] = true
 		bs[p.Float("b")] = true
 		return nil
@@ -142,7 +174,7 @@ func TestFailures(t *testing.T) {
 	}
 	// A sample may have its own allowance.
 	g.SampleMaxFailRate = 0.5
-	if r := g.run(false, fails); r.MaxFailRate != 0.5 || r.Full {
+	if r := g.run(false, false, fails); r.MaxFailRate != 0.5 || r.Full {
 		t.Errorf("sample allowance %g, full %t", r.MaxFailRate, r.Full)
 	}
 	if r := g.RunAll(fails); r.MaxFailRate != 0.2 {
@@ -157,7 +189,7 @@ func TestFailures(t *testing.T) {
 		t.Errorf("under the rate: failed %t, logs %v", rec.failed, rec.logs)
 	}
 	rec = &recorder{}
-	g.run(false, fails).Require(rec)
+	g.run(false, false, fails).Require(rec)
 	if rec.failed {
 		t.Errorf("a sample under the rate: logs %v", rec.logs)
 	}

@@ -121,8 +121,9 @@ RACE_PACKAGES ?= ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/.
 	./pkg/core ./pkg/geom ./pkg/libm ./pkg/internal/... ./pkg/check ./pkg/thread ./pkg/res ./pkg/ttf ./pkg/topo \
 	./pkg/ui ./pkg/script/api
 
-# The fixture loops take a sample under the race detector
-# (fixtures.Sample in pkg/internal/fixtures).
+# The fixture loops and the sweeps take a fifth under the race detector
+# (fixtures.Sample in pkg/internal/fixtures, sweep.Grid.Run), which needs
+# the code that runs on several goroutines, not every model.
 # RACE_TIMEOUT bounds each go test process: pkg/script/api's
 # TestFilletOnOtherSolidsVolumes alone takes 14 minutes here under the
 # detector, and twice that on a runner, so the nightly workflow gives it
