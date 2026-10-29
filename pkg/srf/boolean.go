@@ -39,7 +39,19 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 
 	for i := range s.Curve {
 		sc := &s.Curve[i]
-		sc.RemoveShortSegments(sc.SurfaceA(a, b), sc.SurfaceB(a, b))
+		sA, sB := sc.SurfaceA(a, b), sc.SurfaceB(a, b)
+		if (sA == nil) != (sB == nil) {
+			// A curve one of whose surfaces an earlier Boolean dropped
+			// keeps its points: a cutter flush with a face (a pocket
+			// extruded up from a block's bottom) loses its cap, which
+			// lay on the face, and its side keeps the edge it shared
+			// with the cap, beside the face's own curve along the same
+			// outline with the same points. Thinned against the side
+			// alone, the chords along the mouth part from the face's,
+			// and the meshes part with them (roadmap K3).
+			continue
+		}
+		sc.RemoveShortSegments(sA, sB)
 	}
 	s.fuseVertices(a, b)
 	s.refineGrazingMeets(a, b)

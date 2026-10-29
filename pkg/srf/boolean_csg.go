@@ -403,8 +403,16 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 		// The surfaces the segment lies in, as the next patch of a flat
 		// face does across a seam, are crossed nowhere AllPointsIntersecting
 		// can see; the segment is split where it crosses their trims.
+		// An operand's own edge, split against the other operand alone,
+		// is split by the seams lying under either of its faces: a band's
+		// bottom edge on a lathe's flat end crosses the seam between its
+		// quarters there, and the quarters' trims split at that point.
 		il = coplanarTrimCrossings(il, c, agnstA, srfA, prev.P, p.P)
-		il = coplanarTrimCrossings(il, c, agnstB, srfB, prev.P, p.P)
+		if agnstB != nil {
+			il = coplanarTrimCrossings(il, c, agnstB, srfB, prev.P, p.P)
+		} else {
+			il = coplanarTrimCrossings(il, c, agnstA, srfB, prev.P, p.P)
+		}
 		// Now add any vertex that is on this segment
 		lineStart := prev.P
 		lineDirection := p.P.Minus(prev.P)
