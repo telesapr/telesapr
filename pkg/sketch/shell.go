@@ -95,8 +95,8 @@ func (sk *Sketch) SetShellFaces(hg core.HGroup, faces []srf.FaceID) error {
 }
 
 // solidMade is how a solid was made, when a shell can hollow it by
-// that: a revolution, a drafted extrusion, or a union of parts a shell
-// hollows alone. All nil when none.
+// that: a revolution, a drafted extrusion, or parts a shell hollows
+// alone, joined. All nil when none.
 type solidMade struct {
 	rev   *topo.Revolution
 	draft *topo.DraftedSolid

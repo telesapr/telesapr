@@ -24,12 +24,37 @@ import (
 // leaving a wall thinner than the thickness beyond a face moved out:
 // the insides made again with every face a wall and those faces moved
 // out by twice the thickness must lie in the solid.
+//
+// A part taken away from the solid before it, as a round pocket or a
+// lathed groove cut into a block, takes away from the inside that part
+// grown by the thickness, every face moved out but those on a face taken
+// away: the solid moved in by t, less the part, is the inside moved in,
+// less the part moved out. A part the solid before it is intersected
+// with intersects the inside with that part's inside, every face moved
+// in. The parts are taken in order, as the solid was made. A face of a
+// part joined by a union lies inside the others where it lies on none of
+// the union of those parts' faces; where it lies on that union's faces
+// and not on the solid's, a part taken away or intersected with took it
+// away, and it is moved in as a wall, which takes nothing from the
+// solid.
 
-// ShellPart is one of the solids a solid is the union of: a revolution
-// (Rev), or else its own solid (Shell), of flat faces or a prism.
+// ShellPart is one of the solids a solid is made of: a revolution
+// (Rev), or else its own solid (Shell), of flat faces or a prism, and
+// how it is joined to the parts before it (srf.SurfaceUnion,
+// srf.SurfaceDiff or srf.SurfaceInter; zero is a union). The first
+// part is joined by a union.
 type ShellPart struct {
-	Rev   *Revolution
-	Shell *srf.SShell
+	Rev     *Revolution
+	Shell   *srf.SShell
+	Combine srf.SurfaceCombineAs
+}
+
+// combine is how the part is joined, a union for zero.
+func (p ShellPart) combine() srf.SurfaceCombineAs {
+	if p.Combine == 0 {
+		return srf.SurfaceUnion
+	}
+	return p.Combine
 }
 
 // ShellJoined hollows sh, the union of parts, to walls thick, taking
@@ -75,31 +100,78 @@ func ShellJoined(sh *srf.SShell, parts []ShellPart, open []int, thick float64, o
 	return out, nil
 }
 
-// joinedInside is the union of the insides of parts of sh (topology t),
-// faces opened taken away and a part's faces lying inside the others
-// moved as inside says, and whether any does.
+// joinedInside is the inside of sh (topology t), made of parts, faces
+// opened taken away and a part's faces lying inside the other parts
+// joined by unions moved as inside says, and whether any does.
 func joinedInside(t *Topology, sh *srf.SShell, parts []ShellPart, opened map[int]bool, inside faceMode, thick float64) (*srf.SShell, bool, error) {
+	onUnion, err := unionTopology(sh, t, parts)
+	if err != nil {
+		return nil, false, err
+	}
 	buried := false
-	modeAt := func(p geom.Vector) faceMode {
+	onSolid := func(p geom.Vector) faceMode {
 		f, d := t.FaceAt(p)
 		switch {
 		case f < 0 || d > 100*geom.LengthEps:
-			buried = true
-			return inside
+			return -1
 		case opened[f]:
 			return openFace
 		}
 		return keptFace
 	}
+	// A part joined by a union: inside the others where it lies on no
+	// face of their union, a wall where a later part took it away.
+	unionMode := func(p geom.Vector) faceMode {
+		if m := onSolid(p); m >= 0 {
+			return m
+		}
+		if f, d := onUnion.FaceAt(p); f >= 0 && d <= 100*geom.LengthEps {
+			return keptFace
+		}
+		buried = true
+		return inside
+	}
+	// A part taken away is grown, a part intersected with moved in: the
+	// faces taken away it lies on are found from the points of those
+	// faces (joinedFlatInside), as a point of the part's face may lie on
+	// the edge of one, where the part runs on past it.
+	grownMode := func(geom.Vector) faceMode { return buriedFace }
+	shrunkMode := func(geom.Vector) faceMode { return keptFace }
+	openPts := openPoints(t, sh, opened)
+	// A face of a part taken away or intersected with that the solid is
+	// open at runs out past the solid's face, into the part taken away or
+	// out of the part intersected with: left on it, the inside's face
+	// would lie on the solid's, which the Boolean that takes it away
+	// fails to cut where curved faces meet it (a ball cut flat).
+	openedAs := map[srf.SurfaceCombineAs]faceMode{srf.SurfaceUnion: openFace, srf.SurfaceDiff: keptFace, srf.SurfaceInter: buriedFace}
 	color := sh.Surface[0].Color
 	var inner *srf.SShell
-	for _, part := range parts {
+	for k, part := range parts {
+		op := part.combine()
+		if k == 0 && op != srf.SurfaceUnion {
+			return nil, false, errors.New("the first part of a solid must be joined by a union")
+		}
+		modeAt := unionMode
+		switch op {
+		case srf.SurfaceDiff:
+			modeAt = grownMode
+		case srf.SurfaceInter:
+			modeAt = shrunkMode
+		}
 		var in *srf.SShell
-		var err error
 		if part.Rev != nil {
+			if op == srf.SurfaceDiff && !part.Rev.Whole() {
+				return nil, false, shellErr(part.Rev.Pt, "a revolve of less than a whole turn is taken away from the solid; "+
+					"a shell takes away lathes and whole turns only")
+			}
+			if op != srf.SurfaceUnion {
+				if err := openOnRevolution(*part.Rev, openPts, sh.Tol, color); err != nil {
+					return nil, false, err
+				}
+			}
 			in, err = joinedRevolvedInside(*part.Rev, modeAt, thick, sh.Tol, color)
 		} else {
-			in, err = joinedFlatInside(part.Shell, modeAt, thick)
+			in, err = joinedFlatInside(part.Shell, modeAt, openPts, openedAs[op], thick)
 		}
 		if err != nil {
 			return nil, false, err
@@ -109,13 +181,52 @@ func joinedInside(t *Topology, sh *srf.SShell, parts []ShellPart, opened map[int
 			continue
 		}
 		u := &srf.SShell{Tol: sh.Tol}
-		u.MakeFromUnionOf(inner, in)
+		u.MakeFromBoolean(inner, in, op)
 		if u.BooleanFailed {
-			return nil, false, errors.New("the Boolean that joins the parts' insides failed")
+			return nil, false, fmt.Errorf("the Boolean that joins the parts' insides failed (%v)", op)
 		}
 		inner = u
 	}
 	return inner, buried, nil
+}
+
+// unionTopology is the topology of the union of parts joined by unions,
+// t when every part is.
+func unionTopology(sh *srf.SShell, t *Topology, parts []ShellPart) (*Topology, error) {
+	if allUnions(parts) {
+		return t, nil
+	}
+	var u *srf.SShell
+	for _, part := range parts {
+		if part.combine() != srf.SurfaceUnion {
+			continue
+		}
+		s := part.Shell
+		if part.Rev != nil {
+			s = part.Rev.solid(sh.Tol, sh.Surface[0].Color)
+		}
+		if u == nil {
+			u = s
+			continue
+		}
+		next := &srf.SShell{Tol: sh.Tol}
+		next.MakeFromUnionOf(u, s)
+		if next.BooleanFailed {
+			return nil, errors.New("the Boolean that joins the solid's parts failed")
+		}
+		u = next
+	}
+	return Build(u)
+}
+
+// allUnions reports whether every part is joined by a union.
+func allUnions(parts []ShellPart) bool {
+	for _, p := range parts {
+		if p.combine() != srf.SurfaceUnion {
+			return false
+		}
+	}
+	return true
 }
 
 // joinedRevolvedInside is the inside of the revolution rev, a part of a
@@ -188,7 +299,12 @@ func profilePoints(profile *srf.SBezierLoopSetSet) []geom.Vector {
 
 // joinedFlatInside is the inside of part, a solid of flat faces or a
 // prism, each face moved as modeAt says of points of it.
-func joinedFlatInside(part *srf.SShell, modeAt func(geom.Vector) faceMode, thick float64) (*srf.SShell, error) {
+//
+// A face of the part a face taken away lies on is moved as opened says,
+// though no point of the part's face it was asked about lies on it: a
+// part intersected with can be larger than the solid by far. open are
+// points of the faces taken away.
+func joinedFlatInside(part *srf.SShell, modeAt func(geom.Vector) faceMode, open []openPoint, opened faceMode, thick float64) (*srf.SShell, error) {
 	pt, err := Build(part)
 	if err != nil {
 		return nil, err
@@ -199,6 +315,11 @@ func joinedFlatInside(part *srf.SShell, modeAt func(geom.Vector) faceMode, thick
 	mode := make([]faceMode, len(pt.Faces))
 	for f := range pt.Faces {
 		mode[f] = faceModeOf(pt, part, f, modeAt)
+	}
+	for _, o := range open {
+		if f := onFaceOf(pt, o); f >= 0 {
+			mode[f] = opened
+		}
 	}
 	inner, ok, err := prismInside(pt, part, mode, thick, 0)
 	if !ok {
@@ -260,4 +381,63 @@ func insideOf(inner, sh *srf.SShell, thick float64) error {
 			"the part it meets is thinner than twice that there", thick)
 	}
 	return nil
+}
+
+// openOnRevolution is an error when a face taken away lies on rev, a
+// part taken away or intersected with.
+func openOnRevolution(rev Revolution, open []openPoint, tol srf.Tolerance, color core.RGBA) error {
+	if len(open) == 0 {
+		return nil
+	}
+	rt, err := Build(rev.solid(tol, color))
+	if err != nil {
+		return err
+	}
+	for _, o := range open {
+		if onFaceOf(rt, o) >= 0 {
+			return shellErr(o.p, "a face taken away lies on a lathe or revolve taken away from the solid or intersected with it; "+
+				"a shell opens such a solid only at faces of the parts joined to it")
+		}
+	}
+	return nil
+}
+
+// onFaceOf is the face of t the open point o lies on, along it, or -1.
+func onFaceOf(t *Topology, o openPoint) int {
+	f, d := t.FaceAt(o.p)
+	if f < 0 || d > 100*geom.LengthEps {
+		return -1
+	}
+	// On the face, not across it: a point of a face taken away can lie
+	// on a side running up from its edge.
+	s := t.Surface(f)
+	var u, v float64
+	s.ClosestPointToUV(o.p, &u, &v, true)
+	if math.Abs(s.NormalAt(u, v).WithMagnitude(1).Dot(o.n)) < 1-1e-6 {
+		return -1
+	}
+	return f
+}
+
+// openPoint is a point of a face taken away, and the face's normal there.
+type openPoint struct{ p, n geom.Vector }
+
+// openPoints are the middles of the triangles of sh's faces opened (of
+// topology t), put back on their surfaces.
+func openPoints(t *Topology, sh *srf.SShell, opened map[int]bool) []openPoint {
+	var out []openPoint
+	for f := range t.Faces {
+		if !opened[f] {
+			continue
+		}
+		var m srf.SMesh
+		s := t.Surface(f)
+		s.TriangulateInto(sh, &m)
+		for _, tr := range m.Triangles {
+			var u, v float64
+			s.ClosestPointToUV(tr.A.Plus(tr.B).Plus(tr.C).ScaledBy(1.0/3), &u, &v, true)
+			out = append(out, openPoint{p: s.PointAt(u, v), n: s.NormalAt(u, v).WithMagnitude(1)})
+		}
+	}
+	return out
 }

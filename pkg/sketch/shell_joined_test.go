@@ -174,22 +174,37 @@ func TestShellLatheAndLug(t *testing.T) {
 }
 
 // A round prism whose side lies wholly inside a turned cylinder with a
-// bevelled top, its ends on the cylinder's: the side can't be moved out
-// as a prism's, and the shell is refused, naming it.
+// bevelled top, its ends on the cylinder's: every side of the prism is
+// moved out alike, and its inside lies in the cylinder's, so the shell
+// is the cylinder's alone.
 func TestShellJoinedBuriedSide(t *testing.T) {
 	t.Parallel()
-	d := api.New()
-	d.Features.SketchIn(d.Workplane("ZX"), "")
-	axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 22))
-	axis.SetConstruction(true)
-	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(10, 0, 18), api.V(8, 0, 20), api.V(0, 0, 20))
-	cyl := d.Features.Lathe(axis, "")
-	d.Features.SketchIn(d.Workplane("XY"), "")
-	d.Sketch.Circle(api.V(0, 0, 0), 4)
-	pin := d.Features.Extrude(20, "")
-	if p := pin.Problem(); p != "" {
-		t.Fatal(p)
+	shell := func(pin bool) float64 {
+		d := api.New()
+		d.Features.SketchIn(d.Workplane("ZX"), "")
+		axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 22))
+		axis.SetConstruction(true)
+		d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(10, 0, 18), api.V(8, 0, 20), api.V(0, 0, 20))
+		cyl := d.Features.Lathe(axis, "")
+		if pin {
+			d.Features.SketchIn(d.Workplane("XY"), "")
+			d.Sketch.Circle(api.V(0, 0, 0), 4)
+			if p := d.Features.Extrude(20, "").Problem(); p != "" {
+				t.Fatal(p)
+			}
+		}
+		top := cyl.Solid().FaceAt(api.V(6, 0, 20))
+		sh := d.Features.ShellSolid([]api.SolidFace{top}, 1, "")
+		if p := sh.Problem(); p != "" {
+			t.Fatal(p)
+		}
+		r := sh.Analyze().Check()
+		if !r.Sound() {
+			t.Fatalf("pin %v: %s", pin, r.String())
+		}
+		return r.Volume
 	}
-	top := cyl.Solid().FaceAt(api.V(6, 0, 20))
-	refusedWith(t, "a side of a prism lies inside", func() { d.Features.ShellSolid([]api.SolidFace{top}, 1, "") })
+	if with, alone := shell(true), shell(false); math.Abs(with-alone) > 0.002*alone {
+		t.Fatalf("with the pin %g, the cylinder alone %g", with, alone)
+	}
 }

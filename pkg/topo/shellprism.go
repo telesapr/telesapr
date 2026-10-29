@@ -57,6 +57,7 @@ func prismInside(t *Topology, sh *srf.SShell, mode []faceMode, thick float64, or
 	}
 	var caps []int
 	lo, hi := math.Inf(1), math.Inf(-1)
+	sideMode := faceMode(-1) // every side's, which must be the same
 	for f := range t.Faces {
 		n, flat := t.planarNormal(f)
 		if !flat {
@@ -66,7 +67,7 @@ func prismInside(t *Topology, sh *srf.SShell, mode []faceMode, thick float64, or
 				return nil, true, shellErr(t.faceAnchor(f), "a curved face of the solid runs across its sides; "+
 					"a shell hollows prisms whose sides all run one way")
 			}
-			if err := prismSide(t, f, mode[f]); err != nil {
+			if err := prismSide(t, f, mode[f], &sideMode); err != nil {
 				return nil, true, err
 			}
 			continue
@@ -77,7 +78,7 @@ func prismInside(t *Topology, sh *srf.SShell, mode []faceMode, thick float64, or
 			h := t.faceAnchor(f).Dot(axis)
 			lo, hi = math.Min(lo, h), math.Max(hi, h)
 		case c < 1e-9:
-			if err := prismSide(t, f, mode[f]); err != nil {
+			if err := prismSide(t, f, mode[f], &sideMode); err != nil {
 				return nil, true, err
 			}
 		default:
@@ -99,6 +100,9 @@ func prismInside(t *Topology, sh *srf.SShell, mode []faceMode, thick float64, or
 		}
 	}
 	moved := map[faceMode]float64{keptFace: thick, openFace: 0, buriedFace: -thick, probedFace: -2 * thick}
+	if sideMode < 0 {
+		sideMode = keptFace
+	}
 	z0, z1 := lo+moved[lowMode], hi-moved[highMode]
 	if z1-z0 <= geom.LengthEps {
 		return nil, true, shellErr(t.faceAnchor(caps[0]), "a thickness of %g makes the walls meet, closing up the inside", thick)
@@ -109,7 +113,7 @@ func prismInside(t *Topology, sh *srf.SShell, mode []faceMode, thick float64, or
 	for _, f := range bottom {
 		n, _ := t.planarNormal(f)
 		for _, l := range t.Faces[f].Loops {
-			curves, err := t.offsetLoop(f, l, n, thick)
+			curves, err := t.offsetLoop(f, l, n, moved[sideMode])
 			if err != nil {
 				return nil, true, err
 			}
@@ -136,16 +140,19 @@ func prismInside(t *Topology, sh *srf.SShell, mode []faceMode, thick float64, or
 	return inner, true, nil
 }
 
-// prismSide is why a prism's side f can't be moved as mode says: only a
-// wall moves in square to itself.
-func prismSide(t *Topology, f int, mode faceMode) error {
-	switch mode {
-	case openFace:
+// prismSide is why a prism's side f can't be moved as mode says: a wall
+// moves in square to itself, and a side of a solid taken away from
+// another (shelljoined.go) out, but every side alike, as the profile is
+// offset by one distance. side is the sides' mode so far, -1 for none.
+func prismSide(t *Topology, f int, mode faceMode, side *faceMode) error {
+	switch {
+	case mode == openFace:
 		return shellErr(t.faceAnchor(f), "a shell of a solid with curved sides is open only at its ends")
-	case buriedFace, probedFace:
+	case *side >= 0 && *side != mode:
 		return shellErr(t.faceAnchor(f), "a side of a prism lies inside another solid it is joined to; "+
 			"a shell hollows a prism joined to others only where its ends do")
 	}
+	*side = mode
 	return nil
 }
 
