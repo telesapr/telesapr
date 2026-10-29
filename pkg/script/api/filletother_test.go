@@ -653,6 +653,52 @@ func TestFilletRimMitre(t *testing.T) {
 	}
 }
 
+// The blob's top rim at fine chord tolerances, refused below about
+// 0.005% before 2026-10-29: the sections near the mitre run along the
+// chain across many of the dense edge's points, and the planes they lie
+// in turned with a corner at each (rollingBall.along), which no quintic
+// follows; past that, at radius 1, they take four spans (mitreSpans).
+// Each takes what it takes at 0.01% within the meshes' difference.
+func TestFilletRimMitreFine(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("fillets over curved faces, slow")
+	}
+	blob := filepath.Join("..", "..", "..", "testdata", "step", "shapes", "blob_extruded.step")
+	took := func(t *testing.T, r, chord float64) float64 {
+		d := New()
+		d.Edit.SetChordTolerance(chord)
+		g, err := d.Assembly.LinkStep(blob, "", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		before := g.Analyze().Check().Volume
+		var rim SolidEdge
+		for _, e := range g.Solid().Edges() {
+			if a, b := e.Ends(); a == b && math.Abs(a.Z-5) < 1e-9 {
+				rim = e
+			}
+		}
+		f := d.Features.FilletSolid([]SolidEdge{rim}, r, "")
+		if p := f.Problem(); p != "" {
+			t.Fatalf("r %g at %g%%: %s", r, chord, p)
+		}
+		rep := f.Analyze().Check()
+		if !rep.Sound() {
+			t.Errorf("r %g at %g%%: %s", r, chord, rep.Summary())
+		}
+		return before - rep.Volume
+	}
+	for _, r := range []float64{0.5, 1} {
+		t.Run(fmt.Sprint(r), func(t *testing.T) {
+			t.Parallel()
+			if a, b := took(t, r, 0.002), took(t, r, 0.0005); math.Abs(a-b) > 1e-3*b {
+				t.Errorf("r %g takes %g at 0.002%%, %g at 0.0005%%", r, a, b)
+			}
+		})
+	}
+}
+
 // The lid's upright with the bottom edge it meets, of two radii (1 and
 // 0.5, and 0.5 and 1), each given its own (SetEdgeRadius): the smaller
 // fillet ends in a mitre against the larger's surface, on its own wall
