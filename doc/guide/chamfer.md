@@ -89,6 +89,14 @@ the sharp edge goes on past that line to the sharp edge, along the line where it
 side face. Where the chamfers fill, as at the foot of a block standing on a plate, the side face
 grows out to meet them.
 
+Where one of those two is convex and the other concave, as a ledge's top edge with the inside
+upright below it, or a block's upright with one of its foot edges, they meet in a three-sided face.
+On the face they share their lines cross; one chamfer runs from there to the sharp edge, and the
+other is cut square to its edge. The face the sharp edge bounds takes a curve from the cut along its
+chamfer's line round onto the sharp edge, and the corner's face fills between it and the two ends,
+as OpenCASCADE's makeChamfer fills it (its face bulges a little less, by a tenth of a cubic
+millimetre at distances of 1 mm).
+
 OpenCASCADE parts from this in two places: at a corner of three where one crossing point lies
 close to the line between the other two it makes the triangle of the three points, where here the
 chamfers are cut as above (a few tenths of a cubic millimetre apart at distances of 1 to 3 mm);
