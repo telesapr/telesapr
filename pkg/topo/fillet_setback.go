@@ -226,45 +226,76 @@ func (t *Topology) setbackCornerAt(v int, edges []filletEdge, byEdge map[int]int
 		}
 		c.arcs[fe.e] = arc
 	}
-	// The hole's sides in order round it: a fillet's section from one of
-	// its faces to the other, then that face's curve to the next fillet.
-	fe := round[0]
-	f := fe.f[0]
-	var sides []setbackSide
-	for range round {
-		g := fe.f[1-kOf(fe, f)]
-		arc := c.arcs[fe.e]
-		if !arc.Start().Equals(point(fe, f)) {
-			arc.Reverse()
-		}
-		sides = append(sides, setbackSide{ctrl: quinticCtrl(arc), arc: true, e: fe.dir})
-		next := other(fe, g)
-		if next == nil {
-			return nil, filletErr(p, "the corner's edges don't go round it one after another")
-		}
-		a, b := point(fe, g), point(next, g)
-		quad := srf.SBezierFrom3(a, cross[g], b)
-		fc, err := quad.ElevatedTo(patchDeg)
-		if err != nil {
-			return nil, filletErr(p, "the corner's curve on a face can't be made: %v", err)
-		}
-		c.faceCurves[g] = fc
-		sides = append(sides, setbackSide{ctrl: quinticCtrl(fc), e: normal[g]})
-		fe, f = next, g
-	}
-	if fe != round[0] {
-		return nil, filletErr(p, "the corner's edges don't go round it one after another")
-	}
 	var facing geom.Vector
 	for _, n := range normal {
 		facing = facing.Plus(n)
 	}
-	quads, err := setbackPatches(sides, facing)
-	if err != nil {
-		return nil, filletErr(p, "the corner can't be filled: %v", err)
+	// The hole's sides in order round it: a fillet's section from one of
+	// its faces to the other, then that face's curve to the next fillet.
+	// Each face's curve is tried as the parabola first, then, where the
+	// patches fold, hugging the chord between its ends more
+	// (setbackLegs).
+	var firstErr error
+	for _, leg := range setbackLegs {
+		clear(c.faceCurves)
+		fe := round[0]
+		f := fe.f[0]
+		var sides []setbackSide
+		for range round {
+			g := fe.f[1-kOf(fe, f)]
+			arc := c.arcs[fe.e]
+			if !arc.Start().Equals(point(fe, f)) {
+				arc.Reverse()
+			}
+			sides = append(sides, setbackSide{ctrl: quinticCtrl(arc), arc: true, e: fe.dir})
+			next := other(fe, g)
+			if next == nil {
+				return nil, filletErr(p, "the corner's edges don't go round it one after another")
+			}
+			fc, err := setbackFaceCurve(point(fe, g), cross[g], point(next, g), leg)
+			if err != nil {
+				return nil, filletErr(p, "the corner's curve on a face can't be made: %v", err)
+			}
+			c.faceCurves[g] = fc
+			sides = append(sides, setbackSide{ctrl: quinticCtrl(fc), e: normal[g]})
+			fe, f = next, g
+		}
+		if fe != round[0] {
+			return nil, filletErr(p, "the corner's edges don't go round it one after another")
+		}
+		quads, err := setbackPatches(sides, facing)
+		if err == nil {
+			c.quads = quads
+			return c, nil
+		}
+		if firstErr == nil {
+			firstErr = err
+		}
 	}
-	c.quads = quads
-	return c, nil
+	return nil, filletErr(p, "the corner can't be filled: %v", firstErr)
+}
+
+// setbackLegs are the shares of the way from each end to where the
+// tangent lines cross that a face's curve round a setback corner leaves
+// along, tried in turn (setbackFaceCurve): 0 for the parabola through
+// the crossing. Beside a fillet five or six times the radius of the next
+// the parabola's legs are as unequal, and the patches along it, slow at
+// one end and fast at the other, fold beside it; legs a share of the
+// shorter one's length keep the curve near the chord, and the patches
+// fair.
+var setbackLegs = []float64{0, 0.4, 0.2}
+
+// setbackFaceCurve is the quintic on a face from a to b, tangent at each
+// to the line to x, where the two fillets' tangent lines cross: the
+// parabola with x its control point for leg 0, else the cubic whose legs
+// are leg times the shorter of the two.
+func setbackFaceCurve(a, x, b geom.Vector, leg float64) (srf.SBezier, error) {
+	sb := srf.SBezierFrom3(a, x, b)
+	if leg > 0 {
+		l := leg * math.Min(x.Minus(a).Magnitude(), x.Minus(b).Magnitude())
+		sb = srf.SBezierFrom4(a, a.Plus(x.Minus(a).WithMagnitude(l)), b.Plus(x.Minus(b).WithMagnitude(l)), b)
+	}
+	return sb.ElevatedTo(patchDeg)
 }
 
 func quinticCtrl(sb srf.SBezier) [patchDeg + 1]geom.Vector {

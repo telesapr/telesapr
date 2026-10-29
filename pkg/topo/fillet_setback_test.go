@@ -220,14 +220,15 @@ func TestFilletSetbackSweep(t *testing.T) {
 	}).Require(t)
 }
 
-// TestFilletSetbackExtremeSweep is the same over radii up to 6 to 1
+// TestFilletSetbackExtremeSweep is the same over radii up to 12 to 1
 // apart. What is made must be sound and tangent all round; a corner
 // whose patches would fold is refused, and those refusals are the rate
-// measured: 4 of 36 when this was written (11%: a box's corner of 3,
-// 0.5 and 0.75 either way round, and two apexes, each with radii 5 or 6
-// to 1 side by side). The allowance was set after the first run, unlike
-// the grid above's, and was fixed at those 4 on 2026-10-10 to be kept
-// from then on. The whole grid always runs.
+// measured. It was 4 of 36 over radii up to 6 to 1 from 2026-10-10 (a
+// box's corner of 3, 0.5 and 0.75 either way round, and two apexes,
+// each with radii 5 or 6 to 1 side by side), the face's curves all
+// parabolas; with curves nearer their chords where those fold
+// (setbackLegs) none since 2026-10-29, and the grid took radii of 0.25
+// then, kept at none. The whole grid always runs.
 func TestFilletSetbackExtremeSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
@@ -237,11 +238,11 @@ func TestFilletSetbackExtremeSweep(t *testing.T) {
 		Parallel: true,
 		Axes: []sweep.Axis{
 			sweep.Strings("corner", "box", "apex"),
-			sweep.Floats("r1", 0.5, 1.5, 3),
-			sweep.Floats("r2", 0.5, 1.5, 3),
-			sweep.Floats("r3", 0.75, 2.5),
+			sweep.Floats("r1", 0.25, 0.5, 1.5, 3),
+			sweep.Floats("r2", 0.25, 0.5, 1.5, 3),
+			sweep.Floats("r3", 0.25, 0.75, 2.5),
 		},
-		MaxFailRate: 4.0 / 36,
+		MaxFailRate: 0,
 	}
 	// The points run side by side, so the count is atomic.
 	var bad atomic.Int32
