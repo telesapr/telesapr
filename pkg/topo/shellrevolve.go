@@ -218,6 +218,12 @@ func revolvedInside(rev Revolution, modeAt func(geom.Vector) (faceMode, bool), e
 		return nil, err
 	}
 	openStart, openEnd := endModes[0] == openFace, endModes[1] == openFace
+	reflex := !rev.Whole() && math.Abs(rev.End-rev.Start) > math.Pi+1e-9
+	movedOut := endModes[0] >= buriedFace || endModes[1] >= buriedFace
+	if movedOut && reflex {
+		return nil, shellErr(rev.Pt, "an end of a revolve of more than half a turn lies inside another solid it is joined to; "+
+			"a shell moves out the ends of revolves of half a turn or less only")
+	}
 
 	// The inside's profile.
 	var sbl srf.SBezierList
@@ -245,6 +251,9 @@ func revolvedInside(rev Revolution, modeAt func(geom.Vector) (faceMode, bool), e
 		return nil, errors.New("the inside's profile, offset from the solid's, does not close")
 	}
 	inner := &srf.SShell{Tol: tol}
+	if movedOut {
+		return endsMoved(rev, &sets, endModes, radial, thick, tol, color)
+	}
 	for i := range sets.Sets {
 		if rev.Whole() {
 			inner.MakeFromRevolutionOf(&sets.Sets[i], rev.Pt, axis, color, noFaces{})
@@ -252,7 +261,6 @@ func revolvedInside(rev Revolution, modeAt func(geom.Vector) (faceMode, bool), e
 			inner.MakeFromHelicalRevolutionOf(&sets.Sets[i], rev.Pt, axis, color, noFaces{}, rev.Start, rev.End, 0, 0)
 		}
 	}
-	reflex := !rev.Whole() && math.Abs(rev.End-rev.Start) > math.Pi+1e-9
 	if reflex && (!openStart || !openEnd) {
 		cut, err := reflexEndsCut(rev, [2]bool{!openStart, !openEnd}, radial, thick, tol, color)
 		if err != nil {

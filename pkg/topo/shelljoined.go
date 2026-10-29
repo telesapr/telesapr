@@ -259,7 +259,7 @@ func joinedRevolvedInside(rev Revolution, modeAt func(geom.Vector) faceMode, ope
 			return mode, ErrNotRevolution
 		}
 		for k, a := range []float64{rev.Start, rev.End} {
-			wall, open := false, false
+			wall, open, probed := false, false, false
 			for _, q := range pts {
 				q = q.RotatedAbout(rev.Pt, axis, a)
 				if isOpen(q) {
@@ -271,14 +271,19 @@ func joinedRevolvedInside(rev Revolution, modeAt func(geom.Vector) faceMode, ope
 					open = true
 				case keptFace:
 					wall = true
+				case probedFace:
+					probed = true
 				}
 			}
 			switch {
 			case open:
 				mode[k] = openFace
-			case !wall:
-				return mode, shellErr(pts[0].RotatedAbout(rev.Pt, axis, a), "an end of a revolve lies inside another solid it is joined to; "+
-					"a shell hollows a revolve joined to others only where its ends are walls or taken away")
+			case wall:
+			case probed:
+				mode[k] = probedFace
+			default:
+				// Inside another part: moved out, so the insides meet.
+				mode[k] = buriedFace
 			}
 		}
 		return mode, nil
@@ -381,8 +386,8 @@ func joinedDraftedInside(part *srf.SShell, d DraftedSolid, modeAt func(geom.Vect
 	return inner, nil
 }
 
-// faceModeOf is face f's mode, of a part's solid of topology t, by the
-// middles of its triangles on it: taken away where any lies on a face taken
+// faceModeOf is face f's mode, of a part's solid of topology t, by
+// points of its triangles on it: taken away where any lies on a face taken
 // away, a wall where any lies on one, inside the others where none
 // lies on the solid (moved as modeAt says of such points).
 func faceModeOf(t *Topology, part *srf.SShell, f int, modeAt func(geom.Vector) faceMode) faceMode {
@@ -391,17 +396,28 @@ func faceModeOf(t *Topology, part *srf.SShell, f int, modeAt func(geom.Vector) f
 	s.TriangulateInto(part, &m)
 	wall, open := false, false
 	inside := buriedFace
+	// Points across each triangle of a flat face of few, not its middle
+	// alone: such a face is two or three large triangles, whose middles
+	// can all lie where another part stands on it. Other faces are asked
+	// at their triangles' middles, each put back on the face, a chord's
+	// sag off a curved one.
+	samples := triangleSamples[:1]
+	if _, flat := t.planarNormal(f); flat && len(m.Triangles) <= 32 {
+		samples = triangleSamples
+	}
 	for _, tr := range m.Triangles {
-		// The middle, a chord's sag off a curved face, put back on it.
-		var u, v float64
-		s.ClosestPointToUV(tr.A.Plus(tr.B).Plus(tr.C).ScaledBy(1.0/3), &u, &v, true)
-		switch modeAt(s.PointAt(u, v)) {
-		case openFace:
-			open = true
-		case keptFace:
-			wall = true
-		case probedFace:
-			inside = probedFace
+		for _, w := range samples {
+			var u, v float64
+			p := tr.A.ScaledBy(w[0]).Plus(tr.B.ScaledBy(w[1])).Plus(tr.C.ScaledBy(w[2]))
+			s.ClosestPointToUV(p, &u, &v, true)
+			switch modeAt(s.PointAt(u, v)) {
+			case openFace:
+				open = true
+			case keptFace:
+				wall = true
+			case probedFace:
+				inside = probedFace
+			}
 		}
 	}
 	switch {
@@ -412,6 +428,21 @@ func faceModeOf(t *Topology, part *srf.SShell, f int, modeAt func(geom.Vector) f
 	}
 	return inside
 }
+
+// triangleSamples are the barycentric weights of points inside a
+// triangle, a grid of sixths, the middle first.
+var triangleSamples = func() [][3]float64 {
+	out := [][3]float64{{1.0 / 3, 1.0 / 3, 1.0 / 3}}
+	for a := 1; a <= 4; a++ {
+		for b := 1; a+b <= 5; b++ {
+			if a == 2 && b == 2 {
+				continue
+			}
+			out = append(out, [3]float64{float64(a) / 6, float64(b) / 6, float64(6-a-b) / 6})
+		}
+	}
+	return out
+}()
 
 // insideOf is an error when inner, the insides of a solid's parts with
 // every face a wall and those inside the others moved out by twice the

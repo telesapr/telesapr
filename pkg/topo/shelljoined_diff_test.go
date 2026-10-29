@@ -210,21 +210,56 @@ func TestShellJoinedPartialRevolveTakenAway(t *testing.T) {
 	}
 }
 
-// A round post half sunk into the side of a block, as high as it: half
-// its side lies inside the block and half is a wall, and a prism's sides
-// all move alike, so the shell is refused, naming the side.
+// A round post half sunk into the side of a block, lower than it, open
+// at the block's top: half its side lies inside the block and half is a wall,
+// and the two halves run on smoothly into each other, so they can't
+// move apart: the side is moved in as a wall all round, and the post's
+// inside reaches past the block's side, moved in, into the block's.
 func TestShellJoinedHalfBuriedSide(t *testing.T) {
 	t.Parallel()
 	tol := srf.Tol(0.001, 20)
 	body := &srf.SShell{Tol: tol}
 	body.MakePrism([]geom.Vector{v(-20, -20, 0), v(0, -20, 0), v(0, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, 10),
 		core.NewRGBA(100, 100, 100, 255))
-	post := cylinder(3, 10, tol)
+	post := cylinder(3, 6, tol)
 	sh := &srf.SShell{Tol: tol}
 	sh.MakeFromUnionOf(body, post)
-	_, err := topo.ShellJoined(sh, []topo.ShellPart{{Shell: body}, {Shell: post}}, facesAt(t, sh, v(-10, 0, 10)), 1, 1000)
-	if err == nil || !strings.Contains(err.Error(), "a side of a prism lies inside") {
-		t.Errorf("a post half sunk: %v", err)
+	out, err := topo.ShellJoined(sh, []topo.ShellPart{{Shell: body}, {Shell: post}}, facesAt(t, sh, v(-10, 0, 10)), 1, 1000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The block's inside to x = -1, and of the post's, of radius 2 from
+	// 1 to 5 high, what lies past that.
+	want := 8000 + 27*math.Pi - (9*18*38 + 4*(8*math.Pi/3+math.Sqrt(3)))
+	if r := soundness(out); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Fatalf("a post half sunk: %s, want %g", r.String(), want)
+	}
+}
+
+// A square post lower than a block sunk into its side by less than
+// twice the thickness, open at the block's top: the post's side inside
+// the block is moved out, into the block, and the sides across the
+// block's face, partly walls, in, so the insides meet.
+func TestShellJoinedShallowSquarePost(t *testing.T) {
+	t.Parallel()
+	tol := srf.Tol(0.001, 20)
+	body := &srf.SShell{Tol: tol}
+	body.MakePrism([]geom.Vector{v(-20, -20, 0), v(0, -20, 0), v(0, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, 10),
+		core.NewRGBA(100, 100, 100, 255))
+	post := &srf.SShell{Tol: tol}
+	post.MakePrism([]geom.Vector{v(-1.5, -4, 0), v(6, -4, 0), v(6, 4, 0), v(-1.5, 4, 0)}, v(0, 0, 0), v(0, 0, 6),
+		core.NewRGBA(100, 100, 100, 255))
+	sh := &srf.SShell{Tol: tol}
+	sh.MakeFromUnionOf(body, post)
+	out, err := topo.ShellJoined(sh, []topo.ShellPart{{Shell: body}, {Shell: post}}, facesAt(t, sh, v(-10, 0, 10)), 1, 1000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The block's inside to x = -1, the post's from -2.5 to 5, 6 wide,
+	// 1 to 5 high.
+	want := 8000.0 + 6*8*6 - (9*18*38 + 6*6*4)
+	if r := soundness(out); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Fatalf("a square post sunk shallow: %s, want %g", r.String(), want)
 	}
 }
 
@@ -256,7 +291,7 @@ func TestShellJoinedPartialRevolveOpenEnd(t *testing.T) {
 	sh.MakeFromDifferenceOf(body, cut)
 	_, err = topo.ShellJoined(sh, []topo.ShellPart{{Shell: body}, {Rev: &rev, Combine: srf.SurfaceDiff}},
 		facesAt(t, sh, v(15, 15, 0), v(2, 0, 17)), 1, 1000)
-	if err == nil || !strings.Contains(err.Error(), "one end of a half turn") {
+	if err == nil || !strings.Contains(err.Error(), "two ends of a half turn") {
 		t.Errorf("a half turn open at one end: %v", err)
 	}
 }

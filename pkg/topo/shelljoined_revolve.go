@@ -98,13 +98,48 @@ func grownRevolution(rev Revolution, openAt func(geom.Vector) bool, thick float6
 			}
 		}
 	}
+	return cutToEnds(inner, rev, radial, shift, thick, tol, color)
+}
+
+// endsMoved is the inside of rev, a revolve of half a turn or less, of
+// the inside's profile sets, where an end lies inside another part:
+// the whole turn of the profile cut by each end's plane moved as its
+// mode says, in by the thickness as a wall, out by it inside another
+// part (twice that probed), where it is taken away.
+func endsMoved(rev Revolution, sets *srf.SBezierLoopSetSet, modes [2]faceMode, radial geom.Vector, thick float64,
+	tol srf.Tolerance, color core.RGBA) (*srf.SShell, error) {
+	axis := rev.Axis.WithMagnitude(1)
+	inner := &srf.SShell{Tol: tol}
+	for i := range sets.Sets {
+		inner.MakeFromRevolutionOf(&sets.Sets[i], rev.Pt, axis, color, noFaces{})
+	}
+	var shift [2]float64
+	for k, m := range modes {
+		switch m {
+		case keptFace:
+			shift[k] = thick
+		case buriedFace:
+			shift[k] = -thick
+		case probedFace:
+			shift[k] = -2 * thick
+		}
+	}
+	return cutToEnds(inner, rev, radial, shift, thick, tol, color)
+}
+
+// cutToEnds is inner, a whole turn, cut back to the planes of rev's ends
+// moved by shift into its material: what lies past both taken away for
+// half a turn or less, past either for more.
+func cutToEnds(inner *srf.SShell, rev Revolution, radial geom.Vector, shift [2]float64, thick float64,
+	tol srf.Tolerance, color core.RGBA) (*srf.SShell, error) {
+	axis := rev.Axis.WithMagnitude(1)
 	turn := math.Abs(rev.End - rev.Start)
 	half := math.Abs(turn-math.Pi) < 1e-9
 	if half && shift[0] != shift[1] {
 		// The two ends lie in one plane, either side of the axis: moved
 		// apart, the plane would step at the axis.
-		return nil, shellErr(pts[0].RotatedAbout(rev.Pt, axis, rev.End), "one end of a half turn taken away from the solid is taken away "+
-			"and the other is not; a shell takes away half turns open at both ends or at neither")
+		return nil, shellErr(rev.Pt.Plus(radial.RotatedAroundAxis(axis, rev.End)), "the two ends of a half turn lie in one plane "+
+			"and are not moved alike, one taken away, a wall or inside another solid and the other not; a shell moves the ends of a half turn alike only")
 	}
 	var beyond [2]*srf.SShell
 	for k := range 2 {
@@ -127,7 +162,7 @@ func grownRevolution(rev Revolution, openAt func(geom.Vector) bool, thick float6
 		back := &srf.SShell{Tol: tol}
 		back.MakeFromDifferenceOf(inner, c)
 		if back.BooleanFailed {
-			return nil, errors.New("the Boolean that cuts a revolve taken away back to its ends failed")
+			return nil, errors.New("the Boolean that cuts a revolve's inside back to its ends failed")
 		}
 		inner = back
 	}
