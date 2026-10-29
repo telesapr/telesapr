@@ -123,11 +123,10 @@ against; either set is the loft's problem. Profiles between its first and last c
 square as an open loft's are, the ring then one surface from each held profile round to the
 next, still one face. Guides hold it as they hold an open loft, each going round the ring
 through every profile back to where it started, closing on itself; a guide with ends is the
-loft's problem. A ring can be held by guides or square to its profiles, not both. Profiles more
-than a quarter turn apart round the ring are refused: the sections between them would pinch, so
-draw more. Between profiles turned far apart the loft's sections shrink as the profiles' blend
-does, so a ring of few profiles is thinner between them than a torus; eight or more round a
-circle make one within a percent. Examples:
+loft's problem. A ring can be held by guides or square to its profiles, not both. Between
+profiles the loft's sections turn with the ring, as a closed sweep's do, so they keep the
+profiles' size: three circles round a circle make a torus within a fifth of a percent.
+Profiles more than a third of a turn apart round the ring are refused, so draw more. Examples:
 [`examples/scripts/ring`](../../examples/scripts/ring/ring.go), a ring that swells and narrows,
 running straight through its narrow profiles;
 [`examples/scripts/wavering`](../../examples/scripts/wavering/wavering.go), a ring held by a
