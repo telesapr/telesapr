@@ -1204,13 +1204,15 @@ func (rb *rollingBall) misfit(sf *srf.BSplineSurface, t, s float64, near bool) (
 		if s >= rb.length/2 {
 			k = 1
 		}
-		curved := k < len(rb.ends) && rb.ends[k] != nil && rb.ends[k].curved
+		// An end on a curved face is curved across, and so is an end
+		// section fitted to where a flat face's plane cuts the chamfer
+		// (fitCuts), the chamfer's rulings along a curved edge leaning out
+		// of that plane: there the surface keeps to the nearest ruling.
+		curved := k < len(rb.ends) && rb.ends[k] != nil && (rb.ends[k].curved || rb.fitCuts)
 		for _, u := range []float64{0.25, 0.5, 0.75} {
 			p := sf.PointAt(u, t)
 			line := []geom.Vector{p0, p1}
 			if curved {
-				// An end on a curved face is curved across: the surface
-				// keeps to the chamfer's nearest ruling instead.
 				sec, err := rb.section(rb.nearestSection(p, s))
 				if err != nil {
 					return math.Inf(1), p
