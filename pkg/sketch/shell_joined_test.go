@@ -79,6 +79,41 @@ func TestShellLatheAndBoss(t *testing.T) {
 	}
 }
 
+// A plate with a turned post sunk into it, open at the post's top: the
+// post's foot moved out by the thickness stays in the plate, but leaves
+// a wall below it thinner than the thickness, so the shell is refused;
+// sunk less deep, the wall keeps the thickness and the shell is made.
+func TestShellLatheThinWall(t *testing.T) {
+	t.Parallel()
+	shell := func(foot float64) func() api.Group {
+		d := api.New()
+		d.Edit.SetChordTolerance(0.005)
+		d.Features.SketchIn(d.Workplane("XY"), "")
+		block(d, -20, -20, 20, 20, 4)
+		d.Features.SketchIn(d.Workplane("ZX"), "")
+		axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, foot+12))
+		axis.SetConstruction(true)
+		d.Sketch.Polyline(true, api.V(0, 0, foot), api.V(3, 0, foot), api.V(3, 0, foot+10), api.V(0, 0, foot+10))
+		post := d.Features.Lathe(axis, "")
+		if p := post.Problem(); p != "" {
+			t.Fatal(p)
+		}
+		top := post.Solid().FaceAt(api.V(1, 1, foot+10))
+		return func() api.Group { return d.Features.ShellSolid([]api.SolidFace{top}, 1, "") }
+	}
+	// The foot at 1.5 moved out to 0.5, half the thickness over the
+	// plate's bottom.
+	refusedWith(t, "leaves a wall thinner", func() { shell(1.5)() })
+	sh := shell(2.5)()
+	if p := sh.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	want := 40*40*4 - 38*38*2 + math.Pi*(9*8.5-4*9.5)
+	if r := sh.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Fatalf("shelled plate and post: %s, want volume %g", r.String(), want)
+	}
+}
+
 // A block with a round boss standing on it, both extrusions from one
 // sketch's plane, open at the boss's top: a tube down into the block's
 // inside. Neither part is turned: the block is hollowed as a solid of

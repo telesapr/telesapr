@@ -66,13 +66,15 @@ func ShellSolid(sh *srf.SShell, open []int, thick float64, origin uint32) (*srf.
 // the thickness, a wall; leaves it where it is, taken away; or, a face
 // of a part of a solid lying inside another part (shelljoined.go),
 // moves it out by the thickness, so the part's inside meets the
-// others'.
+// others'; or such a face moved out by twice the thickness, to find
+// where the wall beyond it would be thinner than the thickness.
 type faceMode int
 
 const (
 	keptFace faceMode = iota
 	openFace
 	buriedFace
+	probedFace
 )
 
 // flatInside is the inside of sh, a solid of flat faces of topology t,
@@ -97,6 +99,8 @@ func flatInside(t *Topology, sh *srf.SShell, mode []faceMode, thick float64, ori
 			d = 0
 		case buriedFace:
 			d = thick
+		case probedFace:
+			d = 2 * thick
 		}
 		normal[f] = n
 		offset[f] = n.Dot(t.Surface(f).Ctrl[0][0]) + d

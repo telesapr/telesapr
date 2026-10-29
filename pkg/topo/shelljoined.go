@@ -20,7 +20,10 @@ import (
 // the others', so the walls round the joint keep the thickness and the
 // insides meet with no wall between them. Each face's mode is found by
 // where it lies on the solid: on a face taken away, on a wall, or on
-// none. A part's inside moved out of the solid is refused.
+// none. A part's inside moved out of the solid is refused, and so is one
+// leaving a wall thinner than the thickness beyond a face moved out:
+// the insides made again with every face a wall and those faces moved
+// out by twice the thickness must lie in the solid.
 
 // ShellPart is one of the solids a solid is the union of: a revolution
 // (Rev), or else its own solid (Shell), of flat faces or a prism.
@@ -43,15 +46,17 @@ func ShellJoined(sh *srf.SShell, parts []ShellPart, open []int, thick float64, o
 	if err != nil {
 		return nil, err
 	}
-	inner, buried, err := joinedInside(t, sh, parts, opened, thick)
+	inner, buried, err := joinedInside(t, sh, parts, opened, buriedFace, thick)
 	if err != nil {
 		return nil, err
 	}
 	if buried {
 		// The parts' insides with every face a wall, so that none lies on
-		// a face taken away: what of them lies outside the solid is where
-		// a face moved out came out of it.
-		check, _, err := joinedInside(t, sh, parts, nil, thick)
+		// a face taken away, and the faces moved out moved out by twice
+		// the thickness: what of them lies outside the solid is where the
+		// wall beyond a face moved out is thinner than the thickness, or
+		// where it came out of the solid.
+		check, _, err := joinedInside(t, sh, parts, nil, probedFace, thick)
 		if err != nil {
 			return nil, err
 		}
@@ -71,16 +76,16 @@ func ShellJoined(sh *srf.SShell, parts []ShellPart, open []int, thick float64, o
 }
 
 // joinedInside is the union of the insides of parts of sh (topology t),
-// faces opened taken away, and whether any part's face lies inside the
-// others.
-func joinedInside(t *Topology, sh *srf.SShell, parts []ShellPart, opened map[int]bool, thick float64) (*srf.SShell, bool, error) {
+// faces opened taken away and a part's faces lying inside the others
+// moved as inside says, and whether any does.
+func joinedInside(t *Topology, sh *srf.SShell, parts []ShellPart, opened map[int]bool, inside faceMode, thick float64) (*srf.SShell, bool, error) {
 	buried := false
 	modeAt := func(p geom.Vector) faceMode {
 		f, d := t.FaceAt(p)
 		switch {
 		case f < 0 || d > 100*geom.LengthEps:
 			buried = true
-			return buriedFace
+			return inside
 		case opened[f]:
 			return openFace
 		}
@@ -205,12 +210,13 @@ func joinedFlatInside(part *srf.SShell, modeAt func(geom.Vector) faceMode, thick
 // faceModeOf is face f's mode, of a part's solid of topology t, by the
 // middles of its triangles on it: taken away where any lies on a face taken
 // away, a wall where any lies on one, inside the others where none
-// lies on the solid.
+// lies on the solid (moved as modeAt says of such points).
 func faceModeOf(t *Topology, part *srf.SShell, f int, modeAt func(geom.Vector) faceMode) faceMode {
 	var m srf.SMesh
 	s := t.Surface(f)
 	s.TriangulateInto(part, &m)
 	wall, open := false, false
+	inside := buriedFace
 	for _, tr := range m.Triangles {
 		// The middle, a chord's sag off a curved face, put back on it.
 		var u, v float64
@@ -220,6 +226,8 @@ func faceModeOf(t *Topology, part *srf.SShell, f int, modeAt func(geom.Vector) f
 			open = true
 		case keptFace:
 			wall = true
+		case probedFace:
+			inside = probedFace
 		}
 	}
 	switch {
@@ -228,12 +236,13 @@ func faceModeOf(t *Topology, part *srf.SShell, f int, modeAt func(geom.Vector) f
 	case wall:
 		return keptFace
 	}
-	return buriedFace
+	return inside
 }
 
 // insideOf is an error when inner, the insides of a solid's parts with
-// every face a wall, comes out of sh: a face moved out has gone through
-// the solid.
+// every face a wall and those inside the others moved out by twice the
+// thickness, comes out of sh: beyond a face moved out the wall is
+// thinner than the thickness, or there is none.
 func insideOf(inner, sh *srf.SShell, thick float64) error {
 	out := &srf.SShell{Tol: sh.Tol}
 	out.MakeFromDifferenceOf(inner, sh)
@@ -247,7 +256,8 @@ func insideOf(inner, sh *srf.SShell, thick float64) error {
 		if len(m.Triangles) > 0 {
 			at = m.Triangles[0].A
 		}
-		return shellErr(at, "a thickness of %g takes the inside out of the solid, where a part joined to it is thinner than twice that", thick)
+		return shellErr(at, "a thickness of %g leaves a wall thinner than that, or none, beyond where a part's inside meets another's; "+
+			"the part it meets is thinner than twice that there", thick)
 	}
 	return nil
 }
