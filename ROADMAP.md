@@ -184,13 +184,38 @@ solids) at 59 of 59 sound since 2026-10-22. Chamfers: `TestChamferOnOtherSolids`
 | Item | State | Approach / tried |
 |---|---|---|
 | A run-off of a blend that takes material away; both ends running off; a run-off onto a curved face only just past its edge, or with a curved end face | refused, naming the place | Run-offs onto a curved face are made since 2026-10-29 (below). For the rest the setback patch is the means: where the ball runs off a face, cut the fillet as a setback is cut and fill the hole between it, the next face's fillet (or the face) and the faces round. A run-off taking material away was never reached by any test case (a slot cut from the cone never got that far) |
-| A rim's mitre below about 0.005% chord | refused: "the fillet's sections near its mitre can't be fitted" | At the cap the mitre runs nearly along the chain; tried: starting the fit from chord-length parameters (worse). More spans than two, or sections fitted against the mitre's own parameter |
 | Mitres of two radii left | refused, naming the place | A chain that meets smaller ones at both its ends with different kinks (the three cubics at 0.5, 1 and 0.75), or a larger one at one end and a smaller at the other: its sections would need two kinks, or a kink and the copied span split at it, and the mate's span is one quintic; a mitre of one radius beside one of two on the same chain (their sections split differently); chamfers of two distances in the rolling ball's mitres (the line's height is the same; the kink, `onMateArc`, would be the line's foot; those between flat faces are made since 2026-10-28, `chamferPairAt`) |
 | A rib rounded all over, foot first | the top first is made (below); two cases of 24 unsound: width leaning -4, r 0.5, h 5 and 10, at chord 0.015% 3 to 5 mesh edges cross at the front corners, where the foot's fillet passes from the slope edge's fillet onto the slope (sound at 0.01%) | Foot first, the top's edge ends on the foot's fillet and the grown top. Tried 2026-10-29, after run-offs onto curved faces were made: on a rib whose foot is filled, the edge across the back rounds alone, sound; the uprights at the back are refused as fillets meeting above an edge left sharp; the slope's edges are refused before their ends, the ball leaving the side face for the foot's fillet (three fillets meeting at a vertex: a vertex blend, not a run-off). Not needed while the stages take the top first |
-| Radii 5-6:1 side by side at a setback corner | 4 of 36 refused as folding (`TestFilletSetbackExtremeSweep`) | More patches, or a smaller setback for the small fillets. Tried and given up: one fitted patch over the hole (0.1 rad off at degree 9), a fan of quads, a star for even counts, stronger pulls, larger setbacks, net second differences as fairness |
 | Convex meeting concave at one vertex beyond what the stages round, fillets or chamfers | refused | Chamfer corners where every edge is chamfered are made since 2026-10-28 (`chamferCornerAt`: OpenCASCADE's pivot and square cuts, plane or bilinear patch), and so are two chamfers of any distances above a third edge left sharp (`chamferPairAt`). Since 2026-10-29 a chamfer's edge takes a distance and a second distance of its own (`EdgeRadii`, `EdgeSeconds`, `pkg/sketch/chamfer_edge_distances.go`), from its screen and from scripts. Left: chamfers of different distances where some edges at a corner of three or more are left sharp; a corner of three chamfered edges of different distances that the edit can't make is cut by wedges |
 | The vase's foot fillet against OpenCASCADE | ours -2.8% (0.011 mm³) | Not checked further |
 | Slot chamfer at 3 | see K4 | The teapot handle and the run-off chamfers' crossings, listed here before, are sound since K4's mender |
+
+Done 2026-10-29: a rim's mitre at fine chord tolerances, refused below about 0.005% ("the
+fillet's sections near its mitre can't be fitted"). The sections near a mitre run along the chain
+across many of the dense edge's points (a tenth of a millimetre apart on the blob's rim), and the
+edge's tangent was interpolated linearly between them, so the planes the sections lie in turned with
+a corner at each: the points a section is fitted through had a kink of a few hundred-thousandths of a
+millimetre at every one, and the misfit stayed there whatever the fit. On a chain with a mitre the
+edge is now cubic Hermite pieces, the tangent's with its turn at the points (`rollingBall.along`);
+other chains keep straight pieces, since with Hermite pieces everywhere fillet-tee's golden moved in
+its last digits and a rib's foot at r 1, leaning -4, came out with two crossing triangles. Smooth, the
+sections take four spans where two and one miss (`mitreSpans`, tried last, so what two or one made
+stays). The blob's rims at r 0.5 and 1 are sound from 0.01% to 0.0005% (`TestFilletRimMitreFine`);
+r 1.5 stays refused, as OpenCASCADE refuses it. Tried first: four spans alone (no better: the kinks
+were the misfit), more centres for the mate's swept surface (`mitreSamples` 32 to 128, no change), a
+denser edge (smaller kinks, the misfit the same).
+
+Done 2026-10-29: setback corners of radii far apart, 4 of 36 refused as folding with radii 5 or 6 to
+1 side by side (`TestFilletSetbackExtremeSweep`). Every fold was the check just inside a face's side:
+the face's curve, the parabola through where the two fillets' tangent lines cross, has legs as unequal
+as the radii, and the patches along it, slow at one end and fast at the other, turned beside it. Where
+they do, the curves are cubics whose legs are 0.4, then 0.2, of the shorter leg, nearer the chord
+(`setbackLegs`, `setbackFaceCurve`); a corner the parabolas fill is made as before. The sweep, its
+radii taken down to 0.25 (12 to 1), refuses none of 96, each sound and tangent all round; to 20 to 1
+none of 36 either. Tried and not taken: setbacks of each fillet's own radius, of the radii's
+geometric mean, twice and half the largest's (each still folds all four). Of the curves: legs of
+0.6 the shorter leg and over fill the apexes, not the boxes; 0.2 and 0.4 of the longer fill all four,
+0.6 and over none; the parabola's legs scaled alike, 0.3 all four, 0.5 not the boxes.
 
 Done 2026-10-29: blends that run off their face onto a curved one, as a fillet of a band's side on
 the cone past the band's rounded top (`TestFilletRunsOffOntoCylinder`). The run-off's plane is
@@ -308,7 +333,7 @@ approach on the cap the two share, where they meet tangentially); the sections b
 ball's own lie on the swept surface, their arc lengths moved from the mitre's at each point. Its
 vertices are OpenCASCADE's and our surfaces lie within 8e-5 mm of its result; r 0.5 and 1 are sound
 from chord 0.5% to 0.005%; r 1.5 and 2 are refused, as OpenCASCADE refuses them; below about 0.005%
-the sections near the mitre miss their fit (it runs nearly along the chain at the cap). A chain is
+the sections near the mitre missed their fit (made since 2026-10-29, above). A chain is
 closed only through a smooth join (`blendChain`).
 
 Done 2026-10-11: mitres between different chains, a rim that turns sharply at two or more creases of
