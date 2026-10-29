@@ -125,17 +125,14 @@ func blendOrRefusal(d *Doc, edge SolidEdge, r float64, chamfer bool) (g Group, e
 }
 
 // runOffRefused are the cases of TestFilletRunsOffOntoCylinder that are
-// refused, and what the refusal says: chamfers ending on the narrowest
-// band's top, the cone going on past it, whose end's sections lie too
-// far off the chamfer's surface to fit; and fillets whose end only just
-// runs off onto the x band's top, the end section crossing it within
-// the chord tolerance of the band's side, where the top would grow by a
+// refused, and what the refusal says: fillets whose end only just runs
+// off onto the x band's top, the end section crossing it within the
+// chord tolerance of the band's side, where the top would grow by a
 // sliver its mesh leaves open; and the x band's widest chamfers, which
-// run off both the band's side and the cone, as on a flat top.
+// run off both the band's side and the cone, as on a flat top. The
+// chamfers ending on the narrowest band's top, the cone going on past
+// it, refused as "can't be fitted" before 2026-10-29, are made.
 var runOffRefused = map[string]string{
-	"chamfer, y band 4 wide, top 18 sag 1 r 1.5": "can't be fitted",
-	"chamfer, y band 4 wide, top 18 sag 1 r 2":   "can't be fitted",
-	"chamfer, y band 4 wide, top 18 sag 1 r 2.5": "can't be fitted",
 	"x band 6 wide, top 20 sag -1 r 1.5":         "only just runs off",
 	"x band 6 wide, top 20 sag 1 r 1.5":          "only just runs off",
 	"x band 6 wide, top 21 sag 1 r 2":            "only just runs off",
