@@ -20,6 +20,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/thread"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
 
@@ -89,6 +90,19 @@ var pathEquivalences = map[string]pathCheck{
 	// A buttress screw thread typed in, its load flank turned back, made
 	// through its screen, and by a script.
 	"thread_buttress": nil,
+	// A buttress screw thread with a rounded crest, its arc leaning off
+	// the ridge's middle, made through its screen, and by a script.
+	"thread_buttress_rounded": func(t *testing.T, ui, _ *sketch.Sketch) {
+		for i := range ui.Groups {
+			if o := ui.Groups[i].Thread; o.IsThread() {
+				if o.Crest != thread.CrestRounded || !o.Spec.Buttress() {
+					t.Errorf("the thread: crest %v, %v", o.Crest, o.Spec)
+				}
+				return
+			}
+		}
+		t.Error("no thread")
+	},
 	// A B1.9 buttress thread with rounded roots and PULL-BUTT typed, at a
 	// chord tolerance set fine enough, made through its screen, and by a
 	// script.

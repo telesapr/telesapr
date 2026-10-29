@@ -42,7 +42,6 @@ func init() {
 		"EdgeSecondField":              reflect.ValueOf(sketch.EdgeSecondField),
 		"EntityPointCount":             reflect.ValueOf(sketch.EntityPointCount),
 		"ErrBadDensity":                reflect.ValueOf(&sketch.ErrBadDensity).Elem(),
-		"ErrButtressRounded":           reflect.ValueOf(&sketch.ErrButtressRounded).Elem(),
 		"ErrChamferTooFine":            reflect.ValueOf(&sketch.ErrChamferTooFine).Elem(),
 		"ErrConstraintSelection":       reflect.ValueOf(&sketch.ErrConstraintSelection).Elem(),
 		"ErrEqualSelection":            reflect.ValueOf(&sketch.ErrEqualSelection).Elem(),

@@ -225,8 +225,10 @@ type Profile struct {
 	// FlankAngle but for a buttress thread.
 	UpperFlank float64
 	// CrestRoundRadius is the radius of a rounded crest's arc, 0 for a
-	// flat crest; the arc meets the flanks at RoundFootRadius from the
-	// axis, CrestWidth apart (WithCrest).
+	// flat crest. The flanks, carried on, are CrestWidth apart at
+	// RoundFootRadius from the axis: where a symmetric ridge's arc meets
+	// them, and the crest's radius on a buttress ridge, whose arc meets
+	// them at two radii (WithCrest, CrestArc).
 	CrestRoundRadius, RoundFootRadius float64
 	// RootRoundRadius is the radius of a rounded root's arcs, 0 for a
 	// flat root (RootArcs). Profile leaves the root flat; a thread made

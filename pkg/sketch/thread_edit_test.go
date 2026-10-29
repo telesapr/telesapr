@@ -254,27 +254,53 @@ func TestThreadLengthExpression(t *testing.T) {
 	}
 }
 
+// ridgesVolume is what a thread's ridges, its group hg, add to the
+// turned or bored part, from their meshes.
+func ridgesVolume(t *testing.T, sk *sketch.Sketch, hg core.HGroup) float64 {
+	t.Helper()
+	// The thread's groups: the blank, the turned part, the ridge's
+	// sketch and the helix.
+	turned, bad := meshStats(sk, sk.GroupOrder[sk.Group(hg).Order-2])
+	if bad != 0 {
+		t.Fatalf("turned part: %d naked or self-intersecting edges", bad)
+	}
+	mesh, bad := meshStats(sk, hg)
+	if bad != 0 {
+		t.Fatalf("%d naked or self-intersecting edges", bad)
+	}
+	return mesh.CalculateVolume() - turned.CalculateVolume()
+}
+
 // ridgeSection is the cross-section of a ridge above the root, in a
 // plane through the axis: its area, and the radius of its centroid.
 // A rounded crest is taken as a polygon of many sides along its arc.
 func ridgeSection(p thread.Profile) (area, centroid float64) {
 	toRoot := math.Copysign(1, p.RootRadius-p.CrestRadius)
-	// (r, z) around the outline: the root, a flank, the crest, the other
-	// flank.
-	pts := [][2]float64{{p.RootRadius, -p.RootWidth / 2}, {p.RootRadius, p.RootWidth / 2}}
+	// (r, z) around the outline, z from the middle of the crest, or of
+	// the ridge where a rounded crest's flanks are CrestWidth apart: the
+	// root, the upper flank, the crest, the lower flank.
+	top := p.CrestRadius
 	if p.CrestRoundRadius > 0 {
-		rc := p.CrestRadius + toRoot*p.CrestRoundRadius
-		a0 := math.Atan2(p.CrestWidth/2, p.RoundFootRadius-rc)
-		a1 := math.Atan2(-p.CrestWidth/2, p.RoundFootRadius-rc)
-		if toRoot > 0 {
-			// The arc bulges towards the axis: from the upper foot it
-			// turns the long way round through angle pi.
+		top = p.RoundFootRadius
+	}
+	deep := toRoot * (p.RootRadius - top)
+	tl := math.Tan((p.FlankAngle - p.UpperFlank) * math.Pi / 180)
+	tu := math.Tan(p.UpperFlank * math.Pi / 180)
+	pts := [][2]float64{{p.RootRadius, -p.CrestWidth/2 - tl*deep}, {p.RootRadius, p.CrestWidth/2 + tu*deep}}
+	if p.CrestRoundRadius > 0 {
+		c, lower, upper := p.CrestArc()
+		a0 := math.Atan2(upper[1]-c[1], upper[0]-c[0])
+		a1 := math.Atan2(lower[1]-c[1], lower[0]-c[0])
+		// The arc, less than half a turn, the short way round.
+		if a1-a0 > math.Pi {
+			a1 -= 2 * math.Pi
+		} else if a0-a1 > math.Pi {
 			a1 += 2 * math.Pi
 		}
 		const n = 2000
 		for i := range n + 1 {
 			a := a0 + (a1-a0)*float64(i)/n
-			pts = append(pts, [2]float64{rc + p.CrestRoundRadius*math.Cos(a), p.CrestRoundRadius * math.Sin(a)})
+			pts = append(pts, [2]float64{c[0] + p.CrestRoundRadius*math.Cos(a), c[1] + p.CrestRoundRadius*math.Sin(a)})
 		}
 	} else {
 		pts = append(pts, [2]float64{p.CrestRadius, p.CrestWidth / 2}, [2]float64{p.CrestRadius, -p.CrestWidth / 2})
@@ -305,6 +331,14 @@ func TestThreadCrests(t *testing.T) {
 		{"nut_m8_truncated", 7, 6.5, "M8", sketch.ThreadOptions{Length: 6.5, Through: true, Internal: true, Crest: thread.CrestTruncated}},
 		{"lead_tr20_rounded", 10, 40, "Tr20x8(P4)", sketch.ThreadOptions{Length: 30, Crest: thread.CrestRounded}},
 		{"screw_m6_down_rounded", 3, -20, "M6-LH", sketch.ThreadOptions{Length: 10, Reverse: true, Crest: thread.CrestRounded}},
+		// Buttress ridges, whose arcs lean: DIN 513 and B1.9, a screw and
+		// a nut, either way round, and with B1.9's rounded roots.
+		{"screw_s20_rounded", 10, 40, "S20x4", sketch.ThreadOptions{Length: 30, Crest: thread.CrestRounded}},
+		{"nut_s20_back_rounded", 16, 20, "S20x4", sketch.ThreadOptions{Length: 20, Through: true, Internal: true, LoadFlankBack: true, Crest: thread.CrestRounded}},
+		{"screw_butt_rounded", 12.7, 40, "1-12 PULL-BUTT", sketch.ThreadOptions{Length: 25, Clearance: 0.05, Crest: thread.CrestRounded}},
+		{"nut_butt_lh_rounded", 20, 15, "1-12 BUTT-LH", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Clearance: 0.05, Crest: thread.CrestRounded}},
+		{"screw_butt_round_both", 9.525, 20, "3/4-10 BUTT", sketch.ThreadOptions{Length: 12, Clearance: 0.05, RoundRoot: true, Crest: thread.CrestRounded}},
+		{"nut_butt_round_both", 20, 15, "1-12 PULL-BUTT", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Clearance: 0.05, RoundRoot: true, Crest: thread.CrestRounded}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -322,28 +356,32 @@ func TestThreadCrests(t *testing.T) {
 						g.Name, g.Solved.How, g.Solved.Dof, g.BooleanFailed)
 				}
 			}
-			o := tc.options(t)
+			o := tc.options(t).LoadStated()
 			s := o.Spec
-			p := s.Profile(o.Internal, o.Clearance).WithCrest(o.Crest)
-			// What the ridges add to the turned part: the section above
-			// the root, swept.
+			std := s.Profile(o.Internal, o.Clearance)
+			if o.LoadFlankBack {
+				std = std.Turned()
+			}
+			p := std.WithCrest(o.Crest)
+			// What the shaped crest takes off the standard one's ridges:
+			// the sections above the root, swept. A rounded root's
+			// fillets are the same under either crest.
 			area, centroid := ridgeSection(p)
+			flatArea, flatCentroid := ridgeSection(std)
 			sweep := 2 * math.Abs(sk.MustParam(res.Group.Param(7)).Val)
-			want := float64(s.NumStarts()) * area * centroid * sweep / s.Lead() * 2 * math.Pi
-			turned, bad := meshStats(sk, sk.GroupOrder[len(sk.GroupOrder)-3])
-			if bad != 0 {
-				t.Fatalf("turned part: %d naked or self-intersecting edges", bad)
-			}
-			mesh, bad := meshStats(sk, res.Group)
-			if bad != 0 {
-				t.Fatalf("%d naked or self-intersecting edges", bad)
-			}
-			// The standard crest's ridges, to see the shaped one apart.
-			flatArea, flatCentroid := ridgeSection(s.Profile(o.Internal, o.Clearance))
-			flat := float64(s.NumStarts()) * flatArea * flatCentroid * sweep / s.Lead() * 2 * math.Pi
-			got := mesh.CalculateVolume() - turned.CalculateVolume()
-			if math.Abs(got-want) > 0.25*math.Abs(flat-want) {
-				t.Errorf("ridges %.5f, want %.5f (with a standard crest %.5f)", got, want, flat)
+			turns := float64(s.NumStarts()) * sweep / s.Lead() * 2 * math.Pi
+			want := (flatArea*flatCentroid - area*centroid) * turns
+			// Against the same thread made with the standard crest at the
+			// same tolerance, so that what the meshes of the helix and of
+			// the turned part miss, as much as a crest takes on the larger
+			// parts (1.7 mm³ of a 1-12 BUTT nut's ridges at 0.003%),
+			// cancels.
+			flatCase := tc
+			flatCase.o.Crest = thread.CrestStandard
+			fsk, _, fres := flatCase.build(t, 0.003)
+			got := ridgesVolume(t, fsk, fres.Group) - ridgesVolume(t, sk, res.Group)
+			if math.Abs(got-want) > 0.25*math.Abs(want) {
+				t.Errorf("the crest takes %.5f off the ridges, want %.5f", got, want)
 			}
 			if r := check.Group(sk, sk.Group(res.Group)); !r.Sound() || r.Empty() {
 				t.Errorf("oracle: %s", r.String())

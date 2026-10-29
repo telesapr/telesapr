@@ -466,11 +466,13 @@ func (d *threadDrawer) drawProfile() {
 	}
 	for i := range n {
 		z := d.l.ridgeMiddle() + float64(i)*d.o.Spec.Pitch + d.shift
-		switch {
-		case d.l.profile.CrestRoundRadius > 0:
-			d.drawRoundRidge(i, z)
-		case d.l.profile.RootRoundRadius > 0:
+		switch p := d.l.profile; {
+		case p.RootRoundRadius > 0:
 			d.drawRoundRootRidge(i, z)
+		case p.CrestRoundRadius > 0 && !p.Symmetric():
+			d.drawLeaningRoundRidge(i, z)
+		case p.CrestRoundRadius > 0:
+			d.drawRoundRidge(i, z)
 		default:
 			d.drawFlatRidge(i, z)
 		}
@@ -508,10 +510,11 @@ func (d *threadDrawer) drawFlatRidge(i int, z float64) {
 }
 
 // drawRoundRootRidge draws the ridge i, its foot centred at height z,
-// with a flat crest and a rounded root (thread.Profile.RootArcs): each
-// flank runs into an arc tangent to it, the arc into its tangent, which
-// crosses the root into the part, and a line square to the axis from
-// the tangent's end to the foot closes the ridge there, inside the part.
+// with a flat or a rounded crest and a rounded root
+// (thread.Profile.RootArcs): each flank runs into an arc tangent to it,
+// the arc into its tangent, which crosses the root into the part, and a
+// line square to the axis from the tangent's end to the foot closes the
+// ridge there, inside the part.
 func (d *threadDrawer) drawRoundRootRidge(i int, z float64) {
 	p, l, none := d.l.profile, d.l, core.NoEntity
 	crest := p.CrestWidth / 2
@@ -521,11 +524,24 @@ func (d *threadDrawer) drawRoundRootRidge(i int, z float64) {
 	_, lowZ := at(lower.End)
 	_, upZ := at(upper.End)
 	b := d.line(l.baseR, lowZ, l.baseR, upZ)
-	top := d.line(p.CrestRadius, zc+crest, p.CrestRadius, zc-crest)
+	// The crest: a flat top, or a rounded crest's arc, whose feet the
+	// flanks run to.
+	var top, crestArc core.HRequest
+	var upCrest, downCrest core.HEntity
+	var centre [2]float64
+	upTop, downTop := [2]float64{p.CrestRadius, crest}, [2]float64{p.CrestRadius, -crest}
+	if p.CrestRoundRadius > 0 {
+		crestArc, centre, downCrest, upCrest = d.crestArc(zc)
+		_, downTop, upTop = p.CrestArc()
+	} else {
+		top = d.line(p.CrestRadius, zc+crest, p.CrestRadius, zc-crest)
+		upCrest, downCrest = top.Entity(1), top.Entity(2)
+	}
 	// side draws the root on one side and its flank, from the foot to
-	// the crest's end at crestZ: the line from the foot, the tangent,
+	// the crest's end at crestEnd: the line from the foot, the tangent,
 	// the arc and the flank, as requests in that order.
-	side := func(a thread.RootArc, footZ, crestZ float64) [4]core.HRequest {
+	side := func(a thread.RootArc, footZ float64, crestEnd [2]float64) [4]core.HRequest {
+		crestR, crestZ := at(crestEnd)
 		er, ez := at(a.End)
 		ar, az := at(a.Turn)
 		tr, tz := at(a.Tangent)
@@ -539,10 +555,10 @@ func (d *threadDrawer) drawRoundRootRidge(i int, z float64) {
 			arc = d.arc(cr, cz, tr, tz, ar, az)
 		}
 		return [4]core.HRequest{d.line(l.baseR, footZ, er, ez), d.line(er, ez, ar, az), arc,
-			d.line(tr, tz, p.CrestRadius, crestZ)}
+			d.line(tr, tz, crestR, crestZ)}
 	}
-	ups := side(upper, upZ, zc+crest)
-	downs := side(lower, lowZ, zc-crest)
+	ups := side(upper, upZ, upTop)
+	downs := side(lower, lowZ, downTop)
 	up, down := ups[3], downs[3]
 
 	// The arc's ends: at its turn, and at the flank.
@@ -553,8 +569,8 @@ func (d *threadDrawer) drawRoundRootRidge(i int, z float64) {
 		}
 		return arc.Entity(3), arc.Entity(2), false
 	}
-	d.coincident(top.Entity(2), down.Entity(2))
-	d.coincident(up.Entity(2), top.Entity(1))
+	d.coincident(downCrest, down.Entity(2))
+	d.coincident(up.Entity(2), upCrest)
 	for _, s := range []struct {
 		reqs   [4]core.HRequest
 		corner core.HEntity
@@ -579,16 +595,76 @@ func (d *threadDrawer) drawRoundRootRidge(i int, z float64) {
 
 	d.constrain(core.ConstraintVertical, none, none, b.Entity(0), none, false)
 	d.dimension(core.ConstraintPtLineDistance, l.baseR, d.center, none, b.Entity(0), none)
-	d.constrain(core.ConstraintVertical, none, none, top.Entity(0), none, false)
-	d.dimension(core.ConstraintPtLineDistance, p.CrestRadius, d.center, none, top.Entity(0), none)
-	d.dimension(core.ConstraintPtPtDistance, p.CrestWidth, top.Entity(1), top.Entity(2), none, none)
+	if p.CrestRoundRadius == 0 {
+		d.constrain(core.ConstraintVertical, none, none, top.Entity(0), none, false)
+		d.dimension(core.ConstraintPtLineDistance, p.CrestRadius, d.center, none, top.Entity(0), none)
+		d.dimension(core.ConstraintPtPtDistance, p.CrestWidth, top.Entity(1), top.Entity(2), none, none)
+	}
 	d.dimension(core.ConstraintAngle, p.FlankAngle, none, none, up.Entity(0), down.Entity(0))
 	if p.Symmetric() {
 		d.constrain(core.ConstraintEqualLengthLines, none, none, up.Entity(0), down.Entity(0), false)
 	} else {
 		d.dimension(core.ConstraintAngle, 90+p.UpperFlank, none, none, b.Entity(0), up.Entity(0))
 	}
+	if p.CrestRoundRadius > 0 {
+		d.holdCrestArc(crestArc, centre, b, up, down, upCrest == crestArc.Entity(3))
+		d.placeRidge(i, crestArc, 1, zc+centre[1])
+		return
+	}
 	d.placeRidge(i, top, 2, zc-crest)
+}
+
+// drawLeaningRoundRidge draws the buttress ridge i, its foot centred at
+// height z, with a rounded crest (thread.Profile.CrestArc): its flanks,
+// at their own angles, run into an arc tangent to both, whose centre
+// and feet lie off the middle of the ridge.
+func (d *threadDrawer) drawLeaningRoundRidge(i int, z float64) {
+	p, l, none := d.l.profile, d.l, core.NoEntity
+	base := l.baseW / 2
+	zc := z - l.footShift
+	centre, lower, upper := p.CrestArc()
+	b := d.line(l.baseR, z-base, l.baseR, z+base)
+	up := d.line(l.baseR, z+base, upper[0], zc+upper[1])
+	down := d.line(lower[0], zc+lower[1], l.baseR, z-base)
+	crest, _, downEnd, upEnd := d.crestArc(zc)
+	d.coincident(b.Entity(2), up.Entity(1))
+	d.coincident(up.Entity(2), upEnd)
+	d.coincident(downEnd, down.Entity(1))
+	d.coincident(down.Entity(2), b.Entity(1))
+	d.constrain(core.ConstraintVertical, none, none, b.Entity(0), none, false)
+	d.dimension(core.ConstraintPtLineDistance, l.baseR, d.center, none, b.Entity(0), none)
+	d.dimension(core.ConstraintAngle, p.FlankAngle, none, none, up.Entity(0), down.Entity(0))
+	d.dimension(core.ConstraintAngle, 90+p.UpperFlank, none, none, b.Entity(0), up.Entity(0))
+	d.holdCrestArc(crest, centre, b, up, down, upEnd == crest.Entity(3))
+	d.placeRidge(i, crest, 1, zc+centre[1])
+}
+
+// crestArc draws a rounded crest's arc, the middle of the ridge at
+// RoundFootRadius at height zc: it bulges away from the axis on a
+// screw, towards it in a nut, and runs anticlockwise. It returns the
+// arc, its centre as CrestArc gives it, and its ends at the lower and
+// the upper flank.
+func (d *threadDrawer) crestArc(zc float64) (arc core.HRequest, centre [2]float64, lowEnd, upEnd core.HEntity) {
+	p := d.l.profile
+	centre, lower, upper := p.CrestArc()
+	if p.RootRadius > p.CrestRadius {
+		arc = d.arc(centre[0], zc+centre[1], upper[0], zc+upper[1], lower[0], zc+lower[1])
+		return arc, centre, arc.Entity(3), arc.Entity(2)
+	}
+	arc = d.arc(centre[0], zc+centre[1], lower[0], zc+lower[1], upper[0], zc+upper[1])
+	return arc, centre, arc.Entity(2), arc.Entity(3)
+}
+
+// holdCrestArc holds a rounded crest's arc, whose ends the flanks up
+// and down run to: tangent to both, of its radius, its centre at its
+// distance from the ridge's foot b, which puts its top at the crest.
+// atUp is whether the arc ends, rather than starts, at up.
+func (d *threadDrawer) holdCrestArc(arc core.HRequest, centre [2]float64, b, up, down core.HRequest, atUp bool) {
+	p, none := d.l.profile, core.NoEntity
+	d.constrain(core.ConstraintArcLineTangent, none, none, arc.Entity(0), up.Entity(0), atUp)
+	d.constrain(core.ConstraintArcLineTangent, none, none, arc.Entity(0), down.Entity(0), !atUp)
+	d.dimension(core.ConstraintDiameter, 2*p.CrestRoundRadius, none, none, arc.Entity(0), none)
+	d.dimension(core.ConstraintPtLineDistance, math.Abs(centre[0]-d.l.baseR), arc.Entity(1), none, b.Entity(0), none)
 }
 
 // drawRoundRidge draws the ridge i, centred at height z, with a

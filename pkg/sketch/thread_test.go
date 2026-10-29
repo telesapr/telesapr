@@ -422,10 +422,6 @@ func TestThreadErrors(t *testing.T) {
 		{"too coarse a pitch", circle, func(o *sketch.ThreadOptions) { o.Spec.Pitch = 8 }},
 		{"a clearance that leaves nothing", circle, func(o *sketch.ThreadOptions) { o.Clearance = 4 }},
 		{"a clearance that isn't a number", circle, func(o *sketch.ThreadOptions) { o.Clearance = math.NaN() }},
-		{"a rounded buttress crest", circle, func(o *sketch.ThreadOptions) {
-			o.Spec = thread.Spec{Form: thread.FormButtress, Diameter: 8, Pitch: 1.5}
-			o.Crest = thread.CrestRounded
-		}},
 		// The part, 30 mm long, has a chord tolerance of 0.03 mm at 0.1%,
 		// coarser than a fifth of the root's 0.071 mm.
 		{"a rounded root at a coarse chord tolerance", circle, func(o *sketch.ThreadOptions) {

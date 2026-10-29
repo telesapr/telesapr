@@ -8,8 +8,8 @@ import (
 
 // buttressNut saves an S20x4 nut, a Ø40 disc 16 mm high with its hole
 // threaded through from the bottom up, its load flank turned back or
-// not, and returns its path.
-func buttressNut(t *testing.T, back bool) string {
+// not, its crest as named, and returns its path.
+func buttressNut(t *testing.T, back bool, crest string) string {
 	t.Helper()
 	nut := New()
 	disc := nut.Sketch.Circle(V(0, 0, 0), 20)
@@ -19,7 +19,7 @@ func buttressNut(t *testing.T, back bool) string {
 	hole := nut.Sketch.Circle(V(0, 0, 0), 10)
 	nut.Constrain.Coincident(hole.Center(), nut.Origin())
 	nut.Features.Thread(hole, ThreadOptions{Designation: "S20x4", Internal: true, Through: true, Length: 16,
-		Clearance: 0.1, LoadFlankBack: back})
+		Clearance: 0.1, LoadFlankBack: back, Crest: crest})
 	path := filepath.Join(t.TempDir(), "nut.tlspr")
 	if err := nut.File.Save(path); err != nil {
 		t.Fatal(err)
@@ -28,8 +28,8 @@ func buttressNut(t *testing.T, back bool) string {
 }
 
 // buttressRod is a Ø20 rod 48 mm long threaded S20x4 down from its
-// top, and the circle there that the thread is on.
-func buttressRod(d *Doc) Entity {
+// top, its crest as named, and the circle there that the thread is on.
+func buttressRod(d *Doc, crest string) Entity {
 	shank := d.Sketch.Circle(V(0, 0, 0), 10)
 	d.Constrain.Coincident(shank.Center(), d.Origin())
 	rod := d.Features.Extrude(48, "rod")
@@ -39,7 +39,7 @@ func buttressRod(d *Doc) Entity {
 			end = e
 		}
 	}
-	d.Features.Thread(end, ThreadOptions{Designation: "S20x4", Length: 48, Reverse: true, Through: true, Clearance: 0.1})
+	d.Features.Thread(end, ThreadOptions{Designation: "S20x4", Length: 48, Reverse: true, Through: true, Clearance: 0.1, Crest: crest})
 	return end
 }
 
@@ -67,8 +67,8 @@ func TestScrewFitsButtressThreads(t *testing.T) {
 		t.Skip("interferences of threads by their meshes, a few seconds")
 	}
 	d := New()
-	end := buttressRod(d)
-	g, err := d.Assembly.Link(buttressNut(t, false), "ahead")
+	end := buttressRod(d, "")
+	g, err := d.Assembly.Link(buttressNut(t, false, ""), "ahead")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,9 +77,30 @@ func TestScrewFitsButtressThreads(t *testing.T) {
 		d.Assembly.Screw(end, buttressLowest(g), 0)
 	})
 
-	d = New()
-	end = buttressRod(d)
-	if g, err = d.Assembly.Link(buttressNut(t, true), "back"); err != nil {
+	screwButtress(t, "")
+}
+
+// TestScrewFitsRoundedButtressThreads screws a buttress nut with a
+// rounded crest onto a rod whose crest is rounded too: the mate holds
+// the ridges by their arcs' centres, which lie off the ridges' middles,
+// and still puts the nut's ridges in the rod's grooves.
+func TestScrewFitsRoundedButtressThreads(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("interferences of threads by their meshes, a few seconds")
+	}
+	screwButtress(t, "rounded")
+}
+
+// screwButtress screws the nut, its load flank turned back, onto the
+// rod, both with the crest named, and requires it fits at every turn
+// and collides half a pitch off.
+func screwButtress(t *testing.T, crest string) {
+	t.Helper()
+	d := New()
+	end := buttressRod(d, crest)
+	g, err := d.Assembly.Link(buttressNut(t, true, crest), "back")
+	if err != nil {
 		t.Fatal(err)
 	}
 	link := g.AsLink()
