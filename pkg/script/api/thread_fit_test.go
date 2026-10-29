@@ -176,8 +176,8 @@ func TestScrewFitsFaceThreads(t *testing.T) {
 
 // A thread's class sets its clearance, which Options gives with the
 // class; a phase and a class edited in one step of undo come back on
-// undo and redo; a class of the other side and a phase with a run-out
-// are refused.
+// undo and redo; a class of the other side is refused, and a phase
+// with a run-out makes a sound thread that keeps both.
 func TestThreadClassAndPhase(t *testing.T) {
 	t.Parallel()
 	d := New()
@@ -222,7 +222,13 @@ func TestThreadClassAndPhase(t *testing.T) {
 	o.Class = "6H"
 	mustFail(t, "a nut's class", "class of an internal thread", func() { th.Edit(o) })
 	o.Class, o.RunOut = "", 2
-	mustFail(t, "a phase and a run-out", "can't be phased", func() { th.Edit(o) })
+	th.Edit(o)
+	if e := th.Options(); e.Phase != 90 || e.RunOut != 2 {
+		t.Errorf("a phase and a run-out: %+v", e)
+	}
+	if r := g.Analyze().Check(); !r.Sound() {
+		t.Errorf("the phased thread with a run-out is not sound: %s", r.String())
+	}
 }
 
 // A cosmetic thread keeps its class and phase as a record: the rod is

@@ -14,7 +14,8 @@
 // sinks into the part as a die leaves it. LevelStarts gives each start
 // of a thread of several its own ridge and helix from the circle's
 // plane, rather than one helix sweeping the ridges stacked a pitch
-// apart. Both are edited later as the rest of the thread is. The
+// apart. Both are edited later as the rest of the thread is, and a
+// Phase, which turns the thread about its axis, goes with either. The
 // script checks the solids, prints them, and saves threadrunout.tlspr
 // unless given "-".
 package main
@@ -51,6 +52,13 @@ func main() {
 	o.RunOut = 2
 	screw.Edit(o)
 	fmt.Printf("screw %s, run-out %.1f mm\n", screw.Options().Designation, screw.Options().RunOut)
+	check(screw.Finished())
+	// Turned a quarter turn about its axis: the ridges move along by a
+	// quarter of the pitch, and still fade out into the run-out.
+	o = screw.Options()
+	o.Phase = 90
+	screw.Edit(o)
+	fmt.Printf("screw phased %.0f°\n", screw.Options().Phase)
 	check(screw.Finished())
 
 	// A triple-start lead screw beside it: the three starts from its

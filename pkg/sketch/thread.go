@@ -113,6 +113,15 @@ func (o ThreadOptions) FitClearance() (float64, error) {
 // keeps its phase only for when it is modelled.
 func (o ThreadOptions) phased() bool { return o.Phase != 0 && !o.Cosmetic }
 
+// phaseShift is how far along the thread its phase moves the ridges,
+// within the room a phased thread leaves them (phaseRange).
+func (o ThreadOptions) phaseShift() float64 {
+	if !o.phased() {
+		return 0
+	}
+	return phaseRange(o.Spec.Lead()*o.Phase/360, o.Spec.Pitch)
+}
+
 // levelStarts tells whether the thread is made of a ridge and a helix
 // per start.
 func (o ThreadOptions) levelStarts() bool {
@@ -381,11 +390,6 @@ func (l *threadLayout) layRunOut(o ThreadOptions) error {
 	if o.Through {
 		return errors.New("a through thread has no shoulder to run out at")
 	}
-	// The run-out keeps the ridges' end off its cone's circle, which
-	// moving them would undo.
-	if o.phased() {
-		return errors.New("a thread with a run-out can't be phased")
-	}
 	if o.RunOut >= o.Length {
 		return fmt.Errorf("thread run-out must be less than its length, %.4g mm", o.Length)
 	}
@@ -420,11 +424,12 @@ const runOutClear = 0.1
 // help, since the end turns with it. The least move that clears every
 // flank of every start's end, up or down by at most twice runOutClear
 // of a pitch, is taken: the ridge still stops short of the shoulder,
-// and only the end of its last turn moves.
+// and only the end of its last turn moves. The end is where the phase
+// has moved the ridges to.
 func (l *threadLayout) clearOfRunOut(o ThreadOptions) float64 {
 	s := o.Spec
 	m := runOutClear * s.Pitch
-	end := l.ridgeBottom + l.baseW/2 + l.ridgeSweep
+	end := l.ridgeMiddle() + o.phaseShift() + l.ridgeSweep
 	var gaps []float64
 	for i := range s.NumStarts() {
 		z := end

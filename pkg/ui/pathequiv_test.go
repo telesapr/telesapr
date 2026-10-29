@@ -104,6 +104,19 @@ var pathEquivalences = map[string]pathCheck{
 	// A screw thread with level starts and a run-out, made through its
 	// screen, and by a script.
 	"thread_runout": nil,
+	// A phased screw thread with a run-out, made through its screen, and
+	// by a script; the phase is kept.
+	"thread_runout_phase": func(t *testing.T, ui, _ *sketch.Sketch) {
+		for i := range ui.Groups {
+			if o := ui.Groups[i].Thread; o.IsThread() {
+				if o.Phase != 120 || o.RunOut != 4 {
+					t.Errorf("the thread: phase %g, run-out %g", o.Phase, o.RunOut)
+				}
+				return
+			}
+		}
+		t.Error("no thread")
+	},
 	// A rectangle whose sides come from parameters, made through the
 	// parameters screen and the dimension editor, and by a script.
 	"parameters": nil,

@@ -44,7 +44,7 @@ takes:
   then follows;
 - **length** has the **phase** beside it, in degrees: the thread turned about its axis, its
   ridges moved along by that part of the lead (and a pitch shorter, to leave them the room). It
-  fits a thread to another by hand; a thread with a run-out takes none;
+  fits a thread to another by hand, and goes with a run-out too;
 - **clearance**, in the document's unit, which moves the thread away from its mate, and beside it the **class**, whose
   **[choose]** lists the tolerance classes of the thread's form and side: 6g, 6h, 6f, 6e, 4h, 8g
   for an ISO metric screw and 6H, 4H, 5H, 7H, 6G for its nut (ISO 965-1); 1A, 2A, 3A and 1B, 2B,
@@ -251,9 +251,10 @@ ridges.
 
 Where a ridge runs into the run-out's cone, its flanks cross the cone at the thread's helix
 angle. Where a flank of the ridge's end would meet the circle at which the cone begins, the end
-is moved along the axis by up to a fifth of a pitch, off it. The run-outs of the sweep
-(`TestThreadRunOutSweep`: ten threads, screws and nuts from M3 to Tr20, three lengths each and
-five run-outs, 150 in all) come out sound. That is what is tested, not a promise for every
+is moved along the axis by up to a fifth of a pitch, off it, from where the phase has put it. The
+run-outs of the sweeps (`TestThreadRunOutSweep`: ten threads, screws and nuts from M3 to Tr20,
+three lengths each and five run-outs, 150 in all; `TestThreadPhasedRunOutSweep`: the ten at six
+phases and three run-outs, 180) come out sound. That is what is tested, not a promise for every
 thread: should one not come out sound, the thread tries other planes for its ridges, and the
 window says the solid isn't sound if none does, as `Group.Analyze().Check()` does from a script.
 
