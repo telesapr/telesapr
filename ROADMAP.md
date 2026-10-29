@@ -185,7 +185,7 @@ solids) at 59 of 59 sound since 2026-10-22. Chamfers: `TestChamferOnOtherSolids`
 |---|---|---|
 | A run-off of a blend that takes material away; both ends running off where their cuts share a patch; a run-off onto a curved face only just past its edge, or with a curved end face; a chamfer's end running off both its faces | refused, naming the place | Run-offs onto a curved face are made since 2026-10-29 (below), and chamfers ending on a curved face the cone goes on past since 2026-10-29 (rd5, below). Both ends running off onto flat faces are made where the fillet is long enough that their cuts don't share a patch: a plate with a gabled top on a rod, its side's edges with the ends 0.58 high, fillets and chamfers of 1 to 2 run off at both ends, sound, on plates 2 to 20 long (probed 2026-10-29, not kept as a test); shorter ones are refused as "the fillet runs off the face past the next one too". For the rest the setback patch is the means: where the ball runs off a face, cut the fillet as a setback is cut and fill the hole between it, the next face's fillet (or the face) and the faces round. A run-off taking material away was never reached by any test case (a slot cut from the cone never got that far; a band raised off the cone's base, its chamfer's end on the band's bottom, is no run-off). "Only just runs off" is a sliver of the next face thinner than the chord tolerance; snapping p1 to w as on a flat face would move the curves' ends by up to the chord tolerance, past an edge's |
 | A rib rounded all over, foot first | the top first is made (below), all 24 cases sound since 2026-10-29 (below) | Foot first, the top's edge ends on the foot's fillet and the grown top. Tried 2026-10-29, after run-offs onto curved faces were made: on a rib whose foot is filled, the edge across the back rounds alone, sound; the uprights at the back are refused as fillets meeting above an edge left sharp; the slope's edges are refused before their ends, the ball leaving the side face for the foot's fillet (three fillets meeting at a vertex: a vertex blend, not a run-off). Not needed while the stages take the top first. The blend patch of 2026-10-29 (two fillets above an edge left sharp, flat faces) is not that: there the three fillets meet on curved faces |
-| Convex meeting concave at one vertex beyond what the stages round, fillets or chamfers | refused | Chamfer corners where every edge is chamfered are made since 2026-10-28 (`chamferCornerAt`: OpenCASCADE's pivot and square cuts, plane or bilinear patch), and so are two chamfers of any distances above a third edge left sharp (`chamferPairAt`). Since 2026-10-29 a chamfer's edge takes a distance and a second distance of its own (`EdgeRadii`, `EdgeSeconds`, `pkg/sketch/chamfer_edge_distances.go`), from its screen and from scripts. Since 2026-10-29 (below) a corner of three of both kinds, every edge chamfered, takes OpenCASCADE's pivot too, and a corner of four or more with some edges sharp is cut by the chamfers' planes. Since 2026-10-29 (below) a convex and a concave chamfer with the third edge sharp meet in a three-sided face, and a convex and a concave fillet above a third edge left sharp are blended by one patch, as OpenCASCADE's are. Since 2026-10-29 (below) that blend is made whichever radius is the larger, fillets at corners of three of both kinds whose two of one kind differ in radius are made, the radius varying along the arc between them, and fillets at corners of four or more of both kinds, every edge rounded, are set back. Left: at a corner of four or more of both kinds, fillets with an edge left sharp (OpenCASCADE makes the saddle's with one vertex blend whatever is picked) and chamfers (OpenCASCADE: one B-spline patch; our cone cut takes convex cones only, and the setback's patches are tangent to fillets, not to a chamfer's plane) |
+| Convex meeting concave at one vertex beyond what the stages round, fillets or chamfers | refused | Chamfer corners where every edge is chamfered are made since 2026-10-28 (`chamferCornerAt`: OpenCASCADE's pivot and square cuts, plane or bilinear patch), and so are two chamfers of any distances above a third edge left sharp (`chamferPairAt`). Since 2026-10-29 a chamfer's edge takes a distance and a second distance of its own (`EdgeRadii`, `EdgeSeconds`, `pkg/sketch/chamfer_edge_distances.go`), from its screen and from scripts. Since 2026-10-29 (below) a corner of three of both kinds, every edge chamfered, takes OpenCASCADE's pivot too, and a corner of four or more with some edges sharp is cut by the chamfers' planes. Since 2026-10-29 (below) a convex and a concave chamfer with the third edge sharp meet in a three-sided face, and a convex and a concave fillet above a third edge left sharp are blended by one patch, as OpenCASCADE's are. Since 2026-10-29 (below) that blend is made whichever radius is the larger, fillets at corners of three of both kinds whose two of one kind differ in radius are made, the radius varying along the arc between them, and fillets at corners of four or more of both kinds, every edge rounded, are set back. Since 2026-10-29 (below) two fillets of unlike radii above a third edge left sharp, of either kind, are made. Left: at a corner of four or more of both kinds, fillets with an edge left sharp (OpenCASCADE makes the saddle's with one vertex blend whatever is picked; a setback with a side folded to the sharp edge's end tried 2026-10-29, below) and chamfers (OpenCASCADE: one B-spline patch; our cone cut takes convex cones only, and the setback's patches are tangent to fillets, not to a chamfer's plane; not begun) |
 | Slot chamfer at 3 | see K4 | The teapot handle and the run-off chamfers' crossings, listed here before, are sound since K4's mender |
 
 Done 2026-10-29: the vase's foot fillet, listed as 2.8% short of OpenCASCADE, is right: its surface
@@ -239,7 +239,41 @@ four or more edges of both kinds, all rounded, the middle of a saddle where two 
 meet: the setback takes edges of both kinds (`setbackCornerAt`), each face's tangent lines lying in it
 whichever way its edges go; within 0.05 r³ of OpenCASCADE's volume on 15 saddles (its one patch against
 our four; `TestFilletSaddleSweep`, 36, none failing). Not open to the ledge: its two convex edges
-first, which are two fillets of unlike radii above an edge left sharp, a corner nothing here makes.
+first, which are two fillets of unlike radii above an edge left sharp, a corner nothing here made
+until the next paragraph's.
+
+Done 2026-10-29 (rd6): two fillets of unlike radii, both convex or both concave, above a third edge
+left sharp: a box's two top edges over its upright, the ledge's two top edges over its concave
+upright, a rib's two foot edges under its convex upright, refused before as "fillets of radius 1
+and 2 meet here above an edge left sharp" (`pkg/topo/fillet_radii_pair.go`, tried where the stages
+and the setback refuse). The cylinders, tangent to the face they share, cross where their tangent
+lines on it do and meet along a quartic with its double point there; as at an uneven mitre, one
+strip reaches its side's tangent line on the other's cylinder before the third edge and ends along
+the quartic, the other goes on past it, cut by the first's side face along a conic, to the third
+edge. That is OpenCASCADE's corner, two cylinders and no patch. The quartic is followed by the angle
+round the first cylinder, the crossing with the second the root that holds the far end, as quintic
+Hermite pieces within 1e-7 mm (`cylindersMeet`): cubics took 30 pieces, slivers the coarse meshes
+crossed on; at the double point the discriminant's rounding moves the crossing by its square root,
+so the point there is the tangent lines' crossing and the differences are taken a thousandth of the
+way wide. Against makeFillet (`scripts/fillet-radii-pair-fixtures.py`, `TestFilletRadiiPairOracle`),
+49 boxes, ledges of 60 to 120 degrees and ribs at radii 0.5 to 3: its count of faces, its volume
+within 0.014 mm³ at chord 0.0005% (within 0.004 at 0.0001% on the five furthest off; at 0.002% the
+meshes' chords miss up to 0.054 at radius 3); `TestFilletRadiiPairSweep`, 360, none failing. Where
+the larger fillet is too wide for the face at its end the corner is refused as before, by name.
+
+Tried 2026-10-29 (rd6) and set aside: three of a saddle's four edges rounded, the fourth left sharp,
+as a setback whose hole has a side folded to a point P on the sharp edge, past where the fillets'
+tangent lines cross it, each of its faces taking a curve from its fillet to P. With both curves
+reaching P along the edge, they meet in a cusp and the patches beside it turn over: the row beside
+the fold must leave the first curve's end into the hole, and tangent to that face it can only go
+out over the edge, so the normal turns the wrong way round it whatever that row is drawn to. With
+one curve along the edge and the other leaving P across its face (along the chord, square to the
+edge, or between), as a blend's does, every layout still turned over along the curve reaching P
+along the edge (the patches' normal there the face's reversed), or missed tangency where a rung of
+the ladder starts at P. A blend (fillet_blend.go) has one fillet run its tangent line up to the
+sharp edge, so the fold is between a face's curve and that fillet's cut; the saddle's would need the
+same, which leaves a hole of seven sides, one more patch than a ladder takes, and is the next thing
+to try.
 
 
 Done 2026-10-29: the mitres of two radii left (`pkg/topo/rollingkink.go`, `TestFilletChainsRadii`,

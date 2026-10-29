@@ -90,19 +90,24 @@ func TestFilletStages(t *testing.T) {
 }
 
 // What neither the stages nor a setback rounds is refused, saying why:
-// two top edges of different radii mitred over an upright edge left
-// sharp, where the blend would need a crease. A top ring larger than
-// the uprights it would go round is set back (TestFilletSetback).
+// three of a saddle's four edges at its corner, the fourth left sharp,
+// which would need a vertex blend. Two top edges of different radii
+// over an upright left sharp are made since 2026-10-29
+// (TestFilletRadiiPairOracle); a top ring larger than the uprights it
+// would go round is set back (TestFilletSetback).
 func TestFilletStagesRefused(t *testing.T) {
 	t.Parallel()
-	picks := []topo.FilletPick{{A: v(0, 0, 30), B: v(10, 0, 30), R: 2}, {A: v(10, 0, 30), B: v(10, 20, 30)}}
-	err := topo.FilletPicks(box(srf.Tolerance{}), picks, 1, 1<<30, false)
+	sh, picks, err := mixedSaddle(0.5, 0.5, [4]float64{1, 1, 1, 1}, srf.Tolerance{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = topo.FilletPicks(sh, picks[1:], 1, 1<<30, false)
 	if err == nil || !strings.Contains(err.Error(), "left sharp") {
-		t.Errorf("a mitre of two radii: %v", err)
+		t.Errorf("a saddle with an edge left sharp: %v", err)
 	}
 	var fx *topo.FilletError
-	if !errors.As(err, &fx) || fx.At.Z != 30 {
-		t.Errorf("the refusal is not marked at the top: %v", err)
+	if !errors.As(err, &fx) || !fx.At.Equals(v(10, 10, 10)) {
+		t.Errorf("the refusal is not marked at the corner: %v", err)
 	}
 }
 

@@ -692,7 +692,8 @@ func TestFilletEdgeRadii(t *testing.T) {
 	if f.AsFillet().EdgeRadius(2) != 2 {
 		t.Errorf("edge 2 at %g after its own radius is taken off", f.AsFillet().EdgeRadius(2))
 	}
-	// Two that meet must have one radius.
+	// Two that meet above an edge left sharp may have radii of their own:
+	// the smaller ends on the larger's cylinder (topo.radiiPairAt).
 	d = api.New()
 	ex = block(d, 0, 0, 20, 10, 10)
 	g := d.Features.Fillet([]api.Entity{
@@ -700,7 +701,7 @@ func TestFilletEdgeRadii(t *testing.T) {
 		lineAlong(t, ex, api.V(0, 0, 0), api.V(0, 0, 10)),
 	}, 1, "")
 	g.AsFillet().SetEdgeRadius(1, 2)
-	if p := g.Problem(); !strings.Contains(p, "radius 1 and 2 meet") {
+	if p := g.Problem(); p != "" {
 		t.Errorf("a corner of two radii: %q", p)
 	}
 }
