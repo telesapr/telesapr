@@ -138,3 +138,66 @@ func TestLoftGuideMisuse(t *testing.T) {
 		}()
 	}
 }
+
+// A loft held by a guide and square to the profile between its ends at
+// once: circles of radius 10 at z 0, 20 and 40, a guide of two cubics
+// bowing out between them, kinked where it passes the middle one. The
+// loft keeps its sections' size, so its volume is the cylinder's
+// (Cavalieri); it reaches out to the guide; and it is the same after
+// saving and loading.
+func TestLoftGuideHeldSquare(t *testing.T) {
+	t.Parallel()
+	d := New()
+	d.Edit.SetChordTolerance(0.005)
+	bottom := d.Features.SketchIn(d.Workplane("XY"), "bottom")
+	d.Sketch.Circle(V(0, 0, 0), 10)
+	d.Features.Sketch3D("guide")
+	guide := []Entity{
+		d.Sketch.Cubic(V(10, 0, 0), V(14, 0, 7), V(14, 0, 13), V(10, 0, 20)),
+		d.Sketch.Cubic(V(10, 0, 20), V(14, 0, 27), V(14, 0, 33), V(10, 0, 40)),
+	}
+	d.Features.Sketch3D("")
+	middle := d.Features.SketchAt(d.Sketch.Point(V(0, 0, 20)), V(1, 0, 0), V(0, 1, 0), "middle")
+	d.Sketch.Circle(V(0, 0, 20), 10)
+	d.Features.Sketch3D("")
+	top := d.Features.SketchAt(d.Sketch.Point(V(0, 0, 40)), V(1, 0, 0), V(0, 1, 0), "top")
+	d.Sketch.Circle(V(0, 0, 40), 10)
+	g := d.Features.LoftThrough([]Group{bottom, middle, top}, "duct")
+	loft := g.AsLoft()
+	loft.SetGuides(guide)
+	if p := g.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	free := g.Analyze().Check()
+	loft.SetProfileTangency(middle, 0.5)
+	if p := g.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	if got := loft.ProfileTangency(middle); got != 0.5 {
+		t.Errorf("tangency %g, want 0.5", got)
+	}
+	r := g.Analyze().Check()
+	want := math.Pi * 100 * 40
+	if !r.Sound() || math.Abs(r.Volume-want) > 3e-3*want {
+		t.Fatalf("guided and held square: %s, want volume %g", r.Summary(), want)
+	}
+	if math.Abs(r.Volume-free.Volume) < 1e-9 {
+		t.Error("holding it square changed nothing")
+	}
+	if _, hi := g.Analyze().Bounds(); hi.X < 12.9 {
+		t.Errorf("the loft reaches only x = %g", hi.X)
+	}
+	path := filepath.Join(t.TempDir(), "duct.tlspr")
+	if err := d.File.Save(path); err != nil {
+		t.Fatal(err)
+	}
+	e := New()
+	if err := e.File.Load(path); err != nil {
+		t.Fatal(err)
+	}
+	e.Edit.SetChordTolerance(0.005)
+	again := e.Group("duct")
+	if r2 := again.Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-r.Volume) > 1e-6*r.Volume {
+		t.Errorf("loaded: %s, saved volume %g", r2.Summary(), r.Volume)
+	}
+}

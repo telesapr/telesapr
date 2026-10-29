@@ -132,8 +132,8 @@ func TestClosedLoftRefusals(t *testing.T) {
 
 // TestClosedLoftSweep closes rings of circles, squares and blobs, four
 // to twelve of them, of one size or swelling and narrowing by turns,
-// free, held square to every third profile or guided over their tops,
-// and
+// free, held square to every third profile, guided over their tops or
+// both, and
 // lofts through circles stacked aside held square to the profiles
 // between their ends, and requires sound solids; a torus of eight or
 // more and a stack of one circle moved have the volumes Pappus and
@@ -149,7 +149,7 @@ func TestClosedLoftSweep(t *testing.T) {
 	grid := sweep.Grid{
 		Parallel: true,
 		Axes: []sweep.Axis{
-			sweep.Strings("kind", "ring", "held ring", "guided ring", "middle"),
+			sweep.Strings("kind", "ring", "held ring", "guided ring", "guided held ring", "middle"),
 			sweep.Strings("profile", "circle", "square", "blob"),
 			sweep.Floats("profiles", 4, 5, 8, 12),
 			sweep.Floats("swell", 0, 0.4),
@@ -179,7 +179,7 @@ func TestClosedLoftSweep(t *testing.T) {
 				held[j] = 0.6 + 0.2*float64(j%2)
 			}
 			sh, err = topo.MakeClosedLoftHeld(ringProfiles(n, 25, func(i int) []srf.SBezier { return shape(i, 0) }), held, col, 9, tol)
-		case "guided ring":
+		case "guided ring", "guided held ring":
 			// Circles only, and an even count round, for which the guide
 			// over their tops, rising and falling with them, closes.
 			if p.String("profile") != "circle" || n%2 == 1 {
@@ -189,7 +189,16 @@ func TestClosedLoftSweep(t *testing.T) {
 			guide := ringGuide(25, 4, func(float64) float64 { return math.Pi / 2 }, func(a float64) float64 {
 				return 4*swell*(1-math.Cos(float64(n)*a/2))/2 + 1.2*math.Pow(math.Sin(float64(n)*a/2), 2)
 			})
-			sh, err = topo.MakeClosedGuidedLoft(ringProfiles(n, 25, func(i int) []srf.SBezier { return shape(i, 0) }), []topo.LoftGuide{guide}, col, 9, tol)
+			loops := ringProfiles(n, 25, func(i int) []srf.SBezier { return shape(i, 0) })
+			if p.String("kind") == "guided ring" {
+				sh, err = topo.MakeClosedGuidedLoft(loops, []topo.LoftGuide{guide}, col, 9, tol)
+				break
+			}
+			held := make([]float64, n)
+			for j := 0; j < n; j += 3 {
+				held[j] = 0.6 + 0.2*float64(j%2)
+			}
+			sh, err = topo.MakeClosedGuidedLoftHeld(loops, held, []topo.LoftGuide{guide}, col, 9, tol)
 		default:
 			var loops [][]srf.SBezier
 			for i := range n {

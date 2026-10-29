@@ -252,6 +252,14 @@ var pathEquivalences = map[string]pathCheck{
 			t.Errorf("the loft: closed %v, tangencies %v, problem %q", g.LoftClosed, g.LoftThroughTangency, g.Problem.Msg)
 		}
 	},
+	// A closed loft held by its guide and square to a profile at once,
+	// the guide picked with the mouse and the profile held on its screen,
+	// and by a script.
+	"loft_ring_guide_held": func(t *testing.T, ui, _ *sketch.Sketch) {
+		if g := ui.Group(ui.Active); g.Type != sketch.GroupLoft || !g.LoftClosed || len(g.Edges) != 6 || !slices.Equal(g.LoftThroughTangency, []float64{0, 1, 0, 0}) || g.Problem.Msg != "" {
+			t.Errorf("the loft: closed %v, guides %v, tangencies %v, problem %q", g.LoftClosed, g.Edges, g.LoftThroughTangency, g.Problem.Msg)
+		}
+	},
 	// A smooth loft held square to a profile between its ends on its
 	// screen, and by a script.
 	"loft_profile_tangency": func(t *testing.T, ui, _ *sketch.Sketch) {

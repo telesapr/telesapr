@@ -34,6 +34,7 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 - `telesapr-cli export-section` writes the section of the solid by the plane `--plane` names, `z=15` for a plane square to an axis or six numbers for a point and a normal, or by the workplane active when the model was saved, in any 2d vector format.
 - A closed loft can be held square to its profiles between the first and the last, as an open loft is: the ring runs straight through each held profile. Before, a closed loft with a profile held square was refused.
 - A closed loft can be held by guide curves, each going round the ring through every profile and closing on itself: Features > Guide Loft by Selected Curves on a closed loft, or `LoftGroup.SetGuides`. Before, a closed loft with guides was refused.
+- A loft, open or closed, can be held by guide curves and square to its profiles between the ends at once: the guides move the sections of the loft held square, which still leaves each held profile square to it. Before, a loft held both ways was refused ("a loft held by guides can't also be held square to a profile between its ends").
 
 ### Changed
 - A datum on a face or an edge of the solid follows its face as the model changes even when its group comes after the active one: a mate, or a model linking the part, finds it where the face is. Before, it stayed where it was until its group was active or the model was saved, which the datums screen noted under its row.

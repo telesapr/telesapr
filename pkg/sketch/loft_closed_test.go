@@ -121,8 +121,9 @@ func ringGuide(d *api.Doc, n int, big, r, lift float64) []api.Entity {
 // A closed loft held by a guide going round the ring over the circles'
 // tops, rising between them: sound, one face, as high as the guide
 // between the profiles, its volume the free ring's within 2% (the
-// sections are moved up, not out). Setting the guide is one undo step,
-// and saved; an open guide on a closed loft is the loft's problem.
+// sections are moved up, not out), and so held square to a profile too.
+// Setting the guide, or the tangency, is one undo step, and saved; an
+// open guide on a closed loft is the loft's problem.
 func TestLoftClosedGuided(t *testing.T) {
 	t.Parallel()
 	d := api.New()
@@ -154,10 +155,13 @@ func TestLoftClosedGuided(t *testing.T) {
 		t.Errorf("an open guide on a ring: %q", p)
 	}
 	l.AsLoft().SetGuides(guide)
+	step(d)
+	held := saved(t, d)
 	l.AsLoft().SetProfileTangency(ps[2], 1)
-	if p := l.Problem(); !strings.Contains(p, "guides") {
-		t.Errorf("guided and held square: %q", p)
+	if r := l.Analyze().Check(); l.Problem() != "" || !r.Sound() || math.Abs(r.Volume-free) > 0.02*free {
+		t.Errorf("guided and held square: %q, %s", l.Problem(), r.String())
 	}
+	undoRedo(t, d, held)
 	l.AsLoft().SetProfileTangency(ps[2], 0)
 	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
 	back := roundTrip(t, d)
