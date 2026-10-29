@@ -33,9 +33,10 @@ type profilePiece struct {
 	outward bool // an arc whose material lies outside its circle
 }
 
-// shellPrism hollows sh, a prism along axis with caps at levels lo and
-// hi, open where opened. ok is false when sh is no such prism.
-func shellPrism(t *Topology, sh *srf.SShell, opened map[int]bool, thick float64, origin uint32) (out *srf.SShell, ok bool, err error) {
+// prismInside is the inside of sh, of topology t, a prism along axis
+// with caps at levels lo and hi, each face moved as mode says; a side
+// may only be a wall. ok is false when sh is no such prism.
+func prismInside(t *Topology, sh *srf.SShell, mode []faceMode, thick float64, origin uint32) (inner *srf.SShell, ok bool, err error) {
 	// The direction: that of a curved side's extrusion.
 	var axis geom.Vector
 	for f := range t.Faces {
@@ -65,8 +66,8 @@ func shellPrism(t *Topology, sh *srf.SShell, opened map[int]bool, thick float64,
 				return nil, true, shellErr(t.faceAnchor(f), "a curved face of the solid runs across its sides; "+
 					"a shell hollows prisms whose sides all run one way")
 			}
-			if opened[f] {
-				return nil, true, shellErr(t.faceAnchor(f), "a shell of a solid with curved sides is open only at its ends")
+			if err := prismSide(t, f, mode[f]); err != nil {
+				return nil, true, err
 			}
 			continue
 		}
@@ -76,33 +77,29 @@ func shellPrism(t *Topology, sh *srf.SShell, opened map[int]bool, thick float64,
 			h := t.faceAnchor(f).Dot(axis)
 			lo, hi = math.Min(lo, h), math.Max(hi, h)
 		case c < 1e-9:
-			if opened[f] {
-				return nil, true, shellErr(t.faceAnchor(f), "a shell of a solid with curved sides is open only at its ends")
+			if err := prismSide(t, f, mode[f]); err != nil {
+				return nil, true, err
 			}
 		default:
 			return nil, true, shellErr(t.faceAnchor(f), "a flat face of the solid leans; a shell hollows prisms whose sides all run one way")
 		}
 	}
-	openLo, openHi := false, false
+	// Each end's mode: the most open of its faces'.
+	var lowMode, highMode faceMode
 	var bottom []int
 	for _, f := range caps {
 		switch h := t.faceAnchor(f).Dot(axis); {
 		case math.Abs(h-lo) < geom.LengthEps:
 			bottom = append(bottom, f)
-			openLo = openLo || opened[f]
+			lowMode = max(lowMode, mode[f])
 		case math.Abs(h-hi) < geom.LengthEps:
-			openHi = openHi || opened[f]
+			highMode = max(highMode, mode[f])
 		default:
 			return nil, true, shellErr(t.faceAnchor(f), "the solid's ends lie on more than two levels; a shell hollows prisms")
 		}
 	}
-	z0, z1 := lo+thick, hi-thick
-	if openLo {
-		z0 = lo
-	}
-	if openHi {
-		z1 = hi
-	}
+	moved := map[faceMode]float64{keptFace: thick, openFace: 0, buriedFace: -thick}
+	z0, z1 := lo+moved[lowMode], hi-moved[highMode]
 	if z1-z0 <= geom.LengthEps {
 		return nil, true, shellErr(t.faceAnchor(caps[0]), "a thickness of %g makes the walls meet, closing up the inside", thick)
 	}
@@ -128,7 +125,7 @@ func shellPrism(t *Topology, sh *srf.SShell, opened map[int]bool, thick float64,
 	if !allClosed || !allCoplanar || len(sets.Sets) == 0 {
 		return nil, true, errors.New("the inside's outline, offset from the solid's end, does not close")
 	}
-	inner := &srf.SShell{Tol: sh.Tol}
+	inner = &srf.SShell{Tol: sh.Tol}
 	color := t.Surface(bottom[0]).Color
 	for i := range sets.Sets {
 		inner.MakeFromExtrusionOf(&sets.Sets[i], axis.ScaledBy(z0-lo), axis.ScaledBy(z1-lo), color)
@@ -136,12 +133,20 @@ func shellPrism(t *Topology, sh *srf.SShell, opened map[int]bool, thick float64,
 	for i := range inner.Surface {
 		inner.Surface[i].Origin = origin + uint32(i)
 	}
-	out = &srf.SShell{Tol: sh.Tol}
-	out.MakeFromDifferenceOf(sh, inner)
-	if out.BooleanFailed {
-		return nil, true, errors.New("the Boolean that takes the inside away failed")
+	return inner, true, nil
+}
+
+// prismSide is why a prism's side f can't be moved as mode says: only a
+// wall moves in square to itself.
+func prismSide(t *Topology, f int, mode faceMode) error {
+	switch mode {
+	case openFace:
+		return shellErr(t.faceAnchor(f), "a shell of a solid with curved sides is open only at its ends")
+	case buriedFace:
+		return shellErr(t.faceAnchor(f), "a side of a prism lies inside another solid it is joined to; "+
+			"a shell hollows a prism joined to others only where its ends do")
 	}
-	return out, true, nil
+	return nil
 }
 
 // offsetLoop offsets loop l of the flat face f, of normal n, into the

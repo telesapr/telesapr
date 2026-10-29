@@ -95,16 +95,18 @@ func (sk *Sketch) SetShellFaces(hg core.HGroup, faces []srf.FaceID) error {
 }
 
 // solidMade is how a solid was made, when a shell can hollow it by
-// that: a revolution, or a drafted extrusion. Both nil when neither.
+// that: a revolution, a drafted extrusion, or a union of parts a shell
+// hollows alone. All nil when none.
 type solidMade struct {
 	rev   *topo.Revolution
 	draft *topo.DraftedSolid
+	parts []topo.ShellPart
 }
 
 // madeAt is how the solid at group g was made (revolutionAt,
-// draftedAt).
+// draftedAt, unionPartsAt).
 func (sk *Sketch) madeAt(g *Group) solidMade {
-	return solidMade{rev: sk.revolutionAt(g), draft: sk.draftedAt(g)}
+	return solidMade{rev: sk.revolutionAt(g), draft: sk.draftedAt(g), parts: sk.unionPartsAt(g)}
 }
 
 // shellOf hollows sh, taking away the faces with identities faces. A
@@ -139,6 +141,9 @@ func shellOf(sh *srf.SShell, faces []srf.FaceID, thick float64, origin uint32, m
 			return out, derr
 		}
 	}
+	if made.rev == nil && made.draft == nil && len(made.parts) > 1 {
+		return topo.ShellJoined(sh, made.parts, open, thick, origin)
+	}
 	return nil, err
 }
 
@@ -161,6 +166,12 @@ func (sk *Sketch) oneRevolutionAt(g *Group) *topo.Revolution {
 	if g == nil || (g.Type != GroupLathe && g.Type != GroupRevolve) {
 		return nil
 	}
+	return sk.revolutionOf(g)
+}
+
+// revolutionOf is how the lathe or revolve g turns its sketch, or nil
+// when the sketch has no loops.
+func (sk *Sketch) revolutionOf(g *Group) *topo.Revolution {
 	src := sk.Group(g.OpA)
 	if src == nil || len(src.BezierLoops.Sets) == 0 {
 		return nil

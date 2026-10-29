@@ -175,8 +175,10 @@ func TestShellJoinedLathes(t *testing.T) {
 	undoRedo(t, d, before)
 }
 
-// A lathe after which another solid is added is no longer one
-// revolution: its shell is refused as a curved solid's.
+// A lathe out of which a block is cut is no longer one revolution, nor
+// a union of parts a shell hollows alone: its shell is refused as a
+// curved solid's. (A block added to it is hollowed with it,
+// shell_joined_test.go.)
 func TestShellLatheAndMore(t *testing.T) {
 	t.Parallel()
 	d := api.New()
@@ -184,14 +186,15 @@ func TestShellLatheAndMore(t *testing.T) {
 	axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 12))
 	axis.SetConstruction(true)
 	d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(6, 0, 8), api.V(0, 0, 8))
-	d.Features.Lathe(axis, "")
+	lathe := d.Features.Lathe(axis, "")
 	d.Features.SketchIn(d.Workplane("XY"), "")
-	more := block(d, 20, 0, 30, 10, 5)
+	cut := block(d, 2, -2, 4, 2, 5)
+	cut.SetCombine(api.Difference)
 	defer func() {
 		err, ok := recover().(error)
 		if !ok || !strings.Contains(err.Error(), "curved") {
 			t.Errorf("%v, want an error saying the solid is curved", err)
 		}
 	}()
-	d.Features.ShellSolid([]api.SolidFace{more.Solid().FaceAt(api.V(25, 5, 5))}, 1, "")
+	d.Features.ShellSolid([]api.SolidFace{lathe.Solid().FaceAt(api.V(1, 1, 8))}, 1, "")
 }

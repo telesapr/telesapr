@@ -54,32 +54,74 @@ func ShellRevolved(sh *srf.SShell, rev Revolution, open []int, thick float64, or
 	if rev.Profile == nil || len(rev.Profile.Sets) == 0 {
 		return nil, ErrNotRevolution
 	}
-	t, err := Build(sh)
+	t, opened, err := shellFaces(sh, open)
 	if err != nil {
 		return nil, err
 	}
-	if probs := t.Validate(); len(probs) > 0 {
-		return nil, shellErr(probs[0].At, "the solid is not closed: %s", probs[0].Msg)
-	}
-	opened := map[int]bool{}
-	for _, f := range open {
-		if f < 0 || f >= len(t.Faces) {
-			return nil, fmt.Errorf("there is no face %d of the solid", f)
+	seen := map[int]bool{}
+	modeAt := func(p geom.Vector) (faceMode, bool) {
+		f, d := t.FaceAt(p)
+		if f < 0 || d > 100*geom.LengthEps {
+			return keptFace, false
 		}
-		opened[f] = true
+		seen[f] = true
+		if opened[f] {
+			return openFace, true
+		}
+		return keptFace, true
 	}
-	if len(opened) == 0 {
-		return nil, errors.New("there are no faces to take away: a shell is open where faces are taken away")
+	// The faces no piece turned into are a revolve's ends.
+	ends := func(radial geom.Vector) ([2]faceMode, error) {
+		var mode [2]faceMode
+		for f := range t.Faces {
+			if seen[f] {
+				continue
+			}
+			at, ok := revolveEnd(t, f, rev, radial)
+			if !ok {
+				return mode, ErrNotRevolution
+			}
+			if opened[f] {
+				mode[at] = openFace
+			}
+		}
+		return mode, nil
 	}
-	if len(opened) == len(t.Faces) {
-		return nil, errors.New("every face is taken away, which leaves no wall")
+	inner, err := revolvedInside(rev, modeAt, ends, thick, sh.Tol, sh.Surface[0].Color)
+	if err != nil {
+		return nil, err
 	}
+	for i := range inner.Surface {
+		inner.Surface[i].Origin = origin + uint32(i)
+	}
+	out := &srf.SShell{Tol: sh.Tol}
+	out.MakeFromDifferenceOf(sh, inner)
+	if out.BooleanFailed {
+		again, err := revolvedAgain(sh, t, rev)
+		if err != nil {
+			return nil, err
+		}
+		out = &srf.SShell{Tol: sh.Tol}
+		out.MakeFromDifferenceOf(again, inner)
+	}
+	if out.BooleanFailed {
+		return nil, errors.New("the Boolean that takes the inside away failed")
+	}
+	return out, nil
+}
+
+// revolvedInside is the inside of rev, walls thick: its profile offset
+// as modeAt says of each piece's faces, by the points of them it is
+// asked about (false where there is no face, which is no revolution),
+// turned, and cut back from the ends that ends says are kept, given the
+// direction from the axis to the profile.
+func revolvedInside(rev Revolution, modeAt func(geom.Vector) (faceMode, bool), ends func(radial geom.Vector) ([2]faceMode, error),
+	thick float64, tol srf.Tolerance, color core.RGBA) (*srf.SShell, error) {
 	axis := rev.Axis.WithMagnitude(1)
 	n := rev.Profile.Sets[0].Normal.WithMagnitude(1)
 	if math.Abs(n.Dot(axis)) > 1e-9 {
 		return nil, ErrNotRevolution
 	}
-
 	// The profile's pieces, loop by loop, and which faces each turns
 	// into.
 	var loops [][]profilePiece
@@ -125,7 +167,6 @@ func ShellRevolved(sh *srf.SShell, rev Revolution, open []int, thick float64, or
 			probes = append(probes, rev.Start+(float64(k)+0.5)*wedge)
 		}
 	}
-	seen := map[int]bool{}
 	ds := make([][]float64, len(loops))
 	for li, ps := range loops {
 		ds[li] = make([]float64, len(ps))
@@ -133,17 +174,26 @@ func ShellRevolved(sh *srf.SShell, rev Revolution, open []int, thick float64, or
 			if onAxis[li][i] {
 				continue
 			}
-			ds[li][i] = thick
+			// A piece is taken away where any of its faces is, a wall
+			// where any is one, and lies inside another solid where none
+			// is either: moved out, it meets that solid's inside.
+			ds[li][i] = -thick
 			m := p.mid
+			wall := false
 			for _, a := range probes {
-				f, d := t.FaceAt(m.RotatedAbout(rev.Pt, axis, a))
-				if f < 0 || d > 100*geom.LengthEps {
+				mode, ok := modeAt(m.RotatedAbout(rev.Pt, axis, a))
+				if !ok {
 					return nil, ErrNotRevolution
 				}
-				seen[f] = true
-				if opened[f] {
+				switch mode {
+				case openFace:
 					ds[li][i] = 0
+				case keptFace:
+					wall = true
 				}
+			}
+			if wall && ds[li][i] != 0 {
+				ds[li][i] = thick
 			}
 			if ds[li][i] == 0 && !across(p, axis) {
 				// A curved face taken away: the inside's face on it would
@@ -158,21 +208,11 @@ func ShellRevolved(sh *srf.SShell, rev Revolution, open []int, thick float64, or
 		}
 	}
 
-	// The faces no piece turned into are a revolve's ends.
-	openStart, openEnd := false, false
-	for f := range t.Faces {
-		if seen[f] {
-			continue
-		}
-		at, ok := revolveEnd(t, f, rev, radial)
-		if !ok {
-			return nil, ErrNotRevolution
-		}
-		if opened[f] {
-			openStart = openStart || at == 0
-			openEnd = openEnd || at == 1
-		}
+	endModes, err := ends(radial)
+	if err != nil {
+		return nil, err
 	}
+	openStart, openEnd := endModes[0] == openFace, endModes[1] == openFace
 
 	// The inside's profile.
 	var sbl srf.SBezierList
@@ -195,12 +235,11 @@ func ShellRevolved(sh *srf.SShell, rev Revolution, open []int, thick float64, or
 	allClosed, allCoplanar := false, false
 	var notClosed srf.SEdge
 	var notCoplanar geom.Vector
-	sets.FindOuterFacesFrom(&sbl, &poly, nil, sh.Tol, &allClosed, &notClosed, &allCoplanar, &notCoplanar, nil)
+	sets.FindOuterFacesFrom(&sbl, &poly, nil, tol, &allClosed, &notClosed, &allCoplanar, &notCoplanar, nil)
 	if !allClosed || !allCoplanar || len(sets.Sets) == 0 {
 		return nil, errors.New("the inside's profile, offset from the solid's, does not close")
 	}
-	color := sh.Surface[0].Color
-	inner := &srf.SShell{Tol: sh.Tol}
+	inner := &srf.SShell{Tol: tol}
 	for i := range sets.Sets {
 		if rev.Whole() {
 			inner.MakeFromRevolutionOf(&sets.Sets[i], rev.Pt, axis, color, noFaces{})
@@ -210,11 +249,11 @@ func ShellRevolved(sh *srf.SShell, rev Revolution, open []int, thick float64, or
 	}
 	reflex := !rev.Whole() && math.Abs(rev.End-rev.Start) > math.Pi+1e-9
 	if reflex && (!openStart || !openEnd) {
-		cut, err := reflexEndsCut(rev, [2]bool{!openStart, !openEnd}, radial, thick, sh.Tol, color)
+		cut, err := reflexEndsCut(rev, [2]bool{!openStart, !openEnd}, radial, thick, tol, color)
 		if err != nil {
 			return nil, err
 		}
-		back := &srf.SShell{Tol: sh.Tol}
+		back := &srf.SShell{Tol: tol}
 		back.MakeFromDifferenceOf(inner, cut)
 		if back.BooleanFailed {
 			return nil, errors.New("the Boolean that cuts the inside back from the revolve's ends failed")
@@ -239,11 +278,11 @@ func ShellRevolved(sh *srf.SShell, rev Revolution, open []int, thick float64, or
 					from = -thick / 2
 				}
 			}
-			cut, err := endSlab(rev, k, radial, from, thick, sh.Tol, color)
+			cut, err := endSlab(rev, k, radial, from, thick, tol, color)
 			if err != nil {
 				return nil, err
 			}
-			back := &srf.SShell{Tol: sh.Tol}
+			back := &srf.SShell{Tol: tol}
 			back.MakeFromDifferenceOf(inner, cut)
 
 			if back.BooleanFailed {
@@ -252,23 +291,7 @@ func ShellRevolved(sh *srf.SShell, rev Revolution, open []int, thick float64, or
 			inner = back
 		}
 	}
-	for i := range inner.Surface {
-		inner.Surface[i].Origin = origin + uint32(i)
-	}
-	out := &srf.SShell{Tol: sh.Tol}
-	out.MakeFromDifferenceOf(sh, inner)
-	if out.BooleanFailed {
-		again, err := revolvedAgain(sh, t, rev)
-		if err != nil {
-			return nil, err
-		}
-		out = &srf.SShell{Tol: sh.Tol}
-		out.MakeFromDifferenceOf(again, inner)
-	}
-	if out.BooleanFailed {
-		return nil, errors.New("the Boolean that takes the inside away failed")
-	}
-	return out, nil
+	return inner, nil
 }
 
 // meridianPieces are the pieces of a loop of a profile in the plane of
