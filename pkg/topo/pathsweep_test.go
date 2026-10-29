@@ -496,3 +496,18 @@ func TestPathSweepHairpinCloses(t *testing.T) {
 		t.Errorf("%s: want closed and crossing itself", rep.String())
 	}
 }
+
+// A path gives back the curves and options it was made from, for the
+// ray-cast oracle to place the profile by frames of its own.
+func TestSweepPathPiecesOptions(t *testing.T) {
+	t.Parallel()
+	path := []srf.SBezier{srf.SBezierFrom2(v(0, 0, 0), v(0, 0, 10)), srf.SBezierFrom2(v(0, 0, 10), v(0, 0, 20))}
+	opts := topo.PathSweepOptions{Twist: 1, Up: v(1, 0, 0)}
+	sp := newPath(t, path, opts)
+	if got := sp.Pieces(); len(got) != 2 || !got[1].Finish().Equals(v(0, 0, 20)) {
+		t.Errorf("pieces %v", got)
+	}
+	if got := sp.Options(); got.Twist != 1 || !got.Up.Equals(v(1, 0, 0)) {
+		t.Errorf("options %+v", got)
+	}
+}

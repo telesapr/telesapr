@@ -10,6 +10,7 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 ## [Unreleased]
 
 ### Added
+- Analyze > Ray-Cast Check and `group.Analyze().RayCheck()` check sweeps fitted along their path: along a cubic, twisted, held to a direction, or round a closed path out of a plane. The check places the profile along the path by frames of its own and compares the kernel's fitted mesh with it ray by ray. Before, such a sweep was refused as one the check can't rebuild.
 - A modelled screw thread can have a phase and a run-out together: the ridges are moved along the thread by the phase and still fade out into the run-out's cone. Before, a thread with a run-out refused a phase ("a thread with a run-out can't be phased").
 - A solid joined by unions from lathes, revolves and extrusions, as a turned body with an extruded boss, a cup with a lug revolved part of a turn round it, or a block with a round boss, is hollowed by a shell: each part's walls move in, and a part's face lying inside another, as a boss's foot sunk into the body, moves out, so the insides meet with no wall between them. Before, a lathe joined to anything but lathes about its axis, and a block with a round boss, were refused as curved solids.
 - A drafted extrusion whose sides are cones, as a drafted cylinder, ring or slot, is hollowed by a shell open at its ends: each side is moved in square to itself, so the walls keep the thickness along the cones, and a two-sided draft's inside leans both ways from its neutral plane. Before, such a shell was refused as a curved solid.

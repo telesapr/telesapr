@@ -66,9 +66,16 @@ inside the solid.
 
 The rebuilt model takes extrusions, drafted or not, lathes, revolves, helices of a profile drawn
 in a plane through their axis, sweeps along line segments and arcs (mitred or with a corner radius,
-the profile square to an arc's axis), and the copies step and repeats, patterns along a path and
-mirrors make of them; a model with any other solid group (a fillet, a chamfer, a loft, a sweep
-along a cubic, twisted or held to a direction, a shell, a STEP link) is refused, naming the group.
+the profile square to an arc's axis), sweeps the kernel fits along their path (along a cubic,
+twisted, held to a direction, or round a closed path out of a plane), and the copies step and
+repeats, patterns along a path and mirrors make of them; a model with any other solid group (a
+fillet, a chamfer, a loft, a shell, a STEP link) is refused, naming the group.
+
+A fitted sweep is rebuilt by placing the profile along the path by frames of the check's own: they
+turn with the path and no more, or are held to the direction, and the twist turns them evenly by
+length. The kernel fits its surfaces between sections of the same sweep, so the rays show where the
+fit strays; where a ray meets the swept sides, the rebuilt model samples the crossing, as a
+helix's.
 
 A helix's rays agree with the mesh as a lathe's do, within the chord tolerance: the kernel's
 patches follow the true helix within a few millionths of each quarter turn's rise. A ray that

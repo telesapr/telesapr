@@ -46,7 +46,9 @@ func newCutPrism(pr profile, along geom.Vector, start, end halfSpace) *prism {
 	return p
 }
 
-// sweepLeaves is a sweep along lines and arcs as its steps move each of
+// sweepLeaves is a fitted sweep's profile placed along its path by the
+// oracle's own frames (pathSweep), or a sweep along lines and arcs as
+// its steps move each of
 // the profile's loop sets: a prism along each line, ended by the
 // profile's plane or by the plane halving a mitred corner, and a
 // revolution about each arc's axis. A run along an arc is a revolve
@@ -56,7 +58,15 @@ func newCutPrism(pr profile, along geom.Vector, start, end halfSpace) *prism {
 func sweepLeaves(sk *sketch.Sketch, g, src *sketch.Group) (union, error) {
 	steps, err := g.SweepSteps(sk)
 	if errors.Is(err, sketch.ErrFittedSweep) {
-		return nil, fmt.Errorf("%w: %w", err, ErrUnsupported)
+		sp, err := g.FittedSweepPath(sk)
+		if err != nil {
+			return nil, err
+		}
+		var leaves union
+		for i := range src.BezierLoops.Sets {
+			leaves = append(leaves, newPathSweep(&src.BezierLoops.Sets[i], sp))
+		}
+		return leaves, nil
 	}
 	if err != nil {
 		return nil, err
