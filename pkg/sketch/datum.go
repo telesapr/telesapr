@@ -187,6 +187,21 @@ func (sk *Sketch) LinkLabel(g *Group) string {
 	return g.Name
 }
 
+// lastSolidDatum is the place in GroupOrder of the last group that
+// makes the workplane of a datum on a face or an edge of the solid, or
+// -1: a regeneration makes the groups up to it, past the active group,
+// so that the datum follows its face.
+func (sk *Sketch) lastSolidDatum() int {
+	last := -1
+	for i, hg := range sk.GroupOrder {
+		g := sk.Group(hg)
+		if g.Subtype == GroupWorkplaneByDatum && g.followsSolid() && sk.DatumOf(g.H.Entity(0)) != nil {
+			last = i
+		}
+	}
+	return last
+}
+
 // keepDatumKind gives the datum naming the workplane of g, a datum on
 // the solid, the kind its frame was last found as.
 func (sk *Sketch) keepDatumKind(g *Group) {

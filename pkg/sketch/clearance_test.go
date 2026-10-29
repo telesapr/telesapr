@@ -2,6 +2,7 @@ package sketch_test
 
 import (
 	"math"
+	"path/filepath"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/script/api"
@@ -302,5 +303,71 @@ func TestClearancesWithinAMeshPart(t *testing.T) {
 	}
 	if c := cs[1]; c.B.H != pair.H || math.Abs(c.Gap-3) > 1e-9 || c.SolidB == 0 {
 		t.Errorf("the block to the nearer piece: %+v", c)
+	}
+}
+
+// hollowRing lathes a ring 10 square in section with a hollow 6 by 6
+// inside it, walls 2 thick all round: its shell is two pieces, the
+// outside and the hollow's inside, and one solid.
+func hollowRing(t *testing.T, d *api.Doc) api.Group {
+	t.Helper()
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 22))
+	axis.SetConstruction(true)
+	d.Sketch.Rect(api.V(5, 0, 0), api.V(15, 0, 10))
+	d.Sketch.Rect(api.V(7, 0, 2), api.V(13, 0, 8))
+	g := d.Features.Lathe(axis, "ring")
+	if p := g.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	return g
+}
+
+// A hollow is no gap: ClearancesWithin takes the ring and the hollow
+// inside it as one solid, as a shell or as a mesh, and finds only the
+// gap to the block beside it.
+func TestClearancesWithinAHollow(t *testing.T) {
+	t.Parallel()
+	for _, mesh := range []bool{false, true} {
+		d := api.New()
+		block(d, 30, 0, 40, 10, 10)
+		ring := hollowRing(t, d)
+		ring.SetCombine(api.Assemble)
+		ring.SetForceToMesh(mesh)
+		cs := d.Assembly.ClearancesWithin(0)
+		if len(cs) != 1 || cs[0].SolidA != 0 || cs[0].SolidB != 0 || math.Abs(cs[0].Gap-15) > 1e-6 {
+			t.Errorf("mesh %v: %+v", mesh, cs)
+		}
+	}
+}
+
+// Walls are measured by solids: two blocks standing one on the other,
+// assembled in a model that is linked as one part, are measured each
+// alone, so a ray up through the lower doesn't stop where it meets the
+// upper; a hollow is measured with the solid round it.
+func TestWallThicknessBySolids(t *testing.T) {
+	t.Parallel()
+	e := api.New()
+	block(e, 0, 0, 10, 10, 2)
+	e.Features.SketchIn(e.Workplane("XY"), "")
+	e.Sketch.Rect(api.V(0, 0, 0), api.V(10, 10, 0))
+	e.Features.Extrude(-3, "under").SetCombine(api.Assemble)
+	path := filepath.Join(t.TempDir(), "stack.tlspr")
+	if err := e.File.Save(path); err != nil {
+		t.Fatal(err)
+	}
+	d := api.New()
+	l, err := d.Assembly.Link(path, "stack")
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := l.Analyze().WallThickness(0)
+	if math.Abs(r.Thinnest.Thickness-2) > 1e-9 || r.Unmeasured != 0 {
+		t.Errorf("linked stack: thinnest %g, %d of %d unmeasured", r.Thinnest.Thickness, r.Unmeasured, r.Samples)
+	}
+	h := api.New()
+	r = hollowRing(t, h).Analyze().WallThickness(0)
+	if math.Abs(r.Thinnest.Thickness-2) > r.Tolerance+1e-9 || r.Unmeasured != 0 {
+		t.Errorf("hollow ring: thinnest %g within %g, %d of %d unmeasured", r.Thinnest.Thickness, r.Tolerance, r.Unmeasured, r.Samples)
 	}
 }

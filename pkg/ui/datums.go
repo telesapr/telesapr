@@ -94,9 +94,6 @@ func (tw *textWindow) ShowDatums() {
 			bg, pad(d.Name, 13), what,
 			i, lf(tw.ScreenChangeDatum), i, lf(tw.ScreenChangeDatum), i, lf(tw.ScreenChangeDatum),
 			i, lf(tw.ScreenPickDatumForMate))
-		if datumAfterActive(sk, d) {
-			tw.Printf(false, "%Bp       %Fx(after the active group: it follows its face when that group is active, and on saving)%E", bg)
-		}
 	}
 	if _, ok := ss.selectedForDatum(); ok {
 		tw.Printf(true, "   %Fl%La%f[name the selected entity]%E", lf(tw.ScreenChangeDatum))
@@ -129,19 +126,6 @@ func (tw *textWindow) ShowDatums() {
 		}
 	}
 	tw.showDatumMate()
-}
-
-// datumAfterActive reports whether datum d names an entity of a group
-// after the active one, which is not made again until it is active or
-// the model is saved: a datum on the solid there stays where it was
-// last found while groups before it change.
-func datumAfterActive(sk *sketch.Sketch, d sketch.Datum) bool {
-	e := sk.Entity(d.Entity)
-	if e == nil {
-		return false
-	}
-	g, active := sk.Group(e.Group), sk.Group(sk.Active)
-	return g != nil && active != nil && g.Order > active.Order
 }
 
 // showDatumMate shows the names picked for a mate, and the mates that

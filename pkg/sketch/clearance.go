@@ -74,23 +74,21 @@ func newClearancePart(hg core.HGroup, sh *srf.SShell) *clearancePart {
 // clearanceParts are the parts of the model up to group upTo, with
 // shells or as meshes: a part with no shell is taken by its triangles,
 // which are its geometry, so its chord tolerance is 0.
-// With bySolid, a part of several solids is taken by its solids, and a
-// mesh by its pieces (meshPieces).
+// With bySolid, a part of several solids is taken by its solids, a
+// shell's and a mesh's pieces with each hollow's inside kept with the
+// piece round it (clearance_solids.go).
 func (sk *Sketch) clearanceParts(upTo core.HGroup, bySolid bool) []*clearancePart {
 	parts, meshOnly, _ := sk.assemblyParts(upTo)
 	var out []*clearancePart
 	for _, p := range parts {
+		cp := newClearancePart(p.g, p.shell)
 		if bySolid {
-			if pieces := p.shell.Pieces(); len(pieces) > 1 {
-				for i, sh := range pieces {
-					cp := newClearancePart(p.g, sh)
-					cp.solid = i + 1
-					out = append(out, cp)
-				}
+			if solids := shellSolids(cp); solids != nil {
+				out = append(out, solids...)
 				continue
 			}
 		}
-		out = append(out, newClearancePart(p.g, p.shell))
+		out = append(out, cp)
 	}
 	for _, hg := range meshOnly {
 		// A group forced to a mesh holds the triangles of its own solid
@@ -103,12 +101,8 @@ func (sk *Sketch) clearanceParts(upTo core.HGroup, bySolid bool) []*clearancePar
 			mp.mesh.Triangles[i].Tag = -1
 		}
 		if bySolid {
-			if pieces := meshPieces(&mp.mesh); len(pieces) > 1 {
-				for i := range pieces {
-					pp := &clearancePart{g: hg, solid: i + 1, mesh: pieces[i]}
-					pp.tree = srf.NewMeshTree(&pp.mesh)
-					out = append(out, pp)
-				}
+			if solids := meshSolids(mp); solids != nil {
+				out = append(out, solids...)
 				continue
 			}
 		}

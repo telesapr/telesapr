@@ -50,10 +50,9 @@ doc.Datums.NameFaceAt("foot", lens.Solid().FaceAt(api.V(10, 6, 2.5)), api.V(4.53
 doc.Assembly.Concentric(doc.Datums.Get("a.corner"), doc.Datums.Get("b.corner"))
 ```
 
-A datum on a solid in a group after the active one stays where it was while the groups before
-it change, as every group after the active one does; the datums screen says so under its row. It
-follows its face again when its group is active, and when the model is saved, so a model linking
-the saved part finds it where the face is.
+A datum on a solid follows its face even from a group after the active one: each regeneration
+makes the groups up to the last such datum, though the groups after the active one stay hidden,
+so a mate, or a model linking the saved part, finds it where the face is.
 
 ## What it does not do yet
 

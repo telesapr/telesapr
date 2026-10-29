@@ -5762,7 +5762,7 @@
 					},
 					"WallThickness": {
 						"decl": "func (v GroupAnalysis) WallThickness(below float64) (r sketch.WallReport)",
-						"text": "WallThickness measures the walls of the model up to and with this\ngroup, in mm, as Analyze \u003e Clearance and Walls does: from the middle\nof each triangle of each part's mesh, square to it, into the solid to\nwhere it leaves the part again. It lists the points thinner than\nbelow, the thinnest first, or with a below of 0 only the thinnest\n(WallReport.Thinnest). Each part is measured alone, as Assembly.\nInterferences takes them. Between the points, the corners of where\none triangle covers another a ray joined them across are measured\ntoo, so a spot thinner than the points about it, as under a narrow\ngroove's tip, is found; WallReport.Tolerance is how far each\nthickness may be from the true one at its point."
+						"text": "WallThickness measures the walls of the model up to and with this\ngroup, in mm, as Analyze \u003e Clearance and Walls does: from the middle\nof each triangle of each part's mesh, square to it, into the solid to\nwhere it leaves the part again. It lists the points thinner than\nbelow, the thinnest first, or with a below of 0 only the thinnest\n(WallReport.Thinnest). Each solid is measured alone, a part of\nseveral taken by its solids as Assembly.ClearancesWithin takes them,\na hollow's inside with the solid round it. Between the points, the corners of where\none triangle covers another a ray joined them across are measured\ntoo, so a spot thinner than the points about it, as under a narrow\ngroove's tip, is found; WallReport.Tolerance is how far each\nthickness may be from the true one at its point."
 					}
 				}
 			},

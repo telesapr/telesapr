@@ -74,11 +74,11 @@ func TestDatumsOnFreeFormFaces(t *testing.T) {
 	}
 }
 
-// A datum on the solid in a group after the active one stays where it
-// was while groups before it change, as every group after the active
-// one does, and follows its face again on saving: a model linking the
-// saved file finds it where the face is.
-func TestDatumAfterActiveFollowsOnSave(t *testing.T) {
+// A datum on the solid in a group after the active one follows its face
+// while groups before it change, though the groups after the active one
+// stay hidden: a mate finds it where the face is, and so does a model
+// linking the saved file.
+func TestDatumAfterActiveFollows(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	path := saveRoundedPlate(t, dir)
@@ -90,8 +90,11 @@ func TestDatumAfterActiveFollowsOnSave(t *testing.T) {
 	if err := p.Params.Set("w", "50"); err != nil {
 		t.Fatal(err)
 	}
-	if at, _ := frameOf(p.Datums.Get("rounded")); math.Abs(at.X-36) > 1e-6 {
-		t.Errorf("after the active group, the axis moved to %v before saving", at)
+	if at, _ := frameOf(p.Datums.Get("rounded")); math.Abs(at.X-46) > 1e-6 {
+		t.Errorf("after the active group, the axis is at %v", at)
+	}
+	if active := p.Active(); active.H != p.Group("plate").H {
+		t.Errorf("following the datum made %s active", active)
 	}
 	wider := filepath.Join(dir, "wider.tlspr")
 	if err := p.File.Save(wider); err != nil {

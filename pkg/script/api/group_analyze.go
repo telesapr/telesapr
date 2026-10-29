@@ -68,8 +68,9 @@ func (v GroupAnalysis) MassProperties() (r sketch.MassReport) {
 // of each triangle of each part's mesh, square to it, into the solid to
 // where it leaves the part again. It lists the points thinner than
 // below, the thinnest first, or with a below of 0 only the thinnest
-// (WallReport.Thinnest). Each part is measured alone, as Assembly.
-// Interferences takes them. Between the points, the corners of where
+// (WallReport.Thinnest). Each solid is measured alone, a part of
+// several taken by its solids as Assembly.ClearancesWithin takes them,
+// a hollow's inside with the solid round it. Between the points, the corners of where
 // one triangle covers another a ray joined them across are measured
 // too, so a spot thinner than the points about it, as under a narrow
 // groove's tip, is found; WallReport.Tolerance is how far each
