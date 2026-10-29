@@ -124,8 +124,10 @@ seams under either of its faces (`MakeCopySplitAgainst`). And where a band's top
 past its end face, the curve the end face cuts from the cone was marched from the cone's seam, above
 the top, and stopped at the seed where the top's arc crosses it, inside both patches, where the curve
 goes on; the seed left at the band's side had none to end at, the curve's rest was never made and the
-Boolean failed. A march that stops at a seed inside both patches leaves that seed to start the rest,
-marched on the way it arrived, once (`SSurface.passesThrough`, `intersectByMarching`;
+Boolean failed. A march that stops at a seed inside both patches, leaving an odd number of seeds, leaves
+that seed to start the rest, marched on the way it arrived, once, and the rest is kept only where it
+reaches another seed (`SSurface.passesThrough`, `intersectByMarching`; at first any such seed went
+on, and a sphere_bored STEP Boolean and a rounded BSF screw's coarse chamfer came out unsound;
 `TestBandEndOnCone`, 32 of 32 sound, 20 failing before). No golden moved.
 
 Left: the band's top touching the cone at one point at the end face (the x band at 21 dipping 1), the

@@ -504,6 +504,13 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 
 		var reached bool
 		sc.Points, reached = s.marchFrom(b, start, startv, spl.Points, false)
+		if !reached && slices.Contains(passed, start) {
+			// The rest of a curve past a seed it went on from is kept only
+			// where it reaches another seed: a curve that ended there after
+			// all (a bore's circle across a sphere's patches, a chamfer's
+			// cone over a rounded crest) leaves the march nowhere to go.
+			continue
+		}
 		if !reached && !marchOnBothPatches(s, b, sc.Points, maxtol) {
 			// The curve leaves the seed's edge at a grazing angle, as the
 			// cone of a thread's chamfer meets a ridge's flank just past
@@ -526,9 +533,17 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 			// start a curve of its own.
 			continue
 		}
+		// The seeds are the curves' ends, two to a curve; one left over
+		// is an end whose curve the march took only part of.
+		left := 0
+		for _, sp := range spl.Points {
+			if sp.Tag == 0 {
+				left++
+			}
+		}
 		kept := spl.Points[:0]
 		for _, sp := range spl.Points {
-			if sp.Tag != 0 && !slices.Contains(passed, sp.P) && s.passesThrough(b, sp.P) {
+			if left%2 == 1 && sp.Tag != 0 && !slices.Contains(passed, sp.P) && s.passesThrough(b, sp.P) {
 				// The curve goes on past the seed it stopped at, where a
 				// trim inside both patches crosses it (a band's top
 				// dipping into a cone just past its end face, the face's
@@ -540,6 +555,7 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 				n := len(sc.Points)
 				sp.AuxV = sc.Points[n-2].P.Minus(sc.Points[n-1].P).WithMagnitude(1)
 				sp.Tag = 0
+				left++
 				passed = append(passed, sp.P)
 			}
 			if sp.Tag == 0 {
