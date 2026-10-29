@@ -1,0 +1,20 @@
+# A sweep held to a direction through a corner between two lines: the
+# rectangle of sweep_corner.tlspr swept along its two lines, then its
+# frames held to y, the corner's axis, on the group's screen, which makes
+# it fitted; the corner is mitred as before, and the solid is checked.
+file $testdata/ui/sweep_corner.tlspr
+menu File|Open...
+view other
+move 347.5 217.5
+down L 347.5 217.5
+up L 347.5 217.5
+move 377.5 202.5
+down L 377.5 202.5
+up L 377.5 202.5
+menu Features|Sweep Along Path
+twmove 346 225
+twdown L 346 225
+twup L 346 225
+tw
+menu Analyze|Check Solid
+dump

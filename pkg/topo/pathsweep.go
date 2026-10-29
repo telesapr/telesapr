@@ -63,6 +63,11 @@ type SweepPath struct {
 	// closure is the turn about the tangent, in radians, spread along a
 	// closed path so that its frames meet where it closes.
 	closure float64
+	// corner marks the joins between pieces, by the chain's parameter,
+	// where the path turns sharply; prism the straight pieces beside
+	// them (pathsweep_corner.go).
+	corner []bool
+	prism  []bool
 }
 
 // framesPerPiece are the frames sampled on each piece of a path; a
@@ -125,6 +130,9 @@ func NewSweepPath(pieces []srf.SBezier, r0 geom.Vector, opts PathSweepOptions) (
 		// the tangent, taken back.
 		r1 := f.r.Minus(t0.ScaledBy(f.r.Dot(t0)))
 		sp.closure = -math.Atan2(sp.samples[0].r.Cross(r1).Dot(t0), sp.samples[0].r.Dot(r1))
+	}
+	if err := sp.findCorners(); err != nil {
+		return nil, err
 	}
 	return sp, nil
 }
@@ -292,6 +300,18 @@ func (sp *SweepPath) SweptSurfaces(loops [][]srf.SBezier) ([][]*srf.BSplineSurfa
 	var all [][]float64
 	total := 0
 	for i := range sp.pieces {
+		if sp.prism[i] {
+			surfs, ss, err := sp.prismSkins(curves, i)
+			if err != nil {
+				return nil, nil, err
+			}
+			for li := range surfs {
+				out[li] = append(out[li], surfs[li])
+			}
+			all = append(all, []float64{float64(i) + ss[0], float64(i) + ss[1]})
+			total += len(ss)
+			continue
+		}
 		// Four sections a piece to begin with.
 		var ss []float64
 		for k := range 5 {

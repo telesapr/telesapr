@@ -218,6 +218,13 @@ var pathEquivalences = map[string]pathCheck{
 			t.Errorf("the sweep: type %d, problem %q, corner radius %g", g.Type, g.Problem.Msg, g.ValB)
 		}
 	},
+	// A sweep through a corner between lines held to the corner's axis on
+	// its screen, fitted and mitred, and by a script.
+	"sweep_held_corner": func(t *testing.T, ui, _ *sketch.Sketch) {
+		if g := ui.Group(ui.Active); g.Type != sketch.GroupSweep || g.Problem.Msg != "" || g.SweepUp != (geom.Vector{Y: 1}) {
+			t.Errorf("the sweep: type %d, problem %q, held to %v", g.Type, g.Problem.Msg, g.SweepUp)
+		}
+	},
 	// A loft's ends set on its screen, and by a script (roadmap 28.3).
 	"loft_tangency": func(t *testing.T, ui, _ *sketch.Sketch) {
 		if g := ui.Group(ui.Active); g.Type != sketch.GroupLoft || g.ValB != 1 || g.ValC != 0.5 || g.Problem.Msg != "" {

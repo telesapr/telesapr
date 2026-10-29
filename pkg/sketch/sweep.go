@@ -210,7 +210,7 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 		// Corners are rounded on the whole loop, before it is cut where
 		// the profile is, so that a piece cut short there still takes the
 		// radius at its corner.
-		if g.ValB > 0 && !g.sweepFitted(chain) {
+		if g.ValB > 0 {
 			if chain, err = sk.roundClosedCorners(chain, g.ValB); err != nil {
 				return nil, err
 			}
@@ -226,14 +226,7 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 		return nil, pathErr(&chain[0].start, "the path runs along the profile's plane: it must leave it")
 	}
 	if g.sweepFitted(chain) {
-		for k := range chain {
-			if cornerAt(k) {
-				x := chain[k].start
-				return nil, pathErr(&x, "a twisted sweep, one held to a direction, or one along a curve takes no corners; "+
-					"the path has one at (%g, %g, %g)", x.X, x.Y, x.Z)
-			}
-		}
-		return nil, g.fitPath(chain)
+		return nil, sk.fitCornered(g, chain, closed)
 	}
 	g.fittedPath = nil
 	if g.ValB > 0 {
@@ -362,6 +355,9 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 func (g *Group) fitPath(chain []pathPiece) error {
 	sp, err := sweepPathOf(chain, g)
 	if err != nil {
+		if pe := fittedCornerError(err); pe != nil {
+			return pe
+		}
 		return pathErr(&chain[0].start, "%v", err)
 	}
 	g.fittedPath = sp
@@ -752,6 +748,10 @@ func (g *Group) generateFittedSweepShell(sk *Sketch, src *Group, start, end uint
 			loops = append(loops, h.Curves)
 		}
 		sh, err := topo.MakePathSweep(g.fittedPath, loops, g.Color, start, end, next, sk.tol)
+		if pe := fittedCornerError(err); pe != nil {
+			g.setProblem(pe.at, "%s", pe.msg)
+			return
+		}
 		if err != nil {
 			g.setProblem(nil, "%v", err)
 			return

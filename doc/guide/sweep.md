@@ -63,8 +63,18 @@ A corner too sharp for the arc beside it, where the line's side passes outside t
 bar 2 wide round an arc of radius 12, a corner of 150°), or a piece too short for the joint, is a
 problem on the group, which a corner radius then rounds. Example:
 [`examples/scripts/hook`](../../examples/scripts/hook/hook.go), a round bar up a shank and round
-a bend that leaves it at a right angle. A corner next to a cubic is refused, as is a twisted
-sweep or one held to a direction with a corner, and a piece too short for the mitres at its ends.
+a bend that leaves it at a right angle. A corner next to a cubic is refused, and a piece too
+short for the mitres at its ends.
+
+A sweep along a cubic, or held to a direction, is mitred at a corner between two lines too: along
+a line its frames don't turn, so the two straight runs are prisms cut by the plane that halves the
+corner. Held to a direction, the frames must turn at the corner as the path does, so the
+direction must be the corner's axis (across the path's plane); held otherwise, the corner is a
+problem on the group. A twisted sweep takes no sharp corner, since the twist turns the frames
+along a line and the mitre's two sides wouldn't meet: give it a corner radius, and the twist runs
+round the corner's arc. A corner beside an arc on such a sweep needs a corner radius too.
+Example: [`examples/scripts/zigzag`](../../examples/scripts/zigzag/zigzag.go), a rail along a
+cubic and a sharp corner, and a twisted bar round a rounded one.
 
 A corner radius, set on the sweep's screen ("corners mitred [round]"), rounds every corner on the
 path instead, as a pipe is bent: the pieces either side are cut back to where an arc of the
@@ -103,7 +113,7 @@ Round lines and arcs in a plane the profile comes back as it left, and the surfa
 Round a cubic, lines and arcs out of a plane, or with a twist, the surface is fitted, and the turn
 the frames come back with, which the path's shape decides, is taken out evenly along it; a twist
 must then be whole turns, or the profile wouldn't meet itself, and lines and arcs out of a plane
-take no corners. A profile at a corner of the path, or whose plane doesn't cross it, is a problem
+take no corners. A cubic in a plane takes corners between lines, mitred, as an open path's. A profile at a corner of the path, or whose plane doesn't cross it, is a problem
 on the group.
 
 ```go
