@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -41,6 +42,12 @@ type PathSweepOptions struct {
 	// holonomy), so that turn is taken back evenly along the path, on
 	// top of Twist, which must then be whole turns.
 	Closed bool
+	// Reach is how far the profile reaches from the path's start. A
+	// twisted path (or a closed one turned to meet itself) with sharp
+	// corners holds its twist still along the stretch beside each corner
+	// its mitre spans, which Reach sizes (pathsweep_hold.go); zero
+	// refuses such corners.
+	Reach float64
 }
 
 // frame is a point of the path with a unit tangent and a unit normal
@@ -68,6 +75,12 @@ type SweepPath struct {
 	// them (pathsweep_corner.go).
 	corner []bool
 	prism  []bool
+	// rigid marks the pieces swept as a rigid sweep is, runs of lines
+	// and arcs about a corner beside an arc (pathsweep_joint.go).
+	rigid []bool
+	// law, when not nil, is how the twist is spread along the path when
+	// it is held still beside corners.
+	law *twistLaw
 }
 
 // framesPerPiece are the frames sampled on each piece of a path; a
@@ -77,6 +90,29 @@ const framesPerPiece = 128
 // NewSweepPath reads a chain of curves joined end to end as a path,
 // with its first frame's normal r0, which must cross the first tangent.
 func NewSweepPath(pieces []srf.SBezier, r0 geom.Vector, opts PathSweepOptions) (*SweepPath, error) {
+	sp, err := sampleSweepPath(pieces, r0, opts)
+	if err != nil {
+		return nil, err
+	}
+	if !sp.twisted() || !slices.Contains(sp.corner, true) {
+		return sp, nil
+	}
+	if split := sp.heldPieces(); len(split) > len(pieces) {
+		// Lines carry their frames unturned, so the samples on the other
+		// pieces come out as before.
+		if sp, err = sampleSweepPath(split, r0, opts); err != nil {
+			return nil, err
+		}
+	}
+	if err := sp.holdTwist(); err != nil {
+		return nil, err
+	}
+	return sp, nil
+}
+
+// sampleSweepPath is NewSweepPath with the path's frames sampled and its
+// corners found, a twist not yet held beside them.
+func sampleSweepPath(pieces []srf.SBezier, r0 geom.Vector, opts PathSweepOptions) (*SweepPath, error) {
 	if len(pieces) == 0 {
 		return nil, errors.New("there is no path")
 	}
@@ -216,6 +252,17 @@ func (sp *SweepPath) End() float64 { return float64(len(sp.pieces)) }
 
 // frameAt is the frame at s, twisted as the options say.
 func (sp *SweepPath) frameAt(s float64) frame {
+	f := sp.untwistedAt(s)
+	if tw := sp.opts.Twist + sp.closure; tw != 0 && sp.length > 0 {
+		a := tw * sp.TwistShare(f.arc)
+		b := f.t.Cross(f.r)
+		f.r = f.r.ScaledBy(math.Cos(a)).Plus(b.ScaledBy(math.Sin(a)))
+	}
+	return f
+}
+
+// untwistedAt is the frame at s before any twist.
+func (sp *SweepPath) untwistedAt(s float64) frame {
 	s = math.Max(0, math.Min(s, sp.End()))
 	k := min(int(math.Floor(s*framesPerPiece)), len(sp.samples)-1)
 	f := sp.samples[k]
@@ -224,12 +271,26 @@ func (sp *SweepPath) frameAt(s float64) frame {
 			f = g
 		}
 	}
-	if tw := sp.opts.Twist + sp.closure; tw != 0 && sp.length > 0 {
-		a := tw * f.arc / sp.length
-		b := f.t.Cross(f.r)
-		f.r = f.r.ScaledBy(math.Cos(a)).Plus(b.ScaledBy(math.Sin(a)))
-	}
 	return f
+}
+
+// twisted reports whether the frames turn about the path beyond its
+// tangent's turn: a twist, or a closed path's turn taken out.
+func (sp *SweepPath) twisted() bool {
+	return sp.opts.Twist != 0 || math.Abs(sp.closure) > 1e-9
+}
+
+// TwistShare is the share of the twist the frames have turned by at arc
+// length arc from the start: arc over the path's length, or, held still
+// beside corners, as pathsweep_hold.go spreads it.
+func (sp *SweepPath) TwistShare(arc float64) float64 {
+	if sp.law != nil {
+		return sp.law.share(arc)
+	}
+	if sp.length == 0 {
+		return 0
+	}
+	return arc / sp.length
 }
 
 // Motion is the rigid motion that takes the profile from the path's
@@ -260,7 +321,8 @@ func (sp *SweepPath) Rigid(s float64) srf.Rigid {
 // would smooth over. The outer loop runs counter-clockwise about the
 // path's start, the holes the other way, so that each surface faces out
 // of the solid. The sections' parameters along the path come back too,
-// those of each piece.
+// those of each piece. A piece swept rigidly beside a corner at an arc
+// has no surfaces here (nil), nor sections.
 func (sp *SweepPath) SweptSurfaces(loops [][]srf.SBezier) ([][]*srf.BSplineSurface, [][]float64, error) {
 	if len(loops) == 0 {
 		return nil, nil, errors.New("there is no profile")
@@ -300,6 +362,14 @@ func (sp *SweepPath) SweptSurfaces(loops [][]srf.SBezier) ([][]*srf.BSplineSurfa
 	var all [][]float64
 	total := 0
 	for i := range sp.pieces {
+		if sp.rigid[i] {
+			// Made apart, by the rigid sweep.
+			for li := range out {
+				out[li] = append(out[li], nil)
+			}
+			all = append(all, nil)
+			continue
+		}
 		if sp.prism[i] {
 			surfs, ss, err := sp.prismSkins(curves, i)
 			if err != nil {
@@ -452,6 +522,9 @@ func (sp *SweepPath) strays(curves []srf.BSplineCurve, surfs []*srf.BSplineSurfa
 // caps, and startFace and endFace go unused.
 func MakePathSweep(sp *SweepPath, loops [][]srf.SBezier, color core.RGBA, startFace, endFace, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
 	sp.tol = tol
+	if slices.Contains(sp.rigid, true) {
+		return sp.makeJointed(loops, color, startFace, endFace, origin)
+	}
 	surfs, _, err := sp.SweptSurfaces(loops)
 	if err != nil {
 		return nil, err

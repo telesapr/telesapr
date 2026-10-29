@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // A fitted sweep's path may turn sharply between two straight pieces,
@@ -117,4 +118,29 @@ func (ps *pathSweep) inPrism(pp *pathPrism, x geom.Vector) bool {
 // straight piece taken as a prism.
 func (ps *pathSweep) inPrismed(k int) bool {
 	return len(ps.prismed) > 0 && ps.prismed[min(int(math.Floor(ps.s[k])), len(ps.prismed)-1)]
+}
+
+// arcCorner reports whether the path turns sharply beside a piece that is
+// not straight: an arc, which the kernel joins as a rigid sweep's, along
+// curves no plane holds, which the oracle's prisms can't cut.
+func arcCorner(pieces []srf.SBezier) bool {
+	straight := func(sb *srf.SBezier) bool {
+		a, d := sb.Start(), sb.Finish().Minus(sb.Start())
+		l := d.Magnitude()
+		for _, p := range sb.Ctrl[1:sb.Degree] {
+			q := p.Minus(a)
+			if q.Cross(d).Magnitude() > 1e-9*l*math.Max(1, l) {
+				return false
+			}
+		}
+		return l > 0
+	}
+	for k := 1; k < len(pieces); k++ {
+		d1 := pieces[k-1].TangentAt(1).WithMagnitude(1)
+		d2 := pieces[k].TangentAt(0).WithMagnitude(1)
+		if d1.Dot(d2) < pathCornerCos && (!straight(&pieces[k-1]) || !straight(&pieces[k])) {
+			return true
+		}
+	}
+	return false
 }

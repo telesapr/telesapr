@@ -18,7 +18,8 @@ import (
 // frame is the one before turned by the least rotation that takes its
 // tangent onto the next, where the kernel reflects twice), or hold
 // their second axis to a direction; a twist turns them about the
-// tangent evenly by arc length, and round a closed path the turn they
+// tangent evenly by arc length (held still beside corners as the path
+// spreads it, topo.SweepPath.TwistShare), and round a closed path the turn they
 // come back with is taken out the same way. A point is inside where
 // the profile, moved back from one of the planes it is moved to through
 // the point, holds it: the solid is the union of the moved profiles.
@@ -34,6 +35,7 @@ type pathSweep struct {
 	arc    []float64
 	length float64
 	twist  float64 // over the whole length, the closure's turn in it
+	share  func(arc float64) float64
 	pr     profile
 	// The path's start, where the profile is drawn, and its frame
 	// there, b0 = t0 x r0.
@@ -111,6 +113,10 @@ func newPathSweep(sbls *srf.SBezierLoopSet, sp *topo.SweepPath) *pathSweep {
 	}
 	ps.length = ps.arc[n]
 	ps.twist = opts.Twist
+	// The twist is spread as the path says: evenly by arc length, or
+	// held still along the lines beside corners. The oracle's arc
+	// lengths are its own, so they are taken as shares of its length.
+	ps.share = func(arc float64) float64 { return sp.TwistShare(arc / ps.length * sp.Length()) }
 	if opts.Closed {
 		// The turn from the first frame's second axis to the last's,
 		// about the tangent, taken back.
@@ -267,7 +273,7 @@ func (ps *pathSweep) twisted(t, ru geom.Vector, arc float64) geom.Vector {
 	if ps.twist == 0 || ps.length == 0 {
 		return ru
 	}
-	a := ps.twist * arc / ps.length
+	a := ps.twist * ps.share(arc)
 	return ru.ScaledBy(math.Cos(a)).Plus(t.Cross(ru).ScaledBy(math.Sin(a)))
 }
 

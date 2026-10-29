@@ -226,7 +226,7 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 		return nil, pathErr(&chain[0].start, "the path runs along the profile's plane: it must leave it")
 	}
 	if g.sweepFitted(chain) {
-		return nil, sk.fitCornered(g, chain, closed)
+		return nil, sk.fitCornered(g, chain, closed, profileReach(sbls, chain[0].start))
 	}
 	g.fittedPath = nil
 	if g.ValB > 0 {
@@ -346,14 +346,31 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 					"the profile would come back turned", x.X, x.Y, x.Z)
 			}
 		}
-		return nil, g.fitPath(chain)
+		return nil, g.fitPath(chain, profileReach(sbls, chain[0].start))
 	}
 	return steps, nil
 }
 
-// fitPath makes the sweep's fitted path along the chain.
-func (g *Group) fitPath(chain []pathPiece) error {
-	sp, err := sweepPathOf(chain, g)
+// profileReach is how far the profile's loops reach from the point at:
+// their control points, which hold the curves, as far as the furthest.
+func profileReach(sbls *srf.SBezierLoopSetSet, at geom.Vector) float64 {
+	r := 0.0
+	for si := range sbls.Sets {
+		for _, l := range sbls.Sets[si].Loops() {
+			for ci := range l.Curves {
+				for _, q := range l.Curves[ci].Ctrl[:l.Curves[ci].Degree+1] {
+					r = math.Max(r, q.Minus(at).Magnitude())
+				}
+			}
+		}
+	}
+	return r
+}
+
+// fitPath makes the sweep's fitted path along the chain, the profile
+// reaching reach from its start.
+func (g *Group) fitPath(chain []pathPiece, reach float64) error {
+	sp, err := sweepPathOf(chain, g, reach)
 	if err != nil {
 		if pe := fittedCornerError(err); pe != nil {
 			return pe
@@ -711,8 +728,8 @@ func (g *Group) sweepFitted(chain []pathPiece) bool {
 }
 
 // sweepPathOf is the fitted sweep's path along the chain, twisted and
-// held as the group says.
-func sweepPathOf(chain []pathPiece, g *Group) (*topo.SweepPath, error) {
+// held as the group says, for a profile reaching reach from its start.
+func sweepPathOf(chain []pathPiece, g *Group, reach float64) (*topo.SweepPath, error) {
 	var curves []srf.SBezier
 	for _, p := range chain {
 		for _, c := range p.curves {
@@ -733,6 +750,7 @@ func sweepPathOf(chain []pathPiece, g *Group) (*topo.SweepPath, error) {
 		Twist:  g.ValC * math.Pi / 180,
 		Up:     g.SweepUp,
 		Closed: g.sweepClosed,
+		Reach:  reach,
 	})
 }
 
@@ -751,6 +769,13 @@ func (g *Group) generateFittedSweepShell(sk *Sketch, src *Group, start, end uint
 		if pe := fittedCornerError(err); pe != nil {
 			g.setProblem(pe.at, "%s", pe.msg)
 			return
+		}
+		if _, ok := errors.AsType[*srf.CornerError](err); ok {
+			// A corner beside an arc, joined as a rigid sweep's.
+			if pe, ok := errors.AsType[*pathError](cornerJointError(err)); ok {
+				g.setProblem(pe.at, "%s", pe.msg)
+				return
+			}
 		}
 		if err != nil {
 			g.setProblem(nil, "%v", err)

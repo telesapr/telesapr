@@ -324,7 +324,9 @@ func (v SweepGroup) Twist() (degrees float64) {
 
 // SetTwist turns a sweep's profile about the path by degrees over the
 // whole of it, evenly along its length: a square swept along a line and
-// twisted by 90 is a twisted bar. A twisted sweep's surface is fitted
+// twisted by 90 is a twisted bar. Beside a sharp corner between two
+// line segments the twist is held still over the stretch the corner's
+// mitre spans, and turns along the rest. A twisted sweep's surface is fitted
 // to the true one within a tenth of the chord tolerance, as a sweep
 // along a cubic is. SetExpr with sketch.GroupValC gives it an
 // expression.

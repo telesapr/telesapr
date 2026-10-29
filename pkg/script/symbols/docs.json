@@ -6746,7 +6746,7 @@
 					},
 					"SetTwist": {
 						"decl": "func (v SweepGroup) SetTwist(degrees float64)",
-						"text": "SetTwist turns a sweep's profile about the path by degrees over the\nwhole of it, evenly along its length: a square swept along a line and\ntwisted by 90 is a twisted bar. A twisted sweep's surface is fitted\nto the true one within a tenth of the chord tolerance, as a sweep\nalong a cubic is. SetExpr with sketch.GroupValC gives it an\nexpression."
+						"text": "SetTwist turns a sweep's profile about the path by degrees over the\nwhole of it, evenly along its length: a square swept along a line and\ntwisted by 90 is a twisted bar. Beside a sharp corner between two\nline segments the twist is held still over the stretch the corner's\nmitre spans, and turns along the rest. A twisted sweep's surface is fitted\nto the true one within a tenth of the chord tolerance, as a sweep\nalong a cubic is. SetExpr with sketch.GroupValC gives it an\nexpression."
 					},
 					"SweepUp": {
 						"decl": "func (v SweepGroup) SweepUp() (up Vec)",

@@ -250,9 +250,10 @@ func TestSweepFittedCorner(t *testing.T) {
 	d.Edit.Regen()
 
 	sw := s.AsSweep()
+	// Twisted, the twist is held still along the lines beside the corner.
 	sw.SetTwist(30)
-	if p := s.Problem(); !strings.Contains(p, "twisted") || !strings.Contains(p, "corner radius") {
-		t.Errorf("a twisted sweep's corner: %q", p)
+	if r := s.Analyze().Check(); s.Problem() != "" || !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Errorf("a twisted sweep's corner: %q %s, want %g", s.Problem(), r.String(), want)
 	}
 	sw.SetCornerRadius(3)
 	if r := s.Analyze().Check(); s.Problem() != "" || !r.Sound() {
@@ -282,4 +283,44 @@ func TestSweepFittedCorner(t *testing.T) {
 		}
 	}()
 	e.Features.Sweep(kinked, "")
+}
+
+// A fitted sweep's corner beside an arc is joined as a rigid sweep's:
+// held to the arc's axis, the hook up a line and round an arc is the
+// rigid one, sound and of its volume, one step of undo and back from the
+// file. Twisted, with every piece beside the corner, there is nowhere
+// for the twist to turn, and the corner is a problem naming the radius.
+func TestSweepFittedCornerBesideArc(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	d.Features.SketchIn(d.Workplane("ZX"), "path")
+	path := []api.Entity{
+		d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 10)),
+		d.Sketch.Arc(api.V(0, 0, 15), api.V(0, 0, 10), api.V(5, 0, 15)),
+	}
+	d.Features.SketchIn(d.Workplane("XY"), "profile")
+	d.Sketch.Rect(api.V(-1, -2, 0), api.V(1, 2, 0))
+	step(d)
+	s := d.Features.Sweep(path, "")
+	rigid := s.Analyze().Check()
+	if s.Problem() != "" || !rigid.Sound() {
+		t.Fatalf("rigid: %q %s", s.Problem(), rigid.String())
+	}
+	before := saved(t, d)
+	step(d)
+	s.AsSweep().SetSweepUp(api.V(0, 1, 0))
+	if r := s.Analyze().Check(); s.Problem() != "" || !r.Sound() || math.Abs(r.Volume-rigid.Volume) > 1e-6*rigid.Volume {
+		t.Errorf("held to the arc's axis: %q %s, want %g", s.Problem(), r.String(), rigid.Volume)
+	}
+	undoRedo(t, d, before)
+	roundTrip(t, d)
+	s.AsSweep().SetSweepUp(api.V(0, 1, 1))
+	if p := s.Problem(); !strings.Contains(p, "held to a direction") {
+		t.Errorf("held off the arc's axis: %q", p)
+	}
+	s.AsSweep().SetSweepUp(api.V(0, 0, 0))
+	s.AsSweep().SetTwist(30)
+	if p := s.Problem(); !strings.Contains(p, "nowhere") && !strings.Contains(p, "no stretch") || !strings.Contains(p, "corner radius") {
+		t.Errorf("twisted with nowhere to turn: %q", p)
+	}
 }
