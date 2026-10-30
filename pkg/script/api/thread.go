@@ -43,8 +43,10 @@ type ThreadOptions struct {
 	// middle of its zone: "6g", "6h", "6f", "6e", "4h" or "8g" for an
 	// ISO metric screw, "6H", "4H", "5H", "7H" or "6G" for its nut;
 	// "1A", "2A", "3A" and "1B", "2B", "3B" for unified threads; "7e",
-	// "8e" and "7H", "8H" for trapezoidal ones. "" is Clearance as
-	// given. ThreadClasses lists a thread's. A Cosmetic thread keeps
+	// "8e" and "7H", "8H" for trapezoidal ones; "2G" to "5G" for ACME
+	// ones, screw and nut; "2A", "3A" and "2B", "3B" for ASME B1.9
+	// buttress ones; "7e", "8e", "8c", "9c" and "7H", "8H", "9H" for DIN
+	// 513 buttress ones. "" is Clearance as given. ThreadClasses lists a thread's. A Cosmetic thread keeps
 	// its class as a record, its part left at the nominal size.
 	Class string
 	// LengthExpr is an expression of the parameters for the length, in
@@ -66,15 +68,17 @@ type ThreadOptions struct {
 	// circle's plane, each a ridge sketch and a helix of its own;
 	// otherwise one helix sweeps the ridges stacked a pitch apart.
 	LevelStarts bool
-	// LoadFlankBack turns a buttress thread's ridge about: its load
-	// flank, nearly square to the axis, faces back, towards where the
-	// thread starts, on a screw, and away from it in a nut, rather than
-	// the other way. A screw and a nut mate when their load flanks face
-	// each other, which depends on which way each thread runs:
-	// Assembly.Screw refuses two that face the same way. Other threads'
-	// ridges are symmetric and stay as they are. A designation that says
-	// which way the load goes sets it: "PUSH-BUTT" leaves the load flank
-	// ahead, "PULL-BUTT" turns it back.
+	// LoadFlankBack turns a buttress thread's ridge about. As drawn, a
+	// screw's 45° clearance flank leads, facing where the thread starts,
+	// and a nut's 7° load flank faces its mouth; turned, the other way.
+	// A screw and a nut mate when their load flanks face each other:
+	// Assembly.Screw refuses two that face the same way. An ASME B1.9
+	// designation sets it, by the flank that leads: "BUTT" (or
+	// "PULL-BUTT") pulls, the clearance flank leading, and "PUSH-BUTT"
+	// pushes, the load flank leading, on a screw and a nut alike; read
+	// back, the designation says which. A DIN 513 designation ("S20x4")
+	// says nothing of it, and this field turns the ridge. Other threads'
+	// ridges are symmetric and stay as they are.
 	LoadFlankBack bool
 	// RoundRoot rounds the roots of an ASME B1.9 buttress thread (BUTT)
 	// as the standard does, by an arc of 0.07141 pitches tangent to both
@@ -156,14 +160,14 @@ func (o ThreadOptions) sketchOptions(sk *sketch.Sketch, diameter float64) sketch
 
 // threadOptionsOf is what a script reads back of a thread's options.
 func threadOptionsOf(o sketch.ThreadOptions) ThreadOptions {
-	right := o.Spec
-	right.LeftHand = false
+	right := o
+	right.Spec.LeftHand = false
 	clearance, err := o.FitClearance()
 	if err != nil {
 		clearance = o.Clearance
 	}
 	return ThreadOptions{
-		Designation: right.String(), LeftHand: o.Spec.LeftHand, Internal: o.Internal, Length: o.Length, Through: o.Through,
+		Designation: right.Designation(), LeftHand: o.Spec.LeftHand, Internal: o.Internal, Length: o.Length, Through: o.Through,
 		Reverse: o.Reverse, Clearance: clearance, Class: o.Class, LengthExpr: o.LengthExpr, Crest: o.Crest.String(),
 		RunOut: o.RunOut, LevelStarts: o.LevelStarts, FullLength: o.FullLength, Cosmetic: o.Cosmetic, Phase: o.Phase,
 		Chamfer: o.Chamfer, LoadFlankBack: o.LoadFlankBack, RoundRoot: o.RoundRoot,
@@ -262,7 +266,7 @@ func (v ThreadGroup) Edit(o ThreadOptions) (edited ThreadGroup) {
 			fail("%v", err)
 		}
 		if o.Designation == "" {
-			o.Designation = was.Spec.String()
+			o.Designation = was.Designation()
 		}
 		if o.Length == 0 && o.LengthExpr == "" {
 			o.Length, o.LengthExpr = was.Length, was.LengthExpr
@@ -338,8 +342,8 @@ func ThreadDesignation(text string) string {
 
 // ThreadClasses are the tolerance classes of a thread of the
 // designation, a screw's or, internal, a nut's, the default first:
-// ThreadClasses("M8", false) begins "6g". Whitworth and ACME threads
-// have none, and take a Clearance.
+// ThreadClasses("M8", false) begins "6g". Whitworth threads have none,
+// and take a Clearance.
 func ThreadClasses(designation string, internal bool) []string {
 	s, err := thread.Parse(designation)
 	if err != nil {

@@ -23,8 +23,9 @@ import (
 //	1/2-10 ACME    general purpose ACME, 10 threads per inch
 //	S20x4          DIN 513 metric buttress
 //	S40x14(P7)     buttress, 7 mm pitch, 14 mm lead
-//	1-12 BUTT      ASME B1.9 buttress inch, 12 threads per inch
-//	1-12 PULL-BUTT the same, the screw pulling (PUSH-BUTT, pushing)
+//	1-12 BUTT      ASME B1.9 buttress inch, 12 threads per inch, pulling
+//	1-12 PUSH-BUTT the same, pushing (PULL-BUTT is read as BUTT)
+//	2-4 BUTT-2A    with its class, which the thread's options keep
 //
 // A designation ending in -LH is a left-hand thread. Letter case and
 // spaces don't matter, and the multiplication sign may stand for the x.
@@ -205,9 +206,15 @@ func (s *Spec) parseInch(t, text string) error {
 	if err != nil {
 		return err
 	}
-	// The class of an ACME thread, as in 1/2-10 ACME-2G.
+	// The class of an ACME thread, as in 1/2-10 ACME-2G, or of a B1.9
+	// buttress one, as in 2-4 BUTT-2A, which the options keep apart.
 	if i := strings.LastIndex(t, "ACME"); i >= 0 {
 		if class := strings.Trim(t[i+4:], "- "); len(class) == 2 && class[1] == 'G' && strings.ContainsAny(class[:1], "2345") {
+			t = t[:i+4]
+		}
+	}
+	if i := strings.LastIndex(t, "BUTT"); i >= 0 {
+		if class := strings.Trim(t[i+4:], "- "); len(class) == 2 && strings.ContainsAny(class[:1], "23") && strings.ContainsAny(class[1:], "AB") {
 			t = t[:i+4]
 		}
 	}
@@ -425,14 +432,17 @@ func Note(text string, s Spec) string {
 }
 
 // parseLoad takes the way of the load, PUSH or PULL, off the end of t,
-// what comes before BUTT in a designation, and returns the rest.
+// what comes before BUTT in a designation, and returns the rest. A
+// designation without either pulls, as B1.9 has it.
 func (s *Spec) parseLoad(t string) string {
-	for l, name := range loadNames {
-		if word := strings.TrimSuffix(name, "-"); word != "" {
-			if rest, ok := strings.CutSuffix(t, word); ok {
-				s.Load = Load(l)
-				return strings.TrimRight(rest, "- ")
-			}
+	s.Load = LoadPull
+	for _, w := range []struct {
+		word string
+		load Load
+	}{{"PUSH", LoadPush}, {"PULL", LoadPull}} {
+		if rest, ok := strings.CutSuffix(t, w.word); ok {
+			s.Load = w.load
+			return strings.TrimRight(rest, "- ")
 		}
 	}
 	return t

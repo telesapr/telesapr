@@ -135,20 +135,23 @@ func buttressInchTPI(d float64) []float64 {
 }
 
 // Load is the way a buttress thread carries its load, as ASME B1.9's
-// designations name it.
+// designations name it, by its leading flank: the one that faces the
+// mating thread as the two are about to be put together, on a screw
+// towards the end its thread starts from, in a nut towards its mouth.
 type Load int
 
 const (
-	// LoadUnstated is a designation that doesn't say: BUTT.
+	// LoadUnstated is a thread whose designation wasn't read, as one
+	// built in code or kept in a file, which keeps the way it is drawn.
 	LoadUnstated Load = iota
-	// LoadPush is PUSH-BUTT: the screw pushes, at the end its thread
-	// starts from, what lies beyond it, the nut holding it back. The
-	// screw's load flank faces away from that end, as a thread is drawn.
+	// LoadPush is PUSH-BUTT: the 7° load flank leads, on the screw and
+	// on the nut alike.
 	LoadPush
-	// LoadPull is PULL-BUTT: the screw pulls, its load flank facing the
-	// end its thread starts from; the ridge is turned about.
+	// LoadPull is BUTT, or PULL-BUTT as it may also be typed: the 45°
+	// clearance flank leads, the load flank following it.
 	LoadPull
 )
 
-// loadNames are the designations' words for each way, before BUTT.
-var loadNames = [...]string{LoadUnstated: "", LoadPush: "PUSH-", LoadPull: "PULL-"}
+// loadNames are the designations' words for each way, before BUTT;
+// B1.9 writes a pulling thread without one.
+var loadNames = [...]string{LoadUnstated: "", LoadPush: "PUSH-", LoadPull: ""}

@@ -213,6 +213,19 @@ func TestClassOrder(t *testing.T) {
 	if !(e7 > 0 && e8 > e7) {
 		t.Errorf("Tr 7e %v, 8e %v", e7, e8)
 	}
+	acme, _ := Parse("1-5 ACME")
+	g2, _ := ClassClearance(acme, false, "2G")
+	g5, _ := ClassClearance(acme, false, "5G")
+	n2, _ := ClassClearance(acme, true, "2G")
+	if !(g2 > n2 && n2 > g5 && g5 > 0) {
+		t.Errorf("ACME 2G %v, 2G nut %v, 5G %v", g2, n2, g5)
+	}
+	sb, _ := Parse("S40x7")
+	c8, _ := ClassClearance(sb, false, "8c")
+	se8, _ := ClassClearance(sb, false, "8e")
+	if !(c8 > se8 && se8 > 0) {
+		t.Errorf("S 8c %v, 8e %v", c8, se8)
+	}
 }
 
 // TestClassRefused checks the classes a thread doesn't take.
@@ -220,6 +233,7 @@ func TestClassRefused(t *testing.T) {
 	t.Parallel()
 	m, _ := Parse("M8")
 	w, _ := Parse("1/4 BSW")
+	b, _ := Parse("1-12 BUTT")
 	for _, tc := range []struct {
 		s        Spec
 		internal bool
@@ -231,6 +245,8 @@ func TestClassRefused(t *testing.T) {
 		{m, false, "2A", "6g"},
 		{m, false, "", "unknown"},
 		{w, false, "6g", "no tolerance classes"},
+		{b, false, "2B", "internal"},
+		{b, false, "1A", "unknown"},
 	} {
 		_, err := ClassClearance(tc.s, tc.internal, tc.class)
 		if err == nil || !strings.Contains(err.Error(), tc.says) {
@@ -243,7 +259,7 @@ func TestClassRefused(t *testing.T) {
 // and a form without classes has none.
 func TestDefaultClass(t *testing.T) {
 	t.Parallel()
-	for _, name := range []string{"M8", "1/4-20 UNC", "Tr20x4", "1/4 BSW", "1/2-10 ACME"} {
+	for _, name := range []string{"M8", "1/4-20 UNC", "Tr20x4", "1/4 BSW", "1/2-10 ACME", "S20x4", "1-12 BUTT"} {
 		s, _ := Parse(name)
 		for _, internal := range []bool{false, true} {
 			def := DefaultClass(s, internal)
@@ -256,6 +272,150 @@ func TestDefaultClass(t *testing.T) {
 					t.Errorf("%s: %v", name, err)
 				}
 			}
+		}
+	}
+}
+
+// TestACMETable checks ASME B1.5's general purpose classes against
+// Engineers Edge's table of external ACME threads (pitch diameters, in
+// inches, of 1-5 and 3/4-6 in classes 2G to 5G) and Machining Doctor's
+// 3/4-6 4G nut, 0.6667 to 0.6725: the allowance is how far the
+// maximum lies under the basic pitch diameter, D - p/2, and the
+// tolerance the range.
+func TestACMETable(t *testing.T) {
+	t.Parallel()
+	for _, r := range []struct {
+		d, tpi       float64
+		class        string
+		pdMax, pdMin float64
+	}{
+		{1, 5, "2G", 0.8920, 0.8726}, {1, 5, "3G", 0.8940, 0.8849},
+		{1, 5, "4G", 0.8960, 0.8895}, {1, 5, "5G", 0.9000, 0.8948},
+		{0.75, 6, "2G", 0.6598, 0.6424}, {0.75, 6, "3G", 0.6615, 0.6534},
+		{0.75, 6, "4G", 0.6632, 0.6574}, {0.75, 6, "5G", 0.6667, 0.6620},
+	} {
+		p := 1 / r.tpi
+		tolerance, allowance := acmeTolerance(r.d, p, r.class)
+		basic := roundTenThousandth(r.d - p/2)
+		if math.Abs(tolerance-(r.pdMax-r.pdMin)) > 1e-9 || math.Abs(allowance-(basic-r.pdMax)) > 1e-9 {
+			t.Errorf("%g-%g ACME %s: tolerance %.4f, allowance %.4f; the table's %.4f, %.4f",
+				r.d, r.tpi, r.class, tolerance, allowance, r.pdMax-r.pdMin, basic-r.pdMax)
+		}
+	}
+	s, _ := Parse("3/4-6 ACME")
+	got, err := ClassClearance(s, true, "4G")
+	if want := (0.6725 - 0.6667) / 4 * mmPerInch; err != nil || math.Abs(got-want) > 1e-9 {
+		t.Errorf("3/4-6 ACME 4G nut: %v, %v; want %v", got, err, want)
+	}
+}
+
+// TestButtressInchTable checks ASME B1.9's classes against NBS Handbook
+// H28 (1957) Part III, Tables XIV.2 and XIV.3 (class 3 and class 2
+// pitch diameter tolerances, in inches) and Table XIV.5 (the
+// allowances, class 3's), and Machinery's Handbook's 2-4 class 2
+// example: an allowance of 0.0074 and a tolerance of 0.0112. H28's
+// class 3 cell of 11/16 to 1 inch at 16 threads per inch reads 0.0042
+// where its sum gives 0.0041, the one cell of the rows here that
+// disagrees, and is left out.
+func TestButtressInchTable(t *testing.T) {
+	t.Parallel()
+	for _, r := range []struct {
+		d, tpi         float64
+		class2, class3 float64
+	}{
+		{0.5, 20, 0.0056, 0.0037}, {0.5, 16, 0.0060, 0.0040}, {0.625, 12, 0.0067, 0.0044},
+		{0.875, 12, 0.0069, 0.0046}, {1, 10, 0.0074, 0.0049},
+		{1.25, 16, 0.0065, 0.0043}, {1.25, 12, 0.0071, 0.0048}, {1.5, 10, 0.0076, 0.0051},
+		{1.375, 8, 0.0083, 0.0055}, {1.5, 6, 0.0092, 0.0061},
+		{2, 16, 0.0068, 0.0046}, {2, 12, 0.0075, 0.0050}, {2, 10, 0.0080, 0.0053},
+		{2, 8, 0.0086, 0.0058}, {2, 6, 0.0096, 0.0064}, {2.5, 5, 0.0103, 0.0068}, {2, 4, 0.0112, 0.0074},
+		{3, 16, 0.0073, 0.0049}, {3, 6, 0.0100, 0.0067}, {4, 4, 0.0116, 0.0077},
+		{5, 3, 0.0134, 0.0089},
+	} {
+		p := 1 / r.tpi
+		t2, a2 := buttressInchTolerance(r.d, p, 2)
+		t3, a3 := buttressInchTolerance(r.d, p, 3)
+		if math.Abs(t2-r.class2) > 1e-9 || math.Abs(t3-r.class3) > 1e-9 || a2 != t3 || a3 != t3 {
+			t.Errorf("%g-%g BUTT: class 2 %.4f, class 3 %.4f, allowances %.4f, %.4f; H28's %.4f, %.4f",
+				r.d, r.tpi, t2, t3, a2, a3, r.class2, r.class3)
+		}
+	}
+	s, _ := Parse("2-4 BUTT")
+	got, err := ClassClearance(s, false, "2A")
+	if want := (0.0074 + 0.0112/2) / 2 * mmPerInch; err != nil || math.Abs(got-want) > 1e-9 {
+		t.Errorf("2-4 BUTT 2A: %v, %v; want %v", got, err, want)
+	}
+	if got, _ := ClassClearance(s, true, "2B"); math.Abs(got-0.0112/4*mmPerInch) > 1e-9 {
+		t.Errorf("2-4 BUTT 2B: %v", got)
+	}
+}
+
+// TestButtressMetricTable checks DIN 513-3:2020's classes: the
+// deviations of Table 2 and the tolerances of Tables 8 and 9, a row of
+// each range, and the formulae for what they lack; and that its grades
+// 7 and 8 are ISO 2903's where both list a row.
+func TestButtressMetricTable(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		thread, class string
+		internal      bool
+		es, td2       float64
+	}{
+		{"S10x2", "7e", false, 71, 190},
+		{"S10x2", "9c", false, 150, 300},
+		{"S10x2", "9H", true, 0, 400},
+		{"S20x4", "7e", false, 95, 265},
+		{"S20x4", "8c", false, 190, 335},
+		{"S20x4", "7H", true, 0, 355},
+		{"S40x7", "8e", false, 125, 450},
+		{"S70x10", "9c", false, 300, 670},
+		{"S120x14", "8H", true, 0, 900},
+		{"S300x24", "7e", false, 236, 710},
+		{"S400x12", "9c", false, 335, 900},
+		{"S400x44", "9H", true, 0, 2000},
+		// Two starts of 7 mm: the tolerance times DIN 513-3's 1.12,
+		// the deviation of the pitch.
+		{"S40x14(P7)", "7e", false, 125, 355 * 1.12},
+		// A pitch Table 2 lacks: -(50 + 11 P) for e, 5 + 94.12 √P for c,
+		// each to R40, and the tolerances by 90 P^0.4 d^0.1 of the
+		// range's geometric mean, 31.75, times 1.25 (7) and 2 (9).
+		{"S30x1.5", "7e", false, 67, 190},
+		{"S30x13", "9c", false, 335, 710},
+	} {
+		s, err := Parse(tc.thread)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := ClassClearance(s, tc.internal, tc.class)
+		if err != nil {
+			t.Errorf("%s %s: %v", tc.thread, tc.class, err)
+			continue
+		}
+		if want := (tc.es + tc.td2/2) / 2 / 1000; math.Abs(got-want) > 1e-9 {
+			t.Errorf("%s %s: clearance %.5f mm, the table's %.5f", tc.thread, tc.class, got, want)
+		}
+	}
+	for _, r := range buttressTolerances {
+		for _, tr := range trapezoidalTolerances {
+			if tr.over == r.over && same(tr.pitch, r.pitch) &&
+				(tr.ext != [2]int{r.ext[0], r.ext[1]} || tr.in != [2]int{r.in[0], r.in[1]}) {
+				t.Errorf("over %g, P%g: DIN 513-3 %v %v, ISO 2903 %v %v", r.over, r.pitch, r.ext, r.in, tr.ext, tr.in)
+			}
+		}
+	}
+	for _, r := range buttressDeviations {
+		e := 47.48 * math.Sqrt(r.pitch)
+		if r.pitch <= 6 {
+			e = 50 + 11*r.pitch
+		}
+		c := 5 + 94.12*math.Sqrt(r.pitch)
+		if r.pitch <= 2 {
+			c = 125 + 11*r.pitch
+		}
+		// DIN 513-3 says the table differs from the formulae by 3% at
+		// most; e at 12 mm is 170 for the formula's 164, 3.4%.
+		if math.Abs(float64(r.e)-e) > 0.035*e || math.Abs(float64(r.c)-c) > 0.03*c {
+			t.Errorf("P%g: c %d, e %d; the formulae's %.0f, %.0f", r.pitch, r.c, r.e, c, e)
 		}
 	}
 }

@@ -18,7 +18,7 @@ fixture has been done; its "Tried" notes say what not to try again.
 | 1 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Each refused case today is a clear message, not bad geometry |
 | 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Shells of filleted and lofted solids; corners on twisted and fitted sweeps |
 | 2a | [Modelling upgrade leftovers](#modelling-upgrade-leftovers) | kernel and feature | ? | What the 2026-10-22 work packages left; each refuses with a message today |
-| 2b | [Thread leftovers](#thread-leftovers) | kernel and feature | ? | What the thread improvements of 2026-10-23 left: ACME classes, buttress classes and rounded crests |
+| 2b | [Thread leftovers](#thread-leftovers) | kernel and feature | ? | What the thread improvements of 2026-10-23 left: DIN 513's nut deviation, B1.9's preferred pitches, a rounded root at coarse tolerances |
 | 3 | [F5 Small UI and CLI conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
 | 4 | [K4 Constrained Delaunay mesher](#k4-constrained-delaunay-mesher) | kernel foundation | M | Since 2026-10-11 it mends the ear clipper's crossing faces; as the default it still costs 3 to 5 times the triangles |
 | 5 | [F6 IGES import and export](#f6-iges-import-and-export) | feature | L | Only if asked for |
@@ -744,8 +744,31 @@ What the thread improvements of 2026-10-23 (`doc/notes/thread-evaluation.md`, br
 
 | Item | State | Approach / tried |
 |---|---|---|
-| ACME tolerance classes (2G to 5G) | read from a designation and dropped; an ACME thread takes B1.5's crest clearance and a typed-in clearance | B1.5's pitch diameter allowances and tolerances were not to hand; metric, trapezoidal and unified classes follow their tables since 2026-10-28 (`pkg/thread/class_iso.go`, `class_unified.go`) |
-| Buttress threads, what was left | DIN 513 (S) and ASME B1.9 (BUTT) made since 2026-10-28, B1.9's rounded root and PUSH-/PULL-BUTT since 2026-10-29 (below), rounded crests since 2026-10-29 (below); no classes; a rounded root refused at chord tolerances coarser than a fifth of its radius (`ErrRootRoundCoarse`) | DIN 513-2's and B1.9's tolerance classes (the user's tables). A rounded root at coarse tolerances: grooves cut from a blank at the crest (the groove's arc then meets nothing) were sound for every nut at 0.5% in a spike, but screws turned down failed at 0.2% and 0.5%, and the cut would need its own chamfer and run-out |
+| DIN 513-3's nut deviation | DIN 513 classes 7e, 8e, 8c, 9c and 7H, 8H, 9H made since 2026-10-30 (below), the nut's H taken as basic | DIN 513-3 gives the nut's pitch diameter EI = 3.1758 a, 2/(tan 3° + tan 30°) times DIN 513-1's axial play a, which no free source gives; with a, `buttressClearance` (`pkg/thread/class_buttress.go`) adds it |
+| B1.9's preferred pitches | `buttressInchTPI` follows NBS H28 (1957) Part III's ranges of diameter and their pitches, which the fork that wrote it took from memory and H28 confirms up to 4 inches | amesweb's buttress calculator lists three pitches a diameter (1/2 to 3/4: 12, 16, 20; 1 1/4 to 1 1/2: 8, 10, 12; ...), B1.9 (1973)'s Table 1 of preferred and alternative combinations, perhaps; B1.9 itself would settle it, and the default pitch of a size without one |
+| Buttress threads, what was left | DIN 513 (S) and ASME B1.9 (BUTT) made since 2026-10-28, B1.9's rounded root and PUSH-BUTT since 2026-10-29 (below), rounded crests since 2026-10-29 (below), classes since 2026-10-30 (below); a rounded root refused at chord tolerances coarser than a fifth of its radius (`ErrRootRoundCoarse`) | A rounded root at coarse tolerances: grooves cut from a blank at the crest (the groove's arc then meets nothing) were sound for every nut at 0.5% in a spike, but screws turned down failed at 0.2% and 0.5%, and the cut would need its own chamfer and run-out. Classes of several starts: B1.5's appendix B allowances and B1.9's are left out (DIN 513-3's factors are in) |
+
+Done 2026-10-30: tolerance classes of ACME and buttress threads, and the way of a B1.9 thread's load.
+ASME B1.5's general purpose 2G to 5G (`pkg/thread/class_acme.go`): a screw's allowance 0.008, 0.006,
+0.004 and 0 times √D, the tolerance 0.010√p + 0.002√D times 3.0, 1.4, 1 and 0.8, a nut's alike
+without the allowance, each to 0.0001 inch, which gives every pitch diameter of Engineers Edge's 1-5
+and 3/4-6 rows (`TestACMETable`). ASME B1.9's 2A, 3A and 2B, 3B (`class_buttress.go`): NBS Handbook H28
+(1957) Part III's formula, 0.002∛D + 0.00278√Le + 0.00854√p, Le ten pitches, in its tables' form (a
+diameter increment of the range's middle and a pitch increment of 0.0173√p, each to 0.00001, their sum
+to 0.0001, halves to even), class 3 two thirds of class 2, the screw's allowance class 3's tolerance:
+H28's Tables XIV.2 and XIV.3 but one cell of its scan (11/16 to 1 inch, 16 threads per inch, class 3,
+0.0042 for the sum's 0.0041), and Machinery's Handbook's 2-4 class 2 example, 0.0074 and 0.0112
+(`TestButtressInchTable`). DIN 513-3:2020's 7e, 8e, 8c, 9c and 7H, 8H, 9H: Tables 2, 8 and 9, which are
+ISO 2903's where both have a row, the formulae of clause 11 for what they lack, and clause 12's
+factors for several starts (`TestButtressMetricTable`). B1.9's leading flank, which H28 defines as the
+flank that faces the mating thread as the two are put together, was read the wrong way round on a
+screw: PUSH-BUTT left a screw's ridge as drawn, its clearance flank leading, which is pulling. Pushing
+now turns a screw's ridge and leaves a nut's, pulling the other way (`ThreadOptions.LoadStated`); a
+designation without PUSH pulls, as B1.9 has it, PULL-BUTT is read and written BUTT, and a thread writes
+back the way its ridge makes (`ThreadOptions.Designation`), so that a screw and a nut that both push,
+or both pull, mate (`TestScrewFitsButtressLoadWays`). A file's thread keeps its ridge: it saves no
+designation. The thread cases that typed PULL-BUTT on a screw type PUSH-BUTT, which keeps their ridges
+and their goldens; ext_thread_round_root's row now shows PUSH-BUTT.
 
 Done 2026-10-29: rounded crests on buttress threads, refused before (`ErrButtressRounded`, gone). The
 circle tangent to the crest's line and to a flank at angle a from the plane square to the axis has its

@@ -18,5 +18,5 @@ func main() {
 			top = e
 		}
 	}
-	doc.Features.Thread(top, ThreadOptions{Designation: "1/2-16 PULL-BUTT", Length: 30, Reverse: true, RoundRoot: true})
+	doc.Features.Thread(top, ThreadOptions{Designation: "1/2-16 PUSH-BUTT", Length: 30, Reverse: true, RoundRoot: true})
 }

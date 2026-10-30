@@ -130,3 +130,72 @@ func screwButtress(t *testing.T, crest string) {
 		t.Errorf("half a pitch off: %+v, want the nut to collide", found)
 	}
 }
+
+// TestScrewFitsButtressLoadWays screws a B1.9 nut onto a B1.9 rod by
+// the way of the load their designations say. The rod's thread runs
+// down from its top, which goes into the nut first, and the nut's up
+// from its bottom, which meets the rod first: a screw and a nut that
+// both push (PUSH-BUTT) or both pull (BUTT) mate, their load flanks
+// facing each other, and one of each is refused.
+func TestScrewFitsButtressLoadWays(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("buttress threads screwed together, a few seconds")
+	}
+	const r = 12.7
+	nutFile := func(designation string) string {
+		nut := New()
+		disc := nut.Sketch.Circle(V(0, 0, 0), 25)
+		nut.Constrain.Coincident(disc.Center(), nut.Origin())
+		nut.Features.Extrude(15, "disc")
+		nut.Features.SketchIn(nut.Workplane("XY"), "hole")
+		hole := nut.Sketch.Circle(V(0, 0, 0), r)
+		nut.Constrain.Coincident(hole.Center(), nut.Origin())
+		nut.Features.Thread(hole, ThreadOptions{Designation: designation, Internal: true, Through: true, Length: 15, Class: "2B"})
+		path := filepath.Join(t.TempDir(), "nut.tlspr")
+		if err := nut.File.Save(path); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	for _, c := range []struct {
+		rod, nut string
+		mates    bool
+	}{
+		{"1-12 PUSH-BUTT", "1-12 PUSH-BUTT", true},
+		{"1-12 BUTT", "1-12 PULL-BUTT", true},
+		{"1-12 PUSH-BUTT", "1-12 BUTT", false},
+		{"1-12 BUTT", "1-12 PUSH-BUTT", false},
+	} {
+		d := New()
+		shank := d.Sketch.Circle(V(0, 0, 0), r)
+		d.Constrain.Coincident(shank.Center(), d.Origin())
+		rod := d.Features.Extrude(40, "rod")
+		var end Entity
+		for _, e := range rod.Entities() {
+			if e.Kind() == "circle" && e.Center().Pos().Z > 20 {
+				end = e
+			}
+		}
+		d.Features.Thread(end, ThreadOptions{Designation: c.rod, Length: 40, Reverse: true, Through: true, Class: "2A"})
+		g, err := d.Assembly.Link(nutFile(c.nut), "nut")
+		if err != nil {
+			t.Fatal(err)
+		}
+		var hole Entity
+		for _, e := range g.Entities() {
+			if e.Kind() == "circle" && math.Abs(e.Radius()-r) < 1e-6 &&
+				(hole.H.V == 0 || e.Center().Pos().Z < hole.Center().Pos().Z) {
+				hole = e
+			}
+		}
+		d.Sketch.Anywhere3D()
+		if c.mates {
+			d.Assembly.Screw(end, hole, 0)
+			continue
+		}
+		mustFail(t, c.rod+" on "+c.nut, "load flanks face the same way", func() {
+			d.Assembly.Screw(end, hole, 0)
+		})
+	}
+}

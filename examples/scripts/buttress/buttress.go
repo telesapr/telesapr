@@ -1,8 +1,8 @@
 // Buttress threads, which carry their load on one flank: a screw jack's
 // S20x4 spindle (DIN 513) threaded down from its top, its nut with the
 // load flank turned back to mate it, and a 1-12 BUTT (ASME B1.9) ring,
-// then its roots rounded as B1.9 draws them and its crests rounded for
-// printing, made by a script.
+// then pushing, in class 2A, its roots rounded as B1.9 draws them and
+// its crests rounded for printing, made by a script.
 //
 // Without a window:
 //
@@ -12,11 +12,14 @@
 //
 //	telesapr --script examples/scripts/buttress/buttress.go
 //
-// A buttress ridge leans: its load flank, nearly square to the axis,
-// faces along the thread on a screw and back in a nut. The spindle's
-// thread runs down from its top and the nut's up from its bottom, so the
-// nut takes LoadFlankBack for the two load flanks to face each other,
-// as Assembly.Screw requires of buttress threads it fits. The script
+// A buttress ridge leans: its load flank is nearly square to the axis.
+// As drawn, a screw's clearance flank leads, facing where its thread
+// starts, and a nut's load flank faces its mouth. The spindle's thread
+// runs down from its top and the nut's up from its bottom, so the nut
+// takes LoadFlankBack for the two load flanks to face each other, as
+// Assembly.Screw requires of buttress threads it fits. A B1.9
+// designation says it by the flank that leads: BUTT pulls, the
+// clearance flank leading, and PUSH-BUTT pushes. The script
 // checks the solids, prints them, and saves buttress.tlspr unless given
 // "-".
 package main
@@ -93,19 +96,19 @@ func main() {
 	check(last(inch))
 
 	// The ring's thread made again as ASME B1.9 draws it, its roots
-	// rounded, and pulling: PULL-BUTT turns its load flank back. The
-	// rounded roots' arcs, 0.15 mm, need a chord tolerance finer than
-	// the default.
+	// rounded, in class 2A, and pushing: PUSH-BUTT, its load flank
+	// leading, turns the screw's ridge back. The rounded roots' arcs,
+	// 0.15 mm, need a chord tolerance finer than the default.
 	doc.Edit.SetChordTolerance(0.01)
-	inch = inch.Edit(api.ThreadOptions{Designation: "1-12 PULL-BUTT", Length: 20, RoundRoot: true})
+	inch = inch.Edit(api.ThreadOptions{Designation: "1-12 PUSH-BUTT", Length: 20, RoundRoot: true, Class: "2A"})
 	o = inch.Options()
-	fmt.Printf("ring %s, load flank back %v, rounded root %v\n", o.Designation, o.LoadFlankBack, o.RoundRoot)
+	fmt.Printf("ring %s %s, load flank back %v, rounded root %v\n", o.Designation, o.Class, o.LoadFlankBack, o.RoundRoot)
 	check(last(inch))
 
 	// And its crests rounded too, as prints better: the arc, tangent to
 	// flanks at 7° and 45°, has its top off the ridge's middle, towards
 	// the steeper flank.
-	inch = inch.Edit(api.ThreadOptions{Designation: "1-12 PULL-BUTT", Length: 20, RoundRoot: true, Crest: "rounded"})
+	inch = inch.Edit(api.ThreadOptions{Designation: "1-12 PUSH-BUTT", Length: 20, RoundRoot: true, Class: "2A", Crest: "rounded"})
 	fmt.Printf("ring crest %s\n", inch.Options().Crest)
 	check(last(inch))
 

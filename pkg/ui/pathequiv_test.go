@@ -103,7 +103,7 @@ var pathEquivalences = map[string]pathCheck{
 		}
 		t.Error("no thread")
 	},
-	// A B1.9 buttress thread with rounded roots and PULL-BUTT typed, at a
+	// A B1.9 buttress thread with rounded roots and PUSH-BUTT typed, at a
 	// chord tolerance set fine enough, made through its screen, and by a
 	// script.
 	"thread_round_root": nil,

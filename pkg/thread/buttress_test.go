@@ -106,13 +106,17 @@ func TestButtressDesignations(t *testing.T) {
 		{"s20", "S20x4", Spec{Form: FormButtress, Diameter: 20, Pitch: 4}},
 		{"S 40 x 14 (P7)-LH", "S40x14(P7)-LH", Spec{Form: FormButtress, Diameter: 40, Pitch: 7, Starts: 2, LeftHand: true}},
 		{"S25x3", "S25x3", Spec{Form: FormButtress, Diameter: 25, Pitch: 3}},
-		{"1-12 BUTT", "1-12 BUTT", Spec{Form: FormButtressInch, Diameter: in, Pitch: in / 12}},
-		{"1 butt", "1-12 BUTT", Spec{Form: FormButtressInch, Diameter: in, Pitch: in / 12}},
-		{"2-1/2-8 BUTT (2 starts)", "2 1/2-8 BUTT (2 starts)", Spec{Form: FormButtressInch, Diameter: 2.5 * in, Pitch: in / 8, Starts: 2}},
-		{"0.6-20 BUTT", "0.6-20 BUTT", Spec{Form: FormButtressInch, Diameter: 0.6 * in, Pitch: in / 20}},
+		// B1.9 writes a pulling thread BUTT, a pushing one PUSH-BUTT.
+		{"1-12 BUTT", "1-12 BUTT", Spec{Form: FormButtressInch, Diameter: in, Pitch: in / 12, Load: LoadPull}},
+		{"1 butt", "1-12 BUTT", Spec{Form: FormButtressInch, Diameter: in, Pitch: in / 12, Load: LoadPull}},
+		{"2-1/2-8 BUTT (2 starts)", "2 1/2-8 BUTT (2 starts)", Spec{Form: FormButtressInch, Diameter: 2.5 * in, Pitch: in / 8, Starts: 2, Load: LoadPull}},
+		{"0.6-20 BUTT", "0.6-20 BUTT", Spec{Form: FormButtressInch, Diameter: 0.6 * in, Pitch: in / 20, Load: LoadPull}},
 		{"1-12 PUSH-BUTT", "1-12 PUSH-BUTT", Spec{Form: FormButtressInch, Diameter: in, Pitch: in / 12, Load: LoadPush}},
-		{"1-12 pull butt-LH", "1-12 PULL-BUTT-LH", Spec{Form: FormButtressInch, Diameter: in, Pitch: in / 12, Load: LoadPull, LeftHand: true}},
-		{"1 PULL-BUTT", "1-12 PULL-BUTT", Spec{Form: FormButtressInch, Diameter: in, Pitch: in / 12, Load: LoadPull}},
+		{"1-12 pull butt-LH", "1-12 BUTT-LH", Spec{Form: FormButtressInch, Diameter: in, Pitch: in / 12, Load: LoadPull, LeftHand: true}},
+		{"1 PULL-BUTT", "1-12 BUTT", Spec{Form: FormButtressInch, Diameter: in, Pitch: in / 12, Load: LoadPull}},
+		// The class, which the thread's options keep, is read past.
+		{"2-4 BUTT-2A", "2-4 BUTT", Spec{Form: FormButtressInch, Diameter: 2 * in, Pitch: in / 4, Load: LoadPull}},
+		{"1-12 PUSH-BUTT-3B LH", "1-12 PUSH-BUTT-LH", Spec{Form: FormButtressInch, Diameter: in, Pitch: in / 12, Load: LoadPush, LeftHand: true}},
 	} {
 		got, err := Parse(tc.text)
 		if err != nil {
@@ -130,7 +134,7 @@ func TestButtressDesignations(t *testing.T) {
 			t.Errorf("%q: %q reads back as %+v, %v", tc.text, got.String(), back, err)
 		}
 	}
-	for _, bad := range []string{"S21", "5 BUTT", "S", "1-12 PUSH", "1-12 PUSH-ACME"} {
+	for _, bad := range []string{"S21", "5 BUTT", "S", "1-12 PUSH", "1-12 PUSH-ACME", "1-12 BUTT-4A"} {
 		if _, err := Parse(bad); err == nil {
 			t.Errorf("%q read", bad)
 		}
@@ -168,11 +172,11 @@ func TestButtressSeries(t *testing.T) {
 	if SeriesOf(sizes[0]) != SeriesButtress || SeriesOf(inch[0]) != SeriesButtressInch {
 		t.Error("buttress sizes are of another series")
 	}
-	if Classes(sizes[0], false) != nil || DefaultClass(inch[0], true) != "" {
-		t.Error("a buttress thread has classes")
+	if DefaultClass(sizes[0], false) != "7e" || DefaultClass(inch[0], true) != "2B" {
+		t.Error("the buttress threads' default classes")
 	}
-	if _, err := ClassClearance(sizes[0], false, "7e"); err == nil {
-		t.Error("a buttress thread took a class")
+	if _, err := ClassClearance(sizes[0], false, "6g"); err == nil {
+		t.Error("a DIN 513 thread took ISO 965-1's 6g")
 	}
 }
 

@@ -20,7 +20,7 @@ takes:
   | `G1/2`, `G1 1/2` | parallel pipe thread (BSP, ISO 228-1) |
   | `1/2-10 ACME`, `1/2 ACME-2G` | general purpose ACME, 29° |
   | `S20x4`, `S40x14(P7)` | metric buttress (DIN 513), flanks at 3° and 30° |
-  | `1-12 BUTT`, `1 BUTT`, `1-12 PULL-BUTT` | buttress inch (ASME B1.9), flanks at 7° and 45° |
+  | `1-12 BUTT`, `1 BUTT`, `1-12 PUSH-BUTT`, `2-4 BUTT-2A` | buttress inch (ASME B1.9), flanks at 7° and 45° |
 
   **[choose]** lists the series (metric, unified, trapezoidal, Whitworth, pipe, ACME, buttress,
   and BUTT for buttress inch), the sizes
@@ -31,14 +31,18 @@ takes:
   thread and the nearest standard size (`give its pitch, as in Tr21x4, or take the nearest,
   Tr20x4`). Whitworth crests and roots are flat at the height of the standard's rounds; the
   rounded crest comes close to the standard's crest. A buttress thread's ridge leans: its load
-  flank, nearly square to the axis, faces along the thread on a screw and back in a nut, so that
-  a screw and a nut whose threads run the same way mate; **load flank back**, beside the hand for
-  a buttress thread, turns it about. A B1.9 designation may say which way the load goes:
-  `PUSH-BUTT` leaves the load flank as it is drawn, the screw pushing at the end its thread starts
-  from; `PULL-BUTT` ticks **load flank back**. A buttress thread's rounded crest is the arc
+  flank is nearly square to the axis. As drawn, a screw's clearance flank leads, facing where
+  its thread starts, the end that goes into the nut, and a nut's load flank faces its mouth;
+  **load flank back**, beside the hand for a buttress thread, turns it about. A screw and a nut
+  mate when their load flanks face each other. B1.9 names the way by the flank that leads as the
+  two are put together, on the screw and the nut alike: `BUTT` pulls, the clearance flank
+  leading, and `PUSH-BUTT` pushes, the load flank leading (`PULL-BUTT` is read as `BUTT`). A
+  designation typed sets **load flank back** so, and the thread's row writes the way its ridge
+  makes; made internal, a B1.9 thread keeps its way and its ridge turns. A DIN 513 designation
+  says nothing of it. A buttress thread's rounded crest is the arc
   tangent to both flanks and to the standard crest, which its top touches off the crest's
-  middle, towards the steeper flank; it goes with a rounded root too. Buttress threads have no
-  tolerance classes. Their roots are flat at the standard's truncation;
+  middle, towards the steeper flank; it goes with a rounded root too. Their roots are flat at the
+  standard's truncation;
   **rounded root**, at the end of the crest's row for a B1.9 thread, rounds them as B1.9 draws
   them, by an arc of 0.07141 pitches tangent to both flanks. Its arcs are small, 0.15 mm on a
   1-12 BUTT, and a chord tolerance coarser than a fifth of their radius is refused with the
@@ -58,8 +62,11 @@ takes:
 - **clearance**, in the document's unit, which moves the thread away from its mate, and beside it the **class**, whose
   **[choose]** lists the tolerance classes of the thread's form and side: 6g, 6h, 6f, 6e, 4h, 8g
   for an ISO metric screw and 6H, 4H, 5H, 7H, 6G for its nut (ISO 965-1); 1A, 2A, 3A and 1B, 2B,
-  3B for unified threads (ASME B1.1); 7e, 8e and 7H, 8H for trapezoidal ones (ISO 2903).
-  Whitworth, ACME and buttress threads have none. A class sets the clearance to the middle of its zone:
+  3B for unified threads (ASME B1.1); 7e, 8e and 7H, 8H for trapezoidal ones (ISO 2903); 2G,
+  3G, 4G and 5G for ACME ones, screw and nut (ASME B1.5, general purpose); 2A, 3A and 2B, 3B for
+  buttress inch ones (ASME B1.9); 7e, 8e, 8c, 9c and 7H, 8H, 9H for metric buttress ones (DIN
+  513-3, whose nut deviation of 3.1758 times DIN 513-1's axial play is not yet taken: H is
+  basic). Whitworth threads have none. A class sets the clearance to the middle of its zone:
   half the fundamental deviation plus half the pitch diameter tolerance, as a radius, so that a
   6g screw fits a 6H nut as their parts do on average (M10: 0.049 and 0.044 mm). The numbers
   come from the standards' formulas, within a few µm of their tables for the sizes checked; a

@@ -335,8 +335,8 @@ func TestThreadCrests(t *testing.T) {
 		// a nut, either way round, and with B1.9's rounded roots.
 		{"screw_s20_rounded", 10, 40, "S20x4", sketch.ThreadOptions{Length: 30, Crest: thread.CrestRounded}},
 		{"nut_s20_back_rounded", 16, 20, "S20x4", sketch.ThreadOptions{Length: 20, Through: true, Internal: true, LoadFlankBack: true, Crest: thread.CrestRounded}},
-		{"screw_butt_rounded", 12.7, 40, "1-12 PULL-BUTT", sketch.ThreadOptions{Length: 25, Clearance: 0.05, Crest: thread.CrestRounded}},
-		{"nut_butt_lh_rounded", 20, 15, "1-12 BUTT-LH", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Clearance: 0.05, Crest: thread.CrestRounded}},
+		{"screw_butt_rounded", 12.7, 40, "1-12 PUSH-BUTT", sketch.ThreadOptions{Length: 25, Clearance: 0.05, Crest: thread.CrestRounded}},
+		{"nut_butt_lh_rounded", 20, 15, "1-12 PUSH-BUTT-LH", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Clearance: 0.05, Crest: thread.CrestRounded}},
 		{"screw_butt_round_both", 9.525, 20, "3/4-10 BUTT", sketch.ThreadOptions{Length: 12, Clearance: 0.05, RoundRoot: true, Crest: thread.CrestRounded}},
 		{"nut_butt_round_both", 20, 15, "1-12 PULL-BUTT", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Clearance: 0.05, RoundRoot: true, Crest: thread.CrestRounded}},
 	} {

@@ -2,6 +2,7 @@ package sketch_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/internal/sweep"
@@ -37,12 +38,12 @@ func buttressCrestCases() []threadCase {
 			if back {
 				suffix = " back"
 			}
-			cases = append(cases, threadCase{name + " screw" + suffix, c.d / 2, 2 * c.d, c.designation, screw})
+			cases = append(cases, threadCase{name + " screw" + suffix, c.d / 2, 2 * c.d, loadWay(c.designation, false, back), screw})
 			// The 2-8 BUTT nut is unsound at chord tolerances of 0.2% and
 			// coarser whatever its crest, flat ones alike (the same 774
 			// naked edges at 0.2%): not the crest's, left out.
 			if c.d < 50 {
-				cases = append(cases, threadCase{name + " nut" + suffix, c.d, 0.8 * c.d, c.designation, nut})
+				cases = append(cases, threadCase{name + " nut" + suffix, c.d, 0.8 * c.d, loadWay(c.designation, true, back), nut})
 			}
 		}
 	}
@@ -54,8 +55,18 @@ func buttressCrestCases() []threadCase {
 		// rounded one: not the crest's; an S20x4 nut stands in for it.
 		threadCase{"S20x4 nut chamfer", 20, 16, "S20x4", sketch.ThreadOptions{Length: 16, Through: true, Internal: true, Chamfer: true, Crest: thread.CrestRounded}},
 		threadCase{"S20x4 screw run-out", 10, 40, "S20x4", sketch.ThreadOptions{Length: 20, RunOut: 6, Crest: thread.CrestRounded}},
-		threadCase{"1-12 BUTT screw run-out back", 12.7, 40, "1-12 BUTT", sketch.ThreadOptions{Length: 20, RunOut: 5, LoadFlankBack: true, Crest: thread.CrestRounded}})
+		threadCase{"1-12 BUTT screw run-out back", 12.7, 40, "1-12 PUSH-BUTT", sketch.ThreadOptions{Length: 20, RunOut: 5, Crest: thread.CrestRounded}})
 	return cases
+}
+
+// loadWay is a B1.9 designation that turns the ridge of a screw or a
+// nut back, or leaves it, as LoadFlankBack does a DIN 513 one's: a
+// screw's is turned pushing, a nut's pulling.
+func loadWay(designation string, internal, back bool) string {
+	if !strings.HasSuffix(designation, "BUTT") || internal == back {
+		return designation
+	}
+	return strings.Replace(designation, "BUTT", "PUSH-BUTT", 1)
 }
 
 // TestThreadButtressCrestSweep makes buttress threads with rounded

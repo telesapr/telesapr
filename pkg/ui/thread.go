@@ -146,7 +146,7 @@ func (tw *textWindow) EditControlDoneForThread(s string) bool {
 		// flank, which then keeps it.
 		t.options.Spec = spec
 		t.options = t.options.LoadStated()
-		t.designation = t.options.Spec.String()
+		t.designation = t.options.Designation()
 		t.note = thread.Note(s, spec)
 
 	case editThreadLength:
@@ -220,21 +220,27 @@ func (tw *textWindow) ScreenChangeThread(link int, v uint32) {
 		t.picking, t.series = true, thread.SeriesOf(t.options.Spec)
 	case 'h', 'k':
 		t.options.Spec.LeftHand = link == 'k'
-		t.designation, t.note = t.options.Spec.String(), ""
+		t.designation, t.note = t.options.Designation(), ""
 	case 's':
 		t.options.LevelStarts = !t.options.LevelStarts
 	case 'w':
 		t.options.LoadFlankBack = !t.options.LoadFlankBack
+		t.designation = t.options.Designation()
 	case 'j':
 		t.options.RoundRoot = !t.options.RoundRoot
 	case 'y', 'z':
 		t.options.Cosmetic = link == 'z'
 	case 'x':
 		t.options.Chamfer = !t.options.Chamfer
-	case 'e':
-		t.options.Internal = false
-	case 'i':
-		t.options.Internal = true
+	case 'e', 'i':
+		// A B1.9 thread keeps the way of its load, which its designation
+		// says, on either side: its ridge turns with the side.
+		if internal := link == 'i'; internal != t.options.Internal {
+			t.options.Internal = internal
+			if t.options.Spec.Form == thread.FormButtressInch {
+				t.options.LoadFlankBack = !t.options.LoadFlankBack
+			}
+		}
 	case 't':
 		if t.onFace {
 			// Off, the thread keeps the face's length, ending short of
@@ -274,7 +280,7 @@ func (tw *textWindow) ScreenEditThread(link int, v uint32) {
 		return
 	}
 	tw.shown.thread = threadScreen{
-		circle: ss.SK.Group(hg).Thread.Circle, designation: o.Spec.String(), options: o, edit: hg}
+		circle: ss.SK.Group(hg).Thread.Circle, designation: o.Designation(), options: o, edit: hg}
 	if p, ok := ss.SK.ThreadPlaceOf(hg); ok {
 		tw.shown.thread.onFace, tw.shown.thread.place = true, p
 	}
