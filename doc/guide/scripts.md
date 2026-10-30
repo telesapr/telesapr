@@ -109,6 +109,18 @@ face no point finds. Handles are numbered
 afresh, so the script names what a group made by what it was made from (`g3.Made(r4, 1002)`)
 and a request's points by their number (`r4.Part(1)`).
 
+## A model in words
+
+`doc.Describe()` returns the drawing in words: the unit, the parameters, each group with how it
+solved, its degrees of freedom and problems, and the volume and bounds of the solid; then the
+active group's requests and constraints with their names and values. `Group.Describe()` does the
+same for one group. It is what an AI program reads before writing a script ([`doc/ai.md`](../ai.md));
+example: [`examples/scripts/describe`](../../examples/scripts/describe/describe.go).
+
+```go
+fmt.Println(doc.Describe())
+```
+
 ## What it does not do yet
 
 - A form's fields are a flat list: no units that follow the document's, no bounds, no fields

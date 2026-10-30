@@ -4,7 +4,10 @@ Examples: [`examples/scripts/fillet`](../../examples/scripts/fillet/fillet.go), 
 its upright edges rounded; [`roundbox`](../../examples/scripts/roundbox),
 [`tray`](../../examples/scripts/tray), [`ramp`](../../examples/scripts/ramp),
 [`plinth`](../../examples/scripts/plinth), [`spinner`](../../examples/scripts/spinner) and
-[`rib`](../../examples/scripts/rib) for corners, filled edges and edges of their own radius.
+[`rib`](../../examples/scripts/rib) for corners, filled edges and edges of their own radius;
+[`soap`](../../examples/scripts/soap) for a rim rounded all round,
+[`knob`](../../examples/scripts/knob) for a fillet beside a chamfer, and
+[`casing`](../../examples/scripts/casing) for two radii in one fillet.
 
 Features > Fillet Edges (Shift+F) rounds edges of the solid so far, 1 mm to begin with. It
 takes the same selection as a chamfer:
