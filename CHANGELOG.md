@@ -9,6 +9,11 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.5.12] - 2026-10-30
+
+### Changed
+- Release maintenance only: the continuous-integration workflow runs the race detector on request instead of on every push to master.
+
 ## [0.5.11] - 2026-10-30
 
 ### Fixed
