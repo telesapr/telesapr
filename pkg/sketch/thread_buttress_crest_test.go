@@ -38,13 +38,9 @@ func buttressCrestCases() []threadCase {
 			if back {
 				suffix = " back"
 			}
-			cases = append(cases, threadCase{name + " screw" + suffix, c.d / 2, 2 * c.d, loadWay(c.designation, false, back), screw})
-			// The 2-8 BUTT nut is unsound at chord tolerances of 0.2% and
-			// coarser whatever its crest, flat ones alike (the same 774
-			// naked edges at 0.2%): not the crest's, left out.
-			if c.d < 50 {
-				cases = append(cases, threadCase{name + " nut" + suffix, c.d, 0.8 * c.d, loadWay(c.designation, true, back), nut})
-			}
+			cases = append(cases,
+				threadCase{name + " screw" + suffix, c.d / 2, 2 * c.d, loadWay(c.designation, false, back), screw},
+				threadCase{name + " nut" + suffix, c.d, 0.8 * c.d, loadWay(c.designation, true, back), nut})
 		}
 	}
 	// Chamfered ends and run-outs, whose cones cut the arcs.

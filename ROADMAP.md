@@ -18,7 +18,7 @@ item is sized only after a two-day spike on its hardest fixture.
 | 1 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | One case is unsound, not refused; the rest refuse with a message |
 | 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Sweep corners next to a cubic; shells of the last joined cases |
 | 3 | [Modelling upgrade leftovers](#modelling-upgrade-leftovers) | kernel and feature | ? | Small ends of D1, D4, D5 and lofts |
-| 4 | [Thread leftovers](#thread-leftovers) | feature | S each | DIN 513's nut deviation, B1.9's pitches, a few unsound nuts |
+| 4 | [Thread leftovers](#thread-leftovers) | feature | S each | DIN 513's nut deviation, B1.9's pitches and multi-start allowances wait for sources; chamfered nuts at coarse tolerances |
 | 5 | [Test infrastructure](#test-infrastructure) | tooling | S | The race stage is within minutes of its limit |
 | 6 | [K3 contact](#k3-coincident-and-tangent-contact) | kernel foundation | ? | One pinch case and the "fuse by identity" rework |
 | 7 | [K4 mesher as default](#k4-constrained-delaunay-mesher) | kernel foundation | M | Costs 3 to 5 times the triangles today |
@@ -82,8 +82,8 @@ DIN 513-3:2020 (free text), NBS H28 (1957) Part III, Machinery's Handbook, Engin
 | DIN 513-3's nut deviation | 7H, 8H, 9H taken as basic | EI = 3.1758·a (2/(tan 3° + tan 30°) times DIN 513-1's axial play a, not found free); with a, `buttressClearance` adds it |
 | B1.9's preferred pitches | `buttressInchTPI` follows H28's ranges | amesweb's calculator lists three a diameter (B1.9 Table 1?); B1.9 itself would settle it, and the default pitch per size |
 | Rounded B1.9 root at coarse chord tolerances | refused coarser than a fifth of its radius (`ErrRootRoundCoarse`) | Grooves cut from a blank: nuts sound at 0.5%, screws failed at 0.2% and 0.5% |
-| Multi-start allowances | left out for B1.5 (appendix B) and B1.9; DIN 513-3's factors are in | |
-| Buttress nuts unsound, flat or rounded crest alike | the 2-8 BUTT nut at chord 0.2% and coarser; a chamfered 1-12 BUTT nut 20 long at 0.3% and coarser; the 1-12 BUTT nut on a Ø40 part 15 long at 0.01% and finer | Kernel cases, out of the sweeps |
+| Chamfered nuts at coarse chord tolerances | Buttress nuts at 0.2% and coarser (a 1-12 BUTT nut 20 long, a 2-8 BUTT nut), and ISO, UNC and trapezoidal nuts 16 long in parts of twice their diameter at 0.5% (M20, M36) or 1% (M8, 1/2-13 UNC, Tr40x7): unsound, flat or rounded crest, after every one of `chamferTries` | Naked edges where the chamfer's cone meets the ridges near its quarters' seams and the end's plane. Sweeping the ridges or the chamfer finer than the sketch moves which cases fail, so it is the Boolean of the cone with the ridges, not their chords |
+| Multi-start allowances | left out for B1.5 (appendix B) and B1.9; DIN 513-3's factors are in | H28 (1957) has none for ACME, only its gauges' lead tolerance times 1.5. Machining Doctor says B1.5 adds K × es to a nut's diameters by its number of starts; K not found free |
 
 ### Test infrastructure
 
@@ -165,7 +165,7 @@ Not in it: threads in the browser, the MCP agent.
 
 | Item | State |
 |---|---|
-| DIN 513-1's axial play a, and ASME B1.9's Table 1 | Each settles a row of [Thread leftovers](#thread-leftovers) |
+| DIN 513-1's axial play a, ASME B1.9's Table 1, and ASME B1.5's appendix B | Each settles a row of [Thread leftovers](#thread-leftovers) |
 | What to take back from "Parked" | Every row there is a proposal |
 | What the review took in without being asked | B3 (16.11), G4 (17.4) and S3 (17.5) are built; the user may still disown them |
 
