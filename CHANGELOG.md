@@ -9,6 +9,8 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.5.10] - 2026-10-30
+
 ### Added
 - The script console edits as readline does: Tab completes the name before the cursor (a variable, a package, or after a dot what the value has, from types alone: `doc.Active().Re` offers `Requests(`), and with several names lists them and goes through them on Tab again, back on Shift+Tab, Control+R searches the history, and Control+K, U, W, Y, Alt+B, F, D and the others kill, yank and move by words. Return on a statement that isn't finished starts another line, indented. What is entered is kept between runs in `telesapr/script_history` in the user's configuration folder. The console starts by running `help()`. It is a regular window of takigo's themed widgets in the application's light or dark palette, what is typed in the lower fifth, with Run, Stop and Clear buttons, rather than a black tool window kept over the main window.
 - `telesapr-cli repl` at a terminal edits lines with readline's keys (reeflective/readline), Tab completing names, with the history the window's console keeps, statements of several lines, and `help()` at the start.
