@@ -2,6 +2,7 @@ package sketch
 
 import (
 	"testing"
+	"time"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -112,5 +113,20 @@ func TestGenerateTypeString(t *testing.T) {
 			t.Errorf("GenerateType(%d) out of range", got)
 		}
 		_ = want
+	}
+}
+
+// TestFindToFixTimeout: a sketch that sets none searches for the
+// constraints to remove for the default second, one that sets one for
+// that long.
+func TestFindToFixTimeout(t *testing.T) {
+	t.Parallel()
+	sk := NewSketch()
+	if got := sk.findToFixTimeout(); got != timeoutRedundantConstr {
+		t.Errorf("unset: %v, want %v", got, timeoutRedundantConstr)
+	}
+	sk.FindToFixTimeout = time.Minute
+	if got := sk.findToFixTimeout(); got != time.Minute {
+		t.Errorf("set to a minute: %v", got)
 	}
 }

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"testing"
+	"time"
 
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
@@ -36,5 +37,24 @@ func TestApplyEngineSettingsReloadsLinksOnAToleranceChange(t *testing.T) {
 		if got := ss.SK.ChordTolPercent(); got != tc.tol {
 			t.Errorf("the sketch's tolerance is %g, want %g", got, tc.tol)
 		}
+	}
+}
+
+// The configuration screen's time for finding the constraints to remove
+// is what the sketch's solver is given.
+func TestApplyEngineSettingsPassesFindToFixTimeout(t *testing.T) {
+	t.Parallel()
+	ss, _ := newTestApp(t)
+	ss.TimeoutRedundantConstr = 2500
+	ss.applyEngineSettings()
+	if got, want := ss.SK.FindToFixTimeout, 2500*time.Millisecond; got != want {
+		t.Errorf("the sketch's search may take %v, want %v", got, want)
+	}
+
+	// A test's own time takes its place.
+	ss.findToFixTimeout = time.Hour
+	ss.applyEngineSettings()
+	if got := ss.SK.FindToFixTimeout; got != time.Hour {
+		t.Errorf("with the test's time set the sketch's search may take %v, want an hour", got)
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -121,6 +122,8 @@ func newUIScriptRunner(t testing.TB) *uiScriptRunner {
 	t.Cleanup(func() { _ = r.ss.AllowAgent(false) })
 	// Animations jump to their end, so they don't depend on the clock.
 	r.ss.AnimationSpeed = 0
+	// Nor does a failed solve's list of the constraints to remove.
+	r.ss.findToFixTimeout = time.Hour
 	r.settle()
 	return r
 }

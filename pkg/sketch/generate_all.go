@@ -706,8 +706,17 @@ func (sk *Sketch) PruneRequestsAndConstraints(hg core.HGroup) bool {
 }
 
 // timeoutRedundantConstr bounds the search for the constraints that
-// make a group inconsistent.
+// make a group inconsistent, unless the sketch's FindToFixTimeout does.
 const timeoutRedundantConstr = 1000 * time.Millisecond
+
+// findToFixTimeout is how long the search for the constraints that make
+// a group inconsistent may take.
+func (sk *Sketch) findToFixTimeout() time.Duration {
+	if sk.FindToFixTimeout > 0 {
+		return sk.FindToFixTimeout
+	}
+	return timeoutRedundantConstr
+}
 
 // WriteEquationsExceptFor appends the equations of group hg: those of
 // its constraints except hc, of its entities, and of the group itself.
@@ -775,7 +784,7 @@ func (sk *Sketch) writeEqSystemForGroup(hg core.HGroup, groupParams []core.HPara
 	sg := &solver.Group{
 		SuppressDofCalculation: g.SuppressDofCalculation,
 		AllowRedundant:         g.AllowRedundant,
-		FindToFixTimeout:       timeoutRedundantConstr,
+		FindToFixTimeout:       sk.findToFixTimeout(),
 		Constraints:            constraints,
 		WriteEquationsExceptFor: func(hc core.HConstraint, l *[]core.Equation) {
 			sk.WriteEquationsExceptFor(hg, hc, l)

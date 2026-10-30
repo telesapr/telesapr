@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 	"unicode/utf8"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -180,6 +181,10 @@ func textwinScreensFor(t testing.TB, path string) string {
 	p := headless.New()
 	ss := New(p)
 	ss.LoadSettings()
+	// The failed-solve screens list what the search for the constraints
+	// to remove found before its time ran out; under the race detector,
+	// with every package's tests running, a second is not enough.
+	ss.findToFixTimeout = time.Hour
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		t.Fatal(err)

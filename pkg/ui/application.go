@@ -9,6 +9,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -116,6 +117,13 @@ type Application struct {
 	// lastGeneration is the sketch generation the display last saw, to
 	// notice a regeneration.
 	lastGeneration uint64
+
+	// findToFixTimeout, when set, bounds the search for the constraints
+	// that make a group inconsistent in place of the setting,
+	// TimeoutRedundantConstr. A test that records the search's result
+	// sets it long, so that what it records does not depend on the clock
+	// and the configuration screen still shows the setting.
+	findToFixTimeout time.Duration
 }
 
 // New makes the application on a platform; Init loads the settings and
@@ -147,6 +155,10 @@ func (ss *Application) applyEngineSettings() {
 		ss.SK.ChordTolPct = ss.ChordTol
 		ss.SK.MaxSegments = ss.MaxSegments
 		ss.SK.CheckClosedContour = ss.CheckClosedContour
+		ss.SK.FindToFixTimeout = time.Duration(ss.TimeoutRedundantConstr) * time.Millisecond
+		if ss.findToFixTimeout > 0 {
+			ss.SK.FindToFixTimeout = ss.findToFixTimeout
+		}
 		ss.SK.Exporting = ss.exportTolerance()
 		// The tolerance is a single-precision number in the settings and
 		// in the dialogs that set it, so the default of 0.1% reads back

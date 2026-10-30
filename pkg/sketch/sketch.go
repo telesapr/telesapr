@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"sort"
+	"time"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -107,6 +108,12 @@ type Sketch struct {
 	// CheckClosedContour is whether a sketch's loops are checked for
 	// self-intersection, which is slow.
 	CheckClosedContour bool
+
+	// FindToFixTimeout bounds the search for the constraints that make
+	// a group inconsistent; 0 is the default, a second. The search is
+	// bounded by the clock, so a test that records what it finds sets
+	// it long.
+	FindToFixTimeout time.Duration
 
 	// Generation counts completed GenerateAll runs, so a GUI can tell
 	// when its per-entity drawing caches are stale.
