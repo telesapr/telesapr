@@ -114,8 +114,8 @@ test-gui:
 # regenerates through them, and the servers and platforms that hand
 # work between goroutines: every package with tests. The GitHub
 # workflow runs the set in shards, each a RACE_PACKAGES of its own, on
-# a push to master without pkg/ui and pkg/script/api, which the nightly
-# workflow runs.
+# request (workflow_dispatch) and not on a push, without pkg/ui and
+# pkg/script/api, which the nightly workflow runs.
 RACE_PACKAGES ?= ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/... \
 	./pkg/script ./pkg/script/agent ./pkg/mcpserver ./pkg/platform/... ./pkg/render ./pkg/render/soft ./cmd/... \
 	./pkg/core ./pkg/geom ./pkg/libm ./pkg/internal/... ./pkg/check ./pkg/thread ./pkg/res ./pkg/ttf ./pkg/topo \
@@ -162,11 +162,11 @@ fuzz:
 # nightly and Release workflows as one that fails.
 checks: fmt-check tidy-check generate-check build
 
-# What .github/workflows/ci.yml runs on a push to master, in one go:
-# the checks, then the rest side by side, each target's output printed
-# when it is done. govet is in the lint; the GUI packages run under
-# Xvfb inside test. On a branch the workflow leaves out test-race,
-# which it runs on master and on request.
+# What .github/workflows/ci.yml runs on a push to master, and the race
+# detector, in one go: the checks, then the rest side by side, each
+# target's output printed when it is done. govet is in the lint; the GUI
+# packages run under Xvfb inside test. The workflow runs test-race only
+# on request (workflow_dispatch), on master as on a branch.
 ci: checks
 	@$(MAKE) --no-print-directory -j --output-sync=target test test-heavy test-race lint vuln
 

@@ -2,9 +2,9 @@
 # the lint and the vulnerability report, as jobs side by side. On a push
 # to master, and on request (workflow_dispatch) for a branch, every test
 # in place of the quick ones (make test and make test-heavy, on a runner
-# each), and the race detector in shards: make ci,
-# run before a merge, is the same locally, so a branch gets its answer in
-# minutes and master still checks it all. The nightly workflow
+# each). The race detector, in shards, runs only on request: make ci,
+# run before a merge, runs it locally, so a branch gets its answer in
+# minutes and a push to master does not wait for the slowest stage. The nightly workflow
 # (nightly.yml) runs what is too slow or costs too many minutes for
 # every push: the coverage rule, and the quick tests on Windows and macOS
 # among it.
@@ -185,13 +185,13 @@ jobs:
 
   race:
     # The engine packages under the race detector, about eight times
-    # slower than the plain run: on master, where make release waits
-    # for it, and on request. scripts/go-test.sh runs the slow packages
+    # slower than the plain run: only on request, not on a push to
+    # master; make ci runs it before a merge. scripts/go-test.sh runs the slow packages
     # as several processes, and the shards take about the same time;
     # with the build cache, a package no commit touched since the last
     # run is a cached result. pkg/ui and pkg/script/api run under the
     # detector in the nightly workflow.
-    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
