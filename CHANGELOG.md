@@ -9,6 +9,8 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.5.11] - 2026-10-30
+
 ### Fixed
 - On Windows, a script console whose history file had grown past twice its limit failed to cut it back ("Access is denied"): the file was renamed over while it was still open.
 
