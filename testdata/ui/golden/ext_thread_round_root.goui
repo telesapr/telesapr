@@ -11,14 +11,14 @@ row 4
 row 7 SCREW THREAD
  0-11 74 64 0
  12-99 64 64 0
-row 10    thread    1/2-16 BUTT [change] [choose]
+row 10    thread    1/2-16 PUSH-BUTT [change] [choose]
  0-2 64 61 0
  3-8 74 61 0
- 9-24 64 61 0
- 25-32 6c 61 100 0 1 0
- 33-33 64 61 0
- 34-41 6c 61 109 0 1 0
- 42-99 64 61 0
+ 9-29 64 61 0
+ 30-37 6c 61 100 0 1 0
+ 38-38 64 61 0
+ 39-46 6c 61 109 0 1 0
+ 47-99 64 61 0
 row 12              1.59 pitch     right-hand   left-hand      load flank back
  0-26 64 64 0
  27-38 64 64 104 0 1 0
@@ -106,14 +106,14 @@ row 4
 row 7 SCREW THREAD
  0-11 74 64 0
  12-99 64 64 0
-row 10    thread    1/2-16 BUTT [change] [choose]
+row 10    thread    1/2-16 PUSH-BUTT [change] [choose]
  0-2 64 61 0
  3-8 74 61 0
- 9-24 64 61 0
- 25-32 6c 61 100 0 1 0
- 33-33 64 61 0
- 34-41 6c 61 109 0 1 0
- 42-99 64 61 0
+ 9-29 64 61 0
+ 30-37 6c 61 100 0 1 0
+ 38-38 64 61 0
+ 39-46 6c 61 109 0 1 0
+ 47-99 64 61 0
 row 12              1.59 pitch     right-hand   left-hand      load flank back
  0-26 64 64 0
  27-38 64 64 104 0 1 0
@@ -219,7 +219,7 @@ row 10  screw thread   [edit thread]
  13-15 64 64 0
  16-28 6c 64 101 7 1 0
  29-99 64 64 0
-row 12    1/2-16 BUTT, 1.59 mm pitch, right-hand, 30.00 mm long, external
+row 12    1/2-16 PUSH-BUTT, 1.59 mm pitch, right-hand, 30.00 mm long, external
  0-99 64 61 0
 row 14    crest standard, clearance 0.00 mm, run-out none, flipped, load flank back, rounded root
  0-99 64 64 0
