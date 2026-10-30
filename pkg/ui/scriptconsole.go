@@ -34,6 +34,12 @@ type ScriptConsole struct {
 	session *agent.Session
 	capture *agent.Capture
 
+	// history is what was typed in the console, kept in the file
+	// ScriptHistory names; greeted is whether the console has shown
+	// help(), which it does when first shown.
+	history *script.History
+	greeted bool
+
 	// guarded is the session an AI program's scripts run in while
 	// their files are guarded (AgentGuarded), made when first needed;
 	// guardDone removes its temporary folder.
@@ -45,14 +51,6 @@ const (
 	consolePrompt     = ">>> "
 	consoleContPrompt = "... "
 )
-
-const consoleGreeting = `Go on the sketch: doc is the drawing. Try
-    doc.Groups()                              the groups
-    l := doc.Sketch.Line(V(0, 0, 0), V(40, 0, 0))    draw, in mm
-    doc.Constrain.Length(l, 50)                         constrain
-    doc.Edit.Selection()                           what is selected
-help() says more.
-`
 
 // Console is the application's console for scripts, made when first
 // asked for. Its window is nil on a platform without consoles.
@@ -66,14 +64,59 @@ func (ss *Application) Console() *ScriptConsole {
 	if host, ok := ss.Platform.(platform.ConsoleHost); ok {
 		c.window = host.CreateConsole(ss.GW.window)
 		ev := c.window.Events()
-		ev.OnSubmit = c.Submit
+		ev.OnSubmit = c.entered
 		ev.OnInterrupt = c.Stop
 		ev.OnClose = func() { c.SetVisible(false) }
+		ev.IsUnfinished = c.unfinished
+		ev.OnComplete = c.complete
 		c.window.ThawPosition(ss.Settings, "ScriptConsole")
-		c.window.Print(platform.ConsoleInfo, consoleGreeting)
 		c.window.SetPrompt(consolePrompt)
+		var err error
+		if c.history, err = script.LoadHistory(ss.ScriptHistory); err != nil {
+			c.print(platform.ConsoleError, err.Error()+"\n")
+		}
+		c.window.SetHistory(c.history.Entries())
 	}
 	return c
+}
+
+// entered takes what the user entered in the console's window: it is
+// kept in the history, and run.
+func (c *ScriptConsole) entered(text string) {
+	if err := c.history.Add(text); err != nil {
+		c.print(platform.ConsoleError, err.Error()+"\n")
+	}
+	c.Submit(text)
+}
+
+// unfinished reports whether what is typed in the console stops in the
+// middle of a statement, after what was entered before it.
+func (c *ScriptConsole) unfinished(text string) bool {
+	if c.busy || c.ensureEngine() != nil {
+		return false
+	}
+	return c.engine.Unfinished(text)
+}
+
+// complete is what the name before the cursor can be completed to.
+func (c *ScriptConsole) complete(text string, cursor int) (int, []string) {
+	if c.busy || c.ensureEngine() != nil {
+		return 0, nil
+	}
+	return c.engine.Complete(text, cursor)
+}
+
+// greet runs help() when the console is first shown, as if it had
+// been typed, so that it starts by saying what can be done in it. A
+// console shown to run a file, or while a script runs, keeps to what
+// that prints, and greets when next shown.
+func (c *ScriptConsole) greet() {
+	if c.greeted || c.busy {
+		return
+	}
+	c.greeted = true
+	c.print(platform.ConsoleInput, consolePrompt+"help()\n")
+	c.Submit("help()")
 }
 
 // consoleWriter shows what is written to it in the console; a script
@@ -158,8 +201,17 @@ func (c *ScriptConsole) Visible() bool {
 	return c.window != nil && c.window.IsVisible()
 }
 
-// SetVisible shows or hides the console's window.
+// SetVisible shows or hides the console's window; shown for the first
+// time, it runs help().
 func (c *ScriptConsole) SetVisible(visible bool) {
+	c.show(visible)
+	if visible {
+		c.greet()
+	}
+}
+
+// show shows or hides the console's window.
+func (c *ScriptConsole) show(visible bool) {
 	if c.window == nil {
 		if visible {
 			c.ss.Error("There is no script console on this platform.")
@@ -320,7 +372,7 @@ func (c *ScriptConsole) Submit(text string) {
 }
 
 // RunFile runs a script file with arguments; what it prints shows in
-// the console. A file is a program of its own: it doesn't see what
+// the console, which it shows. A file is a program of its own: it doesn't see what
 // was typed in the console, nor the console what it defines. A script
 // that declares a form (api.Form) asks for its values first, and
 // doesn't run if that is cancelled.
@@ -333,6 +385,7 @@ func (c *ScriptConsole) RunFile(path string, args ...string) {
 	if !ok {
 		return
 	}
+	c.show(true)
 	c.print(platform.ConsoleInput, "run "+strings.Join(append([]string{path}, args...), " ")+"\n")
 	opts := c.options(append([]string{path}, args...))
 	opts.Form = form
@@ -377,7 +430,6 @@ func (ss *Application) MenuScript(id Command) {
 			break
 		}
 		dialog.FreezeChoices(ss.Settings, "Script")
-		c.SetVisible(true)
 		c.RunFile(dialog.Filename())
 
 	case cmdScriptStop:

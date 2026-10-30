@@ -3,6 +3,7 @@ package ui
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -42,7 +43,7 @@ func TestScriptConsole(t *testing.T) {
 	t.Parallel()
 	ss, p := newTestApp(t)
 	w := shownConsole(t, ss, p)
-	if w.Prompt != ">>> " || !strings.HasPrefix(w.Text(), "Go on the sketch") {
+	if w.Prompt != ">>> " || !strings.HasPrefix(w.Text(), ">>> help()\ndoc is the sketch.") {
 		t.Fatalf("the console starts with the prompt %q and %q", w.Prompt, w.Text())
 	}
 	if item := p.MainMenuBar.Find("Script", "Show Console"); !item.Active {
@@ -148,7 +149,7 @@ func main() {
 	}
 	w := p.Consoles[0]
 	want := "run " + file + "\nradius 15\ng003-disc made\ndisc.go done.\n"
-	if got := after(w, 1); got != want {
+	if got := after(w, 0); got != want {
 		t.Errorf("the console showed %q, want %q", got, want)
 	}
 	if got := ss.SK.Undo.Cnt; got != 1 {
@@ -209,6 +210,8 @@ func TestScriptConsoleOnLoop(t *testing.T) {
 		t.Fatal("the script didn't end")
 	}
 
+	// The console runs help() when shown.
+	idle()
 	n := 0
 	on(func() { n = len(w.Texts) })
 	on(func() { w.Submit(`sides := doc.Sketch.Rect(V(0, 0, 0), V(8, 6, 0))`) })
@@ -251,4 +254,63 @@ func TestScriptConsoleOnLoop(t *testing.T) {
 		}
 	})
 	p.stop()
+}
+
+// The console keeps what was entered in its history file, which the
+// next console reads; Tab completes from the interpreter's names, and
+// Return on an unfinished statement goes on to another line. Shown to
+// run a file, it doesn't run help(), which it runs when next shown.
+func TestScriptConsoleReadline(t *testing.T) {
+	t.Parallel()
+	history := filepath.Join(t.TempDir(), "history")
+	ss, p := newTestApp(t)
+	ss.ScriptHistory = history
+	w := shownConsole(t, ss, p)
+	if len(w.History) != 0 {
+		t.Errorf("a new history has %q", w.History)
+	}
+	w.Submit("x := doc.Groups()")
+	w.Submit("for i := 0; i < 1; i++ {\n}")
+	ev := w.Events()
+	if start, got := ev.OnComplete("doc.Ske", 7); start != 4 || !slices.Contains(got, "Sketch") {
+		t.Errorf("doc.Ske completes from %d to %q", start, got)
+	}
+	if _, got := ev.OnComplete("le", 2); !slices.Contains(got, "len(") {
+		t.Errorf("le completes to %q", got)
+	}
+	if !ev.IsUnfinished("if x != nil {") || ev.IsUnfinished("x") {
+		t.Error("unfinished statements aren't told from finished ones")
+	}
+
+	again, p2 := newTestApp(t)
+	again.ScriptHistory = history
+	again.Console().RunFile(filepath.Join(t.TempDir(), "missing.go"))
+	w2 := p2.Consoles[0]
+	if !w2.Visible || strings.Contains(w2.Text(), "help()") {
+		t.Errorf("running a file showed %v: %q", w2.Visible, w2.Text())
+	}
+	want := []string{"x := doc.Groups()", "for i := 0; i < 1; i++ {\n}"}
+	if !slices.Equal(w2.History, want) {
+		t.Errorf("the next console's history is %q, want %q", w2.History, want)
+	}
+	again.Console().SetVisible(false)
+	again.Console().SetVisible(true)
+	if !strings.Contains(w2.Text(), ">>> help()\ndoc is the sketch.") {
+		t.Errorf("shown again, the console has %q", w2.Text())
+	}
+	n := len(w2.Texts)
+	again.Console().SetVisible(false)
+	again.Console().SetVisible(true)
+	if len(w2.Texts) != n {
+		t.Errorf("help() ran again: %q", after(w2, n))
+	}
+
+	// A history that can't be written is said in the console.
+	bad, p3 := newTestApp(t)
+	bad.ScriptHistory = filepath.Join(history, "below a file")
+	w3 := shownConsole(t, bad, p3)
+	w3.Submit("1")
+	if !strings.Contains(w3.Text(), "writing history") {
+		t.Errorf("a history that can't be written: %q", w3.Text())
+	}
 }

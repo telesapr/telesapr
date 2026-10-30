@@ -8,12 +8,14 @@ require (
 	github.com/andybalholm/brotli v1.2.6
 	github.com/go-gl/gl v0.0.0-20260331235117-4566fea9a276
 	github.com/modelcontextprotocol/go-sdk v1.8.0
-	github.com/takigo/takigo v0.4.2
+	github.com/reeflective/readline v1.3.0
+	github.com/takigo/takigo v0.4.3
 	github.com/traefik/yaegi v0.16.1
 )
 
 require (
 	github.com/google/jsonschema-go v0.4.3 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/segmentio/encoding v0.5.4 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect

@@ -68,6 +68,14 @@ func newAgentApp(t *testing.T) *agentApp {
 		a.w = a.p.Consoles[0]
 		a.p.MainMenuBar.Find("Script", "Allow AI Connections").OnTrigger()
 	})
+	// The console runs help() when shown; the tests start once it
+	// is over.
+	for busy := true; busy; {
+		a.on(func() { busy = a.ss.Console().Busy() })
+		if busy {
+			time.Sleep(time.Millisecond)
+		}
+	}
 	a.r = &agent.Remote{Connect: func() (net.Conn, error) { return agent.Connect(dir) }, CancelWait: 10 * time.Second}
 	t.Cleanup(func() {
 		a.r.Close()

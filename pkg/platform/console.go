@@ -1,6 +1,9 @@
 package platform
 
-import "github.com/telesapr/telesapr/pkg/core"
+import (
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/platform/lineedit"
+)
 
 // ConsoleKind is what a piece of a console's text is, which decides
 // how it looks.
@@ -30,11 +33,19 @@ type ConsoleEvents struct {
 	// OnClose is called when the user closes the console's window,
 	// which hides it.
 	OnClose func()
+	// IsUnfinished, if set, says whether what is typed stops in the
+	// middle of a statement: Return then starts another line rather
+	// than entering it.
+	IsUnfinished func(text string) bool
+	// OnComplete, if set, gives what the name before the cursor can
+	// be completed to, for Tab.
+	OnComplete lineedit.Completer
 }
 
 // Console is a window with lines of text that grow at the bottom,
 // where the user types after a prompt: a terminal for a script
-// interpreter. What was typed can be got back with the up key.
+// interpreter. What is typed is edited with readline's keys, and what
+// was typed can be got back with the up key or searched for.
 type Console interface {
 	Events() *ConsoleEvents
 	// Print adds text above the prompt; it should end with a new
@@ -47,6 +58,9 @@ type Console interface {
 	SetBusy(busy bool)
 	// Clear drops the text.
 	Clear()
+	// SetHistory sets what was entered before, oldest first, for the
+	// up key and searching; what is entered is added to it.
+	SetHistory(entries []string)
 	SetVisible(visible bool)
 	IsVisible() bool
 	Focus()

@@ -26,7 +26,12 @@ Scripting commands:
         the script declares (api.Form) a value, as the window's dialog does.
     repl [--lib <dir>] [<sketch.tlspr>]
         Reads Go statements and expressions from standard input and runs each
-        on the sketch, printing the values of the expressions.
+        on the sketch, printing the values of the expressions. At a terminal it
+        starts with help(), and lines are edited with readline's keys: Tab
+        completes a name, Up and Control+R bring back what was entered, kept
+        in telesapr/script_history in the user's configuration directory as
+        the window's console keeps it, and Return on a statement that isn't
+        finished goes on to another line.
     eval [--lib <dir>] [<sketch.tlspr>] <code> [<code>...]
         Runs each <code> as a line given to repl. It exits with status 3 if
         one of them failed.
@@ -188,6 +193,10 @@ func runScript(ctx context.Context, args []string, stdin io.Reader, stdout, stde
 			}()
 			ctx = context.WithoutCancel(ctx)
 		}
+		if prompt && isTerminal(stdout) {
+			err = interactive(ctx, e, stdout, script.DefaultHistory())
+			break
+		}
 		err = e.REPL(ctx, stdin, stdout, prompt)
 	}
 
@@ -205,10 +214,10 @@ func runScript(ctx context.Context, args []string, stdin io.Reader, stdout, stde
 	return exitScript
 }
 
-// isTerminal reports whether r is a terminal, where a prompt is
-// wanted.
-func isTerminal(r io.Reader) bool {
-	f, ok := r.(*os.File)
+// isTerminal reports whether stream, an input or an output, is a
+// terminal, where a prompt is wanted.
+func isTerminal(stream any) bool {
+	f, ok := stream.(*os.File)
 	if !ok {
 		return false
 	}

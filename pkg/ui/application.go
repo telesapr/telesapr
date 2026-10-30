@@ -98,6 +98,10 @@ type Application struct {
 	messageSink func(text string, isError bool)
 	// console is the window scripts are typed in, see Console.
 	console *ScriptConsole
+	// ScriptHistory is the file what is typed in the console is kept
+	// in between runs (script.DefaultHistory), "" to keep it only while
+	// the program runs.
+	ScriptHistory string
 	// AgentSocketDir is where the socket AI programs connect to is
 	// made, the user's own directory for them if "".
 	AgentSocketDir string

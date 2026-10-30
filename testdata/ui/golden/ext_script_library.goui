@@ -314,7 +314,6 @@ row 171 (renderer)
 row 173 
  0-99 64 64 0
 filedialog open
-console 3 Go on the sketch: doc is the drawing. Try\n    doc.Groups()                              the groups\n    l := doc.Sketch.Line(V(0, 0, 0), V(40, 0, 0))    draw, in mm\n    doc.Constrain.Length(l, 50)                         constrain\n    doc.Edit.Selection()                           what is selected\nhelp() says more.\n
 console 4 run $testdata/ui/scriptlib/gear.go\n
 console 0 radius 12\n
 console 3 gear.go done.\n

@@ -972,6 +972,15 @@ func unfinished(src string) bool {
 	return Incomplete(err, src)
 }
 
+// Unfinished reports whether text, fed after the lines the engine
+// already has (Pending), would stop in the middle of a statement, as
+// far as can be told without running it: a console then starts another
+// line where Return was pressed, rather than entering what was typed.
+func (e *Engine) Unfinished(text string) bool {
+	src := strings.Join(append(slices.Clone(e.pending), text), "\n")
+	return strings.TrimSpace(src) != "" && unfinished(src)
+}
+
 // Feed gives the engine the next line of a console. It runs what the
 // lines so far make once that is complete; until then more is true
 // and nothing ran. For an expression, shown is its value as a console

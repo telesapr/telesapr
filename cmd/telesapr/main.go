@@ -11,6 +11,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/platform/tkgui"
+	"github.com/telesapr/telesapr/pkg/script"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/ui"
 )
@@ -53,6 +54,7 @@ func run(cfg options, logger *slog.Logger) error {
 	// The solids are made off the interface's thread unless
 	// TELESAPR_BACKGROUND is off (roadmap 17.3).
 	ss.BackgroundShells = os.Getenv("TELESAPR_BACKGROUND") != "off"
+	ss.ScriptHistory = script.DefaultHistory()
 	ss.Init()
 
 	if len(cfg.files) >= 1 {
@@ -68,9 +70,7 @@ func run(cfg options, logger *slog.Logger) error {
 	}
 	if cfg.scriptFile != "" {
 		// It runs once the event loop does, on the sketch just opened.
-		console := ss.Console()
-		console.SetVisible(true)
-		console.RunFile(cfg.scriptFile, cfg.scriptArgs...)
+		ss.Console().RunFile(cfg.scriptFile, cfg.scriptArgs...)
 	}
 
 	p.Run()

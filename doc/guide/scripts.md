@@ -2,7 +2,34 @@
 
 Every feature can be scripted in Go (see the [README](../../README.md#scripting) and `help()` in
 the console). This page covers what helps scripts be shared and reused: forms that ask for a script's values
-when it runs, and a library of packages of your own.
+when it runs, and a library of packages of your own, and how the console is typed in.
+
+## The console
+
+Script > Show Console opens the console in a window of its own: what was shown above, what is
+typed in the lower fifth, and Run, Stop and Clear buttons. It runs `help()`
+when it is first shown. `telesapr-cli repl` at a terminal starts the same way. In both, what is typed
+is edited with readline's keys:
+
+| Key | Does |
+|---|---|
+| Return | Runs what is typed; in a statement that isn't finished, as after `for i := 0; i < 3; i++ {`, starts another line |
+| Shift+Return | Starts another line, indented as the one before (window) |
+| Tab, Shift+Tab | Completes the name before the cursor: a variable, a package, or after a dot what the value or package has, worked out from types without running anything (`doc.Active().Re` offers `Requests(`). With several, completes as far as they agree and lists them; Tab again puts each in its place in turn, then what was typed, and Shift+Tab goes back (window; at a terminal, readline's own menu) |
+| Up, Down, Control+P, Control+N | The entry before, after; in an entry of several lines, the line above, below |
+| Control+R | Searches back through the entries for what is typed next; again, further back; Escape puts back what was typed |
+| Control+A, Control+E | The start, end of the line |
+| Alt+B, Alt+F | A word back, forward |
+| Control+K, Control+U | Kills to the end, the start of the line |
+| Control+W, Alt+Backspace, Alt+D | Kills the word before the cursor (up to space), the word before, the word after |
+| Control+Y | Yanks back what was killed |
+| Control+T, Control+H | Swaps two characters, deletes back |
+| Control+L | Clears what the console shows (window) |
+| Control+C, Escape | Stops what runs, or drops a statement half entered |
+
+What is entered is kept between runs in `telesapr/script_history` in the user's configuration
+folder, which the window and `telesapr-cli repl` share. At a terminal, the keys are those of
+[reeflective/readline](https://github.com/reeflective/readline), which reads `~/.inputrc`.
 
 ## Forms
 

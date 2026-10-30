@@ -99,10 +99,12 @@ A sketch can be read and changed from Go scripts, run by an embedded interpreter
 
 - In the application, Script > Show Console opens a console where Go is typed a line at a time
   and run on the drawing: `doc` is the sketch, what a line draws shows at once, and each line
-  is one step of undo. Script > Run File... and `telesapr --script file.go` run a file.
+  is one step of undo. It starts with `help()`, edits with readline's keys, completes names
+  with Tab and keeps its history between runs ([the keys](doc/guide/scripts.md#the-console)).
+  Script > Run File... and `telesapr --script file.go` run a file.
 - Without a window, `telesapr-cli run [model.tlspr] script.go [args]` runs a file,
-  `telesapr-cli repl` reads lines from standard input and `telesapr-cli eval` takes them from
-  the command line.
+  `telesapr-cli repl` reads lines from standard input, at a terminal as the console does, and
+  `telesapr-cli eval` takes them from the command line.
 - A script that declares an `api.Form` asks for its values in a dialog when the window runs
   it, and takes them as `--set name=value` on the command line.
 - Packages of your own go in the script library folder (the configuration screen's, or

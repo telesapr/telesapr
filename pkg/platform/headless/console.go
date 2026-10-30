@@ -25,6 +25,8 @@ type Console struct {
 	Focused bool
 	// Cleared counts the calls of Clear.
 	Cleared int
+	// History is what SetHistory set, and what Submit entered since.
+	History []string
 }
 
 var _ platform.Console = (*Console)(nil)
@@ -49,6 +51,7 @@ func (c *Console) Clear()                               { c.Texts, c.Cleared = n
 func (c *Console) SetVisible(visible bool)              { c.Visible = visible }
 func (c *Console) IsVisible() bool                      { return c.Visible }
 func (c *Console) Focus()                               { c.Focused = true }
+func (c *Console) SetHistory(entries []string)          { c.History = entries }
 func (c *Console) FreezePosition(core.Settings, string) {}
 func (c *Console) ThawPosition(core.Settings, string)   {}
 
@@ -60,6 +63,7 @@ func (c *Console) Submit(line string) bool {
 		return false
 	}
 	c.Print(platform.ConsoleInput, c.Prompt+line+"\n")
+	c.History = append(c.History, line)
 	if c.events.OnSubmit != nil {
 		c.events.OnSubmit(line)
 	}
