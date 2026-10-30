@@ -1,5 +1,5 @@
 # A B1.9 buttress thread with its roots rounded and the load's way typed,
-# PULL-BUTT, at a chord tolerance set fine enough, on an extruded circle;
+# PUSH-BUTT, at a chord tolerance set fine enough, on an extruded circle;
 # the same model as path_thread_round_root.go makes
 # (TestPathEquivalence/thread_round_root).
 key c
@@ -25,7 +25,7 @@ menu Features|Screw Thread...
 twmove 172 110
 twdown L 172 110
 twup L 172 110
-edit 1/2-16 PULL-BUTT
+edit 1/2-16 PUSH-BUTT
 # The rounded root, at the end of the crest's row.
 twmove 690 190
 twdown L 690 190

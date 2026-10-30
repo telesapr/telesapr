@@ -6927,7 +6927,7 @@
 			},
 			"ThreadClasses": {
 				"decl": "func ThreadClasses(designation string, internal bool) []string",
-				"text": "ThreadClasses are the tolerance classes of a thread of the\ndesignation, a screw's or, internal, a nut's, the default first:\nThreadClasses(\"M8\", false) begins \"6g\". Whitworth and ACME threads\nhave none, and take a Clearance."
+				"text": "ThreadClasses are the tolerance classes of a thread of the\ndesignation, a screw's or, internal, a nut's, the default first:\nThreadClasses(\"M8\", false) begins \"6g\". Whitworth threads have none,\nand take a Clearance."
 			},
 			"ThreadDesignation": {
 				"decl": "func ThreadDesignation(text string) string",
@@ -9123,13 +9123,17 @@
 				"text": "ThreadOptions is a screw thread to make on a circle.",
 				"kind": "struct",
 				"methods": {
+					"Designation": {
+						"decl": "func (o ThreadOptions) Designation() string",
+						"text": "Designation is the thread's designation, with the way of the load a B1.9 buttress thread's flanks make: PUSH-BUTT for one that pushes, BUTT for one that pulls (LoadFlankBack)."
+					},
 					"FitClearance": {
 						"decl": "func (o ThreadOptions) FitClearance() (float64, error)",
 						"text": "FitClearance is the clearance the thread is made with: its class's, or Clearance when it has none."
 					},
 					"LoadStated": {
 						"decl": "func (o ThreadOptions) LoadStated() ThreadOptions",
-						"text": "LoadStated is o with the way of the load its designation states, if it does, taken into LoadFlankBack, which keeps it in the thread's options: PULL-BUTT turns the ridge, PUSH-BUTT leaves it as drawn."
+						"text": "LoadStated is o with the way of the load its designation states, if it does, taken into LoadFlankBack, which keeps it in the thread's options: pushing, a screw's ridge is turned and a nut's left as drawn; pulling, the other way."
 					}
 				}
 			},

@@ -62,12 +62,19 @@ var threadCases = []threadCase{
 	{"nut_s20", 16, 20, "S20x4", sketch.ThreadOptions{Length: 20, Through: true, Internal: true}},
 	{"nut_s20_back", 16, 20, "S20x4", sketch.ThreadOptions{Length: 20, Through: true, Internal: true, LoadFlankBack: true}},
 	{"screw_butt", 12.7, 40, "1-12 BUTT", sketch.ThreadOptions{Length: 25, Clearance: 0.05}},
-	{"nut_butt_lh", 20, 15, "1-12 BUTT-LH", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Clearance: 0.05}},
+	{"nut_butt_lh", 20, 15, "1-12 PUSH-BUTT-LH", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Clearance: 0.05}},
 	// B1.9's rounded roots, and the load's way in the designation.
 	// A coarse pitch on a short part, which the default chord tolerance
 	// takes.
-	{"screw_butt_round", 9.525, 20, "3/4-10 PULL-BUTT", sketch.ThreadOptions{Length: 12, Clearance: 0.05, RoundRoot: true}},
-	{"nut_butt_round", 20, 15, "1-12 BUTT", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Clearance: 0.05, RoundRoot: true}},
+	{"screw_butt_round", 9.525, 20, "3/4-10 PUSH-BUTT", sketch.ThreadOptions{Length: 12, Clearance: 0.05, RoundRoot: true}},
+	{"nut_butt_round", 20, 15, "1-12 PUSH-BUTT", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Clearance: 0.05, RoundRoot: true}},
+	// Classes of ASME B1.5, ASME B1.9 and DIN 513-3.
+	{"screw_acme_2g", 6.35, 30, "1/2-10 ACME", sketch.ThreadOptions{Length: 20, Class: "2G"}},
+	{"nut_acme_3g", 12, 12, "1/2-10 ACME", sketch.ThreadOptions{Length: 12, Through: true, Internal: true, Class: "3G"}},
+	{"screw_butt_2a", 12.7, 40, "1-12 BUTT", sketch.ThreadOptions{Length: 25, Class: "2A"}},
+	{"nut_butt_3b", 20, 15, "1-12 BUTT", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Class: "3B"}},
+	{"screw_s20_8c", 10, 40, "S20x4", sketch.ThreadOptions{Length: 30, Class: "8c"}},
+	{"nut_s20_7h", 16, 20, "S20x4", sketch.ThreadOptions{Length: 20, Through: true, Internal: true, Class: "7H"}},
 }
 
 // build makes the part and its thread, with the given chord tolerance
@@ -168,7 +175,7 @@ func TestThreadSolids(t *testing.T) {
 				t.Fatal(err)
 			}
 			p := s.Profile(o.Internal, clearance)
-			if o.LoadFlankBack || s.Load == thread.LoadPull {
+			if o.LoadStated().LoadFlankBack {
 				p = p.Turned()
 			}
 			if o.RoundRoot {

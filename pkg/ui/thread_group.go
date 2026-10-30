@@ -48,7 +48,7 @@ func (tw *textWindow) showThreadSummary(g *sketch.Group, helix core.HGroup) {
 	if o.Internal {
 		kind = "internal"
 	}
-	tw.Printf(false, "%Ba   %s, %s %s pitch, %s, %s %s long%s, %s", o.Spec.String(), ss.MmToString(o.Spec.Pitch, false), unit, hand,
+	tw.Printf(false, "%Ba   %s, %s %s pitch, %s, %s %s long%s, %s", o.Designation(), ss.MmToString(o.Spec.Pitch, false), unit, hand,
 		ss.MmToString(o.Length, false), unit, exprNote(o.LengthExpr), kind)
 
 	runOut := "none"

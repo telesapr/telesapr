@@ -74,14 +74,16 @@ type ThreadOptions struct {
 	// when the thread is made and each time it is edited, and Length
 	// follows the face at each regeneration (thread_follow.go).
 	FullLength bool
-	// LoadFlankBack turns a buttress thread's ridge about: its load
-	// flank, the one nearly square to the axis, faces back towards
-	// where the thread starts on a screw, and away from it in a nut,
-	// rather than the other way. A screw and a nut mate when their load
-	// flanks face each other, which depends on which way each thread
-	// runs. Other threads' ridges are symmetric, and it leaves them as
-	// they are. A designation that says which way the load goes
-	// (thread.Spec.Load: PUSH-BUTT, PULL-BUTT) sets it.
+	// LoadFlankBack turns a buttress thread's ridge about. As drawn, a
+	// screw's 45° clearance flank leads, facing where the thread starts,
+	// the end that goes into the nut, and a nut's 7° load flank faces
+	// its mouth: a screw that pulls and a nut that pushes, in ASME
+	// B1.9's words, by the flank that leads. Turned, a screw pushes and
+	// a nut pulls. A screw and a nut mate when both push or both pull,
+	// their load flanks facing each other. A B1.9 designation sets it
+	// (thread.Spec.Load: BUTT pulls, PUSH-BUTT pushes); a DIN 513 one
+	// says nothing of it. Other threads' ridges are symmetric, and it
+	// leaves them as they are.
 	LoadFlankBack bool
 	// RoundRoot rounds the roots of an ASME B1.9 buttress thread as its
 	// standard does, by an arc tangent to both flanks
@@ -119,18 +121,33 @@ func (o ThreadOptions) FitClearance() (float64, error) {
 
 // LoadStated is o with the way of the load its designation states, if
 // it does, taken into LoadFlankBack, which keeps it in the thread's
-// options: PULL-BUTT turns the ridge, PUSH-BUTT leaves it as drawn.
-// AddThread and EditThread take it so; the thread's screen takes it to
-// show the load flank as a designation typed in sets it.
+// options: pushing, a screw's ridge is turned and a nut's left as
+// drawn; pulling, the other way. AddThread and EditThread take it so;
+// the thread's screen takes it to show the load flank as a designation
+// typed in sets it.
 func (o ThreadOptions) LoadStated() ThreadOptions {
 	switch o.Spec.Load {
 	case thread.LoadPush:
-		o.LoadFlankBack = false
+		o.LoadFlankBack = !o.Internal
 	case thread.LoadPull:
-		o.LoadFlankBack = true
+		o.LoadFlankBack = o.Internal
 	}
 	o.Spec.Load = thread.LoadUnstated
 	return o
+}
+
+// Designation is the thread's designation, with the way of the load a
+// B1.9 buttress thread's flanks make: PUSH-BUTT for one that pushes,
+// BUTT for one that pulls (LoadFlankBack).
+func (o ThreadOptions) Designation() string {
+	s := o.Spec
+	if s.Form == thread.FormButtressInch {
+		s.Load = thread.LoadPull
+		if o.LoadFlankBack != o.Internal {
+			s.Load = thread.LoadPush
+		}
+	}
+	return s.String()
 }
 
 // phased tells whether the thread's ridges are moved along it from

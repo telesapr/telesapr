@@ -1,7 +1,7 @@
 # A B1.9 buttress thread with its roots rounded: the chord tolerance set
 # fine enough in the preferences, the designation typed with the load's
-# way, PULL-BUTT, which ticks the load flank turned back, and the rounded
-# root ticked at the end of the crest's row; then made.
+# way, PUSH-BUTT, which on a screw ticks the load flank turned back, and
+# the rounded root ticked at the end of the crest's row; then made.
 key c
 move 300 300
 down L 300 300
@@ -25,7 +25,7 @@ menu Features|Screw Thread...
 twmove 172 110
 twdown L 172 110
 twup L 172 110
-edit 1/2-16 PULL-BUTT
+edit 1/2-16 PUSH-BUTT
 tw
 # The rounded root, at the end of the crest's row.
 twmove 690 190
