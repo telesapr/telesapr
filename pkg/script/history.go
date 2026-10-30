@@ -1,7 +1,6 @@
 package script
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -45,27 +44,23 @@ func LoadHistory(path string) (*History, error) {
 	if path == "" {
 		return h, nil
 	}
-	f, err := os.Open(path)
+	// The file is read whole and closed before it may be rewritten:
+	// Windows refuses to rename a file over one that is open.
+	data, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
 		return h, nil
 	}
 	if err != nil {
 		return h, fmt.Errorf("reading history: %w", err)
 	}
-	defer func() { _ = f.Close() }()
-	scan := bufio.NewScanner(f)
-	scan.Buffer(make([]byte, 0, 64*1024), 16*1024*1024)
 	read := 0
-	for scan.Scan() {
-		entry, err := strconv.Unquote(scan.Text())
+	for line := range strings.Lines(string(data)) {
+		entry, err := strconv.Unquote(strings.TrimRight(line, "\r\n"))
 		if err != nil {
 			continue
 		}
 		read++
 		h.entries = append(h.entries, entry)
-	}
-	if err := scan.Err(); err != nil {
-		return h, fmt.Errorf("reading history: %w", err)
 	}
 	if len(h.entries) > HistoryLimit {
 		h.entries = h.entries[len(h.entries)-HistoryLimit:]
