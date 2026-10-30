@@ -9,6 +9,11 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.5.13] - 2026-10-31
+
+### Changed
+- Release maintenance only.
+
 ## [0.5.12] - 2026-10-30
 
 ### Changed
