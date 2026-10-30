@@ -646,6 +646,17 @@ func (g *Group) generateHelixShell(sk *Sketch) {
 	if !g.haveSource(sk) {
 		return
 	}
+	g.sweepHelix(sk)
+	if fine, ok := g.ridgeRetol(sk); ok {
+		g.ThisShell.Clear()
+		g.ThisShell.Tol = fine
+		g.sweepHelix(sk)
+	}
+}
+
+// sweepHelix sweeps the source group's loop sets into ThisShell, at
+// its tolerance.
+func (g *Group) sweepHelix(sk *Sketch) {
 	src := sk.Group(g.OpA)
 	pt, axis := g.revolveAxis(sk)
 
