@@ -48,6 +48,24 @@ two rank tests of a solve during a drag, and in the kernel `ClosestPointToUV`, t
 walk and the serial quarter of a Boolean (the loops' commits, `fuseVertices`, merge classes, the
 top of the union tree). The parallel speedup on 32 threads is about 3.2x.
 
+## A third look, 2026-10-30
+
+The slowest fixtures are now the threads (0.1–0.35 s each from the command line). In `face_m8`,
+closest points (`ClosestPointToUV`) are half the profile, and 81% of their Newton steps are in
+`closestPointRestarts`, all of whose 3619 calls fail: the points a Boolean projects (a trim's
+chord points in `makeCopyTrimAgainst`, `offPatch` and `onSurface` in the march) lie further than
+`ratPolyEps` off the surface, so each call takes its 20 starts to their 25 steps, 500 steps.
+
+- Done: Newton stops at a fixed point or a two-step cycle, with the (u, v) its remaining steps
+  would end on (`closestPointNewton`). Same bytes, 27% of the steps; `BenchmarkEditBack/made`
+  −5 to −7%.
+- Open, goldens: a restart only where the first refinement did not settle (a point off the
+  surface settles where `p - S(u, v)` is square to both tangents; a stall at a fold's edge does
+  not). That is most of the remaining three quarters of the steps.
+- Open, same bytes: `offPatch` and `onSurface` could reject a point further than their tolerance
+  from the surface's control-point box before searching; a failed search leaves `Cached` alone,
+  so nothing else changes. How many of their points that catches is not yet measured.
+
 ## Every recommendation and what became of it
 
 "Same bytes": held by the hash script and the goldens. "Goldens": fixtures regenerate otherwise,

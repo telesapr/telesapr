@@ -555,12 +555,21 @@ func (s *SSurface) closestPointRestarts(p geom.Vector, u, v *float64) bool {
 
 // closestPointNewton refines the guess (u, v) by Newton iteration,
 // clamped to the unit square.
+//
+// A step depends on (u, v) alone, so once a step comes back to where it
+// started, or to where the step before started, every step left repeats
+// that cycle and its points have failed the test for p already: the
+// iteration stops there with the (u, v) the remaining steps would have
+// ended on. For a point off the surface, as a trim's chord points are by
+// more than ratPolyEps, that is most of the steps a search makes.
 func (s *SSurface) closestPointNewton(p geom.Vector, u, v *float64, mustConverge bool) bool {
 	iters := 5
 	if mustConverge {
 		iters = 25
 	}
-	for range iters {
+	prevU, prevV := math.NaN(), math.NaN()
+	for it := range iters {
+		curU, curV := *u, *v
 		var p0, tu, tv geom.Vector
 		s.PointAndTangentsAt(*u, *v, &p0, &tu, &tv, true)
 		if mustConverge {
@@ -594,9 +603,27 @@ func (s *SSurface) closestPointNewton(p geom.Vector, u, v *float64, mustConverge
 		} else if *v > 1.0 {
 			*v = 1.0
 		}
+
+		if sameBits(*u, curU) && sameBits(*v, curV) {
+			return false
+		}
+		if sameBits(*u, prevU) && sameBits(*v, prevV) {
+			// An odd number of steps left ends on the other point.
+			if (iters-1-it)%2 == 1 {
+				*u, *v = curU, curV
+			}
+			return false
+		}
+		prevU, prevV = curU, curV
 	}
 
 	return false
+}
+
+// sameBits tells whether a and b are one float64 to the bit, so that a
+// zero's sign tells two points apart as it would their next steps.
+func sameBits(a, b float64) bool {
+	return math.Float64bits(a) == math.Float64bits(b)
 }
 
 // PointOnCurve refines (*up, *vp), an initial guess, to where curve
