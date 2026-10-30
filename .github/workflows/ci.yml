@@ -201,7 +201,11 @@ jobs:
           - name: sketch
             packages: ./pkg/sketch/...
           - name: topo
-            packages: ./pkg/topo ./pkg/thread ./pkg/ttf ./pkg/check
+            packages: ./pkg/topo ./pkg/thread ./pkg/ttf
+          # check has a runner of its own: beside topo, the two took the
+          # shard past go test's 30 minutes on a slow runner.
+          - name: check
+            packages: ./pkg/check
           - name: kernel
             packages: >-
               ./pkg/srf/... ./pkg/solver/... ./pkg/persist/convert ./pkg/persist/slvs
