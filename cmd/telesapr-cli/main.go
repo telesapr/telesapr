@@ -84,7 +84,7 @@ Commands:
                 [--bg-color <on|off>] [--group <group>]
         Exports a view of the sketch, in a 2d vector format.
     export-drawing --output <pattern> [--chord-tol <tolerance>]
-        Exports the sketch's drawing (File > Drawing Sheet), or the default
+        Exports the sketch's drawing (View > Drawing Sheet), or the default
         one, an A3 sheet of the standard views fitted, in a 2d vector format.
     export-section --output <pattern> [--plane <plane>] [--chord-tol <tolerance>]
                    [--group <group>]

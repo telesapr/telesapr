@@ -1,5 +1,5 @@
 # A thread's drawing (an extension): the thread of path_thread, then
-# File > Drawing Sheet, where "threads as modelled" turns the drafting
+# View > Drawing Sheet, where "threads as modelled" turns the drafting
 # convention off, and on again.
 key c
 move 300 300
