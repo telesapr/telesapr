@@ -3,33 +3,35 @@
 Example: [`examples/scripts/history`](../../examples/scripts/history/history.go), a block with
 a boss and copies of it, whose history is edited step by step.
 
-Every group is a step of the model's history, listed on the home screen of the text window in
-order. A group may use earlier ones: an extrusion uses its sketch, a sketch on a face uses the
-group that made the face.
+Every group is a step in the model's history. The home screen of the text window lists the
+groups in order. A group may use earlier groups: an extrusion uses its sketch, and a sketch on
+a face uses the group that made the face.
 
 ## Moving a group
 
-The arrows after a group's name in the group list move it one place; Features > Move Group Earlier
-and Move Group Later move the active group. A move that would put a group ahead of a group it
-uses is refused, and the message names both.
+The arrows after a group's name in the group list move it one place up or down. Features >
+Move Group Earlier and Move Group Later move the active group. A move that would put a group
+ahead of a group it uses is refused, and the message names both groups.
 
-Features > Move Group to End moves the active group to the end of the history together with the
-groups only it needs, keeping their order: an extrusion goes with its sketch, and that sketch's
-own workplane with it. A sketch that another group uses too stays where it is. Scripts do the
-same with `GroupHistory.MoveToEndWithSources` and `GroupHistory.MoveWithSourcesBefore`; `GroupHistory.MoveToEnd`
-moves the one group.
+Features > Move Group to End moves the active group to the end of the history. The groups that
+only it needs go with it, in their order: an extrusion takes its sketch, and that sketch takes
+its own workplane. A sketch that another group also uses stays where it is. In a script,
+`GroupHistory.MoveToEndWithSources` and `GroupHistory.MoveWithSourcesBefore` do the same.
+`GroupHistory.MoveToEnd` moves the one group alone.
 
-Deleting the active group, or a group it uses (which deletes it too), makes active the last
-group before it that is left, so that the next new group still comes at the end of the history.
+When you delete the active group, or a group it uses (which deletes it too), the last remaining
+group before it becomes active. So the next new group still goes at the end of the history.
 
 ## Inserting a group
 
-A new group goes in after the active one, so activating an earlier group (the radio button
-before its name on the home screen) and adding one inserts it in the middle of the history; the
-groups after it are regenerated on it. While an earlier group is active, what comes after it is
-hidden and can't be picked, so nothing new refers to it. A script is held to the same: a
-constraint on an entity of a later group, or a new group that would use one, is refused with a
-message naming the later group. The file keeps the active group.
+A new group goes in after the active one. To insert a group in the middle of the history, make
+an earlier group active (the radio button before its name on the home screen) and add the new
+group. The groups after it are regenerated on top of it.
+
+While an earlier group is active, everything after it is hidden and can't be picked. So nothing
+new can refer to it. A script is held to the same rule: a constraint on an entity of a later
+group, or a new group that would use one, is refused. The message names the later group. The
+file keeps which group is active.
 
 ```go
 doc.Activate(block)
@@ -46,21 +48,26 @@ must(in3d.History().MoveToEnd())
 
 ## Suppressing
 
-A group's screen has two boxes to leave it out. "Suppress this group's solid model" keeps its
-sketch but leaves its solid out of the model, as SolveSpace does. "Suppress this group and the
-groups that use it" leaves out the group and every group that uses it, with nothing deleted: the group list says what is left out and why,
-and a group left out can't be made active. Undo, or clearing the box, brings it all back.
+A group's screen has two boxes that leave it out of the model:
 
-From a script, `group.SetSuppress(api.SuppressWhole)`, `api.SuppressSolid` or
+- "suppress this group's solid model" keeps the group's sketch but leaves its solid out, as
+  SolveSpace does.
+- "suppress this group and the groups that use it" leaves out the group and every group that
+  uses it. Nothing is deleted. The group list says what is left out and why. A group left out
+  can't be made active.
+
+Undo, or clearing the box, brings everything back.
+
+From a script: `group.SetSuppress(api.SuppressWhole)`, `api.SuppressSolid` or
 `api.Unsuppressed`.
 
 ## Broken references
 
-Deleting a group deletes the groups that use it, and a constraint goes with the entities it
-held. Features > Broken References lists each thing a deletion took, with what it used; the home
+Deleting a group deletes the groups that use it. A constraint goes with the entities it held.
+Features > Broken References lists each thing a deletion took, with what it used. The home
 screen links to the list while it is not empty. Undo brings them back.
 
-From a script, `doc.Features.BrokenReferences()` and `doc.Features.ClearBrokenReferences()`.
+From a script: `doc.Features.BrokenReferences()` and `doc.Features.ClearBrokenReferences()`.
 
 ## Not yet
 

@@ -9,7 +9,7 @@ file, extruded, and its section written to SVG; [`gltf`](../../examples/scripts/
 
 ## Export
 
-File > Export writes:
+File > Export has one entry for each kind of file:
 
 | Entry | Formats | Script |
 |---|---|---|
@@ -22,12 +22,13 @@ File > Export writes:
 | Script | `.go` | `File.ExportScript` |
 | Drawing | as 2d View | see [Drawings](drawings.md) |
 
-`File.Export` picks what to write from the extension. Every export is of the model as it is at the
-active group.
+`File.Export` tells from the extension what to write. Every export is of the model as it is at
+the active group.
 
 ### Mesh quality
 
-Triangle Mesh asks for three settings, offered as presets:
+A triangle mesh follows the curved faces only so closely. Triangle Mesh asks for three settings
+that say how closely, and offers them as presets:
 
 | Preset | Chord tolerance | Angular tolerance | Segments per curve |
 |---|---|---|---|
@@ -35,9 +36,10 @@ Triangle Mesh asks for three settings, offered as presets:
 | standard (default) | 0.1 mm | none | 64 |
 | fine | 0.02 mm | 10° | 256 |
 
-The angular tolerance bounds the turn between neighbouring facets, so small radii are followed
-as closely as large ones. **Strict** refuses to write a mesh with naked edges or
-self-intersections, where otherwise it is written with a warning. Facets of no area are left out.
+The chord tolerance is how far a facet may stray from the true surface. The angular tolerance
+bounds the turn between neighbouring facets, so small radii are followed as closely as large
+ones. **Strict** refuses to write a mesh that has naked edges or self-intersections. Without it,
+such a mesh is written with a warning. Facets of no area are left out.
 
 ```go
 doc.File.SetMeshQuality(api.MeshFine)
@@ -47,21 +49,36 @@ doc.File.SetExportOptions(o)
 doc.File.Export("part.stl")
 ```
 
-A `.glb` carries each face's colour and appearance, in metres ([Appearance](appearance.md)).
+A `.glb` file carries each face's colour, with lengths in metres ([Appearance](appearance.md)).
 
 ### 2d Section
 
-2d Section writes where a plane cuts the solid: the section view's plane when it is on
-([Section view](section-view.md)), else the active workplane. A plane that misses the solid
-writes nothing and says so. The scale, page and margins are the export options' (Edit >
-Preferences, or `ExportOptions` `Scale`, `Canvas`, `Margin`).
+2d Section writes the outline where a plane cuts the solid. In the window, the plane comes from
+what is selected:
+
+- nothing selected: the active workplane;
+- a face: the plane through that face;
+- a point and two line segments: the plane through the point, parallel to the lines.
+
+From a script, `File.ExportSection` uses the section view's plane when the section view is on
+([Section view](section-view.md)), and otherwise the active workplane. A plane that misses the
+solid writes nothing and says so.
+
+The scale, page size and margins of the 2d exports are set on the configuration screen
+(**configuration** on the home screen of the property browser). From a script they are
+`ExportOptions`'s `Scale`, `Canvas` and `Margin`.
 
 ## Import
 
-File > Import takes a DXF file into the active group's workplane, or, when it has entities off
-its XY plane, as construction entities in 3d. Entities of kinds it doesn't know are left out and
-counted. Edit > Rotate Imported 90° turns a linked part a quarter turn (`AsLink().Rotate90`).
-SolveSpace's `.slvs` files are imported as new `.tlspr` models.
+File > Import takes a DXF file into the active group's workplane. When the file has entities off
+its XY plane, they come in as construction entities in 3d. Entities of kinds it doesn't know are
+left out and counted. Choosing a `.dwg` file says that DWG is not supported, so save the drawing
+as DXF first.
+
+Edit > Rotate Imported 90° turns a linked part a quarter turn (`AsLink().Rotate90` in a script).
+
+SolveSpace's `.slvs` files are imported as new `.tlspr` models. Importing one replaces the model
+you have open.
 
 ```go
 ignored, err := doc.File.ImportDXF("plate.dxf")
@@ -71,16 +88,21 @@ STEP, STL and OBJ files are linked rather than imported: see [STEP links](step-l
 
 ## The command line
 
-`telesapr-cli` exports without a window: `thumbnail`, `export-view`, `export-section`,
-`export-wireframe`, `export-mesh`, `export-surfaces`, `export-drawing` and `export-script`, and
-`convert` for `.slvs` files. `--group` exports the model up to a group; `export-mesh` takes
-`--quality draft|standard|fine`, `--angle-tol`, `--max-segments` and `--strict`;
-`export-section --plane z=15` cuts square to an axis, or `--plane x,y,z,nx,ny,nz` through a point
-with a normal. `telesapr-cli --help` lists them all.
+`telesapr-cli` exports without a window. Its commands are `thumbnail`, `export-view`,
+`export-section`, `export-wireframe`, `export-mesh`, `export-surfaces`, `export-drawing` and
+`export-script`, and `convert` for `.slvs` files. Some flags:
+
+- `--group` exports the model up to a group (every export command but `export-drawing`);
+- `export-mesh` takes `--quality draft|standard|fine`, `--angle-tol`, `--max-segments` and
+  `--strict`;
+- `export-section --plane z=15` cuts square to an axis, or `--plane x,y,z,nx,ny,nz` through a
+  point with a normal.
+
+`telesapr-cli --help` lists them all.
 
     telesapr-cli export-mesh --quality fine --strict --output part.stl part.tlspr
     telesapr-cli export-section --plane z=5 --output cut.svg part.tlspr
 
 ## Not yet
 
-DXF is the only 2d format imported; a STEP file can't be imported as editable geometry.
+DXF is the only 2d format imported. A STEP file can't be imported as editable geometry.

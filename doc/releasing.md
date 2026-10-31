@@ -37,10 +37,13 @@ a fixed one with the next version, and the tag is never moved.
 
 ## The packages
 
-The Release workflow (`.github/workflows/release.yml`) runs one job per OS, each of which runs the
-script `make dist-<os>` runs, and a last job that attaches what they built to the release with
-`SHA256SUMS`. Run by hand from the Actions page (workflow_dispatch) it builds without a release,
-and the packages are the run's artifacts: that is how to try a change to the packaging.
+The Release workflow (`.github/workflows/release.yml`) runs a govulncheck job, one job per OS,
+and a last job. Each OS job runs the script `make dist-<os>` runs (on Windows, the script
+directly, as GNU make is not on the runner's `PATH`); the Windows and macOS jobs run the quick
+tests (`scripts/test-os.sh`) first. The last job checks that the tag is the version in
+`pkg/version/version.go` and attaches what the OS jobs built to the release with `SHA256SUMS`.
+Run by hand from the Actions page (workflow_dispatch) it builds without a release, and the
+packages are the run's artifacts: that is how to try a change to the packaging.
 
 | Package | Made by | On |
 |---|---|---|

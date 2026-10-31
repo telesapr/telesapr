@@ -1,7 +1,7 @@
 # Roadmap
 
 What is left to build, as of 2026-10-30. Only open work is listed. What is built is described in
-`doc/guide`, `doc/ai.md` and `doc/done-audit.md`; `doc/done-audit.md` also holds the definition of
+`doc/guide`, `doc/guide/ai.md` and `doc/dev-notes/done-audit.md`; `doc/dev-notes/done-audit.md` also holds the definition of
 done. The dated "Done" and "Tried" notes of every item, cut from this file on 2026-10-30, are in
 `git show af848717:ROADMAP.md`; read an item's there before taking it up, so as not to try again
 what failed. Code comments that cite "ROADMAP-JUMP.md", "package 5.1" or "roadmap 24.2" refer to
@@ -63,14 +63,14 @@ ball's probes: four times slower, no fillet gained.
 
 ### Modelling upgrade leftovers
 
-Left by the work packages of `doc/notes/modelling_upgrades.md` (notes at `1e84ca0c`).
+Left by the work packages of `doc/dev-notes/modelling_upgrades.md` (notes at `1e84ca0c`).
 
 | Item | Left |
 |---|---|
 | Lofts (C4) | A solid's sides at a closed loft's ends (a ring has none); profiles more than a third of a turn apart round a ring (draw more) |
 | Clearance and walls (D1) | A wall between two triangles no measured ray joined can be missed; a group forced to a mesh with a part assembled after it is no part to `Clearances` |
 | Model to script (D5) | `tlspr/v1/fields.tlspr` (dangling references) opens as no model. Opening damaged files in part would turn about 250 `Must*` lookups in `pkg/sketch` into diagnostics on their groups: an item of its own |
-| Regeneration (D4) | Recommendation 11's parallel commits (curve ids reserved in advance); the rest taken or measured and declined (`doc/notes/performance.md`) |
+| Regeneration (D4) | Recommendation 11's parallel commits (curve ids reserved in advance); the rest taken or measured and declined (`doc/dev-notes/performance.md`) |
 
 ### Thread leftovers
 
@@ -122,7 +122,7 @@ Taken case by case, each a fixture with a sweep (`pkg/srf/contact_test.go`, `con
 Merged as a mender (`pkg/srf/triangulate_mend.go`, `triangulate_check.go`): the ear clipper meshes
 every face, and a face that crosses the shell's mesh, leaves an edge unmated, shares a triangle with
 another face, or holds a sliver is meshed again by the CDT. As the default (`k4-cdt-spike` branch,
-`doc/notes/k4-cdt-spike.md`) it costs 3 to 5 times the triangles and makes `pkg/topo`'s tests 3.4
+`doc/dev-notes/k4-cdt-spike.md`) it costs 3 to 5 times the triangles and makes `pkg/topo`'s tests 3.4
 times slower. To take it up: bring the cost down, then regenerate every golden with a curved face.
 It would close the twisted swept bar's 1.6% volume error, the only open item no mender reaches.
 
@@ -148,7 +148,7 @@ Neosolve reads and writes IGES. STEP covers the exchange; take it when a user as
 
 ### F8 TeleSAPR in a browser
 
-Spike done 2026-10-29 (`doc/notes/browser-wasm-spike.md`, `cmd/telesapr-wasm`): every package but
+Spike done 2026-10-29 (`doc/dev-notes/browser-wasm-spike.md`, `cmd/telesapr-wasm`): every package but
 the takigo window builds for js/wasm, output is byte-identical to native, regeneration 2.5 to 5 times
 slower than one native thread, 12 MB gzipped, the soft renderer 6 to 18 fps (under the 15 fps gate).
 
@@ -181,7 +181,7 @@ Each stays out until its reason stops holding.
 | The section view saved in files | View state; goes with saved views, which nothing plans |
 | Open thread ends in STEP | Closing them would invent geometry |
 | CSG and swept solids in STEP | No vendor file in the corpus has them; the export half is cheap once the group tree is walkable |
-| A chat window, MCP resources and prompts, an HTTP transport | "An MCP server, and nothing else" until a user needs more (`doc/ai.md`) |
+| A chat window, MCP resources and prompts, an HTTP transport | "An MCP server, and nothing else" until a user needs more (`doc/guide/ai.md`) |
 | `make ai-eval` | Needs a model and an account, outside CI |
 | Tolerances per edge and vertex | Healing within a file's tolerance suffices so far |
 | Generated entities left out of `.tlspr` | Possible behind the version number; no need yet |
@@ -191,4 +191,4 @@ Each stays out until its reason stops holding.
 | A mesh Boolean fallback with perturbation | Conflicts with "never silently wrong geometry" |
 | Sheet metal, direct modelling, tolerancing, CAM, simulation | Each an XL product of its own |
 | Dual contouring | A mesher for sampled fields, not an exact B-rep (`git show 39142006:doc/notes/dual-contouring-fit.md`) |
-| `.tlspr` read and written as streams | P5 of `doc/notes/performance.md`; no user has waited on it |
+| `.tlspr` read and written as streams | P5 of `doc/dev-notes/performance.md`; no user has waited on it |

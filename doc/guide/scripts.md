@@ -1,39 +1,41 @@
 # Scripts
 
-Every feature can be scripted in Go (see the [README](../../README.md#scripting) and `help()` in
-the console). This page covers what helps scripts be shared and reused: forms that ask for a script's values
-when it runs, and a library of packages of your own, and how the console is typed in.
+Every feature can be scripted in Go. The [README](../../README.md#scripting) says how a script
+is written, and `help()` in the console lists what it can call. This page is about what helps
+scripts be shared and reused: how the console is typed in, forms that ask for a script's values
+when it runs, a library of packages of your own, and a model written out as a script.
 
 ## The console
 
-Script > Show Console opens the console in a window of its own: what was shown above, what is
-typed in the lower fifth, and Run, Stop and Clear buttons. It runs `help()`
-when it is first shown. `telesapr-cli repl` at a terminal starts the same way. In both, what is typed
-is edited with readline's keys:
+Script > Show Console (Ctrl+Shift+K) opens the console in a window of its own. What was shown
+so far is above, what you type is in the lower fifth, and there are Run, Stop and Clear buttons.
+The first time it is shown it runs `help()`. `telesapr-cli repl` at a terminal starts the same
+way. In both, you edit what you type with readline's keys:
 
 | Key | Does |
 |---|---|
-| Return | Runs what is typed; in a statement that isn't finished, as after `for i := 0; i < 3; i++ {`, starts another line |
-| Shift+Return | Starts another line, indented as the one before (window) |
-| Tab, Shift+Tab | Completes the name before the cursor: a variable, a package, or after a dot what the value or package has, worked out from types without running anything (`doc.Active().Re` offers `Requests(`). With several, completes as far as they agree and lists them; Tab again puts each in its place in turn, then what was typed, and Shift+Tab goes back (window; at a terminal, readline's own menu) |
-| Up, Down, Control+P, Control+N | The entry before, after; in an entry of several lines, the line above, below |
-| Control+R | Searches back through the entries for what is typed next; again, further back; Escape puts back what was typed |
-| Control+A, Control+E | The start, end of the line |
-| Alt+B, Alt+F | A word back, forward |
-| Control+K, Control+U | Kills to the end, the start of the line |
-| Control+W, Alt+Backspace, Alt+D | Kills the word before the cursor (up to space), the word before, the word after |
+| Return | Runs what is typed. In a statement that isn't finished, as after `for i := 0; i < 3; i++ {`, it starts another line instead |
+| Shift+Return | Starts another line, indented like the one before (window) |
+| Tab, Shift+Tab | Completes the name before the cursor: a variable, a package, or after a dot what the value or package has. This is worked out from the types without running anything (`doc.Active().Re` offers `Requests(`). With several matches it completes as far as they agree and lists them. Tab again puts each in place in turn, then what you typed, and Shift+Tab goes back (window; at a terminal, readline's own menu) |
+| Up, Down, Control+P, Control+N | The entry before, the entry after. In an entry of several lines, the line above or below |
+| Control+R | Searches back through the entries for what you type next. Again goes further back. Escape puts back what you had typed |
+| Control+A, Control+E | The start, the end of the line |
+| Alt+B, Alt+F | A word back, a word forward |
+| Control+K, Control+U | Kills to the end, to the start of the line |
+| Control+W, Alt+Backspace, Alt+D | Kills the word before the cursor (up to a space), the word before, the word after |
 | Control+Y | Yanks back what was killed |
 | Control+T, Control+H | Swaps two characters, deletes back |
 | Control+L | Clears what the console shows (window) |
 | Control+C, Escape | Stops what runs, or drops a statement half entered |
 
-What is entered is kept between runs in `telesapr/script_history` in the user's configuration
-folder, which the window and `telesapr-cli repl` share. At a terminal, the keys are those of
+What you enter is kept between runs in `telesapr/script_history` in your configuration folder.
+The window and `telesapr-cli repl` share it. At a terminal the keys are those of
 [reeflective/readline](https://github.com/reeflective/readline), which reads `~/.inputrc`.
 
 ## Forms
 
-A script declares the values it asks for with an `api.Form`, a variable at its top level:
+A script can ask for its values when it runs. It declares them with an `api.Form`, a variable at
+its top level:
 
 ```go
 var Form = api.Form{
@@ -47,26 +49,26 @@ var Form = api.Form{
 }
 ```
 
-and reads them with `Form.Float("outer")`, `Form.Int("slots")`, `Form.Text("finish")` and
-`Form.Bool("save")`. In a script of statements, as the console takes them, it is
-`var form = Form{...}`, without the package's name. Each `Value` is written as a literal, and
-says what its field takes: `0` a whole number, `30.0` a number, `true` or `false` a check box,
-a quoted string text, or one of the `Choices`.
+It reads them with `Form.Float("outer")`, `Form.Int("slots")`, `Form.Text("finish")` and
+`Form.Bool("save")`. In a script of plain statements, as the console takes them, write
+`var form = Form{...}` without the package name. Each `Value` is written as a literal, and the
+literal says what the field takes: `0` a whole number, `30.0` a number, `true` or `false` a check
+box, a quoted string text, or one of the `Choices`.
 
-- **Script > Run File** shows the fields in a dialog before the script runs, with the values
-  written in it, and runs it with those you leave. **Cancel** doesn't run it; a value that
-  doesn't fit its field (`many` slots) is refused with a message.
+- **Script > Run File** (Ctrl+Shift+R) shows the fields in a dialog before the script runs, with
+  the values written in the script, and runs it with the values you leave there. **Cancel**
+  doesn't run it. A value that doesn't fit its field (`many` slots) is refused with a message.
 - `telesapr-cli run --set outer=40 --set slots=6 washer.go` gives the same values without a
   window.
 - An AI program's `run_script` takes them as its `form` argument.
 
-The values given are written into the script's text in place of the ones it was written with,
-so the script runs the same way whichever way it was given them, and a field not given keeps
-its value. The example is [`examples/scripts/form`](../../examples/scripts/form).
+The values you give are written into the script's text in place of the ones it was written with.
+So the script runs the same way whichever way it got them, and a field you don't give keeps its
+value. The example is [`examples/scripts/form`](../../examples/scripts/form).
 
 ## The script library
 
-A script imports a package of your own by its path in the **script library folder**:
+A script can import a package of your own by its path in the **script library folder**:
 `import "gears"` reads the Go files in `<library>/gears`, and `import "shop/brackets"` those in
 `<library>/shop/brackets`. Library packages import each other the same way, and import
 `github.com/telesapr/telesapr/pkg/script/api` as any script does. They have no `doc` of their
@@ -89,19 +91,19 @@ import "gears"
 gears.Blank(doc, 24, 2, 8, 6, "gear")
 ```
 
-The folder is the same for every way a script runs:
+The folder is the same whichever way a script runs:
 
-- In the window, the configuration screen's **script library folder**. Left empty it is
-  `telesapr/library` in the user's configuration folder (`~/.config` on Linux, `%AppData%` on
+- In the window, it is the configuration screen's **script library folder**. Left empty, it is
+  `telesapr/library` in your configuration folder (`~/.config` on Linux, `%AppData%` on
   Windows, `~/Library/Application Support` on macOS). The console, Script > Run File and AI
-  connections all use it; a change takes effect at the next import.
-- On the command line, `--lib <dir>` before the model and the script:
-  `telesapr-cli run --lib ~/parts examples/scripts/library/library.go`, and likewise for `repl`,
-  `eval` and `mcp --headless`. Without it, the default folder above.
+  connections all use it. A change takes effect at the next import.
+- On the command line, give `--lib <dir>` before the model and the script:
+  `telesapr-cli run --lib ~/parts examples/scripts/library/library.go`. The same goes for
+  `repl`, `eval` and `mcp --headless`. Without it, the default folder above is used.
 
 The go tool doesn't know the library, so a script file that imports from it can't be built with
-`go build` or checked with `go vet`. Such a file carries the build tag `telesapr`, which the
-scripts' interpreter has and the go tool doesn't:
+`go build` or checked with `go vet`. Give such a file the build tag `telesapr`. The scripts'
+interpreter has that tag and the go tool doesn't:
 
 ```go
 //go:build telesapr
@@ -118,43 +120,51 @@ Example: [`examples/scripts/exportscript`](../../examples/scripts/exportscript/e
 a plate whose width is a parameter, written out as the program that builds it.
 
 File > Export > Script (.go) writes the drawing as a Go program that builds it again on a new
-drawing: the parameters, every group in the order the model is built made by the call that
-makes one of its kind, the requests of each sketch where they are solved to, and the
-constraints with their values, names and expressions, the styles, images, splines of any
-number of points (`doc.Sketch.Spline`, `doc.Sketch.PeriodicSpline`), kerned text, datum points
-in groups that aren't sketches, and faces' own appearances. An image's file is named where it is, as a link's is. Edit it, give it a form, and run it as
-any script. `telesapr-cli export-script model.tlspr` does the same without a window, and a
+drawing. It writes:
+
+- the parameters;
+- every group, in the order the model is built, each made by the call that makes a group of its
+  kind;
+- the requests of each sketch, where they are solved to;
+- the constraints with their values, names and expressions;
+- the styles, images, splines of any number of points (`doc.Sketch.Spline`,
+  `doc.Sketch.PeriodicSpline`), kerned text, datum points in groups that aren't sketches, and
+  faces' own appearances.
+
+An image's file is named where it is, as a link's is. Edit the script, give it a form, and run it
+as any script. `telesapr-cli export-script model.tlspr` does the same without a window. A
 script calls `doc.File.ExportScript(path)`, or `doc.Script()` for the text and a list of what it
 left out. An AI program's `export` tool writes it for a file ending `.go`.
 
-What a DXF import draws as the window can't is written with calls of its own: an arc drawn in
-3d (`doc.Sketch.ArcIn3D`), a workplane drawn in a workplane (`doc.Sketch.NewWorkplaneIn`) and
-the same constraint twice (`doc.Constrain.Again`). An image whose file is missing is written as
-its frame (`doc.Sketch.ImageFrame`), and the window says so. What the script can't write is a
-comment in it starting `not written:`, and the window says so too: a face's appearance on a
-face no point finds. Handles are numbered
-afresh, so the script names what a group made by what it was made from (`g3.Made(r4, 1002)`)
-and a request's points by their number (`r4.Part(1)`).
+Some things a DXF import draws can't be drawn in the window. They are written with calls of
+their own: an arc drawn in 3d (`doc.Sketch.ArcIn3D`), a workplane drawn in a workplane
+(`doc.Sketch.NewWorkplaneIn`) and the same constraint twice (`doc.Constrain.Again`). An image
+whose file is missing is written as its frame (`doc.Sketch.ImageFrame`), and the window says
+so. What the script can't write is a comment in it starting `not written:`, and the window
+says so too. One such thing is a face's appearance on a face that no point finds. Handles are
+numbered afresh, so the script names what a group made by what it was made from
+(`g3.Made(r4, 1002)`), and a request's points by their number (`r4.Part(1)`).
 
 ## A model in words
 
 `doc.Describe()` returns the drawing in words: the unit, the parameters, each group with how it
-solved, its degrees of freedom and problems, and the volume and bounds of the solid; then the
-active group's requests and constraints with their names and values. `Group.Describe()` does the
-same for one group. It is what an AI program reads before writing a script ([`doc/ai.md`](../ai.md));
-example: [`examples/scripts/describe`](../../examples/scripts/describe/describe.go).
+solved, its degrees of freedom and its problems, and the volume and bounds of the solid. Then
+come the active group's requests and constraints with their names and values.
+`Group.Describe()` does the same for one group. It is what an AI program reads before writing a
+script ([Drawing with an AI model](ai.md)). Example:
+[`examples/scripts/describe`](../../examples/scripts/describe/describe.go).
 
 ```go
 fmt.Println(doc.Describe())
 ```
 
-## What it does not do yet
+## Not yet
 
 - A form's fields are a flat list: no units that follow the document's, no bounds, no fields
   that depend on others.
-- A package is read once per interpreter: a library file changed while the console is open is
-  seen after Script > Stop has stopped a script, or in a new window. Script files run from the
-  menu start a new interpreter each time, and see it at once.
+- A package is read once per interpreter. A library file changed while the console is open is
+  seen after Script > Stop has stopped a script, or in a new window. A script file run from the
+  menu starts a new interpreter each time, and sees the change at once.
 - There are no versions or downloads of packages: the library is a folder you keep.
-- An AI program's scripts are kept to some folders ([Drawing with an AI model](../ai.md#files));
+- An AI program's scripts are kept to some folders ([Drawing with an AI model](ai.md#files));
   yours are not.

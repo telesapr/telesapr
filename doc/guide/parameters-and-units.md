@@ -1,26 +1,26 @@
 # Parameters and units
 
-Example: [`examples/scripts/plate`](../../examples/scripts/plate/plate.go), a mounting plate
+Examples: [`examples/scripts/plate`](../../examples/scripts/plate/plate.go), a mounting plate
 whose sizes all come from a table of parameters, and
-[`examples/scripts/feedback`](../../examples/scripts/feedback/feedback.go), for units,
-measuring and what a sketch says about itself.
+[`examples/scripts/feedback`](../../examples/scripts/feedback/feedback.go), which shows units,
+measuring and what a sketch can tell you about itself.
 
 ## Parameters
 
-A parameter is a name for a value, such as `width = 60` or `margin = height/5`. A dimension
-whose value is an expression of parameters changes when they do, and so does everything built
-on it.
+A parameter is a name for a value, such as `width = 60` or `margin = height/5`. A dimension can
+be an expression of parameters. When a parameter changes, the dimension changes, and so does
+everything built on it.
 
 In the window:
 
-- **Edit > Parameters** (Ctrl+Shift+M) opens the table. Add a parameter, give it an expression,
-  rename it or delete it there. A parameter may name earlier ones.
-- Double-click a dimension and type an expression, such as `width - 2*margin`, in place of a
-  number. The editor shows the expression again the next time.
+- **Edit > Parameters** (Ctrl+Shift+M) opens the table. There you add a parameter, give it an
+  expression, rename it or delete it. A parameter's expression may use parameters made before it.
+- Double-click a dimension and type an expression, such as `width - 2*margin`, instead of a
+  number. The next time you open the editor, it shows the expression again.
 - A group's own values, such as an extrusion's depth or a fillet's radius, take expressions on
   the group's screen.
-- Renaming a parameter rewrites every expression that uses it. Deleting one that is used is
-  refused, and the message says what uses it.
+- Renaming a parameter rewrites every expression that uses it. Deleting a parameter that is
+  still used is refused, and the message says what uses it.
 
 From a script:
 
@@ -34,21 +34,27 @@ for _, p := range doc.Params.List() {
 }
 ```
 
-`RenameParameter` and `DeleteParameter` do what the table does; `doc.Params.Errors()` lists
-expressions that do not evaluate.
+`doc.Params.Rename` and `doc.Params.Delete` do what the table does. `doc.Params.Errors()` lists
+the expressions that could not be evaluated.
 
 ## An extrusion's depth and a revolve's angle
 
 Example: [`examples/scripts/extent`](../../examples/scripts/extent/extent.go), a plate whose
-depth is the parameter `thick` and an arc of a ring turned by the parameter `arc`.
+depth is the parameter `thick`, and an arc of a ring turned by the parameter `arc`.
 
-An extrusion's depth, and a revolve's or a helix's angle, are free until something holds them:
-a dimension on the solid, or the group's own value. The group's screen shows the depth or angle
-it has now, on the row of its sides, with **held** beside it. Checked, the value is held where
-it is, a drag no longer moves the far end, and `[change]` takes a number or an expression of the
-parameters, as `thick`; a dimension that held it too is then redundant. Unchecked, it is free
-again, to be dragged or dimensioned. A revolve turns by 360 degrees at most. An extrusion of a
-sketch in 3d has no normal to hold its depth along.
+An extrusion's depth is free until something holds it. The same goes for a revolve's angle and
+a helix's angle. Two things can hold it: a dimension on the solid, or the group's own value.
+
+The group's screen shows the depth or angle it has now, on the row of its sides, with a **held**
+box beside it:
+
+- Checked, the value is held where it is. Dragging no longer moves the far end. `[change]`
+  takes a number or an expression of the parameters, such as `thick`. A dimension that also held
+  it is now redundant.
+- Unchecked, the value is free again. You can drag it or dimension it.
+
+A revolve turns by 360 degrees at most. An extrusion of a sketch drawn in 3d has no normal to
+hold its depth along, so it can't be held.
 
 ```go
 must(plate.SetExpr(sketch.GroupExtent, "thick"))
@@ -62,13 +68,19 @@ fmt.Println(plate.AsExtrude().Depth(), plate.AsExtrude().DepthHeld(), ring.AsRev
 Example: [`examples/scripts/configurations`](../../examples/scripts/configurations/configurations.go),
 one plate in three sizes.
 
-A configuration is a named set of the parameters' expressions: the same model small and large,
-from one table filled two ways. Under CONFIGURATIONS on the parameters screen,
-`[add a configuration of the table as it is]` makes one and makes it active; while it is active,
-a change to the table is a change to it too. Choosing another writes its expressions into the
-table, and the model follows; choosing `none` leaves the table as it is, and changes it alone. A
-parameter renamed is renamed in every configuration; one that an inactive configuration's
-expression uses can't be deleted. The file keeps the configurations and which is active.
+A configuration is a named set of expressions for the parameters. It lets you keep the same
+model in a small size and a large size, from one table filled in two ways.
+
+On the parameters screen, under CONFIGURATIONS:
+
+- `[add a configuration of the table as it is]` makes a new one and makes it active. While it
+  is active, every change to the table is also a change to the configuration.
+- Choosing another configuration writes its expressions into the table, and the model follows.
+- Choosing `none` leaves the table as it is. Changes then go to the table alone.
+
+A parameter renamed is renamed in every configuration. A parameter that an inactive
+configuration still uses can't be deleted. The file keeps the configurations and which one is
+active.
 
 ```go
 must(doc.Params.AddConfiguration("small"))
@@ -80,15 +92,20 @@ must(doc.Params.ActivateConfiguration("small"))
 ## Motion study
 
 Example: [`examples/scripts/motion`](../../examples/scripts/motion/motion.go), a plate grown
-through a range of widths, a mesh saved at each step.
+through a range of widths, with a mesh saved at each step.
 
-Assembly > Motion Study drives one parameter through a range: its screen takes the parameter, the
-values to go from and to, and the number of steps. `[run]` regenerates the model at each step,
-and lists the value, whether every group solved, and the volume of the solid. `[run, saving each
-step...]` asks for a file and saves a frame of each step beside it, numbered: a picture of the
-view the window shows for `.png`, which makes an animation, or a mesh for `.stl`, `.3mf` and `.glb`.
-The parameter gets its expression back afterwards. A [screw mate](bill-of-materials.md#mates)'s
-`turn` is such a parameter: a study of it runs a nut up its screw.
+Assembly > Motion Study drives one parameter through a range of values. Its screen takes the
+parameter, the value to start from, the value to end at, and the number of steps.
+
+- `[run]` regenerates the model at each step. It lists the value, whether every group solved,
+  and the volume of the solid.
+- `[run, saving each step...]` asks for a file name and saves one frame per step beside it,
+  numbered. For `.png` it saves a picture of the view as the window shows it, which makes an
+  animation. For `.stl`, `.3mf` and `.glb` it saves a mesh.
+
+Afterwards the parameter gets its own expression back. The `turn` parameter of a
+[screw mate](bill-of-materials.md#mates) is such a parameter: a study of it runs a nut up its
+screw.
 
 ```go
 frames, err := doc.Assembly.MotionStudy("w", 20, 80, 6, "frames/plate-%02d.stl")
@@ -97,21 +114,24 @@ for _, f := range frames {
 }
 ```
 
-Pictures need the application's window; `telesapr-cli` saves meshes.
+Pictures need the application's window. `telesapr-cli` saves meshes only.
 
 ## Dimensions by name
 
 Example: [`examples/scripts/dimensions`](../../examples/scripts/dimensions/dimensions.go), a
-plate whose height and hole read its width dimension.
+plate whose height and hole read its width dimension by name.
 
-A dimension can be named, and expressions read its value by the name, as they read a
-parameter. Double-click the dimension and type `width = 60`: the label shows
-`width = 60.00`, and another dimension can be `width*2/3`. The value read is the one the label
-shows, in the document's unit: a distance without the sign of its side, a diameter shown as a
-radius as the radius. Typing a new name renames every use; `= 60` takes the name away, which is
-refused while something uses it. Parameters and dimensions share the names. A reference
-dimension measures, and can't be named. Changing the document's unit keeps the lengths that
-read a named length.
+A dimension can have a name. Expressions then read its value by that name, as they read a
+parameter. Double-click the dimension and type `width = 60`. The label shows `width = 60.00`,
+and another dimension can now be `width*2/3`.
+
+- The value read is the one the label shows, in the document's unit. A distance is read without
+  the sign of its side. A diameter shown as a radius is read as the radius.
+- Typing a new name renames every use of the old one. Typing `= 60` takes the name away, which
+  is refused while something still uses it.
+- Parameters and named dimensions share one set of names.
+- A reference dimension only measures, so it can't be named.
+- Changing the document's unit keeps the lengths that read a named length.
 
 ```go
 doc.Constrain.Length(sides[0], 60).SetName("width")
@@ -122,31 +142,33 @@ must(doc.Dimension("width").SetExpr("90"))
 ## The document's unit
 
 View > Dimension Units sets the unit the document is in: millimetres, metres, inches, or feet
-and inches. It belongs to the document and is saved with it. Lengths typed in the window, and
-lengths in expressions, are in that unit: in an inch document, `1/4` is a quarter inch, and is
-kept and saved as typed. Changing the unit keeps every size, rewriting each expression to give
-the same length, and is one undo step.
+and inches. The unit belongs to the document and is saved with it.
 
-From a script, `doc.View.SetUnits(core.UnitInches)` does the same, and `doc.View.Units()` reads it. The
-script methods that take plain numbers, such as `doc.Constrain.Length(line, 50.8)`, always take mm; only
-text, as in `SetExpr("2")`, is in the document's unit.
+Lengths typed in the window, and lengths in expressions, are in that unit. In an inch document,
+`1/4` is a quarter of an inch, and is kept and saved as you typed it. Changing the unit keeps
+every size: each expression is rewritten to give the same length. The change is one undo step.
+
+From a script, `doc.View.SetUnits(core.UnitInches)` does the same, and `doc.View.Units()` reads
+the unit. Script methods that take plain numbers, such as `doc.Constrain.Length(line, 50.8)`,
+always take millimetres. Only text, as in `SetExpr("2")`, is in the document's unit.
 
 ## What a sketch says about itself
 
-- **Freedom.** Entities are drawn in one colour when the constraints fix them and in another
+- **Freedom.** Entities are drawn in one colour when the constraints fix them, and in another
   while they can still move. From a script, `entity.Free()` is `sketch.FreedomFixed`,
-  `FreedomPartly` or `FreedomFree`.
+  `sketch.FreedomPartly` or `sketch.FreedomFree`.
 - **Conflicts.** When a group's constraints contradict each other, its screen lists the
-  constraints any one of which could be removed, and the canvas marks them. From a script,
-  `group.Conflicts()`.
+  constraints. Removing any one of them would resolve the conflict. The canvas marks them too.
+  From a script, `group.Conflicts()`.
 - **Measure.** Analyze > Measure Selection shows the length, radius, distance or angle of what
-  is selected on the canvas, without adding a constraint. From a script, `doc.Analyze.Measure(a, b)`.
-- **Find Command.** Edit > Find Command (Ctrl+K) finds any menu command by typing part of its
-  name. From a script, `api.Commands()` lists them and `doc.Edit.RunCommand("View > Zoom To Fit")`
-  runs one.
+  you selected on the canvas, without adding a constraint. From a script,
+  `doc.Analyze.Measure(a, b)`.
+- **Find Command.** Edit > Find Command (Ctrl+K) finds any menu command when you type part of
+  its name. From a script, `api.Commands()` lists them and
+  `doc.Edit.RunCommand("View > Zoom To Fit")` runs one.
 
 ## Not yet
 
-A parameter that reads a named length changes with the document's unit; changing the unit lists
-it among the ones to check. A configuration holds parameters' expressions only, not group
-values or which groups are suppressed.
+A parameter that reads a named length changes with the document's unit. When you change the
+unit, the window lists such parameters, so that you can check them. A configuration holds the
+parameters' expressions only: not a group's own values, and not which groups are suppressed.

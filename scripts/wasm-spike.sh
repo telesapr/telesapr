@@ -1,5 +1,5 @@
 #!/bin/sh
-# Builds the browser spike (cmd/telesapr-wasm, doc/notes/browser-wasm-spike.md)
+# Builds the browser spike (cmd/telesapr-wasm, doc/dev-notes/browser-wasm-spike.md)
 # into a folder that any static file server can serve, with a model to show.
 #
 #   scripts/wasm-spike.sh [out-dir [model.tlspr]]

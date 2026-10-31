@@ -142,7 +142,7 @@ its own and needs no API key.
 
 The model writes scripts against `pkg/script/api`, reads the drawing in words and looks at
 pictures of it. Each script shows in the script console and is one step of undo.
-`telesapr-cli mcp --headless` does the same without a window. See [`doc/ai.md`](doc/ai.md).
+`telesapr-cli mcp --headless` does the same without a window. See [`doc/guide/ai.md`](doc/guide/ai.md).
 
 ## Project structure
 

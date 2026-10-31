@@ -1,34 +1,35 @@
 # Assemblies
 
-An assembly is a model of parts: files linked into it (Assembly > Link / Assemble), or groups
-that combine as an assembly. This page is about linking them, putting them together, checking
-them and counting them.
+An assembly is a model made of parts. The parts are files linked into it (Assembly > Link /
+Assemble), or groups that combine as an assembly. This page is about linking parts, putting
+them together, checking them against each other, and counting them.
 
 ## Linked parts
 
 Example: [`examples/scripts/partsizes`](../../examples/scripts/partsizes/partsizes.go), one
 plate file linked three times in three sizes, and a fourth link pointed at another file.
 
-A link group's screen names the file it links, with `[relink]` beside it: choose another file,
-and the link reads it in place of the old one, keeping where the part is placed, its scale and
-what the link passes into it. Use it for a newer revision of a part saved under another name, or
-a STEP file in place of a model. What later groups use of the old part that the new one lacks is
-removed with them, as when a linked file is missing.
+A link group's screen names the file it links, with `[relink]` beside it. Choose another file
+there, and the link reads the new file in place of the old one. The part keeps its place, its
+scale and the values the link passes into it. Use this for a newer revision of a part saved
+under another name, or for a STEP file in place of a model. If later groups used something of
+the old part that the new one lacks, they are removed with it, as when a linked file is
+missing.
 
-A link to a model may pass it a configuration and values for its parameters (see
+A link to a model can pass it a configuration and values for its parameters (see
 [configurations](parameters-and-units.md#configurations)). The model is then regenerated with
-them, not read as it was saved, so one part file placed twice can be two sizes. The link's
-screen lists:
+those values instead of being read as it was saved. So one part file placed twice can come in
+two sizes. The link's screen lists:
 
-- **configuration**, `as saved` or one of the model's configurations, for a model that has
-  them;
-- each of the model's **parameters** with its value: `in the model [pass a value]` while the
-  model's own stands, or the value passed with `[change]` and `[model's]`, which gives the model
-  its own again.
+- **configuration**: `as saved`, or one of the model's configurations, when the model has
+  any;
+- each of the model's **parameters** with its value. While the model's own value stands, the
+  row says `in the model [pass a value]`. Once a value is passed, the row shows it with
+  `[change]` and `[model's]`, which gives the model its own value back.
 
-A value passed is a number or an expression in this model's parameters, as `W*2`: when they
-change, the linked model is regenerated again, so an assembly drives its parts from its own
-table. Each change is one step of undo.
+A value passed can be a number or an expression in this model's parameters, such as `W*2`.
+When those parameters change, the linked model is regenerated again. So an assembly can drive
+its parts from its own parameter table. Each change is one step of undo.
 
 From a script:
 
@@ -46,37 +47,41 @@ fmt.Println(driven.AsLink().ModelParams(), driven.AsLink().ModelConfigurations()
 
 ## Mates
 
-Example: [`examples/scripts/mates`](../../examples/scripts/mates/mates.go), a plate stacked on a
-copy of itself, flush and with the holes on one axis.
+Example: [`examples/scripts/mates`](../../examples/scripts/mates/mates.go), a plate stacked
+on a copy of itself, flush and with the holes on one axis.
 
-A mate is a shortcut to the constraints that put two parts together. Select the first of the
-part that stays, then the second of the part the active group places (a link group places the
-part it links), and choose from the Assembly menu:
+A mate is a shortcut for the constraints that put two parts together. Select something on the
+part that stays first, then something on the part the active group places (a link group
+places the part it links). Then choose from the Assembly menu:
 
-- **Mate Concentric**, two circles or arcs: their axes parallel, and the second's centre on the
-  first's axis; the part may still turn about the axis and slide along it. In a workplane, the
-  centres on each other.
-- **Mate Flush**, two faces: parallel, with a point of the first lying on the second; the part may
-  still slide and turn on the face.
-- **Mate Hinge**, two line segments: the starts on each other and the second's end on the first's
-  line; the part may only turn about it.
-- **Mate Screw**, two circles or arcs: on one axis, as Mate Concentric, with the second part's
-  turn about it tied to its travel along it, as a nut's on a screw. Two new parameters drive it
-  (`turn2` and `lead2` for a second screw, and so on): `turn`, in degrees from where the part
-  was, starting at 0, and `lead`, how far a whole turn moves it along the first circle's normal,
-  negative for a left-hand screw. Without threads on the circles the window takes the
-  lead as the coarse metric pitch of the first circle's diameter, or 1 where there is none; edit
-  `lead` in the parameter table (Edit > Parameters). Assembly > Motion Study on `turn` screws the
-  part in ([motion study](parameters-and-units.md#motion-study)). The mate is made in 3d, and the
-  second part needs a point off the axis. Of two circles that carry screw threads, a bolt's and
-  its nut's, the lead is the threads' and the part is first moved to where the threads fit
-  ([fitting a nut to its bolt](threads.md#fitting-a-nut-to-its-bolt)); a lead of 0 from a script
-  is the threads'. Example:
+- **Mate Concentric**, with two circles or arcs. Their axes are made parallel, and the second
+  circle's centre is put on the first's axis. The part can still turn about the axis and slide
+  along it. Inside a workplane, the centres are put on each other.
+- **Mate Flush**, with two faces. The faces are made parallel, with a point of the first lying
+  on the second. The part can still slide and turn on the face.
+- **Mate Hinge**, with two line segments. The starts are put on each other, and the second's
+  end on the first's line. The part can only turn about the line.
+- **Mate Screw**, with two circles or arcs. They are put on one axis, as Mate Concentric does,
+  and the second part's turn about the axis is tied to its travel along it, like a nut on a
+  screw. Two new parameters drive it: `turn`, in degrees from where the part was, starting at
+  0, and `lead`, how far one whole turn moves the part along the first circle's normal. A
+  negative lead is a left-hand screw. A second screw mate gets `turn2` and `lead2`, and so on.
+
+  When the circles carry no screw threads, the window takes the lead as the coarse metric
+  pitch for the first circle's diameter, or 1 where there is none. Edit `lead` in the
+  parameter table (Edit > Parameters). Assembly > Motion Study on `turn` screws the part in
+  ([motion study](parameters-and-units.md#motion-study)). The mate is made in 3d, and the
+  second part needs a point off the axis.
+
+  When the two circles carry screw threads, a bolt's and its nut's, the lead is the threads'
+  own, and the part is first moved to where the threads fit
+  ([fitting a nut to its bolt](threads.md#fitting-a-nut-to-its-bolt)). From a script, a lead of
+  0 means the threads' lead. Example:
   [`examples/scripts/screw`](../../examples/scripts/screw/screw.go), a nut run two turns up
   another's thread.
 
-Each makes ordinary constraints, one step of undo, which are listed, edited and deleted as any;
-one that what is already there makes redundant is left out.
+Each mate makes ordinary constraints, in one step of undo. They are listed, edited and deleted
+like any other. A constraint that would be redundant with what is already there is left out.
 
 ```go
 doc.Assembly.Flush(top, bottom)
@@ -87,22 +92,31 @@ frames, err := doc.Assembly.MotionStudy(mate.Turn, 0, 720, 8, "")
 
 ## Bill of materials
 
-Example: [`examples/scripts/bom`](../../examples/scripts/bom/bom.go), which saves a plate and a
+Example: [`examples/scripts/bom`](../../examples/scripts/bom/bom.go). It saves a plate and a
 bolt as part files, links them into a bracket with the bolt repeated, links the bracket twice
 into the model, and writes the bill.
 
-Assembly > Bill of Materials lists the parts the model places by linking files, one line a file:
-how many, the part's name (the file's, without its folder and extension), the file, and the
-groups that place them. Each link group places one part. A step and repeat, a mirror or a
-pattern along a path of a link group places its copies too, but for a copy at the place of the
-part it copies; a mirror that leaves the original out places none more; a repeat of a repeat
-counts the copies of what it repeats. Groups left out of the model place none. A linked model
-is a part, a sub-assembly, and the parts it links in turn count too, once for each place the
-model is, at any depth: their groups read as `g003-bracket > g004-bolt`, the group here and the
-group in the linked file. A file that links itself, by way of others, is followed once. Where a
-link group placing the part has a [density](mass.md) set, the screen gives one part's mass
-under it ("12.4 g each"). The screen's `[export to a CSV file...]` writes the list with the
-columns `part`, `count`, `file`, `groups` and `mass_g`, the last empty where no density is set.
+Assembly > Bill of Materials lists the parts the model places by linking files, one line per
+file: how many, the part's name (the file's name without folder and extension), the file, and
+the groups that place them.
+
+How parts are counted:
+
+- Each link group places one part.
+- A step and repeat, a mirror or a pattern along a path of a link group places its copies too,
+  except for a copy at the place of the part it copies. A mirror that leaves the original out
+  places no more. A repeat of a repeat counts the copies of what it repeats.
+- Groups left out of the model place none.
+- A linked model is a part, a sub-assembly. The parts it links in turn count too, once for each
+  place the model is, at any depth. Their groups read as `g003-bracket > g004-bolt`: the group
+  here, then the group in the linked file.
+- A file that links itself, by way of other files, is followed once.
+
+Where a link group placing the part has a [density](mass.md) set, the screen gives one part's
+mass under it ("12.4 g each").
+
+`[export to a CSV file...]` on the screen writes the list with the columns `part`, `count`,
+`file`, `groups` and `mass_g`. The last column is empty where no density is set.
 
 From a script:
 
@@ -115,21 +129,28 @@ must(doc.Assembly.ExportBOM("bom.csv"))
 
 ## Interfering parts
 
-Assembly > Show Interfering Parts checks the parts of an assembly against each other by their
-shells: each group that combines as an assembly is a part, and so is the solid made before the
-first of them. Two parts interfere where they share volume; parts that only touch don't. The
-message lists each pair with the volume they share, and the shared solid is outlined. A group
-that cuts the assembly after a part cuts the part too, so a hole cut after a bracket is a hole in
-the bracket and the screw through it doesn't interfere. A part that is itself an assembly, as a
-linked model of parts, is checked solid by solid. Where the Boolean of two parts fails, as for a
-shank lying on its nut's hole or a screw's flanks on its nut's, their meshes are intersected
-instead, and the volume is marked "about". What the meshes share counts as touching when it is on
-average no thicker than the chord tolerance, as where faces lie on each other; a screw and a nut
-of clearance 0 put half a pitch out of their fit collide by tens of mm³ and are listed. A volume summed over
-several solids of one part is marked "about" too, as it counts twice what they share.
-A pair that can't be checked either way is listed as failed. A part
-linked from a mesh or a STEP file has no shell; with one in the model, the check falls back to
-the triangles of the whole model, as SolveSpace's does.
+Assembly > Show Interfering Parts (Ctrl+Shift+I) checks the parts of an assembly against each
+other by their shells. A shell is the exact surfaces of a solid, as opposed to its triangle
+mesh. Each group that combines as an assembly is a part, and so is the solid made before the
+first of them.
+
+Two parts interfere where they share volume. Parts that only touch don't. The message lists
+each pair with the volume they share, and the shared solid is outlined on the model.
+
+- A group that cuts the assembly after a part cuts the part too. So a hole cut after a bracket
+  is a hole in the bracket, and the screw through it doesn't interfere.
+- A part that is itself an assembly, such as a linked model of parts, is checked solid by
+  solid.
+- Where the Boolean of two parts fails, as for a shank lying on its nut's hole or a screw's
+  flanks on its nut's, their meshes are intersected instead, and the volume is marked "about".
+  What the meshes share counts as touching when it is on average no thicker than the chord
+  tolerance, as where faces lie on each other. A screw and a nut with no clearance, moved half
+  a pitch out of their fit, collide by tens of mm³ and are listed.
+- A volume summed over several solids of one part is marked "about" too, since it counts twice
+  what they share.
+- A pair that can't be checked either way is listed as failed.
+- A part linked from a mesh or a STEP file has no shell. With one such part in the model, the
+  check falls back to the triangles of the whole model, as SolveSpace's does.
 
 ```go
 found, meshOnly := doc.Assembly.Interferences()
@@ -140,15 +161,17 @@ for _, f := range found {
 
 ## STEP export of an assembly
 
-File > Export > Surfaces... writes a model with parts as an assembly: the model is the top
-product, and each part a product of its own, written once in its own coordinates, with its faces
-in their colours; each place a part goes is an occurrence of it, with the rotation and offset
-that put it there. A file linked twice is one product used twice. The parts are those the
+File > Export > Surfaces... writes a model with parts as an assembly. The model is the top
+product. Each part is a product of its own, written once in its own coordinates, with its faces
+in their colours. Each place a part goes is an occurrence of it, with the rotation and offset
+that put it there. A file linked twice is one product used twice. The parts are the ones the
 interference check takes. A model with no assembled parts is written as one solid, as before.
 
 ## Not yet
 
-A part linked from two paths to one file counts as two parts. A copy made by a group whose source is not a
-link group, such as a translate of the whole model, is not counted. One file linked in two sizes,
-by configuration or by values passed, is one line of the bill, with the mass of the first link
-that has a density. A part placed only inside a linked sub-assembly has no mass in the bill.
+- A part linked from two different paths to one file counts as two parts.
+- A copy made by a group whose source is not a link group, such as a translate of the whole
+  model, is not counted.
+- One file linked in two sizes, by configuration or by values passed, is one line of the bill,
+  with the mass of the first link that has a density.
+- A part placed only inside a linked sub-assembly has no mass in the bill.

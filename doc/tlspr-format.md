@@ -12,7 +12,8 @@ knows nothing about sketches. The model layer (`encode.go`, `decode.go`) maps th
 ## Example
 
 Two datum points ten millimetres apart, as TeleSAPR saves them
-(`testdata/tlspr/v1/sketch.tlspr`), shortened where `...` stands:
+(`testdata/tlspr/v1/sketch.tlspr`, whose header, that of a version 1 file, reads `telesapr 1`),
+shortened where `...` stands:
 
 ```
 telesapr 2
@@ -98,7 +99,7 @@ file       = header , { statement } ;
 header     = "telesapr" , integer , eol ;
 statement  = field | block | blank ;
 field      = name , { value } , eol
-           | name , "=" , expression , eol ;
+           | name , { value } , "=" , expression , eol ;
 block      = name , { value } , "{" , eol , { statement } , "}" , eol ;
 value      = word | string ;
 name       = word ;
@@ -124,7 +125,9 @@ parameter is a plain number, which takes the unit of the value it drives: in an 
 `param wall = 2.5` makes `value = wall` 2.5 inches. Feet and inches (`ft-in`) count in inches.
 
 Everything else the file holds is in millimetres whatever `units` says: solved values (`value
-<handle> <real>`), entities, meshes and shells, label offsets and style sizes.
+<handle> <real>`), entities, meshes and shells, label offsets and style sizes. The exceptions
+are a thread's `clearance` and `run-out`, lengths the user typed that are written as plain
+numbers in the document's unit.
 
 The expression syntax is that of the dimension editor: numbers, parameter names, `+ - * / ^`,
 brackets, the constants `pi` and `e`, and the functions `sqrt`, `sq`, `sin`, `cos`, `tan`,
@@ -161,7 +164,7 @@ its place. The value it drives keeps its default, 1 for copies and 0 otherwise.
 |---|---|
 | Integer | Decimal, with an optional `-`. |
 | Real | The shortest decimal form that reads back to the same 64-bit value. Plain notation for magnitudes from 1e-6 up to 1e21, exponent notation such as `1.5e-09` outside, and `nan`, `inf`, `-inf` when they occur. Zero is `0`, and negative zero is `-0`. |
-| Handle | `0x` and lowercase hexadecimal with no leading zeros, such as `0x40010`. The handle 0 means "none" and the field is left out. `0x0` is written only inside a list where a position must be held. |
+| Handle | `0x` and lowercase hexadecimal with no leading zeros, such as `0x40010`. The handle 0 means "none" and the field is left out. `0x0` is written only where a position must be held: inside a list, or in a line of several values, such as a mesh `triangle`'s face or a curve's `surfaces`. |
 | Colour | Four integers 0 to 255: red, green, blue, alpha. Alpha 255 is opaque. |
 | Flag | The field name alone. |
 | Enumeration | A lowercase name with hyphens, from the tables below. |
@@ -393,9 +396,9 @@ thread {
   length = <expression>     # from the circle's plane, a length
   reverse                   # against the circle's normal
   through                   # past the far end
-  clearance <real>          # away from the mate, a length; left out for none
+  clearance <real>          # away from the mate, a length in the document's unit; left out for none
   crest <crest>             # truncated or rounded; left out for the standard crest
-  run-out <real>            # how far the root tapers to the crest before the shoulder, a length; left out for none
+  run-out <real>            # how far the root tapers to the crest before the shoulder, a length in the document's unit; left out for none
   level-starts              # every start from the circle's plane, a ridge and a helix each
   load-flank-back           # a buttress thread's load flank faces back, to where a screw's thread starts
   round-root                # a B1.9 buttress thread's roots rounded as the standard draws them
@@ -738,8 +741,8 @@ report, and draws the style at its default level.
 
 ## Links
 
-A link group's `link` names a `.tlspr`, `.emn` or `.stl` file relative to the file that holds
-the group. A link to a `.slvs` file is not followed: importing a SolveSpace assembly converts
+A link group's `link` names a `.tlspr`, `.emn`, `.stl`, `.obj`, `.step` or `.stp` file relative
+to the file that holds the group. A link to a `.slvs` file is not followed: importing a SolveSpace assembly converts
 every linked `.slvs` file to a `.tlspr` file beside it and rewrites the links
 (`pkg/persist/convert`, File > Import, `telesapr-cli convert`, `api.Import`).
 
