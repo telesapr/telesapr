@@ -9,6 +9,8 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.5.14] - 2026-11-01
+
 ### Added
 - Scripts add and remove a drawing's section and detail views as the drawing screen's links do: `doc.Drawing.AddSection(view, offset)` and `doc.Drawing.AddDetail(view, x, y, radius, times)` return the new view's letter, which `AddDimension` takes, and `doc.Drawing.RemoveSection(letter)` and `RemoveDetail(letter)` take one away. Each is one step of undo, and a section that misses the solid, a detail off its view, an unknown view or letter, or a view with a dimension on it makes the script fail. The types `DrawingSection` and `DrawingDetail` are named in the script API too.
 
