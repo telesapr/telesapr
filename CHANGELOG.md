@@ -26,6 +26,15 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 - View > Show Drawing Sheet fits the sheet into the part of the window the toolbar leaves free, so the toolbar no longer covers the left of the sheet's frame.
 - View > Zoom To Fit (and the fit made on opening a file) fits the model into the part of the window the toolbar leaves free, and centres it there, instead of fitting the whole window and leaving the left of the model under the toolbar. In perspective projection the fit is made of the model as drawn in perspective, so a solid that comes near the camera, as a two-sided extrusion or a mirrored body seen from a corner, no longer runs off the window.
 - A selected face's normal on the property screen points out of the solid, as Measure Selection and the section view already had it. Before, both ends of an extrusion showed the normal of the sketch's winding, so the top of a rectangle drawn from the origin up and to the right read (0, 0, -1). The angle between two selected faces and a point's distance from a face follow it: two opposite sides of a block are 180 degrees apart, and a point outside a face is a positive distance from it.
+## [0.5.13] - 2026-10-31
+
+### Changed
+- Release maintenance only.
+
+## [0.5.12] - 2026-10-30
+
+### Changed
+- Release maintenance only: the continuous-integration workflow runs the race detector on request instead of on every push to master.
 
 ## [0.5.11] - 2026-10-30
 
