@@ -1,6 +1,6 @@
 # Roadmap
 
-What is left to build, as of 2026-10-30. Only open work is listed. What is built is described in
+What is left to build, as of 2026-11-01. Only open work is listed. What is built is described in
 `doc/guide`, `doc/guide/ai.md` and `doc/dev-notes/done-audit.md`; `doc/dev-notes/done-audit.md` also holds the definition of
 done. The dated "Done" and "Tried" notes of every item, cut from this file on 2026-10-30, are in
 `git show af848717:ROADMAP.md`; read an item's there before taking it up, so as not to try again
@@ -20,11 +20,12 @@ item is sized only after a two-day spike on its hardest fixture.
 | 3 | [Modelling upgrade leftovers](#modelling-upgrade-leftovers) | kernel and feature | ? | Small ends of D1, D4, D5 and lofts |
 | 4 | [Thread leftovers](#thread-leftovers) | feature | S each | DIN 513's nut deviation, B1.9's pitches and multi-start allowances wait for sources; chamfered nuts at coarse tolerances |
 | 5 | [Test infrastructure](#test-infrastructure) | tooling | S | The race stage is within minutes of its limit |
-| 6 | [K3 contact](#k3-coincident-and-tangent-contact) | kernel foundation | ? | One pinch case and the "fuse by identity" rework |
-| 7 | [K4 mesher as default](#k4-constrained-delaunay-mesher) | kernel foundation | M | Costs 3 to 5 times the triangles today |
-| 8 | [F5 small conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
-| 9 | [F8 TeleSAPR in a browser](#f8-telesapr-in-a-browser) | feature | L | Spiked; needs a WebGL renderer and a `web` platform |
-| 10 | [F6 IGES](#f6-iges-import-and-export) | feature | L | Only if asked for |
+| 6 | [Interface leftovers from the guide](#interface-leftovers-from-the-guide) | interface | S each | Found while illustrating the user's guide; one waits for a decision |
+| 7 | [K3 contact](#k3-coincident-and-tangent-contact) | kernel foundation | ? | One pinch case and the "fuse by identity" rework |
+| 8 | [K4 mesher as default](#k4-constrained-delaunay-mesher) | kernel foundation | M | Costs 3 to 5 times the triangles today |
+| 9 | [F5 small conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
+| 10 | [F8 TeleSAPR in a browser](#f8-telesapr-in-a-browser) | feature | L | Spiked; needs a WebGL renderer and a `web` platform |
+| 11 | [F6 IGES](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
 ## Open defects
 
@@ -90,6 +91,27 @@ DIN 513-3:2020 (free text), NBS H28 (1957) Part III, Machinery's Handbook, Engin
 | Item | State |
 |---|---|
 | Race stage of `make ci` | About 1450 to 1560 s a package against the 1800 s limit (2026-10-30). Next to thin under `-race`: the single fillet tests of 500 to 640 s (`TestChamferEndsOnCurvedFace`, `TestFilletEndsOnCurvedFace*`, `TestFilletRimMitreFine/1`, the loft's edges) |
+
+### Interface leftovers from the guide
+
+Found while making the guide's pictures (`doc/guide/scenarios`, `TestDocScenarios`); two rounds of
+fixes are in devel (`2fd71b6f`, `fdea36ad`). These are what is left.
+
+| Item | State | Approach |
+|---|---|---|
+| A hidden line within 10 px is picked before the face the click is on | **waits for the user**: the rule lets hidden sketch lines be picked through a solid | Prefer the face when the line is hidden by it, or keep the rule and say so in `doc/guide/interface.md` |
+| A small mirrored "M10-cosmetic" label in a corner of `threads-10-cosmetic.png` | open | A cosmetic thread's label drawn through a flipped basis; look at how its text is placed against the view |
+| In a script, a second `Angle()` at the same corner comes out a reference dimension; from the menu it does not | open | Compare the script call's redundancy check with the menu's (`pkg/script/api`, `pkg/sketch`) |
+| The drawing sheet is small in the guide's 800 × 600 pictures | open, guide only | A larger `size` in `drawing.scenario` / `drawings.scenario`, or fit the sheet to the window |
+
+### Guide tooling
+
+| Item | State |
+|---|---|
+| Menus, popup menus and dialogs in pictures | The headless platform draws none; the real window under Xvfb with takigo's `GetImageRGBA` |
+| Clicks by name (`click-entity`, `click-tw <link>`) in scenarios | Coordinates break when the layout moves |
+| Smaller PNGs | 164 pictures committed; compress losslessly, keeping them byte-identical across runs |
+| Video | Frames of each `settle()` with the cursor tweened, captions, ffmpeg; longer demos from the real window under Xvfb |
 
 ## Kernel foundations
 
@@ -167,6 +189,7 @@ Not in it: threads in the browser, the MCP agent.
 |---|---|
 | DIN 513-1's axial play a, ASME B1.9's Table 1, and ASME B1.5's appendix B | Each settles a row of [Thread leftovers](#thread-leftovers) |
 | What to take back from "Parked" | Every row there is a proposal |
+| Whether a click picks a hidden line before the face hiding it | Settles the first row of [Interface leftovers from the guide](#interface-leftovers-from-the-guide) |
 | What the review took in without being asked | B3 (16.11), G4 (17.4) and S3 (17.5) are built; the user may still disown them |
 
 ## Parked
