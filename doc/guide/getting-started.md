@@ -48,8 +48,8 @@ becomes a solid, and how the solid is changed, checked and saved. The
    and the property browser shows that group's screen. To see the solid from the side, turn the
    view: drag with the middle mouse button.
 
-   The depth starts at 20 mm, half the longer side of the sketch. It is set on the group's
-   screen (the marked row). Tick "held", click "[change]" beside the depth, type 10 and press
+   The depth starts at 20 mm, the sketch's shorter side, 25 mm, rounded. It is set on the
+   group's screen (the marked row). Tick "held", click "[change]" beside the depth, type 10 and press
    Enter. View > Zoom To Fit (F) fits the solid in the window.
 
    ![The plate extruded 10 mm](images/getting-started-5-extruded.png)
@@ -81,8 +81,9 @@ becomes a solid, and how the solid is changed, checked and saved. The
 
 9. Press Shift+X to extrude the circle. On the group's screen, click "difference" under "solid
    model as": the extrusion now takes material away instead of adding it, and its depth turns
-   into the plate (it reads -5.00). Tick "held", click "[change]" beside the depth and type -10.
-   A negative depth goes into the plate, against the face's normal. The hole now goes through.
+   into the plate. It reads -10.00, as deep as the circle is wide and the plate is thick, so the
+   hole goes through. A negative depth goes into the plate, against the face's normal. To keep
+   it there, tick "held", click "[change]" beside the depth and type -10.
 
    ![The hole cut through the plate](images/getting-started-9-cut.png)
 

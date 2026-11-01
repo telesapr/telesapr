@@ -93,3 +93,115 @@ func TestDistanceLabelClearOfDiameter(t *testing.T) {
 	ss.MenuConstrain(cmdDistanceDia)
 	requireLabelsApart(t, ss)
 }
+
+// requireLabelsClearOfPoints fails where a label the window draws sits
+// on a point it draws: a point is a square seven pixels across.
+func requireLabelsClearOfPoints(t *testing.T, ss *Application) {
+	t.Helper()
+	sk := ss.SK
+	const half = 3.5
+	for i := range sk.Constraints {
+		c := &sk.Constraints[i]
+		if !c.HasLabel() {
+			continue
+		}
+		lo, hi := labelScreenBox(ss, c)
+		for j := range sk.Entities {
+			e := &sk.Entities[j]
+			if !e.IsPoint() || !sk.EntityIsVisible(e) {
+				continue
+			}
+			p := ss.GW.ProjectPoint(e.PointGetNum(sk))
+			if lo.U < p.U+half && p.U-half < hi.U && lo.V < p.V+half && p.V-half < hi.V {
+				t.Errorf("the label %q is on the point %x", ss.constraintLabel(c), e.H.V)
+			}
+		}
+	}
+}
+
+// requireSameOffsets fails where the window and a script put a label
+// in different places.
+func requireSameOffsets(t *testing.T, win, scr *Application) {
+	t.Helper()
+	if len(win.SK.Constraints) != len(scr.SK.Constraints) {
+		t.Fatalf("%d constraints in the window and %d from a script", len(win.SK.Constraints), len(scr.SK.Constraints))
+	}
+	for i := range win.SK.Constraints {
+		w, s := win.SK.Constraints[i].Disp.Offset, scr.SK.Constraints[i].Disp.Offset
+		if !w.Equals(s) {
+			t.Errorf("label %d at %v in the window and %v from a script", i, w, s)
+		}
+	}
+}
+
+// A minimum and a maximum angle at one corner, made from the Constrain
+// menu, put their labels apart and off the corner, as a script that
+// makes them does.
+func TestAngleLabelsApart(t *testing.T) {
+	t.Parallel()
+	build := func(doc *api.Doc) (a, b api.Entity) {
+		return doc.Sketch.Line(api.V(0, 0, 0), api.V(40, 0, 0)), doc.Sketch.Line(api.V(0, 0, 0), api.V(30, 30, 0))
+	}
+	win, _ := newTestApp(t)
+	la, lb := build(api.NewDoc(win.ScriptHost()))
+	for _, cmd := range []Command{cmdMinDistance, cmdMaxDistance} {
+		win.GW.ClearSelection()
+		win.GW.MakeSelectedEntity(la.H)
+		win.GW.MakeSelectedEntity(lb.H)
+		win.MenuConstrain(cmd)
+	}
+	requireLabelsApart(t, win)
+	requireLabelsClearOfPoints(t, win)
+
+	scr, _ := newTestApp(t)
+	sdoc := api.NewDoc(scr.ScriptHost())
+	sa, sb := build(sdoc)
+	sdoc.Constrain.Angle(sa, sb, 45).SetLimit(api.Minimum)
+	sdoc.Constrain.Angle(sa, sb, 45).SetLimit(api.Maximum)
+	requireLabelsApart(t, scr)
+	requireSameOffsets(t, win, scr)
+}
+
+// A ratio and a difference of the same two line segments put their
+// labels apart, from the menu as from a script.
+func TestRatioLabelsApart(t *testing.T) {
+	t.Parallel()
+	build := func(doc *api.Doc) (a, b api.Entity) {
+		return doc.Sketch.Line(api.V(0, 0, 0), api.V(40, 0, 0)), doc.Sketch.Line(api.V(0, 10, 0), api.V(20, 10, 0))
+	}
+	win, _ := newTestApp(t)
+	la, lb := build(api.NewDoc(win.ScriptHost()))
+	for _, cmd := range []Command{cmdRatio, cmdDifference} {
+		win.GW.ClearSelection()
+		win.GW.MakeSelectedEntity(la.H)
+		win.GW.MakeSelectedEntity(lb.H)
+		win.MenuConstrain(cmd)
+	}
+	requireLabelsApart(t, win)
+
+	scr, _ := newTestApp(t)
+	sdoc := api.NewDoc(scr.ScriptHost())
+	sa, sb := build(sdoc)
+	sdoc.Constrain.Ratio(sa, sb, 2)
+	sdoc.Constrain.Difference(sa, sb, 20)
+	requireLabelsApart(t, scr)
+	requireSameOffsets(t, win, scr)
+}
+
+// A circle's diameter keeps its label off the circle's centre, from the
+// menu as from a script.
+func TestDiameterLabelClearOfCentre(t *testing.T) {
+	t.Parallel()
+	win, _ := newTestApp(t)
+	circle := api.NewDoc(win.ScriptHost()).Sketch.Circle(api.V(0, 0, 0), 5)
+	win.GW.ClearSelection()
+	win.GW.MakeSelectedEntity(circle.H)
+	win.MenuConstrain(cmdDistanceDia)
+	requireLabelsClearOfPoints(t, win)
+
+	scr, _ := newTestApp(t)
+	sdoc := api.NewDoc(scr.ScriptHost())
+	sdoc.Constrain.Diameter(sdoc.Sketch.Circle(api.V(0, 0, 0), 5), 10)
+	requireLabelsClearOfPoints(t, scr)
+	requireSameOffsets(t, win, scr)
+}

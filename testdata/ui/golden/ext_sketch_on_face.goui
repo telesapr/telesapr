@@ -94,4 +94,4 @@ camera 5 -16 6 -20 2.2204460492503131e-16 1 -0 -1 2.2204460492503131e-16 0
 counts 5 11 125 17 60
 editor 0 "" 0 ""
 tw 1 unsaved 1 cursor 0 tooltip ""
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 11\nTriangles: 30\nVolume: 21.92 cm³\nCenter of mass: (0.34, 6.56, 12.19)\nExtent: 42.00 x 26.00 x 30.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 11\nTriangles: 30\nVolume: 25.12 cm³\nCenter of mass: (2.08, 6.24, 15.10)\nExtent: 42.00 x 26.00 x 40.00

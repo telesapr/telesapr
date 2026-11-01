@@ -1,5 +1,5 @@
 // A bracket and its drawing: the standard views on an A3 sheet with a
-// title block, made by a script.
+// title block and a section, made by a script.
 //
 // Without a window:
 //
@@ -15,7 +15,9 @@
 // with a hole in its foot gets one, third angle, fitted to A3, with
 // dimensions: the foot's thickness between its faces on the right view,
 // the hole's diameter from its wall on the top view, and the foot's
-// length on the isometric, as long as it is, not as it looks. The
+// length on the isometric, as long as it is, not as it looks; and a
+// section A-A through the hole, square to the top view, with the
+// foot's thickness dimensioned on it again. The
 // script saves drawing.tlspr and a picture of the sheet shown in the
 // window, sheet.png, unless given "-"; in the application it
 // also writes drawing.pdf (File > Export > Drawing does the same), and
@@ -62,6 +64,11 @@ func main() {
 	wall := solid.FaceAt(api.V(55, 20, 4))
 	doc.Drawing.AddFaceDimension("right", "distance", 10, over, under)
 	doc.Drawing.AddFaceDimension("top", "diameter", 10, wall)
+	// A section through the hole's axis, which is the solid's middle
+	// seen from the top: the cut shows the L and the hole across the
+	// foot. Its letter is the view a dimension on it names.
+	a := doc.Drawing.AddSection("top", 0)
+	doc.Drawing.AddFaceDimension(a, "distance", 10, over, under)
 	for _, e := range solid.Edges() {
 		if a, b := e.Ends(); e.Straight() && a.Z == 0 && b.Z == 0 && a.Y == 0 && b.Y == 0 {
 			doc.Drawing.AddDimension("iso", "length", 10, e)
@@ -77,7 +84,8 @@ func main() {
 	}
 
 	r := hole.Analyze().Check()
-	fmt.Printf("a bracket of %.0f mm³, drawn on %s, %s\n", r.Volume, d.Sheet, map[bool]string{true: "first angle", false: "third angle"}[d.FirstAngle])
+	fmt.Printf("a bracket of %.0f mm³, drawn on %s, %s, with section %s\n", r.Volume, d.Sheet,
+		map[bool]string{true: "first angle", false: "third angle"}[d.FirstAngle], a)
 	if !r.Sound() {
 		os.Exit(1)
 	}

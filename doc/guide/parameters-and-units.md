@@ -33,8 +33,8 @@ Size a rectangle and its extrusion from two parameters:
 
    ![The rectangle at 90 mm wide](images/parameters-and-units-5-width-90.png)
 
-5. Press Esc, then Shift+X to extrude. The depth starts at 50 mm: half the width, rounded. On
-   the extrusion's screen, click "held" beside the depth.
+5. Press Esc, then Shift+X to extrude. The depth starts at 50 mm: half the width, which is more
+   than the height, rounded. On the extrusion's screen, click "held" beside the depth.
 
    ![The held box beside the depth](images/parameters-and-units-6-held-box.png)
 
@@ -86,8 +86,9 @@ depth is the parameter `thick`, and an arc of a ring turned by the parameter `ar
 An extrusion's depth is free until something holds it. The same goes for a revolve's angle and
 a helix's angle. Two things can hold it: a dimension on the solid, or the group's own value.
 
-A new extrusion made in the window starts at half the longer side of its sketch, rounded to 1, 2
-or 5 times a power of ten: a 40 by 25 rectangle starts 20 mm deep, a circle 10 mm across 5 mm.
+A new extrusion made in the window starts at the shorter side of its sketch's bounding box, or
+half the longer side if that is more, rounded to 1, 2 or 5 times a power of ten: a 40 by 25
+rectangle starts 20 mm deep, a 90 by 10 one 50 mm, a circle 10 mm across 10 mm.
 It goes along the workplane's normal, towards you, or away if you look at the sketch from behind.
 
 The group's screen shows the depth or angle it has now, on the row of its sides, with a **held**

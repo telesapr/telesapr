@@ -779,6 +779,15 @@ var pathEquivalences = map[string]pathCheck{
 			t.Errorf("the drawing: %+v", d)
 		}
 	},
+	// A section and a detail added on the drawing's screen, and the same
+	// added by a script's Drawing.AddSection and AddDetail.
+	"drawing_section": func(t *testing.T, ui, _ *sketch.Sketch) {
+		d := ui.Drawing
+		if d == nil || len(d.Sections) != 1 || d.Sections[0] != (sketch.DrawingSection{View: "top", Offset: 8}) ||
+			len(d.Details) != 1 || d.Details[0] != (sketch.DrawingDetail{View: "front", CX: 5, CY: 5, R: 6, Scale: 2}) {
+			t.Errorf("the drawing: %+v", d)
+		}
+	},
 	// What a feature is built from changed on its screen, and by a
 	// script (ROADMAP F7): a fillet's and a chamfer's edges, a shell's
 	// faces, a sweep's and a pattern's path, a loft's profiles and a

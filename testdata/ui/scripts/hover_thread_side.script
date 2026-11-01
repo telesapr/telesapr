@@ -1,0 +1,42 @@
+# A rod of 10 mm threaded M10 from its top rim, seen from the side
+# with its axis upright, zoomed to fit: what the mouse hovers beside it.
+# A workplane is hovered only near the lines it draws.
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 325 300
+down L 325 300
+up L 325 300
+key esc
+key x shift
+twmove 505 133
+twdown L 505 133
+twup L 505 133
+twmove 490 133
+twdown L 490 133
+twup L 490 133
+edit 20
+view default
+move 325 300
+down L 325 300
+up L 325 300
+menu Features|Screw Thread...
+twmove 220 150
+twdown L 220 150
+twup L 220 150
+edit 12
+twmove 64 230
+twdown L 64 230
+twup L 64 230
+twdown L 70 260
+twup L 70 260
+move 300 300
+down M 300 300
+move 300 200 M
+up M 300 200
+menu View|Zoom To Fit
+menu View|Zoom Out
+move 590 240
+hover
+hovergrid 12

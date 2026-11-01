@@ -12,5 +12,9 @@ const SolveSpaceVersion = "3.2~cbff7a91"
 // Repository is the project's home.
 const Repository = "https://github.com/telesapr/telesapr"
 
-// Guide is the user's guide.
-const Guide = Repository + "/blob/master/doc/guide/README.md"
+// Site is the project's web site, which make deploy-site publishes.
+const Site = "https://telesapr.sourceforge.io/"
+
+// Guide is the user's guide, published on the site with its pictures
+// and search (make guide-site); doc/guide holds its source.
+const Guide = Site + "guide/"

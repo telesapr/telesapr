@@ -12,12 +12,12 @@ func main() {
 	doc := Current()
 	doc.Sketch.Circle(V(30, -10, 0), 2)
 	doc.Sketch.Circle(V(10, -10, 0), 20).SetConstruction(true)
-	post := doc.Features.Extrude(2, "")
+	post := doc.Features.Extrude(5, "")
 	// The copy of the ring at the top of the extrusion, which the mouse
 	// picks.
 	var ring Entity
 	for _, e := range post.Entities() {
-		if e.Kind() == "circle" && e.Center().Pos().Z == 2 && math.Abs(e.Radius()-20) < 1e-9 {
+		if e.Kind() == "circle" && e.Center().Pos().Z == 5 && math.Abs(e.Radius()-20) < 1e-9 {
 			ring = e
 		}
 	}

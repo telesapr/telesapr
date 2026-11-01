@@ -228,9 +228,11 @@ func (tw *textWindow) ShowListOfGroups() {
 		active := g.H == ss.GW.activeGroupH()
 		shown := g.Visible
 		ok := g.IsSolvedOkay()
-		warn := (g.Type == sketch.GroupDrawingWorkplane && g.PolyError.How != int(core.PolyGood)) ||
-			((g.Type == sketch.GroupExtrude || g.Type == sketch.GroupLathe) &&
-				sk.Group(g.OpA).PolyError.How != int(core.PolyGood)) ||
+		// A sketch whose contour is not good says so in its Problem,
+		// which it has only when a solid is made from it: a sweep's
+		// path or a drawing's sketch is open by design.
+		warn := ((g.Type == sketch.GroupExtrude || g.Type == sketch.GroupLathe) &&
+			sk.Group(g.OpA).PolyError.How != int(core.PolyGood)) ||
 			g.Problem.Msg != "" || g.LinkProblem != ""
 		dof := g.Solved.Dof
 		sdof := "ok "

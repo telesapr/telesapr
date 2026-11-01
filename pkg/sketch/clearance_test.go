@@ -75,6 +75,19 @@ func TestClearanceOfAPinInABore(t *testing.T) {
 	if r := math.Hypot(c.PB.X, c.PB.Y); math.Abs(r-4.5) > 1e-6 {
 		t.Errorf("the pin's point %v is %g off the axis", c.PB, r)
 	}
+	// The plate's point is on the bore, the two are within the plate's
+	// thickness and as far apart as the gap says, across it.
+	if r := math.Hypot(c.PA.X, c.PA.Y); math.Abs(r-5) > 1e-6 {
+		t.Errorf("the plate's point %v is %g off the axis", c.PA, r)
+	}
+	for _, p := range []api.Vec{c.PA, c.PB} {
+		if p.Z < -1e-9 || p.Z > 10+1e-9 {
+			t.Errorf("point %v is off the plate's thickness", p)
+		}
+	}
+	if d := c.PA.Minus(c.PB); math.Abs(d.Magnitude()-c.Gap) > 1e-9 || math.Abs(d.Z) > 1e-9 {
+		t.Errorf("the points %v %v are %v apart, the gap %g", c.PA, c.PB, d, c.Gap)
+	}
 }
 
 // One part has nothing to be clear of.

@@ -12,9 +12,8 @@ import (
 // doc/notes/modelling_upgrades.md, Sketch.Clearances and
 // Sketch.WallThickness). Its screen takes the gap and the wall
 // thickness to look for less than, checks the model up to the active
-// group, lists what it found, and draws a line across each gap and
-// thin wall in the error colour, as Show Interfering Parts draws what
-// parts share.
+// group, lists what it found, and marks each gap and thin wall on the
+// model in the error colour (clearance_draw.go).
 
 // clearanceCheck is the screen's state.
 type clearanceCheck struct {
@@ -82,11 +81,7 @@ func (tw *textWindow) showClearances() {
 		if i%2 == 1 {
 			bg = 'd'
 		}
-		gap := "touch"
-		if cl.Gap > 0 {
-			gap = ss.MmToString(cl.Gap, true)
-		}
-		tw.Printf(false, "%Bp   %s %s and %s", bg, pad(gap, 14), solidName(ss.SK, cl.A, cl.SolidA), solidName(ss.SK, cl.B, cl.SolidB))
+		tw.Printf(false, "%Bp   %s %s and %s", bg, pad(ss.gapString(cl), 14), solidName(ss.SK, cl.A, cl.SolidA), solidName(ss.SK, cl.B, cl.SolidB))
 	}
 	tol := 0.0
 	for _, cl := range c.clearances {
@@ -118,6 +113,14 @@ func (tw *textWindow) showWalls() {
 		tw.Printf(false, "   %d points could not be measured: the mesh is", r.Unmeasured)
 		tw.Printf(false, "   open there, or parts stand in each other.")
 	}
+}
+
+// gapString is a gap as the list and the mark on the model give it.
+func (ss *Application) gapString(cl sketch.Clearance) string {
+	if cl.Gap > 0 {
+		return ss.MmToString(cl.Gap, true)
+	}
+	return "touch"
 }
 
 // solidName is a part in the list of gaps: its group, and which of its
@@ -153,7 +156,7 @@ func (tw *textWindow) ScreenChangeClearance(link int, v uint32) {
 }
 
 // checkClearances checks the gaps between the parts up to the active
-// group, and draws a line across each.
+// group, and marks each on the model (clearance_draw.go).
 func (ss *Application) checkClearances() {
 	c := &ss.TW.clearance
 	sk := ss.SK
@@ -165,31 +168,35 @@ func (ss *Application) checkClearances() {
 	}
 	c.checked, c.walls, c.err = true, nil, ""
 	ss.GW.nakedEdges.Clear()
+	ss.GW.clearClearanceMarks()
 	for _, cl := range c.clearances {
-		ss.GW.nakedEdges.AddEdge(cl.PA, cl.PB, 0, 0, 0)
+		ss.GW.gapMarks = append(ss.GW.gapMarks, gapMark{A: cl.PA, B: cl.PB, Label: ss.gapString(cl)})
 	}
 	ss.GW.Invalidate(false)
 	ss.ScheduleShowTW()
 }
 
-// checkWalls measures the walls up to the active group, and draws a
-// line across each thin spot, and the thinnest.
+// checkWalls measures the walls up to the active group, marks the
+// thinnest with its thickness and draws a line across each thin spot
+// (clearance_draw.go).
 func (ss *Application) checkWalls() {
 	c := &ss.TW.clearance
 	sk := ss.SK
 	sk.RemakeStaleMeshes()
 	c.checked, c.walls, c.err = false, nil, ""
 	ss.GW.nakedEdges.Clear()
+	ss.GW.clearClearanceMarks()
 	r, err := sk.WallThickness(ss.GW.activeGroupH(), c.wall)
 	if err != nil {
 		c.err = capitalize(err.Error()) + "."
 	} else {
 		c.walls = &r
 		if r.Samples > r.Unmeasured {
-			ss.GW.nakedEdges.AddEdge(r.Thinnest.From, r.Thinnest.To, 0, 0, 0)
+			ss.GW.gapMarks = append(ss.GW.gapMarks, gapMark{A: r.Thinnest.From, B: r.Thinnest.To,
+				Label: ss.MmToString(r.Thinnest.Thickness, true)})
 		}
 		for _, s := range r.Thin[:min(len(r.Thin), maxWallLines)] {
-			ss.GW.nakedEdges.AddEdge(s.From, s.To, 0, 0, 0)
+			ss.GW.thinSpots.AddEdge(s.From, s.To, 0, 0, 0)
 		}
 	}
 	ss.GW.Invalidate(false)

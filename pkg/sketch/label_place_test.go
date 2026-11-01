@@ -9,7 +9,7 @@ import (
 
 // newLabelBox is the box of new label c as ClearNewLabel judges it.
 func newLabelBox(sk *Sketch, c *core.Constraint) labelBox {
-	at, _ := sk.labelAnchor(c)
+	at, _ := sk.labelAnchor(sk.view(), c, labelNominalText)
 	return sk.labelBoxAt(sk.view(), at, c, labelNominalText)
 }
 
@@ -36,7 +36,7 @@ func TestClearNewLabelOfSameLine(t *testing.T) {
 	if moved.Dot(before) <= 0 || moved.Cross(before).Magnitude() > 1e-9 {
 		t.Errorf("the label moved by %v, not outward along %v", moved, before)
 	}
-	at, _ := sk.labelAnchor(first)
+	at, _ := sk.labelAnchor(sk.view(), first, labelText(first))
 	if newLabelBox(sk, &c).overlaps(sk.labelBoxAt(sk.view(), at, first, labelText(first))) {
 		t.Errorf("the label at %v is still on the first", c.Disp.Offset)
 	}
@@ -75,7 +75,7 @@ func TestLabelText(t *testing.T) {
 func TestClearNewLabelLeavesOthers(t *testing.T) {
 	t.Parallel()
 	sk, _, hc := lineSketch(t)
-	for _, typ := range []core.ConstraintType{core.ConstraintAngle, core.ConstraintComment, core.ConstraintHorizontal} {
+	for _, typ := range []core.ConstraintType{core.ConstraintAxisAngle, core.ConstraintComment, core.ConstraintHorizontal} {
 		c := *sk.Constraint(hc)
 		c.Type = typ
 		c.Disp.Offset = geom.Vector{}
@@ -84,8 +84,8 @@ func TestClearNewLabelLeavesOthers(t *testing.T) {
 			t.Errorf("%v moved to %v", typ, c.Disp.Offset)
 		}
 	}
-	if _, ok := sk.labelAnchor(&core.Constraint{ConstraintBase: core.ConstraintBase{
-		Type: core.ConstraintPtLineDistance, PtA: core.HEntity{V: 999}}}); ok {
+	if _, ok := sk.labelAnchor(sk.view(), &core.Constraint{ConstraintBase: core.ConstraintBase{
+		Type: core.ConstraintPtLineDistance, PtA: core.HEntity{V: 999}}}, ""); ok {
 		t.Errorf("a distance from a missing point has a label place")
 	}
 }
@@ -97,13 +97,13 @@ func TestClearNewLabelOfComment(t *testing.T) {
 	c := *sk.Constraint(hc)
 	c.H = core.HConstraint{}
 	c.Limit = core.LimitMin
-	at, _ := sk.labelAnchor(&c)
+	at, _ := sk.labelAnchor(sk.view(), &c, labelNominalText)
 	sk.Constraints = append(sk.Constraints, core.Constraint{ConstraintBase: core.ConstraintBase{
 		Type: core.ConstraintComment, Group: sk.Active, Comment: "a long comment here"}})
 	sk.Constraints[len(sk.Constraints)-1].Disp.Offset = at
 	sk.ClearNewLabel(&c)
 	com := &sk.Constraints[len(sk.Constraints)-1]
-	cat, _ := sk.labelAnchor(com)
+	cat, _ := sk.labelAnchor(sk.view(), com, labelText(com))
 	if newLabelBox(sk, &c).overlaps(sk.labelBoxAt(sk.view(), cat, com, labelText(com))) {
 		t.Errorf("the label at %v is on the comment", c.Disp.Offset)
 	}

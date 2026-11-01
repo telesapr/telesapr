@@ -25,13 +25,19 @@ func TestClearanceScreenMatchesScript(t *testing.T) {
 	c.wall = 1.5
 	ss.checkClearances()
 	want := doc.Assembly.Clearances(c.gap)
-	if len(want) != 1 || len(c.clearances) != len(want) || len(ss.GW.nakedEdges.Edges) != len(want) {
-		t.Fatalf("the screen found %d gaps and drew %d, a script %d", len(c.clearances), len(ss.GW.nakedEdges.Edges), len(want))
+	if len(want) != 1 || len(c.clearances) != len(want) || len(ss.GW.gapMarks) != len(want) {
+		t.Fatalf("the screen found %d gaps and marked %d, a script %d", len(c.clearances), len(ss.GW.gapMarks), len(want))
 	}
 	for i, w := range want {
 		if got := c.clearances[i]; got.A != w.A.H || got.B != w.B.H || got.Gap != w.Gap || got.PA != w.PA {
 			t.Errorf("gap %d: the screen %+v, a script %+v", i, got, w)
 		}
+		if m := ss.GW.gapMarks[i]; m.A != w.PA || m.B != w.PB || m.Label != "0.50" {
+			t.Errorf("gap %d marked %+v, a script found %v %v", i, m, w.PA, w.PB)
+		}
+	}
+	if len(ss.GW.nakedEdges.Edges) != 0 {
+		t.Errorf("a gap drawn as %d naked edges too", len(ss.GW.nakedEdges.Edges))
 	}
 	// With the solids within parts, as a script's ClearancesWithin.
 	ss.TW.ScreenChangeClearance('s', 0)
@@ -46,8 +52,20 @@ func TestClearanceScreenMatchesScript(t *testing.T) {
 	if c.walls == nil || c.walls.Thinnest != r.Thinnest || len(c.walls.Thin) != len(r.Thin) || c.checked {
 		t.Fatalf("walls: the screen %+v, a script %+v", c.walls, r)
 	}
-	if math.Abs(r.Thinnest.Thickness-1.2) > 1e-6 || len(ss.GW.nakedEdges.Edges) != min(len(r.Thin), maxWallLines)+1 {
-		t.Errorf("thinnest %g, %d lines drawn for %d thin spots", r.Thinnest.Thickness, len(ss.GW.nakedEdges.Edges), len(r.Thin))
+	if math.Abs(r.Thinnest.Thickness-1.2) > 1e-6 || len(ss.GW.thinSpots.Edges) != min(len(r.Thin), maxWallLines) ||
+		len(ss.GW.nakedEdges.Edges) != 0 {
+		t.Errorf("thinnest %g, %d lines drawn for %d thin spots, %d naked edges", r.Thinnest.Thickness,
+			len(ss.GW.thinSpots.Edges), len(r.Thin), len(ss.GW.nakedEdges.Edges))
+	}
+	// The thinnest is marked with its thickness, between the points a
+	// script gets; the gaps' marks are gone.
+	if m := ss.GW.gapMarks; len(m) != 1 || m[0].A != r.Thinnest.From || m[0].B != r.Thinnest.To || m[0].Label != "1.20" {
+		t.Errorf("the thinnest wall marked %+v, a script's %v to %v", m, r.Thinnest.From, r.Thinnest.To)
+	}
+	for _, e := range ss.GW.thinSpots.Edges[:min(len(r.Thin), 20)] {
+		if d := e.B.Minus(e.A).Magnitude(); d > 1.5+c.walls.Tolerance {
+			t.Errorf("a thin spot drawn %g across", d)
+		}
 	}
 	// A limit of nothing is refused; the screen keeps what it had.
 	p.DialogResponses = []platform.Response{platform.ResponseOK}

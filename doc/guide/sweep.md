@@ -13,8 +13,7 @@ Sweep a circle along a bent path:
 
 1. Draw the path in one sketch: here a line, an arc and a line, tangent where they meet. Draw
    the profile, a circle, in a workplane across the path's start, and keep its sketch active.
-   The home screen shows "err" beside the path's sketch only because the path is not a closed
-   loop; a path need not be one.
+   A path need not be a closed loop.
 
    ![The path and the circle, the circle's sketch active](images/sweep-1-profile.png)
 

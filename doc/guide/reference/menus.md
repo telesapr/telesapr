@@ -81,7 +81,7 @@ Every entry of the main menu, its keys, and what a script calls to do the same (
 | Show Exploded View *(on/off)* | <kbd>\</kbd> | none: what the window shows |
 | Section View *(on/off)* | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> | `View.SetSection`, `View.ClearSection` |
 | Show Drawing Sheet *(on/off)* |  | `Drawing.Show` |
-| Drawing Sheet... |  | `Drawing.Set`, `Drawing.Get` |
+| Drawing Sheet... |  | `Drawing.Set`, `Drawing.Get`, `Drawing.AddSection`, `Drawing.AddDetail`, `Drawing.RemoveSection`, `Drawing.RemoveDetail` |
 | Dimension Units > Dimensions in Millimeters *(choice)* |  | `View.SetUnits` |
 | Dimension Units > Dimensions in Meters *(choice)* |  | `View.SetUnits` |
 | Dimension Units > Dimensions in Inches *(choice)* |  | `View.SetUnits` |

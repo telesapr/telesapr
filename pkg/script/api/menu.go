@@ -83,7 +83,7 @@ var MenuCalls = map[string]string{
 	"View/Show Exploded View":                            "- what the window shows",
 	"View/Section View":                                  "View.SetSection View.ClearSection",
 	"View/Show Drawing Sheet":                            "Drawing.Show",
-	"View/Drawing Sheet...":                              "Drawing.Set Drawing.Get",
+	"View/Drawing Sheet...":                              "Drawing.Set Drawing.Get Drawing.AddSection Drawing.AddDetail Drawing.RemoveSection Drawing.RemoveDetail",
 	"View/Dimension Units/Dimensions in Millimeters":     "View.SetUnits",
 	"View/Dimension Units/Dimensions in Meters":          "View.SetUnits",
 	"View/Dimension Units/Dimensions in Inches":          "View.SetUnits",

@@ -45,8 +45,9 @@ func TestExtrudeSeed(t *testing.T) {
 	}
 }
 
-// TestDefaultExtrudeDepth takes half the longer side of the profile's
-// bounding box in its workplane, to a round number.
+// TestDefaultExtrudeDepth takes the shorter side of the profile's
+// bounding box in its workplane, no less than half the longer, to a
+// round number.
 func TestDefaultExtrudeDepth(t *testing.T) {
 	t.Parallel()
 	sk := NewSketch()
@@ -82,7 +83,13 @@ func TestDefaultExtrudeDepth(t *testing.T) {
 				rect(geom.Vector{X: -90, Y: 10}, geom.Vector{X: -80, Y: 20})}, nil, 20},
 		{"in the zx plane", HRequestReferenceZX,
 			[]srf.SContour{rect(geom.Vector{Y: 3}, geom.Vector{X: 25, Y: 3, Z: 40})}, nil, 20},
-		{"circle", HRequestReferenceXY, []srf.SContour{contour(circle...)}, nil, 5},
+		{"circle", HRequestReferenceXY, []srf.SContour{contour(circle...)}, nil, 10},
+		{"90 by 10 bar", HRequestReferenceXY,
+			[]srf.SContour{rect(geom.Vector{}, geom.Vector{X: 90, Y: 10})}, nil, 50},
+		{"100 square", HRequestReferenceXY,
+			[]srf.SContour{rect(geom.Vector{}, geom.Vector{X: 100, Y: 100})}, nil, 100},
+		{"70 by 60 rectangle", HRequestReferenceXY,
+			[]srf.SContour{rect(geom.Vector{}, geom.Vector{X: 70, Y: 60})}, nil, 50},
 		{"open curves", HRequestReferenceXY, nil,
 			[]srf.SBezierLoop{{Curves: []srf.SBezier{srf.SBezierFrom2(geom.Vector{}, geom.Vector{X: 3})}}}, 2},
 		{"nothing", HRequestReferenceXY, nil, nil, 10},

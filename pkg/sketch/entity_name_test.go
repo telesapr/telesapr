@@ -116,3 +116,52 @@ func TestEntityNameGone(t *testing.T) {
 		t.Errorf("got %q, want %q", got, want)
 	}
 }
+
+// TestEntityNameConstruction: what an extrusion or a lathe copies of a
+// construction line is no edge or face of the solid, and its name says
+// it is construction.
+func TestEntityNameConstruction(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	d.Sketch.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
+	d.Sketch.Line(api.V(0, 5, 0), api.V(20, 5, 0)).SetConstruction(true)
+	ex := d.Features.Extrude(10, "")
+	if p := ex.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	d.With(func(sk *sketch.Sketch) {
+		line := core.HRequest{V: 8}.Entity(0)
+		for _, c := range []struct{ got, want string }{
+			{madeName(t, sk, ex.H, line, sketch.RemapTop),
+				"top construction line segment of g003-extrude from r008-line-segment"},
+			{madeName(t, sk, ex.H, line, sketch.RemapLineToFace),
+				"side construction plane of g003-extrude from r008-line-segment"},
+			{madeName(t, sk, ex.H, core.HRequest{V: 8}.Entity(1), sketch.RemapPtToLine),
+				"side construction line segment of g003-extrude from point 1 of r008-line-segment"},
+			{madeName(t, sk, ex.H, core.HRequest{V: 8}.Entity(2), sketch.RemapTop),
+				"top construction point of g003-extrude from point 2 of r008-line-segment"},
+			// What the solid's own lines make is named as before.
+			{madeName(t, sk, ex.H, core.HRequest{V: 4}.Entity(0), sketch.RemapTop),
+				"top edge of g003-extrude from r004-line-segment"},
+			{madeName(t, sk, ex.H, core.HRequest{V: 4}.Entity(1), sketch.RemapTop),
+				"top point of g003-extrude from point 1 of r004-line-segment"},
+		} {
+			if c.got != c.want {
+				t.Errorf("got %q, want %q", c.got, c.want)
+			}
+		}
+	})
+
+	dl := api.New()
+	l := lathedCylinder(dl, 10, 10)
+	if p := l.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	dl.With(func(sk *sketch.Sketch) {
+		axis := core.HRequest{V: 4}.Entity(0)
+		if got, want := madeName(t, sk, l.H, axis, sketch.RemapLatheStart),
+			"start construction line segment of g004-lathe from r004-line-segment"; got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
+}

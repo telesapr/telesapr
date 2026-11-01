@@ -38,15 +38,29 @@ func (b BrokenReference) String() string {
 // knownNames are the names of the groups and requests at the end of the
 // last regeneration, so that what has been deleted since can be named.
 type knownNames struct {
-	groups   map[core.HGroup]string
+	groups   map[core.HGroup]knownGroup
 	requests map[core.HRequest]knownRequest
 }
 
-// knownRequest is what names a request: its description comes from
-// its type and handle.
+// knownGroup is what names a group and the entities it made: its name,
+// its type, which says whether its curves were edges of a solid, and
+// its remap table, which says what each entity was a copy of. The
+// table is the group's own, not a copy: a regeneration replaces these
+// before it changes one, and a group deleted keeps its table as it was.
+type knownGroup struct {
+	name  string
+	typ   GroupType
+	remap core.EntityMap
+}
+
+// knownRequest is what names a request and its entities: its
+// description comes from its type and handle, its entities' kinds from
+// its type and extra points.
 type knownRequest struct {
-	typ   RequestType
-	group core.HGroup
+	typ          RequestType
+	group        core.HGroup
+	extraPoints  int
+	construction bool
 }
 
 // rememberNames records the names of the groups and requests there are.
@@ -54,18 +68,18 @@ type knownRequest struct {
 func (sk *Sketch) rememberNames() {
 	n := &sk.names
 	if n.groups == nil {
-		n.groups = make(map[core.HGroup]string, len(sk.Groups))
+		n.groups = make(map[core.HGroup]knownGroup, len(sk.Groups))
 		n.requests = make(map[core.HRequest]knownRequest, len(sk.Requests))
 	}
 	clear(n.groups)
 	clear(n.requests)
 	for i := range sk.Groups {
 		g := &sk.Groups[i]
-		n.groups[g.H] = g.Name
+		n.groups[g.H] = knownGroup{g.Name, g.Type, g.Remap}
 	}
 	for i := range sk.Requests {
 		r := &sk.Requests[i]
-		n.requests[r.H] = knownRequest{r.Type, r.Group}
+		n.requests[r.H] = knownRequest{r.Type, r.Group, r.ExtraPoints, r.Construction}
 	}
 }
 
@@ -79,8 +93,8 @@ func (sk *Sketch) anyGroupName(h core.HGroup) string {
 	if g := sk.Group(h); g != nil {
 		return g.DescriptionString()
 	}
-	if name, ok := sk.names.groups[h]; ok {
-		g := Group{H: h, Name: name}
+	if known, ok := sk.names.groups[h]; ok {
+		g := Group{H: h, Name: known.name}
 		return g.DescriptionString()
 	}
 	return fmt.Sprintf("g%03x", h.V)

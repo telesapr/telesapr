@@ -1,0 +1,21 @@
+# A section and a detail added on the drawing's screen; the same as
+# path_drawing_section.go adds by Drawing.AddSection and AddDetail
+# (TestPathEquivalence/drawing_section).
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+menu View|Drawing Sheet...
+twmove 60 276
+twdown L 60 276
+twup L 60 276
+edit top 8
+twmove 60 316
+twdown L 60 316
+twup L 60 316
+edit front 5 5 6 2

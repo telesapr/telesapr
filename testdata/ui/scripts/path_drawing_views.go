@@ -4,10 +4,7 @@
 // isometric one left out, and a section of the top view placed.
 package main
 
-import (
-	. "github.com/telesapr/telesapr/pkg/script/api"
-	"github.com/telesapr/telesapr/pkg/sketch"
-)
+import . "github.com/telesapr/telesapr/pkg/script/api"
 
 func main() {
 	doc := Current()
@@ -20,6 +17,6 @@ func main() {
 		{Kind: "right", X: 130, Y: 100},
 		{Kind: "back", X: 210, Y: 150},
 	}
-	d.Sections = append(d.Sections, sketch.DrawingSection{View: "top", X: 300, Y: 100})
+	d.Sections = append(d.Sections, DrawingSection{View: "top", X: 300, Y: 100})
 	doc.Drawing.Set(d)
 }

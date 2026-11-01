@@ -5,6 +5,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/render"
+	"github.com/telesapr/telesapr/pkg/res"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
@@ -340,7 +341,11 @@ type graphicsWindow struct {
 		Point core.HEntity
 	}
 	nakedEdges srf.SEdgeList
-	extraLine  struct {
+	// gapMarks are the gaps and the thinnest wall Analyze > Clearance
+	// and Walls found, and thinSpots the walls thinner than asked for.
+	gapMarks  []gapMark
+	thinSpots srf.SEdgeList
+	extraLine struct {
 		Draw     bool
 		PtA, PtB geom.Vector
 	}
@@ -452,6 +457,8 @@ type graphicsWindow struct {
 	gs                          groupedSelection
 
 	toolbarHovered Command
+	// toolbarIcons are the toolbar's pictures, by name (toolbarIcon).
+	toolbarIcons map[string]*res.Pixmap
 
 	// This sets what gets displayed.
 	show sketch.Visibility

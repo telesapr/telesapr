@@ -4769,6 +4769,10 @@
 				"text": "Drawing is the model's sheet of views (roadmap step 18): its size,\nscale, projection, views and title block. See sketch.Drawing.",
 				"kind": "sketch.Drawing"
 			},
+			"DrawingDetail": {
+				"text": "DrawingDetail is a detail view of the drawing, see\nsketch.DrawingDetail.",
+				"kind": "sketch.DrawingDetail"
+			},
 			"DrawingDimension": {
 				"text": "DrawingDimension is a dimension on a view of the drawing, see\nsketch.DrawingDimension.",
 				"kind": "sketch.DrawingDimension"
@@ -4777,6 +4781,10 @@
 				"text": "DrawingMenu holds the calls of View \u003e Drawing Sheet and File \u003e Export\n\u003e Drawing: the sheet of views, sections and dimensions. A script\nreaches it as doc.Drawing.",
 				"kind": "struct",
 				"methods": {
+					"AddDetail": {
+						"decl": "func (m DrawingMenu) AddDetail(view string, x, y, radius, times float64) (letter string)",
+						"text": "AddDetail adds a detail view to the drawing, as the drawing sheet's\n[add a detail] does: the part of the view (front, back, top, bottom,\nleft, right or iso) within radius mm of the point x, y, in mm right\nand up from the view's middle on the model, enlarged times the\nsheet's scale, placed right of the views. The point must be within\nthe solid's outline on the view. It returns the detail's letter."
+					},
 					"AddDimension": {
 						"decl": "func (m DrawingMenu) AddDimension(view, kind string, offset float64, edges ...SolidEdge)",
 						"text": "AddDimension adds a dimension to the drawing's view: \"length\"\nof an edge, \"distance\" between two, \"diameter\" or \"radius\" of a\ncircular one; offset is how far its line stands off what it measures,\nin sheet mm, out from the view's middle (0 for 10; negative, in toward\nit). The dimension holds\nthe edges' names, so it measures them again as the model changes.\nThe view is front, back, top, bottom, left, right or iso, where a\nlength is the edge's in the model, not as foreshortened, or a section\nor a detail by its letter (A, B, ...: the sections first)."
@@ -4789,6 +4797,10 @@
 						"decl": "func (m DrawingMenu) AddFaceDimension(view, kind string, offset float64, faces ...SolidFace)",
 						"text": "AddFaceDimension adds a dimension of faces to the drawing's\nview, as AddDrawingDimension does of edges: \"distance\" between two\nparallel flat faces, \"diameter\" or \"radius\" of a face's circular\nedge, the largest, as a cylinder's or a round end's. The dimension\nholds the faces' identities, so it measures them again as the model\nchanges."
 					},
+					"AddSection": {
+						"decl": "func (m DrawingMenu) AddSection(view string, offset float64) (letter string)",
+						"text": "AddSection adds a section view to the drawing, as the drawing sheet's\n[add a section] does: the active group's solid cut square to the view\n(front, back, top, bottom, left or right) offset mm toward the viewer\nfrom the solid's middle, the half beyond seen and the cut hatched,\nplaced right of the views. The plane must cut the solid. It returns\nthe section's letter, which AddDimension takes as a view; the\nsections are lettered before the details, so a detail's letter moves\none on, and the dimensions on it with it."
+					},
 					"Dimensions": {
 						"decl": "func (m DrawingMenu) Dimensions() (values []float64, errs []error)",
 						"text": "Dimensions measures the drawing's dimensions on the solid as\nit is: each one's value in mm, and an error for one that can't be\nmeasured, as for an edge no longer in the solid. It needs the\napplication, or a view of it."
@@ -4800,6 +4812,14 @@
 					"Get": {
 						"decl": "func (m DrawingMenu) Get() (dr Drawing)",
 						"text": "Get is the model's drawing, or the default one, an A3 sheet\nfitted, if it has none yet. It is a copy: SetDrawing changes it."
+					},
+					"RemoveDetail": {
+						"decl": "func (m DrawingMenu) RemoveDetail(letter string)",
+						"text": "RemoveDetail removes the detail with the letter, as RemoveSection\ndoes a section."
+					},
+					"RemoveSection": {
+						"decl": "func (m DrawingMenu) RemoveSection(letter string)",
+						"text": "RemoveSection removes the section with the letter (A, B, ...), as\nthe drawing sheet's [delete] beside it does. The letters after it\nmove one back, and the dimensions on them with them; a section with\na dimension on it stays, and the script fails."
 					},
 					"Set": {
 						"decl": "func (m DrawingMenu) Set(dr Drawing)",
@@ -4814,6 +4834,10 @@
 						"text": "Shown reports whether the window shows the drawing sheet."
 					}
 				}
+			},
+			"DrawingSection": {
+				"text": "DrawingSection is a section view of the drawing, see\nsketch.DrawingSection.",
+				"kind": "sketch.DrawingSection"
 			},
 			"DrawingView": {
 				"text": "DrawingView is a view on the sheet, see sketch.DrawingView.",
@@ -7179,6 +7203,14 @@
 				"text": "Drawing is the model's sheet.",
 				"kind": "struct",
 				"methods": {
+					"AddDetail": {
+						"decl": "func (d *Drawing) AddDetail(view string, cx, cy, r, times float64, solid *srf.SMesh) error",
+						"text": "AddDetail adds a detail of the view: the part within r mm of the point cx, cy (mm right and up from the view's middle), enlarged times the sheet's scale, placed automatically."
+					},
+					"AddSection": {
+						"decl": "func (d *Drawing) AddSection(view string, offset float64, solid *srf.SMesh) error",
+						"text": "AddSection adds a section of the view (front, back, top, bottom, left or right) cut offset mm toward the viewer from the middle of solid, placed automatically."
+					},
 					"Check": {
 						"decl": "func (d *Drawing) Check() error",
 						"text": "Check reports what is wrong with the drawing's settings."
@@ -7190,6 +7222,10 @@
 					"DimensionView": {
 						"decl": "func (d *Drawing) DimensionView(view string) (n int, ok bool)",
 						"text": "DimensionView is what a dimension's view names: a view kind (front, ..., iso), or the n-th section or detail by its letter, sections first; n is -1 for a view kind, and ok false when it names none."
+					},
+					"ExtraIndex": {
+						"decl": "func (d *Drawing) ExtraIndex(letter string) (i int, section, ok bool)",
+						"text": "ExtraIndex is which section or detail a letter names: the index into Sections or into Details, and section true for a section; ok is false when it names neither."
 					},
 					"Layout": {
 						"decl": "func (d *Drawing) Layout(sizes map[string][2]float64) ([]DrawingView, float64)",
@@ -7210,6 +7246,14 @@
 					"PlaceView": {
 						"decl": "func (d *Drawing) PlaceView(kind string, x, y float64) error",
 						"text": "PlaceView shows the view of the given kind with its middle at x, y mm from the sheet's bottom left, moving it if the drawing shows it already."
+					},
+					"RemoveDetail": {
+						"decl": "func (d *Drawing) RemoveDetail(i int) error",
+						"text": "RemoveDetail removes the i-th detail."
+					},
+					"RemoveSection": {
+						"decl": "func (d *Drawing) RemoveSection(i int) error",
+						"text": "RemoveSection removes the i-th section."
 					},
 					"RemoveView": {
 						"decl": "func (d *Drawing) RemoveView(kind string) error",
@@ -8053,7 +8097,7 @@
 					},
 					"ClearNewLabel": {
 						"decl": "func (sk *Sketch) ClearNewLabel(c *core.Constraint)",
-						"text": "ClearNewLabel moves the label of c, a dimension about to be added to its group, along the dimension's normal until its box is clear of the labels the group has, as the view shows them."
+						"text": "ClearNewLabel moves the label of c, a dimension about to be added to its group, until its box is clear of the labels the group has and of the points the view shows: a distance's along the dimension's normal, an angle's along its bisector, a diameter's up the screen."
 					},
 					"ClearSection": {
 						"decl": "func (sk *Sketch) ClearSection()",
@@ -8177,6 +8221,10 @@
 					"DistanceLabelOffset": {
 						"decl": "func (sk *Sketch) DistanceLabelOffset(a, b geom.Vector) geom.Vector",
 						"text": "DistanceLabelOffset is where the label of a new distance between points at a and b goes, as Constrain \u003e Distance puts it: 50 pixels from the middle, across the line between them in the view."
+					},
+					"DrawingSolid": {
+						"decl": "func (sk *Sketch) DrawingSolid() (*srf.SMesh, error)",
+						"text": "DrawingSolid is the mesh the drawing's views look at: the active group's solid, as displayed."
 					},
 					"DuplicateConstraint": {
 						"decl": "func (sk *Sketch) DuplicateConstraint(hc core.HConstraint) (core.HConstraint, error)",
@@ -8518,6 +8566,10 @@
 					"PopOntoCurrentFrom": {
 						"decl": "func (s *Sketch) PopOntoCurrentFrom(uk *UndoStack)",
 						"text": "PopOntoCurrentFrom makes the last state on uk the current one, then reloads the linked files and regenerates."
+					},
+					"ProfileOfSolid": {
+						"decl": "func (sk *Sketch) ProfileOfSolid(h core.HGroup) bool",
+						"text": "ProfileOfSolid reports whether a group left in makes a solid from the contours of group h."
 					},
 					"ProjectPoint": {
 						"decl": "func (sk *Sketch) ProjectPoint(p geom.Vector) geom.Point2d",
@@ -9466,6 +9518,10 @@
 			"ErrNoDatum": {
 				"decl": "var ErrNoDatum",
 				"text": "ErrNoDatum is the error for a datum name nothing answers to."
+			},
+			"ErrNoDrawingSolid": {
+				"decl": "var ErrNoDrawingSolid",
+				"text": "ErrNoDrawingSolid is returned when the active group has no solid for the drawing's views to look at."
 			},
 			"ErrNoRequest": {
 				"decl": "var ErrNoRequest",

@@ -53,6 +53,7 @@ func init() {
 		"ErrNoCombine":                 reflect.ValueOf(&sketch.ErrNoCombine).Elem(),
 		"ErrNoConstraint":              reflect.ValueOf(&sketch.ErrNoConstraint).Elem(),
 		"ErrNoDatum":                   reflect.ValueOf(&sketch.ErrNoDatum).Elem(),
+		"ErrNoDrawingSolid":            reflect.ValueOf(&sketch.ErrNoDrawingSolid).Elem(),
 		"ErrNoRequest":                 reflect.ValueOf(&sketch.ErrNoRequest).Elem(),
 		"ErrNoSolidSuppress":           reflect.ValueOf(&sketch.ErrNoSolidSuppress).Elem(),
 		"ErrNoThreads":                 reflect.ValueOf(&sketch.ErrNoThreads).Elem(),

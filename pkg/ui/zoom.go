@@ -6,6 +6,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/render"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // screenArea is a rectangle of what a camera sees, in its pixels from
@@ -61,6 +62,13 @@ func (gw *graphicsWindow) fitPoints(entities []*core.Entity, constraints []*core
 			q := sk.Entity(e.Normal).NormalGetNum(sk)
 			u, v := q.RotationU().ScaledBy(r), q.RotationV().ScaledBy(r)
 			pts = append(pts, c.Plus(u), c.Minus(u), c.Plus(v), c.Minus(v))
+		case e.Type == core.EntityArcOfCircle:
+			// An arc bulges past its ends and centre, and one whose ends
+			// meet, as a lathe sweeps from a point, is a whole circle:
+			// the points it is drawn through.
+			for _, ed := range gw.getOrGenerateEdges(e).Edges {
+				pts = append(pts, ed.A, ed.B)
+			}
 		default:
 			// We have to iterate children points, because we can select
 			// entities without points.
@@ -111,6 +119,25 @@ func containsFace(faces []core.HEntity, face uint32) bool {
 	return false
 }
 
+// threadHelperGroups are the groups of screw threads whose entities
+// Zoom To Fit leaves out: a thread is one feature, and what its groups
+// draw (the blank, whose lathe sweeps circles well past the part, the
+// ridge, the datum at a face's end) is how it is made, not the model;
+// the solid they make is fitted. A thread's sketch that is active, being
+// edited, is fitted as any sketch is.
+func (gw *graphicsWindow) threadHelperGroups() map[core.HGroup]bool {
+	sk := gw.sk()
+	active := sk.Group(gw.activeGroupH())
+	out := map[core.HGroup]bool{}
+	for hg := range sk.ThreadOfGroups() {
+		if hg == active.H && (active.Type == sketch.GroupDrawingWorkplane || active.Type == sketch.GroupDrawing3D) {
+			continue
+		}
+		out[hg] = true
+	}
+	return out
+}
+
 // ZoomToFit scales and centres the view on the sketch and its solid, or
 // on the selection with useSelection, in the part of the window the
 // toolbar leaves free.
@@ -151,6 +178,7 @@ func (gw *graphicsWindow) zoomToFit(camera *render.Camera, area screenArea, incl
 	selectionUsed := len(entities) > 0 || len(constraints) > 0 || len(faces) > 0
 
 	if !selectionUsed {
+		helpers := gw.threadHelperGroups()
 		for i := range sk.Entities {
 			e := &sk.Entities[i]
 			// We don't want to handle separate points, because we will
@@ -161,11 +189,14 @@ func (gw *graphicsWindow) zoomToFit(camera *render.Camera, area screenArea, incl
 			if !includingInvisibles && !sk.EntityIsVisible(e) {
 				continue
 			}
+			if helpers[e.Group] {
+				continue
+			}
 			entities = append(entities, e)
 		}
 		for i := range sk.Constraints {
 			c := &sk.Constraints[i]
-			if !gw.constraintIsVisible(c) {
+			if !gw.constraintIsVisible(c) || helpers[c.Group] {
 				continue
 			}
 			constraints = append(constraints, c)

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
@@ -102,6 +103,50 @@ func TestBrokenReferencesDeleteRequest(t *testing.T) {
 	for _, b := range sk.BrokenReferences {
 		if b.Group != hg(2) && b.Group != hg(4) {
 			t.Fatalf("%+v", b)
+		}
+	}
+}
+
+// TestBrokenReferencesGoneEntity: an entity of a group deleted with it
+// is named by what it was, where, and what it was made from, as the
+// group's remap table and its requests said at the last regeneration;
+// a construction line's copy says it was construction.
+func TestBrokenReferencesGoneEntity(t *testing.T) {
+	t.Parallel()
+	for _, c := range []struct {
+		construction bool
+		want         string
+	}{
+		{false, "deleted g004-boss-sketch, which used top point of g003-block from point 1 of r004-line-segment"},
+		{true, "deleted g004-boss-sketch, which used top construction point of g003-block from point 1 of r008-line-segment"},
+	} {
+		d := api.New()
+		base := d.Active()
+		d.Sketch.Rect(api.V(0, 0, 0), api.V(40, 20, 0))
+		at := d.Sketch.Line(api.V(0, 0, 0), api.V(40, 20, 0))
+		at.SetConstruction(true)
+		block := d.Features.Extrude(10, "block")
+		var top api.Entity
+		for _, e := range block.Entities() {
+			if e.Kind() != "point" || e.Pos().Z < 5 {
+				continue
+			}
+			if e.Construction() == c.construction {
+				top = e
+				break
+			}
+		}
+		d.Features.SketchAt(top, api.V(1, 0, 0), api.V(0, 1, 0), "boss-sketch")
+		d.Sketch.Circle(api.V(10, 10, 10), 3)
+		d.Features.Extrude(5, "boss")
+		base.Delete()
+		refs := d.Features.BrokenReferences()
+		if len(refs) != 3 || refs[1].Text != c.want {
+			var lines []string
+			for _, r := range refs {
+				lines = append(lines, r.Text)
+			}
+			t.Errorf("broken:\n%s\nwant second: %s", strings.Join(lines, "\n"), c.want)
 		}
 	}
 }

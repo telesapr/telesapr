@@ -90,14 +90,18 @@ face reaches the crest and is hatched up to it, with the root a thin line on it.
   It is labelled SECTION A-A. The cutting plane is drawn dashed and lettered on the views that
   see it edge on: a letter past each end of the line, or beside the end when a dimension's text
   is there. A view's name that a letter or a dimension would cover is moved down below it.
+  The plane must cut the solid: an offset that puts it on the solid's outermost face, or
+  further, is refused.
 - `[add a detail]` asks for a view, the point it enlarges (in mm right and up from the view's
   middle), a radius and how many times larger, as `front 10 5 8 2`. What lies within that circle
   is drawn enlarged, inside a circle, labelled DETAIL B with its scale. The circle is drawn
-  dashed and lettered on the view.
+  dashed and lettered on the view. The point must lie within the solid's outline on the view.
 
-Sections and details are lettered A, B, ... in the order they were added. They are placed in
-columns to the right of the views, unless `[place]` on their row, or a script's `X` and `Y`,
-gives them a place. `[delete]` on a row takes one away.
+Sections and details are lettered A, B, ..., the sections first, each kind in the order it was
+added: a section added after a detail takes the detail's letter, and the detail, with the
+dimensions on it, moves to the next. They are placed in columns to the right of the views,
+unless `[place]` on their row, or a script's `X` and `Y`, gives them a place. `[delete]` on a
+row takes one away, unless a dimension is on it; the letters after it move back one.
 
 ### Dimensions
 
@@ -163,12 +167,20 @@ must(doc.Drawing.Export("bracket.pdf"))   // in the application
 - `doc.Drawing.AddEdgeFaceDistance("top", 10, edge, face)` adds the distance from an edge to a
   face.
 - `doc.Drawing.Dimensions()` measures them all.
-- `d.Sections` and `d.Details` hold the section and detail views.
+- `doc.Drawing.AddSection("top", 8)` adds a section, as `[add a section]` does, and returns its
+  letter, which `AddDimension` takes as a view. `doc.Drawing.AddDetail("front", 10, 5, 8, 2)`
+  adds a detail: the view, the point, the radius and how many times larger. A section that
+  does not cut the solid, or a detail whose point is off it, makes the script fail.
+- `doc.Drawing.RemoveSection("A")` and `doc.Drawing.RemoveDetail("B")` take one away by its
+  letter.
+- `d.Sections` and `d.Details` hold the section and detail views, where a script can set their
+  `X` and `Y` on the sheet.
 - `d.Views` places views where you want them, each by its kind and the sheet position of its
   middle, in millimetres from the bottom left. Left empty, the standard views are placed for you.
 
 The example [`examples/scripts/drawing`](../../examples/scripts/drawing/drawing.go) dimensions
-faces and the isometric view.
+faces and the isometric view, and adds a section through the hole with the foot's thickness
+dimensioned on it.
 
 ## Not yet
 

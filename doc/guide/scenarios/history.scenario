@@ -41,4 +41,8 @@ shot history-7-broken-link tw
 twdown L 190 238
 twup L 190 238
 cursor off
+# Wide enough for the longest name, that of the point the boss sketch
+# was on.
+size tw 900 600
 shot history-8-broken tw
+size tw 600 600

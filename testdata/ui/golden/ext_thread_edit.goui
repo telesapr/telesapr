@@ -96,7 +96,7 @@ selection 0
 active 3 0
 camera 5 0 0 0 1 0 0 0 1 0
 counts 3 4 32 1 27
-editor 0 "" 0 "10"
+editor 0 "" 0 "20"
 tw 10 unsaved 1 cursor 0 tooltip ""
 row 0  home › screw thread   drawing / constraining in 3d
  0-0 64 64 0

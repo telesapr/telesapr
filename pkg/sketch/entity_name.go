@@ -47,8 +47,9 @@ func (sk *Sketch) requestEntityName(he core.HEntity, inGroup bool) string {
 	if !inGroup {
 		if part := he.V & 0xffff; part != 0 {
 			kind := "part"
-			if e := sk.Entity(he); e != nil {
-				kind = entityKindWord(e, false)
+			if e := sk.knownEntity(he, 0); e != nil {
+				// The request's name says whether it is construction.
+				kind = kindWord(e, false)
 			}
 			name = fmt.Sprintf("%s %d of %s", kind, part, name)
 		}
@@ -60,33 +61,28 @@ func (sk *Sketch) requestEntityName(he core.HEntity, inGroup bool) string {
 // madeEntityName names entity he that a group made: kind is the word
 // for what it is, "" to take it from the entity or the copy that made
 // it. depth bounds the chain of copies of copies that names the
-// source.
+// source. The group and the entity may be gone since the last
+// regeneration: what was known of them then names them.
 func (sk *Sketch) madeEntityName(he core.HEntity, kind string, depth int) string {
 	hg := he.Group()
 	group := sk.anyGroupName(hg)
-	g := sk.Group(hg)
-	key, made := core.EntityKey{}, false
-	if g != nil {
-		key, made = g.remapKeyOf(he)
-	}
-	e := sk.Entity(he)
-	solid := g != nil && sweepsSolid(g.Type)
+	typ, remap, known := sk.groupRemap(hg)
+	key, made := remapKey(remap, hg, he)
+	solid := known && sweepsSolid(typ)
 	if made && !solid && key.Input != core.NoEntity && !key.Input.IsFromRequest() {
 		// A copy of what a solid's group made, as a step and repeat
 		// of an extrusion's edges, is on a solid too.
-		src := sk.Group(key.Input.Group())
-		solid = src != nil && sweepsSolid(src.Type)
+		if srcTyp, _, ok := sk.groupRemap(key.Input.Group()); ok {
+			solid = sweepsSolid(srcTyp)
+		}
 	}
 	if kind == "" {
-		switch {
-		case e != nil:
+		if e := sk.knownEntity(he, depth); e != nil {
 			kind = entityKindWord(e, solid)
-		case made:
-			kind = sk.copyKindWord(key, solid)
 		}
 	}
 	if !made {
-		if g != nil && g.Type == GroupDrawingWorkplane {
+		if known && typ == GroupDrawingWorkplane {
 			if w, ok := workplaneParts[he.V&0xffff]; ok {
 				return w + " of " + group
 			}
@@ -96,6 +92,10 @@ func (sk *Sketch) madeEntityName(he core.HEntity, kind string, depth int) string
 		}
 		return fmt.Sprintf("%s %d of %s", kind, he.V&0xffff, group)
 	}
+	if kind == "" {
+		// Known to be a copy, of what is not.
+		kind = "copy"
+	}
 	s := kind + " of " + group
 	if pos := remapPosition(key.CopyNumber); pos != "" {
 		s = pos + " " + s
@@ -103,7 +103,20 @@ func (sk *Sketch) madeEntityName(he core.HEntity, kind string, depth int) string
 	if src := sk.sourceName(key.Input, depth); src != "" {
 		s += " from " + src
 	}
-	return s + copySuffix(g.Type, key.CopyNumber)
+	return s + copySuffix(typ, key.CopyNumber)
+}
+
+// groupRemap is the type and the remap table of group hg, as it is or,
+// deleted since, as it was at the last regeneration; ok is false for a
+// group never seen.
+func (sk *Sketch) groupRemap(hg core.HGroup) (typ GroupType, remap core.EntityMap, ok bool) {
+	if g := sk.Group(hg); g != nil {
+		return g.Type, g.Remap, true
+	}
+	if known, ok := sk.names.groups[hg]; ok {
+		return known.typ, known.remap, true
+	}
+	return 0, nil, false
 }
 
 // copySuffix says which copy of a step and repeat or a pattern an
@@ -141,9 +154,7 @@ func (sk *Sketch) sourceName(in core.HEntity, depth int) string {
 	switch {
 	case in == core.NoEntity:
 		return ""
-	case in.V&(1<<30) != 0 && in.V&(1<<31) == 0:
-		// A face no entity names, copied as a step and repeat copies
-		// the solid's faces.
+	case isFaceID(in):
 		return sk.FaceName(srf.FaceID(in.V))
 	case in.IsFromRequest():
 		if sk.Request(in.Request()) == nil {
@@ -152,16 +163,18 @@ func (sk *Sketch) sourceName(in core.HEntity, depth int) string {
 			}
 		}
 		return sk.requestEntityName(in, false)
-	case depth < 4 && sk.Group(in.Group()) != nil:
-		return sk.madeEntityName(in, "", depth+1)
+	case depth < 4:
+		if _, _, ok := sk.groupRemap(in.Group()); ok {
+			return sk.madeEntityName(in, "", depth+1)
+		}
 	}
 	return ""
 }
 
-// remapKeyOf is the key in the group's remap table that made he.
-func (g *Group) remapKeyOf(he core.HEntity) (core.EntityKey, bool) {
-	for key, id := range g.Remap {
-		if g.H.Entity(int(id.V)) == he {
+// remapKey is the key in group hg's remap table that made he.
+func remapKey(remap core.EntityMap, hg core.HGroup, he core.HEntity) (core.EntityKey, bool) {
+	for key, id := range remap {
+		if hg.Entity(int(id.V)) == he {
 			return key, true
 		}
 	}
@@ -190,33 +203,119 @@ func remapPosition(copyNumber int) string {
 	return ""
 }
 
-// copyKindWord is what a copy is, when the entity itself is gone: what
-// its copy number makes, or else what it was copied from.
-func (sk *Sketch) copyKindWord(key core.EntityKey, solid bool) string {
+// isFaceID reports whether he is a face's identity, not an entity's
+// handle: a face no entity names, copied as a step and repeat copies
+// the solid's faces.
+func isFaceID(he core.HEntity) bool { return he.V&(1<<30) != 0 && he.V&(1<<31) == 0 }
+
+// knownEntity is entity he, or, when it is gone since the last
+// regeneration, a stand-in that has what can still be known of it: its
+// type and whether it is construction, from its request's type or from
+// the copy that made it. It is nil when nothing is known.
+func (sk *Sketch) knownEntity(he core.HEntity, depth int) *core.Entity {
+	if e := sk.Entity(he); e != nil {
+		return e
+	}
+	switch {
+	case isFaceID(he):
+		return &core.Entity{H: he, Type: core.EntityFaceNormalPt}
+	case he.IsFromRequest():
+		return sk.goneRequestEntity(he)
+	case depth > 4:
+		return nil
+	}
+	_, remap, _ := sk.groupRemap(he.Group())
+	key, made := remapKey(remap, he.Group(), he)
+	if !made {
+		return nil
+	}
+	var src *core.Entity
+	if key.Input != core.NoEntity {
+		src = sk.knownEntity(key.Input, depth+1)
+	}
+	e := &core.Entity{H: he, Construction: src != nil && src.Construction}
 	switch key.CopyNumber {
 	case RemapLineToFace:
-		return "face"
-	case RemapPtToLine, RemapPtToArc:
-		return "edge"
+		e.Type = core.EntityFaceXProd
+	case RemapPtToLine:
+		e.Type = core.EntityLineSegment
+	case RemapPtToArc:
+		e.Type = core.EntityArcOfCircle
 	case RemapPtToNormal:
-		return "normal"
+		e.Type = core.EntityNormalNCopy
 	case RemapLatheArcCenter:
-		return "point"
+		e.Type = core.EntityPointNCopy
+	default:
+		switch {
+		case key.Input == core.NoEntity:
+			// What an extrusion or a lathe makes of no entity is its
+			// end faces.
+			e.Type = core.EntityFaceNormalPt
+		case src == nil:
+			return nil
+		default:
+			e.Type = src.Type
+		}
 	}
-	if key.Input == core.NoEntity {
-		// What an extrusion or a lathe makes of no entity is its end
-		// faces.
-		return "face"
+	return e
+}
+
+// goneRequestEntity is a stand-in for entity he of a request deleted
+// since the last regeneration, typed by its part: the request's own
+// entity, one of its points, its normal or its distance.
+func (sk *Sketch) goneRequestEntity(he core.HEntity) *core.Entity {
+	r, ok := sk.names.requests[he.Request()]
+	if !ok {
+		return nil
 	}
-	if e := sk.Entity(key.Input); e != nil {
-		return entityKindWord(e, solid)
+	typ, points, hasNormal, hasDistance, ok := getRequestInfo(r.typ, r.extraPoints)
+	if !ok {
+		return nil
 	}
-	return ""
+	first := 1
+	if typ == 0 {
+		// A request with no entity of its own, as a datum point, is
+		// its points from 0.
+		first = 0
+	}
+	e := &core.Entity{H: he, Construction: r.construction}
+	switch part := int(he.V & 0xffff); {
+	case part == 0 && typ != 0:
+		e.Type = typ
+	case part >= first && part < first+points:
+		e.Type = core.EntityPointIn3D
+	case part == 32 && hasNormal:
+		e.Type = core.EntityNormalIn3D
+	case part == 64 && hasDistance:
+		e.Type = core.EntityDistance
+	default:
+		return nil
+	}
+	return e
 }
 
 // entityKindWord is what an entity is, in words: on a solid (solid
-// true), a curve is an edge.
+// true), a curve is an edge. A construction entity is no part of a
+// solid, whatever group made it: its copy at the top of an extrusion
+// is a "construction line segment", the side an extrusion sweeps it
+// into a "construction plane".
 func entityKindWord(e *core.Entity, solid bool) string {
+	if !e.Construction {
+		return kindWord(e, solid)
+	}
+	switch w := kindWord(e, false); w {
+	case "point", "line segment", "curve", "circle", "arc":
+		return "construction " + w
+	case "face":
+		return "construction plane"
+	default:
+		return w
+	}
+}
+
+// kindWord is what an entity is, in words, construction or not: on a
+// solid (solid true), a curve is an edge.
+func kindWord(e *core.Entity, solid bool) string {
 	switch {
 	case e.IsPoint():
 		return "point"

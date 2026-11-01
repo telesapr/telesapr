@@ -10,7 +10,7 @@ func main() {
 	c := doc.Sketch.Circle(V(0, 0, 0), 10)
 	// Clicked on the origin, the centre is held on it.
 	doc.Constrain.Coincident(doc.Sketch.ActiveWorkplane().Points()[0], c.Center())
-	g := doc.Features.Extrude(10, "")
+	g := doc.Features.Extrude(20, "")
 	doc.Edit.Regen()
 	// The end face nearer the viewer, as the front view looks.
 	var end Entity

@@ -455,10 +455,11 @@ func (gw *graphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 	}
 
 	canvas := &render.ObjectPicker{
-		Cam:       gw.Camera(),
-		SelRadius: 10.0,
-		Point:     mp,
-		MaxZIndex: -1,
+		Cam:        gw.Camera(),
+		SelRadius:  10.0,
+		Point:      mp,
+		MaxZIndex:  -1,
+		ClipToView: true,
 	}
 	canvas.SetBitmapFont(gw.bitmapFont())
 
@@ -757,6 +758,7 @@ func (gw *graphicsWindow) Draw(canvas render.Canvas) {
 
 	// And the naked edges, if the user did Analyze -> Show Naked Edges.
 	canvas.DrawEdges(&ss.GW.nakedEdges, hcsError)
+	gw.drawClearanceMarks(canvas)
 
 	// Then redraw whatever the mouse is hovering over, highlighted.
 	gw.drawSelection(&gw.hover, true, canvas)

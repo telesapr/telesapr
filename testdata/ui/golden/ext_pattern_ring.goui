@@ -39,12 +39,12 @@ row 14    path [change]
  7-7 64 61 0
  8-15 6c 61 108 4 1 0
  16-99 64 61 0
-row 16      top edge of g003-extrude from r005-circle [remove]
+row 16      top construction circle of g003-extrude from r005-circle [remove]
  0-4 64 64 0
- 5-45 6c 64 108 8003000e 1 1
- 46-46 64 64 0
- 47-54 6c 64 108 0 1 0
- 55-99 64 64 0
+ 5-60 6c 64 108 8003000e 1 1
+ 61-61 64 64 0
+ 62-69 6c 64 108 0 1 0
+ 70-99 64 64 0
 row 18 
  0-99 64 64 0
 row 20    appearance   matte   plastic   glossy   metal
@@ -107,7 +107,7 @@ row 51    (none)
  0-99 64 61 0
 row 53 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 9, of 18 patches\nTriangles: 780\nVolume: 75.28 mm³\nCenter of mass: (10.00, -10.00, 1.00)\nExtent: 34.00 x 38.64 x 2.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 9, of 18 patches\nTriangles: 780\nVolume: 188.19 mm³\nCenter of mass: (10.00, -10.00, 2.50)\nExtent: 34.00 x 38.64 x 5.00
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0

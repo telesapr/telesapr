@@ -1,7 +1,11 @@
 package ui
 
 import (
+	"strings"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform/headless"
 )
 
 // The drawing screen chooses which views the sheet shows and where the
@@ -72,5 +76,71 @@ func TestDrawingScreenViews(t *testing.T) {
 	tw.ScreenChangeDrawing('N', 0)
 	if len(ss.SK.Drawing.Views) != 0 {
 		t.Error("back to the standard views left views")
+	}
+}
+
+// The drawing screen adds sections and details through the calls a
+// script's Drawing.AddSection and AddDetail reach: one that would show
+// nothing of the solid is refused, and an addition or a deletion is one
+// step of undo that comes back on redo.
+func TestDrawingScreenSections(t *testing.T) {
+	t.Parallel()
+	ss, doc := drawingModel(t)
+	tw := ss.TW
+	ss.MenuDrawingSheet()
+	extras := func() (int, int) {
+		if ss.SK.Drawing == nil {
+			return 0, 0
+		}
+		return len(ss.SK.Drawing.Sections), len(ss.SK.Drawing.Details)
+	}
+	p := ss.Platform.(*headless.Platform)
+	var said string
+	p.OnMessageDialog = func(d *headless.MessageDialog) { said = d.Message }
+	// The block is 40 deep seen from the front, 120 wide.
+	for _, c := range []struct {
+		meaning   Edit
+		text, say string
+	}{{editDrawingSection, "front 20", "within 20 mm"}, {editDrawingSection, "iso 0", "No section of"},
+		{editDrawingDetail, "front 61 0 5 2", "within 60 mm"}, {editDrawingDetail, "front 0 0 -5 2", "radius and scale"}} {
+		p.DialogResponses = []platform.Response{platform.ResponseOK}
+		said = ""
+		tw.edit.meaning = c.meaning
+		tw.editDrawing(c.text)
+		if s, d := extras(); s+d != 0 || !strings.Contains(said, c.say) {
+			t.Fatalf("%q: %d sections and %d details, said %q", c.text, s, d, said)
+		}
+	}
+	tw.ScreenChangeDrawing('a', 0)
+	tw.editDrawing("front 10")
+	tw.ScreenChangeDrawing('d', 0)
+	tw.editDrawing("top -50 0 8 2")
+	if s, d := extras(); s != 1 || d != 1 {
+		t.Fatalf("%d sections and %d details", s, d)
+	}
+	ss.UndoUndo()
+	if s, d := extras(); s != 1 || d != 0 {
+		t.Errorf("after undo: %d sections and %d details", s, d)
+	}
+	ss.UndoRedo()
+	if s, d := extras(); s != 1 || d != 1 {
+		t.Errorf("after redo: %d sections and %d details", s, d)
+	}
+	// The script reads the same drawing.
+	other := doc.Drawing.Get()
+	if other.Sections[0] != ss.SK.Drawing.Sections[0] || other.Details[0] != ss.SK.Drawing.Details[0] {
+		t.Errorf("the script reads %+v", other)
+	}
+	tw.ScreenChangeDrawing('x', 0)
+	if s, d := extras(); s != 0 || d != 1 {
+		t.Errorf("after the section's deletion: %d sections and %d details", s, d)
+	}
+	tw.ScreenChangeDrawing('X', 0)
+	if s, d := extras(); s != 0 || d != 0 {
+		t.Errorf("after the detail's deletion: %d sections and %d details", s, d)
+	}
+	ss.UndoUndo()
+	if s, d := extras(); s != 0 || d != 1 {
+		t.Errorf("after undoing the detail's deletion: %d sections and %d details", s, d)
 	}
 }

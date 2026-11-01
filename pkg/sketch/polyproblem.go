@@ -82,7 +82,7 @@ func (g *Group) reportPolyProblem(sk *Sketch) {
 		if !ok {
 			return
 		}
-		if !sk.profileOfSolid(g.H) {
+		if !sk.ProfileOfSolid(g.H) {
 			return
 		}
 		g.setProblem(&at, "the sketch %s", msg)
@@ -108,9 +108,9 @@ func (g *Group) reportPolyProblem(sk *Sketch) {
 	}
 }
 
-// profileOfSolid reports whether a group makes a solid from the
+// ProfileOfSolid reports whether a group left in makes a solid from the
 // contours of group h.
-func (sk *Sketch) profileOfSolid(h core.HGroup) bool {
+func (sk *Sketch) ProfileOfSolid(h core.HGroup) bool {
 	for i := range sk.Groups {
 		g := &sk.Groups[i]
 		if g.SuppressedBy.V == 0 && g.takesProfile(h) {

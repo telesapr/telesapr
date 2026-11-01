@@ -11,8 +11,8 @@ down L 325 300
 up L 325 300
 key esc
 key x shift
-# The extrusion is 5 mm deep, half the circle: hold its depth and make
-# it 20.
+# The extrusion is 10 mm deep, the circle's width, short of the 12 mm
+# thread: hold its depth and make it 20.
 twmove 505 133
 twdown L 505 133
 twup L 505 133

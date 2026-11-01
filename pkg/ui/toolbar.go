@@ -14,63 +14,62 @@ type toolIcon struct {
 	name    string
 	command Command
 	tooltip string
-	pixmap  *res.Pixmap
 }
 
 // toolbar is the toolbar at the left of the graphics window.
 var toolbar = []toolIcon{
-	{"line", cmdLineSegment, "Sketch line segment", nil},
-	{"rectangle", cmdRectangle, "Sketch rectangle", nil},
-	{"circle", cmdCircle, "Sketch circle", nil},
-	{"arc", cmdArc, "Sketch arc of a circle", nil},
-	{"text", cmdTTFText, "Sketch curves from text in a TrueType font", nil},
-	{"image", cmdImage, "Sketch image from a file", nil},
-	{"tangent-arc", cmdTangentArc, "Create tangent arc at selected point", nil},
-	{"bezier", cmdCubic, "Sketch cubic Bezier spline", nil},
-	{"point", cmdDatumPoint, "Sketch datum point", nil},
-	{"construction", cmdConstruction, "Toggle construction", nil},
-	{"trim", cmdSplitCurves, "Split lines / curves where they intersect", nil},
-	{"", cmdNone, "", nil},
+	{"line", cmdLineSegment, "Sketch line segment"},
+	{"rectangle", cmdRectangle, "Sketch rectangle"},
+	{"circle", cmdCircle, "Sketch circle"},
+	{"arc", cmdArc, "Sketch arc of a circle"},
+	{"text", cmdTTFText, "Sketch curves from text in a TrueType font"},
+	{"image", cmdImage, "Sketch image from a file"},
+	{"tangent-arc", cmdTangentArc, "Create tangent arc at selected point"},
+	{"bezier", cmdCubic, "Sketch cubic Bezier spline"},
+	{"point", cmdDatumPoint, "Sketch datum point"},
+	{"construction", cmdConstruction, "Toggle construction"},
+	{"trim", cmdSplitCurves, "Split lines / curves where they intersect"},
+	{"", cmdNone, ""},
 
-	{"length", cmdDistanceDia, "Constrain distance / diameter / length", nil},
-	{"angle", cmdAngle, "Constrain angle", nil},
-	{"horiz", cmdHorizontal, "Constrain to be horizontal", nil},
-	{"vert", cmdVertical, "Constrain to be vertical", nil},
-	{"parallel", cmdParallel, "Constrain to be parallel or tangent", nil},
-	{"perpendicular", cmdPerpendicular, "Constrain to be perpendicular", nil},
-	{"pointonx", cmdOnEntity, "Constrain point on line / curve / plane / point", nil},
-	{"symmetric", cmdSymmetric, "Constrain symmetric", nil},
-	{"equal", cmdEqual, "Constrain equal length / radius / angle", nil},
-	{"same-orientation", cmdOrientedSame, "Constrain normals in same orientation", nil},
-	{"other-supp", cmdOtherAngle, "Other supplementary angle", nil},
-	{"ref", cmdReference, "Toggle reference dimension", nil},
-	{"", cmdNone, "", nil},
+	{"length", cmdDistanceDia, "Constrain distance / diameter / length"},
+	{"angle", cmdAngle, "Constrain angle"},
+	{"horiz", cmdHorizontal, "Constrain to be horizontal"},
+	{"vert", cmdVertical, "Constrain to be vertical"},
+	{"parallel", cmdParallel, "Constrain to be parallel or tangent"},
+	{"perpendicular", cmdPerpendicular, "Constrain to be perpendicular"},
+	{"pointonx", cmdOnEntity, "Constrain point on line / curve / plane / point"},
+	{"symmetric", cmdSymmetric, "Constrain symmetric"},
+	{"equal", cmdEqual, "Constrain equal length / radius / angle"},
+	{"same-orientation", cmdOrientedSame, "Constrain normals in same orientation"},
+	{"other-supp", cmdOtherAngle, "Other supplementary angle"},
+	{"ref", cmdReference, "Toggle reference dimension"},
+	{"", cmdNone, ""},
 
-	{"extrude", cmdGroupExtrude, "New group extruding active sketch", nil},
-	{"lathe", cmdGroupLathe, "New group rotating active sketch", nil},
-	{"helix", cmdGroupHelix, "New group helix from active sketch", nil},
-	{"revolve", cmdGroupRevolve, "New group revolve active sketch", nil},
-	{"step-rotate", cmdGroupRot, "New group step and repeat rotating", nil},
-	{"step-translate", cmdGroupTrans, "New group step and repeat translating", nil},
-	{"sketch-in-plane", cmdGroupWrkpl, "New group in new workplane (thru given entities)", nil},
-	{"sketch-in-3d", cmdGroup3D, "New group in 3d", nil},
-	{"assemble", cmdGroupLink, "New group linking / assembling file", nil},
-	{"", cmdNone, "", nil},
+	{"extrude", cmdGroupExtrude, "New group extruding active sketch"},
+	{"lathe", cmdGroupLathe, "New group rotating active sketch"},
+	{"helix", cmdGroupHelix, "New group helix from active sketch"},
+	{"revolve", cmdGroupRevolve, "New group revolve active sketch"},
+	{"step-rotate", cmdGroupRot, "New group step and repeat rotating"},
+	{"step-translate", cmdGroupTrans, "New group step and repeat translating"},
+	{"sketch-in-plane", cmdGroupWrkpl, "New group in new workplane (thru given entities)"},
+	{"sketch-in-3d", cmdGroup3D, "New group in 3d"},
+	{"assemble", cmdGroupLink, "New group linking / assembling file"},
+	{"", cmdNone, ""},
 
-	{"fillet", cmdGroupFillet, "Fillet selected edges", nil},
-	{"chamfer", cmdGroupChamfer, "Chamfer selected edges", nil},
-	{"shell", cmdGroupShell, "Shell solid, open at selected faces", nil},
-	{"sweep", cmdGroupSweep, "Sweep active sketch along selected path", nil},
-	{"loft", cmdGroupLoft, "Loft active sketch to selected profiles", nil},
-	{"mirror", cmdGroupMirror, "Mirror in selected plane", nil},
-	{"pattern", cmdGroupPathPattern, "Pattern along selected path", nil},
-	{"thread", cmdGroupThread, "Screw thread on selected face, edge or circle", nil},
-	{"", cmdNone, "", nil},
+	{"fillet", cmdGroupFillet, "Fillet selected edges"},
+	{"chamfer", cmdGroupChamfer, "Chamfer selected edges"},
+	{"shell", cmdGroupShell, "Shell solid, open at selected faces"},
+	{"sweep", cmdGroupSweep, "Sweep active sketch along selected path"},
+	{"loft", cmdGroupLoft, "Loft active sketch to selected profiles"},
+	{"mirror", cmdGroupMirror, "Mirror in selected plane"},
+	{"pattern", cmdGroupPathPattern, "Pattern along selected path"},
+	{"thread", cmdGroupThread, "Screw thread on selected face, edge or circle"},
+	{"", cmdNone, ""},
 
-	{"in3d", cmdNearestIso, "Nearest isometric view", nil},
-	{"ontoworkplane", cmdOntoWorkplane, "Align view to active workplane", nil},
-	{"measure", cmdMeasure, "Measure selection", nil},
-	{"section", cmdSectionView, "Section view", nil},
+	{"in3d", cmdNearestIso, "Nearest isometric view"},
+	{"ontoworkplane", cmdOntoWorkplane, "Align view to active workplane"},
+	{"measure", cmdMeasure, "Measure selection"},
+	{"section", cmdSectionView, "Section view"},
 }
 
 // Toolbar geometry, in pixels: a button's pitch, the gap a spacer adds,
@@ -81,6 +80,21 @@ const (
 	toolbarFudge  = 8
 	toolbarTop    = 21 // the menu bar is 20 high
 )
+
+// toolbarIcon is a button's picture, loaded the first time the window
+// draws it. Each window keeps its own: the toolbar table is shared by
+// every window, which may draw at the same time.
+func (gw *graphicsWindow) toolbarIcon(name string) *res.Pixmap {
+	if pm, ok := gw.toolbarIcons[name]; ok {
+		return pm
+	}
+	if gw.toolbarIcons == nil {
+		gw.toolbarIcons = map[string]*res.Pixmap{}
+	}
+	pm := res.LoadPng("icons/graphics-window/" + name + ".png")
+	gw.toolbarIcons[name] = pm
+	return pm
+}
 
 // toolbarRows is the number of rows the toolbar's buttons take in cols
 // columns, and the number of spacers between their sections.
@@ -233,12 +247,9 @@ func (gw *graphicsWindow) toolbarDrawOrHitTest(mx, my int, canvas *render.UICanv
 			continue
 		}
 
-		if icon.pixmap == nil {
-			icon.pixmap = res.LoadPng("icons/graphics-window/" + icon.name + ".png")
-		}
-
 		if canvas != nil {
-			canvas.DrawPixmap(icon.pixmap, x-icon.pixmap.Width/2, y-icon.pixmap.Height/2, 0)
+			pm := gw.toolbarIcon(icon.name)
+			canvas.DrawPixmap(pm, x-pm.Width/2, y-pm.Height/2, 0)
 
 			if gw.toolbarHovered == icon.command || gw.toolbarToggled(icon.command) ||
 				(gw.pending.operation == pendingCommand && gw.pending.command == icon.command) {

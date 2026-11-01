@@ -47,8 +47,10 @@ drawing: after drawing something, `answer no` and `menu File|New` first.
 - A shot of a solid turns the view (`view rotated`) and fits it; pick edges and faces in the view
   where they are easiest to hit, then turn.
 - Turn the cursor off for pictures of results; keep it on where a picture shows what to click.
-- Zoom To Fit fits what is selected when anything is: fit before picking, not after. It takes
-  in construction geometry too (a thread's helper circles), where one Zoom Out may help.
-- A click near a group's normal arrow or on a line drawn across a face picks that, not the
-  face: check picks with `hover` before relying on them.
+- Zoom To Fit fits what is selected when anything is: fit before picking, not after. It fits the
+  solid and what the sketches draw, but not the circles and sketches a screw thread is made of,
+  which may run out of the window.
+- A click within 10 pixels of a line, a point or a label picks that before the face under it,
+  even where the line is behind the face: a reference plane's dashed square crosses most views.
+  Check picks with `hover` before relying on them.
 - Look at every picture before using it on a page.

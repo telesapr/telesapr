@@ -134,6 +134,7 @@ constraint 0x2 diameter {
   workplane 0x80020000
   value = 20
   entity-a 0x40000
+  label-offset 0 3.9 0
 }
 
 value 0x10010 0

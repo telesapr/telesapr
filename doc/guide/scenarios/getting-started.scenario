@@ -100,8 +100,8 @@ key esc
 leave
 freedom
 shot getting-started-8-hole-sketch
-# Extruded as a difference, which turns the depth into the plate;
-# held at 10 deep.
+# Extruded as a difference, which turns the depth into the plate: 10
+# deep, the circle's width; held there.
 key x shift
 twmove 78 234
 twdown L 78 234

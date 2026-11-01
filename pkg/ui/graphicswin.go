@@ -804,6 +804,7 @@ func (gw *graphicsWindow) unselectAll() {
 	gw.ClearSuper()
 	ss.TW.HideEditControl()
 	ss.GW.nakedEdges.Clear()
+	ss.GW.clearClearanceMarks()
 	ss.GW.justExported.Draw = false
 	ss.GW.centerOfMass.Draw = false
 	// This clears the marks drawn to indicate which points are still

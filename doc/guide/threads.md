@@ -7,10 +7,10 @@ with a thread of any designation, M8 unless you give another.
 
 Thread the end of a 10 mm rod:
 
-1. Draw a circle 10 mm across and extrude it (Shift+X). The rod starts 5 mm long, half the
-   circle's width. On the extrusion's screen, tick "held", click "[change]" beside the depth
-   and type 20. In the view from above, click the circle at the rod's top end. It is drawn in
-   red when selected.
+1. Draw a circle 10 mm across and extrude it (Shift+X). The rod starts 10 mm long, as long as
+   the circle is wide: too short for the 12 mm thread below. On the extrusion's screen, tick
+   "held", click "[change]" beside the depth and type 20. In the view from above, click the
+   circle at the rod's top end. It is drawn in red when selected.
 
    ![The rod's top rim selected](images/threads-1-rim.png)
 

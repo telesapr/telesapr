@@ -1,5 +1,6 @@
-# A self-intersecting sketch: a bowtie of four lines, which the closed
-# contour check reports, so it has no area and nothing to extrude.
+# A self-intersecting sketch: a bowtie of four lines, which has no area
+# and nothing to extrude. The closed contour check says nothing of it
+# until it is extruded: the extrusion then reports it.
 key s
 move 200 200
 down L 200 200

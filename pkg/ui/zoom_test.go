@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
 )
@@ -185,5 +186,72 @@ func TestWindowPictureOfFreeArea(t *testing.T) {
 	}
 	if fill := (hi.U - lo.U) / 800; math.Abs(fill-0.9) > 0.01 {
 		t.Errorf("the solid fills %.3f of the picture across", fill)
+	}
+}
+
+// TestZoomToFitThread fits a rod threaded M10 from its top rim, made
+// through the interface (hover_thread_side), from the side and turned to
+// show three sides: the solid, not the circles the lathe of the thread's
+// blank sweeps out past it, fills the free area, all of it in view. The
+// fill is a little short of nine tenths, as the rod's sketch, drawn at
+// its full diameter, stands past the part the thread turned down.
+func TestZoomToFitThread(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("makes the thread through the interface, some seconds")
+	}
+	var r *uiScriptRunner
+	runUIScriptWith(t, "hover_thread_side", func(rr *uiScriptRunner) { r = rr })
+	gw := r.ss.GW
+	for _, view := range []string{"side", "rotated"} {
+		if view == "rotated" {
+			r.setView(view)
+		}
+		gw.MenuView(cmdZoomToFit)
+		camera := gw.Camera()
+		area := gw.freeArea(&camera)
+		lo, hi := meshBounds(t, r.ss)
+		left, right := area.Mid.U-area.Width/2, area.Mid.U+area.Width/2
+		top, bottom := area.Mid.V+area.Height/2, area.Mid.V-area.Height/2
+		if lo.U < left || hi.U > right || lo.V < bottom || hi.V > top {
+			t.Errorf("%s: the solid spans %v to %v, out of the free area", view, lo, hi)
+		}
+		fill := max((hi.U-lo.U)/area.Width, (hi.V-lo.V)/area.Height)
+		t.Logf("%s: fill %.3f", view, fill)
+		if fill < 0.85 || fill > 0.901 {
+			t.Errorf("%s: the solid fills %.3f of the free area, want nearly 0.9", view, fill)
+		}
+	}
+}
+
+// TestZoomToFitArc fits a sketch of an arc: all of the arc as drawn,
+// its bulge past its ends and centre too, lies in the free area.
+func TestZoomToFitArc(t *testing.T) {
+	t.Parallel()
+	ss := zoomApp(t, filepath.Join("..", "tlspr", "golden", "request", "arc_of_circle", "normal.tlspr"))
+	gw := ss.GW
+	gw.MenuView(cmdZoomToFit)
+	camera := gw.Camera()
+	area := gw.freeArea(&camera)
+	left, right := area.Mid.U-area.Width/2, area.Mid.U+area.Width/2
+	top, bottom := area.Mid.V+area.Height/2, area.Mid.V-area.Height/2
+	arcs := 0
+	for i := range ss.SK.Entities {
+		e := &ss.SK.Entities[i]
+		if e.Type != core.EntityArcOfCircle {
+			continue
+		}
+		arcs++
+		for _, ed := range gw.getOrGenerateEdges(e).Edges {
+			for _, p := range [...]geom.Vector{ed.A, ed.B} {
+				q := gw.ProjectPoint(p)
+				if q.U < left || q.U > right || q.V < bottom || q.V > top {
+					t.Errorf("arc %x drawn through %v, out of the free area", e.H.V, q)
+				}
+			}
+		}
+	}
+	if arcs == 0 {
+		t.Fatal("no arc")
 	}
 }

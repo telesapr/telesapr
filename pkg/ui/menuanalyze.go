@@ -124,6 +124,7 @@ func (ss *Application) analyzeInterference() {
 	gw := ss.GW
 
 	ss.GW.nakedEdges.Clear()
+	ss.GW.clearClearanceMarks()
 
 	// The parts by their shells (roadmap 16.10), unless one is a mesh
 	// with none: then the triangles.
@@ -328,6 +329,7 @@ func (ss *Application) analyzeStopTracing() {
 // active group's mesh and reports them.
 func (ss *Application) ShowNakedEdges(reportOnlyWhenNotOkay bool) {
 	ss.GW.nakedEdges.Clear()
+	ss.GW.clearClearanceMarks()
 
 	g := ss.SK.Group(ss.GW.activeGroupH())
 	root := srf.SKdNodeFrom(&g.DisplayMesh)
@@ -368,6 +370,7 @@ func (ss *Application) CheckSolid() {
 	g := sk.Group(ss.GW.activeGroupH())
 	r := check.Group(sk, g)
 	ss.GW.nakedEdges.Clear()
+	ss.GW.clearClearanceMarks()
 	ss.GW.nakedEdges.Edges = append(ss.GW.nakedEdges.Edges, r.Problems.Edges...)
 	ss.GW.nakedEdges.Edges = append(ss.GW.nakedEdges.Edges, r.TopologyEdges.Edges...)
 	ss.GW.Invalidate(false)
@@ -432,6 +435,7 @@ func (ss *Application) RayCheck() {
 		return
 	}
 	ss.GW.nakedEdges.Clear()
+	ss.GW.clearClearanceMarks()
 	for _, d := range r.Disagree {
 		for _, iv := range append(append([]check.Interval(nil), d.Oracle...), d.Mesh...) {
 			ss.GW.nakedEdges.AddEdge(d.From.Plus(d.Dir.ScaledBy(iv.From)), d.From.Plus(d.Dir.ScaledBy(iv.To)), 0, 0, 0)

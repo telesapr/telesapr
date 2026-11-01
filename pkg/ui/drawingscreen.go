@@ -187,7 +187,8 @@ func (tw *textWindow) ShowDrawing() {
 
 // ScreenChangeDrawing changes the drawing: the next sheet ('s'),
 // landscape or portrait ('o', 'O'), the scale ('c'), the projection
-// ('t', 'f'), hidden edges ('h'), or a field of the title block ('1' to
+// ('t', 'f'), hidden edges ('h'), a section or a detail added ('a',
+// 'd') or deleted ('x', 'X'), or a field of the title block ('1' to
 // '6').
 func (tw *textWindow) ScreenChangeDrawing(link int, v uint32) {
 	ss := tw.ss
@@ -263,17 +264,9 @@ func (tw *textWindow) ScreenChangeDrawing(link int, v uint32) {
 		tw.edit.meaning = editDrawingPlace
 		tw.edit.i = link<<16 | int(v) // what is placed, and which
 	case 'x':
-		change(func(d *sketch.Drawing) {
-			if int(v) < len(d.Sections) {
-				d.Sections = append(d.Sections[:v], d.Sections[v+1:]...)
-			}
-		})
+		tw.editDrawingCopy(func(d *sketch.Drawing) error { return d.RemoveSection(int(v)) })
 	case 'X':
-		change(func(d *sketch.Drawing) {
-			if int(v) < len(d.Details) {
-				d.Details = append(d.Details[:v], d.Details[v+1:]...)
-			}
-		})
+		tw.editDrawingCopy(func(d *sketch.Drawing) error { return d.RemoveDetail(int(v)) })
 	case 'r':
 		change(func(d *sketch.Drawing) {
 			if int(v) < len(d.Dimensions) {
@@ -394,26 +387,27 @@ func (tw *textWindow) editDrawing(s string) bool {
 			}
 			nums = append(nums, x)
 		}
-		d := ss.drawing().Clone()
 		if tw.edit.meaning == editDrawingSection {
 			if len(f) != 2 || len(nums) != 1 {
 				ss.Error("A section is typed as its view and its offset, as front 0.")
 				return true
 			}
-			d.Sections = append(d.Sections, sketch.DrawingSection{View: f[0], Offset: nums[0]})
-		} else {
-			if len(f) != 5 || len(nums) != 4 {
-				ss.Error("A detail is typed as its view, the x and y of its middle, its radius and how many times larger, as front 10 5 8 2.")
-				return true
-			}
-			d.Details = append(d.Details, sketch.DrawingDetail{View: f[0], CX: nums[0], CY: nums[1], R: nums[2], Scale: nums[3]})
-		}
-		if err := d.Check(); err != nil {
-			ss.Report(err)
+		} else if len(f) != 5 || len(nums) != 4 {
+			ss.Error("A detail is typed as its view, the x and y of its middle, its radius and how many times larger, as front 10 5 8 2.")
 			return true
 		}
-		ss.UndoRemember()
-		ss.SK.Drawing = d
+		meaning := tw.edit.meaning
+		tw.editDrawingCopy(func(d *sketch.Drawing) error {
+			solid, err := ss.SK.DrawingSolid()
+			if err != nil {
+				return err
+			}
+			if meaning == editDrawingSection {
+				return d.AddSection(f[0], nums[0], solid)
+			}
+			return d.AddDetail(f[0], nums[0], nums[1], nums[2], nums[3], solid)
+		})
+		return true
 	case editDrawingDimension:
 		f := strings.Fields(s)
 		if len(f) < 2 || len(f) > 3 {

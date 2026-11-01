@@ -16,13 +16,15 @@ Example: [`examples/scripts/clearance`](../../examples/scripts/clearance/clearan
    ![The Clearance and Walls screen](images/clearance-2-screen.png)
 
 3. The screen lists the pair of parts nearer than 1 mm: the plate and the pin, 0.50 apart. A
-   short red line across the gap shows where it is. At 0.5 mm it looks like a dot.
+   short red line across the gap, with a leader to its size, shows where it is. Here it is at
+   the bottom of the bore, behind the plate, so it and its leader are dashed.
 
    ![The gap between the pin and the plate](images/clearance-3-gaps.png)
 
 4. Click [change] beside walls thinner than, type 1.5, and click [check walls]. The thinnest
-   wall is 1.20, in the hollowed box, and red lines cross every point of it thinner than
-   1.5 mm.
+   wall is 1.20, in the hollowed box, marked as a gap is, with its thickness. Thin red lines
+   cross every point of the walls thinner than 1.5 mm, fainter where the wall hides them, so
+   the thin walls show shaded red.
 
    ![The box's walls thinner than 1.5 mm](images/clearance-4-walls.png)
 
@@ -41,8 +43,10 @@ The screen's first row is **gaps less than** a distance, 1 mm to start with. [ch
 The parts are the same ones Show Interfering Parts checks: each group assembled into the model,
 and the solid made before the first of them.
 
-[check gaps] lists every pair of parts nearer than the distance, the nearest first, and draws a
-line across each gap on the model. Parts that touch or overlap have a gap of 0. Which of those
+[check gaps] lists every pair of parts nearer than the distance, the nearest first, and marks
+each gap on the model: a red line between its two nearest points, a tick across each end and a
+leader to its size. Where a solid hides the gap, the line and the leader are dashed. A gap that
+is as narrow along a length, as round a pin in its bore, is marked at one place along it. Parts that touch or overlap have a gap of 0. Which of those
 overlap, Show Interfering Parts tells.
 
 With **solids within parts** ticked, a part made of several solids, such as a linked assembly,
@@ -56,8 +60,9 @@ The second row is **walls thinner than** a thickness, also 1 mm to start with.
 
 [check walls] measures the walls of each part. From points on each triangle of the part's mesh,
 it casts a ray straight into the solid, square to the triangle, to where the ray leaves the
-part again. The screen says what the thinnest wall is and where, and draws a line across each
-point thinner than asked.
+part again. The screen says what the thinnest wall is and where. On the model the thinnest wall
+is marked as a gap is, with a line across it, a tick at each end and a leader to its thickness,
+and a thin line crosses each point thinner than asked, faint where the wall hides it.
 
 How the points are chosen:
 

@@ -48,7 +48,7 @@ func (gw *graphicsWindow) drawMesh(g *sketch.Group, how drawMeshAs, canvas rende
 		if !gw.showShaded {
 			fillFront.Layer = render.LayerDepthOnly
 		}
-		if (g.Type == sketch.GroupDrawing3D || g.Type == sketch.GroupDrawingWorkplane) && gw.dimSolidModel {
+		if dimsSolid(g) && gw.dimSolidModel {
 			fillFront.Color = ss.styleColor(hstyle(core.StyleDimSolid))
 		}
 		hcfFront := canvas.InternFill(fillFront)
@@ -128,6 +128,18 @@ func (gw *graphicsWindow) drawMesh(g *sketch.Group, how drawMeshAs, canvas rende
 	}
 }
 
+// dimsSolid tells whether the solid is drawn dim while g is the active
+// group: a sketch the user draws in, whose lines a shaded solid would
+// distract from. A cosmetic thread's sketch is not one: it is the
+// thread, made last and so active, and its part is what it shows, so
+// the part is shaded as after a modelled thread.
+func dimsSolid(g *sketch.Group) bool {
+	if g.Thread.IsThread() {
+		return false
+	}
+	return g.Type == sketch.GroupDrawing3D || g.Type == sketch.GroupDrawingWorkplane
+}
+
 // drawGroup is Group::Draw: the mesh, edges and outlines, whether or
 // not the group is hidden.
 func (gw *graphicsWindow) drawGroup(g *sketch.Group, canvas render.Canvas) {
@@ -174,8 +186,14 @@ func (gw *graphicsWindow) drawGroup(g *sketch.Group, canvas render.Canvas) {
 	gw.drawSectionCap(g, canvas)
 }
 
-// drawPolyError is Group::DrawPolyError: where the sketch isn't a
-// closed, planar, non-intersecting contour.
+// drawPolyError shows what is wrong with the active group: where its
+// sketch isn't a closed, planar, non-intersecting contour, or the
+// problem that kept it from adding a solid. The place is marked on the
+// model; the words go in a corner of the window (drawStatusMessage),
+// where they cover none of it. A sketch says its contour is not good
+// only when a solid is made from it, as its Problem does: a sweep's
+// path, a single construction line or a drawing's sketch is open by
+// design.
 func (gw *graphicsWindow) drawPolyError(g *sketch.Group, canvas render.Canvas) {
 	ss := gw.ss
 	camera := canvas.Camera()
@@ -189,48 +207,43 @@ func (gw *graphicsWindow) drawPolyError(g *sketch.Group, canvas render.Canvas) {
 	strokeError.Width = 1.0
 	hcsError := canvas.InternStroke(strokeError)
 
-	textHeight := ss.defaultTextHeight() / camera.Scale
+	cross := func(at geom.Vector) {
+		s := 6 / camera.Scale
+		r, u := camera.ProjRight.ScaledBy(s), camera.ProjUp.ScaledBy(s)
+		canvas.DrawLine(at.Minus(r).Minus(u), at.Plus(r).Plus(u), hcsError)
+		canvas.DrawLine(at.Minus(r).Plus(u), at.Plus(r).Minus(u), hcsError)
+	}
 
-	// And finally show the polygons too, and any errors if it's not
-	// possible to assemble the lines into closed polygons.
-	switch core.PolyError(g.PolyError.How) {
-	case core.PolyNotClosed:
-		// Report this error only in sketch-in-workplane groups; otherwise
-		// it's just a nuisance.
-		if g.Type == sketch.GroupDrawingWorkplane {
-			canvas.DrawVectorText("not closed contour, or not all same style!", textHeight,
-				g.PolyError.NotClosed.B, camera.ProjRight, camera.ProjUp, hcsError)
+	if g.Type == sketch.GroupDrawingWorkplane && core.PolyError(g.PolyError.How) != core.PolyGood {
+		if !gw.sk().ProfileOfSolid(g.H) {
+			return
+		}
+		var msg string
+		switch core.PolyError(g.PolyError.How) {
+		case core.PolyNotClosed:
+			msg = "not closed contour, or not all same style!"
 			canvas.DrawLine(g.PolyError.NotClosed.A, g.PolyError.NotClosed.B, hcsUnclosed)
+			cross(g.PolyError.NotClosed.A)
+		case core.PolyNotCoplanar:
+			msg = "points not all coplanar!"
+			cross(g.PolyError.ErrorPoint)
+		case core.PolySelfIntersecting:
+			msg = "contour is self-intersecting!"
+			cross(g.PolyError.ErrorPoint)
+		default:
+			msg = "zero-length edge!"
+			cross(g.PolyError.ErrorPoint)
 		}
-	case core.PolyNotCoplanar, core.PolySelfIntersecting, core.PolyZeroLenEdge:
-		// These errors occur at points, not lines
-		if g.Type == sketch.GroupDrawingWorkplane {
-			var msg string
-			switch core.PolyError(g.PolyError.How) {
-			case core.PolyNotCoplanar:
-				msg = "points not all coplanar!"
-			case core.PolySelfIntersecting:
-				msg = "contour is self-intersecting!"
-			default:
-				msg = "zero-length edge!"
-			}
-			canvas.DrawVectorText(msg, textHeight, g.PolyError.ErrorPoint,
-				camera.ProjRight, camera.ProjUp, hcsError)
-		}
+		gw.drawStatusMessage(msg, hcsError, canvas)
+		return
 	}
 	// Otherwise the contours will get filled in DrawFilledPaths.
 
 	// A problem with the group's input, as an edge a chamfer can't
-	// cut, is marked where it is; a sketch's own contour error is drawn
-	// above.
-	drawn := g.Type == sketch.GroupDrawingWorkplane && core.PolyError(g.PolyError.How) != core.PolyGood
-	if p := g.Problem; p.Msg != "" && p.HasPoint && !drawn {
-		s := 6 / camera.Scale
-		r, u := camera.ProjRight.ScaledBy(s), camera.ProjUp.ScaledBy(s)
-		canvas.DrawLine(p.At.Minus(r).Minus(u), p.At.Plus(r).Plus(u), hcsError)
-		canvas.DrawLine(p.At.Minus(r).Plus(u), p.At.Plus(r).Minus(u), hcsError)
-		canvas.DrawVectorText(p.Msg, textHeight, p.At.Plus(r).Plus(u),
-			camera.ProjRight, camera.ProjUp, hcsError)
+	// cut, is marked where it is.
+	if p := g.Problem; p.Msg != "" && p.HasPoint {
+		cross(p.At)
+		gw.drawStatusMessage(p.Msg, hcsError, canvas)
 	}
 }
 

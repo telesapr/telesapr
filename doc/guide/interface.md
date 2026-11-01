@@ -59,8 +59,9 @@ The home screen lists the groups in the order they are made:
   groups after it are left out of the model until you go back.
 - **shown**: the box hides or shows the group. A "-" marks a group after the active one.
 - **dof**: "ok" when the group is fully held, or how many degrees of freedom are left. "err"
-  means its sketch's outline is not closed, and "ERR" that it could not be solved. Click the
-  value to see how the group was solved.
+  means the group has a problem, as an extrusion of a sketch whose outline is not closed (and
+  that sketch with it; a sketch no solid is made from, as a sweep's path, may be open), and
+  "ERR" that it could not be solved. Click the value to see how the group was solved.
 - **group-name**: click it to open the group's screen. The arrows move the group earlier or
   later in the history.
 

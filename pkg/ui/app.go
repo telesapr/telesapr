@@ -107,6 +107,7 @@ func (ss *Application) AfterNewFile() {
 	ss.GW.traced.Path.Points = nil
 	// and the naked edges
 	ss.GW.nakedEdges.Clear()
+	ss.GW.clearClearanceMarks()
 
 	// Quit export mode
 	ss.GW.justExported.Draw = false

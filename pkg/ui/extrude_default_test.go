@@ -7,7 +7,7 @@ import (
 
 // TestExtrudeDepthIgnoresZoom extrudes the same rectangle at three
 // zooms and from the view rotated: the new extrusion starts at the
-// depth its sketch gives, half its longer side to a round number, along
+// depth its sketch gives, its shorter side to a round number, along
 // the workplane's normal, whatever the view.
 func TestExtrudeDepthIgnoresZoom(t *testing.T) {
 	t.Parallel()
@@ -39,7 +39,8 @@ func TestExtrudeDepthIgnoresZoom(t *testing.T) {
 		depths = append(depths, 2*v.Z)
 	}
 	// The rectangle is 180 by 130 pixels, at the default 5 pixels to
-	// the mm 36 by 26 mm: half of 36 is 18, nearest 20.
+	// the mm 36 by 26 mm: the shorter side, 26, is more than half of 36 and
+	// nearest 20.
 	for i, d := range depths {
 		if math.Abs(d-20) > 1e-9 {
 			t.Errorf("extrusion %d is %g deep, want 20", i, d)

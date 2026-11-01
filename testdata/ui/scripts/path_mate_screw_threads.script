@@ -9,10 +9,10 @@ file $testdata/ui/thread_pair.tlspr
 menu File|Open...
 menu View|Show Toolbar
 key f
-move 111 255
-down L 111 255
-up L 111 255
-move 429 285
-down L 429 285
-up L 429 285
+move 125 255
+down L 125 255
+up L 125 255
+move 490 266
+down L 490 266
+up L 490 266
 menu Assembly|Mate Screw

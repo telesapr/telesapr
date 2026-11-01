@@ -12,14 +12,20 @@ import (
 const fallbackExtrudeDepth = 10
 
 // defaultExtrudeDepth is the depth the extrusion g starts at, before
-// anything holds it: half the longer side of the bounding box of the
-// sketch's profile, measured in its workplane, taken to the nearest of
-// 1, 2 or 5 times a power of ten. A 40 by 25
-// rectangle gives 20, a circle 10 across 5. It depends on the sketch
-// alone, so an extrusion comes out the same depth whatever the view's
-// zoom; a round number is one a user can leave as it is. A sketch with
-// no closed loop is measured by its open curves; one with nothing to
-// measure gives 10.
+// anything holds it: the shorter side of the bounding box of the
+// sketch's profile, measured in its workplane, but no less than half
+// the longer side, taken to the nearest of 1, 2 or 5 times a power of
+// ten. A profile whose sides are within a factor of two of each other,
+// a circle or a square, comes out a rod or a block about as long as it
+// is wide (a circle 10 across 10, long enough to take a thread; a 100
+// square 100); a long one comes out a plate half as deep as it is long,
+// not a stick as thin as it is narrow (a 90 by 10 bar 50, a 40 by 25
+// rectangle 20). Half the longer side alone, the rule before, made a
+// round profile a disc half as long as it is wide. The depth depends
+// on the sketch alone, so an extrusion comes out the same whatever the
+// view's zoom; a round number is one a user can leave as it is. A
+// sketch with no closed loop is measured by its open curves (a straight
+// line by half its length); one with nothing to measure gives 10.
 func (g *Group) defaultExtrudeDepth(sk *Sketch) float64 {
 	src := sk.Group(g.OpA)
 	if src == nil {
@@ -45,7 +51,7 @@ func (g *Group) defaultExtrudeDepth(sk *Sketch) float64 {
 			}
 		}
 	}
-	return roundDepth(b.longerSide() / 2)
+	return roundDepth(max(b.shorterSide(), b.longerSide()/2))
 }
 
 // profileBounds is the bounding box of points in a workplane's u and v.
@@ -71,6 +77,14 @@ func (b *profileBounds) longerSide() float64 {
 		return 0
 	}
 	return max(b.maxU-b.minU, b.maxV-b.minV)
+}
+
+// shorterSide is the shorter side of the box, 0 for an empty one.
+func (b *profileBounds) shorterSide() float64 {
+	if b.n == 0 {
+		return 0
+	}
+	return min(b.maxU-b.minU, b.maxV-b.minV)
 }
 
 // roundDepth takes d to the nearest of 1, 2 or 5 times a power of ten,

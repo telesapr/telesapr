@@ -8,12 +8,12 @@ func main() {
 	doc := Current()
 	doc.Sketch.Circle(V(-20, 0, 0), 2)
 	doc.Sketch.Line(V(-20, 20, 0), V(20, 20, 0)).SetConstruction(true)
-	post := doc.Features.Extrude(2, "")
+	post := doc.Features.Extrude(5, "")
 	// The copy of the line at the top of the extrusion, which the mouse
 	// picks.
 	var path Entity
 	for _, e := range post.Entities() {
-		if e.Kind() == "line" && e.Start().Pos().Z == 2 && e.End().Pos().Z == 2 {
+		if e.Kind() == "line" && e.Start().Pos().Z == 5 && e.End().Pos().Z == 5 {
 			path = e
 		}
 	}
