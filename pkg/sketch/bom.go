@@ -192,11 +192,20 @@ func (sk *Sketch) BillOfMaterialsAsRead() []BOMItem {
 // RelativePath names path, a linked file, as seen from the model saved
 // in saveFile: relative to its folder, as the model's file stores a
 // link, so that the name stays short and stays true when the model and
-// its parts move together. A relative path is that already; with no
-// saveFile, or where no relative path reaches path (another volume),
+// its parts move together. A relative path is that already, written
+// with the system's separators: the model's file stores a link with
+// '/', and on Windows the same file linked by its absolute path comes
+// back from filepath.Rel with '\', which must name the same part. With
+// no saveFile, or where no relative path reaches path (another volume),
 // path is kept absolute.
 func RelativePath(saveFile, path string) string {
-	if path == "" || saveFile == "" || !filepath.IsAbs(path) {
+	if path == "" {
+		return path
+	}
+	if !filepath.IsAbs(path) {
+		return filepath.Clean(filepath.FromSlash(path))
+	}
+	if saveFile == "" {
 		return path
 	}
 	dir, err := filepath.Abs(filepath.Dir(saveFile))

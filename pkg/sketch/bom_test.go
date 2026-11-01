@@ -255,7 +255,8 @@ func TestRelativePath(t *testing.T) {
 	for _, c := range []struct{ save, path, want string }{
 		{model, filepath.Join(root, "models", "parts", "bolt.tlspr"), filepath.Join("parts", "bolt.tlspr")},
 		{model, filepath.Join(root, "shapes", "box.step"), filepath.Join("..", "shapes", "box.step")},
-		{model, "parts/bolt.tlspr", "parts/bolt.tlspr"},
+		{model, "parts/bolt.tlspr", filepath.Join("parts", "bolt.tlspr")},
+		{model, "./parts//bolt.tlspr", filepath.Join("parts", "bolt.tlspr")},
 		{"", filepath.Join(root, "box.step"), filepath.Join(root, "box.step")},
 		{model, "", ""},
 	} {
