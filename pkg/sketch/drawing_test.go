@@ -55,3 +55,56 @@ func TestDrawingSaved(t *testing.T) {
 		}()
 	}
 }
+
+// The standard views stand 25 mm apart, room for a dimension beside
+// one and a cutting plane's letter beside the next, in third angle and
+// first.
+func TestLayoutSpacing(t *testing.T) {
+	t.Parallel()
+	sizes := map[string][2]float64{"front": {100, 50}, "top": {100, 40}, "right": {40, 50}, "left": {40, 50}, "iso": {90, 80}}
+	for _, first := range []bool{false, true} {
+		d := &sketch.Drawing{Sheet: "A3", FirstAngle: first}
+		views, scale := d.Layout(sizes)
+		at := map[string]sketch.DrawingView{}
+		for _, v := range views {
+			at[v.Kind] = v
+		}
+		side := map[bool]string{false: "right", true: "left"}[first]
+		front, top, sv := at["front"], at["top"], at[side]
+		gapX := (sv.X - scale*sizes[side][0]/2) - (front.X + scale*sizes["front"][0]/2)
+		gapY := (top.Y - scale*sizes["top"][1]/2) - (front.Y + scale*sizes["front"][1]/2)
+		if first {
+			gapY = (front.Y - scale*sizes["front"][1]/2) - (top.Y + scale*sizes["top"][1]/2)
+		}
+		if gapX < 25-1e-9 || gapY < 25-1e-9 {
+			t.Errorf("first angle %v, scale %g: %g mm across and %g mm up between the views, want 25", first, scale, gapX, gapY)
+		}
+	}
+}
+
+// The scale fitted leaves room for the sections and details right of
+// the views: placed there, each stands clear of the views and within
+// the frame, where without them the views would be drawn larger.
+func TestLayoutRoomForSections(t *testing.T) {
+	t.Parallel()
+	sizes := map[string][2]float64{"front": {60, 26}, "top": {60, 30}, "right": {30, 26}, "iso": {63.6, 62}}
+	bare := &sketch.Drawing{Sheet: "A3"}
+	_, bareScale := bare.Layout(sizes)
+	d := &sketch.Drawing{Sheet: "A3", Sections: []sketch.DrawingSection{{View: "top", Offset: 8}, {View: "front"}},
+		Details: []sketch.DrawingDetail{{View: "front", R: 5, Scale: 2}}}
+	views, scale := d.Layout(sizes)
+	if scale >= bareScale {
+		t.Errorf("scale %g with sections, %g without: the views fill the room the sections need", scale, bareScale)
+	}
+	right := 0.0
+	for _, v := range views {
+		right = max(right, v.X+scale*sizes[v.Kind][0]/2)
+	}
+	on := [][2]float64{{scale * 60, scale * 30}, {scale * 60, scale * 26}, {scale * 20, scale * 20}}
+	w, _ := d.Size()
+	for i, p := range d.PlaceExtras(right, on) {
+		if lo, hi := p[0]-on[i][0]/2, p[0]+on[i][0]/2; lo < right+10 || hi > w-sketch.SheetBorder+1e-9 {
+			t.Errorf("extra %d from %g to %g: the views end at %g, the frame at %g", i, lo, hi, right, w-sketch.SheetBorder)
+		}
+	}
+}

@@ -372,6 +372,9 @@ type graphicsWindow struct {
 	sheetShown    bool
 	sheet         sheetCache
 	sheetMenuItem platform.MenuItem
+	// inPicture is set while a picture is drawn (writePicture), which
+	// has no toolbar over it to leave room for (freeArea).
+	inPicture bool
 	// sectionCap is the section view's cap, as last computed.
 	sectionCap              sectionCap
 	perspectiveProjMenuItem platform.MenuItem

@@ -27,7 +27,7 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed   depth 80.00   held
+row 12     one-sided   two-sided   skewed   depth 20.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
@@ -168,7 +168,7 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed   depth 80.00 [change]   held
+row 12     one-sided   two-sided   skewed   depth 20.00 [change]   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0

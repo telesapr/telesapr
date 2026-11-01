@@ -47,22 +47,22 @@ row 14    edges [change]
  8-8 64 61 0
  9-16 6c 61 108 4 1 0
  17-99 64 61 0
-row 16      entity 80030004 of g003-extrude [remove]
+row 16      top edge of g003-extrude from r004-line-segment [remove]
  0-4 64 64 0
- 5-35 6c 64 108 80030004 1 1
- 36-36 64 64 0
- 37-44 6c 64 108 0 1 0
- 45-99 64 64 0
+ 5-51 6c 64 108 80030004 1 1
+ 52-52 64 64 0
+ 53-60 6c 64 108 0 1 0
+ 61-99 64 64 0
 row 18        [own radius]
  0-6 64 64 0
  7-18 6c 64 108 0 1 0
  19-99 64 64 0
-row 20      entity 80030016 of g003-extrude [remove]
+row 20      top edge of g003-extrude from r006-line-segment [remove]
  0-4 64 61 0
- 5-35 6c 61 108 80030016 1 1
- 36-36 64 61 0
- 37-44 6c 61 108 1 1 0
- 45-99 64 61 0
+ 5-51 6c 61 108 80030016 1 1
+ 52-52 64 61 0
+ 53-60 6c 61 108 1 1 0
+ 61-99 64 61 0
 row 22        radius 3.00 [change] [the fillet's]
  0-6 64 61 0
  7-12 74 61 0
@@ -129,4 +129,4 @@ row 55    (none)
  0-99 64 61 0
 row 57 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 44\nVolume: 74.82 cm³\nCenter of mass: (-1.99, 7.00, 39.97)\nExtent: 36.00 x 26.00 x 80.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 68\nVolume: 18.66 cm³\nCenter of mass: (-1.96, 7.00, 9.97)\nExtent: 36.00 x 26.00 x 20.00

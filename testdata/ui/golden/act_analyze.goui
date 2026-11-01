@@ -5,7 +5,7 @@ pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0
 active 5 0
-camera 270 -0.5 1 0 1 0 0 0 1 0
+camera 270 -0.31851851851851853 1 0 1 0 0 0 1 0
 counts 5 9 107 19 55
 editor 0 "" 0 ""
 tw 0 unsaved 0 cursor 0 tooltip ""
@@ -712,7 +712,7 @@ pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0
 active 5 0
-camera 270 -0.5 1 0 1 0 0 0 1 0
+camera 270 -0.31851851851851853 1 0 1 0 0 0 1 0
 counts 5 9 107 19 55
 editor 0 "" 0 ""
 tw 3 unsaved 1 cursor 0 tooltip ""

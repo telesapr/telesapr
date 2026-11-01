@@ -47,12 +47,12 @@ row 14    edges [change]
  8-8 64 61 0
  9-16 6c 61 108 4 1 0
  17-99 64 61 0
-row 16      entity 80030005 of g003-extrude [remove]
+row 16      top edge of g003-extrude from r004-circle [remove]
  0-4 64 64 0
- 5-35 6c 64 108 80030005 1 1
- 36-36 64 64 0
- 37-44 6c 64 108 0 1 0
- 45-99 64 64 0
+ 5-45 6c 64 108 80030005 1 1
+ 46-46 64 64 0
+ 47-54 6c 64 108 0 1 0
+ 55-99 64 64 0
 row 18        [own radius]
  0-6 64 64 0
  7-18 6c 64 108 0 1 0
@@ -115,7 +115,7 @@ row 51    (none)
  0-99 64 61 0
 row 53 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 4, of 10 patches\nTriangles: 388\nVolume: 24.96 cm³\nCenter of mass: (-2.00, 7.00, 39.98)\nExtent: 20.00 x 20.00 x 80.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 4, of 10 patches\nTriangles: 788\nVolume: 3.12 cm³\nCenter of mass: (-2.00, 7.00, 4.98)\nExtent: 20.00 x 20.00 x 10.00
 row 0  home › g004-fillet   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
@@ -157,12 +157,12 @@ row 14    edges [change]
  8-8 64 61 0
  9-16 6c 61 108 4 1 0
  17-99 64 61 0
-row 16      entity 80030005 of g003-extrude [remove]
+row 16      top edge of g003-extrude from r004-circle [remove]
  0-4 64 64 0
- 5-35 6c 64 108 80030005 1 1
- 36-36 64 64 0
- 37-44 6c 64 108 0 1 0
- 45-99 64 64 0
+ 5-45 6c 64 108 80030005 1 1
+ 46-46 64 64 0
+ 47-54 6c 64 108 0 1 0
+ 55-99 64 64 0
 row 18        [own radius]
  0-6 64 64 0
  7-18 6c 64 108 0 1 0
@@ -225,4 +225,4 @@ row 51    (none)
  0-99 64 61 0
 row 53 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 4, of 10 patches\nTriangles: 388\nVolume: 24.85 cm³\nCenter of mass: (-2.00, 7.00, 39.81)\nExtent: 20.00 x 20.00 x 80.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 4, of 10 patches\nTriangles: 1284\nVolume: 3.02 cm³\nCenter of mass: (-2.00, 7.00, 4.84)\nExtent: 20.00 x 20.00 x 10.00

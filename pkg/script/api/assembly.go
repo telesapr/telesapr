@@ -25,15 +25,22 @@ type AssemblyMenu struct{ d *Doc }
 // mirror or a pattern of a link group its copies, but for one where the
 // part already is. Groups left out of the model place none. The parts a
 // linked model links in turn count too, once for each place the model
-// is, their groups named "here > there".
+// is, their groups named "here > there". Each file is named relative to
+// the model's file, as the model's file stores a link, or absolute while
+// the model is unsaved.
 func (m AssemblyMenu) BillOfMaterials() (items []sketch.BOMItem) {
 	d := m.d
-	d.read(func(sk *sketch.Sketch) { items = sk.BillOfMaterials() })
+	saveFile := ""
+	if fn, ok := d.h.(FileNamer); ok {
+		saveFile = fn.FileName()
+	}
+	d.read(func(sk *sketch.Sketch) { items = sk.BillOfMaterials(saveFile) })
 	return items
 }
 
 // ExportBOM writes the bill of materials to a CSV file: part, count,
-// file and the groups that place them.
+// file and the groups that place them, the files named as
+// BillOfMaterials names them.
 func (m AssemblyMenu) ExportBOM(path string) error {
 	d := m.d
 	if err := d.checkFile(path, true); err != nil {

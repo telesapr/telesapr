@@ -4,10 +4,10 @@
 file $testdata/ui/screw_pair.tlspr
 menu File|Open...
 key f
-move 245 185
-down L 245 185
-up L 245 185
-move 445 195
-down L 445 195
-up L 445 195
+move 303 203.8
+down L 303 203.8
+up L 303 203.8
+move 470.3 212.2
+down L 470.3 212.2
+up L 470.3 212.2
 menu Assembly|Mate Screw

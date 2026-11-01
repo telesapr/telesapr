@@ -159,9 +159,9 @@ func TestScriptHostSelectsSolid(t *testing.T) {
 		`len(sides)`,
 	)
 	want := "0\n" +
-		"\"the edge between face entity 80030007 of g003-block and face entity 8003002c of g003-block\"\n" +
+		"\"the edge between side face of g003-block from r004-line-segment and top face of g003-block\"\n" +
 		"nil\n\"fillet \"\n0\ntrue\n" +
-		"\"face entity 8003002c of g003-block\"\n" +
+		"\"top face of g003-block\"\n" +
 		"nil\n\"shell \"\n4\n"
 	if got != want {
 		t.Errorf("the console showed:\n%s\nwant:\n%s", got, want)

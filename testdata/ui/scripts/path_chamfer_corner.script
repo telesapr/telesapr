@@ -12,17 +12,26 @@ down L 380 330
 up L 380 330
 key esc
 key x shift
+# Its depth held and typed as 80 on its screen: the model was drawn
+# for a deep part, deeper than a new extrusion of this sketch starts.
+twmove 501 125
+twdown L 501 125
+twup L 501 125
+twmove 501 125
+twdown L 501 125
+twup L 501 125
+edit 80
 view rotated
 menu View|Zoom To Fit
-move 450.8 84.6
-down L 450.8 84.6
-up L 450.8 84.6
-move 310.1 56
-down L 310.1 56
-up L 310.1 56
-move 353.2 219.4
-down L 353.2 219.4
-up L 353.2 219.4
+move 499.8 84.6
+down L 499.8 84.6
+up L 499.8 84.6
+move 359.1 56
+down L 359.1 56
+up L 359.1 56
+move 402.2 219.4
+down L 402.2 219.4
+up L 402.2 219.4
 menu Features|Chamfer Edges
 twmove 263 145
 twdown L 263 145

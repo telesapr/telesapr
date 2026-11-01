@@ -3,7 +3,7 @@ pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0
 active 5 0
-camera 6.75 -40 -40 0 1 0 0 0 1 0
+camera 5.6475 -31.323594510845506 -40 0 1 0 0 0 1 0
 counts 5 12 137 0 63
 editor 0 "" 0 ""
 tw 0 unsaved 0 cursor 0 tooltip ""
@@ -13,7 +13,7 @@ pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0
 active 5 0
-camera 270 -0.5 1 0 1 0 0 0 1 0
+camera 270 -0.31851851851851853 1 0 1 0 0 0 1 0
 counts 5 9 107 19 55
 editor 0 "" 0 ""
 tw 0 unsaved 0 cursor 0 tooltip ""
@@ -22,7 +22,7 @@ pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0
 active 2 80020000
-camera 54 0 -2.5 0 1 0 0 0 1 0
+camera 45.18 1.0845506861443117 -2.5 0 1 0 0 0 1 0
 counts 2 4 15 0 25
 editor 0 "" 0 ""
 tw 0 unsaved 0 cursor 0 tooltip ""

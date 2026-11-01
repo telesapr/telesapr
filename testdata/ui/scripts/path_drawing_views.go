@@ -12,7 +12,7 @@ import (
 func main() {
 	doc := Current()
 	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
-	doc.Features.Extrude(80, "")
+	doc.Features.Extrude(80, "").AsExtrude().SetDepth(80)
 	d := doc.Drawing.Get()
 	d.Views = []DrawingView{
 		{Kind: "front", X: 50, Y: 100},

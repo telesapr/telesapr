@@ -15,7 +15,8 @@ View > Drawing Sheet opens the drawing's screen in the property browser. It has 
 - **sheet**: A4 up to A0, Letter or Tabloid, in landscape or portrait. `[next]` steps through
   the sizes.
 - **scale**: "fitted to the sheet" to begin with. That is the largest of 10:1, 5:1, 2:1, 1:1,
-  1:2, 1:5 and so on down at which the views fit above the title block. Or type one with
+  1:2, 1:5 and so on down at which the views, and the sections and details placed beside them,
+  fit above the title block. Or type one with
   `[change]`, as `1:2`, `2:1` or a plain number.
 - **projection**: third angle (the top view above the front view, the right view on its right),
   or first angle as ISO has it (the top view below, the left view on the right).
@@ -47,7 +48,8 @@ face reaches the crest and is hatched up to it, with the root a thin line on it.
   square to that view's direction, through the solid's middle, moved the offset in mm toward the
   viewer. The half beyond the plane is drawn, with its cut face hatched every 3 mm on the sheet.
   It is labelled SECTION A-A. The cutting plane is drawn dashed and lettered on the views that
-  see it edge on.
+  see it edge on: a letter past each end of the line, or beside the end when a dimension's text
+  is there. A view's name that a letter or a dimension would cover is moved down below it.
 - `[add a detail]` asks for a view, the point it enlarges (in mm right and up from the view's
   middle), a radius and how many times larger, as `front 10 5 8 2`. What lies within that circle
   is drawn enlarged, inside a circle, labelled DETAIL B with its scale. The circle is drawn
@@ -69,7 +71,9 @@ A dimension keeps the edges' names and the faces' identities. Each time the draw
 finds them in the solid as it now is and measures them. The kinds are:
 
 - **length** of a straight edge, as seen in the view. On the isometric view it is the edge's
-  own length, not the foreshortened one.
+  own length, not the foreshortened one. An edge inside the view's outline has its dimension
+  drawn out past the outline: in an orthographic view out from the view's middle, in the
+  isometric on whichever side the outline is nearer.
 - **distance** from a straight edge to another edge, square to the first, as the view shows it.
   With faces: between two parallel flat faces, or from a straight edge to a flat face it runs
   parallel to. It is drawn out to the side of what it measures.

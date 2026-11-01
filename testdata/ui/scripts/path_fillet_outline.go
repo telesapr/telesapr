@@ -16,6 +16,6 @@ func main() {
 			doc.Sketch.TangentArc(s.Start(), 0, false)
 		}
 	}
-	doc.Features.Extrude(80, "")
+	doc.Features.Extrude(20, "")
 	doc.Features.Fillet([]Entity{doc.Entity(0x80030035)}, 1, "")
 }

@@ -27,7 +27,7 @@ func (gw *graphicsWindow) showContextMenu(x, y float64) {
 	v = v.Plus(gw.view.ProjRight.ScaledBy(x / scale))
 	v = v.Plus(gw.view.ProjUp.ScaledBy(y / scale))
 
-	menu := ss.Platform.CreateMenu()
+	menu := &tidyMenu{Menu: ss.Platform.CreateMenu()}
 	gw.context.active = true
 
 	if !gw.hover.IsEmpty() {
@@ -42,7 +42,8 @@ func (gw *graphicsWindow) showContextMenu(x, y float64) {
 	// though no entity draws them.
 	anyPicked := itemsSelected || len(gs.solidEdge) > 0 || len(gs.solidFace) > 0
 	if itemsSelected {
-		if gs.stylables > 0 {
+		sketchStylables, sketchEntities := gw.sketchEntitiesSelected(&gs)
+		if sketchStylables+gw.constraintsStylable(&gs) > 0 {
 			styleMenu := menu.AddSubMenu("Assign to Style")
 			empty := true
 			for _, s := range sk.Styles {
@@ -151,7 +152,7 @@ func (gw *graphicsWindow) showContextMenu(x, y float64) {
 				}, true)
 			}
 		}
-		if gs.entities == gs.n {
+		if gs.entities == gs.n && sketchEntities == gs.n {
 			menu.AddItem("Toggle Construction", func() { gw.MenuSketch(cmdConstruction) }, true)
 		}
 

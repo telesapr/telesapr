@@ -101,7 +101,7 @@ pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 1 0/3
 active 2 80020000
-camera 13.5 0 -16.380000000000003 0 1 0 0 0 1 0
+camera 11.295 4.3382027445772469 -16.380000000000003 0 1 0 0 0 1 0
 counts 2 4 15 3 25
 editor 0 "40.00" 0 ""
 tw 2 unsaved 1 cursor 0 tooltip ""

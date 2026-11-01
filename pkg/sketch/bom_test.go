@@ -245,3 +245,91 @@ func TestBillOfMaterialsMass(t *testing.T) {
 		t.Errorf("CSV:\n%s", b.String())
 	}
 }
+
+// A file is named as the model's file stores a link: relative to its
+// folder, absolute while the model is unsaved.
+func TestRelativePath(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir() // absolute on every system, with a volume on Windows
+	model := filepath.Join(root, "models", "top.tlspr")
+	for _, c := range []struct{ save, path, want string }{
+		{model, filepath.Join(root, "models", "parts", "bolt.tlspr"), filepath.Join("parts", "bolt.tlspr")},
+		{model, filepath.Join(root, "shapes", "box.step"), filepath.Join("..", "shapes", "box.step")},
+		{model, "parts/bolt.tlspr", "parts/bolt.tlspr"},
+		{"", filepath.Join(root, "box.step"), filepath.Join(root, "box.step")},
+		{model, "", ""},
+	} {
+		if got := sketch.RelativePath(c.save, c.path); got != c.want {
+			t.Errorf("RelativePath(%q, %q) = %q, want %q", c.save, c.path, got, c.want)
+		}
+	}
+}
+
+// The bill names each file relative to the model's file once the model
+// is saved, in the list and in the CSV, the parts a linked model links
+// too; a file linked by its absolute path and by the relative one the
+// model's file stored is one part.
+func TestBillOfMaterialsRelative(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	parts := filepath.Join(dir, "parts")
+	if err := os.MkdirAll(parts, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	save := func(d *api.Doc, path string) {
+		if err := d.File.Save(path); err != nil {
+			t.Fatal(err)
+		}
+	}
+	link := func(d *api.Doc, path string) {
+		if _, err := d.Assembly.Link(path, ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	part := api.New()
+	part.Sketch.Rect(api.V(0, 0, 0), api.V(2, 2, 0))
+	part.Features.Extrude(2, "")
+	bolt := filepath.Join(parts, "bolt.tlspr")
+	save(part, bolt)
+	bracket := api.New()
+	link(bracket, bolt)
+	brk := filepath.Join(parts, "bracket.tlspr")
+	save(bracket, brk)
+
+	top := api.New()
+	link(top, brk)
+	files := func(d *api.Doc) map[string]string {
+		got := map[string]string{}
+		for _, it := range d.Assembly.BillOfMaterials() {
+			got[it.Part] = it.File
+		}
+		return got
+	}
+	if got := files(top); got["bracket"] != brk || got["bolt"] != bolt {
+		t.Errorf("unsaved: %v, want absolute paths", got)
+	}
+	model := filepath.Join(dir, "top.tlspr")
+	save(top, model)
+	want := map[string]string{"bracket": filepath.Join("parts", "bracket.tlspr"), "bolt": filepath.Join("parts", "bolt.tlspr")}
+	if got := files(top); got["bracket"] != want["bracket"] || got["bolt"] != want["bolt"] {
+		t.Errorf("saved: %v, want %v", got, want)
+	}
+	csvPath := filepath.Join(dir, "bom.csv")
+	if err := top.Assembly.ExportBOM(csvPath); err != nil {
+		t.Fatal(err)
+	}
+	csv, _ := os.ReadFile(csvPath)
+	if !strings.Contains(string(csv), "bracket,1,"+want["bracket"]+",") || strings.Contains(string(csv), dir) {
+		t.Errorf("CSV:\n%s", csv)
+	}
+
+	opened, err := api.Open(model)
+	if err != nil {
+		t.Fatal(err)
+	}
+	link(opened, brk)
+	items := opened.Assembly.BillOfMaterials()
+	if len(items) != 2 || items[0].File != want["bracket"] || items[0].Count != 2 || items[1].Count != 2 {
+		t.Errorf("a file linked by both names: %+v", items)
+	}
+}

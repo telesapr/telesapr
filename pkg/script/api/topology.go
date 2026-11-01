@@ -300,7 +300,10 @@ func (f SolidFace) Patches() (n int) {
 	return n
 }
 
-// Name names the face: the entity that made it, or the group.
+// Name names the face for a person, as the screens do: by what made
+// it and where, "top face of g003-extrude" or "side face of
+// g003-extrude from r005-line-segment", or by its number in its
+// group, "face 4 of g003-lathe". ID identifies it to a script.
 func (f SolidFace) Name() (name string) {
 	f.s.d.read(func(sk *sketch.Sketch) { name = sk.FaceName(f.id) })
 	return name

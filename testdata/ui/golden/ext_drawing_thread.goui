@@ -348,6 +348,7 @@ group 0x3 extrude "extrude" {
   order 2
   subtype one-sided
   op-a 0x2
+  depth = 80
   color 100 100 100 255
   predef {
     entity-b 0x80020000

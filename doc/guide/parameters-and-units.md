@@ -45,6 +45,10 @@ depth is the parameter `thick`, and an arc of a ring turned by the parameter `ar
 An extrusion's depth is free until something holds it. The same goes for a revolve's angle and
 a helix's angle. Two things can hold it: a dimension on the solid, or the group's own value.
 
+A new extrusion made in the window starts at half the longer side of its sketch, rounded to 1, 2
+or 5 times a power of ten: a 40 by 25 rectangle starts 20 mm deep, a circle 10 mm across 5 mm.
+It goes along the workplane's normal, towards you, or away if you look at the sketch from behind.
+
 The group's screen shows the depth or angle it has now, on the row of its sides, with a **held**
 box beside it:
 

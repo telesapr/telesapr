@@ -45,24 +45,24 @@ row 16    edges [change]
  8-8 64 61 0
  9-16 6c 61 108 4 1 0
  17-99 64 61 0
-row 18      entity 80030004 of g003-extrude [remove]
+row 18      top edge of g003-extrude from r004-line-segment [remove]
  0-4 64 64 0
- 5-35 6c 64 108 80030004 1 1
- 36-36 64 64 0
- 37-44 6c 64 108 0 1 0
- 45-99 64 64 0
+ 5-51 6c 64 108 80030004 1 1
+ 52-52 64 64 0
+ 53-60 6c 64 108 0 1 0
+ 61-99 64 64 0
 row 20        [own distance] [own second distance]
  0-6 64 64 0
  7-20 6c 64 108 0 1 0
  21-21 64 64 0
  22-42 6c 64 108 0 1 0
  43-99 64 64 0
-row 22      entity 8003001f of g003-extrude [remove]
+row 22      top edge of g003-extrude from r007-line-segment [remove]
  0-4 64 61 0
- 5-35 6c 61 108 8003001f 1 1
- 36-36 64 61 0
- 37-44 6c 61 108 1 1 0
- 45-99 64 61 0
+ 5-51 6c 61 108 8003001f 1 1
+ 52-52 64 61 0
+ 53-60 6c 61 108 1 1 0
+ 61-99 64 61 0
 row 24        [own distance] [own second distance]
  0-6 64 61 0
  7-20 6c 61 108 1 1 0
@@ -178,24 +178,24 @@ row 16    edges [change]
  8-8 64 61 0
  9-16 6c 61 108 4 1 0
  17-99 64 61 0
-row 18      entity 80030004 of g003-extrude [remove]
+row 18      top edge of g003-extrude from r004-line-segment [remove]
  0-4 64 64 0
- 5-35 6c 64 108 80030004 1 1
- 36-36 64 64 0
- 37-44 6c 64 108 0 1 0
- 45-99 64 64 0
+ 5-51 6c 64 108 80030004 1 1
+ 52-52 64 64 0
+ 53-60 6c 64 108 0 1 0
+ 61-99 64 64 0
 row 20        [own distance] [own second distance]
  0-6 64 64 0
  7-20 6c 64 108 0 1 0
  21-21 64 64 0
  22-42 6c 64 108 0 1 0
  43-99 64 64 0
-row 22      entity 8003001f of g003-extrude [remove]
+row 22      top edge of g003-extrude from r007-line-segment [remove]
  0-4 64 61 0
- 5-35 6c 61 108 8003001f 1 1
- 36-36 64 61 0
- 37-44 6c 61 108 1 1 0
- 45-99 64 61 0
+ 5-51 6c 61 108 8003001f 1 1
+ 52-52 64 61 0
+ 53-60 6c 61 108 1 1 0
+ 61-99 64 61 0
 row 24        distance 2.00 [change] [the chamfer's]
  0-6 64 61 0
  7-14 74 61 0
@@ -317,24 +317,24 @@ row 16    edges [change]
  8-8 64 61 0
  9-16 6c 61 108 4 1 0
  17-99 64 61 0
-row 18      entity 80030004 of g003-extrude [remove]
+row 18      top edge of g003-extrude from r004-line-segment [remove]
  0-4 64 64 0
- 5-35 6c 64 108 80030004 1 1
- 36-36 64 64 0
- 37-44 6c 64 108 0 1 0
- 45-99 64 64 0
+ 5-51 6c 64 108 80030004 1 1
+ 52-52 64 64 0
+ 53-60 6c 64 108 0 1 0
+ 61-99 64 64 0
 row 20        [own distance] [own second distance]
  0-6 64 64 0
  7-20 6c 64 108 0 1 0
  21-21 64 64 0
  22-42 6c 64 108 0 1 0
  43-99 64 64 0
-row 22      entity 8003001f of g003-extrude [remove]
+row 22      top edge of g003-extrude from r007-line-segment [remove]
  0-4 64 61 0
- 5-35 6c 61 108 8003001f 1 1
- 36-36 64 61 0
- 37-44 6c 61 108 1 1 0
- 45-99 64 61 0
+ 5-51 6c 61 108 8003001f 1 1
+ 52-52 64 61 0
+ 53-60 6c 61 108 1 1 0
+ 61-99 64 61 0
 row 24        distance 2.00 [change] [the chamfer's]
  0-6 64 61 0
  7-14 74 61 0
@@ -413,4 +413,4 @@ row 61    (none)
  0-99 64 61 0
 row 63 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 20\nVolume: 74.81 cm³\nCenter of mass: (-2.00, 6.99, 39.97)\nExtent: 36.00 x 26.00 x 80.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 20\nVolume: 18.65 cm³\nCenter of mass: (-2.01, 6.96, 9.97)\nExtent: 36.00 x 26.00 x 20.00

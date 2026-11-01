@@ -6,10 +6,10 @@ file $testdata/topo/ramp.tlspr
 menu File|Open...
 view rotated
 menu View|Zoom To Fit
-move 445 145
-down L 445 145
-up L 445 145
-move 445 265
-down L 445 265
-up L 445 265
+move 470.3 170.3
+down L 470.3 170.3
+up L 470.3 170.3
+move 470.3 270.7
+down L 470.3 270.7
+up L 470.3 270.7
 menu Features|Fillet Edges

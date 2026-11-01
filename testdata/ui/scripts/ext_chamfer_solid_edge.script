@@ -7,10 +7,10 @@ file $testdata/topo/slot.tlspr
 menu File|Open...
 view rotated
 menu View|Zoom To Fit
-move 335 425
+move 378.3 404.6
 dump
-down L 335 425
-up L 335 425
+down L 378.3 404.6
+up L 378.3 404.6
 dump
 tw
 menu Features|Chamfer Edges

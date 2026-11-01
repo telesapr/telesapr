@@ -12,7 +12,8 @@ import (
 
 // The drawing sheet shown in the window (roadmap 29.1): View > Show
 // Drawing Sheet draws the sheet, as File > Export > Drawing writes it, in
-// place of the model, fitted to the window, until it is chosen again.
+// place of the model, fitted to the part of the window the toolbar
+// leaves free, until it is chosen again.
 // It is view state, not saved. While it is shown the mouse picks
 // nothing in the model; the drawing's screen still edits the sheet, and
 // what is shown follows each change.
@@ -73,14 +74,15 @@ func (gw *graphicsWindow) sheetEdges() (*srf.SEdgeList, error) {
 }
 
 // sheetCamera looks square at the sheet, which lies in the plane z = 0
-// in mm from its bottom left, fitted to a window the size of camera's.
-func (gw *graphicsWindow) sheetCamera(camera render.Camera) render.Camera {
+// in mm from its bottom left, fitted to area of camera's view, in its
+// middle: the part of the window the toolbar leaves free.
+func (gw *graphicsWindow) sheetCamera(camera render.Camera, area screenArea) render.Camera {
 	w, h := gw.ss.drawing().Size()
 	c := camera
 	c.ProjRight, c.ProjUp = geom.Vector{X: 1}, geom.Vector{Y: 1}
-	c.Offset = geom.Vector{X: -w / 2, Y: -h / 2}
 	c.Tangent = 0
-	c.Scale = math.Min(camera.Width/(w*1.06), camera.Height/(h*1.06))
+	c.Scale = math.Min(area.Width/(w*1.06), area.Height/(h*1.06))
+	c.Offset = geom.Vector{X: area.Mid.U/c.Scale - w/2, Y: area.Mid.V/c.Scale - h/2}
 	return c
 }
 
@@ -94,7 +96,8 @@ func (gw *graphicsWindow) drawSheet(canvas render.Canvas) {
 	if !ok {
 		return
 	}
-	vc.SetCamera(gw.sheetCamera(*canvas.Camera()))
+	camera := *canvas.Camera()
+	vc.SetCamera(gw.sheetCamera(camera, gw.freeArea(&camera)))
 	w, h := ss.drawing().Size()
 	var paper srf.SEdgeList
 	rect(&paper, geom.Vector{}, geom.Vector{X: w, Y: h}, core.StyleSolidEdge)

@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -903,27 +902,12 @@ func (ss *Application) deleteGroup(hg core.HGroup) {
 	ss.deleteGroups([]core.HGroup{hg})
 }
 
-// relativePath names path relative to the folder of the sketch's file,
-// or "" when it can't.
-func (ss *Application) relativePath(path string) string {
-	if path == "" || ss.SaveFile == "" || !filepath.IsAbs(path) {
-		return ""
-	}
-	rel, err := filepath.Rel(filepath.Dir(ss.SaveFile), path)
-	if err != nil {
-		return ""
-	}
-	return rel
-}
-
-// linkDisplayPath is how a group or image names its file: the engine
-// keeps what the file said, relative to the sketch, and the UI the
-// absolute paths it chose; they are shown relative when they can be.
+// linkDisplayPath is how a group, an image or the bill of materials
+// names its file: the engine keeps what the file said, relative to the
+// sketch, and the UI the absolute paths it chose; they are shown
+// relative when they can be.
 func (ss *Application) linkDisplayPath(path string) string {
-	if rel := ss.relativePath(path); rel != "" {
-		return rel
-	}
-	return path
+	return sketch.RelativePath(ss.SaveFile, path)
 }
 
 // wrapWords breaks text into lines of at most width characters, at
@@ -1407,7 +1391,7 @@ func (tw *textWindow) showWrapInfo(g *sketch.Group) {
 
 	tw.Printf(true, " %Ftwrap the sketch onto a face%E")
 	if len(g.SolidFaces) > 0 {
-		tw.Printf(false, "%Bd   %Ftface%E %Fl%Ll%D%f%h%s%E", uint32(0),
+		tw.Printf(false, "%Bd   %Fton%E %Fl%Ll%D%f%h%s%E", uint32(0),
 			lf(tw.ScreenSelectSolidFace), lf(tw.ScreenHoverSolidFace), sk.FaceName(g.SolidFaces[0]))
 	}
 	tw.Printf(false, "%Ba   %Ftheight%E %s%s %Fl%Ll%f%D[change]%E",

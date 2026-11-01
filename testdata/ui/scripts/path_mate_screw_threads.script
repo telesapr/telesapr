@@ -2,9 +2,12 @@
 # threaded hole picked with the mouse and made a screw mate, which takes
 # the threads' lead and moves the nut to where the threads fit; the
 # same as path_mate_screw_threads.go makes
-# (TestPathEquivalence/mate_screw_threads).
+# (TestPathEquivalence/mate_screw_threads). The toolbar is hidden so that
+# the fit fills the whole window: where the rims are picked, each lies on
+# another entity, and which of the two the mouse takes is the fit's.
 file $testdata/ui/thread_pair.tlspr
 menu File|Open...
+menu View|Show Toolbar
 key f
 move 111 255
 down L 111 255

@@ -96,7 +96,7 @@ selection 0
 active 3 0
 camera 5 0 0 0 1 0 0 0 1 0
 counts 3 4 32 1 27
-editor 0 "" 0 ""
+editor 0 "" 0 "10"
 tw 10 unsaved 1 cursor 0 tooltip ""
 row 0  home › screw thread   drawing / constraining in 3d
  0-0 64 64 0
@@ -753,7 +753,7 @@ param 80070006 1 0 0
 param 80070007 -5.03125 0 0
 group 1 0 0 0 1
 group 2 0 1 1 1
-group 3 0 1 1 1
+group 3 0 0 1 1
 group 4 0 0 1 1
 group 5 0 0 1 1
 group 6 0 0 1 1
@@ -784,6 +784,7 @@ group 0x3 extrude "extrude" {
   order 2
   subtype one-sided
   op-a 0x2
+  depth = 80
   color 100 100 100 255
   predef {
     entity-b 0x80020000
@@ -12439,13 +12440,13 @@ row 13         1   g002-sketch-in-plane  ↑ ↓
  37-37 64 64 0
  38-38 6c 64 100 2 1 0
  39-99 64 64 0
-row 15         1   g003-extrude  ↑ ↓
+row 15         ok  g003-extrude  ↑ ↓
  0-0 64 61 0
  1-3 62 61 108 3 1 0
  4-4 64 61 0
  5-7 62 61 108 3 1 0
  8-9 64 61 0
- 10-12 69 61 0
+ 10-12 73 61 0
  13-13 64 61 0
  14-25 6c 61 108 3 1 0
  26-27 64 61 0

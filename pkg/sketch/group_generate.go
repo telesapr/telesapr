@@ -509,26 +509,29 @@ func (g *Group) viewSeeds(sk *Sketch) (gn, gp, gc geom.Vector) {
 	return gn, gp, gc
 }
 
-// extrudeSeed is where the solve of a new extrusion along its
-// workplane's normal starts: the view's normal, unless the workplane is
-// seen edge on. Then the view's normal projects onto the workplane's to
-// nothing, the first solid is a sheet in the sketch's own plane, and the
-// Boolean of it with the solid so far fails; the workplane's normal is
-// taken instead.
+// extrudeSeed is where the solve of a new extrusion starts: the vector
+// to the middle of an extrusion of the sketch's default depth
+// (defaultExtrudeDepth), along the workplane's normal on the side the
+// view's normal gn is on, toward the viewer. Along the normal itself, not
+// gn, so that the depth is the default one whatever the view's angle;
+// seen edge on, within about six degrees, the side is the normal's own,
+// as gn then gives none and the solid would come out a sheet in the
+// sketch's plane. A skewed extrusion, or one with no workplane, goes
+// along gn.
 func (g *Group) extrudeSeed(sk *Sketch, gn geom.Vector) geom.Vector {
+	half := g.defaultExtrudeDepth(sk) / 2
 	if g.Subtype == GroupOneSkewed || g.Subtype == GroupTwoSkewed || core.IsFreeIn3D(g.Predef.EntityB) {
-		return gn
+		return gn.WithMagnitude(half)
 	}
 	w := sk.Entity(g.Predef.EntityB)
 	if w == nil {
-		return gn
+		return gn.WithMagnitude(half)
 	}
 	n := w.NormalEntity(sk).NormalN(sk)
-	// Within about six degrees of edge on.
-	if math.Abs(gn.Dot(n)) >= 0.1*gn.Magnitude() {
-		return gn
+	if gn.Dot(n) <= -0.1*gn.Magnitude() {
+		n = n.Negated()
 	}
-	return n.WithMagnitude(gn.Magnitude())
+	return n.WithMagnitude(half)
 }
 
 // linksModel reports whether a link group links a model file, rather

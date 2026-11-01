@@ -1,7 +1,7 @@
 // The model of path_parameters.script, made by a script
 // (TestPathEquivalence/parameters): a rectangle with the mouse's
 // corners at (-20, 20) and (16, -6), its bottom and right sides
-// dimensioned by parameters, extruded 80 mm as the interface does by
+// dimensioned by parameters, extruded 20 mm as the interface does by
 // default. The bottom side is sides[0] and the right one sides[1].
 package main
 
@@ -32,5 +32,5 @@ func main() {
 		must(c.SetExpr(d.expr))
 		doc.Edit.Regen()
 	}
-	doc.Features.Extrude(80, "")
+	doc.Features.Extrude(20, "")
 }

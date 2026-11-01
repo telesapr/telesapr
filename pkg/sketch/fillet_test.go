@@ -120,7 +120,10 @@ func TestFilletRefused(t *testing.T) {
 		fn   func()
 		want string
 	}{
-		"no edges":          {func() { d.Features.Fillet(nil, 1, "") }, "no edges"},
+		"no edges": {func() { d.Features.Fillet(nil, 1, "") }, "no edges"},
+		// The message is shared with the chamfer, and names neither.
+		"not an edge": {func() { d.Features.Fillet([]api.Entity{d.Sketch.Point(api.V(30, 30, 0))}, 1, "") },
+			"neither a line segment nor a circle: only straight and circular edges are chamfered or rounded"},
 		"zero":              {func() { d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 0, "") }, "more than zero"},
 		"too large":         {func() { d.Features.Fillet([]api.Entity{lineAlong(t, ex, api.V(0, 0, 5), api.V(20, 0, 5))}, 50, "") }, "wider than a face"},
 		"radius of extrude": {func() { ex.AsFillet().Radius() }, "fillet"},

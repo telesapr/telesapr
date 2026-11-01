@@ -11,6 +11,7 @@ func main() {
 	circle := doc.Sketch.Circle(V(0, 0, 0), 10)
 	doc.Constrain.Coincident(doc.Sketch.ActiveWorkplane().Points()[0], circle.Center())
 	ex := doc.Features.Extrude(80, "")
+	ex.AsExtrude().SetDepth(80)
 	side := ex.Solid().FaceAt(V(7.0710678, 7.0710678, 40))
 	doc.Features.ThreadOnFace(side, ThreadOptions{Cosmetic: true})
 }

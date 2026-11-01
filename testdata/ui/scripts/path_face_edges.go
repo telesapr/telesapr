@@ -11,7 +11,7 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 func main() {
 	doc := Current()
 	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
-	block := doc.Features.Extrude(80, "")
+	block := doc.Features.Extrude(20, "")
 	top := block.Solid().Face(0x8003002c)
 	doc.Features.ChamferSolid(top.Edges(), 1, "")
 }

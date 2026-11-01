@@ -170,12 +170,22 @@ func parity(a int) byte {
 // ent is the entity with handle h, which the selection holds.
 func (d *describer) ent(h core.HEntity) *core.Entity { return d.sk.MustEntity(h) }
 
+// faceNormal is the selected face h's normal as the screen reports it:
+// out of the solid, as Measure has it. The face entity's own normal
+// follows the winding of the sketch it came from, so it pointed into
+// the solid on one end of an extrusion of a rectangle drawn one way and
+// on the other end of one drawn the other way. Adding zero makes a
+// component turned from 0 into -0 a 0 again, which prints as 0.000.
+func (d *describer) faceNormal(h core.HEntity) geom.Vector {
+	return d.sk.OutwardFaceNormal(d.ent(h)).Plus(geom.Vector{})
+}
+
 // listFaces lists the selected faces' normals and points.
 func (d *describer) listFaces() {
 	tw, sk, gs := d.tw, d.sk, d.gs
 	abc := byte('A')
 	for _, fc := range gs.face {
-		n := d.ent(fc).FaceGetNormalNum(sk)
+		n := d.faceNormal(fc)
 		tw.Printf(true, " plane%c normal = "+ptAsNum, flatArgs(abc, co(n))...)
 		p := d.ent(fc).FaceGetPointNum(sk)
 		tw.Printf(false, "   plane%c thru = "+ptAsStr, flatArgs(abc, d.costr(d.ent(fc), p))...)
@@ -363,7 +373,7 @@ func (d *describer) describeOne() {
 		core.EntityFaceNRotAA, core.EntityFaceNTrans, core.EntityFaceRotNormalPt,
 		core.EntityFaceNRotAxisTrans:
 		tw.Printf(false, "%FtPLANE FACE%E")
-		p = e.FaceGetNormalNum(sk)
+		p = d.faceNormal(e.H)
 		tw.Printf(true, "   normal = "+ptAsNum, co(p)...)
 		p = e.FaceGetPointNum(sk)
 		tw.Printf(false, "     thru = "+ptAsStr, d.costr(e, p)...)
@@ -544,11 +554,11 @@ func (d *describer) describePointAndFace() {
 	tw.Printf(false, "%FtA POINT AND A PLANE FACE")
 	pt := d.ent(gs.point[0]).PointGetNum(sk)
 	tw.Printf(true, "        point = "+ptAsStr, d.costr(d.ent(gs.point[0]), pt)...)
-	n := d.ent(gs.face[0]).FaceGetNormalNum(sk)
+	n := d.faceNormal(gs.face[0])
 	tw.Printf(true, " plane normal = "+ptAsNum, co(n)...)
 	pl := d.ent(gs.face[0]).FaceGetPointNum(sk)
 	tw.Printf(false, "   plane thru = "+ptAsStr, d.costr(d.ent(gs.face[0]), pl)...)
-	dd := n.Dot(pl) - n.Dot(pt)
+	dd := n.Dot(pt) - n.Dot(pl)
 	tw.Printf(true, "     distance = %Fi%s", d.mm(dd))
 }
 
@@ -621,8 +631,8 @@ func (d *describer) describeTwoFaces() {
 
 	d.listFaces()
 
-	n0 := d.ent(gs.face[0]).FaceGetNormalNum(sk)
-	n1 := d.ent(gs.face[1]).FaceGetNormalNum(sk)
+	n0 := d.faceNormal(gs.face[0])
+	n1 := d.faceNormal(gs.face[1])
 
 	theta := libm.Acos(n0.Dot(n1))
 	tw.Printf(true, "         angle = %Fi%2%E degrees", theta*180/math.Pi)

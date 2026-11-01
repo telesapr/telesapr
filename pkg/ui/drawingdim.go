@@ -40,6 +40,11 @@ type dimView struct {
 	pictorial bool
 	clip      bool
 	clipR     float64
+	// outline is the points of the view's edges, in its coordinates,
+	// which a dimension stands clear of.
+	outline []geom.Vector
+	// box is a section's or a detail's box on the sheet.
+	box sheetBox
 }
 
 func (v dimView) toView(p geom.Vector) geom.Vector {
@@ -168,7 +173,7 @@ func (v dimView) inDetail(pts []geom.Vector) bool {
 
 // measureDimension measures dm on view v of the solid's topology, and
 // adds what draws it to el (when el isn't nil).
-func measureDimension(tp *topo.Topology, dm sketch.DrawingDimension, v dimView, el *srf.SEdgeList) (float64, error) {
+func measureDimension(tp *topo.Topology, dm sketch.DrawingDimension, v dimView, el *dimOut) (float64, error) {
 	elems, err := dimElems(tp, dm)
 	if err != nil {
 		return 0, err
@@ -198,7 +203,7 @@ func measureDimension(tp *topo.Topology, dm sketch.DrawingDimension, v dimView, 
 			l = b3.Minus(a3).Magnitude()
 		}
 		if el != nil {
-			linearDim(el, v.toSheet(a), v.toSheet(b), off, formatValue(l), v.at)
+			el.linearDimClear(v, a, b, off, formatValue(l))
 		}
 		return l, nil
 	case "distance":
@@ -229,13 +234,13 @@ func measureDimension(tp *topo.Topology, dm sketch.DrawingDimension, v dimView, 
 				u = v.right
 			}
 			if el != nil {
-				leader(el, v.toSheet(v.toView(c.Plus(u.WithMagnitude(r)))), off, text)
+				el.leader(v.toSheet(v.toView(c.Plus(u.WithMagnitude(r)))), off, text)
 			}
 		case facing > 0.99:
 			if el != nil {
 				cv := v.toView(c)
 				edge := v.toSheet(cv.Plus(geom.Vector{X: r / math.Sqrt2, Y: r / math.Sqrt2}))
-				leader(el, edge, off, text)
+				el.leader(edge, off, text)
 			}
 		case facing < 0.01:
 			// Seen edge on: its width across.
@@ -245,7 +250,7 @@ func measureDimension(tp *topo.Topology, dm sketch.DrawingDimension, v dimView, 
 				if dm.Kind == "radius" {
 					b = v.toView(c)
 				}
-				linearDim(el, v.toSheet(a), v.toSheet(b), off, text, v.at)
+				el.linearDim(v.toSheet(a), v.toSheet(b), off, text, v.at)
 			}
 		default:
 			return 0, errors.New("the circle is seen at a slant in this view")
@@ -258,7 +263,7 @@ func measureDimension(tp *topo.Topology, dm sketch.DrawingDimension, v dimView, 
 // edgeDistance is the distance between two edges as an orthographic
 // view shows it: from the first, straight, to the second's middle,
 // square to the first in the view (roadmap 18.4).
-func edgeDistance(elems []dimElem, v dimView, off float64, el *srf.SEdgeList) (float64, error) {
+func edgeDistance(elems []dimElem, v dimView, off float64, el *dimOut) (float64, error) {
 	if !elems[0].straight {
 		return 0, errors.New("a distance is from a straight edge")
 	}
@@ -277,7 +282,7 @@ func edgeDistance(elems []dimElem, v dimView, off float64, el *srf.SEdgeList) (f
 	foot := a.Plus(d.ScaledBy(m.Minus(a).Dot(d)))
 	dist := m.Minus(foot).Magnitude()
 	if el != nil && dist > geom.LengthEps {
-		linearDim(el, v.toSheet(foot), v.toSheet(m), off, formatValue(dist), v.at)
+		el.linearDim(v.toSheet(foot), v.toSheet(m), off, formatValue(dist), v.at)
 	}
 	return dist, nil
 }
@@ -286,7 +291,7 @@ func edgeDistance(elems []dimElem, v dimView, off float64, el *srf.SEdgeList) (f
 // or flat faces (roadmap 29.2): from the first edge to the second's
 // middle square to it; between parallel faces; from an edge to a face
 // it runs parallel to. An orthographic view must show it at its length.
-func elemDistance(elems []dimElem, v dimView, off float64, el *srf.SEdgeList) (float64, error) {
+func elemDistance(elems []dimElem, v dimView, off float64, el *dimOut) (float64, error) {
 	a, b := elems[0], elems[1]
 	if !a.straight && !a.plane {
 		return 0, errors.New("a distance is from a straight edge or a flat face")
@@ -347,7 +352,7 @@ func elemDistance(elems []dimElem, v dimView, off float64, el *srf.SEdgeList) (f
 			}
 			P, Q = P.Plus(across.ScaledBy(shift)), Q.Plus(across.ScaledBy(shift))
 		}
-		linearDim(el, v.toSheet(P), v.toSheet(Q), off, formatValue(dist), v.at)
+		el.linearDim(v.toSheet(P), v.toSheet(Q), off, formatValue(dist), v.at)
 	}
 	return dist, nil
 }
@@ -361,30 +366,53 @@ func arrow(el *srf.SEdgeList, p, t geom.Vector) {
 	}
 }
 
-// textAlong adds text along u, its baseline's middle at o.
-func textAlong(el *srf.SEdgeList, text string, o, u geom.Vector) {
+// dimTextHeight is the height of a dimension's text on the sheet, mm.
+const dimTextHeight = 3.0
+
+// textAlong adds text along u, its baseline's middle at o, and keeps
+// its box.
+func (out *dimOut) textAlong(text string, o, u geom.Vector) {
 	u = u.WithMagnitude(1)
 	v := geom.Vector{X: -u.Y, Y: u.X}
-	w := res.BuiltinVectorFont().Width(3, text)
+	w := res.BuiltinVectorFont().Width(dimTextHeight, text)
 	start := o.Minus(u.ScaledBy(w / 2))
-	res.BuiltinVectorFont().Trace(3, start, u, v, text, func(a, b geom.Vector) {
-		el.AddEdge(a, b, sheetThin, 0, 0)
+	res.BuiltinVectorFont().Trace(dimTextHeight, start, u, v, text, func(a, b geom.Vector) {
+		out.el.AddEdge(a, b, sheetThin, 0, 0)
 	})
+	var b sheetBox
+	for _, c := range []geom.Vector{start, start.Plus(u.ScaledBy(w)), start.Plus(v.ScaledBy(dimTextHeight)), start.Plus(u.ScaledBy(w)).Plus(v.ScaledBy(dimTextHeight))} {
+		b = b.with(c)
+	}
+	out.texts = append(out.texts, b)
 }
 
 // linearDim adds a dimension from p to q on the sheet, its line off mm
 // out from the view's middle, centre (in toward it when off is
 // negative), with extension lines, arrows and the text.
-func linearDim(el *srf.SEdgeList, p, q geom.Vector, off float64, text string, centre geom.Vector) {
+func (out *dimOut) linearDim(p, q geom.Vector, off float64, text string, centre geom.Vector) {
+	out.linearDimAcross(p, q, outFrom(p, q, centre), off, text)
+}
+
+// outFrom is the unit vector square to p to q, out from centre.
+func outFrom(p, q, centre geom.Vector) geom.Vector {
 	d := q.Minus(p).WithMagnitude(1)
 	n := geom.Vector{X: -d.Y, Y: d.X}
 	if n.Dot(p.Plus(q).ScaledBy(0.5).Minus(centre)) < 0 {
 		n = n.ScaledBy(-1)
 	}
+	return n
+}
+
+// linearDimAcross adds a dimension from p to q on the sheet, its line
+// off mm from them along n, the unit vector square to them it stands
+// out along (back along n when off is negative).
+func (out *dimOut) linearDimAcross(p, q, n geom.Vector, off float64, text string) {
+	d := q.Minus(p).WithMagnitude(1)
 	s := 1.0
 	if off < 0 {
 		s = -1
 	}
+	el := &out.el
 	P, Q := p.Plus(n.ScaledBy(off)), q.Plus(n.ScaledBy(off))
 	for _, e := range [][2]geom.Vector{{p, P}, {q, Q}} {
 		el.AddEdge(e[0].Plus(n.ScaledBy(s*1.5)), e[1].Plus(n.ScaledBy(s*2)), sheetThin, 0, 0)
@@ -392,17 +420,60 @@ func linearDim(el *srf.SEdgeList, p, q geom.Vector, off float64, text string, ce
 	el.AddEdge(P, Q, sheetThin, 0, 0)
 	arrow(el, P, d.ScaledBy(-1))
 	arrow(el, Q, d)
-	// The text above the line, read left to right.
-	u, up := d, n
+	// The text read left to right, on the line's side away from what it
+	// measures: its baseline by the line, or its top where the letters
+	// would stand up across the line.
+	u := d
 	if u.X < -1e-9 || math.Abs(u.X) < 1e-9 && u.Y < 0 {
-		u, up = u.ScaledBy(-1), up.ScaledBy(-1)
+		u = u.ScaledBy(-1)
 	}
-	textAlong(el, text, P.Plus(Q).ScaledBy(0.5).Plus(up.ScaledBy(1.2)), u)
+	side := n.ScaledBy(s)
+	away := 1.2
+	if (geom.Vector{X: -u.Y, Y: u.X}).Dot(side) < 0 {
+		away += dimTextHeight
+	}
+	out.textAlong(text, P.Plus(Q).ScaledBy(0.5).Plus(side.ScaledBy(away)), u)
+}
+
+// linearDimClear adds the dimension of the length from a to b, in v's
+// coordinates, standing off mm clear of the view's outline: a length
+// of an edge inside the outline, as most of an isometric's are, has its
+// line moved out past the outline rather than drawn across the solid.
+// An orthographic view's dimension stands out from the view's middle;
+// a pictorial view's on the side the outline is nearer, out from the
+// middle when they are as near. A dimension in toward the middle (off
+// negative) stays where it is put.
+func (out *dimOut) linearDimClear(v dimView, a, b geom.Vector, off float64, text string) {
+	p, q := v.toSheet(a), v.toSheet(b)
+	n := outFrom(p, q, v.at)
+	if off < 0 {
+		out.linearDimAcross(p, q, n, off, text)
+		return
+	}
+	// How far the outline stands beyond the edge along s, on the sheet.
+	beyond := func(s geom.Vector) float64 {
+		far := 0.0
+		for _, o := range v.outline {
+			far = math.Max(far, v.toSheet(o).Minus(p).Dot(s))
+		}
+		if far < 1e-6 {
+			return 0
+		}
+		return far
+	}
+	shift := beyond(n)
+	if v.pictorial {
+		if back := beyond(n.ScaledBy(-1)); back < shift {
+			n, shift = n.ScaledBy(-1), back
+		}
+	}
+	out.linearDimAcross(p, q, n, shift+off, text)
 }
 
 // leader adds a leader from p, on a circle, out at 45 degrees by off mm,
 // then a shelf with the text.
-func leader(el *srf.SEdgeList, p geom.Vector, off float64, text string) {
+func (out *dimOut) leader(p geom.Vector, off float64, text string) {
+	el := &out.el
 	t := geom.Vector{X: 1, Y: 1}.WithMagnitude(1)
 	q := p.Plus(t.ScaledBy(math.Abs(off)))
 	el.AddEdge(p, q, sheetThin, 0, 0)
@@ -410,7 +481,9 @@ func leader(el *srf.SEdgeList, p geom.Vector, off float64, text string) {
 	w := res.BuiltinVectorFont().Width(3, text)
 	shelf := q.Plus(geom.Vector{X: w + 2})
 	el.AddEdge(q, shelf, sheetThin, 0, 0)
-	sheetText(el, text, 3, q.Plus(geom.Vector{X: 1, Y: 1}))
+	o := q.Plus(geom.Vector{X: 1, Y: 1})
+	sheetText(el, text, 3, o)
+	out.texts = append(out.texts, sheetBox{}.with(o).with(o.Plus(geom.Vector{X: w, Y: 3})))
 }
 
 // DrawingDimensions measures the drawing's dimensions as they would be
@@ -428,12 +501,15 @@ func (ss *Application) DrawingDimensions(d *sketch.Drawing) []DimensionResult {
 
 // drawDimensions measures and draws the dimensions on the placed views
 // and on the sections and details (extras, where drawExtras put them),
-// keeping what each gave in ss.lastDimensions.
+// keeping what each gave in ss.lastDimensions. outlines are the points
+// of each view's edges, by kind. It returns the boxes of the texts
+// drawn, which the letters of the cutting planes keep clear of, and the
+// box about each dimension drawn, which the views' names keep clear of.
 func (ss *Application) drawDimensions(sheet *srf.SEdgeList, g *sketch.Group, d *sketch.Drawing, views []sketch.DrawingView,
-	scale float64, mids map[string]geom.Vector, extras []dimView) {
+	scale float64, mids map[string]geom.Vector, outlines map[string][]geom.Vector, extras []dimView) (texts, whole []sheetBox) {
 	ss.lastDimensions = make([]DimensionResult, len(d.Dimensions))
 	if len(d.Dimensions) == 0 {
-		return
+		return nil, nil
 	}
 	tp, terr := g.Topology()
 	for i, dm := range d.Dimensions {
@@ -448,7 +524,7 @@ func (ss *Application) drawDimensions(sheet *srf.SEdgeList, g *sketch.Group, d *
 				if views[k].Kind == dm.View {
 					r, u, _ := sketch.ViewDirection(dm.View)
 					dv = dimView{right: vec(r), up: vec(u), mid: mids[dm.View], at: geom.Vector{X: views[k].X, Y: views[k].Y},
-						scale: scale, pictorial: dm.View == "iso"}
+						scale: scale, pictorial: dm.View == "iso", outline: outlines[dm.View]}
 					found = true
 				}
 			}
@@ -460,14 +536,21 @@ func (ss *Application) drawDimensions(sheet *srf.SEdgeList, g *sketch.Group, d *
 			ss.lastDimensions[i].Err = terr
 		default:
 			// Drawn only when measured: what isn't goes on no sheet.
-			var el srf.SEdgeList
-			v, err := measureDimension(tp, dm, dv, &el)
+			var out dimOut
+			v, err := measureDimension(tp, dm, dv, &out)
 			ss.lastDimensions[i] = DimensionResult{Value: v, Err: err}
 			if err == nil {
-				sheet.Edges = append(sheet.Edges, el.Edges...)
+				sheet.Edges = append(sheet.Edges, out.el.Edges...)
+				texts = append(texts, out.texts...)
+				var b sheetBox
+				for _, e := range out.el.Edges {
+					b = b.with(e.A).with(e.B)
+				}
+				whole = append(whole, b)
 			}
 		}
 	}
+	return texts, whole
 }
 
 // selectedFaceIDs are the identities of the selected faces of the

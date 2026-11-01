@@ -9,6 +9,7 @@ func main() {
 	doc := Current()
 	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
 	ext := doc.Features.Extrude(80, "")
+	ext.AsExtrude().SetDepth(80)
 	sh := doc.Features.Shell([]Entity{doc.Entity(0x8003002c)}, 1, "")
 	for _, f := range ext.Solid().Faces() {
 		if f.ID() == 0x80030019 {

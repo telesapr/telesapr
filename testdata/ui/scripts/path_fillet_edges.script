@@ -18,9 +18,9 @@ move 247.5 202.5
 down L 247.5 202.5
 up L 247.5 202.5
 menu Features|Fillet Edges
-twmove 348 205
-twdown L 348 205
-twup L 348 205
+twmove 492 205
+twdown L 492 205
+twup L 492 205
 answer ok
 twmove 96 145
 twdown L 96 145

@@ -15,16 +15,16 @@ down L 290 265
 up L 290 265
 menu Features|Mirror
 answer ok
-twmove 411 125
-twdown L 411 125
-twup L 411 125
+twmove 357 125
+twdown L 357 125
+twup L 357 125
 view iso
 move 168.75 431.25
 down L 168.75 431.25
 up L 168.75 431.25
-twmove 411 125
-twdown L 411 125
-twup L 411 125
+twmove 357 125
+twdown L 357 125
+twup L 357 125
 twmove 321 75
 twdown L 321 75
 twup L 321 75

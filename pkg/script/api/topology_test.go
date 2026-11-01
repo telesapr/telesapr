@@ -51,7 +51,7 @@ func TestSolidTopology(t *testing.T) {
 	if again := s.Edge(right.Name()); again.Name() != right.Name() {
 		t.Error("the name reads back")
 	}
-	if !strings.Contains(right.Describe(), "the edge between face") || !strings.Contains(right.Describe(), "number 2") {
+	if !strings.Contains(right.Describe(), "the edge between side face of") || !strings.Contains(right.Describe(), "number 2") {
 		t.Errorf("describe %q", right.Describe())
 	}
 	// Eight edges run along x: the front's four, cut in two by the

@@ -27,7 +27,7 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed   depth 80.00   held
+row 12     one-sided   two-sided   skewed   depth 20.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
@@ -168,7 +168,7 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed   depth 80.00   held
+row 12     one-sided   two-sided   skewed   depth 20.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
@@ -290,7 +290,7 @@ row 63    (none)
  0-99 64 61 0
 row 65 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 12\nVolume: 45.39 cm³\nCenter of mass: (-2.00, 7.00, 32.10)\nExtent: 36.00 x 26.00 x 80.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 12\nVolume: 16.63 cm³\nCenter of mass: (-2.00, 7.00, 9.59)\nExtent: 36.00 x 26.00 x 20.00
 row 0  home › g003-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
@@ -320,7 +320,7 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed   depth 80.00   held
+row 12     one-sided   two-sided   skewed   depth 20.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
@@ -442,7 +442,7 @@ row 63    (none)
  0-99 64 61 0
 row 65 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 12\nVolume: 40.72 cm³\nCenter of mass: (-2.00, 7.00, 30.05)\nExtent: 36.00 x 26.00 x 80.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 12\nVolume: 16.23 cm³\nCenter of mass: (-2.00, 7.00, 9.50)\nExtent: 36.00 x 26.00 x 20.00
 row 0  home › g003-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
@@ -472,7 +472,7 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed   depth 80.00   held
+row 12     one-sided   two-sided   skewed   depth 20.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
@@ -594,7 +594,7 @@ row 63    (none)
  0-99 64 61 0
 row 65 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10\nTriangles: 20\nVolume: 55.91 cm³\nCenter of mass: (-2.00, 7.00, -0.00)\nExtent: 36.00 x 26.00 x 80.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10\nTriangles: 20\nVolume: 17.45 cm³\nCenter of mass: (-2.00, 7.00, 0.00)\nExtent: 36.00 x 26.00 x 20.00
 row 0  home › g003-extrude   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
@@ -624,7 +624,7 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed   depth 80.00   held
+row 12     one-sided   two-sided   skewed   depth 20.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
@@ -751,4 +751,4 @@ row 67    (none)
  0-99 64 61 0
 row 69 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 12\nVolume: 74.88 cm³\nCenter of mass: (-2.00, 7.00, 0.00)\nExtent: 36.00 x 26.00 x 80.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 12\nVolume: 18.72 cm³\nCenter of mass: (-2.00, 7.00, 0.00)\nExtent: 36.00 x 26.00 x 20.00

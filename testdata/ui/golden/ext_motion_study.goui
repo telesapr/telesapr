@@ -93,13 +93,13 @@ row 19    [run]   [run, saving each step...]
 row 22    step  w             solved   volume        file
  0-49 74 64 0
  50-99 64 64 0
-row 24    0     30            yes      62400.0
+row 24    0     30            yes      15600.0
  0-99 64 61 0
-row 26    1     40            yes      83200.0
+row 26    1     40            yes      20800.0
  0-99 64 64 0
-row 28    2     50            yes      104000.0
+row 28    2     50            yes      26000.0
  0-99 64 61 0
-row 30    3     60            yes      124800.0
+row 30    3     60            yes      31200.0
  0-99 64 64 0
 row 33 (back to the groups)
  0-0 64 64 0
@@ -154,13 +154,13 @@ row 19    [run]   [run, saving each step...]
 row 22    step  w             solved   volume        file
  0-49 74 64 0
  50-99 64 64 0
-row 24    0     30            yes      62400.0       frame-000.stl
+row 24    0     30            yes      15600.0       frame-000.stl
  0-99 64 61 0
-row 26    1     40            yes      83200.0       frame-001.stl
+row 26    1     40            yes      20800.0       frame-001.stl
  0-99 64 64 0
-row 28    2     50            yes      104000.0      frame-002.stl
+row 28    2     50            yes      26000.0       frame-002.stl
  0-99 64 61 0
-row 30    3     60            yes      124800.0      frame-003.stl
+row 30    3     60            yes      31200.0       frame-003.stl
  0-99 64 64 0
 row 33 (back to the groups)
  0-0 64 64 0

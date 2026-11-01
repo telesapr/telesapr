@@ -47,12 +47,12 @@ row 14    edges [change]
  8-8 64 61 0
  9-16 6c 61 108 4 1 0
  17-99 64 61 0
-row 16      entity 80030035 of g003-extrude [remove]
+row 16      top edge of g003-extrude from r009-line-segment [remove]
  0-4 64 64 0
- 5-35 6c 64 108 80030035 1 1
- 36-36 64 64 0
- 37-44 6c 64 108 0 1 0
- 45-99 64 64 0
+ 5-51 6c 64 108 80030035 1 1
+ 52-52 64 64 0
+ 53-60 6c 64 108 0 1 0
+ 61-99 64 64 0
 row 18        [own radius]
  0-6 64 64 0
  7-18 6c 64 108 0 1 0
@@ -115,7 +115,7 @@ row 51    (none)
  0-99 64 61 0
 row 53 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10\nTriangles: 136\nVolume: 73.53 cm³\nCenter of mass: (-2.29, 7.20, 39.99)\nExtent: 35.99 x 26.00 x 80.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10\nTriangles: 236\nVolume: 18.38 cm³\nCenter of mass: (-2.29, 7.20, 9.99)\nExtent: 35.99 x 26.00 x 20.00
 row 0  home › g004-fillet   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
@@ -157,12 +157,12 @@ row 14    edges [change]
  8-8 64 61 0
  9-16 6c 61 108 4 1 0
  17-99 64 61 0
-row 16      entity 80030035 of g003-extrude [remove]
+row 16      top edge of g003-extrude from r009-line-segment [remove]
  0-4 64 64 0
- 5-35 6c 64 108 80030035 1 1
- 36-36 64 64 0
- 37-44 6c 64 108 0 1 0
- 45-99 64 64 0
+ 5-51 6c 64 108 80030035 1 1
+ 52-52 64 64 0
+ 53-60 6c 64 108 0 1 0
+ 61-99 64 64 0
 row 18        [own radius]
  0-6 64 64 0
  7-18 6c 64 108 0 1 0
@@ -225,4 +225,4 @@ row 51    (none)
  0-99 64 61 0
 row 53 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10\nTriangles: 136\nVolume: 73.43 cm³\nCenter of mass: (-2.30, 7.21, 39.94)\nExtent: 35.99 x 26.00 x 80.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 10\nTriangles: 372\nVolume: 18.28 cm³\nCenter of mass: (-2.32, 7.24, 9.94)\nExtent: 35.99 x 26.00 x 20.00

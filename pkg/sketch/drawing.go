@@ -234,8 +234,13 @@ const (
 	TitleBlockHeight = 40.0
 	// SheetBorder is the margin from the paper's edge to the frame.
 	SheetBorder = 10.0
-	// viewGap is the space between views.
+	// viewGap is the margin about the views and the space between the
+	// section and detail views.
 	viewGap = 15.0
+	// viewSpacing is the space between the standard views: room for a
+	// dimension's line and text, 10 mm out from one view, beside the
+	// letter of a cutting plane drawn past the next one's outline.
+	viewSpacing = 25.0
 )
 
 // Layout places the views: the drawing's own, or the standard ones,
@@ -243,7 +248,9 @@ const (
 // given each view's width and height on the model in mm (sizes, by
 // kind). It returns the views and the scale, which is the drawing's or,
 // for 0, the largest standard one at which they fit above the title
-// block.
+// block with the sections and details that have no place of their own
+// in columns to their right (PlaceExtras), the views and the columns
+// together in the middle of the sheet.
 func (d *Drawing) Layout(sizes map[string][2]float64) ([]DrawingView, float64) {
 	w, h := d.Size()
 	if len(d.Views) > 0 {
@@ -265,8 +272,8 @@ func (d *Drawing) Layout(sizes map[string][2]float64) ([]DrawingView, float64) {
 	roomW := w - 2*SheetBorder - 2*viewGap
 	roomH := h - 2*SheetBorder - TitleBlockHeight - 2*viewGap
 	fits := func(s float64) bool {
-		return s*(math.Max(fw, tw)+math.Max(sw, iw))+viewGap <= roomW &&
-			s*(math.Max(fh, sh)+math.Max(th, ih))+viewGap <= roomH
+		return s*(math.Max(fw, tw)+math.Max(sw, iw))+viewSpacing+d.extrasWidth(s, sizes) <= roomW &&
+			s*(math.Max(fh, sh)+math.Max(th, ih))+viewSpacing <= roomH
 	}
 	scale := d.Scale
 	if scale == 0 {
@@ -285,15 +292,15 @@ func (d *Drawing) Layout(sizes map[string][2]float64) ([]DrawingView, float64) {
 	col1 := scale * math.Max(sw, iw)
 	row0 := scale * math.Max(fh, sh) // the front's row
 	row1 := scale * math.Max(th, ih) // the top's row
-	left := SheetBorder + viewGap + (roomW-(col0+col1+viewGap))/2
-	bottom := SheetBorder + TitleBlockHeight + viewGap + (roomH-(row0+row1+viewGap))/2
-	frontX, sideX := left+col0/2, left+col0+viewGap+col1/2
+	left := SheetBorder + viewGap + (roomW-(col0+col1+viewSpacing+d.extrasWidth(scale, sizes)))/2
+	bottom := SheetBorder + TitleBlockHeight + viewGap + (roomH-(row0+row1+viewSpacing))/2
+	frontX, sideX := left+col0/2, left+col0+viewSpacing+col1/2
 	var frontY, topY float64
 	if d.FirstAngle {
 		// Top below the front; the left view to the front's right.
-		topY, frontY = bottom+row1/2, bottom+row1+viewGap+row0/2
+		topY, frontY = bottom+row1/2, bottom+row1+viewSpacing+row0/2
 	} else {
-		frontY, topY = bottom+row0/2, bottom+row0+viewGap+row1/2
+		frontY, topY = bottom+row0/2, bottom+row0+viewSpacing+row1/2
 	}
 	return []DrawingView{
 		{Kind: "front", X: frontX, Y: frontY},
@@ -337,11 +344,35 @@ func Letter(n int) string {
 	return Letter(n/26-1) + Letter(n%26)
 }
 
+// extrasWidth is the width the sections and details with no place of
+// their own take right of the views at scale s, the gap before each
+// column of them included, given the views' sizes on the model: a
+// section is reckoned the size of its view, which holds it, as it is
+// not drawn yet.
+func (d *Drawing) extrasWidth(s float64, sizes map[string][2]float64) float64 {
+	on := make([][2]float64, 0, len(d.Sections)+len(d.Details))
+	for _, sec := range d.Sections {
+		on = append(on, [2]float64{s * sizes[sec.View][0], s * sizes[sec.View][1]})
+	}
+	for _, dt := range d.Details {
+		on = append(on, [2]float64{2 * dt.R * s * dt.Scale, 2 * dt.R * s * dt.Scale})
+	}
+	_, width := d.packExtras(0, on)
+	return width
+}
+
 // PlaceExtras places the sections and details that have no place, in
 // columns to the right of the views, from the top down, given each
 // one's size on the sheet in mm, the sections' first; right is where
 // the views end. It returns where each goes, the sections' first.
 func (d *Drawing) PlaceExtras(right float64, sizes [][2]float64) [][2]float64 {
+	out, _ := d.packExtras(right, sizes)
+	return out
+}
+
+// packExtras is PlaceExtras, and how far right of right the columns
+// reach, were the sheet wide enough for them.
+func (d *Drawing) packExtras(right float64, sizes [][2]float64) ([][2]float64, float64) {
 	w, h := d.Size()
 	top := h - SheetBorder - viewGap
 	x, y, colW := right+viewGap, top, 0.0
@@ -354,6 +385,8 @@ func (d *Drawing) PlaceExtras(right float64, sizes [][2]float64) [][2]float64 {
 		return dt.X, dt.Y, dt.X != 0 || dt.Y != 0
 	}
 	out := make([][2]float64, len(sizes))
+	// The columns' x as they would be, not pushed back onto the sheet.
+	free, reach := x, right
 	for i, sz := range sizes {
 		if gx, gy, ok := given(i); ok {
 			out[i] = [2]float64{gx, gy}
@@ -363,7 +396,9 @@ func (d *Drawing) PlaceExtras(right float64, sizes [][2]float64) [][2]float64 {
 		// block.
 		if y-sz[1]-10 < SheetBorder+TitleBlockHeight && y != top {
 			x, y, colW = x+colW+viewGap, top, 0
+			free = x
 		}
+		reach = math.Max(reach, free+sz[0])
 		if x+sz[0] > w-SheetBorder {
 			x = w - SheetBorder - sz[0]
 		}
@@ -371,5 +406,5 @@ func (d *Drawing) PlaceExtras(right float64, sizes [][2]float64) [][2]float64 {
 		y -= sz[1] + viewGap + 7
 		colW = math.Max(colW, sz[0])
 	}
-	return out
+	return out, reach - right
 }

@@ -195,6 +195,7 @@ func (k *constraining) constrainDistance(id Command) {
 	}
 	c.ValA = 0
 	c.ModifyToSatisfy(sk)
+	sk.ClearNewLabel(&c)
 	k.add(c, true)
 }
 

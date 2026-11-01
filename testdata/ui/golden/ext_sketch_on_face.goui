@@ -3,7 +3,7 @@ pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0
 active 4 80040000
-camera 5 -16 6 -80 2.2204460492503131e-16 1 -0 -1 2.2204460492503131e-16 0
+camera 5 -16 6 -20 2.2204460492503131e-16 1 -0 -1 2.2204460492503131e-16 0
 counts 4 7 70 8 40
 editor 0 "" 0 ""
 tw 1 unsaved 1 cursor 0 tooltip ""
@@ -36,12 +36,12 @@ row 10  sketch on face
  0-0 64 64 0
  1-14 74 64 0
  15-99 64 64 0
-row 12    in face entity 8003002c of g003-extrude
+row 12    in top face of g003-extrude
  0-2 64 61 0
  3-4 74 61 0
  5-5 64 61 0
- 6-41 6c 61 108 0 1 1
- 42-99 64 61 0
+ 6-29 6c 61 108 0 1 1
+ 30-99 64 61 0
 row 14 
  0-99 64 64 0
 row 16    show entities from this group
@@ -90,8 +90,8 @@ pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0
 active 5 0
-camera 5 -16 6 -80 2.2204460492503131e-16 1 -0 -1 2.2204460492503131e-16 0
+camera 5 -16 6 -20 2.2204460492503131e-16 1 -0 -1 2.2204460492503131e-16 0
 counts 5 11 125 17 60
 editor 0 "" 0 ""
 tw 1 unsaved 1 cursor 0 tooltip ""
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 11\nTriangles: 30\nVolume: 100.49 cm³\nCenter of mass: (2.08, 6.24, 60.39)\nExtent: 42.00 x 26.00 x 160.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 11\nTriangles: 30\nVolume: 21.92 cm³\nCenter of mass: (0.34, 6.56, 12.19)\nExtent: 42.00 x 26.00 x 30.00

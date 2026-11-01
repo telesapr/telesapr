@@ -9,7 +9,7 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 func main() {
 	doc := Current()
 	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
-	doc.Features.Extrude(80, "")
+	doc.Features.Extrude(20, "")
 	c := doc.Features.Chamfer([]Entity{doc.Entity(0x80030004), doc.Entity(0x8003001f)}, 1, "")
 	c.AsChamfer().SetEdges([]Entity{doc.Entity(0x80030004)}, []SolidEdge{})
 	c.AsChamfer().SetEdges([]Entity{doc.Entity(0x8003001f)}, []SolidEdge{})

@@ -1,7 +1,7 @@
 // The model of path_dimension_name.script, made by a script
 // (TestPathEquivalence/dimension_name): a rectangle with the mouse's
 // corners, its bottom side's length named width and its right side's
-// width/2, extruded 80 mm as the interface does by default (roadmap
+// width/2, extruded 20 mm as the interface does by default (roadmap
 // 16.1).
 package main
 
@@ -24,5 +24,5 @@ func main() {
 	doc.Edit.Regen()
 	must(height.SetExpr("width/2"))
 	doc.Edit.Regen()
-	doc.Features.Extrude(80, "")
+	doc.Features.Extrude(20, "")
 }

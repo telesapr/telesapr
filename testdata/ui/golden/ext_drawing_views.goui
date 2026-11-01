@@ -149,22 +149,22 @@ row 21    views  [back to the standard ones]
  8-9 64 64 0
  10-36 6c 64 78 0 1 0
  37-99 64 64 0
-row 23     front   at 161.49, 121 mm [move]
+row 23     front   at 157.9, 111.91 mm [move]
  0-2 64 61 0
  3-3 64 61 118 0 1 0
- 4-30 64 61 0
- 31-36 6c 61 77 0 1 0
- 37-99 64 61 0
+ 4-32 64 61 0
+ 33-38 6c 61 77 0 1 0
+ 39-99 64 61 0
 row 25     back
  0-2 64 64 0
  3-3 64 64 118 1 1 0
  4-99 64 64 0
-row 27     top     at 161.49, 189 mm [move]
+row 27     top     at 157.9, 207 mm [move]
  0-2 64 61 0
  3-3 64 61 118 2 1 0
- 4-30 64 61 0
- 31-36 6c 61 77 2 1 0
- 37-99 64 61 0
+ 4-29 64 61 0
+ 30-35 6c 61 77 2 1 0
+ 36-99 64 61 0
 row 29     bottom
  0-2 64 64 0
  3-3 64 64 118 3 1 0
@@ -173,13 +173,13 @@ row 31     left
  0-2 64 61 0
  3-3 64 61 118 4 1 0
  4-99 64 61 0
-row 33     right   at 235.5, 121 mm [move]
+row 33     right   at 258.5, 111.91 mm [move]
  0-2 64 64 0
  3-3 64 64 118 5 1 0
- 4-29 64 64 0
- 30-35 6c 64 77 5 1 0
- 36-99 64 64 0
-row 35     iso     at 235.5, 189 mm [move]
+ 4-32 64 64 0
+ 33-38 6c 64 77 5 1 0
+ 39-99 64 64 0
+row 35     iso     at 258.5, 207 mm [move]
  0-2 64 61 0
  3-3 64 61 118 6 1 0
  4-29 64 61 0
@@ -286,24 +286,24 @@ row 21    views  [back to the standard ones]
  8-9 64 64 0
  10-36 6c 64 78 0 1 0
  37-99 64 64 0
-row 23     front   at 161.49, 121 mm [move]
+row 23     front   at 157.9, 111.91 mm [move]
  0-2 64 61 0
  3-3 64 61 118 0 1 0
- 4-30 64 61 0
- 31-36 6c 61 77 0 1 0
- 37-99 64 61 0
+ 4-32 64 61 0
+ 33-38 6c 61 77 0 1 0
+ 39-99 64 61 0
 row 25     back    at 210, 148.5 mm [move]
  0-2 64 64 0
  3-3 64 64 118 1 1 0
  4-29 64 64 0
  30-35 6c 64 77 1 1 0
  36-99 64 64 0
-row 27     top     at 161.49, 189 mm [move]
+row 27     top     at 157.9, 207 mm [move]
  0-2 64 61 0
  3-3 64 61 118 2 1 0
- 4-30 64 61 0
- 31-36 6c 61 77 2 1 0
- 37-99 64 61 0
+ 4-29 64 61 0
+ 30-35 6c 61 77 2 1 0
+ 36-99 64 61 0
 row 29     bottom
  0-2 64 64 0
  3-3 64 64 118 3 1 0
@@ -312,12 +312,12 @@ row 31     left
  0-2 64 61 0
  3-3 64 61 118 4 1 0
  4-99 64 61 0
-row 33     right   at 235.5, 121 mm [move]
+row 33     right   at 258.5, 111.91 mm [move]
  0-2 64 64 0
  3-3 64 64 118 5 1 0
- 4-29 64 64 0
- 30-35 6c 64 77 5 1 0
- 36-99 64 64 0
+ 4-32 64 64 0
+ 33-38 6c 64 77 5 1 0
+ 39-99 64 64 0
 row 35     iso
  0-2 64 61 0
  3-3 64 61 118 6 1 0
@@ -435,12 +435,12 @@ row 25     back    at 210, 148.5 mm [move]
  4-29 64 64 0
  30-35 6c 64 77 1 1 0
  36-99 64 64 0
-row 27     top     at 161.49, 189 mm [move]
+row 27     top     at 157.9, 207 mm [move]
  0-2 64 61 0
  3-3 64 61 118 2 1 0
- 4-30 64 61 0
- 31-36 6c 61 77 2 1 0
- 37-99 64 61 0
+ 4-29 64 61 0
+ 30-35 6c 61 77 2 1 0
+ 36-99 64 61 0
 row 29     bottom
  0-2 64 64 0
  3-3 64 64 118 3 1 0
@@ -449,12 +449,12 @@ row 31     left
  0-2 64 61 0
  3-3 64 61 118 4 1 0
  4-99 64 61 0
-row 33     right   at 235.5, 121 mm [move]
+row 33     right   at 258.5, 111.91 mm [move]
  0-2 64 64 0
  3-3 64 64 118 5 1 0
- 4-29 64 64 0
- 30-35 6c 64 77 5 1 0
- 36-99 64 64 0
+ 4-32 64 64 0
+ 33-38 6c 64 77 5 1 0
+ 39-99 64 64 0
 row 35     iso
  0-2 64 61 0
  3-3 64 61 118 6 1 0
@@ -578,12 +578,12 @@ row 25     back    at 210, 148.5 mm [move]
  4-29 64 64 0
  30-35 6c 64 77 1 1 0
  36-99 64 64 0
-row 27     top     at 161.49, 189 mm [move]
+row 27     top     at 157.9, 207 mm [move]
  0-2 64 61 0
  3-3 64 61 118 2 1 0
- 4-30 64 61 0
- 31-36 6c 61 77 2 1 0
- 37-99 64 61 0
+ 4-29 64 61 0
+ 30-35 6c 61 77 2 1 0
+ 36-99 64 61 0
 row 29     bottom
  0-2 64 64 0
  3-3 64 64 118 3 1 0
@@ -592,12 +592,12 @@ row 31     left
  0-2 64 61 0
  3-3 64 61 118 4 1 0
  4-99 64 61 0
-row 33     right   at 235.5, 121 mm [move]
+row 33     right   at 258.5, 111.91 mm [move]
  0-2 64 64 0
  3-3 64 64 118 5 1 0
- 4-29 64 64 0
- 30-35 6c 64 77 5 1 0
- 36-99 64 64 0
+ 4-32 64 64 0
+ 33-38 6c 64 77 5 1 0
+ 39-99 64 64 0
 row 35     iso
  0-2 64 61 0
  3-3 64 61 118 6 1 0
@@ -668,8 +668,8 @@ drawing {
   sheet A3
   hidden
   view front 50 100
-  view top 161.48780669118025 189
-  view right 235.5 121
+  view top 157.90202025355333 207
+  view right 258.5 111.9091846299028
   view back 210 148.5
   section top 0 300 100
 }
@@ -872,7 +872,7 @@ value 0x70013 -20
 value 0x70014 20
 value 0x80030000 0
 value 0x80030001 0
-value 0x80030002 40
+value 0x80030002 10
 
 entity 0x10000 workplane {
   group 0x1
@@ -1072,13 +1072,13 @@ entity 0x80030004 line-segment {
 
 entity 0x80030005 point-n-trans {
   group 0x3
-  act-point 16 -6 80
+  act-point 16 -6 20
   act-visible
 }
 
 entity 0x80030006 point-n-trans {
   group 0x3
-  act-point 16 20 80
+  act-point 16 20 20
   act-visible
 }
 
@@ -1128,13 +1128,13 @@ entity 0x8003000d line-segment {
 
 entity 0x8003000e point-n-trans {
   group 0x3
-  act-point -20 -6 80
+  act-point -20 -6 20
   act-visible
 }
 
 entity 0x8003000f point-n-trans {
   group 0x3
-  act-point 16 -6 80
+  act-point 16 -6 20
   act-visible
 }
 
@@ -1184,13 +1184,13 @@ entity 0x80030016 line-segment {
 
 entity 0x80030017 point-n-trans {
   group 0x3
-  act-point -20 20 80
+  act-point -20 20 20
   act-visible
 }
 
 entity 0x80030018 point-n-trans {
   group 0x3
-  act-point -20 -6 80
+  act-point -20 -6 20
   act-visible
 }
 
@@ -1240,13 +1240,13 @@ entity 0x8003001f line-segment {
 
 entity 0x80030020 point-n-trans {
   group 0x3
-  act-point 16 20 80
+  act-point 16 20 20
   act-visible
 }
 
 entity 0x80030021 point-n-trans {
   group 0x3
-  act-point -20 20 80
+  act-point -20 20 20
   act-visible
 }
 
@@ -1293,7 +1293,7 @@ entity 0x80030029 normal-n-copy {
 entity 0x8003002a point-n-trans {
   group 0x3
   construction
-  act-point 0 0 80
+  act-point 0 0 20
   act-visible
 }
 
@@ -1307,7 +1307,7 @@ entity 0x8003002b line-segment {
 entity 0x8003002c face-normal-pt {
   group 0x3
   points 0x8003002a
-  act-point 0 0 80
+  act-point 0 0 20
   act-normal 0 0 -0 1
   act-visible
 }
@@ -1324,14 +1324,14 @@ shell {
     color 100 100 100 255
     face 0x8003002c
     degree 1 1
-    ctrl 0 0 -20 20 80 1
-    ctrl 0 1 16 20 80 1
-    ctrl 1 0 -20 -6 80 1
-    ctrl 1 1 16 -6 80 1
-    trim 0xa forward 16 20 80 16 -6 80
-    trim 0x4 forward -20 -6 80 -20 20 80
-    trim 0x7 forward -20 20 80 16 20 80
-    trim 0x1 forward 16 -6 80 -20 -6 80
+    ctrl 0 0 -20 20 20 1
+    ctrl 0 1 16 20 20 1
+    ctrl 1 0 -20 -6 20 1
+    ctrl 1 1 16 -6 20 1
+    trim 0xa forward 16 20 20 16 -6 20
+    trim 0x4 forward -20 -6 20 -20 20 20
+    trim 0x7 forward -20 20 20 16 20 20
+    trim 0x1 forward 16 -6 20 -20 -6 20
   }
   surface 0x2 {
     color 100 100 100 255
@@ -1351,65 +1351,65 @@ shell {
     face 0x80030010
     sheet 0x50000
     degree 1 1
-    ctrl 0 0 16 -6 80 1
+    ctrl 0 0 16 -6 20 1
     ctrl 0 1 16 -6 0 1
-    ctrl 1 0 -20 -6 80 1
+    ctrl 1 0 -20 -6 20 1
     ctrl 1 1 -20 -6 0 1
     trim 0x2 forward 16 -6 0 -20 -6 0
-    trim 0x1 backward -20 -6 80 16 -6 80
-    trim 0xc forward 16 -6 80 16 -6 0
-    trim 0x3 backward -20 -6 0 -20 -6 80
+    trim 0x1 backward -20 -6 20 16 -6 20
+    trim 0xc forward 16 -6 20 16 -6 0
+    trim 0x3 backward -20 -6 0 -20 -6 20
   }
   surface 0x4 {
     color 100 100 100 255
     face 0x80030019
     sheet 0x60000
     degree 1 1
-    ctrl 0 0 -20 -6 80 1
+    ctrl 0 0 -20 -6 20 1
     ctrl 0 1 -20 -6 0 1
-    ctrl 1 0 -20 20 80 1
+    ctrl 1 0 -20 20 20 1
     ctrl 1 1 -20 20 0 1
     trim 0x5 forward -20 -6 0 -20 20 0
-    trim 0x4 backward -20 20 80 -20 -6 80
-    trim 0x3 forward -20 -6 80 -20 -6 0
-    trim 0x6 backward -20 20 0 -20 20 80
+    trim 0x4 backward -20 20 20 -20 -6 20
+    trim 0x3 forward -20 -6 20 -20 -6 0
+    trim 0x6 backward -20 20 0 -20 20 20
   }
   surface 0x5 {
     color 100 100 100 255
     face 0x80030022
     sheet 0x70000
     degree 1 1
-    ctrl 0 0 -20 20 80 1
+    ctrl 0 0 -20 20 20 1
     ctrl 0 1 -20 20 0 1
-    ctrl 1 0 16 20 80 1
+    ctrl 1 0 16 20 20 1
     ctrl 1 1 16 20 0 1
     trim 0x8 forward -20 20 0 16 20 0
-    trim 0x7 backward 16 20 80 -20 20 80
-    trim 0x6 forward -20 20 80 -20 20 0
-    trim 0x9 backward 16 20 0 16 20 80
+    trim 0x7 backward 16 20 20 -20 20 20
+    trim 0x6 forward -20 20 20 -20 20 0
+    trim 0x9 backward 16 20 0 16 20 20
   }
   surface 0x6 {
     color 100 100 100 255
     face 0x80030007
     sheet 0x40000
     degree 1 1
-    ctrl 0 0 16 20 80 1
+    ctrl 0 0 16 20 20 1
     ctrl 0 1 16 20 0 1
-    ctrl 1 0 16 -6 80 1
+    ctrl 1 0 16 -6 20 1
     ctrl 1 1 16 -6 0 1
     trim 0xb forward 16 20 0 16 -6 0
-    trim 0xa backward 16 -6 80 16 20 80
-    trim 0x9 forward 16 20 80 16 20 0
-    trim 0xc backward 16 -6 0 16 -6 80
+    trim 0xa backward 16 -6 20 16 20 20
+    trim 0x9 forward 16 20 20 16 20 0
+    trim 0xc backward 16 -6 0 16 -6 20
   }
   curve 0x1 {
     exact
     degree 1
     surfaces 0x1 0x3
-    ctrl 0 16 -6 80 1
-    ctrl 1 -20 -6 80 1
-    vertex 16 -6 80
-    vertex -20 -6 80
+    ctrl 0 16 -6 20 1
+    ctrl 1 -20 -6 20 1
+    vertex 16 -6 20
+    vertex -20 -6 20
   }
   curve 0x2 {
     exact
@@ -1424,19 +1424,19 @@ shell {
     exact
     degree 1
     surfaces 0x3 0x4
-    ctrl 0 -20 -6 80 1
+    ctrl 0 -20 -6 20 1
     ctrl 1 -20 -6 0 1
-    vertex -20 -6 80
+    vertex -20 -6 20
     vertex -20 -6 0
   }
   curve 0x4 {
     exact
     degree 1
     surfaces 0x1 0x4
-    ctrl 0 -20 -6 80 1
-    ctrl 1 -20 20 80 1
-    vertex -20 -6 80
-    vertex -20 20 80
+    ctrl 0 -20 -6 20 1
+    ctrl 1 -20 20 20 1
+    vertex -20 -6 20
+    vertex -20 20 20
   }
   curve 0x5 {
     exact
@@ -1451,19 +1451,19 @@ shell {
     exact
     degree 1
     surfaces 0x4 0x5
-    ctrl 0 -20 20 80 1
+    ctrl 0 -20 20 20 1
     ctrl 1 -20 20 0 1
-    vertex -20 20 80
+    vertex -20 20 20
     vertex -20 20 0
   }
   curve 0x7 {
     exact
     degree 1
     surfaces 0x1 0x5
-    ctrl 0 -20 20 80 1
-    ctrl 1 16 20 80 1
-    vertex -20 20 80
-    vertex 16 20 80
+    ctrl 0 -20 20 20 1
+    ctrl 1 16 20 20 1
+    vertex -20 20 20
+    vertex 16 20 20
   }
   curve 0x8 {
     exact
@@ -1478,19 +1478,19 @@ shell {
     exact
     degree 1
     surfaces 0x5 0x6
-    ctrl 0 16 20 80 1
+    ctrl 0 16 20 20 1
     ctrl 1 16 20 0 1
-    vertex 16 20 80
+    vertex 16 20 20
     vertex 16 20 0
   }
   curve 0xa {
     exact
     degree 1
     surfaces 0x1 0x6
-    ctrl 0 16 20 80 1
-    ctrl 1 16 -6 80 1
-    vertex 16 20 80
-    vertex 16 -6 80
+    ctrl 0 16 20 20 1
+    ctrl 1 16 -6 20 1
+    vertex 16 20 20
+    vertex 16 -6 20
   }
   curve 0xb {
     exact
@@ -1505,9 +1505,9 @@ shell {
     exact
     degree 1
     surfaces 0x6 0x3
-    ctrl 0 16 -6 80 1
+    ctrl 0 16 -6 20 1
     ctrl 1 16 -6 0 1
-    vertex 16 -6 80
+    vertex 16 -6 20
     vertex 16 -6 0
   }
 }

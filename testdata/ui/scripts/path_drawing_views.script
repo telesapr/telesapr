@@ -9,6 +9,15 @@ down L 380 330
 up L 380 330
 key esc
 key x shift
+# Its depth held and typed as 80 on its screen: the model was drawn
+# for a deep part, deeper than a new extrusion of this sketch starts.
+twmove 501 125
+twdown L 501 125
+twup L 501 125
+twmove 501 125
+twdown L 501 125
+twup L 501 125
+edit 80
 menu View|Drawing Sheet...
 twmove 581 221
 twdown L 581 221

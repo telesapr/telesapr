@@ -110,8 +110,9 @@ func (sk *Sketch) SectionCut() (keep srf.HalfSpace, origin geom.Vector, ok bool,
 // sketch it came from, and points in on some faces of an extrusion; it
 // stays so, since a constraint on a face, a distance from it, keeps its
 // sign in the file, and turning the normal would move the point to the
-// other side. What reports a direction to the user, the section view
-// and Measure, takes this one (roadmap 14.5).
+// other side. What reports a direction to the user, the section view,
+// Measure and the description of a selected face, takes this one
+// (roadmap 14.5).
 func (sk *Sketch) OutwardFaceNormal(e *core.Entity) geom.Vector {
 	n := e.FaceGetNormalNum(sk)
 	for _, hg := range []core.HGroup{sk.ActiveGroup(), e.Group} {

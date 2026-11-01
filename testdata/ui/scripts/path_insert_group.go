@@ -9,7 +9,7 @@ func main() {
 	doc := Current()
 	sketch := doc.Active()
 	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
-	doc.Features.Extrude(80, "")
+	doc.Features.Extrude(20, "")
 	doc.Activate(sketch)
-	doc.Features.Extrude(80, "")
+	doc.Features.Extrude(20, "")
 }

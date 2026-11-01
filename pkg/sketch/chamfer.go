@@ -227,7 +227,7 @@ func (sk *Sketch) chamferSegments(solid *Group, edges []core.HEntity, names []to
 			continue
 		}
 		if e.Type != core.EntityLineSegment {
-			return nil, fmt.Errorf("%s is neither a line segment nor a circle: a chamfer cuts straight and circular edges", sk.entityName(he))
+			return nil, fmt.Errorf("%s is neither a line segment nor a circle: only straight and circular edges are chamfered or rounded", sk.entityName(he))
 		}
 		out = append(out, chamferSegment{
 			a:     sk.MustEntity(e.Point[0]).PointGetNum(sk),
@@ -271,14 +271,19 @@ func (sk *Sketch) SolidEdgeName(n topo.Name) string {
 	return s
 }
 
-// FaceName names a face of a solid by its identity: the entity that
-// made it, or for a face no entity names, the group that made it.
+// FaceName names a face of a solid by its identity: by the entity
+// that made it, "top face of g003-extrude" or "side face of
+// g003-extrude from r005-line-segment", or for a face no entity names,
+// by its number in the group that made it, "face 4 of g003-lathe".
 func (sk *Sketch) FaceName(id srf.FaceID) string {
 	he := core.HEntity{V: uint32(id)}
 	if g := faceGroup(id); id&(1<<30) != 0 && id&(1<<31) == 0 {
 		return fmt.Sprintf("face %d of %s", uint32(id)&0xffff, sk.anyGroupName(g))
 	}
-	return "face " + sk.entityName(he)
+	if he.IsFromRequest() {
+		return "face of " + sk.entityName(he)
+	}
+	return sk.madeEntityName(he, "face", 0)
 }
 
 // SolidAt is the group whose running solid is the model at group hg,

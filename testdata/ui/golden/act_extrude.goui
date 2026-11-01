@@ -23,9 +23,9 @@ at 75 75 0 0 0
 at 125 75 0 0 0
 at 175 75 0 0 0
 at 225 75 0 0 0
-at 275 75 8003001f 0 0
+at 275 75 10000 0 0
 at 325 75 20000 0 0
-at 375 75 80030004 0 0
+at 375 75 10000 0 0
 at 425 75 30000 0 0
 at 475 75 0 0 0
 at 525 75 0 0 0
@@ -36,7 +36,7 @@ at 125 125 10000 0 0
 at 175 125 0 0 0
 at 225 125 30000 0 0
 at 275 125 30000 0 0
-at 325 125 8003000d 0 0
+at 325 125 0 0 0
 at 375 125 20000 0 0
 at 425 125 10000 0 0
 at 475 125 0 0 0
@@ -46,10 +46,10 @@ at 25 175 0 0 0
 at 75 175 0 0 0
 at 125 175 20000 0 0
 at 175 175 0 0 0
-at 225 175 80030024 0 0
-at 275 175 8003001b 0 0
-at 325 175 8003002b 0 0
-at 375 175 80030012 0 0
+at 225 175 0 0 0
+at 275 175 0 0 0
+at 325 175 0 0 0
+at 375 175 0 0 0
 at 425 175 0 0 0
 at 475 175 10000 0 0
 at 525 175 30000 0 0
@@ -58,9 +58,9 @@ at 25 225 0 0 0
 at 75 225 0 0 0
 at 125 225 20000 0 0
 at 175 225 0 0 0
-at 225 225 80030019 0 0
-at 275 225 8003001b 0 0
-at 325 225 80030010 0 0
+at 225 225 80030016 0 0
+at 275 225 8003002c 0 0
+at 325 225 80030004 0 0
 at 375 225 0 0 0
 at 425 225 0 0 0
 at 475 225 0 0 0
@@ -71,7 +71,7 @@ at 75 275 0 0 0
 at 125 275 0 0 0
 at 175 275 0 0 0
 at 225 275 80030019 0 0
-at 275 275 30020 0 0
+at 275 275 8003000d 0 0
 at 325 275 80030001 0 0
 at 375 275 0 0 0
 at 425 275 0 0 0
@@ -353,7 +353,7 @@ value 0x70013 -20
 value 0x70014 20
 value 0x80030000 0
 value 0x80030001 0
-value 0x80030002 40
+value 0x80030002 10
 
 entity 0x10000 workplane {
   group 0x1
@@ -553,13 +553,13 @@ entity 0x80030004 line-segment {
 
 entity 0x80030005 point-n-trans {
   group 0x3
-  act-point 16 -6 80
+  act-point 16 -6 20
   act-visible
 }
 
 entity 0x80030006 point-n-trans {
   group 0x3
-  act-point 16 20 80
+  act-point 16 20 20
   act-visible
 }
 
@@ -609,13 +609,13 @@ entity 0x8003000d line-segment {
 
 entity 0x8003000e point-n-trans {
   group 0x3
-  act-point -20 -6 80
+  act-point -20 -6 20
   act-visible
 }
 
 entity 0x8003000f point-n-trans {
   group 0x3
-  act-point 16 -6 80
+  act-point 16 -6 20
   act-visible
 }
 
@@ -665,13 +665,13 @@ entity 0x80030016 line-segment {
 
 entity 0x80030017 point-n-trans {
   group 0x3
-  act-point -20 20 80
+  act-point -20 20 20
   act-visible
 }
 
 entity 0x80030018 point-n-trans {
   group 0x3
-  act-point -20 -6 80
+  act-point -20 -6 20
   act-visible
 }
 
@@ -721,13 +721,13 @@ entity 0x8003001f line-segment {
 
 entity 0x80030020 point-n-trans {
   group 0x3
-  act-point 16 20 80
+  act-point 16 20 20
   act-visible
 }
 
 entity 0x80030021 point-n-trans {
   group 0x3
-  act-point -20 20 80
+  act-point -20 20 20
   act-visible
 }
 
@@ -774,7 +774,7 @@ entity 0x80030029 normal-n-copy {
 entity 0x8003002a point-n-trans {
   group 0x3
   construction
-  act-point 0 0 80
+  act-point 0 0 20
   act-visible
 }
 
@@ -788,7 +788,7 @@ entity 0x8003002b line-segment {
 entity 0x8003002c face-normal-pt {
   group 0x3
   points 0x8003002a
-  act-point 0 0 80
+  act-point 0 0 20
   act-normal 0 0 -0 1
   act-visible
 }
@@ -805,14 +805,14 @@ shell {
     color 100 100 100 255
     face 0x8003002c
     degree 1 1
-    ctrl 0 0 -20 20 80 1
-    ctrl 0 1 16 20 80 1
-    ctrl 1 0 -20 -6 80 1
-    ctrl 1 1 16 -6 80 1
-    trim 0xa forward 16 20 80 16 -6 80
-    trim 0x4 forward -20 -6 80 -20 20 80
-    trim 0x7 forward -20 20 80 16 20 80
-    trim 0x1 forward 16 -6 80 -20 -6 80
+    ctrl 0 0 -20 20 20 1
+    ctrl 0 1 16 20 20 1
+    ctrl 1 0 -20 -6 20 1
+    ctrl 1 1 16 -6 20 1
+    trim 0xa forward 16 20 20 16 -6 20
+    trim 0x4 forward -20 -6 20 -20 20 20
+    trim 0x7 forward -20 20 20 16 20 20
+    trim 0x1 forward 16 -6 20 -20 -6 20
   }
   surface 0x2 {
     color 100 100 100 255
@@ -832,65 +832,65 @@ shell {
     face 0x80030010
     sheet 0x50000
     degree 1 1
-    ctrl 0 0 16 -6 80 1
+    ctrl 0 0 16 -6 20 1
     ctrl 0 1 16 -6 0 1
-    ctrl 1 0 -20 -6 80 1
+    ctrl 1 0 -20 -6 20 1
     ctrl 1 1 -20 -6 0 1
     trim 0x2 forward 16 -6 0 -20 -6 0
-    trim 0x1 backward -20 -6 80 16 -6 80
-    trim 0xc forward 16 -6 80 16 -6 0
-    trim 0x3 backward -20 -6 0 -20 -6 80
+    trim 0x1 backward -20 -6 20 16 -6 20
+    trim 0xc forward 16 -6 20 16 -6 0
+    trim 0x3 backward -20 -6 0 -20 -6 20
   }
   surface 0x4 {
     color 100 100 100 255
     face 0x80030019
     sheet 0x60000
     degree 1 1
-    ctrl 0 0 -20 -6 80 1
+    ctrl 0 0 -20 -6 20 1
     ctrl 0 1 -20 -6 0 1
-    ctrl 1 0 -20 20 80 1
+    ctrl 1 0 -20 20 20 1
     ctrl 1 1 -20 20 0 1
     trim 0x5 forward -20 -6 0 -20 20 0
-    trim 0x4 backward -20 20 80 -20 -6 80
-    trim 0x3 forward -20 -6 80 -20 -6 0
-    trim 0x6 backward -20 20 0 -20 20 80
+    trim 0x4 backward -20 20 20 -20 -6 20
+    trim 0x3 forward -20 -6 20 -20 -6 0
+    trim 0x6 backward -20 20 0 -20 20 20
   }
   surface 0x5 {
     color 100 100 100 255
     face 0x80030022
     sheet 0x70000
     degree 1 1
-    ctrl 0 0 -20 20 80 1
+    ctrl 0 0 -20 20 20 1
     ctrl 0 1 -20 20 0 1
-    ctrl 1 0 16 20 80 1
+    ctrl 1 0 16 20 20 1
     ctrl 1 1 16 20 0 1
     trim 0x8 forward -20 20 0 16 20 0
-    trim 0x7 backward 16 20 80 -20 20 80
-    trim 0x6 forward -20 20 80 -20 20 0
-    trim 0x9 backward 16 20 0 16 20 80
+    trim 0x7 backward 16 20 20 -20 20 20
+    trim 0x6 forward -20 20 20 -20 20 0
+    trim 0x9 backward 16 20 0 16 20 20
   }
   surface 0x6 {
     color 100 100 100 255
     face 0x80030007
     sheet 0x40000
     degree 1 1
-    ctrl 0 0 16 20 80 1
+    ctrl 0 0 16 20 20 1
     ctrl 0 1 16 20 0 1
-    ctrl 1 0 16 -6 80 1
+    ctrl 1 0 16 -6 20 1
     ctrl 1 1 16 -6 0 1
     trim 0xb forward 16 20 0 16 -6 0
-    trim 0xa backward 16 -6 80 16 20 80
-    trim 0x9 forward 16 20 80 16 20 0
-    trim 0xc backward 16 -6 0 16 -6 80
+    trim 0xa backward 16 -6 20 16 20 20
+    trim 0x9 forward 16 20 20 16 20 0
+    trim 0xc backward 16 -6 0 16 -6 20
   }
   curve 0x1 {
     exact
     degree 1
     surfaces 0x1 0x3
-    ctrl 0 16 -6 80 1
-    ctrl 1 -20 -6 80 1
-    vertex 16 -6 80
-    vertex -20 -6 80
+    ctrl 0 16 -6 20 1
+    ctrl 1 -20 -6 20 1
+    vertex 16 -6 20
+    vertex -20 -6 20
   }
   curve 0x2 {
     exact
@@ -905,19 +905,19 @@ shell {
     exact
     degree 1
     surfaces 0x3 0x4
-    ctrl 0 -20 -6 80 1
+    ctrl 0 -20 -6 20 1
     ctrl 1 -20 -6 0 1
-    vertex -20 -6 80
+    vertex -20 -6 20
     vertex -20 -6 0
   }
   curve 0x4 {
     exact
     degree 1
     surfaces 0x1 0x4
-    ctrl 0 -20 -6 80 1
-    ctrl 1 -20 20 80 1
-    vertex -20 -6 80
-    vertex -20 20 80
+    ctrl 0 -20 -6 20 1
+    ctrl 1 -20 20 20 1
+    vertex -20 -6 20
+    vertex -20 20 20
   }
   curve 0x5 {
     exact
@@ -932,19 +932,19 @@ shell {
     exact
     degree 1
     surfaces 0x4 0x5
-    ctrl 0 -20 20 80 1
+    ctrl 0 -20 20 20 1
     ctrl 1 -20 20 0 1
-    vertex -20 20 80
+    vertex -20 20 20
     vertex -20 20 0
   }
   curve 0x7 {
     exact
     degree 1
     surfaces 0x1 0x5
-    ctrl 0 -20 20 80 1
-    ctrl 1 16 20 80 1
-    vertex -20 20 80
-    vertex 16 20 80
+    ctrl 0 -20 20 20 1
+    ctrl 1 16 20 20 1
+    vertex -20 20 20
+    vertex 16 20 20
   }
   curve 0x8 {
     exact
@@ -959,19 +959,19 @@ shell {
     exact
     degree 1
     surfaces 0x5 0x6
-    ctrl 0 16 20 80 1
+    ctrl 0 16 20 20 1
     ctrl 1 16 20 0 1
-    vertex 16 20 80
+    vertex 16 20 20
     vertex 16 20 0
   }
   curve 0xa {
     exact
     degree 1
     surfaces 0x1 0x6
-    ctrl 0 16 20 80 1
-    ctrl 1 16 -6 80 1
-    vertex 16 20 80
-    vertex 16 -6 80
+    ctrl 0 16 20 20 1
+    ctrl 1 16 -6 20 1
+    vertex 16 20 20
+    vertex 16 -6 20
   }
   curve 0xb {
     exact
@@ -986,9 +986,9 @@ shell {
     exact
     degree 1
     surfaces 0x6 0x3
-    ctrl 0 16 -6 80 1
+    ctrl 0 16 -6 20 1
     ctrl 1 16 -6 0 1
-    vertex 16 -6 80
+    vertex 16 -6 20
     vertex 16 -6 0
   }
 }

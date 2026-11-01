@@ -26,7 +26,7 @@ func (ss *Application) WriteThumbnail(filename string, width, height uint, projR
 	// zoomToFit moves the offset by where the model falls with none,
 	// so it starts from none, not from wherever the window looks.
 	gw.view.Offset = geom.Vector{}
-	gw.view.Scale = gw.zoomToFit(&camera, false, false)
+	gw.view.Scale = gw.zoomToFit(&camera, cameraArea(&camera), false, false)
 	camera.Scale = gw.view.Scale
 	camera.Offset = gw.view.Offset
 	ss.GenerateAll(sketch.GenerateAll)
@@ -34,20 +34,35 @@ func (ss *Application) WriteThumbnail(filename string, width, height uint, projR
 }
 
 // WriteWindowPicture draws a PNG of width by height pixels of the view
-// the window shows: its direction and middle, scaled so that as much of
-// the model goes across the picture as across the window.
+// the window shows (windowPictureCamera).
 func (ss *Application) WriteWindowPicture(filename string, width, height uint) error {
 	gw := ss.GW
+	camera := gw.windowPictureCamera(width, height)
+	gw.view.Scale, gw.view.Offset = camera.Scale, camera.Offset
+	ss.GenerateAll(sketch.GenerateAll)
+	return ss.writePicture(filename, camera)
+}
+
+// windowPictureCamera is the camera of a picture of width by height
+// pixels of the view the window shows: its direction, and the part of
+// the window the toolbar leaves free, whose middle is the picture's,
+// scaled so that as much of the model goes across the picture as across
+// that part. What Zoom To Fit fitted in the window fills the picture as
+// it does the window, with no room left for a toolbar the picture
+// doesn't have.
+func (gw *graphicsWindow) windowPictureCamera(width, height uint) render.Camera {
 	camera := gw.Camera()
+	area := gw.freeArea(&camera)
+	// The point drawn in the middle of the free area goes to the middle.
+	camera.Offset = camera.Offset.Minus(camera.ProjRight.ScaledBy(area.Mid.U / camera.Scale)).Minus(
+		camera.ProjUp.ScaledBy(area.Mid.V / camera.Scale))
 	scale := camera.Scale
-	if camera.Width > 0 {
-		scale *= float64(width) / camera.Width
+	if area.Width > 0 {
+		scale *= float64(width) / area.Width
 	}
 	camera.PixelRatio, camera.GridFit = 1, true
 	camera.Width, camera.Height, camera.Scale = float64(width), float64(height), scale
-	gw.view.Scale = scale
-	ss.GenerateAll(sketch.GenerateAll)
-	return ss.writePicture(filename, camera)
+	return camera
 }
 
 // writePicture draws the model with camera into a PNG file.
@@ -61,7 +76,9 @@ func (ss *Application) writePicture(filename string, camera render.Camera) error
 	canvas.SetCamera(camera)
 
 	canvas.StartFrame()
+	gw.inPicture = true
 	gw.Draw(canvas)
+	gw.inPicture = false
 	canvas.FlushFrame()
 	canvas.FinishFrame()
 	err := writeFramePng(canvas.ReadFrame(), filename)

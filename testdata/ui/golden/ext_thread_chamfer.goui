@@ -238,7 +238,7 @@ selection 0
 active 9 0
 camera 5 0 0 0 1 0 0 0 1 0
 counts 9 17 208 41 87
-editor 0 "" 0 ""
+editor 0 "" 0 "10"
 tw 1 unsaved 1 cursor 0 tooltip ""
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
@@ -246,7 +246,7 @@ selection 0
 active 3 0
 camera 5 0 0 0 1 0 0 0 1 0
 counts 3 4 32 1 27
-editor 0 "" 0 ""
+editor 0 "" 0 "10"
 tw 0 unsaved 1 cursor 0 tooltip ""
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
@@ -254,5 +254,5 @@ selection 0
 active 9 0
 camera 5 0 0 0 1 0 0 0 1 0
 counts 9 17 208 41 87
-editor 0 "" 0 ""
+editor 0 "" 0 "10"
 tw 0 unsaved 1 cursor 0 tooltip ""

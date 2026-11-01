@@ -1,11 +1,6 @@
 popup
-  Assign to Style ind=0 en=1 act=0
-    No Style ind=0 en=1 act=0
-    Newly Created Custom Style... ind=0 en=1 act=0
   Group Info ind=0 en=1 act=0
   Style Info ind=0 en=1 act=0
-  Toggle Construction ind=0 en=1 act=0
-  ---
   ---
   Shell Solid Open Here ind=0 en=1 act=0
   Mirror in This Plane ind=0 en=1 act=0

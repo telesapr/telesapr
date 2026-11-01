@@ -371,6 +371,8 @@ func dimension(sk *sketch.Sketch, c *core.Constraint, v float64) {
 	c.ValA = 0
 	c.ModifyToSatisfy(sk)
 	sketch.SetConstraintValue(c, v)
+	// Clear of the labels the group has, as the interface puts it.
+	sk.ClearNewLabel(c)
 }
 
 // distanceBetween makes c the distance between a and b, as Distance

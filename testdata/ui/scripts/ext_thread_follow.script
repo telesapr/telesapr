@@ -1,6 +1,6 @@
 # A full-length thread follows its face (an extension): the side of an
-# extruded circle, picked on the model, is threaded over its whole
-# length; the extrusion's depth is then held and typed as 100, and the
+# extruded circle, its depth held at 80, picked on the model, is threaded
+# over its whole length; the extrusion's depth is then typed as 100, and the
 # thread, not edited, is 100 long with it; typed as 1, too short for a
 # thread, the thread keeps its length and reports why.
 key c
@@ -12,6 +12,15 @@ down L 350 300
 up L 350 300
 key esc
 key x shift
+# Its depth held and typed as 80 on its screen: the model was drawn
+# for a deep part, deeper than a new extrusion of this sketch starts.
+twmove 501 125
+twdown L 501 125
+twup L 501 125
+twmove 501 125
+twdown L 501 125
+twup L 501 125
+edit 80
 view rotated
 move 336 207
 down L 336 207
@@ -31,13 +40,10 @@ twmove 44 10
 twdown L 44 10
 twup L 44 10
 tw
-# The extrusion's depth: held, then typed as 100.
+# The extrusion's depth, held, typed as 100.
 twmove 150 160
 twdown L 150 160
 twup L 150 160
-twmove 501 125
-twdown L 501 125
-twup L 501 125
 twmove 501 125
 twdown L 501 125
 twup L 501 125

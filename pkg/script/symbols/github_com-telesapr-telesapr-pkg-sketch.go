@@ -136,6 +136,7 @@ func init() {
 		"ParseExprText":                reflect.ValueOf(sketch.ParseExprText),
 		"ParseMeshQuality":             reflect.ValueOf(sketch.ParseMeshQuality),
 		"QualityOf":                    reflect.ValueOf(sketch.QualityOf),
+		"RelativePath":                 reflect.ValueOf(sketch.RelativePath),
 		"RemapBottom":                  reflect.ValueOf(constant.MakeFromLiteral("1002", token.INT, 0)),
 		"RemapLast":                    reflect.ValueOf(constant.MakeFromLiteral("1000", token.INT, 0)),
 		"RemapLatheArcCenter":          reflect.ValueOf(constant.MakeFromLiteral("1010", token.INT, 0)),

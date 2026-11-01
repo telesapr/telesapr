@@ -88,7 +88,7 @@ func (tw *textWindow) ShowDatums() {
 			what = sk.EntityName(d.Entity)
 		}
 		if d.Kind != topo.DatumUnknown {
-			what += " " + d.Kind.String()
+			what += " (" + d.Kind.String() + ")"
 		}
 		tw.Printf(false, "%Bp   %s %Fd%s%E %Fl%Ls%D%f[select]%E %Fl%Ln%D%f[rename]%E %Fl%Lx%D%f[delete]%E %Fl%Lm%D%f[mate]%E",
 			bg, pad(d.Name, 13), what,

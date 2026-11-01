@@ -326,25 +326,49 @@ func rect(el *srf.SEdgeList, lo, hi geom.Vector, style int) {
 // the sheet in mm from its bottom left, the views placed and the scale
 // used.
 func (ss *Application) DrawingSheet(d *sketch.Drawing) (srf.SEdgeList, []sketch.DrawingView, float64, error) {
-	var sheet srf.SEdgeList
+	ds, err := ss.drawSheet(d)
+	return ds.sheet, ds.views, ds.scale, err
+}
+
+// drawnSheet is a drawing's sheet as drawSheet makes it, with the boxes
+// of what is written on it beside the views: the dimensions' texts,
+// the cutting planes' letters and the views' names.
+type drawnSheet struct {
+	sheet                 srf.SEdgeList
+	views                 []sketch.DrawingView
+	scale                 float64
+	texts, letters, names []sheetBox
+	// dims are the boxes about the dimensions.
+	dims []sheetBox
+}
+
+// drawSheet draws the drawing of the active group's solid.
+func (ss *Application) drawSheet(d *sketch.Drawing) (drawnSheet, error) {
+	var ds drawnSheet
 	if err := d.Check(); err != nil {
-		return sheet, nil, 0, err
+		return ds, err
 	}
 	g := ss.SK.Group(ss.GW.activeGroupH())
 	if g == nil || len(g.RunningShell.Surface) == 0 && len(g.RunningMesh.Triangles) == 0 {
-		return sheet, nil, 0, errors.New("the active group has no solid to draw")
+		return ds, errors.New("the active group has no solid to draw")
 	}
+	sheet := &ds.sheet
 	kinds := []string{"front", "back", "top", "bottom", "left", "right", "iso"}
 	edges := map[string]srf.SEdgeList{}
 	sizes := map[string][2]float64{}
 	mids := map[string]geom.Vector{}
+	outlines := map[string][]geom.Vector{}
 	for _, k := range kinds {
 		r, u, _ := sketch.ViewDirection(k)
 		el := ss.viewEdges(g, vec(r), vec(u), d.Hidden && k != "iso", d.ModelledThreads)
 		lo, hi := box(&el)
 		edges[k], sizes[k], mids[k] = el, [2]float64{hi.X - lo.X, hi.Y - lo.Y}, lo.Plus(hi).ScaledBy(0.5)
+		outlines[k] = edgePoints(&el)
 	}
 	views, scale := d.Layout(sizes)
+	// What is written keeps clear of the views.
+	var taken []sheetBox
+	var labels []viewLabel
 	for _, v := range views {
 		at := geom.Vector{X: v.X, Y: v.Y}
 		for _, e := range edges[v.Kind].Edges {
@@ -353,16 +377,32 @@ func (ss *Application) DrawingSheet(d *sketch.Drawing) (srf.SEdgeList, []sketch.
 			a.Z, b.Z = 0, 0
 			sheet.AddEdge(a, b, e.AuxA, 0, 0)
 		}
+		sz := sizes[v.Kind]
+		taken = append(taken, boxAbout(at, scale*sz[0], scale*sz[1]))
 		// The view's name below it.
-		label := map[string]string{"front": "FRONT", "back": "BACK", "top": "TOP", "bottom": "BOTTOM",
+		name := map[string]string{"front": "FRONT", "back": "BACK", "top": "TOP", "bottom": "BOTTOM",
 			"left": "LEFT", "right": "RIGHT", "iso": "ISOMETRIC"}[v.Kind]
-		w := res.BuiltinVectorFont().Width(3, label)
-		sheetText(&sheet, label, 3, geom.Vector{X: v.X - w/2, Y: v.Y - scale*sizes[v.Kind][1]/2 - 7})
+		labels = append(labels, viewLabel{text: name, x: v.X, y: v.Y - scale*sz[1]/2 - 7})
 	}
-	extras := ss.drawExtras(&sheet, g, d, views, scale, edges, sizes, mids)
-	ss.drawDimensions(&sheet, g, d, views, scale, mids, extras)
-	ss.sheetFrame(&sheet, d, scale)
-	return sheet, views, scale, nil
+	extras := ss.drawExtras(sheet, g, d, views, scale, edges, sizes, mids)
+	for _, e := range extras {
+		taken = append(taken, e.box)
+	}
+	ds.views, ds.scale = views, scale
+	ds.texts, ds.dims = ss.drawDimensions(sheet, g, d, views, scale, mids, outlines, extras)
+	ds.letters = ss.cuttingPlanes(sheet, g, d, views, scale, sizes, mids, slices.Concat(taken, ds.texts))
+	ds.names = drawViewLabels(sheet, labels, slices.Concat(ds.letters, ds.dims))
+	ss.sheetFrame(sheet, d, scale)
+	return ds, nil
+}
+
+// edgePoints are the ends of the edges.
+func edgePoints(el *srf.SEdgeList) []geom.Vector {
+	out := make([]geom.Vector, 0, 2*len(el.Edges))
+	for _, e := range el.Edges {
+		out = append(out, e.A, e.B)
+	}
+	return out
 }
 
 // label writes text centred under a view whose box on the sheet is
@@ -374,8 +414,8 @@ func label(el *srf.SEdgeList, text string, x, y, height float64) {
 
 // drawExtras adds the section and detail views (roadmap 18.3): each
 // placed by the drawing or in columns right of the views, lettered, a
-// section's cutting plane drawn on the views that see it edge on, a
-// detail's circle on its view. It returns where each went, as
+// detail's circle on its view; cuttingPlanes draws a section's plane on
+// the views that see it edge on. It returns where each went, as
 // dimensions on it need (roadmap 29.2), the sections' first.
 func (ss *Application) drawExtras(sheet *srf.SEdgeList, g *sketch.Group, d *sketch.Drawing, views []sketch.DrawingView,
 	scale float64, edges map[string]srf.SEdgeList, sizes map[string][2]float64, mids map[string]geom.Vector) []dimView {
@@ -423,7 +463,8 @@ func (ss *Application) drawExtras(sheet *srf.SEdgeList, g *sketch.Group, d *sket
 			kind = d.Details[i-len(d.Sections)].View
 		}
 		r, u, _ := sketch.ViewDirection(kind)
-		out[i] = dimView{right: vec(r), up: vec(u), mid: e.mid, at: p, scale: e.k, pictorial: kind == "iso"}
+		out[i] = dimView{right: vec(r), up: vec(u), mid: e.mid, at: p, scale: e.k, pictorial: kind == "iso",
+			outline: edgePoints(&e.el), box: boxAbout(p, e.size[0], e.size[1])}
 		if i >= len(d.Sections) {
 			out[i].clip, out[i].clipR = true, d.Details[i-len(d.Sections)].R
 		}
@@ -436,7 +477,6 @@ func (ss *Application) drawExtras(sheet *srf.SEdgeList, g *sketch.Group, d *sket
 		letter := sketch.Letter(i)
 		if i < len(d.Sections) {
 			label(sheet, "SECTION "+letter+"-"+letter, p.X, p.Y, e.size[1])
-			ss.cuttingPlane(sheet, g, d.Sections[i], letter, placed, scale, sizes, mids)
 			continue
 		}
 		dt := d.Details[i-len(d.Sections)]
@@ -457,50 +497,6 @@ func edgesOf(edges map[string]srf.SEdgeList, kind string) srf.SEdgeList {
 	var el srf.SEdgeList
 	el.Edges = append(el.Edges, edges[kind].Edges...)
 	return el
-}
-
-// cuttingPlane draws a section's plane, dashed and lettered at its
-// ends, on each placed view that sees it edge on.
-func (ss *Application) cuttingPlane(sheet *srf.SEdgeList, g *sketch.Group, sec sketch.DrawingSection, letter string,
-	placed map[string]sketch.DrawingView, scale float64, sizes map[string][2]float64, mids map[string]geom.Vector) {
-	r, u, _ := sketch.ViewDirection(sec.View)
-	keep := sectionPlane(&g.DisplayMesh, vec(r), vec(u), sec.Offset)
-	for kind, v := range placed {
-		if kind == "iso" {
-			continue
-		}
-		vr, vu, _ := sketch.ViewDirection(kind)
-		rr, uu := vec(vr), vec(vu)
-		if math.Abs(rr.Cross(uu).Dot(keep.N)) > 1e-9 {
-			continue
-		}
-		// In the view: a x + b y = D, its points' x and y the view's.
-		a, b := keep.N.Dot(rr), keep.N.Dot(uu)
-		base := geom.Vector{X: a * keep.D, Y: b * keep.D}
-		dir := geom.Vector{X: -b, Y: a}
-		half := math.Hypot(sizes[kind][0], sizes[kind][1])/2 + 6/scale
-		mid := mids[kind]
-		// From the view's middle along the line.
-		t0 := mid.Minus(base).Dot(dir)
-		toSheet := func(p geom.Vector) geom.Vector {
-			q := p.Minus(mid).ScaledBy(scale).Plus(geom.Vector{X: v.X, Y: v.Y})
-			q.Z = 0
-			return q
-		}
-		// Clipped to the view's box, grown a little.
-		hw, hh := sizes[kind][0]/2+5/scale, sizes[kind][1]/2+5/scale
-		var ends []geom.Vector
-		for _, t := range []float64{t0 - half, t0 + half} {
-			p := base.Plus(dir.ScaledBy(t))
-			p.X = math.Max(mid.X-hw, math.Min(mid.X+hw, p.X))
-			p.Y = math.Max(mid.Y-hh, math.Min(mid.Y+hh, p.Y))
-			ends = append(ends, toSheet(p))
-		}
-		sheet.AddEdge(ends[0], ends[1], core.StyleHiddenEdge, 0, 0)
-		for _, e := range ends {
-			sheetText(sheet, letter, 3.5, e.Plus(geom.Vector{X: 1.5, Y: 1.5}))
-		}
-	}
 }
 
 // sheetFrame adds the frame and the title block (roadmap 18.2).

@@ -86,27 +86,6 @@ func (sk *Sketch) anyGroupName(h core.HGroup) string {
 	return fmt.Sprintf("g%03x", h.V)
 }
 
-// entityName names entity he, which may have been deleted since the
-// last regeneration, by its request or its group.
-// EntityName names an entity for a message: a request's entity by its
-// request, "line-segment r005 of g002-sketch", another by its handle
-// and group.
-func (sk *Sketch) EntityName(he core.HEntity) string { return sk.entityName(he) }
-
-func (sk *Sketch) entityName(he core.HEntity) string {
-	if he.IsFromRequest() {
-		if r := sk.Request(he.Request()); r != nil {
-			return r.DescriptionString() + " of " + sk.anyGroupName(r.Group)
-		}
-		if r, ok := sk.names.requests[he.Request()]; ok {
-			gone := Request{H: he.Request(), Type: r.typ}
-			return gone.DescriptionString() + " of " + sk.anyGroupName(r.group)
-		}
-		return fmt.Sprintf("r%03x", he.Request().V)
-	}
-	return fmt.Sprintf("entity %x of %s", he.V, sk.anyGroupName(he.Group()))
-}
-
 // broke records a deletion. What belonged to a deleted group is not
 // recorded: it went with the group, which is.
 func (sk *Sketch) broke(group core.HGroup, item, missing string) {

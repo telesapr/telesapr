@@ -82,7 +82,8 @@ func (m FileMenu) ExportSection(path string) error {
 // Render draws the sketch into a PNG file of width by height pixels,
 // fitted to it and seen from "top", "bottom", "left", "right",
 // "front", "back" or "isometric"; or "window", as the application's
-// window shows it, the same middle and as much of it across.
+// window shows it: the part of the window the toolbar leaves free, its
+// middle the picture's and as much of the model across.
 func (m FileMenu) Render(path string, width, height int, view string) (err error) {
 	d := m.d
 	v, ok := views[strings.ToLower(view)]

@@ -4288,7 +4288,7 @@
 				"methods": {
 					"BillOfMaterials": {
 						"decl": "func (m AssemblyMenu) BillOfMaterials() (items []sketch.BOMItem)",
-						"text": "BillOfMaterials is the parts the model places by linking files, one\nitem a file: each link group places one, and a step and repeat, a\nmirror or a pattern of a link group its copies, but for one where the\npart already is. Groups left out of the model place none. The parts a\nlinked model links in turn count too, once for each place the model\nis, their groups named \"here \u003e there\"."
+						"text": "BillOfMaterials is the parts the model places by linking files, one\nitem a file: each link group places one, and a step and repeat, a\nmirror or a pattern of a link group its copies, but for one where the\npart already is. Groups left out of the model place none. The parts a\nlinked model links in turn count too, once for each place the model\nis, their groups named \"here \u003e there\". Each file is named relative to\nthe model's file, as the model's file stores a link, or absolute while\nthe model is unsaved."
 					},
 					"Clearances": {
 						"decl": "func (m AssemblyMenu) Clearances(below float64) (found []Clearance)",
@@ -4304,7 +4304,7 @@
 					},
 					"ExportBOM": {
 						"decl": "func (m AssemblyMenu) ExportBOM(path string) error",
-						"text": "ExportBOM writes the bill of materials to a CSV file: part, count,\nfile and the groups that place them."
+						"text": "ExportBOM writes the bill of materials to a CSV file: part, count,\nfile and the groups that place them, the files named as\nBillOfMaterials names them."
 					},
 					"Flush": {
 						"decl": "func (m AssemblyMenu) Flush(faceA, faceB Entity) []Constraint",
@@ -5342,7 +5342,7 @@
 					},
 					"Render": {
 						"decl": "func (m FileMenu) Render(path string, width, height int, view string) (err error)",
-						"text": "Render draws the sketch into a PNG file of width by height pixels,\nfitted to it and seen from \"top\", \"bottom\", \"left\", \"right\",\n\"front\", \"back\" or \"isometric\"; or \"window\", as the application's\nwindow shows it, the same middle and as much of it across."
+						"text": "Render draws the sketch into a PNG file of width by height pixels,\nfitted to it and seen from \"top\", \"bottom\", \"left\", \"right\",\n\"front\", \"back\" or \"isometric\"; or \"window\", as the application's\nwindow shows it: the part of the window the toolbar leaves free, its\nmiddle the picture's and as much of the model across."
 					},
 					"Save": {
 						"decl": "func (m FileMenu) Save(path string) (err error)",
@@ -6539,7 +6539,7 @@
 					},
 					"Name": {
 						"decl": "func (f SolidFace) Name() (name string)",
-						"text": "Name names the face: the entity that made it, or the group."
+						"text": "Name names the face for a person, as the screens do: by what made\nit and where, \"top face of g003-extrude\" or \"side face of\ng003-extrude from r005-line-segment\", or by its number in its\ngroup, \"face 4 of g003-lathe\". ID identifies it to a script."
 					},
 					"Neighbours": {
 						"decl": "func (f SolidFace) Neighbours() (faces []SolidFace)",
@@ -7993,8 +7993,8 @@
 						"text": "AssemblyParts are the parts of the model up to group upTo, as the interference check takes them (interference.go): the solid before the first group that combines as an assembly, and each such group."
 					},
 					"BillOfMaterials": {
-						"decl": "func (sk *Sketch) BillOfMaterials() []BOMItem",
-						"text": "BillOfMaterials is the model's parts, by file, in the order of the first group that places each."
+						"decl": "func (sk *Sketch) BillOfMaterials(saveFile string) []BOMItem",
+						"text": "BillOfMaterials is the model's parts, by file, in the order of the first group that places each, with the files named relative to saveFile, the file the model is saved in or \"\" for none (RelativePath)."
 					},
 					"BillOfMaterialsAsRead": {
 						"decl": "func (sk *Sketch) BillOfMaterialsAsRead() []BOMItem",
@@ -8050,6 +8050,10 @@
 					"ClearExisting": {
 						"decl": "func (sk *Sketch) ClearExisting()",
 						"text": "ClearExisting drops the whole sketch and the undo history, leaving it without even the references; the caller must fix that."
+					},
+					"ClearNewLabel": {
+						"decl": "func (sk *Sketch) ClearNewLabel(c *core.Constraint)",
+						"text": "ClearNewLabel moves the label of c, a dimension about to be added to its group, along the dimension's normal until its box is clear of the labels the group has, as the view shows them."
 					},
 					"ClearSection": {
 						"decl": "func (sk *Sketch) ClearSection()",
@@ -8203,7 +8207,7 @@
 					},
 					"EntityName": {
 						"decl": "func (sk *Sketch) EntityName(he core.HEntity) string",
-						"text": "entityName names entity he, which may have been deleted since the last regeneration, by its request or its group."
+						"text": "EntityName names an entity for a person: a request's entity by its request, \"r005-line-segment of g002-sketch\"; an entity a group made by what it is, where, and what it was made from, \"top edge of g003-extrude from r005-line-segment\"."
 					},
 					"EqualConstraints": {
 						"decl": "func (sk *Sketch) EqualConstraints(base core.Constraint, es []core.HEntity) ([]core.Constraint, error)",
@@ -8223,7 +8227,7 @@
 					},
 					"FaceName": {
 						"decl": "func (sk *Sketch) FaceName(id srf.FaceID) string",
-						"text": "FaceName names a face of a solid by its identity: the entity that made it, or for a face no entity names, the group that made it."
+						"text": "FaceName names a face of a solid by its identity: by the entity that made it, \"top face of g003-extrude\" or \"side face of g003-extrude from r005-line-segment\", or for a face no entity names, by its number in the group that made it, \"face 4 of g003-lathe\"."
 					},
 					"FacesArea": {
 						"decl": "func (sk *Sketch) FacesArea(hg core.HGroup, hs []core.HEntity) (float64, error)",
@@ -9341,6 +9345,10 @@
 			"QualityOf": {
 				"decl": "func QualityOf(chordMm, angleDeg float64, segments int) MeshQuality",
 				"text": "QualityOf is the preset whose settings are the given ones, or MeshQualityCustom."
+			},
+			"RelativePath": {
+				"decl": "func RelativePath(saveFile, path string) string",
+				"text": "RelativePath names path, a linked file, as seen from the model saved in saveFile: relative to its folder, as the model's file stores a link, so that the name stays short and stays true when the model and its parts move together."
 			},
 			"ScaleText": {
 				"decl": "func ScaleText(s float64) string",

@@ -111,7 +111,7 @@ row 10  extrude plane sketch
  0-0 64 64 0
  1-20 74 64 0
  21-99 64 64 0
-row 12     one-sided   two-sided   skewed   depth 80.00   held
+row 12     one-sided   two-sided   skewed   depth 10.00   held
  0-2 64 61 0
  3-13 64 61 115 0 1 0
  14-15 64 61 0
@@ -425,7 +425,7 @@ value 0x70013 -20
 value 0x70014 -1.0658141036401503e-14
 value 0x80030000 0
 value 0x80030001 0
-value 0x80030002 40
+value 0x80030002 5
 
 entity 0x10000 workplane {
   group 0x1
@@ -625,13 +625,13 @@ entity 0x80030004 line-segment {
 
 entity 0x80030005 point-n-trans {
   group 0x3
-  act-point -20 -1.0658141036401503e-14 80
+  act-point -20 -1.0658141036401503e-14 10
   act-visible
 }
 
 entity 0x80030006 point-n-trans {
   group 0x3
-  act-point 20 3.552713678800501e-15 80
+  act-point 20 3.552713678800501e-15 10
   act-visible
 }
 
@@ -681,13 +681,13 @@ entity 0x8003000d line-segment {
 
 entity 0x8003000e point-n-trans {
   group 0x3
-  act-point 20 3.552713678800501e-15 80
+  act-point 20 3.552713678800501e-15 10
   act-visible
 }
 
 entity 0x8003000f point-n-trans {
   group 0x3
-  act-point 0.09999999999999787 3.552713678800501e-15 80
+  act-point 0.09999999999999787 3.552713678800501e-15 10
   act-visible
 }
 
@@ -737,13 +737,13 @@ entity 0x80030016 line-segment {
 
 entity 0x80030017 point-n-trans {
   group 0x3
-  act-point 0.09999999999999787 3.552713678800501e-15 80
+  act-point 0.09999999999999787 3.552713678800501e-15 10
   act-visible
 }
 
 entity 0x80030018 point-n-trans {
   group 0x3
-  act-point 0.09999999999999787 -1.0658141036401503e-14 80
+  act-point 0.09999999999999787 -1.0658141036401503e-14 10
   act-visible
 }
 
@@ -793,13 +793,13 @@ entity 0x8003001f line-segment {
 
 entity 0x80030020 point-n-trans {
   group 0x3
-  act-point 0.09999999999999787 -1.0658141036401503e-14 80
+  act-point 0.09999999999999787 -1.0658141036401503e-14 10
   act-visible
 }
 
 entity 0x80030021 point-n-trans {
   group 0x3
-  act-point -20 -1.0658141036401503e-14 80
+  act-point -20 -1.0658141036401503e-14 10
   act-visible
 }
 
@@ -846,7 +846,7 @@ entity 0x80030029 normal-n-copy {
 entity 0x8003002a point-n-trans {
   group 0x3
   construction
-  act-point 0 0 80
+  act-point 0 0 10
   act-visible
 }
 
@@ -860,7 +860,7 @@ entity 0x8003002b line-segment {
 entity 0x8003002c face-normal-pt {
   group 0x3
   points 0x8003002a
-  act-point 0 0 80
+  act-point 0 0 10
   act-normal 0 0 0 1
   act-visible
 }

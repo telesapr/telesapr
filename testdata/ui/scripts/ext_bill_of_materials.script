@@ -1,8 +1,12 @@
 # Bill of Materials (an extension): a STEP part linked twice and a
 # second part once; Analyze > Bill of Materials lists them with their
-# counts, files and groups, and writes them to a CSV file.
+# counts, files and groups, and writes them to a CSV file. The model is
+# saved beside the parts' folder, so each file is named relative to it,
+# as a link group's screen names it.
 menu Assembly|Bill of Materials
 tw
+file $testdata/step/host.tlspr
+menu File|Open...
 file $testdata/step/shapes/cylinder.step
 menu Assembly|Link / Assemble...
 file $testdata/step/shapes/cylinder.step

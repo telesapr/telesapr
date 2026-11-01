@@ -8,7 +8,7 @@ file $testdata/topo/boss.tlspr
 menu File|Open...
 view under
 menu View|Zoom To Fit
-move 371 276
-down L 371 276
-up L 371 276
+move 408.4 279.9
+down L 408.4 279.9
+up L 408.4 279.9
 menu Features|Fillet Edges

@@ -27,7 +27,9 @@ import (
 type BOMItem struct {
 	// Part is the file's name without its folder and extension.
 	Part string
-	// File is the file as the link groups name it.
+	// File is the file relative to the folder of the model's file, as
+	// the model's file stores a link (RelativePath); absolute while the
+	// model is unsaved, or where no relative path reaches it.
 	File string
 	// Count is how many the model places.
 	Count int
@@ -40,13 +42,17 @@ type BOMItem struct {
 }
 
 // BillOfMaterials is the model's parts, by file, in the order of the
-// first group that places each.
-func (sk *Sketch) BillOfMaterials() []BOMItem {
+// first group that places each, with the files named relative to
+// saveFile, the file the model is saved in or "" for none
+// (RelativePath). A file one link names absolute and another relative
+// is one part.
+func (sk *Sketch) BillOfMaterials(saveFile string) []BOMItem {
 	// What each group places: count by file.
 	placed := map[core.HGroup]map[string]int{}
 	var items []BOMItem
 	index := map[string]int{}
 	addAs := func(file string, n int, by string) {
+		file = RelativePath(saveFile, file)
 		i, ok := index[file]
 		if !ok {
 			i = len(items)
@@ -71,15 +77,16 @@ func (sk *Sketch) BillOfMaterials() []BOMItem {
 			if g.LinkFile == "" {
 				continue
 			}
-			mine := map[string]int{g.LinkFile: 1}
-			add(g.LinkFile, 1, g)
-			if it := &items[index[g.LinkFile]]; it.Mass == 0 {
+			file := RelativePath(saveFile, g.LinkFile)
+			mine := map[string]int{file: 1}
+			add(file, 1, g)
+			if it := &items[index[file]]; it.Mass == 0 {
 				it.Mass = linkMass(g)
 			}
 			// What the linked model places in turn, named by the group
 			// here and the groups there.
 			for _, it := range g.LinkParts {
-				mine[it.File] += it.Count
+				mine[RelativePath(saveFile, it.File)] += it.Count
 				addAs(it.File, it.Count, g.DescriptionString()+" > "+strings.Join(it.Groups, ", "))
 			}
 			placed[hg] = mine
@@ -179,5 +186,26 @@ func WriteBOMCSV(w io.Writer, items []BOMItem) error {
 // out is worked out first.
 func (sk *Sketch) BillOfMaterialsAsRead() []BOMItem {
 	sk.markSuppressed()
-	return sk.BillOfMaterials()
+	return sk.BillOfMaterials("")
+}
+
+// RelativePath names path, a linked file, as seen from the model saved
+// in saveFile: relative to its folder, as the model's file stores a
+// link, so that the name stays short and stays true when the model and
+// its parts move together. A relative path is that already; with no
+// saveFile, or where no relative path reaches path (another volume),
+// path is kept absolute.
+func RelativePath(saveFile, path string) string {
+	if path == "" || saveFile == "" || !filepath.IsAbs(path) {
+		return path
+	}
+	dir, err := filepath.Abs(filepath.Dir(saveFile))
+	if err != nil {
+		return path
+	}
+	rel, err := filepath.Rel(dir, path)
+	if err != nil {
+		return path
+	}
+	return rel
 }

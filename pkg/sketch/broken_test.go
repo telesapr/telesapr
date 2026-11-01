@@ -115,7 +115,7 @@ func TestBrokenReferencesNames(t *testing.T) {
 		want   string
 	}{
 		{core.HRequest{V: 0x77}.Entity(1), "deleted g004-sketch-in-plane, which used r077"},
-		{core.HGroup{V: 0x55}.Entity(3), "deleted g004-sketch-in-plane, which used entity 80550003 of g055"},
+		{core.HGroup{V: 0x55}.Entity(3), "deleted g004-sketch-in-plane, which used entity 3 of g055"},
 	} {
 		sk := translateND(t)
 		// The sketch on the face gets an origin that never was.

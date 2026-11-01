@@ -9,7 +9,7 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 func main() {
 	doc := Current()
 	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
-	doc.Features.Extrude(80, "")
+	doc.Features.Extrude(80, "").AsExtrude().SetDepth(80)
 	c := doc.Features.Chamfer([]Entity{doc.Entity(0x80030004), doc.Entity(0x8003001f), doc.Entity(0x80030023)}, 1, "")
 	c.AsChamfer().SetSecondDistance(2)
 }

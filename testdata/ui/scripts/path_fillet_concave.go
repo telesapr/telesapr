@@ -9,9 +9,9 @@ import . "github.com/telesapr/telesapr/pkg/script/api"
 func main() {
 	doc := Current()
 	doc.Sketch.Rect(V(-20, 20, 0), V(16, -6, 0))
-	doc.Features.Extrude(80, "")
+	doc.Features.Extrude(20, "")
 	doc.Features.SketchAt(doc.Entity(0x80030021), V(1, 0, 0), V(0, 1, 0), "")
 	doc.Sketch.Rect(V(-16, 16, 80), V(0, 4, 80))
-	doc.Features.Extrude(80, "")
+	doc.Features.Extrude(10, "")
 	doc.Features.Fillet([]Entity{doc.Entity(0x8005000a)}, 1, "")
 }

@@ -7,9 +7,9 @@ file $testdata/solid/loft-circle-to-square.tlspr
 menu File|Open...
 view rotated
 menu View|Zoom To Fit
-move 400 300
-down L 400 300
-up L 400 300
+move 449 300
+down L 449 300
+up L 449 300
 menu Edit|Datums...
 tw
 twmove 100 130

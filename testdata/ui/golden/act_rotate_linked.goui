@@ -2,7 +2,7 @@ pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0
 active 3 10000
-camera 36 -7.5 -7.5 0 1 0 0 0 1 0
+camera 30.120000000000001 -5.8731739707835331 -7.5 0 1 0 0 0 1 0
 counts 3 3 32 0 28
 editor 0 "" 0 ""
 tw 0 unsaved 0 cursor 0 tooltip ""
@@ -10,7 +10,7 @@ pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0
 active 3 10000
-camera 36 -7.5 -7.5 0 1 0 0 0 1 0
+camera 30.120000000000001 -5.8731739707835331 -7.5 0 1 0 0 0 1 0
 counts 3 3 32 0 28
 editor 0 "" 0 ""
 tw 0 unsaved 1 cursor 0 tooltip ""
