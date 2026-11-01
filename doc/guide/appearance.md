@@ -4,6 +4,34 @@ Example: [`examples/scripts/appearance`](../../examples/scripts/appearance/appea
 shaft sits in a housing. The shaft is metal, the housing is plastic, and the housing's top face
 is matte.
 
+## Step by step
+
+Make a cylinder metal and see it shaded:
+
+1. Press C for a circle, click its centre and a point on it, then press Esc and Shift+X to
+   extrude it.
+
+   ![A cylinder extruded from a circle](images/appearance-1-shaft.png)
+
+2. On the group's screen, click **metal** on the appearance row. Here the colour row's
+   [change] was also given `0.8, 0.55, 0.25`, a bronze, so that the highlight shows.
+
+   ![The appearance row of the group's screen](images/appearance-2-metal.png)
+
+3. Choose Edit > Preferences and tick **shade solids by their appearance**, near the end of
+   the screen.
+
+   ![The box that turns the shading on](images/appearance-3-shade.png)
+
+4. The cylinder is now lit as metal: less diffuse light, and a highlight in its own colour.
+
+   ![The cylinder shaded as metal](images/appearance-4-shaded.png)
+
+To give one face an appearance of its own, right-click it and choose one from the
+**Appearance** menu.
+
+These pictures are made by [`scenarios/appearance.scenario`](scenarios/appearance.scenario).
+
 ## What it does
 
 Every solid has an appearance as well as a colour. The appearance says how light falls on it.
@@ -15,7 +43,7 @@ There are four:
 - **metal**: less diffuse light, and a highlight in the face's own colour.
 
 The window uses the appearance only when **shade solids by their appearance** is ticked on the
-configuration screen (Configuration, on the home screen). Then each face is lit by two lights,
+preferences screen (Edit > Preferences, or configuration on the home screen). Then each face is lit by two lights,
 one from the sky above and a weaker one from the ground below, plus a highlight toward the
 viewer. The GL renderer works this out for every pixel, in a shader. The software renderer,
 which draws without GL and makes the pictures, works it out at the corners of each triangle.

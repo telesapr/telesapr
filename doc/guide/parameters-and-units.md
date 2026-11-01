@@ -5,6 +5,47 @@ whose sizes all come from a table of parameters, and
 [`examples/scripts/feedback`](../../examples/scripts/feedback/feedback.go), which shows units,
 measuring and what a sketch can tell you about itself.
 
+## Step by step
+
+Size a rectangle and its extrusion from two parameters:
+
+1. Draw a rectangle (R), press Esc, click its top side and press D for a dimension. Press Esc
+   to leave its editor. Then choose Edit > Parameters (Ctrl+Shift+M). The property browser
+   shows the table, empty.
+
+   ![The empty table of parameters](images/parameters-and-units-1-table.png)
+
+2. Click "[add a parameter]" and type `width = 60`. Click it again and type `thick = width/6`.
+   The table shows each parameter's value and expression, and what uses it.
+
+   ![Two parameters, the second read from the first](images/parameters-and-units-2-parameters.png)
+
+3. Double-click the dimension and type `width`. The rectangle becomes 60 mm wide. The table
+   now says that the dimension uses `width`.
+
+   ![The dimension driven by width](images/parameters-and-units-3-dimension.png)
+
+4. Click "[edit]" on the row of `width` and type 90.
+
+   ![The edit link of a parameter](images/parameters-and-units-4-edit-link.png)
+
+   The rectangle follows, and so does `thick`, now 15.
+
+   ![The rectangle at 90 mm wide](images/parameters-and-units-5-width-90.png)
+
+5. Press Esc, then Shift+X to extrude. The depth starts at 50 mm: half the width, rounded. On
+   the extrusion's screen, click "held" beside the depth.
+
+   ![The held box beside the depth](images/parameters-and-units-6-held-box.png)
+
+6. Click "[change]" beside the depth and type `thick`. The depth is 15 mm, and the screen shows
+   "(= thick)".
+
+   ![The block, its depth held at thick](images/parameters-and-units-7-depth-thick.png)
+
+These pictures are made by
+[`scenarios/parameters-and-units.scenario`](scenarios/parameters-and-units.scenario).
+
 ## Parameters
 
 A parameter is a name for a value, such as `width = 60` or `margin = height/5`. A dimension can

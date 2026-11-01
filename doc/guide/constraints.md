@@ -9,6 +9,27 @@ other features on this page.
 All of SolveSpace's constraints are here, under the Constrain menu. TeleSAPR adds the ones
 below. Each is one undo step, and each has a script call on `doc.Constrain`.
 
+## Step by step
+
+Hold a rectangle's depth to half its width, so that one dimension sizes both:
+
+1. Draw a rectangle (R) and press Esc. Click its right side, then its top side. The first one
+   picked is the length that is set as a multiple of the second.
+
+   ![The right and top sides selected](images/constraints-1-two-sides.png)
+
+2. Press Z for Constrain > Length / Arc Ratio. Its editor opens: type 0.5 and press Enter. The
+   rectangle's depth becomes half its width, and the label reads "0.500:1".
+
+   ![The ratio on the rectangle](images/constraints-2-ratio.png)
+
+3. Click the top side and press D for a dimension. Type 60. The width becomes 60 mm, and the
+   depth follows to 30 mm.
+
+   ![The width at 60 mm, the depth following](images/constraints-3-width-60.png)
+
+These pictures are made by [`scenarios/constraints.scenario`](scenarios/constraints.scenario).
+
 ## Ratios and differences of lengths
 
 Constrain > Length / Arc Ratio (Z) makes one length a multiple of another. Length / Arc

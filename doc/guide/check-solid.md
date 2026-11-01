@@ -4,6 +4,25 @@ Every example script calls this check. See
 [`examples/scripts/plate`](../../examples/scripts/plate/plate.go) for one that stops with an
 error when the solid is not sound.
 
+## Step by step
+
+1. Make the group whose solid you want to check active. Here it is an L-shaped block.
+
+   ![A sound solid](images/check-solid-1-sound.png)
+
+2. Choose Analyze > Check Solid (Ctrl+Shift+O). For this block the message reads "The solid is
+   sound. It is closed, it does not intersect itself, and its Boolean succeeded." Below that
+   it gives the faces (10), the triangles (28), the volume (296 cm³), the centre of mass and
+   the extent (80.00 x 80.00 x 80.00).
+
+3. On a solid that is not sound, the message reads "The solid is NOT sound.", says what is
+   wrong ("3 naked edges, so it is not closed") and that "The problem edges are marked". They
+   are drawn in red on the model.
+
+   ![The naked edges of an open mesh, drawn in red](images/check-solid-2-naked.png)
+
+These pictures are made by [`scenarios/check-solid.scenario`](scenarios/check-solid.scenario).
+
 ## What it does
 
 Analyze > Check Solid (Ctrl+Shift+O) looks at the active group's solid and reports:

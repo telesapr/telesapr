@@ -5,6 +5,44 @@ held between a shortest and a longest length, with its end riding in a slot.
 
 A bound is a dimension that holds from one side only: "at least 30" or "at most 30".
 
+## Step by step
+
+Keep a line between 40 and 50 mm long, then put a point on it:
+
+1. Draw a line segment (S), press Esc, and click the line to select it. The property browser
+   shows its length, here 30 mm.
+
+   ![A line of 30 mm selected](images/limits-1-line-selected.png)
+
+2. Choose Constrain > Minimum Dimension. The bound is made at the length the line has now, and
+   its editor opens. Type 40 and press Enter. The line grows to 40 mm, and the label reads
+   "min 40.00".
+
+   ![The line held at least 40 mm long](images/limits-2-min.png)
+
+3. Select the line again and choose Constrain > Maximum Dimension. Type 50. The line is already
+   shorter than that, so nothing moves. The new label is drawn below the first, clear of it.
+
+   ![A minimum of 40 and a maximum of 50 on one line](images/limits-3-max.png)
+
+4. Drag the line's right end out. The line grows to 50 mm and no further. Here its other end
+   is free, so it follows the mouse instead.
+
+   ![The line dragged out past its maximum](images/limits-4-drag-stops.png)
+
+5. Draw a point (P) below the line and press Esc. Select the point and the line.
+
+   ![A point and the line selected](images/limits-5-point-and-line.png)
+
+6. Choose Constrain > On Segment. The point and the line move to meet, with the point between
+   the line's ends.
+
+   ![The point on the segment](images/limits-6-on-segment.png)
+
+These pictures are made by [`scenarios/limits.scenario`](scenarios/limits.scenario).
+
+## In the window
+
 Constrain > Minimum Dimension and Constrain > Maximum Dimension make one. Select what Distance
 / Diameter or Angle takes: two points, a line, a point and a line, a workplane or a face, a
 circle or an arc, two lines or normals. The bound is made at the value the sketch has now,

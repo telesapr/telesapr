@@ -1,0 +1,78 @@
+# The user's guide as a web site: make guide-site builds it into
+# site/guide, which make deploy-site publishes with the rest of site/.
+site_name: TeleSAPR user's guide
+docs_dir: doc/guide
+site_dir: site/guide
+repo_url: https://github.com/telesapr/telesapr
+edit_uri: ""
+exclude_docs: |
+  scenarios/
+hooks:
+  - tools/docs/hooks.py
+# The logo goes back to the landing page the guide sits under.
+extra:
+  homepage: ../
+theme:
+  name: material
+  # The landing page's logo, which the guide sits beside on the site
+  # (site/telesapr.svg), so the two are one file.
+  logo: ../telesapr.svg
+  favicon: ../telesapr.svg
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - content.code.copy
+  palette:
+    - scheme: slate
+      primary: blue grey
+markdown_extensions:
+  - tables
+  - admonition
+  - attr_list
+  - pymdownx.highlight
+  - pymdownx.superfences
+nav:
+  - Home: README.md
+  - First steps:
+      - Getting started: getting-started.md
+      - The window: interface.md
+  - Sketching:
+      - Constraints while drawing: drawing.md
+      - Constraints: constraints.md
+      - Parameters and units: parameters-and-units.md
+      - Datums: datums.md
+      - Sketch on a face: sketch-on-face.md
+      - Limits: limits.md
+  - Solid features:
+      - Fillet: fillet.md
+      - Chamfer: chamfer.md
+      - Draft: draft.md
+      - Shell: shell.md
+      - Two-sided extrusion: two-sided.md
+      - Mirror: mirror.md
+      - Pattern: pattern.md
+      - Loft: loft.md
+      - Sweep: sweep.md
+      - Wrap: wrap.md
+      - Threads: threads.md
+      - History: history.md
+  - Looking and checking:
+      - Appearance: appearance.md
+      - Section view: section-view.md
+      - Check solid: check-solid.md
+      - Mass: mass.md
+      - Clearance: clearance.md
+  - Assemblies:
+      - STEP and links: step-links.md
+      - Bill of materials: bill-of-materials.md
+  - Drawings and files:
+      - Drawings: drawings.md
+      - Export and import: export-import.md
+  - Scripting:
+      - Scripts: scripts.md
+      - AI assistants: ai.md
+  - Reference:
+      - Menus: reference/menus.md
+      - Keyboard shortcuts: reference/shortcuts.md
+      - Toolbar: reference/toolbar.md

@@ -5,6 +5,28 @@ prints what was read. Given no file, it exports a plate as STEP and links that b
 [`examples/scripts/stepsolid`](../../examples/scripts/stepsolid/stepsolid.go) links a STEP
 file as a solid and cuts a slot across it.
 
+## Step by step
+
+Link a STEP file of a block with a hole, then read it as a solid:
+
+1. Choose Assembly > Link / Assemble... (Shift+I) and pick the STEP file. The block comes in
+   as a reference mesh, with a point at each vertex and at the hole's centre. Its screen says
+   what was read: STEP AP214 in millimetres, 1 shape, 7 faces, 360 triangles, and the chord
+   tolerance.
+
+   ![The STEP file linked as a reference mesh](images/step-links-1-mesh.png)
+
+2. On the row **read as**, click **solid**.
+
+   ![The read as row](images/step-links-2-read-as.png)
+
+3. The screen adds "read as a solid, 7 faces exact", and the hole is drawn smooth. Analyze >
+   Check Solid now says "The solid is sound." with 7 faces of 11 patches.
+
+   ![The STEP file read as a solid](images/step-links-3-solid.png)
+
+These pictures are made by [`scenarios/step-links.scenario`](scenarios/step-links.scenario).
+
 ## What it does
 
 Assembly > Link / Assemble... (Shift+I) brings another file into the model as a part. The file

@@ -1,0 +1,36 @@
+# The pictures of mass.md: the pin, the bored plate and the hollowed
+# box of examples/scripts/clearance (testdata/solid/clearance.tlspr),
+# the plate made aluminium and the pin steel. The property browser is
+# widened so that the density shows at the end of the appearance row.
+file $testdata/solid/clearance.tlspr
+menu File|Open...
+size tw 800 600
+view rotated
+menu View|Zoom To Fit
+cursor on
+twmove 200 220
+mark 128 210 100 22 tw
+shot mass-1-groups
+twdown L 200 220
+twup L 200 220
+twmove 676 245
+mark 495 240 258 22 tw
+shot mass-2-density tw
+twdown L 676 245
+twup L 676 245
+edit 2.7
+cursor off
+mark 495 240 258 22 tw
+shot mass-3-set tw
+twmove 30 5
+twdown L 30 5
+twup L 30 5
+twmove 200 295
+twdown L 200 295
+twup L 200 295
+twmove 676 245
+twdown L 676 245
+twup L 676 245
+edit 7.85
+answer ok
+menu Analyze|Measure Volume

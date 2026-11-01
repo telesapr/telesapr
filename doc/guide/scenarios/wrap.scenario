@@ -1,0 +1,72 @@
+# The pictures of wrap.md: a cylinder turned from a rectangle about its
+# lower side, a rectangle drawn in a workplane through the cylinder's
+# axis and wrapped onto it, raised then sunk; then the wrap example's
+# handle.
+cursor on
+key r
+move 250 200
+down L 250 200
+up L 250 200
+move 350 250
+down L 350 250
+up L 350 250
+key esc
+move 300 250
+down L 300 250
+up L 300 250
+key l shift
+key esc
+view rotated
+menu View|Zoom To Fit
+menu View|Zoom Out
+cursor off
+shot wrap-1-lathed gw
+# A workplane at the rectangle's corner, parallel to XY: it holds the
+# axis, so it is parallel to it.
+view default
+move 250 200
+down L 250 200
+up L 250 200
+key w shift
+view default
+menu View|Show|Construction Entities
+cursor on
+key r
+move 262 212
+down L 262 212
+up L 262 212
+move 330 236
+down L 330 236
+up L 330 236
+key esc
+menu View|Show|Construction Entities
+move 420 330
+mark 254 204 84 40
+shot wrap-2-sketch
+menu View|Show|Selectable Faces
+move 330 280
+down L 330 280
+up L 330 280
+shot wrap-3-face gw
+menu Features|Wrap Sketch Onto Face
+view rotated
+menu View|Zoom To Fit
+menu View|Zoom Out
+cursor off
+shot wrap-4-raised
+cursor on
+twmove 125 165
+mark 116 162 70 22 tw
+shot wrap-5-sunk-link tw
+twdown L 125 165
+twup L 125 165
+cursor off
+shot wrap-6-sunk gw
+file $repo/examples/scripts/wrap/wrap.go
+answer no
+menu File|New
+menu Script|Run File...
+view rotated
+menu View|Zoom To Fit
+menu View|Zoom Out
+shot wrap-7-handle gw

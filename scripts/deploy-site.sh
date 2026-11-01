@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# deploy-site.sh -- Copies the web site in site/ to the TeleSAPR project's
-# web space on SourceForge (https://telesapr.sourceforge.io), over rsync
-# and SSH:
+# deploy-site.sh -- Copies the web site in site/, with the user's guide
+# make guide-site built into site/guide, to the TeleSAPR project's web
+# space on SourceForge (https://telesapr.sourceforge.io), over rsync and
+# SSH:
 #
 #     SF_USER=<sourceforge user> ./scripts/deploy-site.sh [--dry-run]
 #
@@ -35,6 +36,11 @@ if [ -z "$SF_USER" ]; then
 fi
 if [ ! -f "$SITE/index.html" ]; then
   echo "error: $SITE/index.html not found" >&2
+  exit 2
+fi
+# The landing page links to the guide, which make guide-site builds.
+if [ ! -f "$SITE/guide/index.html" ]; then
+  echo "error: $SITE/guide/index.html not found: run make guide-site, or make deploy-site" >&2
   exit 2
 fi
 

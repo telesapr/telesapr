@@ -4,6 +4,40 @@ Example: [`examples/scripts/pedestal`](../../examples/scripts/pedestal/pedestal.
 column drawn on its top and a cap drawn on the column's top. When the base is made thicker, the
 column and the cap go up with it.
 
+## Step by step
+
+Stand a column on a base, then make the base thicker:
+
+1. Draw a rectangle (R), press Esc, and extrude it (Shift+X). Here its depth is held at 10 mm.
+   Click the top face of the block. It is hatched when selected, and the property browser describes it.
+
+   ![The base's top face selected](images/sketch-on-face-1-face.png)
+
+2. Choose Features > Sketch On Face (Shift+B). A new sketch group starts in the face, and the
+   view turns to look straight at it. The group's screen names the face it lies in.
+
+   ![The new sketch on the face](images/sketch-on-face-2-workplane.png)
+
+3. Draw a rectangle inside the face and press Esc. Here the view is turned to show the sketch
+   on the block.
+
+   ![A rectangle drawn on the face](images/sketch-on-face-3-rectangle.png)
+
+4. Extrude it (Shift+X). The column stands on the base. Here its depth is held at 30 mm, as
+   [Parameters and units](parameters-and-units.md#an-extrusions-depth-and-a-revolves-angle)
+   says.
+
+   ![The column extruded from the face](images/sketch-on-face-4-column.png)
+
+5. Make the base thicker: on the home screen click the base's extrusion, and change its depth,
+   here from 10 to 25 mm. The sketch on the face and the column go up with the face.
+
+   ![The base thicker, the column still on top](images/sketch-on-face-5-thicker.png)
+
+These pictures are made by [`scenarios/sketch-on-face.scenario`](scenarios/sketch-on-face.scenario).
+
+## In the window
+
 Features > Sketch On Face (Shift+B) starts a sketch whose workplane lies in a flat face of the
 solid so far. Select one face on the model. It may be a face an extrusion made, or one that no
 entity stands for, such as a chamfer's face or a shell's. A right click on a face offers the

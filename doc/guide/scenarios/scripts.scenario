@@ -1,0 +1,26 @@
+# The pictures of scripts.md. The script console is a window of its own
+# that the headless platform keeps as text, so the page quotes what the
+# console lines below print instead of picturing it.
+#
+# The form example, run with the values a user would type into its
+# dialog; save=0 keeps it from writing washer.tlspr.
+file $repo/examples/scripts/form/form.go
+form outer=40 slots=6 save=0
+menu Script|Run File...
+console
+view rotated
+menu View|Zoom To Fit
+shot scripts-1-washer
+# A new drawing, without saving the washer, and the describe example.
+answer no
+menu File|New
+file $repo/examples/scripts/describe/describe.go
+menu Script|Run File...
+console
+view rotated
+menu View|Zoom To Fit
+shot scripts-2-plate gw
+# The plate written out as a script.
+file $tmp/plate.go
+menu File|Export|Script (.go)...
+cat $tmp/plate.go

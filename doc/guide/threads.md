@@ -3,6 +3,63 @@
 Example: [`examples/scripts/bolt`](../../examples/scripts/bolt/bolt.go), a hexagon head bolt
 with a thread of any designation, M8 unless you give another.
 
+## Step by step
+
+Thread the end of a 10 mm rod:
+
+1. Draw a circle 10 mm across and extrude it (Shift+X). The rod starts 5 mm long, half the
+   circle's width. On the extrusion's screen, tick "held", click "[change]" beside the depth
+   and type 20. In the view from above, click the circle at the rod's top end. It is drawn in
+   red when selected.
+
+   ![The rod's top rim selected](images/threads-1-rim.png)
+
+2. Choose Features > Screw Thread... (Shift+E). The property browser shows the thread's
+   screen. It offers M10, the standard thread nearest the circle, 15 mm long.
+
+   ![The screw thread screen](images/threads-2-screen.png)
+
+3. Click "[change]" beside the length and type 12. Tick "flip the direction": the top rim's
+   normal points out of the rod, so the thread must run against it, down into the rod. Then
+   click "make the thread now".
+
+   ![The screen filled in](images/threads-3-filled.png)
+
+4. The rod is turned down and the ridge swept round it. The thread's screen says what was made
+   and whether the solid came out sound.
+
+   ![The M10 thread and its screen](images/threads-4-made.png)
+
+   Seen from the side:
+
+   ![The M10 thread from the side](images/threads-5-metric.png)
+
+5. To change the thread, click "[edit thread]". The same screen opens, filled in from the
+   thread. Change what you need and click "make the thread again now".
+
+   ![The edit thread link](images/threads-6-edit-link.png)
+
+   Here the designation is changed to Tr10x2, a trapezoidal thread with a 2 mm pitch and
+   30° flanks, then to S10x2, a metric buttress thread whose load flank is nearly square to
+   the axis:
+
+   ![The rod with a Tr10x2 thread](images/threads-7-trapezoidal.png)
+
+   ![The rod with an S10x2 thread](images/threads-8-buttress.png)
+
+6. "[choose]" beside the designation lists the series. Pick a series to see its sizes, and a
+   size to see its pitches. Here the metric series, with M10 picked.
+
+   ![The metric sizes and M10's pitches](images/threads-9-choose.png)
+
+7. Click "cosmetic" on the "as modelled / cosmetic" row and make the thread again. The thread
+   is now only recorded on the rod, which keeps its diameter. The window draws its turns as
+   thin lines.
+
+   ![A cosmetic M10 thread](images/threads-10-cosmetic.png)
+
+These pictures are made by [`scenarios/threads.scenario`](scenarios/threads.scenario).
+
 ## Making a thread
 
 Select a circle or an arc, such as the rim of an extruded circle, and choose Features > Screw

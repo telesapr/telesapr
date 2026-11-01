@@ -7,3 +7,8 @@ coverage.out
 # go-winres writes these for the Windows build (scripts/dist-windows.sh)
 *.syso
 .claude
+
+# Built by make guide-site.
+/site/guide/
+# Python caches (tools/docs/hooks.py run by mkdocs).
+__pycache__/

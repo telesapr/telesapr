@@ -1,0 +1,37 @@
+# The pictures of bill-of-materials.md: examples/scripts/bom, which
+# saves a plate and a bolt as parts, links them into a bracket with the
+# bolt repeated, and links the bracket twice into the model; its bill
+# of materials; and a density on the bracket's link group, which the
+# bill turns into a mass.
+file $repo/examples/scripts/bom/bom.go
+menu Script|Run File...
+# Saved in the working directory, beside the parts folder the example
+# made there, so that the bill gives paths relative to the model: a
+# relative path here on purpose.
+file assembly.tlspr
+menu File|Save As...
+size tw 800 600
+view rotated
+menu View|Zoom To Fit
+cursor off
+shot bill-of-materials-1-linked
+menu Assembly|Bill of Materials
+shot bill-of-materials-2-bill tw
+# The bracket's link group, from the list of groups.
+twmove 30 5
+twdown L 30 5
+twup L 30 5
+twmove 200 155
+twdown L 200 155
+twup L 200 155
+cursor on
+twmove 676 245
+mark 495 240 258 22 tw
+shot bill-of-materials-3-link tw
+twdown L 676 245
+twup L 676 245
+edit 2.7
+cursor off
+menu Assembly|Bill of Materials
+tw
+shot bill-of-materials-4-mass tw

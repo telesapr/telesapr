@@ -1,0 +1,73 @@
+# The pictures of parameters-and-units.md: a rectangle whose width is
+# the parameter width, changed in the table; then extruded, its depth
+# held at an expression of the parameter.
+size tw 760 600
+cursor on
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+move 290 200
+down L 290 200
+up L 290 200
+key d
+key esc
+menu Edit|Parameters...
+twmove 80 133
+mark 30 122 170 22 tw
+shot parameters-and-units-1-table
+twdown L 80 133
+twup L 80 133
+edit width = 60
+twmove 80 153
+twdown L 80 153
+twup L 80 153
+edit thick = width/6
+cursor off
+shot parameters-and-units-2-parameters tw
+# The dimension takes the parameter by name.
+cursor on
+move 290 150
+down L 290 150
+up L 290 150
+down L 290 150
+dbl L 290 150
+up L 290 150
+edit width
+menu View|Zoom To Fit
+menu View|Zoom Out
+cursor off
+shot parameters-and-units-3-dimension
+# The table's value changed: the rectangle follows.
+cursor on
+twmove 420 123
+mark 400 112 60 22 tw
+shot parameters-and-units-4-edit-link tw
+twdown L 420 123
+twup L 420 123
+edit 90
+menu View|Zoom To Fit
+menu View|Zoom Out
+cursor off
+shot parameters-and-units-5-width-90
+# Extruded, the depth held, then set to the parameter thick.
+key esc
+key x shift
+cursor on
+twmove 505 128
+mark 479 118 66 22 tw
+shot parameters-and-units-6-held-box tw
+twdown L 505 128
+twup L 505 128
+twmove 510 128
+twdown L 510 128
+twup L 510 128
+edit thick
+view rotated
+menu View|Zoom To Fit
+cursor off
+shot parameters-and-units-7-depth-thick

@@ -66,6 +66,20 @@ The values you give are written into the script's text in place of the ones it w
 So the script runs the same way whichever way it got them, and a field you don't give keeps its
 value. The example is [`examples/scripts/form`](../../examples/scripts/form).
 
+Run from Script > Run File, the example's dialog is titled Washer, with its six fields and the
+buttons Run and Cancel. Given 40 for the outer diameter, 6 slots, and Save washer.tlspr
+unticked, the console shows
+
+```
+run …/examples/scripts/form/form.go
+g003-washer: 6 slots, volume 3179 mm³
+form.go done.
+```
+
+and the window the washer, its finish metal as the form gave it:
+
+![The washer the form example makes](images/scripts-1-washer.png)
+
 ## The script library
 
 A script can import a package of your own by its path in the **script library folder**:
@@ -157,6 +171,58 @@ script ([Drawing with an AI model](ai.md)). Example:
 ```go
 fmt.Println(doc.Describe())
 ```
+
+The example draws a 40 by 20 mm plate, 4 mm thick, with a 6 mm hole held in size but not in
+place:
+
+![The plate the describe example draws](images/scripts-2-plate.png)
+
+Run from Script > Run File, it prints this in the console, first the drawing, then the sketch
+group `g002`:
+
+```
+sketch: unit mm, unsaved changes
+groups, in the order the model is built:
+    g002-sketch-in-plane, sketch-in-plane: solved, 2 DOF
+    g003-plate, extrude: solved, 1 DOF, volume 3087.632 mm³, bounds (0, 0, 0) to (40, 20, 4); active
+active group g003-plate, extrude: solved, 1 DOF, volume 3087.632 mm³, bounds (0, 0, 0) to (40, 20, 4)
+g002-sketch-in-plane, sketch-in-plane: solved, 2 DOF
+  requests:
+    r004-line-segment: line (40, 0, 0) to (40, 20, 0)
+    r005-line-segment: line (0, 0, 0) to (40, 0, 0)
+    ...
+    r008-circle: circle at (10, 10, 0), radius 3
+  constraints:
+    c001-pts-coincident, on r004-line-segment, r005-line-segment
+    ...
+    c00a-pt-pt-distance = 40, on r005-line-segment
+    c00b-pt-pt-distance = 20, on r004-line-segment
+    c00c-diameter = 6, on r008-circle
+line r005-line-segment is 40 mm long
+describe.go done.
+```
+
+File > Export > Script (.go) writes this plate back as a program. Its `main` begins:
+
+```go
+func main() {
+	doc := api.Current()
+
+	g2 := doc.Active()
+	r4 := doc.Sketch.Line(api.V(40, 0, 0), api.V(40, 20, 0))
+	r5 := doc.Sketch.Line(api.V(0, 0, 0), api.V(40, 0, 0))
+	...
+	r8 := doc.Sketch.Circle(api.V(10, 10, 0), 3)
+	c1 := doc.Constrain.Raw(core.ConstraintPointsCoincident, r4.Part(1), r5.Part(2), api.Entity{}, api.Entity{}, false, false)
+	...
+	c12 := doc.Constrain.Raw(core.ConstraintDiameter, api.Entity{}, api.Entity{}, r8, api.Entity{}, false, false)
+	c12.Set(6)
+
+	g3 := doc.Features.Extrude(4, "plate")
+```
+
+The pictures and the console's text are made by
+[`scenarios/scripts.scenario`](scenarios/scripts.scenario).
 
 ## Not yet
 

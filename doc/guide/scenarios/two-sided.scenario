@@ -1,0 +1,31 @@
+# The pictures of two-sided.md: a rectangle extruded one-sided, then
+# two-sided from the extrusion's screen; last, the spacer example.
+# Coordinates are those of the 600x600 headless window.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+view rotated
+menu View|Zoom To Fit
+cursor on
+twmove 186 125
+mark 36 122 240 22 tw
+shot two-sided-1-one-sided
+twdown L 186 125
+twup L 186 125
+menu View|Zoom To Fit
+cursor off
+shot two-sided-2-two-sided
+# The spacer example, in a new file.
+answer no
+menu File|New
+file $repo/examples/scripts/spacer/spacer.go
+menu Script|Run File...
+view rotated
+menu View|Zoom To Fit
+shot two-sided-3-spacer

@@ -1,0 +1,73 @@
+# The pictures of datums.md: a block's top face named top on the
+# datums screen; then a model linking a tile twice, and the tiles'
+# tops mated flush by name.
+size tw 760 600
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+twmove 505 128
+twdown L 505 128
+twup L 505 128
+twmove 510 128
+twdown L 510 128
+twup L 510 128
+edit 10
+move 290 265
+down L 290 265
+up L 290 265
+menu Edit|Datums...
+cursor on
+twmove 120 133
+view rotated
+menu View|Zoom To Fit
+mark 30 122 245 22 tw
+shot datums-1-name-link
+twdown L 120 133
+twup L 120 133
+edit top
+cursor off
+shot datums-2-named
+# A model that links a tile twice, the tiles' tops mated by name.
+answer no
+file $testdata/datums/host.tlspr
+menu File|Open...
+file $testdata/datums/tile.tlspr
+menu Assembly|Link / Assemble...
+file $testdata/datums/tile.tlspr
+menu Assembly|Link / Assemble...
+menu Edit|Datums...
+view rotated
+menu View|Zoom To Fit
+menu View|Zoom Out
+# The second tile dragged up and aside by a corner.
+move 421 77
+down L 421 77
+move 430 72 L
+move 450 55 L
+move 480 35 L
+up L 480 35
+key esc
+menu View|Zoom To Fit
+menu Edit|Datums...
+cursor off
+shot datums-3-linked
+twmove 361 183
+twdown L 361 183
+twup L 361 183
+twmove 361 253
+twdown L 361 253
+twup L 361 253
+cursor on
+twmove 60 323
+mark 30 312 70 22 tw
+shot datums-4-mate-names tw
+twdown L 60 323
+twup L 60 323
+cursor off
+shot datums-5-flush

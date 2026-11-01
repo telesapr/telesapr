@@ -10,6 +10,40 @@ Examples:
   entity draws, chamfered by its name.
 - [`examples/scripts/bevel`](../../examples/scripts/bevel/bevel.go): a bevel of two distances.
 
+## Step by step
+
+Cut two top edges of a block:
+
+1. Press R for a rectangle and click two corners. Press Esc, then Shift+X to extrude it.
+   Click the two edges to cut, as seen from above. They are drawn in red when selected.
+
+   ![Two top edges of the block selected](images/chamfer-1-edges.png)
+
+2. Choose Features > Chamfer Edges. The edges are cut at 1 mm, and the property browser lists
+   them.
+
+   ![The chamfer group and its edges](images/chamfer-2-chamfered.png)
+
+3. Click "[change]" beside the distance and type a new one, here 10.
+
+   ![The distance row of the chamfer group](images/chamfer-3-distance-link.png)
+
+   ![The edges cut at 10 mm](images/chamfer-4-distance-10.png)
+
+4. To cut further back on one face than on the other, click "[change]" beside the second
+   distance and type it, here 4. The cut now goes 10 mm down the sides and 4 mm across the top.
+
+   ![The second distance row](images/chamfer-5-second-link.png)
+
+   ![The edges cut at 10 and 4 mm](images/chamfer-6-two-distances.png)
+
+5. Click "[swap]" to exchange the two distances: 4 mm down the sides, 10 mm across the top.
+
+   ![The two distances swapped](images/chamfer-7-swapped.png)
+
+These pictures are made by [`scenarios/chamfer.scenario`](scenarios/chamfer.scenario), which
+replays the same clicks on the program (`scripts/regen-doc-images.sh`).
+
 ## In the window
 
 Choose Features > Chamfer Edges (Shift+Q). It cuts edges of the solid built so far. The
@@ -110,6 +144,8 @@ corner is cut the way OpenCASCADE cuts it:
 
 Example: [`examples/scripts/chamfercorner`](../../examples/scripts/chamfercorner/chamfercorner.go),
 a block with every edge chamfered at two distances.
+
+![The chamfercorner example: every edge cut at 2 and 4 mm](images/chamfer-8-corners.png)
 
 **Two chamfered edges meet, the third edge left sharp.** The two chamfers meet along the line
 where their planes cross, whatever their distances. The one that reaches further down the sharp

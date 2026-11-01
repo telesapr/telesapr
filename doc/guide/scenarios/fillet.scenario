@@ -1,0 +1,42 @@
+# The pictures of fillet.md: a rectangle, extruded, two top edges
+# picked and rounded. Coordinates are those of the 600x600 headless
+# window.
+cursor on
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+shot fillet-1-rectangle
+key esc
+key x shift
+view rotated
+menu View|Zoom To Fit
+cursor off
+shot fillet-2-extruded
+# Back to the view from above, where the edges are picked.
+view default
+cursor on
+move 382.5 232.5
+down L 382.5 232.5
+up L 382.5 232.5
+move 247.5 202.5
+down L 247.5 202.5
+up L 247.5 202.5
+shot fillet-3-edges gw
+menu Features|Fillet Edges
+view rotated
+menu View|Zoom To Fit
+cursor off
+shot fillet-4-filleted
+cursor on
+twmove 150 125
+mark 28 122 190 22 tw
+shot fillet-5-radius-link tw
+twdown L 150 125
+twup L 150 125
+edit 10
+cursor off
+shot fillet-6-radius-10

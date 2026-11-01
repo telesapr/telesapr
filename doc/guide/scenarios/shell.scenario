@@ -1,0 +1,71 @@
+# The pictures of shell.md: a rectangle extruded, its top face picked
+# and the block hollowed open there; the thickness changed; then a side
+# face taken away as well, through [change] beside the faces; last,
+# the pot example. Coordinates are those of the 600x600 headless
+# window.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+# The top face is picked in the view from above.
+cursor on
+move 290 265
+down L 290 265
+up L 290 265
+shot shell-1-face gw
+menu Features|Shell Solid
+view rotated
+menu View|Zoom To Fit
+cursor off
+shot shell-2-hollowed
+cursor on
+twmove 200 125
+mark 28 122 217 22 tw
+shot shell-3-thickness-link tw
+twdown L 200 125
+twup L 200 125
+edit 4
+cursor off
+shot shell-4-thickness-4
+# [change] beside the faces, with nothing selected, makes the extrusion
+# active and says what to pick (a message box, answered here).
+answer ok
+twmove 210 145
+twdown L 210 145
+twup L 210 145
+# Fitted before anything is picked: Zoom To Fit fits the selection.
+view rotated
+menu View|Zoom To Fit
+cursor on
+move 300 200
+down L 300 200
+up L 300 200
+move 430 350
+down L 430 350
+up L 430 350
+mark 28 142 345 22 tw
+shot shell-5-two-faces
+twmove 210 145
+twdown L 210 145
+twup L 210 145
+# The extrusion is still active: make the shell active again.
+twmove 320 75
+twdown L 320 75
+twup L 320 75
+view rotated
+menu View|Zoom To Fit
+cursor off
+shot shell-6-open-twice
+# The pot example, in a new file: rounded corners and a drain hole.
+answer no
+menu File|New
+file $repo/examples/scripts/pot/pot.go
+menu Script|Run File...
+view rotated
+menu View|Zoom To Fit
+shot shell-7-pot gw

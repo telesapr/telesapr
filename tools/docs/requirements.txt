@@ -1,0 +1,2 @@
+# The user's guide site (make guide-site), run through uv so nothing is installed.
+mkdocs-material==9.6.14

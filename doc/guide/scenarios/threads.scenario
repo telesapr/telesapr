@@ -1,0 +1,120 @@
+# The pictures of threads.md: a rod of 10 mm, threaded M10 from its
+# top rim down; the thread's screen, the series list; then the thread
+# edited to other forms.
+cursor on
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 325 300
+down L 325 300
+up L 325 300
+key esc
+key x shift
+# The extrusion is 5 mm deep, half the circle: hold its depth and make
+# it 20.
+twmove 505 133
+twdown L 505 133
+twup L 505 133
+twmove 490 133
+twdown L 490 133
+twup L 490 133
+edit 20
+view default
+move 325 300
+down L 325 300
+up L 325 300
+mark 268 268 64 64
+shot threads-1-rim gw
+menu Features|Screw Thread...
+size tw 900 600
+cursor off
+shot threads-2-screen tw
+# The length, then flip: the top rim's normal points out of the rod.
+twmove 220 150
+twdown L 220 150
+twup L 220 150
+edit 12
+twmove 64 230
+twdown L 64 230
+twup L 64 230
+cursor on
+twmove 70 260
+mark 10 250 180 22 tw
+shot threads-3-filled tw
+twdown L 70 260
+twup L 70 260
+size tw 600 600
+view rotated
+menu View|Zoom To Fit
+menu View|Zoom Out
+# The pointer where nothing is under it, so nothing is drawn hovered.
+move 590 300
+cursor off
+shot threads-4-made
+# From the side, the axis upright, to compare the forms.
+view default
+move 300 300
+down M 300 300
+move 300 200 M
+up M 300 200
+menu View|Zoom To Fit
+menu View|Zoom Out
+move 590 120
+cursor off
+shot threads-5-metric gw
+# [edit thread], then another designation, made again.
+cursor on
+twmove 255 105
+mark 146 102 124 22 tw
+shot threads-6-edit-link tw
+twdown L 255 105
+twup L 255 105
+twmove 172 110
+twdown L 172 110
+twup L 172 110
+edit Tr10x2
+twmove 70 260
+twdown L 70 260
+twup L 70 260
+cursor off
+shot threads-7-trapezoidal gw
+twmove 190 105
+twdown L 190 105
+twup L 190 105
+twmove 217 110
+twdown L 217 110
+twup L 217 110
+edit S10x2
+twmove 70 260
+twdown L 70 260
+twup L 70 260
+shot threads-8-buttress gw
+# The series list, from [choose] beside the designation.
+twmove 190 105
+twdown L 190 105
+twup L 190 105
+size tw 900 600
+twmove 289 110
+twdown L 289 110
+twup L 289 110
+# The metric series, its sizes and M10's pitches.
+twmove 154 135
+twdown L 154 135
+twup L 154 135
+twmove 430 185
+twdown L 430 185
+twup L 430 185
+shot threads-9-choose tw
+# Back to the thread, now M10, made cosmetic.
+twmove 55 285
+twdown L 55 285
+twup L 55 285
+twmove 694 205
+twdown L 694 205
+twup L 694 205
+twmove 70 260
+twdown L 70 260
+twup L 70 260
+size tw 600 600
+shot threads-10-cosmetic gw

@@ -1,0 +1,18 @@
+# The picture of export-import.md: the export settings of the
+# preferences screen. The Triangle Mesh dialog and the file choosers are
+# not drawn on the headless platform, so the page gives them in words.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+menu Edit|Preferences...
+# Scrolled down to the export settings.
+twscroll 300 300 -3.4
+mark 8 32 345 82 tw
+mark 8 272 390 326 tw
+shot export-import-1-preferences tw

@@ -5,6 +5,42 @@ A draft leans the sides of an extrusion inward, so that a moulded part comes out
 Example: [`examples/scripts/draft`](../../examples/scripts/draft/draft.go), a moulded boss: a
 rounded block with a bore, its sides drafted 3 degrees.
 
+## Step by step
+
+Draft the sides of a block, then only two of them:
+
+1. Press R for a rectangle and click two corners. Press Esc, then Shift+X to extrude it. On
+   the extrusion's screen in the property browser, click "[change]" beside the draft.
+
+   ![The draft row of the extrusion's screen](images/draft-1-draft-link.png)
+
+2. Type the angle in degrees, here 15. All four sides lean in from the sketch.
+
+   ![The block's sides drafted 15 degrees](images/draft-2-drafted.png)
+
+3. To draft only some sides, keep the extrusion active and click the sketch's lines of those
+   sides. They are drawn in red when selected.
+
+   ![Two of the sketch's lines selected](images/draft-3-sides.png)
+
+4. Choose Features > Draft Selected Sides. Those two sides lean; the other two stay upright.
+   The screen says how many sides are drafted, and "[all]" drafts every side again.
+
+   ![Two sides drafted, two upright](images/draft-4-chosen-sides.png)
+
+5. Click "[change]" beside "from the plane" and type how far along the extrusion the neutral
+   plane lies, here 10, half way up. The drafted sides narrow from there both ways.
+
+   ![The neutral plane half way up](images/draft-5-neutral-plane.png)
+
+The `draft` example, a boss with its sides drafted 3 degrees: the rounded corners become cones
+and the bore widens towards the top.
+
+![The draft example: a drafted boss with a bore](images/draft-6-boss.png)
+
+These pictures are made by [`scenarios/draft.scenario`](scenarios/draft.scenario), which
+replays the same clicks on the program (`scripts/regen-doc-images.sh`).
+
 ## What it does
 
 The sketch's plane is the neutral plane: the sides pass through the sketch there. The far end is

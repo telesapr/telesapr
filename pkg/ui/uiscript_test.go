@@ -40,6 +40,9 @@ type uiScriptRunner struct {
 	// frames, when not nil, collects a hash of each frame the graphics
 	// window presents.
 	frames *[]uint64
+
+	// doc is what the user manual's scenarios add (docshot_test.go).
+	doc docShot
 }
 
 func g17(v float64) string { return cfmt.Sprintf("%.17g", v) }
@@ -83,9 +86,21 @@ func runUIScriptWith(t testing.TB, name string, setup func(r *uiScriptRunner)) s
 	return r.b.String()
 }
 
+// uiTestdata is the repository's testdata, absolute so that a test that
+// works in a directory of its own (TestDocScenarios) still finds it.
+var uiTestdata = mustAbs(filepath.Join("..", "..", "testdata"))
+
+func mustAbs(path string) string {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		panic(err)
+	}
+	return abs
+}
+
 // newUIScriptRunner starts the application.
 func newUIScriptRunner(t testing.TB) *uiScriptRunner {
-	root := filepath.Join("..", "..", "testdata")
+	root := uiTestdata
 
 	// The save goes one folder under the temporary directory, the
 	// same depth for every run: a linked file is saved relative to it.
@@ -128,10 +143,10 @@ func newUIScriptRunner(t testing.TB) *uiScriptRunner {
 	return r
 }
 
-// expand replaces $tmp/ and $testdata/ at the start of a script's path
+// expand replaces $tmp/, $testdata/ and $repo/ at the start of a script's path
 // by the runner's temporary directory and testdata.
 func (r *uiScriptRunner) expand(path string) string {
-	for prefix, dir := range map[string]string{"$tmp/": r.tmp, "$testdata/": r.dir} {
+	for prefix, dir := range map[string]string{"$tmp/": r.tmp, "$testdata/": r.dir, "$repo/": filepath.Join(r.dir, "..")} {
 		if rest, ok := strings.CutPrefix(path, prefix); ok {
 			abs, err := filepath.Abs(dir)
 			if err != nil {
@@ -441,8 +456,10 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 	case "view":
 		r.setView(t[1])
 	case "move", "down", "up", "dbl", "scroll", "leave":
+		r.noteMouse(t, false)
 		r.mouse(r.gw(), t)
 	case "twmove", "twdown", "twup", "twdbl", "twscroll", "twleave":
+		r.noteMouse(t, true)
 		r.mouse(r.tw(), t)
 	case "key":
 		r.key(t)
@@ -577,7 +594,9 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 			fmt.Fprintf(&r.b, "save\n%send save\n", data)
 		}
 	default:
-		r.t.Fatalf("unknown script line: %s", line)
+		if !r.docStep(t) {
+			r.t.Fatalf("unknown script line: %s", line)
+		}
 	}
 	return true
 }

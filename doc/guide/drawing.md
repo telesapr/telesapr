@@ -4,6 +4,33 @@ Example: [`examples/scripts/autoconstrain`](../../examples/scripts/autoconstrain
 which draws a slot of two lines and two arcs, and a ring of circles, roughly, and lets the
 constraints the window would add square them up.
 
+## Step by step
+
+Draw two lines square to each other, a third parallel to the first, and an arc tangent to a
+line:
+
+1. Press S for a line segment. Click its start, then click its end a little off horizontal.
+   Move the mouse to where the second line should end, nearly square to the first. Both lines
+   show the perpendicular sign: the constraint that will be added. Click to place the point,
+   then press Esc.
+
+   ![A second line offered perpendicular to the first](images/drawing-1-perpendicular.png)
+
+2. Press S again and draw a line at nearly the same angle as the first. The two lines show the
+   parallel sign, and the line is made parallel when you click its end.
+
+   ![A third line offered parallel to the first](images/drawing-2-parallel.png)
+
+3. Draw a line, press Esc, then press A for an arc. Click the line's end, and move the arc's
+   other end so that the line between the arc's ends is square to the line. The arc shows the
+   tangent sign, and is made tangent when you click.
+
+   ![An arc offered tangent to the line it starts on](images/drawing-3-tangent-arc.png)
+
+These pictures are made by [`scenarios/drawing.scenario`](scenarios/drawing.scenario).
+
+## What is offered
+
 SolveSpace makes a line horizontal or vertical when you draw it nearly so. TeleSAPR offers more
 constraints while you draw. It tries them in this order and offers the first that fits.
 

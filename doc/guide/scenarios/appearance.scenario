@@ -1,0 +1,39 @@
+# The pictures of appearance.md: a cylinder extruded from a circle, its
+# appearance set to metal on its group's screen, and shading by
+# appearance turned on in the preferences.
+cursor on
+key c
+move 300 300
+down L 300 300
+up L 300 300
+move 340 300
+down L 340 300
+up L 340 300
+key esc
+key x shift
+view rotated
+menu View|Zoom To Fit
+menu View|Zoom Out
+cursor off
+shot appearance-1-shaft
+cursor on
+twmove 433 245
+mark 405 240 75 22 tw
+shot appearance-2-metal tw
+twdown L 433 245
+twup L 433 245
+# A bronze colour, so that the metal's highlight shows.
+twmove 340 265
+twdown L 340 265
+twup L 340 265
+edit 0.8, 0.55, 0.25
+menu Edit|Preferences...
+# Down to the row "shade solids by their appearance".
+twscroll 300 300 -9.7
+twmove 37 211
+mark 14 201 330 22 tw
+shot appearance-3-shade tw
+twdown L 37 211
+twup L 37 211
+cursor off
+shot appearance-4-shaded gw

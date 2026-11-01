@@ -8,6 +8,46 @@ view and an isometric view. The views are placed as the projection puts them, at
 frame with a title block. The drawing is part of the model and is saved with it. Each time the
 sheet is written, the views are made from the solid again, so the drawing follows the model.
 
+## Step by step
+
+Draw a block with one rounded edge, then give it a drawing with a section and two dimensions:
+
+1. Press R and click two corners for a rectangle, press Esc, then Shift+X to extrude it. Click
+   the rectangle's right edge, choose Features > Fillet Edges, and set the radius to 10 (see
+   [Fillets](fillet.md)).
+
+   ![The block with one rounded edge](images/drawings-1-model.png)
+
+2. Choose View > Drawing Sheet. The property browser shows the drawing's screen. Click
+   `[show it in the window]`.
+
+   ![The drawing's screen](images/drawings-2-screen.png)
+
+3. The window now shows the sheet beside the toolbar: A3, fitted, third angle, with the top,
+   front, right and isometric views and the title block. The scale is 2:1, the largest at which
+   the views fit; the title block writes it 2/1.
+
+   ![The sheet in the window](images/drawings-3-sheet.png)
+
+4. Click `[change]` beside **title** and type BLOCK. Click `[add a section]` and type `top 8`:
+   a section through the top view, 8 mm toward the viewer from the middle.
+5. While the sheet is shown, the mouse picks nothing in the model. Click `[show the model]`.
+   Click the rounded face, then `[dimension the selected edges or faces]`, and type
+   `top radius`. Click the edge where the rounded face meets the top. The screen counts it as
+   "1 edge and 0 faces selected". Click `[dimension the selected edges or faces]` again and type
+   `front length 12`, which draws the dimension 12 mm out from the edge.
+
+   ![The edge picked for a dimension](images/drawings-4-edge.png)
+
+6. Click `[show it in the window]` again. The sheet has the title, SECTION A-A with its cut face
+   hatched beside the views, R 10 on the top view and 26 on the front view. The cutting plane is
+   drawn dashed across the front and right views, with an A past each end, clear of the
+   dimension and of the views' names.
+
+   ![The finished sheet](images/drawings-5-dimensioned.png)
+
+These pictures are made by [`scenarios/drawings.scenario`](scenarios/drawings.scenario).
+
 ## The drawing's screen
 
 View > Drawing Sheet opens the drawing's screen in the property browser. It has these rows:
@@ -62,9 +102,11 @@ gives them a place. `[delete]` on a row takes one away.
 ### Dimensions
 
 With the drawing's screen shown, select one or two edges or faces of the solid in the model.
-The screen stays open and counts what is selected. Then click
-`[dimension the selected edges or faces]` and type the view and the kind, as `front length`, or
-`front distance 15` with how far out the dimension is drawn, in mm. The view is front, back,
+The screen stays open and counts what is selected. Where a line of a sketch lies along an
+edge, a click picks the line, which the count leaves out: click the edge where no line is
+drawn, or pick a face. Then click `[dimension the selected edges or faces]` and type the view
+and the kind, as `front length`, or `front distance 15` with how far out the dimension is
+drawn, in mm. Without that number it is drawn on what it measures. The view is front, back,
 top, bottom, left, right or iso, or a section or a detail by its letter, as `A diameter`.
 
 A dimension keeps the edges' names and the faces' identities. Each time the drawing is made it

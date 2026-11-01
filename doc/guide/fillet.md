@@ -15,6 +15,37 @@ Examples:
 - [`knob`](../../examples/scripts/knob): a fillet beside a chamfer.
 - [`casing`](../../examples/scripts/casing): two radii in one fillet.
 
+## Step by step
+
+Round two top edges of a block:
+
+1. Press R for a rectangle and click two corners.
+
+   ![A rectangle drawn in the sketch](images/fillet-1-rectangle.png)
+
+2. Press Esc, then Shift+X to extrude it. The left-hand window is the model, the right-hand
+   one the property browser, which shows the new group.
+
+   ![The rectangle extruded into a block](images/fillet-2-extruded.png)
+
+3. Click the two edges to round. They are drawn in red when selected.
+
+   ![Two top edges selected](images/fillet-3-edges.png)
+
+4. Choose Features > Fillet Edges. The edges are rounded at 1 mm, mitred where they meet, and
+   the property browser lists them.
+
+   ![The fillet group and its edges](images/fillet-4-filleted.png)
+
+5. Click "[change]" beside the radius and type a new one, here 10.
+
+   ![The radius row of the fillet group](images/fillet-5-radius-link.png)
+
+   ![The edges rounded at 10 mm](images/fillet-6-radius-10.png)
+
+These pictures are made by [`scenarios/fillet.scenario`](scenarios/fillet.scenario), which
+replays the same clicks on the program (`scripts/regen-doc-images.sh`).
+
 ## In the window
 
 Choose Features > Fillet Edges (Shift+F). It rounds edges of the solid built so far. The radius

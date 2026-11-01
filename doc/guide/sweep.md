@@ -7,6 +7,43 @@ swept along a helix drawn as cubics.
 
 A sweep moves a sketch (the *profile*) along a path, and makes the solid it passes through.
 
+## Step by step
+
+Sweep a circle along a bent path:
+
+1. Draw the path in one sketch: here a line, an arc and a line, tangent where they meet. Draw
+   the profile, a circle, in a workplane across the path's start, and keep its sketch active.
+   The home screen shows "err" beside the path's sketch only because the path is not a closed
+   loop; a path need not be one.
+
+   ![The path and the circle, the circle's sketch active](images/sweep-1-profile.png)
+
+2. Click the three pieces of the path. They are drawn in red when selected.
+
+   ![The path's pieces selected](images/sweep-2-path.png)
+
+3. Choose Features > Sweep Along Path (Shift+U). The circle is swept along the path into a
+   bent tube, and the property browser lists the path's pieces.
+
+   ![The swept tube and its screen](images/sweep-3-swept.png)
+
+Along a helix, as in the `spring` example, the profile keeps its attitude to the path, so the
+wire does not spin about itself:
+
+![A circle swept along a helix of cubics](images/sweep-4-spring.png)
+
+The `elbow` example sweeps a 6 by 4 mm rectangle along three lines, with a corner radius of
+8 mm that rounds both corners. Click "[change]" beside the twist and type 90: the rectangle
+turns a quarter turn about the path over its length, round the corners' arcs too.
+
+![The elbow and its screen](images/sweep-5-elbow.png)
+
+![The twist row of the sweep group](images/sweep-6-twist-link.png)
+
+![The elbow twisted by 90 degrees](images/sweep-7-twisted.png)
+
+These pictures are made by [`scenarios/sweep.scenario`](scenarios/sweep.scenario).
+
 ## In the window
 
 1. Draw the path: line segments, arcs and cubics, joined end to end and meeting tangent. They

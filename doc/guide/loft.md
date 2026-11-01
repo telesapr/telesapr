@@ -8,6 +8,49 @@ a ring closed on itself.
 A loft joins the closed loop of one sketch to the closed loops of other sketches, and makes a
 solid between them. Each sketch is a *profile*, drawn in a workplane.
 
+## Step by step
+
+Loft a small square down to a larger one below it:
+
+1. Draw the two squares, each in a sketch of its own, in workplanes one above the other. Keep
+   the upper square's sketch active. Here it is g005-top, and the radio button before it on the
+   home screen is set.
+
+   ![Two squares in two sketches, the upper one active](images/loft-1-profiles.png)
+
+2. Click a line of the other square. It is drawn in red when selected.
+
+   ![A line of the lower square selected](images/loft-2-picked.png)
+
+3. Choose Features > Loft To Selected Profile (Shift+O). Ruled faces join the two squares, and
+   the property browser shows the new loft group.
+
+   ![The loft and its screen](images/loft-3-lofted.png)
+
+4. Click "[+1]" on the "turn the second by" row. The second square is turned by one side, so
+   each side of one square is joined to the next side of the other. The faces become saddles.
+   "[-1]" turns it back.
+
+   ![The turn row of the loft group](images/loft-4-turn-link.png)
+
+   ![The loft turned by one side](images/loft-5-turned.png)
+
+## Ruled and smooth
+
+Two profiles are joined by ruled faces, one face per curve. The `loft` example joins a circle to
+a square this way: the circle counts as four arcs, and each arc is joined to one side of the
+square by a ruled face.
+
+![A circle lofted to a square by ruled faces](images/loft-6-ruled.png)
+
+Three profiles or more are joined by one smooth surface. The `vase` example lofts a square foot
+through three circles. The property browser lists the profiles in order, each with how the
+loft passes it.
+
+![A vase lofted smoothly through four profiles](images/loft-7-smooth.png)
+
+These pictures are made by [`scenarios/loft.scenario`](scenarios/loft.scenario).
+
 ## In the window
 
 1. Activate one of the profile sketches.

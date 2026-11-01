@@ -13,6 +13,12 @@ under [`examples/scripts`](../../examples/scripts). An example runs without a wi
 
 or in the application, from Script > Run File, or with `telesapr --script <file>`.
 
+New to TeleSAPR? Start with [Getting started](getting-started.md), which builds a first part
+step by step, and [The window](interface.md), a tour of what is on the screen. The
+[menu reference](reference/menus.md), [keyboard shortcuts](reference/shortcuts.md) and
+[toolbar](reference/toolbar.md) pages are written from the program itself, so they list every
+entry as it is. `make guide-site` builds these pages as a web site in `site/guide`.
+
 Every feature can be scripted. The console (Script > Show Console, Ctrl+Shift+K) takes the same
 Go, one line at a time, and `help()` there lists what a script can call.
 

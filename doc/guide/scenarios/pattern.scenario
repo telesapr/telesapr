@@ -1,0 +1,58 @@
+# The pictures of pattern.md: a post (a small circle) and a
+# construction line drawn, the post extruded and repeated along the
+# line; the number of copies changed; last, the flange example, bolt
+# holes round a circle. Coordinates are those of the 600x600 headless
+# window.
+cursor on
+key c
+move 200 300
+down L 200 300
+up L 200 300
+move 220 300
+down L 220 300
+up L 220 300
+key esc
+key s
+move 200 200
+down L 200 200
+up L 200 200
+move 400 200
+down L 400 200
+up L 400 200
+key esc
+key esc
+# The line made construction (G), so that only the circle is extruded.
+move 300 200
+down L 300 200
+up L 300 200
+key g
+key esc
+shot pattern-1-sketch gw
+key x shift
+view default
+move 300 200
+down L 300 200
+up L 300 200
+shot pattern-2-path gw
+menu Features|Pattern Along Path
+view rotated
+menu View|Zoom To Fit
+cursor off
+shot pattern-3-patterned
+cursor on
+twmove 143 125
+mark 28 122 160 22 tw
+shot pattern-4-copies-link tw
+twdown L 143 125
+twup L 143 125
+edit 5
+cursor off
+shot pattern-5-five-copies
+# The flange example, in a new file: bolt holes round a pitch circle.
+answer no
+menu File|New
+file $repo/examples/scripts/flange/flange.go
+menu Script|Run File...
+view rotated
+menu View|Zoom To Fit
+shot pattern-6-flange

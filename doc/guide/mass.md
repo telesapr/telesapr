@@ -4,6 +4,33 @@ Example: [`examples/scripts/mass`](../../examples/scripts/mass/mass.go), a steel
 aluminium housing. The script prints the mass, centre of mass and inertia of each part and of
 the whole.
 
+## Step by step
+
+Give two parts a density and weigh the model. The model is the one of
+[`examples/scripts/clearance`](../../examples/scripts/clearance/clearance.go): a hollowed box,
+a plate with a bore and a pin in it. The plate and the pin are assembled, so each is a part.
+
+1. On the home screen, click the plate's group, g006-plate.
+
+   ![The groups of the model](images/mass-1-groups.png)
+
+2. At the end of the appearance row, click [change] beside "density not set".
+
+   ![The density on the group's screen](images/mass-2-density.png)
+
+3. Type the density in g/cm³, here 2.7 for aluminium. The row now reads "density 2.7 g/cm³".
+   Do the same for the pin's group, g00a-pin, with 7.85 for steel.
+
+   ![The density set](images/mass-3-set.png)
+
+4. Choose Analyze > Measure Volume (Ctrl+Shift+V). The message gives the mass of the model,
+   28.43 g, centred at (1.79, -0.00, 4.94), then each part: the box 1.274 g at 1 g/cm³, the
+   plate 22.19 g at 2.7 g/cm³ and the pin 4.962 g at 7.85 g/cm³. It ends: "Where no density is
+   set, 1 g/cm³ is taken: set it in the group's screen."
+
+These pictures are made by [`scenarios/mass.scenario`](scenarios/mass.scenario). The property
+browser is wider than usual in them, so that the whole appearance row shows.
+
 ## What it does
 
 A density belongs to a part, not to a feature. Once two features' solids are joined, nothing

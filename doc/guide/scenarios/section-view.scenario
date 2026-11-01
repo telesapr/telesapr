@@ -1,0 +1,36 @@
+# The pictures of section-view.md: a block with a bore through it, cut
+# parallel to its front face through the bore's axis.
+cursor on
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key c
+move 290 265
+down L 290 265
+up L 290 265
+move 320 265
+down L 320 265
+up L 320 265
+key esc
+key x shift
+view rotated
+menu View|Zoom To Fit
+move 420 370
+down L 420 370
+up L 420 370
+shot section-view-1-face gw
+menu View|Section View
+# At offset 0 the plane lies on the face clicked; the screen moves it.
+twmove 190 133
+mark 158 122 82 22 tw
+shot section-view-2-screen tw
+twmove 190 133
+twdown L 190 133
+twup L 190 133
+edit -13
+cursor off
+shot section-view-3-axis

@@ -11,6 +11,39 @@ A datum is a name that a part gives to something it offers other parts: a point,
 face, or a line, circle or arc used as an axis. An assembly that links the part finds the datum
 as `link.name`. So a mate holds by what the part declares, not by where things happen to be.
 
+## Step by step
+
+Name a block's top, then lay two linked tiles' tops in one plane by their names:
+
+1. Draw a rectangle (R), press Esc, and extrude it (Shift+X). Click its top face, then choose
+   Edit > Datums. The screen offers to name the selection.
+
+   ![The top face selected, and the datums screen](images/datums-1-name-link.png)
+
+2. Click "[name the selected entity]" and type `top`. The datum is listed with
+   "[select]", "[rename]", "[delete]" and "[mate]". Save the part, and a model that links it
+   finds the face as `<link>.top`.
+
+   ![The top face named top](images/datums-2-named.png)
+
+3. In another model, link a part twice with Assembly > Link / Assemble. Here it is a tile with
+   datums `top` and `corner`, and the second copy has been dragged aside. Edit > Datums lists
+   each link's datums under its group's name.
+
+   ![Two tiles linked, and their datums](images/datums-3-linked.png)
+
+4. Click "[mate]" on `g003-tile.top`, then on `g004-tile.top`. The screen offers the mates of
+   the two names.
+
+   ![The mates offered for two names](images/datums-4-mate-names.png)
+
+5. Click "[flush]". The second tile moves so that its top lies in the plane of the first's.
+   The first tile, named first, stays where it is.
+
+   ![The two tops flush](images/datums-5-flush.png)
+
+These pictures are made by [`scenarios/datums.scenario`](scenarios/datums.scenario).
+
 ## Naming things
 
 Edit > Datums lists the part's own datums, and the datums of each model it links. With something

@@ -1,0 +1,34 @@
+# The pictures of constraints.md: a rectangle whose depth is held to
+# half its width by a ratio, so that one dimension on the width sizes
+# both.
+cursor on
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 400 340
+down L 400 340
+up L 400 340
+key esc
+move 400 270
+down L 400 270
+up L 400 270
+move 300 200
+down L 300 200
+up L 300 200
+shot constraints-1-two-sides
+key z
+edit 0.5
+key esc
+cursor off
+shot constraints-2-ratio gw
+move 370 214
+down L 370 214
+up L 370 214
+key d
+edit 60
+key esc
+menu View|Zoom To Fit
+menu View|Zoom Out
+cursor off
+shot constraints-3-width-60 gw

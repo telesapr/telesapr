@@ -1,0 +1,44 @@
+# The pictures of history.md: a bolt's groups, one moved up the list,
+# one suppressed with what uses it; then the history example, whose last
+# step deletes the block's sketch and lists what went with it.
+load thread/bolt_m8x30.tlspr
+view rotated
+menu View|Zoom To Fit
+menu View|Zoom Out
+cursor off
+shot history-1-groups
+cursor off
+twmove 307 180
+mark 292 169 32 24 tw
+shot history-2-arrow tw
+twdown L 307 180
+twup L 307 180
+cursor off
+shot history-3-moved tw
+twmove 145 160
+twdown L 145 160
+twup L 145 160
+cursor on
+twmove 20 165
+mark 10 162 452 22 tw
+shot history-4-suppress-box tw
+twdown L 20 165
+twup L 20 165
+cursor off
+shot history-5-suppressed gw
+twmove 28 10
+twdown L 28 10
+twup L 28 10
+shot history-6-left-out tw
+answer no
+menu File|New
+file $repo/examples/scripts/history/history.go
+menu Script|Run File...
+cursor on
+twmove 190 238
+mark 18 230 200 22 tw
+shot history-7-broken-link tw
+twdown L 190 238
+twup L 190 238
+cursor off
+shot history-8-broken tw

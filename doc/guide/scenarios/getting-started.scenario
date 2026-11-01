@@ -1,0 +1,165 @@
+# The pictures of getting-started.md: a plate sketched from the origin,
+# held by two dimensions, extruded, a hole sketched on its top face and
+# cut through, the top edges rounded, and the hole measured.
+# Coordinates are those of the 600x600 headless window.
+# The property browser is widened so that its longest rows show whole.
+size tw 720 600
+shot getting-started-1-window
+# A rectangle from the origin; the first click lands on the origin
+# point, which makes the corner coincident with it.
+cursor on
+key r
+move 300 300
+down L 300 300
+up L 300 300
+move 500 170
+down L 500 170
+up L 500 170
+key esc
+cursor off
+shot getting-started-2-rectangle
+# The top side's length.
+cursor on
+move 400 170
+down L 400 170
+up L 400 170
+key d
+edit 40
+key esc
+cursor off
+shot getting-started-3-width gw
+# The right side's length: nothing is free any more.
+move 500 235
+down L 500 235
+up L 500 235
+key d
+edit 25
+key esc
+shot getting-started-4-held
+# Extruded; its depth held at 10 from the group's screen.
+key x shift
+twmove 501 134
+twdown L 501 134
+twup L 501 134
+twmove 501 134
+twdown L 501 134
+twup L 501 134
+edit 10
+view rotated
+move 300 300
+menu View|Zoom To Fit
+leave
+mark 614 122 714 22
+shot getting-started-5-extruded
+# The top face picked, and a sketch started on it.
+cursor on
+move 410 275
+down L 410 275
+up L 410 275
+shot getting-started-6-face gw
+menu Features|Sketch On Face
+move 300 300
+menu View|Zoom To Fit
+menu View|Zoom Out
+leave
+cursor off
+shot getting-started-7-on-face
+# A circle, its diameter, and its centre's distances from two edges.
+key c
+move 340 290
+down L 340 290
+up L 340 290
+move 396 290
+down L 396 290
+up L 396 290
+key esc
+move 396 290
+down L 396 290
+up L 396 290
+key d
+edit 10
+key esc
+move 340 290
+down L 340 290
+up L 340 290
+move 420 75
+down L 420 75
+up L 420 75
+key d
+edit 20
+key esc
+move 340 299
+down L 340 299
+up L 340 299
+move 208 450
+down L 208 450
+up L 208 450
+key d
+edit 12.5
+key esc
+leave
+freedom
+shot getting-started-8-hole-sketch
+# Extruded as a difference, which turns the depth into the plate;
+# held at 10 deep.
+key x shift
+twmove 78 234
+twdown L 78 234
+twup L 78 234
+twmove 505 134
+twdown L 505 134
+twup L 505 134
+twmove 510 134
+twdown L 510 134
+twup L 510 134
+edit -10
+view rotated
+move 300 300
+menu View|Zoom To Fit
+leave
+mark 614 122 714 22
+mark 614 222 714 22
+shot getting-started-9-cut
+# The four top edges picked and rounded at 3 mm.
+cursor on
+move 297 190
+down L 297 190
+up L 297 190
+move 513 224
+down L 513 224
+up L 513 224
+move 418 341
+down L 418 341
+up L 418 341
+move 202 307
+down L 202 307
+up L 202 307
+dump
+shot getting-started-10-edges gw
+key f shift
+twmove 168 134
+twdown L 168 134
+twup L 168 134
+edit 3
+leave
+cursor off
+shot getting-started-11-fillet
+# Checked, then the hole's rim measured.
+answer ok
+menu Analyze|Check Solid
+answer ok
+menu Analyze|Measure Volume
+menu Analyze|Measure Selection
+move 312 262
+down L 312 262
+up L 312 262
+dump
+move 560 450
+shot getting-started-12-measure gw
+# Saved, and exported as STL.
+file $tmp/plate.tlspr
+key s ctrl
+form
+file $tmp/plate.stl
+menu File|Export|Triangle Mesh (.stl, .3mf, .glb, .obj, .html, .js, .wrl)...
+dump

@@ -1,0 +1,50 @@
+# The pictures of drawing.md: a line, then a second from its end nearly
+# square to it, which is offered perpendicular; a third nearly
+# parallel to the first; a line and an arc from its end with the chord
+# square to it, offered tangent. The mouse moves twice to each point,
+# as a drag does: what is offered is worked out before the point
+# follows.
+cursor on
+key s
+move 130 180
+down L 130 180
+up L 130 180
+move 230 189
+move 230 190
+down L 230 190
+up L 230 190
+move 220 289
+move 220 290
+shot drawing-1-perpendicular gw
+down L 220 290
+up L 220 290
+key esc
+key s
+move 130 400
+down L 130 400
+up L 130 400
+move 230 410
+move 230 411
+shot drawing-2-parallel gw
+down L 230 411
+up L 230 411
+key esc
+key s
+move 340 480
+down L 340 480
+up L 340 480
+move 440 480
+move 440 480
+down L 440 480
+up L 440 480
+key esc
+key a
+move 440 480
+down L 440 480
+up L 440 480
+move 440 401
+move 440 400
+shot drawing-3-tangent-arc gw
+down L 440 400
+up L 440 400
+key esc

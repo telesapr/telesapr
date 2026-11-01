@@ -4,6 +4,38 @@ An assembly is a model made of parts. The parts are files linked into it (Assemb
 Assemble), or groups that combine as an assembly. This page is about linking parts, putting
 them together, checking them against each other, and counting them.
 
+## Step by step
+
+Count the parts of the [`bom`](../../examples/scripts/bom/bom.go) example's model:
+
+1. Choose Script > Run File and pick `bom.go`. It saves a plate and a bolt as part files, links
+   them into a bracket with the bolt repeated four times, and links the bracket into the model,
+   repeated once more. Each part comes in by Assembly > Link / Assemble... (Shift+I), as you
+   would link it in the window. Save the model with File > Save As, beside the `parts` folder.
+
+   ![Two brackets, each a plate with four bolts](images/bill-of-materials-1-linked.png)
+
+2. Choose Assembly > Bill of Materials. It lists 2 brackets, 2 plates and 8 bolts, each with
+   its file and the groups that place it. A file is given relative to the saved model, here
+   `parts/bracket.tlspr`, and a long path wraps onto the next line. The groups in the
+   bracket's own file read as `g003-bracket > g004-bolt`.
+
+   ![The bill of materials](images/bill-of-materials-2-bill.png)
+
+3. To have the bill give masses, open a link group's screen from the home screen, here
+   g003-bracket, and click [change] at the end of its appearance row to set its
+   [density](mass.md), here 2.7 g/cm³.
+
+   ![The density row of a link group](images/bill-of-materials-3-link.png)
+
+4. The bill now gives the bracket's mass: "30.46 g each". [export to a CSV file...] writes the
+   list to a file.
+
+   ![The bill with the bracket's mass](images/bill-of-materials-4-mass.png)
+
+These pictures are made by
+[`scenarios/bill-of-materials.scenario`](scenarios/bill-of-materials.scenario).
+
 ## Linked parts
 
 Example: [`examples/scripts/partsizes`](../../examples/scripts/partsizes/partsizes.go), one
@@ -98,7 +130,8 @@ into the model, and writes the bill.
 
 Assembly > Bill of Materials lists the parts the model places by linking files, one line per
 file: how many, the part's name (the file's name without folder and extension), the file, and
-the groups that place them.
+the groups that place them. The file is given relative to the model's own folder once the model
+is saved, and in full before.
 
 How parts are counted:
 

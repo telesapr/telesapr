@@ -1,0 +1,16 @@
+# The pictures of check-solid.md: Check Solid on a sound solid, and on
+# a mesh with naked edges, which it draws.
+load tlspr/golden/group/boolean_tangent_edge/normal.tlspr
+view rotated
+menu View|Zoom To Fit
+cursor off
+shot check-solid-1-sound gw
+answer ok
+menu Analyze|Check Solid
+load tlspr/golden/group/force_to_mesh/fillet.tlspr
+view rotated
+menu View|Zoom To Fit
+answer ok
+menu Analyze|Check Solid
+mark 292 46 56 124
+shot check-solid-2-naked gw

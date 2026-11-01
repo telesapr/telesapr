@@ -41,6 +41,14 @@ bounds the turn between neighbouring facets, so small radii are followed as clos
 ones. **Strict** refuses to write a mesh that has naked edges or self-intersections. Without it,
 such a mesh is written with a warning. Facets of no area are left out.
 
+In the window, File > Export > Triangle Mesh first shows a dialog, Export Triangle Mesh. It has
+**Quality** (Draft, Standard, Fine or Custom), **Chord tolerance** in mm, **Angular tolerance**
+in degrees (0 for none), **Max linear segments**, and the check box **Refuse a mesh that isn't
+watertight or crosses itself**, which is Strict. Choosing a quality fills in the three values;
+changing a value by hand makes it Custom. **Export...** then asks for the file, and **Cancel**
+writes nothing. The dialog keeps what you chose for the next export. The chord tolerance and the
+segments are also on the preferences screen (below).
+
 ```go
 doc.File.SetMeshQuality(api.MeshFine)
 o := doc.File.ExportOptions()
@@ -64,9 +72,20 @@ From a script, `File.ExportSection` uses the section view's plane when the secti
 ([Section view](section-view.md)), and otherwise the active workplane. A plane that misses the
 solid writes nothing and says so.
 
-The scale, page size and margins of the 2d exports are set on the configuration screen
-(**configuration** on the home screen of the property browser). From a script they are
-`ExportOptions`'s `Scale`, `Canvas` and `Margin`.
+The scale, page size and margins of the 2d exports are set on the preferences screen: Edit >
+Preferences, or **configuration** on the home screen of the property browser. From a script
+they are `ExportOptions`'s `Scale`, `Canvas` and `Margin`.
+
+![The export settings of the preferences screen](images/export-import-1-preferences.png)
+
+The upper box holds the mesh's chord tolerance and segments, as the Triangle Mesh dialog sets
+them. The lower one holds the 2d exports' settings: the scale factor, the cutter radius offset,
+whether shaded triangles are written, whether curves are written as straight pieces, whether
+white lines are written black, whether the background is written, and the canvas, fixed or sized
+by margins round what is exported. Each value is
+changed with its `[change]`. Below them are the depth, passes and feeds of G-code.
+
+This picture is made by [`scenarios/export-import.scenario`](scenarios/export-import.scenario).
 
 ## Import
 

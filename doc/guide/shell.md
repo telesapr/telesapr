@@ -14,6 +14,43 @@ Examples:
 - [`examples/scripts/housing`](../../examples/scripts/housing/housing.go): a turned housing
   with a square boss out of its side, hollowed as one.
 
+## Step by step
+
+Hollow a block, open at the top:
+
+1. Press R for a rectangle and click two corners. Press Esc, then Shift+X to extrude it.
+   Click the top face. It is drawn hatched when selected.
+
+   ![The top face of the block selected](images/shell-1-face.png)
+
+2. Choose Features > Shell Solid. The block is hollowed to walls 1 mm thick, open at the top,
+   and the property browser lists the face taken away.
+
+   ![The shell group and its face](images/shell-2-hollowed.png)
+
+3. Click "[change]" beside the thickness and type a new one, here 4.
+
+   ![The thickness row of the shell group](images/shell-3-thickness-link.png)
+
+   ![The walls 4 mm thick](images/shell-4-thickness-4.png)
+
+4. To open a side as well, click "[change]" beside the faces with nothing selected. A message
+   says what to pick, and the extrusion becomes active, so its faces can be picked. Pick the top
+   and a side. The link now reads "[take the selection]".
+
+   ![The top and a side picked, the link ready to take them](images/shell-5-two-faces.png)
+
+5. Click "[take the selection]". The extrusion is still active, so click "activate" on the
+   shell's screen to see the shell again. It is open at the top and at the side.
+
+   ![The block open at two faces](images/shell-6-open-twice.png)
+
+These pictures are made by [`scenarios/shell.scenario`](scenarios/shell.scenario), which
+replays the same clicks on the program (`scripts/regen-doc-images.sh`). Its last picture is the
+`pot` example:
+
+![The pot example: rounded corners and a drain hole, hollowed to 2 mm](images/shell-7-pot.png)
+
 ## In the window
 
 Select one or more faces of the solid to take away, then choose Features > Shell Solid

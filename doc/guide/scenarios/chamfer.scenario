@@ -1,0 +1,59 @@
+# The pictures of chamfer.md: a rectangle extruded, two top edges
+# picked and chamfered, the distance changed, then a second distance
+# given and swapped; last, the chamfercorner example. Coordinates are
+# those of the 600x600 headless window.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+# The edges are picked in the view from above.
+cursor on
+move 202.5 282.5
+down L 202.5 282.5
+up L 202.5 282.5
+move 317.5 327.5
+down L 317.5 327.5
+up L 317.5 327.5
+shot chamfer-1-edges gw
+menu Features|Chamfer Edges
+view rotated
+menu View|Zoom To Fit
+cursor off
+shot chamfer-2-chamfered
+cursor on
+twmove 186 125
+mark 28 122 208 22 tw
+shot chamfer-3-distance-link tw
+twdown L 186 125
+twup L 186 125
+edit 10
+cursor off
+shot chamfer-4-distance-10
+# Two distances: the second row, then [swap].
+cursor on
+twmove 263 145
+mark 28 142 307 22 tw
+shot chamfer-5-second-link tw
+twdown L 263 145
+twup L 263 145
+edit 4
+cursor off
+shot chamfer-6-two-distances
+twmove 310 145
+twdown L 310 145
+twup L 310 145
+shot chamfer-7-swapped
+# The chamfercorner example: every edge at 2 and 4 mm.
+# A new file first: an example draws from a fresh sketch.
+answer no
+menu File|New
+file $repo/examples/scripts/chamfercorner/chamfercorner.go
+menu Script|Run File...
+view rotated
+menu View|Zoom To Fit
+shot chamfer-8-corners gw

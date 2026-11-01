@@ -87,6 +87,18 @@ The guard is on by default. Unticking the box lets the model's scripts use any f
 your own scripts in the console do. Either way, the model is told not to save, export or load
 unless you ask for it. Turn on the confirmation setting if you want to read every script first.
 
+Both settings are on the configuration screen (Edit > Preferences, or **configuration** on the
+home screen of the property browser), near its end:
+
+![The AI settings of the configuration screen](images/ai-1-preferences.png)
+
+**ask before an AI program's script runs** is the confirmation setting. The box below it is the
+guard, and `[change]` under it edits the list of other folders, which is "no others" to begin
+with. The **script library folder** is the folder the scripts may also read. This picture is
+made by [`scenarios/ai.scenario`](scenarios/ai.scenario). The rest of this page has no
+pictures: Script > Allow AI Connections is a menu entry, and what the model runs shows in the
+script console, a window of its own.
+
 The guard does not cover two things. The files a drawing links (other parts, STEP files, images)
 are read where they are when the drawing regenerates. And the files a menu command reads or
 writes (`doc.Edit.RunCommand`) are the ones you choose in its dialog.

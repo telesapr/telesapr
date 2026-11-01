@@ -1,0 +1,51 @@
+# The pictures of sweep.md: the circle of sweep_path.tlspr swept along
+# a line, a bend and a line; then the spring and elbow examples, the
+# elbow twisted on its screen.
+file $testdata/ui/sweep_path.tlspr
+menu File|Open...
+view rotated
+menu View|Zoom To Fit
+menu View|Zoom Out
+cursor off
+mark 154 410 92 66
+shot sweep-1-profile
+# The path's three pieces, picked in the rotated view.
+cursor on
+move 217.5 382.5
+down L 217.5 382.5
+up L 217.5 382.5
+move 292.5 232.5
+down L 292.5 232.5
+up L 292.5 232.5
+move 457.5 157.5
+down L 457.5 157.5
+up L 457.5 157.5
+shot sweep-2-path gw
+menu Features|Sweep Along Path
+cursor off
+shot sweep-3-swept
+answer no
+menu File|New
+file $repo/examples/scripts/spring/spring.go
+menu Script|Run File...
+view rotated
+menu View|Zoom To Fit
+menu View|Zoom Out
+shot sweep-4-spring gw
+menu File|New
+file $repo/examples/scripts/elbow/elbow.go
+menu Script|Run File...
+view rotated
+menu View|Zoom To Fit
+menu View|Zoom Out
+shot sweep-5-elbow
+# twist [change] on the duct's screen.
+cursor on
+twmove 172 205
+mark 138 203 80 22 tw
+shot sweep-6-twist-link tw
+twdown L 172 205
+twup L 172 205
+edit 90
+cursor off
+shot sweep-7-twisted

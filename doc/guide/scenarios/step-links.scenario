@@ -1,0 +1,21 @@
+# The pictures of step-links.md: a block with a hole, as a STEP file
+# (testdata/step/shapes/box_hole.step), linked into an empty model
+# saved beside it, first as a reference mesh and then as a solid.
+file $testdata/step/host.tlspr
+menu File|Open...
+file $testdata/step/shapes/box_hole.step
+menu Assembly|Link / Assemble...
+view rotated
+menu View|Zoom To Fit
+cursor off
+shot step-links-1-mesh
+cursor on
+twmove 289 172
+mark 270 162 75 22 tw
+shot step-links-2-read-as tw
+twdown L 289 172
+twup L 289 172
+answer ok
+menu Analyze|Check Solid
+cursor off
+shot step-links-3-solid

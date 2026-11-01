@@ -1,0 +1,83 @@
+# The pictures of interface.md: the window round the fillet example,
+# the toolbar's blocks, the property browser's screens, hovering and
+# selecting, the two kinds of marquee, and the command search.
+# Coordinates are those of the 600x600 headless window; the property
+# browser is widened so that its longest rows show whole.
+size tw 720 600
+file $repo/examples/scripts/fillet/fillet.go
+menu Script|Run File...
+view rotated
+move 300 300
+menu View|Zoom To Fit
+leave
+shot interface-1-window
+# The toolbar's five blocks.
+mark 0 0 99 136
+mark 0 141 99 140
+mark 0 284 99 112
+mark 0 399 99 106
+mark 0 508 99 80
+shot interface-2-toolbar gw
+# The home screen: the breadcrumb line and the icons above the list.
+twmove 28 14
+twdown L 28 14
+twup L 28 14
+twleave
+mark 0 2 720 24 tw
+mark 14 24 200 36 tw
+mark 218 24 136 36 tw
+mark 358 24 36 36 tw
+shot interface-3-home tw
+# A group's screen, opened from its name in the list.
+twmove 168 164
+twdown L 168 164
+twup L 168 164
+twleave
+mark 0 2 160 24 tw
+mark 284 74 196 22 tw
+shot interface-4-group tw
+# Hovering the top face, then clicking it.
+cursor on
+move 450 285
+shot interface-5-hover gw
+down L 450 285
+up L 450 285
+shot interface-6-selected
+key esc
+# The sketch made active from the home screen, seen from above, with
+# room round it.
+twmove 28 14
+twdown L 28 14
+twup L 28 14
+twmove 24 144
+twdown L 24 144
+twup L 24 144
+view default
+move 300 300
+menu View|Zoom To Fit
+menu View|Zoom Out
+# A marquee from left to right: what lies wholly inside.
+move 135 140
+down L 135 140
+move 150 200 L
+move 190 400 L
+move 205 460 L
+shot interface-7-window-drag gw
+up L 205 460
+shot interface-8-window-result gw
+key esc
+# The same box from right to left: what it crosses too.
+move 205 460
+down L 205 460
+move 190 400 L
+move 150 200 L
+move 135 140 L
+shot interface-9-cross-drag gw
+up L 135 140
+shot interface-10-cross-result gw
+key esc
+# The command search, Ctrl+K, after typing "zoom".
+cursor off
+key k ctrl
+edit zoom
+shot interface-11-find tw

@@ -1,0 +1,51 @@
+# The pictures of mirror.md: a rectangle extruded, a side face picked
+# and the block reflected in it; then the reflection alone; last, the
+# mirror example. Coordinates are those of the 600x600 headless window.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+# The side face is picked in the turned view.
+# Fitted before the face is picked: Zoom To Fit fits the selection.
+view rotated
+menu View|Zoom To Fit
+cursor on
+move 430 350
+down L 430 350
+up L 430 350
+shot mirror-1-face gw
+menu Features|Mirror
+view rotated
+menu View|Zoom To Fit
+cursor off
+shot mirror-2-mirrored
+# "reflection only" leaves the block out.
+cursor on
+twmove 276 145
+mark 28 142 400 22 tw
+twdown L 276 145
+twup L 276 145
+shot mirror-3-reflection-only
+cursor off
+# The mirror example, in a new file: the whole solid so far reflected,
+# the bore cut by a later group with it.
+answer no
+menu File|New
+file $repo/examples/scripts/mirror/mirror.go
+menu Script|Run File...
+view rotated
+menu View|Zoom To Fit
+shot mirror-4-bracket
+# The box off: the mirror reflects its own group only, the half's
+# extrusion, and the bore is cut on one side.
+cursor on
+twmove 40 172
+mark 28 162 250 22 tw
+twdown L 40 172
+twup L 40 172
+shot mirror-5-source-only

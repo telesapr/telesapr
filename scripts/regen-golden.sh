@@ -20,6 +20,7 @@ declare -A pkg=(
     [tlspr]=./pkg/persist/convert [newfile]=./pkg/sketch [modify]=./pkg/sketch
     [thread]=./pkg/sketch [importdxf]=./pkg/persist/dxf [solid]=./pkg/sketch
     [sparseqr]=./pkg/solver [groups]=./pkg/sketch [sprintf]=./pkg/internal/cfmt
+    [docref]=./pkg/ui
 )
 declare -A run=(
     [display]='^TestDisplayOutlines$'                 # testdata/display
@@ -41,10 +42,11 @@ declare -A run=(
     [sparseqr]='^TestSparseQRGolden$'                 # testdata/solver/sparseqr
     [groups]='^TestFixtureGroupsSolve$'               # testdata/fixture-groups.txt
     [sprintf]='^TestSprintfGolden$'                   # pkg/internal/cfmt/testdata/sprintf.golden
+    [docref]='^TestReferencePages$'                   # doc/guide/reference, doc/guide/images/icons
 )
 areas=("$@")
 if [ ${#areas[@]} -eq 0 ]; then
-    areas=(display stl draw export textwin ui render soft res ttf tlspr newfile modify thread importdxf solid sparseqr groups sprintf)
+    areas=(display stl draw export textwin ui render soft res ttf tlspr newfile modify thread importdxf solid sparseqr groups sprintf docref)
 fi
 for a in "${areas[@]}"; do
     if [ -z "${run[$a]:-}" ]; then
@@ -54,4 +56,4 @@ for a in "${areas[@]}"; do
     echo "== $a"
     TELESAPR_REGEN_GOLDEN=1 go test "${pkg[$a]}" -run "${run[$a]}" -count=1
 done
-git status --short testdata pkg/internal/cfmt/testdata
+git status --short testdata pkg/internal/cfmt/testdata doc/guide/reference doc/guide/images/icons

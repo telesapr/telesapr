@@ -1,0 +1,29 @@
+# The pictures of clearance.md: the pin in the plate's bore and the
+# hollowed box of examples/scripts/clearance, as the example saves
+# them (testdata/solid/clearance.tlspr).
+file $testdata/solid/clearance.tlspr
+menu File|Open...
+view rotated
+menu View|Zoom To Fit
+cursor off
+shot clearance-1-model gw
+cursor on
+menu Analyze|Clearance and Walls...
+twmove 60 145
+mark 28 140 110 22 tw
+shot clearance-2-screen tw
+twdown L 60 145
+twup L 60 145
+cursor off
+shot clearance-3-gaps
+cursor on
+twmove 267 115
+twdown L 267 115
+twup L 267 115
+edit 1.5
+twmove 204 145
+twdown L 204 145
+twup L 204 145
+tw
+cursor off
+shot clearance-4-walls

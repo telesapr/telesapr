@@ -3,6 +3,31 @@
 Example: [`examples/scripts/clearance`](../../examples/scripts/clearance/clearance.go), a pin
 9 mm across in a plate's bore 10 mm across, and a box hollowed to walls 1.2 mm thick.
 
+## Step by step
+
+1. Open the model. Here it is the one the example saves: a pin in a plate's bore, and a box
+   hollowed to thin walls.
+
+   ![The pin in its plate, and the hollowed box](images/clearance-1-model.png)
+
+2. Choose Analyze > Clearance and Walls. Its screen opens in the property browser. Click
+   [check gaps].
+
+   ![The Clearance and Walls screen](images/clearance-2-screen.png)
+
+3. The screen lists the pair of parts nearer than 1 mm: the plate and the pin, 0.50 apart. A
+   short red line across the gap shows where it is. At 0.5 mm it looks like a dot.
+
+   ![The gap between the pin and the plate](images/clearance-3-gaps.png)
+
+4. Click [change] beside walls thinner than, type 1.5, and click [check walls]. The thinnest
+   wall is 1.20, in the hollowed box, and red lines cross every point of it thinner than
+   1.5 mm.
+
+   ![The box's walls thinner than 1.5 mm](images/clearance-4-walls.png)
+
+These pictures are made by [`scenarios/clearance.scenario`](scenarios/clearance.scenario).
+
 ## What it does
 
 Before a model is printed or machined, two things are worth checking: are any two parts too

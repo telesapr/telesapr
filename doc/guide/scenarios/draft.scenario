@@ -1,0 +1,57 @@
+# The pictures of draft.md: a rectangle extruded, its sides drafted
+# 15 degrees on the extrusion's screen; then two sides picked and
+# drafted alone, and the neutral plane moved; last, the draft example.
+# Coordinates are those of the 600x600 headless window.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+cursor on
+twmove 163 145
+mark 28 142 190 22 tw
+shot draft-1-draft-link tw
+twdown L 163 145
+twup L 163 145
+edit 15
+view rotated
+menu View|Zoom To Fit
+cursor off
+shot draft-2-drafted
+# Two sides picked by the sketch's lines, in the view from above.
+view default
+cursor on
+move 202.5 282.5
+down L 202.5 282.5
+up L 202.5 282.5
+move 317.5 327.5
+down L 317.5 327.5
+up L 317.5 327.5
+shot draft-3-sides gw
+menu Features|Draft Selected Sides
+view rotated
+menu View|Zoom To Fit
+cursor off
+mark 28 182 290 22 tw
+shot draft-4-chosen-sides
+# The neutral plane moved half way up.
+cursor on
+twmove 272 165
+mark 28 162 340 22 tw
+twdown L 272 165
+twup L 272 165
+edit 10
+cursor off
+shot draft-5-neutral-plane
+# The draft example, in a new file.
+answer no
+menu File|New
+file $repo/examples/scripts/draft/draft.go
+menu Script|Run File...
+view rotated
+menu View|Zoom To Fit
+shot draft-6-boss gw

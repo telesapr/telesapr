@@ -1,0 +1,69 @@
+# The pictures of sketch-on-face.md: a base, its top face picked, a
+# sketch started on it, a rectangle drawn there and extruded into a
+# column; then the base made thicker, and the column going up with it.
+size tw 760 600
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+# The base's depth held at 10.
+twmove 505 128
+twdown L 505 128
+twup L 505 128
+twmove 510 128
+twdown L 510 128
+twup L 510 128
+edit 10
+move 290 265
+down L 290 265
+up L 290 265
+view rotated
+menu View|Zoom To Fit
+shot sketch-on-face-1-face
+menu Features|Sketch On Face
+menu View|Zoom To Fit
+menu View|Zoom Out
+shot sketch-on-face-2-workplane
+view default
+key r
+move 250 230
+down L 250 230
+up L 250 230
+move 330 300
+down L 330 300
+up L 330 300
+key esc
+view rotated
+menu View|Zoom To Fit
+shot sketch-on-face-3-rectangle gw
+key x shift
+# The column's depth held at 30.
+twmove 505 128
+twdown L 505 128
+twup L 505 128
+twmove 510 128
+twdown L 510 128
+twup L 510 128
+edit 30
+view rotated
+menu View|Zoom To Fit
+shot sketch-on-face-4-column
+twmove 30 13
+twdown L 30 13
+twup L 30 13
+# The base made 25 thick from its own screen: the column goes up.
+twmove 150 163
+twdown L 150 163
+twup L 150 163
+twmove 510 128
+twdown L 510 128
+twup L 510 128
+edit 25
+view rotated
+menu View|Zoom To Fit
+shot sketch-on-face-5-thicker

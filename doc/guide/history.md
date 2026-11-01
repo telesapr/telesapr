@@ -7,6 +7,54 @@ Every group is a step in the model's history. The home screen of the text window
 groups in order. A group may use earlier groups: an extrusion uses its sketch, and a sketch on
 a face uses the group that made the face.
 
+## Step by step
+
+A bolt's history: a sketch and the head extruded from it, a sketch and the shank, then the
+groups of its thread.
+
+1. The home screen of the property browser lists the groups in order. The radio button before
+   a name makes that group active, the box shows or hides it, and the arrows after it move it.
+
+   ![A bolt and its groups](images/history-1-groups.png)
+
+2. Click the up arrow after g004-shank-sketch. The shank's sketch uses only the references, so
+   it can go before the head. It moves up one place.
+
+   ![The up arrow after the shank's sketch](images/history-2-arrow.png)
+
+   ![The shank's sketch moved before the head](images/history-3-moved.png)
+
+   The same arrow on g003-head is refused: the head can't go before the sketch it extrudes. A
+   message names both groups.
+
+3. Click the name g004-shank-sketch to open its screen. Tick "suppress this group and the
+   groups that use it".
+
+   ![The suppress box on the sketch's screen](images/history-4-suppress-box.png)
+
+   The shank and the thread are left out with the sketch, and only the head is left. Nothing is
+   deleted: clear the box, or undo, and they come back.
+
+   ![Only the head is left](images/history-5-suppressed.png)
+
+4. Click "home". The group list greys the groups left out and says why: "(suppressed)" on the
+   sketch, "(suppressed with g004)" on the groups that use it.
+
+   ![The group list with groups left out](images/history-6-left-out.png)
+
+5. The `history` example ends by deleting the block's sketch. The groups that used it, and the
+   groups that used those, are deleted too. The home screen then links to the list of what was
+   taken.
+
+   ![The link to the broken references](images/history-7-broken-link.png)
+
+6. Click "broken references (4)". The list names each deleted group and what it used. Undo
+   brings them back; "[clear the list]" empties it.
+
+   ![The broken references list](images/history-8-broken.png)
+
+These pictures are made by [`scenarios/history.scenario`](scenarios/history.scenario).
+
 ## Moving a group
 
 The arrows after a group's name in the group list move it one place up or down. Features >
@@ -64,7 +112,7 @@ From a script: `group.SetSuppress(api.SuppressWhole)`, `api.SuppressSolid` or
 ## Broken references
 
 Deleting a group deletes the groups that use it. A constraint goes with the entities it held.
-Features > Broken References lists each thing a deletion took, with what it used. The home
+Features > Broken References... lists each thing a deletion took, with what it used. The home
 screen links to the list while it is not empty. Undo brings them back.
 
 From a script: `doc.Features.BrokenReferences()` and `doc.Features.ClearBrokenReferences()`.

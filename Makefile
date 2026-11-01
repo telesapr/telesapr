@@ -42,10 +42,11 @@ help:
 	@echo "  make dist-macos   - a universal TeleSAPR.app in a .dmg (on macOS only)"
 	@echo "  make release-notes - Print what the release of v$(VERSION) would say"
 	@echo "  make release      - Push master, wait for CI, tag v$(VERSION), make the GitHub release"
-	@echo "  make deploy-site  - Copy site/ to telesapr.sourceforge.io (SF_USER=<user>)"
+	@echo "  make guide-site   - Build the user's guide into site/guide (needs uv)"
+	@echo "  make deploy-site  - Build the guide, copy site/ to telesapr.sourceforge.io (SF_USER=<user>)"
 	@echo ""
 
-.PHONY: test test-heavy test-fast test-sweeps bench test-gui test-race coverage fuzz checks ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
+.PHONY: guide-site test test-heavy test-fast test-sweeps bench test-gui test-race coverage fuzz checks ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
 	dist dist-linux dist-windows dist-macos release release-notes
 
 # The version is pkg/version.Version; a release's tag is v$(VERSION).
@@ -308,8 +309,14 @@ release:
 release-notes:
 	scripts/release.sh --notes
 
-# The web site in site/, to the project's web space on SourceForge.
-deploy-site:
+# The user's guide as a web site in site/guide (mkdocs.yml), with mkdocs
+# run through uv at the version tools/docs/requirements.txt pins.
+guide-site:
+	uvx --with-requirements tools/docs/requirements.txt mkdocs build --clean
+
+# The web site in site/, with the guide built into site/guide, to the
+# project's web space on SourceForge.
+deploy-site: guide-site
 	scripts/deploy-site.sh
 
 # Build output only; dist/ holds tracked sources and .gocache is kept.

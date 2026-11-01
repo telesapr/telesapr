@@ -8,6 +8,39 @@ circle.
 A pattern repeats a group's solid along a path. The path is line segments and arcs, joined end
 to end and meeting tangent, as a sweep's path is.
 
+## Step by step
+
+Repeat a post along a line:
+
+1. Press C for a circle and click its centre and a point on it: that is the post. Press S for
+   a line and click its two ends: that is the path. Select the line and press G to make it
+   construction, so that it is not extruded into a wall.
+
+   ![A circle and a construction line](images/pattern-1-sketch.png)
+
+2. Press Shift+X to extrude the circle into a post. Click the path to select it.
+
+   ![The path selected](images/pattern-2-path.png)
+
+3. Choose Features > Pattern Along Path. There are three posts: the first where the post is,
+   the last at the far end of the line, one half way.
+
+   ![Three posts along the line](images/pattern-3-patterned.png)
+
+4. Click "[change]" beside the copies and type a new number, here 5.
+
+   ![The copies row of the pattern group](images/pattern-4-copies-link.png)
+
+   ![Five posts along the line](images/pattern-5-five-copies.png)
+
+The `flange` example repeats a bolt hole round a circle, a closed path: six holes, shared out
+evenly all round it.
+
+![The flange example: six holes round a pitch circle](images/pattern-6-flange.png)
+
+These pictures are made by [`scenarios/pattern.scenario`](scenarios/pattern.scenario), which
+replays the same clicks on the program (`scripts/regen-doc-images.sh`).
+
 ## In the window
 
 1. Make the group whose solid is to be repeated active.

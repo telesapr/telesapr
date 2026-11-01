@@ -1,0 +1,9 @@
+# The picture of ai.md: the AI settings of the preferences screen. The
+# Script menu's Allow AI Connections and the confirmation dialog are not
+# drawn on the headless platform, so the page gives them in words.
+menu Edit|Preferences...
+size tw 680 214
+# Scrolled down to the settings for AI programs.
+twscroll 300 100 -12.3
+mark 12 80 620 70 tw
+shot ai-1-preferences tw

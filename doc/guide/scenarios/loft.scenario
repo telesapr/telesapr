@@ -1,0 +1,43 @@
+file $testdata/ui/loft_profiles.tlspr
+menu File|Open...
+view rotated
+menu View|Zoom To Fit
+menu View|Zoom Out
+cursor off
+shot loft-1-profiles
+view default
+cursor on
+move 300 400
+down L 300 400
+up L 300 400
+mark 190 385 220 30
+shot loft-2-picked gw
+menu Features|Loft To Selected Profile
+view rotated
+menu View|Zoom To Fit
+menu View|Zoom Out
+cursor off
+shot loft-3-lofted
+cursor on
+twmove 280 165
+mark 262 155 44 22 tw
+shot loft-4-turn-link tw
+twdown L 280 165
+twup L 280 165
+cursor off
+shot loft-5-turned gw
+answer no
+menu File|New
+file $repo/examples/scripts/loft/loft.go
+menu Script|Run File...
+view rotated
+menu View|Zoom To Fit
+menu View|Zoom Out
+shot loft-6-ruled
+menu File|New
+file $repo/examples/scripts/vase/vase.go
+menu Script|Run File...
+view rotated
+menu View|Zoom To Fit
+menu View|Zoom Out
+shot loft-7-smooth

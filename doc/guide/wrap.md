@@ -6,6 +6,43 @@ cone and a cylinder, a word raised on the cylinder and a band of squares sunk in
 A wrap rolls a sketch onto a cylinder or a cone of the solid, as paper is rolled onto it. It then
 raises the sketch from the face (an *emboss*) or sinks it into the face (an *engraving*).
 
+## Step by step
+
+Raise a rectangle on a cylinder, then sink it:
+
+1. Draw a rectangle, select its lower side and press Shift+L to turn the rectangle about that
+   side (Features > Lathe). It makes a cylinder.
+
+   ![A cylinder turned from a rectangle](images/wrap-1-lathed.png)
+
+2. In the view from above, select a corner of the first rectangle and press Shift+W
+   (Features > Sketch In New Workplane). The new workplane goes through that point, parallel
+   to the screen, so it holds the cylinder's axis. Draw a small rectangle in it.
+
+   ![The rectangle to wrap, drawn over the cylinder](images/wrap-2-sketch.png)
+
+3. Turn on View > Show > Selectable Faces, and click the cylinder. The face is drawn hatched
+   when selected.
+
+   ![The cylinder's face selected](images/wrap-3-face.png)
+
+4. Choose Features > Wrap Sketch Onto Face. The rectangle is rolled onto the cylinder and
+   raised by 1 mm. The property browser shows the face, the height, and raised or sunk.
+
+   ![The rectangle raised on the cylinder](images/wrap-4-raised.png)
+
+5. Click "sunk". The rectangle is sunk 1 mm into the cylinder instead.
+
+   ![The raised and sunk buttons](images/wrap-5-sunk-link.png)
+
+   ![The rectangle sunk into the cylinder](images/wrap-6-sunk.png)
+
+The `wrap` example raises a word on a cylinder and sinks a band of squares into a cone:
+
+![A handle with a raised word and sunk squares](images/wrap-7-handle.png)
+
+These pictures are made by [`scenarios/wrap.scenario`](scenarios/wrap.scenario).
+
 ## In the window
 
 1. Draw the sketch as closed loops, in a workplane parallel to the face's axis. Text counts:
