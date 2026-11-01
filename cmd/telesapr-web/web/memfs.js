@@ -1,0 +1,146 @@
+// memfs.js: the in-memory file system telesapr-web reads and writes in
+// a browser. Go's js/wasm port calls globalThis.fs in the shape of
+// node's callback API (syscall/fs_js.go); wasm_exec.js puts in a stub
+// that refuses every call unless a fs is there before it loads.
+// Files are byte arrays by absolute path; directories are implied.
+// What is under /home/ is kept across visits in IndexedDB: memfs.mount()
+// reads it back before the program starts, and changes are written a
+// moment after they are made.
+"use strict";
+(() => {
+	const files = new Map(); // path -> Uint8Array
+	const fds = new Map(); // fd -> {path, pos, flags}
+	let nextFD = 10;
+	const C = { O_RDONLY: 0, O_WRONLY: 1, O_RDWR: 2, O_CREAT: 64, O_EXCL: 128, O_TRUNC: 512, O_APPEND: 1024, O_DIRECTORY: 65536 };
+	const err = (code) => { const e = new Error(code); e.code = code; return e; };
+	const norm = (p) => (p.startsWith("/") ? p : "/" + p).replace(/\/+/g, "/");
+	const isDir = (p) => { const d = p.endsWith("/") ? p : p + "/"; for (const k of files.keys()) if (k.startsWith(d)) return true; return p === "/"; };
+	const stat = (p) => {
+		const f = files.get(p), dir = !f && isDir(p);
+		if (!f && !dir) return null;
+		const t = Date.now();
+		return { dev: 0, ino: 0, mode: dir ? 0o40755 : 0o100644, nlink: 1, uid: 0, gid: 0, rdev: 0,
+			size: f ? f.length : 0, blksize: 4096, blocks: 0, atimeMs: t, mtimeMs: t, ctimeMs: t,
+			isDirectory: () => dir };
+	};
+	const decoder = new TextDecoder("utf-8");
+	let line = "";
+	const out = (buf) => {
+		line += decoder.decode(buf);
+		const nl = line.lastIndexOf("\n");
+		if (nl >= 0) { console.log(line.substring(0, nl)); line = line.substring(nl + 1); }
+		return buf.length;
+	};
+	// Persistence: the files under /home/ in an IndexedDB store, by path.
+	const KEPT = "/home/";
+	const dirty = new Set(); // paths to write or delete
+	let db = null, flushTimer = 0;
+	const touch = (p) => {
+		if (!db || !p.startsWith(KEPT)) return;
+		dirty.add(p);
+		if (!flushTimer) flushTimer = setTimeout(flush, 300);
+	};
+	const flush = () => {
+		flushTimer = 0;
+		if (!db || !dirty.size) return;
+		const paths = [...dirty];
+		dirty.clear();
+		try {
+			const tx = db.transaction("files", "readwrite");
+			const store = tx.objectStore("files");
+			for (const p of paths) {
+				const data = files.get(p);
+				if (data) store.put({ path: p, data }); else store.delete(p);
+			}
+			tx.onerror = () => console.warn("memfs: could not save files", tx.error);
+		} catch (e) { console.warn("memfs: could not save files", e); }
+	};
+	globalThis.memfs = {
+		put(path, bytes) { path = norm(path); files.set(path, bytes); touch(path); },
+		get(path) { return files.get(norm(path)); },
+		remove(path) { path = norm(path); files.delete(path); touch(path); },
+		list(prefix) { return [...files.keys()].filter((k) => k.startsWith(prefix || "/")); },
+		// mount opens the store and reads the kept files; it resolves
+		// when they are in. Without IndexedDB (a private window, say) it
+		// resolves at once and nothing is kept.
+		mount() {
+			return new Promise((resolve) => {
+				if (!globalThis.indexedDB) { resolve(false); return; }
+				const open = indexedDB.open("telesapr-fs", 1);
+				open.onupgradeneeded = () => open.result.createObjectStore("files", { keyPath: "path" });
+				open.onerror = () => { console.warn("memfs: no storage", open.error); resolve(false); };
+				open.onsuccess = () => {
+					const d = open.result;
+					const all = d.transaction("files").objectStore("files").getAll();
+					all.onsuccess = () => {
+						for (const r of all.result) if (!files.has(r.path)) files.set(r.path, r.data);
+						db = d;
+						resolve(true);
+					};
+					all.onerror = () => resolve(false);
+				};
+			});
+		},
+		flush,
+	};
+	addEventListener("pagehide", flush);
+	globalThis.fs = {
+		constants: C,
+		writeSync(fd, buf) { return out(buf); },
+		open(path, flags, mode, cb) {
+			path = norm(path);
+			if (!files.has(path)) {
+				if (!(flags & C.O_CREAT)) { if (isDir(path)) { const fd = nextFD++; fds.set(fd, { path, pos: 0 }); cb(null, fd); return; } cb(err("ENOENT")); return; }
+				files.set(path, new Uint8Array(0));
+			} else if (flags & C.O_EXCL && flags & C.O_CREAT) { cb(err("EEXIST")); return; }
+			if (flags & C.O_TRUNC) files.set(path, new Uint8Array(0));
+			const fd = nextFD++;
+			fds.set(fd, { path, pos: flags & C.O_APPEND ? files.get(path).length : 0 });
+			cb(null, fd);
+		},
+		close(fd, cb) { const f = fds.get(fd); fds.delete(fd); if (f) touch(f.path); cb(null); },
+		fstat(fd, cb) { const f = fds.get(fd); const s = f && stat(f.path); s ? cb(null, s) : cb(err("EBADF")); },
+		stat(path, cb) { const s = stat(norm(path)); s ? cb(null, s) : cb(err("ENOENT")); },
+		lstat(path, cb) { this.stat(path, cb); },
+		readdir(path, cb) {
+			const d = norm(path).replace(/\/?$/, "/"), names = new Set();
+			for (const k of files.keys()) if (k.startsWith(d)) names.add(k.substring(d.length).split("/")[0]);
+			cb(null, [...names]);
+		},
+		read(fd, buffer, offset, length, position, cb) {
+			const f = fds.get(fd); if (!f) { cb(err("EBADF")); return; }
+			const data = files.get(f.path) || new Uint8Array(0);
+			const at = position === null ? f.pos : position;
+			const n = Math.max(0, Math.min(length, data.length - at));
+			buffer.set(data.subarray(at, at + n), offset);
+			if (position === null) f.pos += n;
+			cb(null, n);
+		},
+		write(fd, buf, offset, length, position, cb) {
+			if (fd === 1 || fd === 2) { cb(null, out(buf.subarray(offset, offset + length))); return; }
+			const f = fds.get(fd); if (!f) { cb(err("EBADF")); return; }
+			const at = position === null ? f.pos : position;
+			const old = files.get(f.path), end = Math.max(old.length, at + length);
+			const data = end > old.length ? new Uint8Array(end) : old;
+			if (data !== old) data.set(old);
+			data.set(buf.subarray(offset, offset + length), at);
+			files.set(f.path, data);
+			if (position === null) f.pos += length;
+			cb(null, length);
+		},
+		mkdir(path, perm, cb) { cb(null); },
+		fsync(fd, cb) { const f = fds.get(fd); if (f) touch(f.path); cb(null); },
+		unlink(path, cb) { const p = norm(path); if (files.delete(p)) { touch(p); cb(null); } else cb(err("ENOENT")); },
+		rename(from, to, cb) { const d = files.get(norm(from)); if (!d) { cb(err("ENOENT")); return; } files.delete(norm(from)); files.set(norm(to), d); touch(norm(from)); touch(norm(to)); cb(null); },
+		ftruncate(fd, length, cb) { const f = fds.get(fd); const d = files.get(f.path); files.set(f.path, d.slice(0, length)); cb(null); },
+		truncate(path, length, cb) { const d = files.get(norm(path)); files.set(norm(path), d.slice(0, length)); cb(null); },
+		chmod(p, m, cb) { cb(null); }, chown(p, u, g, cb) { cb(null); }, fchmod(fd, m, cb) { cb(null); },
+		fchown(fd, u, g, cb) { cb(null); }, lchown(p, u, g, cb) { cb(null); }, utimes(p, a, m, cb) { cb(null); },
+		link(p, l, cb) { cb(err("ENOSYS")); }, symlink(p, l, cb) { cb(err("ENOSYS")); },
+		readlink(p, cb) { cb(err("EINVAL")); }, rmdir(p, cb) { cb(null); },
+	};
+	// path.resolve, which syscall.Open calls, is node's; a browser has
+	// none, and every path here is absolute already.
+	globalThis.path = globalThis.path || { resolve: (p) => norm(p) };
+	globalThis.process = globalThis.process || { pid: 1, ppid: 0, cwd: () => "/", chdir() {}, getuid: () => -1, getgid: () => -1, geteuid: () => -1, getegid: () => -1, getgroups() { throw err("ENOSYS"); }, umask() { return 0o22; } };
+})();

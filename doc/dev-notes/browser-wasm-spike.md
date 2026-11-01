@@ -1,5 +1,7 @@
 # Browser WASM spike: TeleSAPR in a browser, October 2026
 
+> The editor that this spike's plan led to is built: see [browser.md](browser.md).
+
 Whether a browser version of TeleSAPR is possible. The route is **Go to WebAssembly**
 (`GOOS=js GOARCH=wasm`), not a hand-written JS port. The plan below was written on 2026-10-21;
 the spike ran on 2026-10-29 (branch `rd6-wasm-spike`) and its results come first.

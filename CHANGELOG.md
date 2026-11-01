@@ -9,6 +9,9 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+### Added
+- The editor runs in a browser (WebAssembly build, `make wasm`): the same windows, menus, dialogs, script console and models, with files kept in the browser, opened by a dialog or by dropping them on the page, and saved as downloads. See `doc/dev-notes/browser.md`.
+
 ## [0.5.15] - 2026-11-01
 
 ### Fixed

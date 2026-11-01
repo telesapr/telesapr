@@ -1,6 +1,6 @@
 # Makefile for TeleSAPR
 
-.PHONY: help
+.PHONY: help wasm
 help:
 	@echo "TeleSAPR Build Targets:"
 	@echo ""
@@ -29,6 +29,7 @@ help:
 	@echo ""
 	@echo "Application:"
 	@echo "  make build        - Build bin/telesapr and bin/telesapr-cli"
+	@echo "  make wasm         - Build the browser version into bin/web (doc/dev-notes/browser.md)"
 	@echo "  make install      - Install it with its desktop entry, icons and MIME type"
 	@echo "                      (PREFIX=$(PREFIX), DESTDIR for staging)"
 	@echo "  make uninstall    - Remove what install put in place"
@@ -242,6 +243,12 @@ build:
 	@echo "==> go build ./cmd/telesapr ./cmd/telesapr-cli"
 	GOCACHE=$(PWD)/.gocache go build -ldflags '$(LDFLAGS)' -o bin/telesapr ./cmd/telesapr
 	GOCACHE=$(PWD)/.gocache go build -ldflags '$(LDFLAGS)' -o bin/telesapr-cli ./cmd/telesapr-cli
+
+# The editor in a browser (doc/dev-notes/browser.md): bin/web is a folder
+# any static file server can serve.
+wasm:
+	@echo "==> scripts/wasm-build.sh bin/web"
+	GOCACHE=$(PWD)/.gocache scripts/wasm-build.sh bin/web
 
 # The desktop entry, icons and MIME type, from dist/freedesktop; the
 # layout follows SolveSpace's res/CMakeLists.txt.
