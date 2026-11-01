@@ -9,6 +9,8 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.5.15] - 2026-11-01
+
 ### Fixed
 - On Windows, the bill of materials counts a part file the model's file links as `parts/bolt.tlspr` and one linked since by its full path as one part, named `parts\bolt.tlspr`, rather than two; a link group's screen names the file the same way.
 
