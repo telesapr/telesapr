@@ -307,6 +307,9 @@ func convertOne(it Item, o Options) (data []byte, warnings []string, err error) 
 		warnings = append(warnings, fmt.Sprintf("%s: regeneration removed %d requests, %d constraints and %d groups that depended on what is missing",
 			it.Src, requests, constraints, groups))
 	}
+	for _, m := range sk.Mended {
+		warnings = append(warnings, it.Src+": "+m)
+	}
 	// The model is in millimetres; the unit only says what typed
 	// lengths are in, and an imported model has none typed yet.
 	sk.Units = o.Units

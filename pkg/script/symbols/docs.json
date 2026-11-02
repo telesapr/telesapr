@@ -5196,7 +5196,7 @@
 					},
 					"ClearBrokenReferences": {
 						"decl": "func (m FeaturesMenu) ClearBrokenReferences()",
-						"text": "ClearBrokenReferences empties the list BrokenReferences gives."
+						"text": "ClearBrokenReferences empties the lists BrokenReferences and Mended\ngive."
 					},
 					"Emboss": {
 						"decl": "func (m FeaturesMenu) Emboss(face SolidFace, height float64, name string) Group",
@@ -5241,6 +5241,10 @@
 					"LoftThrough": {
 						"decl": "func (m FeaturesMenu) LoftThrough(profiles []Group, name string) Group",
 						"text": "LoftThrough joins the closed loops of sketches in workplanes, three\nor more, in order, by one smooth surface through them all, and closes\nthe ends with the first and last sketches' planes. Loops of fewer\ncurves have their longest split until all match, and each loop after\nthe first starts at the curve nearest where the one before it does.\nThe new group becomes active."
+					},
+					"Mended": {
+						"decl": "func (m FeaturesMenu) Mended() (mended []string)",
+						"text": "Mended lists what was put back when a damaged file was opened, such\nas a reference workplane the file lacked, a sentence each; what used\nsomething the file lacked is in BrokenReferences. ClearBrokenReferences\nempties it too."
 					},
 					"Mirror": {
 						"decl": "func (m FeaturesMenu) Mirror(plane Entity, name string) Group",
@@ -8089,7 +8093,7 @@
 					},
 					"ClearBrokenReferences": {
 						"decl": "func (sk *Sketch) ClearBrokenReferences()",
-						"text": "ClearBrokenReferences empties the list of what regenerations deleted."
+						"text": "ClearBrokenReferences empties the list of what regenerations deleted, and of what the load mended."
 					},
 					"ClearExisting": {
 						"decl": "func (sk *Sketch) ClearExisting()",
@@ -10059,6 +10063,10 @@
 				"text": "MeshTree is a tree of boxes over a mesh's triangles, to find the nearest points of two meshes, the point of one nearest a point, and where a ray leaves one, without looking at every triangle: the clearance between the parts of an assembly and the thickness of their walls (pkg/sketch).",
 				"kind": "struct",
 				"methods": {
+					"AppendInBox": {
+						"decl": "func (t *MeshTree) AppendInBox(dst []int, lo, hi geom.Vector) []int",
+						"text": "AppendInBox appends to dst the triangles, by their places in the mesh, whose boxes meet the box from lo to hi, in no order: those that may lie in it, for a caller to test as it needs, as the wall check does the triangles in the prism a triangle sweeps into the solid."
+					},
 					"Len": {
 						"decl": "func (t *MeshTree) Len() int",
 						"text": "Len is the number of triangles in the tree."

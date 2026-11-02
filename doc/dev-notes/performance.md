@@ -99,7 +99,7 @@ and the goldens go in a commit of their own.
 | 8 | Closed-form closest points on cylinders (K2) | Not taken: 6% of the thread, goldens |
 | 9 | Draw the last solids while a drag's are made off the thread (D4) | Behind a setting, off (`DragSolidsLate`). Off, a drag makes its solids on the thread so linked parts follow the pointer (151fda16) |
 | 10 | Coplanar trim crossings bucketed (K3) | Done per surface split against, in the shell's index: 12x12 −16% |
-| 11 | Curve ids reserved in advance (K4) | In part: the scan for the next id is gone, same bytes. The loops' commits stay serial (2% of the 12x12 on one goroutine) |
+| 11 | Curve ids reserved in advance (K4) | In part: the scan for the next id is gone, same bytes. The loops' commits stay serial: measured again 2026-11-02 with the loops parallel, `curveSink.commitTo` and the id calls under it are 0.15% of the CPU samples of the 12x12 (`BenchmarkRegenerateTranslate/on`, 91 ms), none in the text, the tangent fillet, `bolt_m8x30`, `face_m8` or the rover. Running them in parallel could save under 1% of the wall time, and an exact curve's look-up among the curves before it would need them committed first; declined |
 | 12 | Connected components solved apart (S4) | Done (`components.go`), a component's system taken from the whole Jacobian. Goldens by 1.3e-14 |
 | 13 | A drag's steps with a kept factorisation (S5) | Done (`drag_step.go`), a chord method while each step halves what is left. No golden moved |
 | 14 | The hover frame restores only its rows (D7) | Done (`rowstate.go`): `PaintHover` 7.8 → 7.3 ms |
@@ -153,6 +153,8 @@ not dense arithmetic.
   another key. A group with no solid passes one key down whatever its tolerance.
 - A test reading a script's sketch through `Doc.With` records an undo step and dirties the active
   group: read through the host.
+- `telesapr-cli regenerate` writes the model back over its input. Profile a copy, never a user's
+  design or a fixture in the tree.
 - Five fixtures fail to regenerate from the command line before and after alike (a missing IDF/STL
   link, two images, the v1 `fields` file).
 
@@ -166,7 +168,8 @@ go test -run '^$' -bench 'Drag|Paint|Frame' ./pkg/ui
 (cd pkg/persist/slvs && go test -run '^$' -bench Regenerate -benchmem -count 6 .)
 go test -run '^$' -bench 'Fillet|Shell|Loft|Sweep' ./pkg/sketch ./pkg/topo
 TELESAPR_BENCH_MODEL=/path/to/model.tlspr go test -run '^$' -bench RegenerateModel ./pkg/persist/tlspr
-bin/telesapr-cli regenerate --cpuprofile cpu.out model.tlspr   # or --trace trace.out
+cp model.tlspr /tmp/m.tlspr    # regenerate writes the file back
+bin/telesapr-cli regenerate --cpuprofile cpu.out /tmp/m.tlspr   # or --trace trace.out
 ```
 
 The scaled step-and-repeat models are `testdata/group/translate_nd/normal.slvs` with both

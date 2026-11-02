@@ -1,6 +1,8 @@
 package api
 
 import (
+	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -337,5 +339,35 @@ func TestMoveWithSources(t *testing.T) {
 			}()
 			fn()
 		}()
+	}
+}
+
+// A damaged file opens from a script, which reads what was put back and
+// what was left out.
+func TestOpenDamagedMended(t *testing.T) {
+	t.Parallel()
+	d, err := Open(filepath.Join("..", "..", "..", "testdata", "tlspr", "damaged", "missing_references.tlspr"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"the reference workplane YZ was missing and was made again",
+		"the reference workplane ZX was missing and was made again",
+	}
+	if got := d.Features.Mended(); !slices.Equal(got, want) {
+		t.Errorf("mended %q", got)
+	}
+	d.Features.ClearBrokenReferences()
+	if got := d.Features.Mended(); len(got) != 0 {
+		t.Errorf("cleared, mended %q", got)
+	}
+
+	d, err = Open(filepath.Join("..", "..", "..", "testdata", "tlspr", "damaged", "constraint_missing_entity.tlspr"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	refs := d.Features.BrokenReferences()
+	if len(refs) != 1 || refs[0].Text != "deleted c001-pt-pt-distance of g002-sketch-in-plane, which used r006" {
+		t.Errorf("broken %v", refs)
 	}
 }

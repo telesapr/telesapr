@@ -107,6 +107,22 @@ func (sk *Sketch) broke(group core.HGroup, item, missing string) {
 		Group: group, GroupName: sk.anyGroupName(group), Item: item, Missing: missing})
 }
 
+// neverGroup reports whether h, a group that isn't there, never was: no
+// regeneration knew it and this one didn't delete it. What a damaged
+// file puts in such a group is listed when it is left out; what was in
+// a group deleted goes with it unlisted.
+func (sk *Sketch) neverGroup(h core.HGroup) bool {
+	if _, ok := sk.names.groups[h]; ok {
+		return false
+	}
+	for _, b := range sk.broken {
+		if b.Group == h && b.Item == b.GroupName {
+			return false
+		}
+	}
+	return true
+}
+
 // publishBroken makes what the regeneration deleted the list the user
 // sees; a regeneration that deleted nothing leaves the list as it was.
 func (sk *Sketch) publishBroken() {
@@ -116,8 +132,10 @@ func (sk *Sketch) publishBroken() {
 	}
 }
 
-// ClearBrokenReferences empties the list of what regenerations deleted.
+// ClearBrokenReferences empties the list of what regenerations deleted,
+// and of what the load mended.
 func (sk *Sketch) ClearBrokenReferences() {
 	sk.BrokenReferences = nil
+	sk.Mended = nil
 	sk.broken = nil
 }

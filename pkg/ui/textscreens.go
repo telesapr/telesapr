@@ -336,7 +336,7 @@ func (tw *textWindow) ShowListOfGroups() {
 		lf(tw.ScreenShowEditView),
 		lf(tw.ScreenShowConfiguration))
 	tw.Printf(false, "  %Fl%Lr%fparameters%E", lf(tw.ScreenShowParameters))
-	if n := len(sk.BrokenReferences) + len(sk.ExprErrors); n > 0 {
+	if n := len(sk.BrokenReferences) + len(sk.Mended) + len(sk.ExprErrors); n > 0 {
 		tw.Printf(false, "  %Fx%Lb%fbroken references (%d)%E", lf(tw.ScreenShowBrokenReferences), n)
 	}
 }

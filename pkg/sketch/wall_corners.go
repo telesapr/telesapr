@@ -18,9 +18,8 @@ import (
 // that part is at one of its corners. Each pair of triangles a measured
 // ray joined is taken so, its corners measured, and a ray from a corner
 // that leaves through another triangle, the first hidden from T by it,
-// gives a pair taken in the next round. A wall thinner than the points
-// about it is then missed only where no measured ray reached the pair
-// of triangles it lies between.
+// gives a pair taken in the next round. The pairs no measured ray
+// reached are found by where the triangles lie (wall_near.go).
 
 const (
 	// wallCornerRounds is how many times the pairs that rays from
@@ -33,34 +32,52 @@ const (
 	wallCornerIn = 1e-8
 )
 
+// cornerWalk is what the corners measured of one part so far leave:
+// the thinnest found, the pairs of triangles taken, and how many more
+// corners may be measured.
+type cornerWalk struct {
+	least  float64
+	seen   map[[2]int]bool
+	budget int
+}
+
+// newCornerWalk starts the walk over the corners of a part whose
+// points measured found.
+func newCornerWalk(found []wallSample) *cornerWalk {
+	cw := &cornerWalk{least: math.Inf(1), seen: map[[2]int]bool{}, budget: wallCornerMost}
+	for _, f := range found {
+		cw.least = min(cw.least, f.spot.Thickness)
+	}
+	return cw
+}
+
 // measureCorners measures the corners of the parts of triangles that
 // the rays found join, wherever the walls there could be thinner than
 // below or than the thinnest found, and adds them to found.
-func (r *WallReport) measureCorners(w *clearancePart, below float64, found []wallSample) []wallSample {
-	least := math.Inf(1)
-	for _, f := range found {
-		least = min(least, f.spot.Thickness)
-	}
-	type pair struct{ tri, hit int }
-	seen := map[pair]bool{}
-	next := slices.Clone(found)
-	budget := wallCornerMost
+func (r *WallReport) measureCorners(w *clearancePart, below float64, cw *cornerWalk, found []wallSample) []wallSample {
+	return r.walkCorners(w, below, cw, found, slices.Clone(found))
+}
+
+// walkCorners measures the corners of the pairs of triangles next
+// joins, then those of the pairs the rays from them join, for
+// wallCornerRounds rounds, and adds what they found to found.
+func (r *WallReport) walkCorners(w *clearancePart, below float64, cw *cornerWalk, found, next []wallSample) []wallSample {
 	for range wallCornerRounds {
 		// The thinnest first, so that the thinnest found falls soon and
 		// fewer corners are measured.
 		slices.SortStableFunc(next, func(a, b wallSample) int { return cmp.Compare(a.spot.Thickness, b.spot.Thickness) })
 		var more []wallSample
 		for _, f := range next {
-			p := pair{f.tri, f.hit}
-			if f.hit < 0 || seen[p] {
+			p := [2]int{f.tri, f.hit}
+			if f.hit < 0 || cw.seen[p] {
 				continue
 			}
-			seen[p] = true
+			cw.seen[p] = true
 			for _, c := range wallPairCorners(w.tree.Triangle(f.tri), w.tree.Triangle(f.hit)) {
-				if c.t >= max(below, least) || budget == 0 {
+				if c.t >= max(below, cw.least) || cw.budget == 0 {
 					continue
 				}
-				budget--
+				cw.budget--
 				sp, hit, ok := thicknessFrom(w.tree, f.tri, c.at, w.tree.Triangle(f.tri).Normal().WithMagnitude(-1))
 				if !ok {
 					continue
@@ -68,7 +85,7 @@ func (r *WallReport) measureCorners(w *clearancePart, below float64, found []wal
 				r.Samples++
 				sp.Group = w.g
 				sp.sa = w.tree.Triangle(f.tri).Tag
-				least = min(least, sp.Thickness)
+				cw.least = min(cw.least, sp.Thickness)
 				more = append(more, wallSample{spot: sp, tri: f.tri, hit: hit})
 			}
 		}
@@ -94,35 +111,62 @@ type wallCorner struct {
 // the ray from each to h's plane; none where h stands along the ray or
 // faces back at it.
 func wallPairCorners(t, h *srf.STriangle) []wallCorner {
-	n := t.Normal()
-	if n.Magnitude() < 1e-12 {
+	f, ok := newWallFrame(t)
+	if !ok {
 		return nil
 	}
+	return f.corners(h)
+}
+
+// wallFrame is a triangle laid flat in its plane, to be cut by the
+// triangles it faces: its corner A, two directions along its plane,
+// its inward normal and its corners in the plane.
+type wallFrame struct {
+	a, e1, e2, in geom.Vector
+	poly          [][2]float64
+}
+
+// newWallFrame lays triangle t flat; false for a triangle of no area.
+func newWallFrame(t *srf.STriangle) (wallFrame, bool) {
+	n := t.Normal()
+	if n.Magnitude() < 1e-12 {
+		return wallFrame{}, false
+	}
 	n = n.WithMagnitude(1)
-	in := n.ScaledBy(-1)
+	f := wallFrame{a: t.A, e1: t.B.Minus(t.A).WithMagnitude(1), in: n.ScaledBy(-1)}
+	f.e2 = n.Cross(f.e1)
+	f.poly = [][2]float64{f.flat(t.A), f.flat(t.B), f.flat(t.C)}
+	if area2(f.poly) < 1e-18 {
+		return wallFrame{}, false
+	}
+	return f, true
+}
+
+// flat is point p in the frame's plane.
+func (f *wallFrame) flat(p geom.Vector) [2]float64 {
+	d := p.Minus(f.a)
+	return [2]float64{d.Dot(f.e1), d.Dot(f.e2)}
+}
+
+// corners are wallPairCorners of the frame's triangle and h.
+func (f *wallFrame) corners(h *srf.STriangle) []wallCorner {
 	nh := h.Normal()
 	if nh.Magnitude() < 1e-12 {
 		return nil
 	}
 	nh = nh.WithMagnitude(1)
-	cos := nh.Dot(in)
+	cos := nh.Dot(f.in)
 	if cos < 1e-9 {
 		return nil
 	}
-	e1 := t.B.Minus(t.A).WithMagnitude(1)
-	e2 := n.Cross(e1)
-	flat := func(p geom.Vector) [2]float64 {
-		d := p.Minus(t.A)
-		return [2]float64{d.Dot(e1), d.Dot(e2)}
-	}
-	poly := [][2]float64{flat(t.A), flat(t.B), flat(t.C)}
-	cut := [][2]float64{flat(h.A), flat(h.B), flat(h.C)}
+	cut := [][2]float64{f.flat(h.A), f.flat(h.B), f.flat(h.C)}
 	if area2(cut) < 0 {
 		slices.Reverse(cut)
 	}
-	if area2(cut) < 1e-18 || area2(poly) < 1e-18 {
+	if area2(cut) < 1e-18 {
 		return nil
 	}
+	poly := f.poly
 	for k := range cut {
 		poly = clipBy(poly, cut[k], cut[(k+1)%len(cut)])
 		if len(poly) < 3 {
@@ -142,7 +186,7 @@ func wallPairCorners(t, h *srf.STriangle) []wallCorner {
 			p[0] += dx * k
 			p[1] += dy * k
 		}
-		at := t.A.Plus(e1.ScaledBy(p[0])).Plus(e2.ScaledBy(p[1]))
+		at := f.a.Plus(f.e1.ScaledBy(p[0])).Plus(f.e2.ScaledBy(p[1]))
 		out = append(out, wallCorner{at: at, t: nh.Dot(h.A.Minus(at)) / cos})
 	}
 	return out

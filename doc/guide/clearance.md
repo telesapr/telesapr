@@ -41,7 +41,8 @@ property browser that checks both, on the model up to the active group.
 The screen's first row is **gaps less than** a distance, 1 mm to start with. [change] sets it.
 
 The parts are the same ones Show Interfering Parts checks: each group assembled into the model,
-and the solid made before the first of them.
+and the solid made before the first of them, even when that solid was made as triangles
+(**force NURBS surfaces to triangle mesh**).
 
 [check gaps] lists every pair of parts nearer than the distance, the nearest first, and marks
 each gap on the model: a red line between its two nearest points, a tick across each end and a
@@ -74,6 +75,9 @@ How the points are chosen:
   from one flat triangle to the one it leaves through grows or shrinks evenly as it moves, so
   the corners of where the two triangles overlap are measured too. The thinnest spot is among
   them.
+- So that no such spot is missed where no ray happened to land, as under a dimple narrower than
+  the points are apart, every pair of triangles that face each other closer than the thinnest
+  wall found is measured the same way.
 - A sharp edge, as where a thread's ridge runs out of an end face, has a thickness of nothing
   there, and is listed so.
 
@@ -116,5 +120,7 @@ The MCP `measure` tool reports both when asked with `gaps` and `walls`
 
 ## Not yet
 
-- A wall between two triangles that no measured ray joined, narrower than the points measured
-  around it, can still be missed.
+- A part whose thinnest wall is most of its size, such as a solid ball, can have more pairs of
+  facing triangles than are measured (4 million a part); past them a wall can still be missed.
+- A part made of triangles (forced to a triangle mesh, or linked as a mesh) is not cut by the
+  groups that cut the assembly after it.

@@ -50,6 +50,10 @@ type Sketch struct {
 	// something deleted, and why. It stays until another regeneration
 	// deletes something, an undo or redo, or ClearBrokenReferences.
 	BrokenReferences []BrokenReference
+	// Mended lists what the load of a damaged file put back, a
+	// sentence fragment each (mend.go); ClearBrokenReferences empties
+	// it with BrokenReferences.
+	Mended []string
 	// broken collects them during a regeneration; names are those of
 	// the groups and requests at the end of the last one.
 	broken []BrokenReference

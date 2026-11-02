@@ -199,3 +199,34 @@ func TestTriangulateBySurface(t *testing.T) {
 		t.Errorf("%d triangles by surface, %d whole", n, len(whole.Triangles))
 	}
 }
+
+// TestMeshTreeAppendInBox holds the triangles a box query finds to
+// those of a random soup whose boxes meet the box, found one by one.
+func TestMeshTreeAppendInBox(t *testing.T) {
+	t.Parallel()
+	r := rand.New(rand.NewPCG(3, 4))
+	m := &SMesh{}
+	for range 300 {
+		c := v3(r.Float64()*20, r.Float64()*20, r.Float64()*20)
+		p := func() geom.Vector { return c.Plus(v3(r.Float64()*2-1, r.Float64()*2-1, r.Float64()*2-1)) }
+		m.AddTriangle(STriangle{A: p(), B: p(), C: p()})
+	}
+	tree := NewMeshTree(m)
+	if got := NewMeshTree(&SMesh{}).AppendInBox(nil, v3(0, 0, 0), v3(1, 1, 1)); len(got) != 0 {
+		t.Errorf("an empty tree found %v", got)
+	}
+	for k := range 20 {
+		lo := v3(r.Float64()*20, r.Float64()*20, r.Float64()*20)
+		hi := lo.Plus(v3(r.Float64()*float64(k), r.Float64()*5, r.Float64()*5))
+		got := map[int]bool{}
+		for _, i := range tree.AppendInBox(nil, lo, hi) {
+			got[i] = true
+		}
+		for i, tr := range m.Triangles {
+			l, h := boxOf(tr)
+			if want := boxDistance(lo, hi, l, h) == 0; want != got[i] {
+				t.Errorf("box %v %v, triangle %d: found %v, want %v", lo, hi, i, got[i], want)
+			}
+		}
+	}
+}

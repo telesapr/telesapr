@@ -25,48 +25,56 @@ import (
 // drawn turned a little more each time round the ring (a twisted ring)
 // take what is left of the turn between the last and the first.
 func ClosedLoftSections(loops [][]srf.SBezier) ([][]srf.SBezier, error) {
+	loops, _, err := closedSections(loops)
+	return loops, err
+}
+
+// closedSections are ClosedLoftSections and the gaps between them (see
+// ringGap). A ring some of whose profiles turn more than wideTurn from
+// one to the next, or one with a gap longer than half a turn, is faced
+// and turned about its own axis (wideRing).
+func closedSections(loops [][]srf.SBezier) ([][]srf.SBezier, []ringGap, error) {
 	k := len(loops)
 	if k < 3 {
-		return nil, errors.New("a closed loft needs three profiles at least")
+		return nil, nil, errors.New("a closed loft needs three profiles at least")
 	}
 	for i, l := range loops {
 		if err := checkLoop(l); err != nil {
-			return nil, fmt.Errorf("profile %d: %w", i+1, err)
+			return nil, nil, fmt.Errorf("profile %d: %w", i+1, err)
 		}
 		if newell(l).Magnitude() < geom.LengthEps {
-			return nil, fmt.Errorf("profile %d encloses no area", i+1)
+			return nil, nil, fmt.Errorf("profile %d encloses no area", i+1)
 		}
 	}
 	loops = MatchCounts(loops)
 	for i := range loops {
 		if centroid(loops[(i+1)%k]).Minus(centroid(loops[i])).Magnitude() < geom.LengthEps {
-			return nil, fmt.Errorf("profiles %d and %d lie on each other", i+1, (i+1)%k+1)
-		}
-		// The way round the ring at a profile, from the one before to
-		// the one after: at the first and the last this takes the seam
-		// in as any other.
-		along := centroid(loops[(i+1)%k]).Minus(centroid(loops[(i+k-1)%k]))
-		if along.Magnitude() < geom.LengthEps {
-			return nil, fmt.Errorf("the profiles either side of profile %d lie on each other", i+1)
-		}
-		if newell(loops[i]).Dot(along) < 0 {
-			loops[i] = reverseLoop(loops[i])
+			return nil, nil, fmt.Errorf("profiles %d and %d lie on each other", i+1, (i+1)%k+1)
 		}
 	}
-	// Sections between profiles are turned with the ring's frame
-	// (ringSections), on a curve leaving each profile square to it: past
-	// a third of a turn from one to the next that curve swings wide of
-	// the chord between them and loops on itself near half a turn.
+	// The way round the ring at a profile, from the one before to the
+	// one after: at the first and the last this takes the seam in as any
+	// other. Over a gap of half a turn or more that chord points back, and
+	// the ring is faced by its axis instead (wideRing).
+	faced := make([][]srf.SBezier, k)
 	for i := range loops {
-		a, b := newell(loops[i]).WithMagnitude(1), newell(loops[(i+1)%k]).WithMagnitude(1)
-		if a.Dot(b) < -0.5-1e-6 {
-			return nil, fmt.Errorf("profiles %d and %d turn by more than a third of a turn from one to the other; a closed loft needs profiles between them", i+1, (i+1)%k+1)
+		along := centroid(loops[(i+1)%k]).Minus(centroid(loops[(i+k-1)%k]))
+		if along.Magnitude() < geom.LengthEps {
+			return nil, nil, fmt.Errorf("the profiles either side of profile %d lie on each other", i+1)
+		}
+		faced[i] = loops[i]
+		if newell(loops[i]).Dot(along) < 0 {
+			faced[i] = reverseLoop(loops[i])
 		}
 	}
 	for i := 1; i < k; i++ {
-		loops[i] = alignTo(loops[i], loops[i-1])
+		faced[i] = alignTo(faced[i], faced[i-1])
 	}
-	return loops, nil
+	gaps, wide := ringGaps(faced)
+	if wide {
+		return wideRing(loops)
+	}
+	return faced, gaps, nil
 }
 
 // ClosedLoftSurface is the B-spline surface of a closed loft through
@@ -98,6 +106,7 @@ func ClosedLoftSurface(loops [][]srf.SBezier) (*srf.BSplineSurface, error) {
 // again.
 type closedRing struct {
 	loops  [][]srf.SBezier
+	gaps   []ringGap
 	curves []srf.BSplineCurve
 	ts     []float64
 }
@@ -105,7 +114,7 @@ type closedRing struct {
 // closedLoftRing is the ring of sections a closed loft through loops
 // takes.
 func closedLoftRing(loops [][]srf.SBezier) (closedRing, error) {
-	loops, err := ClosedLoftSections(loops)
+	loops, gaps, err := closedSections(loops)
 	if err != nil {
 		return closedRing{}, err
 	}
@@ -130,13 +139,16 @@ func closedLoftRing(loops [][]srf.SBezier) (closedRing, error) {
 		for i := range curves[0].Ctrl {
 			d += curves[s].Ctrl[i].Minus(curves[s-1].Ctrl[i]).Magnitude()
 		}
+		if x := gaps[s-1].arcRatio(); x != 1 {
+			d *= x
+		}
 		ts[s] = ts[s-1] + d/float64(len(curves[0].Ctrl))
 	}
 	for s := range ts {
 		ts[s] /= ts[k]
 	}
 	ts[k] = 1
-	return closedRing{loops: loops, curves: curves, ts: ts}, nil
+	return closedRing{loops: loops, gaps: gaps, curves: curves, ts: ts}, nil
 }
 
 // ClosedLoftSurfaces are the surfaces of a closed loft through loops
@@ -174,7 +186,11 @@ func ClosedLoftSurfaces(loops [][]srf.SBezier, held []float64) ([]*srf.BSplineSu
 	k := len(r.loops)
 	length := 0.0
 	for i := range k {
-		length += centroid(r.loops[(i+1)%k]).Minus(centroid(r.loops[i])).Magnitude()
+		chord := centroid(r.loops[(i+1)%k]).Minus(centroid(r.loops[i])).Magnitude()
+		if x := r.gaps[i].arcRatio(); x != 1 {
+			chord *= x
+		}
+		length += chord
 	}
 	// The slope across at held profile s against the ring's parameter:
 	// square to its plane, which ClosedLoftSections turned to face the

@@ -187,7 +187,8 @@ A smooth loft of three profiles or more can go on from its last profile back to 
 as smooth where it closes as anywhere else.
 
 - A ring has no ends, so it cannot carry a solid's sides on, and it cannot turn its profiles.
-  Either setting is a problem on the group.
+  Either setting is a problem on the group. A ring passes through every profile, so one drawn
+  on a solid's face goes on into the solid; hold that profile square instead.
 - Any of its profiles can be held square, as an open loft's middle ones are. The ring is then
   one surface from each held profile round to the next, and still one face. The first and last
   profiles are held by the rows that set an open loft's ends (`SetTangency` in a script, or
@@ -197,7 +198,9 @@ as smooth where it closes as anywhere else.
 - A ring can be held by guides and square to its profiles at once.
 - Between profiles, the sections turn with the ring, as a closed sweep's do, so they keep the
   profiles' size. Three circles round a circle make a torus within a fifth of a percent.
-- Profiles more than a third of a turn apart round the ring are refused. Draw more profiles.
+- Profiles can be any distance apart round the ring: three bunched on one side make the whole
+  ring, going back from the last to the first the long way round. They must go once round the
+  ring in their order; profiles drawn out of order, or on a line, are a problem on the group.
 
 Examples: [`examples/scripts/ring`](../../examples/scripts/ring/ring.go), a ring that swells
 and narrows, running straight through its narrow profiles;

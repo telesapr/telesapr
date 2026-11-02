@@ -384,3 +384,27 @@ func TestWallThicknessBySolids(t *testing.T) {
 		t.Errorf("hollow ring: thinnest %g within %g, %d of %d unmeasured", r.Thinnest.Thickness, r.Tolerance, r.Unmeasured, r.Samples)
 	}
 }
+
+// A model whose first solid is forced to a mesh, with a block assembled
+// 2 off its side: the solid before the assembly is a part though it has
+// no shell, taken by its triangles, as the mass properties take it.
+func TestClearanceToAMeshBase(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	base := block(d, 0, 0, 10, 10, 10)
+	base.SetForceToMesh(true)
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(12, 0, 0), api.V(20, 10, 0))
+	beside := d.Features.Extrude(10, "beside")
+	beside.SetCombine(api.Assemble)
+	cs := d.Assembly.Clearances(0)
+	if len(cs) != 1 || cs[0].A.H != base.H || cs[0].B.H != beside.H || math.Abs(cs[0].Gap-2) > 1e-9 {
+		t.Fatalf("mesh base: %+v", cs)
+	}
+	if cs := d.Assembly.ClearancesWithin(0); len(cs) != 1 || math.Abs(cs[0].Gap-2) > 1e-9 {
+		t.Errorf("mesh base by solids: %+v", cs)
+	}
+	if r := base.Analyze().WallThickness(0); math.Abs(r.Thinnest.Thickness-10) > 1e-9 {
+		t.Errorf("mesh base's walls: thinnest %g", r.Thinnest.Thickness)
+	}
+}

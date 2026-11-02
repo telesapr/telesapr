@@ -78,10 +78,15 @@ func TestLoadFileErrors(t *testing.T) {
 		t.Errorf("syntax error: %v", err)
 	}
 
-	// A sketch without the reference workplanes can't regenerate.
-	if _, err := tlspr.Load([]byte("telesapr 1\ngroup 0x1 sketch-3d \"r\" {\n}\nrequest 0x4 line-segment {\n  group 0x1\n  workplane 0x80020000\n}\n"),
-		filepath.Join(dir, "broken.tlspr")); err == nil || !strings.Contains(err.Error(), "can't regenerate") {
-		t.Errorf("unregenerable sketch: %v", err)
+	// A sketch without the reference workplanes has them put back, and
+	// a line in a workplane it lacks is left out.
+	doc, err := tlspr.Load([]byte("telesapr 1\ngroup 0x1 sketch-3d \"r\" {\n}\nrequest 0x4 line-segment {\n  group 0x1\n  workplane 0x80020000\n}\n"),
+		filepath.Join(dir, "broken.tlspr"))
+	if err != nil {
+		t.Fatalf("damaged sketch: %v", err)
+	}
+	if sk := doc.Sketch; len(sk.Mended) != 3 || len(sk.BrokenReferences) != 1 || len(sk.Requests) != 3 {
+		t.Errorf("mended %q, broken %v, %d requests", sk.Mended, sk.BrokenReferences, len(sk.Requests))
 	}
 }
 

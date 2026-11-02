@@ -142,8 +142,23 @@ func (ss *Application) LoadFromFile(filename string) error {
 			"and what they drive keeps a default value until they are fixed.\n\n%s",
 			filename, warningList(errorStrings(doc.ExprErrors)))
 	}
+	if damage := damageList(doc.Sketch); len(damage) > 0 {
+		ss.Error("The file '%s' is damaged: it refers to things it doesn't hold. What every "+
+			"model has was put back, and what used something missing was left out; a save "+
+			"keeps it so. Edit > Broken References lists it.\n\n%s", filename, warningList(damage))
+	}
 	ss.setSketch(doc.Sketch)
 	return nil
+}
+
+// damageList says what the load of a damaged file mended and left out,
+// a line each.
+func damageList(sk *sketch.Sketch) []string {
+	out := append([]string(nil), sk.Mended...)
+	for _, b := range sk.BrokenReferences {
+		out = append(out, b.String())
+	}
+	return out
 }
 
 // SaveToFile writes the sketch to filename; the error is what to tell

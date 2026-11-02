@@ -21,7 +21,9 @@ import (
 // mesh's triangles, as near the tip of a cone, isn't missed between
 // their middles; about the thinnest points found the pieces are cut
 // finer again, and between them the corners of where the triangles the
-// rays joined cover each other are measured (wall_corners.go). The two
+// rays joined cover each other are measured (wall_corners.go), and of
+// the triangles facing each other within the thinnest found that no
+// ray joined (wall_near.go). The two
 // ends of each ray lie on the mesh, each within
 // the chord tolerance of the surface; where both ends are on surfaces
 // of a part with a shell, the thinnest spots are followed onto those
@@ -184,13 +186,21 @@ func (r *WallReport) measure(w *clearancePart, below float64) {
 		budget -= n * n
 		found = r.measureTriangle(w, i, n, found)
 	}
-	found = r.measureCorners(w, below, found)
+	cw := newCornerWalk(found)
+	found = r.measureCorners(w, below, cw, found)
+	found = r.measureNear(w, below, cw, found)
 	slices.SortStableFunc(found, func(a, b wallSample) int { return cmp.Compare(a.spot.Thickness, b.spot.Thickness) })
 	// The thinnest are followed onto the surfaces, each of which may move
-	// it by the meshes' tolerance: the thinnest after is among them.
+	// it by the meshes' tolerance: the thinnest after is among them. A
+	// spot further over the thinnest than twice that, and not thin
+	// enough to be listed, can't come to either, and isn't followed.
+	reach := 0.0
+	if len(found) > 0 {
+		reach = max(found[0].spot.Thickness+4*w.chord, below+2*w.chord)
+	}
 	for k, f := range found {
 		s := f.spot
-		if k < wallRefineMost {
+		if k < wallRefineMost && s.Thickness <= reach+geom.LengthEps {
 			s = w.refineWall(s)
 			if s.Thickness < r.Thinnest.Thickness {
 				r.Thinnest = s

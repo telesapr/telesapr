@@ -84,8 +84,9 @@ func load(data []byte, path string, o link.Options) (doc *Document, err error) {
 	again.CanCancel = false
 	sk.ReloadAllLinked = func(sk *sketch.Sketch) { link.ReloadAll(sk, path, again) }
 	defer func() {
-		// A sketch that breaks regeneration, such as one missing the
-		// reference workplanes, is an error.
+		// What a damaged file lacks is put back or left out
+		// (Sketch.Mended, BrokenReferences); a regeneration that still
+		// breaks is a bug, reported as an error rather than a crash.
 		if rec := recover(); rec != nil {
 			doc, err = nil, fmt.Errorf("%s: can't regenerate: %v", path, rec)
 		}

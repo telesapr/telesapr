@@ -90,7 +90,8 @@ func (tw *textWindow) ScreenClearBrokenReferences(link int, v uint32) {
 
 // ShowBrokenReferences is the screen of what the last regeneration
 // that deleted something deleted, because what it used was gone, and
-// of the stored expressions that can't be evaluated; each with a link
+// of what the load of a damaged file mended and of the stored
+// expressions that can't be evaluated; each with a link
 // to the group it is in, where that group is still there.
 func (tw *textWindow) ShowBrokenReferences() {
 	sk := tw.ss.SK
@@ -110,8 +111,20 @@ func (tw *textWindow) ShowBrokenReferences() {
 		}
 	}
 	if len(sk.BrokenReferences) > 0 {
-		tw.Printf(false, "   Undo the deletion to bring them back. %Fl%Lc%f[clear the list]%E",
+		// A file opened damaged has nothing to undo: what it lacked
+		// was never there.
+		bring := "Undo the deletion to bring them back."
+		if sk.Undo.Cnt == 0 {
+			bring = "The file lacked what they used."
+		}
+		tw.Printf(false, "   %s %Fl%Lc%f[clear the list]%E", bring,
 			lf(tw.ScreenClearBrokenReferences))
+	}
+	if len(sk.Mended) > 0 {
+		tw.Printf(true, "%FtMENDED WHEN THE FILE WAS OPENED%E")
+		for _, m := range sk.Mended {
+			tw.Printf(false, "   %Fx%s%E", m)
+		}
 	}
 
 	if len(sk.ExprErrors) > 0 {

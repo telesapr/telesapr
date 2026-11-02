@@ -19,11 +19,7 @@ import (
 
 // scriptRoundTripKnown are the fixtures whose script doesn't build the
 // model again, with why. The list may only shrink.
-var scriptRoundTripKnown = map[string]string{
-	// A file of every field set, whose references lead to entities it
-	// hasn't: it doesn't open as a model, so there is none to write.
-	"tlspr/v1/fields.tlspr": "every field set, not a model that regenerates",
-}
+var scriptRoundTripKnown = map[string]string{}
 
 // handlePrefix is the handle part of a group's name in Describe, which
 // a model made again numbers afresh.

@@ -271,6 +271,24 @@ func TestSolidGoldens(t *testing.T) {
 			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
 			d.Edit.Regen()
 		},
+		"loft-ring-wide": func(d *api.Doc) {
+			// Three circles within a sixth of the ring, the last back to
+			// the first the long way round.
+			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.01 })
+			var ps []api.Group
+			for _, deg := range []float64{0, 30, 60} {
+				a := deg * math.Pi / 180
+				er := api.V(math.Cos(a), math.Sin(a), 0)
+				d.Features.Sketch3D("")
+				o := d.Sketch.Point(er.ScaledBy(20))
+				ps = append(ps, d.Features.SketchAt(o, er, api.V(0, 0, 1), ""))
+				d.Sketch.Circle(er.ScaledBy(20), 3)
+			}
+			d.Features.LoftThrough(ps, "").AsLoft().SetClosed(true)
+			// The file keeps no chord tolerance.
+			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+			d.Edit.Regen()
+		},
 		"loft-ring-held": func(d *api.Doc) {
 			ps := ringOfCircles(d, 6, 20, 3)
 			l := d.Features.LoftThrough(ps, "")

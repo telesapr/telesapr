@@ -78,8 +78,13 @@ func newClearancePart(hg core.HGroup, sh *srf.SShell) *clearancePart {
 // shell's and a mesh's pieces with each hollow's inside kept with the
 // piece round it (clearance_solids.go).
 func (sk *Sketch) clearanceParts(upTo core.HGroup, bySolid bool) []*clearancePart {
-	parts, meshOnly, _ := sk.assemblyParts(upTo)
+	parts, meshOnly, before := sk.assemblyParts(upTo)
 	var out []*clearancePart
+	// A solid before the assembly made as triangles has no shell to be a
+	// part by, and is one by its mesh, as MassProperties takes it.
+	if before != nil && len(before.RunningShell.Surface) == 0 && !before.RunningMesh.IsEmpty() {
+		out = append(out, meshClearancePart(before.H, bySolid, &before.RunningMesh)...)
+	}
 	for _, p := range parts {
 		cp := newClearancePart(p.g, p.shell)
 		if bySolid {
@@ -94,22 +99,29 @@ func (sk *Sketch) clearanceParts(upTo core.HGroup, bySolid bool) []*clearancePar
 		// A group forced to a mesh holds the triangles of its own solid
 		// in its shell until they are combined.
 		g := sk.Group(hg)
-		mp := &clearancePart{g: hg}
-		mp.mesh.MakeFromCopyOf(&g.ThisMesh)
-		g.ThisShell.TriangulateInto(&mp.mesh)
-		for i := range mp.mesh.Triangles {
-			mp.mesh.Triangles[i].Tag = -1
-		}
-		if bySolid {
-			if solids := meshSolids(mp); solids != nil {
-				out = append(out, solids...)
-				continue
-			}
-		}
-		mp.tree = srf.NewMeshTree(&mp.mesh)
-		out = append(out, mp)
+		var m srf.SMesh
+		m.MakeFromCopyOf(&g.ThisMesh)
+		g.ThisShell.TriangulateInto(&m)
+		out = append(out, meshClearancePart(hg, bySolid, &m)...)
 	}
 	return out
+}
+
+// meshClearancePart is the part of group hg made of the triangles of m,
+// which it takes; with bySolid, its solids, where it is several.
+func meshClearancePart(hg core.HGroup, bySolid bool, m *srf.SMesh) []*clearancePart {
+	mp := &clearancePart{g: hg}
+	mp.mesh.Triangles = append(mp.mesh.Triangles, m.Triangles...)
+	for i := range mp.mesh.Triangles {
+		mp.mesh.Triangles[i].Tag = -1
+	}
+	if bySolid {
+		if solids := meshSolids(mp); solids != nil {
+			return solids
+		}
+	}
+	mp.tree = srf.NewMeshTree(&mp.mesh)
+	return []*clearancePart{mp}
 }
 
 // Clearances are the gaps between the parts of the model up to group

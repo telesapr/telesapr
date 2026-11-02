@@ -366,3 +366,42 @@ func TestLoadMissingLinkAsks(t *testing.T) {
 		})
 	}
 }
+
+// TestOpenDamagedFile: a file that refers to what it lacks opens, with
+// a message saying what was put back and what was left out, and the
+// Broken References screen lists the same.
+func TestOpenDamagedFile(t *testing.T) {
+	t.Parallel()
+	ss, p := newTestApp(t)
+	p.DialogResponses = []platform.Response{platform.ResponseOK}
+	path := filepath.Join("..", "..", "testdata", "tlspr", "damaged", "group_missing_workplane.tlspr")
+	if err := ss.LoadFromFile(path); err != nil {
+		t.Fatal(err)
+	}
+	if len(ss.SK.Groups) != 2 {
+		t.Errorf("%d groups", len(ss.SK.Groups))
+	}
+	text := dialogText(lastDialog(t, p))
+	if !strings.Contains(text, "is damaged") || !strings.Contains(text, "deleted g003-on-missing, which used r007") {
+		t.Errorf("message %q", text)
+	}
+	ss.TW.GoToScreen(screenBrokenReferences)
+	ss.TW.Show()
+	if !shows(ss, "deleted g003-on-missing, which used r007") || !shows(ss, "The file lacked what they used.") {
+		t.Error("the broken references screen doesn't list what was left out")
+	}
+
+	p.DialogResponses = []platform.Response{platform.ResponseOK}
+	path = filepath.Join("..", "..", "testdata", "tlspr", "damaged", "missing_references.tlspr")
+	if err := ss.LoadFromFile(path); err != nil {
+		t.Fatal(err)
+	}
+	if text := dialogText(lastDialog(t, p)); !strings.Contains(text, "the reference workplane YZ was missing and was made again") {
+		t.Errorf("message %q", text)
+	}
+	ss.TW.GoToScreen(screenBrokenReferences)
+	ss.TW.Show()
+	if !shows(ss, "MENDED WHEN THE FILE WAS OPENED") || !shows(ss, "the reference workplane ZX was missing") {
+		t.Error("the broken references screen doesn't list what was put back")
+	}
+}

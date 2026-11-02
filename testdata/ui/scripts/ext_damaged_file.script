@@ -1,0 +1,13 @@
+# A damaged file (an extension): a sketch placed on a point the file
+# lacks is left out, and the reference workplanes it lacks are put back.
+# A message says so on opening, and Edit > Broken References lists both.
+answer ok
+load tlspr/damaged/group_missing_workplane.tlspr
+tw
+menu Features|Broken References...
+tw
+answer ok
+load tlspr/damaged/missing_references.tlspr
+tw
+menu Features|Broken References...
+tw

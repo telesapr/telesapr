@@ -10,7 +10,13 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 ## [Unreleased]
 
 ### Added
+- A loft closed into a ring takes profiles any distance apart round it: three bunched on one side make the whole ring, going back the long way round, where profiles more than a third of a turn apart were refused. Profiles drawn out of their order round the ring are a problem on the group that says so.
+- A damaged file, one that refers to things it doesn't hold, opens as far as it can rather than not at all: the reference workplanes are put back if it lacks them, and what uses something missing is left out. A message says what on opening, Features > Broken References lists it, and scripts read it with `doc.Features.Mended()` and `doc.Features.BrokenReferences()`; `telesapr-cli convert` reports it as warnings.
 - The editor runs in a browser (WebAssembly build, `make wasm`): the same windows, menus, dialogs, script console and models, with files kept in the browser, opened by a dialog or by dropping them on the page, and saved as downloads. See `doc/dev-notes/browser.md`.
+
+### Fixed
+- Clearance and Walls no longer misses a thin wall where no measured point's ray landed, as under a dimple narrower than the points are apart: every pair of triangles facing each other closer than the thinnest wall found is measured too.
+- Clearance and Walls takes the solid made before the first assembled part as a part when it was forced to a triangle mesh; it was left out.
 
 ## [0.5.15] - 2026-11-01
 

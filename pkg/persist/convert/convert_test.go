@@ -240,23 +240,33 @@ func TestLoadErrorWarns(t *testing.T) {
 	}
 }
 
-// TestUnregenerable: a model that can't regenerate fails, and isn't
-// written.
-func TestUnregenerable(t *testing.T) {
+// TestConvertDamaged: a model missing its reference workplanes, with a
+// line in a workplane it lacks, is converted with the workplanes put
+// back and the line left out, each said.
+func TestConvertDamaged(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	root := filepath.Join(dir, "bad.slvs")
-	// A line segment in a workplane that doesn't exist.
 	model := "\xb1\xb2\xb3SolveSpaceREVa\n\nGroup.h.v=00000001\nGroup.type=5000\nGroup.name=#references\nAddGroup\n\n" +
 		"Request.h.v=00000004\nRequest.type=200\nRequest.workplane.v=80020000\nRequest.group.v=00000001\nAddRequest\n\n"
 	if err := os.WriteFile(root, []byte(model), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	_, _, err := convert.File(root, filepath.Join(dir, "bad.tlspr"), false)
-	if err == nil || !strings.Contains(err.Error(), "can't regenerate") {
-		t.Errorf("error %v", err)
+	_, r, err := convert.File(root, filepath.Join(dir, "bad.tlspr"), false)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "bad.tlspr")); err == nil {
-		t.Error("an unregenerable model was written")
+	if _, err := os.Stat(filepath.Join(dir, "bad.tlspr")); err != nil {
+		t.Error("the mended model wasn't written")
+	}
+	want := []string{
+		"the reference workplane XY was missing and was made again",
+		"removed 1 requests, 0 constraints and 0 groups",
+	}
+	got := strings.Join(r.Warnings, "\n")
+	for _, w := range want {
+		if !strings.Contains(got, w) {
+			t.Errorf("warnings %q lack %q", r.Warnings, w)
+		}
 	}
 }

@@ -3,6 +3,7 @@ package topo_test
 import (
 	"fmt"
 	"math"
+	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/check"
@@ -96,8 +97,8 @@ func TestClosedLoft(t *testing.T) {
 	}
 }
 
-// Closed lofts refuse two profiles, profiles more than a third of a
-// turn apart and profiles on each other; a ring drawn turned a little
+// Closed lofts refuse two profiles, profiles out of their order round
+// the ring or on a line, and profiles on each other; a ring drawn turned a little
 // more each time round closes all the same.
 func TestClosedLoftRefusals(t *testing.T) {
 	t.Parallel()
@@ -118,11 +119,15 @@ func TestClosedLoftRefusals(t *testing.T) {
 	if rep := check.Solid(sh, &m); !rep.Sound() {
 		t.Errorf("a twisted ring: %s", rep.String())
 	}
-	// Three round the ring, two of them 150 degrees apart: the centres'
-	// curve between them would swing wide of the ring.
-	wide := ringProfiles(12, 20, func(int) []srf.SBezier { return circle(4, 0, 0) })
-	if _, err := topo.MakeClosedLoft([][]srf.SBezier{wide[0], wide[5], wide[8]}, col, 9, srf.Tolerance{}); err == nil {
-		t.Error("profiles 150 degrees apart made a closed loft")
+	// Four round the ring out of their order go round it twice; three
+	// stacked on a line go round no ring.
+	wide := ringProfiles(4, 20, func(int) []srf.SBezier { return circle(4, 0, 0) })
+	if _, err := topo.MakeClosedLoft([][]srf.SBezier{wide[0], wide[2], wide[1], wide[3]}, col, 9, srf.Tolerance{}); err == nil || !strings.Contains(err.Error(), "once round") {
+		t.Errorf("profiles out of order: %v", err)
+	}
+	stack := [][]srf.SBezier{circle(4, 0, 0), circle(4, 10, 0), circle(4, 20, 0)}
+	if _, err := topo.MakeClosedLoft(stack, col, 9, srf.Tolerance{}); err == nil || !strings.Contains(err.Error(), "on a line") {
+		t.Errorf("profiles on a line: %v", err)
 	}
 	same := [][]srf.SBezier{circle(4, 0, 0), circle(4, 0, 0), circle(4, 1, 0)}
 	if _, err := topo.MakeClosedLoft(same, col, 9, srf.Tolerance{}); err == nil {

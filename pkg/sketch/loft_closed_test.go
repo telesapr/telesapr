@@ -255,9 +255,7 @@ func TestLoftClosedProblems(t *testing.T) {
 	if p := l.Problem(); p != "" {
 		t.Fatal(p)
 	}
-	if !refused(func() { l.AsLoft().SetAlongSides(true, false) }) {
-		t.Error("a closed loft took a solid's sides at its ends")
-	}
+	refusedWith(t, "hold a profile square", func() { l.AsLoft().SetAlongSides(true, false) })
 	for _, c := range []struct {
 		set  func()
 		want string
@@ -361,4 +359,37 @@ func TestLoftGuidesAlongSides(t *testing.T) {
 		t.Errorf("at the guide's middle the loft is %.4f out, want 3.545", r)
 	}
 	undoRedo(t, d, before)
+}
+
+// A closed loft through three circles bunched within a sixth of the
+// ring, the last back to the first the long way round, refused before
+// as profiles more than a third of a turn apart: the torus, free or held
+// square at the middle profile.
+func TestLoftClosedWide(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.01 })
+	const big, r = 20.0, 4.0
+	var ps []api.Group
+	for _, deg := range []float64{0, 30, 60} {
+		a := deg * math.Pi / 180
+		er := api.V(math.Cos(a), math.Sin(a), 0)
+		d.Features.Sketch3D("")
+		o := d.Sketch.Point(er.ScaledBy(big))
+		ps = append(ps, d.Features.SketchAt(o, er, api.V(0, 0, 1), ""))
+		d.Sketch.Circle(er.ScaledBy(big), r)
+	}
+	l := d.Features.LoftThrough(ps, "ring")
+	l.AsLoft().SetClosed(true)
+	want := 2 * math.Pi * math.Pi * big * r * r
+	for _, held := range []float64{0, 1} {
+		l.AsLoft().SetProfileTangency(ps[1], held)
+		if p := l.Problem(); p != "" {
+			t.Fatalf("held %g: %s", held, p)
+		}
+		rep := l.Analyze().Check()
+		if !rep.Sound() || math.Abs(rep.Volume-want) > 0.01*want {
+			t.Errorf("held %g: %s, want volume %g", held, rep.String(), want)
+		}
+	}
 }

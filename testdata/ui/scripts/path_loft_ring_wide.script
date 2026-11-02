@@ -1,0 +1,13 @@
+# loft_ring_wide.tlspr's smooth loft through three circles bunched within
+# a sixth of the ring, closed into a ring by [closed] on its screen, the
+# last profile going back to the first the long way round; the same as
+# path_loft_ring_wide.go makes (TestPathEquivalence/loft_ring_wide).
+file $testdata/ui/loft_ring_wide.tlspr
+menu File|Open...
+view default
+twmove 137 280
+twdown L 137 280
+twup L 137 280
+twmove 407 270
+twdown L 407 270
+twup L 407 270

@@ -75,7 +75,8 @@ func LoadFile(path string) (doc *Document, err error) {
 	}
 	doc.Sketch.ReloadAllLinked = func(*sketch.Sketch) { doc.reloadAllLinked(path, false) }
 	defer func() {
-		// A sketch missing its reference workplanes is an error.
+		// As in tlspr.load: what the file lacks is mended or left out,
+		// and a regeneration that still breaks is a bug.
 		if rec := recover(); rec != nil {
 			doc, err = nil, fmt.Errorf("%s: can't regenerate: %v", path, rec)
 		}

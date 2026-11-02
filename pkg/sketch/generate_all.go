@@ -555,7 +555,8 @@ func (sk *Sketch) GroupsInOrder(before, after core.HGroup) bool {
 }
 
 // PruneOrphans removes requests and constraints whose group doesn't
-// exist.
+// exist. Those of a group that never was, as in a damaged file, are
+// listed in BrokenReferences; those of a group deleted went with it.
 func (sk *Sketch) PruneOrphans() bool {
 	requests, constraints := len(sk.Requests), len(sk.Constraints)
 
@@ -563,6 +564,8 @@ func (sk *Sketch) PruneOrphans() bool {
 	for _, r := range sk.Requests {
 		if sk.groupExists(r.Group) {
 			keptR = append(keptR, r)
+		} else if sk.neverGroup(r.Group) {
+			sk.broke(r.Group, r.DescriptionString(), sk.anyGroupName(r.Group))
 		}
 	}
 	sk.Requests = keptR
@@ -572,6 +575,8 @@ func (sk *Sketch) PruneOrphans() bool {
 	for _, c := range sk.Constraints {
 		if sk.groupExists(c.Group) {
 			keptC = append(keptC, c)
+		} else if sk.neverGroup(c.Group) {
+			sk.broke(c.Group, c.DescriptionString(), sk.anyGroupName(c.Group))
 		}
 	}
 	sk.Constraints = keptC
@@ -647,7 +652,7 @@ func (sk *Sketch) PruneGroups(hg core.HGroup) bool {
 // constraints that refer to entities that don't exist.
 func (sk *Sketch) PruneRequestsAndConstraints(hg core.HGroup) bool {
 	entityRequestExists := func(he core.HEntity, checkEntity bool) bool {
-		if he == core.NoEntity {
+		if he == core.NoEntity || he == core.FreeIn3D {
 			return true
 		}
 		if he.IsFromRequest() {
@@ -664,7 +669,7 @@ func (sk *Sketch) PruneRequestsAndConstraints(hg core.HGroup) bool {
 
 	keptR := sk.Requests[:0]
 	for _, r := range sk.Requests {
-		if r.Group != hg || entityRequestExists(r.Workplane, false) {
+		if r.Group != hg || entityRequestExists(r.Workplane, true) {
 			keptR = append(keptR, r)
 		} else {
 			sk.broke(hg, r.DescriptionString(), sk.entityName(r.Workplane))

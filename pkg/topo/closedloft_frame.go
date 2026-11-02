@@ -43,7 +43,8 @@ func ringSections(r closedRing) (curves []srf.BSplineCurve, ts []float64, at []i
 		a, b := i, (i+1)%k
 		at = append(at, len(curves))
 		curves, ts = append(curves, r.curves[i]), append(ts, r.ts[i])
-		axis, angle := turnBetween(n[a], n[b])
+		g := r.gaps[i]
+		axis, angle := g.axis, g.angle
 		m := int(math.Ceil(angle/ringTurn - 1e-9))
 		if m < 2 {
 			continue
@@ -51,7 +52,7 @@ func ringSections(r closedRing) (curves []srf.BSplineCurve, ts []float64, at []i
 		// The shapes of the profile before, a, b and the one after, each
 		// about its centre and turned back into a's frame, in homogeneous
 		// coordinates.
-		back := turnTo(n[b], n[a])
+		back := g.back()
 		local := func(j int, turn func(geom.Vector) geom.Vector) []geom.Vector4 {
 			cv := r.curves[(j%k+k)%k]
 			out := make([]geom.Vector4, len(cv.Ctrl))
@@ -60,8 +61,8 @@ func ringSections(r closedRing) (curves []srf.BSplineCurve, ts []float64, at []i
 			}
 			return out
 		}
-		fromPrev := turnTo(n[(a+k-1)%k], n[a])
-		afterNext := turnTo(n[(b+1)%k], n[b])
+		fromPrev := r.gaps[(a+k-1)%k].forward()
+		afterNext := r.gaps[b].back()
 		same := func(p geom.Vector) geom.Vector { return p }
 		la := local(a, same)
 		lb := local(a+1, back)
@@ -92,14 +93,14 @@ func ringSections(r closedRing) (curves []srf.BSplineCurve, ts []float64, at []i
 			fromA := pa.Plus(geom.QuaternionFromAxisAngle(axis, f*angle).Rotate(c[a].Minus(pa)))
 			fromB := pb.Plus(geom.QuaternionFromAxisAngle(axis, (f-1)*angle).Rotate(c[b].Minus(pb)))
 			centre := fromA.ScaledBy(h00).Plus(fromB.ScaledBy(h01))
-			spin := geom.QuaternionFromAxisAngle(axis, f*angle)
+			spin := g.turn(f)
 			cv := srf.BSplineCurve{Deg: r.curves[a].Deg, Knots: r.curves[a].Knots}
 			cv.Ctrl = make([]geom.Vector, len(la))
 			cv.Weight = make([]float64, len(la))
 			for q := range la {
 				h := la[q].ScaledBy(h00).Plus(ma[q].ScaledBy(h10)).Plus(lb[q].ScaledBy(h01)).Plus(mb[q].ScaledBy(h11))
 				cv.Weight[q] = h.W
-				cv.Ctrl[q] = centre.Plus(spin.Rotate(h.PerspectiveProject()))
+				cv.Ctrl[q] = centre.Plus(spin(h.PerspectiveProject()))
 			}
 			curves, ts = append(curves, cv), append(ts, ta+f*dt)
 		}

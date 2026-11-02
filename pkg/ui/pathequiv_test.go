@@ -258,6 +258,21 @@ var pathEquivalences = map[string]pathCheck{
 			t.Errorf("the loft: type %d, closed %v, problem %q", g.Type, g.LoftClosed, g.Problem.Msg)
 		}
 	},
+	// A smooth loft through three profiles within a sixth of the ring
+	// closed into a ring, the long way back to the first, on its screen
+	// and by a script: the whole torus.
+	"loft_ring_wide": func(t *testing.T, ui, _ *sketch.Sketch) {
+		g := ui.Group(ui.Active)
+		if g.Type != sketch.GroupLoft || !g.LoftClosed || g.Problem.Msg != "" {
+			t.Fatalf("the loft: type %d, closed %v, problem %q", g.Type, g.LoftClosed, g.Problem.Msg)
+		}
+		const want = 2 * math.Pi * math.Pi * 20 * 3 * 3
+		var m srf.SMesh
+		g.ThisShell.TriangulateInto(&m)
+		if v := m.CalculateVolume(); math.Abs(v-want) > 0.01*want {
+			t.Errorf("volume %g, want the torus's %g", v, want)
+		}
+	},
 	// A closed loft's guide, six cubics round the ring, picked with the
 	// mouse and set by Features > Guide Loft by Selected Curves, and by a
 	// script.

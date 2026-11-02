@@ -260,6 +260,10 @@ func (w *scriptWriter) writeGroups() {
 		}
 		first = false
 	}
+	if first {
+		// A model of the references alone, as a damaged file can open.
+		w.line("doc.Active().Delete() // the group a new drawing starts with")
+	}
 }
 
 // isDefaultSketch reports whether g is the group a new drawing starts

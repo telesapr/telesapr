@@ -1,0 +1,60 @@
+telesapr 2
+
+units mm
+
+group 0x1 sketch-3d "#references" {
+  visible
+}
+
+group 0x2 sketch-in-plane "sketch-in-plane" {
+  order 1
+  subtype point-ortho
+  workplane 0x80020000
+  predef {
+    q 1 0 0 0
+    origin 0x10001
+  }
+  visible
+}
+
+request 0x1 workplane {
+  group 0x1
+}
+
+request 0x2 workplane {
+  group 0x1
+}
+
+request 0x3 workplane {
+  group 0x1
+}
+
+request 0x4 datum-point {
+  group 0x2
+  workplane 0x80020000
+}
+
+request 0x5 datum-point {
+  group 0x2
+  workplane 0x80020000
+}
+
+value 0x40010 -5
+value 0x40011 5
+value 0x50010 5
+value 0x50011 5
+
+constraint 0x1 pt-pt-distance {
+  group 0x2
+  workplane 0x80020000
+  value = 10
+  pt-a 0x40000
+  pt-b 0x60000
+}
+
+constraint 0x2 horizontal {
+  group 0x2
+  workplane 0x80020000
+  pt-a 0x40000
+  pt-b 0x50000
+}

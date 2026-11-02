@@ -30,7 +30,17 @@ func (m FeaturesMenu) BrokenReferences() (refs []BrokenReference) {
 	return refs
 }
 
-// ClearBrokenReferences empties the list BrokenReferences gives.
+// Mended lists what was put back when a damaged file was opened, such
+// as a reference workplane the file lacked, a sentence each; what used
+// something the file lacked is in BrokenReferences. ClearBrokenReferences
+// empties it too.
+func (m FeaturesMenu) Mended() (mended []string) {
+	m.d.read(func(sk *sketch.Sketch) { mended = slices.Clone(sk.Mended) })
+	return mended
+}
+
+// ClearBrokenReferences empties the lists BrokenReferences and Mended
+// give.
 func (m FeaturesMenu) ClearBrokenReferences() {
 	d := m.d
 	d.h.Run(func() { d.h.Sketch().ClearBrokenReferences() })

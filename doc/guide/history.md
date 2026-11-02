@@ -117,6 +117,17 @@ screen links to the list while it is not empty. Undo brings them back.
 
 From a script: `doc.Features.BrokenReferences()` and `doc.Features.ClearBrokenReferences()`.
 
+A damaged file, one that refers to things it doesn't hold, opens as far as it can. The
+reference workplanes, which every model has, are put back if it lacks them; a group, request or
+constraint that uses something missing is left out. A message says what on opening, and Broken
+References lists it, the workplanes put back under "mended when the file was opened". Nothing
+undoes it, the file never having held what was missing; saving keeps the model as it opened.
+From a script, `doc.Features.Mended()` lists what was put back; `telesapr-cli convert` reports
+it as warnings.
+
 ## Not yet
 
 A group can't be moved ahead of a group it uses, even when the reference could be redirected.
+
+What a damaged file leaves out is gone from the model, so saving the file drops it; it can't be
+kept in the file, left out, for you to mend by hand.

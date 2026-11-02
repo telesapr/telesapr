@@ -312,8 +312,11 @@ func (g *Group) generateLoftShell(sk *Sketch) {
 }
 
 // errClosedEnds is a solid's sides set at a closed loft's ends, which
-// it has none of to carry them on.
-var errClosedEnds = errors.New("a closed loft has no ends to carry a solid's sides on")
+// it has none of to carry them on. The refusal is final: a ring passes
+// through every profile, so one drawn on a face goes on into the solid
+// past it, where the sides below the face are no way to leave by;
+// holding the profile square to its plane is what a ring can take.
+var errClosedEnds = errors.New("a closed loft has no ends to carry a solid's sides on; hold a profile square to its plane instead")
 
 // closedLoftConflict is why the closed loft g can't be made as it is
 // set, or nil: a ring has no ends to carry a solid's sides on and

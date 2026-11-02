@@ -6,8 +6,11 @@ import (
 )
 
 // UpgradeLegacyData brings a freshly loaded sketch up to date, and
-// regenerates its entities without solving.
+// regenerates its entities without solving. A damaged sketch's
+// references are mended first (Mended), and what refers to what it
+// lacks is left out (BrokenReferences).
 func (sk *Sketch) UpgradeLegacyData() {
+	sk.mendReferences()
 	for ri := range sk.Requests {
 		r := &sk.Requests[ri]
 		if r.Type != RequestTTFText {

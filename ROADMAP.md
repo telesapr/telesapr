@@ -1,6 +1,6 @@
 # Roadmap
 
-What is left to build, as of 2026-11-01. Only open work is listed. What is built is described in
+What is left to build, as of 2026-11-02. Only open work is listed. What is built is described in
 `doc/guide`, `doc/guide/ai.md` and `doc/dev-notes/done-audit.md`; `doc/dev-notes/done-audit.md` also holds the definition of
 done. The dated "Done" and "Tried" notes of every item, cut from this file on 2026-10-30, are in
 `git show af848717:ROADMAP.md`; read an item's there before taking it up, so as not to try again
@@ -17,7 +17,7 @@ item is sized only after a two-day spike on its hardest fixture.
 |---|---|---|---|---|
 | 1 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | One case is unsound, not refused; the rest refuse with a message |
 | 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Sweep corners next to a cubic; shells of the last joined cases |
-| 3 | [Modelling upgrade leftovers](#modelling-upgrade-leftovers) | kernel and feature | ? | Small ends of D1, D4, D5 and lofts |
+| 3 | [Modelling upgrade leftovers](#modelling-upgrade-leftovers) | kernel and feature | ? | Small ends of D1 and D5 |
 | 4 | [Thread leftovers](#thread-leftovers) | feature | S each | DIN 513's nut deviation, B1.9's pitches and multi-start allowances wait for sources; chamfered nuts at coarse tolerances |
 | 5 | [Test infrastructure](#test-infrastructure) | tooling | S | The race stage is within minutes of its limit |
 | 6 | [Interface leftovers from the guide](#interface-leftovers-from-the-guide) | interface | S each | Found while illustrating the user's guide; one waits for a decision |
@@ -64,14 +64,16 @@ ball's probes: four times slower, no fillet gained.
 
 ### Modelling upgrade leftovers
 
-Left by the work packages of `doc/dev-notes/modelling_upgrades.md` (notes at `1e84ca0c`).
+Left by the work packages of `doc/dev-notes/modelling_upgrades.md` (notes at `1e84ca0c`). On
+2026-11-02 D4's last recommendation (11, parallel commits) was measured and declined, under 1%
+(`doc/dev-notes/performance.md`), and the lofts' row (C4) closed: profiles any distance apart round
+a ring are made; a solid's sides at a ring's ends stay refused for good, a ring going on into the
+solid past a profile drawn on its face (the message says to hold the profile square).
 
 | Item | Left |
 |---|---|
-| Lofts (C4) | A solid's sides at a closed loft's ends (a ring has none); profiles more than a third of a turn apart round a ring (draw more) |
-| Clearance and walls (D1) | A wall between two triangles no measured ray joined can be missed; a group forced to a mesh with a part assembled after it is no part to `Clearances` |
-| Model to script (D5) | `tlspr/v1/fields.tlspr` (dangling references) opens as no model. Opening damaged files in part would turn about 250 `Must*` lookups in `pkg/sketch` into diagnostics on their groups: an item of its own |
-| Regeneration (D4) | Recommendation 11's parallel commits (curve ids reserved in advance); the rest taken or measured and declined (`doc/dev-notes/performance.md`) |
+| Clearance and walls (D1) | Pairs of triangles facing within the thinnest wall found are measured since 2026-11-02 (`pkg/sketch/wall_near.go`), up to `wallNearMost` (4M) pairs a part: a part whose thinnest wall is most of its size can have more (a solid ball of 4000 triangles has 172k), past which a wall may still be missed. Parts made of triangles (forced to a mesh, linked meshes) are not cut by the groups that cut the assembly after them (`cutParts`) |
+| Model to script (D5) | Damaged files open in part since 2026-11-02 (the references put back, what uses something missing left out, `TestOpenDamaged`), and every fixture's script builds it again. Left: what is left out is deleted, as an edit's broken references are, so a save loses it; keeping it in the file, left out as a group suppressed whole is, would let a user mend the file by hand |
 
 ### Thread leftovers
 
