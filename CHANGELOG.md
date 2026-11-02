@@ -9,6 +9,8 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.5.16] - 2026-11-02
+
 ### Added
 - A loft closed into a ring takes profiles any distance apart round it: three bunched on one side make the whole ring, going back the long way round, where profiles more than a third of a turn apart were refused. Profiles drawn out of their order round the ring are a problem on the group that says so.
 - A damaged file, one that refers to things it doesn't hold, opens as far as it can rather than not at all: the reference workplanes are put back if it lacks them, and what uses something missing is left out. A message says what on opening, Features > Broken References lists it, and scripts read it with `doc.Features.Mended()` and `doc.Features.BrokenReferences()`; `telesapr-cli convert` reports it as warnings.
