@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Try TeleSAPR in your browser</title>
+<meta name="description" content="Run the TeleSAPR parametric CAD editor in a web browser, without installing it.">
+<link rel="icon" href="telesapr.svg" type="image/svg+xml">
+<style>
+:root {
+  --sky: #a8dadc;
+  --cream: #f1faee;
+  --amber: #f4a261;
+  --coral: #e76f51;
+  --ink: #0b1622;
+  --panel-line: #24384f;
+  --grid: rgba(168, 218, 220, 0.06);
+  --text: #dbe6ec;
+  --dim: #8ea3b4;
+  --mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  display: flex; flex-direction: column;
+  background:
+    linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 24px 24px,
+    radial-gradient(ellipse at 70% 20%, #18304b 0%, var(--ink) 65%);
+  color: var(--text);
+  font: 16px/1.6 "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+}
+a { color: var(--sky); }
+.topbar { border-bottom: 1px solid var(--panel-line); }
+.topbar .wrap { display: flex; align-items: center; height: 60px; }
+.wrap { max-width: 760px; width: 100%; margin: 0 auto; padding: 0 16px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--cream); text-decoration: none; font-weight: 700; letter-spacing: 0.04em; }
+.brand img { width: 30px; height: 30px; }
+main { flex: 1; display: flex; align-items: center; padding: 48px 0; }
+.eyebrow {
+  font-family: var(--mono); font-size: 0.78em; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--amber); margin: 0 0 14px;
+}
+h1 { font-size: 2.3em; line-height: 1.15; margin: 0 0 18px; color: #fff; }
+p { color: var(--dim); margin: 0 0 16px; }
+.size {
+  display: flex; gap: 14px; align-items: flex-start;
+  border-left: 3px solid var(--amber);
+  background: rgba(16, 31, 48, 0.8);
+  border-radius: 4px;
+  padding: 16px 18px;
+  margin: 26px 0;
+}
+.size svg { flex: none; width: 26px; height: 26px; fill: var(--amber); margin-top: 2px; }
+.size p { margin: 0; }
+.size strong { color: var(--cream); }
+ul { color: var(--dim); padding-left: 1.2em; margin: 0 0 28px; }
+li { margin-bottom: 6px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 22px; border-radius: 6px;
+  font-weight: 600; text-decoration: none; font-size: 0.97em;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn.primary { background: var(--coral); color: #fff; }
+.btn.primary:hover { background: #d65a3c; }
+.btn.ghost { border-color: #3a536d; color: var(--cream); }
+.btn.ghost:hover { border-color: var(--sky); }
+.btn svg { width: 18px; height: 18px; fill: currentColor; }
+footer { border-top: 1px solid var(--panel-line); color: var(--dim); font-size: 0.85em; padding: 22px 0; }
+footer a { color: var(--dim); }
+@media (max-width: 600px) { h1 { font-size: 1.8em; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="telesapr.svg" alt="">TeleSAPR</a>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <p class="eyebrow">Try it in your browser</p>
+    <h1>TeleSAPR, without installing it</h1>
+    <p>The whole editor runs in this browser tab as WebAssembly: sketches, solids, drawings and
+    the script console, with nothing sent to a server.</p>
+
+    <div class="size">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v10.2l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6z M5 19h14v2H5z"/></svg>
+      <p><strong>A large file is downloaded.</strong> The program is about 9&nbsp;MB compressed
+      (40&nbsp;MB unpacked), fetched each time the page is opened unless your browser has it
+      cached. On a slow or metered connection, you may want to wait for a better one.</p>
+    </div>
+
+    <ul>
+      <li>A desktop browser with WebAssembly and WebGL works best: recent Firefox, Chrome, Edge
+      or Safari. A phone or tablet is not a good fit.</li>
+      <li>The files you save are kept in the browser's storage, on this computer only. Download
+      the ones you want to keep; clearing the site's data removes them, and so does a private
+      window when it is closed.</li>
+      <li>The desktop program is faster and has everything; it is a
+      <a href="https://sourceforge.net/projects/telesapr/files/">free download</a>.</li>
+    </ul>
+
+    <div class="actions">
+      <a class="btn primary" href="app/">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        Proceed and load TeleSAPR
+      </a>
+      <a class="btn ghost" href="./">Back</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">© TeleSAPR authors · GPL-3.0-or-later</div>
+</footer>
+
+</body>
+</html>

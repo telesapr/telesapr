@@ -6,6 +6,10 @@
 #
 #     SF_USER=<sourceforge user> ./scripts/deploy-site.sh [--dry-run]
 #
+# The browser version, which make wasm builds into bin/web (WEB_BUILD to
+# take it from elsewhere), is copied into site/app first; site/app is not
+# tracked. The landing page links to it through site/try.html.
+#
 # The SSH key must be registered with that SourceForge account. What is
 # on the server and not in site/ is deleted, so htdocs holds the site and
 # nothing else; --dry-run lists what would be copied and deleted, and
@@ -15,6 +19,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SITE="$REPO_ROOT/site"
+WEB_BUILD="${WEB_BUILD:-$REPO_ROOT/bin/web}"
 
 PROJECT="${SF_PROJECT:-telesapr}"
 SF_USER="${SF_USER:-}"
@@ -43,6 +48,23 @@ if [ ! -f "$SITE/guide/index.html" ]; then
   echo "error: $SITE/guide/index.html not found: run make guide-site, or make deploy-site" >&2
   exit 2
 fi
+
+# site/try.html links to the browser version in site/app.
+web_files=(index.html memfs.js wasm_exec.js telesapr-web.wasm)
+for f in "${web_files[@]}"; do
+  if [ ! -f "$WEB_BUILD/$f" ]; then
+    echo "error: $WEB_BUILD/$f not found: run make wasm" >&2
+    exit 2
+  fi
+done
+# The brotli copy is optional: without it the host sends the 40 MB file.
+[ -f "$WEB_BUILD/telesapr-web.wasm.br" ] && web_files+=(telesapr-web.wasm.br)
+echo "==> $WEB_BUILD to site/app"
+rm -rf "$SITE/app"
+mkdir -p "$SITE/app"
+for f in "${web_files[@]}"; do
+  cp "$WEB_BUILD/$f" "$SITE/app/"
+done
 
 echo "==> site/ to $SF_USER@$DEST${dry_run:+ (dry run)}"
 rsync -rlvz --delete --chmod=D755,F644 "${dry_run[@]}" \

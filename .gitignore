@@ -12,3 +12,5 @@ coverage.out
 /site/guide/
 # Python caches (tools/docs/hooks.py run by mkdocs).
 __pycache__/
+# The browser version, copied from bin/web (make wasm) by scripts/deploy-site.sh.
+/site/app/
