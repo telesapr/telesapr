@@ -57,8 +57,6 @@ for f in "${web_files[@]}"; do
     exit 2
   fi
 done
-# The brotli copy is optional: without it the host sends the 40 MB file.
-[ -f "$WEB_BUILD/telesapr-web.wasm.br" ] && web_files+=(telesapr-web.wasm.br)
 echo "==> $WEB_BUILD to site/app"
 rm -rf "$SITE/app"
 mkdir -p "$SITE/app"

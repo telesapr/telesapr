@@ -1,28 +1,16 @@
 #!/usr/bin/env python3
 """Serves the browser build for trying it out: scripts/wasm-serve.py [dir [port]].
 
-Like python3 -m http.server, but it sends telesapr-web.wasm.br, when the
-build wrote one and the browser accepts brotli, as the compressed
-telesapr-web.wasm.
+Like python3 -m http.server, but on 127.0.0.1 only, and it names .wasm
+application/wasm on every Python, which WebAssembly.instantiateStreaming needs.
 """
 import http.server
-import os
 import sys
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
-    def send_head(self):
-        path = self.translate_path(self.path)
-        if (path.endswith(".wasm") and "br" in self.headers.get("Accept-Encoding", "")
-                and os.path.exists(path + ".br")):
-            f = open(path + ".br", "rb")
-            self.send_response(200)
-            self.send_header("Content-Type", "application/wasm")
-            self.send_header("Content-Encoding", "br")
-            self.send_header("Content-Length", str(os.fstat(f.fileno()).st_size))
-            self.end_headers()
-            return f
-        return super().send_head()
+    extensions_map = {**http.server.SimpleHTTPRequestHandler.extensions_map,
+                      ".wasm": "application/wasm"}
 
 
 if __name__ == "__main__":

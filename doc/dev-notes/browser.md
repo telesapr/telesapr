@@ -9,9 +9,10 @@ The editor builds for `GOOS=js GOARCH=wasm` (`cmd/telesapr-web`) on its own plat
     scripts/wasm-serve.py bin/web 8080         # then open http://localhost:8080/
 
 `?model=<url>` opens a model once the editor is up. The program is about 43 MB, 40 MB after wasm-opt. The build
-shrinks it with `wasm-opt` (binaryen) when that is on PATH or in `$WASM_OPT`, and writes a
-brotli copy, `telesapr-web.wasm.br`, when `brotli` is installed: `scripts/wasm-serve.py` and any
-host set to send it with `Content-Encoding: br` make the download about 9 MB (gzip: 11 MB).
+shrinks it with `wasm-opt` (binaryen) when that is on PATH or in `$WASM_OPT`. It writes no
+compressed copy: SourceForge's project web, where `scripts/deploy-site.sh` puts it, ignores
+`.htaccess` and so could not send one, and the Cloudflare in front of it compresses the `.wasm`
+by itself, with brotli, to about 11 MB. `scripts/wasm-serve.py` sends it uncompressed.
 The build leaves out WOFF2 fonts (`pkg/ttf/woff2_nobrotli_js.go`): the Brotli decoder imports
 `net/http`, which cost 2 MB. Without GPU access WebGL runs in the browser's software rasteriser and
 is slow; the software renderer is used when WebGL cannot be had (or when `UseOpenGL` is off).
