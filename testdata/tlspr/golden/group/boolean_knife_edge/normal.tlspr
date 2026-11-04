@@ -1481,8 +1481,8 @@ shell {
     ctrl 1 0 -1 0 0.49834022880539447 1
     ctrl 1 1 0 0 0.49834022880539447 1
     trim 0x13 forward -1 0 0.49834022880539447 0 1 0.49834022880539447
-    trim 0x16 forward 0 1 0.49834022880539447 0 0 0.49834022880539447
-    trim 0x19 forward 0 0 0.49834022880539447 -1 0 0.49834022880539447
+    trim 0x25 backward 0 1 0.49834022880539447 0 0 0.49834022880539447
+    trim 0x1f backward 0 0 0.49834022880539447 -1 0 0.49834022880539447
   }
   surface 0xd {
     color 100 100 100 255
@@ -1495,8 +1495,8 @@ shell {
     ctrl 1 1 0 1 0 1
     trim 0x13 backward 0 1 0.49834022880539447 -1 0 0.49834022880539447
     trim 0x14 forward -1 0 0 0 1 0
-    trim 0x15 backward 0 1 0 0 1 0.49834022880539447
-    trim 0x1b forward -1 0 0.49834022880539447 -1 0 0
+    trim 0x27 backward 0 1 0 0 1 0.49834022880539447
+    trim 0x1d forward -1 0 0.49834022880539447 -1 0 0
   }
   curve 0x1 {
     exact
@@ -1681,60 +1681,6 @@ shell {
     ctrl 1 0 1 0 1
     vertex -1 0 0
     vertex 0 1 0
-  }
-  curve 0x15 {
-    exact
-    degree 1
-    surfaces 0xd 0xe
-    ctrl 0 0 1 0.49834022880539447 1
-    ctrl 1 0 1 0 1
-    vertex 0 1 0.49834022880539447
-    vertex 0 1 0
-  }
-  curve 0x16 {
-    exact
-    degree 1
-    surfaces 0xb 0xe
-    ctrl 0 0 1 0.49834022880539447 1
-    ctrl 1 0 0 0.49834022880539447 1
-    vertex 0 1 0.49834022880539447
-    vertex 0 0 0.49834022880539447
-  }
-  curve 0x17 {
-    exact
-    degree 1
-    surfaces 0x2 0xe
-    ctrl 0 0 1 0 1
-    ctrl 1 0 0 0 1
-    vertex 0 1 0
-    vertex 0 0 0
-  }
-  curve 0x19 {
-    exact
-    degree 1
-    surfaces 0xb 0xf
-    ctrl 0 0 0 0.49834022880539447 1
-    ctrl 1 -1 0 0.49834022880539447 1
-    vertex 0 0 0.49834022880539447
-    vertex -1 0 0.49834022880539447
-  }
-  curve 0x1a {
-    exact
-    degree 1
-    surfaces 0x2 0xf
-    ctrl 0 0 0 0 1
-    ctrl 1 -1 0 0 1
-    vertex 0 0 0
-    vertex -1 0 0
-  }
-  curve 0x1b {
-    exact
-    degree 1
-    surfaces 0xf 0xd
-    ctrl 0 -1 0 0.49834022880539447 1
-    ctrl 1 -1 0 0 1
-    vertex -1 0 0.49834022880539447
-    vertex -1 0 0
   }
   curve 0x1d {
     exact

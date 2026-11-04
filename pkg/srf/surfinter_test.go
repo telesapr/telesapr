@@ -64,7 +64,10 @@ func extrudedCurves(sbl *SBezierList, t0, t1 geom.Vector, tol Tolerance) *SShell
 
 // TestIntersectionBranches runs a boolean through each of
 // IntersectAgainst's branches that the fixtures don't reach, at a chord
-// tolerance of 0.1, and pins the result's volume and counts.
+// tolerance of 0.1. The result's surfaces and curves are the kernel's and
+// are pinned; its mesh is checked closed, and its volume against the
+// exact solid's within what chords of the tolerance can lose over the
+// curved faces, so that either mesher passes (doc/dev-notes/k4-cdt-spike.md).
 func TestIntersectionBranches(t *testing.T) {
 	t.Parallel()
 	tol := Tol(0.1, 20)
@@ -95,23 +98,32 @@ func TestIntersectionBranches(t *testing.T) {
 		return tube, box
 	}
 
+	// The coaxial cylinders, r 10 with centres 12 apart, overlap in a
+	// lens 10 high; the crossing ones, r 10 along z and r 6 along x, in
+	// the solid whose sections across y are rectangles 2√(36-y²) by
+	// 2√(100-y²).
+	lens := 200*math.Acos(0.6) - 6*math.Sqrt(400-144)
+	cross := simpson(func(y float64) float64 { return 4 * math.Sqrt(36-y*y) * math.Sqrt(100-y*y) }, -6, 6, 20000)
 	for _, tc := range []struct {
-		name      string
-		shells    func() (*SShell, *SShell)
-		op        SurfaceCombineAs
-		vol       float64
-		surfaces  int
-		curves    int
-		triangles int
+		name     string
+		shells   func() (*SShell, *SShell)
+		op       SurfaceCombineAs
+		vol      float64 // the exact solid's
+		curved   float64 // the curved faces' area, at most
+		surfaces int
+		curves   int
 	}{
 		// Recorded; they change only when the kernel means them to. A
 		// difference drops the cutter's faces wholly outside, with the
-		// curves on them no trim uses (roadmap 13.3).
-		{"coaxial-union", coaxial, SurfaceUnion, 8481.244959586, 12, 30, 268},
-		{"coaxial-difference", coaxial, SurfaceDiff, 2237.031816644, 8, 19, 132},
-		{"crossing-union", crossing, SurfaceUnion, 14851.712352551, 12, 32, 364},
-		{"crossing-difference", crossing, SurfaceDiff, 10379.792222337, 10, 24, 232},
-		{"seam-difference", seam, SurfaceDiff, 4.591632342, 9, 36, 76},
+		// curves on them no trim uses (roadmap 13.3). In the seam's
+		// difference 16 curves whose other face was dropped ran along
+		// the same points as curves between two kept faces; the trims
+		// on them move onto those, and they go (moveOrphanTrims).
+		{"coaxial-union", coaxial, SurfaceUnion, 1000*math.Pi + 2000*math.Pi - 10*lens, 2 * math.Pi * 10 * 30, 12, 30},
+		{"coaxial-difference", coaxial, SurfaceDiff, 1000*math.Pi - 10*lens, 2 * math.Pi * 10 * 20, 8, 19},
+		{"crossing-union", crossing, SurfaceUnion, 4000*math.Pi + 1440*math.Pi - cross, 2 * math.Pi * (10 + 6) * 40, 12, 32},
+		{"crossing-difference", crossing, SurfaceDiff, 4000*math.Pi - cross, 2 * math.Pi * (10 + 6) * 40, 10, 24},
+		{"seam-difference", seam, SurfaceDiff, 1.5 * math.Pi, math.Pi * (1 + 2 + 3), 9, 20},
 	} {
 		a, b := tc.shells()
 		var r SShell
@@ -119,13 +131,30 @@ func TestIntersectionBranches(t *testing.T) {
 		var m SMesh
 		r.TriangulateInto(&m)
 		vol := m.CalculateVolume()
-		if r.BooleanFailed || math.Abs(vol/tc.vol-1) > 1e-6 ||
-			len(r.Surface) != tc.surfaces || len(r.Curve) != tc.curves || len(m.Triangles) != tc.triangles {
-			t.Errorf("%s: vol %.9f failed %v surfaces %d curves %d triangles %d; want vol %.9f surfaces %d curves %d triangles %d",
-				tc.name, vol, r.BooleanFailed, len(r.Surface), len(r.Curve), len(m.Triangles),
-				tc.vol, tc.surfaces, tc.curves, tc.triangles)
+		// Each triangle lies within the chord tolerance of its surface,
+		// so the mesh's volume within that times the curved area.
+		allow := tol.ChordTolMm() * tc.curved
+		if r.BooleanFailed || !meshIsSound(&r) || math.Abs(vol-tc.vol) > allow ||
+			len(r.Surface) != tc.surfaces || len(r.Curve) != tc.curves {
+			t.Errorf("%s: vol %.6f (exact %.6f, allowed %.3f) failed %v sound %v surfaces %d curves %d; want surfaces %d curves %d",
+				tc.name, vol, tc.vol, allow, r.BooleanFailed, meshIsSound(&r), len(r.Surface), len(r.Curve),
+				tc.surfaces, tc.curves)
 		}
 	}
+}
+
+// simpson integrates f over [a, b] by Simpson's rule on n (even) steps.
+func simpson(f func(float64) float64, a, b float64, n int) float64 {
+	h := (b - a) / float64(n)
+	sum := f(a) + f(b)
+	for i := 1; i < n; i++ {
+		w := 2.0
+		if i%2 == 1 {
+			w = 4
+		}
+		sum += w * f(a+float64(i)*h)
+	}
+	return sum * h / 3
 }
 
 // TestIntersectAgainstTwoPlanes verifies that two intersecting

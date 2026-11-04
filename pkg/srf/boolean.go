@@ -17,6 +17,7 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 	stage := func(name string) func() { return trace.StartRegion(context.Background(), name).End }
 	s.BooleanFailed = false
 	s.Tol = s.Tol.Or(a.Tol).Or(b.Tol)
+	b = snapToSpheres(a, snapToCones(a, snapToCylinders(a, snapToPlanes(a, b))))
 
 	end := stage("classifying bsps")
 	a.MakeClassifyingBsps(nil)
@@ -94,20 +95,25 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 // exporter of surfaces writes them out whole (roadmap 13.3).
 func (s *SShell) dropUntrimmed() {
 	dropped := map[core.HSSurface]bool{}
-	used := map[core.HSCurve]bool{}
-	kept := s.Surface[:0]
 	for _, sf := range s.Surface {
 		if sf.TrimBuilt && len(sf.Trim) == 0 {
 			dropped[sf.H] = true
+		}
+	}
+	if len(dropped) == 0 {
+		return
+	}
+	s.moveOrphanTrims(dropped)
+	used := map[core.HSCurve]bool{}
+	kept := s.Surface[:0]
+	for _, sf := range s.Surface {
+		if dropped[sf.H] {
 			continue
 		}
 		for _, t := range sf.Trim {
 			used[t.Curve] = true
 		}
 		kept = append(kept, sf)
-	}
-	if len(dropped) == 0 {
-		return
 	}
 	clear(s.Surface[len(kept):])
 	s.Surface = kept

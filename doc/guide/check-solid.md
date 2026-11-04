@@ -42,6 +42,13 @@ Analyze > Check Solid (Ctrl+Shift+O) looks at the active group's solid and repor
 When something is wrong, the message lists what by kind, and the edges at fault are drawn on
 the model, the way Analyze > Show Naked Edges draws naked ones.
 
+Where the only fault is that the group's part and the solid before it touch at a point or along
+a line, as a ball resting on a plate or a rod lying on one, the message says so: "its parts touch
+only at a point or along a line, as at (x, y, z) mm, so it is not closed there: move them apart
+or into one another". Such a union is the right shape, but it is not a closed solid where they
+touch, and the naked or self-intersecting edges there are where the mesh meets itself. In a
+script, `Report.Touches` is set and `Report.TouchAt` is a point of the contact.
+
 ### About the volume
 
 The volume is the mesh's. The mesh follows the curved faces with straight chords, within the

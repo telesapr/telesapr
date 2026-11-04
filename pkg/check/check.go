@@ -69,6 +69,14 @@ type Report struct {
 
 	// Problems holds the naked and self-intersecting edges, for drawing.
 	Problems srf.SEdgeList
+
+	// Touches is set when every naked or self-intersecting edge lies
+	// where the group's part and the solid before it touch at a point or
+	// along a line, as a ball resting on a plate: their union is the
+	// true result and not a manifold there, not a Boolean that failed.
+	// TouchAt is a point of the contact.
+	Touches bool
+	TouchAt geom.Vector
 }
 
 // Empty reports whether there is no solid at all.
@@ -165,7 +173,11 @@ func Group(sk *sketch.Sketch, g *sketch.Group) (r Report) {
 	if src.IsForcedToMesh(sk) {
 		shell = nil
 	}
-	return Solid(shell, &g.DisplayMesh)
+	r = Solid(shell, &g.DisplayMesh)
+	if shell != nil && !r.BooleanFailed && r.NakedEdges+r.SelfIntersecting > 0 {
+		r.TouchAt, r.Touches = touchAt(sk, src, &r.Problems, r.Volume)
+	}
+	return r
 }
 
 // String is the report on one line, every number written so it reads
@@ -218,6 +230,9 @@ func (r *Report) Summary() string {
 		if r.TopologyProblems > 0 {
 			fmt.Fprintf(&b, "    %d topology problems, the first: %s\n", r.TopologyProblems, r.Topology[0].Msg)
 		}
+		if r.Touches {
+			b.WriteString("    " + r.TouchText() + "\n")
+		}
 		b.WriteString("\n")
 	}
 	if r.Patches != r.Faces {
@@ -238,3 +253,11 @@ func (r *Report) Summary() string {
 func g17(v float64) string { return cfmt.Sprintf("%.17g", v) }
 
 func v17(v geom.Vector) string { return g17(v.X) + "," + g17(v.Y) + "," + g17(v.Z) }
+
+// TouchText says where and why a solid that Touches is not closed.
+func (r *Report) TouchText() string {
+	c := r.TouchAt
+	return fmt.Sprintf("its parts touch only at a point or along a line, as at (%s, %s, %s) mm, "+
+		"so it is not closed there: move them apart or into one another",
+		cfmt.Sprintf("%.6g", c.X), cfmt.Sprintf("%.6g", c.Y), cfmt.Sprintf("%.6g", c.Z))
+}

@@ -241,24 +241,9 @@ func (t *Topology) offsetLoop(f, l int, n geom.Vector, dOf func(side int) float6
 // piece keep[j] starts, moved. what names the distance for messages.
 func offsetProfile(pieces []profilePiece, n geom.Vector, ds []float64, what string) (keep []int, corner []geom.Vector, err error) {
 	k := len(pieces)
-	// The moved copy of each piece: a line through a point, along a
-	// direction, or a circle.
-	moved := func(p profilePiece, d float64) profilePiece {
-		q := p
-		if p.arc {
-			if p.outward {
-				q.r = p.r + d
-			} else {
-				q.r = p.r - d
-			}
-		} else {
-			q.a, q.b = p.a.Plus(p.into.ScaledBy(d)), p.b.Plus(p.into.ScaledBy(d))
-		}
-		return q
-	}
 	mv := make([]profilePiece, k)
 	for i, p := range pieces {
-		mv[i] = moved(p, ds[i])
+		mv[i] = movedPiece(p, ds[i])
 		if !p.arc || mv[i].r > geom.LengthEps {
 			keep = append(keep, i)
 		}
@@ -285,6 +270,22 @@ func offsetProfile(pieces []profilePiece, n geom.Vector, ds []float64, what stri
 		corner[j] = c
 	}
 	return keep, corner, nil
+}
+
+// movedPiece is p moved into its material by d: a line through a
+// point, along a direction, or a circle.
+func movedPiece(p profilePiece, d float64) profilePiece {
+	q := p
+	if p.arc {
+		if p.outward {
+			q.r = p.r + d
+		} else {
+			q.r = p.r - d
+		}
+	} else {
+		q.a, q.b = p.a.Plus(p.into.ScaledBy(d)), p.b.Plus(p.into.ScaledBy(d))
+	}
+	return q
 }
 
 // movedCurves is piece p moved to run from a to b, as a line or an arc

@@ -51,15 +51,23 @@ func (s *SSurface) addExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 
 	// Test if the curve lies entirely outside one of the
 	withinA, withinB := false, false
+	// A point counts as within a patch only if it lies on it too: the
+	// closest point of a patch to one on its surface's extension past
+	// the patch can come back inside the patch's parameters, and a plane
+	// across a cylinder's extension, a block 4 mm below a turned
+	// cylinder, gave a circle off both solids (the K3 spike's probe).
+	onTol := 2*s.Tol.ChordTolMm() + lengthEps
 	for _, scpt := range split.Points {
 		const tol = 0.01
 		var puv geom.Point2d
 		s.ClosestPointTo(scpt.P, &puv, true)
-		if puv.U > -tol && puv.U < 1+tol && puv.V > -tol && puv.V < 1+tol {
+		if puv.U > -tol && puv.U < 1+tol && puv.V > -tol && puv.V < 1+tol &&
+			s.PointAt(puv.U, puv.V).Minus(scpt.P).Magnitude() < onTol {
 			withinA = true
 		}
 		srfB.ClosestPointTo(scpt.P, &puv, true)
-		if puv.U > -tol && puv.U < 1+tol && puv.V > -tol && puv.V < 1+tol {
+		if puv.U > -tol && puv.U < 1+tol && puv.V > -tol && puv.V < 1+tol &&
+			srfB.PointAt(puv.U, puv.V).Minus(scpt.P).Magnitude() < onTol {
 			withinB = true
 		}
 		// Break out early, no sense wasting time if we already have the answer.
@@ -150,6 +158,32 @@ func (s *SSurface) intersectAgainst(b *SSurface, agnstA, agnstB *SShell, into *c
 				// we have a curve belonging to the curved surface and not the plane.
 				// does it lie completely in the plane?
 				if splane.ContainsPlaneCurve(sc) {
+					bezier := sc.Exact
+					s.addExactIntersectionCurve(&bezier, b, agnstA, agnstB, into)
+					foundExact = true
+				}
+			}
+			// The plane's own outline may lie on the curved surface, as a
+			// countersink's rim on a cone of its angle standing in it, or a
+			// seat's rim on its ball (roadmap K3): marched, the curve
+			// there would follow other points than the outline's, and the
+			// two faces' meshes would not meet.
+			shplane := agnstA
+			if splane == b {
+				shplane = agnstB
+			}
+			if !foundExact && shplane != nil {
+				for i := range shplane.Curve {
+					sc := &shplane.Curve[i]
+					if sc.Source == CurveSourceIntersection || !sc.IsExact {
+						continue
+					}
+					if sc.SurfA != splane.H && sc.SurfB != splane.H {
+						continue
+					}
+					if !splane.ContainsPlaneCurve(sc) || !sext.containsCurve(&sc.Exact) {
+						continue
+					}
 					bezier := sc.Exact
 					s.addExactIntersectionCurve(&bezier, b, agnstA, agnstB, into)
 					foundExact = true
@@ -965,4 +999,18 @@ func (s *SShell) MakeCoincidentEdgesInto(proto *SSurface, sameNormal bool, el *S
 			se.A = geom.Vector{X: ub, Y: vb}
 		}
 	}
+}
+
+// containsCurve reports whether the curve lies on s: its points at
+// eight places along it, each within LengthEps of s, unclamped.
+func (s *SSurface) containsCurve(sb *SBezier) bool {
+	for i := range 9 {
+		p := sb.PointAt(float64(i) / 8)
+		var puv geom.Point2d
+		s.ClosestPointTo(p, &puv, false)
+		if s.PointAt(puv.U, puv.V).Minus(p).Magnitude() > lengthEps {
+			return false
+		}
+	}
+	return true
 }

@@ -57,7 +57,9 @@ starts at 1 mm. Select the same kind of things as for a chamfer:
 - straight or circular edges of the solid, picked on the model.
 
 The radius takes a number or an expression. A radius too large for the faces is a problem on
-the group, named on its screen, and the solid passes through unrounded.
+the group, named on its screen, and the solid passes through unrounded. So is a fillet whose
+result would not be a closed solid where the solid before it was one: the message says the
+rounded solid would not be closed and to make it a little smaller or larger.
 
 The group's screen lists the edges. Under each edge, "[own radius]" gives that edge a radius of
 its own, and "[remove]" takes the edge out of the fillet. "[change]" beside the list takes the
@@ -79,6 +81,10 @@ doc.Features.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 0, 5))}, 1.5, "")
 
 - A convex edge is rounded by an exact cylinder, or by a torus round a circle. A concave edge
   is filled.
+- A circle's fillet whose foot reaches past the flat face it lies on, as round a rod through a
+  narrow plate, is cut by the planes of the face's flat sides it runs into, and those sides grow
+  up by its sections. It is refused where the foot only just reaches a side (make it a little
+  smaller or larger), and where the solid goes on beyond the side.
 - A rounded edge takes with it the edges it meets smoothly, as round a rounded rectangle.
 - Where two rounded edges meet, they are mitred. Where three meet at the corner of a block, a
   sphere rounds the corner.
@@ -117,6 +123,14 @@ radius that changes from one's to the other's along it, tangent all round.
 **Four or more edges of both kinds at a corner.** Take the middle of a saddle, where two ridges
 and two valleys meet, all rounded. Each fillet is set back and the hole is filled by patches,
 as at a corner of three radii.
+
+Round three of the saddle's four edges and leave the fourth sharp, and the two fillets beside
+the sharp edge run up to it and are cut there, the third is set back, and patches fill the
+hole, their surface turning from one fillet to the other where the sharp edge ends. This is
+made where the two fillets reach the sharp edge at one point, as when they have one radius on
+a saddle that is the same on both sides of the sharp edge, and the saddle is not steep.
+Chamfers of three of the four edges are cut the same way: the two beside the sharp edge are
+cut up to it, the third is set back, and curved patches fill the corner between them.
 
 **Refused.** Two top edges of different radii over an upright edge that stays sharp are refused,
 and the message names the radii: the blend would need a crease. Round the upright edge too, or
@@ -159,14 +173,18 @@ goes on to that face: its plane cuts the fillet too, and both the end face and t
 the fillet's end. If the face it runs onto is curved, as a band's rounded top, that surface is
 carried on past its edge with the face the fillet ran off, it cuts the fillet, and it grows over
 the fillet's end, sharing with the end face the line or curve where the end face's plane meets
-that surface.
+that surface. Where the fillet's end only just runs off onto a curved face, within two chord
+tolerances of its edge, the end is taken to that edge's corner, so the face doesn't grow by a
+sliver too thin to mesh.
+
+Both ends may run off this way, as a chamfer of a short plate's foot on a rod does past both
+slopes of the plate's gabled top. Each end cuts the fillet on its own; where the two cuts would
+fall on one piece of the fillet's surface, that surface is split between them first.
 
 The fillet is refused at the place in these cases:
 
 - the ball can't touch both faces (the radius is too large for the room beside a hole);
 - the fillet's end runs off both faces;
-- it only just runs off onto a curved face, so the face would grow by a sliver thinner than the
-  chord tolerance (make the fillet a little smaller or larger);
 - a fillet that takes material away runs off onto the next face.
 
 **A curved end face.** The end face may be curved too, as a box's upright edge between flat walls
@@ -191,11 +209,14 @@ These are refused with a message:
   the foot alone, or the top's edges alone.
 - A fillet between curved faces along an edge that ends at a curved face which the side faces go
   on past.
-- Chamfers meeting at a crease, or at a corner whose third edge stays sharp.
+- Chamfers meeting above an edge left sharp that they would cut at two points, or at a corner
+  where their distances are too unlike for a face to close it ([Chamfer](chamfer.md) says what
+  is made).
 - A corner where a convex edge meets a concave one at a vertex that the stages can't round while
-  some edge there is left sharp.
+  some edge there is left sharp, but for three of a saddle's four edges as above, fillets or
+  chamfers.
 - A blend that takes material away and runs off onto the next face, or that runs off at both of
-  its ends.
+  its ends where the two ends' cuts meet along the edge.
 
 Also:
 

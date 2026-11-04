@@ -152,7 +152,7 @@ func (r *uiScriptRunner) writeShot(name, which string) {
 		}
 		drawCursor(img, o.X+int(d.x), o.Y+int(d.y))
 	}
-	if err := writeFramePng(img, filepath.Join(d.dir, name+".png")); err != nil {
+	if err := writeDocPng(img, filepath.Join(d.dir, name+".png")); err != nil {
 		r.t.Fatal(err)
 	}
 }
@@ -290,6 +290,10 @@ func TestDocScenarios(t *testing.T) {
 			runDocScenario(t, f, dir)
 		})
 	}
+	// The real window's pictures (TestDocWindowShots) are made too.
+	for _, sh := range docWindowShots {
+		made[sh.name] = true
+	}
 	checkGuideImages(t, made)
 }
 
@@ -309,7 +313,7 @@ func shotNames(t *testing.T, path string) []string {
 }
 
 // checkGuideImages fails on a picture the guide shows that no scenario
-// makes.
+// or real-window shot makes.
 func checkGuideImages(t *testing.T, made map[string]bool) {
 	pages, err := filepath.Glob(filepath.Join(docScenarioDir, "..", "*.md"))
 	if err != nil {

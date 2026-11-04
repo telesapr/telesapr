@@ -222,19 +222,6 @@ func TestShellRevolvedRefusals(t *testing.T) {
 			t.Errorf("%s: %v, want %q", c.name, err, c.want)
 		}
 	}
-	// A curved face taken away between an inside corner and the top.
-	step := [][2]float64{{0, 0}, {10, 0}, {10, 5}, {6, 5}, {6, 10}, {0, 10}}
-	sh0, rev0 := turned(meridian(t, step, nil, srf.Tolerance{}), 0, 2*math.Pi, srf.Tolerance{})
-	tp0 := build(t, sh0)
-	var side []int
-	for k := range 4 {
-		a := math.Pi/4 + float64(k)*math.Pi/2
-		f, _ := tp0.FaceAt(v(6*math.Cos(a), 6*math.Sin(a), 8))
-		side = append(side, f)
-	}
-	if _, err := topo.ShellRevolved(sh0, rev0, side, 1, 1<<30); err == nil || !strings.Contains(err.Error(), "inside corner") {
-		t.Errorf("a side at an inside corner: %v", err)
-	}
 	// A solid that is not the revolution given.
 	sh := cylinder(5, 10, srf.Tolerance{})
 	_, rev := turned(meridian(t, [][2]float64{{0, 0}, {4, 0}, {4, 10}, {0, 10}}, nil, srf.Tolerance{}), 0, 2*math.Pi, srf.Tolerance{})

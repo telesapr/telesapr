@@ -277,6 +277,8 @@ var windowActions = map[string]string{
 	"ScreenMoveGroup":                 "GroupHistory.MoveBefore GroupHistory.MoveToEnd",
 	"ScreenShowBrokenReferences":      "- navigation; Features.BrokenReferences lists them",
 	"ScreenClearBrokenReferences":     "Features.ClearBrokenReferences",
+	"ScreenDiscardLeftOut":            "Features.DiscardLeftOut",
+	"ScreenMendLeftOut":               "Features.MendLeftOut",
 	"ScreenExportBOM":                 "Assembly.ExportBOM",
 	"ScreenChangeCommandQuery":        "- the search box of Edit > Find Command; the script names the command",
 	"ScreenRunCommand":                "Edit.RunCommand",

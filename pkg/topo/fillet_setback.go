@@ -80,6 +80,15 @@ type setbackSide struct {
 	ctrl [patchDeg + 1]geom.Vector
 	arc  bool
 	e    geom.Vector
+	// fold: the side is folded to one point, where the hole's two sides
+	// either side of it meet at an angle, as on an edge left sharp, and
+	// the patch's normal turns from one's to the other's (saddleSharpAt).
+	// lean is then the weight of the rows leaning into the hole along
+	// the patch's other sides, against fairness: held harder than
+	// elsewhere, else fairness pulls the row beside a fillet's cut under
+	// it short of the fold.
+	fold bool
+	lean float64
 }
 
 func (s setbackSide) bezier() srf.SBezier {
@@ -484,6 +493,10 @@ func setbackPatches(sides []setbackSide, out geom.Vector) ([]srf.SSurface, error
 	bestQ := math.Inf(-1)
 	var firstErr error
 	ns := len(sides)
+	folds := false
+	for _, sd := range sides {
+		folds = folds || sd.fold
+	}
 	for start := range ns {
 		if (ns/2)%2 == 1 && start > 1 {
 			break
@@ -496,7 +509,7 @@ func setbackPatches(sides []setbackSide, out geom.Vector) ([]srf.SSurface, error
 			}
 			continue
 		}
-		if q := foldFree(ps, out); q > bestQ {
+		if q := foldFree(ps, out, folds); q > bestQ {
 			best, bestQ = ps, q
 		}
 	}
@@ -512,8 +525,9 @@ func setbackPatches(sides []setbackSide, out geom.Vector) ([]srf.SSurface, error
 // foldFree is the least, over the patches, of the cosine between the
 // normal and out, the way the corner faces, each patch's normal turned
 // to face it at its middle: a patch with a normal that turns away
-// folds.
-func foldFree(ps []srf.SSurface, out geom.Vector) float64 {
+// folds. Where the hole has a side folded to a point (folds), the
+// patches' sides are passed over where they have no normal.
+func foldFree(ps []srf.SSurface, out geom.Vector, folds bool) float64 {
 	worst := 1.0
 	const g = 24
 	out = out.WithMagnitude(1)
@@ -533,6 +547,11 @@ func foldFree(ps []srf.SSurface, out geom.Vector) float64 {
 			for _, v := range ts {
 				nm := ps[i].NormalAt(u, v)
 				if nm.Magnitude() < 1e-12 {
+					// A side folded to a point has no normal along it, nor
+					// has a corner beside it.
+					if folds && (u == 0 || u == 1 || v == 0 || v == 1) {
+						continue
+					}
 					return -1
 				}
 				worst = math.Min(worst, sign*nm.WithMagnitude(1).Dot(out))
@@ -857,7 +876,13 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 					if side.e.Dot(in) < 0 {
 						sign = -1
 					}
-					eq(map[int]float64{arcVar[r.hole] + k: 1}, sign*reach, w)
+					lw := w
+					for _, r2 := range sd {
+						if r2.hole >= 0 && sides[r2.hole].fold {
+							lw = w * sides[r2.hole].lean
+						}
+					}
+					eq(map[int]float64{arcVar[r.hole] + k: 1}, sign*reach, lw)
 					continue
 				}
 				i, j, i1, j1 := slot(s, k)
@@ -944,12 +969,50 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 	// Each patch tangent to what lies beyond each of its sides, measured:
 	// a patch can satisfy every equation and still turn its normal where
 	// its derivative across nearly runs along the side.
+	// A side folded to a point (saddleSharpAt) has no normal, nor has a
+	// patch at that point: there the samples along a hole's side move
+	// just off it, as blendPatchCheck's do, and those along a curve
+	// across the hole are passed over; and a patch with a folded side,
+	// whose normal turns across it, isn't held to the normal just inside.
 	const samples = 16
+	var folds []geom.Vector
+	for _, sd := range sides {
+		if sd.fold {
+			folds = append(folds, sd.ctrl[0])
+		}
+	}
+	atFold := func(pt geom.Vector) bool {
+		for _, f := range folds {
+			if pt.Minus(f).Magnitude() < 1e-9 {
+				return true
+			}
+		}
+		return false
+	}
+	quadFolds := func(sd [4]ref) bool {
+		for _, r := range sd {
+			if r.hole >= 0 && sides[r.hole].fold {
+				return true
+			}
+		}
+		return false
+	}
 	for q, sd := range quads {
 		for si, r := range sd {
+			if r.hole >= 0 && sides[r.hole].fold {
+				continue
+			}
 			for k := 0; k <= samples; k++ {
 				tk := float64(k) / samples
 				u, v := sideUV(si, tk)
+				nearFold := atFold(out[q].PointAt(u, v))
+				if nearFold {
+					if r.hole < 0 {
+						continue
+					}
+					tk = math.Min(math.Max(tk, 1e-4), 1-1e-4)
+					u, v = sideUV(si, tk)
+				}
 				nm := out[q].NormalAt(u, v)
 				if nm.Magnitude() < 1e-12 {
 					return nil, filletErr(out[q].PointAt(u, v), "a patch that would fill it has no normal")
@@ -1001,6 +1064,9 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 					iu += in
 				}
 				ni := out[q].NormalAt(iu, iv)
+				if quadFolds(sd) || nearFold {
+					continue
+				}
 				if ni.Magnitude() < 1e-12 || math.Acos(math.Min(1, math.Abs(ni.WithMagnitude(1).Dot(want.WithMagnitude(1))))) > 10*setbackTangentTol {
 					return nil, filletErr(out[q].PointAt(u, v), "the patches that would fill it fold")
 				}

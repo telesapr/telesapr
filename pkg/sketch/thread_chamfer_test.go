@@ -258,6 +258,57 @@ func TestThreadChamferCoarse(t *testing.T) {
 	}
 }
 
+// TestThreadChamferNutCoarse makes chamfered nuts at chord tolerances
+// coarser than they can be chamfered at, flat and rounded crests: ISO,
+// UNC and trapezoidal nuts 16 long in parts of twice their diameter,
+// unsound at 0.5% or 1% before, and buttress nuts 20 long, unsound from
+// 0.2%. Their groups are made at a tolerance of the thread's own
+// (threadSolidTol), and the rest of the part at the sketch's. The
+// Tr40x7 nut, as short as its two chamfers' cuts allow, had them cross
+// and cut nothing, at any tolerance.
+func TestThreadChamferNutCoarse(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("thread solids")
+	}
+	type nut struct {
+		designation string
+		length, tol float64
+	}
+	var cases []threadCase
+	var tols []float64
+	for _, n := range []nut{
+		{"M20", 16, 0.5}, {"M36", 16, 0.5}, {"M8", 16, 1}, {"1/2-13 UNC", 16, 1}, {"Tr40x7", 16, 1},
+		{"1-12 BUTT", 20, 0.2}, {"2-8 BUTT", 20, 1},
+	} {
+		spec, err := thread.Parse(n.designation)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, crest := range []thread.Crest{thread.CrestStandard, thread.CrestRounded} {
+			o := sketch.ThreadOptions{Length: n.length, Through: true, Internal: true, Chamfer: true, Crest: crest}
+			cases = append(cases, threadCase{n.designation + "_" + crest.String(), spec.Diameter, n.length, n.designation, o})
+			tols = append(tols, n.tol)
+		}
+	}
+	tolOf := map[string]float64{}
+	for i, tc := range cases {
+		tolOf[tc.name] = tols[i]
+	}
+	for _, tc := range fixtures.Sample(cases) {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			sk, _, res := tc.build(t, tolOf[tc.name])
+			requireSoundThread(t, sk, res)
+			bands := sk.ThreadBands(lastOf(t, sk, res.Group).H)
+			if len(bands) != 1 {
+				t.Fatalf("bands %+v, want one", bands)
+			}
+			requireChamferCone(t, sk, res.Group, tc.options(t), bands[0])
+		})
+	}
+}
+
 // TestCosmeticThreadChamfer makes chamfered cosmetic threads: the
 // part's end is cut by the chamfer's cone, by the thread's lathe, which
 // a part left at its size has for the chamfer alone, and the solid is

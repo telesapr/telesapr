@@ -49,6 +49,8 @@ changing a value by hand makes it Custom. **Export...** then asks for the file, 
 writes nothing. The dialog keeps what you chose for the next export. The chord tolerance and the
 segments are also on the preferences screen (below).
 
+![The Export Triangle Mesh dialog](images/export-import-1-mesh-dialog.png)
+
 ```go
 doc.File.SetMeshQuality(api.MeshFine)
 o := doc.File.ExportOptions()

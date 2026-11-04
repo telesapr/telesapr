@@ -15,6 +15,9 @@ type eventQueue struct {
 	// wake has room for one token: a post leaves one for the loop if it
 	// sleeps.
 	wake chan struct{}
+	// after, if set, is called after each function the loop runs, on
+	// its goroutine: the platform ends a busy spell there.
+	after func()
 }
 
 func newEventQueue() *eventQueue {
@@ -82,6 +85,9 @@ func (q *eventQueue) run(stop func() bool) bool {
 			return false
 		}
 		runGuarded(fn)
+		if q.after != nil {
+			q.after()
+		}
 	}
 	return true
 }

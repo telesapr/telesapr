@@ -22,6 +22,13 @@ type FilletError struct {
 	At  geom.Vector
 	// rolling says the rolling ball refused (RollingRefusal).
 	rolling bool
+	// off is, for a circular fillet whose foot runs off its flat face
+	// into flat sides square to it, those sides (contactsClear).
+	off *runOff
+	// splitAt is, for a fillet whose two ends run off faces with cuts
+	// apart along the edge but sharing a patch, the arc length between
+	// them a section is put at (runOffApart); 0 where there is none.
+	splitAt float64
 }
 
 func (e *FilletError) Error() string { return e.Msg }

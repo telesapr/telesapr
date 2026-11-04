@@ -33,7 +33,7 @@ size tw 600 600
 cursor off
 twdown L 470 75
 twup L 470 75
-size gw 800 600
+size gw 1100 800
 shot drawings-3-sheet gw
 size gw 600 600
 # A title, and a section through the top view.
@@ -73,5 +73,5 @@ tw
 twmove 470 75
 twdown L 470 75
 twup L 470 75
-size gw 800 600
+size gw 1100 800
 shot drawings-5-dimensioned gw

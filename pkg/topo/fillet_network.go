@@ -239,9 +239,55 @@ func FilletNetwork(sh *srf.SShell, segs [][2]geom.Vector, r float64, origin uint
 // chamfers them at distance r along both faces; a chamfer here takes
 // circular edges only. Where edges of different radii, or convex and
 // concave ones, meet at a corner, they are rounded in stages
-// (filletInStages).
+// (filletInStages). A result that is not a closed solid where sh was
+// one is refused (notClosedMsg), so a fillet is never made open with
+// nothing said; on an error sh is left part made, for the caller to drop.
 func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) error {
+	before := sh.Clone()
+	if err := filletPicksAny(sh, picks, r, origin, flat); err != nil {
+		return err
+	}
+	if unsound(sh) && !unsound(&before) {
+		var at geom.Vector
+		if len(picks) > 0 {
+			at = picks[0].At
+		}
+		what := "fillet"
+		if flat {
+			what = "chamfer"
+		}
+		return filletErr(at, notClosedMsg, what)
+	}
+	return nil
+}
+
+// notClosedMsg refuses a fillet or chamfer (%s) made, but not a closed
+// solid where the solid before it was one: its mesh open or crossing
+// itself, or its faces not joined as a solid's are.
+const notClosedMsg = notClosedPrefix + " (the %s's mesh comes out open at this size): make it a little smaller or larger"
+
+// NotClosedRefusal reports whether err refuses a fillet or chamfer
+// whose result would not be a closed solid (notClosedMsg). A chamfer's
+// wedges are not tried after it: before the check such a result was
+// made, so nothing made before is lost, and the edit's reason is the
+// one to show.
+func NotClosedRefusal(err error) bool {
+	var fx *FilletError
+	return errors.As(err, &fx) && strings.HasPrefix(fx.Msg, notClosedPrefix)
+}
+
+// notClosedPrefix is what every notClosedMsg starts with.
+const notClosedPrefix = "the rounded solid would not be closed"
+
+// filletPicksAny is FilletPicks without the check of its result: the
+// first of its ways that takes the picks.
+func filletPicksAny(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) error {
 	err := filletPicks(sh, picks, r, origin, flat, nil)
+	if fx, ok := errors.AsType[*FilletError](err); ok && fx.off != nil {
+		// A circular fillet whose foot runs off its flat face into flat
+		// sides: made past them and cut back.
+		return filletPastSides(sh, picks, r, origin, flat, fx.off, err)
+	}
 	if curvedEndRefusal(err) && len(picks) == 1 {
 		// An edge between flat faces that ends on a curved one: the
 		// rolling ball, whose end follows the curved face (roadmap 22.5);
@@ -503,6 +549,10 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 		}
 	}
 
+	if err := t.clearOfFaces(edges, byEdge, flat); err != nil {
+		return err
+	}
+
 	// How the edges meet at each vertex they touch.
 	corners := map[int]*filletCorner{}
 	for _, fe := range edges {
@@ -567,6 +617,16 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 				// A convex fillet and a concave one above an edge left
 				// sharp, which the stages don't round: one patch fills it.
 				c, err = t.blendCornerAt(v, edges, byEdge)
+			}
+			if err != nil && (setback || flat) && t.saddleSharpTakes(v, edges, byEdge) {
+				// A saddle's three edges rounded or chamfered, the fourth
+				// left sharp: the blends beside it cut up to it, the hole
+				// filled by patches with a side folded there. Where that
+				// can't be made, the refusal says why as before.
+				sc, serr := t.saddleSharpAt(v, edges, byEdge)
+				if serr == nil {
+					c, err = sc, nil
+				}
 			}
 			if err != nil {
 				if why := stopped[v]; why != nil {

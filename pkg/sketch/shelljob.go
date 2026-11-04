@@ -153,6 +153,7 @@ func (sk *Sketch) ApplyLate(j *ShellJob) bool {
 		g.ThisMesh, g.RunningMesh = c.ThisMesh, c.RunningMesh
 		g.BooleanFailed, g.Problem = c.BooleanFailed, c.Problem
 		g.solidTol, g.fittedPath, g.sweepClosed = c.solidTol, c.fittedPath, c.sweepClosed
+		g.sweepRuns = c.sweepRuns
 		g.solidKey = c.solidKey
 		g.forgetTopology()
 		g.DisplayDirty = true

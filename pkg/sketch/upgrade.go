@@ -8,9 +8,10 @@ import (
 // UpgradeLegacyData brings a freshly loaded sketch up to date, and
 // regenerates its entities without solving. A damaged sketch's
 // references are mended first (Mended), and what refers to what it
-// lacks is left out (BrokenReferences).
+// lacks is left out (BrokenReferences) and kept for a save (LeftOut).
 func (sk *Sketch) UpgradeLegacyData() {
 	sk.mendReferences()
+	loaded := sk.loaded()
 	for ri := range sk.Requests {
 		r := &sk.Requests[ri]
 		if r.Type != RequestTTFText {
@@ -61,6 +62,7 @@ func (sk *Sketch) UpgradeLegacyData() {
 		oldParam[p.H] = true
 	}
 	sk.GenerateAllTyped(GenerateRegen)
+	sk.keepLeftOut(loaded)
 
 	allParamsExistFor := func(c *core.Constraint) bool {
 		var param []core.Param

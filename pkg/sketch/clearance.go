@@ -10,7 +10,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// The clearance between parts (item 14 of doc/notes/modelling_upgrades.md).
+// The clearance between parts (item 14 of doc/dev-notes/modelling_upgrades.md).
 // The parts are the interference check's (assemblyParts). Two parts'
 // gap is first the least distance between their meshes, which is
 // within the two chord tolerances of the true one: each mesh lies
@@ -78,12 +78,14 @@ func newClearancePart(hg core.HGroup, sh *srf.SShell) *clearancePart {
 // shell's and a mesh's pieces with each hollow's inside kept with the
 // piece round it (clearance_solids.go).
 func (sk *Sketch) clearanceParts(upTo core.HGroup, bySolid bool) []*clearancePart {
-	parts, meshOnly, before := sk.assemblyParts(upTo)
+	parts, meshes, before := sk.assemblyParts(upTo)
 	var out []*clearancePart
 	// A solid before the assembly made as triangles has no shell to be a
-	// part by, and is one by its mesh, as MassProperties takes it.
-	if before != nil && len(before.RunningShell.Surface) == 0 && !before.RunningMesh.IsEmpty() {
-		out = append(out, meshClearancePart(before.H, bySolid, &before.RunningMesh)...)
+	// part by, and is one by its mesh, first, as MassProperties takes it.
+	for _, mp := range meshes {
+		if before != nil && mp.g == before.H {
+			out = append(out, meshClearancePart(mp.g, bySolid, &mp.mesh)...)
+		}
 	}
 	for _, p := range parts {
 		cp := newClearancePart(p.g, p.shell)
@@ -95,14 +97,10 @@ func (sk *Sketch) clearanceParts(upTo core.HGroup, bySolid bool) []*clearancePar
 		}
 		out = append(out, cp)
 	}
-	for _, hg := range meshOnly {
-		// A group forced to a mesh holds the triangles of its own solid
-		// in its shell until they are combined.
-		g := sk.Group(hg)
-		var m srf.SMesh
-		m.MakeFromCopyOf(&g.ThisMesh)
-		g.ThisShell.TriangulateInto(&m)
-		out = append(out, meshClearancePart(hg, bySolid, &m)...)
+	for _, mp := range meshes {
+		if before == nil || mp.g != before.H {
+			out = append(out, meshClearancePart(mp.g, bySolid, &mp.mesh)...)
+		}
 	}
 	return out
 }

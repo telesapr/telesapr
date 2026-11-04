@@ -88,8 +88,10 @@ profiles are joined, then the profile is offset into the material: each line is 
 itself, each arc gets a smaller or larger radius about its centre, and the result is turned
 again. So a cone gets a coned inside and a sphere a spherical one, each wall exactly the
 thickness. Such a solid can be open at any of its faces: a flat one, such as a cup's top, or a
-curved one between outside corners, such as a ring open all round its outer side, which leaves a
-channel. A revolve's flat ends are walls too, unless they are taken away. Where the ends of a
+curved one, such as a ring open all round its outer side, which leaves a channel. Where a curved
+face taken away meets a flat face at an inside corner, as a stepped shaft's narrower part meets
+the step, the inside steps along the flat face's plane round the corner, so the wall under the
+step keeps its thickness. A revolve's flat ends are walls too, unless they are taken away. Where the ends of a
 revolve of more than half a turn meet at the axis, the inside keeps the thickness from each end
 and is rounded about the axis.
 
@@ -107,11 +109,17 @@ insides. Examples: a turned body with an extruded boss out of its side, a cup wi
 part of a turn round it, a block with a round boss. Each part's walls are moved in. But a face of
 a part that lies inside the others, such as a boss's foot sunk into the body, is moved out by the
 thickness instead. So the boss's inside runs into the body's with no wall between them, and the
-walls round the joint keep the thickness. The ends of a revolve of half a turn or less standing
-inside another part, such as a half ring on a block's side, move out the same way. A prism's
+walls round the joint keep the thickness. The ends of a revolve standing inside another part, such
+as a ring on a block's side, move out the same way, whatever its turn. An end in the air beside
+them is a wall, which runs on round the axis: on a half turn, whose two ends lie in one plane,
+the inside steps there, the thickness past the axis. A prism's
 sides move each as it lies: a round post half sunk into a block's side is walled all round, its
-inside reaching into the block's. Lathes about one axis are joined by their profiles first, as
-above.
+inside reaching into the block's. Where a part's foot moved out would carry its inside past the
+wall of the part it stands in (a post sunk into a block's top just beside its side, standing out
+of the block), the foot is kept as a wall there instead, the other part's wall. A top that two
+parts share in one plane, as a block's and a round post's sunk into it as high as the block, can
+be opened at the block's face or at both; the post's top is a wall unless it is opened too. Lathes about one axis are joined by their
+profiles first, as above.
 
 **Parts taken away or intersected.** Such parts can also be taken away from the solid before
 them, or intersected with it: a round pocket or a groove lathed into a block, a cone or a ball
@@ -128,14 +136,17 @@ through it.
 - A solid with curved faces must be one of these: a prism whose sides all run one way, open
   only at its ends; one lathe or revolve; lathes about one axis; or a solid joined from such
   parts. A solid with a helix, or with a feature after those parts, is refused.
-- In a union, the end of a revolve of more than half a turn lying inside another part is
-  refused. So is a revolve of half a turn where one end is taken away, a wall or inside another
-  part and the other end is not.
-- A union opened at a top face that two parts share can fail.
+- In a union, a part whose inside would touch another's along a line or at a point (a round post
+  sunk beside a block's side, as high as the block, its inside just meeting the block's) is
+  refused: the walls either side would meet with no thickness, which is no closed solid. Move
+  the post or change the thickness. So is a prism whose inside's outline would touch itself (the
+  same post standing on the block's own bottom): the walls either side would meet along a line.
 - A face moved out that would come out of the solid is refused. So is one that would leave a
   wall beyond it thinner than the thickness, where a part joined to another is thinner there than
   twice the thickness.
-- A revolve's curved face can be opened only between outside corners.
+- A revolve's curved face can be opened at an inside corner only beside a flat face square to
+  the axis, and one wider than the thickness: beside a cone, a sphere or a torus it is refused. A
+  drafted extrusion's round side can be opened only between outside corners.
 - A profile of curves other than lines and arcs is refused.
 - Beside a round hole, walls thinner than about twice the chord tolerance (how far the mesh may
   stray from the true surface, set on the configuration screen) can come out unsound: the hole's

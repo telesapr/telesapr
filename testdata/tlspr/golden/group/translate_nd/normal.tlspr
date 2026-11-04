@@ -5253,8 +5253,8 @@ shell {
     ctrl 0 1 -10 5 0 1
     ctrl 1 0 -5 5 1 1
     ctrl 1 1 -5 5 0 1
-    trim 0xd forward -5 5 1 -10 5 1
-    trim 0xe backward -10 5 0 -5 5 0
+    trim 0x79 backward -5 5 1 -10 5 1
+    trim 0x9d backward -10 5 0 -5 5 0
     trim 0xf forward -10 5 1 -10 5 0
     trim 0x18 backward -5 5 0 -5 5 1
   }
@@ -5267,8 +5267,8 @@ shell {
     ctrl 0 1 -10 10 0 1
     ctrl 1 0 -10 5 1 1
     ctrl 1 1 -10 5 0 1
-    trim 0x10 forward -10 5 1 -10 10 1
-    trim 0x11 backward -10 10 0 -10 5 0
+    trim 0x7a backward -10 5 1 -10 10 1
+    trim 0x9e backward -10 10 0 -10 5 0
     trim 0x12 forward -10 10 1 -10 10 0
     trim 0xf backward -10 5 0 -10 5 1
   }
@@ -5281,8 +5281,8 @@ shell {
     ctrl 0 1 -5 10 0 1
     ctrl 1 0 -10 10 1 1
     ctrl 1 1 -10 10 0 1
-    trim 0x13 forward -10 10 1 -5 10 1
-    trim 0x14 backward -5 10 0 -10 10 0
+    trim 0x7b backward -10 10 1 -5 10 1
+    trim 0x9f backward -5 10 0 -10 10 0
     trim 0x15 forward -5 10 1 -5 10 0
     trim 0x12 backward -10 10 0 -10 10 1
   }
@@ -5295,8 +5295,8 @@ shell {
     ctrl 0 1 -5 5 0 1
     ctrl 1 0 -5 10 1 1
     ctrl 1 1 -5 10 0 1
-    trim 0x16 forward -5 10 1 -5 5 1
-    trim 0x17 backward -5 5 0 -5 10 0
+    trim 0x7c backward -5 10 1 -5 5 1
+    trim 0xa0 backward -5 5 0 -5 10 0
     trim 0x18 forward -5 5 1 -5 5 0
     trim 0x15 backward -5 10 0 -5 10 1
   }
@@ -5309,8 +5309,8 @@ shell {
     ctrl 0 1 0 5 0 1
     ctrl 1 0 5 5 1 1
     ctrl 1 1 5 5 0 1
-    trim 0x19 forward 5 5 1 0 5 1
-    trim 0x1a backward 0 5 0 5 5 0
+    trim 0x7d backward 5 5 1 0 5 1
+    trim 0xa1 backward 0 5 0 5 5 0
     trim 0x1b forward 0 5 1 0 5 0
     trim 0x24 backward 5 5 0 5 5 1
   }
@@ -5323,8 +5323,8 @@ shell {
     ctrl 0 1 0 10 0 1
     ctrl 1 0 0 5 1 1
     ctrl 1 1 0 5 0 1
-    trim 0x1c forward 0 5 1 0 10 1
-    trim 0x1d backward 0 10 0 0 5 0
+    trim 0x7e backward 0 5 1 0 10 1
+    trim 0xa2 backward 0 10 0 0 5 0
     trim 0x1e forward 0 10 1 0 10 0
     trim 0x1b backward 0 5 0 0 5 1
   }
@@ -5337,8 +5337,8 @@ shell {
     ctrl 0 1 5 10 0 1
     ctrl 1 0 0 10 1 1
     ctrl 1 1 0 10 0 1
-    trim 0x1f forward 0 10 1 5 10 1
-    trim 0x20 backward 5 10 0 0 10 0
+    trim 0x7f backward 0 10 1 5 10 1
+    trim 0xa3 backward 5 10 0 0 10 0
     trim 0x21 forward 5 10 1 5 10 0
     trim 0x1e backward 0 10 0 0 10 1
   }
@@ -5351,8 +5351,8 @@ shell {
     ctrl 0 1 5 5 0 1
     ctrl 1 0 5 10 1 1
     ctrl 1 1 5 10 0 1
-    trim 0x22 forward 5 10 1 5 5 1
-    trim 0x23 backward 5 5 0 5 10 0
+    trim 0x80 backward 5 10 1 5 5 1
+    trim 0xa4 backward 5 5 0 5 10 0
     trim 0x24 forward 5 5 1 5 5 0
     trim 0x21 backward 5 10 0 5 10 1
   }
@@ -5365,8 +5365,8 @@ shell {
     ctrl 0 1 10 5 0 1
     ctrl 1 0 15 5 1 1
     ctrl 1 1 15 5 0 1
-    trim 0x26 backward 10 5 0 15 5 0
-    trim 0x25 forward 15 5 1 10 5 1
+    trim 0xa5 backward 10 5 0 15 5 0
+    trim 0x81 backward 15 5 1 10 5 1
     trim 0x30 backward 15 5 0 15 5 1
     trim 0x27 forward 10 5 1 10 5 0
   }
@@ -5379,8 +5379,8 @@ shell {
     ctrl 0 1 10 10 0 1
     ctrl 1 0 10 5 1 1
     ctrl 1 1 10 5 0 1
-    trim 0x29 backward 10 10 0 10 5 0
-    trim 0x28 forward 10 5 1 10 10 1
+    trim 0xa6 backward 10 10 0 10 5 0
+    trim 0x82 backward 10 5 1 10 10 1
     trim 0x27 backward 10 5 0 10 5 1
     trim 0x2a forward 10 10 1 10 10 0
   }
@@ -5393,8 +5393,8 @@ shell {
     ctrl 0 1 15 10 0 1
     ctrl 1 0 10 10 1 1
     ctrl 1 1 10 10 0 1
-    trim 0x2c backward 15 10 0 10 10 0
-    trim 0x2b forward 10 10 1 15 10 1
+    trim 0xa7 backward 15 10 0 10 10 0
+    trim 0x83 backward 10 10 1 15 10 1
     trim 0x2a backward 10 10 0 10 10 1
     trim 0x2d forward 15 10 1 15 10 0
   }
@@ -5407,8 +5407,8 @@ shell {
     ctrl 0 1 15 5 0 1
     ctrl 1 0 15 10 1 1
     ctrl 1 1 15 10 0 1
-    trim 0x2f backward 15 5 0 15 10 0
-    trim 0x2e forward 15 10 1 15 5 1
+    trim 0xa8 backward 15 5 0 15 10 0
+    trim 0x84 backward 15 10 1 15 5 1
     trim 0x2d backward 15 10 0 15 10 1
     trim 0x30 forward 15 5 1 15 5 0
   }
@@ -5421,8 +5421,8 @@ shell {
     ctrl 0 1 -10 -5 0 1
     ctrl 1 0 -5 -5 1 1
     ctrl 1 1 -5 -5 0 1
-    trim 0x31 forward -5 -5 1 -10 -5 1
-    trim 0x32 backward -10 -5 0 -5 -5 0
+    trim 0x85 backward -5 -5 1 -10 -5 1
+    trim 0xa9 backward -10 -5 0 -5 -5 0
     trim 0x33 forward -10 -5 1 -10 -5 0
     trim 0x3c backward -5 -5 0 -5 -5 1
   }
@@ -5435,8 +5435,8 @@ shell {
     ctrl 0 1 -10 0 0 1
     ctrl 1 0 -10 -5 1 1
     ctrl 1 1 -10 -5 0 1
-    trim 0x34 forward -10 -5 1 -10 0 1
-    trim 0x35 backward -10 0 0 -10 -5 0
+    trim 0x86 backward -10 -5 1 -10 0 1
+    trim 0xaa backward -10 0 0 -10 -5 0
     trim 0x36 forward -10 0 1 -10 0 0
     trim 0x33 backward -10 -5 0 -10 -5 1
   }
@@ -5449,8 +5449,8 @@ shell {
     ctrl 0 1 -5 0 0 1
     ctrl 1 0 -10 0 1 1
     ctrl 1 1 -10 0 0 1
-    trim 0x37 forward -10 0 1 -5 0 1
-    trim 0x38 backward -5 0 0 -10 0 0
+    trim 0x87 backward -10 0 1 -5 0 1
+    trim 0xab backward -5 0 0 -10 0 0
     trim 0x39 forward -5 0 1 -5 0 0
     trim 0x36 backward -10 0 0 -10 0 1
   }
@@ -5463,8 +5463,8 @@ shell {
     ctrl 0 1 -5 -5 0 1
     ctrl 1 0 -5 0 1 1
     ctrl 1 1 -5 0 0 1
-    trim 0x3a forward -5 0 1 -5 -5 1
-    trim 0x3b backward -5 -5 0 -5 0 0
+    trim 0x88 backward -5 0 1 -5 -5 1
+    trim 0xac backward -5 -5 0 -5 0 0
     trim 0x3c forward -5 -5 1 -5 -5 0
     trim 0x39 backward -5 0 0 -5 0 1
   }
@@ -5477,8 +5477,8 @@ shell {
     ctrl 0 1 0 -5 0 1
     ctrl 1 0 5 -5 1 1
     ctrl 1 1 5 -5 0 1
-    trim 0x3d forward 5 -5 1 0 -5 1
-    trim 0x3e backward 0 -5 0 5 -5 0
+    trim 0x89 backward 5 -5 1 0 -5 1
+    trim 0xad backward 0 -5 0 5 -5 0
     trim 0x3f forward 0 -5 1 0 -5 0
     trim 0x48 backward 5 -5 0 5 -5 1
   }
@@ -5491,8 +5491,8 @@ shell {
     ctrl 0 1 0 0 0 1
     ctrl 1 0 0 -5 1 1
     ctrl 1 1 0 -5 0 1
-    trim 0x40 forward 0 -5 1 0 0 1
-    trim 0x41 backward 0 0 0 0 -5 0
+    trim 0x8a backward 0 -5 1 0 0 1
+    trim 0xae backward 0 0 0 0 -5 0
     trim 0x42 forward 0 0 1 0 0 0
     trim 0x3f backward 0 -5 0 0 -5 1
   }
@@ -5505,8 +5505,8 @@ shell {
     ctrl 0 1 5 0 0 1
     ctrl 1 0 0 0 1 1
     ctrl 1 1 0 0 0 1
-    trim 0x43 forward 0 0 1 5 0 1
-    trim 0x44 backward 5 0 0 0 0 0
+    trim 0x8b backward 0 0 1 5 0 1
+    trim 0xaf backward 5 0 0 0 0 0
     trim 0x45 forward 5 0 1 5 0 0
     trim 0x42 backward 0 0 0 0 0 1
   }
@@ -5519,8 +5519,8 @@ shell {
     ctrl 0 1 5 -5 0 1
     ctrl 1 0 5 0 1 1
     ctrl 1 1 5 0 0 1
-    trim 0x46 forward 5 0 1 5 -5 1
-    trim 0x47 backward 5 -5 0 5 0 0
+    trim 0x8c backward 5 0 1 5 -5 1
+    trim 0xb0 backward 5 -5 0 5 0 0
     trim 0x48 forward 5 -5 1 5 -5 0
     trim 0x45 backward 5 0 0 5 0 1
   }
@@ -5533,8 +5533,8 @@ shell {
     ctrl 0 1 10 -5 0 1
     ctrl 1 0 15 -5 1 1
     ctrl 1 1 15 -5 0 1
-    trim 0x4a backward 10 -5 0 15 -5 0
-    trim 0x49 forward 15 -5 1 10 -5 1
+    trim 0xb1 backward 10 -5 0 15 -5 0
+    trim 0x8d backward 15 -5 1 10 -5 1
     trim 0x54 backward 15 -5 0 15 -5 1
     trim 0x4b forward 10 -5 1 10 -5 0
   }
@@ -5547,8 +5547,8 @@ shell {
     ctrl 0 1 10 0 0 1
     ctrl 1 0 10 -5 1 1
     ctrl 1 1 10 -5 0 1
-    trim 0x4d backward 10 0 0 10 -5 0
-    trim 0x4c forward 10 -5 1 10 0 1
+    trim 0xb2 backward 10 0 0 10 -5 0
+    trim 0x8e backward 10 -5 1 10 0 1
     trim 0x4b backward 10 -5 0 10 -5 1
     trim 0x4e forward 10 0 1 10 0 0
   }
@@ -5561,8 +5561,8 @@ shell {
     ctrl 0 1 15 0 0 1
     ctrl 1 0 10 0 1 1
     ctrl 1 1 10 0 0 1
-    trim 0x50 backward 15 0 0 10 0 0
-    trim 0x4f forward 10 0 1 15 0 1
+    trim 0xb3 backward 15 0 0 10 0 0
+    trim 0x8f backward 10 0 1 15 0 1
     trim 0x4e backward 10 0 0 10 0 1
     trim 0x51 forward 15 0 1 15 0 0
   }
@@ -5575,8 +5575,8 @@ shell {
     ctrl 0 1 15 -5 0 1
     ctrl 1 0 15 0 1 1
     ctrl 1 1 15 0 0 1
-    trim 0x53 backward 15 -5 0 15 0 0
-    trim 0x52 forward 15 0 1 15 -5 1
+    trim 0xb4 backward 15 -5 0 15 0 0
+    trim 0x90 backward 15 0 1 15 -5 1
     trim 0x51 backward 15 0 0 15 0 1
     trim 0x54 forward 15 -5 1 15 -5 0
   }
@@ -5589,8 +5589,8 @@ shell {
     ctrl 0 1 -10 -15 0 1
     ctrl 1 0 -5 -15 1 1
     ctrl 1 1 -5 -15 0 1
-    trim 0x56 backward -10 -15 0 -5 -15 0
-    trim 0x55 forward -5 -15 1 -10 -15 1
+    trim 0xb5 backward -10 -15 0 -5 -15 0
+    trim 0x91 backward -5 -15 1 -10 -15 1
     trim 0x60 backward -5 -15 0 -5 -15 1
     trim 0x57 forward -10 -15 1 -10 -15 0
   }
@@ -5603,8 +5603,8 @@ shell {
     ctrl 0 1 -10 -10 0 1
     ctrl 1 0 -10 -15 1 1
     ctrl 1 1 -10 -15 0 1
-    trim 0x59 backward -10 -10 0 -10 -15 0
-    trim 0x58 forward -10 -15 1 -10 -10 1
+    trim 0xb6 backward -10 -10 0 -10 -15 0
+    trim 0x92 backward -10 -15 1 -10 -10 1
     trim 0x57 backward -10 -15 0 -10 -15 1
     trim 0x5a forward -10 -10 1 -10 -10 0
   }
@@ -5617,8 +5617,8 @@ shell {
     ctrl 0 1 -5 -10 0 1
     ctrl 1 0 -10 -10 1 1
     ctrl 1 1 -10 -10 0 1
-    trim 0x5c backward -5 -10 0 -10 -10 0
-    trim 0x5b forward -10 -10 1 -5 -10 1
+    trim 0xb7 backward -5 -10 0 -10 -10 0
+    trim 0x93 backward -10 -10 1 -5 -10 1
     trim 0x5a backward -10 -10 0 -10 -10 1
     trim 0x5d forward -5 -10 1 -5 -10 0
   }
@@ -5631,8 +5631,8 @@ shell {
     ctrl 0 1 -5 -15 0 1
     ctrl 1 0 -5 -10 1 1
     ctrl 1 1 -5 -10 0 1
-    trim 0x5f backward -5 -15 0 -5 -10 0
-    trim 0x5e forward -5 -10 1 -5 -15 1
+    trim 0xb8 backward -5 -15 0 -5 -10 0
+    trim 0x94 backward -5 -10 1 -5 -15 1
     trim 0x5d backward -5 -10 0 -5 -10 1
     trim 0x60 forward -5 -15 1 -5 -15 0
   }
@@ -5645,8 +5645,8 @@ shell {
     ctrl 0 1 0 -15 0 1
     ctrl 1 0 5 -15 1 1
     ctrl 1 1 5 -15 0 1
-    trim 0x62 backward 0 -15 0 5 -15 0
-    trim 0x61 forward 5 -15 1 0 -15 1
+    trim 0xb9 backward 0 -15 0 5 -15 0
+    trim 0x95 backward 5 -15 1 0 -15 1
     trim 0x6c backward 5 -15 0 5 -15 1
     trim 0x63 forward 0 -15 1 0 -15 0
   }
@@ -5659,8 +5659,8 @@ shell {
     ctrl 0 1 0 -10 0 1
     ctrl 1 0 0 -15 1 1
     ctrl 1 1 0 -15 0 1
-    trim 0x65 backward 0 -10 0 0 -15 0
-    trim 0x64 forward 0 -15 1 0 -10 1
+    trim 0xba backward 0 -10 0 0 -15 0
+    trim 0x96 backward 0 -15 1 0 -10 1
     trim 0x63 backward 0 -15 0 0 -15 1
     trim 0x66 forward 0 -10 1 0 -10 0
   }
@@ -5673,8 +5673,8 @@ shell {
     ctrl 0 1 5 -10 0 1
     ctrl 1 0 0 -10 1 1
     ctrl 1 1 0 -10 0 1
-    trim 0x68 backward 5 -10 0 0 -10 0
-    trim 0x67 forward 0 -10 1 5 -10 1
+    trim 0xbb backward 5 -10 0 0 -10 0
+    trim 0x97 backward 0 -10 1 5 -10 1
     trim 0x66 backward 0 -10 0 0 -10 1
     trim 0x69 forward 5 -10 1 5 -10 0
   }
@@ -5687,8 +5687,8 @@ shell {
     ctrl 0 1 5 -15 0 1
     ctrl 1 0 5 -10 1 1
     ctrl 1 1 5 -10 0 1
-    trim 0x6b backward 5 -15 0 5 -10 0
-    trim 0x6a forward 5 -10 1 5 -15 1
+    trim 0xbc backward 5 -15 0 5 -10 0
+    trim 0x98 backward 5 -10 1 5 -15 1
     trim 0x69 backward 5 -10 0 5 -10 1
     trim 0x6c forward 5 -15 1 5 -15 0
   }
@@ -5701,8 +5701,8 @@ shell {
     ctrl 0 1 10 -15 0 1
     ctrl 1 0 15 -15 1 1
     ctrl 1 1 15 -15 0 1
-    trim 0x6d forward 15 -15 1 10 -15 1
-    trim 0x6e backward 10 -15 0 15 -15 0
+    trim 0x99 backward 15 -15 1 10 -15 1
+    trim 0xbd backward 10 -15 0 15 -15 0
     trim 0x6f forward 10 -15 1 10 -15 0
     trim 0x78 backward 15 -15 0 15 -15 1
   }
@@ -5715,8 +5715,8 @@ shell {
     ctrl 0 1 10 -10 0 1
     ctrl 1 0 10 -15 1 1
     ctrl 1 1 10 -15 0 1
-    trim 0x70 forward 10 -15 1 10 -10 1
-    trim 0x71 backward 10 -10 0 10 -15 0
+    trim 0x9a backward 10 -15 1 10 -10 1
+    trim 0xbe backward 10 -10 0 10 -15 0
     trim 0x72 forward 10 -10 1 10 -10 0
     trim 0x6f backward 10 -15 0 10 -15 1
   }
@@ -5729,8 +5729,8 @@ shell {
     ctrl 0 1 15 -10 0 1
     ctrl 1 0 10 -10 1 1
     ctrl 1 1 10 -10 0 1
-    trim 0x73 forward 10 -10 1 15 -10 1
-    trim 0x74 backward 15 -10 0 10 -10 0
+    trim 0x9b backward 10 -10 1 15 -10 1
+    trim 0xbf backward 15 -10 0 10 -10 0
     trim 0x75 forward 15 -10 1 15 -10 0
     trim 0x72 backward 10 -10 0 10 -10 1
   }
@@ -5743,8 +5743,8 @@ shell {
     ctrl 0 1 15 -15 0 1
     ctrl 1 0 15 -10 1 1
     ctrl 1 1 15 -10 0 1
-    trim 0x76 forward 15 -10 1 15 -15 1
-    trim 0x77 backward 15 -15 0 15 -10 0
+    trim 0x9c backward 15 -10 1 15 -15 1
+    trim 0xc0 backward 15 -15 0 15 -10 0
     trim 0x78 forward 15 -15 1 15 -15 0
     trim 0x75 backward 15 -10 0 15 -10 1
   }
@@ -5856,24 +5856,6 @@ shell {
     vertex 20 -20 1
     vertex 20 -20 0
   }
-  curve 0xd {
-    exact
-    degree 1
-    surfaces 0x7 0x9
-    ctrl 0 -5 5 1 1
-    ctrl 1 -10 5 1 1
-    vertex -5 5 1
-    vertex -10 5 1
-  }
-  curve 0xe {
-    exact
-    degree 1
-    surfaces 0x8 0x9
-    ctrl 0 -5 5 0 1
-    ctrl 1 -10 5 0 1
-    vertex -5 5 0
-    vertex -10 5 0
-  }
   curve 0xf {
     exact
     degree 1
@@ -5882,24 +5864,6 @@ shell {
     ctrl 1 -10 5 0 1
     vertex -10 5 1
     vertex -10 5 0
-  }
-  curve 0x10 {
-    exact
-    degree 1
-    surfaces 0x7 0xa
-    ctrl 0 -10 5 1 1
-    ctrl 1 -10 10 1 1
-    vertex -10 5 1
-    vertex -10 10 1
-  }
-  curve 0x11 {
-    exact
-    degree 1
-    surfaces 0x8 0xa
-    ctrl 0 -10 5 0 1
-    ctrl 1 -10 10 0 1
-    vertex -10 5 0
-    vertex -10 10 0
   }
   curve 0x12 {
     exact
@@ -5910,24 +5874,6 @@ shell {
     vertex -10 10 1
     vertex -10 10 0
   }
-  curve 0x13 {
-    exact
-    degree 1
-    surfaces 0x7 0xb
-    ctrl 0 -10 10 1 1
-    ctrl 1 -5 10 1 1
-    vertex -10 10 1
-    vertex -5 10 1
-  }
-  curve 0x14 {
-    exact
-    degree 1
-    surfaces 0x8 0xb
-    ctrl 0 -10 10 0 1
-    ctrl 1 -5 10 0 1
-    vertex -10 10 0
-    vertex -5 10 0
-  }
   curve 0x15 {
     exact
     degree 1
@@ -5936,24 +5882,6 @@ shell {
     ctrl 1 -5 10 0 1
     vertex -5 10 1
     vertex -5 10 0
-  }
-  curve 0x16 {
-    exact
-    degree 1
-    surfaces 0x7 0xc
-    ctrl 0 -5 10 1 1
-    ctrl 1 -5 5 1 1
-    vertex -5 10 1
-    vertex -5 5 1
-  }
-  curve 0x17 {
-    exact
-    degree 1
-    surfaces 0x8 0xc
-    ctrl 0 -5 10 0 1
-    ctrl 1 -5 5 0 1
-    vertex -5 10 0
-    vertex -5 5 0
   }
   curve 0x18 {
     exact
@@ -5964,24 +5892,6 @@ shell {
     vertex -5 5 1
     vertex -5 5 0
   }
-  curve 0x19 {
-    exact
-    degree 1
-    surfaces 0xd 0xf
-    ctrl 0 5 5 1 1
-    ctrl 1 0 5 1 1
-    vertex 5 5 1
-    vertex 0 5 1
-  }
-  curve 0x1a {
-    exact
-    degree 1
-    surfaces 0xe 0xf
-    ctrl 0 5 5 0 1
-    ctrl 1 0 5 0 1
-    vertex 5 5 0
-    vertex 0 5 0
-  }
   curve 0x1b {
     exact
     degree 1
@@ -5990,24 +5900,6 @@ shell {
     ctrl 1 0 5 0 1
     vertex 0 5 1
     vertex 0 5 0
-  }
-  curve 0x1c {
-    exact
-    degree 1
-    surfaces 0xd 0x10
-    ctrl 0 0 5 1 1
-    ctrl 1 0 10 1 1
-    vertex 0 5 1
-    vertex 0 10 1
-  }
-  curve 0x1d {
-    exact
-    degree 1
-    surfaces 0xe 0x10
-    ctrl 0 0 5 0 1
-    ctrl 1 0 10 0 1
-    vertex 0 5 0
-    vertex 0 10 0
   }
   curve 0x1e {
     exact
@@ -6018,24 +5910,6 @@ shell {
     vertex 0 10 1
     vertex 0 10 0
   }
-  curve 0x1f {
-    exact
-    degree 1
-    surfaces 0xd 0x11
-    ctrl 0 0 10 1 1
-    ctrl 1 5 10 1 1
-    vertex 0 10 1
-    vertex 5 10 1
-  }
-  curve 0x20 {
-    exact
-    degree 1
-    surfaces 0xe 0x11
-    ctrl 0 0 10 0 1
-    ctrl 1 5 10 0 1
-    vertex 0 10 0
-    vertex 5 10 0
-  }
   curve 0x21 {
     exact
     degree 1
@@ -6044,24 +5918,6 @@ shell {
     ctrl 1 5 10 0 1
     vertex 5 10 1
     vertex 5 10 0
-  }
-  curve 0x22 {
-    exact
-    degree 1
-    surfaces 0xd 0x12
-    ctrl 0 5 10 1 1
-    ctrl 1 5 5 1 1
-    vertex 5 10 1
-    vertex 5 5 1
-  }
-  curve 0x23 {
-    exact
-    degree 1
-    surfaces 0xe 0x12
-    ctrl 0 5 10 0 1
-    ctrl 1 5 5 0 1
-    vertex 5 10 0
-    vertex 5 5 0
   }
   curve 0x24 {
     exact
@@ -6072,24 +5928,6 @@ shell {
     vertex 5 5 1
     vertex 5 5 0
   }
-  curve 0x25 {
-    exact
-    degree 1
-    surfaces 0x13 0x15
-    ctrl 0 15 5 1 1
-    ctrl 1 10 5 1 1
-    vertex 15 5 1
-    vertex 10 5 1
-  }
-  curve 0x26 {
-    exact
-    degree 1
-    surfaces 0x14 0x15
-    ctrl 0 15 5 0 1
-    ctrl 1 10 5 0 1
-    vertex 15 5 0
-    vertex 10 5 0
-  }
   curve 0x27 {
     exact
     degree 1
@@ -6098,24 +5936,6 @@ shell {
     ctrl 1 10 5 0 1
     vertex 10 5 1
     vertex 10 5 0
-  }
-  curve 0x28 {
-    exact
-    degree 1
-    surfaces 0x13 0x16
-    ctrl 0 10 5 1 1
-    ctrl 1 10 10 1 1
-    vertex 10 5 1
-    vertex 10 10 1
-  }
-  curve 0x29 {
-    exact
-    degree 1
-    surfaces 0x14 0x16
-    ctrl 0 10 5 0 1
-    ctrl 1 10 10 0 1
-    vertex 10 5 0
-    vertex 10 10 0
   }
   curve 0x2a {
     exact
@@ -6126,24 +5946,6 @@ shell {
     vertex 10 10 1
     vertex 10 10 0
   }
-  curve 0x2b {
-    exact
-    degree 1
-    surfaces 0x13 0x17
-    ctrl 0 10 10 1 1
-    ctrl 1 15 10 1 1
-    vertex 10 10 1
-    vertex 15 10 1
-  }
-  curve 0x2c {
-    exact
-    degree 1
-    surfaces 0x14 0x17
-    ctrl 0 10 10 0 1
-    ctrl 1 15 10 0 1
-    vertex 10 10 0
-    vertex 15 10 0
-  }
   curve 0x2d {
     exact
     degree 1
@@ -6152,24 +5954,6 @@ shell {
     ctrl 1 15 10 0 1
     vertex 15 10 1
     vertex 15 10 0
-  }
-  curve 0x2e {
-    exact
-    degree 1
-    surfaces 0x13 0x18
-    ctrl 0 15 10 1 1
-    ctrl 1 15 5 1 1
-    vertex 15 10 1
-    vertex 15 5 1
-  }
-  curve 0x2f {
-    exact
-    degree 1
-    surfaces 0x14 0x18
-    ctrl 0 15 10 0 1
-    ctrl 1 15 5 0 1
-    vertex 15 10 0
-    vertex 15 5 0
   }
   curve 0x30 {
     exact
@@ -6180,24 +5964,6 @@ shell {
     vertex 15 5 1
     vertex 15 5 0
   }
-  curve 0x31 {
-    exact
-    degree 1
-    surfaces 0x19 0x1b
-    ctrl 0 -5 -5 1 1
-    ctrl 1 -10 -5 1 1
-    vertex -5 -5 1
-    vertex -10 -5 1
-  }
-  curve 0x32 {
-    exact
-    degree 1
-    surfaces 0x1a 0x1b
-    ctrl 0 -5 -5 0 1
-    ctrl 1 -10 -5 0 1
-    vertex -5 -5 0
-    vertex -10 -5 0
-  }
   curve 0x33 {
     exact
     degree 1
@@ -6206,24 +5972,6 @@ shell {
     ctrl 1 -10 -5 0 1
     vertex -10 -5 1
     vertex -10 -5 0
-  }
-  curve 0x34 {
-    exact
-    degree 1
-    surfaces 0x19 0x1c
-    ctrl 0 -10 -5 1 1
-    ctrl 1 -10 0 1 1
-    vertex -10 -5 1
-    vertex -10 0 1
-  }
-  curve 0x35 {
-    exact
-    degree 1
-    surfaces 0x1a 0x1c
-    ctrl 0 -10 -5 0 1
-    ctrl 1 -10 0 0 1
-    vertex -10 -5 0
-    vertex -10 0 0
   }
   curve 0x36 {
     exact
@@ -6234,24 +5982,6 @@ shell {
     vertex -10 0 1
     vertex -10 0 0
   }
-  curve 0x37 {
-    exact
-    degree 1
-    surfaces 0x19 0x1d
-    ctrl 0 -10 0 1 1
-    ctrl 1 -5 0 1 1
-    vertex -10 0 1
-    vertex -5 0 1
-  }
-  curve 0x38 {
-    exact
-    degree 1
-    surfaces 0x1a 0x1d
-    ctrl 0 -10 0 0 1
-    ctrl 1 -5 0 0 1
-    vertex -10 0 0
-    vertex -5 0 0
-  }
   curve 0x39 {
     exact
     degree 1
@@ -6260,24 +5990,6 @@ shell {
     ctrl 1 -5 0 0 1
     vertex -5 0 1
     vertex -5 0 0
-  }
-  curve 0x3a {
-    exact
-    degree 1
-    surfaces 0x19 0x1e
-    ctrl 0 -5 0 1 1
-    ctrl 1 -5 -5 1 1
-    vertex -5 0 1
-    vertex -5 -5 1
-  }
-  curve 0x3b {
-    exact
-    degree 1
-    surfaces 0x1a 0x1e
-    ctrl 0 -5 0 0 1
-    ctrl 1 -5 -5 0 1
-    vertex -5 0 0
-    vertex -5 -5 0
   }
   curve 0x3c {
     exact
@@ -6288,24 +6000,6 @@ shell {
     vertex -5 -5 1
     vertex -5 -5 0
   }
-  curve 0x3d {
-    exact
-    degree 1
-    surfaces 0x1f 0x21
-    ctrl 0 5 -5 1 1
-    ctrl 1 0 -5 1 1
-    vertex 5 -5 1
-    vertex 0 -5 1
-  }
-  curve 0x3e {
-    exact
-    degree 1
-    surfaces 0x20 0x21
-    ctrl 0 5 -5 0 1
-    ctrl 1 0 -5 0 1
-    vertex 5 -5 0
-    vertex 0 -5 0
-  }
   curve 0x3f {
     exact
     degree 1
@@ -6314,24 +6008,6 @@ shell {
     ctrl 1 0 -5 0 1
     vertex 0 -5 1
     vertex 0 -5 0
-  }
-  curve 0x40 {
-    exact
-    degree 1
-    surfaces 0x1f 0x22
-    ctrl 0 0 -5 1 1
-    ctrl 1 0 0 1 1
-    vertex 0 -5 1
-    vertex 0 0 1
-  }
-  curve 0x41 {
-    exact
-    degree 1
-    surfaces 0x20 0x22
-    ctrl 0 0 -5 0 1
-    ctrl 1 0 0 0 1
-    vertex 0 -5 0
-    vertex 0 0 0
   }
   curve 0x42 {
     exact
@@ -6342,24 +6018,6 @@ shell {
     vertex 0 0 1
     vertex 0 0 0
   }
-  curve 0x43 {
-    exact
-    degree 1
-    surfaces 0x1f 0x23
-    ctrl 0 0 0 1 1
-    ctrl 1 5 0 1 1
-    vertex 0 0 1
-    vertex 5 0 1
-  }
-  curve 0x44 {
-    exact
-    degree 1
-    surfaces 0x20 0x23
-    ctrl 0 0 0 0 1
-    ctrl 1 5 0 0 1
-    vertex 0 0 0
-    vertex 5 0 0
-  }
   curve 0x45 {
     exact
     degree 1
@@ -6368,24 +6026,6 @@ shell {
     ctrl 1 5 0 0 1
     vertex 5 0 1
     vertex 5 0 0
-  }
-  curve 0x46 {
-    exact
-    degree 1
-    surfaces 0x1f 0x24
-    ctrl 0 5 0 1 1
-    ctrl 1 5 -5 1 1
-    vertex 5 0 1
-    vertex 5 -5 1
-  }
-  curve 0x47 {
-    exact
-    degree 1
-    surfaces 0x20 0x24
-    ctrl 0 5 0 0 1
-    ctrl 1 5 -5 0 1
-    vertex 5 0 0
-    vertex 5 -5 0
   }
   curve 0x48 {
     exact
@@ -6396,24 +6036,6 @@ shell {
     vertex 5 -5 1
     vertex 5 -5 0
   }
-  curve 0x49 {
-    exact
-    degree 1
-    surfaces 0x25 0x27
-    ctrl 0 15 -5 1 1
-    ctrl 1 10 -5 1 1
-    vertex 15 -5 1
-    vertex 10 -5 1
-  }
-  curve 0x4a {
-    exact
-    degree 1
-    surfaces 0x26 0x27
-    ctrl 0 15 -5 0 1
-    ctrl 1 10 -5 0 1
-    vertex 15 -5 0
-    vertex 10 -5 0
-  }
   curve 0x4b {
     exact
     degree 1
@@ -6422,24 +6044,6 @@ shell {
     ctrl 1 10 -5 0 1
     vertex 10 -5 1
     vertex 10 -5 0
-  }
-  curve 0x4c {
-    exact
-    degree 1
-    surfaces 0x25 0x28
-    ctrl 0 10 -5 1 1
-    ctrl 1 10 0 1 1
-    vertex 10 -5 1
-    vertex 10 0 1
-  }
-  curve 0x4d {
-    exact
-    degree 1
-    surfaces 0x26 0x28
-    ctrl 0 10 -5 0 1
-    ctrl 1 10 0 0 1
-    vertex 10 -5 0
-    vertex 10 0 0
   }
   curve 0x4e {
     exact
@@ -6450,24 +6054,6 @@ shell {
     vertex 10 0 1
     vertex 10 0 0
   }
-  curve 0x4f {
-    exact
-    degree 1
-    surfaces 0x25 0x29
-    ctrl 0 10 0 1 1
-    ctrl 1 15 0 1 1
-    vertex 10 0 1
-    vertex 15 0 1
-  }
-  curve 0x50 {
-    exact
-    degree 1
-    surfaces 0x26 0x29
-    ctrl 0 10 0 0 1
-    ctrl 1 15 0 0 1
-    vertex 10 0 0
-    vertex 15 0 0
-  }
   curve 0x51 {
     exact
     degree 1
@@ -6476,24 +6062,6 @@ shell {
     ctrl 1 15 0 0 1
     vertex 15 0 1
     vertex 15 0 0
-  }
-  curve 0x52 {
-    exact
-    degree 1
-    surfaces 0x25 0x2a
-    ctrl 0 15 0 1 1
-    ctrl 1 15 -5 1 1
-    vertex 15 0 1
-    vertex 15 -5 1
-  }
-  curve 0x53 {
-    exact
-    degree 1
-    surfaces 0x26 0x2a
-    ctrl 0 15 0 0 1
-    ctrl 1 15 -5 0 1
-    vertex 15 0 0
-    vertex 15 -5 0
   }
   curve 0x54 {
     exact
@@ -6504,24 +6072,6 @@ shell {
     vertex 15 -5 1
     vertex 15 -5 0
   }
-  curve 0x55 {
-    exact
-    degree 1
-    surfaces 0x2b 0x2d
-    ctrl 0 -5 -15 1 1
-    ctrl 1 -10 -15 1 1
-    vertex -5 -15 1
-    vertex -10 -15 1
-  }
-  curve 0x56 {
-    exact
-    degree 1
-    surfaces 0x2c 0x2d
-    ctrl 0 -5 -15 0 1
-    ctrl 1 -10 -15 0 1
-    vertex -5 -15 0
-    vertex -10 -15 0
-  }
   curve 0x57 {
     exact
     degree 1
@@ -6530,24 +6080,6 @@ shell {
     ctrl 1 -10 -15 0 1
     vertex -10 -15 1
     vertex -10 -15 0
-  }
-  curve 0x58 {
-    exact
-    degree 1
-    surfaces 0x2b 0x2e
-    ctrl 0 -10 -15 1 1
-    ctrl 1 -10 -10 1 1
-    vertex -10 -15 1
-    vertex -10 -10 1
-  }
-  curve 0x59 {
-    exact
-    degree 1
-    surfaces 0x2c 0x2e
-    ctrl 0 -10 -15 0 1
-    ctrl 1 -10 -10 0 1
-    vertex -10 -15 0
-    vertex -10 -10 0
   }
   curve 0x5a {
     exact
@@ -6558,24 +6090,6 @@ shell {
     vertex -10 -10 1
     vertex -10 -10 0
   }
-  curve 0x5b {
-    exact
-    degree 1
-    surfaces 0x2b 0x2f
-    ctrl 0 -10 -10 1 1
-    ctrl 1 -5 -10 1 1
-    vertex -10 -10 1
-    vertex -5 -10 1
-  }
-  curve 0x5c {
-    exact
-    degree 1
-    surfaces 0x2c 0x2f
-    ctrl 0 -10 -10 0 1
-    ctrl 1 -5 -10 0 1
-    vertex -10 -10 0
-    vertex -5 -10 0
-  }
   curve 0x5d {
     exact
     degree 1
@@ -6584,24 +6098,6 @@ shell {
     ctrl 1 -5 -10 0 1
     vertex -5 -10 1
     vertex -5 -10 0
-  }
-  curve 0x5e {
-    exact
-    degree 1
-    surfaces 0x2b 0x30
-    ctrl 0 -5 -10 1 1
-    ctrl 1 -5 -15 1 1
-    vertex -5 -10 1
-    vertex -5 -15 1
-  }
-  curve 0x5f {
-    exact
-    degree 1
-    surfaces 0x2c 0x30
-    ctrl 0 -5 -10 0 1
-    ctrl 1 -5 -15 0 1
-    vertex -5 -10 0
-    vertex -5 -15 0
   }
   curve 0x60 {
     exact
@@ -6612,24 +6108,6 @@ shell {
     vertex -5 -15 1
     vertex -5 -15 0
   }
-  curve 0x61 {
-    exact
-    degree 1
-    surfaces 0x31 0x33
-    ctrl 0 5 -15 1 1
-    ctrl 1 0 -15 1 1
-    vertex 5 -15 1
-    vertex 0 -15 1
-  }
-  curve 0x62 {
-    exact
-    degree 1
-    surfaces 0x32 0x33
-    ctrl 0 5 -15 0 1
-    ctrl 1 0 -15 0 1
-    vertex 5 -15 0
-    vertex 0 -15 0
-  }
   curve 0x63 {
     exact
     degree 1
@@ -6638,24 +6116,6 @@ shell {
     ctrl 1 0 -15 0 1
     vertex 0 -15 1
     vertex 0 -15 0
-  }
-  curve 0x64 {
-    exact
-    degree 1
-    surfaces 0x31 0x34
-    ctrl 0 0 -15 1 1
-    ctrl 1 0 -10 1 1
-    vertex 0 -15 1
-    vertex 0 -10 1
-  }
-  curve 0x65 {
-    exact
-    degree 1
-    surfaces 0x32 0x34
-    ctrl 0 0 -15 0 1
-    ctrl 1 0 -10 0 1
-    vertex 0 -15 0
-    vertex 0 -10 0
   }
   curve 0x66 {
     exact
@@ -6666,24 +6126,6 @@ shell {
     vertex 0 -10 1
     vertex 0 -10 0
   }
-  curve 0x67 {
-    exact
-    degree 1
-    surfaces 0x31 0x35
-    ctrl 0 0 -10 1 1
-    ctrl 1 5 -10 1 1
-    vertex 0 -10 1
-    vertex 5 -10 1
-  }
-  curve 0x68 {
-    exact
-    degree 1
-    surfaces 0x32 0x35
-    ctrl 0 0 -10 0 1
-    ctrl 1 5 -10 0 1
-    vertex 0 -10 0
-    vertex 5 -10 0
-  }
   curve 0x69 {
     exact
     degree 1
@@ -6692,24 +6134,6 @@ shell {
     ctrl 1 5 -10 0 1
     vertex 5 -10 1
     vertex 5 -10 0
-  }
-  curve 0x6a {
-    exact
-    degree 1
-    surfaces 0x31 0x36
-    ctrl 0 5 -10 1 1
-    ctrl 1 5 -15 1 1
-    vertex 5 -10 1
-    vertex 5 -15 1
-  }
-  curve 0x6b {
-    exact
-    degree 1
-    surfaces 0x32 0x36
-    ctrl 0 5 -10 0 1
-    ctrl 1 5 -15 0 1
-    vertex 5 -10 0
-    vertex 5 -15 0
   }
   curve 0x6c {
     exact
@@ -6720,24 +6144,6 @@ shell {
     vertex 5 -15 1
     vertex 5 -15 0
   }
-  curve 0x6d {
-    exact
-    degree 1
-    surfaces 0x37 0x39
-    ctrl 0 15 -15 1 1
-    ctrl 1 10 -15 1 1
-    vertex 15 -15 1
-    vertex 10 -15 1
-  }
-  curve 0x6e {
-    exact
-    degree 1
-    surfaces 0x38 0x39
-    ctrl 0 15 -15 0 1
-    ctrl 1 10 -15 0 1
-    vertex 15 -15 0
-    vertex 10 -15 0
-  }
   curve 0x6f {
     exact
     degree 1
@@ -6746,24 +6152,6 @@ shell {
     ctrl 1 10 -15 0 1
     vertex 10 -15 1
     vertex 10 -15 0
-  }
-  curve 0x70 {
-    exact
-    degree 1
-    surfaces 0x37 0x3a
-    ctrl 0 10 -15 1 1
-    ctrl 1 10 -10 1 1
-    vertex 10 -15 1
-    vertex 10 -10 1
-  }
-  curve 0x71 {
-    exact
-    degree 1
-    surfaces 0x38 0x3a
-    ctrl 0 10 -15 0 1
-    ctrl 1 10 -10 0 1
-    vertex 10 -15 0
-    vertex 10 -10 0
   }
   curve 0x72 {
     exact
@@ -6774,24 +6162,6 @@ shell {
     vertex 10 -10 1
     vertex 10 -10 0
   }
-  curve 0x73 {
-    exact
-    degree 1
-    surfaces 0x37 0x3b
-    ctrl 0 10 -10 1 1
-    ctrl 1 15 -10 1 1
-    vertex 10 -10 1
-    vertex 15 -10 1
-  }
-  curve 0x74 {
-    exact
-    degree 1
-    surfaces 0x38 0x3b
-    ctrl 0 10 -10 0 1
-    ctrl 1 15 -10 0 1
-    vertex 10 -10 0
-    vertex 15 -10 0
-  }
   curve 0x75 {
     exact
     degree 1
@@ -6800,24 +6170,6 @@ shell {
     ctrl 1 15 -10 0 1
     vertex 15 -10 1
     vertex 15 -10 0
-  }
-  curve 0x76 {
-    exact
-    degree 1
-    surfaces 0x37 0x3c
-    ctrl 0 15 -10 1 1
-    ctrl 1 15 -15 1 1
-    vertex 15 -10 1
-    vertex 15 -15 1
-  }
-  curve 0x77 {
-    exact
-    degree 1
-    surfaces 0x38 0x3c
-    ctrl 0 15 -10 0 1
-    ctrl 1 15 -15 0 1
-    vertex 15 -10 0
-    vertex 15 -15 0
   }
   curve 0x78 {
     exact

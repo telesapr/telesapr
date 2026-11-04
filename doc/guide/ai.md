@@ -121,6 +121,33 @@ folder. `--unguarded` lets them use any file. `--lib` names the script library t
 for `telesapr-cli run`; without it, the default one. `--lib`, `--allow` and `--unguarded` are
 for `--headless` only: the window has the same settings on its configuration screen.
 
+## In a browser
+
+The browser version (Try in browser) has no socket for `telesapr-cli mcp` to reach. A program in
+the browser reaches the page instead, through `window.postMessage`: a script of the page's own
+site, such as a browser extension's in the page, or a page of another site that has the editor in
+a frame. Script > Allow AI Connections turns it on and off as in the window, and the same
+settings ask before each script runs.
+
+- A program of the page's own site is let in.
+- A program of another site is let in only if you allow it: a dialog names the site, and the
+  answer holds until AI connections are turned off. Don't Allow is the default.
+- Turning AI connections off ends every connection.
+
+The site serves `agent-client.js`, the program's end of the connection:
+
+```js
+const tele = await telesaprAgent(frame.contentWindow, "https://example.org");
+const out = await tele.run("fmt.Println(len(doc.Groups()))"); // {output, value, error, ...}
+const text = await tele.describe("");
+tele.close();
+```
+
+What goes through is the protocol between `telesapr-cli mcp` and the window (requests to run,
+describe, render, help, measure, export, open and list files), not MCP itself: an MCP client
+outside the browser needs something to carry it to the page, which TeleSAPR does not ship yet.
+The messages are described in `pkg/script/agent/socket_js.go`.
+
 ## If it does not work
 
 - **"TeleSAPR isn't running, or Script > Allow AI Connections is off"**: start TeleSAPR and

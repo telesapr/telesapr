@@ -1,0 +1,11 @@
+# A square swept round a closed path out of a plane with sharp corners,
+# the path picked with the mouse; the same as path_sweep_skew.go makes
+# (TestPathEquivalence/sweep_skew).
+file $testdata/ui/sweep_skew.tlspr
+menu File|Open...
+view other
+click-entity 40000
+click-entity 50000
+click-entity 60000
+click-entity 70000
+menu Features|Sweep Along Path

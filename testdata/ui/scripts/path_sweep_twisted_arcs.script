@@ -1,0 +1,13 @@
+# A rectangle swept along two arcs that meet at a sharp corner, with no
+# line to twist along, twisted by 90 degrees typed in on the group's
+# screen: each arc held still only as far as the corner's joint reaches;
+# the same as path_sweep_twisted_arcs.go makes
+# (TestPathEquivalence/sweep_twisted_arcs).
+file $testdata/ui/sweep_twisted_arcs.tlspr
+menu File|Open...
+view other
+click-entity 40000
+click-entity 50000
+menu Features|Sweep Along Path
+click-tw #2 [change]
+edit 90

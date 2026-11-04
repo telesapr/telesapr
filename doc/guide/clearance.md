@@ -42,7 +42,10 @@ The screen's first row is **gaps less than** a distance, 1 mm to start with. [ch
 
 The parts are the same ones Show Interfering Parts checks: each group assembled into the model,
 and the solid made before the first of them, even when that solid was made as triangles
-(**force NURBS surfaces to triangle mesh**).
+(**force NURBS surfaces to triangle mesh**). A group that cuts the assembly after them cuts each
+part it reaches, a part made of triangles too (forced to a triangle mesh, or linked as a mesh).
+A cutting group with no surfaces of its own, as a linked mesh, cuts the parts it reaches as
+triangles, which are then parts of triangles: Show Interfering Parts can't check those.
 
 [check gaps] lists every pair of parts nearer than the distance, the nearest first, and marks
 each gap on the model: a red line between its two nearest points, a tick across each end and a
@@ -120,7 +123,7 @@ The MCP `measure` tool reports both when asked with `gaps` and `walls`
 
 ## Not yet
 
-- A part whose thinnest wall is most of its size, such as a solid ball, can have more pairs of
-  facing triangles than are measured (4 million a part); past them a wall can still be missed.
-- A part made of triangles (forced to a triangle mesh, or linked as a mesh) is not cut by the
-  groups that cut the assembly after it.
+- A part can have more pairs of triangles facing each other within its thinnest wall than are
+  measured (4 million a part, each pair covering some of the other). Past them a wall can still
+  be missed, and the screen says so. No part has come near: a ball of 159,000 triangles has a
+  few.

@@ -10,7 +10,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/topo"
 )
 
-// A datum (roadmap item 2 of doc/notes/modelling_upgrades.md) is a name
+// A datum (roadmap item 2 of doc/dev-notes/modelling_upgrades.md) is a name
 // the user gives an entity a part offers to others: a point, a
 // workplane, a face of the solid, or a line, normal, circle or arc as an
 // axis. A part so declares its interfaces, and an assembly that links it

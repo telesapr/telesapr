@@ -17,7 +17,7 @@ import (
 type FeaturesMenu struct{ d *Doc }
 
 // BrokenReferences lists what the last regeneration that deleted
-// something deleted, as Edit > Broken References shows it. The list
+// something deleted, as Features > Broken References shows it. The list
 // stays until a regeneration deletes something else, an undo or redo,
 // or ClearBrokenReferences. Undo brings the deleted items back.
 func (m FeaturesMenu) BrokenReferences() (refs []BrokenReference) {
@@ -37,6 +37,56 @@ func (m FeaturesMenu) BrokenReferences() (refs []BrokenReference) {
 func (m FeaturesMenu) Mended() (mended []string) {
 	m.d.read(func(sk *sketch.Sketch) { mended = slices.Clone(sk.Mended) })
 	return mended
+}
+
+// LeftOut names what was left out of the model when a damaged file was
+// opened, because it used something the file lacked: "g003-on-missing",
+// "r008-datum-point of g003-on-missing". It is kept: a save writes it
+// back, to be left out again, so that the file can be mended by hand,
+// until DiscardLeftOut.
+func (m FeaturesMenu) LeftOut() (names []string) {
+	m.d.read(func(sk *sketch.Sketch) { names = sk.LeftOutNames() })
+	return names
+}
+
+// LeftOutMissing are the entities what LeftOut lists uses and the file
+// lacks, which MendLeftOut can replace: a group's origin, a request's
+// workplane, a constraint's point or workplane, or a dropped edge.
+// They are not in the model.
+func (m FeaturesMenu) LeftOutMissing() (missing []Entity) {
+	m.d.read(func(sk *sketch.Sketch) {
+		for _, he := range sk.LeftOutMissing() {
+			missing = append(missing, Entity{m.d, he})
+		}
+	})
+	return missing
+}
+
+// MendLeftOut puts with, an entity of the model, in the place of
+// missing, one LeftOutMissing gives, wherever what LeftOut lists used
+// it as with's kind: a point for a group's origin or a constraint's
+// point, a workplane for a request's or a constraint's workplane, a
+// curve for an edge. What then has all it uses comes back into the
+// model; the rest stays left out. It fails, changing nothing, when
+// nothing left out uses missing or with is of none of the kinds it is
+// used as. Undo takes it back.
+func (m FeaturesMenu) MendLeftOut(missing, with Entity) {
+	m.d.change(func(sk *sketch.Sketch) {
+		if err := sk.MendLeftOut(missing.H, with.H); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
+// DiscardLeftOut forgets what LeftOut lists, so that the next save no
+// longer writes it; it fails when nothing was left out. Undo brings it
+// back.
+func (m FeaturesMenu) DiscardLeftOut() {
+	m.d.change(func(sk *sketch.Sketch) {
+		if err := sk.DiscardLeftOut(); err != nil {
+			fail("%v", err)
+		}
+	})
 }
 
 // ClearBrokenReferences empties the lists BrokenReferences and Mended

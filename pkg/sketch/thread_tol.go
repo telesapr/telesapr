@@ -73,3 +73,88 @@ func chordsDipInto(sh *srf.SShell, pt, axis geom.Vector, r float64) bool {
 	}
 	return false
 }
+
+// threadOwnPitchTol and threadOwnCrestTol bound the chord tolerance a
+// thread of its own tolerance (hasOwnTol) is made at, as parts of its
+// pitch and of a rounded crest's radius (threadSolidTol). Coarser, the
+// Booleans of the chamfer's and the turning's cones with the ridges
+// leave trims open where the cones cross the ridges' flanks and crests
+// near the end's plane, at every way of making the chamfer
+// (chamferTries): ISO, UNC and trapezoidal nuts 16 mm long in parts of
+// twice their diameter from about 0.1 of the pitch, buttress nuts from
+// 0.07, and a 1-12 BUTT nut's rounded crest (0.13 of the pitch) from
+// 0.15 of its radius. A buttress nut's ridges, whose steep flank stands
+// almost square to the axis, meet a bore chorded that coarsely in
+// trims that don't close even without a chamfer: a 1-12 and a 2-8 BUTT
+// nut 20 mm long, flat crest, at 1% (0.25 and 0.31 of the pitch). At
+// these, every such nut measured comes out sound at chord tolerances
+// up to 1%.
+const (
+	threadOwnPitchTol = 0.05
+	threadOwnCrestTol = 0.1
+)
+
+// hasOwnTol tells whether a thread made with the options o is made at
+// a tolerance of its own where the sketch's is coarser
+// (threadSolidTol): a modelled thread with a chamfer, or a buttress
+// nut's.
+func (o ThreadOptions) hasOwnTol() bool {
+	return !o.Cosmetic && (o.Chamfer || o.Internal && o.Spec.Buttress())
+}
+
+// threadSolidTol is the tolerance the group g's solid is made at when
+// g is one of the groups of a thread of its own tolerance (hasOwnTol)
+// and the sketch's tolerance is coarser than the thread can be made at
+// (threadOwnPitchTol, threadOwnCrestTol), and whether it is. Its
+// sketches are made at it too: a Boolean takes each surface it copies
+// to its result's tolerance, so the part's surfaces reach the thread's
+// turning at the thread's tolerance through the sketch before it, as
+// the cones and the ridges need them (at the sketch's, the end's plane
+// meets the cones, and the bore the ridges, in chords too coarse for
+// the ridges' curves to close on). The groups after the thread take
+// the part back to the sketch's.
+func (sk *Sketch) threadSolidTol(g *Group) (srf.Tolerance, bool) {
+	// Most models have no such thread: they are told apart without
+	// finding every thread's groups, for every group.
+	if !sk.hasThreadOfOwnTol() {
+		return srf.Tolerance{}, false
+	}
+	helix, ok := sk.ThreadOfGroup(g.H)
+	if !ok {
+		return srf.Tolerance{}, false
+	}
+	o := sk.Group(helix).Thread.LoadStated()
+	if !o.hasOwnTol() {
+		return srf.Tolerance{}, false
+	}
+	limit := threadOwnPitchTol * o.Spec.Pitch
+	if l, err := o.layout(0); err == nil && l.profile.CrestRoundRadius > 0 {
+		limit = min(limit, threadOwnCrestTol*l.profile.CrestRoundRadius)
+	}
+	t := sk.tol
+	if !(limit > 0) || t.ChordTolMm() <= limit {
+		return srf.Tolerance{}, false
+	}
+	return srf.Tol(limit, t.MaxSegments()).WithMesher(t.Mesher()).WithAngle(t.AngleDeg()), true
+}
+
+// hasThreadOfOwnTol tells whether a group keeps a modelled thread made
+// at a tolerance of its own (hasOwnTol).
+func (sk *Sketch) hasThreadOfOwnTol() bool {
+	for i := range sk.Groups {
+		if t := &sk.Groups[i].Thread; t.IsThread() && t.hasOwnTol() {
+			return true
+		}
+	}
+	return false
+}
+
+// groupSolidTol is the tolerance g's solid is made at: the sketch's,
+// or a finer one for the groups of a thread of its own tolerance
+// (threadSolidTol).
+func (sk *Sketch) groupSolidTol(g *Group) srf.Tolerance {
+	if t, ok := sk.threadSolidTol(g); ok {
+		return t
+	}
+	return sk.tol
+}

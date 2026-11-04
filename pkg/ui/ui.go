@@ -276,6 +276,9 @@ type Hover struct {
 	Distance  float64
 	Depth     float64
 	Selection Selection
+	// Hidden is a line behind a face of the solid where the mouse is
+	// near it: a click picks the face rather than it.
+	Hidden bool
 }
 
 // groupedSelection is the selection sorted by kind.

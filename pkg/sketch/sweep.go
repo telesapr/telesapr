@@ -225,6 +225,16 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 	if math.Abs(chain[0].tangentAt(false).Dot(normal)) < 1e-3 {
 		return nil, pathErr(&chain[0].start, "the path runs along the profile's plane: it must leave it")
 	}
+	g.sweepRuns = nil
+	if at := cubicCorners(chain); len(at) > 0 {
+		g.fittedPath = nil
+		sr, err := sk.fitRuns(g, chain, at, closed, profileReach(sbls, chain[0].start))
+		if err != nil {
+			return nil, err
+		}
+		g.sweepRuns = sr
+		return nil, nil
+	}
 	if g.sweepFitted(chain) {
 		return nil, sk.fitCornered(g, chain, closed, profileReach(sbls, chain[0].start))
 	}
@@ -332,21 +342,20 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 	if besideArc {
 		for si := range sbls.Sets {
 			if err := srf.CheckSweepCorners(&sbls.Sets[si], steps, closed); err != nil {
+				// A corner whose pieces' sides don't meet is filled by
+				// Booleans on an open path (sweepCornersFilled).
+				if !closed && errors.Is(err, srf.ErrCornerNoJoint) {
+					continue
+				}
 				return nil, cornerJointError(err)
 			}
 		}
 	}
 	if closed && !bringsBack(steps, ctrls) {
 		// Round lines and arcs out of a plane the profile comes back
-		// turned: the frames are fitted, and the turn taken out.
-		for k := range chain {
-			if cornerAt(k) || chain[k].rounded {
-				x := chain[k].start
-				return nil, pathErr(&x, "the closed path leaves its plane and has a corner at (%g, %g, %g): "+
-					"the profile would come back turned", x.X, x.Y, x.Z)
-			}
-		}
-		return nil, g.fitPath(chain, profileReach(sbls, chain[0].start))
+		// turned: the frames are fitted, and the turn taken out, held
+		// still beside the corners as a twist is.
+		return nil, sk.fitCornered(g, chain, closed, profileReach(sbls, chain[0].start))
 	}
 	return steps, nil
 }
@@ -561,18 +570,15 @@ func (sk *Sketch) pathChainAny(edges []core.HEntity, extra []pathPiece, what str
 		next := chain[k%len(chain)]
 		if dot := chain[k-1].tangentAt(true).Dot(next.tangentAt(false)); dot < sweepTangentCos {
 			x := next.start
-			if corners && !chain[k-1].free && !next.free {
+			if corners {
 				if dot < -1+1e-6 {
 					return nil, false, pathErr(&x, "the path turns back on itself at (%g, %g, %g)", x.X, x.Y, x.Z)
 				}
 				// A corner between two lines is mitred (roadmap 28.4);
 				// one beside an arc is rounded, with the sweep's corner
-				// radius (F4).
+				// radius (F4), or joined; one beside a cubic cuts the
+				// path into runs joined by Booleans (sweep_cubic_corner.go).
 				continue
-			}
-			if corners {
-				return nil, false, pathErr(&x, "the path has a corner at (%g, %g, %g) next to a curve: "+
-					"a %s's curves meet their neighbours tangent", x.X, x.Y, x.Z, what)
 			}
 			return nil, false, pathErr(&x, "the path has a corner at (%g, %g, %g): a %s needs its pieces to meet tangent",
 				x.X, x.Y, x.Z, what)
@@ -589,6 +595,9 @@ func (g *Group) generateSweep(sk *Sketch, entity *[]core.Entity) {
 		end = srf.SweepEnd(steps)
 		if g.fittedPath != nil {
 			end = g.fittedPath.Rigid(g.fittedPath.End())
+		}
+		if g.sweepRuns != nil {
+			end = g.sweepRuns.end()
 		}
 	}
 	var pt core.HEntity
@@ -660,9 +669,20 @@ func (g *Group) generateSweepShell(sk *Sketch) {
 	}
 	start := srf.FaceID(g.RemapEntity(core.NoEntity, RemapBottom).V)
 	end := srf.FaceID(g.RemapEntity(core.NoEntity, RemapTop).V)
+	if g.sweepRuns != nil {
+		g.generateRunsSweepShell(sk, src, uint32(start), uint32(end))
+		return
+	}
 	if g.fittedPath != nil {
 		g.generateFittedSweepShell(sk, src, uint32(start), uint32(end))
+		g.refuseCrossing(sk, func() bool { return curvesComeBack(&src.BezierLoops, g.fittedPath.Pieces()) }, nil)
 		return
+	}
+	if !g.sweepClosed {
+		if unjoined := unjoinedCorners(&src.BezierLoops, steps); len(unjoined) > 0 {
+			g.generateFilledSweepShell(sk, src, steps, unjoined, start, end)
+			return
+		}
 	}
 	for i := range src.BezierLoops.Sets {
 		if g.sweepClosed {
@@ -671,6 +691,11 @@ func (g *Group) generateSweepShell(sk *Sketch) {
 		}
 		g.ThisShell.MakeFromSweepOf(&src.BezierLoops.Sets[i], steps, g.Color, start, end)
 	}
+	var remake func() *srf.SShell
+	if !g.sweepClosed {
+		remake = func() *srf.SShell { return sweepInStretches(&src.BezierLoops, steps, g.Color, start, end, sk.tol) }
+	}
+	g.refuseCrossing(sk, func() bool { return stepsComeBack(&src.BezierLoops, steps) }, remake)
 }
 
 // ErrFittedSweep is SweepSteps' error for a sweep whose surface is
@@ -692,7 +717,7 @@ func (g *Group) SweepSteps(sk *Sketch) ([]srf.SweepStep, error) {
 	if err != nil {
 		return nil, err
 	}
-	if g.fittedPath != nil {
+	if g.fittedPath != nil || g.sweepRuns != nil {
 		return nil, fmt.Errorf("%s: %w", g.DescriptionString(), ErrFittedSweep)
 	}
 	return steps, nil
@@ -708,6 +733,9 @@ func (g *Group) FittedSweepPath(sk *Sketch) (*topo.SweepPath, error) {
 	}
 	if _, err := g.sweepPath(sk); err != nil {
 		return nil, err
+	}
+	if g.sweepRuns != nil {
+		return nil, fmt.Errorf("%s: %w", g.DescriptionString(), ErrSweepJoined)
 	}
 	return g.fittedPath, nil
 }

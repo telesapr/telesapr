@@ -154,7 +154,7 @@ var MenuCalls = map[string]string{
 	"Features/Move Group Earlier":            "GroupHistory.MoveBefore",
 	"Features/Move Group Later":              "GroupHistory.MoveBefore",
 	"Features/Move Group to End":             "GroupHistory.MoveToEnd GroupHistory.MoveToEndWithSources",
-	"Features/Broken References...":          "Features.BrokenReferences Features.Mended Features.ClearBrokenReferences",
+	"Features/Broken References...":          "Features.BrokenReferences Features.Mended Features.LeftOut Features.LeftOutMissing Features.MendLeftOut Features.DiscardLeftOut Features.ClearBrokenReferences",
 
 	"Assembly/Link / Assemble...":     "Assembly.Link",
 	"Assembly/Link Recent":            "- links a file from the recent list; Assembly.Link takes any file",

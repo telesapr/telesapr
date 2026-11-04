@@ -140,6 +140,13 @@ const cdtRefineRounds = 6
 // cdtMaxPoints bounds the points of one region's mesh.
 const cdtMaxPoints = 200000
 
+// cdtLeastScale is the least a chart's axis is shortened against the
+// other by curvatureScale. Measured over the solid and thread goldens
+// (doc/dev-notes/k4-cdt-spike.md, 2026-11-04): 0.1 took the CDT from 2.0
+// to 1.43 times the ear clipper's triangles, 0.05 to 1.30 but with 4.3%
+// of the curved triangles past the chord tolerance against 1.8%.
+const cdtLeastScale = 0.1
+
 // cdtMaxDepth bounds how many times a quadtree cell is halved.
 const cdtMaxDepth = 12
 
@@ -199,8 +206,15 @@ func newUVChart(srf *SSurface, bnd []geom.Vector) *uvChart {
 				folds = append(folds, side)
 			}
 		}
-		if len(folds) == 1 {
+		switch {
+		case len(folds) == 1:
 			c.polarAbout(srf, folds[0])
+		case tolOf(srf).Mesher() == MesherCDT:
+			// Only where the CDT meshes every face: as the mender of a
+			// face the ear clipper meshed badly it keeps the chart it
+			// had, so that the meshes of every model meshed by default
+			// stay as they were.
+			c.curvatureScale(srf, u0, u1, v0, v1)
 		}
 	}
 	// The chart's turn against the parameters', at the region's middle.
@@ -699,4 +713,53 @@ func segDistCDT(p, a, b cdt.Point) float64 {
 		t = math.Max(0, math.Min(1, ((p.X-a.X)*dx+(p.Y-a.Y)*dy)/l2))
 	}
 	return math.Hypot(p.X-a.X-t*dx, p.Y-a.Y-t*dy)
+}
+
+// curvatureScale shortens the chart along the parameter the surface
+// bends less along, by the square root of the ratio of the two bends
+// and at least cdtLeastScale. A sag goes as the bend times the square of
+// the length, so cells square in the chart then sag alike both ways: a
+// cylinder's are long along its rulings, as the ear clipper's grid's rows
+// are, where in a chart scaled by speed alone they were square on the
+// surface and the face along a ruling took as many points as round it.
+// The bends are the largest sags of the parameter lines' chords, quarters
+// of the region, over the square of their length.
+func (c *uvChart) curvatureScale(srf *SSurface, u0, u1, v0, v1 float64) {
+	const ns = 4
+	bend := func(alongU bool) float64 {
+		k := 0.0
+		for j := range ns + 1 {
+			f := (float64(j) + 0.5) / (ns + 1)
+			for i := range ns {
+				var a, b geom.Vector
+				var l float64
+				if alongU {
+					v := v0 + (v1-v0)*f
+					ua, ub := u0+(u1-u0)*float64(i)/ns, u0+(u1-u0)*float64(i+1)/ns
+					a, b = geom.Vector{X: ua, Y: v}, geom.Vector{X: ub, Y: v}
+					l = (ub - ua) * c.lu
+				} else {
+					u := u0 + (u1-u0)*f
+					va, vb := v0+(v1-v0)*float64(i)/ns, v0+(v1-v0)*float64(i+1)/ns
+					a, b = geom.Vector{X: u, Y: va}, geom.Vector{X: u, Y: vb}
+					l = (vb - va) * c.lv
+				}
+				if l <= 0 {
+					continue
+				}
+				m := a.Plus(b).ScaledBy(0.5)
+				pa, pb := srf.PointAt(a.X, a.Y), srf.PointAt(b.X, b.Y)
+				sag := srf.PointAt(m.X, m.Y).Minus(pa.Plus(pb).ScaledBy(0.5)).Magnitude()
+				k = math.Max(k, 8*sag/(l*l))
+			}
+		}
+		return k
+	}
+	ku, kv := bend(true), bend(false)
+	kmax := math.Max(ku, kv)
+	if kmax <= 0 {
+		return
+	}
+	c.lu *= math.Max(cdtLeastScale, math.Sqrt(ku/kmax))
+	c.lv *= math.Max(cdtLeastScale, math.Sqrt(kv/kmax))
 }

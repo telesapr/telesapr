@@ -11,7 +11,7 @@ import (
 )
 
 // A link group may pass values into the model it links (roadmap item 3
-// of doc/notes/modelling_upgrades.md): a configuration of the model to
+// of doc/dev-notes/modelling_upgrades.md): a configuration of the model to
 // regenerate it in, and values for some of its parameters. The linked
 // model is then regenerated with them rather than read as it was saved,
 // so one part file placed twice can be two sizes. A value is an

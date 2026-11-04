@@ -220,11 +220,11 @@ func (k *constraining) constrainBound(id Command) {
 		}
 		ss.UndoRemember()
 		if c.Limit == limit {
-			c.Limit = core.LimitNone
-		} else {
-			c.Limit = limit
+			limit = core.LimitNone
 		}
-		sk.MarkGroupDirty(c.Group, false)
+		if err := sk.SetConstraintLimit(gs.constraint[0], limit); err != nil {
+			ss.Report(err)
+		}
 		return
 	}
 	k.limit = limit

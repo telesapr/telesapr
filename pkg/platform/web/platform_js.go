@@ -54,12 +54,15 @@ type Platform struct {
 
 	glReported bool
 	stats      RenderStats
+	// busy times the work the loop is doing (busy.go).
+	busy busyClock
 }
 
 var (
 	_ platform.Platform    = (*Platform)(nil)
 	_ platform.LoopPoster  = (*Platform)(nil)
 	_ platform.ConsoleHost = (*Platform)(nil)
+	_ platform.Yielder     = (*Platform)(nil)
 )
 
 // RenderStats are the times the windows took to draw.
@@ -90,6 +93,7 @@ func New() (*Platform, error) {
 	doc.Get("head").Call("appendChild", style)
 	w := js.Global().Get("Function").New(pageScript).Invoke()
 	p := &Platform{q: newEventQueue(), w: w, done: make(chan struct{})}
+	p.q.after = p.endBusy
 	p.settings = kvSettings{s: localStore{js.Global().Get("localStorage")}}
 	w.Call("init")
 	w.Call("onKey", p.fn(p.keyEvent))
@@ -128,6 +132,36 @@ func (p *Platform) Exit() {
 		p.q.close()
 		p.w.Call("exited")
 	})
+}
+
+// Yield is called between the groups of a regeneration, on the loop's
+// goroutine. Every so often it waits for the page to draw a frame,
+// showing how long the work has taken once it is long: the goroutine
+// that waits leaves the page's only thread to the browser.
+func (p *Platform) Yield() {
+	yield, text := p.busy.step(time.Now())
+	if !yield {
+		return
+	}
+	if text != "" {
+		p.w.Call("busy", text)
+	}
+	frame := make(chan struct{})
+	var f js.Func
+	f = js.FuncOf(func(js.Value, []js.Value) any {
+		f.Release()
+		close(frame)
+		return nil
+	})
+	p.w.Call("nextFrame", f)
+	<-frame
+}
+
+// endBusy ends a spell of work once the loop has run what started it.
+func (p *Platform) endBusy() {
+	if p.busy.end() {
+		p.w.Call("idle")
+	}
 }
 
 // Stats are the times the windows took to draw so far.

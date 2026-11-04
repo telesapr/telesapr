@@ -98,11 +98,11 @@ func grownRevolution(rev Revolution, openAt func(geom.Vector) bool, thick float6
 			}
 		}
 	}
-	return cutToEnds(inner, rev, radial, shift, thick, tol, color)
+	return cutToEnds(inner, rev, radial, shift, [2]bool{}, thick, tol, color)
 }
 
-// endsMoved is the inside of rev, a revolve of half a turn or less, of
-// the inside's profile sets, where an end lies inside another part:
+// endsMoved is the inside of rev, a revolve, of the inside's profile
+// sets, where an end lies inside another part:
 // the whole turn of the profile cut by each end's plane moved as its
 // mode says, in by the thickness as a wall, out by it inside another
 // part (twice that probed), where it is taken away.
@@ -114,36 +114,56 @@ func endsMoved(rev Revolution, sets *srf.SBezierLoopSetSet, modes [2]faceMode, r
 		inner.MakeFromRevolutionOf(&sets.Sets[i], rev.Pt, axis, color, noFaces{})
 	}
 	var shift [2]float64
+	var wall [2]bool
 	for k, m := range modes {
 		switch m {
 		case keptFace:
 			shift[k] = thick
+			wall[k] = true
 		case buriedFace:
 			shift[k] = -thick
 		case probedFace:
 			shift[k] = -2 * thick
 		}
 	}
-	return cutToEnds(inner, rev, radial, shift, thick, tol, color)
+	return cutToEnds(inner, rev, radial, shift, wall, thick, tol, color)
 }
 
 // cutToEnds is inner, a whole turn, cut back to the planes of rev's ends
 // moved by shift into its material: what lies past both taken away for
-// half a turn or less, past either for more.
-func cutToEnds(inner *srf.SShell, rev Revolution, radial geom.Vector, shift [2]float64, thick float64,
+// half a turn or less, past either for more. An end that is a wall
+// (wall[k], moved in) of more than half a turn walls off only what lies
+// within the thickness of the end itself, as a kept end does
+// (shellrevolve_reflex.go); the two ends of a half turn moved unlike
+// step at the axis (steppedHalfCut).
+func cutToEnds(inner *srf.SShell, rev Revolution, radial geom.Vector, shift [2]float64, wall [2]bool, thick float64,
 	tol srf.Tolerance, color core.RGBA) (*srf.SShell, error) {
-	axis := rev.Axis.WithMagnitude(1)
 	turn := math.Abs(rev.End - rev.Start)
 	half := math.Abs(turn-math.Pi) < 1e-9
 	if half && shift[0] != shift[1] {
-		// The two ends lie in one plane, either side of the axis: moved
-		// apart, the plane would step at the axis.
-		return nil, shellErr(rev.Pt.Plus(radial.RotatedAroundAxis(axis, rev.End)), "the two ends of a half turn lie in one plane "+
-			"and are not moved alike, one taken away, a wall or inside another solid and the other not; a shell moves the ends of a half turn alike only")
+		cut := steppedHalfCut(rev, radial, shift, wall, thick, tol, color)
+		return cutAway(inner, cut, tol)
+	}
+	reflex := turn > math.Pi && !half
+	if reflex && wall[0] && wall[1] {
+		// Both walls: the slabs and the gap between the ends make one
+		// region.
+		cut, err := reflexEndsCut(rev, wall, radial, thick, tol, color)
+		if err != nil {
+			return nil, err
+		}
+		return cutAway(inner, cut, tol)
 	}
 	var beyond [2]*srf.SShell
 	for k := range 2 {
-		beyond[k] = beyondEnd(rev, k, radial, shift[k], thick, tol, color)
+		at := shift[k]
+		if reflex && wall[k] {
+			// The end's own plane: the slab within the thickness of the
+			// end is cut after, rounded about the axis, where the plane
+			// moved in would cut the material across the axis.
+			at = 0
+		}
+		beyond[k] = beyondEnd(rev, k, radial, at, thick, tol, color)
 	}
 	cuts := beyond[:]
 	switch {
@@ -158,15 +178,64 @@ func cutToEnds(inner *srf.SShell, rev Revolution, radial geom.Vector, shift [2]f
 		}
 		cuts = []*srf.SShell{both}
 	}
-	for _, c := range cuts {
-		back := &srf.SShell{Tol: tol}
-		back.MakeFromDifferenceOf(inner, c)
-		if back.BooleanFailed {
-			return nil, errors.New("the Boolean that cuts a revolve's inside back to its ends failed")
+	if reflex && (wall[0] || wall[1]) {
+		slab, err := reflexEndsCut(rev, wall, radial, thick, tol, color)
+		if err != nil {
+			return nil, err
 		}
-		inner = back
+		cuts = append(cuts, slab)
+	}
+	var err error
+	for _, c := range cuts {
+		if inner, err = cutAway(inner, c, tol); err != nil {
+			return nil, err
+		}
 	}
 	return inner, nil
+}
+
+// cutAway is inner with cut taken away.
+func cutAway(inner, cut *srf.SShell, tol srf.Tolerance) (*srf.SShell, error) {
+	back := &srf.SShell{Tol: tol}
+	back.MakeFromDifferenceOf(inner, cut)
+	if back.BooleanFailed {
+		return nil, errors.New("the Boolean that cuts a revolve's inside back to its ends failed")
+	}
+	return back, nil
+}
+
+// steppedHalfCut is the prism along the axis of rev, a half turn whose
+// two ends, in one plane either side of the axis, are moved unlike
+// (shift, into the material): what lies past each end's plane moved, on
+// that end's side of the axis, the two meeting in a step. The step is
+// at the axis, or where one end is a wall and the other not, the
+// thickness past it on the other end's side, so the wall runs on round
+// the end's edge at the axis and the other end's inside stops short of
+// it.
+func steppedHalfCut(rev Revolution, radial geom.Vector, shift [2]float64, wall [2]bool, thick float64,
+	tol srf.Tolerance, color core.RGBA) *srf.SShell {
+	axis := rev.Axis.WithMagnitude(1)
+	u, into := endFrame(rev, 0, radial)
+	lo, hi := profileBox(rev.Profile)
+	size := 2*(hi.Minus(lo).Magnitude()+rev.Pt.Minus(lo).Magnitude()) + 2*thick + 1
+	step := 0.0
+	switch {
+	case wall[0] && !wall[1]:
+		step = -thick
+	case wall[1] && !wall[0]:
+		step = thick
+	}
+	// A point s along the start's end from the axis and g past the
+	// ends' plane, away from the material.
+	base := rev.Pt.Minus(axis.ScaledBy(size))
+	at := func(s, g float64) geom.Vector { return base.Plus(u.ScaledBy(s)).Minus(into.ScaledBy(g)) }
+	pts := []geom.Vector{
+		at(size, -shift[0]), at(step, -shift[0]), at(step, -shift[1]),
+		at(-size, -shift[1]), at(-size, size), at(size, size),
+	}
+	sh := &srf.SShell{Tol: tol}
+	sh.MakePrism(pts, geom.Vector{}, axis.ScaledBy(2*size), color)
+	return sh
 }
 
 // beyondEnd is a block holding all that lies on the far side from the

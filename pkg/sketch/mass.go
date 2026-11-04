@@ -10,7 +10,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// Mass properties (item 13 of doc/notes/modelling_upgrades.md). A
+// Mass properties (item 13 of doc/dev-notes/modelling_upgrades.md). A
 // density belongs to a part, not to a feature: once a Boolean has
 // joined two features' solids, nothing says which volume was whose. So
 // a part is what the interference check takes for one (assemblyParts):
@@ -101,9 +101,9 @@ func (sk *Sketch) MassProperties(upTo core.HGroup) (MassReport, error) {
 	if g == nil {
 		return MassReport{}, fmt.Errorf("g%03x doesn't exist", upTo.V)
 	}
-	parts, meshOnly, before := sk.assemblyParts(upTo)
+	parts, meshes, before := sk.assemblyParts(upTo)
 	var r MassReport
-	if len(parts) == 0 && len(meshOnly) == 0 {
+	if len(parts) == 0 && len(meshes) == 0 {
 		g.GenerateDisplayItems(sk)
 		if g.DisplayMesh.IsEmpty() {
 			return MassReport{}, errors.New("there is no solid at the group")
@@ -121,15 +121,15 @@ func (sk *Sketch) MassProperties(upTo core.HGroup) (MassReport, error) {
 			}
 			r.Parts = append(r.Parts, partMass(p.g, &m, d))
 		}
-		// A solid before the assembly that was made as triangles has
-		// no shell to be a part by.
-		if before != nil && !baseFound && !before.RunningMesh.IsEmpty() {
-			base := partMass(before.H, &before.RunningMesh, sk.densityThrough(before.H))
-			r.Parts = append([]PartMass{base}, r.Parts...)
-		}
-		for _, hg := range meshOnly {
-			mg := sk.Group(hg)
-			r.Parts = append(r.Parts, partMass(hg, &mg.ThisMesh, mg.Density))
+		for _, mp := range meshes {
+			// A solid before the assembly that was made as triangles
+			// has no shell to be a part by, and comes first.
+			if before != nil && !baseFound && mp.g == before.H {
+				base := partMass(before.H, &mp.mesh, sk.densityThrough(before.H))
+				r.Parts = append([]PartMass{base}, r.Parts...)
+				continue
+			}
+			r.Parts = append(r.Parts, partMass(mp.g, &mp.mesh, sk.Group(mp.g).Density))
 		}
 	}
 	r.combine()

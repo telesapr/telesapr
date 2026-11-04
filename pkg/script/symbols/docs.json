@@ -1779,6 +1779,10 @@
 					"Summary": {
 						"decl": "func (r *Report) Summary() string",
 						"text": "Summary is the report for a person, in millimetres."
+					},
+					"TouchText": {
+						"decl": "func (r *Report) TouchText() string",
+						"text": "TouchText says where and why a solid that Touches is not closed."
 					}
 				},
 				"makers": [
@@ -4582,7 +4586,7 @@
 					},
 					"SetLimit": {
 						"decl": "func (c Constraint) SetLimit(l core.Limit)",
-						"text": "SetLimit makes the dimension a bound: Minimum lets what it measures\nbe its value or more, Maximum its value or less, and NoLimit makes it\nhold its value again. Any distance, a diameter or radius, and an\nangle take a limit; for an angle, Minimum is the least angle."
+						"text": "SetLimit makes the dimension a bound: Minimum lets what it measures\nbe its value or more, Maximum its value or less, and NoLimit makes it\nhold its value again. Any distance, a diameter or radius, and an\nangle take a limit; for an angle, Minimum is the least angle. A\ndimension made a reference only because it over-constrained the\ngroup, as a second angle at a corner that has a bound is, holds once\nit is a bound, as one made from the window's Minimum or Maximum does."
 					},
 					"SetName": {
 						"decl": "func (c Constraint) SetName(name string)",
@@ -5184,7 +5188,7 @@
 				"methods": {
 					"BrokenReferences": {
 						"decl": "func (m FeaturesMenu) BrokenReferences() (refs []BrokenReference)",
-						"text": "BrokenReferences lists what the last regeneration that deleted\nsomething deleted, as Edit \u003e Broken References shows it. The list\nstays until a regeneration deletes something else, an undo or redo,\nor ClearBrokenReferences. Undo brings the deleted items back."
+						"text": "BrokenReferences lists what the last regeneration that deleted\nsomething deleted, as Features \u003e Broken References shows it. The list\nstays until a regeneration deletes something else, an undo or redo,\nor ClearBrokenReferences. Undo brings the deleted items back."
 					},
 					"Chamfer": {
 						"decl": "func (m FeaturesMenu) Chamfer(edges []Entity, distance float64, name string) Group",
@@ -5197,6 +5201,10 @@
 					"ClearBrokenReferences": {
 						"decl": "func (m FeaturesMenu) ClearBrokenReferences()",
 						"text": "ClearBrokenReferences empties the lists BrokenReferences and Mended\ngive."
+					},
+					"DiscardLeftOut": {
+						"decl": "func (m FeaturesMenu) DiscardLeftOut()",
+						"text": "DiscardLeftOut forgets what LeftOut lists, so that the next save no\nlonger writes it; it fails when nothing was left out. Undo brings it\nback."
 					},
 					"Emboss": {
 						"decl": "func (m FeaturesMenu) Emboss(face SolidFace, height float64, name string) Group",
@@ -5234,6 +5242,14 @@
 						"decl": "func (m FeaturesMenu) LatheAbout(point, vector Entity, name string) Group",
 						"text": "LatheAbout is Lathe about an axis through a point and parallel to a\nvector, a line segment or a normal, as the window takes a point and\na line segment or normal."
 					},
+					"LeftOut": {
+						"decl": "func (m FeaturesMenu) LeftOut() (names []string)",
+						"text": "LeftOut names what was left out of the model when a damaged file was\nopened, because it used something the file lacked: \"g003-on-missing\",\n\"r008-datum-point of g003-on-missing\". It is kept: a save writes it\nback, to be left out again, so that the file can be mended by hand,\nuntil DiscardLeftOut."
+					},
+					"LeftOutMissing": {
+						"decl": "func (m FeaturesMenu) LeftOutMissing() (missing []Entity)",
+						"text": "LeftOutMissing are the entities what LeftOut lists uses and the file\nlacks, which MendLeftOut can replace: a group's origin, a request's\nworkplane, a constraint's point or workplane, or a dropped edge.\nThey are not in the model."
+					},
 					"Loft": {
 						"decl": "func (m FeaturesMenu) Loft(from, to Group, name string) Group",
 						"text": "Loft joins the closed loops of two sketches in workplanes, from and\nto, with ruled faces, curve by curve, and closes the ends with the\nsketches' planes: each loop must be one closed loop; a circle counts\nas four curves, and a loop with fewer curves than the other has its\nlongest split until they match. The solid joins the solid so far as\nan extrusion's does. The new group becomes active."
@@ -5241,6 +5257,10 @@
 					"LoftThrough": {
 						"decl": "func (m FeaturesMenu) LoftThrough(profiles []Group, name string) Group",
 						"text": "LoftThrough joins the closed loops of sketches in workplanes, three\nor more, in order, by one smooth surface through them all, and closes\nthe ends with the first and last sketches' planes. Loops of fewer\ncurves have their longest split until all match, and each loop after\nthe first starts at the curve nearest where the one before it does.\nThe new group becomes active."
+					},
+					"MendLeftOut": {
+						"decl": "func (m FeaturesMenu) MendLeftOut(missing, with Entity)",
+						"text": "MendLeftOut puts with, an entity of the model, in the place of\nmissing, one LeftOutMissing gives, wherever what LeftOut lists used\nit as with's kind: a point for a group's origin or a constraint's\npoint, a workplane for a request's or a constraint's workplane, a\ncurve for an edge. What then has all it uses comes back into the\nmodel; the rest stays left out. It fails, changing nothing, when\nnothing left out uses missing or with is of none of the kinds it is\nused as. Undo takes it back."
 					},
 					"Mended": {
 						"decl": "func (m FeaturesMenu) Mended() (mended []string)",
@@ -7677,6 +7697,14 @@
 				"text": "Interference is two parts that overlap: the groups that made them, the volume they share, and its triangles.",
 				"kind": "struct"
 			},
+			"LeftOut": {
+				"text": "LeftOut is what the load of a damaged file left out of the model, each item as the file held it: the groups, requests and constraints that used something the file lacked, with the values of their parameters.",
+				"kind": "struct"
+			},
+			"LeftOutEdges": {
+				"text": "LeftOutEdges is a group's list of edges as a damaged file held it, with what the load dropped from it because the file doesn't hold them.",
+				"kind": "struct"
+			},
 			"LinkParam": {
 				"text": "LinkParam is a value a link group passes to a parameter of the model it links.",
 				"kind": "struct"
@@ -8036,6 +8064,10 @@
 						"decl": "func (sk *Sketch) ApplySuggestion(s Suggestion) core.HConstraint",
 						"text": "ApplySuggestion adds the suggested constraint to the active group, unless it would be redundant; it returns the constraint, or none."
 					},
+					"AsSaved": {
+						"decl": "func (sk *Sketch) AsSaved(g *Group) *Group",
+						"text": "AsSaved is g as a save writes it: with the edges the load of a damaged file dropped from it put back where the file had them, with their own values, while its edges are still those the load left it."
+					},
 					"AssemblyParts": {
 						"decl": "func (sk *Sketch) AssemblyParts(upTo core.HGroup) []AssemblyPart",
 						"text": "AssemblyParts are the parts of the model up to group upTo, as the interference check takes them (interference.go): the solid before the first group that combines as an assembly, and each such group."
@@ -8222,6 +8254,10 @@
 						"decl": "func (sk *Sketch) DependenciesOf(g *Group) []Dependency",
 						"text": "DependenciesOf is GroupDependencies of g, which need not be in the sketch yet: a group about to be added has no requests or constraints."
 					},
+					"DiscardLeftOut": {
+						"decl": "func (sk *Sketch) DiscardLeftOut() error",
+						"text": "DiscardLeftOut forgets what the load of a damaged file left out, so that the next save no longer writes it."
+					},
 					"DistanceLabelOffset": {
 						"decl": "func (sk *Sketch) DistanceLabelOffset(a, b geom.Vector) geom.Vector",
 						"text": "DistanceLabelOffset is where the label of a new distance between points at a and b goes, as Constrain \u003e Distance puts it: 50 pixels from the middle, across the line between them in the view."
@@ -8356,6 +8392,22 @@
 						"decl": "func (sk *Sketch) Interferences(upTo core.HGroup) (found []Interference, meshOnly []core.HGroup)",
 						"text": "Interferences checks the parts of the model up to group upTo against each other."
 					},
+					"LeftOutEdgeNames": {
+						"decl": "func (sk *Sketch) LeftOutEdgeNames(hg core.HGroup) []string",
+						"text": "LeftOutEdgeNames names the edges the load of a damaged file dropped from group hg because the file doesn't hold them, and that a save still writes back; none once the group's edges have been edited."
+					},
+					"LeftOutMissing": {
+						"decl": "func (sk *Sketch) LeftOutMissing() []core.HEntity",
+						"text": "LeftOutMissing are the entities that what the load of a damaged file left out uses, the model doesn't hold, and a mend (MendLeftOut) may replace, in the order of their handles."
+					},
+					"LeftOutMissingName": {
+						"decl": "func (sk *Sketch) LeftOutMissingName(he core.HEntity) string",
+						"text": "LeftOutMissingName names an entity LeftOutMissing gives, as what the load left out knew it: \"r007\" or \"point 1 of r007\"."
+					},
+					"LeftOutNames": {
+						"decl": "func (sk *Sketch) LeftOutNames() []string",
+						"text": "LeftOutNames names each item the load of a damaged file left out, a line each: \"g003-on-missing\", \"r008-datum-point of g003-on-missing\", \"c001-pt-pt-distance of g002-sketch-in-plane\"."
+					},
 					"Length": {
 						"decl": "func (sk *Sketch) Length(hs []core.HEntity) (float64, error)",
 						"text": "Length is the total length of the curves of entities hs: line segments, arcs, circles, cubics and text."
@@ -8399,6 +8451,10 @@
 					"Measure": {
 						"decl": "func (sk *Sketch) Measure(entities ...core.HEntity) (Measurement, error)",
 						"text": "Measure measures entities, as the description of the selection does: one line segment or circle; two points; a point and a circle, line segment or plane face; two lines, normals or plane faces; or two points and a line along which to project their distance."
+					},
+					"MendLeftOut": {
+						"decl": "func (sk *Sketch) MendLeftOut(missing, with core.HEntity) error",
+						"text": "MendLeftOut puts with in the place of missing, an entity the file lacks, wherever what the load left out used it in a role with fits: a group's origin or a constraint's point takes a point, a request's or a constraint's workplane a workplane, a dropped edge a curve."
 					},
 					"MeshProblems": {
 						"decl": "func (sk *Sketch) MeshProblems() (naked srf.SEdgeList, inters, leaks bool)",
@@ -8688,6 +8744,10 @@
 					"SetConstraintLabelOffset": {
 						"decl": "func (sk *Sketch) SetConstraintLabelOffset(hc core.HConstraint, off geom.Vector) error",
 						"text": "SetConstraintLabelOffset puts the label of a dimension or a comment at off from the place the constraint measures: what dragging the label does, on every move of the mouse."
+					},
+					"SetConstraintLimit": {
+						"decl": "func (sk *Sketch) SetConstraintLimit(hc core.HConstraint, l core.Limit) error",
+						"text": "SetConstraintLimit makes the dimension hc a bound (core.LimitMin, core.LimitMax) or a dimension again (core.LimitNone)."
 					},
 					"SetConstraintName": {
 						"decl": "func (sk *Sketch) SetConstraintName(hc core.HConstraint, name string) error",
@@ -9479,6 +9539,10 @@
 				"decl": "var ErrBadDensity",
 				"text": "ErrBadDensity is a density that is not a positive number."
 			},
+			"ErrCannotLimit": {
+				"decl": "var ErrCannotLimit",
+				"text": "ErrCannotLimit is returned for a limit a constraint can't take: one that is no distance, diameter or angle, or a limit that is none of core.LimitNone, LimitMin and LimitMax."
+			},
 			"ErrChamferTooFine": {
 				"decl": "var ErrChamferTooFine",
 				"text": "ErrChamferTooFine is returned for a chamfered screw so small for its pitch that the cones, which run on past the end by a pitch, would reach the axis there (a Tr12x3)."
@@ -9498,6 +9562,10 @@
 			"ErrLoadFlanksSameWay": {
 				"decl": "var ErrLoadFlanksSameWay",
 				"text": "ErrLoadFlanksSameWay is ThreadFitMove's error for two buttress threads whose load flanks face the same way along their axis, which no move fits: one of them must be made with its load flank turned (ThreadOptions.LoadFlankBack)."
+			},
+			"ErrMendKind": {
+				"decl": "var ErrMendKind",
+				"text": "ErrMendKind is MendLeftOut's error when the entity picked is not of the kind what was left out used: a point for a point, a workplane for a workplane, a curve for an edge."
 			},
 			"ErrMeshNotSound": {
 				"decl": "var ErrMeshNotSound",
@@ -9551,6 +9619,10 @@
 				"decl": "var ErrNotCylinder",
 				"text": "ErrNotCylinder is returned for a face or an edge a thread can't be made on."
 			},
+			"ErrNotMissing": {
+				"decl": "var ErrNotMissing",
+				"text": "ErrNotMissing is MendLeftOut's error when nothing left out uses the entity it is to replace."
+			},
 			"ErrNotPoint": {
 				"decl": "var ErrNotPoint",
 				"text": "ErrNotPoint is returned by Overlap for an entity that isn't a point."
@@ -9563,6 +9635,10 @@
 				"decl": "var ErrNotThread",
 				"text": "ErrNotThread is returned for a group that is not a thread's helix."
 			},
+			"ErrNothingLeftOut": {
+				"decl": "var ErrNothingLeftOut",
+				"text": "ErrNothingLeftOut is DiscardLeftOut's error when the load left nothing out."
+			},
 			"ErrRootRoundCoarse": {
 				"decl": "var ErrRootRoundCoarse",
 				"text": "ErrRootRoundCoarse is returned for a rounded root (RoundRoot) on a part whose chord tolerance is coarser than rootChordLimit of the root's radius: the Booleans then fail where the root's arcs cross the turned or bored surface."
@@ -9570,6 +9646,14 @@
 			"ErrSplinePointsFull": {
 				"decl": "var ErrSplinePointsFull",
 				"text": "ErrSplinePointsFull is returned when a spline has as many points as an entity holds."
+			},
+			"ErrSweepCrossesItself": {
+				"decl": "var ErrSweepCrossesItself",
+				"text": "ErrSweepCrossesItself is the problem of a sweep whose solid would pass through itself: its path comes back within the profile's reach of where it has been, as an arc turning back over the line before it, so the profile's two passes overlap."
+			},
+			"ErrSweepJoined": {
+				"decl": "var ErrSweepJoined",
+				"text": "ErrSweepJoined is FittedSweepPath's error for a sweep made of runs joined at corners beside a cubic, which no one path describes."
 			},
 			"ErrThreadNoPart": {
 				"decl": "var ErrThreadNoPart",
@@ -10063,9 +10147,9 @@
 				"text": "MeshTree is a tree of boxes over a mesh's triangles, to find the nearest points of two meshes, the point of one nearest a point, and where a ray leaves one, without looking at every triangle: the clearance between the parts of an assembly and the thickness of their walls (pkg/sketch).",
 				"kind": "struct",
 				"methods": {
-					"AppendInBox": {
-						"decl": "func (t *MeshTree) AppendInBox(dst []int, lo, hi geom.Vector) []int",
-						"text": "AppendInBox appends to dst the triangles, by their places in the mesh, whose boxes meet the box from lo to hi, in no order: those that may lie in it, for a caller to test as it needs, as the wall check does the triangles in the prism a triangle sweeps into the solid."
+					"AppendNearSegment": {
+						"decl": "func (t *MeshTree) AppendNearSegment(dst []int, a, b geom.Vector, r float64) []int",
+						"text": "AppendNearSegment appends to dst the triangles, by their places in the mesh, whose boxes the segment from a to b passes within r of on every axis, in no order: those that may meet the capsule of radius r round it, for a caller to test as it needs."
 					},
 					"Len": {
 						"decl": "func (t *MeshTree) Len() int",
@@ -11051,7 +11135,7 @@
 					},
 					"Clone": {
 						"decl": "func (s *SShell) Clone() SShell",
-						"text": "Clone is a copy of the shell that shares nothing with it, to the bit: the surfaces with their trims, the curves with their points."
+						"text": "Clone is a copy of the shell that shares nothing with it, to the bit: the surfaces with their trims, the curves with their points, and the tolerance it is followed at."
 					},
 					"CopyCurvesSplitAgainst": {
 						"decl": "func (s *SShell) CopyCurvesSplitAgainst(opA bool, agnst, into *SShell)",
@@ -11076,6 +11160,10 @@
 					"FindSurface": {
 						"decl": "func (s *SShell) FindSurface(h core.HSSurface) *SSurface",
 						"text": "FindSurface returns the SSurface with the given handle, or nil if not found."
+					},
+					"FlattenPlanarPatches": {
+						"decl": "func (s *SShell) FlattenPlanarPatches()",
+						"text": "FlattenPlanarPatches makes each patch of the shell whose control points lie in a plane, as a fitted sweep's are where a straight side of its profile is swept along a path in a plane parallel to it, a plane patch spanning the same points: Booleans and the coplanar merges know a plane lying along another (snapToPlanes, MergeCoincidentSurfaces) but not a curved patch that happens to be flat."
 					},
 					"JoinedAtCaps": {
 						"decl": "func (s *SShell) JoinedAtCaps(a, b uint32) (*SShell, error)",
@@ -11637,6 +11725,10 @@
 			"InterpolatedPatch": {
 				"decl": "func InterpolatedPatch(du, dv int, f func(x, y float64) geom.Vector, tol float64) (SSurface, error)",
 				"text": "InterpolatedPatch is the patch of degree du by dv through f's points at Chebyshev-Lobatto points of [0, 1] each way, its corners and sides' ends among them, or an error when it strays from f by more than tol."
+			},
+			"JointReach": {
+				"decl": "func JointReach(a, cs, b SweepStep, at []geom.Vector) (back, on float64, err error)",
+				"text": "JointReach is how far the joint of the corner cs, between the steps a and b, a line or an arc each with an arc beside the corner, reaches back along a from its end and on along b from its start, for the profile's points at, given where a leaves them: lengths along a line, angles along an arc."
 			},
 			"MaxSegments": {
 				"decl": "func MaxSegments() int",

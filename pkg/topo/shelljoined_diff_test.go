@@ -2,7 +2,6 @@ package topo_test
 
 import (
 	"math"
-	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -285,14 +284,23 @@ func TestShellJoinedPartialRevolveOpenEnd(t *testing.T) {
 	if r := soundness(out); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
 		t.Fatalf("a quarter turn open at an end: %s, want %g", r.String(), want)
 	}
-	// A half turn open at one end only is refused by name.
+	// A half turn open at one end only: its ends lie in one plane, which
+	// steps at the axis, moved into the cutter on the open end's side and
+	// out of it on the other's.
 	cut, rev = turned(rev.Profile, 0, math.Pi, tol)
 	sh = &srf.SShell{Tol: tol}
 	sh.MakeFromDifferenceOf(body, cut)
-	_, err = topo.ShellJoined(sh, []topo.ShellPart{{Shell: body}, {Rev: &rev, Combine: srf.SurfaceDiff}},
+	out, err = topo.ShellJoined(sh, []topo.ShellPart{{Shell: body}, {Rev: &rev, Combine: srf.SurfaceDiff}},
 		facesAt(t, sh, v(15, 15, 0), v(2, 0, 17)), 1, 1000)
-	if err == nil || !strings.Contains(err.Error(), "two ends of a half turn") {
-		t.Errorf("a half turn open at one end: %v", err)
+	if err != nil {
+		t.Fatalf("a half turn open at one end: %v", err)
+	}
+	solid = 32000 - 25*math.Pi/2*5
+	inside = 38*38*19 - 5*discArea(6, func(x, y float64) bool { return (x >= 0 && y >= 1) || (x < 0 && y >= -1) })
+	inCutter = 4 * discArea(5, func(x, y float64) bool { return x >= 0 && y <= 1 && y >= 0 })
+	want = solid - (inside - inCutter)
+	if r := soundness(out); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Errorf("a half turn open at one end: %s, want %g", r.String(), want)
 	}
 }
 

@@ -2,7 +2,7 @@
 // GOOS=js GOARCH=wasm draws into canvases of a page, shows its menus,
 // dialogs and console as HTML, and reads and writes its files in the
 // in-memory file system the page provides (cmd/telesapr-web/web/memfs.js).
-// The design is in doc/dev-notes/browser-wasm-spike.md.
+// The design is in doc/dev-notes/browser.md.
 //
 // The page calls into Go only through callbacks that enqueue: a Go
 // function called from JavaScript that blocks would deadlock the page.

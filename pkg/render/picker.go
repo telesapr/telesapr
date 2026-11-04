@@ -25,7 +25,20 @@ type ObjectPicker struct {
 	MinDepth    float64
 	MaxZIndex   int
 	Position    uint32
+	// MinAt is where the best candidate is near the mouse, in model
+	// space, where AtKnown is set: of the points of lines, edges and
+	// points (a quad or text gives none) within a pixel of the best
+	// distance, the one nearest the viewer, so that a circle seen edge
+	// on is found at its front half, not at the half behind it. The
+	// window asks whether a face hides it there.
+	MinAt   geom.Vector
+	AtKnown bool
+	atDepth float64
 }
+
+// atSlack is how much further from the mouse than the best candidate,
+// in pixels, a point may be and still be where it is found.
+const atSlack = 1.0
 
 var _ Canvas = (*ObjectPicker)(nil)
 
@@ -34,15 +47,44 @@ func (op *ObjectPicker) Camera() *Camera { return &op.Cam }
 
 // DoCompare records a candidate at the given distance.
 func (op *ObjectPicker) DoCompare(depth, distance float64, zIndex int, comparePosition uint32) {
+	op.compareAt(depth, distance, zIndex, comparePosition, geom.Vector{}, false)
+}
+
+// compareAt is DoCompare for a candidate whose point nearest the mouse,
+// at, is known.
+func (op *ObjectPicker) compareAt(depth, distance float64, zIndex int, comparePosition uint32, at geom.Vector, known bool) {
 	if distance > op.SelRadius {
 		return
 	}
 	if (zIndex == op.MaxZIndex && distance < op.MinDistance) || zIndex > op.MaxZIndex {
+		if zIndex > op.MaxZIndex || distance < op.MinDistance-atSlack {
+			// Clearly better: what was found before is not where this is.
+			op.AtKnown = false
+		}
 		op.MinDepth = depth
 		op.MinDistance = distance
 		op.MaxZIndex = zIndex
 		op.Position = comparePosition
 	}
+	if known && zIndex == op.MaxZIndex && distance <= op.MinDistance+atSlack {
+		// Depth grows away from the viewer.
+		if d := op.Cam.ProjectPoint3(at).Z; !op.AtKnown || d < op.atDepth {
+			op.MinAt, op.atDepth, op.AtKnown = at, d, true
+		}
+	}
+}
+
+// nearestOnSegment is the point of the segment ab whose projection is
+// nearest the mouse.
+func (op *ObjectPicker) nearestOnSegment(a, b geom.Vector) geom.Vector {
+	ap, bp := op.Cam.ProjectPoint(a), op.Cam.ProjectPoint(b)
+	d := bp.Minus(ap)
+	m := d.MagSquared()
+	if m == 0 {
+		return a
+	}
+	t := min(max(op.Point.Minus(ap).DivProjected(d), 0), 1)
+	return a.Plus(b.Minus(a).ScaledBy(t))
 }
 
 // DoQuad records a quad: distance 0 inside it, else to its nearest
@@ -89,7 +131,7 @@ func (op *ObjectPicker) DrawLine(a, b geom.Vector, hcs HStroke) {
 	}
 	distance := op.Point.DistanceToLine(ap, bp.Minus(ap), true)
 	depth := 0.5 * (op.Cam.ProjectPoint3(a).Z + op.Cam.ProjectPoint3(b).Z)
-	op.DoCompare(depth, distance-stroke.Width/2.0, stroke.ZIndex, 0)
+	op.compareAt(depth, distance-stroke.Width/2.0, stroke.ZIndex, 0, op.nearestOnSegment(a, b), true)
 }
 
 // inView is the part of the segment ab inside the view, when
@@ -144,7 +186,7 @@ func (op *ObjectPicker) DrawEdges(el *srf.SEdgeList, hcs HStroke) {
 		}
 		distance := op.Point.DistanceToLine(ap, bp.Minus(ap), true)
 		depth := 0.5 * (op.Cam.ProjectPoint3(e.A).Z + op.Cam.ProjectPoint3(e.B).Z)
-		op.DoCompare(depth, distance-stroke.Width/2.0, stroke.ZIndex, uint32(e.AuxB))
+		op.compareAt(depth, distance-stroke.Width/2.0, stroke.ZIndex, uint32(e.AuxB), op.nearestOnSegment(e.A, e.B), true)
 	}
 }
 
@@ -183,7 +225,7 @@ func (op *ObjectPicker) DrawPoint(o geom.Vector, hcs HStroke) {
 	}
 	distance := op.Point.DistanceTo(po) - stroke.Width/2
 	depth := op.Cam.ProjectPoint3(o).Z
-	op.DoCompare(depth, distance, stroke.ZIndex, 0)
+	op.compareAt(depth, distance, stroke.ZIndex, 0, o, true)
 }
 
 // DrawPolygon is not implemented.
@@ -215,6 +257,7 @@ func (op *ObjectPicker) Pick(drawFn func()) bool {
 	op.MinDepth = veryPositive
 	op.MinDistance = veryPositive
 	op.MaxZIndex = math.MinInt32
+	op.AtKnown = false
 	drawFn()
 	return op.MinDistance < op.SelRadius
 }

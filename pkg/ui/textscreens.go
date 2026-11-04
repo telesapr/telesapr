@@ -233,7 +233,7 @@ func (tw *textWindow) ShowListOfGroups() {
 		// path or a drawing's sketch is open by design.
 		warn := ((g.Type == sketch.GroupExtrude || g.Type == sketch.GroupLathe) &&
 			sk.Group(g.OpA).PolyError.How != int(core.PolyGood)) ||
-			g.Problem.Msg != "" || g.LinkProblem != ""
+			g.Problem.Msg != "" || g.LinkProblem != "" || len(sk.LeftOutEdgeNames(g.H)) > 0
 		dof := g.Solved.Dof
 		sdof := "ok "
 		if ok && dof > 0 {
@@ -336,7 +336,9 @@ func (tw *textWindow) ShowListOfGroups() {
 		lf(tw.ScreenShowEditView),
 		lf(tw.ScreenShowConfiguration))
 	tw.Printf(false, "  %Fl%Lr%fparameters%E", lf(tw.ScreenShowParameters))
-	if n := len(sk.BrokenReferences) + len(sk.Mended) + len(sk.ExprErrors); n > 0 {
+	// What was left out is among the broken references already, but
+	// stays listed after they are cleared.
+	if n := len(sk.BrokenReferences) + len(sk.Mended) + len(sk.ExprErrors); n > 0 || len(sk.LeftOutNames()) > 0 {
 		tw.Printf(false, "  %Fx%Lb%fbroken references (%d)%E", lf(tw.ScreenShowBrokenReferences), n)
 	}
 }
@@ -1566,6 +1568,30 @@ func (tw *textWindow) showGroupEdges(g *sketch.Group, what string) {
 	}
 	if len(g.Edges) == 0 && len(g.SolidEdges) == 0 {
 		tw.Printf(false, "%Bd     (none)")
+	}
+	tw.showLeftOutEdges(g)
+}
+
+// showLeftOutEdges says which edges the damaged file this group was
+// opened from names and doesn't hold: the group goes without them, and
+// a save keeps them in the file, until its edges are edited.
+func (tw *textWindow) showLeftOutEdges(g *sketch.Group) {
+	names := tw.ss.SK.LeftOutEdgeNames(g.H)
+	if len(names) == 0 {
+		return
+	}
+	msg := fmt.Sprintf("The file names %d edges it doesn't hold, left out here and kept in the file: %s. "+
+		"Editing the edges lets them go.", len(names), strings.Join(names, ", "))
+	if len(names) == 1 {
+		msg = fmt.Sprintf("The file names an edge it doesn't hold, left out here and kept in the file: %s. "+
+			"Editing the edges lets it go.", names[0])
+	}
+	for i, line := range wrapWords(msg, maxCols-6) {
+		indent := "   "
+		if i > 0 {
+			indent = "     "
+		}
+		tw.Printf(false, "%s%Fx%s%E", indent, line)
 	}
 }
 

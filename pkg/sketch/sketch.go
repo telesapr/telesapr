@@ -54,6 +54,9 @@ type Sketch struct {
 	// sentence fragment each (mend.go); ClearBrokenReferences empties
 	// it with BrokenReferences.
 	Mended []string
+	// LeftOut is what the load of a damaged file left out of the model
+	// and a save writes back (leftout.go), or nil.
+	LeftOut *LeftOut
 	// broken collects them during a regeneration; names are those of
 	// the groups and requests at the end of the last one.
 	broken []BrokenReference
@@ -324,10 +327,10 @@ func (s *Sketch) AddReferences() {
 }
 
 // The Add* functions add an item with a new handle, one more than the
-// largest in use.
+// largest in use, counting what was left out (LeftOut).
 
 func (s *Sketch) AddGroup(g Group) core.HGroup {
-	var top uint32
+	top, _, _ := s.LeftOut.topHandles()
 	for i := range s.Groups {
 		top = maxU32(top, s.Groups[i].H.V)
 	}
@@ -337,7 +340,7 @@ func (s *Sketch) AddGroup(g Group) core.HGroup {
 }
 
 func (s *Sketch) AddRequest(r Request) core.HRequest {
-	var top uint32
+	_, top, _ := s.LeftOut.topHandles()
 	for i := range s.Requests {
 		top = maxU32(top, s.Requests[i].H.V)
 	}
@@ -367,7 +370,7 @@ func (s *Sketch) AddParam(p core.Param) core.HParam {
 }
 
 func (s *Sketch) AddConstraint(c core.Constraint) core.HConstraint {
-	var top uint32
+	_, _, top := s.LeftOut.topHandles()
 	for i := range s.Constraints {
 		top = maxU32(top, s.Constraints[i].H.V)
 	}
@@ -404,6 +407,7 @@ func (s *Sketch) Clear() {
 	s.Parameters = nil
 	s.ExprErrors = nil
 	s.ClearBrokenReferences()
+	s.LeftOut = nil
 	s.Section = nil
 	s.names = knownNames{}
 	s.Units = core.UnitMM

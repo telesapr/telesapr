@@ -83,8 +83,10 @@ func TestOracleFittedCorner(t *testing.T) {
 	dir := end.Minus(top).WithMagnitude(1)
 	want := 80 * (55 + cubicLength(slantCubic(end, dir)))
 	o := oracleOf(t, d)
-	if m := o.Measure(1e-3, 256); !near(m.Volume, want, 2e-3) {
-		t.Errorf("volume %g, want %g (spread %g at %d rays)", m.Volume, want, m.Spread(), m.Rays)
+	if measuresVolume() {
+		if m := o.Measure(1e-3, 256); !near(m.Volume, want, 2e-3) {
+			t.Errorf("volume %g, want %g (spread %g at %d rays)", m.Volume, want, m.Spread(), m.Rays)
+		}
 	}
 	if diffs := o.Diff(meshOf(d), 16, 0.05); len(diffs) != 0 {
 		t.Errorf("%d rays disagree with the mesh, as %+v", len(diffs), diffs[0])
@@ -111,8 +113,10 @@ func TestOracleFittedTwistedCorner(t *testing.T) {
 	dir := end.Minus(top).WithMagnitude(1)
 	want := 80 * (55 + cubicLength(slantCubic(end, dir)))
 	o := oracleOf(t, d)
-	if m := o.Measure(1e-3, 256); !near(m.Volume, want, 2e-3) {
-		t.Errorf("volume %g, want %g (spread %g at %d rays)", m.Volume, want, m.Spread(), m.Rays)
+	if measuresVolume() {
+		if m := o.Measure(1e-3, 256); !near(m.Volume, want, 2e-3) {
+			t.Errorf("volume %g, want %g (spread %g at %d rays)", m.Volume, want, m.Spread(), m.Rays)
+		}
 	}
 	if diffs := o.Diff(meshOf(d), 16, 0.05); len(diffs) != 0 {
 		t.Errorf("%d rays disagree with the mesh, as %+v", len(diffs), diffs[0])

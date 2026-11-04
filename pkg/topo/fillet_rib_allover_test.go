@@ -84,9 +84,14 @@ func readRibOracle(t *testing.T) []ribOracle {
 // that roll round the foot (ballHeight).
 func TestFilletRibAllOverOracle(t *testing.T) {
 	t.Parallel()
-	// Under the race detector a fifth of the rows (fixtures.Sample): the
-	// 24 took half of the package's time there.
-	for _, o := range fixtures.Sample(readRibOracle(t)) {
+	// Under the race detector two rows of the fifth fixtures.Sample keeps:
+	// the 24 took half of the package's time there, and the five 55
+	// minutes of processor.
+	rows := fixtures.Sample(readRibOracle(t))
+	if fixtures.RaceDetector {
+		rows = rows[:min(2, len(rows))]
+	}
+	for _, o := range rows {
 		if testing.Short() && (o.h != 10 || o.lean != 2 || o.r != 1) {
 			// Each case takes 10 to 20 s; the short run keeps one.
 			continue
@@ -332,6 +337,11 @@ func TestFilletRibFootAfterTop(t *testing.T) {
 		name  string
 		picks []topo.FilletPick
 	}{{"all", loop}, {"one", loop[1:2]}} {
+		if fixtures.RaceDetector && c.name == "one" {
+			// The same chain filled on the same goroutines, 6 minutes
+			// more under the race detector.
+			continue
+		}
 		var sh srf.SShell
 		sh.MakeFromCopyOf(before)
 		if err := topo.FilletPicks(&sh, c.picks, 1, 1<<29, false); err != nil {

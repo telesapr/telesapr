@@ -393,6 +393,10 @@ parallel to the chamfer's cone. The chamfer then takes that cone away together w
 ends, and no two faces lie on each other. Whether the Booleans succeed depends on where those
 cones and the ridges' ends lie. So a chamfered thread tries seven placements of the hidden cone
 and ridge ends, each at every plane for its ridges, before the window says it is not sound.
+Where the model's chord tolerance is coarser than these Booleans can take, a chamfered thread's
+groups, and a buttress nut's with or without a chamfer, are made at a tolerance of their own: a
+twentieth of the pitch, or a tenth of a rounded crest's radius where that is finer. The rest of
+the part keeps the model's.
 `TestThreadChamferSweep` makes eleven sizes of every form, as screws, studs, nuts and tapped
 holes, at three lengths and five chord tolerances, 660 in all. All come out sound since the
 Boolean's curves were refined beside grazing meets (2026-10-29).

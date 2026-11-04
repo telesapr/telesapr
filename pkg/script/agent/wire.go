@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"sync"
 	"time"
 )
@@ -193,13 +192,13 @@ var ErrNotRunning = errors.New("TeleSAPR isn't running, or Script > Allow AI Con
 type Remote struct {
 	// Connect makes a connection to the program; its error should be,
 	// or wrap, ErrNotRunning when there is none to connect to.
-	Connect func() (net.Conn, error)
+	Connect func() (Conn, error)
 	// CancelWait is how long a cancelled request waits for the
 	// program to say what came of it; a second if zero.
 	CancelWait time.Duration
 
 	mu      sync.Mutex
-	conn    net.Conn
+	conn    Conn
 	enc     *json.Encoder
 	next    int
 	pending map[int]chan response
@@ -208,7 +207,7 @@ type Remote struct {
 var _ Backend = (*Remote)(nil)
 
 // link is the connection, made if there is none.
-func (r *Remote) link() (net.Conn, error) {
+func (r *Remote) link() (Conn, error) {
 	r.mu.Lock()
 	if r.conn != nil {
 		defer r.mu.Unlock()
@@ -245,7 +244,7 @@ func (r *Remote) link() (net.Conn, error) {
 
 // read gives each response to the call that waits for it, and when
 // the connection ends, ends them all.
-func (r *Remote) read(conn net.Conn) {
+func (r *Remote) read(conn Conn) {
 	scan := bufio.NewScanner(conn)
 	scan.Buffer(make([]byte, 0, 64<<10), maxLine)
 	for scan.Scan() {
@@ -266,7 +265,7 @@ func (r *Remote) read(conn net.Conn) {
 
 // drop forgets a connection that ended, and fails the calls that wait
 // on it.
-func (r *Remote) drop(conn net.Conn) {
+func (r *Remote) drop(conn Conn) {
 	_ = conn.Close()
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -285,7 +284,7 @@ func (r *Remote) drop(conn net.Conn) {
 var errBroken = errors.New("the connection to TeleSAPR ended")
 
 // roundTrip sends a request over conn and waits for its response.
-func (r *Remote) roundTrip(ctx context.Context, conn net.Conn, req request) (response, error) {
+func (r *Remote) roundTrip(ctx context.Context, conn Conn, req request) (response, error) {
 	r.mu.Lock()
 	if r.conn != conn {
 		r.mu.Unlock()

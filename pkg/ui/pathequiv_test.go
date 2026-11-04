@@ -30,7 +30,7 @@ import (
 // headless platform, and the Go script testdata/ui/scripts/<goScript>.go
 // runs on a new sketch with no interface, as telesapr-cli run does.
 // Both paths must reach the same engine entry points, so neither can
-// drift from the other (doc/done-audit.md, "Definition of done").
+// drift from the other (doc/dev-notes/done-audit.md, "Definition of done").
 // The pairs are named path_*, and have no golden of their own: each
 // path is the other's judge. An interface script must not save: a save
 // regenerates, and the solver is not a fixed point, so a solved sketch
@@ -220,9 +220,50 @@ var pathEquivalences = map[string]pathCheck{
 			t.Errorf("the sweep: type %d, problem %q, %d edges, corner radius %g", g.Type, g.Problem.Msg, len(g.Edges), g.ValB)
 		}
 	},
+	// A twisted sweep round a sharp corner beside an arc, the twist typed
+	// in on its screen and held still but for the line past the joint, and
+	// by a script.
+	"sweep_twisted_run": func(t *testing.T, ui, _ *sketch.Sketch) {
+		if g := ui.Group(ui.Active); g.Type != sketch.GroupSweep || g.Problem.Msg != "" || g.ValC != 90 {
+			t.Errorf("the sweep: type %d, problem %q, twist %g", g.Type, g.Problem.Msg, g.ValC)
+		}
+	},
+	// A twisted sweep along two arcs about a sharp corner, with no line to
+	// twist along, the twist typed in on its screen and held still along
+	// each arc only as far as the corner's joint reaches, and by a script.
+	"sweep_twisted_arcs": func(t *testing.T, ui, _ *sketch.Sketch) {
+		if g := ui.Group(ui.Active); g.Type != sketch.GroupSweep || g.Problem.Msg != "" || g.ValC != 90 || len(g.ThisShell.Surface) == 0 {
+			t.Errorf("the sweep: type %d, problem %q, twist %g, %d surfaces", g.Type, g.Problem.Msg, g.ValC, len(g.ThisShell.Surface))
+		}
+	},
+	// A sweep along a line and an arc about a corner of 150°, too sharp
+	// for the kernel to join, picked with the mouse, and by a script: the
+	// pieces and the corner's fill joined, sound.
+	"sweep_sharp_arc": func(t *testing.T, ui, _ *sketch.Sketch) {
+		g := ui.Group(ui.Active)
+		if g.Type != sketch.GroupSweep || g.Problem.Msg != "" || len(g.ThisShell.Surface) == 0 {
+			t.Errorf("the sweep: type %d, problem %q, %d surfaces", g.Type, g.Problem.Msg, len(g.ThisShell.Surface))
+		}
+	},
+	// A sweep along a line and a cubic about a corner of 150°, which the
+	// kernel's fitted sweep can't mitre, picked with the mouse, and by a
+	// script: the pieces and the corner's fill joined, sound.
+	"sweep_sharp_cubic": func(t *testing.T, ui, _ *sketch.Sketch) {
+		g := ui.Group(ui.Active)
+		if g.Type != sketch.GroupSweep || g.Problem.Msg != "" || len(g.ThisShell.Surface) == 0 {
+			t.Errorf("the sweep: type %d, problem %q, %d surfaces", g.Type, g.Problem.Msg, len(g.ThisShell.Surface))
+		}
+	},
 	// A sweep round a closed path, picked with the mouse, and by a script.
 	"sweep_ring": func(t *testing.T, ui, _ *sketch.Sketch) {
 		if g := ui.Group(ui.Active); g.Type != sketch.GroupSweep || g.Problem.Msg != "" || len(g.Edges) != 1 {
+			t.Errorf("the sweep: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.Edges))
+		}
+	},
+	// A sweep round a closed path out of a plane with sharp corners,
+	// fitted and mitred, picked with the mouse, and by a script.
+	"sweep_skew": func(t *testing.T, ui, _ *sketch.Sketch) {
+		if g := ui.Group(ui.Active); g.Type != sketch.GroupSweep || g.Problem.Msg != "" || len(g.Edges) != 4 {
 			t.Errorf("the sweep: type %d, problem %q, %d edges", g.Type, g.Problem.Msg, len(g.Edges))
 		}
 	},
@@ -494,6 +535,58 @@ var pathEquivalences = map[string]pathCheck{
 		want := math.Pi * ((24*24-10*10)*20 - (24*24-11*11)*18)
 		if !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
 			t.Errorf("the channel ring: %s, want volume %g", r.String(), want)
+		}
+	},
+	// A stepped ring turned by a lathe, the narrow part's outer side
+	// picked with the mouse and the ring hollowed open there, and the same
+	// made by a script: the side meets the step at an inside corner, where
+	// the inside steps along the step's plane.
+	"shell_step": func(t *testing.T, ui, _ *sketch.Sketch) {
+		g := ui.Group(ui.Active)
+		if g.Type != sketch.GroupShell || g.Problem.Msg != "" {
+			t.Fatalf("the shell: type %d, problem %q", g.Type, g.Problem.Msg)
+		}
+		// The walls: the bottom (4..24 by 0..1), the hole's (4..5 by 1..20),
+		// the rim (23..24 by 1..10), the step (14..23 by 9..10) and the top
+		// (5..14 by 19..20), turned.
+		var m srf.SMesh
+		g.RunningShell.TriangulateInto(&m)
+		r := check.Solid(&g.RunningShell, &m)
+		want := math.Pi * ((24*24-4*4)*1 + (5*5-4*4)*19 + (24*24-23*23)*9 + (23*23-14*14)*1 + (14*14-5*5)*1)
+		if !r.Sound() || math.Abs(r.Volume-want) > 0.005*want {
+			t.Errorf("the stepped ring: %s, want volume %g", r.String(), want)
+		}
+	},
+	// A block with a ring revolved three quarters of a turn on its side,
+	// the block's top picked with the mouse and the solid hollowed open
+	// there, and the same made by a script: the ring's end on the block is
+	// moved out into it, its end in the air a wall.
+	"shell_ring_on_block": func(t *testing.T, ui, _ *sketch.Sketch) {
+		g := ui.Group(ui.Active)
+		if g.Type != sketch.GroupShell || g.Problem.Msg != "" {
+			t.Fatalf("the shell: type %d, problem %q", g.Type, g.Problem.Msg)
+		}
+		// The block 20 by 20 by 10 and three quarters of the ring 5..10
+		// out, 10 high, less the block's inside (18 by 18 by 9) and the
+		// ring's, 6..9 out and 9 high (the tops are one face, open), past
+		// its end on the block moved out by 1 and short of the wall 1
+		// thick along its other end: its area in plan by rows, the ring
+		// turned from +x to -y.
+		const n = 1000
+		area := 0.0
+		for i := range n {
+			for j := range n {
+				x, y := -9+18*(float64(i)+0.5)/n, -9+18*(float64(j)+0.5)/n
+				if r := math.Hypot(x, y); r >= 6 && r <= 9 && !(y > 1 && x > 0) && !(math.Abs(x) <= 1 && y >= 0) {
+					area += 18 * 18 / float64(n*n)
+				}
+			}
+		}
+		want := 4000 + 562.5*math.Pi - (18*18*9 + 9*area)
+		var m srf.SMesh
+		g.RunningShell.TriangulateInto(&m)
+		if r := check.Solid(&g.RunningShell, &m); !r.Sound() || math.Abs(r.Volume-want) > 0.005*want {
+			t.Errorf("the ring on a block: %s, want volume %g", r.String(), want)
 		}
 	},
 	// An extrusion's draft set on its group screen, and the same set by a
@@ -875,6 +968,9 @@ func TestPathEquivalence(t *testing.T) {
 			continue
 		}
 		seen[name] = true
+		if raceLeavesOut(name, "thread") {
+			continue
+		}
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			fromUI, fromScript := requireSamePaths(t, "path_"+name, "path_"+name)

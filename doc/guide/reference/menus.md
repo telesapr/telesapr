@@ -164,7 +164,7 @@ Every entry of the main menu, its keys, and what a script calls to do the same (
 | Move Group Earlier |  | `GroupHistory.MoveBefore` |
 | Move Group Later |  | `GroupHistory.MoveBefore` |
 | Move Group to End |  | `GroupHistory.MoveToEnd`, `GroupHistory.MoveToEndWithSources` |
-| Broken References... |  | `Features.BrokenReferences`, `Features.Mended`, `Features.ClearBrokenReferences` |
+| Broken References... |  | `Features.BrokenReferences`, `Features.Mended`, `Features.LeftOut`, `Features.LeftOutMissing`, `Features.MendLeftOut`, `Features.DiscardLeftOut`, `Features.ClearBrokenReferences` |
 
 ## Assembly
 

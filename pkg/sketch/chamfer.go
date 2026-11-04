@@ -126,7 +126,7 @@ func (sk *Sketch) chamferTrial(solid *Group, edges []core.HEntity, solidEdges []
 		if err == nil {
 			return nil
 		}
-		if topo.RollingRefusal(err) {
+		if topo.RollingRefusal(err) || topo.NotClosedRefusal(err) {
 			// No wedge cuts there soundly (generateChamferShell).
 			return err
 		}
@@ -473,9 +473,10 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 			g.ThisShell.MakeFromCopyOf(&sh)
 			return true
 		}
-		if topo.RollingRefusal(err) {
-			// A wedge would stand open across a curved face: the
-			// edit's reason is the group's.
+		if topo.RollingRefusal(err) || topo.NotClosedRefusal(err) {
+			// A wedge would stand open across a curved face, or the
+			// edit's solid is not closed: the edit's reason is the
+			// group's.
 			g.RunningShell.MakeFromCopyOf(&prev.RunningShell)
 			if fe, ok := errors.AsType[*topo.FilletError](err); ok {
 				at := fe.At

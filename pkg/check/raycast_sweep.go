@@ -59,6 +59,9 @@ func sweepLeaves(sk *sketch.Sketch, g, src *sketch.Group) (union, error) {
 	steps, err := g.SweepSteps(sk)
 	if errors.Is(err, sketch.ErrFittedSweep) {
 		sp, err := g.FittedSweepPath(sk)
+		if errors.Is(err, sketch.ErrSweepJoined) {
+			return nil, fmt.Errorf("%s: a corner beside a cubic: %w", g.DescriptionString(), ErrUnsupported)
+		}
 		if err != nil {
 			return nil, err
 		}

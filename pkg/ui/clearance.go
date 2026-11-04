@@ -9,7 +9,7 @@ import (
 )
 
 // The clearance between parts and the thickness of walls (item 14 of
-// doc/notes/modelling_upgrades.md, Sketch.Clearances and
+// doc/dev-notes/modelling_upgrades.md, Sketch.Clearances and
 // Sketch.WallThickness). Its screen takes the gap and the wall
 // thickness to look for less than, checks the model up to the active
 // group, lists what it found, and marks each gap and thin wall on the
@@ -112,6 +112,11 @@ func (tw *textWindow) showWalls() {
 	if r.Unmeasured > 0 {
 		tw.Printf(false, "   %d points could not be measured: the mesh is", r.Unmeasured)
 		tw.Printf(false, "   open there, or parts stand in each other.")
+	}
+	if r.NearCut {
+		tw.Printf(false, "   A part has more triangles facing each other within")
+		tw.Printf(false, "   its thinnest wall than are measured: a thinner")
+		tw.Printf(false, "   wall between two of those left may be missed.")
 	}
 }
 

@@ -189,3 +189,96 @@ func TestShellJoinedRevolveEndsInside(t *testing.T) {
 		t.Fatalf("a half ring on a block's side: %s, want %g", r.String(), want)
 	}
 }
+
+// A round post half sunk into the side of a block, as high as it, open
+// at the block's top or at both tops: the solid's top is two faces in
+// one plane, split along the arc where they meet, which the insides'
+// tops left on them don't match, so the inside is run out past the top.
+// The post's sides run on smoothly into each other and are moved in as
+// walls all round; its top is a wall unless it is opened too.
+func TestShellJoinedFlushPost(t *testing.T) {
+	t.Parallel()
+	tol := srf.Tol(0.001, 20)
+	body := &srf.SShell{Tol: tol}
+	body.MakePrism([]geom.Vector{v(-20, -20, 0), v(0, -20, 0), v(0, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, 10),
+		core.NewRGBA(100, 100, 100, 255))
+	post := cylinder(3, 10, tol)
+	sh := &srf.SShell{Tol: tol}
+	sh.MakeFromUnionOf(body, post)
+	parts := []topo.ShellPart{{Shell: body}, {Shell: post}}
+	// The block's inside to x = -1, and of the post's, of radius 2 from
+	// 1 up, what lies past that: half a disc and a strip 1 wide.
+	past := 2*math.Pi + math.Sqrt(3) + 2*math.Pi/3
+	for _, c := range []struct {
+		open []geom.Vector
+		high float64
+	}{
+		{[]geom.Vector{v(-10, 0, 10)}, 8},
+		{[]geom.Vector{v(-10, 0, 10), v(1, 0, 10)}, 9},
+	} {
+		out, err := topo.ShellJoined(sh, parts, facesAt(t, sh, c.open...), 1, 1000)
+		if err != nil {
+			t.Errorf("open at %v: %v", c.open, err)
+			continue
+		}
+		want := 8000 + 45*math.Pi - (9*18*38 + past*c.high)
+		if r := soundness(out); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+			t.Errorf("open at %v: %s, want %g", c.open, r.String(), want)
+		}
+	}
+}
+
+// flushPost is a 40 × 40 × 10 block with a round post of radius 3 sunk
+// into its top at x, from 2 up, as high as the block, the solid and its
+// parts, at tol.
+func flushPost(x float64, tol srf.Tolerance) (*srf.SShell, []topo.ShellPart) {
+	block := &srf.SShell{Tol: tol}
+	block.MakePrism([]geom.Vector{v(-20, -20, 0), v(20, -20, 0), v(20, 20, 0), v(-20, 20, 0)}, v(0, 0, 0), v(0, 0, 10),
+		core.NewRGBA(100, 100, 100, 255))
+	post := &srf.SShell{Tol: tol}
+	post.MakeFromTransformationOf(cylinder(3, 8, tol), v(x, 0, 2), geom.QuaternionIdentity, 1)
+	sh := &srf.SShell{Tol: tol}
+	sh.MakeFromUnionOf(block, post)
+	return sh, []topo.ShellPart{{Shell: block}, {Shell: post}}
+}
+
+// A round post sunk into a block's top beside its side, standing out 1
+// past it, as high as the block, open at both tops. The post's foot lies
+// inside the block; moved down by the thickness to join the post's
+// inside to the block's, it would take the post's inside, which reaches
+// the block's side at x 20, down past where the post stands out, to the
+// block's side below it. Kept as a wall, the foot is taken away by the
+// block's inside up to x 19 and stays a wall past it, the block's side's.
+func TestShellJoinedFlushPostStep(t *testing.T) {
+	t.Parallel()
+	tol := srf.Tol(0.001, 20)
+	sh, parts := flushPost(18, tol)
+	out, err := topo.ShellJoined(sh, parts, facesAt(t, sh, v(-10, -10, 10), v(19, 0, 10)), 1, 1000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The block and the post's segment past x 20, less the block's
+	// inside, 38 × 38 × 9, and the post's, of radius 2 from 3 up, past x 19.
+	segment := func(r, d float64) float64 { return r*r*math.Acos(d/r) - d*math.Sqrt(r*r-d*d) }
+	want := 16000 + 8*segment(3, 2) - (38*38*9 + 7*segment(2, 1))
+	if r := soundness(out); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Fatalf("a post at 18: %s, want %g", r.String(), want)
+	}
+}
+
+// The same post at 21: its inside, of radius 2, touches the block's,
+// which runs to x 19, along a line, and the walls either side of the
+// line meet there with no thickness. That is no closed solid, so the
+// shell is refused, saying what touches, not made unsound.
+func TestShellJoinedFlushPostRefused(t *testing.T) {
+	t.Parallel()
+	tol := srf.Tol(0.001, 20)
+	sh, parts := flushPost(21, tol)
+	out, err := topo.ShellJoined(sh, parts, facesAt(t, sh, v(-10, -10, 10), v(22, 0, 10)), 1, 1000)
+	if err == nil {
+		t.Fatalf("made, %s", soundness(out).String())
+	}
+	if !strings.Contains(err.Error(), "no closed solid") || !strings.Contains(err.Error(), "touch") {
+		t.Errorf("refused with %v", err)
+	}
+}

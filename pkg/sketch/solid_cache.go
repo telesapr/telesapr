@@ -15,7 +15,7 @@ import (
 )
 
 // Solids kept by what they were made from (item 17 of
-// doc/notes/modelling_upgrades.md). A regeneration makes each group's
+// doc/dev-notes/modelling_upgrades.md). A regeneration makes each group's
 // solid from the group's definition, its entities and params, those of
 // the groups before it, the solids before it and the tolerance. Those
 // inputs are hashed, group by group in order, into a key; the solid made
@@ -46,6 +46,7 @@ type solidResult struct {
 	problem                 GroupProblem
 	tol                     srf.Tolerance
 	fittedPath              *topo.SweepPath
+	sweepRuns               *sweepRuns
 	sweepClosed             bool
 	// size is about how many bytes the copy holds.
 	size int64
@@ -63,6 +64,7 @@ func (g *Group) result() *solidResult {
 		problem:       g.Problem,
 		tol:           g.solidTol,
 		fittedPath:    g.fittedPath,
+		sweepRuns:     g.sweepRuns,
 		sweepClosed:   g.sweepClosed,
 	}
 	r.size = shellSize(&r.thisShell) + shellSize(&r.runningShell) +
@@ -81,6 +83,7 @@ func (g *Group) setResult(r *solidResult) {
 	g.Problem = r.problem
 	g.solidTol = r.tol
 	g.fittedPath = r.fittedPath
+	g.sweepRuns = r.sweepRuns
 	g.sweepClosed = r.sweepClosed
 	g.forgetTopology()
 	g.DisplayDirty = true
@@ -451,16 +454,19 @@ func (sk *Sketch) prefixKey(prev solidKey, g *Group, params []core.HParam) solid
 	return h.sum()
 }
 
-// solidKeyOf is the key of the solid of a group whose prefix key is
-// prefix, made at the sketch's tolerance after the solid prev names;
-// zero when either is unknown.
-func (sk *Sketch) solidKeyOf(prefix, prev solidKey) solidKey {
+// solidKeyOf is the key of the solid of the group g, whose prefix key
+// is prefix, made at its tolerance (groupSolidTol) after the solid prev
+// names; zero when either is unknown. The tolerance is the group's own
+// rather than the sketch's: a chamfered thread's or a buttress nut's
+// turning is made finer by what the thread's later groups hold, which
+// its prefix doesn't.
+func (sk *Sketch) solidKeyOf(g *Group, prefix, prev solidKey) solidKey {
 	if !prefix.known() || !prev.known() || sk.solidCache() == nil {
 		return solidKey{}
 	}
 	h := sk.newKeyHash()
 	h.key(prefix)
 	h.key(prev)
-	h.value(reflect.ValueOf(sk.tol))
+	h.value(reflect.ValueOf(sk.groupSolidTol(g)))
 	return h.sum()
 }

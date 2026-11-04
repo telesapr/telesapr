@@ -3,7 +3,5 @@
 file $testdata/ui/sweep_ring.tlspr
 menu File|Open...
 view other
-move 339 280.5
-down L 339 280.5
-up L 339 280.5
+click-entity 40000
 menu Features|Sweep Along Path

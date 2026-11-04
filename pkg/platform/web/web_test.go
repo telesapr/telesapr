@@ -1,8 +1,11 @@
 package web
 
 import (
+	"slices"
+	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/telesapr/telesapr/pkg/platform"
 )
@@ -114,6 +117,14 @@ func TestKeyCandidates(t *testing.T) {
 			want: []platform.KeyboardEvent{ch('3', true, false)}},
 		{name: "alt is the browser's", key: "f", alt: true},
 		{name: "AltGr", key: "@", ctrl: true, alt: true},
+		{name: "ctrl alt n is ctrl n, which the browser keeps", key: "n", code: "KeyN", ctrl: true, alt: true,
+			want: []platform.KeyboardEvent{ch('n', false, true)}},
+		{name: "ctrl alt shift t is ctrl shift t", key: "T", code: "KeyT", shift: true, ctrl: true, alt: true,
+			want: []platform.KeyboardEvent{ch('t', true, true)}},
+		{name: "cmd alt w is ctrl w", key: "w", code: "KeyW", alt: true, meta: true,
+			want: []platform.KeyboardEvent{ch('w', false, true)}},
+		{name: "ctrl alt of another key is still AltGr", key: "s", code: "KeyS", ctrl: true, alt: true},
+		{name: "alt n alone is the browser's", key: "n", code: "KeyN", alt: true},
 		{name: "modifier", key: "Shift", shift: true},
 		{name: "home", key: "Home"},
 		{name: "F13", key: "F13"},
@@ -159,6 +170,60 @@ func TestTakesKey(t *testing.T) {
 	}
 	if takesKey("Shift", "ShiftLeft", true, false, false, false) {
 		t.Error("a modifier is nobody's")
+	}
+	if !takesKey("n", "KeyN", false, true, true, false) {
+		t.Error("Ctrl+Alt+N is New in a page, where the browser keeps Ctrl+N")
+	}
+}
+
+func TestQueueAfterEachFunction(t *testing.T) {
+	t.Parallel()
+	q := newEventQueue()
+	var log []string
+	q.after = func() { log = append(log, "after") }
+	q.post(func() { log = append(log, "a") })
+	q.post(func() { log = append(log, "b") })
+	q.post(func() { panic("bug") })
+	n := 0
+	q.run(func() bool { n++; return n > 3 })
+	want := []string{"a", "after", "b", "after", "after"}
+	if !slices.Equal(log, want) {
+		t.Errorf("got %v, want %v", log, want)
+	}
+}
+
+func TestBusyClock(t *testing.T) {
+	t.Parallel()
+	t0 := time.Unix(1000, 0)
+	at := t0.Add
+	var b busyClock
+	if y, _ := b.step(at(0)); y {
+		t.Error("the first step starts the spell, it doesn't yield")
+	}
+	if y, _ := b.step(at(50 * time.Millisecond)); y {
+		t.Error("yielded before yieldEvery")
+	}
+	if y, text := b.step(at(120 * time.Millisecond)); !y || text != "" {
+		t.Errorf("at 120 ms: yield %v, text %q; want a frame and nothing shown", y, text)
+	}
+	if y, _ := b.step(at(150 * time.Millisecond)); y {
+		t.Error("yielded again within yieldEvery of the last frame")
+	}
+	y, text := b.step(at(2500 * time.Millisecond))
+	if !y || text != busyText(2500*time.Millisecond) || !strings.Contains(text, "2 s") {
+		t.Errorf("at 2.5 s: yield %v, text %q", y, text)
+	}
+	if !b.end() {
+		t.Error("a shown spell should be taken off the page")
+	}
+	if b.end() {
+		t.Error("end twice")
+	}
+	var short busyClock
+	short.step(at(0))
+	short.step(at(150 * time.Millisecond))
+	if short.end() {
+		t.Error("a short spell was never shown")
 	}
 }
 
@@ -286,6 +351,18 @@ func TestFileHelpers(t *testing.T) {
 	}
 	if folderOrHome("/work/a.tlspr") != "/work" || folderOrHome("a.tlspr") != homeDir {
 		t.Error("folderOrHome")
+	}
+	for _, tc := range []struct{ dir, name, ext, want string }{
+		{"", "part", "tlspr", homeDir + "/part.tlspr"},
+		{"/work", " part.step ", "tlspr", "/work/part.step"},
+		{"", "../etc/part", "tlspr", homeDir + "/part.tlspr"},
+	} {
+		if got := saveTarget(tc.dir, tc.name, tc.ext); got != tc.want {
+			t.Errorf("saveTarget(%q, %q, %q) = %q, want %q", tc.dir, tc.name, tc.ext, got, tc.want)
+		}
+	}
+	if !strings.Contains(replaceMessage("part.tlspr"), "part.tlspr") {
+		t.Error("replaceMessage names the file")
 	}
 }
 

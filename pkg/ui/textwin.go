@@ -218,6 +218,11 @@ type shownState struct {
 	// nothing to take: its screen stays while the inputs are picked, as
 	// the drawing's does (featureinputs.go).
 	inputsFor core.HGroup
+	// mendFor is the entity a damaged file lacks whose [use the
+	// selected] was clicked with nothing selected: the Broken
+	// References screen stays while what takes its place is picked
+	// (history.go).
+	mendFor core.HEntity
 }
 
 // cellMeta is how one character cell is drawn and what clicking it
@@ -781,7 +786,8 @@ func (tw *textWindow) Show() {
 		tw.Printf(true, "%Fl%f%Ll(cancel operation)%E", linkFunction(tw.ScreenUnselectAll))
 
 	case (gs.n > 0 || gs.constraints > 0 || len(gs.solidEdge) > 0) && tw.shown.screen != screenPasteTransformed &&
-		tw.shown.screen != screenDrawing && tw.shown.screen != screenDatums && !tw.awaitingInputs():
+		tw.shown.screen != screenDrawing && tw.shown.screen != screenDatums && !tw.awaitingInputs() &&
+		!tw.awaitingMend():
 
 		// The drawing's screen stays while edges and faces are picked
 		// for its dimensions (roadmap 29.2), the datums' while what
@@ -1472,6 +1478,9 @@ func (tw *textWindow) GoToScreen(screen Screen) {
 	tw.shown.screen = screen
 	if screen != screenGroupInfo {
 		tw.shown.inputsFor = core.HGroup{}
+	}
+	if screen != screenBrokenReferences {
+		tw.shown.mendFor = core.HEntity{}
 	}
 }
 

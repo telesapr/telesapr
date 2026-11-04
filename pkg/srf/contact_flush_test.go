@@ -121,18 +121,18 @@ func endBand(y, top, sag float64, flip bool, tol Tolerance) *SShell {
 // Boolean is sound, and the volumes add up: the cone less the band and
 // their intersection are the cone, and so on.
 //
-// Left: the top meeting the cone at one point, where the end face's arc
-// is tangent to the curve the end face cuts from the cone (top 21, sag
-// -1). The end face outside the cone is two lobes touching there, and
-// pkg/topo chains it as one loop through the point twice while its mesh
-// needs it as two; the ear clipper leaves a sliver beside the point
-// open (roadmap K3).
+// With the top meeting the cone at one point (top 21, sag -1), where the
+// end face's arc is tangent to the curve the end face cuts from the
+// cone, the end face outside the cone is two lobes touching there, which
+// its trims run round as one loop through the point twice; the mesh
+// closes, and pkg/topo splits the loop into the two faces
+// (TestPinchedLoopSplit).
 func TestBandEndOnCone(t *testing.T) {
 	t.Parallel()
 	tol := Tol(0.0008544921875, 200)
 	grid := sweep.Grid{
 		Axes: []sweep.Axis{
-			sweep.Floats("top", 20.5, 20.9, 21.05, 21.5),
+			sweep.Floats("top", 20.5, 20.9, 21, 21.05, 21.5),
 			sweep.Floats("sag", -1, 1),
 			sweep.Bools("flip"),
 			sweep.Bools("quarters"),
@@ -171,6 +171,74 @@ func TestBandEndOnCone(t *testing.T) {
 			if math.Abs(c.got-c.want) > 1e-3*(cv+bv) {
 				return fmt.Errorf("%s %g, want %g", c.name, c.got, c.want)
 			}
+		}
+		return nil
+	}).Require(t)
+}
+
+// TestBandInCone intersects the cone and the band of TestBandEndOnCone at
+// a finer chord, where the cone's side within the band strays from it as
+// the ear clipper meshes it: it fans a sliver from the cone's base to the
+// point where the end face's curve crosses its seam, through the solid.
+// The sliver's own edges each end on a face it meets and cross nothing,
+// but the flat end face's fan to that point passes through it: 30 of the
+// end face's edges crossed the mesh, with the band's top above the cone
+// or not. The mender tests a straying surface against the other faces'
+// edges too, and meshes it again (mendCrossings).
+func TestBandInCone(t *testing.T) {
+	t.Parallel()
+	tol := Tol(0.0005, 200)
+	grid := sweep.Grid{
+		Axes: []sweep.Axis{
+			sweep.Floats("top", 21, 21.001),
+			sweep.Floats("sag", -1, 1),
+			sweep.Bools("quarters"),
+		},
+		MaxFailRate: 0,
+		Parallel:    true,
+	}
+	grid.Run(func(p sweep.Point) error {
+		cone := lathedFrustum(p.Bool("quarters"), tol)
+		band := endBand(3, p.Float("top"), p.Float("sag"), false, tol)
+		out := SShell{Tol: tol}
+		out.MakeFromBoolean(cone, band, SurfaceInter)
+		if out.BooleanFailed || !meshIsSound(&out) {
+			return errUnsound(out.BooleanFailed)
+		}
+		return nil
+	}).Require(t)
+}
+
+// TestCutAcrossCurvedSeam cuts a box out of a block with a round post as
+// high as it standing half out past its side, the box's side crossing
+// the arc where the post's top meets the block's in one plane (roadmap
+// "a union opened at a top face two parts share"). The arc, a trim of
+// both tops, is split where the box's side meets it on its exact curve;
+// the line where that side crosses the tops was split where it crossed
+// the arc's chord, short of that by the chord's sag, and neither top's
+// trim closed.
+func TestCutAcrossCurvedSeam(t *testing.T) {
+	t.Parallel()
+	v := func(x, y, z float64) geom.Vector { return geom.Vector{X: x, Y: y, Z: z} }
+	grid := sweep.Grid{
+		Axes: []sweep.Axis{
+			sweep.Floats("chord", 0.02, 0.005, 0.001),
+			sweep.Floats("side", 18, 19, 21, 22),
+		},
+		MaxFailRate: 0,
+		Parallel:    true,
+	}
+	grid.Run(func(p sweep.Point) error {
+		tol := Tol(p.Float("chord"), 20)
+		block := extrudedBox(v(-20, -20, 0), v(20, 20, 10), tol)
+		post := extrudedCurves(circleCurves(v(20, 0, 2), v(1, 0, 0), v(0, 1, 0), 3), v(0, 0, 0), v(0, 0, 8), tol)
+		joined := SShell{Tol: tol}
+		joined.MakeFromBoolean(block, post, SurfaceUnion)
+		x := p.Float("side")
+		out := SShell{Tol: tol}
+		out.MakeFromBoolean(&joined, extrudedBox(v(-19, -10, 1), v(x, 10, 11), tol), SurfaceDiff)
+		if out.BooleanFailed || !meshIsSound(&out) {
+			return errUnsound(out.BooleanFailed)
 		}
 		return nil
 	}).Require(t)

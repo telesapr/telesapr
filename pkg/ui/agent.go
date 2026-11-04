@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"strings"
 
 	"github.com/telesapr/telesapr/pkg/platform"
@@ -13,13 +12,14 @@ import (
 
 // This file lets a program that draws by writing scripts, such as an
 // AI model's, work on the drawing on screen: Script > Allow AI
-// Connections makes a socket that telesapr-cli mcp connects to, and
+// Connections makes a socket that telesapr-cli mcp connects to (in a
+// browser, the page takes connections through window.postMessage), and
 // what comes through it runs in the script console, where the user
 // sees it.
 
 // agentServer listens for such programs.
 type agentServer struct {
-	listener net.Listener
+	listener agent.Listener
 	// path is the socket's.
 	path string
 	// stop ends the connections that are open.
@@ -74,11 +74,41 @@ func (ss *Application) AllowAgent(allow bool) error {
 	if err != nil {
 		return err
 	}
+	// The browser's listener lets in the page's own site, and asks the
+	// user about any other.
+	if o, ok := l.(interface{ AllowOrigins(func(string) bool) }); ok {
+		o.AllowOrigins(ss.allowAgentSite)
+	}
 	ctx, stop := context.WithCancel(context.Background())
 	ss.agent = &agentServer{listener: l, path: path, stop: stop}
 	go agent.Accept(ctx, l, consoleBackend{ss.Console()})
 	return nil
 }
+
+// allowAgentSite asks the user whether a program of the web site
+// origin may work on the drawing, in a browser where another site's
+// page asks to connect. It is called off the event loop, and waits
+// for the user's answer there.
+func (ss *Application) allowAgentSite(origin string) bool {
+	ask := func() error {
+		dialog := ss.Platform.CreateMessageDialog(ss.GW.window)
+		dialog.SetType(platform.DialogQuestion)
+		dialog.SetTitle("AI Connection")
+		dialog.SetMessage("A program on another site wants to work on the drawing:")
+		dialog.SetDescription(origin + "\n\nWhile AI connections are allowed it can run scripts on the drawing, read it, and open and save files.")
+		dialog.AddButton("&Allow", platform.ResponseYes, false)
+		dialog.AddButton("&Don't Allow", platform.ResponseNo, true)
+		if dialog.RunModal() != platform.ResponseYes {
+			return errSiteNotAllowed
+		}
+		return nil
+	}
+	return consoleBackend{ss.Console()}.onLoop(ask) == nil
+}
+
+// errSiteNotAllowed is the answer of a user who didn't let a site
+// connect.
+var errSiteNotAllowed = errors.New("site not allowed")
 
 // consoleBackend is the application as a program that writes scripts
 // sees it: the scripts run in the script console. Its methods are

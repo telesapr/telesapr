@@ -450,6 +450,17 @@ func (l *threadLayout) checkChamfer(o ThreadOptions) error {
 	if ends*reach >= free {
 		return fmt.Errorf("thread length must be more than %.4g mm for its chamfers", ends*reach)
 	}
+	// What a chamfer takes away is drawn on past the crest by a quarter
+	// of the thread's depth (layChamfer), which cuts nothing more. On a
+	// thread as short as a Tr40x7 nut 16 long that brings the two ends'
+	// cuts across each other, a sketch that crosses itself and cuts
+	// nothing: the ridges' ends were left standing past the part's. The
+	// cut then stops halfway between the crest and where the cuts would
+	// meet.
+	if drawn := math.Abs(l.chamferOut - l.chamferR); ends*drawn >= free {
+		way := math.Copysign(1, l.chamferOut-l.chamferR)
+		l.chamferOut = l.chamferR + way*(reach+free/ends)/2
+	}
 	return nil
 }
 
@@ -640,11 +651,14 @@ func (sk *Sketch) threadIsSound(tg threadGroups) bool {
 	return true
 }
 
-// solidIsSound tells whether the group's Boolean succeeded and the
-// mesh of its solid is watertight and doesn't cross itself.
+// solidIsSound tells whether the group made its solid, its Boolean
+// succeeded and the mesh of its solid is watertight and doesn't cross
+// itself. A group with a problem adds no solid, and passes on the one
+// before whole: a thread's chamfer that cut nothing left the ridges'
+// ends standing past the part's, in a mesh that was closed.
 func (sk *Sketch) solidIsSound(hg core.HGroup) bool {
 	g := sk.Group(hg)
-	if g.BooleanFailed {
+	if g.BooleanFailed || g.Problem.Msg != "" {
 		return false
 	}
 	g.GenerateDisplayItems(sk)

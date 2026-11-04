@@ -641,6 +641,27 @@ func (o *Oracle) Measure(rel float64, most int) RayMeasure {
 	}
 }
 
+// cellShiftI and cellShiftJ step the shifts of cellShift: the golden
+// ratio's and the plastic number's fractional parts, whose multiples
+// spread evenly over a cell and unlike each other.
+const (
+	cellShiftI = 0.6180339887498949
+	cellShiftJ = 0.7548776662466927
+)
+
+// cellShift is where, as a fraction of a cell from its middle, the ray
+// through the cells of row or column k crosses them: across the cells
+// of one column, those of successive rows. A face along the rays,
+// as a solid's face square to an axis is, then cuts a column's cells at
+// spread depths, and the column's rays find as much of it inside as the
+// face leaves; through the middles they would all fall on one side,
+// and the column count wholly in or out. The moments stay with the
+// cells' middles, so a box's are still exact.
+func cellShift(k int, step float64) float64 {
+	f := float64(k+1) * step
+	return f - math.Floor(f) - 0.5
+}
+
 func (o *Oracle) measureAt(n int) RayMeasure {
 	m := RayMeasure{Rays: n}
 	var moment [3]geom.Vector
@@ -658,19 +679,23 @@ func (o *Oracle) measureAt(n int) RayMeasure {
 		setElement(&dir, k, 1)
 		for a := range n {
 			for b := range n {
-				var from geom.Vector
-				setElement(&from, i, o.Min.Element(i)+(float64(a)+0.5)*hi)
-				setElement(&from, j, o.Min.Element(j)+(float64(b)+0.5)*hj)
+				// The cell's middle, and the ray through the cell
+				// shifted from it (cellShift).
+				var mid, from geom.Vector
+				setElement(&mid, i, o.Min.Element(i)+(float64(a)+0.5)*hi)
+				setElement(&mid, j, o.Min.Element(j)+(float64(b)+0.5)*hj)
+				setElement(&from, i, mid.Element(i)+cellShift(b, cellShiftI)*hi)
+				setElement(&from, j, mid.Element(j)+cellShift(a, cellShiftJ)*hj)
 				for _, iv := range o.Probe(from, dir) {
 					l := (iv.To - iv.From) * hi * hj
 					m.Volumes[k] += l
 					var c geom.Vector
-					setElement(&c, i, from.Element(i)*l)
-					setElement(&c, j, from.Element(j)*l)
+					setElement(&c, i, mid.Element(i)*l)
+					setElement(&c, j, mid.Element(j)*l)
 					setElement(&c, k, (iv.From+iv.To)/2*l)
 					moment[k] = moment[k].Plus(c)
 					// Along the ray, x_k runs from s0 to s1; the others stay.
-					xi, xj := from.Element(i)-p0.Element(i), from.Element(j)-p0.Element(j)
+					xi, xj := mid.Element(i)-p0.Element(i), mid.Element(j)-p0.Element(j)
 					s0, s1 := iv.From-p0.Element(k), iv.To-p0.Element(k)
 					area := hi * hj
 					first := (s1*s1 - s0*s0) / 2 * area

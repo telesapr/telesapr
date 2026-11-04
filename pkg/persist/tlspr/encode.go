@@ -149,9 +149,18 @@ func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *Fil
 		add(n)
 	}
 
-	groups := make([]*sketch.Group, len(sk.Groups))
+	// What the load of a damaged file left out is written back with the
+	// rest, to be left out again, until the file is mended.
+	lo := sk.LeftOut
+	if lo == nil {
+		lo = &sketch.LeftOut{}
+	}
+	groups := make([]*sketch.Group, 0, len(sk.Groups)+len(lo.Groups))
 	for i := range sk.Groups {
-		groups[i] = &sk.Groups[i]
+		groups = append(groups, sk.AsSaved(&sk.Groups[i]))
+	}
+	for i := range lo.Groups {
+		groups = append(groups, &lo.Groups[i])
 	}
 	sort.SliceStable(groups, func(i, j int) bool {
 		if groups[i].Order != groups[j].Order {
@@ -163,19 +172,22 @@ func encodeTree(sk *sketch.Sketch, o Options, m *srf.SMesh, sh *srf.SShell) *Fil
 		add(encodeGroup(g, mmPer))
 	}
 
-	for _, i := range sortedBy(len(sk.Requests), func(i int) uint32 { return sk.Requests[i].H.V }) {
-		add(encodeRequest(&sk.Requests[i]))
+	requests := append(slices.Clip(sk.Requests), lo.Requests...)
+	for _, i := range sortedBy(len(requests), func(i int) uint32 { return requests[i].H.V }) {
+		add(encodeRequest(&requests[i]))
 	}
-	for _, i := range sortedBy(len(sk.Constraints), func(i int) uint32 { return sk.Constraints[i].H.V }) {
-		add(encodeConstraint(&sk.Constraints[i], mmPer))
+	constraints := append(slices.Clip(sk.Constraints), lo.Constraints...)
+	for _, i := range sortedBy(len(constraints), func(i int) uint32 { return constraints[i].H.V }) {
+		add(encodeConstraint(&constraints[i], mmPer))
 	}
 	for _, i := range sortedBy(len(sk.Styles), func(i int) uint32 { return sk.Styles[i].H.V }) {
 		if sk.Styles[i].H.V >= core.StyleFirstCustom {
 			add(encodeStyle(&sk.Styles[i]))
 		}
 	}
-	for _, i := range sortedBy(len(sk.Params), func(i int) uint32 { return sk.Params[i].H.V }) {
-		p := &sk.Params[i]
+	params := append(slices.Clip(sk.Params), lo.Params...)
+	for _, i := range sortedBy(len(params), func(i int) uint32 { return params[i].H.V }) {
+		p := &params[i]
 		add(field("value", hex(p.H.V), num(p.Val)))
 	}
 	for _, i := range sortedBy(len(sk.Entities), func(i int) uint32 { return sk.Entities[i].H.V }) {

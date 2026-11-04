@@ -218,6 +218,67 @@ func TestSolidGoldens(t *testing.T) {
 			d.Sketch.Circle(api.V(0, 0, 0), 1)
 			d.Features.Sweep(path, "")
 		},
+		"sweep-twisted-run": func(d *api.Doc) {
+			// A line meeting an arc at a sharp corner, twisted: the twist
+			// is held still about the corner but for the line past the
+			// joint's reach, which takes it.
+			d.Features.SketchIn(d.Workplane("ZX"), "path")
+			path := []api.Entity{
+				d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 20)),
+				d.Sketch.Arc(api.V(0, 0, 25), api.V(0, 0, 20), api.V(5, 0, 25)),
+			}
+			d.Features.SketchIn(d.Workplane("XY"), "profile")
+			d.Sketch.Rect(api.V(-1, -1.5, 0), api.V(1, 1.5, 0))
+			d.Features.Sweep(path, "").AsSweep().SetTwist(90)
+		},
+		"sweep-twisted-arcs": func(d *api.Doc) {
+			// Two quarter arcs meeting at a right angle, twisted, with no
+			// line to twist along: each arc is held still only as far as
+			// the corner's joint reaches and twists along the rest.
+			d.Features.SketchIn(d.Workplane("ZX"), "path")
+			path := []api.Entity{
+				d.Sketch.Arc(api.V(15, 0, 0), api.V(0, 0, 0), api.V(15, 0, 15)),
+				d.Sketch.Arc(api.V(30, 0, 15), api.V(15, 0, 15), api.V(30, 0, 30)),
+			}
+			d.Features.SketchIn(d.Workplane("XY"), "profile")
+			d.Sketch.Rect(api.V(-1, -1.5, 0), api.V(1, 1.5, 0))
+			d.Features.Sweep(path, "").AsSweep().SetTwist(90)
+		},
+		"sweep-sharp-arc": func(d *api.Doc) {
+			// A line meeting an arc at a corner of 150°, too sharp for
+			// the kernel to join: the pieces swept apart and the corner's
+			// fill, where both carried on overlap, joined.
+			d.Features.SketchIn(d.Workplane("ZX"), "path")
+			y := api.V(0, 1, 0)
+			top := api.V(0, 0, 20)
+			c := top.Plus(api.V(0, 0, 1).RotatedAroundAxis(y, 150*math.Pi/180).RotatedAroundAxis(y, math.Pi/2).ScaledBy(12))
+			path := []api.Entity{
+				d.Sketch.Line(api.V(0, 0, 0), top),
+				d.Sketch.Arc(c, top, c.Plus(top.Minus(c).RotatedAroundAxis(y, 100*math.Pi/180))),
+			}
+			d.Features.SketchIn(d.Workplane("XY"), "profile")
+			d.Sketch.Rect(api.V(-1, -1.5, 0), api.V(1, 1.5, 0))
+			d.Features.Sweep(path, "")
+		},
+		"sweep-sharp-cubic": func(d *api.Doc) {
+			// A line meeting a cubic at a corner of 150°, which the
+			// kernel's fitted sweep can't mitre: the pieces swept apart
+			// and the corner's fill, where both carried on along their
+			// tangents overlap, joined.
+			d.Features.SketchIn(d.Workplane("ZX"), "path")
+			y := api.V(0, 1, 0)
+			top := api.V(0, 0, 20)
+			dir := api.V(0, 0, 1).RotatedAroundAxis(y, 150*math.Pi/180)
+			b := 60 * math.Pi / 180
+			far := top.Plus(dir.RotatedAroundAxis(y, b/2).ScaledBy(12))
+			path := []api.Entity{
+				d.Sketch.Line(api.V(0, 0, 0), top),
+				d.Sketch.Cubic(top, top.Plus(dir.ScaledBy(4)), far.Minus(dir.RotatedAroundAxis(y, b).ScaledBy(4)), far),
+			}
+			d.Features.SketchIn(d.Workplane("XY"), "profile")
+			d.Sketch.Rect(api.V(-1, -1.5, 0), api.V(1, 1.5, 0))
+			d.Features.Sweep(path, "")
+		},
 		"sweep-fitted-corner": func(d *api.Doc) {
 			// Along a cubic, on along a line and round a sharp corner
 			// onto another, mitred though the sweep is fitted.
@@ -247,6 +308,13 @@ func TestSolidGoldens(t *testing.T) {
 		},
 		"sweep-frame": func(d *api.Doc) {
 			path := framePath(d, 20, 10)
+			squareProfile(d, 2)
+			d.Features.Sweep(path, "")
+		},
+		"sweep-skew-frame": func(d *api.Doc) {
+			// Round a closed path out of a plane with sharp corners:
+			// fitted, the frames' turn taken out between the corners.
+			path := skewPath(d, skewFour)
 			squareProfile(d, 2)
 			d.Features.Sweep(path, "")
 		},
@@ -511,6 +579,30 @@ func TestSolidGoldens(t *testing.T) {
 			d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(6, 0, 8), api.V(0, 0, 8))
 			lathe := d.Features.Lathe(axis, "")
 			d.Features.ShellSolid([]api.SolidFace{lathe.Solid().FaceAt(api.V(1, 1, 8))}, 1, "")
+		},
+		"shell-step": func(d *api.Doc) {
+			// A stepped shaft turned by a lathe, open at the narrow part's
+			// side and its end: the side meets the step at an inside corner,
+			// where the inside steps along the step's plane.
+			d.Features.SketchIn(d.Workplane("ZX"), "")
+			axis := d.Sketch.Line(api.V(0, 0, -2), api.V(0, 0, 12))
+			axis.SetConstruction(true)
+			d.Sketch.Polyline(true, api.V(0, 0, 0), api.V(10, 0, 0), api.V(10, 0, 5), api.V(6, 0, 5),
+				api.V(6, 0, 10), api.V(0, 0, 10))
+			lathe := d.Features.Lathe(axis, "")
+			s := lathe.Solid()
+			d.Features.ShellSolid([]api.SolidFace{s.FaceAt(api.V(1, 1, 10)), s.FaceAt(api.V(6*math.Cos(0.3), 6*math.Sin(0.3), 8))}, 1, "")
+		},
+		"shell-ring-on-block": func(d *api.Doc) {
+			// A block with a ring revolved three quarters of a turn on its
+			// side, open at the block's top: the ring's end on the block is
+			// moved out into it, its end in the air a wall.
+			b, _ := ringOnBlock(d, 270)
+			y := -10.0
+			if lo, _ := b.Analyze().Bounds(); lo.Y > -1 {
+				y = 10
+			}
+			d.Features.ShellSolid([]api.SolidFace{b.Solid().FaceAt(api.V(12, y, 10))}, 1, "")
 		},
 		"shell-revolve": func(d *api.Doc) {
 			// A rectangle off the axis revolved a quarter turn, open at its
@@ -993,6 +1085,21 @@ func BenchmarkSweepFittedCorner(b *testing.B) {
 		d.Features.SketchIn(d.Workplane("XY"), "profile")
 		d.Sketch.Rect(api.V(-1, -1.5, 0), api.V(1, 1.5, 0))
 		d.Features.Sweep(path, "")
+	})
+}
+
+// A rectangle up a line and sharply round an arc, twisted: the line past
+// the joint's reach takes the twist.
+func BenchmarkSweepTwistedRun(b *testing.B) {
+	benchRegen(b, func(d *api.Doc) {
+		d.Features.SketchIn(d.Workplane("ZX"), "path")
+		path := []api.Entity{
+			d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 20)),
+			d.Sketch.Arc(api.V(0, 0, 25), api.V(0, 0, 20), api.V(5, 0, 25)),
+		}
+		d.Features.SketchIn(d.Workplane("XY"), "profile")
+		d.Sketch.Rect(api.V(-1, -1.5, 0), api.V(1, 1.5, 0))
+		d.Features.Sweep(path, "").AsSweep().SetTwist(90)
 	})
 }
 

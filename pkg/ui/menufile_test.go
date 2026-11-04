@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/persist/convert"
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
@@ -390,6 +391,22 @@ func TestOpenDamagedFile(t *testing.T) {
 	if !shows(ss, "deleted g003-on-missing, which used r007") || !shows(ss, "The file lacked what they used.") {
 		t.Error("the broken references screen doesn't list what was left out")
 	}
+	if !shows(ss, "LEFT OUT OF THE MODEL, KEPT IN THE FILE") || !shows(ss, "r008-datum-point of g003-on-missing") {
+		t.Error("the broken references screen doesn't list what the file keeps")
+	}
+	// Discarding it is a step of undo; undo keeps it again.
+	clickText(t, ss, "[discard them]")
+	if ss.SK.LeftOut != nil || !ss.SK.Unsaved {
+		t.Error("discard kept what was left out")
+	}
+	ss.UndoUndo()
+	if got := ss.SK.LeftOutNames(); len(got) != 2 {
+		t.Errorf("after undo, left out %q", got)
+	}
+	ss.UndoRedo()
+	if ss.SK.LeftOut != nil {
+		t.Error("redo didn't discard it again")
+	}
 
 	p.DialogResponses = []platform.Response{platform.ResponseOK}
 	path = filepath.Join("..", "..", "testdata", "tlspr", "damaged", "missing_references.tlspr")
@@ -403,5 +420,71 @@ func TestOpenDamagedFile(t *testing.T) {
 	ss.TW.Show()
 	if !shows(ss, "MENDED WHEN THE FILE WAS OPENED") || !shows(ss, "the reference workplane ZX was missing") {
 		t.Error("the broken references screen doesn't list what was put back")
+	}
+}
+
+// What a damaged file's load left out is mended from the Broken
+// References screen: the entity selected takes the place of what the
+// file lacks, and what then has all it uses comes back; one step of
+// undo. Nothing, or something of the wrong kind, selected is refused.
+func TestMendDamagedFile(t *testing.T) {
+	t.Parallel()
+	ss, p := newTestApp(t)
+	p.DialogResponses = []platform.Response{platform.ResponseOK}
+	path := filepath.Join("..", "..", "testdata", "tlspr", "damaged", "group_missing_workplane.tlspr")
+	if err := ss.LoadFromFile(path); err != nil {
+		t.Fatal(err)
+	}
+	ss.TW.GoToScreen(screenBrokenReferences)
+	ss.TW.Show()
+	if !shows(ss, "Or select what to use in place of what the file lacks:") || !shows(ss, "r007") {
+		t.Fatal("the broken references screen offers no mend")
+	}
+	// With nothing selected, the screen waits for it to be picked.
+	p.DialogResponses = []platform.Response{platform.ResponseOK}
+	clickText(t, ss, "[use the selected]")
+	if ss.SK.LeftOut == nil {
+		t.Fatal("a mend with nothing selected went ahead")
+	}
+	ss.TW.Show()
+	// The XY workplane is no point, which the group's origin is.
+	ss.GW.selection = []Selection{{Entity: core.HEntity{V: 0x10000}}}
+	ss.TW.Show()
+	p.DialogResponses = []platform.Response{platform.ResponseOK}
+	clickText(t, ss, "[take the selection]")
+	if text := dialogText(lastDialog(t, p)); !strings.Contains(text, "as a point") {
+		t.Errorf("message %q", text)
+	}
+	ss.GW.selection = []Selection{{Entity: core.HEntity{V: 0x10001}}}
+	ss.TW.Show()
+	clickText(t, ss, "[take the selection]")
+	ss.SK.Refresh()
+	if ss.SK.LeftOut != nil || ss.SK.Group(core.HGroup{V: 3}) == nil || ss.SK.Request(core.HRequest{V: 8}) == nil {
+		t.Fatalf("the mend didn't bring the group back; left out %q", ss.SK.LeftOutNames())
+	}
+	ss.UndoUndo()
+	if ss.SK.Group(core.HGroup{V: 3}) != nil || len(ss.SK.LeftOutNames()) != 2 {
+		t.Error("undo didn't take the mend back")
+	}
+	ss.UndoRedo()
+	if ss.SK.Group(core.HGroup{V: 3}) == nil || ss.SK.LeftOut != nil {
+		t.Error("redo didn't mend it again")
+	}
+}
+
+// A chamfer's screen says which of its edges the file names and
+// doesn't hold, and its row in the list of groups is marked.
+func TestDamagedChamferScreen(t *testing.T) {
+	t.Parallel()
+	ss, p := newTestApp(t)
+	p.DialogResponses = []platform.Response{platform.ResponseOK}
+	path := filepath.Join("..", "..", "testdata", "tlspr", "damaged", "chamfer_missing_edge.tlspr")
+	if err := ss.LoadFromFile(path); err != nil {
+		t.Fatal(err)
+	}
+	ss.TW.shown.screen, ss.TW.shown.group = screenGroupInfo, core.HGroup{V: 4}
+	ss.TW.Show()
+	if !shows(ss, "The file names an edge it doesn't hold") || !shows(ss, "entity 3853 of") {
+		t.Error("the chamfer's screen doesn't say what edge is missing")
 	}
 }

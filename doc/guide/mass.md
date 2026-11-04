@@ -41,6 +41,9 @@ says which volume was whose. The parts are the same ones Show Interfering Parts 
   groups;
 - a model that assembles nothing is one part.
 
+A group that cuts the assembly after them cuts each part it reaches before it is weighed, a part
+made of triangles (forced to a triangle mesh, or linked as a mesh) as well.
+
 ## In the window
 
 A group's screen sets the density at the end of its appearance row: `density not set

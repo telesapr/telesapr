@@ -739,6 +739,24 @@ report, and draws the style at its default level.
 
 `testdata/tlspr/v1` and `testdata/tlspr/v2` hold files that every later reader must load.
 
+## Damaged files
+
+A file may refer to things it doesn't hold: a group, request or constraint that uses a group,
+entity or workplane that no statement makes, or a chamfer's, fillet's, sweep's or loft's
+`edges` naming an edge that isn't there. The reader loads it all; the model then puts back the reference
+workplanes if they are missing, and leaves out of the model each group, request and constraint
+that uses something still missing, with the `value`s of their parameters, and drops from a
+group's `edges` the edges the file lacks (`pkg/sketch/upgrade.go`, `pkg/sketch/leftout.go`).
+
+What is left out is kept, not deleted. The writer writes it back among the rest as the file held
+it, groups in their `order` and the rest by handle, so the next reader leaves it out again; once
+the file holds what it lacked, by hand or from Features > Broken References, it is read whole. A
+group whose `edges` lost some is written with them back in their places, each with its own
+distance or radius, so long as the group's edges have not been edited since. There are no
+statements or fields of their own for this. A group, request or constraint added to such a
+model takes a handle past those left out, so a save never writes a handle twice. Discarding what
+was left out (`Features.DiscardLeftOut`) stops the writer writing it.
+
 ## Links
 
 A link group's `link` names a `.tlspr`, `.emn`, `.stl`, `.obj`, `.step` or `.stp` file relative

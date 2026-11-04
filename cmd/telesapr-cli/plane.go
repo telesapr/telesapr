@@ -19,6 +19,9 @@ var errPlaneSyntax = errors.New(`want "x=<d>", "y=<d>", "z=<d>" or six numbers "
 
 // parsePlane reads a plane square to an axis at a distance from the
 // origin ("z=15"), or through a point with a normal (six numbers).
+// A workplane by name is not taken: a point and a normal name any
+// plane, and a name would need the entity found by its description,
+// which no other flag does.
 func parsePlane(spec string) (*sectionPlane, error) {
 	if axis, d, ok := strings.Cut(spec, "="); ok {
 		at, err := strconv.ParseFloat(strings.TrimSpace(d), 64)

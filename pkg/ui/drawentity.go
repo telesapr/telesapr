@@ -488,12 +488,15 @@ func (gw *graphicsWindow) drawEntity(e *core.Entity, how entityDrawAs, canvas re
 		canvas.DrawLine(mm, mp, hcsBorder)
 		canvas.DrawLine(pp, mp, hcsBorder)
 
-		o := mm2.Plus(u.ScaledBy(3.0 / camera.Scale)).Plus(v.ScaledBy(3.0 / camera.Scale))
+		corner := mm2.Plus(u.ScaledBy(3.0 / camera.Scale)).Plus(v.ScaledBy(3.0 / camera.Scale))
 		shortDesc := ss.entityDescription(e)
 		if len(shortDesc) >= 5 {
 			shortDesc = shortDesc[5:]
 		}
-		canvas.DrawVectorText(shortDesc, textHeight, o, u, v, hcs)
+		font := res.BuiltinVectorFont()
+		o, tu, tv := readableInPlane(camera, corner, u, v,
+			font.Width(textHeight, shortDesc), font.GetCapHeight(textHeight))
+		canvas.DrawVectorText(shortDesc, textHeight, o, tu, tv, hcs)
 		return
 
 	case core.EntityLineSegment, core.EntityCircle, core.EntityArcOfCircle,

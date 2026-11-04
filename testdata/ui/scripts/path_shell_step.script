@@ -1,0 +1,12 @@
+# stepped_ring.tlspr, a stepped ring turned by a lathe, hollowed open at
+# the narrow part's outer side, picked with the mouse: the side meets the
+# step at an inside corner, where the inside steps along the step's
+# plane. The same as path_shell_step.go makes
+# (TestPathEquivalence/shell_step).
+file $testdata/ui/stepped_ring.tlspr
+menu File|Open...
+view default
+move 345 225
+down L 345 225
+up L 345 225
+menu Features|Shell Solid

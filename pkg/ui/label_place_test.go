@@ -1,7 +1,10 @@
 package ui
 
 import (
+	"fmt"
 	"math"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -204,4 +207,47 @@ func TestDiameterLabelClearOfCentre(t *testing.T) {
 	sdoc.Constrain.Diameter(sdoc.Sketch.Circle(api.V(0, 0, 0), 5), 10)
 	requireLabelsClearOfPoints(t, scr)
 	requireSameOffsets(t, win, scr)
+}
+
+// A minimum and a maximum angle at one corner are two bounds that hold,
+// none a reference, made from the Constrain menu or from a script that
+// makes each an angle first and then a bound.
+func TestAngleBoundsSameFromMenuAndScript(t *testing.T) {
+	t.Parallel()
+	build := func(doc *api.Doc) (a, b api.Entity) {
+		return doc.Sketch.Line(api.V(0, 0, 0), api.V(40, 0, 0)), doc.Sketch.Line(api.V(0, 0, 0), api.V(30, 30, 0))
+	}
+	win, _ := newTestApp(t)
+	la, lb := build(api.NewDoc(win.ScriptHost()))
+	for _, cmd := range []Command{cmdMinDistance, cmdMaxDistance} {
+		win.GW.ClearSelection()
+		win.GW.MakeSelectedEntity(la.H)
+		win.GW.MakeSelectedEntity(lb.H)
+		win.MenuConstrain(cmd)
+	}
+
+	scr, _ := newTestApp(t)
+	sdoc := api.NewDoc(scr.ScriptHost())
+	sa, sb := build(sdoc)
+	sdoc.Constrain.Angle(sa, sb, 45).SetLimit(api.Minimum)
+	sdoc.Constrain.Angle(sa, sb, 45).SetLimit(api.Maximum)
+
+	kinds := func(app *Application) []string {
+		var out []string
+		for _, c := range app.SK.Constraints {
+			if c.Type == core.ConstraintAngle {
+				out = append(out, fmt.Sprintf("%s reference %t", c.Limit, c.Reference))
+			}
+		}
+		return out
+	}
+	w, s := kinds(win), kinds(scr)
+	if !slices.Equal(w, s) || len(w) != 2 {
+		t.Errorf("angles from the menu %q, from a script %q", w, s)
+	}
+	for _, k := range s {
+		if strings.HasSuffix(k, "true") {
+			t.Errorf("a bound is a reference: %q", s)
+		}
+	}
 }

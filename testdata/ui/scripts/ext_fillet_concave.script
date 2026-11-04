@@ -1,6 +1,6 @@
 # Fillet edges that go in (an extension): a block, a smaller block on
 # its top through a workplane at its corner, and the view turned; the
-# smaller block's foot edge, picked with the mouse, is filled by New
+# smaller block's near foot edge, picked with the mouse, is filled by New
 # Group > Fillet Edges with a cylinder; Check Solid finds it sound, and
 # again at a new radius.
 key r
@@ -31,17 +31,15 @@ move 300 300
 down M 300 300
 move 300 330 M
 move 300 360 M
-move 360 375
-down L 360 375
-up L 360 375
+move 332 311
+down L 332 311
+up L 332 311
 menu Features|Fillet Edges
 dump
 tw
 answer ok
 menu Analyze|Check Solid
-twmove 150 125
-twdown L 150 125
-twup L 150 125
+click-tw [change]
 edit 3
 tw
 answer ok

@@ -107,6 +107,12 @@ func ShellRevolved(sh *srf.SShell, rev Revolution, open []int, thick float64, or
 	if out.BooleanFailed {
 		return nil, errors.New("the Boolean that takes the inside away failed")
 	}
+	// The inside can touch the solid, as where it steps round an inside
+	// corner (shellrevolve_step.go): a result that is no closed solid,
+	// from one that was, is refused, never made.
+	if unsound(out) && !unsound(sh) {
+		return nil, errors.New("the Boolean that takes the inside away left no closed solid")
+	}
 	return out, nil
 }
 
@@ -168,8 +174,12 @@ func revolvedInside(rev Revolution, modeAt func(geom.Vector) (faceMode, bool), e
 		}
 	}
 	ds := make([][]float64, len(loops))
+	steps := make([][]cornerStep, len(loops))
+	var opensCurved [][]bool
 	for li, ps := range loops {
 		ds[li] = make([]float64, len(ps))
+		steps[li] = make([]cornerStep, len(ps))
+		opensCurved = append(opensCurved, make([]bool, len(ps)))
 		for i, p := range ps {
 			if onAxis[li][i] {
 				continue
@@ -203,13 +213,28 @@ func revolvedInside(rev Revolution, modeAt func(geom.Vector) (faceMode, bool), e
 			if ds[li][i] == 0 && !across(p, axis) {
 				// A curved face taken away: the inside's face on it would
 				// lie on it, which the Boolean can't take away, so it runs
-				// out past it. Where it meets its neighbours at an inside
-				// corner, running out would cut into them.
-				if err := outsideCorners(ps, i, n); err != nil {
-					return nil, err
-				}
-				ds[li][i] = -thick
+				// out past it, stepping round an inside corner
+				// (shellrevolve_step.go).
+				opensCurved[li][i] = true
 			}
+		}
+	}
+	for li, ps := range loops {
+		for i := range ps {
+			if !opensCurved[li][i] {
+				continue
+			}
+			ds[li][i] = -thick
+		}
+		for i := range ps {
+			if !opensCurved[li][i] {
+				continue
+			}
+			st, err := cornerSteps(ps, ds[li], i, axis, n, thick)
+			if err != nil {
+				return nil, err
+			}
+			steps[li][i] = st
 		}
 	}
 
@@ -220,26 +245,16 @@ func revolvedInside(rev Revolution, modeAt func(geom.Vector) (faceMode, bool), e
 	openStart, openEnd := endModes[0] == openFace, endModes[1] == openFace
 	reflex := !rev.Whole() && math.Abs(rev.End-rev.Start) > math.Pi+1e-9
 	movedOut := endModes[0] >= buriedFace || endModes[1] >= buriedFace
-	if movedOut && reflex {
-		return nil, shellErr(rev.Pt, "an end of a revolve of more than half a turn lies inside another solid it is joined to; "+
-			"a shell moves out the ends of revolves of half a turn or less only")
-	}
 
 	// The inside's profile.
 	var sbl srf.SBezierList
 	what := fmt.Sprintf("a thickness of %g", thick)
 	for li, ps := range loops {
-		keep, corner, err := offsetProfile(ps, n, ds[li], what)
+		curves, err := steppedLoop(ps, ds[li], steps[li], n, what)
 		if err != nil {
 			return nil, err
 		}
-		for j, i := range keep {
-			curves, err := movedCurves(ps[i], corner[j], corner[(j+1)%len(keep)], n, 0)
-			if err != nil {
-				return nil, shellErr(ps[i].a, "%s makes the walls meet, closing up the inside", what)
-			}
-			sbl.Curves = append(sbl.Curves, curves...)
-		}
+		sbl.Curves = append(sbl.Curves, curves...)
 	}
 	var sets srf.SBezierLoopSetSet
 	var poly srf.SPolygon
@@ -360,24 +375,9 @@ func across(p profilePiece, axis geom.Vector) bool {
 // either neighbour at an inside corner, its material's angle there
 // more than a half turn.
 func outsideCorners(ps []profilePiece, i int, n geom.Vector) error {
-	k := len(ps)
-	prev, next := ps[(i+k-1)%k], ps[(i+1)%k]
-	p := ps[i]
-	// Turning from one piece onto the next towards the first's
-	// material is turning round an outside corner.
-	inside := func(from, to profilePiece, at geom.Vector) bool {
-		into := from.into
-		if from.arc {
-			into = at.Minus(from.centre).WithMagnitude(1)
-			if !from.outward {
-				into = into.ScaledBy(-1)
-			}
-		}
-		return pieceTangent(to, true, n).Dot(into) < -1e-9
-	}
-	if inside(prev, p, p.a) || inside(p, next, p.b) {
-		return shellErr(p.mid, "a curved face taken away meets a face kept at an inside corner; "+
-			"a shell opens a revolve's curved faces only between outside corners")
+	if start, end := insideCorners(ps, i, n); start || end {
+		return shellErr(ps[i].mid, "a curved face taken away meets a face kept at an inside corner; "+
+			"a shell opens a drafted extrusion's curved faces only between outside corners")
 	}
 	return nil
 }

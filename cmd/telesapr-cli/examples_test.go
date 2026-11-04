@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 }
 
 // Every example under examples/scripts runs with telesapr-cli run,
-// with no arguments, in a directory of its own (doc/done-audit.md,
+// with no arguments, in a directory of its own (doc/dev-notes/done-audit.md,
 // "Definition of done": an example for every feature, executed by a
 // test). An example with a lib folder beside it has that as its script
 // library.

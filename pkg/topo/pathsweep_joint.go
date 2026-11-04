@@ -71,10 +71,10 @@ func (sp *SweepPath) growRigid() {
 					sp.rigid[j], grown = true, true
 				}
 			}
-			if sp.corner[i] || i > 0 && sameCircle(&sp.pieces[i-1], &sp.pieces[i]) {
+			if sp.corner[i] || i > 0 && sp.alongCircle(i-1, i) {
 				mark(i - 1)
 			}
-			if i+1 < n && (sp.corner[i+1] || sameCircle(&sp.pieces[i], &sp.pieces[i+1])) {
+			if i+1 < n && (sp.corner[i+1] || sp.alongCircle(i, i+1)) {
 				mark(i + 1)
 			}
 		}
@@ -82,6 +82,16 @@ func (sp *SweepPath) growRigid() {
 	for i := range n {
 		sp.prism[i] = sp.prism[i] && !sp.rigid[i]
 	}
+}
+
+// alongCircle reports whether a rigid run grows from piece a to b, or b
+// to a, along the arc they share: not into a part of the arc split off
+// past a joint to take a twist (heldPieces).
+func (sp *SweepPath) alongCircle(a, b int) bool {
+	if sp.free != nil && (sp.free[a] || sp.free[b]) {
+		return false
+	}
+	return sameCircle(&sp.pieces[a], &sp.pieces[b])
 }
 
 // rigidRuns are the runs of pieces swept rigidly, [lo, hi) each.

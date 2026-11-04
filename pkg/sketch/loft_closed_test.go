@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
@@ -119,10 +120,14 @@ func TestLoftClosedEnds(t *testing.T) {
 		}
 		return rep.Volume
 	}
-	fourth := volume(func(l api.LoftGroup, ps []api.Group) { l.SetProfileTangency(ps[3], 1) })
-	first := volume(func(l api.LoftGroup, ps []api.Group) { l.SetTangency(1, 0) })
-	if math.Abs(first-fourth) > 1e-4*fourth {
-		t.Errorf("held at the first %g, at the fourth %g", first, fourth)
+	if !fixtures.RaceDetector {
+		// Two rings more, 4 minutes under the race detector, which finds
+		// in them nothing the one below doesn't give it.
+		fourth := volume(func(l api.LoftGroup, ps []api.Group) { l.SetProfileTangency(ps[3], 1) })
+		first := volume(func(l api.LoftGroup, ps []api.Group) { l.SetTangency(1, 0) })
+		if math.Abs(first-fourth) > 1e-4*fourth {
+			t.Errorf("held at the first %g, at the fourth %g", first, fourth)
+		}
 	}
 
 	d := api.New()
@@ -217,6 +222,11 @@ func TestLoftClosedGuided(t *testing.T) {
 		t.Errorf("%d faces, want the ring's one", n)
 	}
 	undoRedo(t, d, before)
+	if fixtures.RaceDetector {
+		// The rest regenerates the guided ring four times more, on the
+		// goroutines it used: 10 minutes under the race detector.
+		return
+	}
 	l.AsLoft().SetGuides(guide[:3])
 	if p := l.Problem(); !strings.Contains(p, "closing on itself") {
 		t.Errorf("an open guide on a ring: %q", p)

@@ -4,7 +4,7 @@ Each `<page>.scenario` here replays clicks, keys and menu entries on TeleSAPR wi
 (the headless platform the interface tests use) and saves pictures of what the windows show into
 `../images/`. `TestDocScenarios` (`pkg/ui/docshot_test.go`) runs every scenario as a test, so a
 change to the interface that breaks a page's steps breaks the build. It also fails when a page
-shows an `images/<name>.png` that no scenario makes.
+shows an `images/<name>.png` that no scenario, nor `TestDocWindowShots` (below), makes.
 
     ./scripts/regen-doc-images.sh            # every scenario
     ./scripts/regen-doc-images.sh fillet     # one
@@ -13,6 +13,22 @@ shows an `images/<name>.png` that no scenario makes.
     TELESAPR_DOC_SCENARIO=fillet go test ./pkg/ui -run '^TestDocScenario$' -count=1 -v
 
 Pictures are committed, in a commit of their own, after looking at each one.
+
+## Menus, popup menus and dialogs
+
+The headless platform draws no menus or dialogs: they are the X server's own windows. Their
+pictures come from the real window under an Xvfb of its own, read back from the screen:
+
+    ./scripts/regen-doc-window-images.sh
+
+`TestDocWindowShots` (`pkg/ui/docwindow_test.go`) lists them in `docWindowShots`, each with what
+to do before its picture (open a menu, right-click in the drawing area, run a command that opens a
+dialog) and what to do after it (close the menus or dialogs); a picture is taken once the screen
+has stayed the same for half a second. The model is `examples/scripts/fillet` in the nearest
+isometric view, the graphics window 800×600 with the property browser 440 wide beside it, since
+no window manager places them. The test runs only when the script sets
+`TELESAPR_DOC_WINDOW_SHOTS`, never in `make test`. Its pictures are the same bytes on every run on
+one machine; the fonts are the machine's, so another machine's fonts change them all.
 
 ## The language
 
@@ -27,6 +43,8 @@ browser beside it 600×600. Coordinates are pixels from the window's top left.
 | `menu Features\|Fillet Edges` | A menu entry, by its labels |
 | `move X Y`, `down L X Y`, `up L X Y`, `dbl L X Y`, `scroll X Y D` | The mouse in the graphics window (buttons L M R) |
 | `twmove`, `twdown`, `twup` … | The same in the property browser |
+| `click-entity NAME [shift] [ctrl]`, `move-entity NAME` | Clicks (or only points at) an entity by its handle as `dump` prints it (`40000`) or by its name as the interface shows it (`r005-arc-of-circle of g003-path`), wherever the view puts it: four tenths along a line or a curve, or beside it where a point or another line lies on top. Prints `entity missing` or `entity unpicked` when it can't. Prefer it to `move`/`down`/`up` with coordinates, which break when the layout moves |
+| `click-tw [#N] TEXT` | Clicks the property browser's link whose text is `TEXT` (its spaces and the radio button's or check box's glyph left out), the Nth such link with `#N`: `click-tw [change]`, `click-tw #2 [change]`, `click-tw held to x`. Prints `click-tw missing` when there is none |
 | `edit TEXT` | Types into the field the last click opened, and presses Enter |
 | `answer ok\|yes\|no`, `form k=v …`, `file PATH`, `popup LABEL` | Answers the next message dialog, form, file chooser or context menu (queue them *before* the command that opens it) |
 | `view default\|rotated\|under` | A fixed view: from above, or turned to show three sides |
@@ -44,6 +62,8 @@ drawing: after drawing something, `answer no` and `menu File|New` first.
 ## Conventions
 
 - Name pictures `<page>-<n>-<what>.png`, numbered in the order the page shows them.
+- Pictures are written paletted where they have 256 colours or fewer, at zlib's best compression
+  (`writeDocPng`, `pkg/ui/docshot_png_test.go`): the same pixels give the same bytes every run.
 - A shot of a solid turns the view (`view rotated`) and fits it; pick edges and faces in the view
   where they are easiest to hit, then turn.
 - Turn the cursor off for pictures of results; keep it on where a picture shows what to click.
@@ -51,6 +71,6 @@ drawing: after drawing something, `answer no` and `menu File|New` first.
   solid and what the sketches draw, but not the circles and sketches a screw thread is made of,
   which may run out of the window.
 - A click within 10 pixels of a line, a point or a label picks that before the face under it,
-  even where the line is behind the face: a reference plane's dashed square crosses most views.
-  Check picks with `hover` before relying on them.
+  but not a line or a point the solid hides: there the face in front is picked. A reference
+  plane's dashed square crosses most views. Check picks with `hover` before relying on them.
 - Look at every picture before using it on a page.

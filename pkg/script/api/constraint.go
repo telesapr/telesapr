@@ -437,18 +437,16 @@ const (
 // SetLimit makes the dimension a bound: Minimum lets what it measures
 // be its value or more, Maximum its value or less, and NoLimit makes it
 // hold its value again. Any distance, a diameter or radius, and an
-// angle take a limit; for an angle, Minimum is the least angle.
+// angle take a limit; for an angle, Minimum is the least angle. A
+// dimension made a reference only because it over-constrained the
+// group, as a second angle at a corner that has a bound is, holds once
+// it is a bound, as one made from the window's Minimum or Maximum does.
 func (c Constraint) SetLimit(l core.Limit) {
 	c.d.change(func(sk *sketch.Sketch) {
-		constraint := c.get(sk)
-		if !constraint.CanLimit() {
-			fail("%s can't be a minimum or a maximum", constraint.DescriptionString())
+		c.get(sk)
+		if err := sk.SetConstraintLimit(c.H, l); err != nil {
+			fail("%v", err)
 		}
-		if l != core.LimitNone && l != core.LimitMin && l != core.LimitMax {
-			fail("no limit %d", l)
-		}
-		constraint.Limit = l
-		sk.MarkGroupDirty(constraint.Group, false)
 	})
 }
 

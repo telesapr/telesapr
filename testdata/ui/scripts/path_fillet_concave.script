@@ -1,5 +1,5 @@
 # A block, a smaller block on its top through a workplane at its corner,
-# and the view turned: the smaller block's foot edge, picked with the
+# and the view turned: the smaller block's near foot edge, picked with the
 # mouse, filled; the same as path_fillet_concave.go makes
 # (TestPathEquivalence/fillet_concave).
 key r
@@ -30,7 +30,7 @@ move 300 300
 down M 300 300
 move 300 330 M
 move 300 360 M
-move 360 375
-down L 360 375
-up L 360 375
+move 332 311
+down L 332 311
+up L 332 311
 menu Features|Fillet Edges

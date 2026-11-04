@@ -1254,7 +1254,7 @@ shell {
     ctrl 0 1 5 4 0 1
     ctrl 1 0 5 -1 20 1
     ctrl 1 1 5 -1 0 1
-    trim 0x11 backward 5 4 0 5 -2.220446049250313e-16 0
+    trim 0x1c backward 5 4 0 5 0 0
     trim 0x12 forward 5 4 10 5 4 0
     trim 0x20 backward 5 -2.220446049250313e-16 0 5 -2.220446049250313e-16 10
     trim 0x19 backward 5 -2.220446049250313e-16 10 5 4 10
@@ -1268,7 +1268,7 @@ shell {
     ctrl 0 1 15 4 0 1
     ctrl 1 0 5 4 20 1
     ctrl 1 1 5 4 0 1
-    trim 0x14 backward 15 4 0 5 4 0
+    trim 0x1d backward 15 4 0 5 4 0
     trim 0x15 forward 15 4 10 15 4 0
     trim 0x12 backward 5 4 0 5 4 10
     trim 0x1a backward 5 4 10 15 4 10
@@ -1304,8 +1304,8 @@ shell {
     trim 0x8 backward 20 10 0 0 10 0
     trim 0x5 backward 0 10 0 0 0 0
     trim 0x2 backward 0 0 0 5 0 0
-    trim 0x11 forward 5 0 0 5 4 0
-    trim 0x14 forward 5 4 0 15 4 0
+    trim 0x1c forward 5 0 0 5 4 0
+    trim 0x1d forward 5 4 0 15 4 0
     trim 0x25 forward 15 4 0 15 1.5 0
     trim 0x26 forward 15 1.5 0 16.5 0 0
   }
@@ -1464,16 +1464,6 @@ shell {
     vertex 20 0 10
     vertex 20 0 0
   }
-  curve 0x11 {
-    exact
-    degree 1
-    surfaces 0xd 0xa
-    ctrl 0 5 -1 0 1
-    ctrl 1 5 4 0 1
-    vertex 5 -1 0
-    vertex 5 0 0
-    vertex 5 4 0
-  }
   curve 0x12 {
     exact
     degree 1
@@ -1483,15 +1473,6 @@ shell {
     vertex 5 4 20
     vertex 5 4 10
     vertex 5 4 0
-  }
-  curve 0x14 {
-    exact
-    degree 1
-    surfaces 0xd 0xb
-    ctrl 0 5 4 0 1
-    ctrl 1 15 4 0 1
-    vertex 5 4 0
-    vertex 15 4 0
   }
   curve 0x15 {
     exact
@@ -1520,6 +1501,24 @@ shell {
     ctrl 1 5 4 10 1
     vertex 15 4 10
     vertex 5 4 10
+  }
+  curve 0x1c {
+    exact
+    degree 1
+    surfaces 0xd 0xa
+    ctrl 0 5 0 0 1
+    ctrl 1 5 4 0 1
+    vertex 5 -0 0
+    vertex 5 4 -0
+  }
+  curve 0x1d {
+    exact
+    degree 1
+    surfaces 0xd 0xb
+    ctrl 0 5 4 0 1
+    ctrl 1 15 4 0 1
+    vertex 5 4 0
+    vertex 15 4 0
   }
   curve 0x20 {
     exact

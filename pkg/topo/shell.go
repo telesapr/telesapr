@@ -59,8 +59,19 @@ func ShellSolid(sh *srf.SShell, open []int, thick float64, origin uint32) (*srf.
 	if out.BooleanFailed {
 		return nil, errors.New("the Boolean that takes the inside away failed")
 	}
+	// An inside whose outline touches itself, as a post's offset circle
+	// touching the block's offset side, leaves material meeting along a
+	// line: no closed solid. A solid flawed so before the shell keeps
+	// its flaw; the shell is not refused for it.
+	if unsound(out) && !unsound(sh) {
+		return nil, errInsideTouches
+	}
 	return out, nil
 }
+
+// errInsideTouches is the error of ShellSolid when the shell of a sound
+// solid is not one: its inside's outline touches itself.
+var errInsideTouches = errors.New("the inside touches itself, which leaves no closed solid: change the thickness or move what makes it touch")
 
 // faceMode is what a shell does with a face of a solid: moves it in by
 // the thickness, a wall; leaves it where it is, taken away; or, a face

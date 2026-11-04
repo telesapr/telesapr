@@ -144,3 +144,37 @@ func TestPlural(t *testing.T) {
 		t.Error(plural(1, "face"), plural(3, "face"))
 	}
 }
+
+// A STEP file linked as a solid by two groups is read once: the second
+// group's shell, the cache's copy, is followed at the tolerance the
+// file was read at, as the first's is. It was left unset, so a part of
+// the assembly made from it (Sketch.AssemblyParts) had its surfaces at
+// DefaultTolerance.
+func TestLinkStepSolidCacheTolerance(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	data, err := os.ReadFile(filepath.Join(stepShapes, "cylinder.step"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// A file of its own, so no other test's read is in the cache.
+	if err := os.WriteFile(filepath.Join(dir, "part.step"), data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sk := &sketch.Sketch{ChordTolPct: 0.05}
+	for i := range 2 {
+		sk.Groups = append(sk.Groups, sketch.Group{H: core.HGroup{V: uint32(i + 2)}, Type: sketch.GroupLinked,
+			LinkFile: "part.step", LinkAsSolid: true})
+	}
+	if !ReloadAll(sk, filepath.Join(dir, "model.tlspr"), Options{}) {
+		t.Fatal("cancelled")
+	}
+	a, b := &sk.Groups[0].ImpShell, &sk.Groups[1].ImpShell
+	if len(a.Surface) == 0 || len(b.Surface) == 0 {
+		t.Fatalf("read as a solid: %d and %d surfaces (%q)", len(a.Surface), len(b.Surface), sk.Groups[0].LinkProblem)
+	}
+	if a.Tol != b.Tol || a.Tol.ChordTolMm() == srf.DefaultTolerance.ChordTolMm() {
+		t.Errorf("first read at %g mm, the cache's copy at %g mm (unset %v)",
+			a.Tol.ChordTolMm(), b.Tol.ChordTolMm(), b.Tol == srf.Tolerance{})
+	}
+}

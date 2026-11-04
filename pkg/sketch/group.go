@@ -298,6 +298,9 @@ type Group struct {
 	// fittedPath is a sweep's path when its surface is fitted, made
 	// with the group's shell.
 	fittedPath *topo.SweepPath
+	// sweepRuns is a sweep's path cut at its corners beside a cubic,
+	// made with the group's shell (sweep_cubic_corner.go).
+	sweepRuns *sweepRuns
 	// sweepClosed marks a sweep whose path closes, made with the
 	// group's shell: it has no caps.
 	sweepClosed bool

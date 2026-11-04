@@ -144,8 +144,9 @@ func (ss *Application) LoadFromFile(filename string) error {
 	}
 	if damage := damageList(doc.Sketch); len(damage) > 0 {
 		ss.Error("The file '%s' is damaged: it refers to things it doesn't hold. What every "+
-			"model has was put back, and what used something missing was left out; a save "+
-			"keeps it so. Edit > Broken References lists it.\n\n%s", filename, warningList(damage))
+			"model has was put back, and what used something missing was left out of the "+
+			"model; a save keeps it in the file, so that the file can be mended. "+
+			"Features > Broken References lists it.\n\n%s", filename, warningList(damage))
 	}
 	ss.setSketch(doc.Sketch)
 	return nil

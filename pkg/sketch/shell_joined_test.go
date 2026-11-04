@@ -208,3 +208,49 @@ func TestShellJoinedBuriedSide(t *testing.T) {
 		t.Fatalf("with the pin %g, the cylinder alone %g", with, alone)
 	}
 }
+
+// A block with a round post sunk into its top, as high as it, open at
+// the tops of both. Half out past the block's side, the shell is made;
+// standing out 1, its inside meets the block's at a step and is made too,
+// the post's foot a wall past the block's inside; standing out 4, its
+// inside touches the block's along a line, which is no closed solid, and
+// the shell is refused, not made unsound.
+func TestShellBlockAndFlushPost(t *testing.T) {
+	t.Parallel()
+	shell := func(x float64) func() api.Group {
+		d := api.New()
+		d.Edit.SetChordTolerance(0.005)
+		blk := block(d, -20, -20, 20, 20, 10)
+		d.Features.Sketch3D("")
+		d.Features.SketchIn(d.Sketch.NewWorkplane(api.V(0, 0, 2), api.V(1, 0, 0), api.V(0, 1, 0)), "")
+		d.Sketch.Circle(api.V(x, 0, 2), 3)
+		post := d.Features.Extrude(8, "")
+		if p := post.Problem(); p != "" {
+			t.Fatal(p)
+		}
+		faces := []api.SolidFace{blk.Solid().FaceAt(api.V(-10, -10, 10)), post.Solid().FaceAt(api.V(x+1, 0, 10))}
+		return func() api.Group { return d.Features.ShellSolid(faces, 1, "") }
+	}
+	refusedWith(t, "no closed solid", func() { shell(21)() })
+	segment := func(r, d float64) float64 { return r*r*math.Acos(d/r) - d*math.Sqrt(r*r-d*d) }
+	step := shell(18)()
+	if p := step.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	stepWant := 40*40*10 + segment(3, 2)*8 - (38*38*9 + segment(2, 1)*7)
+	if r := step.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-stepWant) > 0.002*stepWant {
+		t.Errorf("a post at 18: %s, want volume %g", r.String(), stepWant)
+	}
+	sh := shell(20)()
+	if p := sh.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	// The block less its inside, 38 × 38 × 9 open at the top, and the
+	// half of the post past the block's side less its inside, of radius 2
+	// from 3 up, which runs on from x 19, the block's inside's side.
+	half := func(r float64) float64 { return math.Pi * r * r / 2 }
+	want := 40*40*10 - 38*38*9 + half(3)*8 - (half(2)+chordArea(2, 1))*7
+	if r := sh.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		t.Errorf("shelled block and post: %s, want volume %g", r.String(), want)
+	}
+}

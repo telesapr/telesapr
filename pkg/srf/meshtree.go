@@ -211,23 +211,27 @@ func (t *MeshTree) Within(p geom.Vector, r float64) []int {
 	return found
 }
 
-// AppendInBox appends to dst the triangles, by their places in the
-// mesh, whose boxes meet the box from lo to hi, in no order: those that
-// may lie in it, for a caller to test as it needs, as the wall check
-// does the triangles in the prism a triangle sweeps into the solid.
-func (t *MeshTree) AppendInBox(dst []int, lo, hi geom.Vector) []int {
+// AppendNearSegment appends to dst the triangles, by their places in
+// the mesh, whose boxes the segment from a to b passes within r of on
+// every axis, in no order: those that may meet the capsule of radius r
+// round it, for a caller to test as it needs. Where the segment slants
+// across the axes, a box round the capsule would take in much more
+// than the capsule: the wall check looks up the prism a triangle
+// sweeps through a solid so.
+func (t *MeshTree) AppendNearSegment(dst []int, a, b geom.Vector, r float64) []int {
 	if len(t.nodes) == 0 {
 		return dst
 	}
+	d := b.Minus(a)
 	var walk func(i int32)
 	walk = func(i int32) {
 		nd := &t.nodes[i]
-		if boxDistance(lo, hi, nd.lo, nd.hi) > 0 {
+		if !segmentMeetsBox(a, d, nd.lo, nd.hi, r) {
 			return
 		}
 		if nd.left < 0 {
 			for _, ti := range t.idx[nd.first : nd.first+nd.n] {
-				if l, h := boxOf(t.tri[ti]); boxDistance(lo, hi, l, h) == 0 {
+				if l, h := boxOf(t.tri[ti]); segmentMeetsBox(a, d, l, h, r) {
 					dst = append(dst, int(ti))
 				}
 			}
@@ -238,6 +242,31 @@ func (t *MeshTree) AppendInBox(dst []int, lo, hi geom.Vector) []int {
 	}
 	walk(0)
 	return dst
+}
+
+// segmentMeetsBox is whether the segment from a to a+d meets the box
+// from lo to hi grown by r on every side.
+func segmentMeetsBox(a, d, lo, hi geom.Vector, r float64) bool {
+	t0, t1 := 0.0, 1.0
+	for k := range 3 {
+		p, v := a.Element(k), d.Element(k)
+		l, h := lo.Element(k)-r, hi.Element(k)+r
+		if v == 0 {
+			if p < l || p > h {
+				return false
+			}
+			continue
+		}
+		u0, u1 := (l-p)/v, (h-p)/v
+		if u0 > u1 {
+			u0, u1 = u1, u0
+		}
+		t0, t1 = max(t0, u0), min(t1, u1)
+		if t0 > t1 {
+			return false
+		}
+	}
+	return true
 }
 
 // MeshHit is where a ray first meets a mesh: how far along it, by the

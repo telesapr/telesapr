@@ -3,6 +3,7 @@
 package web
 
 import (
+	"os"
 	"path"
 	"strings"
 	"syscall/js"
@@ -131,6 +132,35 @@ func (d *FileDialog) runOpen() bool {
 }
 
 func (d *FileDialog) runSave() bool {
+	name := d.name
+	if name == "" {
+		name = withExtension("untitled", firstExtension(d.filters, d.filter))
+	}
+	for {
+		answer, filter, ok := d.askSaveName(name)
+		if !ok {
+			return false
+		}
+		file := saveTarget(d.dir, answer, firstExtension(d.filters, filter))
+		// The page's storage holds what was saved before: a name taken
+		// already is replaced only when the user says so, else the
+		// dialog comes back with the name to change.
+		if _, err := os.Stat(file); err == nil && !d.confirmReplace(path.Base(file)) {
+			name = answer
+			d.filter = filter
+			continue
+		}
+		d.filter = filter
+		d.filename = file
+		d.pickFilter(d.filename)
+		d.p.offerDownload(d.filename)
+		return true
+	}
+}
+
+// askSaveName shows the page's save dialog with name in its box and
+// returns the name given and the file type chosen; false if cancelled.
+func (d *FileDialog) askSaveName(name string) (string, int, bool) {
 	type filter struct {
 		Name string `json:"name"`
 		Ext  string `json:"ext"`
@@ -138,10 +168,6 @@ func (d *FileDialog) runSave() bool {
 	var fs []filter
 	for _, f := range d.filters {
 		fs = append(fs, filter{f.Name, firstExtension([]platform.FileFilter{f}, 0)})
-	}
-	name := d.name
-	if name == "" {
-		name = withExtension("untitled", firstExtension(d.filters, d.filter))
 	}
 	spec := jsonString(map[string]any{"title": d.title, "name": name, "filters": fs, "filter": d.filter})
 	var answer struct {
@@ -161,21 +187,27 @@ func (d *FileDialog) runSave() bool {
 			return nil
 		}))
 	})
+	answer.Name = strings.TrimSpace(answer.Name)
 	if answer.Name == "" {
-		return false
+		return "", 0, false
 	}
+	chosen := d.filter
 	if answer.Filter >= 0 && answer.Filter < len(d.filters) {
-		d.filter = answer.Filter
+		chosen = answer.Filter
 	}
-	dir := d.dir
-	if dir == "" {
-		dir = homeDir
-	}
-	file := withExtension(strings.TrimSpace(answer.Name), firstExtension(d.filters, d.filter))
-	d.filename = path.Join(dir, path.Base(file))
-	d.pickFilter(d.filename)
-	d.p.offerDownload(d.filename)
-	return true
+	return answer.Name, chosen, true
+}
+
+// confirmReplace asks whether to replace the stored file of that name.
+func (d *FileDialog) confirmReplace(base string) bool {
+	m := d.p.CreateMessageDialog(nil)
+	m.SetType(platform.DialogWarning)
+	m.SetTitle("Replace File")
+	m.SetMessage(replaceMessage(base))
+	m.SetDescription("The browser's storage holds a file of that name. Replacing it overwrites its contents.")
+	m.AddButton("&Cancel", platform.ResponseNo, false)
+	m.AddButton("&Replace", platform.ResponseYes, true)
+	return m.RunModal() == platform.ResponseYes
 }
 
 // pickFilter takes the filter the extension of p belongs to, for

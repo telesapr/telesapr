@@ -31,8 +31,9 @@ var (
 	ErrPathCornerCurved = errors.New("a corner of the path has a curved piece beside it")
 	// ErrPathCornerTwisted is a corner on a twisted path, or a closed one
 	// whose frames are turned to meet round it, where the twist can't be
-	// held still beside it: no reach is given, or every piece is beside
-	// a corner, leaving nowhere to twist.
+	// held still beside it: no reach is given, or every piece is held,
+	// a line along its whole length by the mitre or joint at its corner
+	// and an arc beside a corner whole, leaving nowhere to twist.
 	ErrPathCornerTwisted = errors.New("a corner of the path turns frames that are twisted along it")
 	// ErrPathCornerHeld is a corner where frames held to a direction
 	// turn otherwise than the corner turns the path.

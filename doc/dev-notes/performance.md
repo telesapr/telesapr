@@ -1,146 +1,121 @@
-# Performance, October 2026
+# Performance
 
-Where TeleSAPR spends its time, what was changed, what was measured and left, and how to measure
-again. It compacts two studies and the work that followed them:
+How to measure TeleSAPR's speed, where the time goes, what was decided and why, and what is open.
+Refreshed 2026-11-03 at `c4e18d1a`.
 
-- **The first study** (branch `perf-study`, 2026-10-10): the command line against solvespace-cli.
-  Its work packages are P1 to P9 below.
-- **The second study** (branch `perf-core-study`, 2026-10-20): the solver, the kernel's Booleans
-  and the drawing of frames, one track each. Its recommendations are 1 to 18 below. The tracks'
-  letters (S, K, D) refer to their own notes.
-- **The work that took the recommendations up** (branches `wp-d4-incremental`, `lo-perf` and
-  `lo2-perf`, 2026-10-22).
-
-The full notes, with every profile, benchstat table and commit list, are in git:
+Two studies came before this note: the command line against solvespace-cli (branch `perf-study`,
+2026-10-10, items P1 to P9) and the solver, the kernel's Booleans and the drawing of frames
+(branch `perf-core-study`, 2026-10-20, recommendations 1 to 18). Most of what they proposed is
+done. Their reports, with every profile and benchstat table, are in git:
 `git show 39142006:doc/notes/performance-study.md`, `…:doc/notes/performance-study-2.md` and
-`…:doc/notes/perf-core-study/{solver,kernel,drawing}.md`.
+`…:doc/notes/perf-core-study/{solver,kernel,drawing}.md`. This note's text before the refresh is
+`git show c4e18d1a:doc/dev-notes/performance.md`.
 
-## Where it stands
+## Measuring
 
-- **Nothing a model makes changed without a commit of its own saying so.** Each change was held
-  to `scripts/perf-fixture-hashes.sh` (every `.tlspr` fixture regenerated, and its exports, by
-  sha256) and to the renderers' PNG and frame goldens. Three changes moved goldens on purpose:
-  the components (12), the rows matched (1, 2), each by at most 1.2e-14 in params.
-- **Against SolveSpace**, every model of the original benchmark corpus is faster: 0.66 to 0.89
-  times solvespace-cli's time, against 1.8 to 25.7 times before. Most of the old gap was not the
-  kernel: inflating Unifont for a text window a command-line run never shows, building the solids
-  twice, and reading 1184 system font files to find one that wasn't there. At scale the exact
-  Boolean grows with the number of copies to the power 1.2, SolveSpace's to 1.8: a 16x16 step and
-  repeat takes 264 ms against 2.15 s.
-- **The solver.** A rank test that stops where the rank cannot grow, the symbolic analysis kept
-  across a solve's factorisations, the rows matched to the columns before the sparse QR (the fill
-  was an artefact of Eigen's row order: the Newton step of a 400-chain 28.4 → 0.29 ms), the system
-  kept between solves of a group, connected components solved apart, and a drag's steps taken with
-  a kept factorisation.
-- **The kernel.** Bounding-volume trees over a shell's surfaces, the ray-cast subdivision built
-  once per Boolean, guess grids kept through the topology and the rolling ball, the mesh BSP
-  without an allocation per node, planes and trims of coplanar crossings kept per surface.
-- **Regeneration.** One pass where the model's size keeps the tolerance (the second pass for the
-  size was half a sketch's regeneration in the window), and solids kept by what they were made
-  from (`pkg/sketch/solid_cache.go`): the rover regenerated with nothing changed 1.01 → 0.13 s,
-  an undo and redo of the triple M12 thread 267 → 47 ms.
-- **Frames.** A software frame 27–56% faster (lazy clears, bands, one colour conversion per
-  triangle, rows tested at their ends, hover restoring only the rows it touched); OpenGL 13–50%
-  faster with one `glDrawArrays` per run in place of a cgo call per vertex.
+```sh
+make build                                            # bin/telesapr-cli, which the script runs
+./scripts/perf-fixture-hashes.sh > before.txt         # after the change: again, and diff
+go test -run '^$' -bench . -benchmem ./pkg/solver
+go test -run '^$' -bench 'Regenerate' -benchmem -count 6 ./pkg/sketch
+go test -run '^$' -bench 'Fillet|Shell|Loft|Sweep|Chamfer' ./pkg/sketch ./pkg/topo
+go test -run '^$' -bench 'EditBack|UndoRedo' ./pkg/persist/tlspr
+go test -run '^$' -bench 'Drag|Paint|Frame|Hover' ./pkg/ui
+go test -run '^$' -bench Soft ./pkg/render/soft
+TELESAPR_BENCH_MODEL=/path/to/model.tlspr go test -run '^$' -bench RegenerateModel ./pkg/persist/tlspr
+cp model.tlspr /tmp/m.tlspr                           # regenerate writes the file back
+bin/telesapr-cli regenerate --cpuprofile cpu.out /tmp/m.tlspr
+```
 
-Where the time goes now: a model's solids (the rover's 33 G instructions are its solids'), the
-two rank tests of a solve during a drag, and in the kernel `ClosestPointToUV`, the ray tree's
-walk and the serial quarter of a Boolean (the loops' commits, `fuseVertices`, merge classes, the
-top of the union tree). The parallel speedup on 32 threads is about 3.2x.
+- `scripts/perf-fixture-hashes.sh` regenerates a copy of every `.tlspr` under `testdata/` (312
+  today, about 6 s) and prints the sha256 of each result. A change meant only to be faster leaves
+  the list as it was. `TELESAPR_CLI` names another binary. The renderers' PNG and frame goldens
+  hold the pixels.
+- Every `telesapr-cli` command takes `--cpuprofile`, `--memprofile`, `--trace` (regions for
+  loading, solving, solids and saving) and `--profile` (a JSON summary: time per model, and per
+  group for solving, loops and the solid).
+- `make bench` runs every benchmark once, to keep them working; the nightly workflow runs it. It
+  measures nothing.
+- `pkg/sketch`'s `BenchmarkRegenerate{Text,Translate,Fillet,Mesh}` run each model with
+  `TELESAPR_PARALLEL` off and on, and with the solid cache off, so the kernel is what is timed.
+  `BenchmarkEditBack` and `BenchmarkUndoRedo` time an edit with the cache (`made` and `kept`).
+  `Sketch.NoSolidCache` and `Sketch.NoSolverCache` turn the caches off, to measure them.
+- benchstat: `go install golang.org/x/perf/cmd/benchstat@latest`. It is not in `go.mod`'s tool
+  block: there it pulled a day-old `x/perf` and raised `x/sys`.
+- A scaled step and repeat for `TELESAPR_BENCH_MODEL`: copy
+  `testdata/tlspr/golden/group/translate_nd/normal.tlspr`, set both `copies = 3` (groups 0x6 and
+  0x7) to n, and delete the three `combine difference` lines, so every group is a union. For the
+  mesh variant put `force-to-mesh` in their place. n = 16 regenerates in about 0.25 s.
 
-## A third look, 2026-10-30
+## Where the time goes
 
-The slowest fixtures are now the threads (0.1–0.35 s each from the command line). In `face_m8`,
-closest points (`ClosestPointToUV`) are half the profile, and 81% of their Newton steps are in
-`closestPointRestarts`, all of whose 3619 calls fail: the points a Boolean projects (a trim's
-chord points in `makeCopyTrimAgainst`, `offPatch` and `onSurface` in the march) lie further than
-`ratPolyEps` off the surface, so each call takes its 20 starts to their 25 steps, 500 steps.
+- The slowest fixtures are the threads (`thread/face_m8` 0.24 s, `bolt_m8x30` 0.19 s,
+  `triple_m12` 0.17 s from the command line) and the ring lofts (`solid/loft-ring-guide*`
+  0.16 s). Most fixtures take under 0.1 s.
+- In a thread, closest points (`ClosestPointToUV`) are half the profile. Most of their Newton
+  steps are in `closestPointRestarts`, and nearly all those calls fail: the points a Boolean
+  projects (a trim's chord points in `makeCopyTrimAgainst`, `offPatch` and `onSurface` in the
+  march) lie further than `ratPolyEps` off the surface, so each tries all its starts. Since
+  2026-10-30 a refinement stops when its steps repeat (`closestPointNewton`), which cut the
+  steps to 27%; P10 and P11 are what is left.
+- Elsewhere in the kernel: the ray tree's walk and the serial part of a Boolean (`fuseVertices`,
+  merge classes, the top of the union tree). The parallel speedup on 32 threads was about 3.2x
+  (2026-10-20).
+- In the window: a model's solids, and the two rank tests of a solve during a drag.
 
-- Done: Newton stops at a fixed point or a two-step cycle, with the (u, v) its remaining steps
-  would end on (`closestPointNewton`). Same bytes, 27% of the steps; `BenchmarkEditBack/made`
-  −5 to −7%.
-- Open, goldens: a restart only where the first refinement did not settle (a point off the
-  surface settles where `p - S(u, v)` is square to both tangents; a stall at a fold's edge does
-  not). That is most of the remaining three quarters of the steps.
-- Open, same bytes: `offPatch` and `onSurface` could reject a point further than their tolerance
-  from the surface's control-point box before searching; a failed search leaves `Cached` alone,
-  so nothing else changes. How many of their points that catches is not yet measured.
+## Open
 
-## Every recommendation and what became of it
-
-"Same bytes": held by the hash script and the goldens. "Goldens": fixtures regenerate otherwise,
+Numbered as before, so references stay good; P10 to P12 are new numbers for items that had none.
+"Same bytes": the hash script and the goldens hold. "Goldens": fixtures regenerate otherwise,
 and the goldens go in a commit of their own.
 
-### The first study
-
-| # | Item | Outcome |
+| # | Item | State |
 |---|---|---|
-| P1 | The subdivision of a surface for ray casts kept | Done in the second study (`srf/raycast_tree.go`): thread −12% |
-| P2 | The solver's equations and Jacobian kept; a flat tape for `Expr.Eval`; components | Done as 6 and 12 below. The tape measured 25 → 18 µs for a whole Jacobian, a prototype in a benchmark only |
-| P3 | Mesh BSP without a util per node | Done (`bspScratch`): 8x8 mesh union −25%, allocations −76% |
-| P4 | Skip the regeneration's pass for the model's size | Done as 3 below |
-| P5 | `.tlspr` read and written as streams, numbers parsed in place | Open; decoding was 15% of a mesh model's allocations |
-| P6 | Sketch bookkeeping (sorts, map rebuilds, linear lookups) | In part: the curve-id scan (11), a tail sort copying entities (half a mesh regeneration's allocations) |
-| P7 | CDT of trimmed faces | As 16 below |
-| P8 | Robust predicates in the mesh BSP | As 17 below |
-| P9 | `GOAMD64=v3` | As 18 below |
+| P5 | `.tlspr` read and written as streams, numbers parsed in place | Open. `tlspr.LoadFile` reads the whole file; decoding was 15% of a mesh model's allocations. Parked in ROADMAP: no user has waited on it |
+| P6 | Sketch bookkeeping (sorts, map rebuilds, linear lookups) | In part: a regeneration sorts only what each group adds, by keys; the curve-id scan is gone. The rest is unmeasured |
+| P10 | A closest-point restart only where the first refinement did not settle | Open, goldens. A point off the surface settles where `p - S(u, v)` is square to both tangents; a stall at a fold's edge does not. Most of the remaining steps |
+| P11 | `offPatch` and `onSurface` reject a point far from the surface's control-point box before searching | Open, same bytes: a failed search leaves `Cached` alone. How many points it catches is not measured |
+| P12 | A text-window benchmark | Worth adding before any work on the text window, which paints a rectangle and a pixmap per character cell |
 
-### The second study
+## Decided against, and why
 
-| # | Item | Outcome |
-|---|---|---|
-| 1 | Rows of the Jacobian matched to columns before the sparse QR (S1) | Done (`solver/rowmatch.go`). Goldens, 24 files by numbers only. Closed 400-chain solve 260 M → 51 M instructions |
-| 2 | A rank test that is not a full QR (S2) | Done with 1: the rank test factors A' where A is wide or square. Square 400-chain 988 M → 3.5 M instructions |
-| 3 | One regeneration pass for the model's size | Done (`passOne`, `generate_all.go`). Same bytes. `BenchmarkDrag20` −45% |
-| 4 | Software rasteriser inner loop (D1) | Done: depth before colour, row ends tested. Same pixels. Bolt frame −15% instructions |
-| 5 | OpenGL vertex buffers kept (D2, D3) | Not taken: meshes are under a tenth of a GL frame; a buffer kept needs a generation threaded through `render.Canvas` |
-| 6 | The Jacobian kept between solves of a group (S3) | Done (`solver_cache.go`, `jacobian_memo.go`). Same bytes. A group with nothing left after substitution keeps no system: the collector scanning kept systems cost +23% on a drag |
-| 7 | Arenas for the BSP's nodes (K1) | Built and reverted: allocations −27%, bytes +8%, time no better |
-| 8 | Closed-form closest points on cylinders (K2) | Not taken: 6% of the thread, goldens |
-| 9 | Draw the last solids while a drag's are made off the thread (D4) | Behind a setting, off (`DragSolidsLate`). Off, a drag makes its solids on the thread so linked parts follow the pointer (151fda16) |
-| 10 | Coplanar trim crossings bucketed (K3) | Done per surface split against, in the shell's index: 12x12 −16% |
-| 11 | Curve ids reserved in advance (K4) | In part: the scan for the next id is gone, same bytes. The loops' commits stay serial: measured again 2026-11-02 with the loops parallel, `curveSink.commitTo` and the id calls under it are 0.15% of the CPU samples of the 12x12 (`BenchmarkRegenerateTranslate/on`, 91 ms), none in the text, the tangent fillet, `bolt_m8x30`, `face_m8` or the rover. Running them in parallel could save under 1% of the wall time, and an exact curve's look-up among the curves before it would need them committed first; declined |
-| 12 | Connected components solved apart (S4) | Done (`components.go`), a component's system taken from the whole Jacobian. Goldens by 1.3e-14 |
-| 13 | A drag's steps with a kept factorisation (S5) | Done (`drag_step.go`), a chord method while each step halves what is left. No golden moved |
-| 14 | The hover frame restores only its rows (D7) | Done (`rowstate.go`): `PaintHover` 7.8 → 7.3 ms |
-| 15 | GOGC in the window | Not taken: 1.15 → 1.05 ms a drag step at GOGC 400, against a heap up to four times the live one for a session. `telesapr-cli` runs at 400 unless `GOGC` is set (first study: −14–19%, peak memory +20–65%) |
-| 16 | CDT as the mesher (K5) | Not taken as the default: 3 to 5 times the triangles (`k4-cdt-spike.md`); it mends the faces the ear clipper gets wrong |
-| 17 | Robust predicates for the mesh BSP (K6) | Not taken: no failing case, no cost in a profile |
-| 18 | Tiled rasteriser, SIMD, `GOAMD64=v3`, a BVH for mesh Booleans | Not taken. `v3` measured: 91 of 296 fixtures regenerate otherwise (FMA, `pkg/libm` included), the thread 0.13–0.14 s either way |
-
-Not in either list: a text-window benchmark (D8) is worth adding before any work on the text
-window, which paints a rectangle and a pixmap per character cell.
-
-## Measured and not kept
-
-- PGO from the corpus's profiles: −7% to +4% by model, same bytes.
-- A `sync.Pool` of `bspUtil`: −13%, but a package-level variable written at run time; `bspScratch`
-  has the gain within the rules.
-- Clearing the factorisation's `mark` and `tval` only where touched: they are `memclr`s, and
-  `tval` is touched outside the pattern.
-- Incremental edge functions in the rasteriser: the edge pixels' bits change.
-- The ray tree with control nets remade from the root: no gain.
-- Pre-sizing trim edge lists with `slices.Grow`: time unchanged, bytes −12% and +19%.
-- benchstat in `go.mod`'s tool block: it pulled a day-old `x/perf` and raised `x/sys`. Install it
-  with `go install golang.org/x/perf/cmd/benchstat@latest` instead.
-
-## Libraries surveyed
-
-None is recommended. The time is in pointer-chasing geometry, symbolic bookkeeping and allocation,
-not dense arithmetic.
-
-- Sparse linear algebra: gonum has no sparse QR; SuiteSparseQR and CHOLMOD need cgo; the fill was
-  a permutation's to fix (1).
-- Constraint decomposition (Dulmage–Mendelsohn, matching-based plans): the structural part is
-  what 1 and 12 took.
-- Ray–surface intersection: Bézier clipping or geometric intervals would change which point is
-  found first, so goldens, with nothing measured saying they would win.
-- Robust predicates: Shewchuk's are a few hundred lines to port in-tree if ever needed (17).
-- Mesh Booleans: the pure-Go ones are the same BSP; Manifold has no Go bindings. No pure-Go B-rep
-  kernel exists, and this project is its own kernel.
-- SIMD: `simd/archsimd` is still behind `GOEXPERIMENT` in Go 1.27, and no profile has a wide loop
-  over contiguous floats. FMA is fused by the compiler on arm64 and at `GOAMD64=v3`, which the OS
-  skip lists already meet.
+- OpenGL vertex buffers kept between frames: meshes are under a tenth of a GL frame, and a kept
+  buffer needs a generation threaded through `render.Canvas`.
+- Arenas for the mesh BSP's nodes: allocations −27%, bytes +8%, no faster. `bspScratch` keeps
+  the gain within the rules; a `sync.Pool` of `bspUtil` would be package state written at run
+  time.
+- Closed-form closest points on cylinders: 6% of a thread, and goldens.
+- A drag's solids made off the thread and drawn late: kept behind a setting, off
+  (`DragSolidsLate`). Off, a drag makes its solids on the thread, so linked parts follow the
+  pointer.
+- The loops' curve commits in parallel (recommendation 11): `curveSink.commitTo` and its id calls
+  are 0.15% of the 12x12 step and repeat's samples (2026-11-02), and an exact curve's look-up
+  among those before it needs them committed first.
+- GOGC in the window: 400 saved 0.1 ms a drag step for a heap up to four times the live one.
+  `telesapr-cli` runs at 400 unless `GOGC` is set (`gcPercent`): a run lives for one model, and
+  it is 15–20% faster for more peak memory.
+- CDT as the mesher on every face: 1.43 times the ear clipper's triangles and 1.64 times its
+  regeneration time with the chart scaled by curvature, 2.00 and 1.85 by speed, over the 84 solid
+  and thread goldens (`BenchmarkMeshers`, 2026-11-04; `k4-cdt-spike.md`). It mends the faces the
+  ear clipper gets wrong.
+- Robust predicates in the mesh BSP: no failing case, no cost in a profile. Shewchuk's are a few
+  hundred lines to port if ever needed.
+- `GOAMD64=v3`: 91 of 296 fixtures regenerated otherwise (FMA, `pkg/libm` included), with the
+  thread no faster. Tiled rasteriser, SIMD (`simd/archsimd` is behind `GOEXPERIMENT` in Go 1.27,
+  and no profile has a wide loop over contiguous floats), a BVH for mesh Booleans: not taken.
+- PGO from the corpus's profiles: −7% to +4% by model.
+- Tried and no gain, or bits changed: clearing the factorisation's `mark` and `tval` only where
+  touched (they are `memclr`s, and `tval` is touched outside the pattern); incremental edge
+  functions in the rasteriser (edge pixels change); the ray tree's control nets remade from the
+  root; trim edge lists pre-sized with `slices.Grow`.
+- A flat tape for `Expr.Eval`: 25 → 18 µs for a whole Jacobian, kept only as a benchmark
+  (`pkg/solver/tape_bench_test.go`). The rest of P2 was done as the Jacobian kept between
+  solves (`solver/jacobian_memo.go`) and components solved apart.
+- Libraries: none recommended. The time is in pointer-chasing geometry, symbolic bookkeeping and
+  allocation, not dense arithmetic. gonum has no sparse QR, SuiteSparseQR and CHOLMOD need cgo,
+  and the QR's fill was fixed by matching rows to columns (`solver/rowmatch.go`). Bézier
+  clipping for ray casts would change which point is found first. Pure-Go mesh Booleans are the
+  same BSP; Manifold has no Go bindings.
 
 ## Traps
 
@@ -148,30 +123,15 @@ not dense arithmetic.
   interleaved, six times each, and claim only what benchstat marks significant. On a shared host,
   count instructions (`perf stat -e instructions:u`, a benchmark at two counts, the difference).
 - Don't take `--memprofile` with `--cpuprofile`: its finer sampling is a third of the CPU profile.
-- A solid cache key must leave out what a group keeps from an earlier state that nothing reads
-  (the profile's error point once good, empty slices by their array), or the same inputs get
-  another key. A group with no solid passes one key down whatever its tolerance.
-- A test reading a script's sketch through `Doc.With` records an undo step and dirties the active
-  group: read through the host.
 - `telesapr-cli regenerate` writes the model back over its input. Profile a copy, never a user's
   design or a fixture in the tree.
-- Five fixtures fail to regenerate from the command line before and after alike (a missing IDF/STL
-  link, two images, the v1 `fields` file).
-
-## Reproducing
-
-```sh
-make build
-./scripts/perf-fixture-hashes.sh > before.txt         # and after a change: diff
-go test -run '^$' -bench . -benchmem ./pkg/solver
-go test -run '^$' -bench 'Drag|Paint|Frame' ./pkg/ui
-(cd pkg/persist/slvs && go test -run '^$' -bench Regenerate -benchmem -count 6 .)
-go test -run '^$' -bench 'Fillet|Shell|Loft|Sweep' ./pkg/sketch ./pkg/topo
-TELESAPR_BENCH_MODEL=/path/to/model.tlspr go test -run '^$' -bench RegenerateModel ./pkg/persist/tlspr
-cp model.tlspr /tmp/m.tlspr    # regenerate writes the file back
-bin/telesapr-cli regenerate --cpuprofile cpu.out /tmp/m.tlspr   # or --trace trace.out
-```
-
-The scaled step-and-repeat models are `testdata/group/translate_nd/normal.slvs` with both
-`Group.valA` (lines 212 and 377) set to n and each `Group.meshCombine` set to 0
-(`Group.forceToMesh=1` after each for the mesh variant), converted with `telesapr-cli convert`.
+- A solid cache key (`pkg/sketch/solid_cache.go`) must leave out what a group keeps from an
+  earlier state that nothing reads (the profile's error point once good, empty slices by their
+  array), or the same inputs get another key. A group with no solid passes one key down whatever
+  its tolerance.
+- A group with nothing left after substitution keeps no solver system: the collector scanning
+  kept systems cost 23% on a drag.
+- A test reading a script's sketch through `Doc.With` records an undo step and dirties the active
+  group: read through the host.
+- One fixture fails in the hash script, before and after alike: `tlspr/v1/fields.tlspr`, whose
+  linked file is not in `testdata/`.

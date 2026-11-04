@@ -110,13 +110,27 @@ past the corner to fill it. On the inside each stops where the other's side cuts
 mitre between lines. Example: [`examples/scripts/hook`](../../examples/scripts/hook/hook.go), a
 round bar up a shank and round a bend that leaves it at a right angle.
 
+A corner too sharp for that, where for some points of the profile the line's side passes
+outside the arc's so the two never cross (a bar 2 wide round an arc of radius 12 at a corner of
+150°), is made another way: the line and the arc are swept each on its own, up to the corner,
+and the outside of the turn is filled by where the two, carried on past the corner, overlap,
+all joined into one solid. Where the arc turns away from that overlap, it runs on as far as the
+pieces are carried: their outer sides never meet, and the corner is a problem on the group.
+
 These corners are problems on the group, which a corner radius (below) then rounds:
 
-- a corner too sharp for the arc beside it, where the line's side passes outside the arc's (a
-  bar 2 wide round an arc of radius 12 at a corner of 150°);
+- a corner whose pieces' outer sides never meet past it (the arc turning against a corner of
+  150° or more);
 - a piece too short for the joint at its ends.
 
-A corner next to a cubic is refused.
+A sharp corner next to a cubic is made the same way: the path is cut at the corner, each side is
+swept on its own, carried a little past the corner along its tangent, and the outside of the turn
+is filled by where the two sides, carried on past it along their tangents, overlap, all joined.
+With the cubic straight, that is the mitre two lines make. It is made on an open path with no
+twist, no frames held to a direction and no corner radius (a radius rounds only corners between
+lines and arcs). Where the pieces don't join into a closed solid, as along a round profile, whose
+tubes meet tangent where they overlap, the corner is a problem on the group: round it in the path
+with an arc or a tangent cubic.
 
 **Along a cubic, or held to a direction.** Such a sweep is fitted, but a corner between two
 lines is still mitred: along a line its frames do not turn, so the two straight runs are prisms
@@ -132,11 +146,17 @@ there.
 meet. So a twisted sweep holds its twist still along each line beside a corner, over the
 stretch the mitre spans (the profile's reach from the path over the cosine of half the turn,
 and a tenth more). It turns along the rest of the path, and its rate climbs from nothing over
-the profile's reach, so the twisted faces leave the mitred ones tangent. Where every piece is a
-line beside a corner and held whole, there is nowhere left to twist, and the corner is a
-problem on the group; a corner radius then rounds it, and the twist runs round the corner's
-arc. Example: [`examples/scripts/zigzag`](../../examples/scripts/zigzag/zigzag.go), a rail
-along a cubic and a sharp corner, and a twisted bar round a rounded corner.
+the profile's reach, so the twisted faces leave the mitred ones tangent. A corner beside an arc
+is joined as on a rigid sweep, so the twist is held still along the arc and along each line
+beside it as far as the joint reaches; a line goes on twisting past that. Where that leaves
+nowhere to twist, as on a path of arcs and corners alone, each arc beside a corner is held only
+as far as the joint reaches too, and twists along the rest. Where every piece is still held
+whole, as two arcs about a corner so sharp that its joint takes them whole, there is nowhere
+left to twist, and the corner is a problem on the group; a corner radius then rounds it, and
+the twist runs round the corner's arc. Example:
+[`examples/scripts/zigzag`](../../examples/scripts/zigzag/zigzag.go), a rail along a cubic and
+a sharp corner, a twisted bar round a rounded corner and round a sharp one, and a twisted hook
+up a line and sharply round an arc.
 
 **Corner radius.** On the sweep's screen, "corners mitred [round]" takes a radius, and the row
 then reads "corner radius ... [change]". Every corner on the path is rounded instead of mitred,
@@ -182,8 +202,12 @@ a picture frame mitred at its four corners.
 - Round a cubic, round lines and arcs out of a plane, or with a twist, the surface is fitted.
   The path's shape decides how far the frames have turned when they come back, and that turn
   is taken out evenly along the path. A twist must then be whole turns, or the profile would
-  not meet itself. Lines and arcs out of a plane take no corners. A cubic in a plane takes
-  corners between lines, mitred, as an open path's.
+  not meet itself. The turn is held still beside each sharp corner, so lines and arcs out of a
+  plane take corners too: between two lines mitred, beside an arc joined if the corner is in
+  the arc's plane, or rounded by a corner radius. A cubic in a plane takes corners between
+  lines, mitred, as an open path's. Example:
+  [`examples/scripts/skewframe`](../../examples/scripts/skewframe/skewframe.go), a square bar
+  round four lines in 3d.
 - A profile at a corner of the path, or whose plane does not cross the path, is a problem on
   the group.
 
@@ -195,8 +219,25 @@ d.Sketch.Circle(api.V(0, 0, 0), 2)
 d.Features.Sweep([]api.Entity{ring}, "o-ring")
 ```
 
+## A path that comes back
+
+A path that comes back within the profile's reach of where it has been, as an arc past a sharp
+corner turning back over the line before it, or looping round across it, makes the solid the
+profile passes through: its overlapping passes are joined, so a hook whose end runs back into
+its shaft becomes a ring. Round lines and arcs this is done by sweeping the path in stretches
+that each stay clear of themselves and joining them. Where that can't be done, the group is a
+problem that says the sweep passes through itself, and makes no solid: move the pieces apart or
+make the profile smaller.
+
 ## Not yet
 
-A corner next to a cubic is refused, and so is a closed path out of a plane with a corner.
+A sharp corner next to a cubic is made only on an open path with no twist, held frames or corner
+radius, and only where its pieces join: along a round or a diamond profile it is refused.
+
+A path that comes back over itself, twisted, held to a direction, round a cubic or closed, is
+refused. Round lines and arcs, about half of such paths are refused too, where the stretches
+can't be cut clear of a corner or don't join. Of the 1440 paths of a line and an arc about a
+corner that the tests try (three profiles, corners of 30° to 150° either way, arcs of 45° to
+270°), 160 come back over themselves: 81 are made in stretches and 79 refused (2026-11-04).
 Repeating a solid along a path, instead of sweeping a profile, is
 [Pattern Along Path](pattern.md).

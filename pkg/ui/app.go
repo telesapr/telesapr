@@ -7,6 +7,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/persist/link"
+	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/ttf"
 )
@@ -74,7 +75,16 @@ func (h appHooks) RegenerateAfterDelete() bool {
 	return true
 }
 func (h appHooks) DraggedParams() []core.HParam { return h.ss.MarkDraggedParams() }
-func (h appHooks) Cancel() bool                 { return false }
+
+// Cancel never stops a regeneration on the interface's thread; it is
+// asked between groups, where a platform with no thread but the loop's
+// (a browser page) is let to draw and show progress.
+func (h appHooks) Cancel() bool {
+	if y, ok := h.ss.Platform.(platform.Yielder); ok {
+		y.Yield()
+	}
+	return false
+}
 
 // setSketch makes sk the sketch the application edits, wired to the
 // view, the show flags and the event loop.

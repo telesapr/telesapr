@@ -61,7 +61,8 @@ what is being built. This file is the conventions, for people and for coding age
 ## Tests and the definition of done
 
 A feature is done when it is tested, has a user interface and has scripting support, and all
-three reach the same `pkg/sketch` entry point. `doc/done-audit.md` keeps the table.
+three reach the same `pkg/sketch` entry point, and the documents describe it as it is (see
+"Branches and commits"). `doc/dev-notes/done-audit.md` keeps the table.
 
 - Tests of a package whose tests touch no process-wide state call `t.Parallel()`; a test that
   sets `srf.DefaultTolerance`, `ttf.DefaultFonts`, an environment variable or the working
@@ -111,10 +112,11 @@ three reach the same `pkg/sketch` entry point. `doc/done-audit.md` keeps the tab
 | `TELESAPR_SWEEP=1` | Robustness sweeps run their whole grid instead of a sample (`pkg/internal/sweep`). |
 | `TELESAPR_STEP_CORPUS=dir` | `TestExternalCorpus` reads the STEP files `external.txt` lists from `dir`. |
 | `TELESAPR_STEP_OUT=dir`, `TELESAPR_KEEP_STEP=1`, `TELESAPR_RENDER_DIR=dir`, `TELESAPR_PATHEQUIV_DIR=dir`, `TELESAPR_GL_DUMP=dir` | Tests in `pkg/ui` and `pkg/render/gl` keep what they produced there, for a diff. |
+| `TELESAPR_DOC_WINDOW_SHOTS=dir` | `TestDocWindowShots` (`pkg/ui`) writes the guide's pictures of the real window's menus and dialogs there; it needs `DISPLAY`, and `scripts/regen-doc-window-images.sh` gives it an Xvfb of its own. Skipped without it, `make test` included. |
 | `TELESAPR_UI_SCRIPT=name` | `TestUIScript` prints what the interface shows for one script of `testdata/ui/scripts`. |
 | `TELESAPR_CACHE_DIR=dir` | Where tessellations of STEP files are kept; tests keep none unless it is set. |
 | `TELESAPR_SCRIPT_OUT=dir` | `TestScriptRoundTrip` (`pkg/script`) writes there the script of each fixture that fails to come back. |
-| `TELESAPR_BENCH_MODEL=file` | `BenchmarkRegenerateModel` (`pkg/persist/tlspr`) regenerates that model, one too large for `testdata` (`doc/notes/performance.md`). |
+| `TELESAPR_BENCH_MODEL=file` | `BenchmarkRegenerateModel` (`pkg/persist/tlspr`) regenerates that model, one too large for `testdata` (`doc/dev-notes/performance.md`). |
 | `TELESAPR_CLI=file` | The `telesapr-cli` that `scripts/perf-fixture-hashes.sh` runs, in place of `bin/telesapr-cli`. |
 | `TELESAPR_SOLVESPACE_SRC=dir` | A SolveSpace source tree, for `scripts/gen-dxf-cptables.py`, which reads its vendored libdxfrw. Not needed to build or test. |
 
@@ -131,6 +133,13 @@ At run time, `TELESAPR_PARALLEL=off` generates solids on one goroutine and
 - A change a user would notice (a feature, a changed behaviour, a fix, a removal) adds a line to
   `## [Unreleased]` in `CHANGELOG.md`, in the same commit. Internal work (refactors, tests, docs,
   dependency bumps) does not.
+- A change in code brings the documents that describe it up to date, in the same commit: the
+  feature's guide page in `doc/guide` (its "Not yet" too), `doc/guide/reference` for a menu
+  entry or a script call, `doc/dev-notes/done-audit.md` for a feature, `doc/tlspr-format.md`
+  for anything a file holds, the area's dev note, and the row of `ROADMAP.md` it touches (taken
+  out when done). After a rename or a removal, grep `doc/` and `ROADMAP.md` for the old name.
+  `TestDocScenarios` and `TestReferencePages` (`pkg/ui`) check the guide's pictures and
+  reference pages; a merge of several branches reads the docs they touched once more.
 - takigo is a public module, required in `go.mod` at a tagged version.
 - A release is `make release` on `master` (`doc/releasing.md`): the tag is `v` +
   `version.Version`, bumped by hand in a commit of its own that also renames `Unreleased` in

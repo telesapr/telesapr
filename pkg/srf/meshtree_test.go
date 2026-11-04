@@ -200,9 +200,12 @@ func TestTriangulateBySurface(t *testing.T) {
 	}
 }
 
-// TestMeshTreeAppendInBox holds the triangles a box query finds to
-// those of a random soup whose boxes meet the box, found one by one.
-func TestMeshTreeAppendInBox(t *testing.T) {
+// TestMeshTreeAppendNearSegment holds the triangles a segment query
+// finds to those of a random soup whose boxes the segment passes within
+// the radius of on every axis, found one by one, and checks that every
+// triangle whose box lies within the radius of a point of the segment is
+// among them.
+func TestMeshTreeAppendNearSegment(t *testing.T) {
 	t.Parallel()
 	r := rand.New(rand.NewPCG(3, 4))
 	m := &SMesh{}
@@ -212,20 +215,31 @@ func TestMeshTreeAppendInBox(t *testing.T) {
 		m.AddTriangle(STriangle{A: p(), B: p(), C: p()})
 	}
 	tree := NewMeshTree(m)
-	if got := NewMeshTree(&SMesh{}).AppendInBox(nil, v3(0, 0, 0), v3(1, 1, 1)); len(got) != 0 {
+	if got := NewMeshTree(&SMesh{}).AppendNearSegment(nil, v3(0, 0, 0), v3(1, 1, 1), 1); len(got) != 0 {
 		t.Errorf("an empty tree found %v", got)
 	}
 	for k := range 20 {
-		lo := v3(r.Float64()*20, r.Float64()*20, r.Float64()*20)
-		hi := lo.Plus(v3(r.Float64()*float64(k), r.Float64()*5, r.Float64()*5))
+		a := v3(r.Float64()*20, r.Float64()*20, r.Float64()*20)
+		b := a.Plus(v3(r.Float64()*8-4, r.Float64()*8-4, r.Float64()*8-4))
+		if k == 0 {
+			b = v3(a.X, a.Y, a.Z+5) // along an axis: zero along the others
+		}
+		rad := r.Float64() * float64(k%4)
 		got := map[int]bool{}
-		for _, i := range tree.AppendInBox(nil, lo, hi) {
+		for _, i := range tree.AppendNearSegment(nil, a, b, rad) {
 			got[i] = true
 		}
 		for i, tr := range m.Triangles {
 			l, h := boxOf(tr)
-			if want := boxDistance(lo, hi, l, h) == 0; want != got[i] {
-				t.Errorf("box %v %v, triangle %d: found %v, want %v", lo, hi, i, got[i], want)
+			if want := segmentMeetsBox(a, b.Minus(a), l, h, rad); want != got[i] {
+				t.Errorf("segment %v %v r %g, triangle %d: found %v, want %v", a, b, rad, i, got[i], want)
+			}
+			for s := range 101 {
+				p := a.Plus(b.Minus(a).ScaledBy(float64(s) / 100))
+				if pointBoxDistance(p, l, h) <= rad && !got[i] {
+					t.Errorf("segment %v %v r %g passes within it of triangle %d, not found", a, b, rad, i)
+					break
+				}
 			}
 		}
 	}

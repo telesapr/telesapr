@@ -125,17 +125,14 @@ func blendOrRefusal(d *Doc, edge SolidEdge, r float64, chamfer bool) (g Group, e
 }
 
 // runOffRefused are the cases of TestFilletRunsOffOntoCylinder that are
-// refused, and what the refusal says: fillets whose end only just runs
-// off onto the x band's top, the end section crossing it within the
-// chord tolerance of the band's side, where the top would grow by a
-// sliver its mesh leaves open; and the x band's widest chamfers, which
-// run off both the band's side and the cone, as on a flat top. The
-// chamfers ending on the narrowest band's top, the cone going on past
-// it, refused as "can't be fitted" before 2026-10-29, are made.
+// refused, and what the refusal says: the x band's widest chamfers,
+// which run off both the band's side and the cone, as on a flat top.
+// The chamfers ending on the narrowest band's top, the cone going on
+// past it, refused as "can't be fitted" before 2026-10-29, are made; so
+// are the fillets whose end only just runs off onto the x band's top,
+// refused as "only just runs off" before 2026-11-04: their end is taken
+// to the corner of the band's side and top (topo's runOffSliver).
 var runOffRefused = map[string]string{
-	"x band 6 wide, top 20 sag -1 r 1.5":         "only just runs off",
-	"x band 6 wide, top 20 sag 1 r 1.5":          "only just runs off",
-	"x band 6 wide, top 21 sag 1 r 2":            "only just runs off",
 	"chamfer, x band 6 wide, top 20 sag 1 r 2.5": "runs off the faces on both sides",
 	"chamfer, x band 6 wide, top 21 sag 1 r 2.5": "runs off the faces on both sides",
 }
@@ -208,5 +205,66 @@ func TestFilletRunsOffOntoCylinder(t *testing.T) {
 				t.Errorf("%s added %g, OpenCASCADE's %g", name, added, occ)
 			}
 		}
+	}
+}
+
+// Fillets of the x band's edge on the cone, run off onto its curved top,
+// at sizes between the oracle's (TestFilletRunsOffOntoCylinder) and at
+// three chord tolerances. Before 2026-11-04 those whose end crosses the
+// top within one to two chord tolerances of the band's side were refused
+// or made with the sliver the top grew by left open (6 naked edges),
+// and some wider ones, 1.725 to 1.8 on the top at 20 and 2.3 on the top
+// at 21, were made with 4 naked edges where the curve across the fillet
+// on the top was meshed by the two faces 1e-6 apart; and 1.925 on the
+// top at 21, whose end crosses the top just short of the band's side,
+// was refused as a fillet that takes material away: every one is sound
+// now, adding more than the size before.
+func TestFilletRunsOffOntoCylinderBetween(t *testing.T) {
+	t.Parallel()
+	type key struct{ top, sag, ct float64 }
+	keys := []key{}
+	for _, ts := range [][2]float64{{20, -1}, {20, 1}, {21, 1}} {
+		for _, ct := range []float64{0.002, 0.003, 0.005} {
+			keys = append(keys, key{ts[0], ts[1], ct})
+		}
+	}
+	rs := []float64{1.475, 1.5, 1.525, 1.725, 1.75, 1.775, 1.8, 1.925, 1.975, 2, 2.025, 2.3}
+	if testing.Short() || fixtures.RaceDetector {
+		keys, rs = keys[1:2], []float64{1.475, 1.5, 1.725, 1.75}
+	}
+	for _, k := range keys {
+		t.Run(fmt.Sprintf("top %g sag %g at %g%%", k.top, k.sag, k.ct), func(t *testing.T) {
+			t.Parallel()
+			blendsBetween(t, k.top, k.sag, k.ct, rs)
+		})
+	}
+}
+
+// blendsBetween fillets the x band's edge on the cone, its top at top
+// with sag, at chord tolerance ct, at each of the sizes rs, rising: each
+// sound, adding more than the one before.
+func blendsBetween(t *testing.T, top, sag, ct float64, rs []float64) {
+	t.Helper()
+	prev := 0.0
+	for _, r := range rs {
+		name := fmt.Sprintf("x band, top %g sag %g, %g%%, r %g", top, sag, ct, r)
+		d := New()
+		d.Edit.SetChordTolerance(ct)
+		edge, before := curvedBandOnCone(d, "x", 3, top, sag)
+		g, err := blendOrRefusal(d, edge, r, false)
+		if err != nil {
+			t.Errorf("%s: %v", name, err)
+			continue
+		}
+		rep := g.Analyze().Check()
+		if !rep.Sound() {
+			t.Errorf("%s: %s", name, rep.Summary())
+			continue
+		}
+		added := rep.Volume - before
+		if added <= prev {
+			t.Errorf("%s added %g, no more than at a smaller size, %g", name, added, prev)
+		}
+		prev = added
 	}
 }

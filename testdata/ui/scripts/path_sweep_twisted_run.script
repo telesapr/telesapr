@@ -1,0 +1,11 @@
+# A rectangle swept along a line and an arc that meet at a corner,
+# twisted by 90 degrees typed in on the group's screen; the same as
+# path_sweep_twisted_run.go makes (TestPathEquivalence/sweep_twisted_run).
+file $testdata/ui/sweep_arc_corner.tlspr
+menu File|Open...
+view other
+click-entity 40000
+click-entity 50000
+menu Features|Sweep Along Path
+click-tw #2 [change]
+edit 90

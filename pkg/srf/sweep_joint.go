@@ -319,6 +319,20 @@ func sweepCorners(sbls *SBezierLoopSet, steps []SweepStep) ([]*sweepCorner, erro
 	return corners, nil
 }
 
+// JointReach is how far the joint of the corner cs, between the steps a
+// and b, a line or an arc each with an arc beside the corner, reaches
+// back along a from its end and on along b from its start, for the
+// profile's points at, given where a leaves them: lengths along a line,
+// angles along an arc. It is the error of CheckSweepCorners when the
+// pieces' sides don't meet there.
+func JointReach(a, cs, b SweepStep, at []geom.Vector) (back, on float64, err error) {
+	c, err := newSweepCorner(a, cs, b, RigidIdentity, at)
+	if err != nil {
+		return 0, 0, &CornerError{At: cs.Center, Err: err}
+	}
+	return math.Max(0, -c.aMin), math.Max(0, c.bMax), nil
+}
+
 // splitJointedArc splits an arc turning by total into sections, the
 // first holding the joint of the corner before it, if any, and the last
 // the joint of the corner after.

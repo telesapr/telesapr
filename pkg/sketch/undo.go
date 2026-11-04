@@ -29,6 +29,7 @@ type UndoState struct {
 	Drawing     *Drawing
 	Units       core.Unit
 	Active      core.HGroup
+	LeftOut     *LeftOut
 }
 
 // UndoStack is a ring of up to MaxUndo states.
@@ -142,6 +143,7 @@ func (s *Sketch) definingState() *UndoState {
 	ut.Drawing = s.Drawing.Clone()
 	ut.Units = s.Units
 	ut.Active = s.Active
+	ut.LeftOut = s.LeftOut
 
 	return ut
 }
@@ -176,6 +178,7 @@ func (s *Sketch) PopOntoCurrentFrom(uk *UndoStack) {
 	s.Drawing = ut.Drawing
 	s.Units = ut.Units
 	s.Active = ut.Active
+	s.LeftOut = ut.LeftOut
 
 	// It has been moved, so no need to free it.
 	*ut = UndoState{}

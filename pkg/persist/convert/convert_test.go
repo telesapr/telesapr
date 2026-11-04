@@ -242,7 +242,8 @@ func TestLoadErrorWarns(t *testing.T) {
 
 // TestConvertDamaged: a model missing its reference workplanes, with a
 // line in a workplane it lacks, is converted with the workplanes put
-// back and the line left out, each said.
+// back and the line left out of the model but kept in the file, each
+// said.
 func TestConvertDamaged(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -256,12 +257,17 @@ func TestConvertDamaged(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "bad.tlspr")); err != nil {
-		t.Error("the mended model wasn't written")
+	data, err := os.ReadFile(filepath.Join(dir, "bad.tlspr"))
+	if err != nil {
+		t.Fatal("the mended model wasn't written")
+	}
+	if !strings.Contains(string(data), "request 0x4 ") {
+		t.Error("the converted file lacks the line left out")
 	}
 	want := []string{
 		"the reference workplane XY was missing and was made again",
-		"removed 1 requests, 0 constraints and 0 groups",
+		"left out 1 requests, 0 constraints and 0 groups",
+		"left out of the model, kept in the file: r004-",
 	}
 	got := strings.Join(r.Warnings, "\n")
 	for _, w := range want {

@@ -4,6 +4,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
@@ -68,21 +69,24 @@ func TestOracleFittedSweep(t *testing.T) {
 		d.Constrain.Tangent(arc, along)
 		return []api.Entity{up, arc, along}
 	}
-	for name, c := range map[string]struct {
+	// Under the race detector the first and the last (fixtures.Sample),
+	// the six took 50 minutes of processor there between them.
+	for _, c := range fixtures.Sample([]struct {
+		name  string
 		a     float64
 		draw  func(d *api.Doc) []api.Entity
 		twist float64
 		up    api.Vec
 		want  float64
 	}{
-		"twisted line":  {12, line, 90, api.Vec{}, 144 * 60},
-		"twisted bend":  {12, bend, 45, api.Vec{}, 144 * (70 + 25*math.Pi/2)},
-		"cubic":         {6, cubic(flat), 0, api.Vec{}, 36 * cubicLength(flat)},
-		"cubic out":     {6, cubic(skew), 0, api.Vec{}, 36 * cubicLength(skew)},
-		"cubic held":    {6, cubic(skew), 0, api.V(1, 0, 0), 36 * cubicLength(skew)},
-		"cubic twisted": {6, cubic(skew), 120, api.Vec{}, 36 * cubicLength(skew)},
-	} {
-		t.Run(name, func(t *testing.T) {
+		{"twisted line", 12, line, 90, api.Vec{}, 144 * 60},
+		{"twisted bend", 12, bend, 45, api.Vec{}, 144 * (70 + 25*math.Pi/2)},
+		{"cubic", 6, cubic(flat), 0, api.Vec{}, 36 * cubicLength(flat)},
+		{"cubic out", 6, cubic(skew), 0, api.Vec{}, 36 * cubicLength(skew)},
+		{"cubic held", 6, cubic(skew), 0, api.V(1, 0, 0), 36 * cubicLength(skew)},
+		{"cubic twisted", 6, cubic(skew), 120, api.Vec{}, 36 * cubicLength(skew)},
+	}) {
+		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			d := api.New()
 			d.Edit.SetChordTolerance(0.01)
@@ -97,8 +101,10 @@ func TestOracleFittedSweep(t *testing.T) {
 				t.Fatalf("the kernel refused it: %s", p)
 			}
 			o := oracleOf(t, d)
-			if m := o.Measure(1e-3, 128); !near(m.Volume, c.want, 2e-3) {
-				t.Errorf("volume %g, want %g (spread %g at %d rays)", m.Volume, c.want, m.Spread(), m.Rays)
+			if measuresVolume() {
+				if m := o.Measure(1e-3, 128); !near(m.Volume, c.want, 2e-3) {
+					t.Errorf("volume %g, want %g (spread %g at %d rays)", m.Volume, c.want, m.Spread(), m.Rays)
+				}
 			}
 			if diffs := o.Diff(meshOf(d), 16, 0.05); len(diffs) != 0 {
 				t.Errorf("%d rays disagree with the mesh, as %+v", len(diffs), diffs[0])
@@ -151,7 +157,11 @@ func TestOracleFittedSweepInertia(t *testing.T) {
 	fittedBar(d, 12, func(d *api.Doc) []api.Entity {
 		return []api.Entity{d.Sketch.Line(api.V(0, 0, 0), api.V(0, 0, 60))}
 	}).SetTwist(90)
-	m := oracleOf(t, d).Measure(1e-3, 128)
+	o := oracleOf(t, d)
+	if !measuresVolume() {
+		return
+	}
+	m := o.Measure(1e-3, 128)
 	v := 144.0 * 60
 	axial, across := v*144/6, v*(144+3600)/12
 	if !near(m.Inertia[2][2], axial, 3e-3) || !near(m.Inertia[0][0], across, 3e-3) || !near(m.Inertia[1][1], across, 3e-3) {
@@ -184,11 +194,13 @@ func TestOracleFittedClosedSweep(t *testing.T) {
 		t.Fatalf("the kernel refused it: %s", p)
 	}
 	o := oracleOf(t, d)
-	m := o.Measure(1e-3, 128)
-	v, axial := 16*2*math.Pi*10, 2*math.Pi*(16*1000+3*10*256/12.0)
-	// The ring lies in ZX about (10, 0, 0): its axis is y.
-	if !near(m.Volume, v, 2e-3) || !near(m.Inertia[1][1], axial, 3e-3) {
-		t.Errorf("volume %g, want %g; inertia %v, want %g about y (spread %g)", m.Volume, v, m.Inertia, axial, m.Spread())
+	if measuresVolume() {
+		m := o.Measure(1e-3, 128)
+		v, axial := 16*2*math.Pi*10, 2*math.Pi*(16*1000+3*10*256/12.0)
+		// The ring lies in ZX about (10, 0, 0): its axis is y.
+		if !near(m.Volume, v, 2e-3) || !near(m.Inertia[1][1], axial, 3e-3) {
+			t.Errorf("volume %g, want %g; inertia %v, want %g about y (spread %g)", m.Volume, v, m.Inertia, axial, m.Spread())
+		}
 	}
 	if diffs := o.Diff(meshOf(d), 16, 0.05); len(diffs) != 0 {
 		t.Errorf("%d rays disagree with the mesh, as %+v", len(diffs), diffs[0])

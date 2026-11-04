@@ -45,6 +45,8 @@ func cornerJointError(err error) error {
 		why = "a piece beside it is too short for its joint"
 	case errors.Is(err, srf.ErrCornerTooWide):
 		why = "its joint goes too far round the arc"
+	case errors.Is(err, errCornerFillOpen):
+		why = "its pieces' outer sides never meet past it"
 	}
 	return &pathError{at: &x, kind: errCornerBesideArc, msg: fmt.Sprintf(
 		"the path's corner at (%g, %g, %g) beside an arc can't be joined: %s; "+
@@ -303,7 +305,8 @@ func fittedCornerError(err error) *pathError {
 		why = "a line segment beside it is too short for the mitres at its ends"
 	case errors.Is(err, topo.ErrPathCornerTwisted):
 		why = "the profile is twisted along the path, and the twist, held still along the line segments beside " +
-			"each corner, has no stretch of the path left to turn on"
+			"each corner as far as its mitre or joint reaches, and along an arc beside a corner, has no stretch " +
+			"of the path left to turn on"
 	default:
 		return nil
 	}

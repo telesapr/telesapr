@@ -313,7 +313,18 @@ function makeWindow(isTool, cb) {
 	const wnd = createWindow(isTool, cb);
 	return Object.assign(wnd, windowMethods);
 }
-doc.addEventListener("fullscreenchange", () => { for (const f of fullscreenListeners) f(!!doc.fullscreenElement); });
+doc.addEventListener("fullscreenchange", () => {
+	const on = !!doc.fullscreenElement;
+	// Full screen, a browser that has the Keyboard Lock API gives the page
+	// the Ctrl keys it otherwise keeps (new window, new tab, close tab):
+	// New and Paste Transformed are Ctrl+N and Ctrl+T again there.
+	const kb = navigator.keyboard;
+	if (kb && kb.lock) {
+		if (on) kb.lock(["KeyN", "KeyT", "KeyW"]).catch(() => {});
+		else kb.unlock();
+	}
+	for (const f of fullscreenListeners) f(on);
+});
 const fullscreenListeners = new Set();
 
 let measureCtx = null;
@@ -983,6 +994,7 @@ function onKey(cb) {
 		const t = e.target;
 		if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
 		if (modalDepth) return;
+		if (busyEl) { e.preventDefault(); return; }
 		if (type === 0 && keyMenu(e)) { e.preventDefault(); return; }
 		if (cb(type, e.key, e.code, e.shiftKey, e.ctrlKey, e.altKey, e.metaKey)) e.preventDefault();
 	};
@@ -990,8 +1002,38 @@ function onKey(cb) {
 	doc.addEventListener("keyup", handler(1));
 }
 
+// ---------------------------------------------------------------- busy
+
+// While a regeneration runs on Go's goroutine the page can only draw when
+// Go waits for nextFrame; busy shows how long it has taken, over the
+// page so that clicks and keys don't pile up behind it, and idle takes it
+// away.
+let busyEl = null;
+function busy(text) {
+	if (!busyEl) {
+		busyEl = h("div", "t-busy");
+		busyEl.append(h("div", "t-busy-box"));
+		busyEl.addEventListener("pointerdown", (e) => e.preventDefault());
+		busyEl.addEventListener("wheel", (e) => e.preventDefault(), { passive: false });
+		busyEl.addEventListener("contextmenu", (e) => e.preventDefault());
+		doc.body.append(busyEl);
+	}
+	busyEl.firstChild.textContent = text;
+}
+function idle() {
+	if (busyEl) { busyEl.remove(); busyEl = null; }
+}
+// nextFrame calls cb once the page has drawn a frame, or after 50 ms
+// where it draws none (a tab in the background).
+function nextFrame(cb) {
+	let done = false;
+	const go = () => { if (!done) { done = true; cb(); } };
+	requestAnimationFrame(go);
+	setTimeout(go, 50);
+}
+
 const W = {
-	init, mnemonic, onKey, download, toast,
+	init, mnemonic, onKey, download, toast, busy, idle, nextFrame,
 	createWindow: makeWindow,
 	menu: () => menuObject(false),
 	menuBar: barObject,
@@ -1003,9 +1045,14 @@ const W = {
 	devicePixelRatio: () => window.devicePixelRatio || 1,
 	pageSize: () => [innerWidth, innerHeight],
 	exited() {
+		// The program has ended and can't run again in this page: Start
+		// Again loads the page afresh, which keeps the files and settings.
 		const o = h("div", "t-exited");
-		o.append(h("div", "", "TeleSAPR has exited."), h("div", "t-hint", "Reload the page to start again. Your files are kept."));
+		const again = h("button", "t-btn default", "Start Again");
+		again.addEventListener("click", () => location.reload());
+		o.append(h("div", "", "TeleSAPR has exited."), h("div", "t-hint", "Your files and settings are kept."), again);
 		doc.body.append(o);
+		again.focus();
 	},
 	modalDepth: () => modalDepth,
 	openMenus: () => path.length,

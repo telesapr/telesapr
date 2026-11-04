@@ -360,3 +360,37 @@ func TestSweepJointedCornerSweep(t *testing.T) {
 	}).Require(t)
 	t.Logf("refused %d", refused)
 }
+
+// JointReach says how far a corner's joint reaches back along the line
+// before it: a line any shorter is too short for the joint, any longer
+// holds it. A corner the pieces can't be joined at is its error.
+func TestJointReach(t *testing.T) {
+	t.Parallel()
+	profile := squareAt(0, 0, 2)
+	for _, corner := range []float64{deg(90), deg(-60), deg(120)} {
+		steps, _ := testPath([]pathPart{{l: 30}, {arc: true, r: 10, turn: deg(60), corner: corner}})
+		end := SweepEnd(steps[:1])
+		var at []geom.Vector
+		for _, q := range sweepSamples(profile) {
+			at = append(at, end.Apply(q))
+		}
+		back, on, err := JointReach(steps[0], steps[1], steps[2], at)
+		if err != nil || back <= 0 || on < 0 {
+			t.Fatalf("corner %g: back %g on %g, %v", corner, back, on, err)
+		}
+		for _, c := range []struct {
+			l    float64
+			want error
+		}{{back - 0.05, ErrCornerTooLong}, {back + 0.05, nil}} {
+			short, _ := testPath([]pathPart{{l: c.l}, {arc: true, r: 10, turn: deg(60), corner: corner}})
+			if err := CheckSweepCorners(profile, short, false); !errors.Is(err, c.want) && (c.want != nil || err != nil) {
+				t.Errorf("corner %g, a line of %g against a reach of %g: %v, want %v", corner, c.l, back, err, c.want)
+			}
+		}
+	}
+	steps, _ := testPath([]pathPart{{arc: true, r: 10, turn: deg(60)}, {l: 8, corner: deg(170)}})
+	at := []geom.Vector{SweepEnd(steps[:1]).Apply(geom.Vector{X: 1})}
+	if _, _, err := JointReach(steps[0], steps[1], steps[2], at); !errors.Is(err, ErrCornerNoJoint) {
+		t.Errorf("nearly turning back: %v", err)
+	}
+}

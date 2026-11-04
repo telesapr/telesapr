@@ -36,13 +36,16 @@ var arrowNames = map[string]int{
 // digit is offered also without Shift ('+' on Shift+'=' is Zoom In's
 // key), and, when it is on the top row of digits, as that digit with
 // Shift (Shift+'3' is '#' on one layout, '£' on another). Alt is left to
-// the browser, which also reports AltGr as Control and Alt together, and
-// Command on a Mac counts as Control. The events' Type is KeyPress.
+// the browser, which also reports AltGr as Control and Alt together,
+// but for Ctrl+Alt with a key the browser keeps Ctrl's own of
+// (browserCtrlKey): that is offered as Ctrl and the key, the way to
+// reach New, Paste Transformed, Show Naked Edges and Trace Point in a
+// page. Command on a Mac counts as Control. The events' Type is KeyPress.
 func keyCandidates(key, code string, shift, ctrl, alt, meta bool) []platform.KeyboardEvent {
-	if alt {
+	ctrl = ctrl || meta
+	if alt && (!ctrl || !browserCtrlKey(key)) {
 		return nil
 	}
-	ctrl = ctrl || meta
 	k := platform.KeyboardEvent{Type: platform.KeyPress, ShiftDown: shift, ControlDown: ctrl}
 	if chr, ok := namedKeys[key]; ok {
 		k.Key, k.Chr = platform.KeyCharacter, chr
@@ -77,6 +80,20 @@ func keyCandidates(key, code string, shift, ctrl, alt, meta bool) []platform.Key
 		}
 	}
 	return out
+}
+
+// browserCtrlKey reports whether a browser keeps Ctrl and the key for
+// itself, with or without Shift, so that a page never sees it: a new
+// window, a new tab, closing the tab (Ctrl+N, Ctrl+T, Ctrl+W). The
+// application's accelerators on them are reached with Ctrl+Alt instead,
+// and with Ctrl alone while the page is full screen, where web.js asks
+// the browser for those keys (navigator.keyboard.lock).
+func browserCtrlKey(key string) bool {
+	switch strings.ToLower(key) {
+	case "n", "t", "w":
+		return true
+	}
+	return false
 }
 
 // digitRowKey is the digit of a key of the keyboard's top row by its

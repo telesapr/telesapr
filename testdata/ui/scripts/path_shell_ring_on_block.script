@@ -1,0 +1,12 @@
+# ring_on_block.tlspr, a block with a ring revolved three quarters of a
+# turn on its side, hollowed open at the block's top, picked with the
+# mouse: the ring's end on the block's side is moved out into it, its
+# end in the air is a wall. The same as path_shell_ring_on_block.go
+# makes (TestPathEquivalence/shell_ring_on_block).
+file $testdata/ui/ring_on_block.tlspr
+menu File|Open...
+view default
+move 360 250
+down L 360 250
+up L 360 250
+menu Features|Shell Solid

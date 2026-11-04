@@ -20,5 +20,6 @@ if [ -n "$opt" ]; then
 	mv "$out/telesapr-web.opt.wasm" "$out/telesapr-web.wasm"
 fi
 # wasm_exec.js is read-only in GOROOT, so install it rather than copy it over the last one.
-install -m 644 "$(go env GOROOT)/lib/wasm/wasm_exec.js" cmd/telesapr-web/web/index.html cmd/telesapr-web/web/memfs.js "$out/"
+install -m 644 "$(go env GOROOT)/lib/wasm/wasm_exec.js" cmd/telesapr-web/web/index.html cmd/telesapr-web/web/memfs.js \
+	cmd/telesapr-web/web/agent-client.js "$out/"
 ls -l "$out"/telesapr-web.wasm*

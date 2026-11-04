@@ -1203,7 +1203,7 @@ shell {
     trim 0x11 forward 8 -8 5 -4 -4 15
     trim 0x12 forward -4 -4 15 4 -4 15
     trim 0x13 forward 4 -4 15 8 8 5
-    trim 0xd backward 8 8 5 8 -8 5
+    trim 0x19 backward 8 8 5 8 -8 5
   }
   surface 0x9 {
     color 100 100 100 255
@@ -1217,7 +1217,7 @@ shell {
     trim 0x13 backward 8 8 5 4 -4 15
     trim 0x14 forward 4 -4 15 4 4 15
     trim 0x15 forward 4 4 15 -8 8 5
-    trim 0xe backward -8 8 5 8 8 5
+    trim 0x1a backward -8 8 5 8 8 5
   }
   surface 0xa {
     color 100 100 100 255
@@ -1231,7 +1231,7 @@ shell {
     trim 0x15 backward -8 8 5 4 4 15
     trim 0x16 forward 4 4 15 -4 4 15
     trim 0x17 forward -4 4 15 -8 -8 5
-    trim 0xf backward -8 -8 5 -8 8 5
+    trim 0x1b backward -8 -8 5 -8 8 5
   }
   surface 0xb {
     color 100 100 100 255
@@ -1245,7 +1245,7 @@ shell {
     trim 0x17 backward -8 -8 5 -4 4 15
     trim 0x18 forward -4 4 15 -4 -4 15
     trim 0x11 backward -4 -4 15 8 -8 5
-    trim 0x10 backward 8 -8 5 -8 -8 5
+    trim 0x1c backward 8 -8 5 -8 -8 5
   }
   surface 0xc {
     color 100 100 100 255
@@ -1366,42 +1366,6 @@ shell {
     ctrl 1 10 -10 0 1
     vertex 10 -10 5
     vertex 10 -10 0
-  }
-  curve 0xd {
-    exact
-    degree 1
-    surfaces 0x7 0x8
-    ctrl 0 8 -8 5 1
-    ctrl 1 8 8 5 1
-    vertex 8 -8 5
-    vertex 8 8 5
-  }
-  curve 0xe {
-    exact
-    degree 1
-    surfaces 0x7 0x9
-    ctrl 0 8 8 5 1
-    ctrl 1 -8 8 5 1
-    vertex 8 8 5
-    vertex -8 8 5
-  }
-  curve 0xf {
-    exact
-    degree 1
-    surfaces 0x7 0xa
-    ctrl 0 -8 8 5 1
-    ctrl 1 -8 -8 5 1
-    vertex -8 8 5
-    vertex -8 -8 5
-  }
-  curve 0x10 {
-    exact
-    degree 1
-    surfaces 0x7 0xb
-    ctrl 0 -8 -8 5 1
-    ctrl 1 8 -8 5 1
-    vertex -8 -8 5
-    vertex 8 -8 5
   }
   curve 0x11 {
     exact

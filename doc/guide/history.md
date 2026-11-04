@@ -121,13 +121,32 @@ A damaged file, one that refers to things it doesn't hold, opens as far as it ca
 reference workplanes, which every model has, are put back if it lacks them; a group, request or
 constraint that uses something missing is left out. A message says what on opening, and Broken
 References lists it, the workplanes put back under "mended when the file was opened". Nothing
-undoes it, the file never having held what was missing; saving keeps the model as it opened.
-From a script, `doc.Features.Mended()` lists what was put back; `telesapr-cli convert` reports
-it as warnings.
+undoes it, the file never having held what was missing.
+
+What was left out is kept in the file: Broken References lists it under "left out of the
+model, kept in the file", and saving writes it back as the file held it, so that it is left out
+again when the file is opened. A chamfer's or a fillet's edge, or a piece of a sweep's path,
+that the file names and doesn't hold is left out of its group the same way: the group goes
+without it, its screen says so, and a save writes it back where it was in the list, with its own
+distance or radius. Editing the group's edges lets it go.
+
+To bring it back, give it what it lacks. Under the list, Broken References names each point,
+workplane or edge the file lacks: select one of the model's in its place (a point for a point,
+a workplane for a workplane, a curve for an edge) and click **[use the selected]**. Clicked
+with nothing selected, the screen waits while you pick, and the link reads **[take the
+selection]**. What then has all it uses comes back into the model, in one step of Undo. Or mend
+the file in a text editor and open it again. To be rid of it, click **[discard them]**: the next
+save no longer writes it, and Undo takes the discard back.
+
+From a script, `doc.Features.Mended()` lists what was put back, `doc.Features.LeftOut()` what was
+left out and kept, `doc.Features.LeftOutMissing()` what it lacks,
+`doc.Features.MendLeftOut(missing, with)` gives it in place of one of those, and
+`doc.Features.DiscardLeftOut()` discards it; `telesapr-cli convert` reports both as warnings.
 
 ## Not yet
 
 A group can't be moved ahead of a group it uses, even when the reference could be redirected.
 
-What a damaged file leaves out is gone from the model, so saving the file drops it; it can't be
-kept in the file, left out, for you to mend by hand.
+Of what a damaged file leaves out, only a group's origin, a request's workplane, a constraint's
+points and workplane and a feature's edges can be given from the window; a group or a
+constraint's line, circle or face that the file lacks is mended in the file, by hand.

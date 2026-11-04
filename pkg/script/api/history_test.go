@@ -371,3 +371,50 @@ func TestOpenDamagedMended(t *testing.T) {
 		t.Errorf("broken %v", refs)
 	}
 }
+
+// A script reads what a damaged file's load left out and kept, and
+// discards it as the Broken References screen does, a step of undo.
+func TestDamagedLeftOutScript(t *testing.T) {
+	t.Parallel()
+	d, err := Open(filepath.Join("..", "..", "..", "testdata", "tlspr", "damaged", "group_missing_workplane.tlspr"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"g003-on-missing", "r008-datum-point of g003-on-missing"}
+	if got := d.Features.LeftOut(); !slices.Equal(got, want) {
+		t.Fatalf("left out %q", got)
+	}
+	d.Features.DiscardLeftOut()
+	if got := d.Features.LeftOut(); len(got) != 0 {
+		t.Errorf("discarded, left out %q", got)
+	}
+	failsWith(t, "nothing was left out", func() { d.Features.DiscardLeftOut() })
+	d.Edit.Undo()
+	if got := d.Features.LeftOut(); !slices.Equal(got, want) {
+		t.Errorf("after undo, left out %q", got)
+	}
+}
+
+// A script mends a damaged file as the window does: what the file
+// lacks is given in place of it, and what was left out comes back; a
+// mend with the wrong kind fails, changing nothing; undo takes it back.
+func TestDamagedMendScript(t *testing.T) {
+	t.Parallel()
+	d, err := Open(filepath.Join("..", "..", "..", "testdata", "tlspr", "damaged", "group_missing_workplane.tlspr"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	missing := d.Features.LeftOutMissing()
+	if len(missing) != 1 || missing[0].H.V != 0x70001 {
+		t.Fatalf("missing %v", missing)
+	}
+	failsWith(t, "as a point", func() { d.Features.MendLeftOut(missing[0], d.Entity(0x10000)) })
+	d.Features.MendLeftOut(missing[0], d.Entity(0x10001))
+	if got := d.Features.LeftOut(); len(got) != 0 || len(d.Groups()) != 2 {
+		t.Errorf("mended: left out %q, %d groups", got, len(d.Groups()))
+	}
+	d.Edit.Undo()
+	if got := d.Features.LeftOut(); len(got) != 2 || len(d.Groups()) != 1 {
+		t.Errorf("after undo: left out %q, %d groups", got, len(d.Groups()))
+	}
+}

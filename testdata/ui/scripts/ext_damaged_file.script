@@ -1,6 +1,8 @@
 # A damaged file (an extension): a sketch placed on a point the file
-# lacks is left out, and the reference workplanes it lacks are put back.
-# A message says so on opening, and Edit > Broken References lists both.
+# lacks is left out, and the reference workplanes it lacks are put back;
+# a chamfer's edge the file lacks is left out of the chamfer and kept.
+# A message says so on opening, and Features > Broken References lists each,
+# with what can take the place of what the file lacks.
 answer ok
 load tlspr/damaged/group_missing_workplane.tlspr
 tw
@@ -8,6 +10,11 @@ menu Features|Broken References...
 tw
 answer ok
 load tlspr/damaged/missing_references.tlspr
+tw
+menu Features|Broken References...
+tw
+answer ok
+load tlspr/damaged/chamfer_missing_edge.tlspr
 tw
 menu Features|Broken References...
 tw

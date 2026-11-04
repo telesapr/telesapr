@@ -131,12 +131,13 @@ func cutParts(parts []*part, g *Group) {
 // two parts found nothing, or failed.
 var nudge = geom.Vector{X: 1e-4, Y: 1.618e-4, Z: 1.414e-4}
 
-// assemblyParts are the parts of the model up to group upTo, cut by
-// the groups that cut the assembly after them, and the parts that have
-// no shell, by group. before is the last group before the first
-// assembled one, whose solid so far is a part, or nil when the model is
-// no assembly, or one that starts with an assembled group.
-func (sk *Sketch) assemblyParts(upTo core.HGroup) (parts []*part, meshOnly []core.HGroup, before *Group) {
+// assemblyParts are the parts of the model up to group upTo, and the
+// parts that have no shell, made of triangles (mesh_parts.go), each cut
+// by the groups that cut the assembly after it. before is the last group
+// before the first assembled one, whose solid so far is a part, or nil
+// when the model is no assembly, or one that starts with an assembled
+// group.
+func (sk *Sketch) assemblyParts(upTo core.HGroup) (parts []*part, meshes []*meshPart, before *Group) {
 	add := func(h core.HGroup, sh *srf.SShell) {
 		if len(sh.Surface) == 0 {
 			return
@@ -158,16 +159,22 @@ func (sk *Sketch) assemblyParts(upTo core.HGroup) (parts []*part, meshOnly []cor
 		switch {
 		case solid && g.MeshCombine == CombineAssemble:
 			if !assembled && before != nil {
-				add(before.H, &before.RunningShell)
+				if len(before.RunningShell.Surface) > 0 {
+					add(before.H, &before.RunningShell)
+				} else if !before.RunningMesh.IsEmpty() {
+					meshes = append(meshes, newMeshPart(before.H, &before.RunningMesh, nil))
+				}
 			}
 			assembled = true
 			if g.IsTriangleMeshAssembly() || g.ForceToMesh {
-				meshOnly = append(meshOnly, hg)
+				// A group forced to a mesh holds the triangles of its own
+				// solid in its shell until they are combined.
+				meshes = append(meshes, newMeshPart(hg, &g.ThisMesh, &g.ThisShell))
 			} else {
 				add(hg, &g.ThisShell)
 			}
 		case assembled && solid && (g.MeshCombine == CombineDifference || g.MeshCombine == CombineIntersection):
-			cutParts(parts, g)
+			parts, meshes = cutAssembly(parts, meshes, g)
 		case !assembled && solid:
 			before = g
 		}
@@ -178,13 +185,16 @@ func (sk *Sketch) assemblyParts(upTo core.HGroup) (parts []*part, meshOnly []cor
 	if !assembled {
 		before = nil
 	}
-	return parts, meshOnly, before
+	return parts, meshes, before
 }
 
 // Interferences checks the parts of the model up to group upTo against
 // each other. meshOnly lists the parts that have no shell.
 func (sk *Sketch) Interferences(upTo core.HGroup) (found []Interference, meshOnly []core.HGroup) {
-	parts, meshOnly, _ := sk.assemblyParts(upTo)
+	parts, meshes, _ := sk.assemblyParts(upTo)
+	for _, mp := range meshes {
+		meshOnly = append(meshOnly, mp.g)
+	}
 	for _, p := range parts {
 		p.whole = newPiece(p.shell)
 	}

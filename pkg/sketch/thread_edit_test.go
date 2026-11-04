@@ -8,6 +8,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/thread"
@@ -52,7 +53,9 @@ func TestEditThread(t *testing.T) {
 		t.Skip("thread solids")
 	}
 	base := threadCase{"", 4, 30, "M8", sketch.ThreadOptions{Length: 12}}
-	for _, c := range []struct {
+	// Under the race detector a fifth of the edits (fixtures.Sample): the
+	// nine took 20 minutes of processor there.
+	for _, c := range fixtures.Sample([]struct {
 		name        string
 		designation string
 		edit        func(o *sketch.ThreadOptions)
@@ -68,7 +71,7 @@ func TestEditThread(t *testing.T) {
 		{"starts", "M8xPh2.5P1.25", func(o *sketch.ThreadOptions) {}, false},
 		{"truncated", "M8", func(o *sketch.ThreadOptions) { o.Crest = thread.CrestTruncated }, true},
 		{"rounded", "M8", func(o *sketch.ThreadOptions) { o.Crest = thread.CrestRounded }, false},
-	} {
+	}) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			sk, circle, res := base.build(t, 0)
@@ -324,7 +327,9 @@ func TestThreadCrests(t *testing.T) {
 	if testing.Short() {
 		t.Skip("thread solids")
 	}
-	for _, tc := range []threadCase{
+	// Under the race detector a fifth (fixtures.Sample): the twelve took
+	// 110 minutes of processor there, each thread twice.
+	for _, tc := range fixtures.Sample([]threadCase{
 		{"screw_m8_truncated", 4, 30, "M8", sketch.ThreadOptions{Length: 12, Crest: thread.CrestTruncated}},
 		{"screw_m8_rounded", 4, 30, "M8", sketch.ThreadOptions{Length: 12, Crest: thread.CrestRounded}},
 		{"nut_m8_rounded", 7, 6.5, "M8", sketch.ThreadOptions{Length: 6.5, Through: true, Internal: true, Crest: thread.CrestRounded}},
@@ -339,7 +344,7 @@ func TestThreadCrests(t *testing.T) {
 		{"nut_butt_lh_rounded", 20, 15, "1-12 PUSH-BUTT-LH", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Clearance: 0.05, Crest: thread.CrestRounded}},
 		{"screw_butt_round_both", 9.525, 20, "3/4-10 BUTT", sketch.ThreadOptions{Length: 12, Clearance: 0.05, RoundRoot: true, Crest: thread.CrestRounded}},
 		{"nut_butt_round_both", 20, 15, "1-12 PULL-BUTT", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Clearance: 0.05, RoundRoot: true, Crest: thread.CrestRounded}},
-	} {
+	}) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			// The crest's arc is a fraction of a millimetre across: at the

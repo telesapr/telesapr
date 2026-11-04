@@ -64,6 +64,7 @@ func init() {
 		"InsertKnotH":                 reflect.ValueOf(srf.InsertKnotH),
 		"InterpolatedCurve":           reflect.ValueOf(srf.InterpolatedCurve),
 		"InterpolatedPatch":           reflect.ValueOf(srf.InterpolatedPatch),
+		"JointReach":                  reflect.ValueOf(srf.JointReach),
 		"LocalOriginBit":              reflect.ValueOf(constant.MakeFromLiteral("32768", token.INT, 0)),
 		"MaxDegree":                   reflect.ValueOf(constant.MakeFromLiteral("5", token.INT, 0)),
 		"MaxSegments":                 reflect.ValueOf(srf.MaxSegments),

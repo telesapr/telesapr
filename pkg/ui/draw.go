@@ -382,6 +382,9 @@ func (gw *graphicsWindow) chooseFromHover(forDrag bool) Selection {
 
 	for i := range gw.hoverList {
 		hov := &gw.hoverList[i]
+		if hov.Hidden {
+			continue
+		}
 		var hg core.HGroup
 		switch {
 		case hov.Selection.Entity.V != 0:
@@ -463,6 +466,7 @@ func (gw *graphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 	}
 	canvas.SetBitmapFont(gw.bitmapFont())
 
+	hides := gw.hidesEntities()
 	// Always do the entities; we might be dragging something that should
 	// be auto-constrained, and we need the hover for that.
 	for i := range sk.Entities {
@@ -497,6 +501,7 @@ func (gw *graphicsWindow) HitTestMakeSelection(mp geom.Point2d) {
 				ZIndex:    canvas.MaxZIndex,
 				Depth:     canvas.MinDepth,
 				Selection: Selection{Entity: e.H},
+				Hidden:    hides && gw.hiddenByFace(canvas),
 			})
 		}
 	}

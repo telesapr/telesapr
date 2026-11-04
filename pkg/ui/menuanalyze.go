@@ -398,6 +398,9 @@ func (ss *Application) CheckSolid() {
 			fmt.Fprintf(&b, "    %d problems with its topology, the first: %s\n",
 				r.TopologyProblems, r.Topology[0].Msg)
 		}
+		if r.Touches {
+			b.WriteString("    " + r.TouchText() + "\n")
+		}
 		b.WriteString("\nThe problem edges are marked.\n\n")
 	}
 	c, d := r.CenterOfMass, r.Max.Minus(r.Min)

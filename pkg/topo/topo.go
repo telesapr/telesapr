@@ -296,7 +296,7 @@ func Build(sh *srf.SShell) (*Topology, error) {
 		if err != nil {
 			problems = append(problems, fmt.Sprintf("surface %d: %v", s.H.V, err))
 		}
-		t.makeFaces(s, loops)
+		t.makeFaces(s, t.splitPinchedLoops(s, loops))
 	}
 	t.findSheets()
 	t.nameEdges()
@@ -556,11 +556,7 @@ func (t *Topology) makeFaces(s *srf.SSurface, loops [][]int) {
 	infos := make([]info, len(loops))
 	for i, l := range loops {
 		uv := t.loopUV(s, l)
-		a := 0.0
-		for k := range uv {
-			p, q := uv[k], uv[(k+1)%len(uv)]
-			a += (p.X*q.Y - q.X*p.Y) / 2
-		}
+		a := uvArea(uv)
 		infos[i] = info{ces: l, area: -a, uv: uv, outer: a < 0}
 	}
 	// Outer loops, largest first, each taking the holes inside it.

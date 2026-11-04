@@ -8,6 +8,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -36,6 +37,14 @@ func meshOf(d *api.Doc) *srf.SMesh {
 
 // near reports whether a is within rel of b.
 func near(a, b, rel float64) bool { return math.Abs(a-b) <= rel*math.Abs(b) }
+
+// measuresVolume reports whether a slow oracle test takes the volume by
+// rays (Oracle.Measure): not under the race detector. The oracle runs on
+// one goroutine, so the detector finds nothing in it, and its tens of
+// thousands of rays took 20 minutes a test there, nearly all of the
+// test; what the detector is for, the kernel's regeneration, and the
+// oracle's rays against its mesh (Oracle.Diff) still run.
+func measuresVolume() bool { return !fixtures.RaceDetector }
 
 // A box's volume and centroid come out exact on the coarsest grid,
 // and a probe through it enters and leaves at its faces.

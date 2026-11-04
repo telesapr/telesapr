@@ -5,14 +5,8 @@
 file $testdata/ui/sweep_cubic.tlspr
 menu File|Open...
 view default
-move 382.5 232.5
-down L 382.5 232.5
-up L 382.5 232.5
+click-entity 40000
 menu Features|Sweep Along Path
-twmove 154 165
-twdown L 154 165
-twup L 154 165
+click-tw #2 [change]
 edit 90
-twmove 235 205
-twdown L 235 205
-twup L 235 205
+click-tw held to x

@@ -13,3 +13,15 @@ type LoopPoster interface {
 	// never runs.
 	LoopDone() <-chan struct{}
 }
+
+// Yielder is a Platform whose event loop's thread is the only one the
+// program has, as a browser page's is: while the loop's goroutine
+// regenerates a model, nothing else, the page's drawing included, runs.
+// The application calls Yield between the groups of a regeneration, on
+// the loop's goroutine; the platform may let the page draw and show the
+// work's progress there before it returns. What comes from the user
+// meanwhile waits, or is dropped, until the regeneration is done. A
+// platform with threads of its own doesn't implement it.
+type Yielder interface {
+	Yield()
+}

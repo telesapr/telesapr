@@ -11,9 +11,9 @@ import (
 
 // BenchmarkRegenerateModel regenerates the model TELESAPR_BENCH_MODEL
 // names, for a model too large to keep under testdata: the scaled
-// step-and-repeat models of doc/notes/performance.md, which are
-// made from testdata/group/translate_nd/normal.slvs as that note says,
-// converted.
+// step-and-repeat models of doc/dev-notes/performance.md, made from
+// testdata/tlspr/golden/group/translate_nd/normal.tlspr as that note
+// says.
 // It is skipped when the variable is not set.
 func BenchmarkRegenerateModel(b *testing.B) {
 	file := os.Getenv("TELESAPR_BENCH_MODEL")

@@ -1,0 +1,23 @@
+# A block extruded from a rectangle, seen turned: the mouse beside the
+# rectangle's far sides, which the block hides, picks the face in front
+# of them; beside a near edge, which nothing hides, it picks the edge.
+key r
+move 200 200
+down L 200 200
+up L 200 200
+move 380 330
+down L 380 330
+up L 380 330
+key esc
+key x shift
+view rotated
+# Beside the rectangle's far side, behind the block: the block's top.
+move 280 235
+hover
+# On the rectangle's far side, behind the block: the face in front.
+move 330 285
+hover
+# Beside the block's near bottom edge, in front of the far ones: that
+# edge.
+move 320 290
+hover

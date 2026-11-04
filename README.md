@@ -56,6 +56,11 @@ Each [release](https://github.com/telesapr/telesapr/releases) carries `telesapr`
   `telesapr-cli` is inside, at `TeleSAPR.app/Contents/MacOS/telesapr-cli`. The window draws in
   software.
 
+- **In a browser**: [telesapr.sourceforge.io](https://telesapr.sourceforge.io) has a "Try in
+  browser" page that runs the window as WebAssembly, with nothing to install. Files are kept in the
+  browser's storage; it has no AI agent connection, and a large model holds the page while it
+  regenerates.
+
 `SHA256SUMS` lists the checksums. The release workflow runs the quick tests on Windows and macOS
 before it packages them, but TeleSAPR is developed and used on Linux. `doc/releasing.md` says how a
 release is made.
@@ -73,6 +78,7 @@ git clone https://github.com/telesapr/telesapr
 cd telesapr
 make build                                      # bin/telesapr and bin/telesapr-cli
 sudo make install                               # with the desktop entry, icons and MIME type
+make wasm                                       # the browser version, into bin/web
 ```
 
 `make help` lists the other targets. `make test-fast` runs the quick tests, `make test` all but

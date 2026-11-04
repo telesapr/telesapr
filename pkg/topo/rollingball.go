@@ -99,6 +99,10 @@ type rollingBall struct {
 	// conic and the ball's own leave the ball's at the ball's pace
 	// (rampS), for a skin whose sides ran back on themselves there.
 	easeRamp bool
+	// splitAt are arc lengths a section is put at besides the ball's
+	// own: between the cuts of two ends that run off, so that no patch
+	// is cut by both (runOffApart).
+	splitAt []float64
 	// spans is how many quintic spans of equal length every section is
 	// split into (splitSection), 0 or 1 for one: two so that the end
 	// section on a curved face can follow it round a wide corner, or a
@@ -1507,6 +1511,35 @@ type rbCrossing struct {
 	side  int
 }
 
+// runOffApart is the refusal of a fillet both of whose ends run off
+// faces, their cuts sharing a patch: where the two cuts lie apart along
+// the edge, it carries the arc length between them, at which a section
+// put (splitAt) gives each cut patches of its own.
+func (rb *rollingBall) runOffApart(endCuts []rbEndCut, at geom.Vector) error {
+	err := &FilletError{Msg: "the fillet runs off faces at both its ends: make it smaller", At: at}
+	if len(endCuts) != 2 || endCuts[0].off == nil || endCuts[1].off == nil || len(rb.splitAt) >= maxRunOffSplits {
+		return err
+	}
+	guess := rb.length / 2
+	s0 := rb.nearestSection(endCuts[0].off.p2, guess)
+	s1 := rb.nearestSection(endCuts[1].off.p2, guess)
+	// End 0's cut runs from the start to s0, end 1's from s1 to the end:
+	// apart when s0 comes first, by more than a sliver of a patch.
+	if !(s1-s0 > 1e-3*rb.r) {
+		return err
+	}
+	err.splitAt = (s0 + s1) / 2
+	return err
+}
+
+// runOffAcrossTol is how near both surfaces the curves across a
+// fillet where it runs off onto a curved face keep (acrossPatch).
+const runOffAcrossTol = 1e-7
+
+// maxRunOffSplits is how many sections runOffApart may add to one
+// fillet, one at a time, before the fillet is refused.
+const maxRunOffSplits = 3
+
 // rollingBallFillet rounds the closed edge through edge e, between two
 // curved faces, with radius r, as the package comment above says. The
 // fillet's patches get origin as their origin and sheet.
@@ -1515,15 +1548,32 @@ func rollingBallFillet(sh *srf.SShell, t *Topology, e int, r float64, origin uin
 	if err != nil {
 		return err
 	}
-	sf, secs, cross, err := rb.blend()
-	if err != nil {
-		return err
+	for {
+		sf, secs, cross, err := rb.blend()
+		if err != nil {
+			return err
+		}
+		bl, err := rb.patches(sf, secs, cross)
+		if err != nil {
+			return err
+		}
+		// The shell is changed only when the blend goes in: a fillet whose
+		// two run-offs share a patch is blended again with a section
+		// between them.
+		var cp srf.SShell
+		cp.MakeFromCopyOf(sh)
+		err = putBlends(&cp, []*rbBlend{bl}, origin)
+		var fe *FilletError
+		if errors.As(err, &fe) && fe.splitAt > 0 {
+			rb.splitAt = append(rb.splitAt, fe.splitAt)
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		*sh = cp
+		return nil
 	}
-	bl, err := rb.patches(sf, secs, cross)
-	if err != nil {
-		return err
-	}
-	return putBlends(sh, []*rbBlend{bl}, origin)
 }
 
 // rbBlend is a chain's fillet: its surface's patches, a row or two
@@ -1879,11 +1929,24 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 		}
 		for b := ro.first; b < ro.after; b++ {
 			if _, ok := loops[b]; ok {
-				return nil, filletErr(at, "the fillet runs off faces at both its ends: make it smaller")
+				return nil, rb.runOffApart(endCuts, at)
 			}
-			l, a, err := clipPatch(&row[b], ro, math.Max(sh.Tol.ChordTolMm()/10, 1e-6))
+			tol := math.Max(sh.Tol.ChordTolMm()/10, 1e-6)
+			var l, a []srf.SBezier
+			err := errNotRolling
+			if ro.ns != nil {
+				// Across a curved next face, both faces mesh the same cubics
+				// but each through its own surface: within a tenth of the chord
+				// tolerance of both, their points still parted by 1e-6 there,
+				// past the mesh's join (naked edges on a band's end at 20 on the
+				// cone, its fillets of 1.725 to 1.8 and 2.3 at 21). Nearer
+				// first, where 64 cubics follow it.
+				l, a, err = clipPatch(&row[b], ro, runOffAcrossTol)
+			}
 			if err != nil {
-				return nil, err
+				if l, a, err = clipPatch(&row[b], ro, tol); err != nil {
+					return nil, err
+				}
 			}
 			snapEnds(l, ro.p1At, ro.p1)
 			snapEnds(a, ro.p1At, ro.p1)

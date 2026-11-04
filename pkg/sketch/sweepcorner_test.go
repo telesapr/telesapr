@@ -270,26 +270,28 @@ func TestSweepFittedCorner(t *testing.T) {
 		t.Errorf("held to the corner's axis: %q %s, want %g", s.Problem(), r.String(), want)
 	}
 
-	// A corner straight off the cubic.
+	// A corner straight off the cubic, which no fitted sweep mitres: made
+	// of Booleans (TestSweepSharpCornerBesideCubic), the cubic's run, the
+	// line's and the corner's fill joined; the band's length times its
+	// section, within what the corner's curve moves it.
 	e := api.New()
 	e.Features.Sketch3D("path")
 	kinked := []api.Entity{e.Sketch.Cubic(c[0], c[1], c[2], c[3]), e.Sketch.Line(c[3], c[3].Plus(api.V(8, 0, 0)))}
 	e.Features.SketchIn(e.Workplane("XY"), "profile")
 	e.Sketch.Rect(api.V(-1, -1.5, 0), api.V(1, 1.5, 0))
-	defer func() {
-		err, ok := recover().(error)
-		if !ok || !strings.Contains(err.Error(), "next to a curve") {
-			t.Errorf("a corner beside a cubic: %v", err)
-		}
-	}()
-	e.Features.Sweep(kinked, "")
+	k := e.Features.Sweep(kinked, "")
+	want = 6 * (cubicLength(c[0], c[1], c[2], c[3]) + 8)
+	if r := k.Analyze().Check(); k.Problem() != "" || !r.Sound() || math.Abs(r.Volume-want) > 0.005*want {
+		t.Errorf("a corner beside a cubic: %q %s, want %g", k.Problem(), r.String(), want)
+	}
 }
 
 // A fitted sweep's corner beside an arc is joined as a rigid sweep's:
 // held to the arc's axis, the hook up a line and round an arc is the
 // rigid one, sound and of its volume, one step of undo and back from the
-// file. Twisted, with every piece beside the corner, there is nowhere
-// for the twist to turn, and the corner is a problem naming the radius.
+// file. Twisted, the twist turns along the line past the joint's reach;
+// with the line within it there is nowhere for the twist to turn, and
+// the corner is a problem naming the radius.
 func TestSweepFittedCornerBesideArc(t *testing.T) {
 	t.Parallel()
 	d := api.New()
@@ -319,8 +321,26 @@ func TestSweepFittedCornerBesideArc(t *testing.T) {
 		t.Errorf("held off the arc's axis: %q", p)
 	}
 	s.AsSweep().SetSweepUp(api.V(0, 0, 0))
+	// Twisted, the line leaves the rigid run past its joint's reach and
+	// takes the twist: about the path along a line, the profile keeps the
+	// volume.
 	s.AsSweep().SetTwist(30)
-	if p := s.Problem(); !strings.Contains(p, "nowhere") && !strings.Contains(p, "no stretch") || !strings.Contains(p, "corner radius") {
+	if r := s.Analyze().Check(); s.Problem() != "" || !r.Sound() || math.Abs(r.Volume-rigid.Volume) > 0.005*rigid.Volume {
+		t.Errorf("twisted: %q %s, want %g", s.Problem(), r.String(), rigid.Volume)
+	}
+	// A line within the joint's reach leaves nowhere for the twist to
+	// turn, and the corner is a problem naming the radius.
+	e := api.New()
+	e.Features.SketchIn(e.Workplane("ZX"), "path")
+	short := []api.Entity{
+		e.Sketch.Line(api.V(0, 0, 7), api.V(0, 0, 10)),
+		e.Sketch.Arc(api.V(0, 0, 15), api.V(0, 0, 10), api.V(5, 0, 15)),
+	}
+	e.Features.SketchIn(e.Workplane("XY"), "profile")
+	e.Sketch.Rect(api.V(-1, -2, 7), api.V(1, 2, 7))
+	h := e.Features.Sweep(short, "")
+	h.AsSweep().SetTwist(30)
+	if p := h.Problem(); !strings.Contains(p, "no stretch") || !strings.Contains(p, "corner radius") {
 		t.Errorf("twisted with nowhere to turn: %q", p)
 	}
 }

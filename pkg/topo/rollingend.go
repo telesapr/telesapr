@@ -562,6 +562,11 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		cross = append(cross, rbCrossing{s: s, faces: pairs[i], side: sides[i]})
 		breaks = append(breaks, s)
 	}
+	for _, s := range rb.splitAt {
+		if s > r0 && s < r1 {
+			breaks = append(breaks, s)
+		}
+	}
 	breaks = append(breaks, r1)
 	slices.Sort(breaks)
 	h := math.Min(rb.length/12, 2*rb.r)

@@ -11,6 +11,11 @@ The model in these pictures is made by
 [`examples/scripts/fillet`](../../examples/scripts/fillet/fillet.go): a block with its upright
 edges rounded. [Getting started](getting-started.md) makes a part step by step.
 
+The menu bar along the top holds every command, with its key where it has one. Alt and a menu's
+underlined letter opens it; F10 opens the first.
+
+![The File menu](images/interface-7-file-menu.png)
+
 ## The toolbar
 
 The toolbar runs down the left side of the graphics window. Hover a button to see what it does
@@ -86,6 +91,12 @@ drawn with a dotted pattern.
 
 ![The top face hovered](images/interface-5-hover.png)
 
+A line, a point or a dimension within 10 pixels of the pointer is hovered before the face under
+it, so that thin things are easy to hit. A line or a point that the solid hides is not: where the
+solid's faces are shown and can be picked, the face in front of it is hovered instead. To pick
+something behind the solid, turn the view, or show hidden lines as visible lines (the last
+switch above), which makes them pickable again.
+
 **Click** selects what is hovered. Selected things are drawn in red, and the property browser
 describes them: here a flat face, its normal and a point on it, and its group. Each further click
 adds to the selection. Ctrl+click takes a thing out of it. A click on empty space, or Esc (Edit >
@@ -125,7 +136,9 @@ This Plane, Select Face Edges, Sketch On Face, an Appearance submenu and Measure
 edge it offers Fillet Edges, Chamfer Edges and Sweep Along Edges. On a dimension it offers Edit
 Value. A Group submenu activates, hides, suppresses or deletes the group the thing belongs to.
 The entries are listed in [the guide's first page](README.md). Right-clicking empty space offers
-Select All. The menu is not shown in the pictures here.
+Select All.
+
+![The context menu of an edge](images/interface-8-context-menu.png)
 
 While you draw lines or arcs, a right click stops drawing, as Esc does.
 

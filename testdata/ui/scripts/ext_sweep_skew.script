@@ -1,0 +1,25 @@
+# Sweep Along Path round a closed path out of a plane with sharp
+# corners: a square swept round four lines in 3d, no two sides in one
+# plane, picked with the mouse; the frames come back turned, so the
+# sweep is fitted and the turn taken out between the mitred corners. The
+# group screen, then the solid checked.
+file $testdata/ui/sweep_skew.tlspr
+menu File|Open...
+view other
+move 276 324
+down L 276 324
+up L 276 324
+move 368 216
+down L 368 216
+up L 368 216
+move 344 204
+down L 344 204
+up L 344 204
+move 292 232
+down L 292 232
+up L 292 232
+menu Features|Sweep Along Path
+tw
+answer ok
+menu Analyze|Check Solid
+dump

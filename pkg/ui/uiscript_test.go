@@ -15,6 +15,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/cfmt"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/internal/golden"
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
@@ -594,7 +595,7 @@ func (r *uiScriptRunner) step(line string) (ok bool) {
 			fmt.Fprintf(&r.b, "save\n%send save\n", data)
 		}
 	default:
-		if !r.docStep(t) {
+		if !r.clickStep(t, rest) && !r.docStep(t) {
 			r.t.Fatalf("unknown script line: %s", line)
 		}
 	}
@@ -636,11 +637,24 @@ func compareUIScripts(t *testing.T, prefix string) {
 		t.Fatalf("no scripts %s*", prefix)
 	}
 	for _, name := range names {
+		if raceLeavesOut(name, prefix+"thread") {
+			continue
+		}
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			compareUIScript(t, name, runUIScript(t, name))
 		})
 	}
+}
+
+// raceLeavesOut reports whether a script or model of a thread, name, is
+// left out under the race detector, all but kept: a thread's solid takes
+// minutes there, and the threads' scripts came to 90 minutes of
+// processor between them in pkg/ui alone. Their solids are made on the
+// goroutines kept's is, and pkg/sketch's thread tests make them under
+// the race detector too; the plain run keeps every one.
+func raceLeavesOut(name, kept string) bool {
+	return fixtures.RaceDetector && strings.Contains(name, "thread") && name != kept
 }
 
 // compareUIScript compares a script's output with its golden, or

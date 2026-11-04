@@ -127,3 +127,26 @@ import draws and the window does not.
 Files are saved as `.tlspr`, a text format described in
 [`doc/tlspr-format.md`](../tlspr-format.md). SolveSpace's `.slvs` files are imported (File >
 Import, or `telesapr-cli convert`) and never written.
+
+## In a browser
+
+The project's site, [telesapr.sourceforge.io](https://telesapr.sourceforge.io), runs the same
+window in a browser ("Try in browser"), with nothing installed. It differs from the desktop
+program in a few ways:
+
+- Files are kept in the browser's storage, on that computer only; clearing the site's data
+  removes them. A save dialog also offers the file as a download, and the **Files** button lists,
+  downloads and deletes what is stored. Ctrl+S writes to the storage only. Saving under the
+  name of a file already stored asks before replacing it.
+- A large model holds the page while it regenerates: the window is not redrawn and takes no
+  clicks or keys until it is done, but after a moment a box says how long it has taken. The page
+  is let to draw between the model's groups, so one slow group (a screw thread's) holds it for
+  as long as that group takes.
+- It has no socket for `telesapr-cli mcp` (`--agent`). Script > Allow AI Connections lets a
+  program in the browser work on the drawing through the page instead (see
+  [Drawing with an AI model](ai.md#in-a-browser)).
+- File > Exit ends the program in the page; **Start Again** loads it afresh, with the files kept.
+- The browser keeps Ctrl+N, Ctrl+T and Ctrl+W (new window, new tab, close the tab) for itself:
+  New is Ctrl+Alt+N there, Paste Transformed Ctrl+Alt+T, Show Naked Edges Ctrl+Alt+Shift+N and
+  Trace Point Ctrl+Alt+Shift+T. Full screen (View > Full Screen), Chrome and Edge give the page
+  the Ctrl keys too. Menus open with Alt and their underlined letter, as on the desktop.

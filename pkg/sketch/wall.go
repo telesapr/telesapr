@@ -12,7 +12,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// The thickness of walls (item 14 of doc/notes/modelling_upgrades.md),
+// The thickness of walls (item 14 of doc/dev-notes/modelling_upgrades.md),
 // measured on the parts' meshes: from points of each triangle, a ray
 // into the solid, square to the triangle, to where it leaves the part
 // again. A triangle is measured at the middles of the pieces it is cut
@@ -59,6 +59,10 @@ type WallReport struct {
 	// in Samples where their rays left the part; one whose didn't is
 	// left out, not counted as unmeasured.
 	Samples, Unmeasured int
+	// NearCut is set when a part had more pairs of triangles facing
+	// each other within its thinnest wall than are measured
+	// (wallNearMost): a wall between two of those left may be missed.
+	NearCut bool
 	// Step is the longest a piece of a triangle measured at its middle
 	// was; about the thinnest spots, the pieces were finer.
 	Step float64

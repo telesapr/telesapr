@@ -328,10 +328,10 @@ func (s *SSurface) edgeNormalsWithinSurface(auv, buv geom.Point2d, shell, sha, s
 //
 // Result: returns true if classification succeeded and writes
 // shell classification into *indir and *outdir.
-func (s *SShell) classifyEdge(indir, outdir *SShellClass,
+func (s *SShell) classifyEdge(own *SSurface, indir, outdir *SShellClass,
 	ea, eb, p, edgeNIn, edgeNOut, surfN geom.Vector) {
 	var inDir, outDir Class
-	if !s.ClassifyEdge(&inDir, &outDir, ea, eb, p, edgeNIn, edgeNOut, surfN) {
+	if !s.classifyEdgeOn(own, &inDir, &outDir, ea, eb, p, edgeNIn, edgeNOut, surfN) {
 		return
 	}
 	*indir = shellClassFromClass(inDir)
@@ -517,7 +517,7 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		var surfN, pt, enin, enout geom.Vector
 		pt, enin, enout = ret.edgeNormalsWithinSurface(auv, buv, into, sha, shb, se.AuxA, &surfN)
 		indirShell, outdirShell := ShellOutside, ShellOutside
-		agnst.classifyEdge(&indirShell, &outdirShell,
+		agnst.classifyEdge(ret, &indirShell, &outdirShell,
 			ret.PointAtUv(auv), ret.PointAtUv(buv),
 			pt, enin, enout, surfN)
 		keep := keepEdge(t, opA,
@@ -579,7 +579,7 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 			continue
 		}
 		tagByClassifiedEdge(cThis, &indirOrig, &outdirOrig)
-		agnst.classifyEdge(&indirShell, &outdirShell,
+		agnst.classifyEdge(ret, &indirShell, &outdirShell,
 			ret.PointAtUv(auv), ret.PointAtUv(buv),
 			pt, enin, enout, surfN)
 		keep := keepEdge(t, opA,

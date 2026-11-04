@@ -210,7 +210,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 			if keys {
 				g.prefixKey = sk.prefixKey(prefix, g, nil)
 			}
-			sk.skipGroup(g, prev, i >= first && i <= last, keys, sk.solidKeyOf(g.prefixKey, prevSolid))
+			sk.skipGroup(g, prev, i >= first && i <= last, keys, sk.solidKeyOf(g, g.prefixKey, prevSolid))
 			if keys {
 				prefix, prevSolid = g.prefixKey, sk.chainKey(g)
 			}
@@ -295,7 +295,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 			g.Clean = true
 			if keys {
 				g.prefixKey = sk.prefixKey(prefix, g, groupParams)
-				g.solidKey = sk.solidKeyOf(g.prefixKey, prevSolid)
+				g.solidKey = sk.solidKeyOf(g, g.prefixKey, prevSolid)
 			}
 
 		case i >= first && i <= last:
@@ -332,7 +332,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 					g.GenerateLoops(sk, rt)
 				}
 				g.prefixKey = sk.prefixKey(prefix, g, groupParams)
-				sk.makeSolid(g, sk.solidKeyOf(g.prefixKey, prevSolid))
+				sk.makeSolid(g, sk.solidKeyOf(g, g.prefixKey, prevSolid))
 				g.ShellsStale = false
 				g.Clean = true
 			}
@@ -602,7 +602,7 @@ func (sk *Sketch) PruneGroups(hg core.HGroup) bool {
 				at[i] = len(kept)
 				kept = append(kept, he)
 			} else {
-				sk.broke(hg, "edge of "+g.DescriptionString(), sk.entityName(he))
+				sk.broke(hg, "edge", sk.entityName(he))
 			}
 		}
 		if dropped := len(g.Edges) - len(kept); dropped > 0 {
@@ -1142,9 +1142,9 @@ func (sk *Sketch) RemakeStaleMeshes() bool {
 	for _, h := range sk.GroupOrder {
 		g := sk.Group(h)
 		if g.H.V == HGroupReferences {
-			g.solidKey = sk.solidKeyOf(g.prefixKey, prev)
+			g.solidKey = sk.solidKeyOf(g, g.prefixKey, prev)
 		} else {
-			sk.makeSolid(g, sk.solidKeyOf(g.prefixKey, prev))
+			sk.makeSolid(g, sk.solidKeyOf(g, g.prefixKey, prev))
 		}
 		prev = sk.chainKey(g)
 	}

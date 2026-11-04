@@ -11,7 +11,8 @@ import (
 // surface whose ear-clipped mesh strays from it (strays[i], its mesh
 // ms[i]) or holds a sliver (earMeshSlivers) and is unsound in the
 // shell's, an edge of its triangles crossing the shell's mesh or having
-// no mate there, and each whose triangles lie on another's
+// no mate there, or an edge of another surface's crossing its triangles,
+// and each whose triangles lie on another's
 // (stackedFaces). The ear clipper fans long chords across a patch ruled
 // one way or a trimmed corner, which pass a trim point on the wrong side
 // and cross the face beyond (roadmap K4); on a plane it clips slivers
@@ -21,8 +22,13 @@ import (
 // meridian into a pole, or two faces fan from a corner along the curve
 // they share, it joins the curve's points to the pole or corner on both
 // faces, so slivers of both lie on each other, too thin to count as
-// folded (K5). The CDT is sound there, at more triangles, so it
-// takes only those surfaces, and a sound mesh is left as it is.
+// folded (K5). A surface whose edge runs along another's open edge,
+// past its ends without stopping (runsAlongOpen), is taken too, flagged
+// or not: where a trim lies within a sliver of the line joining two
+// points of the surface's outline, the clipper joins them with one long
+// edge and fans a strip over the face beyond. The CDT is sound there, at
+// more triangles, so it takes only those surfaces, and a sound mesh is
+// left as it is.
 func (s *SShell) mendCrossings(ms []SMesh, strays []bool) {
 	stacked := stackedFaces(ms)
 	var all SMesh
@@ -60,8 +66,50 @@ func (s *SShell) mendCrossings(ms []SMesh, strays []bool) {
 		}
 		return false
 	}
+	// pierced tells whether an edge of another surface's mesh passes
+	// through a triangle of ms[i]: a sliver the ear clipper fans across a
+	// cone from its base to a point on its top trim cuts through the
+	// solid, and its own edges, each ending on a face it meets, cross
+	// nothing; the flat face beyond, its fan reaching that point, does.
+	pierced := func(i int) bool {
+		own := SMesh{Triangles: slices.Clone(ms[i].Triangles)}
+		ki := SKdNodeFrom(&own)
+		for j := range ms {
+			if j == i {
+				continue
+			}
+			for k := range ms[j].Triangles {
+				tr := &ms[j].Triangles[k]
+				for e := range 3 {
+					cnt++
+					var info EdgeOnInfo
+					ki.FindEdgeOn(tr.vertex(e), tr.vertex((e+1)%3), cnt, true, &info)
+					if info.IntersectsMesh {
+						return true
+					}
+				}
+			}
+		}
+		return false
+	}
+	// open is, once asked, the shell's edges with no mate: a T-junction
+	// leaves them where a face's edge runs along another's trim points
+	// without stopping at them.
+	var open [][2]geom.Vector
+	openDone := false
+	openEdges := func() [][2]geom.Vector {
+		if !openDone {
+			openDone = true
+			open = unmatedEdges(&all, kd, &cnt)
+		}
+		return open
+	}
 	for i := range ms {
-		if !stacked[i] && (!strays[i] || !unsound(&ms[i])) {
+		bad := stacked[i] || strays[i] && (unsound(&ms[i]) || pierced(i))
+		// A face whose edge runs along another's open edge is the one to
+		// mesh again, flagged or not: the long edge's own triangles are
+		// whole, and only the face beyond, left open, was flagged.
+		if !bad && !runsAlongOpen(&ms[i], openEdges(), s.Surface[i].Tol.ChordTolMm()) {
 			continue
 		}
 		var m SMesh
@@ -98,4 +146,59 @@ func stackedFaces(ms []SMesh) []bool {
 		}
 	}
 	return out
+}
+
+// unmatedEdges are the edges of m (its k-d tree kd) that have no mate:
+// as many edges run b -> a there as a -> b on coincident ones. cnt tags
+// triangles seen, as FindEdgeOn wants.
+func unmatedEdges(m *SMesh, kd *SKdNode, cnt *int) [][2]geom.Vector {
+	var out [][2]geom.Vector
+	for i := range m.Triangles {
+		tr := &m.Triangles[i]
+		for j := range 3 {
+			a, b := tr.vertex(j), tr.vertex((j+1)%3)
+			*cnt++
+			var info EdgeOnInfo
+			kd.FindEdgeOn(a, b, *cnt, false, &info)
+			if info.Count == 1 {
+				continue
+			}
+			*cnt++
+			var par EdgeOnInfo
+			kd.FindEdgeOn(b, a, *cnt, false, &par)
+			if info.Count != par.Count {
+				out = append(out, [2]geom.Vector{a, b})
+			}
+		}
+	}
+	return out
+}
+
+// runsAlongOpen tells whether an edge of m runs past an end of an open
+// edge of the shell's mesh (open), within tol of it but not ending
+// there: a T-junction. A chamfer's foot along a rod, its trim within a
+// sliver of the line joining two points of the rod's end rings, leaves
+// the ear clipper's long edge between those points running along the
+// foot's points without stopping at them, and its strip of triangles
+// over the chamfer's; every edge of the rod's mesh has its mate, so
+// only the foot's edges, left open, show it.
+func runsAlongOpen(m *SMesh, open [][2]geom.Vector, tol float64) bool {
+	if len(open) == 0 {
+		return false
+	}
+	for i := range m.Triangles {
+		tr := &m.Triangles[i]
+		for j := range 3 {
+			a, b := tr.vertex(j), tr.vertex((j+1)%3)
+			for _, e := range open {
+				for _, p := range e {
+					if p.Minus(a).Magnitude() > lengthEps && p.Minus(b).Magnitude() > lengthEps &&
+						distanceToSegment(p, a, b) < tol {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
 }

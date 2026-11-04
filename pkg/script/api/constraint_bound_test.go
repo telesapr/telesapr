@@ -415,3 +415,31 @@ func TestDistanceBoundsOldFile(t *testing.T) {
 		t.Errorf("read %s", got)
 	}
 }
+
+// A second angle made a bound at a corner that has one is a bound that
+// holds, as the window's Maximum makes it, though as a dimension it was
+// redundant and so a reference; a reference the script asked for stays
+// one.
+func TestSecondAngleBoundHolds(t *testing.T) {
+	t.Parallel()
+	d := New()
+	a := d.Sketch.Line(V(0, 0, 0), V(40, 0, 0))
+	b := d.Sketch.Line(V(0, 0, 0), V(30, 30, 0))
+	least := d.Constrain.Angle(a, b, 45)
+	least.SetLimit(Minimum)
+	most := d.Constrain.Angle(a, b, 45)
+	if !most.Reference() {
+		t.Fatal("a second angle at the corner, as a dimension, is not redundant")
+	}
+	most.SetLimit(Maximum)
+	if most.Reference() || least.Reference() {
+		t.Errorf("bounds made references: least %t, most %t", least.Reference(), most.Reference())
+	}
+
+	ref := d.Constrain.Length(a, 40)
+	ref.SetReference(true)
+	ref.SetLimit(Maximum)
+	if !ref.Reference() {
+		t.Error("a reference the script asked for stopped being one when it became a bound")
+	}
+}

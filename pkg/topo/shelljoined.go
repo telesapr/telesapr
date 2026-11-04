@@ -73,7 +73,7 @@ func ShellJoined(sh *srf.SShell, parts []ShellPart, open []int, thick float64, o
 	if err != nil {
 		return nil, err
 	}
-	inner, buried, err := joinedInside(t, sh, parts, opened, buriedFace, thick)
+	inner, buried, err := joinedInside(t, sh, parts, opened, buriedFace, thick, false)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func ShellJoined(sh *srf.SShell, parts []ShellPart, open []int, thick float64, o
 		// the thickness: what of them lies outside the solid is where the
 		// wall beyond a face moved out is thinner than the thickness, or
 		// where it came out of the solid.
-		check, _, err := joinedInside(t, sh, parts, nil, probedFace, thick)
+		check, _, err := joinedInside(t, sh, parts, nil, probedFace, thick, false)
 		if err != nil {
 			return nil, err
 		}
@@ -91,21 +91,99 @@ func ShellJoined(sh *srf.SShell, parts []ShellPart, open []int, thick float64, o
 			return nil, err
 		}
 	}
+	out, err := takeInside(sh, inner, origin)
+	if !errors.Is(err, errInsideLeftOpen) {
+		return out, err
+	}
+	// The inside's faces left where the faces taken away are lie on the
+	// solid's, and where two parts' faces taken away lie in one plane
+	// (a post's top flush with the block's it is sunk in), the solid's
+	// face there is two patches and the inside's top two others, split
+	// apart elsewhere: the Boolean can't match them. Run out past the
+	// solid by the thickness, the inside's faces cross nothing there.
+	if inner, _, err = joinedInside(t, sh, parts, opened, buriedFace, thick, true); err != nil {
+		return nil, err
+	}
+	out, err = takeInside(sh, inner, origin)
+	if !errors.Is(err, errInsideLeftOpen) || !buried {
+		return out, refusedOpen(err)
+	}
+	// A part's face lying inside another part, moved out by the
+	// thickness to join the two insides, can carry the inside to the
+	// solid's face where that face is the other part's: a post sunk into
+	// a block's top beside its side, its foot moved down past where the
+	// post stands out of the block, takes the inside to the block's side
+	// below it. Kept as walls, such faces are taken away by the other
+	// parts' insides where those reach, and stay as walls where those
+	// don't: there the wall is the other part's own.
+	if inner, _, err = joinedInside(t, sh, parts, opened, keptFace, thick, true); err != nil {
+		return nil, err
+	}
+	out, err = takeInside(sh, inner, origin)
+	return out, refusedOpen(err)
+}
+
+// refusedOpen is err, said to the user when the inside leaves no closed
+// solid: what has most often done so is two parts' insides, or an inside
+// and the solid's face, touching along a line or at a point, where the
+// walls between them meet with no thickness.
+func refusedOpen(err error) error {
+	if errors.Is(err, errInsideLeftOpen) {
+		return fmt.Errorf("%w: where the parts' insides touch each other, or the solid's face, along a line or at "+
+			"a point, the walls meet with no thickness; move what touches apart or change the thickness", err)
+	}
+	return err
+}
+
+// errInsideLeftOpen is the error of takeInside when the Boolean that
+// takes the inside away fails, or leaves no sound solid.
+var errInsideLeftOpen = errors.New("the Boolean that takes the inside away failed, or left no closed solid")
+
+// takeInside is sh less inner, the faces of inner given origins from
+// origin up; errInsideLeftOpen if the Boolean fails or leaves no sound
+// solid.
+func takeInside(sh, inner *srf.SShell, origin uint32) (*srf.SShell, error) {
 	for i := range inner.Surface {
 		inner.Surface[i].Origin = origin + uint32(i)
 	}
 	out := &srf.SShell{Tol: sh.Tol}
 	out.MakeFromDifferenceOf(sh, inner)
-	if out.BooleanFailed {
-		return nil, errors.New("the Boolean that takes the inside away failed")
+	if out.BooleanFailed || unsound(out) {
+		return nil, errInsideLeftOpen
 	}
 	return out, nil
 }
 
+// unsound reports whether sh is not a closed solid: its mesh has an
+// edge with no mate or one passing through a triangle, its topology a
+// problem, or the two count its holes differently. It looks at a copy:
+// meshing sh and building its topology fill caches in it that move the
+// last bits of a later mesh, and a check must leave the solid it
+// checks as it was.
+func unsound(orig *srf.SShell) bool {
+	c := orig.Clone()
+	sh := &c
+	var m srf.SMesh
+	sh.TriangulateInto(&m)
+	if len(m.Triangles) == 0 {
+		return true
+	}
+	var bad srf.SEdgeList
+	srf.SKdNodeFrom(&m).MakeCertainEdgesInto(&bad, srf.EdgeNakedOrSelfInter, true, nil, nil, 0)
+	if len(bad.Edges) > 0 {
+		return true
+	}
+	t, err := Build(sh)
+	return err != nil || len(t.Validate()) > 0 || t.Euler() != MeshEuler(&m)
+}
+
 // joinedInside is the inside of sh (topology t), made of parts, faces
 // opened taken away and a part's faces lying inside the other parts
-// joined by unions moved as inside says, and whether any does.
-func joinedInside(t *Topology, sh *srf.SShell, parts []ShellPart, opened map[int]bool, inside faceMode, thick float64) (*srf.SShell, bool, error) {
+// joined by unions moved as inside says, and whether any does. With
+// runOut, a flat part's or a prism's faces lying on faces taken away
+// are moved out by the thickness, not left on them.
+func joinedInside(t *Topology, sh *srf.SShell, parts []ShellPart, opened map[int]bool, inside faceMode, thick float64,
+	runOut bool) (*srf.SShell, bool, error) {
 	onUnion, err := unionTopology(sh, t, parts)
 	if err != nil {
 		return nil, false, err
@@ -180,7 +258,7 @@ func joinedInside(t *Topology, sh *srf.SShell, parts []ShellPart, opened map[int
 		case part.Draft != nil:
 			in, err = joinedDraftedInside(part.Shell, *part.Draft, modeAt, openPts, openedAs[op], thick)
 		default:
-			in, err = joinedFlatInside(part.Shell, modeAt, openPts, openedAs[op], thick)
+			in, err = joinedFlatInside(part.Shell, modeAt, openPts, openedAs[op], thick, runOut)
 		}
 		if err != nil {
 			return nil, false, err
@@ -331,8 +409,10 @@ func profilePoints(profile *srf.SBezierLoopSetSet) []geom.Vector {
 // A face of the part a face taken away lies on is moved as opened says,
 // though no point of the part's face it was asked about lies on it: a
 // part intersected with can be larger than the solid by far. open are
-// points of the faces taken away.
-func joinedFlatInside(part *srf.SShell, modeAt func(geom.Vector) faceMode, open []openPoint, opened faceMode, thick float64) (*srf.SShell, error) {
+// points of the faces taken away. With runOut, a face taken away is
+// moved out by the thickness, as one inside another part is.
+func joinedFlatInside(part *srf.SShell, modeAt func(geom.Vector) faceMode, open []openPoint, opened faceMode, thick float64,
+	runOut bool) (*srf.SShell, error) {
 	pt, err := Build(part)
 	if err != nil {
 		return nil, err
@@ -347,6 +427,13 @@ func joinedFlatInside(part *srf.SShell, modeAt func(geom.Vector) faceMode, open 
 	for _, o := range open {
 		if f := onFaceOf(pt, o); f >= 0 {
 			mode[f] = opened
+		}
+	}
+	if runOut {
+		for f, m := range mode {
+			if m == openFace {
+				mode[f] = buriedFace
+			}
 		}
 	}
 	inner, ok, err := prismInside(pt, part, mode, thick, 0)

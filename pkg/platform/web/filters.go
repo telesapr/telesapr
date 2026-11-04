@@ -69,3 +69,18 @@ func folderOrHome(p string) string {
 	}
 	return homeDir
 }
+
+// saveTarget is the file a save dialog's answer names: the name with ext
+// added when it was typed without one, in dir (the home folder when
+// empty). Folders typed in the name are dropped: saves go to one place.
+func saveTarget(dir, name, ext string) string {
+	if dir == "" {
+		dir = homeDir
+	}
+	return path.Join(dir, path.Base(withExtension(strings.TrimSpace(name), ext)))
+}
+
+// replaceMessage is the question asked before a save replaces a file.
+func replaceMessage(base string) string {
+	return "Replace the file “" + base + "”?"
+}

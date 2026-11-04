@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -103,8 +104,12 @@ func TestThreadFollowsFace(t *testing.T) {
 	}
 	resize(sk, part, 25)
 	checkFollowed(t, sk, hg, 25)
-	resize(sk, part, 15)
-	checkFollowed(t, sk, hg, 15)
+	if !fixtures.RaceDetector {
+		// Shorter too; under the race detector, where a thread takes
+		// minutes, longer is enough.
+		resize(sk, part, 15)
+		checkFollowed(t, sk, hg, 15)
+	}
 	if got := sk.Group(hg).Thread.LengthDims; len(got) != len(dims) {
 		t.Errorf("length dimensions %v, were %v", got, dims)
 	}
@@ -158,8 +163,8 @@ func TestThreadFollowsFaceCosmetic(t *testing.T) {
 // which keeps its length; made long enough again, the thread follows.
 func TestThreadFollowsFaceRefused(t *testing.T) {
 	t.Parallel()
-	if testing.Short() {
-		t.Skip("thread solids")
+	if testing.Short() || fixtures.RaceDetector {
+		t.Skip("thread solids; under the race detector they regenerate as TestThreadFollowsFace's do, on the same goroutines")
 	}
 	sk, part, hg := fullLengthThread(t, 20, sketch.ThreadOptions{})
 	resize(sk, part, 2)
@@ -197,8 +202,8 @@ func TestThreadFollowsFaceDimensionGone(t *testing.T) {
 // redo brings the followed thread again.
 func TestThreadFollowsFaceUndo(t *testing.T) {
 	t.Parallel()
-	if testing.Short() {
-		t.Skip("thread solids")
+	if testing.Short() || fixtures.RaceDetector {
+		t.Skip("thread solids; under the race detector they regenerate as TestThreadFollowsFace's do, on the same goroutines")
 	}
 	sk, part, hg := fullLengthThread(t, 20, sketch.ThreadOptions{})
 	// The solver settles a fraction of a nanometre apart from one solve
@@ -235,8 +240,8 @@ func TestThreadFollowsFaceUndo(t *testing.T) {
 // thread read from a file follows the face as the one saved did.
 func TestThreadFollowsFaceRoundTrip(t *testing.T) {
 	t.Parallel()
-	if testing.Short() {
-		t.Skip("thread solids")
+	if testing.Short() || fixtures.RaceDetector {
+		t.Skip("thread solids; under the race detector they regenerate as TestThreadFollowsFace's do, on the same goroutines")
 	}
 	sk, _, hg := fullLengthThread(t, 20, sketch.ThreadOptions{})
 	path := filepath.Join(t.TempDir(), "rod.tlspr")

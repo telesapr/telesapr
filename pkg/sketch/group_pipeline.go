@@ -106,6 +106,17 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	g.Problem = GroupProblem{}
 	g.forgetTopology()
 	g.solidTol = sk.tol
+	// A chamfered thread's or a buttress nut's groups are made at a
+	// finer tolerance than the sketch's where it needs one
+	// (threadSolidTol): the sketch's is set
+	// to it while this group's solid is made, which every step below
+	// reads, and set back after. solidTol keeps the sketch's, which is
+	// what tells a solid made at another regeneration's tolerance.
+	if fine, ok := sk.threadSolidTol(g); ok {
+		was := sk.tol
+		sk.tol = fine
+		defer func() { sk.tol = was }()
+	}
 
 	srcg := g
 

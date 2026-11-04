@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"image/png"
-	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -76,7 +75,7 @@ func newAgentApp(t *testing.T) *agentApp {
 			time.Sleep(time.Millisecond)
 		}
 	}
-	a.r = &agent.Remote{Connect: func() (net.Conn, error) { return agent.Connect(dir) }, CancelWait: 10 * time.Second}
+	a.r = &agent.Remote{Connect: func() (agent.Conn, error) { return agent.Connect(dir) }, CancelWait: 10 * time.Second}
 	t.Cleanup(func() {
 		a.r.Close()
 		a.on(func() { _ = a.ss.AllowAgent(false) })

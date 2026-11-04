@@ -1,0 +1,11 @@
+# A rectangle swept along a line and an arc that meet at a sharp corner
+# of 150 degrees, too sharp for the kernel to join: made of the two
+# pieces and the corner's fill, joined; the same as
+# path_sweep_sharp_arc.go makes (TestPathEquivalence/sweep_sharp_arc).
+file $testdata/ui/sweep_sharp_arc.tlspr
+menu File|Open...
+view other
+scroll 296 262 3
+click-entity 40000
+click-entity 50000
+menu Features|Sweep Along Path

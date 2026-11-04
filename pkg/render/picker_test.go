@@ -57,3 +57,33 @@ func TestObjectPickerClipToView(t *testing.T) {
 		t.Errorf("clipped: the line above the window is found")
 	}
 }
+
+// The picker finds a line where it is near the mouse, and of a front
+// and a back half that lie over each other on the screen, as a circle
+// seen edge on has, it finds the front one; a quad gives no point.
+func TestObjectPickerMinAt(t *testing.T) {
+	t.Parallel()
+	cam := Camera{Width: 600, Height: 600, Scale: 1, ProjRight: geom.Vector{X: 1}, ProjUp: geom.Vector{Y: 1}}
+	op := &ObjectPicker{Cam: cam, SelRadius: 10, Point: geom.Point2d{U: 20, V: 3}}
+	hcs := op.InternStroke(Stroke{Width: 1, Unit: UnitPX})
+	// Depth grows away from the viewer, along -z here.
+	back, front := geom.Vector{Z: -5}, geom.Vector{Z: 5}
+	op.Pick(func() {
+		op.DrawLine(geom.Vector{X: -50}.Plus(back), geom.Vector{X: 50}.Plus(back), hcs)
+		op.DrawLine(geom.Vector{X: -50}.Plus(front), geom.Vector{X: 50}.Plus(front), hcs)
+	})
+	if want := (geom.Vector{X: 20, Z: 5}); !op.AtKnown || !op.MinAt.Equals(want) {
+		t.Errorf("found at %v (%t), want %v", op.MinAt, op.AtKnown, want)
+	}
+	op.Pick(func() { op.DrawPoint(geom.Vector{X: 18, Z: 1}, hcs) })
+	if want := (geom.Vector{X: 18, Z: 1}); !op.AtKnown || !op.MinAt.Equals(want) {
+		t.Errorf("point found at %v (%t), want %v", op.MinAt, op.AtKnown, want)
+	}
+	op.Pick(func() {
+		op.DrawQuad(geom.Vector{X: -50, Y: -50}, geom.Vector{X: 50, Y: -50}, geom.Vector{X: 50, Y: 50},
+			geom.Vector{X: -50, Y: 50}, op.InternFill(Fill{}))
+	})
+	if op.AtKnown {
+		t.Errorf("a quad gave a point, %v", op.MinAt)
+	}
+}

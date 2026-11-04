@@ -77,6 +77,28 @@ func ProbeTangentFace(srf *SSurface, p, interEdgeN, nu geom.Vector, f *geom.Vect
 // Returns true on success (which is essentially always; failures
 // fall back to SURF_OUTSIDE).
 func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut, surfN geom.Vector) bool {
+	return s.classifyEdgeOn(nil, indir, outdir, ea, eb, p, edgeNIn, edgeNOut, surfN)
+}
+
+// coincidesWith reports whether the point of srf a step f from p, where
+// ProbeTangentFace looks, lies on own, the surface being classified: a
+// face of the other shell tangent to it at p that is the same surface
+// there, as a pin's side in a bore of its radius, not one that only
+// touches it (roadmap K3). Its deviation from own's tangent plane is
+// the curvature both share, which ProbeTangentFace takes for a side.
+func coincidesWith(own, srf *SSurface, p, f geom.Vector) bool {
+	var fuv, ouv geom.Point2d
+	srf.ClosestPointTo(p.Plus(f), &fuv, false)
+	q := srf.PointAt(fuv.U, fuv.V)
+	own.ClosestPointTo(q, &ouv, false)
+	tol := own.Tol.ChordTolMm()/snapPlaneDiv + lengthEps
+	return own.PointAt(ouv.U, ouv.V).Minus(q).Magnitude() < tol
+}
+
+// classifyEdgeOn is ClassifyEdge for an edge of own, the surface being
+// classified, if known: a curved face of the other shell lying on own
+// is then coincident with it, not inside or outside.
+func (s *SShell) classifyEdgeOn(own *SSurface, indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut, surfN geom.Vector) bool {
 	// 1. Edge-on-edge check.
 	edgeInters := 0
 	var interSurfN [2]geom.Vector
@@ -103,6 +125,30 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 		}
 	}
 
+	if edgeInters == 2 && own != nil {
+		// The faces either side of the edge lie on the surface being
+		// classified (a pin's side across its seam, in a bore of its
+		// radius): the regions either side are coincident with them.
+		// The edge's normals, taken along chords in the surface's
+		// parameters, dip off a curved surface by its curvature, and the
+		// tests below would take that dip for a side (roadmap K3).
+		step := func(i int) geom.Vector {
+			return interEdgeN[i].ScaledBy(-1).WithMagnitude(max(ea.Minus(eb).Magnitude()/4, lengthEps*100))
+		}
+		// The faces are one smooth surface across the edge (their normals
+		// agree), and the one that runs on into the classified patch lies
+		// on it; the other runs past the patch's edge, where no region of
+		// the patch is kept.
+		smooth := interSurfN[0].DirectionCosineWith(interSurfN[1]) > 1-DotProductTol
+		if smooth && (coincidesWith(own, interSrf[0], p, step(0)) || coincidesWith(own, interSrf[1], p, step(1))) {
+			c := SurfCoincOpp
+			if surfN.Dot(interSurfN[0]) > 0 {
+				c = SurfCoincSame
+			}
+			*indir, *outdir = c, c
+			return true
+		}
+	}
 	if edgeInters == 2 {
 		// Two faces meet at the shell's edge. Classify each side.
 		var dotp [2]float64
@@ -125,6 +171,9 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 			var f geom.Vector
 			var flat bool
 			dev := ProbeTangentFace(interSrf[0], p, interEdgeN[0], surfN.WithMagnitude(1), &f, &flat)
+			if !flat && own != nil && coincidesWith(own, interSrf[0], p, f) {
+				flat = true
+			}
 			if !flat {
 				if dev*surfN.Dot(interSurfN[0]) > 0 {
 					towards0 = SurfInside
@@ -141,6 +190,9 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 			nu := surfN.WithMagnitude(1)
 			for i := range 2 {
 				dev[i] = ProbeTangentFace(interSrf[i], p, interEdgeN[i], nu, &f[i], &flat[i])
+				if !flat[i] && own != nil && coincidesWith(own, interSrf[i], p, f[i]) {
+					flat[i] = true
+				}
 			}
 			dirs := [2]*Class{indir, outdir}
 			en := [2]geom.Vector{edgeNIn, edgeNOut}
@@ -303,6 +355,9 @@ func (s *SShell) ClassifyEdge(indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut
 	}
 
 	// 3. Edge-on-surface check.
+	if own != nil && s.classifyOnCoincident(own, near, indir, outdir, p, edgeNIn, edgeNOut, surfN) {
+		return true
+	}
 	for _, i := range near {
 		srf := &s.Surface[i]
 		var puv geom.Point2d
@@ -407,4 +462,68 @@ func (s *SShell) raycastClass(p geom.Vector) (Class, int) {
 		}
 	}
 	return best, raycastTries
+}
+
+// classifyOnCoincident is the edge-on-surface check where p lies on an
+// edge of s that the edge-on-edge check missed, on two of s's faces,
+// one of them curved and lying on own, the surface being classified (a
+// cone in a countersink of its angle, where the countersink meets the
+// face round it). The edge is s's chorded outline and p is on the true
+// curve, off the chord by its sag, so step 1 found no edge, and the
+// first face holding p would decide both sides: the flat one, taking the
+// side that runs on into the coincident face for inside. Each side is
+// coincident if it runs onto the face lying on own, and is classified
+// against the other face if not (roadmap K3).
+func (s *SShell) classifyOnCoincident(own *SSurface, near []int, indir, outdir *Class, p, edgeNIn, edgeNOut, surfN geom.Vector) bool {
+	var on []*SSurface
+	for _, i := range near {
+		srf := &s.Surface[i]
+		var puv geom.Point2d
+		srf.ClosestPointTo(p, &puv, false)
+		if srf.PointAt(puv.U, puv.V).Minus(p).Magnitude() > lengthEps {
+			continue
+		}
+		if srf.Bsp != nil && srf.Bsp.ClassifyPoint(puv, geom.Point2d{}, srf) == BspUvOutside {
+			continue
+		}
+		on = append(on, srf)
+	}
+	if len(on) < 2 {
+		return false
+	}
+	k := -1
+	for i, srf := range on {
+		if srf.DegM < 2 && srf.DegN < 2 {
+			continue
+		}
+		if coincidesWith(own, srf, p, edgeNIn) && coincidesWith(own, srf, p, edgeNOut) {
+			k = i
+			break
+		}
+	}
+	if k < 0 {
+		return false
+	}
+	co := on[k]
+	en := [2]geom.Vector{edgeNIn, edgeNOut}
+	dirs := [2]*Class{indir, outdir}
+	for d := range 2 {
+		var quv geom.Point2d
+		co.ClosestPointTo(p.Plus(en[d]), &quv, false)
+		if co.Bsp == nil || co.Bsp.ClassifyPoint(quv, geom.Point2d{}, co) != BspUvOutside {
+			if surfN.Dot(co.NormalAt(quv.U, quv.V)) > 0 {
+				*dirs[d] = SurfCoincSame
+			} else {
+				*dirs[d] = SurfCoincOpp
+			}
+			continue
+		}
+		// The side runs off the coincident face, past the edge: the
+		// other face there tells it.
+		other := on[(k+1)%len(on)]
+		var ouv geom.Point2d
+		other.ClosestPointTo(p.Plus(en[d]), &ouv, false)
+		*dirs[d] = s.ClassifyRegion(en[d], other.NormalAt(ouv.U, ouv.V), surfN)
+	}
+	return true
 }

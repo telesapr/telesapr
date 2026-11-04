@@ -7,6 +7,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -185,7 +186,9 @@ func TestFilletChainsPartlyMitred(t *testing.T) {
 	t.Parallel()
 	four := fourCubics()
 	all := topPicks(four)
-	for _, c := range []struct {
+	// Under the race detector the first only (fixtures.Sample): the two
+	// took 15 minutes there, on the goroutines one of them uses.
+	for _, c := range fixtures.Sample([]struct {
 		picks []int
 		verts []geom.Vector
 	}{
@@ -193,7 +196,7 @@ func TestFilletChainsPartlyMitred(t *testing.T) {
 			v(-1.259445, 2.094329, 5), v(15.315749, 0.757104, 5), v(13.529656, 14.210272, 5)}},
 		{[]int{1, 2, 3}, []geom.Vector{v(0, 0, 4), v(16, 0, 4), v(0, 13, 4), v(16, 13, 4),
 			v(2.470344, -1.210272, 5), v(13.529656, -1.210272, 5), v(0.684251, 12.242896, 5), v(15.315749, 12.242896, 5)}},
-	} {
+	}) {
 		var picks []topo.FilletPick
 		for _, i := range c.picks {
 			picks = append(picks, all[i])
@@ -228,7 +231,9 @@ func TestChamferChainsMitred(t *testing.T) {
 		t.Skip("rolling-ball chamfers of several chains, slow")
 	}
 	t.Parallel()
-	for _, c := range []struct {
+	// Under the race detector the lens only (fixtures.Sample): the two
+	// took 14 minutes there.
+	for _, c := range fixtures.Sample([]struct {
 		name  string
 		prof  [][4]geom.Vector
 		picks []int
@@ -240,7 +245,7 @@ func TestChamferChainsMitred(t *testing.T) {
 		{"four", fourCubics(), []int{1, 2, 3},
 			[]geom.Vector{v(0, 0, 4), v(16, 0, 4), v(0, 13, 4), v(16, 13, 4), v(0.68425, 12.24290, 5), v(15.31575, 12.24290, 5)},
 			[]geom.Vector{v(2.46653, -1.20879, 5), v(13.53347, -1.20879, 5)}},
-	} {
+	}) {
 		all := topPicks(c.prof)
 		var picks []topo.FilletPick
 		for _, i := range c.picks {
@@ -286,7 +291,9 @@ func TestFilletChainsRadii(t *testing.T) {
 		t.Skip("rolling-ball fillets of several chains, slow")
 	}
 	t.Parallel()
-	for _, c := range []struct {
+	// Under the race detector the lens at the coarser tolerance only
+	// (fixtures.Sample): the eight took 16 minutes there.
+	for _, c := range fixtures.Sample([]struct {
 		name  string
 		prof  [][4]geom.Vector
 		radii []float64
@@ -303,12 +310,12 @@ func TestFilletChainsRadii(t *testing.T) {
 		{"three equal", threeCubics(), []float64{1, 1, 0.5}, []geom.Vector{v(0, 0, 4), v(20, 0, 4), v(10, 17, 4),
 			v(9.914273, 16.892687, 4.5), v(0.044188, 0.131604, 4.5), v(0.770595, 0.690535, 5), v(18.795553, 0.42032, 5),
 			v(9.682331, 15.791699, 5)}},
-	} {
+	}) {
 		picks := topPicks(c.prof)
 		for i := range picks {
 			picks[i].R = c.radii[i]
 		}
-		for _, tol := range []float64{0.01, 0.002} {
+		for _, tol := range fixtures.Sample([]float64{0.01, 0.002}) {
 			sh := cubicPrism(c.prof, fine(tol))
 			if err := topo.FilletPicks(sh, picks, c.radii[0], 1<<30, false); err != nil {
 				t.Fatalf("%s at %g: %v", c.name, tol, err)
@@ -339,7 +346,9 @@ func TestChamferChainsRadii(t *testing.T) {
 		t.Skip("rolling-ball chamfers of several distances, slow")
 	}
 	t.Parallel()
-	for _, c := range []struct {
+	// Under the race detector the lens only (fixtures.Sample): the three
+	// took 8 minutes there.
+	for _, c := range fixtures.Sample([]struct {
 		name  string
 		prof  [][4]geom.Vector
 		radii []float64
@@ -354,7 +363,7 @@ func TestChamferChainsRadii(t *testing.T) {
 		{"three", threeCubics(), []float64{0.5, 1, 0.75}, []geom.Vector{v(0, 0, 4.25), v(0.216294, -0.141909, 4.5),
 			v(19.566064, -0.280173, 4.5), v(20, 0, 4), v(10, 17, 4), v(9.840126, 16.799621, 4.25), v(0.816112, 0.071241, 5),
 			v(9.841377, 15.589126, 5), v(18.964969, -0.060909, 5)}, nil},
-	} {
+	}) {
 		picks := topPicks(c.prof)
 		for i := range picks {
 			picks[i].R = c.radii[i]

@@ -304,8 +304,11 @@ func convertOne(it Item, o Options) (data []byte, warnings []string, err error) 
 	sk.Hooks = counter.Hooks
 	requests, constraints, groups := counter.requests, counter.constraints, counter.groups
 	if requests+constraints+groups > 0 {
-		warnings = append(warnings, fmt.Sprintf("%s: regeneration removed %d requests, %d constraints and %d groups that depended on what is missing",
+		warnings = append(warnings, fmt.Sprintf("%s: regeneration left out %d requests, %d constraints and %d groups that depended on what is missing",
 			it.Src, requests, constraints, groups))
+	}
+	for _, n := range sk.LeftOutNames() {
+		warnings = append(warnings, it.Src+": left out of the model, kept in the file: "+n)
 	}
 	for _, m := range sk.Mended {
 		warnings = append(warnings, it.Src+": "+m)

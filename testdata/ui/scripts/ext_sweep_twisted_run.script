@@ -1,0 +1,24 @@
+# A twisted sweep round a corner beside an arc, sharp: the rectangle of
+# sweep_arc_corner.tlspr swept along its line and three-quarter arc, then
+# twisted by 90 degrees typed in on the group's screen. The line and the
+# arc about the corner are swept rigidly, so the twist is held still
+# there but for the line's stretch past the joint's reach, which takes
+# it; the solid is checked.
+file $testdata/ui/sweep_arc_corner.tlspr
+menu File|Open...
+view other
+move 296.25 243.75
+down L 296.25 243.75
+up L 296.25 243.75
+move 326.25 146.25
+down L 326.25 146.25
+up L 326.25 146.25
+menu Features|Sweep Along Path
+twmove 154 185
+twdown L 154 185
+twup L 154 185
+edit 90
+tw
+answer ok
+menu Analyze|Check Solid
+dump

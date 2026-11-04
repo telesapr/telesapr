@@ -78,6 +78,9 @@ type SweepPath struct {
 	// rigid marks the pieces swept as a rigid sweep is, runs of lines
 	// and arcs about a corner beside an arc (pathsweep_joint.go).
 	rigid []bool
+	// free marks arcs split off past a corner's joint to take a twist,
+	// which a rigid run doesn't grow along; nil when none is.
+	free []bool
 	// law, when not nil, is how the twist is spread along the path when
 	// it is held still beside corners.
 	law *twistLaw
@@ -90,19 +93,33 @@ const framesPerPiece = 128
 // NewSweepPath reads a chain of curves joined end to end as a path,
 // with its first frame's normal r0, which must cross the first tangent.
 func NewSweepPath(pieces []srf.SBezier, r0 geom.Vector, opts PathSweepOptions) (*SweepPath, error) {
-	sp, err := sampleSweepPath(pieces, r0, opts)
+	sp, err := sampleSweepPath(pieces, r0, opts, nil)
 	if err != nil {
 		return nil, err
 	}
 	if !sp.twisted() || !slices.Contains(sp.corner, true) {
 		return sp, nil
 	}
-	if split := sp.heldPieces(); len(split) > len(pieces) {
+	whole := sp
+	if split, free := sp.heldPieces(false); free != nil {
 		// Lines carry their frames unturned, so the samples on the other
 		// pieces come out as before.
-		if sp, err = sampleSweepPath(split, r0, opts); err != nil {
+		if sp, err = sampleSweepPath(split, r0, opts, free); err != nil {
 			return nil, err
 		}
+	}
+	refused := sp.holdTwist()
+	if refused == nil || !errors.Is(refused, ErrPathCornerTwisted) {
+		return sp, refused
+	}
+	// Nowhere left to twist beside the lines: the arcs beside corners
+	// give up their stretches past the joints too.
+	split, free := whole.heldPieces(true)
+	if !slices.Contains(free, true) {
+		return nil, refused
+	}
+	if sp, err = sampleSweepPath(split, r0, opts, free); err != nil {
+		return nil, refused
 	}
 	if err := sp.holdTwist(); err != nil {
 		return nil, err
@@ -111,8 +128,9 @@ func NewSweepPath(pieces []srf.SBezier, r0 geom.Vector, opts PathSweepOptions) (
 }
 
 // sampleSweepPath is NewSweepPath with the path's frames sampled and its
-// corners found, a twist not yet held beside them.
-func sampleSweepPath(pieces []srf.SBezier, r0 geom.Vector, opts PathSweepOptions) (*SweepPath, error) {
+// corners found, a twist not yet held beside them; free marks the arcs
+// split off past a joint (heldPieces), or is nil.
+func sampleSweepPath(pieces []srf.SBezier, r0 geom.Vector, opts PathSweepOptions, free []bool) (*SweepPath, error) {
 	if len(pieces) == 0 {
 		return nil, errors.New("there is no path")
 	}
@@ -129,7 +147,7 @@ func sampleSweepPath(pieces []srf.SBezier, r0 geom.Vector, opts PathSweepOptions
 			return nil, errors.New("a closed path's twist must be whole turns, or the profile doesn't meet itself")
 		}
 	}
-	sp := &SweepPath{pieces: pieces, opts: opts}
+	sp := &SweepPath{pieces: pieces, opts: opts, free: free}
 	t0 := sp.tangent(0)
 	if t0.Magnitude() == 0 {
 		return nil, errors.New("the path has no direction at its start")

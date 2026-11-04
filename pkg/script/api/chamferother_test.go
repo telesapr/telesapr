@@ -106,9 +106,14 @@ func TestChamferEndsOnCurvedFace(t *testing.T) {
 	if testing.Short() {
 		cases = cases[:1]
 	}
+	// Under the race detector the first upright at distance 1 alone, the
+	// one saved and loaded: the eight took 6 minutes there.
+	if fixtures.RaceDetector {
+		cases = cases[:1]
+	}
 	for i, c := range cases {
 		for _, dist := range []float64{1, 2} {
-			if testing.Short() && dist != 1 {
+			if (testing.Short() || fixtures.RaceDetector) && dist != 1 {
 				continue
 			}
 			want := c.d1
@@ -221,9 +226,13 @@ func TestChamferRimMitre(t *testing.T) {
 	}
 	blob := filepath.Join("..", "..", "..", "testdata", "step", "shapes", "blob_extruded.step")
 	// The two rims side by side: one after the other they were the
-	// longest test under the race detector, 19 minutes.
+	// longest test under the race detector, 19 minutes. There the
+	// bottom one alone, 9 minutes, as the fillet's (TestFilletRimMitre).
 	for _, z := range []float64{5, 0} {
 		t.Run(fmt.Sprint(z), func(t *testing.T) {
+			if fixtures.RaceDetector && z == 5 {
+				t.Skip("the top rim under the race detector, slow")
+			}
 			t.Parallel()
 			d := New()
 			d.Edit.SetChordTolerance(0.01)

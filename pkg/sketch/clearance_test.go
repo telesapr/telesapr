@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
@@ -406,5 +407,75 @@ func TestClearanceToAMeshBase(t *testing.T) {
 	}
 	if r := base.Analyze().WallThickness(0); math.Abs(r.Thinnest.Thickness-10) > 1e-9 {
 		t.Errorf("mesh base's walls: thinnest %g", r.Thinnest.Thickness)
+	}
+}
+
+// A block assembled as a mesh (forced to one), then a square hole cut
+// through it by a group cutting the assembly after it: the part is the
+// block with the hole, a tube whose walls are 1 thick, for its mass
+// and its walls, as a part with a shell is; it was the whole block.
+func TestMeshPartCutAfter(t *testing.T) {
+	t.Parallel()
+	d := api.New()
+	block(d, 0, 0, 10, 10, 10)
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(20, 0, 0), api.V(30, 10, 0))
+	tube := d.Features.Extrude(10, "tube")
+	tube.SetCombine(api.Assemble)
+	tube.SetForceToMesh(true)
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(21, 1, -1), api.V(29, 9, -1))
+	hole := d.Features.Extrude(12, "hole")
+	hole.SetCombine(api.Difference)
+	if p := hole.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	m := hole.Analyze().MassProperties()
+	if len(m.Parts) != 2 || m.Parts[1].Group != tube.H || math.Abs(m.Parts[1].Volume-360) > 1e-6 {
+		t.Fatalf("parts %+v, want the tube's 360 mm³ second", m.Parts)
+	}
+	if r := hole.Analyze().WallThickness(0); math.Abs(r.Thinnest.Thickness-1) > 1e-9 || r.Thinnest.Group != tube.H {
+		t.Errorf("thinnest %g in %v, want the tube's 1", r.Thinnest.Thickness, r.Thinnest.Group)
+	}
+	if cs := d.Assembly.Clearances(0); len(cs) != 1 || math.Abs(cs[0].Gap-10) > 1e-9 {
+		t.Errorf("clearances %+v", cs)
+	}
+}
+
+// A linked mesh cutting the assembly after its parts has no shell to
+// cut theirs by: the part it reaches, a block, is cut as triangles and
+// is a part of triangles after, for its mass; the one it doesn't reach
+// keeps its shell.
+func TestMeshToolCutsShellPart(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	cube := api.New()
+	cube.Sketch.Rect(api.V(0, 0, 0), api.V(4, 4, 0))
+	cube.Features.Extrude(4, "")
+	stl := filepath.Join(dir, "cube.stl")
+	if err := cube.File.Export(stl); err != nil {
+		t.Fatal(err)
+	}
+	d := api.New()
+	base := block(d, 0, 0, 10, 10, 10)
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(api.V(20, 0, 0), api.V(30, 10, 0))
+	beside := d.Features.Extrude(10, "beside")
+	beside.SetCombine(api.Assemble)
+	cut, err := d.Assembly.Link(stl, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cut.SetCombine(api.Difference)
+	m := cut.Analyze().MassProperties()
+	vols := map[core.HGroup]float64{}
+	for _, p := range m.Parts {
+		vols[p.Group] = p.Volume
+	}
+	if len(m.Parts) != 2 || math.Abs(vols[base.H]-936) > 1e-6 || math.Abs(vols[beside.H]-1000) > 1e-6 {
+		t.Fatalf("parts %+v, want the base 936 mm³ and the block beside 1000", m.Parts)
+	}
+	if _, meshOnly := d.Assembly.Interferences(); len(meshOnly) != 1 || meshOnly[0].H != base.H {
+		t.Errorf("mesh-only parts %v, want the base", meshOnly)
 	}
 }

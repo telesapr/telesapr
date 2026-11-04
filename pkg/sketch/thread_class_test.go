@@ -4,6 +4,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
@@ -18,7 +19,10 @@ func TestThreadClassFits(t *testing.T) {
 	if testing.Short() {
 		t.Skip("thread solids")
 	}
-	for _, c := range []struct {
+	// Under the race detector the first two, a screw and a nut
+	// (fixtures.Sample keeps the first of each five): the six took 20
+	// minutes of processor there.
+	cases := []struct {
 		name, designation string
 		radius, height    float64
 		internal          bool
@@ -30,7 +34,11 @@ func TestThreadClassFits(t *testing.T) {
 		{"butt nut", "1-12 BUTT", 20, 15, true, "2B", "3B"},
 		{"s20 screw", "S20x4", 10, 40, false, "9c", "7e"},
 		{"s20 nut", "S20x4", 16, 20, true, "9H", "7H"},
-	} {
+	}
+	if fixtures.RaceDetector {
+		cases = cases[:2]
+	}
+	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			var length float64

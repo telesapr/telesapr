@@ -561,6 +561,17 @@ func coplanarTrimCrossings(il []SInter, c *SCurve, sh *SShell, own *SSurface, a,
 			if c.IsExact {
 				p = exactCrossing(&c.Exact, a, b, q0, dq, n)
 			}
+			// A curved seam, as the arc where a post's top meets the
+			// block's top it stands flush with, is split against the
+			// surface c lies on at its exact curve; c, a line, must be
+			// split there too, not where it crosses the seam's chord, or
+			// the two ends of the split miss each other by the chord's
+			// sag and neither patch's trim closes.
+			if tc.IsExact && tc.Exact.Degree > 1 && c.IsExact && c.Exact.Degree == 1 {
+				if q := exactCrossing(&tc.Exact, q0, q1, a, ab, n); !q.EqualsTol(p, geom.LengthEps) {
+					p = q
+				}
+			}
 			if sa <= 0 || sa >= 1 || p.EqualsTol(a, splitEndTol) || p.EqualsTol(b, splitEndTol) {
 				continue
 			}

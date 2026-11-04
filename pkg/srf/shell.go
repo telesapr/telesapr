@@ -1371,11 +1371,12 @@ func (s *SShell) FindCurveBySurface(h core.HSSurface) []*SCurve {
 }
 
 // Clone is a copy of the shell that shares nothing with it, to the bit:
-// the surfaces with their trims, the curves with their points. What is
-// built from them for a Boolean or a triangulation (the trims' BSPs and
-// edge lists) is left for the copy to build again.
+// the surfaces with their trims, the curves with their points, and the
+// tolerance it is followed at. What is built from them for a Boolean or
+// a triangulation (the trims' BSPs and edge lists) is left for the copy
+// to build again.
 func (s *SShell) Clone() SShell {
-	out := SShell{BooleanFailed: s.BooleanFailed}
+	out := SShell{Tol: s.Tol, BooleanFailed: s.BooleanFailed}
 	out.Surface = make([]SSurface, len(s.Surface))
 	for i := range s.Surface {
 		ss := s.Surface[i]
@@ -1383,6 +1384,10 @@ func (s *SShell) Clone() SShell {
 		ss.Bsp = nil
 		ss.Edges = SEdgeList{}
 		ss.curvedEdges = SEdgeList{}
+		// The search grids are filled by whichever search runs first:
+		// shared, the copy's searches would move the last bits of the
+		// original's.
+		ss.guess, ss.rays = nil, nil
 		out.Surface[i] = ss
 	}
 	out.Curve = make([]SCurve, len(s.Curve))

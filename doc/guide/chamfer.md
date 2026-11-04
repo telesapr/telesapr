@@ -73,6 +73,10 @@ from its row, as a line's row does. The links on the screen:
   are picked on, says what to pick, and the link reads "[take the selection]" until you do.
 - "[remove]" on an edge's row takes that edge out of the chamfer.
 
+A chamfer whose result would not be a closed solid, where the solid before it was one, is a
+problem on the group, which says to make it a little smaller or larger; the solid passes
+through uncut.
+
 Edges between curved faces, and edges that end on a curved face, are chamfered the same way
 they are filleted. See [Fillet](fillet.md#between-two-curved-faces).
 
@@ -160,6 +164,12 @@ is cut square to its edge. The face the sharp edge bounds takes a curve from tha
 chamfer's line, round onto the sharp edge. The corner's face fills between that curve and the two
 ends, as OpenCASCADE's makeChamfer fills it. Our face bulges a little less, by about a tenth of a
 cubic millimetre at distances of 1 mm.
+
+**Three of a saddle's four edges.** At the middle of a saddle, where two ridges and two valleys
+meet, three edges can be chamfered with the fourth left sharp. The two chamfers beside the sharp
+edge are cut up to it, the third is set back, and curved patches fill the corner between them,
+as [Fillet](fillet.md) rounds the same corner. Where the two reach the sharp edge at different
+points, or the saddle is steep, the corner is refused with a message.
 
 OpenCASCADE differs from this in two places. At a corner of three where one crossing point lies
 close to the line between the other two, it makes the triangle of the three points, where

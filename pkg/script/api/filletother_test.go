@@ -157,11 +157,12 @@ func raceSolids() []otherSolid {
 
 // edgesPerSolid is how many edges of each solid the fillet and chamfer
 // sweeps cut. Under the race detector, which makes the rolling ball some
-// ten times slower, only the first few: what is made must still be
-// sound, but the counts are the plain run's to hold.
+// ten times slower, only the first two (the loft's took 8 minutes each
+// there): what is made must still be sound, but the counts are the plain
+// run's to hold.
 func edgesPerSolid() int {
 	if fixtures.RaceDetector {
-		return 4
+		return 2
 	}
 	return 16
 }
@@ -388,10 +389,12 @@ func TestFilletEndsOnCurvedFace(t *testing.T) {
 		t.Skip("fillets over curved faces, slow")
 	}
 	lid := filepath.Join("..", "..", "..", "testdata", "step", "degree", "lid_degree7.step")
-	for _, c := range []struct {
+	// Under the race detector the first upright only, the one saved and
+	// loaded (fixtures.Sample): the four took 6 minutes there.
+	for _, c := range fixtures.Sample([]struct {
 		at   Vec
 		want float64
-	}{{V(0, 0, 5), 2.173344}, {V(40, 0, 5), 2.292926}, {V(40, 30, 5), 2.025750}, {V(0, 30, 4), 1.804228}} {
+	}{{V(0, 0, 5), 2.173344}, {V(40, 0, 5), 2.292926}, {V(40, 30, 5), 2.025750}, {V(0, 30, 4), 1.804228}}) {
 		d := New()
 		d.Edit.SetChordTolerance(0.002)
 		g, err := d.Assembly.LinkStep(lid, "", true)
@@ -469,6 +472,11 @@ func TestFilletEndsOnCurvedFaceApart(t *testing.T) {
 	if !rep.Sound() || math.Abs(took-want) > 0.005*want {
 		t.Errorf("%s, took %g, OpenCASCADE %g", rep.Summary(), took, want)
 	}
+	if fixtures.RaceDetector {
+		// The corner's four fillets run on the goroutines the uprights'
+		// did, and took another 3 minutes there.
+		return
+	}
 
 	d = New()
 	d.Edit.SetChordTolerance(0.002)
@@ -521,10 +529,11 @@ func TestFilletEndsOnCurvedFaceWide(t *testing.T) {
 		t.Skip("fillets over curved faces, slow")
 	}
 	lid := filepath.Join("..", "..", "..", "testdata", "step", "degree", "lid_degree7.step")
-	for _, c := range []struct {
+	// Under the race detector the first upright only (fixtures.Sample).
+	for _, c := range fixtures.Sample([]struct {
 		at   Vec
 		want float64
-	}{{V(0, 0, 4), 13.812062}, {V(40, 0, 4), 14.384156}, {V(40, 30, 4), 12.747386}, {V(0, 30, 4), 11.556165}} {
+	}{{V(0, 0, 4), 13.812062}, {V(40, 0, 4), 14.384156}, {V(40, 30, 4), 12.747386}, {V(0, 30, 4), 11.556165}}) {
 		d := New()
 		d.Edit.SetChordTolerance(0.002)
 		g, err := d.Assembly.LinkStep(lid, "", true)
@@ -602,10 +611,15 @@ func TestFilletRimMitre(t *testing.T) {
 	blob := filepath.Join("..", "..", "..", "testdata", "step", "shapes", "blob_extruded.step")
 	var took [2]float64
 	// The two rims side by side: one after the other they took 11
-	// minutes under the race detector.
+	// minutes under the race detector, where the bottom one alone is
+	// cut (the top took 9 minutes, the bottom 5) and the rims aren't
+	// compared.
 	t.Run("rims", func(t *testing.T) {
 		for k, z := range []float64{5, 0} {
 			t.Run(fmt.Sprint(z), func(t *testing.T) {
+				if fixtures.RaceDetector && k == 0 {
+					t.Skip("the top rim under the race detector, slow")
+				}
 				t.Parallel()
 				d := New()
 				d.Edit.SetChordTolerance(0.01)
@@ -664,7 +678,7 @@ func TestFilletRimMitre(t *testing.T) {
 			})
 		}
 	})
-	if !t.Failed() && math.Abs(took[0]-took[1]) > 1e-4*took[0] {
+	if !t.Failed() && !fixtures.RaceDetector && math.Abs(took[0]-took[1]) > 1e-4*took[0] {
 		t.Errorf("the rims take %g and %g", took[0], took[1])
 	}
 }
@@ -707,6 +721,12 @@ func TestFilletRimMitreFine(t *testing.T) {
 	}
 	for _, r := range []float64{0.5, 1} {
 		t.Run(fmt.Sprint(r), func(t *testing.T) {
+			// Under the race detector, radius 0.5 at the coarser
+			// tolerance alone: the rest runs on the same goroutines, and
+			// r 1 at 0.0005% took 11 minutes there, the longest test.
+			if fixtures.RaceDetector && r != 0.5 {
+				t.Skip("radius 1 under the race detector, slow")
+			}
 			t.Parallel()
 			// The two tolerances side by side: one after the other, r 1
 			// was the longest test under the race detector, 19 minutes.
@@ -717,11 +737,14 @@ func TestFilletRimMitreFine(t *testing.T) {
 					a = took(t, r, 0.002)
 				})
 				t.Run("0.0005", func(t *testing.T) {
+					if fixtures.RaceDetector {
+						t.Skip("the finer tolerance under the race detector, slow")
+					}
 					t.Parallel()
 					b = took(t, r, 0.0005)
 				})
 			})
-			if !t.Failed() && math.Abs(a-b) > 1e-3*b {
+			if !t.Failed() && !fixtures.RaceDetector && math.Abs(a-b) > 1e-3*b {
 				t.Errorf("r %g takes %g at 0.002%%, %g at 0.0005%%", r, a, b)
 			}
 		})

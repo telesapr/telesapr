@@ -54,9 +54,19 @@ type rbRunOff struct {
 	// that is within 100 LengthEps of it, so that the end face and the
 	// next face don't share a line too short to mesh (the mesher merges
 	// points that near in a face's (u, v)), and the curves' ends moved
-	// there stay within an edge's tolerance of where they were.
+	// there stay within an edge's tolerance of where they were. On a
+	// curved next face p1 is w too when it lies within runOffSliver
+	// chord tolerances of it: the next face would grow by a sliver
+	// thinner than that, which its mesh left open; the curves' ends move
+	// by no more, and both faces take them at w.
 	p1At geom.Vector
 }
+
+// runOffSliver is, in chord tolerances, how near w the end section
+// crosses a curved next face for the fillet's end to be taken to w: at
+// one, 1.1 to 1.4 of them were still left open (a band's end at 20 on
+// the cone, its fillets of 1.475 to 1.525 at 0.002% to 0.005%).
+const runOffSliver = 2.0
 
 // runOffExt is how far past each of its sides, in its parameters, a
 // curved next face's surface is carried on: the fillet's cut and the
@@ -195,16 +205,15 @@ func (rb *rollingBall) runOffCuts(sh *srf.SShell, row []srf.SSurface, k int, ro 
 	}
 	ro.p1 = sec.PointAt(bezierRoot(&sec, ro.h, 0, 1))
 	ro.p1At = ro.p1
-	if ro.p1.Minus(w).Magnitude() < 100*geom.LengthEps {
+	if d := ro.p1.Minus(w).Magnitude(); d < 100*geom.LengthEps || ro.ns != nil && d < runOffSliver*sh.Tol.ChordTolMm() {
 		ro.p1 = w
-	} else if ro.ns != nil && ro.p1.Minus(w).Magnitude() < sh.Tol.ChordTolMm() {
-		// The end only just runs off onto the curved face: what that face
-		// grows by is a sliver thinner than the tolerance, which its mesh
-		// leaves open.
-		return filletErr(ro.p1, "the fillet's end only just runs off the face on side %d here onto a curved face: "+
-			"make it a little smaller or larger", ro.j+1)
 	}
-	switch alongFrom(ro.p1At, w, t.Edges[ro.endN].Points) {
+	// Taken to w, the end runs off at w whichever side of it p1At lies.
+	along := -1
+	if !ro.p1.Equals(w) {
+		along = alongFrom(ro.p1At, w, t.Edges[ro.endN].Points)
+	}
+	switch along {
 	case 1:
 		return filletErr(ro.p1, "the fillet's end runs off the face past the next one too here: make it smaller")
 	case 0:

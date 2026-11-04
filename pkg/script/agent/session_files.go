@@ -160,6 +160,9 @@ func wallsText(g api.Group, below float64) string {
 	if r.Unmeasured > 0 {
 		fmt.Fprintf(&b, "\n%d points could not be measured: the mesh is open there, or parts stand in each other.", r.Unmeasured)
 	}
+	if r.NearCut {
+		b.WriteString("\nA part has more triangles facing each other within its thinnest wall than are measured: a thinner wall between two of those left may be missed.")
+	}
 	return b.String()
 }
 
