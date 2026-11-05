@@ -134,12 +134,19 @@ func (s *SShell) CopySurfacesTrimAgainst(sha, shb, into *SShell, op SurfaceCombi
 }
 
 // RewriteSurfaceHandlesForCurves points every curve's SurfA/SurfB at
-// the new handles of its surfaces in s.
+// the new handles of its surfaces in s, and at none where its operand
+// no longer has the surface (dropUntrimmed took it, as a cap that
+// cancelled against a face of the other operand): s numbers its
+// surfaces afresh, so the old handle would name another surface of s.
+// Named so, a seam whose cap was dropped (a two-sided draft's crease)
+// was thinned against an unrelated patch, each side's curve along it
+// differently, and the meshes either side parted (crease_seam_test.go).
 func (s *SShell) RewriteSurfaceHandlesForCurves(a, b *SShell) {
 	for i := range s.Curve {
 		sc := &s.Curve[i]
 		sA := sc.SurfaceA(a, b)
 		sB := sc.SurfaceB(a, b)
+		sc.SurfA, sc.SurfB = core.HSSurface{}, core.HSSurface{}
 		if sA != nil {
 			sc.SurfA = sA.NewH
 		}

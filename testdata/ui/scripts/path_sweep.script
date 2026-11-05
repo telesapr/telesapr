@@ -3,13 +3,7 @@
 file $testdata/ui/sweep_path.tlspr
 menu File|Open...
 view other
-move 307.5 247.5
-down L 307.5 247.5
-up L 307.5 247.5
-move 322.5 187.5
-down L 322.5 187.5
-up L 322.5 187.5
-move 397.5 157.5
-down L 397.5 157.5
-up L 397.5 157.5
+click-entity 40000
+click-entity 50000
+click-entity 60000
 menu Features|Sweep Along Path

@@ -153,7 +153,7 @@ func fittedTo(sp *topo.SweepPath, sbls *srf.SBezierLoopSetSet) srf.Rigid {
 
 // runsTo is fittedTo for a sweep in runs joined at corners beside a
 // cubic: along the run the crossing is on, from where that run takes
-// the profile, its lead in.
+// the profile.
 func runsTo(sr *sweepRuns, sbls *srf.SBezierLoopSetSet) srf.Rigid {
 	near := loopsCentre(sbls)
 	starts := sr.starts()
@@ -164,7 +164,7 @@ func runsTo(sr *sweepRuns, sbls *srf.SBezierLoopSetSet) srf.Rigid {
 			continue
 		}
 		if d := runPoint(run, s).Minus(near).Magnitude(); d < best {
-			best, out = d, sr.sweepStart(starts, k).Then(run.Rigid(s))
+			best, out = d, starts[k].Then(run.Rigid(s))
 		}
 	}
 	return out

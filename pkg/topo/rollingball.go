@@ -122,6 +122,9 @@ type rollingBall struct {
 	mitreS [2][]float64
 	// uvLoops are faces' trims in their patches' (u, v).
 	uvLoops map[int][][]geom.Vector
+	// tangentFaces are the flat faces an end that runs off past a curved
+	// next face adds there, tangent to it (rollingrunoff_tangent.go).
+	tangentFaces []tangentFace
 	// The edge, densely, on both faces, with the arc length along it.
 	pts    []geom.Vector
 	tan    []geom.Vector
@@ -1719,6 +1722,9 @@ func putBlends(sh *srf.SShell, bls []*rbBlend, origin uint32) error {
 					return filletErr(loop[0].Start(), "the fillet's face can't be put in: %v", err)
 				}
 			}
+		}
+		if err := bl.rb.putTangentFaces(fa); err != nil {
+			return err
 		}
 	}
 	t2, err := Build(sh)

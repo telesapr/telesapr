@@ -4,9 +4,7 @@
 file $testdata/ui/loft_profiles.tlspr
 menu File|Open...
 view default
-move 300 400
-down L 300 400
-up L 300 400
+click-entity 50000
 menu Features|Loft To Selected Profile
 click-face face 1 of g006-loft
 menu Features|Shell Solid

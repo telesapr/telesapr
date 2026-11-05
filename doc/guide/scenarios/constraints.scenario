@@ -10,9 +10,7 @@ move 400 340
 down L 400 340
 up L 400 340
 key esc
-move 400 270
-down L 400 270
-up L 400 270
+click-entity 40000
 move 300 200
 down L 300 200
 up L 300 200
@@ -22,9 +20,7 @@ edit 0.5
 key esc
 cursor off
 shot constraints-2-ratio gw
-move 370 214
-down L 370 214
-up L 370 214
+click-entity 70000
 key d
 edit 60
 key esc

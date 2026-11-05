@@ -326,3 +326,47 @@ thread's bore is 0.029 mm off the hole's at that model's tolerance. Its first Bo
 failed, and the group came out sound before too, by the thread's later tries; now that Boolean
 is made, fused, and the group carries the note. No
 golden moved.
+
+## A fitted tube touching an exact one (rd11, 2026-11-05)
+
+What the equal pipes left: a tube the kernel fitted (a sweep along a cubic, B-spline patches
+fitted to the circle) against an exact one of the same radius, as at a sweep's sharp corner beside
+a cubic, where the cubic's run meets the line's. They touch tangent at two points, where the
+curves they meet in cross, and every Boolean failed as the exact pair's did: no fuse recognises
+the fitted surface, and `intersectEqualCylinders` takes only exact circles extruded.
+
+The marcher is not taught to find such points (rd9's rule found touches on threads and hung
+them). The feature that builds the operands knows them: at a corner beside a cubic, the two runs'
+sections at the corner are one profile turned about the corner's axis, so they share the points
+where the outline crosses that axis, and the skins' tangent planes agree there. It hands them to
+the Booleans as `SShell.Touch` (a Boolean's result takes both operands'; the sweep clears them
+from its solid, so that a later Boolean with another solid ends no curve there).
+`intersectByMarching` takes the points lying on both patches as sinks: a march whose step passes
+within twice the chord tolerance of one ends there, a seed at one (an edge through the point) is
+dropped, and a single seed left is marched too, since its branch ends at the sink, not at a second
+seed. Nothing changes for operands with no touching points: no golden moved, no thread test slowed.
+
+`TestFittedTubeTouchingExact` (`pkg/topo`): a fitted tube along z against an exact one along x,
+crossing, a tee, and the corner's L, each ending in the plane through the other's axis, five pairs
+of seams on the points and off: 43 of 45 Booleans sound, the intersections the Steinmetz solid's
+share within 2%. The cross's intersection with seams at 0.3 and 0 and its difference with seams at
+0.3 and 1.1 are left: their curves are complete, all four branches at each point, but a trim
+doesn't assemble. Without the points 2 of the 45 are sound.
+
+Tried, not kept: the runs carried a little past the corner, as they were (a lead of 0.05 of the
+reach). Each run's end cap then lies a lead past the touching points, and its rim crosses the
+other tube at a grazing angle a lead from the point, outside it by lead²/2r between the crossings:
+the chords miss the crossings, and the rim's piece between them, within the chord tolerance of the
+other tube, is classified as inside it and dropped, so the trims stay open. Splitting the exact
+rim at its true crossings near a sink, seeding the march there and classifying such edges by their
+distance found the curves but not a sound result in most seams; leads of 0.2 and more cleared the
+grazing but left the fill too short to make at shallow corners (30°) and failed it at steep ones.
+With no leads (each run ends at the corner, its cap on the corner's section through the points)
+the joins close: the rectangles' and diamonds' leads were never needed either.
+
+The sweep (`pkg/sketch/sweep_cubic_corner.go`, `sweep_cubic_corner_touch.go`): of the 60 corners
+of `TestSweepSharpCornerBesideCubicSweep`'s grid at lead 10 (both orders, ±30° to ±150°, bends
+−90° to 90°), circles 56 (0 before), a diamond 60 (12 before), bars both ways 60 as before. The
+4 circles refused turn 150° with the cubic bent 90° the same way; there the corner's fill, two
+exact equal tubes carried past the corner and intersected, fails, its caps' rims grazing the other
+tube near the touching points as above.

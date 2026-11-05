@@ -7,10 +7,6 @@ menu File|Open...
 view other
 scroll 296 262 3
 scroll 305 215 4
-move 277.5 152.5
-down L 277.5 152.5
-up L 277.5 152.5
-move 302.5 152.5
-down L 302.5 152.5
-up L 302.5 152.5
+click-entity 40000
+click-entity 50000
 menu Features|Sweep Along Path

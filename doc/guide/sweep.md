@@ -130,13 +130,13 @@ These corners are problems on the group, which a corner radius (below) then roun
 - a piece too short for the joint at its ends.
 
 A sharp corner next to a cubic is made the same way: the path is cut at the corner, each side is
-swept on its own, carried a little past the corner along its tangent, and the outside of the turn
-is filled by where the two sides, carried on past it along their tangents, overlap, all joined.
-With the cubic straight, that is the mitre two lines make. It is made on an open path with no
-twist, no frames held to a direction and no corner radius (a radius rounds only corners between
-lines and arcs). Where the pieces don't join into a closed solid, as along a round profile, whose
-tubes meet tangent where they overlap, the corner is a problem on the group: round it in the path
-with an arc or a tangent cubic.
+swept on its own up to the corner, and the outside of the turn is filled by where the two sides,
+carried on past it along their tangents, overlap, all joined. With the cubic straight, that is
+the mitre two lines make. A round profile's two sides touch at the two points where the profile
+crosses the corner's axis, and the joins are made to meet there. It is made on an open path with
+no twist, no frames held to a direction and no corner radius (a radius rounds only corners between
+lines and arcs). Where the pieces don't join into a closed solid, the corner is a problem on the
+group: round it in the path with an arc or a tangent cubic.
 
 **Along a cubic, or held to a direction.** Such a sweep is fitted, but a corner between two
 lines is still mitred: along a line its frames do not turn, so the two straight runs are prisms
@@ -239,8 +239,8 @@ passes through itself, and makes no solid: move the pieces apart or make the pro
 ## Not yet
 
 A sharp corner next to a cubic is made only on an open path with no twist, held frames or corner
-radius, and only where its pieces join: along a round profile it is refused, and along one with
-a corner where the turn's axis crosses it, as a diamond's, unless the cubic is straight.
+radius, and only where its pieces join: along a round profile a turn of 150° with the cubic bent
+sharply the same way is refused.
 
 A path that comes back over itself is refused where its stretches can't be cut clear of a
 corner or don't join. Round lines and arcs that is about half of such paths: of the 1440 paths

@@ -6,18 +6,10 @@
 file $testdata/ui/sweep_skew.tlspr
 menu File|Open...
 view other
-move 276 324
-down L 276 324
-up L 276 324
-move 368 216
-down L 368 216
-up L 368 216
-move 344 204
-down L 344 204
-up L 344 204
-move 292 232
-down L 292 232
-up L 292 232
+click-entity 40000
+click-entity 50000
+click-entity 60000
+click-entity 70000
 menu Features|Sweep Along Path
 tw
 answer ok

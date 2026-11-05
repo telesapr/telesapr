@@ -18,13 +18,9 @@ down L 400 200
 up L 400 200
 key esc
 key esc
-move 300 200
-down L 300 200
-up L 300 200
+click-entity 50000
 key g
 key esc
 key x shift
-move 300 200
-down L 300 200
-up L 300 200
+click-entity 8003000d
 menu Features|Pattern Along Path

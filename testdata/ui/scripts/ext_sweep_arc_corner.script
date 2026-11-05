@@ -5,12 +5,8 @@
 file $testdata/ui/sweep_arc_corner.tlspr
 menu File|Open...
 view other
-move 296.25 243.75
-down L 296.25 243.75
-up L 296.25 243.75
-move 326.25 146.25
-down L 326.25 146.25
-up L 326.25 146.25
+click-entity 40000
+click-entity 50000
 menu Features|Sweep Along Path
 tw
 answer ok

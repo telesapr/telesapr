@@ -11,12 +11,8 @@ down L 380 330
 up L 380 330
 key esc
 key x shift
-move 382.5 232.5
-down L 382.5 232.5
-up L 382.5 232.5
-move 247.5 202.5
-down L 247.5 202.5
-up L 247.5 202.5
+click-entity 80030004
+click-entity 8003001f
 menu Features|Fillet Edges
 twmove 492 205
 twdown L 492 205
@@ -25,9 +21,7 @@ answer ok
 twmove 96 145
 twdown L 96 145
 twup L 96 145
-move 247.5 202.5
-down L 247.5 202.5
-up L 247.5 202.5
+click-entity 8003001f
 twmove 96 145
 twdown L 96 145
 twup L 96 145

@@ -8,12 +8,8 @@ down L 400 250
 up L 400 250
 key esc
 key esc
-move 200 200
-down L 200 200
-up L 200 200
-move 400 250
-down L 400 250
-up L 400 250
+click-entity 40001
+click-entity 40002
 key d
 key esc
 move 195 225

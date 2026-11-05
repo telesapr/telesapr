@@ -9,8 +9,6 @@ move 350 250
 down L 350 250
 up L 350 250
 key esc
-move 275 250
-down L 275 250
-up L 275 250
+click-entity 40000
 key right
 key up shift

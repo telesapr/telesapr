@@ -9,9 +9,7 @@ file $testdata/ui/thread_pair.tlspr
 menu File|Open...
 menu View|Show Toolbar
 key f
-move 125 255
-down L 125 255
-up L 125 255
+click-entity 8003002d
 move 490 266
 down L 490 266
 up L 490 266

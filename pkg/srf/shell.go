@@ -3,6 +3,7 @@ package srf
 import (
 	"errors"
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -75,6 +76,13 @@ type SShell struct {
 	// Boolean of the two as drawn failed or left its mesh open; 0 if it
 	// moved none so far. A feature says so on its group.
 	Fused float64
+
+	// Touch are points where the feature that built the shell knows a
+	// face of another shell it will be joined with touches one of its
+	// own tangent, the curves the two meet in crossing there: the
+	// marcher ends each branch at such a point (touchSinks). A Boolean's
+	// result takes both operands'.
+	Touch []geom.Vector
 
 	// index finds the surfaces a line meets, while a Boolean
 	// classifies against the shell: MakeClassifyingBsps makes it,
@@ -1459,7 +1467,7 @@ func (s *SShell) FindCurveBySurface(h core.HSSurface) []*SCurve {
 // a triangulation (the trims' BSPs and edge lists) is left for the copy
 // to build again.
 func (s *SShell) Clone() SShell {
-	out := SShell{Tol: s.Tol, BooleanFailed: s.BooleanFailed, Fused: s.Fused, pace: s.pace}
+	out := SShell{Tol: s.Tol, BooleanFailed: s.BooleanFailed, Fused: s.Fused, Touch: slices.Clone(s.Touch), pace: s.pace}
 	out.Surface = make([]SSurface, len(s.Surface))
 	for i := range s.Surface {
 		ss := s.Surface[i]

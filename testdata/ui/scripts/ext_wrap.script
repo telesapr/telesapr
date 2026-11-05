@@ -11,14 +11,10 @@ move 350 250
 down L 350 250
 up L 350 250
 key esc
-move 300 250
-down L 300 250
-up L 300 250
+click-entity 50000
 key l shift
 key esc
-move 250 200
-down L 250 200
-up L 250 200
+click-entity 80030020
 key w shift
 view default
 menu View|Show|Construction Entities

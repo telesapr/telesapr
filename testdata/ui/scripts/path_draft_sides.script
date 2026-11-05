@@ -14,12 +14,8 @@ twmove 163 145
 twdown L 163 145
 twup L 163 145
 edit 5
-move 382.5 232.5
-down L 382.5 232.5
-up L 382.5 232.5
-move 247.5 202.5
-down L 247.5 202.5
-up L 247.5 202.5
+click-entity 80030001
+click-entity 8003001c
 menu Features|Draft Selected Sides
 twmove 272 165
 twdown L 272 165

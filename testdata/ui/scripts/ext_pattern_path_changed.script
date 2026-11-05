@@ -21,9 +21,7 @@ down L 400 200
 up L 400 200
 key esc
 key esc
-move 300 200
-down L 300 200
-up L 300 200
+click-entity 50000
 key g
 key esc
 key s
@@ -35,24 +33,18 @@ down L 400 250
 up L 400 250
 key esc
 key esc
-move 300 250
-down L 300 250
-up L 300 250
+click-entity 60000
 key g
 key esc
 key x shift
-move 300 200
-down L 300 200
-up L 300 200
+click-entity 8003000d
 menu Features|Pattern Along Path
 tw
 answer ok
 twmove 96 145
 twdown L 96 145
 twup L 96 145
-move 300 250
-down L 300 250
-up L 300 250
+click-entity 80030016
 twmove 96 145
 twdown L 96 145
 twup L 96 145

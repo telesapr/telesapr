@@ -11,12 +11,8 @@ mark 154 410 92 66
 shot sweep-1-profile
 # The path's three pieces, picked in the rotated view.
 cursor on
-move 217.5 382.5
-down L 217.5 382.5
-up L 217.5 382.5
-move 292.5 232.5
-down L 292.5 232.5
-up L 292.5 232.5
+click-entity 40000
+click-entity 50000
 move 457.5 157.5
 down L 457.5 157.5
 up L 457.5 157.5

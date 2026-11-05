@@ -12,9 +12,7 @@ up L 380 330
 key esc
 key x shift
 key esc
-move 200 200
-down L 200 200
-up L 200 200
+click-entity 80030021
 key w shift
 key r
 move 320 320
@@ -30,7 +28,5 @@ move 300 300
 down M 300 300
 move 300 330 M
 move 300 360 M
-move 332 311
-down L 332 311
-up L 332 311
+click-entity 8005001c
 menu Features|Fillet Edges

@@ -11,9 +11,7 @@ up L 350 250
 key esc
 key right
 dump
-move 275 250
-down L 275 250
-up L 275 250
+click-entity 40000
 key right
 dump
 key up shift

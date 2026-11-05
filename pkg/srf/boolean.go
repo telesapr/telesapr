@@ -15,6 +15,7 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 	defer trace.StartRegion(context.Background(), "boolean").End()
 	s.BooleanFailed = false
 	s.Fused = 0
+	s.Touch = unionTouch(a.Touch, b.Touch)
 	s.Tol = s.Tol.Or(a.Tol).Or(b.Tol)
 	if s.pace == nil {
 		s.pace = a.pace
@@ -149,9 +150,18 @@ func (s *SShell) dropUntrimmed() {
 	}
 	clear(s.Surface[len(kept):])
 	s.Surface = kept
+	// A curve kept names a dropped surface as none: a later Boolean
+	// numbers the surfaces afresh, and the handle would name another
+	// (RewriteSurfaceHandlesForCurves).
 	keptc := s.Curve[:0]
 	for _, c := range s.Curve {
 		if used[c.H] || (!dropped[c.SurfA] && !dropped[c.SurfB]) {
+			if dropped[c.SurfA] {
+				c.SurfA = core.HSSurface{}
+			}
+			if dropped[c.SurfB] {
+				c.SurfB = core.HSSurface{}
+			}
 			keptc = append(keptc, c)
 		}
 	}

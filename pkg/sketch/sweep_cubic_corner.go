@@ -24,11 +24,11 @@ import (
 // lines and arcs meeting tangent, else fitted, its own corners mitred or
 // joined by the kernel as before), the profile turned at each cut corner
 // about the corner's axis as a mitre turns it, and the corners' fills,
-// all joined (joinFlush). Each run is carried a little past its corners
-// along its tangent, and the fill stops short of that lead, so that the
-// fill meets a run on a section of the lead, flat where the fill is,
-// rather than along a cubic's skin, which the fill's faces would touch
-// tangent along an edge. An open path with no twist, no frames held to a
+// all joined (joinFlush). Each run ends at its corners, where its
+// section lies flat on the fill's and on the next run's. A round
+// profile's two runs touch tangent there, where the profile crosses the
+// corner's axis: the Booleans are told those points
+// (sweep_cubic_corner_touch.go). An open path with no twist, no frames held to a
 // direction and no corner radius only: a twist or a held frame turns the
 // sections otherwise than the corner does, and a corner radius rounds
 // corners between lines and arcs, which a cubic's is not. Where the
@@ -38,59 +38,33 @@ import (
 // joined at corners beside a cubic, which no one path describes.
 var ErrSweepJoined = errors.New("the sweep is runs joined at corners beside a cubic")
 
-// cubicCornerLead is how far, as a fraction of the profile's reach,
-// each run is carried along a line past a corner beside a cubic.
-const cubicCornerLead = 0.05
-
 // sweepRuns is a sweep's path cut at its corners beside a cubic: the
-// runs, each a fitted path carried on along a tangent line of length
-// lead[k] past a corner at its start (pre) and its end (post), and the
-// turn at each corner between run k and run k+1.
+// runs, each a fitted path from a corner or the path's start to the next
+// corner or the path's end, and the turn at each corner between run k
+// and run k+1.
 type sweepRuns struct {
 	runs  []*topo.SweepPath
 	turns []srf.SweepStep
 	// into and out are the path's unit tangents into and out of each
 	// turn.
 	into, out []geom.Vector
-	// lead is how far each turn's sides are carried past it in the runs.
-	lead []float64
-	// chains are the runs' pieces, the leads in.
+	// chains are the runs' pieces.
 	chains [][]pathPiece
 	// reach is how far the profile reaches from the path.
 	reach float64
 }
 
-// pre says whether run k starts with a lead before a corner, and post
-// whether it ends with one past a corner.
+// pre says whether run k starts at a corner, and post whether it ends
+// at one.
 func (sr *sweepRuns) pre(k int) bool  { return k > 0 }
 func (sr *sweepRuns) post(k int) bool { return k < len(sr.turns) }
-
-// cornerEnd is how far along run k its own path ends, before the lead
-// past the corner after it.
-func (sr *sweepRuns) cornerEnd(k int) float64 {
-	e := sr.runs[k].End()
-	if sr.post(k) {
-		e--
-	}
-	return e
-}
-
-// sweepStart is where the profile is drawn for run k's sweep, as the
-// motion from where it is drawn for the whole: at the corner before it,
-// moved back along the lead.
-func (sr *sweepRuns) sweepStart(starts []srf.Rigid, k int) srf.Rigid {
-	if !sr.pre(k) {
-		return starts[k]
-	}
-	return starts[k].Then(srf.Rigid{Q: geom.QuaternionIdentity, T: sr.out[k-1].ScaledBy(-sr.lead[k-1])})
-}
 
 // starts are where each run takes the profile from at its corner, as
 // the motion from where it is drawn, and the last the sweep's end.
 func (sr *sweepRuns) starts() []srf.Rigid {
 	out := []srf.Rigid{srf.RigidIdentity}
 	for k, run := range sr.runs {
-		at := sr.sweepStart(out, k).Then(run.Rigid(sr.cornerEnd(k)))
+		at := out[k].Then(run.Rigid(run.End()))
 		if sr.post(k) {
 			at = at.Then(sr.turns[k].Motion())
 		}
@@ -105,18 +79,11 @@ func (sr *sweepRuns) end() srf.Rigid {
 	return s[len(s)-1]
 }
 
-// pieces are the curves of every run, in order, the leads left out.
+// pieces are the curves of every run, in order.
 func (sr *sweepRuns) pieces() []srf.SBezier {
 	var out []srf.SBezier
-	for k, run := range sr.runs {
-		p := run.Pieces()
-		if sr.post(k) {
-			p = p[:len(p)-1]
-		}
-		if sr.pre(k) {
-			p = p[1:]
-		}
-		out = append(out, p...)
+	for _, run := range sr.runs {
+		out = append(out, run.Pieces()...)
 	}
 	return out
 }
@@ -156,7 +123,7 @@ func cubicCorners(chain []pathPiece) []int {
 }
 
 // fitRuns cuts the chain at its corners beside a cubic (at) into runs,
-// each carried on a little past its corners, and fits each, for a
+// and fits each, for a
 // profile reaching reach from the path. A pathError where a corner can't
 // be taken so.
 func (sk *Sketch) fitRuns(g *Group, chain []pathPiece, at []int, closed bool, reach float64) (*sweepRuns, error) {
@@ -182,10 +149,9 @@ func (sk *Sketch) fitRuns(g *Group, chain []pathPiece, at []int, closed bool, re
 		sr.turns = append(sr.turns, srf.SweepStep{Corner: true, Center: chain[k].start,
 			Axis: d1.Cross(d2).WithMagnitude(1), Angle: math.Acos(math.Max(-1, math.Min(1, d1.Dot(d2))))})
 		sr.into, sr.out = append(sr.into, d1), append(sr.out, d2)
-		sr.lead = append(sr.lead, cubicCornerLead*reach)
 	}
 	from := 0
-	for n, k := range append(append([]int{}, at...), len(chain)) {
+	for _, k := range append(append([]int{}, at...), len(chain)) {
 		run := append([]pathPiece(nil), chain[from:k]...)
 		for i := range run {
 			if run[i].curves != nil {
@@ -196,16 +162,6 @@ func (sk *Sketch) fitRuns(g *Group, chain []pathPiece, at []int, closed bool, re
 			} else {
 				run[i].curves = []srf.SBezier{srf.SBezierFrom2(run[i].start, run[i].end)}
 			}
-		}
-		if n > 0 {
-			c, d := sr.turns[n-1].Center, sr.out[n-1]
-			a := c.Minus(d.ScaledBy(sr.lead[n-1]))
-			run = append([]pathPiece{{start: a, end: c, curves: []srf.SBezier{srf.SBezierFrom2(a, c)}}}, run...)
-		}
-		if n < len(at) {
-			c, d := sr.turns[n].Center, sr.into[n]
-			b := c.Plus(d.ScaledBy(sr.lead[n]))
-			run = append(run, pathPiece{start: c, end: b, curves: []srf.SBezier{srf.SBezierFrom2(c, b)}})
 		}
 		sp, err := sweepPathOf(run, g, reach)
 		if err != nil {
@@ -228,24 +184,26 @@ func cubicCornerCarry(reach, angle float64) float64 {
 	return 2 * reach * (1 + math.Tan(math.Min(angle, math.Pi*0.999)/2))
 }
 
-// cubicCornerFill is the solid filling the outside of turn k, short of
-// the leads: the profile where run k reaches the corner carried on
-// along the tangent there, from the end of its lead, overlapping the
-// profile where run k+1 leaves the corner carried back along its
-// tangent, up to the start of its lead, each by the fraction f of their
-// carry.
+// atCorner is where run k takes the profile at its end, the corner of
+// turn k, as the motion from where it is drawn.
+func (sr *sweepRuns) atCorner(starts []srf.Rigid, k int) srf.Rigid {
+	return starts[k].Then(sr.runs[k].Rigid(sr.runs[k].End()))
+}
+
+// cubicCornerFill is the solid filling the outside of turn k: the
+// profile where run k reaches the corner carried on along the tangent
+// there, overlapping the profile where run k+1 leaves the corner carried
+// back along its tangent, each by the fraction f of their carry.
 func (sr *sweepRuns) cubicCornerFill(set *srf.SBezierLoopSet, starts []srf.Rigid, k int, f float64, color core.RGBA, tol srf.Tolerance) (*srf.SShell, error) {
 	l := f * cubicCornerCarry(sr.reach, sr.turns[k].Angle)
-	lead := sr.lead[k]
 	t1, t2 := sr.into[k], sr.out[k]
 	move := func(v geom.Vector) srf.Rigid { return srf.Rigid{Q: geom.QuaternionIdentity, T: v} }
-	endA := sr.sweepStart(starts, k).Then(sr.runs[k].Rigid(sr.cornerEnd(k)))
 	on := srf.SShell{Tol: tol}
-	on.MakeFromSweepOf(srf.TransformedLoopSet(set, endA.Then(move(t1.ScaledBy(lead)))),
-		[]srf.SweepStep{{Along: t1.ScaledBy(l - lead)}}, color, 0, 0)
+	on.MakeFromSweepOf(srf.TransformedLoopSet(set, sr.atCorner(starts, k)),
+		[]srf.SweepStep{{Along: t1.ScaledBy(l)}}, color, 0, 0)
 	back := srf.SShell{Tol: tol}
 	back.MakeFromSweepOf(srf.TransformedLoopSet(set, starts[k+1].Then(move(t2.ScaledBy(-l)))),
-		[]srf.SweepStep{{Along: t2.ScaledBy(l - lead)}}, color, 0, 0)
+		[]srf.SweepStep{{Along: t2.ScaledBy(l)}}, color, 0, 0)
 	fill := srf.SShell{Tol: tol}
 	fill.MakeFromIntersectionOf(&on, &back)
 	if fill.BooleanFailed || len(fill.Surface) == 0 {
@@ -256,22 +214,22 @@ func (sr *sweepRuns) cubicCornerFill(set *srf.SBezierLoopSet, starts []srf.Rigid
 
 // sweepRunsJoined is the solid of the profile swept along the runs, the
 // caps' identities start and end and the patches' from origin on: each
-// run swept, carried a little past its corners, each corner's fill, all
-// joined. A *srf.CornerError at a corner whose fill can't be made or
+// run swept, each corner's fill, all joined, told where the runs touch
+// tangent (cornerTouches). A *srf.CornerError at a corner whose fill can't be made or
 // grows with how far its sides are carried; a nil shell where a join
 // fails.
 func (sr *sweepRuns) sweepRunsJoined(sbls *srf.SBezierLoopSetSet, color core.RGBA, start, end, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
 	starts := sr.starts()
 	// The fills, the fitted runs and the exact ones, joined in that
-	// order first: a fill joined to the cubic's run, then the line's,
-	// closes where other orders leave edges open along the leads. The
-	// other orders are tried after it.
+	// order first, the other orders after it: where one order leaves
+	// edges open, another may close.
 	var fills, fitted, exact []*srf.SShell
+	var touch []geom.Vector
 	next := origin
 	for i := range sbls.Sets {
 		set := &sbls.Sets[i]
 		for k, run := range sr.runs {
-			moved := srf.TransformedLoopSet(set, sr.sweepStart(starts, k))
+			moved := srf.TransformedLoopSet(set, starts[k])
 			s, e := uint32(0), uint32(0)
 			if !sr.pre(k) {
 				s = start
@@ -313,13 +271,20 @@ func (sr *sweepRuns) sweepRunsJoined(sbls *srf.SBezierLoopSetSet, color core.RGB
 				return nil, &srf.CornerError{At: sr.turns[k].Center, Err: errCornerFillOpen}
 			}
 			fills = append(fills, fill)
+			touch = append(touch, sr.cornerTouches(set, sr.atCorner(starts, k), k, tol)...)
 		}
+	}
+	for _, sh := range slices.Concat(fills, fitted, exact) {
+		sh.Touch = touch
 	}
 	for _, order := range [][3][]*srf.SShell{
 		{fills, fitted, exact}, {fitted, fills, exact}, {fills, exact, fitted},
 		{exact, fills, fitted}, {fitted, exact, fills}, {exact, fitted, fills},
 	} {
 		if sh := joinFlush(slices.Concat(order[0], order[1], order[2]), tol); sh != nil && topologySound(sh) {
+			// The touches are the runs' own: a later Boolean of the
+			// sweep with another solid must not end its curves there.
+			sh.Touch = nil
 			return sh, nil
 		}
 	}

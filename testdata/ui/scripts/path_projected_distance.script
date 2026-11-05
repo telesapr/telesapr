@@ -19,13 +19,7 @@ move 380 200
 down L 380 200
 up L 380 200
 key esc
-move 200 300
-down L 200 300
-up L 200 300
-move 280 290
-down L 280 290
-up L 280 290
-move 290 200
-down L 290 200
-up L 290 200
+click-entity 40000
+click-entity 50000
+click-entity 60000
 menu Constrain|Distance / Diameter

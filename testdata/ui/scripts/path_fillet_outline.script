@@ -9,13 +9,9 @@ move 380 330
 down L 380 330
 up L 380 330
 key esc
-move 380 330
-down L 380 330
-up L 380 330
+click-entity 50002
 key a shift
 key esc
 key x shift
-move 382.5 232.5
-down L 382.5 232.5
-up L 382.5 232.5
+click-entity 80030035
 menu Features|Fillet Edges

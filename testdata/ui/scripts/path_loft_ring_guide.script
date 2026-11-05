@@ -5,22 +5,10 @@
 file $testdata/ui/loft_ring_guide.tlspr
 menu File|Open...
 view default
-move 386.6 250.0
-down L 386.6 250.0
-up L 386.6 250.0
-move 300.0 200.0
-down L 300.0 200.0
-up L 300.0 200.0
-move 213.4 250.0
-down L 213.4 250.0
-up L 213.4 250.0
-move 213.4 350.0
-down L 213.4 350.0
-up L 213.4 350.0
-move 300.0 400.0
-down L 300.0 400.0
-up L 300.0 400.0
-move 386.6 350.0
-down L 386.6 350.0
-up L 386.6 350.0
+click-entity 100000
+click-entity 110000
+click-entity 120000
+click-entity 130000
+click-entity 140000
+click-entity 150000
 menu Features|Guide Loft by Selected Curves

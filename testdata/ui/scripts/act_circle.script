@@ -8,9 +8,7 @@ down L 350 300
 up L 350 300
 dump
 key esc
-move 300 250
-down L 300 250
-up L 300 250
+click-entity 40000
 dump
 key d
 dump

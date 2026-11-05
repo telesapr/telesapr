@@ -18,9 +18,7 @@ menu Constrain|Minimum Dimension
 edit 40
 cursor off
 shot limits-2-min gw
-move 275 250
-down L 275 250
-up L 275 250
+click-entity 40000
 menu Constrain|Maximum Dimension
 edit 50
 key esc
@@ -42,9 +40,7 @@ move 340 450
 down L 340 450
 up L 340 450
 key esc
-move 340 450
-down L 340 450
-up L 340 450
+click-entity 50000
 move 400 250
 down L 400 250
 up L 400 250

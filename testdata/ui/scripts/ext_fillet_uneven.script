@@ -8,12 +8,8 @@ file $testdata/topo/ramp.tlspr
 menu File|Open...
 view rotated
 menu View|Zoom To Fit
-move 470.3 170.3
-down L 470.3 170.3
-up L 470.3 170.3
-move 470.3 270.7
-down L 470.3 270.7
-up L 470.3 270.7
+click-entity 8004001a
+click-entity 80040013
 menu Features|Fillet Edges
 dump
 tw

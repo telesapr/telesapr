@@ -193,23 +193,20 @@ func draftStepAt(pieces []profilePiece, as, ds []float64, iLine, iArc int, lineF
 	// tangent at its foot, and the way outside the side, a plane leaning
 	// with it, keeps its distance from the side's circle where it touches
 	// the circle moved out; but over, where the way meets the step, has
-	// slid x along it, which stands off the circle by x²/2r more: away
-	// from the side's material beside a convex side, toward the arc's, and
-	// into it beside a hollow one.
+	// slid x along it, which stands off the circle by x²/2r more, away
+	// from the side's material, toward the arc's. Beside a hollow side it
+	// would stand into the material: there the way follows the circle
+	// (shelldraft_hollow.go), and over stays on it.
 	bend := 0.0
-	if L.arc {
+	if L.arc && !K.hollowSide() {
 		bend = 1 / (2 * movedPiece(L, from*tanL).r)
-		if L.outward {
-			bend = -bend
-		}
 	}
 	// The way outside the kept side leaves the step a little outside it,
 	// within the wedge outside the corner, between the kept side going
 	// back from it and the arc leaving it: as far as the narrowest of the
 	// wedge and of how far the step stands back from the corner, going
-	// up, less how far over strays out, allow; beside a hollow side, more
-	// than over strays in. Where the wedge allows too little beside a
-	// convex side, the step is set further back.
+	// up, less how far over strays out, allow. Where the wedge allows too
+	// little, the step is set further back.
 	var into geom.Vector
 	var back, lift float64
 	cornerPos := func(s float64) (float64, bool) {
@@ -223,7 +220,7 @@ func draftStepAt(pieces []profilePiece, as, ds []float64, iLine, iArc int, lineF
 		}
 		findFoot(back)
 		into = K.into(foot)
-		room, rate, in := math.Inf(1), math.Inf(1), 0.0
+		room, rate := math.Inf(1), math.Inf(1)
 		for k := 0; k <= samples; k++ {
 			s := from + h*float64(k)/samples
 			c, ok := cornerAt(s)
@@ -247,17 +244,13 @@ func draftStepAt(pieces []profilePiece, as, ds []float64, iLine, iArc int, lineF
 				return fail()
 			}
 			f := 0.5 * math.Min(1, math.Tan(wedge/2))
-			room = min(room, stand*f-max(0, bend*x*x))
+			room = min(room, stand*f-bend*x*x)
 			rate = min(rate, f)
-			in = max(in, -bend*x*x)
 		}
-		need := max(0.5*rate*margin, 1.5*in+10*geom.LengthEps)
+		need := max(0.5*rate*margin, 10*geom.LengthEps)
 		if room >= need {
 			lift = room
 			break
-		}
-		if in > 0 {
-			return fail()
 		}
 		back += 1.5 * (need - room) / rate
 	}
@@ -291,7 +284,14 @@ func draftStepAt(pieces []profilePiece, as, ds []float64, iLine, iArc int, lineF
 		return best, found
 	}
 	ma := movedPiece(A, ds[iArc])
-	out, found := nearest(over, lineCircle(over, e.ScaledBy(-1), ma.centre, ma.r))
+	var out geom.Vector
+	var found bool
+	var turn float64
+	if K.hollowSide() {
+		out, turn, found = K.hollowWayEnd(over, e, ma.centre, ma.r)
+	} else {
+		out, found = nearest(over, lineCircle(over, e.ScaledBy(-1), ma.centre, ma.r))
+	}
 	if !found {
 		return fail()
 	}
@@ -316,12 +316,24 @@ func draftStepAt(pieces []profilePiece, as, ds []float64, iLine, iArc int, lineF
 		dv := into.ScaledBy((s - from) * tanL)
 		ov := over.Plus(e.ScaledBy(slope * (s - from))).Plus(dv)
 		mo := movedPiece(A, ds[iArc]+(s-from)*tanA)
-		end, found := nearest(ov, lineCircle(ov, e.ScaledBy(-1), mo.centre, mo.r))
+		var end geom.Vector
+		var found bool
+		var tw float64
+		if K.hollowSide() {
+			ov, end, tw, found = K.hollowWayAt(ov, e, s*tanL, lift, mo.centre, mo.r)
+			// The way may not turn round or shrink to nothing going up.
+			found = found && tw*turn > 0 && math.Abs(tw)*K.wayRadius(s*tanL, lift) > 10*geom.LengthEps
+		} else {
+			end, found = nearest(ov, lineCircle(ov, e.ScaledBy(-1), mo.centre, mo.r))
+		}
 		if !found {
 			return fail()
 		}
 		for j := range 9 {
 			p := ov.Plus(end.Minus(ov).ScaledBy(float64(j) / 8))
+			if K.hollowSide() {
+				p = K.hollowWayPoint(ov, tw, float64(j)/8)
+			}
 			if inArc(p, s) || K.inMaterial(p, s*tanL) {
 				return fail()
 			}
@@ -333,6 +345,18 @@ func draftStepAt(pieces []profilePiece, as, ds []float64, iLine, iArc int, lineF
 	leanOf := func(a, b, dir geom.Vector, rate float64) float64 {
 		left := n.Cross(b.Minus(a)).WithMagnitude(1)
 		return math.Atan(rate * left.Dot(dir))
+	}
+	if K.hollowSide() {
+		wc, wa := K.hollowWayCurves(over, out, turn, as[iLine])
+		if lineFirst {
+			curves = append([]srf.SBezier{srf.SBezierFrom2(under, over)}, wc...)
+			angles = append([]float64{leanOf(under, over, e, slope)}, wa...)
+			return under, out, curves, angles, back, nil
+		}
+		curves, angles = wc, wa
+		curves = append(curves, srf.SBezierFrom2(over, under))
+		angles = append(angles, leanOf(over, under, e, slope))
+		return under, out, curves, angles, back, nil
 	}
 	if lineFirst {
 		curves = []srf.SBezier{srf.SBezierFrom2(under, over), srf.SBezierFrom2(over, out)}

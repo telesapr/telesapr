@@ -11,23 +11,15 @@ up L 400 250
 key esc
 key esc
 freedom
-move 200 200
-down L 200 200
-up L 200 200
-move 300 300
-down L 300 300
-up L 300 300
+click-entity 40001
+click-entity 80020002
 key o
 key esc
 freedom
-move 350 275
-down L 350 275
-up L 350 275
+click-entity 40000
 key h
 key esc
-move 350 300
-down L 350 300
-up L 350 300
+click-entity 40000
 key d
 key esc
 freedom

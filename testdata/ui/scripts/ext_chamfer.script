@@ -15,12 +15,8 @@ click-face top face of g003-extrude
 answer ok
 menu Features|Chamfer Edges
 key esc
-move 382.5 232.5
-down L 382.5 232.5
-up L 382.5 232.5
-move 247.5 202.5
-down L 247.5 202.5
-up L 247.5 202.5
+click-entity 80030004
+click-entity 8003001f
 menu Features|Chamfer Edges
 dump
 tw

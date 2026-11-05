@@ -161,10 +161,12 @@ func TestSweepSharpCornerBesideCubic(t *testing.T) {
 }
 
 // Sharp corners beside cubics over both orders, corners either way,
-// cubics bent either way, two leads and three profiles: every sweep made
-// sound, or a problem naming the corner; none unsound. Bars of 2 by 4
-// are made at every corner and bend of these the default sample takes;
-// circles are refused (their tubes' joins fail).
+// cubics bent either way, two leads and four profiles: every sweep made
+// sound, or a problem naming the corner; none unsound. Over the whole
+// grid at lead 10, bars of 2 by 4 either way and a diamond are made at
+// every corner and bend, 60 of 60 each, and a circle at 56: refused at
+// a turn of 150° with the cubic bent 90° the same way, where the
+// corner's fill fails.
 func TestSweepSharpCornerBesideCubicSweep(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -176,7 +178,7 @@ func TestSweepSharpCornerBesideCubicSweep(t *testing.T) {
 			sweep.Floats("corner", -150, -90, -30, 30, 90, 150),
 			sweep.Floats("bend", -90, -30, 0, 30, 90),
 			sweep.Floats("lead", 5, 20),
-			sweep.Floats("profile", 0, 1, 2),
+			sweep.Floats("profile", 0, 1, 2, 3),
 		},
 		MaxFailRate: 0,
 		Sample:      24,
@@ -190,8 +192,10 @@ func TestSweepSharpCornerBesideCubicSweep(t *testing.T) {
 			d.Sketch.Rect(api.V(-1, -2, 0), api.V(1, 2, 0))
 		case 1:
 			d.Sketch.Circle(api.V(0, 0, 0), 1)
-		default:
+		case 2:
 			d.Sketch.Rect(api.V(-2, -1, 0), api.V(2, 1, 0))
+		default:
+			cubicCornerDiamond(d)
 		}
 		s := d.Features.Sweep(path, "")
 		if pr := s.Problem(); pr != "" {
@@ -205,4 +209,67 @@ func TestSweepSharpCornerBesideCubicSweep(t *testing.T) {
 		}
 		return nil
 	}).Require(t)
+}
+
+// cubicCornerDiamond draws a diamond 3 by 2 about the origin, its
+// vertices on the axes: one lies on a corner's axis, as a circle's
+// side does.
+func cubicCornerDiamond(d *api.Doc) {
+	d.Sketch.Polyline(true, api.V(1.5, 0, 0), api.V(0, 1, 0), api.V(-1.5, 0, 0), api.V(0, -1, 0))
+}
+
+// A round profile at a sharp corner beside a cubic: the two runs'
+// tubes touch tangent where the circle crosses the corner's axis, and
+// the curves they meet in cross there, which the Booleans joining them
+// are told (srf.SShell.Touch); a diamond's vertex lies on that axis.
+// Before, every circle was refused and a diamond made only with the
+// cubic straight. The volume is the profile's area times the path's
+// length: the diamond's within 1e-6 with the cubic straight and 0.5%
+// bent, as the bars'; the circle's, whose mesh is short of it by its
+// chords (a straight sweep of it by 1%), within 1%.
+func TestSweepSharpCornerBesideCubicRound(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("each sweep joins its pieces by Booleans: a few seconds")
+	}
+	for _, prof := range []string{"circle", "diamond"} {
+		draw := func(d *api.Doc) {
+			d.Features.SketchIn(d.Workplane("XY"), "profile")
+			if prof == "circle" {
+				d.Sketch.Circle(api.V(0, 0, 0), 1)
+			} else {
+				cubicCornerDiamond(d)
+			}
+			step(d)
+		}
+		area, straight, bent := 3.0, 1e-6, 5e-3
+		if prof == "circle" {
+			area, straight, bent = math.Pi, 1e-2, 1e-2
+		}
+		for _, c := range []struct{ corner, bend float64 }{
+			{90, 0}, {60, 0}, {-120, 0}, {90, 40}, {-120, -60}, {45, 90},
+		} {
+			name := fmt.Sprintf("%s, corner %g, bend %g", prof, c.corner, c.bend)
+			d := api.New()
+			path := cubicCornerPath(d, false, c.corner, c.bend, 10, 12)
+			draw(d)
+			groups := len(d.Groups())
+			s := d.Features.Sweep(path, "")
+			p, r := s.Problem(), s.Analyze().Check()
+			if p != "" || !r.Sound() {
+				t.Errorf("%s: %q %s, want made sound", name, p, r.String())
+				continue
+			}
+			want, rel := area*22, straight
+			if c.bend != 0 {
+				want, rel = area*(10+cornerCubicLength(c.corner, c.bend, 10, 12)), bent
+			}
+			if math.Abs(r.Volume-want) > rel*want {
+				t.Errorf("%s: volume %.4f, want %.4f within %g", name, r.Volume, want, rel)
+			}
+			if !d.Edit.Undo() || len(d.Groups()) != groups {
+				t.Errorf("%s: undo left %d groups, want %d", name, len(d.Groups()), groups)
+			}
+		}
+	}
 }

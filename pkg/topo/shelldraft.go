@@ -41,21 +41,6 @@ type DraftedSet struct {
 // those of the drafted extrusion it was given.
 var ErrNotDrafted = errors.New("the solid is not one drafted extrusion of its profile")
 
-// errTwoSidedSeamOpen is ShellDrafted's error when the shell of a
-// two-sided draft comes out open, as it does along the neutral plane
-// where round sides kept meet at a steep draft.
-var errTwoSidedSeamOpen = errors.New("the Boolean that takes the inside away left no closed solid: where round sides " +
-	"drafted both ways meet on the neutral plane, a steep draft leaves that seam open; make the draft smaller, " +
-	"or take the round sides away too")
-
-// errTwoSidedJoin is draftedInsideOf's error when the parts of a
-// two-sided draft's inside, one each way from the neutral plane, don't
-// join: as the shell's seam (errTwoSidedSeamOpen), where round sides
-// kept meet there at a steep draft.
-var errTwoSidedJoin = errors.New("the Boolean that joins the inside's two drafted parts on the neutral plane failed: " +
-	"where round sides drafted both ways meet there, a steep draft leaves that seam open; make the draft smaller, " +
-	"or take the round sides away too")
-
 // ShellDrafted hollows sh, which is d, to walls thick, taking away faces
 // open (indices into its topology). The faces of the cavity get origins
 // from origin up. note, when not empty, says how the shell differs from
@@ -89,15 +74,10 @@ func ShellDrafted(sh *srf.SShell, d DraftedSolid, open []int, thick float64, ori
 		return nil, "", errors.New("the Boolean that takes the inside away failed")
 	}
 	// A result that is no closed solid, from one that was, is refused,
-	// never made. So far only two-sided drafts come to it: where their
-	// round sides kept meet on the neutral plane at a crease of twice a
-	// steep draft (the lobed block at 9° and thickness 1, a disc at 10°),
-	// the Boolean leaves the seam open, even cutting a small box out of
-	// the middle of the solid, far from it.
+	// never made. Two-sided drafts with round sides kept came to it at
+	// steep drafts until 2026-11-05, their crease left open by a Boolean
+	// (srf.TestDroppedSurfaceNamedByNone); none is known to now.
 	if unsound(out) && !unsound(sh) {
-		if d.Lo < -geom.LengthEps && d.Hi > geom.LengthEps {
-			return nil, "", errTwoSidedSeamOpen
-		}
 		return nil, "", errors.New("the Boolean that takes the inside away left no closed solid")
 	}
 	if short > 0 {
@@ -194,9 +174,6 @@ func draftedInsideOf(t *Topology, d DraftedSolid, modeOf func(f int) faceMode, t
 			u := &srf.SShell{Tol: tol}
 			u.MakeFromUnionOf(inner, part)
 			if u.BooleanFailed {
-				if len(ways) > 1 {
-					return nil, 0, errTwoSidedJoin
-				}
 				return nil, 0, errors.New("the Boolean that joins the inside's drafted parts failed")
 			}
 			inner = u

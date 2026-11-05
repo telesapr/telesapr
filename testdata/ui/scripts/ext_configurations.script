@@ -15,9 +15,7 @@ twmove 51 130
 twdown L 51 130
 twup L 51 130
 edit w = 30
-move 290 330
-down L 290 330
-up L 290 330
+click-entity 50000
 key d
 key esc
 move 290 370

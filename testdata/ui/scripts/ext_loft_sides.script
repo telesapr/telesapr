@@ -4,9 +4,7 @@
 file $testdata/ui/loft_sides.tlspr
 menu File|Open...
 view default
-move 300 250
-down L 300 250
-up L 300 250
+click-entity 60000
 menu Features|Loft To Selected Profile
 twmove 320 185
 twdown L 320 185

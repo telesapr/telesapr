@@ -11,9 +11,7 @@ move 380 330
 down L 380 330
 up L 380 330
 key esc
-move 290 200
-down L 290 200
-up L 290 200
+click-entity 70000
 key d
 key esc
 menu Edit|Parameters...

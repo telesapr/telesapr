@@ -51,7 +51,12 @@ func lobedArea(d float64) float64 {
 // a wall and the one above runs out, the walls under the top edge
 // either side of it stepping short of the corners as a one-sided
 // block's do (TestShellDraftedInsideCorner); open both ways, both
-// halves step. Steeper, TestShellDraftedTwoSidedSteepRefused.
+// halves step. Until 2026-11-05 the steep ones were refused: the
+// Boolean left the crease where the round sides kept meet open from 7°
+// or 9° (srf.TestDroppedSurfaceNamedByNone), and the inside's two halves,
+// their lobes cut into patches at unlike turns, didn't join at 10°
+// (arcPartBounds). At 12° and a thickness of 1, open at the top, the
+// inside's sides meet at a corner of its outline.
 func TestShellDraftedTwoSidedLobed(t *testing.T) {
 	t.Parallel()
 	type tcase struct {
@@ -59,17 +64,16 @@ func TestShellDraftedTwoSidedLobed(t *testing.T) {
 		open         string // "top", "lobe above", "lobe both"
 	}
 	var cases []tcase
-	// The lobe above opened beside the one below kept joins its inside's
-	// halves up to a draft of 5°, not 7°: TestShellDraftedTwoSidedSteepRefused.
-	for _, draft := range []float64{2, 5, 8} {
+	for _, draft := range []float64{2, 5, 8, 10, 12} {
 		for _, open := range []string{"top", "lobe above", "lobe both"} {
-			if open == "lobe above" && draft > 5 {
+			if open == "top" && draft > 10 {
 				continue
 			}
 			cases = append(cases, tcase{draft, 1, open})
 		}
 	}
-	cases = append(cases, tcase{5, 0.5, "lobe above"}, tcase{5, 2, "lobe both"})
+	cases = append(cases, tcase{5, 0.5, "lobe above"}, tcase{5, 2, "lobe both"},
+		tcase{10, 0.5, "top"}, tcase{10, 0.5, "lobe above"}, tcase{10, 2, "lobe both"})
 	for _, c := range cases {
 		t.Run(fmt.Sprintf("%+v", c), func(t *testing.T) {
 			t.Parallel()
@@ -144,37 +148,68 @@ func TestShellDraftedTwoSidedLobed(t *testing.T) {
 	}
 }
 
-// Drafted both ways at 10°, a solid whose round sides are kept meets
-// itself on the neutral plane in a crease of 20°, along which the
-// Boolean taking the inside away, or joining its two halves, leaves the
-// seam open: the shell is refused, where before 2026-11-05 a disc and a
-// slot were made so, unsound, with no problem on the group. So is the
-// lobed block opened at its lobe above only from 7°. Opened at its lobe
-// both ways it keeps no round side, and is made (above).
-func TestShellDraftedTwoSidedSteepRefused(t *testing.T) {
+// Drafted both ways steeply, a solid whose round sides are kept meets
+// itself on the neutral plane in a crease of twice the draft. Until
+// 2026-11-05 the Boolean taking the inside away left that crease open
+// from about 8°, and the shell was refused (a disc and a slot at 10°,
+// made unsound with no problem on the group before that): the crease's
+// curves named the caps the join of the two halves had dropped, by
+// handles the next Boolean gave to other patches
+// (srf.TestDroppedSurfaceNamedByNone). A disc of radius 6 and a slot of
+// half-width 4 and straight length 10, from z = -5 to 5, open at the
+// top, walls 1 thick: each half is a frustum, or a slot narrowing by
+// z tan α, the inside's narrower by sec α from the bottom moved in by 1.
+func TestShellDraftedTwoSidedSteep(t *testing.T) {
 	t.Parallel()
-	d, ex := lobedBlockTwoSided(t, 10)
-	top := ex.Solid().FaceAt(api.V(0, -5, 5))
-	refusedWith(t, "seam open", func() { d.Features.ShellSolid([]api.SolidFace{top}, 1, "") })
-	d, ex = lobedBlockTwoSided(t, 7)
-	r := 4 - 2*math.Tan(7*math.Pi/180)
-	var lobe []api.SolidFace
-	for _, a := range []float64{math.Pi / 4, 3 * math.Pi / 4} {
-		lobe = append(lobe, ex.Solid().FaceAt(api.V(r*math.Cos(a), r*math.Sin(a), 2)))
+	for _, c := range []struct {
+		shape string
+		draft float64
+	}{{"disc", 10}, {"disc", 15}, {"disc", 20}, {"slot", 10}, {"slot", 15}} {
+		t.Run(fmt.Sprintf("%s %g", c.shape, c.draft), func(t *testing.T) {
+			t.Parallel()
+			if (testing.Short() || fixtures.RaceDetector) && c.draft != 10 {
+				t.Skip("only the drafts of 10°, short or under the race detector")
+			}
+			d := api.New()
+			d.Edit.SetChordTolerance(0.005)
+			tan, sec := math.Tan(c.draft*math.Pi/180), 1/math.Cos(c.draft*math.Pi/180)
+			// half is the volume of one half, from the neutral plane up h,
+			// of the section of half-width w0 there.
+			var half func(w0, h float64) float64
+			if c.shape == "disc" {
+				d.Sketch.Circle(api.V(0, 0, 0), 6)
+				half = func(w0, h float64) float64 { return frustum(h, w0, w0-h*tan) }
+			} else {
+				a := d.Sketch.Line(api.V(-5, -4, 0), api.V(5, -4, 0))
+				b := d.Sketch.Line(api.V(5, 4, 0), api.V(-5, 4, 0))
+				d.Sketch.Arc(api.V(5, 0, 0), a.End().Pos(), b.Start().Pos())
+				d.Sketch.Arc(api.V(-5, 0, 0), b.End().Pos(), a.Start().Pos())
+				half = func(w0, h float64) float64 {
+					w1 := w0 - h*tan
+					return 20*h*(w0+w1)/2 + math.Pi*h/3*(w0*w0+w0*w1+w1*w1)
+				}
+			}
+			w := 6.0
+			if c.shape == "slot" {
+				w = 4
+			}
+			ex := d.Features.Extrude(10, "")
+			ex.SetTwoSided(true)
+			ex.AsExtrude().SetDraft(c.draft)
+			if p := ex.Problem(); p != "" {
+				t.Fatal(p)
+			}
+			top := ex.Solid().FaceAt(api.V(0, 0, 5))
+			sh := d.Features.ShellSolid([]api.SolidFace{top}, 1, "")
+			if p := sh.Problem(); p != "" {
+				t.Fatal(p)
+			}
+			want := 2*half(w, 5) - half(w-sec, 5) - half(w-sec, 4)
+			if r := sh.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-want) > 2e-4*want {
+				t.Fatalf("shell: %s, want volume %g", r.String(), want)
+			}
+		})
 	}
-	refusedWith(t, "seam open", func() { d.Features.ShellSolid(lobe, 1, "") })
-
-	d = api.New()
-	d.Edit.SetChordTolerance(0.005)
-	d.Sketch.Circle(api.V(0, 0, 0), 6)
-	disc := d.Features.Extrude(10, "")
-	disc.SetTwoSided(true)
-	disc.AsExtrude().SetDraft(10)
-	if p := disc.Problem(); p != "" {
-		t.Fatal(p)
-	}
-	top = disc.Solid().FaceAt(api.V(0, 0, 5))
-	refusedWith(t, "seam open", func() { d.Features.ShellSolid([]api.SolidFace{top}, 1, "") })
 }
 
 // stepBack is lobedCase.setBack for the inside running from foot to

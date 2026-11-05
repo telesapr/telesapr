@@ -10,20 +10,12 @@ move 380 330
 down L 380 330
 up L 380 330
 key esc
-move 290 330
-down L 290 330
-up L 290 330
+click-entity 50000
 key d
 key esc
-move 380 265
-down L 380 265
-up L 380 265
+click-entity 40000
 key d
 key esc
-move 200 200
-down L 200 200
-up L 200 200
-move 380 330
-down L 380 330 shift
-up L 380 330 shift
+click-entity 70002
+click-entity 50002 shift
 key d

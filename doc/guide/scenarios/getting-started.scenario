@@ -80,27 +80,17 @@ move 396 290
 down L 396 290
 up L 396 290
 key esc
-move 396 290
-down L 396 290
-up L 396 290
+click-entity 80000
 key d
 edit 10
 key esc
-move 340 290
-down L 340 290
-up L 340 290
-move 420 75
-down L 420 75
-up L 420 75
+click-entity 80001
+click-entity 80030016
 key d
 edit 20
 key esc
-move 340 299
-down L 340 299
-up L 340 299
-move 208 450
-down L 208 450
-up L 208 450
+click-entity 80001
+click-entity 8003001f
 key d
 edit 12.5
 key esc
@@ -129,15 +119,9 @@ mark 614 222 714 22
 shot getting-started-9-cut
 # The four top edges picked and rounded at 3 mm.
 cursor on
-move 297 190
-down L 297 190
-up L 297 190
-move 513 224
-down L 513 224
-up L 513 224
-move 418 341
-down L 418 341
-up L 418 341
+click-entity 8003000d
+click-entity 80030004
+click-entity 8003001f
 move 202 307
 down L 202 307
 up L 202 307
@@ -157,9 +141,7 @@ menu Analyze|Check Solid
 answer ok
 menu Analyze|Measure Volume
 menu Analyze|Measure Selection
-move 312 262
-down L 312 262
-up L 312 262
+click-entity 80050001
 dump
 move 560 450
 shot getting-started-12-measure gw

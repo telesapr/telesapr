@@ -98,7 +98,12 @@ doc.Features.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 0, 5))}, 1.5, "")
   asked for, and says so: the group is marked "(note)" in the list of groups, and its screen,
   and `Group.Note()` in a script, say "made at radius 2 mm, the nearest the kernel can cut
   to 2.001 mm". At a chord tolerance too fine for that it is refused (make it a little smaller
-  or larger). One is refused where the solid goes on beyond the side.
+  or larger). Where the solid goes on past the side, as a ledge below it or a tab standing off
+  it, what lies past the side is left as it was, even where the fillet of a hole's rim would
+  have cut down into it, and a side with holes in it, as a cross bore, keeps them. A side
+  that leans to the face, as a drafted plate's, cuts the fillet along its own plane, up to
+  about 53° off square, unless that plane runs on above the face into the solid (as into the
+  rod beside a side leaning out by 45°). A curved side is still refused.
 - A rounded edge takes with it the edges it meets smoothly, as round a rounded rectangle.
 - Where two rounded edges meet, they are mitred. Where three meet at the corner of a block, a
   sphere rounds the corner.
@@ -213,7 +218,15 @@ carried on past its edge with the face the fillet ran off, it cuts the fillet, a
 the fillet's end, sharing with the end face the line or curve where the end face's plane meets
 that surface, or where the end face's own surface meets it when that is curved too. Where the fillet's end only just runs off onto a curved face, within two chord
 tolerances of its edge, the end is taken to that edge's corner, so the face doesn't grow by a
-sliver too thin to mesh.
+sliver too thin to mesh. A curved face that bends away from the edge so fast that, carried on
+past it, it comes round under the fillet's end again, as a band's top rounded tightly across a
+narrow band, would cut the end in the wrong place: there that face is carried on flat instead,
+by the plane tangent to it along its edge, where that edge is straight. The plane becomes a flat
+face beside the curved one, meeting it smoothly and counted as the same face, and the fillet's
+end runs onto it as onto a flat face. A wide chamfer of the band's side whose end lay wholly past
+the rounded top carried on is made so; so is any blend there of a top that sags 2 across a band
+6 wide. Where the end runs off only just, so that the flat face would be a sliver of no area, the
+fillet is refused, saying so.
 
 Both ends may run off this way, as a chamfer of a short plate's foot on a rod does past both
 slopes of the plate's gabled top. Each end cuts the fillet on its own; where the two cuts would
@@ -257,7 +270,8 @@ These are refused with a message:
   some edge there is left sharp, but for one, two opposite or three of a saddle's four edges as
   above, fillets or chamfers, and a ridge and a valley side by side.
 - A blend that takes material away and runs off onto the next face, and a chamfer whose end
-  runs off both its faces onto the next one (the end lies wholly past the next face).
+  runs off both its faces onto the next one (the end lies wholly past the next face) where that
+  face is flat, or curved along a curved edge, so that no tangent plane takes it on.
 
 Also:
 

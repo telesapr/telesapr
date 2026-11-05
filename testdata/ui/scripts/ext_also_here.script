@@ -12,9 +12,7 @@ down L 250 380
 up L 250 380
 key esc
 key esc
-move 400 293
-down L 400 293
-up L 400 293
+click-entity 50001
 dump
 tw
 twmove 60 168

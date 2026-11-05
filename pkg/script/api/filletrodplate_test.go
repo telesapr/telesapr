@@ -250,28 +250,3 @@ func TestFilletHoleRimPastSides(t *testing.T) {
 		})
 	}
 }
-
-// Where the solid goes on past the side the fillet runs into, a tab on
-// the plate's side, cutting the widened plate back would cut the tab:
-// the fillet is refused as running off the top.
-func TestFilletRodPastSideWithTab(t *testing.T) {
-	t.Parallel()
-	d := New()
-	d.Edit.SetChordTolerance(0.003)
-	rodThroughPlate(d)
-	d.Features.Sketch3D("tab")
-	d.Features.SketchIn(d.Workplane("XY"), "")
-	d.Sketch.Rect(V(6, 10, 0), V(8, 14, 0))
-	tab := d.Features.Extrude(2, "tab")
-	msg := func() (msg string) {
-		defer func() {
-			if x := recover(); x != nil {
-				msg = fmt.Sprint(x)
-			}
-		}()
-		return d.Features.FilletSolid([]SolidEdge{tab.Solid().EdgeAt(V(4, 0, 4))}, 2.5, "").Problem()
-	}()
-	if !strings.Contains(msg, "runs off the face") {
-		t.Errorf("not refused as running off the top: %q", msg)
-	}
-}

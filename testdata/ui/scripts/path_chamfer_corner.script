@@ -19,15 +19,9 @@ click-tw [change]
 edit 80
 view rotated
 menu View|Zoom To Fit
-move 305.9 136.6
-down L 305.9 136.6
-up L 305.9 136.6
-move 446.6 165.2
-down L 446.6 165.2
-up L 446.6 165.2
-move 295.8 380.6
-down L 295.8 380.6
-up L 295.8 380.6
+click-entity 80030016
+click-entity 8003000d
+click-entity 8003001b
 menu Features|Chamfer Edges
 click-tw #2 [change]
 edit 2

@@ -125,17 +125,17 @@ func blendOrRefusal(d *Doc, edge SolidEdge, r float64, chamfer bool) (g Group, e
 }
 
 // runOffRefused are the cases of TestFilletRunsOffOntoCylinder that are
-// refused, and what the refusal says: the x band's widest chamfers,
-// which run off both the band's side and the cone, as on a flat top.
-// The chamfers ending on the narrowest band's top, the cone going on
-// past it, refused as "can't be fitted" before 2026-10-29, are made; so
-// are the fillets whose end only just runs off onto the x band's top,
-// refused as "only just runs off" before 2026-11-04: their end is taken
-// to the corner of the band's side and top (topo's runOffSliver).
-var runOffRefused = map[string]string{
-	"chamfer, x band 6 wide, top 20 sag 1 r 2.5": "runs off the faces on both sides",
-	"chamfer, x band 6 wide, top 21 sag 1 r 2.5": "runs off the faces on both sides",
-}
+// refused, and what the refusal says: none since 2026-11-05. The x
+// band's widest chamfers, whose end sections lay wholly outside the
+// band's top carried on as its circle does, were refused as running off
+// the faces on both sides; they are made with the top carried on by its
+// tangent plane (TestChamferRunsOffPastRoundTop). The chamfers ending
+// on the narrowest band's top, the cone going on past it, refused as
+// "can't be fitted" before 2026-10-29, are made; so are the fillets
+// whose end only just runs off onto the x band's top, refused as "only
+// just runs off" before 2026-11-04: their end is taken to the corner of
+// the band's side and top (topo's runOffSliver).
+var runOffRefused = map[string]string{}
 
 // Fillets and chamfers of the band's edge on the cone whose end meets
 // the band's top, a cylinder (roadmap: run-offs onto a curved face). On

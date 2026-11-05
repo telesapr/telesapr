@@ -13,9 +13,7 @@ key esc
 key x shift
 # The edges are picked in the view from above.
 cursor on
-move 202.5 282.5
-down L 202.5 282.5
-up L 202.5 282.5
+click-entity 80030016
 move 317.5 327.5
 down L 317.5 327.5
 up L 317.5 327.5

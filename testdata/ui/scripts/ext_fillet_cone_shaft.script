@@ -5,9 +5,7 @@
 file $testdata/ui/fillet_cone_shaft.tlspr
 menu File|Open...
 view default
-move 295 245
-down L 295 245
-up L 295 245
+click-entity 80040021
 menu Features|Fillet Edges
 tw
 answer ok

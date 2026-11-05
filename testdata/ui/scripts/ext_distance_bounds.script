@@ -11,15 +11,11 @@ move 350 250
 down L 350 250
 up L 350 250
 key esc
-move 275 250
-down L 275 250
-up L 275 250
+click-entity 40000
 menu Constrain|Minimum Dimension
 edit 40
 dump
-move 275 250
-down L 275 250
-up L 275 250
+click-entity 40000
 menu Constrain|Maximum Dimension
 edit 50
 dump
@@ -28,12 +24,8 @@ move 260 330
 down L 260 330
 up L 260 330
 key esc
-move 260 330
-down L 260 330
-up L 260 330
-move 300 250
-down L 300 250
-up L 300 250
+click-entity 50000
+click-entity 40000
 menu Constrain|On Segment
 dump
 tw

@@ -25,9 +25,7 @@ shot draft-2-drafted
 # Two sides picked by the sketch's lines, in the view from above.
 view default
 cursor on
-move 202.5 282.5
-down L 202.5 282.5
-up L 202.5 282.5
+click-entity 80030013
 move 317.5 327.5
 down L 317.5 327.5
 up L 317.5 327.5

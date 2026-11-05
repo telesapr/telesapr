@@ -22,14 +22,10 @@ twmove 51 190
 twdown L 51 190
 twup L 51 190
 edit h = w/2
-move 290 330
-down L 290 330
-up L 290 330
+click-entity 50000
 key d
 key esc
-move 380 265
-down L 380 265
-up L 380 265
+click-entity 40000
 key d
 key esc
 move 290 370

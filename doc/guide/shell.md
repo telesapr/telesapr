@@ -114,11 +114,16 @@ on a disc's rim, the wall under the rim stops short the same way, on a flat face
 rim at the inside's foot; there the step can be set further back, to leave room outside the rim:
 on a lobe of radius 3 on a disc of radius 10, 10 high, from 0.01 short at small drafts up to
 nearly 1 at a draft of 8° and a thickness of 0.5, the volume within 1.3% of walls reaching the
-corner. The group says how far short in a note on its screen (and in a
+corner. Beside a hollow round side kept, as a lobe in a crescent's hollow, the wall stops short
+the same way, and the inside's face outside the side follows its circle, so it never runs into the
+material beyond: on a lobe of radius 2 in hollows of radius 4 to 9, it stops 0.01 to 0.15 short.
+The group says how far short in a note on its screen (and in a
 script, `Note()` on the group). A
 two-sided draft's inside leans both ways from its neutral plane, as the solid does, and each half
 of a side, above and below that plane, is a face of its own: one can be taken away and the other
-kept, as a lobe opened above the sketch only, whose half below stays a wall. (A drafted
+kept, as a lobe opened above the sketch only, whose half below stays a wall. Steep drafts are
+hollowed too, round sides kept and all: a disc drafted 20° both ways, whose two halves meet in a
+crease of 40°. (A drafted
 extrusion of lines only has flat faces, and is hollowed like any solid of flat faces.)
 
 **A union of such parts.** A solid joined by unions from lathes, revolves and extrusions,
@@ -166,10 +171,6 @@ through it.
   outside it, as across a slot that narrow, is refused: the inside would cut into the far side.
   A drafted extrusion's round side opened at an inside corner is refused where the corner is too
   tight for the wall's end to step round it, beside a flat or a round side kept.
-- A two-sided draft whose round sides are kept on both sides of the neutral plane, at a steep
-  draft, is refused: the two halves of a round side meet there in a crease, and the Boolean that
-  takes the inside away leaves that seam open (a disc drafted 10° both ways; the lobed block
-  opened at its lobe above only, from 7°). Make the draft smaller, or take the round sides away.
 - A profile of curves other than lines and arcs is refused.
 - Beside a round hole, walls thinner than about twice the chord tolerance (how far the mesh may
   stray from the true surface, set on the configuration screen) can come out unsound: the hole's

@@ -44,12 +44,19 @@ type runOffSide struct {
 	poly  []geom.Vector
 	past  float64
 	surf  *srf.SSurface
+	// along is the way the face is widened past the side, and slant is
+	// set where the side leans to the face (slabAlong).
+	along geom.Vector
+	slant bool
 }
 
 // offInto adds to off the side the foot's point p runs into: past the
 // edge of the face nearest p, or within the margin of it. off becomes
-// nil where that edge isn't straight, or the face across it isn't flat
-// and square to the face the fillet rolls on (normal n), or has holes.
+// nil where that edge isn't straight, or the face across it isn't flat,
+// or leans to the face the fillet rolls on (normal n) by more than
+// maxSlant. A side with
+// holes (a cross bore in a plate's side) is taken by its outer loop:
+// the slab caps the holes' mouths, and cutting it back opens them.
 func (t *Topology) offInto(off *runOff, p, n geom.Vector, others [][]geom.Vector, otherEdges []int) *runOff {
 	best, bd := -1, math.Inf(1)
 	for i, pts := range others {
@@ -76,14 +83,18 @@ func (t *Topology) offInto(off *runOff, p, n geom.Vector, others [][]geom.Vector
 	side := off.sides[s]
 	if side == nil {
 		ns, ok := t.planarNormal(s)
-		if !ok || math.Abs(ns.Dot(n)) > 1e-9 || len(t.Faces[s].Loops) != 1 {
+		if !ok {
+			return nil
+		}
+		along, slant, ok := slabAlong(ns, n)
+		if !ok {
 			return nil
 		}
 		poly, ok := t.straightOutline(s)
 		if !ok {
 			return nil
 		}
-		side = &runOffSide{p0: poly[0], n: ns, poly: poly, past: math.Inf(-1), surf: t.Surface(s)}
+		side = &runOffSide{p0: poly[0], n: ns, poly: poly, past: math.Inf(-1), surf: t.Surface(s), along: along, slant: slant}
 		off.sides[s] = side
 	}
 	side.past = math.Max(side.past, p.Minus(side.p0).Dot(side.n))
@@ -212,6 +223,13 @@ func sidesPast(picks []FilletPick, off *runOff, within func(float64) bool) (floa
 			return 0, false
 		}
 	}
+	for _, s := range off.sides {
+		// Past a leaning side the foot moves with the size along the
+		// face, not along the side's normal.
+		if s.slant {
+			return 0, false
+		}
+	}
 	var past float64
 	found := false
 	for _, s := range off.sides {
@@ -276,7 +294,7 @@ func widenedFillet(sh *srf.SShell, picks []FilletPick, r float64, origin uint32,
 	for _, s := range off.sides {
 		depth := math.Max(s.past, 0) + r + 1
 		var slab srf.SShell
-		slab.MakePrism(s.poly, geom.Vector{}, s.n.ScaledBy(depth), off.color)
+		slab.MakePrism(s.poly, geom.Vector{}, s.along.ScaledBy(depth/s.along.Dot(s.n)), off.color)
 		var u srf.SShell
 		u.MakeFromUnionOf(&wide, &slab)
 		// The slab's top merges with the face the fillet rolls on, so
@@ -301,26 +319,37 @@ func widenedFillet(sh *srf.SShell, picks []FilletPick, r float64, origin uint32,
 	if unsound(&out) {
 		return srf.SShell{}, false
 	}
-	return out, true
+	return keepBeyond(&out, sh, off, r)
 }
 
 // cutBeyond is the box that cuts the widened solid back to side s's
 // plane: from the plane outward past the slab of depth, across the
 // side's breadth and from below it to above the face the fillet rolls
 // on by more than the fillet's size r. Its faces take the side's
-// colour and identity, so the cut on the plane is the side again. It
-// is refused where any of the solid sh lies in it.
+// colour and identity, so the cut on the plane is the side again.
+// Where any of the solid sh lies in it, the box is cut by sh first, so
+// that what goes on past the side stays (beyondCutter).
 func cutBeyond(s *runOffSide, off *runOff, depth, r float64, sh *srf.SShell) (srf.SShell, bool) {
 	up := off.n
+	if s.slant {
+		var reach float64
+		up, reach = slantUp(s, off.n, r)
+		r = reach
+	}
 	across := s.n.Cross(up)
 	lo, hi := [2]float64{math.Inf(1), math.Inf(1)}, [2]float64{math.Inf(-1), math.Inf(-1)}
-	for _, q := range s.poly {
+	for _, q := range slabCorners(s, depth) {
 		for i, a := range []geom.Vector{across, up} {
 			lo[i] = math.Min(lo[i], q.Dot(a))
 			hi[i] = math.Max(hi[i], q.Dot(a))
 		}
 	}
-	hi[1] = math.Max(hi[1], off.at.Dot(up)+r)
+	if s.slant {
+		// The side's top is its edge on the face, the highest of it.
+		hi[1] += r
+	} else {
+		hi[1] = math.Max(hi[1], off.at.Dot(up)+r)
+	}
 	for i := range 2 {
 		lo[i]--
 		hi[i]++
@@ -336,9 +365,11 @@ func cutBeyond(s *runOffSide, off *runOff, depth, r float64, sh *srf.SShell) (sr
 		a, b := p.Dot(across), p.Dot(up)
 		return d > 10*geom.LengthEps && d < far && a > lo[0] && a < hi[0] && b > lo[1] && b < hi[1]
 	}
+	beyond := false
 	for _, tr := range m.Triangles {
 		if in(tr.A) || in(tr.B) || in(tr.C) || in(tr.A.Plus(tr.B).Plus(tr.C).ScaledBy(1.0/3)) {
-			return srf.SShell{}, false
+			beyond = true
+			break
 		}
 	}
 	var box srf.SShell
@@ -348,6 +379,9 @@ func cutBeyond(s *runOffSide, off *runOff, depth, r float64, sh *srf.SShell) (sr
 		box.Surface[i].Face = s.surf.Face
 		box.Surface[i].Origin = s.surf.Origin
 		box.Surface[i].Sheet = s.surf.Sheet
+	}
+	if beyond {
+		return beyondCutter(&box, sh)
 	}
 	return box, true
 }

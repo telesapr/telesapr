@@ -10,9 +10,7 @@ menu File|Open...
 view default
 answer ok
 menu Features|Loft To Selected Profile
-move 300 400
-down L 300 400
-up L 300 400
+click-entity 50000
 menu Features|Loft To Selected Profile
 dump
 tw

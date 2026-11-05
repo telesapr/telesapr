@@ -11,9 +11,7 @@ down L 380 330
 up L 380 330
 key esc
 key x shift
-move 382.5 232.5
-down L 382.5 232.5
-up L 382.5 232.5
+click-entity 80030004
 answer ok
 menu Features|Mirror
 key esc

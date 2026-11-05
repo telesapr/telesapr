@@ -5,7 +5,5 @@ file $testdata/topo/frustum.tlspr
 menu File|Open...
 view rotated
 menu View|Zoom To Fit
-move 407.6 295.8
-down L 407.6 295.8
-up L 407.6 295.8
+click-entity 80040022
 menu Features|Fillet Edges

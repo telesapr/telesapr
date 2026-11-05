@@ -63,6 +63,9 @@ browser beside it 600×600. Coordinates are pixels from the window's top left.
 | `menu Features\|Fillet Edges` | A menu entry, by its labels |
 | `move X Y`, `down L X Y`, `up L X Y`, `dbl L X Y`, `scroll X Y D` | The mouse in the graphics window (buttons L M R) |
 | `twmove`, `twdown`, `twup` … | The same in the property browser |
+| `click-entity NAME [shift] [ctrl] [right]`, `move-entity NAME` | Clicks a sketch entity, or moves the pointer over it, wherever the view draws it: NAME is its handle in hex, as `dump` prints it, or its name |
+| `click-edge NAME …`, `click-face NAME …`, `move-edge`, `move-face` | The same for an edge or a face of the active group's solid, by the name the interface gives it ("top face of g003-block") |
+| `click-tw [#N] TEXT` | Clicks the property browser's link showing TEXT, the Nth when several do |
 | `click-entity NAME [shift] [ctrl] [right]`, `move-entity NAME` | Clicks (or only points at) an entity by its handle as `dump` prints it (`40000`) or by its name as the interface shows it (`r005-arc-of-circle of g003-path`), wherever the view puts it: four tenths along a line or a curve, or beside it where a point or another line lies on top. Prints `entity missing` or `entity unpicked` when it can't. `right` clicks the right button, for a context menu. Prefer it to `move`/`down`/`up` with coordinates, which break when the layout moves |
 | `click-edge NAME [shift] [ctrl] [right]`, `move-edge NAME` | Clicks (or points at) an edge of the active group's solid that no entity draws, as a Boolean or a fillet makes, by its name as the interface writes it (`the edge between face 0 of g004-fillet and top face of g003-extrude`), wherever the view puts it. Prints `edge missing` or `edge unpicked` when it can't |
 | `click-face NAME [shift] [ctrl] [right]`, `move-face NAME` | The same for a face: an entity's (`top face of g003-extrude`) or one no entity names (`face 4 of g003-lathe`), at the middle of its largest triangle on the screen that picks it. Prints `face missing` or `face unpicked` |
@@ -100,4 +103,8 @@ drawing: after drawing something, `answer no` and `menu File|New` first.
 - A click within 10 pixels of a line, a point or a label picks that before the face under it,
   but not a line or a point the solid hides: there the face in front is picked. A reference
   plane's dashed square crosses most views. Check picks with `hover` before relying on them.
+- Click what is there by name (`click-entity`, `click-edge`, `click-face`, `click-tw`): the step
+  keeps working when the view or the layout moves. Coordinates stay where the place itself is
+  the point: drawing (a command pending places a point where the pointer is), dragging, a
+  constraint's label, empty space, and a click whose pointer a picture or a video shows.
 - Look at every picture before using it on a page.

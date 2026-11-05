@@ -15,9 +15,7 @@ move 330 400
 down L 330 400
 up L 330 400
 key esc
-move 300 225
-down L 300 225
-up L 300 225
+click-entity 40000
 key h
 key esc
 dump

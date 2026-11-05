@@ -10,7 +10,5 @@ down L 340 265
 up L 340 265
 key esc
 key x shift
-move 340 265
-down L 340 265
-up L 340 265
+click-entity 80030005
 menu Features|Fillet Edges

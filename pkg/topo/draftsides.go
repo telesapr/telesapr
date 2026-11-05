@@ -336,11 +336,8 @@ func draftArcSides(p, moved profilePiece, ta, tb geom.Vector, start, end []srf.S
 	if qb-qa < 1e-9 {
 		return nil, nil, nil, shellErr(p.a, "the draft takes an arc of the profile away at the far end")
 	}
-	parts := quarters(hi - lo)
-	bounds := make([]float64, parts+1)
-	for j := range bounds {
-		bounds[j] = lo + (hi-lo)*float64(j)/float64(parts)
-	}
+	bounds := arcPartBounds(lo, hi, pa, pb)
+	parts := len(bounds) - 1
 	rb, rt := p.r, moved.r
 	var faces []draftFace
 	var bottom, top []srf.SBezier
@@ -680,4 +677,31 @@ func bernstein(n, j int, t float64) float64 {
 		c = c * float64(n-j+k) / float64(k)
 	}
 	return c * math.Pow(t, float64(j)) * math.Pow(1-t, float64(n-j))
+}
+
+// arcPartBounds are the turns where an arc's drafted side is cut into
+// patches, from lo to hi, the profile's own arc running from pa to pb
+// within them: cut where the profile's arc is cut into its quarters,
+// the first and last parts running on to lo and hi (under half a turn
+// for any draft a profile takes), so that the cuts on the profile's
+// plane don't depend on how far the far end's corners move round it. A
+// two-sided draft is two prisms from that plane, of unlike lengths;
+// cut from lo to hi alike, the two halves' patches along their shared
+// crease parted at unlike turns, and the Boolean joining them, a shell's
+// inside, failed (the lobed block at 10°, crease_seam_test.go).
+func arcPartBounds(lo, hi, pa, pb float64) []float64 {
+	if lo == pa && hi == pb {
+		parts := quarters(hi - lo)
+		bounds := make([]float64, parts+1)
+		for j := range bounds {
+			bounds[j] = lo + (hi-lo)*float64(j)/float64(parts)
+		}
+		return bounds
+	}
+	parts := quarters(pb - pa)
+	bounds := []float64{lo}
+	for j := 1; j < parts; j++ {
+		bounds = append(bounds, pa+(pb-pa)*float64(j)/float64(parts))
+	}
+	return append(bounds, hi)
 }

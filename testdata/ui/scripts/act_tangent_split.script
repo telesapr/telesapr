@@ -34,12 +34,8 @@ move 450 350
 down L 450 350
 up L 450 350
 key esc
-move 380 380
-down L 380 380
-up L 380 380
-move 380 420
-down L 380 420
-up L 380 420
+click-entity 60000
+click-entity 70000
 key i
 dump
 save

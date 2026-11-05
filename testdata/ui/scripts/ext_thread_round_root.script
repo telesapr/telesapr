@@ -27,9 +27,7 @@ twmove 110 295
 twdown L 110 295
 twup L 110 295
 edit 0.02
-move 350 300
-down L 350 300
-up L 350 300
+click-entity 80030005
 menu Features|Screw Thread...
 twmove 172 110
 twdown L 172 110

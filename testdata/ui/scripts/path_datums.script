@@ -9,9 +9,7 @@ move 380 330
 down L 380 330
 up L 380 330
 key esc
-move 200 200
-down L 200 200
-up L 200 200
+click-entity 70002
 menu Edit|Datums...
 tw
 twmove 78 130

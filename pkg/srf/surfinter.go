@@ -527,9 +527,14 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 		}
 	}
 
+	// Where the operands are known to touch tangent, every branch ends,
+	// and a seed there is none. A seed left alone is marched there too.
+	sinks := s.touchSinks(b, agnstA, agnstB)
+	spl.Points = dropSeedsAt(spl.Points, sinks, s.Tol.ChordTolMm()/100)
+
 	// The seeds a march went on from, each once.
 	var passed []geom.Vector
-	for len(spl.Points) >= 2 {
+	for len(spl.Points) >= 2 || len(spl.Points) == 1 && len(sinks) > 0 {
 		sc := SCurve{
 			SurfA:   s.H,
 			SurfB:   b.H,
@@ -543,7 +548,7 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 		maxtol := s.Tol.ChordTolMm()
 
 		var reached bool
-		sc.Points, reached = s.marchFrom(b, start, startv, spl.Points, false)
+		sc.Points, reached = s.marchFrom(b, start, startv, spl.Points, sinks, false)
 		if !reached && slices.Contains(passed, start) {
 			// The rest of a curve past a seed it went on from is kept only
 			// where it reaches another seed: a curve that ended there after
@@ -558,7 +563,7 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 			// the march went off along the surfaces' extensions past the
 			// edge and found no seed. It is marched again the other way,
 			// and kept only if that reaches a seed on both patches.
-			if back, ok := s.marchFrom(b, start, startv, spl.Points, true); ok && marchOnBothPatches(s, b, back, maxtol) {
+			if back, ok := s.marchFrom(b, start, startv, spl.Points, sinks, true); ok && marchOnBothPatches(s, b, back, maxtol) {
 				sc.Points = back
 			}
 		}
@@ -616,9 +621,10 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 // marchFrom marches along the curve where s meets b from start, a seed
 // whose edge has the normal startv within its surface, into the side
 // that normal points away from (or, back, towards), until it reaches
-// one of seeds or has taken as many steps as the tolerance allows. It
-// tags the seeds it reached, and tells whether it reached any.
-func (s *SSurface) marchFrom(b *SSurface, start, startv geom.Vector, seeds []SPoint, back bool) ([]SCurvePt, bool) {
+// one of seeds or a sink, or has taken as many steps as the tolerance
+// allows. It tags the seeds it reached, and tells whether it reached
+// any or a sink.
+func (s *SSurface) marchFrom(b *SSurface, start, startv geom.Vector, seeds []SPoint, sinks []geom.Vector, back bool) ([]SCurvePt, bool) {
 	for k := range seeds {
 		seeds[k].Tag = 0
 	}
@@ -683,6 +689,11 @@ func (s *SSurface) marchFrom(b *SSurface, start, startv geom.Vector, seeds []SPo
 				(near < 0 || sp.P.Minus(start).Magnitude() < seeds[near].P.Minus(start).Magnitude()) {
 				near = k
 			}
+		}
+		if q, ok := atSink(sinks, start, npc, 2*maxtol); ok && near < 0 {
+			a = maxsteps
+			npc = q
+			reached = true
 		}
 		if near >= 0 {
 			end := seeds[near].P

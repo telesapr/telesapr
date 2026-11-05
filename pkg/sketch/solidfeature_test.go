@@ -604,6 +604,14 @@ func TestSolidGoldens(t *testing.T) {
 			}
 			d.Features.ShellSolid([]api.SolidFace{b.Solid().FaceAt(api.V(12, y, 10))}, 1, "")
 		},
+		"shell-draft-hollow": func(d *api.Doc) {
+			// A crescent drafted 3°, open at the lobe in its hollow: the
+			// hollow's wall stops short of the inside corners, the inside
+			// following the hollow's circle outside it.
+			cr := crescent{rc: 6, rl: 2}
+			ex := cr.draw(d, 3)
+			d.Features.ShellSolid(cr.lobe(ex, math.Tan(3*math.Pi/180)), 1, "")
+		},
 		"shell-revolve": func(d *api.Doc) {
 			// A rectangle off the axis revolved a quarter turn, open at its
 			// outer side, its ends kept.

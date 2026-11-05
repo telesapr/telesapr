@@ -67,6 +67,11 @@ type rbRunOff struct {
 	// two next faces' planes meet across the fillet, in place of p2.
 	consumed bool
 	r, x     geom.Vector
+	// tangent marks a curved next face replaced by its tangent plane
+	// along its edge with side j's face (rollingrunoff_tangent.go): the
+	// plane is np, nd, ns is nil, and the fillet's end goes on a new
+	// flat face there.
+	tangent bool
 }
 
 // runOffSliver is, in chord tolerances, how near w the end section
@@ -193,6 +198,7 @@ func bezierRoot(sb *srf.SBezier, h func(geom.Vector) float64, a, b float64) floa
 // contact curve (p2), and splits the next face's edges with the end face
 // and with side j's face there.
 func (rb *rollingBall) runOffCuts(sh *srf.SShell, row []srf.SSurface, k int, ro *rbRunOff) error {
+	rb.tangentIfPast(row, k, ro)
 	if err := rb.runOffCross(sh, row, k, ro); err != nil {
 		return err
 	}
@@ -713,7 +719,13 @@ func (rb *rollingBall) closeRunOff(sh *srf.SShell, cut rbEndCut, endSec srf.SBez
 	if ro.consumed {
 		gap, fill = ro.r, append([]srf.SBezier{srf.SBezierFrom2(ro.r, ro.x)}, across...)
 	}
-	if _, err := put(ro.n, [][2]geom.Vector{{w, gap}}, fill, gap, ro.p1); err != nil {
+	if ro.tangent {
+		// The next face is the tangent plane's new face, put in with the
+		// fillet's patches: its outline is kept for then.
+		if err := rb.keepTangentFace(ro, across); err != nil {
+			return err
+		}
+	} else if _, err := put(ro.n, [][2]geom.Vector{{w, gap}}, fill, gap, ro.p1); err != nil {
 		return err
 	}
 	if ro.p1.Equals(w) {
@@ -721,7 +733,11 @@ func (rb *rollingBall) closeRunOff(sh *srf.SShell, cut rbEndCut, endSec srf.SBez
 	}
 	// The edge from p1 to w, the end face's and the next face's: the end
 	// face runs it on from the end section, the next face the other way.
-	es, ns := sh.FindSurface(t.Faces[cut.end.f].Surface), sh.FindSurface(t.Faces[ro.n].Surface)
+	es := sh.FindSurface(t.Faces[cut.end.f].Surface)
+	ns = nil
+	if !ro.tangent {
+		ns = sh.FindSurface(t.Faces[ro.n].Surface)
+	}
 	if !got[len(got)-1].sb.Finish().Equals(ro.p1) {
 		slices.Reverse(shared)
 		for i := range shared {
@@ -729,12 +745,18 @@ func (rb *rollingBall) closeRunOff(sh *srf.SShell, cut rbEndCut, endSec srf.SBez
 		}
 	}
 	for _, sb := range shared {
+		if ns == nil {
+			add(es, sb, core.HSSurface{})
+			continue
+		}
 		lh := add(es, sb, ns.H)
 		ns.Trim = append(ns.Trim, srf.STrimBy{Curve: lh, StartP: sb.Finish(), FinishP: sb.Start(), Start: 0, Finish: 1,
 			Backwards: true})
 	}
 	forget(es)
-	forget(ns)
+	if ns != nil {
+		forget(ns)
+	}
 	return nil
 }
 

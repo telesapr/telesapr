@@ -18,14 +18,8 @@ move 300 350
 down L 300 350
 up L 300 350
 key esc
-move 300 250
-down L 300 250
-up L 300 250
+click-entity 80000
 key g
-move 300 150
-down L 300 150
-up L 300 150
-move 300 250
-down L 300 250 shift
-up L 300 250 shift
+click-entity 80001
+click-entity 80000 shift
 menu Features|Lathe

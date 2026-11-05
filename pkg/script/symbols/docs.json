@@ -11328,7 +11328,7 @@
 					},
 					"RewriteSurfaceHandlesForCurves": {
 						"decl": "func (s *SShell) RewriteSurfaceHandlesForCurves(a, b *SShell)",
-						"text": "RewriteSurfaceHandlesForCurves points every curve's SurfA/SurfB at the new handles of its surfaces in s."
+						"text": "RewriteSurfaceHandlesForCurves points every curve's SurfA/SurfB at the new handles of its surfaces in s, and at none where its operand no longer has the surface (dropUntrimmed took it, as a cap that cancelled against a face of the other operand): s numbers its surfaces afresh, so the old handle would name another surface of s."
 					},
 					"SetTolerance": {
 						"decl": "func (s *SShell) SetTolerance(t Tolerance)",
