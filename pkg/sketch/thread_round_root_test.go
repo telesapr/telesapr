@@ -11,7 +11,7 @@ import (
 )
 
 // roundRootCases are B1.9 threads with rounded roots, screws and nuts,
-// flat and rounded crests, screws chamfered or not, from 1/2-20 to 4-4.
+// flat and rounded crests, chamfered or not, from 1/2-20 to 4-4.
 func roundRootCases() []threadCase {
 	var cases []threadCase
 	for _, s := range []struct {
@@ -27,11 +27,14 @@ func roundRootCases() []threadCase {
 			screw.Length = 25
 			chamfered.Length, chamfered.Chamfer = 25, true
 			nut.Length, nut.Through, nut.Internal = 15, true, true
+			chamferedNut := nut
+			chamferedNut.Chamfer = true
 			name := fmt.Sprintf("%s %v", s.designation, crest)
 			cases = append(cases,
 				threadCase{name + " screw", s.d / 2, 40, s.designation, screw},
 				threadCase{name + " chamfered screw", s.d / 2, 40, s.designation, chamfered},
-				threadCase{name + " nut", 0.8 * s.d, 15, s.designation, nut})
+				threadCase{name + " nut", 0.8 * s.d, 15, s.designation, nut},
+				threadCase{name + " chamfered nut", 0.8 * s.d, 15, s.designation, chamferedNut})
 		}
 	}
 	return cases
@@ -44,8 +47,12 @@ func roundRootCases() []threadCase {
 // solid at the thread's. Before 2026-11-04 a rounded root was refused
 // coarser than a fifth of its radius, and with only the thread's groups
 // at the finer tolerance the screws came out with edges open along the
-// root. An even sample by default, the whole grid (240 threads) with
-// TELESAPR_SWEEP=1.
+// root. Chamfered nuts of a lead under about 2° (1/2-20, 1-12, 4-4)
+// came out crossing themselves at every tolerance until their boring's
+// cone was made shallower (turnSlope); a chamfered 2-8 nut until its
+// ridges were tried a tenth of a pitch further past the ends (the last
+// of chamferTries). An even sample by default, the whole grid (320
+// threads) with TELESAPR_SWEEP=1.
 func TestThreadRoundRootSweep(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {

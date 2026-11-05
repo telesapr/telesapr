@@ -278,6 +278,11 @@ func (tw *textWindow) ShowListOfGroups() {
 		if g.Suppress || g.SuppressedBy.V != 0 {
 			fgName = 'g'
 		}
+		// A group whose solid came out other than it asks (Group.Note)
+		// is marked, as one with a problem is coloured.
+		if g.Note != "" && g.Problem.Msg == "" {
+			suffix += " (note)"
+		}
 		// A group left out says so, and what left it out.
 		switch {
 		case g.SuppressedBy == g.H:
@@ -1119,6 +1124,11 @@ func (tw *textWindow) ShowGroupInfo() {
 		default:
 			tw.Printf(false, "%FxThe group adds no solid: %s.%E", g.Problem.Msg)
 		}
+	}
+
+	if g.Note != "" && g.Problem.Msg == "" {
+		tw.Printf(false, "")
+		tw.Printf(false, "%FdNote: %s.%E", g.Note)
 	}
 
 	if g.BooleanFailed {

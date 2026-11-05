@@ -151,7 +151,7 @@ func (sk *Sketch) ApplyLate(j *ShellJob) bool {
 		// The job's copy is let go: its solids are moved, not copied.
 		g.ThisShell, g.RunningShell = c.ThisShell, c.RunningShell
 		g.ThisMesh, g.RunningMesh = c.ThisMesh, c.RunningMesh
-		g.BooleanFailed, g.Problem = c.BooleanFailed, c.Problem
+		g.BooleanFailed, g.Problem, g.Note = c.BooleanFailed, c.Problem, c.Note
 		g.solidTol, g.fittedPath, g.sweepClosed = c.solidTol, c.fittedPath, c.sweepClosed
 		g.sweepRuns = c.sweepRuns
 		g.solidKey = c.solidKey

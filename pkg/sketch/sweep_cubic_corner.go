@@ -332,6 +332,9 @@ func (sr *sweepRuns) sweepRunsJoined(sbls *srf.SBezierLoopSetSet, color core.RGB
 func (g *Group) generateRunsSweepShell(sk *Sketch, src *Group, start, end uint32) {
 	prof := g.sweepProfile(src)
 	sr := g.sweepRuns
+	for _, run := range sr.runs {
+		defer sk.lendPathPace(run)()
+	}
 	sh, err := sr.sweepRunsJoined(prof, g.Color, start, end, srf.OriginFor(g.H.V, 0), sk.tol)
 	if err == nil && sh == nil {
 		err = &srf.CornerError{At: sr.turns[0].Center, Err: srf.ErrCornerNoJoint}

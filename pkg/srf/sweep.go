@@ -290,6 +290,7 @@ func (s *SShell) makeFromSweepOf(sbls *SBezierLoopSet, steps []SweepStep, color 
 		// srfs[k][i] is the surface curve i sweeps along piece k.
 		srfs := make([][]core.HSSurface, len(steps))
 		for k, st := range steps {
+			s.paced()
 			srfs[k] = make([]core.HSSurface, nc)
 			from := len(s.Surface)
 			for i := range loop.Curves {

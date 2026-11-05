@@ -65,6 +65,12 @@ func inPolygon(p [2]float64, poly [][2]float64) bool {
 func wallMoment(pts [][2]float64, arcs map[int][2]float64, open [][2]float64, thick, h float64) float64 {
 	poly := meridianPolygon(pts, arcs)
 	var bands []bandPiece
+	// ring is every piece of the profile in order, faces or not.
+	type ringPiece struct {
+		bp         bandPiece
+		open, face bool
+	}
+	var ring []ringPiece
 	onPiece := func(bp bandPiece, p [2]float64) bool {
 		if !bp.arc {
 			dx, dy := bp.b[0]-bp.a[0], bp.b[1]-bp.a[1]
@@ -78,6 +84,7 @@ func wallMoment(pts [][2]float64, arcs map[int][2]float64, open [][2]float64, th
 	for i, p := range pts {
 		q := pts[(i+1)%len(pts)]
 		if p[0] == 0 && q[0] == 0 {
+			ring = append(ring, ringPiece{bandPiece{a: p, b: q}, false, false})
 			continue
 		}
 		bp := bandPiece{a: p, b: q}
@@ -106,6 +113,65 @@ func wallMoment(pts [][2]float64, arcs map[int][2]float64, open [][2]float64, th
 		}
 		if !isOpen {
 			bands = append(bands, bp)
+		}
+		ring = append(ring, ringPiece{bp, isOpen, true})
+	}
+	// Corners between pieces, each a line where it matters: where two
+	// faces kept meet at an inside corner (the material's angle more than
+	// a half turn), the walls' inner faces run on to meet, holding the
+	// quadrilateral between the walls' ends and where they meet; where a face kept
+	// meets one taken away at an outside corner, its wall runs on past
+	// its end, under the face taken away.
+	var extra []func([2]float64) bool
+	for i, cur := range ring {
+		prev := ring[(i+len(ring)-1)%len(ring)]
+		if !prev.face || !cur.face {
+			continue
+		}
+		c := cur.bp.a
+		var d2 [2]float64
+		if cur.bp.arc {
+			a0 := math.Atan2(c[1]-cur.bp.centre[1], c[0]-cur.bp.centre[0])
+			r := math.Hypot(c[0]-cur.bp.centre[0], c[1]-cur.bp.centre[1])
+			a1 := math.Atan2(cur.bp.b[1]-cur.bp.centre[1], cur.bp.b[0]-cur.bp.centre[0])
+			am := a0 + math.Remainder(a1-a0, 2*math.Pi)*1e-3
+			d2 = [2]float64{cur.bp.centre[0] + r*math.Cos(am) - c[0], cur.bp.centre[1] + r*math.Sin(am) - c[1]}
+		} else {
+			d2 = [2]float64{cur.bp.b[0] - c[0], cur.bp.b[1] - c[1]}
+		}
+		if prev.bp.arc {
+			continue
+		}
+		in1 := prev.bp.into
+		inside := d2[0]*in1[0]+d2[1]*in1[1] < 0
+		dot := func(p [2]float64, u [2]float64) float64 { return (p[0]-c[0])*u[0] + (p[1]-c[1])*u[1] }
+		switch {
+		case inside && !prev.open && !cur.open && !cur.bp.arc:
+			// The quadrilateral between the two walls' ends at c and the
+			// point q where their inner faces meet.
+			in2 := cur.bp.into
+			det := in1[0]*in2[1] - in1[1]*in2[0]
+			q := [2]float64{c[0] + thick*(in2[1]-in1[1])/det, c[1] + thick*(in1[0]-in2[0])/det}
+			quad := [][2]float64{c, {c[0] + thick*in1[0], c[1] + thick*in1[1]}, q, {c[0] + thick*in2[0], c[1] + thick*in2[1]}}
+			extra = append(extra, func(p [2]float64) bool { return inPolygon(p, quad) })
+		case !inside && !prev.open && cur.open:
+			// prev runs into c: past its end, along its direction.
+			dir := [2]float64{c[0] - prev.bp.a[0], c[1] - prev.bp.a[1]}
+			l := math.Hypot(dir[0], dir[1])
+			dir = [2]float64{dir[0] / l, dir[1] / l}
+			extra = append(extra, func(p [2]float64) bool {
+				s, d := dot(p, dir), dot(p, in1)
+				return s >= 0 && s <= 3*thick && d >= 0 && d <= thick
+			})
+		case !inside && prev.open && !cur.open && !cur.bp.arc:
+			// cur runs out of c: before its start, against its direction.
+			in2 := cur.bp.into
+			l := math.Hypot(d2[0], d2[1])
+			back := [2]float64{-d2[0] / l, -d2[1] / l}
+			extra = append(extra, func(p [2]float64) bool {
+				s, d := dot(p, back), dot(p, in2)
+				return s >= 0 && s <= 3*thick && d >= 0 && d <= thick
+			})
 		}
 	}
 	inBand := func(bp bandPiece, p [2]float64) bool {
@@ -143,13 +209,20 @@ func wallMoment(pts [][2]float64, arcs map[int][2]float64, open [][2]float64, th
 	for r := lo[0] + h/2; r < hi[0]; r += h {
 		for z := lo[1] + h/2; z < hi[1]; z += h {
 			p := [2]float64{r, z}
+			in := false
 			for _, bp := range bands {
 				if inBand(bp, p) {
-					if inPolygon(p, poly) {
-						m += r * h * h
-					}
+					in = true
 					break
 				}
+			}
+			for _, e := range extra {
+				if !in && e(p) {
+					in = true
+				}
+			}
+			if in && inPolygon(p, poly) {
+				m += r * h * h
 			}
 		}
 	}
@@ -233,9 +306,76 @@ func TestShellRevolvedInsideCornerSloping(t *testing.T) {
 	}
 }
 
+// Where the solid comes back within the thickness outside a curved face
+// taken away, as across a slot narrower than the thickness, the run-out
+// past the face is shortened to clear it; and where two curved faces
+// taken away meet at an inside corner, both run out and their moved
+// pieces meet outside the corner. The volume is Pappus's over the wall,
+// measured apart from the shell (wallMoment).
+func TestShellRevolvedInsideCornerRunOut(t *testing.T) {
+	t.Parallel()
+	fine := srf.Tol(0.002, 20)
+	type shellCase struct {
+		name string
+		pts  [][2]float64
+		arcs map[int][2]float64
+		open [][2]float64
+	}
+	var cases []shellCase
+	// A slot of width w beside a cylinder of radius 6 taken away, from
+	// z 5 to the top of the outside part at 8, its bottom flat or a cone
+	// rising to the slot's far side.
+	for _, w := range []float64{0.3, 0.5, 0.8} {
+		cases = append(cases,
+			shellCase{fmt.Sprintf("a slot %g wide, flat", w),
+				[][2]float64{{0, 0}, {10, 0}, {10, 8}, {6 + w, 8}, {6 + w, 5}, {6, 5}, {6, 10}, {0, 10}}, nil,
+				[][2]float64{{6, 8}, {3, 10}}},
+			shellCase{fmt.Sprintf("a slot %g wide, a cone", w),
+				[][2]float64{{0, 0}, {10, 0}, {10, 8}, {6 + w, 8}, {6 + w, 5 + w}, {6, 5}, {6, 10}, {0, 10}}, nil,
+				[][2]float64{{6, 8}, {3, 10}}})
+	}
+	// A cylinder on a cone, both taken away, and on a cove.
+	for _, h1 := range []float64{2, 3.5} {
+		cases = append(cases, shellCase{fmt.Sprintf("a cylinder on a cone from %g, both open", h1),
+			[][2]float64{{0, 0}, {10, 0}, {10, h1}, {6, 5}, {6, 10}, {0, 10}}, nil,
+			[][2]float64{{6, 8}, {8, (h1 + 5) / 2}, {3, 10}}})
+	}
+	cases = append(cases, shellCase{"a cylinder on a cove, both open",
+		[][2]float64{{0, 0}, {10, 0}, {10, 3}, {6, 5}, {6, 10}, {0, 10}},
+		map[int][2]float64{2: {9.5, 7}}, [][2]float64{{6, 8}, {9.5 - math.Sqrt(0.25+16)*math.Cos(0.6), 7 - math.Sqrt(0.25+16)*math.Sin(0.6)}, {3, 10}}})
+	if testing.Short() {
+		cases = cases[:2]
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			sh, rev := turned(meridian(t, c.pts, c.arcs, fine), 0, 2*math.Pi, fine)
+			tp := build(t, sh)
+			var open []int
+			for _, rz := range c.open {
+				for k := range 4 {
+					a := math.Pi/4 + float64(k)*math.Pi/2
+					f, d := tp.FaceAt(v(rz[0]*math.Cos(a), rz[0]*math.Sin(a), rz[1]))
+					if f < 0 || d > 1e-6 {
+						t.Fatalf("no face at %v", rz)
+					}
+					open = append(open, f)
+				}
+			}
+			out, err := topo.ShellRevolved(sh, rev, open, 1, 1<<30)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := 2 * math.Pi * wallMoment(c.pts, c.arcs, c.open, 1, 0.005)
+			if got := sound(t, out); math.Abs(got-want) > 0.003*want {
+				t.Errorf("volume %g, want %g", got, want)
+			}
+		})
+	}
+}
+
 // Where the face beside the inside corner is so steep that the way out
-// of the corner runs back through the solid, or the step is narrower
-// than the run-out: refused, saying so.
+// of the corner runs back through the solid, refused, saying so.
 func TestShellRevolvedInsideCornerRefused(t *testing.T) {
 	t.Parallel()
 	refused := func(name string, pts [][2]float64, at [2]float64, says string) {
@@ -252,11 +392,8 @@ func TestShellRevolvedInsideCornerRefused(t *testing.T) {
 			t.Errorf("%s: %v", name, err)
 		}
 	}
-	// A step 0.5 wide, then a second rise: the run-out by the thickness,
-	// 1, would cut into the rise.
-	refused("beside a narrow step", [][2]float64{{0, 0}, {10, 0}, {10, 8}, {6.5, 8}, {6.5, 5}, {6, 5}, {6, 10}, {0, 10}},
-		[2]float64{6, 8}, "narrower")
-	// A cone 0.5 wide sloping up to a second rise.
-	refused("beside a narrow cone", [][2]float64{{0, 0}, {10, 0}, {10, 8}, {6.5, 8}, {6.5, 5.5}, {6, 5}, {6, 10}, {0, 10}},
-		[2]float64{6, 8}, "cut into the solid")
+	// A slot a twentieth of the thickness wide: no run-out the shell
+	// tries clears it.
+	refused("beside a slot too narrow", [][2]float64{{0, 0}, {10, 0}, {10, 8}, {6.05, 8}, {6.05, 5}, {6, 5}, {6, 10}, {0, 10}},
+		[2]float64{6, 8}, "nearer than an eighth")
 }

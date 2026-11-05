@@ -42,7 +42,7 @@ func TestSmoothLoftThrough(t *testing.T) {
 			}
 		}
 		sh, err := topo.MakeSmoothLoftThrough(loops, 0, ends, topo.LoftSides{}, []float64{1},
-			core.NewRGBA(1, 1, 1, 255), 1<<30, srf.Tol(0.002, 30))
+			core.NewRGBA(1, 1, 1, 255), 1<<30, srf.Tol(0.002, 30), nil)
 		if err != nil {
 			t.Fatal(err)
 		}

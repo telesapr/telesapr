@@ -117,8 +117,9 @@ round bar up a shank and round a bend that leaves it at a right angle.
 A corner too sharp for that, where for some points of the profile the line's side passes
 outside the arc's so the two never cross (a bar 2 wide round an arc of radius 12 at a corner of
 150°), is made another way: the line and the arc are swept each on its own, up to the corner,
-and the outside of the turn is filled by where the two, carried on past the corner, overlap,
-all joined into one solid. Round a closed path the same is done, the sweep going round from the
+and the outside of the turn is filled by where the two, carried on past the corner, overlap
+there, all joined into one solid (where an arc carried on comes back over the line far from the
+corner, that overlap is left out). Round a closed path the same is done, the sweep going round from the
 profile and back to it. Where the arc turns away from that overlap, it runs on as far as the
 pieces are carried: their outer sides never meet, and the corner is a problem on the group.
 

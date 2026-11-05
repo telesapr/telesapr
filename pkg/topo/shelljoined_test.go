@@ -145,7 +145,7 @@ func TestShellDraftedCone(t *testing.T) {
 		t.Fatal(err)
 	}
 	top := facesAt(t, sh, v(0, 0, 10))
-	out, err := topo.ShellDrafted(sh, d, top, 1, 1000)
+	out, _, err := topo.ShellDrafted(sh, d, top, 1, 1000)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,13 +155,13 @@ func TestShellDraftedCone(t *testing.T) {
 	if r := soundness(out); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
 		t.Fatalf("drafted cone: %s, want %g", r.String(), want)
 	}
-	if _, err := topo.ShellDrafted(sh, topo.DraftedSolid{}, top, 1, 1000); !errors.Is(err, topo.ErrNotDrafted) {
+	if _, _, err := topo.ShellDrafted(sh, topo.DraftedSolid{}, top, 1, 1000); !errors.Is(err, topo.ErrNotDrafted) {
 		t.Errorf("no profile: %v", err)
 	}
-	if _, err := topo.ShellDrafted(sh, d, top, -1, 1000); err == nil {
+	if _, _, err := topo.ShellDrafted(sh, d, top, -1, 1000); err == nil {
 		t.Error("a negative thickness: no error")
 	}
-	if _, err := topo.ShellDrafted(sh, d, top, 10, 1000); err == nil {
+	if _, _, err := topo.ShellDrafted(sh, d, top, 10, 1000); err == nil {
 		t.Error("walls that meet: no error")
 	}
 }

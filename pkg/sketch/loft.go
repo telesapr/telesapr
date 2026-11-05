@@ -271,9 +271,9 @@ func (g *Group) loftShell(sk *Sketch, origin uint32) (*srf.SShell, error) {
 		// held by the ends' tangencies.
 		held := append(append([]float64{g.ValB}, g.loftMiddle()...), g.ValC)
 		if len(guides) > 0 {
-			return topo.MakeClosedGuidedLoftHeld(loops, held, guides, g.Color, origin, sk.tol)
+			return topo.MakeClosedGuidedLoftHeld(loops, held, guides, g.Color, origin, sk.tol, sk.kernelPace())
 		}
-		return topo.MakeClosedLoftHeld(loops, held, g.Color, origin, sk.tol)
+		return topo.MakeClosedLoftHeld(loops, held, g.Color, origin, sk.tol, sk.kernelPace())
 	}
 	middle := g.loftMiddle()
 	if len(guides) > 0 {
@@ -281,14 +281,14 @@ func (g *Group) loftShell(sk *Sketch, origin uint32) (*srf.SShell, error) {
 		if err != nil {
 			return nil, err
 		}
-		return topo.MakeGuidedLoftThrough(loops, int(g.ValA), g.loftEnds(), sides, middle, guides, g.Color, origin, sk.tol)
+		return topo.MakeGuidedLoftThrough(loops, int(g.ValA), g.loftEnds(), sides, middle, guides, g.Color, origin, sk.tol, sk.kernelPace())
 	}
 	if ends := g.loftEnds(); len(loops) > 2 || ends != (topo.LoftEnds{}) {
 		sides, err := g.loftSides(sk, loops)
 		if err != nil {
 			return nil, err
 		}
-		return topo.MakeSmoothLoftThrough(loops, int(g.ValA), ends, sides, middle, g.Color, origin, sk.tol)
+		return topo.MakeSmoothLoftThrough(loops, int(g.ValA), ends, sides, middle, g.Color, origin, sk.tol, sk.kernelPace())
 	}
 	loops = topo.MatchCounts(loops)
 	a, b := loops[0], loops[1]

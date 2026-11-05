@@ -682,6 +682,7 @@ func (t *Topology) onFace(f int, p geom.Vector) bool {
 // onEdge is the point of both sides' faces in the plane through x
 // square to d, near x, with their normals there.
 func (rb *rollingBall) onEdge(x, d geom.Vector, nr rbNear) (geom.Vector, rbFoot, rbFoot, bool) {
+	rb.t.shell.Paced()
 	p := x
 	var a, b rbFoot
 	for range 60 {
@@ -978,6 +979,7 @@ func (rb *rollingBall) turnAt(i int) geom.Vector {
 // section is the ball at arc length s along the edge: in the plane
 // square to the edge there, touching both faces.
 func (rb *rollingBall) section(s float64) (rbSection, error) {
+	rb.t.shell.Paced()
 	if rb.flat {
 		return rb.chamferSection(s)
 	}

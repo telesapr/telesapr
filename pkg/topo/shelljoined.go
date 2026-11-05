@@ -463,7 +463,7 @@ func joinedDraftedInside(part *srf.SShell, d DraftedSolid, modeAt func(geom.Vect
 			mode[f] = opened
 		}
 	}
-	inner, err := draftedInsideOf(pt, d, func(f int) faceMode { return mode[f] }, thick, part.Tol)
+	inner, _, err := draftedInsideOf(pt, d, func(f int) faceMode { return mode[f] }, thick, part.Tol)
 	if err != nil {
 		return nil, err
 	}

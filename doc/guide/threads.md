@@ -394,9 +394,10 @@ A chamfered thread's ridges start past the end, and for a thread to the end of t
 stop past it too. They reach so far that the chamfer's cone takes their blunt ends whole. A
 ridge that crossed the part's flat end would cut off a sliver that the Boolean loses. So the
 turning or boring first cuts the end back by a cone of its own, inside the ridges' feet and
-parallel to the chamfer's cone. The chamfer then takes that cone away together with the ridges'
+parallel to the chamfer's cone (shallower, at 56° to the axis, for a nut with rounded roots,
+whose ridges' feet the 45° cone met so that fine-pitched nuts came out unsound). The chamfer then takes that cone away together with the ridges'
 ends, and no two faces lie on each other. Whether the Booleans succeed depends on where those
-cones and the ridges' ends lie. So a chamfered thread tries seven placements of the hidden cone
+cones and the ridges' ends lie. So a chamfered thread tries eight placements of the hidden cone
 and ridge ends, each at every plane for its ridges, before the window says it is not sound.
 Where the model's chord tolerance is coarser than these Booleans can take, a chamfered thread's
 groups, and a buttress nut's with or without a chamfer, are made at a tolerance of their own: a

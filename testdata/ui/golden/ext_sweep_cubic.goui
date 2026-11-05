@@ -166,7 +166,7 @@ row 65    (none)
  0-99 64 61 0
 row 67 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6, of 22 patches\nTriangles: 920\nVolume: 1.14 cm³\nCenter of mass: (8.29, 7.18, 19.38)\nExtent: 28.92 x 20.12 x 35.45
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6, of 22 patches\nTriangles: 844\nVolume: 1.14 cm³\nCenter of mass: (8.29, 7.18, 19.39)\nExtent: 28.92 x 20.12 x 35.45
 row 0  home › g005-sweep   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
@@ -326,7 +326,7 @@ row 65    (none)
  0-99 64 61 0
 row 67 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6, of 34 patches\nTriangles: 1446\nVolume: 1.14 cm³\nCenter of mass: (8.30, 7.16, 19.37)\nExtent: 28.90 x 20.73 x 35.02
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6, of 34 patches\nTriangles: 812\nVolume: 1.14 cm³\nCenter of mass: (8.30, 7.16, 19.37)\nExtent: 28.90 x 20.73 x 35.02
 dialog 0 The active group has no solid to check.|
 row 0  home › g005-sweep   drawing / constraining in 3d
  0-0 64 64 0
@@ -492,7 +492,7 @@ row 69    (none)
  0-99 64 61 0
 row 71 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6, of 54 patches\nTriangles: 1876\nVolume: 1.14 cm³\nCenter of mass: (8.30, 7.17, 19.37)\nExtent: 28.61 x 20.54 x 34.26
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6, of 54 patches\nTriangles: 1250\nVolume: 1.14 cm³\nCenter of mass: (8.30, 7.17, 19.38)\nExtent: 28.61 x 20.54 x 34.26
 row 0  home   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
@@ -596,4 +596,4 @@ row 27   parameters
  12-99 64 64 0
 row 29 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6, of 34 patches\nTriangles: 1446\nVolume: 1.14 cm³\nCenter of mass: (8.30, 7.16, 19.37)\nExtent: 28.90 x 20.73 x 35.02
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6, of 34 patches\nTriangles: 812\nVolume: 1.14 cm³\nCenter of mass: (8.30, 7.16, 19.37)\nExtent: 28.90 x 20.73 x 35.02

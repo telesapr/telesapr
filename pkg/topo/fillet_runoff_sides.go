@@ -1,8 +1,10 @@
 package topo
 
 import (
+	"cmp"
 	"errors"
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -133,9 +135,7 @@ func (t *Topology) straightOutline(f int) ([]geom.Vector, bool) {
 // runs past a side's plane may make no sound solid: the plane that cuts
 // the widened solid back meets the fillet nearly tangent along the
 // foot, a sliver of the side of the square of how far past over the
-// fillet's diameter, and some such cuts come out open. A rod of 4
-// through a plate 12 wide, its fillet at a chord tolerance of 0.00085
-// mm: refused from 2.0002 to 2.0028 now and then, made from 2.0029.
+// fillet's diameter, and some such cuts come out open (nearSize).
 const justPast = 0.01
 
 // filletPastSides makes the picks' fillet whose foot runs off its flat
@@ -144,19 +144,27 @@ const justPast = 0.01
 // it rolls on to a point there, two faces touching (assembleTrimPolygon,
 // splitTouchingHoles); one that misses the side or runs past it by no
 // more than a tenth of the chord tolerance is made at the size that
-// reaches it (touchingSize). It leaves sh as it was where the result
-// would not be sound, and gives refusal, or for a foot that only just
-// runs past a side (justPast), why that is refused.
-func filletPastSides(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool, off *runOff, refusal error) error {
+// reaches it (touchingSize). A fillet whose foot runs only just past a
+// side (justPast) and comes out open is made at the nearest size that
+// doesn't, within the chord tolerance of r (nearSize). It leaves sh as
+// it was where the result would not be sound, and gives refusal, or for
+// a foot that only just runs past a side, why that is refused. made is
+// the size made, r unless one near it was.
+func filletPastSides(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool, off *runOff, refusal error) (made float64, err error) {
+	made = r
 	out, ok := widenedFillet(sh, picks, r, origin, flat, off)
 	if !ok {
 		if rs, snap := touchingSize(sh, picks, r, off); snap {
 			out, ok = widenedFillet(sh, picks, rs, origin, flat, off)
+			made = rs
 		}
+	}
+	if !ok && !flat {
+		out, made, ok = nearSize(sh, picks, r, origin, off)
 	}
 	if ok {
 		*sh = out
-		return nil
+		return made, nil
 	}
 	for _, s := range off.sides {
 		if s.past > 0 && s.past < justPast*r {
@@ -168,11 +176,11 @@ func filletPastSides(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 			if fx, ok := errors.AsType[*FilletError](refusal); ok {
 				at = fx.At
 			}
-			return filletErr(at, "the %s's foot only just runs past the side of the face here, too little for "+
+			return r, filletErr(at, "the %s's foot only just runs past the side of the face here, too little for "+
 				"the side to cut it back: make it a little smaller or larger", what)
 		}
 	}
-	return refusal
+	return r, refusal
 }
 
 // touchingSize is the size at which the fillet's foot reaches a side's
@@ -183,6 +191,19 @@ func filletPastSides(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 // it moves with the size one for one. Not for a radius that varies, or
 // a pick of a size of its own, nor where sides disagree.
 func touchingSize(sh *srf.SShell, picks []FilletPick, r float64, off *runOff) (float64, bool) {
+	near := sh.Tol.ChordTolMm() / 10
+	past, ok := sidesPast(picks, off, func(p float64) bool { return math.Abs(p) <= near })
+	if !ok || math.Abs(past) <= geom.LengthEps {
+		return 0, false
+	}
+	return r - past, true
+}
+
+// sidesPast is how far the foot runs past the sides whose past within
+// says, where they all agree on it: not for a radius that varies or a
+// pick of a size of its own, where the foot moves with the size other
+// than one for one.
+func sidesPast(picks []FilletPick, off *runOff, within func(float64) bool) (float64, bool) {
 	if off.varies {
 		return 0, false
 	}
@@ -191,11 +212,10 @@ func touchingSize(sh *srf.SShell, picks []FilletPick, r float64, off *runOff) (f
 			return 0, false
 		}
 	}
-	near := sh.Tol.ChordTolMm() / 10
 	var past float64
 	found := false
 	for _, s := range off.sides {
-		if math.Abs(s.past) > near {
+		if !within(s.past) {
 			continue
 		}
 		if found && math.Abs(s.past-past) > geom.LengthEps {
@@ -203,10 +223,50 @@ func touchingSize(sh *srf.SShell, picks []FilletPick, r float64, off *runOff) (f
 		}
 		past, found = s.past, true
 	}
-	if !found || math.Abs(past) <= geom.LengthEps {
-		return 0, false
+	return past, found
+}
+
+// clearHeight is how far above the face, at a side's plane, a fillet's
+// arc must stand for the cut along the plane to tell the fillet from
+// the face: a few times LengthEps.
+const clearHeight = 3 * geom.LengthEps
+
+// nearSize makes the fillet whose foot runs only just past a side
+// (justPast) at a size near r that the kernel can make, where that
+// moves the fillet's surface by no more than the chord tolerance, and
+// whether one was. Past the side by p, the fillet's arc stands above
+// the face at the side's plane by r - sqrt(r² - p²), about p²/2r: round
+// a rod of 4 through a plate 12 wide, a fillet of 2.001 stands 2.5e-7
+// above the top there, under LengthEps, and the cut along the side's
+// plane can't tell the fillet from the top; it dropped the top (refused
+// from 2.0002 to 2.0028 at a chord setting of 0.003, 2026-11-04). The
+// sizes tried, nearest first: the one at which the foot reaches the
+// side exactly (the top pinched to a point there), and those at which
+// the arc stands clearHeight or more above the top at the side. A
+// fillet of size c in place of r moves its surface by at most
+// (sqrt 2 - 1)|r - c|, at the middle of its arc. made is the size made.
+func nearSize(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, off *runOff) (out srf.SShell, made float64, ok bool) {
+	past, ok := sidesPast(picks, off, func(p float64) bool { return p > 0 && p < justPast*r })
+	if !ok {
+		return srf.SShell{}, r, false
 	}
-	return r - past, true
+	touch := r - past
+	step := math.Sqrt(clearHeight * (2*touch - clearHeight))
+	sizes := []float64{touch}
+	for _, k := range []float64{1, 1.25, 1.5, 2} {
+		sizes = append(sizes, touch+k*step)
+	}
+	slices.SortFunc(sizes, func(a, b float64) int { return cmp.Compare(math.Abs(a-r), math.Abs(b-r)) })
+	tol := sh.Tol.ChordTolMm()
+	for _, c := range sizes {
+		if (math.Sqrt2-1)*math.Abs(r-c) > tol || math.Abs(r-c) <= geom.LengthEps {
+			continue
+		}
+		if out, ok := widenedFillet(sh, picks, c, origin, false, off); ok {
+			return out, c, true
+		}
+	}
+	return srf.SShell{}, r, false
 }
 
 // widenedFillet is filletPastSides' solid, and whether it is sound.

@@ -186,13 +186,14 @@ func GuidedLoftThroughSurfaces(loops [][]srf.SBezier, turn int, ends LoftEnds, s
 }
 
 // MakeGuidedLoftThrough is the shell of GuidedLoftThroughSurfaces, all
-// one face with its two caps, as MakeSmoothLoftThrough's.
-func MakeGuidedLoftThrough(loops [][]srf.SBezier, turn int, ends LoftEnds, sides LoftSides, middle []float64, guides []LoftGuide, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
+// one face with its two caps, as MakeSmoothLoftThrough's, pace called
+// as there.
+func MakeGuidedLoftThrough(loops [][]srf.SBezier, turn int, ends LoftEnds, sides LoftSides, middle []float64, guides []LoftGuide, color core.RGBA, origin uint32, tol srf.Tolerance, pace func()) (*srf.SShell, error) {
 	bss, err := GuidedLoftThroughSurfaces(loops, turn, ends, sides, middle, guides)
 	if err != nil {
 		return nil, err
 	}
-	return closeSkins([][]*srf.BSplineSurface{bss}, color, origin, origin+1, origin+2, tol)
+	return closeSkins([][]*srf.BSplineSurface{bss}, color, origin, origin+1, origin+2, tol, pace)
 }
 
 // checkMiddle is why middle can't hold a loft through loops, or nil.
@@ -338,11 +339,12 @@ func ClosedGuidedLoftSurfaces(loops [][]srf.SBezier, held []float64, guides []Lo
 }
 
 // MakeClosedGuidedLoftHeld is the shell of ClosedGuidedLoftSurfaces, as
-// MakeClosedLoft's: one face of every piece's patches, no caps.
-func MakeClosedGuidedLoftHeld(loops [][]srf.SBezier, held []float64, guides []LoftGuide, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
+// MakeClosedLoft's: one face of every piece's patches, no caps, pace
+// called as MakeClosedLoftHeld calls it.
+func MakeClosedGuidedLoftHeld(loops [][]srf.SBezier, held []float64, guides []LoftGuide, color core.RGBA, origin uint32, tol srf.Tolerance, pace func()) (*srf.SShell, error) {
 	bss, err := ClosedGuidedLoftSurfaces(loops, held, guides)
 	if err != nil {
 		return nil, err
 	}
-	return joinSkins([][]*srf.BSplineSurface{bss}, color, origin, tol)
+	return joinSkins([][]*srf.BSplineSurface{bss}, color, origin, tol, pace)
 }

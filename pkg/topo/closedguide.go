@@ -76,7 +76,7 @@ func MakeClosedGuidedLoft(loops [][]srf.SBezier, guides []LoftGuide, color core.
 	if err != nil {
 		return nil, err
 	}
-	return joinSkins([][]*srf.BSplineSurface{{bs}}, color, origin, tol)
+	return joinSkins([][]*srf.BSplineSurface{{bs}}, color, origin, tol, nil)
 }
 
 // newClosedGuideTrack finds where the closed guide g meets each profile

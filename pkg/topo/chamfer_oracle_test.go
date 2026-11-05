@@ -415,7 +415,10 @@ func TestChamferCornerOracle(t *testing.T) {
 		case math.Abs(got-want) <= 0.005:
 			// OpenCASCADE's volume; where the corners differ, two strips of
 			// the largest distance could each be the pivot, mirror images.
-		case len(occ) == 3 && !samePoints(ours, occ) && math.Abs(got-want) <= 0.5:
+		case len(occ) == 3 && !samePoints(ours, occ) && math.Abs(got-want) <= 0.5+0.005:
+			// Our corner a setback where OpenCASCADE's is a triangle: half
+			// a cubic millimetre apart at most, and the mesh's own error on
+			// the curved setback, as the OpenCASCADE volume case above allows.
 			t.Logf("%s: OpenCASCADE's triangle, %+.3g", head, got-want)
 			triangles++
 		default:

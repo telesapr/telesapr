@@ -79,10 +79,11 @@ and the goldens go in a commit of their own.
 
 - **The CDT at fine chord tolerances** (2026-11-04): with it the default, tests at 1e-4 to
   0.00085 mm took 7 to 18 times as long and `make ci` timed out; a budget gives the faces it
-  would fill with more than 24 times the ear clipper's grid back to the ear clipper. Still
-  above the ear clipper there: the CDT's sag measured between parametric middles, and
-  `faceModeOf`'s `FaceAt` per triangle in a joined shell (`doc/dev-notes/k4-cdt-spike.md`,
-  "Fine tolerances").
+  would fill with more than 24 times the ear clipper's grid back to the ear clipper. Since
+  2026-11-05 the sag is measured square to the triangles and `FaceAt` keeps each loop's outline
+  in its surface's parameters and passes faces whose control points lie farther than one found:
+  the wrap round 70 s to 28 (21 under the ear clipper), the drafted boss's shell 15 s to 3.7
+  (`doc/dev-notes/k4-cdt-spike.md`, "Fine tolerances").
 
 ## Decided against, and why
 

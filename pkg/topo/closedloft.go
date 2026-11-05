@@ -237,15 +237,17 @@ func ClosedLoftSurfaces(loops [][]srf.SBezier, held []float64) ([]*srf.BSplineSu
 // of the surface's patches, their identities from origin on, sheet
 // origin, and no caps.
 func MakeClosedLoft(loops [][]srf.SBezier, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
-	return MakeClosedLoftHeld(loops, nil, color, origin, tol)
+	return MakeClosedLoftHeld(loops, nil, color, origin, tol, nil)
 }
 
 // MakeClosedLoftHeld is MakeClosedLoft held square to profiles as
 // ClosedLoftSurfaces says: still one face, of every piece's patches.
-func MakeClosedLoftHeld(loops [][]srf.SBezier, held []float64, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
+// pace, when not nil, is called while its topology is built, as
+// joinSkins calls it.
+func MakeClosedLoftHeld(loops [][]srf.SBezier, held []float64, color core.RGBA, origin uint32, tol srf.Tolerance, pace func()) (*srf.SShell, error) {
 	bss, err := ClosedLoftSurfaces(loops, held)
 	if err != nil {
 		return nil, err
 	}
-	return joinSkins([][]*srf.BSplineSurface{bss}, color, origin, tol)
+	return joinSkins([][]*srf.BSplineSurface{bss}, color, origin, tol, pace)
 }

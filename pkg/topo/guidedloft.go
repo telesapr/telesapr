@@ -48,7 +48,7 @@ func MakeGuidedLoftSides(loops [][]srf.SBezier, turn int, ends LoftEnds, sides L
 	if err != nil {
 		return nil, err
 	}
-	return closeSkins([][]*srf.BSplineSurface{{bs}}, color, origin, origin+1, origin+2, tol)
+	return closeSkins([][]*srf.BSplineSurface{{bs}}, color, origin, origin+1, origin+2, tol, nil)
 }
 
 // GuidedLoftSurface is the surface of MakeGuidedLoft.

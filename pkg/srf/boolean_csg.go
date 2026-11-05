@@ -285,6 +285,8 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 			findVertsOnCurve(&vertpts, c, agnstB)
 		}
 	}
+	var touches []geom.Vector
+	touchesOn(&touches, c, srfA, srfB, agnstA)
 
 	if len(c.Points) == 0 {
 		return ret
@@ -430,6 +432,16 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 			if 0.0 < t && t < 1.0 {
 				il = append(il, SInter{P: vtx})
 			}
+		}
+		// And where the curve passes a point where an equal cylinder
+		// touches its own tangent, unless a split or an end lies there.
+		for _, vtx := range touches {
+			if !vtx.OnLineSegment(prev.P, p.P, tolOf(srfA).ChordTolMm()) ||
+				vtx.EqualsTol(prev.P, splitEndTol) || vtx.EqualsTol(p.P, splitEndTol) ||
+				slices.ContainsFunc(il, func(o SInter) bool { return o.P.EqualsTol(vtx, splitEndTol) }) {
+				continue
+			}
+			il = append(il, SInter{P: vtx})
 		}
 		if len(il) > 0 {
 			// And now sort them in order along the line. Note that we must

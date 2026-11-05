@@ -93,8 +93,12 @@ doc.Features.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 0, 5))}, 1.5, "")
   narrow plate, is cut by the planes of the face's flat sides it runs into, and those sides grow
   up by its sections. Where the foot just reaches a side, the face is pinched to a point there,
   two faces touching. A fillet whose foot runs past a side by less than about a hundredth of its
-  radius may be refused (make it a little smaller or larger), and one is refused where the solid
-  goes on beyond the side.
+  radius stands above the face there by less than the program can tell apart, so it is made at
+  the nearest size that the program can cut and that is within the chord tolerance of the one
+  asked for, and says so: the group is marked "(note)" in the list of groups, and its screen,
+  and `Group.Note()` in a script, say "made at radius 2 mm, the nearest the kernel can cut
+  to 2.001 mm". At a chord tolerance too fine for that it is refused (make it a little smaller
+  or larger). One is refused where the solid goes on beyond the side.
 - A rounded edge takes with it the edges it meets smoothly, as round a rounded rectangle.
 - Where two rounded edges meet, they are mitred. Where three meet at the corner of a block, a
   sphere rounds the corner.
@@ -147,7 +151,10 @@ steep saddle chamfered at one distance is cut in two goes, the ridges and the va
 Round one of the saddle's four edges alone and its fillet runs on into the two faces across the
 middle, ending where its surface meets their planes, as a fillet ends on the face at a box's
 corner. Round its two ridges, or its two valleys, with the other two left sharp, and the two
-fillets meet in a mitre in the plane of the two sharp edges. Chamfers are cut the same way.
+fillets meet in a mitre in the plane of the two sharp edges. At different radii their ends lie
+apart in that plane, and the plane between them is a flat step from the smaller fillet's end to
+the larger's (OpenCASCADE blends the two instead, with a curved patch). Chamfers are cut the same
+way.
 Round a ridge and a valley side by side, with the other two left sharp, and each fillet runs
 up to the sharp edge beside it; patches fill the corner between the two cuts and the sharp
 edges, which stay sharp. Chamfers are cut the same way.
@@ -205,8 +212,9 @@ slopes of the plate's gabled top. Each end cuts the fillet on its own; where the
 fall on one piece of the fillet's surface, that surface is split between them first. Where the
 fillet is so large that it reaches over the plate's side all along, above one slope or the other,
 it takes the side whole: both slopes cut it, meeting across it on the line of the ridge carried
-on, each slope grows over the fillet up to that line, and the side goes. Where one slope carried
-on past the ridge would cut the other end's section too, the fillet is refused.
+on, each slope grows over the fillet up to that line, and the side goes. This holds however large
+the blend: where an end's section reaches above the far slope carried on past the ridge, it is
+above the near slope there too, which cuts that part away.
 
 The fillet is refused at the place in these cases:
 
@@ -241,10 +249,9 @@ These are refused with a message:
   is made).
 - A corner where a convex edge meets a concave one at a vertex that the stages can't round while
   some edge there is left sharp, but for one, two opposite or three of a saddle's four edges as
-  above, fillets or chamfers, and a ridge and a valley side by side. Two opposite edges of a
-  saddle rounded at different radii, the other two left sharp, are refused.
-- A blend that takes material away and runs off onto the next face, or that runs off at both of
-  its ends onto slopes whose planes, carried on, cut both ends' sections.
+  above, fillets or chamfers, and a ridge and a valley side by side.
+- A blend that takes material away and runs off onto the next face, and a chamfer whose end
+  runs off both its faces onto the next one (the end lies wholly past the next face).
 
 Also:
 

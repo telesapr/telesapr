@@ -174,11 +174,9 @@ func revolvedInside(rev Revolution, modeAt func(geom.Vector) (faceMode, bool), e
 		}
 	}
 	ds := make([][]float64, len(loops))
-	steps := make([][]cornerStep, len(loops))
 	var opensCurved [][]bool
 	for li, ps := range loops {
 		ds[li] = make([]float64, len(ps))
-		steps[li] = make([]cornerStep, len(ps))
 		opensCurved = append(opensCurved, make([]bool, len(ps)))
 		for i, p := range ps {
 			if onAxis[li][i] {
@@ -219,25 +217,7 @@ func revolvedInside(rev Revolution, modeAt func(geom.Vector) (faceMode, bool), e
 			}
 		}
 	}
-	for li, ps := range loops {
-		for i := range ps {
-			if !opensCurved[li][i] {
-				continue
-			}
-			ds[li][i] = -thick
-		}
-		for i := range ps {
-			if !opensCurved[li][i] {
-				continue
-			}
-			st, err := cornerSteps(ps, ds[li], i, axis, n, thick)
-			if err != nil {
-				return nil, err
-			}
-			steps[li][i] = st
-		}
-	}
-
+	what := fmt.Sprintf("a thickness of %g", thick)
 	endModes, err := ends(radial)
 	if err != nil {
 		return nil, err
@@ -248,9 +228,8 @@ func revolvedInside(rev Revolution, modeAt func(geom.Vector) (faceMode, bool), e
 
 	// The inside's profile.
 	var sbl srf.SBezierList
-	what := fmt.Sprintf("a thickness of %g", thick)
 	for li, ps := range loops {
-		curves, err := steppedLoop(ps, ds[li], steps[li], axis, n, inside, what)
+		curves, err := runOutLoop(ps, ds[li], opensCurved[li], axis, n, thick, inside, what)
 		if err != nil {
 			return nil, err
 		}
@@ -369,17 +348,6 @@ func meridianPieces(loop []srf.SBezier, n, pt, axis geom.Vector, inside func(geo
 // is flat.
 func across(p profilePiece, axis geom.Vector) bool {
 	return !p.arc && math.Abs(p.b.Minus(p.a).WithMagnitude(1).Dot(axis)) < 1e-9
-}
-
-// outsideCorners is an error when piece i of the closed loop ps meets
-// either neighbour at an inside corner, its material's angle there
-// more than a half turn.
-func outsideCorners(ps []profilePiece, i int, n geom.Vector) error {
-	if start, end := insideCorners(ps, i, n); start || end {
-		return shellErr(ps[i].mid, "a curved face taken away meets a face kept at an inside corner; "+
-			"a shell opens a drafted extrusion's curved faces only between outside corners")
-	}
-	return nil
 }
 
 // profileInside reports whether a point of the profile's plane, of

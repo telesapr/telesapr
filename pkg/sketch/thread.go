@@ -199,9 +199,13 @@ type threadLayout struct {
 	// turnR is where the turning or the boring meets the end's plane at
 	// a chamfered end: its own cone, parallel to the chamfer's and a
 	// little short of it.
+	// turnSlope is how far the turning's or the boring's cone moves
+	// from the axis along a unit of its length: 1 at 45°, more for a
+	// shallower cone (layChamfer).
 	chamfer, farChamfer  bool
 	chamferR, chamferOut float64
 	chamferPast, turnR   float64
+	turnSlope            float64
 }
 
 // layout places the thread on a circle of the given radius.
@@ -338,8 +342,12 @@ type chamferTry struct{ turnInto, lower float64 }
 // the Boolean takes them least well depends on the thread, and the
 // Boolean that fails at one of these, at every plane for the ridges,
 // may not at another (found over the thread cases: 32 of 33 at the
-// first, all at the first two).
-var chamferTries = [...]chamferTry{{0.2, 0}, {0.2, 0.4}, {0.1, 0}, {0.05, 0}, {0.15, 0.2}, {0.25, 0.25}, {0.1, 0.4}}
+// first, all at the first two). The last is the only one a chamfered
+// 2-8 BUTT nut with rounded roots comes out sound at, at every chord
+// tolerance from 0.1% to 2%, with either crest; with its ridges a
+// twentieth of a pitch further past the ends, or less far, it fails as
+// at the others (2026-11-05). Coming last, it changes no thread an earlier one made.
+var chamferTries = [...]chamferTry{{0.2, 0}, {0.2, 0.4}, {0.1, 0}, {0.05, 0}, {0.15, 0.2}, {0.25, 0.25}, {0.1, 0.4}, {0.2, 0.1}}
 
 // layChamfer places the chamfers, as the try'th of chamferTries makes
 // them: a cone at 45° from chamferInto of a pitch inside the ridges'
@@ -366,6 +374,19 @@ func (l *threadLayout) layChamfer(o ThreadOptions, try chamferTry) {
 	}
 	l.chamferR = l.baseR - out*chamferInto*pitch
 	l.turnR = l.baseR - out*try.turnInto*pitch
+	// A nut's boring with rounded roots leaves its cone at 1.5 of its
+	// length from the axis, 56° from it, not 45°: at 45° it met the
+	// ridges' feet, at the far end, so that the thread's Boolean came
+	// out crossing itself there wherever the lead was less than about
+	// 2° (a 1/2-20, 1-12 or 4-4 BUTT nut, at every chord tolerance and
+	// every one of chamferTries). Shallower, the cone keeps inside the
+	// chamfer's from the end on, which takes it away. A 2-8 BUTT nut,
+	// which still left edges open along its ridges' far ends at every
+	// slope tried (0.75 to 3), is made by the last of chamferTries.
+	l.turnSlope = 1
+	if o.Internal && p.RootRoundRadius > 0 {
+		l.turnSlope = 1.5
+	}
 	l.chamferOut = p.CrestRadius + out*depth/4
 	// A ridge's end lies in the cone where its foot's corner nearest the
 	// end does: so far into the cone, and a tenth of a pitch more. Starts

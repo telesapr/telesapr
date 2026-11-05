@@ -17,7 +17,13 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 	stage := func(name string) func() { return trace.StartRegion(context.Background(), name).End }
 	s.BooleanFailed = false
 	s.Tol = s.Tol.Or(a.Tol).Or(b.Tol)
-	b = snapToSpheres(a, snapToCones(a, snapToCylinders(a, snapToPlanes(a, b))))
+	if s.pace == nil {
+		s.pace = a.pace
+	}
+	if s.pace == nil {
+		s.pace = b.pace
+	}
+	b = snapTangent(a, snapToSpheres(a, snapToCones(a, snapToCylinders(a, snapToPlanes(a, b)))))
 
 	end := stage("classifying bsps")
 	a.MakeClassifyingBsps(nil)
@@ -92,7 +98,7 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 	if !s.BooleanFailed {
 		s.dropUntrimmed()
 	}
-	s.pace = nil
+	s.failCrossingTouch(a, b)
 }
 
 // paced calls the pace the shell was given for the Boolean made into
@@ -152,6 +158,12 @@ func (s *SShell) dropUntrimmed() {
 func (s *SShell) MakeFromAssemblyOf(a, b *SShell) {
 	s.BooleanFailed = false
 	s.Tol = s.Tol.Or(a.Tol).Or(b.Tol)
+	if s.pace == nil {
+		s.pace = a.pace
+	}
+	if s.pace == nil {
+		s.pace = b.pace
+	}
 
 	t := geom.Vector{}
 	q := geom.QuaternionIdentity

@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
@@ -18,7 +19,8 @@ import (
 // Made of Booleans: the path cut at the corner into two runs each swept
 // on its own, and the fill, the intersection of the profile carried on
 // past the corner along the first piece and carried back before it
-// along the second, joined to them. Round a closed path, started where
+// along the second, joined to them: of that overlap, the piece holding
+// the profile at the corner. Round a closed path, started where
 // it is smooth, the first run's start and the last's end meet flush
 // where the profile is, and the union closes them, as stretches do
 // (sweep_cross.go). Where the overlap runs on as far as the pieces are
@@ -101,7 +103,34 @@ func cornerFill(set *srf.SBezierLoopSet, steps []srf.SweepStep, k int, f float64
 	if fill.BooleanFailed || len(fill.Surface) == 0 {
 		return nil, errors.New("the corner's fill failed")
 	}
-	return &fill, nil
+	return nearestPiece(&fill, endA.Apply(set.Outer.Curves[0].Start())), nil
+}
+
+// nearestPiece is, of the fill's pieces, the one nearest at, a point
+// of the profile at the corner, which every corner's fill holds.
+// Carried a quarter turn, an arc can come back over the other piece
+// carried on, far from the corner, as an arc of radius 20 turning
+// against a corner of 150° does over the line before it: their overlap
+// there is a piece of its own, no part of the corner's fill.
+func nearestPiece(fill *srf.SShell, at geom.Vector) *srf.SShell {
+	pieces := fill.Pieces()
+	if len(pieces) < 2 {
+		return fill
+	}
+	best, bd := pieces[0], math.Inf(1)
+	for _, p := range pieces {
+		var m srf.SMesh
+		p.TriangulateInto(&m)
+		for _, tr := range m.Triangles {
+			for _, v := range [3]geom.Vector{tr.A, tr.B, tr.C} {
+				if d := v.Minus(at).Magnitude(); d < bd {
+					best, bd = p, d
+				}
+			}
+		}
+	}
+	best.Tol = fill.Tol
+	return best
 }
 
 // meshVolume is the volume the shell's mesh encloses.

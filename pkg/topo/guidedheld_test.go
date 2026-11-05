@@ -107,7 +107,7 @@ func TestClosedGuidedLoftHeld(t *testing.T) {
 			if worst > c.off {
 				t.Errorf("the surface is %.4g mm off its guides", worst)
 			}
-			sh, err := topo.MakeClosedGuidedLoftHeld(loops, c.held, c.guides, col, srf.OriginFor(9, 0), tol)
+			sh, err := topo.MakeClosedGuidedLoftHeld(loops, c.held, c.guides, col, srf.OriginFor(9, 0), tol, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -187,7 +187,7 @@ func TestGuidedLoftHeld(t *testing.T) {
 			if worst > 0.025 {
 				t.Errorf("the surface is %.4g mm off its guides", worst)
 			}
-			sh, err := topo.MakeGuidedLoftThrough(loops, 0, c.ends, topo.LoftSides{}, []float64{0.5}, c.guides, col, 1<<30, tol)
+			sh, err := topo.MakeGuidedLoftThrough(loops, 0, c.ends, topo.LoftSides{}, []float64{0.5}, c.guides, col, 1<<30, tol, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -14,3 +14,7 @@ coverage.out
 __pycache__/
 # The browser version, copied from bin/web (make wasm) by scripts/deploy-site.sh.
 /site/app/
+# What `go build ./cmd/...` leaves in the working directory.
+/telesapr
+/telesapr-cli
+/telesapr-web

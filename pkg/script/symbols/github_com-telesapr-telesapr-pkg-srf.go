@@ -95,6 +95,7 @@ func init() {
 		"SEdgeFrom":                   reflect.ValueOf(srf.SEdgeFrom),
 		"SKdNodeEdgesFrom":            reflect.ValueOf(srf.SKdNodeEdgesFrom),
 		"SKdNodeFrom":                 reflect.ValueOf(srf.SKdNodeFrom),
+		"SKdNodeFromPaced":            reflect.ValueOf(srf.SKdNodeFromPaced),
 		"STriangleFrom":               reflect.ValueOf(srf.STriangleFrom),
 		"STrimByEntireCurve":          reflect.ValueOf(srf.STrimByEntireCurve),
 		"STrimByEntireCurveFromShell": reflect.ValueOf(srf.STrimByEntireCurveFromShell),

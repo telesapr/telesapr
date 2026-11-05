@@ -21,6 +21,15 @@ func (g Group) Problem() (msg string) {
 	return msg
 }
 
+// Note says how the group's solid, though made, differs from what the
+// group asks for, as a shell's wall stopping short of an inside corner
+// where a drafted round face taken away meets a flat one; or "" when it
+// is as asked.
+func (g Group) Note() (msg string) {
+	g.d.read(func(sk *sketch.Sketch) { msg = g.get(sk).Note })
+	return msg
+}
+
 // problemOf is the group's problem, or that its Boolean failed.
 func problemOf(sk *sketch.Sketch, group *sketch.Group) string {
 	switch {

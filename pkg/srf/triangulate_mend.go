@@ -33,7 +33,9 @@ import (
 // left as it is.
 func (s *SShell) mendCrossings(ms []SMesh, strays []bool) {
 	s.mendDelaunayCrossings(ms)
+	s.paced()
 	stacked := stackedFaces(ms)
+	s.paced()
 	some := false
 	for i := range ms {
 		some = some || strays[i] || stacked[i]
@@ -41,7 +43,7 @@ func (s *SShell) mendCrossings(ms []SMesh, strays []bool) {
 	if !some {
 		return
 	}
-	mc := newMeshCheck(ms)
+	mc := newMeshCheck(ms, s.pace)
 	// open is, once asked, the shell's edges with no mate: a T-junction
 	// leaves them where a face's edge runs along another's trim points
 	// without stopping at them.
@@ -55,6 +57,7 @@ func (s *SShell) mendCrossings(ms []SMesh, strays []bool) {
 		return open
 	}
 	for i := range ms {
+		s.paced()
 		bad := stacked[i] || strays[i] && (mc.unsound(&ms[i]) || mc.pierced(ms, i))
 		// A face whose edge runs along another's open edge is the one to
 		// mesh again, flagged or not: the long edge's own triangles are
@@ -88,9 +91,10 @@ func (s *SShell) mendDelaunayCrossings(ms []SMesh) {
 		return
 	}
 	for range 3 {
-		mc := newMeshCheck(ms)
+		mc := newMeshCheck(ms, s.pace)
 		var bad []int
 		for i := range ms {
+			s.paced()
 			if byCDT[i] && mc.unsound(&ms[i]) {
 				bad = append(bad, i)
 			}
@@ -114,15 +118,24 @@ type meshCheck struct {
 	kd  *SKdNode
 	// cnt tags the triangles seen, as FindEdgeOn wants.
 	cnt int
+	// pace, when not nil, is called every meshCheckPaceEvery triangles
+	// checked, as the shell's pace is (SShell.PaceBy): one face may
+	// hold most of a shell's triangles.
+	pace func()
 }
 
-// newMeshCheck joins ms.
-func newMeshCheck(ms []SMesh) *meshCheck {
-	mc := &meshCheck{}
+// meshCheckPaceEvery is how many triangles a meshCheck checks between
+// paces.
+const meshCheckPaceEvery = 1024
+
+// newMeshCheck joins ms, to be checked with pace called now and then
+// (nil for never).
+func newMeshCheck(ms []SMesh, pace func()) *meshCheck {
+	mc := &meshCheck{pace: pace}
 	for i := range ms {
 		mc.all.Triangles = append(mc.all.Triangles, ms[i].Triangles...)
 	}
-	mc.kd = SKdNodeFrom(&mc.all)
+	mc.kd = SKdNodeFromPaced(&mc.all, pace)
 	return mc
 }
 
@@ -130,6 +143,9 @@ func newMeshCheck(ms []SMesh) *meshCheck {
 // mesh, or has no mate in it.
 func (mc *meshCheck) unsound(m *SMesh) bool {
 	for i := range m.Triangles {
+		if mc.pace != nil && i%meshCheckPaceEvery == meshCheckPaceEvery-1 {
+			mc.pace()
+		}
 		tr := &m.Triangles[i]
 		for j := range 3 {
 			a, b := tr.vertex(j), tr.vertex((j+1)%3)

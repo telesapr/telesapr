@@ -15,6 +15,7 @@ import (
 	"math"
 	"slices"
 	"sort"
+	"sync"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -40,6 +41,10 @@ type Topology struct {
 	// byPair lists the edges between each pair of identities in the
 	// order names number them.
 	byPair map[[2]srf.FaceID][]int
+	// uvCache holds the loops' outlines in their surfaces' parameters
+	// for FaceAt (loop_uv_cache.go), made by uvOnce.
+	uvOnce  sync.Once
+	uvCache *loopUVCache
 }
 
 // Vertex is a point where edges end.
@@ -291,6 +296,7 @@ func Build(sh *srf.SShell) (*Topology, error) {
 		}
 	}
 	for si := range sh.Surface {
+		sh.Paced()
 		s := &sh.Surface[si]
 		loops, err := t.chain(ces[si])
 		if err != nil {

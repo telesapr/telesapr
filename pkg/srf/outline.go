@@ -53,20 +53,40 @@ func (l *SOutlineList) AddEdge(a, b, nl, nr geom.Vector, tag int) {
 // emphasized or sharp; untagged edges between triangles with the same
 // normal are left out, since they cannot produce an outline.
 func (m *SMesh) MakeOutlinesInto(sol *SOutlineList, edgeKind EdgeKind) {
+	m.MakeOutlinesPacedInto(sol, edgeKind, nil)
+}
+
+// outlinePaceEvery is how many triangles MakeOutlinesPacedInto goes
+// through between paces.
+const outlinePaceEvery = 2048
+
+// MakeOutlinesPacedInto is MakeOutlinesInto calling pace, when not nil,
+// between its steps and every outlinePaceEvery triangles, as a shell's
+// pace is called (SShell.PaceBy), so a caller with one thread can draw
+// meanwhile. The outlines are those MakeOutlinesInto lists.
+func (m *SMesh) MakeOutlinesPacedInto(sol *SOutlineList, edgeKind EdgeKind, pace func()) {
+	if pace == nil {
+		pace = func() {}
+	}
 	// The triangles are the tree's copies of the mesh's, so that they are
 	// read in the order SolveSpace reads them in, which is the order the
 	// outlines come out in: an edge is listed as the first of the two
 	// triangles that have it, and so gets that one's direction and
 	// normals. The exports are ordered by it too, and are compared with
 	// SolveSpace's bytes.
-	root := SKdNodeFrom(m)
+	root := SKdNodeFromPaced(m, pace)
+	pace()
 	var tris []*STriangle
 	root.ClearTags()
 	root.ListTrianglesInto(&tris)
 	ix := newMateIndex(tris)
+	pace()
 
 	edgeTris := map[triPair]bool{}
-	for _, tr := range tris {
+	for i, tr := range tris {
+		if i%outlinePaceEvery == outlinePaceEvery-1 {
+			pace()
+		}
 		for j := range 3 {
 			a := tr.vertex(j)
 			b := tr.vertex((j + 1) % 3)

@@ -143,12 +143,14 @@ func TestClosedLoftWideHeldGuided(t *testing.T) {
 		make func() (*srf.SShell, error)
 		want float64
 	}{
-		{"held", func() (*srf.SShell, error) { return topo.MakeClosedLoftHeld(loops(), []float64{0, 1}, col, 9, tol) }, 2 * math.Pi * math.Pi * big * r * r},
+		{"held", func() (*srf.SShell, error) {
+			return topo.MakeClosedLoftHeld(loops(), []float64{0, 1}, col, 9, tol, nil)
+		}, 2 * math.Pi * math.Pi * big * r * r},
 		{"guided", func() (*srf.SShell, error) {
 			return topo.MakeClosedGuidedLoft(loops(), []topo.LoftGuide{guide}, col, 9, tol)
 		}, 0},
 		{"guided held", func() (*srf.SShell, error) {
-			return topo.MakeClosedGuidedLoftHeld(loops(), []float64{1}, []topo.LoftGuide{guide}, col, 9, tol)
+			return topo.MakeClosedGuidedLoftHeld(loops(), []float64{1}, []topo.LoftGuide{guide}, col, 9, tol, nil)
 		}, 0},
 	} {
 		t.Run(c.name, func(t *testing.T) {

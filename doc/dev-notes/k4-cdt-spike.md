@@ -244,3 +244,43 @@ goldens no face passed 19, so no golden moves. At 32, `TestWrapRoundMostOfTheWay
 24 to 32 and took 2.2 times the base. The drafted boss is untouched by it: its shell's
 `faceModeOf` asks `FaceAt` for every triangle's middle of each face, and the frustum's
 parametric-middle triangles are under the budget.
+
+## Fine tolerances: sag square to the triangles (2026-11-05, rd9-cdt-sag)
+
+The parametric-middle measure is gone. `cellSag`'s term across a cell's middle is now the
+distance of the surface's middle from the two triangles either diagonal makes, measured square
+to them, and `refinePoints` measures a triangle's middle and its edges' middles square to the
+triangle's plane: a point of the surface that the chart puts off the triangle's middle along
+the triangle, as between a frustum's rulings, is covered by the triangle and is no error. The
+budget stays, for the cone charted polar.
+
+`FaceAt`, which a joined shell's `faceModeOf` asks at every triangle of every face, projected
+each loop's points onto its surface again for every face it tried. It now keeps the outlines
+per topology (`loop_uv_cache.go`) and passes a face whose surface's control points lie farther
+from the point than both the faces already found, which the patch can't be nearer than. A pass
+skips projections, so a surface's last closest point (`SSurface.Cached`, the next search's
+first guess) can differ from before; no result moved by it.
+
+Alone, without the race detector, at loads of 20 to 56 from other work (base: the ear clipper,
+bf905a66):
+
+| Test | base | budget only (bac83ed3) | now |
+|---|---|---|---|
+| `TestBandEndOnCone` | 1.6 s | 3.7 s | 3.7 s |
+| `TestWrapRectangleOnCone` | 7.3 s | 17 s | 13 s |
+| `TestWrapRoundMostOfTheWay` | 21 s | 70 s | 28 s |
+| `TestShellBlockAndDraftedBoss` | 1.1 s | 15 s | 3.7 s |
+| `TestFilletRunsOffOntoCylinder` | 78 s | 122 s | 138 s (loaded) |
+
+What moved: the meshes of curved faces whose cells were refined for the parametric gap, in the
+display outlines, the draw calls, the text window, the `.tlspr` round trip and 25 interface
+scripts' triangle counts and volumes (regenerated in commits of their own). The solid, thread,
+STL and export goldens did not move. `TestChamferCornerOracle`'s box corners, where ours is a
+setback and OpenCASCADE's a triangle, came out up to 0.002 mm³ past the half cubic millimetre
+it allowed: the curved setback is meshed coarser, within the tolerance, and the test allows
+the mesh's 0.005 as its OpenCASCADE-volume case does.
+
+Under `-race`, the four packages that time out in `make ci` run together, the machine loaded 87
+to 110 by other work, in processor seconds before (bac83ed3, alone on the machine) and after:
+`pkg/srf` 1334 to 888, `pkg/sketch` 9401 to 6994, `pkg/topo` 8602 to 6467, `pkg/script/api`
+10 284 to 8652; all pass. The wall times (414, 1388, 1557, 1650 s) were taken under that load.

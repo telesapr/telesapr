@@ -1,6 +1,10 @@
 package sketch
 
-import "github.com/telesapr/telesapr/pkg/core"
+import (
+	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/topo"
+)
 
 // Hooks is what a sketch tells whoever owns it, and asks of them: a
 // user interface implements all of them, NoHooks none, and Messages a
@@ -71,6 +75,33 @@ func (sk *Sketch) kernelPace() func() {
 		return p.KernelPace()
 	}
 	return nil
+}
+
+// lendPace gives sh the sketch's kernel pace (srf.SShell.PaceBy) while
+// a feature works on it, so the shells the feature makes from it pace
+// too, and returns what takes it back. With no pace, as everywhere but
+// a browser page, it writes nothing: sh may be a solid other goroutines
+// read.
+func (sk *Sketch) lendPace(sh *srf.SShell) (giveBack func()) {
+	p := sk.kernelPace()
+	if p == nil || sh.Pace() != nil {
+		return func() {}
+	}
+	sh.PaceBy(p)
+	return func() { sh.PaceBy(nil) }
+}
+
+// lendPathPace gives sp the sketch's kernel pace while a sweep is made
+// along it (topo.SweepPath.PaceBy), as lendPace gives a shell its, and
+// returns what takes it back. With no pace it writes nothing: sp may be
+// a cached solid's, read by other goroutines.
+func (sk *Sketch) lendPathPace(sp *topo.SweepPath) (giveBack func()) {
+	p := sk.kernelPace()
+	if p == nil || sp == nil || sp.Pace() != nil {
+		return func() {}
+	}
+	sp.PaceBy(p)
+	return func() { sp.PaceBy(nil) }
 }
 
 // Tell shows the user a message, through the sketch's Hooks.

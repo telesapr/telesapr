@@ -168,3 +168,25 @@ for sx, sy in ((0.2, 0.2), (0.2, 0.5), (0.5, 0.2), (0.5, 0.5), (0.8, 0.5), (0.5,
 with open(side, "w") as fh:
     fh.write("\n".join(lines) + "\n")
 print("wrote", len(lines), "lines to", side)
+
+# Two opposite edges rounded at unlike radii, the other two left sharp,
+# testdata/topo/fillet-saddle-pair-unlike.txt: each line sx sy, the two
+# edges (0 1 or 2 3) and their radii, OpenCASCADE's volume and its count
+# of faces. Their ends don't meet in one curve; topo steps between them
+# in the plane of the sharp edges (creaseStep), where OpenCASCADE blends.
+pairu = os.path.join(os.path.dirname(out), "fillet-saddle-pair-unlike.txt")
+lines = []
+for sx, sy in ((0.2, 0.2), (0.2, 0.5), (0.5, 0.2), (0.5, 0.5), (0.8, 0.5), (0.5, 0.8), (0.8, 0.8)):
+    for r0, r1 in ((0.5, 1), (1, 2), (0.5, 2), (1, 1.5)):
+        for two in ((0, 1), (2, 3)):
+            shape, at = saddle(sx, sy)
+            ends = (at(20, 10), at(0, 10), at(10, 20), at(10, 0))
+            try:
+                s = fillet(shape, [(at(10, 10), ends[two[0]], r0), (at(10, 10), ends[two[1]], r1)])
+                lines.append("%g %g %d %d %g %g %.9f %d" % (sx, sy, two[0], two[1], r0, r1, s.Volume, len(s.Faces)))
+            except Exception as e:
+                print("saddle", sx, sy, two, r0, r1, "refused:", e)
+
+with open(pairu, "w") as fh:
+    fh.write("\n".join(lines) + "\n")
+print("wrote", len(lines), "lines to", pairu)

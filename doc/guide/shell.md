@@ -93,7 +93,10 @@ face taken away meets a flat face at an inside corner, as a stepped shaft's narr
 the step, the inside steps along the flat face's plane round the corner, so the wall under the
 step keeps its thickness. Beside a cone, a sphere or a torus at an inside corner, as a cylinder
 standing on a coned or rounded shoulder, the wall under that face keeps its thickness too and
-ends square to it at the corner. A revolve's flat ends are walls too, unless they are taken away. Where the ends of a
+ends square to it at the corner. Where that face is taken away too, the two are both open there.
+Past a curved face taken away the inside runs out a little beyond the solid; where the solid comes
+back within the thickness outside the face, as across a slot narrower than the thickness, it runs
+out less, down to an eighth of the thickness. A revolve's flat ends are walls too, unless they are taken away. Where the ends of a
 revolve of more than half a turn meet at the axis, the inside keeps the thickness from each end
 and is rounded about the axis.
 
@@ -101,7 +104,13 @@ and is rounded about the axis.
 other solid before or after it, is hollowed by its profile too. Each side, plane or cone, is
 moved in square to itself. The inside is the same draft of the profile, offset across by the
 thickness divided by the cosine of the draft angle, between the ends moved in. It can be open
-at its ends, or at a round side between outside corners, past which the inside runs out. A
+at its ends, or at a round side, past which the inside runs out. Where a round side taken away
+meets a flat side kept at an inside corner, as a round lobe on a block's edge does, the inside
+wall under the flat side stops a little short of the corner: the corner moves along a curve going
+up, and the inside's faces are flat. On a lobe of radius 4 on a block 10 high it stops about a
+fiftieth of the thickness short at small drafts and up to 0.25 at a draft of 10°, and the volume
+stays within 0.22% of a shell whose walls reach the corner. The group says how far short in a
+note on its screen (and in a script, `Note()` on the group). A
 two-sided draft's inside leans both ways from its neutral plane, as the solid does. (A drafted
 extrusion of lines only has flat faces, and is hollowed like any solid of flat faces.)
 
@@ -146,10 +155,11 @@ through it.
 - A face moved out that would come out of the solid is refused. So is one that would leave a
   wall beyond it thinner than the thickness, where a part joined to another is thinner there than
   twice the thickness.
-- A revolve's curved face opened at an inside corner beside a face that rises again within the
-  thickness, as a step narrower than the thickness with a second rise beyond it, is refused: the
-  inside would cut into the rise. So is one beside a cone, a sphere or a torus that is taken away
-  too. A drafted extrusion's round side can be opened only between outside corners.
+- A revolve's curved face opened where the solid comes back within an eighth of the thickness
+  outside it, as across a slot that narrow, is refused: the inside would cut into the far side.
+  A drafted extrusion's round side opened at an inside corner beside a round side kept is
+  refused, and beside a flat side kept where the corner is too tight for the wall's end to step
+  round it.
 - A profile of curves other than lines and arcs is refused.
 - Beside a round hole, walls thinner than about twice the chord tolerance (how far the mesh may
   stray from the true surface, set on the configuration screen) can come out unsound: the hole's

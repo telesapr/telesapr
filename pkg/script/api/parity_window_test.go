@@ -784,6 +784,7 @@ Expr                  -q
 Value                 -q
 Faces                 -q
 Problem               -q
+Note                  -q
 Edges                 -q
 Solid                 -q
 SolidEdges            -q

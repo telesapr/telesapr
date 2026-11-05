@@ -183,8 +183,9 @@ func (t *Topology) creaseEndAt(v int, edges []filletEdge, byEdge map[int]int, fl
 // plane, as a crease end runs to the faces across. Where the fillets'
 // tangent lines reach the sharp edges at one point each, both ends,
 // their sections projected along their edges onto the plane, are one
-// curve, which they share; where not, the mitre is no plane, and the
-// corner is refused as before.
+// curve, which they share; where not, as at unlike radii, each ends on
+// its own curve in the plane and the plane between them is a step face
+// (creaseStep), where OpenCASCADE blends the two.
 
 // creasePairOf is the two opposite rounded edges at v, each one's faces
 // in the order of the sharp edges, sharp, they go on into the other's
@@ -263,25 +264,45 @@ func (t *Topology) creasePairAt(v int, edges []filletEdge, byEdge map[int]int, f
 		}
 		ends[i] = sec
 	}
-	// The two ends one curve, else the fillets' surfaces don't meet in
-	// the plane.
-	other := ends[1]
-	if !other.Start().Equals(ends[0].Start()) {
-		other.Reverse()
+	// Each end run from the first sharp edge to the second.
+	onEdge := func(q geom.Vector, x int) bool {
+		w := t.edgeAway(x, v)
+		off := q.Minus(p)
+		return off.Minus(w.ScaledBy(off.Dot(w))).Magnitude() < 10*geom.LengthEps
 	}
-	for _, u := range []float64{0, 0.25, 0.5, 0.75, 1} {
-		if ends[0].PointAt(u).Minus(other.PointAt(u)).Magnitude() > geom.LengthEps {
-			return nil, filletErr(p, "the two fillets' ends don't meet in one curve at the corner; round the other two edges too")
+	for i := range ends {
+		if !onEdge(ends[i].Start(), sharp[0]) {
+			ends[i].Reverse()
 		}
+		if !onEdge(ends[i].Start(), sharp[0]) || !onEdge(ends[i].Finish(), sharp[1]) {
+			return nil, filletErr(p, "a radius this large is wider than a face at the edge's end")
+		}
+	}
+	same := true
+	for _, u := range []float64{0, 0.25, 0.5, 0.75, 1} {
+		same = same && ends[0].PointAt(u).Minus(ends[1].PointAt(u)).Magnitude() <= geom.LengthEps
 	}
 	c := &filletCorner{kind: creaseCorner, at: map[[2]int]geom.Vector{}, long: -1, r: fes[0].r,
 		chain: []srf.SBezier{ends[0]}}
-	for _, fe := range fes {
+	if !same {
+		// The two ends apart, as for unlike radii: each fillet ends on its
+		// own curve in the plane, and the plane between them is a face, a
+		// step from the one fillet's end to the other's, along the sharp
+		// edges between where each reaches them.
+		if err := t.creaseStep(c, v, fes, sharp, ends, n); err != nil {
+			return nil, err
+		}
+	}
+	for i, fe := range fes {
+		end := ends[i]
+		if same {
+			end = ends[0]
+		}
 		margin := math.Max(fe.ss[0], fe.ss[1]) + 2*fe.r
 		for k := range 2 {
-			q := ends[0].Start()
+			q := end.Start()
 			if fe.f[k] != t.faceHolding(q, fe.f) {
-				q = ends[0].Finish()
+				q = end.Finish()
 			}
 			if math.Abs(q.Minus(p).Dot(fe.dir)) > margin-geom.LengthEps {
 				return nil, filletErr(p, "the fillet's end runs too far past the corner")
@@ -289,25 +310,103 @@ func (t *Topology) creasePairAt(v int, edges []filletEdge, byEdge map[int]int, f
 			c.at[[2]int{fe.e, fe.f[k]}] = q
 		}
 	}
-	for _, s := range sharp {
-		var q geom.Vector
-		var found bool
-		for _, e := range []geom.Vector{ends[0].Start(), ends[0].Finish()} {
-			off := e.Minus(p)
-			w := t.edgeAway(s, v)
-			if off.Minus(w.ScaledBy(off.Dot(w))).Magnitude() < 10*geom.LengthEps {
-				q, found = e, true
-			}
-		}
-		reach := q.Minus(p).Dot(t.edgeAway(s, v))
-		if !found || reach < 10*geom.LengthEps || reach > t.straightLen(s)-10*geom.LengthEps {
-			return nil, filletErr(p, "a radius this large is wider than a face at the edge's end")
-		}
+	for j, s := range sharp {
 		for _, f := range t.EdgeFaces(s) {
+			i := 0
+			if f == fes[1].f[0] || f == fes[1].f[1] {
+				i = 1
+			}
+			q := ends[i].Start()
+			if same {
+				q = ends[0].Start()
+			}
+			if j == 1 {
+				q = ends[i].Finish()
+				if same {
+					q = ends[0].Finish()
+				}
+			}
+			reach := q.Minus(p).Dot(t.edgeAway(s, v))
+			if reach < 10*geom.LengthEps || reach > t.straightLen(s)-10*geom.LengthEps {
+				return nil, filletErr(p, "a radius this large is wider than a face at the edge's end")
+			}
 			c.at[[2]int{s, f}] = q
 		}
 	}
 	return c, nil
+}
+
+// creaseStep sets c up for two opposite fillets whose ends at v, ends,
+// each run from sharp[0] to sharp[1] in the plane of normal n, lie
+// apart: each strip ends on its own curve (c.arcs), the face of the
+// fillet nearer v along a sharp edge is split where the other's reaches
+// it (c.splitAt), and the plane between the two curves is a plate.
+func (t *Topology) creaseStep(c *filletCorner, v int, fes [2]*filletEdge, sharp [2]int, ends [2]srf.SBezier, n geom.Vector) error {
+	p := t.Vertices[v].P
+	c.arcs = map[int]srf.SBezier{fes[0].e: ends[0], fes[1].e: ends[1]}
+	c.splitAt = map[[2]int]geom.Vector{}
+	inner := [2]int{-1, -1}
+	for j, s := range sharp {
+		w := t.edgeAway(s, v)
+		q := [2]geom.Vector{ends[0].Start(), ends[1].Start()}
+		if j == 1 {
+			q = [2]geom.Vector{ends[0].Finish(), ends[1].Finish()}
+		}
+		d0, d1 := q[0].Minus(p).Dot(w), q[1].Minus(p).Dot(w)
+		if math.Abs(d0-d1) <= 10*geom.LengthEps {
+			continue
+		}
+		in := 0
+		if d1 < d0 {
+			in = 1
+		}
+		inner[j] = in
+		// The face of the inner fillet goes on along s to the outer's
+		// point, where the plate meets it.
+		for _, f := range t.EdgeFaces(s) {
+			if f == fes[in].f[0] || f == fes[in].f[1] {
+				c.splitAt[[2]int{s, f}] = q[1-in]
+			}
+		}
+	}
+	if inner[0] >= 0 && inner[1] >= 0 && inner[0] != inner[1] {
+		return filletErr(p, "the two fillets' ends cross at the corner; round the other two edges too")
+	}
+	// The plate's loop runs each end the other way to the strip that ends
+	// on it: a strip runs its end from its first face's point to its
+	// second's at its edge's far vertex, the other way at its near one.
+	var arcs [2]srf.SBezier
+	for i, fe := range fes {
+		from := fe.f[1]
+		if v == fe.v[0] {
+			from = fe.f[0]
+		}
+		sb := ends[i]
+		fromS := t.faceHolding(sb.Start(), fe.f) == from
+		if !fromS {
+			sb.Reverse()
+		}
+		arcs[i] = sb
+	}
+	if !arcs[0].Finish().Equals(ends[0].Finish()) == !arcs[1].Finish().Equals(ends[1].Finish()) {
+		return filletErr(p, "the two fillets' ends run the same way round the corner")
+	}
+	loop := []srf.SBezier{arcs[0]}
+	if !arcs[0].Finish().Equals(arcs[1].Start()) {
+		loop = append(loop, srf.SBezierFrom2(arcs[0].Finish(), arcs[1].Start()))
+	}
+	loop = append(loop, arcs[1])
+	if !arcs[1].Finish().Equals(arcs[0].Start()) {
+		loop = append(loop, srf.SBezierFrom2(arcs[1].Finish(), arcs[0].Start()))
+	}
+	var pts []geom.Vector
+	for _, sb := range loop {
+		for _, u := range []float64{0, 0.25, 0.5, 0.75} {
+			pts = append(pts, sb.PointAt(u))
+		}
+	}
+	c.plates = []cornerPlate{{s: planeOver(pts, n), loop: loop}}
+	return nil
 }
 
 // faceHolding is the one of fs whose plane q lies in, of two flat faces.

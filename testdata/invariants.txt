@@ -181,7 +181,7 @@ group/boolean_tangent_spline/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed
 group/boolean_tangent_spline/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 group/boolean_tangent_spline/normal.slvs g3 tri=12 faces=6 naked=0 inter=0 failed=false vol=216000 com=0,0,0 min=-30,-30,-30 max=30,30,30 topo=0 euler=2
 group/boolean_tangent_spline/normal.slvs g4 tri=12 faces=6 naked=0 inter=0 failed=false vol=216000 com=0,0,0 min=-30,-30,-30 max=30,30,30 topo=0 euler=2
-group/boolean_tangent_spline/normal.slvs g5 tri=164 faces=8 naked=0 inter=0 failed=false vol=204687.09721630058 com=-1.1718932909884496,1.079453499290919,-0.82903878194206626 min=-30,-30.000000000000014,-30 max=30.000000000000004,30,30.000000000000007 topo=0 euler=2
+group/boolean_tangent_spline/normal.slvs g5 tri=158 faces=8 naked=0 inter=0 failed=false vol=204683.07250449754 com=-1.1716580426666214,1.0800630137301002,-0.82935003053944056 min=-30,-30.000000000000014,-30 max=30.000000000000004,30,30.000000000000007 topo=0 euler=2
 group/force_to_mesh/difference.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 group/force_to_mesh/difference.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 group/force_to_mesh/difference.slvs g3 tri=16 faces=0 naked=0 inter=0 failed=false vol=1.5812199213663622 com=0.083203907844943206,-0.11074371957313663,0.5 min=-1,-1.6126052390506482,0 max=1.5498346036820765,1,1
@@ -253,7 +253,7 @@ request/line_segment/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 request/line_segment/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 request/ttf_text/extrude.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 request/ttf_text/extrude.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-request/ttf_text/extrude.slvs g3 tri=3196 faces=43 naked=0 inter=0 failed=false vol=427.97654690828114 com=7.5350141277267406,-0.44005349101752878,3.000020889919405 min=-5,-5.227792505174877,0 max=20.535175800323486,5,6.0000000000000027 topo=0 euler=0 patches=127
+request/ttf_text/extrude.slvs g3 tri=3190 faces=43 naked=0 inter=0 failed=false vol=427.97654690828102 com=7.5350141277267424,-0.44005349101752961,3.0000208899194098 min=-5,-5.227792505174877,0 max=20.535175800323486,5,6.0000000000000027 topo=0 euler=0 patches=127
 request/ttf_text/extrude_kerning.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 request/ttf_text/extrude_kerning.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 request/ttf_text/extrude_kerning.slvs g3 tri=1810 faces=19 naked=0 inter=0 failed=false vol=229.49350767412412 com=3.0545737511544027,-0.32343717676105016,3.0000184855457945 min=-4.9241196503862739,-5.2277925051748753,0 max=10.167436599731445,4.5671337842941284,6.0000000000000018 topo=0 euler=2 patches=69

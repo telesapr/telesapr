@@ -173,7 +173,7 @@ reach the sharp edge at two points. Where the saddle is steep and the three have
 the patches would fold, so the chamfers are cut in two goes, the ridges and the valleys apart,
 each ending on the faces across the middle. One of the four edges chamfered alone runs on into the two
 faces across the middle, and two opposite ones meet in a mitre in the plane of the two left
-sharp; a ridge and a valley side by side are each cut up to the sharp edge beside it, and
+sharp, with a flat step in that plane between their ends where their distances differ; a ridge and a valley side by side are each cut up to the sharp edge beside it, and
 patches fill the corner between.
 
 OpenCASCADE differs from this in two places. At a corner of three where one crossing point lies

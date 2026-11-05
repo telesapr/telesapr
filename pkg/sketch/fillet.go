@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"slices"
+	"strconv"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -144,8 +145,10 @@ func (g *Group) generateFilletShell(sk *Sketch) {
 	}
 	picks := filletPicks(segs, g.EdgeRadii)
 	var sh srf.SShell
+	sh.PaceBy(sk.kernelPace())
 	sh.MakeFromCopyOf(&prev.RunningShell)
-	if err := topo.FilletPicks(&sh, picks, g.ValB, srf.OriginFor(g.H.V, 0), false); err != nil {
+	made, err := topo.FilletPicksMade(&sh, picks, g.ValB, srf.OriginFor(g.H.V, 0), false)
+	if err != nil {
 		if fe, ok := errors.AsType[*topo.FilletError](err); ok {
 			at := fe.At
 			g.setProblem(&at, "%v", err)
@@ -154,6 +157,15 @@ func (g *Group) generateFilletShell(sk *Sketch) {
 		}
 		return
 	}
+	if made != g.ValB {
+		g.Note = fmt.Sprintf("made at radius %s mm, the nearest the kernel can cut to %s mm", sizeText(made), sizeText(g.ValB))
+	}
 	g.RunningShell = sh
 	g.ThisShell.MakeFromCopyOf(&sh)
+}
+
+// sizeText is a fillet's size in mm as a notice shows it: to a tenth of
+// a micrometre, without trailing zeros.
+func sizeText(mm float64) string {
+	return strconv.FormatFloat(math.Round(mm*1e4)/1e4, 'f', -1, 64)
 }

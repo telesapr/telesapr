@@ -1,7 +1,6 @@
 package topo_test
 
 import (
-	"errors"
 	"math"
 	"os"
 	"path/filepath"
@@ -119,24 +118,4 @@ func saddleLines(lines []string) []string {
 		lines = lines[:min(3, len(lines))]
 	}
 	return lines
-}
-
-// TestFilletSaddleTwoRefused: two opposite of a saddle's four edges
-// rounded at unlike radii, the other two left sharp, is refused at the
-// corner with a place, not made wrong: the two fillets' tangent lines
-// don't reach the sharp edges at one point, so their mitre is no plane.
-// (Two side by side were refused here before 2026-11-04;
-// TestFilletSaddleSide makes them.)
-func TestFilletSaddleTwoRefused(t *testing.T) {
-	t.Parallel()
-	for _, two := range [][2]int{{0, 1}, {2, 3}} {
-		sh, picks, err := mixedSaddle(0.5, 0.5, [4]float64{1, 2, 1, 2}, srf.Tol(0.002, 20))
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = topo.FilletPicks(sh, []topo.FilletPick{picks[two[0]], picks[two[1]]}, 1, 1<<30, false)
-		if _, ok := errors.AsType[*topo.FilletError](err); !ok {
-			t.Errorf("edges %v: %v, want a refusal at the corner", two, err)
-		}
-	}
 }

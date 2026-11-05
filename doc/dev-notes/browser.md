@@ -72,6 +72,31 @@ software there with the same results.
   `bolt_m8x30` regenerated under node (`go_js_wasm_exec`, machine loaded): the longest stretch
   without a yield was 8 to 50 s, the thread's union, and is 0.16 to 0.46 s, in 7362 paces;
   the whole took as long (8.5 to 14 s, noisy). Natively unpaced, nothing changed.
+- Inside a feature too (2026-11-05): the pace goes with the shell. A copy of a paced shell
+  (`MakeFromCopyOf`, `Clone`) and a Boolean of it with another take it, and keep it until
+  `PaceBy(nil)`; its triangulation and the mender pace per face; `topo.Build` per surface and
+  per edge (`findSheets`); the rolling ball per section and foot (`section`, `onEdge`); a rigid
+  sweep per step. The sketch gives the pace to what a fillet, a chamfer and a shell work on
+  (`lendPace`, which writes nothing where there is no pace, as natively, so a solid other
+  goroutines read is never written), and to the group's own shell, and takes it back once the
+  group's solid is made (`dropPace`), before the cache of solids keeps it. Measured over every
+  fixture of `testdata/solid` and `testdata/thread` under node (`go_js_wasm_exec`, machine
+  loaded 70 to 130): before, 13 held the page more than 0.2 s at a time (the most, a guided
+  closed loft, 1.27 s; a closed sweep 1.04 s; fillets 0.37 s); now only the two guided closed
+  lofts, 0.56 and 0.65 s, whose skins `pkg/topo` builds and joins from nothing. Natively no
+  golden moved.
+- What `pkg/topo` builds from nothing too (2026-11-05): a closed or guided loft's builder and a
+  fitted sweep's path are given the pace (`MakeClosedLoftHeld`, `MakeClosedGuidedLoftHeld`,
+  `MakeGuidedLoftThrough`, `MakeSmoothLoftThrough` take it last; `topo.SweepPath.PaceBy`, lent
+  by the sketch as a shell's is), which their skins' topology (`joinSkins`, `closeSkins`, so
+  `Build`) and a fitted sweep's rounds of sections call. The display mesh paces too: the running
+  shell is lent the pace while it is triangulated, the mender's check paces every 1024 triangles,
+  and the outlines and the k-d trees under them every 2048 (`MakeOutlinesPacedInto`,
+  `SKdNodeFromPaced`), the trees as SKdNodeFrom builds them. Measured over the 88 fixtures of
+  `testdata/solid` and `testdata/thread` under node (`go_js_wasm_exec`, load 12), the solid made
+  and then its display mesh and outlines: before, 32 held the page over 0.2 s at a time (the
+  most, 0.85 to 3.6 s, in the display mesh); now none over 0.1 s (the most, a ring swept, 0.099
+  s). Natively no golden moved.
 - The keys a browser keeps (Ctrl+N, Ctrl+T, Ctrl+W, with Shift too) are taken as Ctrl+Alt and the
   key (`browserCtrlKey`, `keys.go`); full screen, `navigator.keyboard.lock` gives the page the
   Ctrl keys themselves where the browser has it (Chromium). Alt alone still opens the menus by
@@ -161,9 +186,6 @@ headless platform, timed under node) was removed on 2026-11-03; it is in `git sh
 
 ## Open
 
-- Only a group's Boolean is paced: a group's own long work (a sweep, a fillet's rolling ball, the
-  mesh for display) and the Booleans inside features (`pkg/topo`'s shells, a sweep's stretches)
-  still hold the page for their length; each would take a pace the same way.
 - The agent's connection comes through postMessage (`pkg/script/agent/socket_js.go`,
   `msgconn.go`, `web/agent-client.js`), carrying the agent's own protocol, not MCP. An MCP client
   outside the browser reaches it through the extension in `cmd/telesapr-web/extension` and

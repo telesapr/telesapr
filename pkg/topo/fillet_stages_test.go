@@ -90,18 +90,19 @@ func TestFilletStages(t *testing.T) {
 }
 
 // What neither the stages nor a setback rounds is refused, saying why:
-// two opposite of a saddle's four edges at its corner rounded at unlike
-// radii, the other two left sharp, whose mitre would be no plane (three,
-// the fourth left sharp, are made since 2026-11-04:
-// TestFilletSaddleSharp; one alone, two opposite alike or two side by
-// side since too: TestFilletSaddleOne, TestFilletSaddlePair,
-// TestFilletSaddleSide). Two top edges of different radii
-// over an upright left sharp are made since 2026-10-29
+// two opposite of a saddle's four edges at its corner rounded at radii
+// so unlike, 1 and 30, that the larger's end runs past the edges left
+// sharp (two opposite at unlike radii are made since 2026-11-05, a step
+// between their ends: TestFilletSaddlePairUnlike; three, the fourth left
+// sharp, since 2026-11-04: TestFilletSaddleSharp; one alone, two
+// opposite alike or two side by side since too: TestFilletSaddleOne,
+// TestFilletSaddlePair, TestFilletSaddleSide). Two top edges of different
+// radii over an upright left sharp are made since 2026-10-29
 // (TestFilletRadiiPairOracle); a top ring larger than the uprights it
 // would go round is set back (TestFilletSetback).
 func TestFilletStagesRefused(t *testing.T) {
 	t.Parallel()
-	sh, picks, err := mixedSaddle(0.5, 0.5, [4]float64{1, 2, 1, 2}, srf.Tolerance{})
+	sh, picks, err := mixedSaddle(0.5, 0.5, [4]float64{1, 30, 1, 1}, srf.Tolerance{})
 	if err != nil {
 		t.Fatal(err)
 	}

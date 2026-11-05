@@ -845,6 +845,7 @@ func sweepPathOf(chain []pathPiece, g *Group, reach float64) (*topo.SweepPath, e
 func (g *Group) generateFittedSweepShell(sk *Sketch, src *Group, start, end uint32) {
 	prof := g.sweepProfile(src)
 	next := srf.OriginFor(g.H.V, 0)
+	defer sk.lendPathPace(g.fittedPath)()
 	for i := range prof.Sets {
 		set := &prof.Sets[i]
 		loops := [][]srf.SBezier{set.Outer.Curves}

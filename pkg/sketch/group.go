@@ -364,6 +364,10 @@ type Group struct {
 	// group's input, such as an edge a chamfer can't cut; the group
 	// then adds no solid. It is not saved.
 	Problem GroupProblem
+	// Note is what the last regeneration made differently from what the
+	// group asks for, though it made it, such as a shell's wall stopping
+	// short of an inside corner. It is not saved.
+	Note string
 
 	// prefixKey and solidKey name what the group's entities and its
 	// solid were made from (solid_cache.go); zero when unknown.

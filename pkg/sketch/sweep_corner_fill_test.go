@@ -127,8 +127,12 @@ func joinedBandArea(bands []band2, w float64, rows int) float64 {
 // the origin that held says a point is in, integrated by slanted rows,
 // each crossing found by halving.
 func regionArea(held func([2]float64) bool, rows int) float64 {
+	return regionAreaIn(held, rows, 60)
+}
+
+// regionAreaIn is regionArea within half of the origin.
+func regionAreaIn(held func([2]float64) bool, rows int, half float64) float64 {
 	sn, cs := math.Sincos(0.37)
-	const half = 60.0
 	inside := func(u, v float64) bool { return held([2]float64{cs*u - sn*v, sn*u + cs*v}) }
 	h := 2 * half / float64(rows)
 	cols := 4 * rows

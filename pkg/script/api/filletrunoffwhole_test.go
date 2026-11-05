@@ -3,10 +3,10 @@ package api
 import (
 	"fmt"
 	"math"
-	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // gabledAdded is what a fillet (or chamfer) of size r of the edge of
@@ -53,15 +53,6 @@ func blendSectionTop(r float64, chamfer bool) (func(y float64) float64, float64)
 	return func(y float64) float64 { return zc - math.Sqrt(math.Max(0, r*r-(y-1-r)*(y-1-r))) }, 5 * (1 + r) / (5 + r)
 }
 
-// takesSideRefused are the blends of TestBlendTakesSideFaceWhole that
-// are refused: the end section is cut by both slopes, the far one's
-// carried on past the ridge, which the next faces' growing over the
-// fillet up to the ridge doesn't follow.
-var takesSideRefused = map[string]bool{
-	"fillet l 1.5 r 2.2": true, "chamfer l 1.5 r 1.4": true, "chamfer l 2 r 1.8": true,
-	"chamfer l 2.5 r 2.2": true,
-}
-
 // Blends of the edge a short plate with a gabled top stands on a rod by,
 // so large that the ball's contact with the plate's side lies above one
 // slope of the top or the other all along: the blend takes the side
@@ -70,10 +61,18 @@ var takesSideRefused = map[string]bool{
 // the ridge's line out to where the cuts meet, the ends by the end
 // sections, and the side goes. Refused before 2026-11-04 as running off
 // "past the next one too" or "all along"; OpenCASCADE refuses every
-// one. Each is sound and adds what gabledAdded integrates: chamfers
-// within 0.3%, fillets within 0.03, as a fillet of this edge whose top
-// is too tall to run off does at 1.8 (0.02 short), the fillet's mesh
-// lying inside its surface.
+// one. Where the end section reaches above the far slope's plane
+// carried on past the ridge, as the largest blends of the shortest plates
+// do, it reaches above the near slope there too, which cuts that part
+// away first: refused as running off "at both its ends" before
+// 2026-11-05. Each is sound and adds what gabledAdded integrates: chamfers
+// within 0.3%, fillets within six times the chord tolerance (they come
+// out 2 to 3.6 times it over, the meshes' chords; a fillet of this edge
+// whose top is too tall to run off converges on its section's integral
+// as the chord tolerance is made finer). Under the ear clipper, which
+// meshed curved faces before the constrained Delaunay mesher, the
+// fillets came out up to 0.02 short, at any chord tolerance: its
+// triangles strayed past the tolerance.
 func TestBlendTakesSideFaceWhole(t *testing.T) {
 	t.Parallel()
 	type tc struct {
@@ -101,12 +100,6 @@ func TestBlendTakesSideFaceWhole(t *testing.T) {
 		hMid := 0.58 + c.l/4
 		edge, before := gabledPlateOnRod(d, 10, c.l, 0.58, hMid)
 		g, err := blendOrRefusal(d, edge, c.r, c.chamfer)
-		if takesSideRefused[name] {
-			if err == nil || !strings.Contains(err.Error(), "runs off the faces at both its ends") {
-				t.Errorf("%s: %v, want a refusal", name, err)
-			}
-			continue
-		}
 		if err != nil {
 			t.Errorf("%s: %v", name, err)
 			continue
@@ -117,7 +110,9 @@ func TestBlendTakesSideFaceWhole(t *testing.T) {
 			continue
 		}
 		added, want := rep.Volume-before, gabledAdded(c.l, 0.58, hMid, c.r, c.chamfer)
-		tol := 0.03
+		var chord float64
+		d.With(func(sk *sketch.Sketch) { chord = sk.Tol().ChordTolMm() })
+		tol := 6 * chord
 		if c.chamfer {
 			tol = 0.003 * want
 		}

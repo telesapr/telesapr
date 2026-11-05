@@ -133,7 +133,7 @@ row 55    (none)
  0-99 64 61 0
 row 57 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8, of 11 patches\nTriangles: 604\nVolume: 6.29 cm³\nCenter of mass: (-0.01, 10.01, 0.02)\nExtent: 20.00 x 20.00 x 20.51
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8, of 11 patches\nTriangles: 596\nVolume: 6.29 cm³\nCenter of mass: (-0.01, 10.01, 0.02)\nExtent: 20.00 x 20.00 x 20.51
 row 0  home › g005-wrap   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
@@ -260,7 +260,7 @@ row 55    (none)
  0-99 64 61 0
 row 57 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8, of 11 patches\nTriangles: 616\nVolume: 6.31 cm³\nCenter of mass: (-0.02, 10.03, 0.05)\nExtent: 20.00 x 20.00 x 21.46
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8, of 11 patches\nTriangles: 592\nVolume: 6.31 cm³\nCenter of mass: (-0.02, 10.03, 0.05)\nExtent: 20.00 x 20.00 x 21.46
 row 0  home › g005-wrap   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
@@ -387,4 +387,4 @@ row 55    (none)
  0-99 64 61 0
 row 57 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8, of 11 patches\nTriangles: 624\nVolume: 6.25 cm³\nCenter of mass: (0.01, 9.98, -0.04)\nExtent: 20.00 x 20.00 x 20.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8, of 11 patches\nTriangles: 604\nVolume: 6.25 cm³\nCenter of mass: (0.01, 9.98, -0.04)\nExtent: 20.00 x 20.00 x 20.00

@@ -88,6 +88,7 @@ func (g *Group) fittedInStretches(sk *Sketch, src *Group, start, end uint32) *sr
 	if !sp.Spannable() {
 		return nil
 	}
+	defer sk.lendPathPace(sp)()
 	for _, f := range sweepCuts {
 		m, ok := sp.CutAt(0, sp.End(), f)
 		if !ok {

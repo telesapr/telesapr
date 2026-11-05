@@ -190,7 +190,7 @@ func TestClosedLoftSweep(t *testing.T) {
 			for j := 0; j < n; j += 3 {
 				held[j] = 0.6 + 0.2*float64(j%2)
 			}
-			sh, err = topo.MakeClosedLoftHeld(ringProfiles(n, 25, func(i int) []srf.SBezier { return shape(i, 0) }), held, col, 9, tol)
+			sh, err = topo.MakeClosedLoftHeld(ringProfiles(n, 25, func(i int) []srf.SBezier { return shape(i, 0) }), held, col, 9, tol, nil)
 		case "guided ring", "guided held ring":
 			// Circles only, and an even count round, for which the guide
 			// over their tops, rising and falling with them, closes.
@@ -210,7 +210,7 @@ func TestClosedLoftSweep(t *testing.T) {
 			for j := 0; j < n; j += 3 {
 				held[j] = 0.6 + 0.2*float64(j%2)
 			}
-			sh, err = topo.MakeClosedGuidedLoftHeld(loops, held, []topo.LoftGuide{guide}, col, 9, tol)
+			sh, err = topo.MakeClosedGuidedLoftHeld(loops, held, []topo.LoftGuide{guide}, col, 9, tol, nil)
 		default:
 			var loops [][]srf.SBezier
 			for i := range n {
@@ -226,7 +226,7 @@ func TestClosedLoftSweep(t *testing.T) {
 			for j := range middle {
 				middle[j] = 0.2 * float64(j%3)
 			}
-			sh, err = topo.MakeSmoothLoftThrough(loops, 0, topo.LoftEnds{}, topo.LoftSides{}, middle, col, 9, tol)
+			sh, err = topo.MakeSmoothLoftThrough(loops, 0, topo.LoftEnds{}, topo.LoftSides{}, middle, col, 9, tol, nil)
 		}
 		if err != nil {
 			return err
@@ -319,7 +319,7 @@ func TestClosedLoftHeld(t *testing.T) {
 					}
 				}
 			}
-			sh, err := topo.MakeClosedLoftHeld(loops, c.held, col, srf.OriginFor(9, 0), tol)
+			sh, err := topo.MakeClosedLoftHeld(loops, c.held, col, srf.OriginFor(9, 0), tol, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

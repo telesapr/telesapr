@@ -270,6 +270,13 @@ func (t *Topology) FaceAt(p geom.Vector) (int, float64) {
 		if s == nil {
 			continue
 		}
+		// A face whose surface's control points lie farther off than a
+		// face already found can't be nearer: the patch is inside their
+		// box, and a point projected past a plane's patch is over none of
+		// its loops nor on its edges.
+		if t.surfaceBoxDistance(s, p)-2*geom.LengthEps >= max(inD, onD) {
+			continue
+		}
 		var u, v float64
 		s.ClosestPointToUV(p, &u, &v, true)
 		q := s.PointAt(u, v)
@@ -297,7 +304,7 @@ func (t *Topology) FaceAt(p geom.Vector) (int, float64) {
 func (t *Topology) overFace(f int, s *srf.SSurface, u, v float64) bool {
 	uv := geom.Vector{X: u, Y: v}
 	for _, l := range t.Faces[f].Loops {
-		if pointInPolygon(uv, t.loopUV(s, t.Loops[l].CoEdges)) != t.Loops[l].Outer {
+		if pointInPolygon(uv, t.faceLoopUV(l, s)) != t.Loops[l].Outer {
 			return false
 		}
 	}

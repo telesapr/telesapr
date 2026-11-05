@@ -86,13 +86,19 @@ bd_warehouse's library have: tapers and ready-made fasteners.
 - DIN 513-3's nut deviation. 7H/8H/9H are taken as basic until DIN 513-1's axial play `a` is
   found.
 - B1.9's preferred pitches and the default pitch per size, which wait for B1.9 Table 1.
-- Chamfered nuts with B1.9 rounded roots, unsound at every chord tolerance for some sizes.
 - Multi-start allowances for B1.5 and B1.9, which wait for B1.5 appendix B's K factor.
 
 Chamfered nuts at coarse chord tolerances, unsound where the chamfer's cone met the ridges
 (buttress nuts from 0.2%, ISO, UNC and trapezoidal nuts from 0.5–1%), were fixed in `a68c4c8b`: a
 chamfered thread, and a buttress nut, is made at a tolerance of its own, a twentieth of the pitch
-or a tenth of a rounded crest's radius (`threadSolidTol`, `pkg/sketch/thread_tol.go`).
+or a tenth of a rounded crest's radius (`threadSolidTol`, `pkg/sketch/thread_tol.go`). Chamfered
+nuts with B1.9 rounded roots and a lead under about 2° (1/2-20, 1-12, 4-4 BUTT), unsound at every
+tolerance, were fixed on 2026-11-05 by a shallower boring cone, 56° to the axis (`turnSlope`); a
+2-8 BUTT nut, unsound still at every boring-cone slope (0.75 to 3) and depth (0.05 to 0.6 of the
+pitch), by an eighth chamfer try with its ridges a tenth of a pitch further past the ends (the last
+of `chamferTries`). Only that reach works: a twentieth of a pitch more or less fails at every
+tolerance, so the cause, where the Boolean fails among the ridges' far ends, the root's turn into
+the boring cone and the chamfer, is not known.
 
 **Against the others, parked in ROADMAP** ("Never asked for"):
 

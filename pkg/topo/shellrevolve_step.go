@@ -47,25 +47,35 @@ func insideCorners(ps []profilePiece, i int, n geom.Vector) (start, end bool) {
 // steps at an inside corner, or an error when it can't: beside a flat
 // face, kept or taken away, the step runs along its plane; beside a
 // sloping or curved face, kept, it leaves the corner into the empty
-// wedge outside it (cornerOut).
-func cornerSteps(ps []profilePiece, ds []float64, i int, axis, n geom.Vector, thick float64) (cornerStep, error) {
+// wedge outside it (cornerOut). Beside a curved face also taken away,
+// opens says which, it doesn't step: both run out, and their moved
+// pieces meet in the wedge outside the corner, clear of the solid.
+func cornerSteps(ps []profilePiece, ds []float64, opens []bool, i int, axis, n geom.Vector, thick float64) (cornerStep, error) {
 	k := len(ps)
 	start, end := insideCorners(ps, i, n)
-	var beside []int
-	if start {
-		beside = append(beside, (i+k-1)%k)
-	}
-	if end {
-		beside = append(beside, (i+1)%k)
-	}
-	for _, j := range beside {
+	check := func(j int) (bool, error) {
+		if opens[j] {
+			return false, nil
+		}
 		if !across(ps[j], axis) && ds[j] != thick {
-			return cornerStep{}, shellErr(ps[i].mid, "a curved face taken away meets, at an inside corner, a curved or sloping face "+
-				"also taken away; a shell steps round such a corner only beside a face kept")
+			return false, shellErr(ps[i].mid, "a curved face taken away meets, at an inside corner, a curved or sloping face "+
+				"lying inside another part; a shell steps round such a corner only beside a face kept or taken away")
 		}
 		if ds[j] != 0 && ds[j] != thick {
-			return cornerStep{}, shellErr(ps[i].mid, "a curved face taken away meets, at an inside corner, a face lying inside "+
+			return false, shellErr(ps[i].mid, "a curved face taken away meets, at an inside corner, a face lying inside "+
 				"another part; a shell steps round an inside corner only beside a face kept or taken away")
+		}
+		return true, nil
+	}
+	var err error
+	if start {
+		if start, err = check((i + k - 1) % k); err != nil {
+			return cornerStep{}, err
+		}
+	}
+	if end {
+		if end, err = check((i + 1) % k); err != nil {
+			return cornerStep{}, err
 		}
 	}
 	return cornerStep{start, end}, nil
@@ -261,4 +271,82 @@ func cornerOut(curved, beside profilePiece, d float64, c geom.Vector, curvedFirs
 		}
 	}
 	return best, true
+}
+
+// runOutFractions are the run-outs a curved face taken away tries, as
+// fractions of the thickness, longest first. Past the face, the run-out
+// lies in what is outside the solid; where the solid comes back within
+// the thickness (a slot narrower than it, a step that rises again), a
+// shorter run-out still clears the face and leaves the solid whole. The
+// shortest stays far above the chord tolerance, so the inside's face
+// never lies on the face it opens.
+var runOutFractions = []float64{1, 0.5, 0.25, 0.125}
+
+// runOutLoop is the inside's loop of the meridian ps, offset by ds, with
+// the curved pieces opens taken away run out past the solid: by the
+// thickness where that clears the solid, else by the longest of
+// runOutFractions that does, the same for all of them. The shortest
+// run-out's error stands when none does.
+func runOutLoop(ps []profilePiece, ds []float64, opens []bool, axis, n geom.Vector, thick float64,
+	inSolid func(geom.Vector) bool, what string) ([]srf.SBezier, error) {
+	var last error
+	for _, f := range runOutFractions {
+		d := append([]float64(nil), ds...)
+		for i := range ps {
+			if opens[i] {
+				d[i] = -thick * f
+			}
+		}
+		curves, err := runOutTry(ps, d, opens, axis, n, thick, inSolid, what)
+		if err == nil {
+			return curves, nil
+		}
+		last = err
+	}
+	return nil, last
+}
+
+// runOutTry is runOutLoop at one run-out, already in ds.
+func runOutTry(ps []profilePiece, ds []float64, opens []bool, axis, n geom.Vector, thick float64,
+	inSolid func(geom.Vector) bool, what string) ([]srf.SBezier, error) {
+	step := make([]cornerStep, len(ps))
+	for i := range ps {
+		if !opens[i] {
+			continue
+		}
+		if !runOutClear(ps[i], ds[i], n, inSolid) {
+			return nil, shellErr(ps[i].mid, "a curved face taken away has the solid again just outside it, nearer than "+
+				"an eighth of %s; the inside's run-out past the face would cut into the solid", what)
+		}
+		st, err := cornerSteps(ps, ds, opens, i, axis, n, thick)
+		if err != nil {
+			return nil, err
+		}
+		step[i] = st
+	}
+	return steppedLoop(ps, ds, step, axis, n, inSolid, what)
+}
+
+// runOutClear reports whether the band between piece p and p moved by d
+// (d < 0, out of its material) lies outside the solid, inSolid saying
+// where it is: sampled away from p's ends, whose corners cornerSteps
+// and steppedLoop see to.
+func runOutClear(p profilePiece, d float64, n geom.Vector, inSolid func(geom.Vector) bool) bool {
+	const along, out = 32, 4
+	for k := 1; k < along; k++ {
+		t := float64(k) / along
+		var at geom.Vector
+		if p.arc {
+			at = p.a.RotatedAbout(p.centre, n, p.angle*t)
+		} else {
+			at = p.a.Plus(p.b.Minus(p.a).ScaledBy(t))
+		}
+		into := intoAt(p, at)
+		for j := 1; j <= out; j++ {
+			if inSolid(at.Plus(into.ScaledBy(d * float64(j) / out))) {
+				return false
+			}
+		}
+	}
+	return true
 }

@@ -191,6 +191,8 @@ func (g *Group) refuseCrossing(sk *Sketch, comesBack func() bool, remake func() 
 	if g.Problem.Msg != "" || len(g.ThisShell.Surface) == 0 || !comesBack() {
 		return
 	}
+	// A builder that made the group's shell anew left it no pace.
+	g.ThisShell.PaceBy(sk.kernelPace())
 	at, crosses := shellCrossing(&g.ThisShell, false)
 	if !crosses {
 		return

@@ -131,7 +131,7 @@ func MakeSmoothLoft(loops [][]srf.SBezier, turn int, color core.RGBA, origin uin
 	if err != nil {
 		return nil, err
 	}
-	return closeSkins([][]*srf.BSplineSurface{{bs}}, color, origin, origin+1, origin+2, tol)
+	return closeSkins([][]*srf.BSplineSurface{{bs}}, color, origin, origin+1, origin+2, tol, nil)
 }
 
 // SmoothLoftSurface is the B-spline surface of a smooth loft through
@@ -189,13 +189,13 @@ func MakeSmoothLoftSides(loops [][]srf.SBezier, turn int, ends LoftEnds, sides L
 		if err != nil {
 			return nil, err
 		}
-		return closeSkins([][]*srf.BSplineSurface{{bs}}, color, origin, origin+1, origin+2, tol)
+		return closeSkins([][]*srf.BSplineSurface{{bs}}, color, origin, origin+1, origin+2, tol, nil)
 	}
 	b, err := smoothLoftBase(loops, turn, ends, sides)
 	if err != nil {
 		return nil, err
 	}
-	return closeSkins([][]*srf.BSplineSurface{{b.surface}}, color, origin, origin+1, origin+2, tol)
+	return closeSkins([][]*srf.BSplineSurface{{b.surface}}, color, origin, origin+1, origin+2, tol, nil)
 }
 
 // SmoothLoftSurfaceEnds is SmoothLoftSurface with its ends set.
@@ -321,13 +321,14 @@ func smoothLoftBase(loops [][]srf.SBezier, turn int, ends LoftEnds, sides LoftSi
 // to the plane of profile j + 2 (the first between the ends is j 0),
 // its slope across there middle[j] times the loft's length, as an end's
 // tangency does. The loft is then one surface from each such profile to
-// the next, meeting tangent there, all one face.
-func MakeSmoothLoftThrough(loops [][]srf.SBezier, turn int, ends LoftEnds, sides LoftSides, middle []float64, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
+// the next, meeting tangent there, all one face. pace, when not nil, is
+// called while its topology is built, as closeSkins calls it.
+func MakeSmoothLoftThrough(loops [][]srf.SBezier, turn int, ends LoftEnds, sides LoftSides, middle []float64, color core.RGBA, origin uint32, tol srf.Tolerance, pace func()) (*srf.SShell, error) {
 	bss, err := SmoothLoftThroughSurfaces(loops, turn, ends, sides, middle)
 	if err != nil {
 		return nil, err
 	}
-	return closeSkins([][]*srf.BSplineSurface{bss}, color, origin, origin+1, origin+2, tol)
+	return closeSkins([][]*srf.BSplineSurface{bss}, color, origin, origin+1, origin+2, tol, pace)
 }
 
 // SmoothLoftThroughSurfaces are the surfaces of MakeSmoothLoftThrough,

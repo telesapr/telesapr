@@ -210,6 +210,10 @@ type filletCorner struct {
 	// patches that fill the hole.
 	arcs       map[int]srf.SBezier
 	faceCurves map[int]srf.SBezier
+	// splitAt, by edge and face, is a point at which the face's straight
+	// side along a sharp edge is split, where a plate meets it along the
+	// rest (creaseStep).
+	splitAt map[[2]int]geom.Vector
 	// faceSplits, in place of a face's curve, is it in the pieces the
 	// patches meet it along, in order (saddleSharpAt).
 	faceSplits map[int][]srf.SBezier
@@ -246,9 +250,19 @@ func FilletNetwork(sh *srf.SShell, segs [][2]geom.Vector, r float64, origin uint
 // one is refused (notClosedMsg), so a fillet is never made open with
 // nothing said; on an error sh is left part made, for the caller to drop.
 func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) error {
+	_, err := FilletPicksMade(sh, picks, r, origin, flat)
+	return err
+}
+
+// FilletPicksMade is FilletPicks, and the size it made the fillet or
+// chamfer at: r, unless the kernel can't cut that size and one within
+// the chord tolerance of it was made (a foot only just past a flat
+// side, filletPastSides), which the caller should say.
+func FilletPicksMade(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) (float64, error) {
 	before := sh.Clone()
-	if err := filletPicksAny(sh, picks, r, origin, flat); err != nil {
-		return err
+	made, err := filletPicksAny(sh, picks, r, origin, flat)
+	if err != nil {
+		return r, err
 	}
 	bad := unsound(sh)
 	if !bad {
@@ -265,9 +279,9 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 		if flat {
 			what = "chamfer"
 		}
-		return filletErr(at, notClosedMsg, what)
+		return r, filletErr(at, notClosedMsg, what)
 	}
-	return nil
+	return made, nil
 }
 
 // notClosedMsg refuses a fillet or chamfer (%s) made, but not a closed
@@ -289,14 +303,21 @@ func NotClosedRefusal(err error) bool {
 const notClosedPrefix = "the rounded solid would not be closed"
 
 // filletPicksAny is FilletPicks without the check of its result: the
-// first of its ways that takes the picks.
-func filletPicksAny(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) error {
+// first of its ways that takes the picks, and the size it made them at
+// (FilletPicksMade).
+func filletPicksAny(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) (float64, error) {
 	err := filletPicks(sh, picks, r, origin, flat, nil)
 	if fx, ok := errors.AsType[*FilletError](err); ok && fx.off != nil {
 		// A circular fillet whose foot runs off its flat face into flat
 		// sides: made past them and cut back.
 		return filletPastSides(sh, picks, r, origin, flat, fx.off, err)
 	}
+	return r, filletPicksOther(sh, picks, r, origin, flat, err)
+}
+
+// filletPicksOther is filletPicksAny past a foot running off its face,
+// given filletPicks' err.
+func filletPicksOther(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool, err error) error {
 	if curvedEndRefusal(err) && len(picks) == 1 {
 		// An edge between flat faces that ends on a curved one: the
 		// rolling ball, whose end follows the curved face (roadmap 22.5);
@@ -788,6 +809,16 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 
 	for _, v := range vs {
 		c := corners[v]
+		if c.kind == creaseCorner {
+			// The step between two opposite fillets' ends (creaseStep).
+			for _, pl := range c.plates {
+				pl.s.Color = color
+				pl.s.Origin = next
+				next++
+				patches = append(patches, patch{pl.s, pl.loop, t.Vertices[v].P})
+			}
+			continue
+		}
 		if c.kind != setbackCorner {
 			continue
 		}
@@ -1670,6 +1701,9 @@ func (fe *filletEdge) connectors(t *Topology, v int, c *filletCorner, p, q geom.
 		return orientedLines(c.ends[fe.e], p)
 	}
 	if c.kind == creaseCorner {
+		if sb, ok := c.arcs[fe.e]; ok {
+			return orientChain([]srf.SBezier{sb}, p)
+		}
 		return orientChain(c.chain, p)
 	}
 	if c.kind == setbackCorner {
@@ -1765,7 +1799,19 @@ func (t *Topology) filletLoops(f int, edges []filletEdge, byEdge map[int]int, co
 					loop = append(loop, sb)
 				}
 			case t.Straight(x):
-				loop = append(loop, srf.SBezierFrom2(a, b))
+				m, split := geom.Vector{}, false
+				for _, w := range []int{va, vb} {
+					if c := corners[w]; c != nil {
+						if q, ok := c.splitAt[[2]int{x, f}]; ok {
+							m, split = q, true
+						}
+					}
+				}
+				if split && !m.Equals(a) && !m.Equals(b) {
+					loop = append(loop, srf.SBezierFrom2(a, m), srf.SBezierFrom2(m, b))
+				} else {
+					loop = append(loop, srf.SBezierFrom2(a, b))
+				}
 			case moved:
 				return nil, filletErr(a, "a curved edge of a face at the fillet would have to be cut")
 			default:

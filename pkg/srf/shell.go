@@ -74,19 +74,35 @@ type SShell struct {
 	// CleanupAfterBoolean drops it.
 	index *surfaceIndex
 
-	// pace is what the next Boolean made into the shell calls between
-	// the steps of its long loops (PaceBy); nil for none.
+	// pace is what the long loops of a Boolean made into the shell, and
+	// of its triangulation, call between their steps (PaceBy); nil for
+	// none.
 	pace func()
 }
 
-// PaceBy has the next Boolean made into s call pace between the steps
-// of its long loops (the curves split, the intersection curves, the
-// surfaces trimmed), on the goroutine that called it: a platform with
-// one thread, a browser page's, lets the page draw there during a
-// Boolean that takes seconds. The loops then run in order on that
-// goroutine, which gives the result they give at once. The Boolean
-// forgets pace when it is done; nil, the default, paces nothing.
+// PaceBy has the Booleans made into s and its triangulation call pace
+// between the steps of their long loops (the curves split, the
+// intersection curves, the surfaces trimmed, the surfaces meshed), on
+// the goroutine that called them: a platform with one thread, a
+// browser page's, lets the page draw there during a feature that takes
+// seconds. The loops then run in order on that goroutine, which gives
+// the result they give at once. The pace goes with the shell: a copy
+// of it (MakeFromCopyOf, Clone) and a Boolean of it with another take
+// it too, so the shells a feature makes from the one it is given pace
+// as it does, until PaceBy(nil). Nil, the default, paces nothing.
 func (s *SShell) PaceBy(pace func()) { s.pace = pace }
+
+// Pace is the pace s was given (PaceBy), nil for none: for a feature to
+// give the shells it makes from nothing what the shell it works on has.
+func (s *SShell) Pace() func() { return s.pace }
+
+// Paced calls the pace s was given (PaceBy), if any: for the long loops
+// of a feature working on s, between their steps. A nil s paces nothing.
+func (s *SShell) Paced() {
+	if s != nil {
+		s.paced()
+	}
+}
 
 // Clear resets all data.
 func (s *SShell) Clear() {
@@ -765,6 +781,9 @@ func (s *SShell) makeFirstOrderRevolvedRange(pt, axis geom.Vector, i0, i1 int) {
 func (s *SShell) MakeFromTransformationOf(a *SShell, t geom.Vector, q geom.Quaternion, scale float64) {
 	s.BooleanFailed = false
 	s.Tol = s.Tol.Or(a.Tol)
+	if s.pace == nil {
+		s.pace = a.pace
+	}
 	for i := range a.Surface {
 		ss := FromTransformationOf(&a.Surface[i], t, q, scale, true)
 		ss.Tol = s.Tol
@@ -796,8 +815,9 @@ func (s *SShell) TriangulateInto(mesh *SMesh) {
 func (s *SShell) TriangulateBySurface() []SMesh {
 	ms := make([]SMesh, len(s.Surface))
 	strays := make([]bool, len(s.Surface))
-	if len(s.Surface) < 2 || par.Workers() < 2 {
+	if len(s.Surface) < 2 || par.Workers() < 2 || s.pace != nil {
 		for i := range s.Surface {
+			s.paced()
 			strays[i] = s.Surface[i].triangulate(s, &ms[i], meshByTol)
 		}
 	} else {
@@ -1431,7 +1451,7 @@ func (s *SShell) FindCurveBySurface(h core.HSSurface) []*SCurve {
 // a triangulation (the trims' BSPs and edge lists) is left for the copy
 // to build again.
 func (s *SShell) Clone() SShell {
-	out := SShell{Tol: s.Tol, BooleanFailed: s.BooleanFailed}
+	out := SShell{Tol: s.Tol, BooleanFailed: s.BooleanFailed, pace: s.pace}
 	out.Surface = make([]SSurface, len(s.Surface))
 	for i := range s.Surface {
 		ss := s.Surface[i]

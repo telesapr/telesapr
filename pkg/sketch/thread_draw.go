@@ -934,7 +934,8 @@ func (d *threadDrawer) drawLathePolygon(pts []rz) {
 }
 
 // drawChamferedBlank is drawBlank at a chamfered end: the side at the
-// root turns, short of the end, into a cone at 45° that cuts the end
+// root turns, short of the end, into a cone at 45° (shallower in a nut
+// with rounded roots, turnSlope) that cuts the end
 // back inside the ridges' feet (layChamfer), at both ends with a
 // chamfered far end, and into the run-out's cone with a run-out; a
 // cosmetic thread's side, at the crest, into the chamfer's cone.
@@ -952,14 +953,18 @@ func (d *threadDrawer) drawChamferedBlank() {
 		out = -1
 	}
 	zb, zt := l.blankBottom, l.blankTop
-	zc := out * (root - cone)
+	k := l.turnSlope
+	if o.Cosmetic {
+		k = 1
+	}
+	zc := out * (root - cone) / k
 	// The side at the root, from the blank's bottom to its top.
-	side := []rz{{cone + out*zb, zb}, {root, zc}}
+	side := []rz{{cone + out*zb*k, zb}, {root, zc}}
 	switch {
 	case l.runOut:
 		side = append(side, rz{root, l.runFrom}, rz{l.runTo, zt})
 	case l.farChamfer:
-		side = append(side, rz{root, o.Length - zc}, rz{cone + out*(o.Length-zt), zt})
+		side = append(side, rz{root, o.Length - zc}, rz{cone + out*(o.Length-zt)*k, zt})
 	default:
 		side = append(side, rz{root, zt})
 	}

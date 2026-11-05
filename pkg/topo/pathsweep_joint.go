@@ -261,7 +261,7 @@ func (sp *SweepPath) makeJointed(loops [][]srf.SBezier, color core.RGBA, startFa
 			for li := range surfs {
 				chains[li] = surfs[li][pt.lo:pt.hi]
 			}
-			if sh, err = closeSkins(chains, color, c0, c1, id, sp.tol); err != nil {
+			if sh, err = closeSkins(chains, color, c0, c1, id, sp.tol, sp.pace); err != nil {
 				return nil, err
 			}
 			id += uint32(len(sh.Surface) - 2)

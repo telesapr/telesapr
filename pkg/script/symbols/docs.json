@@ -5630,6 +5630,10 @@
 						"decl": "func (g Group) Name() (name string)",
 						"text": "Name is the group's name."
 					},
+					"Note": {
+						"decl": "func (g Group) Note() (msg string)",
+						"text": "Note says how the group's solid, though made, differs from what the\ngroup asks for, as a shell's wall stopping short of an inside corner\nwhere a drafted round face taken away meets a flat one; or \"\" when it\nis as asked."
+					},
 					"Opacity": {
 						"decl": "func (g Group) Opacity() (alpha float64)",
 						"text": "Opacity is how opaque the group's solid is, 0 (clear) to 1."
@@ -10877,7 +10881,8 @@
 					}
 				},
 				"makers": [
-					"SKdNodeFrom"
+					"SKdNodeFrom",
+					"SKdNodeFromPaced"
 				]
 			},
 			"SKdNodeEdges": {
@@ -10983,6 +10988,10 @@
 					"MakeOutlinesInto": {
 						"decl": "func (m *SMesh) MakeOutlinesInto(sol *SOutlineList, edgeKind EdgeKind)",
 						"text": "MakeOutlinesInto lists the mesh's outline edges of the given kind: the edges two triangles share end for end, tagged 1 where they are emphasized or sharp; untagged edges between triangles with the same normal are left out, since they cannot produce an outline."
+					},
+					"MakeOutlinesPacedInto": {
+						"decl": "func (m *SMesh) MakeOutlinesPacedInto(sol *SOutlineList, edgeKind EdgeKind, pace func())",
+						"text": "MakeOutlinesPacedInto is MakeOutlinesInto calling pace, when not nil, between its steps and every outlinePaceEvery triangles, as a shell's pace is called (SShell.PaceBy), so a caller with one thread can draw meanwhile."
 					},
 					"MakeSectionPolygonInto": {
 						"decl": "func (m *SMesh) MakeSectionPolygonInto(h HalfSpace, dest *SPolygon) bool",
@@ -11297,9 +11306,17 @@
 						"decl": "func (s *SShell) MergeCoincidentSurfaces()",
 						"text": "MergeCoincidentSurfaces merges coincident, same-color planes that share an edge into one surface carrying all of their trims."
 					},
+					"Pace": {
+						"decl": "func (s *SShell) Pace() func()",
+						"text": "Pace is the pace s was given (PaceBy), nil for none: for a feature to give the shells it makes from nothing what the shell it works on has."
+					},
 					"PaceBy": {
 						"decl": "func (s *SShell) PaceBy(pace func())",
-						"text": "PaceBy has the next Boolean made into s call pace between the steps of its long loops (the curves split, the intersection curves, the surfaces trimmed), on the goroutine that called it: a platform with one thread, a browser page's, lets the page draw there during a Boolean that takes seconds."
+						"text": "PaceBy has the Booleans made into s and its triangulation call pace between the steps of their long loops (the curves split, the intersection curves, the surfaces trimmed, the surfaces meshed), on the goroutine that called them: a platform with one thread, a browser page's, lets the page draw there during a feature that takes seconds."
+					},
+					"Paced": {
+						"decl": "func (s *SShell) Paced()",
+						"text": "Paced calls the pace s was given (PaceBy), if any: for the long loops of a feature working on s, between their steps."
 					},
 					"Pieces": {
 						"decl": "func (s *SShell) Pieces() []*SShell",
@@ -11860,6 +11877,10 @@
 			"SKdNodeFrom": {
 				"decl": "func SKdNodeFrom(m *SMesh) *SKdNode",
 				"text": "SKdNodeFrom builds the kd-tree over copies of mesh m's triangles, in the shuffled order glibcRand gives them."
+			},
+			"SKdNodeFromPaced": {
+				"decl": "func SKdNodeFromPaced(m *SMesh, pace func()) *SKdNode",
+				"text": "SKdNodeFromPaced is SKdNodeFrom calling pace, when not nil, before it splits each node of kdPaceAt triangles or more, as a shell's pace is called (SShell.PaceBy)."
 			},
 			"STriangleFrom": {
 				"decl": "func STriangleFrom(meta STriMeta, a, b, c geom.Vector) STriangle",

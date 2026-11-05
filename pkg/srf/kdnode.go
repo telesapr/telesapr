@@ -71,6 +71,17 @@ func (g *glibcRand) rand() int {
 // SKdNodeFrom builds the kd-tree over copies of mesh m's triangles, in
 // the shuffled order glibcRand gives them.
 func SKdNodeFrom(m *SMesh) *SKdNode {
+	return SKdNodeFromPaced(m, nil)
+}
+
+// kdPaceAt is the fewest triangles a node of the tree holds for
+// SKdNodeFromPaced to pace before splitting it.
+const kdPaceAt = 2048
+
+// SKdNodeFromPaced is SKdNodeFrom calling pace, when not nil, before it
+// splits each node of kdPaceAt triangles or more, as a shell's pace is
+// called (SShell.PaceBy). The tree is SKdNodeFrom's.
+func SKdNodeFromPaced(m *SMesh, pace func()) *SKdNode {
 	copies := make([]STriangle, len(m.Triangles))
 	copy(copies, m.Triangles)
 	tra := make([]*STriangle, len(copies))
@@ -91,14 +102,18 @@ func SKdNodeFrom(m *SMesh) *SKdNode {
 	for i, tr := range tra {
 		tll[len(tra)-1-i] = tr
 	}
-	return skdNodeFromList(tll)
+	return skdNodeFromList(tll, pace)
 }
 
-// skdNodeFromList builds the kd-tree over tll.
-func skdNodeFromList(tll []*STriangle) *SKdNode {
+// skdNodeFromList builds the kd-tree over tll, calling pace as
+// SKdNodeFromPaced says.
+func skdNodeFromList(tll []*STriangle, pace func()) *SKdNode {
 	ret := &SKdNode{}
 	if len(tll) == 0 {
 		return ret
+	}
+	if pace != nil && len(tll) >= kdPaceAt {
+		pace()
 	}
 
 	var gtc, ltc [3]int
@@ -156,8 +171,8 @@ func skdNodeFromList(tll []*STriangle) *SKdNode {
 
 	ret.Which = which
 	ret.C = split[which]
-	ret.Gt = skdNodeFromList(lgt)
-	ret.Lt = skdNodeFromList(llt)
+	ret.Gt = skdNodeFromList(lgt, pace)
+	ret.Lt = skdNodeFromList(llt, pace)
 	return ret
 }
 

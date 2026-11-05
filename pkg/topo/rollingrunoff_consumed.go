@@ -115,7 +115,10 @@ func (rb *rollingBall) consumedRunOff(row []srf.SSurface, cuts []rbEndCut, isCha
 		}
 	}
 	// Side 1-j's contact stays under both next faces, and each end's
-	// section under the other end's next face.
+	// section under the other end's next face wherever it is under its
+	// own: where it reaches above the other's plane, carried on past the
+	// ridge, above its own too, its own cuts that away first (clipConsumed
+	// cuts by both), and the end face takes only what is under its own.
 	for b := range row {
 		c := row[b].EdgeCurve(uo)
 		for i := range consumedSamples + 1 {
@@ -128,13 +131,13 @@ func (rb *rollingBall) consumedRunOff(row []srf.SSurface, cuts []rbEndCut, isCha
 	}
 	m := len(row)
 	for k, ro := range []*rbRunOff{ro1, ro0} {
-		sec := row[0].EdgeCurve(0)
+		sec, own := row[0].EdgeCurve(0), ro0
 		if k == 1 {
-			sec = row[m-1].EdgeCurve(2)
+			sec, own = row[m-1].EdgeCurve(2), ro1
 		}
 		for i := range consumedSamples + 1 {
 			x := sec.PointAt(float64(i) / consumedSamples)
-			if ro.h(x) > 0 {
+			if ro.h(x) > 0 && own.h(x) <= 0 {
 				return nil, filletErr(x, "the fillet's end runs off the faces at both its ends here: make it smaller")
 			}
 		}

@@ -93,7 +93,7 @@ the second's points if a plane matched. It is not measurable in `pkg/srf`'s test
 
 ## Curved contact
 
-`TestCurvedContactProbe` (`TELESAPR_K3_PROBE=1`) takes what the planes leave, 108 Booleans each
+`TestCurvedContactSweep` (`TestCurvedContactProbe` until 2026-11-05, behind `TELESAPR_K3_PROBE=1`) takes what the planes leave, 108 Booleans each
 (offsets from -1e-2 to 1e-2, two tolerances, two turns, three Booleans), counting those that fail
 or leave the mesh open:
 
@@ -192,7 +192,7 @@ Since the spike (merged in `a68c4c8b`):
   No golden moved (`make test` and `make test-heavy` on the branch). A first version cut the
   circle only at the patch's sides and broke a hemisphere read from STEP cut by a block
   (`TestSolidBooleans`, `sphere_dome`): its patches are trimmed along a meridian inside them.
-- Sunk a hair under the CDT (`TestCurvedContactProbe`): ball 3 of 108 (12 under the ear clipper, 4
+- Sunk a hair under the CDT (`TestCurvedContactProbe`, now `TestCurvedContactSweep`): ball 3 of 108 (12 under the ear clipper, 4
   on devel with the CDT before the changes above), cylinder lying on a plate 30, as before. Those
   are slivers under the chord tolerance, the mesher's.
 - `shell-step` was regenerated on devel with the rest of the round.
@@ -207,6 +207,86 @@ Since the spike (merged in `a68c4c8b`):
   `moveOrphanTrims`) joins two such curves, running between the same ends along one exact curve,
   into one between the two kept faces along the points of both.
 
+## Resting on a plane (rd9, 2026-11-05)
+
+What the probe still had wrong, measured again after the CDT's sag change: ball 3 of 108, cylinder
+lying on a plate 30. Broken down, nearly all were failed Booleans, not slivers in a sound mesh:
+sunk 1e-5 below the plate, its plane cuts the cylinder in two lines 0.0126 mm apart, along both
+sides of the patch seam at its lowest line, and the strips of side and cap between them trim to
+nothing that closes (`AssemblePolygon` fails on edges of 0.003 in u). The cure is the fuse's, for
+the case the coaxial snaps leave: `snapTangent` (`pkg/srf/boolean_snap_tangent.go`) moves the
+second operand whole, rigidly, along a plane's normal, where a cylinder's side parallel to that
+plane, or a ball, is off touching it by more than `snapPlaneFloor` and less than a tenth of the
+chord tolerance, either operand's round on the other's plane; every match must ask the same move.
+After it the probe, now `TestCurvedContactSweep`, has every Boolean of the pin and the ball sound,
+and of the cylinder all but the unions within the snap's reach: two solids touching along a line,
+their volumes added, no manifold there, as the true union is (Check Solid's `Touches`). Standing a
+hair off, within the reach, now unions to the same touching pair where it gave two apart: as a
+block a hair off another's top stands on it.
+
+The seat's coincident rules (changes 2 and 3 above) were not widened past spheres: the sweep has no
+case left they would change, and on every curved face they moved threads and wrapped text.
+
 The libnmg plan's other parts were not needed by any probe case: vertex-to-vertex fusing past
 `fuseVertices`, splitting edges at vertices on them, and point-in-solid by several rays with explicit
 grazing results (`raycastClass` already tries 16 directions).
+
+## Touching tangent at a point (rd9, 2026-11-05, tried, not kept)
+
+Two exact tubes of one radius whose axes cross square meet in two ellipses that cross at the two
+points where the tubes touch tangent. Every Boolean of them fails, whatever the lengths past the
+crossing; tubes of radii 1 and 0.999 are sound. The march along a branch reaches a point where
+the normals' cross product, its direction, shrinks to nothing and turns over, and followed on it
+goes back the way it came; the loop finder (`marchLoop`) took such a there-and-back for a loop,
+its step growing near the point (the surfaces lie so close there that a long step projects
+anywhere along them) until it jumped back to its start.
+
+Tried, on a branch:
+- `marchFrom` ended a curve where the sine between the normals would fall to nothing within the
+  next step and the surfaces lay within a tenth of the chord tolerance with parallel normals there,
+  every branch ending on the same point; a curve ending so takes one seed, so a seed left alone
+  was still marched. `marchLoop` refused a loop through such a point, and steps projected more than
+  60° off their way. The Boolean was marked, and its difference (two pieces meeting at the point)
+  refused.
+- Union and intersection came out sound for 32 of 32 pairs with the patches' seams away from the
+  points (more than about a tenth of a radian), the intersection the Steinmetz solid's 16/3 r³
+  within the chords' bound. A seam through a point still fails: the seeds there are both
+  patches' corners.
+- Not kept: the rule also ended curves on thread models (`TestOpenDamaged/thread/face_m8`,
+  `screw_bsw`), at points on the rod where a ridge's surface comes tangent to it, and the
+  regeneration hung (over 30 minutes; 10 s without the rule). Requiring the normals to part past
+  the point at the rate they came together did not stop it.
+
+Next: take the touch only between surfaces known to be quadrics (circles extruded or lathed),
+or find the point by Newton on both surfaces with parallel normals rather than by extrapolating
+the march; then look at the sweep's case, where a lead's flat end lies a grazing distance from the
+point and a fitted tube's skin is off an exact one by more than the touch allows.
+
+## Equal pipes crossing, exact (rd9, 2026-11-05)
+
+On two cylinders of one radius r whose axes a and b cross at o, a point's distance from either axis
+is r, so (p−o)·a = ±(p−o)·b: the intersection lies in the two planes through o with normals a ± b,
+and on each it is the first cylinder's circle moved along a onto the plane, an affine image of a
+circle, exact as rational quadratic arcs (the map moves control points and keeps weights). Both
+ellipses pass through o ± r (a×b)/|a×b|, where the cylinders touch tangent. `intersectEqualCylinders`
+(`pkg/srf/surfinter_tee.go`) takes that case before the marcher, for patches `IsExtrusion` of a
+circle (`IsCircle`) of radii within `lengthEps` and axes within `lengthEps` of crossing: it cuts
+each ellipse at the touching points, at the crossings of both patches' sides and their faces'
+outlines (a side lies on its cylinder, and a cylinder meets the plane in the same ellipse, so the
+plane's sign along the side finds them), and keeps the spans whose middle lies on both patches.
+An operand's own exact edge passing through a touching point is split there in
+`MakeCopySplitAgainst` (`touchesOn`): a tee's branch ending at the main pipe's axis has its end's
+rim through both points, and without a vertex there its chords crossed the pipe's mesh beside them.
+
+`TestBooleanEqualCylindersCrossing`: 48 pairs (crosses and tees, 90° to 45°, the circles' seams on
+the touching points and off), every Boolean sound and within the chords' bound of the Steinmetz
+16 r³ / (3 sin θ), but 3 of the 12 tee differences at 45°: the branch's end rim lies inside the pipe
+but nearer it than the pipe's chords within a chord tolerance's reach of the touching point, and
+the two meshes cross there (faces closer than the chord tolerance, the mesher's). Regeneration
+checks no mesh, so `failCrossingTouch` meshes the result of any Boolean of equal crossing tubes and
+fails it if the mesh crosses itself or opens: the group says the Boolean failed, as before the
+change, instead of showing a solid that isn't sound. It costs one more triangulation of such a
+Boolean. Threads are not
+touched: the rule asks for two cylinders of one radius, which a thread's ridges and rod are not
+(`TestOpenDamaged` and `pkg/sketch`'s thread tests keep their times).
+

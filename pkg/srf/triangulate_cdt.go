@@ -653,7 +653,22 @@ func cellSag(srf *SSurface, ch *uvChart, x0, y0, x1, y1 float64) (sx, sy, sd flo
 	mid := func(p, q geom.Vector) geom.Vector { return p.Plus(q).ScaledBy(0.5) }
 	sx = max(at(xm, y0).Minus(mid(a, b)).Magnitude(), at(xm, y1).Minus(mid(c, d)).Magnitude(), at(xm, ym).Minus(mid(at(x0, ym), at(x1, ym))).Magnitude())
 	sy = max(at(x0, ym).Minus(mid(d, a)).Magnitude(), at(x1, ym).Minus(mid(b, c)).Magnitude(), at(xm, ym).Minus(mid(at(xm, y0), at(xm, y1))).Magnitude())
-	sd = max(m.Minus(mid(a, c)).Magnitude(), m.Minus(mid(b, d)).Magnitude()) - max(sx, sy)
+	// Across the middle: how far the surface's middle lies from the two
+	// triangles either diagonal makes, measured square to them. Measured
+	// from the diagonal's middle instead, a flat cell that is no
+	// parallelogram, as one between a cone's rulings, would count as
+	// sagging by how far its middle is from the diagonal's along it.
+	off := func(p, q0, q1, q2 geom.Vector) float64 {
+		n := q1.Minus(q0).Cross(q2.Minus(q0))
+		l := n.Magnitude()
+		if l < lengthEps*lengthEps {
+			return p.Minus(mid(q0, q2)).Magnitude()
+		}
+		return math.Abs(p.Minus(q0).Dot(n)) / l
+	}
+	ac := min(off(m, a, b, c), off(m, a, c, d))
+	bd := min(off(m, a, b, d), off(m, b, c, d))
+	sd = max(ac, bd) - max(sx, sy)
 	return sx, sy, sd
 }
 
@@ -716,7 +731,19 @@ func (r *cdtRegion) refinePoints(srf *SSurface, ch *uvChart, pts []cdt.Point, tr
 			}
 			return d > lim
 		}
-		if strays(ch.point(srf, cm).Minus(pa.Plus(pb).Plus(pc).ScaledBy(1.0 / 3)).Magnitude()) {
+		// How far a point of the surface lies from the triangle, square
+		// to it: the chart's middle of a triangle across a cone's rulings
+		// maps off the triangle's own middle along the triangle, which is
+		// no error, as the triangle covers the surface there.
+		n := pb.Minus(pa).Cross(pc.Minus(pa))
+		nl := n.Magnitude()
+		off := func(q, chordMid geom.Vector) float64 {
+			if nl < lengthEps*lengthEps {
+				return q.Minus(chordMid).Magnitude()
+			}
+			return math.Abs(q.Minus(pa).Dot(n)) / nl
+		}
+		if strays(off(ch.point(srf, cm), pa.Plus(pb).Plus(pc).ScaledBy(1.0/3))) {
 			add(cm, shortest)
 			continue
 		}
@@ -728,7 +755,7 @@ func (r *cdtRegion) refinePoints(srf *SSurface, ch *uvChart, pts []cdt.Point, tr
 			}
 			done[key] = true
 			em := cdt.Point{X: (pts[i].X + pts[j].X) / 2, Y: (pts[i].Y + pts[j].Y) / 2}
-			if strays(ch.point(srf, em).Minus(at(i).Plus(at(j)).ScaledBy(0.5)).Magnitude()) {
+			if strays(off(ch.point(srf, em), at(i).Plus(at(j)).ScaledBy(0.5))) {
 				add(em, shortest)
 			}
 		}

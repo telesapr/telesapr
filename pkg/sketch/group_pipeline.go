@@ -102,8 +102,13 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	defer trace.StartRegion(context.Background(), "solid").End()
 	defer sk.timed(g.H, timingSolid)()
 	defer func() { g.DisplayDirty = true }()
+	// The pace a feature gave the shells it made (srf.SShell.PaceBy) is
+	// taken back once the group's solid is made: kept, a cached solid
+	// would hold it.
+	defer g.dropPace()
 	g.BooleanFailed = false
 	g.Problem = GroupProblem{}
+	g.Note = ""
 	g.forgetTopology()
 	g.solidTol = sk.tol
 	// A chamfered thread's or a buttress nut's groups are made at a
@@ -122,6 +127,9 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 
 	g.ThisShell.Clear()
 	g.ThisShell.Tol = sk.tol
+	// What the group's own steps build into its shell paces as its
+	// Boolean does (srf.SShell.PaceBy).
+	g.ThisShell.PaceBy(sk.kernelPace())
 	g.ThisMesh.Clear()
 	g.RunningShell.Clear()
 	g.RunningShell.Tol = sk.tol
@@ -244,6 +252,8 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		}
 	}
 
+	// A builder that made the group's shell anew left it no pace.
+	g.ThisShell.PaceBy(sk.kernelPace())
 	if srcg.MeshCombine != CombineAssemble {
 		g.ThisShell.MergeCoincidentSurfaces()
 	}
@@ -292,6 +302,17 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		g.BooleanFailed = g.RunningShell.BooleanFailed
 	} else {
 		g.combineMeshes(prevg, srcg.MeshCombine)
+	}
+}
+
+// dropPace takes away the pace the group's shells were given while its
+// solid was made (srf.SShell.PaceBy), where they have one.
+func (g *Group) dropPace() {
+	if g.ThisShell.Pace() != nil {
+		g.ThisShell.PaceBy(nil)
+	}
+	if g.RunningShell.Pace() != nil {
+		g.RunningShell.PaceBy(nil)
 	}
 }
 
@@ -809,7 +830,11 @@ func (g *Group) generateOwnDisplayItems(sk *Sketch) {
 	// We do contribute new solid model, so we have to triangulate the
 	// shell, and edge-find the mesh.
 	g.DisplayMesh.Clear()
+	// Triangulated per face with the sketch's pace (srf.SShell.PaceBy),
+	// as the group's solid was made.
+	giveBack := sk.lendPace(&g.RunningShell)
 	g.RunningShell.TriangulateInto(&g.DisplayMesh)
+	giveBack()
 	for _, t := range g.RunningMesh.Triangles {
 		trn := t
 		n := trn.Normal()
@@ -829,7 +854,7 @@ func (g *Group) generateOwnDisplayItems(sk *Sketch) {
 		// The edges between faces too where they meet smoothly, as
 		// about a fillet; not the seams within a face, whose patches
 		// carry one face (SShell.displayFace).
-		g.DisplayMesh.MakeOutlinesInto(&rawOutlines, srf.EdgeSharpOrFace)
+		g.DisplayMesh.MakeOutlinesPacedInto(&rawOutlines, srf.EdgeSharpOrFace, sk.kernelPace())
 	}
 	var builder srf.PolylineBuilder
 	builder.MakeFromOutlines(&rawOutlines)

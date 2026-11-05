@@ -49,7 +49,7 @@ func (sk *Sketch) NewShell(faces []srf.FaceID, thick float64, name string) (Grou
 	if solid.IsForcedToMesh(sk) {
 		return g, errors.New("the solid at the active group is a triangle mesh, which has no faces to move")
 	}
-	if _, err := shellOf(&solid.RunningShell, faces, thick, 1<<30, sk.madeAt(solid)); err != nil {
+	if _, _, err := shellOf(&solid.RunningShell, faces, thick, 1<<30, sk.madeAt(solid)); err != nil {
 		return g, err
 	}
 	g.SolidFaces = append([]srf.FaceID(nil), faces...)
@@ -86,7 +86,7 @@ func (sk *Sketch) SetShellFaces(hg core.HGroup, faces []srf.FaceID) error {
 	if solid.IsForcedToMesh(sk) {
 		return errors.New("the solid is a triangle mesh, which has no faces to move")
 	}
-	if _, err := shellOf(&solid.RunningShell, faces, g.ValB, 1<<30, sk.madeAt(solid)); err != nil {
+	if _, _, err := shellOf(&solid.RunningShell, faces, g.ValB, 1<<30, sk.madeAt(solid)); err != nil {
 		return err
 	}
 	g.SolidFaces = faces
@@ -111,40 +111,42 @@ func (sk *Sketch) madeAt(g *Group) solidMade {
 
 // shellOf hollows sh, taking away the faces with identities faces. A
 // solid of flat faces or a prism is hollowed as such; failing that, by
-// how it was made.
-func shellOf(sh *srf.SShell, faces []srf.FaceID, thick float64, origin uint32, made solidMade) (*srf.SShell, error) {
+// how it was made. note says how the shell differs from what was asked,
+// or is empty.
+func shellOf(sh *srf.SShell, faces []srf.FaceID, thick float64, origin uint32, made solidMade) (out *srf.SShell, note string, err error) {
 	t, err := topo.Build(sh)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	var open []int
 	for _, id := range faces {
 		fs := t.FacesWithID(id)
 		if len(fs) == 0 {
-			return nil, fmt.Errorf("face %x is no longer in the solid", uint32(id))
+			return nil, "", fmt.Errorf("face %x is no longer in the solid", uint32(id))
 		}
 		open = append(open, fs...)
 	}
-	out, err := topo.ShellSolid(sh, open, thick, origin)
+	out, err = topo.ShellSolid(sh, open, thick, origin)
 	if err == nil {
-		return out, nil
+		return out, "", nil
 	}
 	if made.rev != nil {
 		out, rerr := topo.ShellRevolved(sh, *made.rev, open, thick, origin)
 		if !errors.Is(rerr, topo.ErrNotRevolution) {
-			return out, rerr
+			return out, "", rerr
 		}
 	}
 	if made.draft != nil {
-		out, derr := topo.ShellDrafted(sh, *made.draft, open, thick, origin)
+		out, note, derr := topo.ShellDrafted(sh, *made.draft, open, thick, origin)
 		if !errors.Is(derr, topo.ErrNotDrafted) {
-			return out, derr
+			return out, note, derr
 		}
 	}
 	if made.rev == nil && made.draft == nil && len(made.parts) > 1 {
-		return topo.ShellJoined(sh, made.parts, open, thick, origin)
+		out, err := topo.ShellJoined(sh, made.parts, open, thick, origin)
+		return out, "", err
 	}
-	return nil, err
+	return nil, "", err
 }
 
 // revolutionAt is how the solid at group g was made when it is one
@@ -303,7 +305,9 @@ func (g *Group) generateShellShell(sk *Sketch) {
 		g.setProblem(nil, "the solid so far is a triangle mesh, which has no faces to move")
 		return
 	}
-	sh, err := shellOf(&prev.RunningShell, g.SolidFaces, g.ValB, srf.OriginFor(g.H.V, 0), sk.madeAt(prev))
+	giveBack := sk.lendPace(&prev.RunningShell)
+	sh, note, err := shellOf(&prev.RunningShell, g.SolidFaces, g.ValB, srf.OriginFor(g.H.V, 0), sk.madeAt(prev))
+	giveBack()
 	if err != nil {
 		if se, ok := errors.AsType[*topo.ShellError](err); ok {
 			at := se.At
@@ -315,4 +319,5 @@ func (g *Group) generateShellShell(sk *Sketch) {
 	}
 	g.RunningShell = *sh
 	g.ThisShell.MakeFromCopyOf(sh)
+	g.Note = note
 }

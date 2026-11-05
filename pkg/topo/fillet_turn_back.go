@@ -32,7 +32,7 @@ func filletTurnedBack(sh, before *srf.SShell, picks []FilletPick, r float64, ori
 		return
 	}
 	cp := sh.Clone()
-	if err := filletPicksAny(&cp, rest, r, origin+turnBackOrigin, flat); err != nil || unsound(&cp) {
+	if _, err := filletPicksAny(&cp, rest, r, origin+turnBackOrigin, flat); err != nil || unsound(&cp) {
 		return
 	}
 	*sh = cp

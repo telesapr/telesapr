@@ -84,7 +84,18 @@ type SweepPath struct {
 	// law, when not nil, is how the twist is spread along the path when
 	// it is held still beside corners.
 	law *twistLaw
+	// pace, when not nil, is called now and then while the sweep is
+	// made (PaceBy).
+	pace func()
 }
+
+// PaceBy has the sweeps made along sp call pace now and then, between
+// their sections and while their topology is built, so a caller with
+// one thread can draw meanwhile (srf.SShell.PaceBy); nil for none.
+func (sp *SweepPath) PaceBy(pace func()) { sp.pace = pace }
+
+// Pace is what sp's sweeps call now and then, nil for nothing.
+func (sp *SweepPath) Pace() func() { return sp.pace }
 
 // framesPerPiece are the frames sampled on each piece of a path; a
 // frame between them is reflected on from the one before.
@@ -426,6 +437,9 @@ func (sp *SweepPath) sweptSurfacesIn(loops [][]srf.SBezier, lo, hi float64) ([][
 		}
 		ss[0], ss[4] = a, b
 		for {
+			if sp.pace != nil {
+				sp.pace()
+			}
 			surfs, ts, err := sp.skins(curves, ss)
 			if err != nil {
 				return nil, nil, err
@@ -568,16 +582,21 @@ func MakePathSweep(sp *SweepPath, loops [][]srf.SBezier, color core.RGBA, startF
 		return nil, err
 	}
 	if sp.opts.Closed {
-		return joinSkins(surfs, color, origin, tol)
+		return joinSkins(surfs, color, origin, tol, sp.pace)
 	}
-	return closeSkins(surfs, color, startFace, endFace, origin, tol)
+	return closeSkins(surfs, color, startFace, endFace, origin, tol, sp.pace)
 }
 
 // joinSkins is the solid bounded by chains of surfaces closed in u and
 // closed in v too, each chain's last surface ending on the loop its
-// first starts from: a closed sweep's, with no caps.
-func joinSkins(chains [][]*srf.BSplineSurface, color core.RGBA, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
+// first starts from: a closed sweep's, with no caps. pace, when not
+// nil, is called while the shell's topology is built (Build), as a
+// shell's own pace is (srf.SShell.PaceBy); the shell returned keeps
+// none.
+func joinSkins(chains [][]*srf.BSplineSurface, color core.RGBA, origin uint32, tol srf.Tolerance, pace func()) (*srf.SShell, error) {
 	sh := &srf.SShell{Tol: tol}
+	sh.PaceBy(pace)
+	defer sh.PaceBy(nil)
 	fa := NewFaceAdder(sh)
 	id := origin
 	for _, chain := range chains {
@@ -605,9 +624,11 @@ func joinSkins(chains [][]*srf.BSplineSurface, color core.RGBA, origin uint32, t
 // starts, the first chain the outer, and the planes of the chains' first
 // and last loops at both ends. Each chain is one face of its own sheet,
 // its patches' identities on from origin; the caps take startFace and
-// endFace.
-func closeSkins(chains [][]*srf.BSplineSurface, color core.RGBA, startFace, endFace, origin uint32, tol srf.Tolerance) (*srf.SShell, error) {
+// endFace. pace is called as joinSkins calls it.
+func closeSkins(chains [][]*srf.BSplineSurface, color core.RGBA, startFace, endFace, origin uint32, tol srf.Tolerance, pace func()) (*srf.SShell, error) {
 	sh := &srf.SShell{Tol: tol}
+	sh.PaceBy(pace)
+	defer sh.PaceBy(nil)
 	fa := NewFaceAdder(sh)
 	var first, last [][]srf.SBezier
 	id := origin

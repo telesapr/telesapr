@@ -43,6 +43,7 @@ func (t *Topology) findSheets() {
 		return i
 	}
 	for e := range t.Edges {
+		t.shell.Paced()
 		if t.isSeam(e) {
 			t.Edges[e].Seam = true
 			fs := t.EdgeFaces(e)

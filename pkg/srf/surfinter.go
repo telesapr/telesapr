@@ -199,6 +199,9 @@ func (s *SSurface) intersectAgainst(b *SSurface, agnstA, agnstB *SShell, into *c
 				return
 			}
 		}
+		if isExtdt && isExtdb && s.intersectEqualCylinders(b, agnstA, agnstB, into) {
+			return
+		}
 
 		s.intersectByMarching(b, agnstA, agnstB, into)
 	}

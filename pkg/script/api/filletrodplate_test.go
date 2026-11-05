@@ -5,6 +5,8 @@ import (
 	"math"
 	"strings"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 )
 
 // rodThroughPlate is a plate 12 wide, 30 long and 4 thick with a rod of
@@ -93,11 +95,17 @@ const rodPlateVolume = 12.0*30*4 + math.Pi*16*16 - math.Pi*16*4
 // chamfer, of size r round the rod at the plate's top, at a chord
 // tolerance of 0.003; or why it was not made.
 func rodPlateRounded(r float64, flat bool) (vol float64, msg string) {
+	vol, msg, _ = rodPlateRoundedNote(r, flat)
+	return vol, msg
+}
+
+// rodPlateRoundedNote is rodPlateRounded and the group's Note.
+func rodPlateRoundedNote(r float64, flat bool) (vol float64, msg, notice string) {
 	d := New()
 	d.Edit.SetChordTolerance(0.003)
 	rod, e := rodThroughPlate(d)
 	if p := rod.Problem(); p != "" {
-		return 0, p
+		return 0, p, ""
 	}
 	defer func() {
 		if x := recover(); x != nil {
@@ -111,39 +119,105 @@ func rodPlateRounded(r float64, flat bool) (vol float64, msg string) {
 		g = d.Features.FilletSolid([]SolidEdge{e}, r, "")
 	}
 	if p := g.Problem(); p != "" {
-		return 0, p
+		return 0, p, ""
 	}
 	if rep := g.Analyze().Check(); !rep.Sound() {
-		return 0, "unsound: " + rep.Summary()
+		return 0, "unsound: " + rep.Summary(), ""
 	}
-	return g.Analyze().Volume(), ""
+	return g.Analyze().Volume(), "", g.Note()
 }
 
 // A fillet whose foot runs past the plate's sides by more than a tenth
 // of the chord tolerance (0.00085 mm at the setting of 0.003) and less
-// than a few times it: the plane that cuts
-// the widened plate back meets the fillet nearly tangent, where the
-// foot's chords may lie inside the side, and some such sizes come out
-// open. Swept 2026-11-04 from 1.997 to 2.006 by 0.0001: of 91 fillets
-// 17 were refused, all from 2.0002 to 2.0028; of 91 chamfers none. A
-// refused one says why; a made one is sound.
+// than a few times it: its arc stands above the top at the sides' planes
+// by about the square of how far past over its diameter, under
+// LengthEps, and the cut along them can't tell it from the top. Swept
+// 2026-11-04 from 1.997 to 2.006 by 0.0001: of 91 fillets 17 were
+// refused, all from 2.0002 to 2.0028, under the CDT as under the ear
+// clipper. Since 2026-11-05 each is made at the nearest size the kernel
+// can cut that moves its surface by no more than the chord tolerance
+// (nearSize): all 91, sound, within the volume of the size asked for.
 func TestFilletRodJustPastSides(t *testing.T) {
 	t.Parallel()
-	for _, r := range []float64{2.001, 2.0015} {
-		t.Run(fmt.Sprint(r), func(t *testing.T) {
+	if testing.Short() {
+		t.Skip("a fillet per size across the band; a minute or more")
+	}
+	n := 31
+	if fixtures.RaceDetector {
+		n = 3
+	}
+	for i := range n {
+		r := 2 + 0.0001*float64(i*30/(n-1))
+		t.Run(fmt.Sprintf("%.4f", r), func(t *testing.T) {
 			t.Parallel()
-			vol, msg := rodPlateRounded(r, false)
+			vol, msg, notice := rodPlateRoundedNote(r, false)
 			if msg != "" {
-				if !strings.Contains(msg, "only just runs past the side") {
-					t.Errorf("refused, but not as only just past the side: %q", msg)
-				}
-				return
+				t.Fatalf("not made: %s", msg)
+			}
+			// A size other than the one asked for is said on the group.
+			if notice != "" && !strings.Contains(notice, fmt.Sprintf("the nearest the kernel can cut to %s mm",
+				strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.4f", r), "0"), "."))) {
+				t.Errorf("notice %q does not name the radius asked for", notice)
 			}
 			want := rodPlateVolume + ringPastSides(r, false, false)
 			if rel := math.Abs(vol-want) / want; rel > 5e-4 {
 				t.Errorf("volume %.4f, want %.4f (off by %.1e)", vol, want, rel)
 			}
 		})
+	}
+}
+
+// A fillet just past the sides that the kernel can't cut at the size
+// asked for says on the group what size it was made at; one it can cut
+// says nothing.
+func TestFilletRodJustPastSidesNote(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("two fillets round a rod through a plate; tens of seconds")
+	}
+	_, msg, notice := rodPlateRoundedNote(2.001, false)
+	if msg != "" {
+		t.Fatalf("not made: %s", msg)
+	}
+	if !strings.HasPrefix(notice, "made at radius ") || !strings.Contains(notice, "the nearest the kernel can cut to 2.001 mm") {
+		t.Errorf("notice %q, want the radius made and 2.001 asked for", notice)
+	}
+	if _, msg, notice := rodPlateRoundedNote(2.5, false); msg != "" || notice != "" {
+		t.Errorf("a fillet of 2.5: problem %q, notice %q, want neither", msg, notice)
+	}
+}
+
+// A fillet just past the sides at a chord setting ten times finer,
+// where fewer sizes near it lie within the chord tolerance of the one
+// asked for: made sound (it is, 2026-11-05), or refused saying why.
+func TestFilletRodJustPastSidesFine(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("a fillet at a fine chord tolerance; tens of seconds")
+	}
+	d := New()
+	d.Edit.SetChordTolerance(0.0003)
+	rod, e := rodThroughPlate(d)
+	if p := rod.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	msg := func() (msg string) {
+		defer func() {
+			if x := recover(); x != nil {
+				msg = fmt.Sprint(x)
+			}
+		}()
+		g := d.Features.FilletSolid([]SolidEdge{e}, 2.0015, "")
+		if p := g.Problem(); p != "" {
+			return p
+		}
+		if rep := g.Analyze().Check(); !rep.Sound() {
+			t.Fatalf("made unsound: %s", rep.Summary())
+		}
+		return ""
+	}()
+	if msg != "" && !strings.Contains(msg, "only just runs past the side") {
+		t.Errorf("refused, but not as only just past the side: %q", msg)
 	}
 }
 

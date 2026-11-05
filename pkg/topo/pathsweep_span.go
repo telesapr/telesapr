@@ -77,5 +77,5 @@ func MakePathSweepSpan(sp *SweepPath, loops [][]srf.SBezier, color core.RGBA, st
 	if err != nil {
 		return nil, err
 	}
-	return closeSkins(surfs, color, startFace, endFace, origin, tol)
+	return closeSkins(surfs, color, startFace, endFace, origin, tol, sp.pace)
 }

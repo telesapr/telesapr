@@ -467,7 +467,9 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 	// forced to a mesh, which has no faces to edit, straight edges are
 	// cut by wedges and a Boolean, as before.
 	if !prev.IsForcedToMesh(sk) && len(prev.RunningShell.Surface) > 0 {
+		giveBack := sk.lendPace(&prev.RunningShell)
 		sh, err := chamferByEdit(&prev.RunningShell, picks, d, srf.OriginFor(g.H.V, 0))
+		giveBack()
 		if err == nil {
 			g.RunningShell = sh
 			g.ThisShell.MakeFromCopyOf(&sh)
@@ -527,6 +529,7 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 		return true
 	}
 	var sh srf.SShell
+	sh.PaceBy(sk.kernelPace())
 	sh.MakeFromCopyOf(&prev.RunningShell)
 	if err := topo.FilletPicks(&sh, arcs, d, srf.OriginFor(g.H.V, 0), true); err != nil {
 		if fe, ok := errors.AsType[*topo.FilletError](err); ok {
