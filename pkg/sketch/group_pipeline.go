@@ -280,6 +280,7 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		// coplanar faces of the parts of an assembly before it would be
 		// joined across parts into faces that don't mesh.
 		combines := len(g.ThisShell.Surface) > 0 && !g.Suppress
+		g.RunningShell.PaceBy(sk.kernelPace())
 		g.generateForBooleanShell(&prevs, &g.ThisShell, &g.RunningShell, srcg.MeshCombine)
 
 		if combines && srcg.MeshCombine != CombineAssemble {
@@ -688,8 +689,10 @@ func (g *Group) sweepHelix(sk *Sketch) {
 }
 
 // generateForBooleanShell combines prevs and thiss into outs with the
-// group's MeshCombine.
+// group's MeshCombine. A pace given outs (srf.SShell.PaceBy) is
+// dropped whether or not a Boolean took it.
 func (g *Group) generateForBooleanShell(prevs, thiss, outs *srf.SShell, how CombineAs) {
+	defer outs.PaceBy(nil)
 	// If this group contributes no new mesh, then our running mesh is the
 	// same as last time, no combining required. Likewise if we have a mesh
 	// but it's suppressed.

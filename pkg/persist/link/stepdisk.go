@@ -2,7 +2,6 @@ package link
 
 import (
 	"crypto/sha256"
-	"encoding/gob"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -24,7 +23,8 @@ import (
 // TELESAPR_CACHE_DIR is used.
 
 // stepDiskVersion changes when what is kept, or how it is made, does.
-const stepDiskVersion = 1
+// 2: the format of stepdisk_format.go in place of encoding/gob.
+const stepDiskVersion = 2
 
 var (
 	// stepDiskHits and stepDiskWrites count, for the tests.
@@ -52,7 +52,7 @@ func stepCacheDir() string {
 func StepCacheName(contents []byte, pct float64) string {
 	sum := sha256.Sum256(contents)
 	h := sha256.Sum256([]byte(fmt.Sprintf("%d|%x|%g", stepDiskVersion, sum, pct)))
-	return hex.EncodeToString(h[:16]) + ".gob"
+	return hex.EncodeToString(h[:16]) + ".mesh"
 }
 
 // StepCacheDir is the folder the tessellations are kept in, or "" for
@@ -83,12 +83,12 @@ func readStepDisk(key stepKey) (*step.Result, bool) {
 		return nil, false
 	}
 	defer func() { _ = f.Close() }()
-	var res step.Result
-	if err := gob.NewDecoder(f).Decode(&res); err != nil {
+	res, err := decodeStepDisk(f)
+	if err != nil {
 		return nil, false
 	}
 	stepDiskHits.Add(1)
-	return &res, true
+	return res, true
 }
 
 // writeStepDisk keeps res for key, best effort: written aside, then
@@ -102,7 +102,7 @@ func writeStepDisk(key stepKey, res *step.Result) {
 	if err != nil {
 		return
 	}
-	err = gob.NewEncoder(tmp).Encode(res)
+	err = encodeStepDisk(tmp, res)
 	if cerr := tmp.Close(); err == nil {
 		err = cerr
 	}

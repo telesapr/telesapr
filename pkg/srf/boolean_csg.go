@@ -22,7 +22,7 @@ func (s *SShell) CopyCurvesSplitAgainst(opA bool, agnst, into *SShell) {
 	// The curves are split at once, or in order (see parallel.go), and
 	// then added in order.
 	scn := make([]SCurve, len(s.Curve))
-	loop(atOnce, len(s.Curve), func(i int) {
+	loop(atOnce, into.pace, len(s.Curve), func(i int) {
 		sc := &s.Curve[i]
 		scn[i] = sc.MakeCopySplitAgainst(agnst, nil,
 			s.FindSurface(sc.SurfA), s.FindSurface(sc.SurfB))
@@ -75,15 +75,24 @@ func (s *SShell) MakeIntersectionCurvesAgainst(agnst, into *SShell) {
 	// a list; then the lists are added in the surfaces' order, with
 	// the curves that would have followed another surface's curve had
 	// the loop run in order made over (curveSink.commitTo).
+	// Paced, the pairs are taken in order, pace called before each.
 	sinks := make([]curveSink, len(s.Surface))
-	par.For(len(s.Surface), func(i int) {
+	each := func(i int) {
 		sa := &s.Surface[i]
 		sinks[i] = curveSink{shell: into, deferred: true}
 		for j := range agnst.Surface {
+			into.paced()
 			sb := &agnst.Surface[j]
 			sa.intersectAgainst(sb, s, agnst, &sinks[i])
 		}
-	})
+	}
+	if into.pace != nil {
+		for i := range s.Surface {
+			each(i)
+		}
+	} else {
+		par.For(len(s.Surface), each)
+	}
 	first := len(into.Curve)
 	next := into.nextCurveID()
 	for i := range sinks {
@@ -111,7 +120,7 @@ func (s *SShell) CopySurfacesTrimAgainst(sha, shb, into *SShell, op SurfaceCombi
 	into.Surface = append(into.Surface, make([]SSurface, len(s.Surface))...)
 	ssn := into.Surface[first:]
 	failed := make([]bool, len(s.Surface))
-	loop(atOnce, len(s.Surface), func(i int) {
+	loop(atOnce, into.pace, len(s.Surface), func(i int) {
 		failed[i] = s.Surface[i].makeCopyTrimAgainst(s, sha, shb, into, op, &ssn[i])
 	})
 	for i := range s.Surface {

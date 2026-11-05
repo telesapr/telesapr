@@ -60,10 +60,13 @@ func (t *Topology) contactsClear(fe *filletEdge, rounded map[int]int, flat bool)
 			off.color = t.Surface(f).Color
 			off.at = t.Vertices[t.Edges[t.CoEdges[t.Loops[t.Faces[f].Loops[0]].CoEdges[0]].Edge].V[0]].P
 		}
+		foot := func(u float64) geom.Vector {
+			q := fe.curve.PointAt(u)
+			return q.Plus(fe.into(k, q).ScaledBy(fe.ss[k] * fe.lawAt(u)))
+		}
 		for i := range contactSamples {
 			u := (float64(i) + 0.5) / contactSamples
-			q := fe.curve.PointAt(u)
-			p := q.Plus(fe.into(k, q).ScaledBy(fe.ss[k] * fe.lawAt(u)))
+			p := foot(u)
 			inside := !flat || t.inFace(f, p, n)
 			apart := true
 			for _, pts := range others {
@@ -87,12 +90,42 @@ func (t *Topology) contactsClear(fe *filletEdge, rounded map[int]int, flat bool)
 		if first != nil {
 			err := &FilletError{Msg: fmt.Sprintf("the %s runs off the face on side %d here, past its edge: make it smaller", what, k+1), At: *first}
 			if off != nil && len(off.sides) > 0 {
+				for _, side := range off.sides {
+					side.past = math.Max(side.past, furthestPast(foot, side))
+				}
+				off.varies = fe.r1 != 0
 				err.off = off
 			}
 			return err
 		}
 	}
 	return nil
+}
+
+// furthestPast is how far past side's plane the foot goes at most, the
+// samples of contactsClear refined: they miss the foot's furthest point
+// by up to a 128th of the edge, which beside a side the foot only just
+// reaches is more than the distance to tell (filletPastSides).
+func furthestPast(foot func(u float64) geom.Vector, side *runOffSide) float64 {
+	const n = 16 * contactSamples
+	past := func(u float64) float64 { return foot(u).Minus(side.p0).Dot(side.n) }
+	best, bu := math.Inf(-1), 0.0
+	for i := range n + 1 {
+		u := float64(i) / n
+		if d := past(u); d > best {
+			best, bu = d, u
+		}
+	}
+	lo, hi := math.Max(bu-1.0/n, 0), math.Min(bu+1.0/n, 1)
+	for range 60 {
+		a, b := lo+(hi-lo)/3, hi-(hi-lo)/3
+		if past(a) < past(b) {
+			lo = a
+		} else {
+			hi = b
+		}
+	}
+	return math.Max(best, past((lo+hi)/2))
 }
 
 // lawAt is the share of the edge's radius at its start that its

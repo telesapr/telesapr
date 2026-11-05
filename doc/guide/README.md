@@ -140,8 +140,9 @@ program in a few ways:
   name of a file already stored asks before replacing it.
 - A large model holds the page while it regenerates: the window is not redrawn and takes no
   clicks or keys until it is done, but after a moment a box says how long it has taken. The page
-  is let to draw between the model's groups, so one slow group (a screw thread's) holds it for
-  as long as that group takes.
+  is let to draw between the model's groups and while a group is combined with the solid before
+  it (a screw thread's with its blank), but not during a feature's own long work, such as a
+  sweep or a fillet, which holds it for as long as that takes.
 - It has no socket for `telesapr-cli mcp` (`--agent`). Script > Allow AI Connections lets a
   program in the browser work on the drawing through the page instead (see
   [Drawing with an AI model](ai.md#in-a-browser)).

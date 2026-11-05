@@ -160,10 +160,52 @@ Since the spike (merged in `a68c4c8b`):
   `Report.Touches`, `Report.TouchAt`; `TestCheckPartsTouching`).
 - Item 2 is built: `snapToCones` and `snapToSpheres` (`pkg/srf/boolean_snap_revolved.go`), after
   `snapToCylinders`. A cone in a countersink of its angle is right in all 96 cases within the fuse
-  (`TestCoaxialContactSweep`). A ball in a seat of its radius is not yet: 50 of 96 within the fuse
-  still leave the mesh open at the seat's rim, where the seat's marched curve and the ball's do
-  not meet (`TestCoaxialSeatProbe`, under `TELESAPR_K3_PROBE=1`).
+  (`TestCoaxialContactSweep`). A ball in a seat of its radius was not: 50 of 96 within the fuse
+  left the mesh open at the seat's rim, where the seat's marched curve and the ball's did not
+  meet.
+- The ball in its seat is right in all 96 since 2026-11-04 (rd8; `TestCoaxialSeatSweep`, the probe
+  made a test). Three changes, each needed:
+  1. A plane meets a patch on a sphere in an exact circle (`intersectPlaneAndSphere`,
+     `pkg/srf/surfinter_sphere.go`, tried before marching): the circle is cut where it crosses the
+     patch's four sides and its face's outline (found by bisection along them; a face trimmed by
+     a curve that isn't exact is left to the marcher) and kept where it lies on the face, in
+     rational quadratic arcs of a quarter turn or less. The seat's rim and the ball's crossing of
+     the block's top are then the same exact curve, and the second Boolean follows the first's
+     points (`findExact`). Alone, this made it worse (96 of 108): the classification then saw
+     the rim edge on both shells and misread it.
+  2. Edge on edge (`classifyEdgeOn`): where one of the two faces at the other shell's edge is
+     curved and lies on the classified surface, and the faces aren't smooth across it (the seat's
+     sphere and the block's top), the side that runs onto that face is coincident and the other is
+     classified against the other face. Taken as the tangent case, the edge's normal, along a
+     chord, dips off a sphere by its curvature (a direction cosine of about chord/2r, against
+     `DotProductTol` of 1e-5) and both sides read as outside.
+  3. Edge on surface: the true rim lies a sag outside the seat's chorded trim, so
+     `classifyOnCoincident` takes a curved face whose trim misses the point by less than the
+     chord tolerance; and where the classified surface and the face it lies on are both curved, a
+     side that runs onto the face within its trim is coincident although `ClassifyRegion`'s
+     normals, dipped the same way, said inside or outside (both sides of a seat's rim at chord
+     0.1).
+  Changes 2 and 3 are taken for patches on spheres only (`isSpherePatch`): for every curved face
+  they moved results that were right, threads, text wrapped on cylinders and cones, and a chamfer
+  running off a curved end (`make test-fast` on the branch). The chord's dip is the same on any
+  curved face, so the narrowing is a limit of these rules, not of the cause.
+  No golden moved (`make test` and `make test-heavy` on the branch). A first version cut the
+  circle only at the patch's sides and broke a hemisphere read from STEP cut by a block
+  (`TestSolidBooleans`, `sphere_dome`): its patches are trimmed along a meridian inside them.
+- Sunk a hair under the CDT (`TestCurvedContactProbe`): ball 3 of 108 (12 under the ear clipper, 4
+  on devel with the CDT before the changes above), cylinder lying on a plate 30, as before. Those
+  are slivers under the chord tolerance, the mesher's.
 - `shell-step` was regenerated on devel with the rest of the round.
+- A shell's inside leaving a revolve's edge at an inside corner beside a cone, sphere or torus
+  (rd8, `pkg/topo/shellrevolve_step.go`, `cornerOut`) does not lie on the face beside, so needs
+  no coincident curved contact: it leaves the corner at an eighth of a turn from that face into
+  the empty wedge, and touches the solid only along the corner's circle. The Boolean then keeps
+  two edges there, each with one kept face: the solid's face with the face taken away, the
+  inside's wall end with the part of the inside outside the solid. Both are exact circles, but
+  their points can differ (a cove's torus edge takes one more near its seam), and the mesh was
+  open along the corner. `joinOrphans` (`pkg/srf/boolean_orphan_join.go`, after
+  `moveOrphanTrims`) joins two such curves, running between the same ends along one exact curve,
+  into one between the two kept faces along the points of both.
 
 The libnmg plan's other parts were not needed by any probe case: vertex-to-vertex fusing past
 `fuseVertices`, splitting edges at vertices on them, and point-in-solid by several rays with explicit

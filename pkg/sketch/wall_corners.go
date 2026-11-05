@@ -78,8 +78,8 @@ func (r *WallReport) walkCorners(w *clearancePart, below float64, cw *cornerWalk
 					continue
 				}
 				cw.budget--
-				sp, hit, ok := thicknessFrom(w.tree, f.tri, c.at, w.tree.Triangle(f.tri).Normal().WithMagnitude(-1))
-				if !ok {
+				sp, hit, end := w.thicknessFrom(f.tri, c.at, w.tree.Triangle(f.tri).Normal().WithMagnitude(-1))
+				if end != rayOut {
 					continue
 				}
 				r.Samples++

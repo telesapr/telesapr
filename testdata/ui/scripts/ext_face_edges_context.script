@@ -11,10 +11,8 @@ down L 380 330
 up L 380 330
 key esc
 key x shift
-move 290 265
 popup Select Face Edges
-down R 290 265
-up R 290 265
+click-face top face of g003-extrude right
 dump
 menu Features|Chamfer Edges
 dump

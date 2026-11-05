@@ -3,6 +3,8 @@ package api
 import (
 	"math"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 )
 
 // plateOnRod is a rod of radius 8 along x, 30 long, with a plate 6 thick
@@ -35,7 +37,9 @@ func TestFilletFootAlongRodRow(t *testing.T) {
 		segs   int
 	}
 	cases := []tc{{6, 0.003, 20}, {2, 0.005, 20}}
-	if !testing.Short() {
+	if !testing.Short() && !fixtures.RaceDetector {
+		// Under the race detector the short run's two: the eighteen took
+		// eleven minutes there (2026-11-04).
 		cases = cases[:0]
 		for _, l := range []float64{2, 6, 10} {
 			for _, tol := range []float64{0.002, 0.003, 0.005} {

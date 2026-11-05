@@ -1,6 +1,7 @@
 # A damaged file (an extension): a sketch placed on a point the file
 # lacks is left out, and the reference workplanes it lacks are put back;
-# a chamfer's edge the file lacks is left out of the chamfer and kept.
+# a chamfer's edge the file lacks is left out of the chamfer and kept;
+# a lathe's axis and a mirror's plane it lacks leave the group out.
 # A message says so on opening, and Features > Broken References lists each,
 # with what can take the place of what the file lacks.
 answer ok
@@ -16,5 +17,28 @@ tw
 answer ok
 load tlspr/damaged/chamfer_missing_edge.tlspr
 tw
+menu Features|Broken References...
+tw
+# A diameter whose circle the file lacks: the circle is named for its
+# kind. An extrusion whose sketch the file lacks: [choose a group] lists
+# the model's groups to take its place.
+answer ok
+load tlspr/damaged/constraint_missing_circle.tlspr
+menu Features|Broken References...
+tw
+answer ok
+load tlspr/damaged/group_missing_operand.tlspr
+menu Features|Broken References...
+tw
+click-tw [choose a group]
+tw
+# A lathe whose axis the file lacks and a mirror whose plane it lacks:
+# each is named for the kind that can take its place.
+answer ok
+load tlspr/damaged/lathe_missing_axis.tlspr
+menu Features|Broken References...
+tw
+answer ok
+load tlspr/damaged/mirror_missing_plane.tlspr
 menu Features|Broken References...
 tw

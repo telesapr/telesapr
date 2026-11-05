@@ -419,6 +419,7 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		if ss == nil {
 			continue
 		}
+		into.paced()
 		for k := 1; k < len(ic.Points); k++ {
 			a := ic.Points[k-1].P
 			b := ic.Points[k].P
@@ -508,6 +509,7 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 	// Step 6: walk orig chains, classify, keep.
 	final := &SEdgeList{}
 	for len(orig.Edges) > 0 {
+		into.paced()
 		chain := &SEdgeList{}
 		findChainAvoiding(orig, chain, &choosing)
 
@@ -533,6 +535,7 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 
 	// Step 7: walk inter chains, classify, keep.
 	for len(inter.Edges) > 0 {
+		into.paced()
 		chain := &SEdgeList{}
 		findChainAvoiding(inter, chain, &choosing)
 

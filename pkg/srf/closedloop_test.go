@@ -97,8 +97,11 @@ func TestSphereThroughFace(t *testing.T) {
 		if !meshIsSound(&out) {
 			t.Errorf("%s: mesh not watertight", c.name)
 		}
-		// The mesh's chords lose a little of the sphere.
-		if got := shellVolume(&out); math.Abs(got-c.want) > 1e-3*c.want {
+		// The mesh's chords lose a little of the sphere: at most the chord
+		// tolerance over its area, the most a mesh within the tolerance
+		// can lose.
+		sphereArea := 4*math.Pi*r*r - 2*math.Pi*r*(r-top)
+		if got := shellVolume(&out); math.Abs(got-c.want) > tol.ChordTolMm()*sphereArea {
 			t.Errorf("%s: volume %.4f, want %.4f", c.name, got, c.want)
 		}
 	}

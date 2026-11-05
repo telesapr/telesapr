@@ -53,6 +53,17 @@ func Sample[T any](xs []T) []T {
 	return sample(xs, RaceDetector)
 }
 
+// Cases is 0 to n-1, every raceEvery-th of them under the race
+// detector: the cases a test draws all of, so that its random numbers
+// stay the same, and builds a sample of.
+func Cases(n int) []int {
+	all := make([]int, n)
+	for i := range all {
+		all[i] = i
+	}
+	return Sample(all)
+}
+
 // Thin is every raceEvery-th of xs, for a loop that decides itself when
 // to thin, as a sweep does under the race detector unless its whole
 // grid is asked for.

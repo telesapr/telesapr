@@ -472,6 +472,136 @@ func TestMendDamagedFile(t *testing.T) {
 	}
 }
 
+// A group a damaged file lacks, an extrusion's sketch, is mended from
+// the Broken References screen: [choose a group] lists the model's
+// groups, and clicking one brings the extrusion back; one step of undo.
+func TestMendDamagedGroup(t *testing.T) {
+	t.Parallel()
+	ss, p := newTestApp(t)
+	p.DialogResponses = []platform.Response{platform.ResponseOK}
+	path := filepath.Join("..", "..", "testdata", "tlspr", "damaged", "group_missing_operand.tlspr")
+	if err := ss.LoadFromFile(path); err != nil {
+		t.Fatal(err)
+	}
+	ss.TW.GoToScreen(screenBrokenReferences)
+	ss.TW.Show()
+	if !shows(ss, "Or choose a group in place of a group the file lacks:") || !shows(ss, "g009, a group") {
+		t.Fatal("the broken references screen offers no group to choose")
+	}
+	if shows(ss, "[use g002-sketch-in-plane]") {
+		t.Error("the groups are listed before [choose a group] is clicked")
+	}
+	clickText(t, ss, "[choose a group]")
+	ss.TW.Show()
+	if shows(ss, "[use #references]") {
+		t.Error("the references group is offered")
+	}
+	clickText(t, ss, "[use g002-sketch-in-plane]")
+	ss.SK.Refresh()
+	if ss.SK.LeftOut != nil || ss.SK.Group(core.HGroup{V: 3}) == nil {
+		t.Fatalf("the mend didn't bring the extrusion back; left out %q", ss.SK.LeftOutNames())
+	}
+	ss.UndoUndo()
+	if ss.SK.Group(core.HGroup{V: 3}) != nil || len(ss.SK.LeftOutNames()) != 1 {
+		t.Error("undo didn't take the mend back")
+	}
+	ss.UndoRedo()
+	if ss.SK.Group(core.HGroup{V: 3}) == nil || ss.SK.LeftOut != nil {
+		t.Error("redo didn't mend it again")
+	}
+}
+
+// A constraint's circle the damaged file lacks is named for its kind,
+// and the message for a mend with nothing selected asks for that kind.
+func TestMendDamagedCircle(t *testing.T) {
+	t.Parallel()
+	ss, p := newTestApp(t)
+	p.DialogResponses = []platform.Response{platform.ResponseOK}
+	path := filepath.Join("..", "..", "testdata", "tlspr", "damaged", "constraint_missing_circle.tlspr")
+	if err := ss.LoadFromFile(path); err != nil {
+		t.Fatal(err)
+	}
+	ss.TW.GoToScreen(screenBrokenReferences)
+	ss.TW.Show()
+	if !shows(ss, "r009, a circle or an arc") {
+		t.Fatal("the missing circle isn't named for its kind")
+	}
+	p.DialogResponses = []platform.Response{platform.ResponseOK}
+	clickText(t, ss, "[use the selected]")
+	if text := dialogText(lastDialog(t, p)); !strings.Contains(text, "Select a circle or an arc") {
+		t.Errorf("message %q", text)
+	}
+	ss.GW.selection = []Selection{{Entity: core.HEntity{V: 0x40000}}}
+	ss.TW.Show()
+	clickText(t, ss, "[take the selection]")
+	ss.SK.Refresh()
+	if ss.SK.LeftOut != nil || ss.SK.Constraint(core.HConstraint{V: 1}) == nil {
+		t.Fatalf("the diameter didn't come back; left out %q", ss.SK.LeftOutNames())
+	}
+}
+
+// A lathe's axis and a mirror's plane the damaged file lacks are named
+// for their kind, a selection of another kind is refused, and one of
+// the kind brings the group back in one step of undo.
+func TestMendDamagedAxisAndPlane(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		file, kind  string
+		wrong, with core.HEntity
+		group       core.HGroup
+	}{
+		{"lathe_missing_axis", "a line or a normal", core.HEntity{V: 0x40000}, core.HEntity{V: 0x50000}, core.HGroup{V: 3}},
+		{"mirror_missing_plane", "a workplane or a planar face", core.HEntity{V: 0x30020}, core.HEntity{V: 0x20000}, core.HGroup{V: 4}},
+	} {
+		t.Run(tc.file, func(t *testing.T) {
+			t.Parallel()
+			ss, p := newTestApp(t)
+			p.DialogResponses = []platform.Response{platform.ResponseOK}
+			path := filepath.Join("..", "..", "testdata", "tlspr", "damaged", tc.file+".tlspr")
+			if err := ss.LoadFromFile(path); err != nil {
+				t.Fatal(err)
+			}
+			ss.TW.GoToScreen(screenBrokenReferences)
+			ss.TW.Show()
+			if !shows(ss, "r009, "+tc.kind) {
+				t.Fatal("the missing entity isn't named for its kind")
+			}
+			// With nothing selected the screen stays, asking for the kind,
+			// while the entity is picked.
+			p.DialogResponses = []platform.Response{platform.ResponseOK}
+			clickText(t, ss, "[use the selected]")
+			if text := dialogText(lastDialog(t, p)); !strings.Contains(text, "Select "+tc.kind) {
+				t.Errorf("message %q", text)
+			}
+			p.DialogResponses = []platform.Response{platform.ResponseOK}
+			ss.GW.selection = []Selection{{Entity: tc.wrong}}
+			ss.TW.Show()
+			clickText(t, ss, "[take the selection]")
+			if text := dialogText(lastDialog(t, p)); !strings.Contains(text, tc.kind) {
+				t.Errorf("refusal %q", text)
+			}
+			if ss.SK.Group(tc.group) != nil {
+				t.Fatal("a selection of another kind mended it")
+			}
+			ss.GW.selection = []Selection{{Entity: tc.with}}
+			ss.TW.Show()
+			clickText(t, ss, "[take the selection]")
+			ss.SK.Refresh()
+			if ss.SK.LeftOut != nil || ss.SK.Group(tc.group) == nil {
+				t.Fatalf("the group didn't come back; left out %q", ss.SK.LeftOutNames())
+			}
+			ss.UndoUndo()
+			if ss.SK.Group(tc.group) != nil || len(ss.SK.LeftOutNames()) != 1 {
+				t.Error("undo didn't take the mend back")
+			}
+			ss.UndoRedo()
+			if ss.SK.Group(tc.group) == nil || ss.SK.LeftOut != nil {
+				t.Error("redo didn't mend it again")
+			}
+		})
+	}
+}
+
 // A chamfer's screen says which of its edges the file names and
 // doesn't hold, and its row in the list of groups is marked.
 func TestDamagedChamferScreen(t *testing.T) {

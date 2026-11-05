@@ -82,10 +82,11 @@ type ThreadOptions struct {
 	LoadFlankBack bool
 	// RoundRoot rounds the roots of an ASME B1.9 buttress thread (BUTT)
 	// as the standard does, by an arc of 0.07141 pitches tangent to both
-	// flanks; otherwise they are flat. The arcs are small: a chord
-	// tolerance coarser than a fifth of their radius is refused, saying
-	// the tolerance to set (Edit.SetChordTolerance). Other threads'
-	// roots stay flat.
+	// flanks; otherwise they are flat. The arcs are small: where the
+	// chord tolerance (Edit.SetChordTolerance) is coarser than they
+	// take, the thread and the part it is made in are made at a finer
+	// one, the groups after it at the model's. Other threads' roots
+	// stay flat.
 	RoundRoot bool
 	// Phase turns the thread about its axis, in degrees: its ridges
 	// move along it, away from the circle, by that part of the lead,

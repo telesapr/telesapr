@@ -125,7 +125,7 @@ row 55    (none)
  0-99 64 61 0
 row 57 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 40\nVolume: 18.71 cm³\nCenter of mass: (-2.01, 6.99, 9.99)\nExtent: 36.00 x 26.00 x 20.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 126\nVolume: 18.71 cm³\nCenter of mass: (-2.01, 6.99, 9.99)\nExtent: 36.00 x 26.00 x 20.00
 row 0  home › g004-fillet   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0
@@ -245,4 +245,4 @@ row 55    (none)
  0-99 64 61 0
 row 57 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 64\nVolume: 18.67 cm³\nCenter of mass: (-2.02, 6.98, 9.97)\nExtent: 36.00 x 26.00 x 20.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 174\nVolume: 18.67 cm³\nCenter of mass: (-2.02, 6.98, 9.97)\nExtent: 36.00 x 26.00 x 20.00

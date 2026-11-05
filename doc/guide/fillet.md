@@ -17,7 +17,11 @@ Examples:
 
 ## Step by step
 
-Round two top edges of a block:
+Round two top edges of a block. The video shows the steps below from start to end:
+
+<video src="videos/fillet-edges.webm" controls muted loop playsinline style="width:100%"></video>
+
+([fillet-edges.webm](videos/fillet-edges.webm), where the page shows no video.)
 
 1. Press R for a rectangle and click two corners.
 
@@ -56,6 +60,10 @@ starts at 1 mm. Select the same kind of things as for a chamfer:
   cones, meet about one axis, such as a frustum turned on a shaft;
 - straight or circular edges of the solid, picked on the model.
 
+With nothing it can round selected, it says what it takes:
+
+![The message of Fillet Edges with nothing selected](images/fillet-7-selection-message.png)
+
 The radius takes a number or an expression. A radius too large for the faces is a problem on
 the group, named on its screen, and the solid passes through unrounded. So is a fillet whose
 result would not be a closed solid where the solid before it was one: the message says the
@@ -83,8 +91,10 @@ doc.Features.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 0, 5))}, 1.5, "")
   is filled.
 - A circle's fillet whose foot reaches past the flat face it lies on, as round a rod through a
   narrow plate, is cut by the planes of the face's flat sides it runs into, and those sides grow
-  up by its sections. It is refused where the foot only just reaches a side (make it a little
-  smaller or larger), and where the solid goes on beyond the side.
+  up by its sections. Where the foot just reaches a side, the face is pinched to a point there,
+  two faces touching. A fillet whose foot runs past a side by less than about a hundredth of its
+  radius may be refused (make it a little smaller or larger), and one is refused where the solid
+  goes on beyond the side.
 - A rounded edge takes with it the edges it meets smoothly, as round a rounded rectangle.
 - Where two rounded edges meet, they are mitred. Where three meet at the corner of a block, a
   sphere rounds the corner.
@@ -126,11 +136,21 @@ as at a corner of three radii.
 
 Round three of the saddle's four edges and leave the fourth sharp, and the two fillets beside
 the sharp edge run up to it and are cut there, the third is set back, and patches fill the
-hole, their surface turning from one fillet to the other where the sharp edge ends. This is
-made where the two fillets reach the sharp edge at one point, as when they have one radius on
-a saddle that is the same on both sides of the sharp edge, and the saddle is not steep.
+hole, their surface turning from one fillet to the other where the sharp edge ends. Where the
+two fillets beside the sharp edge have different radii they reach it at two points: the
+smaller one stops short of the edge, its face runs on beside the edge up to where the larger
+one reaches it, and the patches fill the rest. Steep saddles are made too.
 Chamfers of three of the four edges are cut the same way: the two beside the sharp edge are
-cut up to it, the third is set back, and curved patches fill the corner between them.
+cut up to it, the third is set back, and curved patches fill the corner between them. A
+steep saddle chamfered at one distance is cut in two goes, the ridges and the valleys apart.
+
+Round one of the saddle's four edges alone and its fillet runs on into the two faces across the
+middle, ending where its surface meets their planes, as a fillet ends on the face at a box's
+corner. Round its two ridges, or its two valleys, with the other two left sharp, and the two
+fillets meet in a mitre in the plane of the two sharp edges. Chamfers are cut the same way.
+Round a ridge and a valley side by side, with the other two left sharp, and each fillet runs
+up to the sharp edge beside it; patches fill the corner between the two cuts and the sharp
+edges, which stay sharp. Chamfers are cut the same way.
 
 **Refused.** Two top edges of different radii over an upright edge that stays sharp are refused,
 and the message names the radii: the blend would need a crease. Round the upright edge too, or
@@ -158,7 +178,10 @@ at a vertex the two share is refused there, with the message "pick it alone".
 
 An edge along a crease that fades out, as a loft's crease from a corner of its square foot up to
 where its sides meet smoothly, is rounded or chamfered up to where its faces turn by almost
-nothing, and ends there. The crease goes on above it.
+nothing, and ends there. Where the crease turns back above that, its faces meeting at an angle
+the other way, that part is rounded too, by a fillet that widens from nothing where the first
+ended and narrows to nothing where the crease fades out again; where it only fades out, the edge
+goes on above as it is.
 
 **Where the edge ends.** The edge may close on itself, as such joints do. Or it may end where it
 meets a flat face at each end, as a band's side on a cone ends at the base and at the band's end.
@@ -173,13 +196,17 @@ goes on to that face: its plane cuts the fillet too, and both the end face and t
 the fillet's end. If the face it runs onto is curved, as a band's rounded top, that surface is
 carried on past its edge with the face the fillet ran off, it cuts the fillet, and it grows over
 the fillet's end, sharing with the end face the line or curve where the end face's plane meets
-that surface. Where the fillet's end only just runs off onto a curved face, within two chord
+that surface, or where the end face's own surface meets it when that is curved too. Where the fillet's end only just runs off onto a curved face, within two chord
 tolerances of its edge, the end is taken to that edge's corner, so the face doesn't grow by a
 sliver too thin to mesh.
 
 Both ends may run off this way, as a chamfer of a short plate's foot on a rod does past both
 slopes of the plate's gabled top. Each end cuts the fillet on its own; where the two cuts would
-fall on one piece of the fillet's surface, that surface is split between them first.
+fall on one piece of the fillet's surface, that surface is split between them first. Where the
+fillet is so large that it reaches over the plate's side all along, above one slope or the other,
+it takes the side whole: both slopes cut it, meeting across it on the line of the ridge carried
+on, each slope grows over the fillet up to that line, and the side goes. Where one slope carried
+on past the ridge would cut the other end's section too, the fillet is refused.
 
 The fillet is refused at the place in these cases:
 
@@ -205,21 +232,21 @@ Examples: [`examples/scripts/tee`](../../examples/scripts/tee/tee.go),
 
 These are refused with a message:
 
-- A rib rounded all over, with the edges of its top rounded as well as its foot filled. Round
-  the foot alone, or the top's edges alone.
+- The edges of a rib's top rounded after its foot was filled. Pick the top's edges and the
+  foot's together, or round the top first and fill the foot after: both are made.
 - A fillet between curved faces along an edge that ends at a curved face which the side faces go
   on past.
 - Chamfers meeting above an edge left sharp that they would cut at two points, or at a corner
   where their distances are too unlike for a face to close it ([Chamfer](chamfer.md) says what
   is made).
 - A corner where a convex edge meets a concave one at a vertex that the stages can't round while
-  some edge there is left sharp, but for three of a saddle's four edges as above, fillets or
-  chamfers.
+  some edge there is left sharp, but for one, two opposite or three of a saddle's four edges as
+  above, fillets or chamfers, and a ridge and a valley side by side. Two opposite edges of a
+  saddle rounded at different radii, the other two left sharp, are refused.
 - A blend that takes material away and runs off onto the next face, or that runs off at both of
-  its ends where the two ends' cuts meet along the edge.
+  its ends onto slopes whose planes, carried on, cut both ends' sections.
 
 Also:
 
-- A crease that fades out is rounded only up to where it fades.
 - A fillet whose radius stops its chain at a rounded corner names the curved face in its message
   rather than saying that the radius is the problem.

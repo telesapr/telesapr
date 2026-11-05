@@ -781,7 +781,8 @@ A packed model, `.tlsprz`, is a zip: the model as `model.tlspr`; the files it li
 link, in `parts/`, their links rewritten to name each other there (`parts/name` from the model,
 `name` from a part); its pictures in `images/`; and in `cache/step/` the tessellations of its STEP
 files, named by a hash of the file's contents, the chord tolerance and a version, which a reader
-may take into its cache. A name that repeats gets `-2`, `-3` before its extension. The entries'
+may take into its cache; an entry of another version than the reader's is never used, and the
+model opens without it. A name that repeats gets `-2`, `-3` before its extension. The entries'
 dates are fixed, so the same model packs to the same bytes. A reader refuses an entry that would
 be written outside the folder it unpacks into.
 

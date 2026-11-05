@@ -102,7 +102,7 @@ type Sketch struct {
 	MaxSegments int
 
 	// Mesher is how curved surfaces are triangulated; the zero value is
-	// the ear clipper (srf.MesherEarClip).
+	// the constrained Delaunay mesher (srf.MesherCDT).
 	Mesher srf.Mesher
 
 	// Exporting, while set, is the tolerance a regeneration follows

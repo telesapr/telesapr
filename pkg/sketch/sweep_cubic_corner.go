@@ -330,8 +330,9 @@ func (sr *sweepRuns) sweepRunsJoined(sbls *srf.SBezierLoopSetSet, color core.RGB
 // corners beside a cubic (sweepRunsJoined): a problem on the group at
 // the corner where it can't be made.
 func (g *Group) generateRunsSweepShell(sk *Sketch, src *Group, start, end uint32) {
+	prof := g.sweepProfile(src)
 	sr := g.sweepRuns
-	sh, err := sr.sweepRunsJoined(&src.BezierLoops, g.Color, start, end, srf.OriginFor(g.H.V, 0), sk.tol)
+	sh, err := sr.sweepRunsJoined(prof, g.Color, start, end, srf.OriginFor(g.H.V, 0), sk.tol)
 	if err == nil && sh == nil {
 		err = &srf.CornerError{At: sr.turns[0].Center, Err: srf.ErrCornerNoJoint}
 	}
@@ -351,7 +352,7 @@ func (g *Group) generateRunsSweepShell(sk *Sketch, src *Group, start, end uint32
 	}
 	g.ThisShell = *sh
 	g.ThisShell.Tol = sk.tol
-	g.refuseCrossing(sk, func() bool { return curvesComeBack(&src.BezierLoops, sr.pieces()) }, nil)
+	g.refuseCrossing(sk, func() bool { return curvesComeBack(prof, sr.pieces()) }, nil)
 }
 
 // topologySound reports whether the shell's topology is a closed solid

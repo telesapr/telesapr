@@ -4,6 +4,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/script/api"
 )
 
@@ -120,6 +121,12 @@ func TestShellLatheThinWall(t *testing.T) {
 // flat faces, the boss as a prism.
 func TestShellBlockAndRoundBoss(t *testing.T) {
 	t.Parallel()
+	if fixtures.RaceDetector {
+		// Fourteen minutes there beside the stage since the CDT meshes
+		// its curved faces (2026-11-04); TestShellBlockAndFlushPost shells a
+		// joined solid of the same kind on the same goroutines.
+		t.Skip("a joined shell, minutes under the race detector")
+	}
 	d := api.New()
 	d.Edit.SetChordTolerance(0.005)
 	block(d, -10, -10, 10, 10, 10)

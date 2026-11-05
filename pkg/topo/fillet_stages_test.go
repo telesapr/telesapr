@@ -90,19 +90,22 @@ func TestFilletStages(t *testing.T) {
 }
 
 // What neither the stages nor a setback rounds is refused, saying why:
-// two of a saddle's four edges at its corner, the other two left sharp,
-// which would need a vertex blend (three, the fourth left sharp, are
-// made since 2026-11-04: TestFilletSaddleSharp). Two top edges of different radii
+// two opposite of a saddle's four edges at its corner rounded at unlike
+// radii, the other two left sharp, whose mitre would be no plane (three,
+// the fourth left sharp, are made since 2026-11-04:
+// TestFilletSaddleSharp; one alone, two opposite alike or two side by
+// side since too: TestFilletSaddleOne, TestFilletSaddlePair,
+// TestFilletSaddleSide). Two top edges of different radii
 // over an upright left sharp are made since 2026-10-29
 // (TestFilletRadiiPairOracle); a top ring larger than the uprights it
 // would go round is set back (TestFilletSetback).
 func TestFilletStagesRefused(t *testing.T) {
 	t.Parallel()
-	sh, picks, err := mixedSaddle(0.5, 0.5, [4]float64{1, 1, 1, 1}, srf.Tolerance{})
+	sh, picks, err := mixedSaddle(0.5, 0.5, [4]float64{1, 2, 1, 2}, srf.Tolerance{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = topo.FilletPicks(sh, picks[2:], 1, 1<<30, false)
+	err = topo.FilletPicks(sh, []topo.FilletPick{picks[0], picks[1]}, 1, 1<<30, false)
 	if err == nil || !strings.Contains(err.Error(), "left sharp") {
 		t.Errorf("a saddle with an edge left sharp: %v", err)
 	}

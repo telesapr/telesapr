@@ -17,9 +17,7 @@ up L 382.5 232.5
 answer ok
 menu Features|Mirror
 key esc
-move 290 265
-down L 290 265
-up L 290 265
+click-face top face of g003-extrude
 menu Features|Mirror
 dump
 tw

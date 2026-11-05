@@ -1,6 +1,7 @@
 package srf
 
 import (
+	"errors"
 	"math"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -72,7 +73,20 @@ type SShell struct {
 	// classifies against the shell: MakeClassifyingBsps makes it,
 	// CleanupAfterBoolean drops it.
 	index *surfaceIndex
+
+	// pace is what the next Boolean made into the shell calls between
+	// the steps of its long loops (PaceBy); nil for none.
+	pace func()
 }
+
+// PaceBy has the next Boolean made into s call pace between the steps
+// of its long loops (the curves split, the intersection curves, the
+// surfaces trimmed), on the goroutine that called it: a platform with
+// one thread, a browser page's, lets the page draw there during a
+// Boolean that takes seconds. The loops then run in order on that
+// goroutine, which gives the result they give at once. The Boolean
+// forgets pace when it is done; nil, the default, paces nothing.
+func (s *SShell) PaceBy(pace func()) { s.pace = pace }
 
 // Clear resets all data.
 func (s *SShell) Clear() {
@@ -784,11 +798,11 @@ func (s *SShell) TriangulateBySurface() []SMesh {
 	strays := make([]bool, len(s.Surface))
 	if len(s.Surface) < 2 || par.Workers() < 2 {
 		for i := range s.Surface {
-			strays[i] = s.Surface[i].triangulate(s, &ms[i], false)
+			strays[i] = s.Surface[i].triangulate(s, &ms[i], meshByTol)
 		}
 	} else {
 		par.For(len(s.Surface), func(i int) {
-			strays[i] = s.Surface[i].triangulate(s, &ms[i], false)
+			strays[i] = s.Surface[i].triangulate(s, &ms[i], meshByTol)
 		})
 	}
 	s.mendCrossings(ms, strays)
@@ -802,15 +816,34 @@ func (s *SShell) TriangulateBySurface() []SMesh {
 // to 3-D via PointAt/NormalAt and flip the winding to match the
 // trim-contour orientation convention.
 func (s *SSurface) TriangulateInto(shell *SShell, mesh *SMesh) {
-	s.triangulate(shell, mesh, false)
+	s.triangulate(shell, mesh, meshByTol)
 }
 
-// triangulate is TriangulateInto, by the constrained Delaunay mesher
-// where the tolerance says so or cdt is set, and the ear clipper where
-// it refuses. It tells whether the ear clipper's mesh of a curved
-// surface strays (earMeshStrays), or holds a sliver (earMeshSlivers),
-// and may cross the faces beyond.
-func (s *SSurface) triangulate(shell *SShell, mesh *SMesh, cdt bool) (strays bool) {
+// meshWith is which mesher triangulate uses.
+type meshWith uint8
+
+const (
+	// meshByTol takes the tolerance's mesher for a curved surface and
+	// the ear clipper for a plane.
+	meshByTol meshWith = iota
+	// meshCDT takes the constrained Delaunay mesher, as the mender asks
+	// for a face the ear clipper meshed badly.
+	meshCDT
+	// meshEar takes the ear clipper, as the mender asks for a curved
+	// face whose Delaunay mesh crosses the shell's.
+	meshEar
+)
+
+// byCDT reports whether triangulate with meshByTol meshes s by the
+// constrained Delaunay mesher.
+func (s *SSurface) byCDT() bool { return s.Tol.Mesher() == MesherCDT && !s.flat() }
+
+// triangulate is TriangulateInto, by the mesher with asks for, the
+// ear clipper where the constrained Delaunay mesher refuses. It tells
+// whether the ear clipper's mesh of a curved surface strays
+// (earMeshStrays), or holds a sliver (earMeshSlivers), and may cross
+// the faces beyond.
+func (s *SSurface) triangulate(shell *SShell, mesh *SMesh, with meshWith) (strays bool) {
 	if len(s.Trim) == 0 && !s.TrimBuilt {
 		// See SSurface.TrimBuilt: a constructor that doesn't build
 		// trims yet.
@@ -822,12 +855,19 @@ func (s *SSurface) triangulate(shell *SShell, mesh *SMesh, cdt bool) (strays boo
 	s.MakeEdgesInto(shell, &el, true, nil)
 
 	var poly SPolygon
-	if !el.AssemblePolygon(&poly, nil, true) {
+	if !el.assembleTrimPolygon(&poly) {
 		// failed to assemble polygon to trim nurbs surface in uv space
 		return false
 	}
 
-	cdt = cdt || s.Tol.Mesher() == MesherCDT
+	// The tolerance's mesher is for curved surfaces (Mesher). A plane's
+	// mesh is its trims' points alone, which the ear clipper takes as
+	// well; Delaunay's, among the fitted trims of a fillet tangent to the
+	// plane, joined three points of a trim a micrometre off one line and
+	// left a chord crossing the fillet's first row (the rib rounded all
+	// over, TestFilletRibAllOverOracleCDT). A plane the mender asks for
+	// is still meshed by the CDT.
+	cdt := with == meshCDT || with == meshByTol && s.byCDT()
 	start := len(mesh.Triangles)
 	if s.flat() {
 		if !cdt || poly.cdtTriangulateInto(mesh, s) != nil {
@@ -835,7 +875,22 @@ func (s *SSurface) triangulate(shell *SShell, mesh *SMesh, cdt bool) (strays boo
 			poly.UvTriangulateInto(mesh, s)
 		}
 	} else {
-		if !cdt || poly.cdtTriangulateInto(mesh, s) != nil {
+		// By the tolerance, the CDT gives a face back to the ear clipper
+		// past its budget (cdtBudgetPerCell); the mender's asking for it
+		// holds. A face given back is the ear clipper's as before the CDT
+		// was the default: told to the mender where it strays.
+		budget := 0
+		if with == meshByTol {
+			budget = -1
+		}
+		var err error
+		if cdt {
+			err = poly.cdtTriangulateBudgetInto(mesh, s, budget)
+			if errors.Is(err, errCDTBudget) {
+				cdt = false
+			}
+		}
+		if !cdt || err != nil {
 			mesh.Triangles = mesh.Triangles[:start]
 			poly.uvGridTriangulateInto(mesh, s, &el)
 			s.splitTrimDiagonals(shell, mesh, start, &el)

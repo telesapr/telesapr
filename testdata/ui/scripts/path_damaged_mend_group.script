@@ -1,0 +1,9 @@
+# A damaged file's extrusion whose sketch the file lacks, given the
+# file's sketch in its place from Broken References' [choose a group];
+# the same as path_damaged_mend_group.go makes
+# (TestPathEquivalence/damaged_mend_group, ROADMAP D5).
+answer ok
+load tlspr/damaged/group_missing_operand.tlspr
+menu Features|Broken References...
+click-tw [choose a group]
+click-tw [use g002-sketch-in-plane]

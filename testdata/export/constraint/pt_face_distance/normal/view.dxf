@@ -2415,6 +2415,246 @@ POLYLINE
 100
 AcDbEntity
   8
+s005-#def-solid-edge
+  6
+CONTINUOUS
+ 62
+    7
+420
+    0
+370
+   20
+100
+AcDb2dPolyline
+ 10
+0
+ 20
+0
+ 30
+0
+ 70
+    0
+  0
+VERTEX
+  5
+4F
+100
+AcDbEntity
+  8
+s005-#def-solid-edge
+  6
+CONTINUOUS
+ 62
+    7
+420
+    0
+370
+   20
+100
+AcDbVertex
+100
+AcDb2dVertex
+ 10
+-1.099853362660149
+ 20
+4.866401412830328
+ 30
+0
+  0
+VERTEX
+  5
+50
+100
+AcDbEntity
+  8
+s005-#def-solid-edge
+  6
+CONTINUOUS
+ 62
+    7
+420
+    0
+370
+   20
+100
+AcDbVertex
+100
+AcDb2dVertex
+ 10
+2.788793605364042
+ 20
+5.921200536986554
+ 30
+0
+  0
+VERTEX
+  5
+51
+100
+AcDbEntity
+  8
+s005-#def-solid-edge
+  6
+CONTINUOUS
+ 62
+    7
+420
+    0
+370
+   20
+100
+AcDbVertex
+100
+AcDb2dVertex
+ 10
+7.195760195183253
+ 20
+7.088001555896341
+ 30
+0
+  0
+SEQEND
+  5
+52
+100
+AcDbEntity
+  8
+s005-#def-solid-edge
+  6
+CONTINUOUS
+ 62
+    7
+420
+    0
+370
+   20
+  0
+POLYLINE
+  5
+53
+100
+AcDbEntity
+  8
+s005-#def-solid-edge
+  6
+CONTINUOUS
+ 62
+    7
+420
+    0
+370
+   20
+100
+AcDb2dPolyline
+ 10
+0
+ 20
+0
+ 30
+0
+ 70
+    0
+  0
+VERTEX
+  5
+54
+100
+AcDbEntity
+  8
+s005-#def-solid-edge
+  6
+CONTINUOUS
+ 62
+    7
+420
+    0
+370
+   20
+100
+AcDbVertex
+100
+AcDb2dVertex
+ 10
+1.09985336266015
+ 20
+-4.866401412830328
+ 30
+0
+  0
+VERTEX
+  5
+55
+100
+AcDbEntity
+  8
+s005-#def-solid-edge
+  6
+CONTINUOUS
+ 62
+    7
+420
+    0
+370
+   20
+100
+AcDbVertex
+100
+AcDb2dVertex
+ 10
+5.506819952479361
+ 20
+-3.699600393920539
+ 30
+0
+  0
+VERTEX
+  5
+56
+100
+AcDbEntity
+  8
+s005-#def-solid-edge
+  6
+CONTINUOUS
+ 62
+    7
+420
+    0
+370
+   20
+100
+AcDbVertex
+100
+AcDb2dVertex
+ 10
+9.395466920503553
+ 20
+-2.644801269764314
+ 30
+0
+  0
+SEQEND
+  5
+57
+100
+AcDbEntity
+  8
+s005-#def-solid-edge
+  6
+CONTINUOUS
+ 62
+    7
+420
+    0
+370
+   20
+  0
+POLYLINE
+  5
+58
+100
+AcDbEntity
+  8
 s001-#def-active-grp
   6
 CONTINUOUS
@@ -2437,7 +2677,7 @@ AcDb2dPolyline
   0
 VERTEX
   5
-4F
+59
 100
 AcDbEntity
   8
@@ -2463,7 +2703,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-50
+5A
 100
 AcDbEntity
   8
@@ -2489,7 +2729,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-51
+5B
 100
 AcDbEntity
   8
@@ -2515,7 +2755,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-52
+5C
 100
 AcDbEntity
   8
@@ -2541,7 +2781,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-53
+5D
 100
 AcDbEntity
   8
@@ -2567,7 +2807,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-54
+5E
 100
 AcDbEntity
   8
@@ -2593,7 +2833,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-55
+5F
 100
 AcDbEntity
   8
@@ -2619,7 +2859,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-56
+60
 100
 AcDbEntity
   8
@@ -2645,7 +2885,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-57
+61
 100
 AcDbEntity
   8
@@ -2671,7 +2911,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-58
+62
 100
 AcDbEntity
   8
@@ -2697,7 +2937,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-59
+63
 100
 AcDbEntity
   8
@@ -2723,7 +2963,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-5A
+64
 100
 AcDbEntity
   8
@@ -2749,7 +2989,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-5B
+65
 100
 AcDbEntity
   8
@@ -2775,7 +3015,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-5C
+66
 100
 AcDbEntity
   8
@@ -2801,7 +3041,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-5D
+67
 100
 AcDbEntity
   8
@@ -2827,7 +3067,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-5E
+68
 100
 AcDbEntity
   8
@@ -2853,7 +3093,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-5F
+69
 100
 AcDbEntity
   8
@@ -2879,7 +3119,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-60
+6A
 100
 AcDbEntity
   8
@@ -2905,7 +3145,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-61
+6B
 100
 AcDbEntity
   8
@@ -2931,7 +3171,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-62
+6C
 100
 AcDbEntity
   8
@@ -2957,7 +3197,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-63
+6D
 100
 AcDbEntity
   8
@@ -2983,7 +3223,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-64
+6E
 100
 AcDbEntity
   8
@@ -3009,7 +3249,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-65
+6F
 100
 AcDbEntity
   8
@@ -3035,7 +3275,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-66
+70
 100
 AcDbEntity
   8
@@ -3061,7 +3301,7 @@ AcDb2dVertex
   0
 VERTEX
   5
-67
+71
 100
 AcDbEntity
   8
@@ -3087,7 +3327,7 @@ AcDb2dVertex
   0
 SEQEND
   5
-68
+72
 100
 AcDbEntity
   8
@@ -3100,58 +3340,6 @@ CONTINUOUS
     0
 370
    30
-  0
-LINE
-  5
-69
-100
-AcDbEntity
-  8
-s005-#def-solid-edge
-  6
-CONTINUOUS
- 62
-    7
-420
-    0
-370
-   20
-100
-AcDbLine
- 10
--1.099853362660149
- 20
-4.866401412830328
- 11
-7.195760195183253
- 21
-7.088001555896341
-  0
-LINE
-  5
-6A
-100
-AcDbEntity
-  8
-s005-#def-solid-edge
-  6
-CONTINUOUS
- 62
-    7
-420
-    0
-370
-   20
-100
-AcDbLine
- 10
-9.395466920503553
- 20
--2.644801269764314
- 11
-1.09985336266015
- 21
--4.866401412830328
   0
 ENDSEC
   0

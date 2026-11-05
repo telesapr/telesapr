@@ -101,7 +101,11 @@ each mesh may stray from its true surface), plus more where the points were foll
 surfaces and moved.
 
 A wall is measured between two points of the mesh, each within the chord tolerance of the
-surface. The thinnest points are then followed onto the two surfaces of the wall.
+surface. The thinnest points are then followed onto the two surfaces of the wall. Where two
+faces meet square or wider, as a cup's inside meets its rim, the triangles beside the edge can
+lean in by a little, and a ray from one leaves through the other at once; such a ray measures
+the mesh's fold, not a wall, and is left out where the part has surfaces to tell: only rays
+whose two faces face each other by more than a degree count.
 
 When the last hundredths matter, set the chord tolerance smaller on the configuration screen.
 

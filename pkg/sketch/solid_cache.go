@@ -48,6 +48,7 @@ type solidResult struct {
 	fittedPath              *topo.SweepPath
 	sweepRuns               *sweepRuns
 	sweepClosed             bool
+	sweepFrom               *srf.Rigid
 	// size is about how many bytes the copy holds.
 	size int64
 }
@@ -66,6 +67,7 @@ func (g *Group) result() *solidResult {
 		fittedPath:    g.fittedPath,
 		sweepRuns:     g.sweepRuns,
 		sweepClosed:   g.sweepClosed,
+		sweepFrom:     g.sweepFrom,
 	}
 	r.size = shellSize(&r.thisShell) + shellSize(&r.runningShell) +
 		int64(len(r.thisMesh.Triangles)+len(r.runningMesh.Triangles))*int64(unsafe.Sizeof(srf.STriangle{}))
@@ -85,6 +87,7 @@ func (g *Group) setResult(r *solidResult) {
 	g.fittedPath = r.fittedPath
 	g.sweepRuns = r.sweepRuns
 	g.sweepClosed = r.sweepClosed
+	g.sweepFrom = r.sweepFrom
 	g.forgetTopology()
 	g.DisplayDirty = true
 }

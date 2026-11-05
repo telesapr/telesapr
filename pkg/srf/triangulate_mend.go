@@ -7,7 +7,9 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
-// mendCrossings meshes again, by the constrained Delaunay mesher, each
+// mendCrossings meshes again by the ear clipper each face the
+// constrained Delaunay mesher meshed that crosses the shell's mesh
+// (mendDelaunayCrossings); then, by the constrained Delaunay mesher, each
 // surface whose ear-clipped mesh strays from it (strays[i], its mesh
 // ms[i]) or holds a sliver (earMeshSlivers) and is unsound in the
 // shell's, an edge of its triangles crossing the shell's mesh or having
@@ -30,68 +32,16 @@ import (
 // more triangles, so it takes only those surfaces, and a sound mesh is
 // left as it is.
 func (s *SShell) mendCrossings(ms []SMesh, strays []bool) {
+	s.mendDelaunayCrossings(ms)
 	stacked := stackedFaces(ms)
-	var all SMesh
 	some := false
 	for i := range ms {
-		all.Triangles = append(all.Triangles, ms[i].Triangles...)
 		some = some || strays[i] || stacked[i]
 	}
 	if !some {
 		return
 	}
-	kd := SKdNodeFrom(&all)
-	cnt := 0
-	unsound := func(m *SMesh) bool {
-		for i := range m.Triangles {
-			tr := &m.Triangles[i]
-			for j := range 3 {
-				a, b := tr.vertex(j), tr.vertex((j+1)%3)
-				cnt++
-				var info EdgeOnInfo
-				kd.FindEdgeOn(a, b, cnt, true, &info)
-				if info.IntersectsMesh {
-					return true
-				}
-				if info.Count != 1 {
-					// Coincident edges run both ways in equal numbers.
-					cnt++
-					var par EdgeOnInfo
-					kd.FindEdgeOn(b, a, cnt, true, &par)
-					if info.Count != par.Count {
-						return true
-					}
-				}
-			}
-		}
-		return false
-	}
-	// pierced tells whether an edge of another surface's mesh passes
-	// through a triangle of ms[i]: a sliver the ear clipper fans across a
-	// cone from its base to a point on its top trim cuts through the
-	// solid, and its own edges, each ending on a face it meets, cross
-	// nothing; the flat face beyond, its fan reaching that point, does.
-	pierced := func(i int) bool {
-		own := SMesh{Triangles: slices.Clone(ms[i].Triangles)}
-		ki := SKdNodeFrom(&own)
-		for j := range ms {
-			if j == i {
-				continue
-			}
-			for k := range ms[j].Triangles {
-				tr := &ms[j].Triangles[k]
-				for e := range 3 {
-					cnt++
-					var info EdgeOnInfo
-					ki.FindEdgeOn(tr.vertex(e), tr.vertex((e+1)%3), cnt, true, &info)
-					if info.IntersectsMesh {
-						return true
-					}
-				}
-			}
-		}
-		return false
-	}
+	mc := newMeshCheck(ms)
 	// open is, once asked, the shell's edges with no mate: a T-junction
 	// leaves them where a face's edge runs along another's trim points
 	// without stopping at them.
@@ -100,12 +50,12 @@ func (s *SShell) mendCrossings(ms []SMesh, strays []bool) {
 	openEdges := func() [][2]geom.Vector {
 		if !openDone {
 			openDone = true
-			open = unmatedEdges(&all, kd, &cnt)
+			open = unmatedEdges(&mc.all, mc.kd, &mc.cnt)
 		}
 		return open
 	}
 	for i := range ms {
-		bad := stacked[i] || strays[i] && (unsound(&ms[i]) || pierced(i))
+		bad := stacked[i] || strays[i] && (mc.unsound(&ms[i]) || mc.pierced(ms, i))
 		// A face whose edge runs along another's open edge is the one to
 		// mesh again, flagged or not: the long edge's own triangles are
 		// whole, and only the face beyond, left open, was flagged.
@@ -113,9 +63,121 @@ func (s *SShell) mendCrossings(ms []SMesh, strays []bool) {
 			continue
 		}
 		var m SMesh
-		s.Surface[i].triangulate(s, &m, true)
+		s.Surface[i].triangulate(s, &m, meshCDT)
 		ms[i] = m
 	}
+}
+
+// mendDelaunayCrossings meshes again by the ear clipper each face the
+// constrained Delaunay mesher meshed whose mesh crosses the shell's,
+// or is crossed by it. Two faces that come within the chord tolerance
+// of each other, as the sides of a triangle lofted a third of a turn
+// round near its corners, have meshes each within it of its own surface
+// that may cross there; the ear clipper's rows, one per point of the
+// trims, keep clear of each other (TestLoftSweep). A face meshed again
+// is checked again against the faces beside it, and they against it,
+// for a few rounds.
+func (s *SShell) mendDelaunayCrossings(ms []SMesh) {
+	byCDT := make([]bool, len(ms))
+	some := false
+	for i := range ms {
+		byCDT[i] = s.Surface[i].byCDT()
+		some = some || byCDT[i]
+	}
+	if !some || len(ms) < 2 {
+		return
+	}
+	for range 3 {
+		mc := newMeshCheck(ms)
+		var bad []int
+		for i := range ms {
+			if byCDT[i] && mc.unsound(&ms[i]) {
+				bad = append(bad, i)
+			}
+		}
+		if len(bad) == 0 {
+			return
+		}
+		for _, i := range bad {
+			var m SMesh
+			s.Surface[i].triangulate(s, &m, meshEar)
+			ms[i] = m
+			byCDT[i] = false
+		}
+	}
+}
+
+// meshCheck is a shell's meshes joined and their k-d tree, to tell
+// whether one face's mesh crosses the rest.
+type meshCheck struct {
+	all SMesh
+	kd  *SKdNode
+	// cnt tags the triangles seen, as FindEdgeOn wants.
+	cnt int
+}
+
+// newMeshCheck joins ms.
+func newMeshCheck(ms []SMesh) *meshCheck {
+	mc := &meshCheck{}
+	for i := range ms {
+		mc.all.Triangles = append(mc.all.Triangles, ms[i].Triangles...)
+	}
+	mc.kd = SKdNodeFrom(&mc.all)
+	return mc
+}
+
+// unsound reports whether an edge of m's triangles crosses the joined
+// mesh, or has no mate in it.
+func (mc *meshCheck) unsound(m *SMesh) bool {
+	for i := range m.Triangles {
+		tr := &m.Triangles[i]
+		for j := range 3 {
+			a, b := tr.vertex(j), tr.vertex((j+1)%3)
+			mc.cnt++
+			var info EdgeOnInfo
+			mc.kd.FindEdgeOn(a, b, mc.cnt, true, &info)
+			if info.IntersectsMesh {
+				return true
+			}
+			if info.Count != 1 {
+				// Coincident edges run both ways in equal numbers.
+				mc.cnt++
+				var par EdgeOnInfo
+				mc.kd.FindEdgeOn(b, a, mc.cnt, true, &par)
+				if info.Count != par.Count {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// pierced tells whether an edge of another surface's mesh passes
+// through a triangle of ms[i]: a sliver the ear clipper fans across a
+// cone from its base to a point on its top trim cuts through the solid,
+// and its own edges, each ending on a face it meets, cross nothing; the
+// flat face beyond, its fan reaching that point, does.
+func (mc *meshCheck) pierced(ms []SMesh, i int) bool {
+	own := SMesh{Triangles: slices.Clone(ms[i].Triangles)}
+	ki := SKdNodeFrom(&own)
+	for j := range ms {
+		if j == i {
+			continue
+		}
+		for k := range ms[j].Triangles {
+			tr := &ms[j].Triangles[k]
+			for e := range 3 {
+				mc.cnt++
+				var info EdgeOnInfo
+				ki.FindEdgeOn(tr.vertex(e), tr.vertex((e+1)%3), mc.cnt, true, &info)
+				if info.IntersectsMesh {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // stackedFaces tells which meshes have a triangle on the same three

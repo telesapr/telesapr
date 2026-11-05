@@ -84,7 +84,12 @@ func TestFilletCylinderFineTolerance(t *testing.T) {
 	if testing.Short() {
 		t.Skip("STEP solids at a fine tolerance")
 	}
-	for _, chord := range []float64{0.002, 0.001} {
+	chords := []float64{0.002, 0.001}
+	if fixtures.RaceDetector {
+		// Ten minutes there; the finer runs the same rounds longer.
+		chords = chords[:1]
+	}
+	for _, chord := range chords {
 		for i := range 2 {
 			d := New()
 			d.Edit.SetChordTolerance(chord)

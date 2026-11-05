@@ -86,7 +86,7 @@ bd_warehouse's library have: tapers and ready-made fasteners.
 - DIN 513-3's nut deviation. 7H/8H/9H are taken as basic until DIN 513-1's axial play `a` is
   found.
 - B1.9's preferred pitches and the default pitch per size, which wait for B1.9 Table 1.
-- B1.9 rounded roots at coarse chord tolerances, refused (`ErrRootRoundCoarse`).
+- Chamfered nuts with B1.9 rounded roots, unsound at every chord tolerance for some sizes.
 - Multi-start allowances for B1.5 and B1.9, which wait for B1.5 appendix B's K factor.
 
 Chamfered nuts at coarse chord tolerances, unsound where the chamfer's cone met the ridges

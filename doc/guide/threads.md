@@ -66,6 +66,10 @@ Select a circle or an arc, such as the rim of an extruded circle, and choose Fea
 Thread... (Shift+E). The screen offers the standard thread nearest the circle's diameter. Fill
 in the rows below and press **make the thread now**.
 
+With anything else selected, or nothing, it says what it takes:
+
+![The message of Screw Thread... with nothing selected](images/threads-11-selection-message.png)
+
 ### The designation
 
 The **thread** row holds the designation. These forms are read:
@@ -130,9 +134,10 @@ jack's S20x4 spindle, its nut with the load flank turned back, and a 1-12 BUTT r
   root too.
 - Roots are flat at the standard's truncation. For a B1.9 thread, **rounded root** at the end
   of the crest row rounds them as B1.9 draws them: an arc of 0.07141 pitches, tangent to both
-  flanks. These arcs are small, 0.15 mm on a 1-12 BUTT. A chord tolerance coarser than a fifth
-  of the arc's radius is refused, and the message says what tolerance to set (Edit >
-  Preferences). The chord tolerance is how far the mesh may stray from the true surface. Near
+  flanks. These arcs are small, 0.15 mm on a 1-12 BUTT. The chord tolerance is how far the mesh
+  may stray from the true surface (Edit > Preferences). Where the model's is coarser than about
+  a sixth of the arc's radius, the thread is made at that finer one, and so is the part it is
+  made in, every group before the thread; the groups after it go back to the model's. Near
   the root's flat the model leaves the standard's arc along its tangent, by up to a quarter of
   its radius, so that the Booleans meet the root at an angle.
 
@@ -395,8 +400,9 @@ cones and the ridges' ends lie. So a chamfered thread tries seven placements of 
 and ridge ends, each at every plane for its ridges, before the window says it is not sound.
 Where the model's chord tolerance is coarser than these Booleans can take, a chamfered thread's
 groups, and a buttress nut's with or without a chamfer, are made at a tolerance of their own: a
-twentieth of the pitch, or a tenth of a rounded crest's radius where that is finer. The rest of
-the part keeps the model's.
+twentieth of the pitch, or a tenth of a rounded crest's radius, or 0.17 of a rounded root's,
+where that is finer. The rest of the part keeps the model's, but for a rounded root, whose part
+is made at the thread's tolerance from its first group.
 `TestThreadChamferSweep` makes eleven sizes of every form, as screws, studs, nuts and tapped
 holes, at three lengths and five chord tolerances, 660 in all. All come out sound since the
 Boolean's curves were refined beside grazing meets (2026-10-29).

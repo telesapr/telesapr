@@ -5,18 +5,17 @@ Refreshed 2026-11-03 at `c4e18d1a`; measured again 2026-11-04 (below). The spike
 
 ## State
 
-- The mesher is in `devel`: `pkg/srf/triangulate_cdt.go`, on the exact-predicate `pkg/internal/cdt`
-  that STEP's tessellation also uses. It is chosen by `srf.Tolerance.WithMesher(srf.MesherCDT)` or
-  `Sketch.Mesher`, which the sketch carries into the tolerance at each regeneration. The default is
-  the ear clipper.
-- It runs as a mender (`triangulate_mend.go`, candidates in `triangulate_check.go`). The ear
-  clipper meshes every face; `mendCrossings` meshes again by the CDT a face that strays from its
-  surface by more than four chord tolerances, folds, or holds a sliver (on a plane or a curved
-  face), and is unsound in the shell's mesh, and every face that shares a triangle with another.
-  No golden moved when each of these was added.
+- **The CDT is the default** since 2026-11-04 (rd8, `MesherCDT` the zero value of `srf.Mesher`):
+  every curved face is meshed by it, flat faces by the ear clipper (their trims' points alone,
+  `SSurface.triangulate`). `pkg/srf/triangulate_cdt.go`, on the exact-predicate
+  `pkg/internal/cdt` that STEP's tessellation also uses. `srf.Tolerance.WithMesher(MesherEarClip)`
+  or `Sketch.Mesher` still asks for the ear clipper, for tests and comparisons; it is not saved,
+  shown or scripted.
+- The mender (`triangulate_mend.go`, candidates in `triangulate_check.go`) works both ways. A
+  face the CDT meshed whose mesh crosses the shell's, or has an edge with no mate there, is meshed
+  again by the ear clipper, in rounds until none does (`mendDelaunayCrossings`); then, as before,
+  a face the ear clipper meshed badly is meshed again by the CDT.
 - The branch `k4-cdt-spike` adds nothing `devel` lacks: its mesher came in as `b33ac6f7`.
-- Making the CDT the default is postponed. It would close the twisted swept bar's 1.6% volume
-  error, the one open item no mender reaches.
 
 ## How the mesher works
 
@@ -128,6 +127,30 @@ committed; see Traps).
   the share of b's volume its own mesh loses, which the CDT can lose again on a piece of b meshed
   apart. Both pass the whole grid with either mesher.
 
+## The rib in full, 2026-11-04 (rd8)
+
+- **The test's cost was its own.** `ballHeight` walked every triangle near a point for each of the
+  few thousand balls it tries there, some 90 000 triangles under the CDT: 56 of the short case's
+  63 s. The triangles a ball resting on the plate can touch are now sorted once per mesh into
+  cubic cells of half the radius (`triGrid`), each looked at only where its box comes within the
+  ball: the same answers, the short case 69 s → 19 s with the CDT.
+- **The 1 to 4 self-intersecting edges were the plate's.** With the mesher set to the CDT, flat
+  faces were meshed by it too, though `Mesher` is documented for curved surfaces. A plane's mesh
+  is its trims' points alone; along the foot of a fillet tangent to the plate, the fitted trim's
+  points lie a few micrometres either side of one line, and Delaunay joined three of them into a
+  sliver whose chord passed a micrometre over the fillet's first row of triangles, crossing it
+  (h 5, lean 0, r 0.5: three such edges, at the corners where the foot's fillet meets the
+  uprights'). The fillet refused it as not closed in 9 of the 24 cases. Planes are now meshed by
+  the ear clipper whatever the mesher (`SSurface.triangulate`; `TestCDTLeavesPlanes`), and by the
+  CDT only when the mender asks, as before. The counts above are unchanged by it: a plane's mesh
+  of its trim points has as many triangles either way.
+- **Result.** `TestFilletRibAllOverOracleCDT` (the oracle test with the CDT on every curved face)
+  passes all 24 cases: no self-intersecting or naked edge, the volumes and the balls' heights
+  within the ear clipper's allowances. It is in `HEAVY` and skipped under the race detector.
+- **Cost under the CDT, beyond the mesh.** In a case of radius 0.5, a third of the time is the
+  fillet's own check of its result (`topo.unsound`: `mendCrossings` and the edge search over
+  some 120 000 triangles), which every fillet pays at regeneration once the CDT is the default.
+
 ## Measurements (spike, 2026-10-10, CDT on every face)
 
 | | CDT | Ear clipper |
@@ -139,20 +162,85 @@ committed; see Traps).
 The quadtree alone is 1.7 times the ear clipper's triangles; grading near the trim and refinement
 are each about half of the rest. The times predate the test suite review; the ratio is what holds.
 
-## To make it the default
+## Made the default, 2026-11-04 (rd8)
 
-- **Cost.** 1.43 times the triangles and 1.27 times `pkg/topo`'s CPU since 2026-11-04, for a mesh
-  that meets the chord tolerance where the ear clipper's does not in a sixth of its triangles.
-- **The rib rounded all over.** No self-intersecting edge on its short case since the evening of
-  2026-11-04; its test does not finish in 10 minutes with the CDT on every face, the cost being
-  the test's walks of 151 500 triangles. Run it in full, its checks made cheaper.
-- **Goldens.** Every `.tlspr`, STL, PNG and pinned count with a curved face moves: one commit per
-  regen script.
-- **Tests to restate.** `TestIntersectionBranches` and `TestNearContactSweep` are, 2026-11-04. On
-  the spike also
-  `TestSphereThroughFace` (0.1% short), one `TestFilletRibFootSweep` point and
-  `TestOracleBooleans`' hole check (should drop a whole face) failed. Run them again.
-- **Slot chamfer on the cone at 3 and 3.25.** One topology problem and one crossing under the CDT,
-  not traced.
-- **A setting.** `Sketch.Mesher` is not saved, shown or scripted. It is needed only if both meshers
-  stay.
+- **Cost.** `BenchmarkMeshers` over the 87 solid and thread goldens: 228 066 triangles against
+  the ear clipper's 158 406 (1.44, median per model 1.41), regeneration 0.99 times the ear
+  clipper's time (median per model 0.88), no model unsound either way. The largest: `loft-tangency` 116 → 1900 triangles
+  (the volume moves in the fourth digit), `screw_bsw` 2686 → 10 116 and three times the time.
+  `pkg/topo`'s light tests: 2797 s of processor against 2347 at the commit before (1.19), with
+  other work on the machine.
+- **The segment limit.** The quadtree never cuts a cell smaller than a 2 MaxSegments'th of the
+  patch (`minCell`); refinement did not stop there. Where the limit holds the cells wider than the
+  tolerance would have them, no triangle can meet it, and every round added points: a cylinder
+  of radius 10 at 0.001 mm and 7 segments made 4816 triangles, more than with no limit (1836).
+  A triangle is now refined only where it strays by more than the tolerance and by more than a
+  cell of the least size sags there (`refinePoints`): 342. Twice the least cell, at twice its
+  sag, was tried first and left seven fillet, chamfer, draft and shell tests of `pkg/topo` past
+  their volume tolerances.
+- **Wall thickness.** Along a cylinder the CDT's triangles beside a trim lean by up to a few
+  tenths of a degree (its points inside the face aren't in line with the trim's), so at a cup's
+  rim, inside meeting top at 90°, a ray square to a side triangle left through the top at once,
+  and the thinnest wall was 0. A ray whose two surfaces don't face each other by more than a
+  degree there measures the mesh's fold and is left out (`wallFold`, `pkg/sketch/wall.go`).
+- **Tests restated** for a mesh that is no longer the same however a solid is moved or meshed
+  again: the CDT's points inside a face fall by rounding, so copies of a pattern, a cylinder
+  meshed again in a union, a fitted sweep against a rigid one, a section's cap, and a nut bored
+  twice now agree within the chord tolerance over the curved area, not to a millionth
+  (`TestPathPattern*`, `TestDisjointTurnedCylinder`, `TestSweepFittedCornerBesideArc`,
+  `TestSectionThroughAxis`, `TestThreadCosmeticNut`, `TestSphereThroughFace`, the lathe shell's
+  path pair). `TestMendCrossings` asks for the ear clipper, which the mender is for. The
+  twisted bar (`TestSweepTwistAndUp`) holds 0.05% by default, 2% with the ear clipper.
+- **Faces within the tolerance of each other.** The sides of a triangle lofted a third of a turn
+  round come within the chord tolerance of each other near its corners, and their meshes, each
+  within it of its own surface, crossed: 2 to 46 self-intersecting edges in 4 of the 5 triangle
+  cases `TestLoftSweep` samples, where the ear clipper's rows, one per trim point, keep clear. The
+  mender takes such faces back to the ear clipper (above): every case sound, no golden's mesh
+  changed by it. Checking every CDT face for it costs a walk of the shell's mesh per
+  triangulation; with each face also checked for being pierced by the others' edges, as the ear
+  clipper's mender does, regeneration took 2.2 times the ear clipper's, and that check was left
+  out: a crossing is found from the other face's side.
+- **Pattern copies differ.** Copies of a post along a path have 110 or 111 triangles to the
+  post's 108: rounding, not the copies' geometry. Not traced further.
+
+## Fine tolerances: the budget (2026-11-04, rd8-cdt-speed)
+
+The default's measurements (`BenchmarkMeshers`, the goldens' regeneration at 0.99 times) were
+all at the goldens' chord tolerances. At fine ones the CDT made far more triangles than the ear
+clipper, and `make ci` timed out at 30 minutes in four packages. Alone, without the race
+detector, on a quiet machine:
+
+| Test | base bf905a66 (ear clipper) | CDT default 20e8502d | with the budget |
+|---|---|---|---|
+| `TestBandEndOnCone` (0.00085 mm) | 1.6 s | 27 s | 3.7 s |
+| `TestWrapRectangleOnCone` (1e-4 mm) | 7.3 s | 85 s | 17 s |
+| `TestWrapRoundMostOfTheWay` (1e-4 mm) | 21 s | 142 s | 70 s |
+| `TestShellBlockAndDraftedBoss` (0.005) | 1.1 s | 15 s | 15 s |
+| `TestFilletRunsOffOntoCylinder` | 78 s | 487 s | 122 s |
+
+A band on a quartered frustum at 0.00085 mm: 40 084 triangles against the ear clipper's 1394,
+each quarter of the cone 5096 points inside from `quadPoints`. Two causes, both in how the CDT
+measures sag, not in the triangulation:
+
+- **Parametric middles.** `cellSag`'s diagonal term and `refinePoints` compare the surface at a
+  cell's or triangle's middle in the chart with the middle of its corners. Between two rulings of
+  a frustum the cell is flat but no parallelogram, and the two middles lie apart along it: it
+  counts as sagging, though the triangles cover the surface there. Measured square to the
+  triangles instead, the band's mesh falls to 6086 triangles, `TestWrapRoundMostOfTheWay` to
+  27 s, the drafted boss to 8 s; but 31 golden cases move (display outlines, STL, solid and
+  script goldens), so it is not in this branch. The patch is kept with the round's notes.
+- **Square cells in an unrolled chart.** A cone to its apex is charted polar, unrolled, and the
+  quadtree's cells are about square there; a straight line of the unrolled cone is a geodesic
+  that sags off its chord, so at 1e-4 mm the cells are a sag's width each way, where the ear
+  clipper's grid runs long along the rulings: up to 174 times the points of its grid's cells.
+
+The budget (`cdtBudgetPerCell`, `cdtTriangulateBudgetInto`): a curved face meshed by the
+tolerance's mesher is given back to the ear clipper where the CDT's points inside pass 24 times
+the cells of the grid the ear clipper would mesh the patch on (`MakeTriangulationGridInto`), and
+is then told to the mender as an ear-clipped face that strays, as before the CDT was the default
+(without that, a chamfer on a raised band, `TestChamferRaisedBand`, came out open). The mender's
+own call for the CDT has no budget. Over the solid, thread, display, STL, export and script
+goldens no face passed 19, so no golden moves. At 32, `TestWrapRoundMostOfTheWay` kept faces of
+24 to 32 and took 2.2 times the base. The drafted boss is untouched by it: its shell's
+`faceModeOf` asks `FaceAt` for every triangle's middle of each face, and the frustum's
+parametric-middle triangles are under the budget.

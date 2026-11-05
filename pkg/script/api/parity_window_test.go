@@ -279,6 +279,8 @@ var windowActions = map[string]string{
 	"ScreenClearBrokenReferences":     "Features.ClearBrokenReferences",
 	"ScreenDiscardLeftOut":            "Features.DiscardLeftOut",
 	"ScreenMendLeftOut":               "Features.MendLeftOut",
+	"ScreenMendLeftOutGroup":          "Features.MendLeftOutGroup",
+	"ScreenChooseMendGroup":           "- navigation; Features.LeftOutMissingGroups lists them",
 	"ScreenExportBOM":                 "Assembly.ExportBOM",
 	"ScreenChangeCommandQuery":        "- the search box of Edit > Find Command; the script names the command",
 	"ScreenRunCommand":                "Edit.RunCommand",

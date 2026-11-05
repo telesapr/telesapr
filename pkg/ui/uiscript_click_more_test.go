@@ -87,3 +87,71 @@ func twCellAt(tw *textWindow, x, y float64) (row, col int) {
 	}
 	return -1, col
 }
+
+// TestClickSolidByName checks click-edge and click-face: an edge of the
+// solid no entity draws, and faces with and without an entity, are
+// selected by their names, shift adds to the selection, and names that
+// find nothing say so.
+func TestClickSolidByName(t *testing.T) {
+	t.Parallel()
+	r := newUIScriptRunner(t)
+	for _, line := range []string{"file $testdata/topo/slot.tlspr", "menu File|Open...", "view rotated",
+		"menu View|Zoom To Fit"} {
+		r.step(line)
+		r.settle()
+	}
+	sk := r.ss.SK
+	const edge = "the edge between side face of g003-block from r005-line-segment and " +
+		"side face of g005-slot from r00a-line-segment"
+	r.b.Reset()
+	r.step("click-edge " + edge)
+	r.settle()
+	sel := r.ss.GW.selection
+	if len(sel) != 1 || sel[0].Edge.A == 0 || sk.SolidEdgeName(sel[0].Edge) != edge {
+		t.Fatalf("click-edge selected %+v", sel)
+	}
+	r.step("click-face top face of g003-block shift")
+	r.settle()
+	sel = r.ss.GW.selection
+	if len(sel) != 2 || sk.EntityName(sel[1].Entity) != "top face of g003-block" {
+		t.Errorf("click-face of an entity's face, shift, selected %+v", sel)
+	}
+	if out := r.b.String(); out != "" {
+		t.Errorf("clicking the solid by name wrote %q", out)
+	}
+
+	r.b.Reset()
+	r.step("click-edge the edge between nothing and nothing")
+	r.step("move-face no face")
+	if out := r.b.String(); !strings.Contains(out, "edge missing the edge between nothing and nothing") ||
+		!strings.Contains(out, "face missing no face") {
+		t.Errorf("names that find nothing: %q", out)
+	}
+	if got := len(r.ss.GW.selection); got != 2 {
+		t.Errorf("a name that finds nothing changed the selection to %d items", got)
+	}
+}
+
+// TestClickSolidFaceByID checks click-face on a face no entity names,
+// by its number in the group that made it: the side of an extruded
+// circle, as ext_thread_face picks it.
+func TestClickSolidFaceByID(t *testing.T) {
+	t.Parallel()
+	r := newUIScriptRunner(t)
+	for _, line := range []string{"key c", "move 300 300", "down L 300 300", "up L 300 300",
+		"move 350 300", "down L 350 300", "up L 350 300", "key esc", "key x shift", "view rotated"} {
+		r.step(line)
+		r.settle()
+	}
+	const name = "face 2 of g003-extrude"
+	r.b.Reset()
+	r.step("click-face " + name)
+	r.settle()
+	if out := r.b.String(); out != "" {
+		t.Fatalf("click-face %s wrote %q", name, out)
+	}
+	sel := r.ss.GW.selection
+	if len(sel) != 1 || sel[0].Face == 0 || r.ss.SK.FaceName(sel[0].Face) != name {
+		t.Errorf("click-face %s selected %+v", name, sel)
+	}
+}

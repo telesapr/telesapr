@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/internal/sweep"
 )
 
@@ -17,7 +18,12 @@ import (
 // its section's area along the edge gives.
 func TestFilletFlatOnConeOffAxis(t *testing.T) {
 	t.Parallel()
-	for _, what := range []string{"a fillet", "a chamfer"} {
+	whats := []string{"a fillet", "a chamfer"}
+	if fixtures.RaceDetector {
+		// A minute there; the chamfer runs the fillet's rolling ball.
+		whats = whats[:1]
+	}
+	for _, what := range whats {
 		d := New()
 		d.Edit.SetChordTolerance(0.002)
 		d.Features.SketchIn(d.Workplane("ZX"), "")
@@ -86,8 +92,13 @@ func bandOnCone(d *Doc, y, top float64) (SolidEdge, float64) {
 // OpenCASCADE's from 0.0015% to 0.003%.
 func TestChamferRunsOffBand(t *testing.T) {
 	occ := map[float64]float64{2: 4.579086, 2.5: 6.797516}
+	sizes := []float64{2, 2.5}
+	if fixtures.RaceDetector {
+		// Three and a half minutes there; 2 is the size saved and loaded.
+		sizes = sizes[:1]
+	}
 	for _, what := range []string{"a chamfer", "a fillet"} {
-		for _, r := range []float64{2, 2.5} {
+		for _, r := range sizes {
 			d := New()
 			d.Edit.SetChordTolerance(0.003)
 			d.Edit.SetMaxSegments(200)
@@ -210,7 +221,12 @@ func TestRunOffFittedCuts(t *testing.T) {
 	if testing.Short() {
 		t.Skip("fillets refined to a fine tolerance")
 	}
-	for _, top := range []float64{22, 25} {
+	tops := []float64{22, 25}
+	if fixtures.RaceDetector {
+		// A minute each there; the refining runs the same way.
+		tops = tops[:1]
+	}
+	for _, top := range tops {
 		d := New()
 		d.Edit.SetChordTolerance(0.003)
 		edge, before := bandOnCone(d, 2, top)

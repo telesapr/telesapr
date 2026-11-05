@@ -9,6 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
@@ -163,6 +164,12 @@ func TestClosedLoftSweep(t *testing.T) {
 	}
 	grid.Run(func(p sweep.Point) error {
 		n := int(p.Float("profiles"))
+		if fixtures.RaceDetector && n > 5 {
+			// Under the race detector, on top of the grid's fifth, rings
+			// of four and five only, half its points: eight and twelve
+			// loft on the same goroutines, in about the same time each.
+			return nil
+		}
 		size := func(i int) float64 { return 4 * (1 + p.Float("swell")*float64(i%2)) }
 		shape := func(i int, z float64) []srf.SBezier {
 			switch p.String("profile") {

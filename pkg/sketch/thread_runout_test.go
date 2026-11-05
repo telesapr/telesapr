@@ -108,7 +108,11 @@ func TestThreadRunOut(t *testing.T) {
 			m, _ := meshStats(sk, lastOf(t, sk, res.Group).H)
 			pm, _ := meshStats(psk, lastOf(t, psk, pres.Group).H)
 			got, without := m.CalculateVolume(), pm.CalculateVolume()
-			if !(got > without) || got > without+ring*1.002 {
+			// Each thread is meshed on its own, and over the run-out, its
+			// flanks about twice the cylinder at the crest, the two meshes
+			// may differ by the chord tolerance over that area.
+			slack := sk.Tol().ChordTolMm() * 2 * 2 * math.Pi * p.CrestRadius * h
+			if !(got > without) || got > without+ring*1.002+slack {
 				t.Errorf("volume %.4f, want between %.4f and %.4f", got, without, without+ring)
 			}
 
@@ -338,7 +342,15 @@ func TestEditThreadShape(t *testing.T) {
 			fresh.GenerateAll()
 			ev, _ := meshStats(sk, lastOf(t, sk, res.Group).H)
 			fv, _ := meshStats(fresh, lastOf(t, fresh, freshRes.Group).H)
-			if a, b := ev.CalculateVolume(), fv.CalculateVolume(); math.Abs(a-b) > 1e-6*b {
+			// The same thread, its surfaces made by another way to their
+			// last bits, and meshed apart: the constrained Delaunay mesher's
+			// points inside a face fall by rounding, each mesh within the
+			// chord tolerance of the solid over its area.
+			area := 0.0
+			for i := range fv.Triangles {
+				area += fv.Triangles[i].Area()
+			}
+			if a, b := ev.CalculateVolume(), fv.CalculateVolume(); math.Abs(a-b) > sk.Tol().ChordTolMm()*area {
 				t.Errorf("volume %.9g, fresh %.9g", a, b)
 			}
 

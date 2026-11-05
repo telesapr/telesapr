@@ -44,9 +44,7 @@ move 420 330
 mark 254 204 84 40
 shot wrap-2-sketch
 menu View|Show|Selectable Faces
-move 330 280
-down L 330 280
-up L 330 280
+click-face face 4 of g003-lathe
 shot wrap-3-face gw
 menu Features|Wrap Sketch Onto Face
 view rotated

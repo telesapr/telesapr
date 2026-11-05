@@ -342,6 +342,14 @@ func (sp *SweepPath) Rigid(s float64) srf.Rigid {
 // those of each piece. A piece swept rigidly beside a corner at an arc
 // has no surfaces here (nil), nor sections.
 func (sp *SweepPath) SweptSurfaces(loops [][]srf.SBezier) ([][]*srf.BSplineSurface, [][]float64, error) {
+	return sp.sweptSurfacesIn(loops, 0, sp.End())
+}
+
+// sweptSurfacesIn are SweptSurfaces along the path from lo to hi, by
+// the chain's parameter: the pieces wholly inside, and those the range
+// cuts from lo or up to hi. A straight piece beside a corner is only
+// taken whole (CutAt keeps cuts out of it).
+func (sp *SweepPath) sweptSurfacesIn(loops [][]srf.SBezier, lo, hi float64) ([][]*srf.BSplineSurface, [][]float64, error) {
 	if len(loops) == 0 {
 		return nil, nil, errors.New("there is no profile")
 	}
@@ -380,6 +388,10 @@ func (sp *SweepPath) SweptSurfaces(loops [][]srf.SBezier) ([][]*srf.BSplineSurfa
 	var all [][]float64
 	total := 0
 	for i := range sp.pieces {
+		a, b := max(float64(i), lo), min(float64(i+1), hi)
+		if b <= a {
+			continue
+		}
 		if sp.rigid[i] {
 			// Made apart, by the rigid sweep.
 			for li := range out {
@@ -389,6 +401,9 @@ func (sp *SweepPath) SweptSurfaces(loops [][]srf.SBezier) ([][]*srf.BSplineSurfa
 			continue
 		}
 		if sp.prism[i] {
+			if a != float64(i) || b != float64(i+1) {
+				return nil, nil, fmt.Errorf("piece %d is straight beside a corner and can't be cut", i+1)
+			}
 			surfs, ss, err := sp.prismSkins(curves, i)
 			if err != nil {
 				return nil, nil, err
@@ -403,8 +418,13 @@ func (sp *SweepPath) SweptSurfaces(loops [][]srf.SBezier) ([][]*srf.BSplineSurfa
 		// Four sections a piece to begin with.
 		var ss []float64
 		for k := range 5 {
-			ss = append(ss, float64(i)+float64(k)/4)
+			if a == float64(i) && b == float64(i+1) {
+				ss = append(ss, float64(i)+float64(k)/4)
+				continue
+			}
+			ss = append(ss, a+(b-a)*float64(k)/4)
 		}
+		ss[0], ss[4] = a, b
 		for {
 			surfs, ts, err := sp.skins(curves, ss)
 			if err != nil {

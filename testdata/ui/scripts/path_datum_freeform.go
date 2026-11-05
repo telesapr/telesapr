@@ -12,5 +12,5 @@ func main() {
 	if err := doc.File.Load("../../testdata/solid/loft-circle-to-square.tlspr"); err != nil {
 		panic(err)
 	}
-	doc.Datums.NameFaceAt("side", doc.Group("loft").Solid().Face(0x40060004), V(-0.26189630213917314, -3.3582418968306533, 7.504989091020432))
+	doc.Datums.NameFaceAt("side", doc.Group("loft").Solid().Face(0x40060004), V(-0.2640487054333116, -3.360353094495541, 7.507440944747123))
 }

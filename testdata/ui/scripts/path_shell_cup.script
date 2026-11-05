@@ -10,7 +10,5 @@ down L 340 265
 up L 340 265
 key esc
 key x shift
-move 320 285
-down L 320 285
-up L 320 285
+click-face top face of g003-extrude
 menu Features|Shell Solid

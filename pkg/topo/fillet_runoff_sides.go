@@ -29,6 +29,8 @@ type runOff struct {
 	// merge with it.
 	color core.RGBA
 	sides map[int]*runOffSide
+	// varies is set where a fillet's radius varies along the edge.
+	varies bool
 }
 
 // runOffSide is a flat side face the foot runs into: its plane (a
@@ -127,26 +129,37 @@ func (t *Topology) straightOutline(f int) ([]geom.Vector, bool) {
 	return poly, len(poly) >= 3
 }
 
-// justReaches is the share of the fillet's size within which a foot
-// that reaches a side's plane, but no further, makes no sound solid
-// either way: cut by the plane at a point, the face the fillet rolls on
-// is pinched there (a foot of radius 6 round a rod, on a plate's top
-// whose side is 6 from the rod's axis).
-const justReaches = 0.01
+// justPast is the share of the fillet's size within which a foot that
+// runs past a side's plane may make no sound solid: the plane that cuts
+// the widened solid back meets the fillet nearly tangent along the
+// foot, a sliver of the side of the square of how far past over the
+// fillet's diameter, and some such cuts come out open. A rod of 4
+// through a plate 12 wide, its fillet at a chord tolerance of 0.00085
+// mm: refused from 2.0002 to 2.0028 now and then, made from 2.0029.
+const justPast = 0.01
 
 // filletPastSides makes the picks' fillet whose foot runs off its flat
 // face as off says: on the solid widened past the sides, then cut back
-// by their planes. It leaves sh as it was where the result would not be
-// sound, and gives refusal, or for a foot that just reaches a side, why
-// that is refused.
+// by their planes. A foot that reaches a side exactly pinches the face
+// it rolls on to a point there, two faces touching (assembleTrimPolygon,
+// splitTouchingHoles); one that misses the side or runs past it by no
+// more than a tenth of the chord tolerance is made at the size that
+// reaches it (touchingSize). It leaves sh as it was where the result
+// would not be sound, and gives refusal, or for a foot that only just
+// runs past a side (justPast), why that is refused.
 func filletPastSides(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool, off *runOff, refusal error) error {
 	out, ok := widenedFillet(sh, picks, r, origin, flat, off)
+	if !ok {
+		if rs, snap := touchingSize(sh, picks, r, off); snap {
+			out, ok = widenedFillet(sh, picks, rs, origin, flat, off)
+		}
+	}
 	if ok {
 		*sh = out
 		return nil
 	}
 	for _, s := range off.sides {
-		if math.Abs(s.past) < justReaches*r {
+		if s.past > 0 && s.past < justPast*r {
 			what := "fillet"
 			if flat {
 				what = "chamfer"
@@ -155,11 +168,45 @@ func filletPastSides(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 			if fx, ok := errors.AsType[*FilletError](refusal); ok {
 				at = fx.At
 			}
-			return filletErr(at, "the %s's foot just reaches the side of the face here, which it would pinch to a point: "+
-				"make it smaller, or larger so that it runs past the side", what)
+			return filletErr(at, "the %s's foot only just runs past the side of the face here, too little for "+
+				"the side to cut it back: make it a little smaller or larger", what)
 		}
 	}
 	return refusal
+}
+
+// touchingSize is the size at which the fillet's foot reaches a side's
+// plane exactly, where at r it misses it, or runs past it, by no more
+// than a tenth of the chord tolerance: as close as that the Booleans
+// that cut the widened solid back can't tell the foot from the side.
+// The foot runs along its face at the fillet's size from the edge, so
+// it moves with the size one for one. Not for a radius that varies, or
+// a pick of a size of its own, nor where sides disagree.
+func touchingSize(sh *srf.SShell, picks []FilletPick, r float64, off *runOff) (float64, bool) {
+	if off.varies {
+		return 0, false
+	}
+	for _, p := range picks {
+		if p.R != 0 {
+			return 0, false
+		}
+	}
+	near := sh.Tol.ChordTolMm() / 10
+	var past float64
+	found := false
+	for _, s := range off.sides {
+		if math.Abs(s.past) > near {
+			continue
+		}
+		if found && math.Abs(s.past-past) > geom.LengthEps {
+			return 0, false
+		}
+		past, found = s.past, true
+	}
+	if !found || math.Abs(past) <= geom.LengthEps {
+		return 0, false
+	}
+	return r - past, true
 }
 
 // widenedFillet is filletPastSides' solid, and whether it is sound.

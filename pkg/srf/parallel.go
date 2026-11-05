@@ -108,8 +108,16 @@ func setNoCache(off bool, shells ...*SShell) {
 	makeGuessGrids(off, shells...)
 }
 
-// loop calls fn for every i in [0, n), at once or in order.
-func loop(atOnce bool, n int, fn func(i int)) {
+// loop calls fn for every i in [0, n), at once or in order; paced
+// (SShell.PaceBy), in order, calling pace before each.
+func loop(atOnce bool, pace func(), n int, fn func(i int)) {
+	if pace != nil {
+		for i := range n {
+			pace()
+			fn(i)
+		}
+		return
+	}
 	if atOnce {
 		par.For(n, fn)
 		return

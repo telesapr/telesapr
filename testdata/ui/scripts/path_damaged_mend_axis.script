@@ -1,0 +1,12 @@
+# A damaged file's lathe whose axis the file lacks, given the file's
+# construction line in its place: Broken References' [use the selected]
+# clicked with nothing selected waits while the line is picked, then
+# [take the selection]; the same as path_damaged_mend_axis.go makes
+# (TestPathEquivalence/damaged_mend_axis, ROADMAP D5).
+answer ok
+load tlspr/damaged/lathe_missing_axis.tlspr
+menu Features|Broken References...
+answer ok
+click-tw [use the selected]
+click-entity 50000
+click-tw [take the selection]

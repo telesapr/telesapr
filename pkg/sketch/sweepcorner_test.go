@@ -311,7 +311,13 @@ func TestSweepFittedCornerBesideArc(t *testing.T) {
 	before := saved(t, d)
 	step(d)
 	s.AsSweep().SetSweepUp(api.V(0, 1, 0))
-	if r := s.Analyze().Check(); s.Problem() != "" || !r.Sound() || math.Abs(r.Volume-rigid.Volume) > 1e-6*rigid.Volume {
+	// Fitted, its faces are other surfaces than the rigid sweep's, and
+	// meshed apart: each mesh within the chord tolerance of the solid,
+	// whose sides round the profile's 12 along the path's 10 + 2.5π, and
+	// ends of 8, are about 240 mm².
+	var chord float64
+	d.With(func(sk *sketch.Sketch) { chord = sk.Tol().ChordTolMm() })
+	if r := s.Analyze().Check(); s.Problem() != "" || !r.Sound() || math.Abs(r.Volume-rigid.Volume) > 2*chord*240 {
 		t.Errorf("held to the arc's axis: %q %s, want %g", s.Problem(), r.String(), rigid.Volume)
 	}
 	undoRedo(t, d, before)

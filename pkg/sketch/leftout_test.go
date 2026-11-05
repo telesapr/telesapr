@@ -95,3 +95,108 @@ func TestDiscardLeftOutUndo(t *testing.T) {
 		t.Error("a cleared sketch keeps it")
 	}
 }
+
+// Each kind of entity a mend may need takes an entity of that kind and
+// refuses one of another.
+func TestMendRoleFits(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		role      mendRole
+		fits, not core.EntityType
+	}{
+		{mendPoint, core.EntityPointIn3D, core.EntityLineSegment},
+		{mendWorkplane, core.EntityWorkplane, core.EntityPointIn3D},
+		{mendCurve, core.EntityCubic, core.EntityPointIn3D},
+		{mendLine, core.EntityLineSegment, core.EntityCircle},
+		{mendCircle, core.EntityArcOfCircle, core.EntityLineSegment},
+		{mendArc, core.EntityArcOfCircle, core.EntityCircle},
+		{mendCubic, core.EntityCubicPeriodic, core.EntityArcOfCircle},
+		{mendFace, core.EntityFaceNormalPt, core.EntityWorkplane},
+		{mendNormal, core.EntityNormalIn3D, core.EntityLineSegment},
+		{mendVector, core.EntityNormalIn2D, core.EntityCircle},
+		{mendArcOrCubic, core.EntityCubic, core.EntityLineSegment},
+		{mendPlane, core.EntityFaceNormalPt, core.EntityNormalIn3D},
+		{mendPlane, core.EntityWorkplane, core.EntityLineSegment},
+	} {
+		if !tc.role.fits(&core.Entity{EntityBase: core.EntityBase{Type: tc.fits}}) ||
+			tc.role.fits(&core.Entity{EntityBase: core.EntityBase{Type: tc.not}}) {
+			t.Errorf("%s: fits wrong", tc.role)
+		}
+	}
+	if !mendAny.fits(&core.Entity{}) {
+		t.Error("an entity of any kind doesn't fit")
+	}
+}
+
+// The kind a constraint's entity must be follows from the constraint.
+func TestConstraintRoles(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		c    core.ConstraintType
+		a, b mendRole
+	}{
+		{core.ConstraintPtPlaneDistance, mendWorkplane, mendAny},
+		{core.ConstraintPtLineDistance, mendLine, mendAny},
+		{core.ConstraintPtOnFace, mendFace, mendAny},
+		{core.ConstraintProjPtDistance, mendVector, mendAny},
+		{core.ConstraintEqualLengthLines, mendLine, mendLine},
+		{core.ConstraintEqualLineArcLen, mendLine, mendArc},
+		{core.ConstraintArcArcDifference, mendArc, mendArc},
+		{core.ConstraintAtMidpoint, mendLine, mendWorkplane},
+		{core.ConstraintDiameter, mendCircle, mendAny},
+		{core.ConstraintEqualRadius, mendCircle, mendCircle},
+		{core.ConstraintSameOrientation, mendNormal, mendNormal},
+		{core.ConstraintParallel, mendVector, mendVector},
+		{core.ConstraintEqualAngle, mendVector, mendVector},
+		{core.ConstraintAxisAngle, mendNormal, mendAny},
+		{core.ConstraintArcLineTangent, mendArc, mendLine},
+		{core.ConstraintCubicLineTangent, mendCubic, mendLine},
+		{core.ConstraintCurveCurveTangent, mendArcOrCubic, mendArcOrCubic},
+		{core.ConstraintPtPtDistance, mendAny, mendAny},
+	} {
+		if r := constraintRoles(tc.c); r[0] != tc.a || r[1] != tc.b {
+			t.Errorf("constraint %d: roles %v", tc.c, r)
+		}
+	}
+}
+
+// An entity the file lacks is named for its kind: the point of a
+// point-to-point distance.
+func TestLeftOutMissingKind(t *testing.T) {
+	t.Parallel()
+	sk := NewSketch()
+	if sk.LeftOutMissingKind(core.HEntity{V: 0x70000}) != "" {
+		t.Error("a kind with nothing left out")
+	}
+	sk = damagedSketch(t)
+	if got := sk.LeftOutMissingKind(core.HRequest{V: 7}.Entity(0)); got != "a point" {
+		t.Errorf("kind %q", got)
+	}
+}
+
+// The kind a group's axis, direction or plane must be follows from the
+// group: a lathe's axis is a line or a normal, an extrusion's plane a
+// workplane, a mirror's a workplane or a face.
+func TestPredefRoles(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		g    Group
+		b, c mendRole
+	}{
+		{Group{Type: GroupDrawingWorkplane, Subtype: GroupWorkplaneByLineSegments}, mendVector, mendVector},
+		{Group{Type: GroupDrawingWorkplane, Subtype: GroupWorkplaneByPointNormal}, mendNormal, mendAny},
+		{Group{Type: GroupDrawingWorkplane, Subtype: GroupWorkplaneByPointOrtho}, mendAny, mendAny},
+		{Group{Type: GroupLathe}, mendVector, mendAny},
+		{Group{Type: GroupRevolve}, mendVector, mendAny},
+		{Group{Type: GroupHelix}, mendVector, mendAny},
+		{Group{Type: GroupRotate}, mendVector, mendAny},
+		{Group{Type: GroupExtrude}, mendWorkplane, mendAny},
+		{Group{Type: GroupTranslate}, mendWorkplane, mendAny},
+		{Group{Type: GroupMirror}, mendPlane, mendAny},
+		{Group{Type: GroupLinked}, mendAny, mendAny},
+	} {
+		if b, c := tc.g.predefRoles(); b != tc.b || c != tc.c {
+			t.Errorf("group %d/%d: roles %s, %s", tc.g.Type, tc.g.Subtype, b, c)
+		}
+	}
+}

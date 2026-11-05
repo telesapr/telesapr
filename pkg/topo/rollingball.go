@@ -73,6 +73,9 @@ type rbSection struct {
 // rollingBall is a fillet's edge, its two sides, and the ball.
 type rollingBall struct {
 	t *Topology
+	// fadeIn lets trace start the fillet where the crease fades in, at
+	// the chain's start, as well as end it where it fades out (finish).
+	fadeIn bool
 	// robust has the feet projected by srf.SSurface.Project, for a
 	// section whose plain steps didn't settle.
 	robust bool
@@ -441,8 +444,19 @@ func (rb *rollingBall) finish() error {
 		} else {
 			rb.reverse()
 			err = first
-			if errors.Is(first, errFadeStart) {
-				err = filletErr(rb.t.Vertices[rb.verts[0]].P, "the faces meet tangent here: a fillet rounds an edge where they meet at an angle")
+			// Faded out at both ends, as a crease that turns back past
+			// where it faded does up to a ring where it fades again: the
+			// fillet widens from nothing and narrows to nothing.
+			rb.reset()
+			rb.fadeIn = true
+			if rerr := rb.trace(); rerr == nil && rb.ends[0].fade && rb.ends[1].fade {
+				err = nil
+			} else {
+				rb.fadeIn = false
+				rb.reset()
+				if errors.Is(first, errFadeStart) {
+					err = filletErr(rb.t.Vertices[rb.verts[0]].P, "the faces meet tangent here: a fillet rounds an edge where they meet at an angle")
+				}
 			}
 		}
 	}
@@ -740,8 +754,28 @@ func (rb *rollingBall) trace() error {
 		return p, tn, tn.Dot(d), true
 	}
 	fades := !rb.closed && rb.ends[1] != nil && !rb.ends[1].mitre
+	// fadesIn: the crease may fade out at the chain's start too, as one
+	// that turns back past where it faded does from there; its first
+	// points, where the faces meet tangent, are passed over until the
+	// crease turns (fadeIn).
+	fadesIn := !rb.closed && rb.ends[0] != nil && !rb.ends[0].mitre && rb.fadeIn
 	sign0 := 0.0
-	var prev geom.Vector
+	if fadesIn {
+		// Which way the crease turns is where it turns most: at its
+		// faded start it may still turn by a hair the way the crease it
+		// faded from did.
+		most := 0.0
+		for i := 0; i+1 < len(raw); i++ {
+			if _, _, turn, ok := turnAt(raw[i], raw[i+1].Minus(raw[i]).WithMagnitude(1)); ok && math.Abs(turn) > math.Abs(most) {
+				most = turn
+			}
+		}
+		if most != 0 {
+			sign0 = math.Copysign(1, most)
+		}
+	}
+	var prev, lastFlat geom.Vector
+	flat := false
 traced:
 	for i := 0; i <= segs; i++ {
 		a, b := raw[i%len(raw)], raw[(i+1)%len(raw)]
@@ -761,8 +795,20 @@ traced:
 				x = b
 			}
 			p, tn, turn, ok := turnAt(x, d)
+			if fadesIn && len(rb.pts) == 0 && (!ok || turn*sign0 < fadeSine) {
+				lastFlat, flat = x, true
+				continue
+			}
 			if sign0 == 0 && ok {
 				sign0 = math.Copysign(1, turn)
+			}
+			if flat && len(rb.pts) == 0 {
+				// The crease fades in: the fillet starts where it widens
+				// from nothing (rbEnd.fade).
+				fp, ftn := rb.fadePoint(x, lastFlat, d, sign0, turnAt)
+				rb.pts = append(rb.pts, fp)
+				rb.tan = append(rb.tan, ftn)
+				rb.ends[0].fade, rb.ends[0].p = true, fp
 			}
 			if !ok || turn*sign0 < fadeSine {
 				if !fades || len(rb.pts) == 0 {
@@ -849,6 +895,11 @@ func (rb *rollingBall) reverse() {
 	rb.pieces = pieces
 	slices.Reverse(rb.verts)
 	rb.ends[0], rb.ends[1] = rb.ends[1], rb.ends[0]
+	rb.reset()
+}
+
+// reset forgets what trace found, to trace the chain again.
+func (rb *rollingBall) reset() {
 	for _, end := range rb.ends {
 		end.fade = false
 	}
@@ -1904,25 +1955,52 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 					drop = append(drop, pair{cut.q[i], t.Vertices[end.v].P})
 				}
 			}
-			if ro := cut.off; ro != nil {
-				if len(all) > 1 {
-					return nil, filletErr(t.Vertices[end.v].P, "the fillet runs off a face at one end and "+
-						"ends on a curved face too wide to follow at the other: make it smaller")
-				}
-				if err := rb.runOffCuts(sh, row, k, ro); err != nil {
-					return nil, err
-				}
-				w := t.Vertices[ro.w].P
-				drop = append(drop, pair{t.Vertices[end.v].P, w}, pair{w, ro.p2})
+			if cut.off != nil && len(all) > 1 {
+				return nil, filletErr(t.Vertices[end.v].P, "the fillet runs off a face at one end and "+
+					"ends on a curved face too wide to follow at the other: make it smaller")
 			}
 			endCuts = append(endCuts, cut)
 		}
+	}
+	// Ends that run off: where the fillet takes side j's face whole, only
+	// where the end sections cross the next faces; else where the
+	// contact comes back under them too.
+	cons, err := rb.consumedRunOff(row, endCuts, isChain)
+	if err != nil {
+		return nil, err
+	}
+	for k, cut := range endCuts {
+		ro := cut.off
+		if ro == nil {
+			continue
+		}
+		w := t.Vertices[ro.w].P
+		if cons != nil {
+			if err := rb.runOffCross(sh, row, k, ro); err != nil {
+				return nil, err
+			}
+			ro.consumed, ro.r, ro.first, ro.after = true, t.Vertices[cons.r].P, 0, m
+			drop = append(drop, pair{t.Vertices[cut.end.v].P, w})
+			continue
+		}
+		if err := rb.runOffCuts(sh, row, k, ro); err != nil {
+			return nil, err
+		}
+		drop = append(drop, pair{t.Vertices[cut.end.v].P, w}, pair{w, ro.p2})
 	}
 	// The fillet's patches an end that runs off cuts, as loops, and the
 	// curves across them in the next face's plane.
 	loops := map[int][]srf.SBezier{}
 	var across [2][]srf.SBezier
+	if cons != nil {
+		if loops, across, err = rb.consumedLoops(sh, row, endCuts, cons); err != nil {
+			return nil, err
+		}
+	}
 	for k, cut := range endCuts {
+		if cons != nil {
+			break
+		}
 		ro := cut.off
 		if ro == nil {
 			continue
@@ -1956,39 +2034,49 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 	}
 
 	// Where the crease fades out, the edge goes on past the fillet: it
-	// is split there, and only the piece the fillet takes goes.
-	fadeK := -1
-	for k, end := range rb.ends {
-		if end != nil && end.fade {
-			fadeK = k
+	// is split there, and only the piece the fillet takes goes. A crease
+	// may fade out at both ends, as one that turns back past where it
+	// faded does between there and a ring where it fades again. The end
+	// at 1 is taken first: the loop's sides before its end section stay
+	// where they are for the end at 0.
+	faded := map[int]bool{}
+	for _, k := range []int{1, 0} {
+		end := rb.ends[k]
+		if end == nil || !end.fade {
+			continue
 		}
-	}
-	if fadeK >= 0 {
 		if len(all) != 1 {
-			return nil, filletErr(rb.ends[fadeK].p, "a fillet that fades out is one row of patches")
+			return nil, filletErr(end.p, "a fillet that fades out is one row of patches")
 		}
-		if err := rb.splitAtFade(sh, fadeK, chainCurve); err != nil {
+		if err := rb.splitAtFade(sh, k, chainCurve); err != nil {
 			return nil, err
 		}
-		// The last patch's end section, from foot to foot, goes by the
+		// The end patch's end section, from foot to foot, goes by the
 		// point where the crease fades out.
-		b := fadeK * (m - 1)
-		l := patchLoop(&row[b])
-		p := rb.ends[fadeK].p
-		if fadeK == 1 {
-			l = []srf.SBezier{l[0], l[1], fadeLine(l[2].Start(), p), fadeLine(p, l[2].Finish()), l[3]}
+		b := k * (m - 1)
+		l, ok := loops[b]
+		if ok && !faded[b] {
+			return nil, filletErr(end.p, "the fillet fades out where it runs off a face: make it smaller")
+		}
+		if !ok {
+			l = patchLoop(&row[b])
+		}
+		p := end.p
+		if k == 1 {
+			l = append(append(append([]srf.SBezier{}, l[:2]...), fadeLine(l[2].Start(), p), fadeLine(p, l[2].Finish())), l[3:]...)
 		} else {
-			l = []srf.SBezier{fadeLine(l[0].Start(), p), fadeLine(p, l[0].Finish()), l[1], l[2], l[3]}
+			l = append([]srf.SBezier{fadeLine(l[0].Start(), p), fadeLine(p, l[0].Finish())}, l[1:]...)
 		}
-		if _, ok := loops[b]; ok {
-			return nil, filletErr(p, "the fillet fades out where it runs off a face: make it smaller")
-		}
-		loops[b] = l
+		loops[b], faded[b] = l, true
 	}
 
 	// The faces at the edge, cut back along the fillet's edges.
 	nextH := newCurveHandle(sh)
 	for k := range 2 {
+		if cons != nil && k == cons.j {
+			// Side j's face goes whole, below.
+			continue
+		}
 		pieces := map[int][]int{}
 		for b := range m {
 			sec, err := rb.section((secs[b].s + secs[b+1].s) / 2)
@@ -2068,14 +2156,17 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 						kept = append(kept, srf.STrimBy{Curve: wc.H, StartP: span.Start(), FinishP: span.Finish(), Start: 0, Finish: 1})
 					}
 				}
-				if fadeK >= 0 && b == fadeK*(m-1) {
-					// On from the fillet's last foot to where the crease
-					// fades out, which the fillet's last patch shares.
-					line := fadeLine(sb.Start(), rb.ends[fadeK].p)
-					if fadeK == 1 {
-						line = fadeLine(sb.Finish(), rb.ends[fadeK].p)
+				for fk := range 2 {
+					if !faded[b] || b != fk*(m-1) || !rb.ends[fk].fade {
+						continue
 					}
-					if fwd != (fadeK == 1) {
+					// On from the fillet's end foot to where the crease
+					// fades out, which the fillet's end patch shares.
+					line := fadeLine(sb.Start(), rb.ends[fk].p)
+					if fk == 1 {
+						line = fadeLine(sb.Finish(), rb.ends[fk].p)
+					}
+					if fwd != (fk == 1) {
 						line.Reverse()
 					}
 					lc := srf.SCurve{H: nextH, Exact: line, IsExact: true, Deg: 1, SurfA: s.H,
@@ -2119,6 +2210,9 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 		if err := rb.closeEnd(sh, cut, &nextH); err != nil {
 			return nil, err
 		}
+	}
+	if cons != nil {
+		dropSurfaceOf(sh, t, cons.f)
 	}
 	return loops, nil
 }

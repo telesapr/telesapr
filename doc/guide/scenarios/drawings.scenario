@@ -52,16 +52,12 @@ twdown L 470 75
 twup L 470 75
 view default
 cursor on
-move 350 260
-down L 350 260
-up L 350 260
+click-face face 0 of g004-fillet
 twmove 46 356
 twdown L 46 356
 twup L 46 356
 edit top radius
-move 330 260
-down L 330 260
-up L 330 260
+click-edge the edge between face 0 of g004-fillet and top face of g003-extrude
 mark 316 188 28 154
 shot drawings-4-edge
 twmove 46 376

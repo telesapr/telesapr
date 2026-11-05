@@ -6,6 +6,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -65,7 +66,9 @@ func TestShellJoinedRevolveEndsMovedUnlike(t *testing.T) {
 		{"half, a wall at the start", -22, -2, -20, 0, 0, math.Pi, 18 * 18 * 9,
 			func(x, y float64) bool { return (x > -1 && y > 1) || (x <= -1 && y > -1) }, nil},
 	}
-	for _, c := range cases {
+	// Under the race detector every fifth case (fixtures.Sample): the
+	// shell runs on the same goroutines in each, 4 minutes for the nine.
+	for _, c := range fixtures.Sample(cases) {
 		body := &srf.SShell{Tol: tol}
 		body.MakePrism([]geom.Vector{v(c.x0, c.y0, 0), v(c.x1, c.y0, 0), v(c.x1, c.y1, 0), v(c.x0, c.y1, 0)}, v(0, 0, 0), v(0, 0, 10),
 			core.NewRGBA(100, 100, 100, 255))

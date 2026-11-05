@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
@@ -312,8 +313,13 @@ func spandrelLoss(rad, r float64, hole bool) float64 {
 // one of its solid edges, through the groups; the loss by Pappus.
 func TestFilletCircle(t *testing.T) {
 	t.Parallel()
+	byNames := []bool{false, true}
+	if fixtures.RaceDetector {
+		// Minutes a case there; by name picks the same edge.
+		byNames = byNames[:1]
+	}
 	for _, flat := range []bool{false, true} {
-		for _, byName := range []bool{false, true} {
+		for _, byName := range byNames {
 			d := api.New()
 			d.Edit.SetChordTolerance(0.005)
 			d.Sketch.Circle(api.V(0, 0, 0), 5)
@@ -541,14 +547,23 @@ func TestFilletRibFoot(t *testing.T) {
 		t.Fatal(p)
 	}
 	r := f.Analyze().Check()
-	corners := r.Volume - volume(true, false) - volume(false, true) + bare
-	if want := 4 * 0.0600158; !r.Sound() || math.Abs(corners-want) > 0.1*want {
-		t.Fatalf("%s: the corners hold %g, want %g", r.String(), corners, want)
-	}
-	// The ends' fillets alone, by their section: the top meets the floor
-	// and the wall at 145 degrees outside the rib.
-	if got, want := volume(false, true)-bare, 2*filletLoss(2, 145*math.Pi/180, 10); math.Abs(got-want) > 0.01 {
-		t.Fatalf("the ends' fillets hold %g, want %g", got, want)
+	if fixtures.RaceDetector {
+		// The sides' and the ends' fillets alone, to measure the corners
+		// by, take three more minutes there and round on the same
+		// goroutines.
+		if !r.Sound() {
+			t.Fatalf("%s", r.String())
+		}
+	} else {
+		corners := r.Volume - volume(true, false) - volume(false, true) + bare
+		if want := 4 * 0.0600158; !r.Sound() || math.Abs(corners-want) > 0.1*want {
+			t.Fatalf("%s: the corners hold %g, want %g", r.String(), corners, want)
+		}
+		// The ends' fillets alone, by their section: the top meets the
+		// floor and the wall at 145 degrees outside the rib.
+		if got, want := volume(false, true)-bare, 2*filletLoss(2, 145*math.Pi/180, 10); math.Abs(got-want) > 0.01 {
+			t.Fatalf("the ends' fillets hold %g, want %g", got, want)
+		}
 	}
 	undoRedo(t, d, saveBefore)
 

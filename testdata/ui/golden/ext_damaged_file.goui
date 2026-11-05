@@ -104,12 +104,12 @@ row 22    again to bring them in. [discard them]
  41-99 64 64 0
 row 24    Or select what to use in place of what the file lacks:
  0-99 64 64 0
-row 26      r007 [use the selected]
+row 26      r007, a point [use the selected]
  0-4 64 64 0
  5-8 78 64 0
- 9-9 64 64 0
- 10-27 6c 64 108 70001 1 0
- 28-99 64 64 0
+ 9-18 64 64 0
+ 19-36 6c 64 108 70001 1 0
+ 37-99 64 64 0
 row 29 (back to the groups)
  0-0 64 64 0
  1-18 6c 64 108 0 1 0
@@ -348,15 +348,267 @@ row 22    again to bring them in. [discard them]
  41-99 64 64 0
 row 24    Or select what to use in place of what the file lacks:
  0-99 64 64 0
-row 26      entity 3853 of g003-extrude [use the selected]
+row 26      entity 3853 of g003-extrude, a curve [use the selected]
  0-4 64 64 0
  5-31 78 64 0
- 32-32 64 64 0
- 33-50 6c 64 108 80030f0d 1 0
- 51-99 64 64 0
+ 32-41 64 64 0
+ 42-59 6c 64 108 80030f0d 1 0
+ 60-99 64 64 0
 row 29 (back to the groups)
  0-0 64 64 0
  1-18 6c 64 108 0 1 0
  19-99 64 64 0
 row 31 
+ 0-99 64 64 0
+dialog 3 The file '$testdata/tlspr/damaged/constraint_missing_circle.tlspr' is damaged:|it refers to things it doesn't hold. What every model has was put back, and what used something missing was left out of the model; a save keeps it in the file, so that the file can be mended. Features > Broken References lists it.\n\ndeleted c001-diameter of g002-sketch-in-plane, which used r009
+row 0  home › broken references   in plane: g002-sketch-in-plane
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-27 64 64 0
+ 28-37 74 64 0
+ 38-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 BROKEN REFERENCES
+ 0-16 74 64 0
+ 17-99 64 64 0
+row 9    deleted c001-diameter of g002-sketch-in-plane, which used r009
+ 0-2 64 64 0
+ 3-64 78 64 0
+ 65-99 64 64 0
+row 11      in g002-sketch-in-plane
+ 0-4 64 64 0
+ 5-27 6c 64 108 2 1 0
+ 28-99 64 64 0
+row 13    The file lacked what they used. [clear the list]
+ 0-34 64 64 0
+ 35-50 6c 64 99 0 1 0
+ 51-99 64 64 0
+row 16 LEFT OUT OF THE MODEL, KEPT IN THE FILE
+ 0-38 74 64 0
+ 39-99 64 64 0
+row 18    c001-diameter of g002-sketch-in-plane
+ 0-2 64 64 0
+ 3-39 78 64 0
+ 40-99 64 64 0
+row 20    A save writes them back; mend the file and open it
+ 0-99 64 64 0
+row 22    again to bring them in. [discard them]
+ 0-26 64 64 0
+ 27-40 6c 64 100 0 1 0
+ 41-99 64 64 0
+row 24    Or select what to use in place of what the file lacks:
+ 0-99 64 64 0
+row 26      r009, a circle or an arc [use the selected]
+ 0-4 64 64 0
+ 5-8 78 64 0
+ 9-29 64 64 0
+ 30-47 6c 64 108 90000 1 0
+ 48-99 64 64 0
+row 29 (back to the groups)
+ 0-0 64 64 0
+ 1-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 31 
+ 0-99 64 64 0
+dialog 3 The file '$testdata/tlspr/damaged/group_missing_operand.tlspr' is damaged:|it refers to things it doesn't hold. What every model has was put back, and what used something missing was left out of the model; a save keeps it in the file, so that the file can be mended. Features > Broken References lists it.\n\ndeleted g003-extrude, which used g009
+row 0  home › broken references   in plane: g002-sketch-in-plane
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-27 64 64 0
+ 28-37 74 64 0
+ 38-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 BROKEN REFERENCES
+ 0-16 74 64 0
+ 17-99 64 64 0
+row 9    deleted g003-extrude, which used g009
+ 0-2 64 64 0
+ 3-39 78 64 0
+ 40-99 64 64 0
+row 11    The file lacked what they used. [clear the list]
+ 0-34 64 64 0
+ 35-50 6c 64 99 0 1 0
+ 51-99 64 64 0
+row 14 LEFT OUT OF THE MODEL, KEPT IN THE FILE
+ 0-38 74 64 0
+ 39-99 64 64 0
+row 16    g003-extrude
+ 0-2 64 64 0
+ 3-14 78 64 0
+ 15-99 64 64 0
+row 18    A save writes them back; mend the file and open it
+ 0-99 64 64 0
+row 20    again to bring them in. [discard them]
+ 0-26 64 64 0
+ 27-40 6c 64 100 0 1 0
+ 41-99 64 64 0
+row 22    Or choose a group in place of a group the file lacks:
+ 0-99 64 64 0
+row 24      g009, a group [choose a group]
+ 0-4 64 64 0
+ 5-8 78 64 0
+ 9-18 64 64 0
+ 19-34 6c 64 108 9 1 0
+ 35-99 64 64 0
+row 27 (back to the groups)
+ 0-0 64 64 0
+ 1-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 29 
+ 0-99 64 64 0
+row 0  home › broken references   in plane: g002-sketch-in-plane
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-27 64 64 0
+ 28-37 74 64 0
+ 38-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 BROKEN REFERENCES
+ 0-16 74 64 0
+ 17-99 64 64 0
+row 9    deleted g003-extrude, which used g009
+ 0-2 64 64 0
+ 3-39 78 64 0
+ 40-99 64 64 0
+row 11    The file lacked what they used. [clear the list]
+ 0-34 64 64 0
+ 35-50 6c 64 99 0 1 0
+ 51-99 64 64 0
+row 14 LEFT OUT OF THE MODEL, KEPT IN THE FILE
+ 0-38 74 64 0
+ 39-99 64 64 0
+row 16    g003-extrude
+ 0-2 64 64 0
+ 3-14 78 64 0
+ 15-99 64 64 0
+row 18    A save writes them back; mend the file and open it
+ 0-99 64 64 0
+row 20    again to bring them in. [discard them]
+ 0-26 64 64 0
+ 27-40 6c 64 100 0 1 0
+ 41-99 64 64 0
+row 22    Or choose a group in place of a group the file lacks:
+ 0-99 64 64 0
+row 24      g009, a group [choose a group]
+ 0-4 64 64 0
+ 5-8 78 64 0
+ 9-18 64 64 0
+ 19-34 6c 64 108 9 1 0
+ 35-99 64 64 0
+row 26        [use g002-sketch-in-plane]
+ 0-6 64 64 0
+ 7-32 6c 64 108 2 1 0
+ 33-99 64 64 0
+row 29 (back to the groups)
+ 0-0 64 64 0
+ 1-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 31 
+ 0-99 64 64 0
+dialog 3 The file '$testdata/tlspr/damaged/lathe_missing_axis.tlspr' is damaged:|it refers to things it doesn't hold. What every model has was put back, and what used something missing was left out of the model; a save keeps it in the file, so that the file can be mended. Features > Broken References lists it.\n\ndeleted g003-lathe, which used r009
+row 0  home › broken references   in plane: g002-sketch-in-plane
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-27 64 64 0
+ 28-37 74 64 0
+ 38-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 BROKEN REFERENCES
+ 0-16 74 64 0
+ 17-99 64 64 0
+row 9    deleted g003-lathe, which used r009
+ 0-2 64 64 0
+ 3-37 78 64 0
+ 38-99 64 64 0
+row 11    The file lacked what they used. [clear the list]
+ 0-34 64 64 0
+ 35-50 6c 64 99 0 1 0
+ 51-99 64 64 0
+row 14 LEFT OUT OF THE MODEL, KEPT IN THE FILE
+ 0-38 74 64 0
+ 39-99 64 64 0
+row 16    g003-lathe
+ 0-2 64 64 0
+ 3-12 78 64 0
+ 13-99 64 64 0
+row 18    A save writes them back; mend the file and open it
+ 0-99 64 64 0
+row 20    again to bring them in. [discard them]
+ 0-26 64 64 0
+ 27-40 6c 64 100 0 1 0
+ 41-99 64 64 0
+row 22    Or select what to use in place of what the file lacks:
+ 0-99 64 64 0
+row 24      r009, a line or a normal [use the selected]
+ 0-4 64 64 0
+ 5-8 78 64 0
+ 9-29 64 64 0
+ 30-47 6c 64 108 90000 1 0
+ 48-99 64 64 0
+row 27 (back to the groups)
+ 0-0 64 64 0
+ 1-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 29 
+ 0-99 64 64 0
+dialog 3 The file '$testdata/tlspr/damaged/mirror_missing_plane.tlspr' is damaged:|it refers to things it doesn't hold. What every model has was put back, and what used something missing was left out of the model; a save keeps it in the file, so that the file can be mended. Features > Broken References lists it.\n\ndeleted g004-mirror, which used r009
+row 0  home › broken references   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-27 64 64 0
+ 28-55 74 64 0
+ 56-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 BROKEN REFERENCES
+ 0-16 74 64 0
+ 17-99 64 64 0
+row 9    deleted g004-mirror, which used r009
+ 0-2 64 64 0
+ 3-38 78 64 0
+ 39-99 64 64 0
+row 11    The file lacked what they used. [clear the list]
+ 0-34 64 64 0
+ 35-50 6c 64 99 0 1 0
+ 51-99 64 64 0
+row 14 LEFT OUT OF THE MODEL, KEPT IN THE FILE
+ 0-38 74 64 0
+ 39-99 64 64 0
+row 16    g004-mirror
+ 0-2 64 64 0
+ 3-13 78 64 0
+ 14-99 64 64 0
+row 18    A save writes them back; mend the file and open it
+ 0-99 64 64 0
+row 20    again to bring them in. [discard them]
+ 0-26 64 64 0
+ 27-40 6c 64 100 0 1 0
+ 41-99 64 64 0
+row 22    Or select what to use in place of what the file lacks:
+ 0-99 64 64 0
+row 24      r009, a workplane or a planar face [use the selected]
+ 0-4 64 64 0
+ 5-8 78 64 0
+ 9-39 64 64 0
+ 40-57 6c 64 108 90000 1 0
+ 58-99 64 64 0
+row 27 (back to the groups)
+ 0-0 64 64 0
+ 1-18 6c 64 108 0 1 0
+ 19-99 64 64 0
+row 29 
  0-99 64 64 0

@@ -62,7 +62,8 @@ def saddle(sx, sy):
 
 
 lines = []
-for sx, sy in ((0.5, 0.5), (0.2, 0.5), (0.5, 0.2), (0.8, 0.2), (0.2, 0.8)):
+for sx, sy in ((0.5, 0.5), (0.2, 0.5), (0.5, 0.2), (0.8, 0.2), (0.2, 0.8), (0.2, 0.2), (0.5, 0.8), (0.8, 0.5),
+               (0.8, 0.8)):
     for r in (0.5, 1, 2):
         for sharp in range(4):
             shape, at = saddle(sx, sy)
@@ -77,3 +78,93 @@ for sx, sy in ((0.5, 0.5), (0.2, 0.5), (0.5, 0.2), (0.8, 0.2), (0.2, 0.8)):
 with open(out, "w") as fh:
     fh.write("\n".join(lines) + "\n")
 print("wrote", len(lines), "lines to", out)
+
+# Unlike distances, testdata/topo/chamfer-saddle-sharp-unlike.txt: each
+# line sx sy, the four edges' distances (0 for the one left sharp), the
+# sharp edge's number, OpenCASCADE's volume and its count of faces. The
+# two chamfers beside the sharp edge, of unlike distances, reach it at
+# two points.
+unlike = os.path.join(os.path.dirname(out), "chamfer-saddle-sharp-unlike.txt")
+lines = []
+for sx, sy in ((0.2, 0.2), (0.2, 0.5), (0.5, 0.2), (0.5, 0.5), (0.8, 0.5), (0.5, 0.8), (0.8, 0.8)):
+    for sharp in range(4):
+        beside = (2, 3) if sharp < 2 else (0, 1)
+        for ra, rb in ((1, 1.5), (1.5, 1), (1, 2), (0.5, 1)):
+            rs = [1.0, 1.0, 1.0, 1.0]
+            rs[beside[0]], rs[beside[1]] = ra, rb
+            rs[sharp] = 0
+            shape, at = saddle(sx, sy)
+            ends = (at(20, 10), at(0, 10), at(10, 20), at(10, 0))
+            specs = [(at(10, 10), e, rs[i]) for i, e in enumerate(ends) if i != sharp]
+            try:
+                s = chamfer(shape, specs)
+                lines.append("%g %g %g %g %g %g %d %.9f %d" % ((sx, sy) + tuple(rs) + (sharp, s.Volume, len(s.Faces))))
+            except Exception as e:
+                print("saddle", sx, sy, rs, sharp, "refused:", e)
+
+with open(unlike, "w") as fh:
+    fh.write("\n".join(lines) + "\n")
+print("wrote", len(lines), "lines to", unlike)
+
+# One edge of the saddle's four rounded alone,
+# testdata/topo/chamfer-saddle-one.txt: each line sx sy r edge,
+# OpenCASCADE's volume and its count of faces. Its end at the saddle's
+# middle runs into the two faces across it (topo's crease end).
+one = os.path.join(os.path.dirname(out), "chamfer-saddle-one.txt")
+lines = []
+for sx, sy in ((0.2, 0.2), (0.2, 0.5), (0.5, 0.2), (0.5, 0.5), (0.8, 0.5), (0.5, 0.8), (0.8, 0.8)):
+    for r in (0.5, 1, 2):
+        for edge in range(4):
+            shape, at = saddle(sx, sy)
+            ends = (at(20, 10), at(0, 10), at(10, 20), at(10, 0))
+            try:
+                s = chamfer(shape, [(at(10, 10), ends[edge], r)])
+                lines.append("%g %g %g %d %.9f %d" % (sx, sy, r, edge, s.Volume, len(s.Faces)))
+            except Exception as e:
+                print("saddle", sx, sy, r, edge, "refused:", e)
+
+with open(one, "w") as fh:
+    fh.write("\n".join(lines) + "\n")
+print("wrote", len(lines), "lines to", one)
+
+# Two opposite edges rounded, the other two left sharp,
+# testdata/topo/chamfer-saddle-pair.txt: each line sx sy r and the two
+# edges (0 1, the convex, or 2 3, the concave), OpenCASCADE's volume and
+# its count of faces. The two meet in a mitre (topo's crease pair).
+pair = os.path.join(os.path.dirname(out), "chamfer-saddle-pair.txt")
+lines = []
+for sx, sy in ((0.2, 0.2), (0.2, 0.5), (0.5, 0.2), (0.5, 0.5), (0.8, 0.5), (0.5, 0.8), (0.8, 0.8)):
+    for r in (0.5, 1, 2):
+        for two in ((0, 1), (2, 3)):
+            shape, at = saddle(sx, sy)
+            ends = (at(20, 10), at(0, 10), at(10, 20), at(10, 0))
+            try:
+                s = chamfer(shape, [(at(10, 10), ends[i], r) for i in two])
+                lines.append("%g %g %g %d %d %.9f %d" % (sx, sy, r, two[0], two[1], s.Volume, len(s.Faces)))
+            except Exception as e:
+                print("saddle", sx, sy, r, two, "refused:", e)
+
+with open(pair, "w") as fh:
+    fh.write("\n".join(lines) + "\n")
+print("wrote", len(lines), "lines to", pair)
+
+# A ridge and a valley side by side rounded, the other two left sharp,
+# testdata/topo/chamfer-saddle-side.txt: each line sx sy r and the two edges
+# (one of 0 1, the convex, and one of 2 3, the concave), OpenCASCADE's
+# volume and its count of faces.
+side = os.path.join(os.path.dirname(out), "chamfer-saddle-side.txt")
+lines = []
+for sx, sy in ((0.2, 0.2), (0.2, 0.5), (0.5, 0.2), (0.5, 0.5), (0.8, 0.5), (0.5, 0.8), (0.8, 0.8)):
+    for r in (0.5, 1, 2):
+        for two in ((0, 2), (0, 3), (1, 2), (1, 3)):
+            shape, at = saddle(sx, sy)
+            ends = (at(20, 10), at(0, 10), at(10, 20), at(10, 0))
+            try:
+                s = chamfer(shape, [(at(10, 10), ends[i], r) for i in two])
+                lines.append("%g %g %g %d %d %.9f %d" % (sx, sy, r, two[0], two[1], s.Volume, len(s.Faces)))
+            except Exception as e:
+                print("saddle", sx, sy, r, two, "refused:", e)
+
+with open(side, "w") as fh:
+    fh.write("\n".join(lines) + "\n")
+print("wrote", len(lines), "lines to", side)

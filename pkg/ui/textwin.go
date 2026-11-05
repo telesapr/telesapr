@@ -223,6 +223,10 @@ type shownState struct {
 	// References screen stays while what takes its place is picked
 	// (history.go).
 	mendFor core.HEntity
+	// mendGroupFor is the group a damaged file lacks whose [choose a
+	// group] was clicked: the Broken References screen lists the
+	// model's groups to take its place.
+	mendGroupFor core.HGroup
 }
 
 // cellMeta is how one character cell is drawn and what clicking it
@@ -1481,6 +1485,7 @@ func (tw *textWindow) GoToScreen(screen Screen) {
 	}
 	if screen != screenBrokenReferences {
 		tw.shown.mendFor = core.HEntity{}
+		tw.shown.mendGroupFor = core.HGroup{}
 	}
 }
 

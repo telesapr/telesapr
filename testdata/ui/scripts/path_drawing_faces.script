@@ -10,9 +10,7 @@ down L 350 300
 up L 350 300
 key esc
 key x shift
-move 285 315
-down L 285 315
-up L 285 315
+click-face top face of g003-extrude
 menu View|Drawing Sheet...
 twmove 46 336
 twdown L 46 336

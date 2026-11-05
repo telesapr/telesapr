@@ -123,11 +123,12 @@ for `--headless` only: the window has the same settings on its configuration scr
 
 ## In a browser
 
-The browser version (Try in browser) has no socket for `telesapr-cli mcp` to reach. A program in
-the browser reaches the page instead, through `window.postMessage`: a script of the page's own
-site, such as a browser extension's in the page, or a page of another site that has the editor in
-a frame. Script > Allow AI Connections turns it on and off as in the window, and the same
-settings ask before each script runs.
+The browser version (Try in browser) has no socket for `telesapr-cli mcp` to reach: an MCP
+client reaches it through the TeleSAPR extension (below). A program in the browser reaches the
+page through `window.postMessage`: a script of the page's own site, such as a browser
+extension's in the page, or a page of another site that has the editor in a frame. Script >
+Allow AI Connections turns it on and off as in the window, and the same settings ask before each
+script runs.
 
 - A program of the page's own site is let in.
 - A program of another site is let in only if you allow it: a dialog names the site, and the
@@ -144,15 +145,52 @@ tele.close();
 ```
 
 What goes through is the protocol between `telesapr-cli mcp` and the window (requests to run,
-describe, render, help, measure, export, open and list files), not MCP itself: an MCP client
-outside the browser needs something to carry it to the page, which TeleSAPR does not ship yet.
-The messages are described in `pkg/script/agent/socket_js.go`.
+describe, render, help, measure, export, open and list files), not MCP itself. The messages are
+described in `pkg/script/agent/socket_js.go`.
+
+### An AI client outside the browser
+
+An MCP client, such as Claude Code, reaches the page through the TeleSAPR extension and
+`telesapr-cli` on your machine: the client starts `telesapr-cli mcp` as it does for the window,
+and the extension starts `telesapr-cli browser-relay`, which listens on a socket as the window
+does and carries each connection to the page.
+
+1. Load the extension in Chrome or Chromium: chrome://extensions, turn on Developer mode, Load
+   unpacked, and pick `cmd/telesapr-web/extension` from TeleSAPR's sources. In Firefox:
+   about:debugging, This Firefox, Load Temporary Add-on, and pick its `manifest.json`.
+2. Tell the browsers where the relay is:
+
+   ```bash
+   telesapr-cli browser-relay --install
+   ```
+
+   It writes the file by which each browser installed for you (Chrome, Chromium, Firefox) starts
+   `telesapr-cli`; `--browser chrome` names one, `--uninstall` takes them away. On Windows it
+   writes the files and prints the `reg add` command that tells the browser where each is. An
+   extension loaded under another id (one installed from a store) is named with
+   `--extension-id`.
+3. Open the editor (Try in browser, or `make wasm` served from this machine) and turn on
+   Script > Allow AI Connections in it.
+4. Add the server to the client as for the window: `claude mcp add telesapr -- telesapr-cli mcp`.
+
+The extension runs only in TeleSAPR's pages: the site's editor and pages served from this
+machine (`localhost`, `127.0.0.1`) that are TeleSAPR's. It comes in as a program of the page's
+own site, so the page asks nothing, and the settings that ask before each script runs hold as
+for any program. With AI connections off in the page, the client is told to turn them on. With
+several TeleSAPR pages open, a connection goes to the one opened last. `telesapr-cli mcp`
+connects to the newest socket that answers; with the window open too, `--socket` names the one
+to talk to.
 
 ## If it does not work
 
 - **"TeleSAPR isn't running, or Script > Allow AI Connections is off"**: start TeleSAPR and
   check the menu item. With several TeleSAPR windows open, the one started last is used.
   `telesapr-cli mcp --socket <path>` names another.
+- **In the browser version**, the same message means the relay isn't running: check that the
+  extension is loaded and that `telesapr-cli browser-relay --install` was run, then reload the
+  page. Chrome says why it couldn't start the relay in the extension's service worker console
+  (chrome://extensions, the extension's "service worker" link). **"the TeleSAPR page didn't
+  answer"**: turn on Script > Allow AI Connections in the page.
 - **"another script is running"**: a script of yours is running in the console. Wait, or stop
   it.
 - **The client shows no TeleSAPR tools**: check that the client can find `telesapr-cli`. Run

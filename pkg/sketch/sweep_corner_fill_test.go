@@ -117,10 +117,16 @@ func arcCornerBands(arcFirst bool, corner, turn, lead, rad float64) []band2 {
 // Integrated by slanted rows, each crossing found by halving.
 func joinedBandArea(bands []band2, w float64, rows int) float64 {
 	a, b := bands[0], bands[1]
-	held := func(x [2]float64) bool {
+	return regionArea(func(x [2]float64) bool {
 		return a.holds(x, w, 0, a.size()) || b.holds(x, w, 0, b.size()) ||
 			a.holds(x, w, a.size(), a.size()+a.carry()) && b.holds(x, w, -b.carry(), 0)
-	}
+	}, rows)
+}
+
+// regionArea is the area of the region of the ZX plane within 60 of
+// the origin that held says a point is in, integrated by slanted rows,
+// each crossing found by halving.
+func regionArea(held func([2]float64) bool, rows int) float64 {
 	sn, cs := math.Sincos(0.37)
 	const half = 60.0
 	inside := func(u, v float64) bool { return held([2]float64{cs*u - sn*v, sn*u + cs*v}) }

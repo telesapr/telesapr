@@ -130,23 +130,33 @@ that the file names and doesn't hold is left out of its group the same way: the 
 without it, its screen says so, and a save writes it back where it was in the list, with its own
 distance or radius. Editing the group's edges lets it go.
 
-To bring it back, give it what it lacks. Under the list, Broken References names each point,
-workplane or edge the file lacks: select one of the model's in its place (a point for a point,
-a workplane for a workplane, a curve for an edge) and click **[use the selected]**. Clicked
-with nothing selected, the screen waits while you pick, and the link reads **[take the
-selection]**. What then has all it uses comes back into the model, in one step of Undo. Or mend
-the file in a text editor and open it again. To be rid of it, click **[discard them]**: the next
+To bring it back, give it what it lacks. Under the list, Broken References names each entity
+the file lacks with the kind it must be, from how what was left out used it: a point for a
+group's origin or a constraint's point, a workplane, a curve for a feature's edge, for a group's
+axis, direction or plane what that kind of group takes ("a line or a normal" for a lathe's, a
+revolve's or a helix's axis, a workplane for an extrusion's, "a workplane or a planar face" for a
+mirror's plane), and for a constraint's other entities what that constraint takes there (a line
+for a point-to-line distance, "a circle or an arc" for a diameter, a face for a point on a face). Select one of the
+model's of that kind in its place and click **[use the selected]**. Clicked with nothing
+selected, the screen waits while you pick, and the link reads **[take the selection]**.
+
+A group the file lacks (the group a request or a constraint is in, or a feature's operand, as an
+extrusion's sketch) is listed below them. Click **[choose a group]** to list the model's
+groups, and click one: **[use g002-sketch-in-plane]**. An operand must come before the group
+that uses it, and the references group is never taken.
+
+What then has all it uses comes back into the model, in one step of Undo. Or mend the file in a
+text editor and open it again. To be rid of it, click **[discard them]**: the next
 save no longer writes it, and Undo takes the discard back.
 
 From a script, `doc.Features.Mended()` lists what was put back, `doc.Features.LeftOut()` what was
 left out and kept, `doc.Features.LeftOutMissing()` what it lacks,
-`doc.Features.MendLeftOut(missing, with)` gives it in place of one of those, and
+`doc.Features.LeftOutMissingKind(missing)` the kind each must be,
+`doc.Features.MendLeftOut(missing, with)` gives it in place of one of those,
+`doc.Features.LeftOutMissingGroups()` and `doc.Features.MendLeftOutGroup(missing, with)` do the
+same for groups, and
 `doc.Features.DiscardLeftOut()` discards it; `telesapr-cli convert` reports both as warnings.
 
 ## Not yet
 
 A group can't be moved ahead of a group it uses, even when the reference could be redirected.
-
-Of what a damaged file leaves out, only a group's origin, a request's workplane, a constraint's
-points and workplane and a feature's edges can be given from the window; a group or a
-constraint's line, circle or face that the file lacks is mended in the file, by hand.

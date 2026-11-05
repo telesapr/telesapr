@@ -265,10 +265,11 @@ func TestSweepTwistAndUp(t *testing.T) {
 	d.Sketch.Rect(api.V(-2, -2, 0), api.V(2, 2, 0))
 	bar := d.Features.Sweep([]api.Entity{line}, "bar")
 	bar.AsSweep().SetTwist(45)
-	// Its sides are twisted ruled faces, which the mesher grids with
-	// rows but no columns: as a twisted loft's (TestLoftSweep), the
-	// diagonals of the quads bias the volume, here by 1.6%.
-	if r := bar.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-480) > 0.02*480 || bar.AsSweep().Twist() != 45 {
+	// Its sides are twisted ruled faces. Meshed by the constrained
+	// Delaunay mesher, the default, whose quadtree cells split where the
+	// twist bends the face from their diagonals, the volume is within
+	// 0.05% (roadmap K4).
+	if r := bar.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-480) > 0.0005*480 || bar.AsSweep().Twist() != 45 {
 		t.Fatalf("a twisted bar: %s, twist %g", r.String(), bar.AsSweep().Twist())
 	}
 	for _, e := range bar.Entities() {
@@ -284,13 +285,13 @@ func TestSweepTwistAndUp(t *testing.T) {
 		}
 	}
 
-	// Meshed by the constrained Delaunay mesher, whose quadtree cells
-	// split where the twist bends the face from their diagonals, the
-	// bias is gone (roadmap K4).
-	d.With(func(sk *sketch.Sketch) { sk.Mesher = srf.MesherCDT })
+	// The ear clipper grids those faces with rows but no columns: as a
+	// twisted loft's (TestLoftSweep), the diagonals of the quads bias the
+	// volume, here by 1.6%.
+	d.With(func(sk *sketch.Sketch) { sk.Mesher = srf.MesherEarClip })
 	d.Edit.Regen()
-	if r := bar.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-480) > 0.0005*480 {
-		t.Fatalf("a twisted bar meshed Delaunay: %s", r.String())
+	if r := bar.Analyze().Check(); !r.Sound() || math.Abs(r.Volume-480) > 0.02*480 {
+		t.Fatalf("a twisted bar ear-clipped: %s", r.String())
 	}
 
 	// A quarter of a helix of radius 20 rising 5, as a cubic.

@@ -6,7 +6,5 @@
 file $testdata/ui/stepped_ring.tlspr
 menu File|Open...
 view default
-move 345 225
-down L 345 225
-up L 345 225
+click-face face 12 of g003-lathe
 menu Features|Shell Solid

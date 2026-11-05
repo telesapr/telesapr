@@ -243,6 +243,7 @@ func (g *Group) generateWrapShell(sk *Sketch) {
 	g.ThisShell = *band
 	var out srf.SShell
 	out.Tol = sk.tol
+	out.PaceBy(sk.kernelPace())
 	g.generateForBooleanShell(&prevs, band, &out, g.MeshCombine)
 	if out.BooleanFailed {
 		out = g.wrapBySets(sk, &prevs, w, sets, overlaps)

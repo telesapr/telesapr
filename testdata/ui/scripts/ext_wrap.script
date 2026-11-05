@@ -34,9 +34,7 @@ menu View|Show|Construction Entities
 answer ok
 menu Features|Wrap Sketch Onto Face
 menu View|Show|Selectable Faces
-move 330 280
-down L 330 280
-up L 330 280
+click-face face 4 of g003-lathe
 menu Features|Wrap Sketch Onto Face
 dump
 tw

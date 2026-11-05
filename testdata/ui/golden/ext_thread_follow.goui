@@ -716,7 +716,7 @@ camera 3.25 -4.5 2.25 1.5 0.8295613557843402 -0.51847584736521257 0.207390338946
 counts 8 13 146 28 70
 editor 0 "" 0 "80"
 tw 1 unsaved 1 cursor 0 tooltip ""
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8, of 467 patches\nTriangles: 9572\nVolume: 26.55 cm³\nCenter of mass: (0.004, 0.00, 50.00)\nExtent: 20.00 x 20.00 x 100.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8, of 467 patches\nTriangles: 12424\nVolume: 26.56 cm³\nCenter of mass: (0.004, 0.00002, 50.00)\nExtent: 20.00 x 20.00 x 100.00
 row 0  home › g008-M20-thread   drawing / constraining in 3d
  0-0 64 64 0
  1-4 6c 64 104 0 1 0

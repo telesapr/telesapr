@@ -232,6 +232,11 @@ func (r *Remote) link() (Conn, error) {
 
 	// The two programs are installed together, but one may be older.
 	res, err := r.roundTrip(context.Background(), conn, request{Op: opHello, Protocol: Protocol})
+	if err == nil && res.Error != "" {
+		// A relay to the browser version says why the page didn't
+		// take the connection (relay.go).
+		err = errors.New(res.Error)
+	}
 	if err == nil && res.Protocol != Protocol {
 		err = fmt.Errorf("TeleSAPR speaks version %d of the protocol and telesapr-cli version %d; install the same version of both", res.Protocol, Protocol)
 	}

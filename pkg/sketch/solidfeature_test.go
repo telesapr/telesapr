@@ -638,6 +638,14 @@ func TestSolidGoldens(t *testing.T) {
 			d.Sketch.Circle(api.V(0, 0, 0), 2)
 			d.Features.Sweep(path, "")
 		},
+		"sweep-partway": func(d *api.Doc) {
+			// A profile drawn across the path partway along it: the whole
+			// path swept, the solid through the profile where it is drawn.
+			path := partwayPath(d, "arc", -5)
+			d.Features.SketchIn(d.Workplane("XY"), "profile")
+			d.Sketch.Rect(api.V(-2, -1.5, 0), api.V(2, 1.5, 0))
+			d.Features.Sweep(path, "")
+		},
 		"sweep-ring-down": func(d *api.Doc) {
 			d.Features.SketchIn(d.Workplane("ZX"), "path")
 			path := []api.Entity{

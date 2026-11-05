@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
@@ -101,6 +102,12 @@ func TestSweepClosed(t *testing.T) {
 			return s
 		}, 4 * 2 * math.Pi * 10},
 	} {
+		// Under the race detector, minutes a curved case, the ring stands
+		// for the stadium and the twisted ring: closed sweeps are joined
+		// on the same goroutines whatever their profile.
+		if fixtures.RaceDetector && (c.name == "stadium" || c.name == "twisted ring") {
+			continue
+		}
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			d := api.New()

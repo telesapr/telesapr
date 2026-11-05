@@ -2,6 +2,7 @@ package tkgui
 
 import (
 	"image"
+	"unicode"
 
 	"github.com/takigo/takigo/event"
 	tkplatform "github.com/takigo/takigo/platform"
@@ -44,6 +45,30 @@ func (p *Platform) ReadScreen(r image.Rectangle) *image.RGBA {
 
 // OpenMenu opens menu i of the bar as Alt and its mnemonic does.
 func (b *MenuBar) OpenMenu(i int) { b.postByKey(i) }
+
+// OpenSubMenu opens the cascade labelled label (its mnemonic's & left
+// out) of menu i of the bar, once OpenMenu(i) has opened that menu: the
+// entry's mnemonic is typed in the menu, which posts the cascade as
+// Alt, the menu's mnemonic and the entry's do. It does nothing when the
+// menu is not open or has no such cascade with a mnemonic.
+func (b *MenuBar) OpenSubMenu(i int, label string) {
+	if i < 0 || i >= len(b.menus) {
+		return
+	}
+	m := b.menus[i].menu.m
+	if !m.IsPosted() {
+		return
+	}
+	for _, e := range m.Entries() {
+		runes := []rune(e.Label)
+		if e.SubMenu == nil || e.Label != label || e.Underline < 0 || e.Underline >= len(runes) {
+			continue
+		}
+		b.p.app.Dispatcher().Dispatch(&event.Event{Type: event.KeyPressType, Window: m.Window().PlatformID,
+			KeySym: tkplatform.RuneToKeySym(unicode.ToLower(runes[e.Underline]))})
+		return
+	}
+}
 
 // Click moves the pointer to x, y in the drawing area, so that what is
 // under it is hovered, then presses and releases button there, with the

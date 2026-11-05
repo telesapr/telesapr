@@ -525,7 +525,7 @@ func oracleLeaf(sk *sketch.Sketch, g *sketch.Group) (node, error) {
 			leaves = append(leaves, hx)
 		}
 	case g.Type == sketch.GroupSweep && src != nil:
-		sw, err := sweepLeaves(sk, g, src)
+		sw, err := sweepLeaves(sk, g)
 		if err != nil {
 			return nil, err
 		}

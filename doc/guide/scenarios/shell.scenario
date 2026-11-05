@@ -14,9 +14,7 @@ key esc
 key x shift
 # The top face is picked in the view from above.
 cursor on
-move 290 265
-down L 290 265
-up L 290 265
+click-face top face of g003-extrude
 shot shell-1-face gw
 menu Features|Shell Solid
 view rotated
@@ -42,12 +40,8 @@ twup L 210 145
 view rotated
 menu View|Zoom To Fit
 cursor on
-move 300 200
-down L 300 200
-up L 300 200
-move 430 350
-down L 430 350
-up L 430 350
+click-face top face of g003-extrude
+click-face side face of g003-extrude from r005-line-segment
 mark 28 142 345 22 tw
 shot shell-5-two-faces
 twmove 210 145

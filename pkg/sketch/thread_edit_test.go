@@ -327,9 +327,11 @@ func TestThreadCrests(t *testing.T) {
 	if testing.Short() {
 		t.Skip("thread solids")
 	}
-	// Under the race detector a fifth (fixtures.Sample): the twelve took
-	// 110 minutes of processor there, each thread twice.
-	for _, tc := range fixtures.Sample([]threadCase{
+	// Under the race detector only the first: the twelve took 110
+	// minutes of processor there, each thread twice, and a fifth of them
+	// still ten minutes each beside the rest of the stage since the
+	// constrained Delaunay mesher meshes their helices (2026-11-04).
+	cases := []threadCase{
 		{"screw_m8_truncated", 4, 30, "M8", sketch.ThreadOptions{Length: 12, Crest: thread.CrestTruncated}},
 		{"screw_m8_rounded", 4, 30, "M8", sketch.ThreadOptions{Length: 12, Crest: thread.CrestRounded}},
 		{"nut_m8_rounded", 7, 6.5, "M8", sketch.ThreadOptions{Length: 6.5, Through: true, Internal: true, Crest: thread.CrestRounded}},
@@ -344,7 +346,11 @@ func TestThreadCrests(t *testing.T) {
 		{"nut_butt_lh_rounded", 20, 15, "1-12 PUSH-BUTT-LH", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Clearance: 0.05, Crest: thread.CrestRounded}},
 		{"screw_butt_round_both", 9.525, 20, "3/4-10 BUTT", sketch.ThreadOptions{Length: 12, Clearance: 0.05, RoundRoot: true, Crest: thread.CrestRounded}},
 		{"nut_butt_round_both", 20, 15, "1-12 PULL-BUTT", sketch.ThreadOptions{Length: 15, Through: true, Internal: true, Clearance: 0.05, RoundRoot: true, Crest: thread.CrestRounded}},
-	}) {
+	}
+	if fixtures.RaceDetector {
+		cases = cases[:1]
+	}
+	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			// The crest's arc is a fraction of a millimetre across: at the

@@ -67,8 +67,7 @@ func loadWay(designation string, internal, back bool) string {
 
 // TestThreadButtressCrestSweep makes buttress threads with rounded
 // crests at chord tolerances from coarse to fine and requires every one
-// sound, a rounded root refused by name where it is too fine for the
-// tolerance: an even sample by default, the whole grid with
+// sound: an even sample by default, the whole grid with
 // TELESAPR_SWEEP=1.
 func TestThreadButtressCrestSweep(t *testing.T) {
 	t.Parallel()
@@ -91,10 +90,7 @@ func TestThreadButtressCrestSweep(t *testing.T) {
 	}
 	grid.Run(func(p sweep.Point) error {
 		_, _, res, err := byName[p.String("case")].tryBuild(t, p.Float("tol"))
-		switch {
-		case errors.Is(err, sketch.ErrRootRoundCoarse):
-			return nil
-		case err != nil:
+		if err != nil {
 			return err
 		}
 		if !res.Sound {

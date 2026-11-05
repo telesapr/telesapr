@@ -13,9 +13,7 @@ key esc
 key x shift
 answer ok
 menu View|Section View
-move 290 265
-down L 290 265
-up L 290 265
+click-face top face of g003-extrude
 dump
 menu View|Section View
 menus

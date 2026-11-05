@@ -18,9 +18,7 @@ twmove 510 128
 twdown L 510 128
 twup L 510 128
 edit 10
-move 290 265
-down L 290 265
-up L 290 265
+click-face top face of g003-extrude
 menu Edit|Datums...
 cursor on
 twmove 120 133

@@ -9,6 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/internal/par"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
@@ -368,7 +369,11 @@ func TestBSplineSweep(t *testing.T) {
 	}
 	// What each point found wrong, logged in order afterwards.
 	found := make([][]string, len(cases))
-	par.For(len(cases), func(i int) {
+	// Under the race detector every fifth case (fixtures.Cases), drawn
+	// after all of them so that the random numbers stay the same.
+	run := fixtures.Cases(len(cases))
+	par.For(len(run), func(k int) {
+		i := run[k]
 		c := cases[i]
 		found[i] = bsplineSweepPoint(c.s, c.x, c.y, c.op, tol)
 	})
@@ -383,7 +388,7 @@ func TestBSplineSweep(t *testing.T) {
 			t.Logf("  %s", l)
 		}
 	}
-	t.Logf("%d points, %d failed", len(cases), failed)
+	t.Logf("%d points, %d failed", len(run), failed)
 }
 
 // bsplineSweepPoint builds the lid of s at tol with a hole (op 0), a

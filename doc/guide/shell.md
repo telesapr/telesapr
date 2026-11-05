@@ -91,7 +91,9 @@ thickness. Such a solid can be open at any of its faces: a flat one, such as a c
 curved one, such as a ring open all round its outer side, which leaves a channel. Where a curved
 face taken away meets a flat face at an inside corner, as a stepped shaft's narrower part meets
 the step, the inside steps along the flat face's plane round the corner, so the wall under the
-step keeps its thickness. A revolve's flat ends are walls too, unless they are taken away. Where the ends of a
+step keeps its thickness. Beside a cone, a sphere or a torus at an inside corner, as a cylinder
+standing on a coned or rounded shoulder, the wall under that face keeps its thickness too and
+ends square to it at the corner. A revolve's flat ends are walls too, unless they are taken away. Where the ends of a
 revolve of more than half a turn meet at the axis, the inside keeps the thickness from each end
 and is rounded about the axis.
 
@@ -144,9 +146,10 @@ through it.
 - A face moved out that would come out of the solid is refused. So is one that would leave a
   wall beyond it thinner than the thickness, where a part joined to another is thinner there than
   twice the thickness.
-- A revolve's curved face can be opened at an inside corner only beside a flat face square to
-  the axis, and one wider than the thickness: beside a cone, a sphere or a torus it is refused. A
-  drafted extrusion's round side can be opened only between outside corners.
+- A revolve's curved face opened at an inside corner beside a face that rises again within the
+  thickness, as a step narrower than the thickness with a second rise beyond it, is refused: the
+  inside would cut into the rise. So is one beside a cone, a sphere or a torus that is taken away
+  too. A drafted extrusion's round side can be opened only between outside corners.
 - A profile of curves other than lines and arcs is refused.
 - Beside a round hole, walls thinner than about twice the chord tolerance (how far the mesh may
   stray from the true surface, set on the configuration screen) can come out unsound: the hole's

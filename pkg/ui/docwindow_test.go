@@ -70,7 +70,37 @@ var docWindowShots = []docWindowShot{
 			_ = s.app.RunCommand("File > Export > Triangle Mesh...")
 		},
 		after: func(s *docWindowPlatform) { s.CloseDialogs() }},
+	{name: "export-import-2-export-menu",
+		// File > Export open, typed as Alt+F, E would: the cascade's
+		// mnemonic once the File menu has its first entry active, which
+		// OpenMenu does keyPostTimeout (300 ms) after posting it.
+		before: func(s *docWindowPlatform) {
+			bar, _ := s.MainMenu()
+			mb := bar.(*tkgui.MenuBar)
+			mb.OpenMenu(0)
+			s.App().After(docSubMenuWait, func() { mb.OpenSubMenu(0, "Export") })
+		},
+		after: func(s *docWindowPlatform) { s.CloseMenus() }},
+	{name: "fillet-7-selection-message",
+		// Fillet Edges with nothing selected says what it takes.
+		before: func(s *docWindowPlatform) {
+			s.app.GW.ClearSelection()
+			_ = s.app.RunCommand("Features > Fillet Edges")
+		},
+		after: func(s *docWindowPlatform) { s.CloseDialogs() }},
+	{name: "threads-11-selection-message",
+		before: func(s *docWindowPlatform) {
+			s.app.GW.ClearSelection()
+			_ = s.app.RunCommand("Features > Screw Thread...")
+		},
+		after: func(s *docWindowPlatform) { s.CloseDialogs() }},
 }
+
+// docSubMenuWait is how long after opening a menu its cascade is
+// opened: past the 300 ms in which the menu's first entry is made
+// active, and short of the half second the screen must stay the same
+// for the shot to be taken.
+const docSubMenuWait = 400 * time.Millisecond
 
 // The windows are placed side by side, since no window manager places
 // them under Xvfb: the graphics window docWindowGW wide, the property

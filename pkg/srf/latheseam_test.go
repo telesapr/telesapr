@@ -143,7 +143,10 @@ func boreToLathedTipAt(tol Tolerance) func(p sweep.Point) error {
 // and the shell's mesh, mended, is sound (roadmap K4).
 func TestMendCrossings(t *testing.T) {
 	t.Parallel()
-	tol := sweepTol()
+	// The ear clipper's, as every curved face was meshed before the
+	// constrained Delaunay mesher was the default: the mender is for
+	// such meshes.
+	tol := sweepTol().WithMesher(MesherEarClip)
 	q := geom.QuaternionIdentity
 	at := geom.Vector{X: 3, Y: 1, Z: 2}
 	spout, bore := SShell{Tol: tol}, SShell{Tol: tol}
@@ -158,7 +161,7 @@ func TestMendCrossings(t *testing.T) {
 	mended := 0
 	for i := range out.Surface {
 		var m SMesh
-		if out.Surface[i].triangulate(&out, &m, false) {
+		if out.Surface[i].triangulate(&out, &m, meshByTol) {
 			mended++
 		}
 		ear.Triangles = append(ear.Triangles, m.Triangles...)

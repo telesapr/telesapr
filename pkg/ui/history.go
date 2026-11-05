@@ -117,7 +117,8 @@ func (tw *textWindow) ScreenMendLeftOut(link int, v uint32) {
 	switch len(with) {
 	case 0:
 		tw.shown.mendFor = missing
-		ss.Error("Select what to use in place of %s, then click [take the selection].", name)
+		ss.Error("Select %s to use in place of %s, then click [take the selection].",
+			ss.SK.LeftOutMissingKind(missing), name)
 		ss.ScheduleShowTW()
 		return
 	case 1:
@@ -134,6 +135,34 @@ func (tw *textWindow) ScreenMendLeftOut(link int, v uint32) {
 	tw.shown.mendFor = core.HEntity{}
 	ss.UndoEnableMenus()
 	ss.GW.ClearSelection()
+	ss.ScheduleShowTW()
+}
+
+// ScreenChooseMendGroup lists the model's groups under v, a group the
+// damaged file lacks, for one to be picked in its place; clicked again,
+// it hides them.
+func (tw *textWindow) ScreenChooseMendGroup(link int, v uint32) {
+	if tw.shown.mendGroupFor.V == v {
+		tw.shown.mendGroupFor = core.HGroup{}
+	} else {
+		tw.shown.mendGroupFor = core.HGroup{V: v}
+	}
+	tw.ss.ScheduleShowTW()
+}
+
+// ScreenMendLeftOutGroup puts group v in the place of the group the
+// damaged file lacks whose list is shown, in what its load left out,
+// and brings back what then has all it uses; one step of undo.
+func (tw *textWindow) ScreenMendLeftOutGroup(link int, v uint32) {
+	ss := tw.ss
+	ss.UndoRemember()
+	if err := ss.SK.MendLeftOutGroup(tw.shown.mendGroupFor, core.HGroup{V: v}); err != nil {
+		ss.SK.UndoDropNewest(1)
+		ss.Report(err)
+		return
+	}
+	tw.shown.mendGroupFor = core.HGroup{}
+	ss.UndoEnableMenus()
 	ss.ScheduleShowTW()
 }
 
@@ -198,10 +227,12 @@ func (tw *textWindow) ShowBrokenReferences() {
 				if tw.shown.mendFor == he {
 					label = "[take the selection]"
 				}
-				tw.Printf(false, "     %Fx%s%E %Fl%Ll%D%f%s%E",
-					sk.LeftOutMissingName(he), he.V, lf(tw.ScreenMendLeftOut), label)
+				tw.Printf(false, "     %Fx%s%E, %s %Fl%Ll%D%f%s%E",
+					sk.LeftOutMissingName(he), sk.LeftOutMissingKind(he),
+					he.V, lf(tw.ScreenMendLeftOut), label)
 			}
 		}
+		tw.showMissingGroups()
 	}
 
 	if len(sk.ExprErrors) > 0 {
@@ -214,4 +245,29 @@ func (tw *textWindow) ShowBrokenReferences() {
 		}
 	}
 	tw.Printf(true, "(%Fl%Ll%fback to the groups%E)", lf(tw.ScreenHome))
+}
+
+// showMissingGroups lists the groups what a damaged file's load left
+// out uses and the file lacks, each with a link that lists the model's
+// groups to pick one in its place.
+func (tw *textWindow) showMissingGroups() {
+	sk := tw.ss.SK
+	missing := sk.LeftOutMissingGroups()
+	if len(missing) == 0 {
+		return
+	}
+	tw.Printf(false, "   Or choose a group in place of a group the file lacks:")
+	for _, h := range missing {
+		tw.Printf(false, "     %Fx%s%E, a group %Fl%Ll%D%f[choose a group]%E",
+			sk.LeftOutMissingGroupName(h), h.V, lf(tw.ScreenChooseMendGroup))
+		if tw.shown.mendGroupFor != h {
+			continue
+		}
+		for _, hg := range sk.GroupOrder {
+			if g := sk.Group(hg); g != nil && hg.V != core.HGroupReferences {
+				tw.Printf(false, "       %Fl%Ll%D%f[use %s]%E",
+					hg.V, lf(tw.ScreenMendLeftOutGroup), g.DescriptionString())
+			}
+		}
+	}
 }

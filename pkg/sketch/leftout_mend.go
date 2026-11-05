@@ -22,40 +22,6 @@ var ErrNotMissing = errors.New("nothing left out uses that entity")
 // a workplane, a curve for an edge.
 var ErrMendKind = errors.New("the entity is not of the kind needed")
 
-// mendRole is what kind of entity a reference of a left-out item must
-// be, for a mend to put another in its place; a reference of any other
-// role, as a constraint's line or a group's axis, is mended only in the
-// file's text.
-type mendRole int
-
-const (
-	mendPoint mendRole = iota
-	mendWorkplane
-	mendCurve
-)
-
-// String names the kind for a message.
-func (r mendRole) String() string {
-	return [...]string{"a point", "a workplane", "a curve"}[r]
-}
-
-// fits reports whether e can take the place of a reference of role r.
-func (r mendRole) fits(e *core.Entity) bool {
-	switch r {
-	case mendPoint:
-		return e.IsPoint()
-	case mendWorkplane:
-		return e.IsWorkplane()
-	default:
-		switch e.Type {
-		case core.EntityLineSegment, core.EntityCubic, core.EntityCubicPeriodic,
-			core.EntityCircle, core.EntityArcOfCircle:
-			return true
-		}
-		return false
-	}
-}
-
 // mendRef is a reference of a left-out item that a mend may replace.
 type mendRef struct {
 	at   *core.HEntity
@@ -63,12 +29,16 @@ type mendRef struct {
 }
 
 // mendRefs are the references of what was left out that a mend may
-// replace: a group's origin, a request's workplane, a constraint's
-// points and workplane, and the edges dropped from a group's list.
+// replace: a group's origin, axis, direction or plane, a request's
+// workplane, a constraint's points, workplane and entities, and the
+// edges dropped from a group's list.
 func (l *LeftOut) mendRefs() []mendRef {
 	var out []mendRef
 	for i := range l.Groups {
-		out = append(out, mendRef{&l.Groups[i].Predef.Origin, mendPoint})
+		g := &l.Groups[i]
+		b, c := g.predefRoles()
+		out = append(out, mendRef{&g.Predef.Origin, mendPoint},
+			mendRef{&g.Predef.EntityB, b}, mendRef{&g.Predef.EntityC, c})
 	}
 	for i := range l.Requests {
 		out = append(out, mendRef{&l.Requests[i].Workplane, mendWorkplane})
@@ -77,6 +47,10 @@ func (l *LeftOut) mendRefs() []mendRef {
 		c := &l.Constraints[i]
 		out = append(out, mendRef{&c.PtA, mendPoint}, mendRef{&c.PtB, mendPoint},
 			mendRef{&c.Workplane, mendWorkplane})
+		roles := constraintRoles(c.Type)
+		for k, at := range [...]*core.HEntity{&c.EntityA, &c.EntityB, &c.EntityC, &c.EntityD} {
+			out = append(out, mendRef{at, roles[k]})
+		}
 	}
 	for i := range l.Edges {
 		e := &l.Edges[i]
@@ -127,7 +101,13 @@ func (sk *Sketch) LeftOutMissingName(he core.HEntity) string { return sk.entityN
 // MendLeftOut puts with in the place of missing, an entity the file
 // lacks, wherever what the load left out used it in a role with fits:
 // a group's origin or a constraint's point takes a point, a request's
-// or a constraint's workplane a workplane, a dropped edge a curve.
+// or a constraint's workplane a workplane, a dropped edge a curve, a
+// group's axis, direction or plane what its kind of group uses (a line
+// or a normal for a lathe's axis, a workplane or a planar face for a
+// mirror's plane), a constraint's entity what its kind of constraint
+// uses there (a line for a point-to-line distance, a circle or an arc
+// for a diameter, a face for a point on a face; LeftOutMissingKind
+// says which).
 // What then has all it uses comes back into the model; the rest stays
 // left out, with with in missing's place. The caller remembers the
 // undo state.
@@ -163,6 +143,13 @@ func (sk *Sketch) MendLeftOut(missing, with core.HEntity) error {
 	if n == 0 {
 		return fmt.Errorf("%w: what was left out uses %s as %s", ErrMendKind, sk.entityName(missing), needs[0])
 	}
+	sk.takeMend(l)
+	return nil
+}
+
+// takeMend makes l, a mended copy of what was left out, what is left
+// out, and brings back what then has all it uses.
+func (sk *Sketch) takeMend(l *LeftOut) {
 	sk.LeftOut = l
 	sk.bringBackLeftOut()
 	for i := range sk.Groups {
@@ -170,7 +157,6 @@ func (sk *Sketch) MendLeftOut(missing, with core.HEntity) error {
 	}
 	sk.Unsaved = true
 	sk.ScheduleGenerateAll()
-	return nil
 }
 
 // clone copies l deep enough for a mend to change its references.
@@ -184,6 +170,7 @@ func (l *LeftOut) clone() *LeftOut {
 	}
 	for i := range l.Groups {
 		c.Groups[i] = l.Groups[i].defining()
+		c.Groups[i].LoftThrough = slices.Clone(c.Groups[i].LoftThrough)
 	}
 	for i := range c.Edges {
 		c.Edges[i].Edges = slices.Clone(c.Edges[i].Edges)

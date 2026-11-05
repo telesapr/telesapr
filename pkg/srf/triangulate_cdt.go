@@ -28,6 +28,34 @@ var errCDTMesh = errors.New("cdt mesh")
 // triangles, in uv and turned as UvTriangulateInto turns them, to mesh.
 // On an error nothing is added.
 func (p *SPolygon) cdtTriangulateInto(mesh *SMesh, srf *SSurface) error {
+	return p.cdtTriangulateBudgetInto(mesh, srf, 0)
+}
+
+// errCDTBudget is why cdtTriangulateBudgetInto gave a region back to the
+// ear clipper: its points inside passed the budget.
+var errCDTBudget = errors.New("cdt mesh past its budget")
+
+// cdtBudgetPerCell is how many points inside a region the CDT may put
+// for each cell of the grid the ear clipper would mesh the patch on
+// (MakeTriangulationGridInto). The CDT's cells are about square in its
+// chart, where the ear clipper's run long along a ruling; at a chord
+// tolerance fine against the patch the CDT fills an unrolled cone's
+// chart with cells a sag's width each way. Measured 2026-11-04 (rd8): a
+// band on a quartered frustum at 0.00085 mm took 40 to 64 times the
+// grid's cells and 29 times the ear clipper's triangles (40 084 to
+// 1394), a band wrapped on a cone at 1e-4 mm up to 174 times; over the
+// solid, thread, display, STL, export and script goldens no face passed
+// 19, so none of them is given back. At 32 the band wrapped most of the
+// way round a cylinder kept faces of 24 to 32 and took 2.2 times as long
+// as the ear clipper; at 24, 1.5 times.
+const cdtBudgetPerCell = 24
+
+// cdtTriangulateBudgetInto is cdtTriangulateInto; with budget -1 it gives
+// the region back (errCDTBudget) where its points inside pass
+// cdtBudgetPerCell times the cells of the ear clipper's grid of the
+// patch, which then meshes it as before the CDT was the default, and
+// with 0 it has no budget.
+func (p *SPolygon) cdtTriangulateBudgetInto(mesh *SMesh, srf *SSurface, budget int) error {
 	var bnd []geom.Vector
 	var segs [][2]int
 	for _, c := range p.Contours {
@@ -98,6 +126,16 @@ func (p *SPolygon) cdtTriangulateInto(mesh *SMesh, srf *SSurface) error {
 	if !srf.flat() {
 		inner = r.quadPoints(srf, ch, tol)
 	}
+	if budget < 0 {
+		li := []float64{0}
+		srf.MakeTriangulationGridInto(&li, 0, 1, true, 0)
+		lj := []float64{0}
+		srf.MakeTriangulationGridInto(&lj, 0, 1, false, 0)
+		budget = cdtBudgetPerCell * len(li) * len(lj)
+		if len(inner) > budget {
+			return errCDTBudget
+		}
+	}
 	all := append(slices.Clip(pts), inner...)
 	var tris [][3]int
 	var err error
@@ -114,6 +152,9 @@ func (p *SPolygon) cdtTriangulateInto(mesh *SMesh, srf *SSurface) error {
 			break
 		}
 		all = append(all, more...)
+		if budget > 0 && len(all)-len(pts) > budget {
+			return errCDTBudget
+		}
 	}
 	uv := func(i int) geom.Vector {
 		if i < len(bnd) {
@@ -658,7 +699,24 @@ func (r *cdtRegion) refinePoints(srf *SSurface, ch *uvChart, pts []cdt.Point, tr
 		}
 		pa, pb, pc := at(t[0]), at(t[1]), at(t[2])
 		cm := cdt.Point{X: (pts[t[0]].X + pts[t[1]].X + pts[t[2]].X) / 3, Y: (pts[t[0]].Y + pts[t[1]].Y + pts[t[2]].Y) / 3}
-		if ch.point(srf, cm).Minus(pa.Plus(pb).Plus(pc).ScaledBy(1.0/3)).Magnitude() > tol {
+		// A triangle is refined where it strays by more than tol and by
+		// more than a cell of the least size sags by here. Where
+		// the segment limit holds the cells wider than the tolerance
+		// would have them, no triangle meets it, and refining the ones
+		// that miss it adds points every round without end (a cylinder
+		// of radius 10 at 0.001 mm and 7 segments: 4816 triangles).
+		lim := -1.0
+		strays := func(d float64) bool {
+			if d <= tol {
+				return false
+			}
+			if lim < 0 {
+				sx, sy, sd := cellSag(srf, ch, cm.X-r.minX/2, cm.Y-r.minY/2, cm.X+r.minX/2, cm.Y+r.minY/2)
+				lim = max(tol, sx, sy, sd)
+			}
+			return d > lim
+		}
+		if strays(ch.point(srf, cm).Minus(pa.Plus(pb).Plus(pc).ScaledBy(1.0 / 3)).Magnitude()) {
 			add(cm, shortest)
 			continue
 		}
@@ -670,7 +728,7 @@ func (r *cdtRegion) refinePoints(srf *SSurface, ch *uvChart, pts []cdt.Point, tr
 			}
 			done[key] = true
 			em := cdt.Point{X: (pts[i].X + pts[j].X) / 2, Y: (pts[i].Y + pts[j].Y) / 2}
-			if ch.point(srf, em).Minus(at(i).Plus(at(j)).ScaledBy(0.5)).Magnitude() > tol {
+			if strays(ch.point(srf, em).Minus(at(i).Plus(at(j)).ScaledBy(0.5)).Magnitude()) {
 				add(em, shortest)
 			}
 		}

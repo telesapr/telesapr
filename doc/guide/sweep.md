@@ -26,6 +26,11 @@ Sweep a circle along a bent path:
 
    ![The swept tube and its screen](images/sweep-3-swept.png)
 
+The profile need not be at the path's end. Drawn across an open path partway along it, the
+whole path is swept, from end to end, and the solid passes through the profile where it is
+drawn. A profile drawn across a sharp corner of the path is a problem on the group: the
+corner's mitre would cut it.
+
 Along a helix, as in the `spring` example, the profile keeps its attitude to the path, so the
 wire does not spin about itself:
 
@@ -89,9 +94,8 @@ tube.AsSweep().SetSweepUp(api.V(0, 0, 1)) // frames held to z; zero turns them l
 
 ## Limits
 
-A twisted sweep's sides of straight edges are twisted ruled faces. The mesher grids them with
-rows along the path but no columns across, so their mesh's volume is off by up to about 2%, as
-a twisted loft's is. The surface itself is right. Where the path's curvature jumps, as where a
+A twisted sweep's sides of straight edges are twisted ruled faces. The mesher splits its cells
+where the twist bends the face, so their mesh's volume is within about 0.05% of the solid's. Where the path's curvature jumps, as where a
 line meets an arc, a twisted sweep has a crease, because the true one has.
 
 ## Corners in the path
@@ -114,7 +118,8 @@ A corner too sharp for that, where for some points of the profile the line's sid
 outside the arc's so the two never cross (a bar 2 wide round an arc of radius 12 at a corner of
 150°), is made another way: the line and the arc are swept each on its own, up to the corner,
 and the outside of the turn is filled by where the two, carried on past the corner, overlap,
-all joined into one solid. Where the arc turns away from that overlap, it runs on as far as the
+all joined into one solid. Round a closed path the same is done, the sweep going round from the
+profile and back to it. Where the arc turns away from that overlap, it runs on as far as the
 pieces are carried: their outer sides never meet, and the corner is a problem on the group.
 
 These corners are problems on the group, which a corner radius (below) then rounds:
@@ -224,20 +229,25 @@ d.Features.Sweep([]api.Entity{ring}, "o-ring")
 A path that comes back within the profile's reach of where it has been, as an arc past a sharp
 corner turning back over the line before it, or looping round across it, makes the solid the
 profile passes through: its overlapping passes are joined, so a hook whose end runs back into
-its shaft becomes a ring. Round lines and arcs this is done by sweeping the path in stretches
-that each stay clear of themselves and joining them. Where that can't be done, the group is a
-problem that says the sweep passes through itself, and makes no solid: move the pieces apart or
-make the profile smaller.
+its shaft becomes a ring. This is done by sweeping the path in stretches that each stay clear
+of themselves and joining them: round lines and arcs, open or closed, and along a fitted path,
+twisted, held to a direction or round a cubic, whose stretches keep the frames, and so the
+twist, of the whole path. Where that can't be done, the group is a problem that says the sweep
+passes through itself, and makes no solid: move the pieces apart or make the profile smaller.
 
 ## Not yet
 
 A sharp corner next to a cubic is made only on an open path with no twist, held frames or corner
-radius, and only where its pieces join: along a round or a diamond profile it is refused.
+radius, and only where its pieces join: along a round profile it is refused, and along one with
+a corner where the turn's axis crosses it, as a diamond's, unless the cubic is straight.
 
-A path that comes back over itself, twisted, held to a direction, round a cubic or closed, is
-refused. Round lines and arcs, about half of such paths are refused too, where the stretches
-can't be cut clear of a corner or don't join. Of the 1440 paths of a line and an arc about a
-corner that the tests try (three profiles, corners of 30° to 150° either way, arcs of 45° to
-270°), 160 come back over themselves: 81 are made in stretches and 79 refused (2026-11-04).
+A path that comes back over itself is refused where its stretches can't be cut clear of a
+corner or don't join. Round lines and arcs that is about half of such paths: of the 1440 paths
+of a line and an arc about a corner that the tests try (three profiles, corners of 30° to 150°
+either way, arcs of 45° to 270°), 160 come back over themselves, and 81 are made in stretches
+and 79 refused (2026-11-04). Along a fitted path more are refused: a round profile held to a
+direction, or a square held with its sides lying in one plane where the path comes back, whose
+stretches' fitted surfaces don't join; a twisted closed path; and a twisted or held path with a
+sharp corner beside an arc or a cubic.
 Repeating a solid along a path, instead of sweeping a profile, is
 [Pattern Along Path](pattern.md).

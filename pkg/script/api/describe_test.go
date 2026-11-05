@@ -36,7 +36,7 @@ parameters:
     half = width/2 = 20
 groups, in the order the model is built:
     g002-sketch-in-plane, sketch-in-plane: solved, 6 DOF; active
-    g003-plate, extrude: solved, 1 DOF, volume 3121.967 mm³, bounds (0, 0, 0) to (40, 20, 4)
+    g003-plate, extrude: solved, 1 DOF, volume 3121.804 mm³, bounds (0, 0, 0) to (40, 20, 4)
 active group g002-sketch-in-plane, sketch-in-plane: solved, 6 DOF
   requests:
     r004-line-segment: line (40, 0, 0) to (40, 20, 0)

@@ -250,7 +250,7 @@ func revolvedInside(rev Revolution, modeAt func(geom.Vector) (faceMode, bool), e
 	var sbl srf.SBezierList
 	what := fmt.Sprintf("a thickness of %g", thick)
 	for li, ps := range loops {
-		curves, err := steppedLoop(ps, ds[li], steps[li], n, what)
+		curves, err := steppedLoop(ps, ds[li], steps[li], axis, n, inside, what)
 		if err != nil {
 			return nil, err
 		}

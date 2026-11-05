@@ -7,6 +7,12 @@ becomes a solid, and how the solid is changed, checked and saved. The
 
 ## Step by step
 
+The video shows steps 2 to 5, from the rectangle to the plate:
+
+<video src="videos/getting-started-plate.webm" controls muted loop playsinline style="width:100%"></video>
+
+([getting-started-plate.webm](videos/getting-started-plate.webm), where the page shows no video.)
+
 1. Start TeleSAPR, or choose File > New (Ctrl+N). The left-hand window is the graphics window,
    where you draw. The toolbar runs down its left side. The right-hand window is the property
    browser. It lists the groups of the model, which are the steps of its history. A new model

@@ -27,7 +27,9 @@ import (
 // ends of each ray lie on the mesh, each within
 // the chord tolerance of the surface; where both ends are on surfaces
 // of a part with a shell, the thinnest spots are followed onto those
-// surfaces as the clearance between parts is (Clearance.refine).
+// surfaces as the clearance between parts is (Clearance.refine). A ray
+// that leaves through the mesh's fold at an edge, where the two faces
+// meet square or wider, measures no wall and is left out (wallFold).
 
 // ThinSpot is a wall's thickness at a point: the part's group, the
 // thickness, the point it was measured from and the one across the
@@ -238,9 +240,12 @@ func (r *WallReport) measureTriangle(w *clearancePart, i, n int, found []wallSam
 	}
 	piece := func(p, q, s geom.Vector) {
 		r.Samples++
-		sp, hit, ok := thicknessAt(w.tree, i, p, q, s, in)
-		if !ok {
+		sp, hit, end := w.thicknessAt(i, p, q, s, in)
+		switch end {
+		case rayLost:
 			r.Unmeasured++
+			return
+		case rayFold:
 			return
 		}
 		sp.Group = w.g
@@ -265,28 +270,94 @@ func (r *WallReport) measureTriangle(w *clearancePart, i, n int, found []wallSam
 // and slips through, three points off it.
 var rayStarts = [][3]float64{{1.0 / 3, 1.0 / 3, 1.0 / 3}, {0.5, 0.3, 0.2}, {0.2, 0.5, 0.3}, {0.3, 0.2, 0.5}}
 
+// rayEnd is how a ray into the solid ended: leaving it through a face
+// that faces out, lost (no way out, or a face the wrong way round), or
+// leaving through the fold of the mesh at an edge (wallFold).
+type rayEnd uint8
+
+const (
+	rayOut rayEnd = iota
+	rayLost
+	rayFold
+)
+
+// wallFoldSin is the sine of a degree: how little the surfaces a ray
+// starts and leaves on may face each other and the ray still be taken
+// for one across a wall (wallFold).
+const wallFoldSin = 0.01745240643728351
+
 // thicknessAt is the wall's thickness at the piece a, b, c of triangle
-// i of the tree's mesh, in along in, with the triangle its ray left
-// through, and false where no ray from it leaves the solid through a
-// face that faces out.
-func thicknessAt(tree *srf.MeshTree, i int, a, b, c, in geom.Vector) (ThinSpot, int, bool) {
+// i of the part's mesh, in along in, with the triangle its ray left
+// through, and how the rays from it ended: out where one from it left
+// the solid through a face that faces out, else a fold where one left
+// through the mesh's fold at an edge, else lost.
+func (w *clearancePart) thicknessAt(i int, a, b, c, in geom.Vector) (ThinSpot, int, rayEnd) {
+	end := rayLost
 	for _, wt := range rayStarts {
 		from := a.ScaledBy(wt[0]).Plus(b.ScaledBy(wt[1])).Plus(c.ScaledBy(wt[2]))
-		if s, hit, ok := thicknessFrom(tree, i, from, in); ok {
-			return s, hit, true
+		s, hit, e := w.thicknessFrom(i, from, in)
+		if e == rayOut {
+			return s, hit, rayOut
+		}
+		if e == rayFold {
+			end = rayFold
 		}
 	}
-	return ThinSpot{}, -1, false
+	return ThinSpot{}, -1, end
 }
 
 // thicknessFrom is the wall's thickness from point from of triangle i,
-// in along in, and the triangle the ray left through.
-func thicknessFrom(tree *srf.MeshTree, i int, from, in geom.Vector) (ThinSpot, int, bool) {
-	h, ok := tree.Ray(from, in, 1e-9, i)
+// in along in, the triangle the ray left through, and how it ended.
+func (w *clearancePart) thicknessFrom(i int, from, in geom.Vector) (ThinSpot, int, rayEnd) {
+	h, ok := w.tree.Ray(from, in, 1e-9, i)
 	if !ok || h.Cos <= 0 {
-		return ThinSpot{}, -1, false
+		return ThinSpot{}, -1, rayLost
 	}
-	return ThinSpot{Thickness: h.T, From: from, To: from.Plus(in.ScaledBy(h.T)), sb: tree.Triangle(h.Tri).Tag}, h.Tri, true
+	if w.wallFold(i, h.Tri, from, from.Plus(in.ScaledBy(h.T))) {
+		return ThinSpot{}, -1, rayFold
+	}
+	return ThinSpot{Thickness: h.T, From: from, To: from.Plus(in.ScaledBy(h.T)), sb: w.tree.Triangle(h.Tri).Tag}, h.Tri, rayOut
+}
+
+// wallFold reports whether a ray square to triangle i from "from" that
+// left the part through triangle j at "at" left through the fold of the
+// mesh at an edge rather than across a wall. Where two faces meet
+// square or wider, as a cup's inside meets its rim, a ray square to one
+// can't leave the solid through the other; on its mesh it does wherever
+// the triangles near the edge lean in by a little, as the constrained
+// Delaunay mesher's do along a cylinder (its points inside the face
+// aren't in line with the trim's), and the wall square to them closes
+// to nothing at the edge. So on a part with a shell a ray counts only
+// where the surfaces it starts and leaves on face each other by more
+// than a degree there: a true wedge, thinning to its edge, still
+// does. A part that is a mesh has its triangles for its geometry, and
+// no fold.
+func (w *clearancePart) wallFold(i, j int, from, at geom.Vector) bool {
+	ti, tj := w.tree.Triangle(i), w.tree.Triangle(j)
+	sa, sb := w.surface(ti.Tag), w.surface(tj.Tag)
+	if sa == nil || sb == nil {
+		return false
+	}
+	// Triangles facing each other within 60 degrees of straight on are
+	// across a wall whatever their surfaces do: no mesh within its chord
+	// tolerance leans that far. Most rays end so, and are spared the
+	// projections onto the surfaces.
+	if ti.Normal().WithMagnitude(1).Dot(tj.Normal().WithMagnitude(1)) < -0.5 {
+		return false
+	}
+	na, nb := surfaceNormalAt(sa, from, ti.Normal()), surfaceNormalAt(sb, at, tj.Normal())
+	return na.Dot(nb) > -wallFoldSin
+}
+
+// surfaceNormalAt is the unit normal of s at the point of it nearest
+// p, turned to the side of mesh's normal m.
+func surfaceNormalAt(s *srf.SSurface, p, m geom.Vector) geom.Vector {
+	pr := s.Project(p, 0)
+	n := s.NormalAt(pr.U, pr.V).WithMagnitude(1)
+	if n.Dot(m) < 0 {
+		n = n.ScaledBy(-1)
+	}
+	return n
 }
 
 // refineWall follows a thin spot's two ends onto the surfaces of the

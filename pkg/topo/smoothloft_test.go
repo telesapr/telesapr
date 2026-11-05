@@ -9,6 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/internal/par"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
@@ -298,7 +299,12 @@ func TestSmoothLoftSweep(t *testing.T) {
 	// What each case's four solids found wrong, logged in order
 	// afterwards.
 	found := make([][][]string, cases)
-	par.For(cases, func(c int) {
+	// Under the race detector every fifth case (fixtures.Sample), drawn
+	// after all of them so that the random numbers stay the same: the
+	// twelve took 10 minutes there.
+	run := fixtures.Cases(cases)
+	par.For(len(run), func(k int) {
+		c := run[k]
 		found[c] = smoothLoftPoint(loops[c], cut[c], tol)
 	})
 	failed := 0
@@ -314,7 +320,7 @@ func TestSmoothLoftSweep(t *testing.T) {
 			}
 		}
 	}
-	t.Logf("%d points, %d failed", 4*cases, failed)
+	t.Logf("%d points, %d failed", 4*len(run), failed)
 }
 
 // smoothLoftPoint lofts loops at tol on its own (op 0), less a block

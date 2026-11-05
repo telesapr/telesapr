@@ -10,6 +10,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
@@ -154,7 +155,13 @@ func TestRollingBallSphere(t *testing.T) {
 	t.Parallel()
 	tol := fine(0.003)
 	last := 0.0
-	for _, r := range []float64{1, 2, 3} {
+	radii := []float64{1, 2, 3}
+	if fixtures.RaceDetector {
+		// The smallest and the largest only: each fills on the same
+		// goroutines, over a minute apiece there.
+		radii = []float64{1, 3}
+	}
+	for _, r := range radii {
 		cy, u := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
 		cy.MakeFromTransformationOf(cylinder(4, 25, tol), v(0, 3, 0), geom.QuaternionFromAxisAngle(v(0, 1, 0), math.Pi/2), 1)
 		u.MakeFromUnionOf(sphereShell(10, tol), &cy)

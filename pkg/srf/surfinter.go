@@ -195,6 +195,9 @@ func (s *SSurface) intersectAgainst(b *SSurface, agnstA, agnstB *SShell, into *c
 			if foundExact {
 				return
 			}
+			if s.intersectPlaneAndSphere(b, agnstA, agnstB, into) {
+				return
+			}
 		}
 
 		s.intersectByMarching(b, agnstA, agnstB, into)

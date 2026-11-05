@@ -34,7 +34,5 @@ up L 295 235
 key esc
 menu View|Show|Construction Entities
 menu View|Show|Selectable Faces
-move 330 280
-down L 330 280
-up L 330 280
+click-face face 4 of g003-lathe
 menu Features|Wrap Sketch Onto Face

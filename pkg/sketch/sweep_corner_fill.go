@@ -18,9 +18,12 @@ import (
 // Made of Booleans: the path cut at the corner into two runs each swept
 // on its own, and the fill, the intersection of the profile carried on
 // past the corner along the first piece and carried back before it
-// along the second, joined to them. Where the overlap runs on as far as
-// the pieces are carried, the sides never meet and no joint closes the
-// corner: that stays refused, with a corner radius to round it.
+// along the second, joined to them. Round a closed path, started where
+// it is smooth, the first run's start and the last's end meet flush
+// where the profile is, and the union closes them, as stretches do
+// (sweep_cross.go). Where the overlap runs on as far as the pieces are
+// carried, the sides never meet and no joint closes the corner: that
+// stays refused, with a corner radius to round it.
 
 // cornerFillCarry is how far a piece is carried on past a corner for
 // its fill: a quarter turn along an arc, as far as one surface of a turn
@@ -195,7 +198,8 @@ func joinFlush(parts []*srf.SShell, tol srf.Tolerance) *srf.SShell {
 // the kernel can't join, filling them (sweepCornersFilled): a problem
 // on the group, with the corner radius to set, where it can't be made.
 func (g *Group) generateFilledSweepShell(sk *Sketch, src *Group, steps []srf.SweepStep, unjoined []int, start, end srf.FaceID) {
-	sh, err := sweepCornersFilled(&src.BezierLoops, steps, unjoined, g.Color, start, end, sk.tol)
+	prof := g.sweepProfile(src)
+	sh, err := sweepCornersFilled(prof, steps, unjoined, g.Color, start, end, sk.tol)
 	if err == nil && sh == nil {
 		err = &srf.CornerError{At: steps[unjoined[0]].Center, Err: srf.ErrCornerNoJoint}
 	}
@@ -210,5 +214,5 @@ func (g *Group) generateFilledSweepShell(sk *Sketch, src *Group, steps []srf.Swe
 	}
 	g.ThisShell = *sh
 	g.ThisShell.Tol = sk.tol
-	g.refuseCrossing(sk, func() bool { return stepsComeBack(&src.BezierLoops, steps) }, nil)
+	g.refuseCrossing(sk, func() bool { return stepsComeBack(prof, steps) }, nil)
 }

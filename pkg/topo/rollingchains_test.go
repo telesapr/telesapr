@@ -186,8 +186,15 @@ func TestFilletChainsPartlyMitred(t *testing.T) {
 	t.Parallel()
 	four := fourCubics()
 	all := topPicks(four)
-	// Under the race detector the first only (fixtures.Sample): the two
-	// took 15 minutes there, on the goroutines one of them uses.
+	// Under the race detector the first only (fixtures.Sample), at a
+	// coarser chord tolerance: the two took 15 minutes there and the
+	// first alone 7 at 0.002, and the race detector needs the goroutines
+	// the fillet runs on, not its finest faces. The vertices are the
+	// same within 1e-4 at 0.01 (2026-11-04).
+	tol := 0.002
+	if fixtures.RaceDetector {
+		tol = 0.01
+	}
 	for _, c := range fixtures.Sample([]struct {
 		picks []int
 		verts []geom.Vector
@@ -201,7 +208,7 @@ func TestFilletChainsPartlyMitred(t *testing.T) {
 		for _, i := range c.picks {
 			picks = append(picks, all[i])
 		}
-		sh := cubicPrism(four, fine(0.002))
+		sh := cubicPrism(four, fine(tol))
 		if err := topo.FilletPicks(sh, picks, 1, 1<<30, false); err != nil {
 			t.Fatalf("%v: %v", c.picks, err)
 		}

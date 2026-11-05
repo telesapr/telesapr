@@ -86,6 +86,16 @@ func (h appHooks) Cancel() bool {
 	return false
 }
 
+// KernelPace lets a platform with no thread but the loop's (a browser
+// page) draw and show progress inside a group's Boolean too, not only
+// between groups; elsewhere the Booleans run at once and pace nothing.
+func (h appHooks) KernelPace() func() {
+	if y, ok := h.ss.Platform.(platform.Yielder); ok {
+		return y.Yield
+	}
+	return nil
+}
+
 // setSketch makes sk the sketch the application edits, wired to the
 // view, the show flags and the event loop.
 func (ss *Application) setSketch(sk *sketch.Sketch) {

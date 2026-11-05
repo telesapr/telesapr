@@ -15,9 +15,7 @@ key x shift
 view rotated
 menu View|Zoom To Fit
 cursor on
-move 430 350
-down L 430 350
-up L 430 350
+click-face side face of g003-extrude from r005-line-segment
 shot mirror-1-face gw
 menu Features|Mirror
 view rotated

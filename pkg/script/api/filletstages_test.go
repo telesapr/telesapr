@@ -4,6 +4,8 @@ import (
 	"math"
 	"path/filepath"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 )
 
 // A block's upright edges rounded at one radius and its top edges at a
@@ -17,6 +19,11 @@ func TestFilletStagesScript(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("a long script")
+	}
+	if fixtures.RaceDetector {
+		// Twelve minutes there; its fillets' stages run on the goroutines
+		// TestFilletOnOtherSolids's do, and it checks the script path.
+		t.Skip("a long script, minutes under the race detector")
 	}
 	const w, l, h, upright, top = 30.0, 20.0, 15.0, 5.0, 2.0
 	build := func(d *Doc) (Group, []SolidEdge, int) {

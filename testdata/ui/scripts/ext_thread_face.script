@@ -22,9 +22,7 @@ twdown L 501 125
 twup L 501 125
 edit 80
 view rotated
-move 336 207
-down L 336 207
-up L 336 207
+click-face face 2 of g003-extrude
 menu Features|Screw Thread...
 tw
 # From the other end, the designation, the length, then make it.
@@ -50,7 +48,5 @@ key z ctrl
 dump
 key esc
 popup Screw Thread...
-move 336 207
-down R 336 207
-up R 336 207
+click-face face 2 of g003-extrude right
 tw

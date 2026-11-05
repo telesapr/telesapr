@@ -189,3 +189,37 @@ func TestSegBoxCross(t *testing.T) {
 		}
 	}
 }
+
+// TestCDTLeavesPlanes meshes a pot with the CDT on every face: its flat
+// faces are meshed as the ear clipper meshes them, triangle for triangle.
+// The tolerance's mesher is for curved faces; Delaunay over a plane's
+// trim points alone joined three of a fitted trim a micrometre off one
+// line, beside a fillet tangent to the plane, and its chord crossed the
+// fillet (the rib rounded all over, pkg/topo).
+func TestCDTLeavesPlanes(t *testing.T) {
+	t.Parallel()
+	prof := []geom.Vector{{}, {X: 30}, {X: 20, Z: 40}, {Z: 40}}
+	cdtSh, earSh := lathedProfile(prof, cdtTol(0.01)), lathedProfile(prof, Tol(0.01, 20))
+	flat := 0
+	for i := range cdtSh.Surface {
+		if !cdtSh.Surface[i].flat() {
+			continue
+		}
+		flat++
+		var a, b SMesh
+		cdtSh.Surface[i].TriangulateInto(cdtSh, &a)
+		earSh.Surface[i].TriangulateInto(earSh, &b)
+		if len(a.Triangles) != len(b.Triangles) {
+			t.Fatalf("surface %d: %d triangles, the ear clipper's %d", i, len(a.Triangles), len(b.Triangles))
+		}
+		for k := range a.Triangles {
+			ta, tb := a.Triangles[k], b.Triangles[k]
+			if !ta.A.EqualsExactly(tb.A) || !ta.B.EqualsExactly(tb.B) || !ta.C.EqualsExactly(tb.C) {
+				t.Fatalf("surface %d: triangle %d differs from the ear clipper's", i, k)
+			}
+		}
+	}
+	if flat == 0 {
+		t.Fatal("the pot has no flat face")
+	}
+}

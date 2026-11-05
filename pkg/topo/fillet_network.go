@@ -210,6 +210,9 @@ type filletCorner struct {
 	// patches that fill the hole.
 	arcs       map[int]srf.SBezier
 	faceCurves map[int]srf.SBezier
+	// faceSplits, in place of a face's curve, is it in the pieces the
+	// patches meet it along, in order (saddleSharpAt).
+	faceSplits map[int][]srf.SBezier
 	quads      []srf.SSurface
 	// For a corner of chamfers: the faces that fill it.
 	plates []cornerPlate
@@ -247,7 +250,13 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 	if err := filletPicksAny(sh, picks, r, origin, flat); err != nil {
 		return err
 	}
-	if unsound(sh) && !unsound(&before) {
+	bad := unsound(sh)
+	if !bad {
+		// What it leaves of a crease that turned back is rounded too,
+		// where that comes out sound.
+		filletTurnedBack(sh, &before, picks, r, origin, flat)
+	}
+	if bad && !unsound(&before) {
 		var at geom.Vector
 		if len(picks) > 0 {
 			at = picks[0].At
@@ -584,6 +593,16 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 					continue
 				}
 			}
+			if (setback || flat) && t.saddleSideTakes(v, edges, byEdge) {
+				// A saddle's ridge and valley side by side rounded, the
+				// other two left sharp: each cut up to its sharp edge, the
+				// hole between filled by patches (fillet_saddle_side.go).
+				// Where that can't be made, as before.
+				if cc, cerr := t.saddleSideAt(v, edges, byEdge); cerr == nil {
+					corners[v] = cc
+					continue
+				}
+			}
 			if flat && len(t.Vertices[v].Edges) > 3 && t.chamferConeTakes(v, edges, byEdge) {
 				// Some edges at a corner of more than three left sharp.
 				c, err = t.chamferConeAt(v, edges, byEdge)
@@ -597,6 +616,22 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 				// A convex and a concave chamfer above an edge left sharp;
 				// where they can't meet so, in stages, by kinds, as before.
 				if cc, cerr := t.chamferMixedPairAt(v, edges, byEdge); cerr == nil {
+					corners[v] = cc
+					continue
+				}
+			}
+			if _, _, _, _, ok := t.creaseEndOf(v, edges, byEdge); ok {
+				// The one edge rounded at a corner of four, ending on the
+				// two faces across it (fillet_crease_end.go).
+				if cc, cerr := t.creaseEndAt(v, edges, byEdge, flat); cerr == nil {
+					corners[v] = cc
+					continue
+				}
+			}
+			if _, _, ok := t.creasePairOf(v, edges, byEdge); ok {
+				// Two opposite edges of such a corner rounded: a mitre in
+				// the plane of the two left sharp.
+				if cc, cerr := t.creasePairAt(v, edges, byEdge, flat); cerr == nil {
 					corners[v] = cc
 					continue
 				}
@@ -654,6 +689,14 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 	for _, c := range corners {
 		if c.kind == 1 {
 			redo[c.end] = true
+		}
+		if c.kind == creaseCorner {
+			for f := range c.faceCurves {
+				redo[f] = true
+			}
+		}
+		for f := range c.faceSplits {
+			redo[f] = true
 		}
 		for f := range c.chains {
 			redo[f] = true
@@ -1626,6 +1669,9 @@ func (fe *filletEdge) connectors(t *Topology, v int, c *filletCorner, p, q geom.
 	if c.kind == coneCorner {
 		return orientedLines(c.ends[fe.e], p)
 	}
+	if c.kind == creaseCorner {
+		return orientChain(c.chain, p)
+	}
 	if c.kind == setbackCorner {
 		sb := c.arcs[fe.e]
 		if !sb.Start().Equals(p) {
@@ -1747,11 +1793,24 @@ func (t *Topology) filletLoops(f int, edges []filletEdge, byEdge map[int]int, co
 				// The face's curve between the two fillets, where the hole's
 				// patches meet it.
 				p, q := point(x, vb), point(nx, vb)
-				if sb, ok := c.faceCurves[f]; ok && !p.Equals(q) {
+				if pcs, ok := c.faceSplits[f]; ok && !p.Equals(q) {
+					loop = append(loop, chainFrom(pcs, p)...)
+				} else if sb, ok := c.faceCurves[f]; ok && !p.Equals(q) {
 					if !sb.Start().Equals(p) {
 						sb.Reverse()
 					}
 					loop = append(loop, sb)
+				}
+			}
+			if c := corners[vb]; c != nil && c.kind == creaseCorner {
+				// The part of the fillet's end that lies on this face.
+				if sb, ok := c.faceCurves[f]; ok {
+					if p, q := point(x, vb), point(nx, vb); !p.Equals(q) {
+						if !sb.Start().Equals(p) {
+							sb.Reverse()
+						}
+						loop = append(loop, sb)
+					}
 				}
 			}
 			if c := corners[vb]; c != nil && c.kind == coneCorner {
@@ -1773,6 +1832,20 @@ func (t *Topology) filletLoops(f int, edges []filletEdge, byEdge map[int]int, co
 		loops = append(loops, loop)
 	}
 	return loops, nil
+}
+
+// chainFrom is the curves pcs, end to end, run from p: as they are, or
+// each reversed in the other order.
+func chainFrom(pcs []srf.SBezier, p geom.Vector) []srf.SBezier {
+	if pcs[0].Start().Equals(p) {
+		return pcs
+	}
+	out := make([]srf.SBezier, len(pcs))
+	for i, sb := range pcs {
+		sb.Reverse()
+		out[len(pcs)-1-i] = sb
+	}
+	return out
 }
 
 // edgeCurve is the exact curve of co-edge ce, run its way: the shell's

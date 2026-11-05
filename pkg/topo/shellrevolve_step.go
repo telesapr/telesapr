@@ -1,6 +1,8 @@
 package topo
 
 import (
+	"math"
+
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
 )
@@ -42,9 +44,10 @@ func insideCorners(ps []profilePiece, i int, n geom.Vector) (start, end bool) {
 }
 
 // cornerSteps is where piece i, a curved face taken away and moved out,
-// steps at an inside corner, or an error when it can't: the step runs
-// along the neighbour's plane, so the neighbour must be a flat face,
-// kept or taken away.
+// steps at an inside corner, or an error when it can't: beside a flat
+// face, kept or taken away, the step runs along its plane; beside a
+// sloping or curved face, kept, it leaves the corner into the empty
+// wedge outside it (cornerOut).
 func cornerSteps(ps []profilePiece, ds []float64, i int, axis, n geom.Vector, thick float64) (cornerStep, error) {
 	k := len(ps)
 	start, end := insideCorners(ps, i, n)
@@ -56,9 +59,9 @@ func cornerSteps(ps []profilePiece, ds []float64, i int, axis, n geom.Vector, th
 		beside = append(beside, (i+1)%k)
 	}
 	for _, j := range beside {
-		if !across(ps[j], axis) {
-			return cornerStep{}, shellErr(ps[i].mid, "a curved face taken away meets a curved or sloping face at an inside corner; "+
-				"a shell opens a revolve's curved faces at an inside corner only beside a flat face square to the axis")
+		if !across(ps[j], axis) && ds[j] != thick {
+			return cornerStep{}, shellErr(ps[i].mid, "a curved face taken away meets, at an inside corner, a curved or sloping face "+
+				"also taken away; a shell steps round such a corner only beside a face kept")
 		}
 		if ds[j] != 0 && ds[j] != thick {
 			return cornerStep{}, shellErr(ps[i].mid, "a curved face taken away meets, at an inside corner, a face lying inside "+
@@ -71,7 +74,9 @@ func cornerSteps(ps []profilePiece, ds []float64, i int, axis, n geom.Vector, th
 // steppedLoop is the inside's loop of the meridian ps, offset by ds,
 // with the steps of step: the kept pieces moved, and where a piece
 // steps, the way from the one before it round the solid's corner.
-func steppedLoop(ps []profilePiece, ds []float64, step []cornerStep, n geom.Vector, what string) ([]srf.SBezier, error) {
+// inSolid reports whether a point of the meridian's plane lies in the
+// solid's profile; axis is the revolution's.
+func steppedLoop(ps []profilePiece, ds []float64, step []cornerStep, axis, n geom.Vector, inSolid func(geom.Vector) bool, what string) ([]srf.SBezier, error) {
 	keep, corner, err := offsetProfile(ps, n, ds, what)
 	if err != nil {
 		return nil, err
@@ -94,18 +99,38 @@ func steppedLoop(ps []profilePiece, ds []float64, step []cornerStep, n geom.Vect
 		// thickness of it, out to the corner: the inside meets it on the
 		// line through the corner square to the flat face. The flat
 		// one where it was meets the curved one moved at the run-out.
-		under := c.Plus(ps[flat].into.ScaledBy(ds[flat]))
-		onFlat, err := meetMoved(ps[flat], movedPiece(ps[curved], ds[curved]), c, ps[flat], ps[curved], ds[curved], n, what)
-		if err != nil {
-			return err
-		}
-		// Past the flat face's far end, the run-out would cut into what
-		// rises or falls from there.
-		along := ps[flat].b.Minus(ps[flat].a)
-		if s := onFlat.Minus(ps[flat].a).Dot(along) / along.MagSquared(); s <= 0 || s >= 1 ||
-			onFlat.Minus(ps[flat].a).Magnitude() < geom.LengthEps || onFlat.Minus(ps[flat].b).Magnitude() < geom.LengthEps {
-			return shellErr(c, "a curved face taken away at an inside corner beside a flat face narrower than %s; "+
-				"the inside's step would run past the flat face", what)
+		under := c.Plus(intoAt(ps[flat], c).ScaledBy(ds[flat]))
+		var onFlat geom.Vector
+		if across(ps[flat], axis) {
+			var err error
+			onFlat, err = meetMoved(ps[flat], movedPiece(ps[curved], ds[curved]), c, ps[flat], ps[curved], ds[curved], n, what)
+			if err != nil {
+				return err
+			}
+			// Past the flat face's far end, the run-out along it would cut
+			// into what rises or falls from there; leaving the corner into
+			// the empty wedge may still clear it.
+			along := ps[flat].b.Minus(ps[flat].a)
+			if s := onFlat.Minus(ps[flat].a).Dot(along) / along.MagSquared(); s <= 0 || s >= 1 ||
+				onFlat.Minus(ps[flat].a).Magnitude() < geom.LengthEps || onFlat.Minus(ps[flat].b).Magnitude() < geom.LengthEps {
+				p, ok := cornerOut(ps[curved], ps[flat], ds[curved], c, curvedFirst, n, inSolid)
+				if !ok {
+					return shellErr(c, "a curved face taken away at an inside corner beside a flat face narrower than %s; "+
+						"the inside's step would run past the flat face", what)
+				}
+				onFlat = p
+			}
+		} else {
+			// Beside a sloping or curved face there is no plane to run
+			// along without lying on the face, which the Boolean can't
+			// take away: the inside leaves the corner into the empty wedge
+			// outside it, touching the solid only along the corner.
+			p, ok := cornerOut(ps[curved], ps[flat], ds[curved], c, curvedFirst, n, inSolid)
+			if !ok {
+				return shellErr(c, "a curved face taken away at an inside corner beside a sloping or curved face; "+
+					"the inside's run-out by %s would cut into the solid past the corner", what)
+			}
+			onFlat = p
 		}
 		var path []geom.Vector
 		if curvedFirst {
@@ -159,4 +184,81 @@ func steppedLoop(ps []profilePiece, ds []float64, step []cornerStep, n geom.Vect
 		out = append(out, way[j]...)
 	}
 	return out, nil
+}
+
+// intoAt is the direction into piece p's material, square to it, at
+// its point at: a line's into, or along an arc's radius.
+func intoAt(p profilePiece, at geom.Vector) geom.Vector {
+	if !p.arc {
+		return p.into
+	}
+	into := at.Minus(p.centre).WithMagnitude(1)
+	if !p.outward {
+		into = into.ScaledBy(-1)
+	}
+	return into
+}
+
+// cornerOut is where the inside, leaving the inside corner c between
+// the curved piece taken away and the piece beside it, crosses the
+// curved piece moved out by d (d < 0): along a line into the empty
+// wedge between the two at c. It is false when that line meets
+// the moved piece nowhere ahead, or runs through the solid on its way.
+func cornerOut(curved, beside profilePiece, d float64, c geom.Vector, curvedFirst bool, n geom.Vector, inSolid func(geom.Vector) bool) (geom.Vector, bool) {
+	// The two pieces' directions leaving c.
+	tc := pieceTangent(curved, true, n)
+	if curvedFirst {
+		tc = pieceTangent(curved, false, n).ScaledBy(-1)
+	}
+	ts := pieceTangent(beside, true, n)
+	if !curvedFirst {
+		ts = pieceTangent(beside, false, n).ScaledBy(-1)
+	}
+	// Leave at half the empty wedge's angle, or an eighth of a turn from
+	// the face beside when the wedge is wider: the wall's end at the
+	// corner runs square to that face, and a way out near it, almost
+	// smooth with the wall's end across the face, leaves the Boolean a
+	// curve it can't split cleanly (a cove's corner of 150°).
+	perp := tc.Minus(ts.ScaledBy(ts.Dot(tc)))
+	if perp.Magnitude() < 1e-9 {
+		return c, false
+	}
+	perp = perp.WithMagnitude(1)
+	angle := math.Min(math.Atan2(tc.Dot(perp), tc.Dot(ts))/2, math.Pi/4)
+	dir := ts.ScaledBy(math.Cos(angle)).Plus(perp.ScaledBy(math.Sin(angle)))
+	mv := movedPiece(curved, d)
+	var cands []geom.Vector
+	if mv.arc {
+		cands = lineCircle(c, dir, mv.centre, mv.r)
+	} else {
+		dm := mv.b.Minus(mv.a)
+		den := dir.Cross(dm).Dot(n)
+		if math.Abs(den) < 1e-12 {
+			return c, false
+		}
+		s := mv.a.Minus(c).Cross(dm).Dot(n) / den
+		cands = append(cands, c.Plus(dir.ScaledBy(s)))
+	}
+	best, found := c, false
+	for _, q := range cands {
+		t := q.Minus(c).Dot(dir)
+		if t <= geom.LengthEps {
+			continue
+		}
+		if !found || t < best.Minus(c).Dot(dir) {
+			best, found = q, true
+		}
+	}
+	if !found {
+		return c, false
+	}
+	// The way out must stay clear of the solid past the corner.
+	const samples = 32
+	for k := 1; k <= samples; k++ {
+		q := c.Plus(best.Minus(c).ScaledBy(float64(k) / samples))
+		if inSolid(q) {
+			return c, false
+		}
+	}
+	return best, true
 }

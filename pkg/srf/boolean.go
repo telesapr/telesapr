@@ -21,7 +21,9 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 
 	end := stage("classifying bsps")
 	a.MakeClassifyingBsps(nil)
+	s.paced()
 	b.MakeClassifyingBsps(nil)
+	s.paced()
 	end()
 
 	// Copy over all the original curves, splitting them so that a
@@ -54,8 +56,11 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 		}
 		sc.RemoveShortSegments(sA, sB)
 	}
+	s.paced()
 	s.fuseVertices(a, b)
+	s.paced()
 	s.refineGrazingMeets(a, b)
+	s.paced()
 
 	// And clean up the piecewise linear things we made as a calculation aid
 	a.CleanupAfterBoolean()
@@ -64,7 +69,9 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 	// curves
 	end = stage("classifying bsps")
 	a.MakeClassifyingBsps(s)
+	s.paced()
 	b.MakeClassifyingBsps(s)
+	s.paced()
 	end()
 
 	// Then trim and copy the surfaces
@@ -85,6 +92,15 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 	if !s.BooleanFailed {
 		s.dropUntrimmed()
 	}
+	s.pace = nil
+}
+
+// paced calls the pace the shell was given for the Boolean made into
+// it (PaceBy), if any.
+func (s *SShell) paced() {
+	if s.pace != nil {
+		s.pace()
+	}
 }
 
 // dropUntrimmed removes the surfaces a Boolean left with no trim, such
@@ -104,6 +120,7 @@ func (s *SShell) dropUntrimmed() {
 		return
 	}
 	s.moveOrphanTrims(dropped)
+	s.joinOrphans(dropped)
 	used := map[core.HSCurve]bool{}
 	kept := s.Surface[:0]
 	for _, sf := range s.Surface {

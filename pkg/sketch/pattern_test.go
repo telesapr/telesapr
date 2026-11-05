@@ -8,7 +8,20 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/script/api"
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
+
+// postsSlack is how far the volume of n copies of a post, whose curved
+// side has area side, may be from n times the post's: each copy's mesh
+// keeps within the chord tolerance of its side, but the copies, turned
+// and moved, aren't meshed point for point alike (the constrained
+// Delaunay mesher's points inside a face fall by rounding where the
+// trim's segments and the sag set them).
+func postsSlack(d *api.Doc, n int, side float64) float64 {
+	var chord float64
+	d.With(func(sk *sketch.Sketch) { chord = sk.Tol().ChordTolMm() })
+	return float64(n) * chord * side
+}
 
 // patternPath draws, in the XY workplane, a straight run of length
 // run from the origin along x, then, if turn is not zero, a bend of
@@ -38,10 +51,10 @@ func TestPathPattern(t *testing.T) {
 	d.Features.SketchIn(d.Workplane("XY"), "post-sketch")
 	d.Sketch.Circle(api.V(0, 0, 0), 1)
 	post := d.Features.Extrude(5, "post")
-	one := post.Analyze().Check().Volume
 	p := d.Features.PatternAlongPath(path, 5, "")
+	one := post.Analyze().Check().Volume
 	r := p.Analyze().Check()
-	if p.Problem() != "" || !r.Sound() || math.Abs(r.Volume-5*one) > 1e-6*one {
+	if p.Problem() != "" || !r.Sound() || math.Abs(r.Volume-5*one) > postsSlack(d, 5, 2*math.Pi*5) {
 		t.Fatalf("five posts: %s, %s, want %g", p.Problem(), r.String(), 5*one)
 	}
 	// The far end of the path is (30, 30, 0).
@@ -51,7 +64,7 @@ func TestPathPattern(t *testing.T) {
 	step(d)
 	before := saved(t, d)
 	p.AsRepeat().SetCopies(3)
-	if p.AsRepeat().Copies() != 3 || !near(p.Analyze().Check().Volume, 3*one) {
+	if p.AsRepeat().Copies() != 3 || math.Abs(p.Analyze().Check().Volume-3*one) > postsSlack(d, 3, 2*math.Pi*5) {
 		t.Errorf("three copies: %d, volume %g", p.AsRepeat().Copies(), p.Analyze().Check().Volume)
 	}
 	undoRedo(t, d, before)
@@ -112,15 +125,15 @@ func TestPathPatternSweep(t *testing.T) {
 		d.Features.SketchIn(d.Workplane("XY"), "")
 		d.Sketch.Circle(api.V(0, 0, 0), rad)
 		post := d.Features.Extrude(4, "")
-		one := post.Analyze().Check().Volume
 		g := d.Features.PatternAlongPath(path, n, "")
+		one := post.Analyze().Check().Volume
 		r := g.Analyze().Check()
 		switch {
 		case g.Problem() != "":
 			return fmt.Errorf("problem: %s", g.Problem())
 		case !r.Sound():
 			return fmt.Errorf("unsound: %s", r.String())
-		case r.Volume > float64(n)*one*(1+1e-6) || r.Volume < one:
+		case r.Volume > float64(n)*one+postsSlack(d, n, 2*math.Pi*rad*4) || r.Volume < one:
 			return fmt.Errorf("volume %g for %d posts of %g", r.Volume, n, one)
 		}
 		return nil
@@ -181,13 +194,13 @@ func TestPathPatternClosedChain(t *testing.T) {
 	d.Features.SketchIn(d.Workplane("XY"), "post-sketch")
 	d.Sketch.Circle(api.V(20, 0, 0), 1)
 	post := d.Features.Extrude(3, "post")
-	one := post.Analyze().Check().Volume
 	// The perimeter: 2*(30+10) of straight runs and a circle of 5.
 	perimeter := 2*(30+10) + 2*math.Pi*5
 	n := 8
 	p := d.Features.PatternAlongPath(path, n, "")
+	one := post.Analyze().Check().Volume
 	r := p.Analyze().Check()
-	if p.Problem() != "" || !r.Sound() || math.Abs(r.Volume-float64(n)*one) > 1e-6*float64(n)*one {
+	if p.Problem() != "" || !r.Sound() || math.Abs(r.Volume-float64(n)*one) > postsSlack(d, n, 2*math.Pi*3) {
 		t.Fatalf("posts round a track: %q, %s, want %g", p.Problem(), r.String(), float64(n)*one)
 	}
 	// The posts lie on the track: within the rectangle grown by a post's
@@ -265,15 +278,16 @@ func TestPathPatternClosedSweep(t *testing.T) {
 		}
 		d.Features.SketchIn(d.Workplane("XY"), "post-sketch")
 		d.Sketch.Circle(at, 1)
-		one := d.Features.Extrude(2, "post").Analyze().Check().Volume
+		post := d.Features.Extrude(2, "post")
 		g := d.Features.PatternAlongPath(path, n, "")
+		one := post.Analyze().Check().Volume
 		r := g.Analyze().Check()
 		switch {
 		case g.Problem() != "":
 			return fmt.Errorf("problem: %s", g.Problem())
 		case !r.Sound():
 			return fmt.Errorf("unsound: %s", r.String())
-		case math.Abs(r.Volume-float64(n)*one) > 1e-6*float64(n)*one:
+		case math.Abs(r.Volume-float64(n)*one) > postsSlack(d, n, 2*math.Pi*2):
 			return fmt.Errorf("volume %g, want %g", r.Volume, float64(n)*one)
 		}
 		return nil

@@ -23,12 +23,32 @@ pictures come from the real window under an Xvfb of its own, read back from the 
 
 `TestDocWindowShots` (`pkg/ui/docwindow_test.go`) lists them in `docWindowShots`, each with what
 to do before its picture (open a menu, right-click in the drawing area, run a command that opens a
-dialog) and what to do after it (close the menus or dialogs); a picture is taken once the screen
-has stayed the same for half a second. The model is `examples/scripts/fillet` in the nearest
-isometric view, the graphics window 800×600 with the property browser 440 wide beside it, since
-no window manager places them. The test runs only when the script sets
-`TELESAPR_DOC_WINDOW_SHOTS`, never in `make test`. Its pictures are the same bytes on every run on
-one machine; the fonts are the machine's, so another machine's fonts change them all.
+dialog, open a menu's cascade with `OpenSubMenu`) and what to do after it (close the menus or
+dialogs); a picture is taken once the screen has stayed the same for half a second. The model is
+`examples/scripts/fillet` in the nearest isometric view, the graphics window 800×600 with the
+property browser 440 wide beside it, since no window manager places them. The test runs only when
+the script sets `TELESAPR_DOC_WINDOW_SHOTS`, never in `make test`. Its pictures are the same bytes
+on every run on one machine; the fonts are the machine's, so another machine's fonts change them
+all.
+
+## Videos
+
+A scenario records a video of some of its steps between `video start NAME` and `video end`:
+a frame after each step, the pointer gliding to where it is moved, a ring where it presses, the
+key a step presses at the bottom right, and the scenario's `caption` under the windows. ffmpeg
+makes `../videos/NAME.webm` of the frames:
+
+    ./scripts/regen-guide-videos.sh                    # every scenario that records one
+    ./scripts/regen-guide-videos.sh getting-started   # one
+
+The commands do nothing unless `TELESAPR_DOC_VIDEOS` names a directory, which the script sets, so
+the scenarios run as tests and make their pictures as before. A page shows a video with
+`<video src="videos/NAME.webm" controls muted loop playsinline style="width:100%"></video>` and a link to the file
+beside it, for where the page shows none (the site's build, `tools/docs/hooks.py`, makes the
+source relative to where the page ends up); `TestDocScenarios` fails on a video a page shows that no
+scenario records, and on one in `videos/` that no page shows. Videos are not goldens: ffmpeg's
+versions write other bytes for the same frames. Watch every one before committing it, and commit
+them on their own. Keep each under about 1 MB.
 
 ## The language
 
@@ -43,7 +63,9 @@ browser beside it 600×600. Coordinates are pixels from the window's top left.
 | `menu Features\|Fillet Edges` | A menu entry, by its labels |
 | `move X Y`, `down L X Y`, `up L X Y`, `dbl L X Y`, `scroll X Y D` | The mouse in the graphics window (buttons L M R) |
 | `twmove`, `twdown`, `twup` … | The same in the property browser |
-| `click-entity NAME [shift] [ctrl]`, `move-entity NAME` | Clicks (or only points at) an entity by its handle as `dump` prints it (`40000`) or by its name as the interface shows it (`r005-arc-of-circle of g003-path`), wherever the view puts it: four tenths along a line or a curve, or beside it where a point or another line lies on top. Prints `entity missing` or `entity unpicked` when it can't. Prefer it to `move`/`down`/`up` with coordinates, which break when the layout moves |
+| `click-entity NAME [shift] [ctrl] [right]`, `move-entity NAME` | Clicks (or only points at) an entity by its handle as `dump` prints it (`40000`) or by its name as the interface shows it (`r005-arc-of-circle of g003-path`), wherever the view puts it: four tenths along a line or a curve, or beside it where a point or another line lies on top. Prints `entity missing` or `entity unpicked` when it can't. `right` clicks the right button, for a context menu. Prefer it to `move`/`down`/`up` with coordinates, which break when the layout moves |
+| `click-edge NAME [shift] [ctrl] [right]`, `move-edge NAME` | Clicks (or points at) an edge of the active group's solid that no entity draws, as a Boolean or a fillet makes, by its name as the interface writes it (`the edge between face 0 of g004-fillet and top face of g003-extrude`), wherever the view puts it. Prints `edge missing` or `edge unpicked` when it can't |
+| `click-face NAME [shift] [ctrl] [right]`, `move-face NAME` | The same for a face: an entity's (`top face of g003-extrude`) or one no entity names (`face 4 of g003-lathe`), at the middle of its largest triangle on the screen that picks it. Prints `face missing` or `face unpicked` |
 | `click-tw [#N] TEXT` | Clicks the property browser's link whose text is `TEXT` (its spaces and the radio button's or check box's glyph left out), the Nth such link with `#N`: `click-tw [change]`, `click-tw #2 [change]`, `click-tw held to x`. Prints `click-tw missing` when there is none |
 | `edit TEXT` | Types into the field the last click opened, and presses Enter |
 | `answer ok\|yes\|no`, `form k=v …`, `file PATH`, `popup LABEL` | Answers the next message dialog, form, file chooser or context menu (queue them *before* the command that opens it) |
@@ -53,6 +75,8 @@ browser beside it 600×600. Coordinates are pixels from the window's top left.
 | `mark X Y W H [tw]` | An orange box round something, on the next shot only (`tw`: property browser coordinates) |
 | `shot NAME [gw\|tw\|both]` | Saves `images/NAME.png`: the graphics window, the property browser, or both side by side (default) |
 | `size gw\|tw W H` | Resizes a window |
+| `video start NAME [gw\|tw\|both]`, `video end` | Records the steps between them as `videos/NAME.webm` (see Videos), of the graphics window, the property browser or both (default) |
+| `caption TEXT`, `pause S` | The caption under the video's frames from here on; hold the last frame S seconds longer |
 | `dump`, `tw`, `hover`, `hovergrid N` | Print the model, the property browser's rows, what is under the mouse, or what is under each point of an N×N grid: use them to find where to click |
 
 A scenario runs in a temporary working directory, where the examples it runs save their files:
@@ -70,6 +94,9 @@ drawing: after drawing something, `answer no` and `menu File|New` first.
 - Zoom To Fit fits what is selected when anything is: fit before picking, not after. It fits the
   solid and what the sketches draw, but not the circles and sketches a screw thread is made of,
   which may run out of the window.
+- Click a solid's faces and edges by name (`click-face`, `click-edge`), as entities
+  (`click-entity`): a click by coordinates breaks when the view or the mesh moves. Where the place
+  on the face matters (a datum placed where it is clicked), keep the coordinates.
 - A click within 10 pixels of a line, a point or a label picks that before the face under it,
   but not a line or a point the solid hides: there the face in front is picked. A reference
   plane's dashed square crosses most views. Check picks with `hover` before relying on them.

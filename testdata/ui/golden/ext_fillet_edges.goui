@@ -226,7 +226,7 @@ row 51    (none)
  0-99 64 61 0
 row 53 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 7\nTriangles: 32\nVolume: 18.71 cm³\nCenter of mass: (-2.01, 7.00, 10.00)\nExtent: 36.00 x 26.00 x 20.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 7\nTriangles: 68\nVolume: 18.71 cm³\nCenter of mass: (-2.01, 7.00, 10.00)\nExtent: 36.00 x 26.00 x 20.00
 dialog 3 Select the edges to round, line segments and circles of the sketch or edges of the solid before the fillet, then click [take the selection].|
 row 0  home › g004-fillet   drawing / constraining in 3d
  0-0 64 64 0
@@ -337,7 +337,7 @@ row 51    (none)
  0-99 64 61 0
 row 53 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 7\nTriangles: 32\nVolume: 18.71 cm³\nCenter of mass: (-2.00, 6.99, 10.00)\nExtent: 36.00 x 26.00 x 20.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 7\nTriangles: 84\nVolume: 18.71 cm³\nCenter of mass: (-2.00, 6.99, 10.00)\nExtent: 36.00 x 26.00 x 20.00
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0

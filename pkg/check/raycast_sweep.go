@@ -55,7 +55,13 @@ func newCutPrism(pr profile, along geom.Vector, start, end halfSpace) *prism {
 // only where the profile, moved to the arc's start, lies in a plane
 // through the arc's axis, as a profile square to the path does; one
 // leaning to it is refused.
-func sweepLeaves(sk *sketch.Sketch, g, src *sketch.Group) (union, error) {
+func sweepLeaves(sk *sketch.Sketch, g *sketch.Group) (union, error) {
+	// The profile as the steps or the path's frames move it, from the
+	// path's start: drawn partway along an open path, carried back there.
+	prof, err := g.SweepProfile(sk)
+	if err != nil {
+		return nil, err
+	}
 	steps, err := g.SweepSteps(sk)
 	if errors.Is(err, sketch.ErrFittedSweep) {
 		sp, err := g.FittedSweepPath(sk)
@@ -69,8 +75,8 @@ func sweepLeaves(sk *sketch.Sketch, g, src *sketch.Group) (union, error) {
 			return nil, fmt.Errorf("%s: a corner beside an arc: %w", g.DescriptionString(), ErrUnsupported)
 		}
 		var leaves union
-		for i := range src.BezierLoops.Sets {
-			leaves = append(leaves, newPathSweep(&src.BezierLoops.Sets[i], sp))
+		for i := range prof.Sets {
+			leaves = append(leaves, newPathSweep(&prof.Sets[i], sp))
 		}
 		return leaves, nil
 	}
@@ -87,10 +93,10 @@ func sweepLeaves(sk *sketch.Sketch, g, src *sketch.Group) (union, error) {
 	// The direction of the line before or after a corner, step k.
 	lineAt := func(k int) geom.Vector { return steps[k].Along.WithMagnitude(1) }
 	var leaves union
-	for i := range src.BezierLoops.Sets {
+	for i := range prof.Sets {
 		frame := srf.RigidIdentity
 		for k, st := range steps {
-			moved := srf.TransformedLoopSet(&src.BezierLoops.Sets[i], frame)
+			moved := srf.TransformedLoopSet(&prof.Sets[i], frame)
 			n := moved.Normal.WithMagnitude(1)
 			switch {
 			case st.Corner:

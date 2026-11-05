@@ -254,6 +254,24 @@ var pathEquivalences = map[string]pathCheck{
 			t.Errorf("the sweep: type %d, problem %q, %d surfaces", g.Type, g.Problem.Msg, len(g.ThisShell.Surface))
 		}
 	},
+	// A sweep whose profile is drawn partway along its path, picked with
+	// the mouse, and by a script: the whole path swept, from 12 below the
+	// profile.
+	"sweep_partway": func(t *testing.T, ui, _ *sketch.Sketch) {
+		g := ui.Group(ui.Active)
+		if g.Type != sketch.GroupSweep || g.Problem.Msg != "" || len(g.ThisShell.Curve) == 0 {
+			t.Fatalf("the sweep: type %d, problem %q, %d curves", g.Type, g.Problem.Msg, len(g.ThisShell.Curve))
+		}
+		lo := math.Inf(1)
+		for _, c := range g.ThisShell.Curve {
+			for _, p := range c.Points {
+				lo = math.Min(lo, p.P.Z)
+			}
+		}
+		if math.Abs(lo+12) > 1e-6 {
+			t.Errorf("the sweep starts at z %g, want -12", lo)
+		}
+	},
 	// A sweep round a closed path, picked with the mouse, and by a script.
 	"sweep_ring": func(t *testing.T, ui, _ *sketch.Sketch) {
 		if g := ui.Group(ui.Active); g.Type != sketch.GroupSweep || g.Problem.Msg != "" || len(g.Edges) != 1 {
@@ -533,7 +551,11 @@ var pathEquivalences = map[string]pathCheck{
 		g.RunningShell.TriangulateInto(&m)
 		r := check.Solid(&g.RunningShell, &m)
 		want := math.Pi * ((24*24-10*10)*20 - (24*24-11*11)*18)
-		if !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+		// Its mesh keeps within the chord tolerance of its curved faces,
+		// the cylinders of radius 24 and 10 high 20 and of 24 and 11 high
+		// 18: it loses at most that over their area.
+		curved := 2 * math.Pi * (24*20 + 10*20 + 24*18 + 11*18)
+		if !r.Sound() || math.Abs(r.Volume-want) > ui.Tol().ChordTolMm()*curved {
 			t.Errorf("the channel ring: %s, want volume %g", r.String(), want)
 		}
 	},
@@ -936,6 +958,24 @@ var pathEquivalences = map[string]pathCheck{
 			ui.Group(g.OpA).Name != "bottom" || ui.Group(g.OpB).Name != "middle" {
 			t.Errorf("the loft: type %d, problem %q, from %s to %s through %d", g.Type, g.Problem.Msg,
 				ui.GroupName(g.OpA), ui.GroupName(g.OpB), len(g.LoftThrough))
+		}
+	},
+	// What a damaged file's load left out, mended in the window and by
+	// a script (ROADMAP D5): an extrusion's sketch the file lacks, a
+	// diameter's circle, and a lathe's axis.
+	"damaged_mend_group": func(t *testing.T, ui, _ *sketch.Sketch) {
+		if g := ui.Group(core.HGroup{V: 3}); ui.LeftOut != nil || g == nil || g.OpA != (core.HGroup{V: 2}) {
+			t.Errorf("the extrusion not brought back; left out %q", ui.LeftOutNames())
+		}
+	},
+	"damaged_mend_axis": func(t *testing.T, ui, _ *sketch.Sketch) {
+		if g := ui.Group(core.HGroup{V: 3}); ui.LeftOut != nil || g == nil || g.Predef.EntityB.V != 0x50000 {
+			t.Errorf("the lathe not brought back; left out %q", ui.LeftOutNames())
+		}
+	},
+	"damaged_mend_circle": func(t *testing.T, ui, _ *sketch.Sketch) {
+		if c := ui.Constraint(core.HConstraint{V: 1}); ui.LeftOut != nil || c == nil || c.EntityA.V != 0x40000 {
+			t.Errorf("the diameter not brought back; left out %q", ui.LeftOutNames())
 		}
 	},
 	"mirror_plane": func(t *testing.T, ui, _ *sketch.Sketch) {

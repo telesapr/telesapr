@@ -8,7 +8,5 @@ move 300 400
 down L 300 400
 up L 300 400
 menu Features|Loft To Selected Profile
-move 320 375
-down L 320 375
-up L 320 375
+click-face face 1 of g006-loft
 menu Features|Shell Solid

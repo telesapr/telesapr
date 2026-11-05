@@ -26,6 +26,15 @@ type Hooks interface {
 	Cancel() bool
 }
 
+// KernelPacer is Hooks whose owner has the thread that regenerates and
+// nothing else, as a browser page has: KernelPace is what the long loops
+// of a group's Boolean call now and then, on the goroutine regenerating,
+// to let the owner draw (srf.SShell.PaceBy), or nil for nothing, as on a
+// platform with threads of its own, where the loops run at once.
+type KernelPacer interface {
+	KernelPace() func()
+}
+
 // NoHooks is the Hooks of a sketch that nobody watches.
 type NoHooks struct{}
 
@@ -53,6 +62,15 @@ func (sk *Sketch) hooks() Hooks {
 		return NoHooks{}
 	}
 	return sk.Hooks
+}
+
+// kernelPace is what the sketch's Hooks give the Booleans to call
+// between their steps, nil for nothing.
+func (sk *Sketch) kernelPace() func() {
+	if p, ok := sk.hooks().(KernelPacer); ok {
+		return p.KernelPace()
+	}
+	return nil
 }
 
 // Tell shows the user a message, through the sketch's Hooks.

@@ -20,18 +20,14 @@ twmove 501 125
 twdown L 501 125
 twup L 501 125
 edit 80
-move 290 265
-down L 290 265
-up L 290 265
+click-face top face of g003-extrude
 menu Features|Shell Solid
 answer ok
 twmove 195 145
 twdown L 195 145
 twup L 195 145
 view iso
-move 243.75 206.25
-down L 243.75 206.25
-up L 243.75 206.25
+click-face side face of g003-extrude from r006-line-segment
 twmove 195 145
 twdown L 195 145
 twup L 195 145

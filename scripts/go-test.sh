@@ -23,6 +23,7 @@ PACKAGES=${PACKAGES:-./...}
 # each, take about as long; a new test of a minute or more goes here.
 HEAVY=${HEAVY:-TestFixtures TestClosedLoftSweep TestSmoothLoftSweep TestBSplineSweep TestPathSweepSweep \
 TestFilletOnOtherSolids TestChamferOnOtherSolids TestFilletOnOtherSolidsVolumes TestFilletRimMitre TestFilletRimMitreFine \
+TestFilletRibAllOverOracleCDT \
 TestCachesSameAsWithout \
 TestParallelSameAsSerial TestThreadSolids TestThreadGoldens TestThreadSweep TestEditThreadShape TestThreadChamfer \
 TestFreedomVsShowDof TestMoveGroupSweep TestSuppressAllSweep}

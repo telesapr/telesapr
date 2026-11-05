@@ -44,33 +44,11 @@ func (sk *Sketch) closedChainAt(chain []pathPiece, n, onPlane, near geom.Vector)
 	side := func(p geom.Vector) float64 { return p.Minus(onPlane).Dot(n) }
 	for k, p := range chain {
 		for ci := range p.curves {
-			c := &p.curves[ci]
-			const steps = 64
-			prev := side(c.PointAt(0))
-			for j := 1; j <= steps; j++ {
-				lo, hi := float64(j-1)/steps, float64(j)/steps
-				next := side(c.PointAt(hi))
-				if prev*next > 0 || prev == 0 && j > 1 {
-					prev = next
-					continue
-				}
-				// Halve the step down to where the curve meets the plane.
-				flo := prev
-				for range 60 {
-					m := (lo + hi) / 2
-					if fm := side(c.PointAt(m)); fm*flo > 0 {
-						lo, flo = m, fm
-					} else {
-						hi = m
-					}
-				}
-				t := (lo + hi) / 2
-				x := c.PointAt(t)
+			planeCrossings(&p.curves[ci], side, func(t float64, x geom.Vector) {
 				if best == nil || x.Minus(near).Magnitude() < best.at.Minus(near).Magnitude() {
 					best = &crossing{piece: k, curve: ci, t: t, at: x}
 				}
-				prev = next
-			}
+			})
 		}
 	}
 	if best == nil {
@@ -100,6 +78,35 @@ func (sk *Sketch) closedChainAt(chain []pathPiece, n, onPlane, near geom.Vector)
 			"draw it across the path where it is smooth", x.X, x.Y, x.Z)
 	}
 	return out, nil
+}
+
+// planeCrossings calls f with each parameter t at which c crosses the
+// plane side measures the signed distance from, and the point there:
+// found on 64 steps along c, each crossing halved down to the plane.
+func planeCrossings(c *srf.SBezier, side func(geom.Vector) float64, f func(t float64, x geom.Vector)) {
+	const steps = 64
+	prev := side(c.PointAt(0))
+	for j := 1; j <= steps; j++ {
+		lo, hi := float64(j-1)/steps, float64(j)/steps
+		next := side(c.PointAt(hi))
+		if prev*next > 0 || prev == 0 && j > 1 {
+			prev = next
+			continue
+		}
+		// Halve the step down to where the curve meets the plane.
+		flo := prev
+		for range 60 {
+			m := (lo + hi) / 2
+			if fm := side(c.PointAt(m)); fm*flo > 0 {
+				lo, flo = m, fm
+			} else {
+				hi = m
+			}
+		}
+		t := (lo + hi) / 2
+		f(t, c.PointAt(t))
+		prev = next
+	}
 }
 
 // roundClosedCorners is roundCorners round a closed chain, the joint

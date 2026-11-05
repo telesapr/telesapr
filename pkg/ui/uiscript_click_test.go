@@ -16,7 +16,7 @@ import (
 // and up at the found point would, so a golden made with coordinates
 // stays the same when the point found is the one the coordinates hit.
 //
-//	click-entity NAME [shift] [ctrl]   the entity, by handle (hex) or name
+//	click-entity NAME [shift] [ctrl] [right]   the entity, by handle (hex) or name
 //	move-entity NAME                   the pointer over it, no click
 //	click-tw [#N] TEXT                 the text window's link showing TEXT
 
@@ -26,23 +26,18 @@ func (r *uiScriptRunner) clickStep(t []string, rest string) bool {
 	case "click-entity", "move-entity":
 		// The name is the rest of the line, as a name may hold spaces,
 		// less the modifiers at its end.
-		words := t[1:]
-		var mods []string
-		for len(words) > 0 && (words[len(words)-1] == "shift" || words[len(words)-1] == "ctrl") {
-			mods = append([]string{words[len(words)-1]}, mods...)
-			words = words[:len(words)-1]
-		}
-		if len(words) == 0 {
+		name, mods, button := nameAndMods(t[1:])
+		if name == "" {
 			r.t.Fatalf("%s: no entity named", t[0])
 		}
-		xs, ys, ok := r.entityPickPoint(strings.Join(words, " "))
+		xs, ys, ok := r.entityPickPoint(name)
 		if !ok {
 			return true
 		}
 		r.replay(false, append([]string{"move", xs, ys}, mods...))
 		if t[0] == "click-entity" {
-			r.replay(false, append([]string{"down", "L", xs, ys}, mods...))
-			r.replay(false, append([]string{"up", "L", xs, ys}, mods...))
+			r.replay(false, append([]string{"down", button, xs, ys}, mods...))
+			r.replay(false, append([]string{"up", button, xs, ys}, mods...))
 		}
 	case "click-tw":
 		nth, text := 1, strings.TrimSpace(rest)
@@ -62,7 +57,7 @@ func (r *uiScriptRunner) clickStep(t []string, rest string) bool {
 		r.replay(true, []string{"twdown", "L", xs, ys})
 		r.replay(true, []string{"twup", "L", xs, ys})
 	default:
-		return false
+		return r.solidClickStep(t)
 	}
 	return true
 }

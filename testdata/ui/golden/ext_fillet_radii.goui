@@ -129,4 +129,4 @@ row 55    (none)
  0-99 64 61 0
 row 57 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 68\nVolume: 18.66 cm³\nCenter of mass: (-1.96, 7.00, 9.97)\nExtent: 36.00 x 26.00 x 20.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 8\nTriangles: 152\nVolume: 18.66 cm³\nCenter of mass: (-1.96, 7.00, 9.97)\nExtent: 36.00 x 26.00 x 20.00

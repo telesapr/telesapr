@@ -11,6 +11,8 @@ file, extruded, and its section written to SVG; [`gltf`](../../examples/scripts/
 
 File > Export has one entry for each kind of file:
 
+![The File > Export menu](images/export-import-2-export-menu.png)
+
 | Entry | Formats | Script |
 |---|---|---|
 | Image | `.png` | `File.Render(path, w, h, view)` |
@@ -36,7 +38,12 @@ that say how closely, and offers them as presets:
 | standard (default) | 0.1 mm | none | 64 |
 | fine | 0.02 mm | 10° | 256 |
 
-The chord tolerance is how far a facet may stray from the true surface. The angular tolerance
+The chord tolerance is how far a facet may stray from the true surface. A curved face is meshed
+by placing points over it where it bends and joining them into triangles (a constrained
+Delaunay mesh), so that its facets keep within the chord tolerance; flat faces are triangles
+between their edges' points. The segments per curve limit how finely the face is cut too: with
+few segments and a fine chord tolerance, a strongly curved face strays by what its fewest
+segments allow. The angular tolerance
 bounds the turn between neighbouring facets, so small radii are followed as closely as large
 ones. **Strict** refuses to write a mesh that has naked edges or self-intersections. Without it,
 such a mesh is written with a warning. Facets of no area are left out.

@@ -5,7 +5,8 @@ Refreshed 2026-11-03 at `c4e18d1a`; items 7 and 15 brought up to `a68c4c8b`.
 Nineteen generic improvements, built from 2026-10-22 as work packages branched from `devel`
 (A1 to D5), then their leftovers (branches `lo-*`, `lo2-*` and, on 2026-11-02, `mu-*`). All are
 built but item 10. Code comments and `doc/dev-notes/done-audit.md` cite them by number; this table
-is the key. What is still open is in ROADMAP, "Modelling upgrade leftovers". How each is used is in
+is the key. Their leftovers were ROADMAP's "Modelling upgrade leftovers", closed on 2026-11-04 with
+the last of D5. How each is used is in
 `doc/guide`.
 
 The plan, with what existed before each item, is at
@@ -29,7 +30,7 @@ The plan, with what existed before each item, is at
 | 12 | Expressions on more group values | A1 | Extrude depth, revolve and helix angle |
 | 13 | Density per group | A3 | `pkg/sketch/mass.go` |
 | 14 | Minimum wall and clearance analysis | D1 | `pkg/sketch/clearance.go`, `wall.go`, `wall_near.go`, `mesh_parts.go`; done 2026-11-04 |
-| 15 | Model to script export | D5 | `Doc.Script`; damaged files open in part through `pkg/sketch/mend.go`, what they leave out kept for a save and mended in the model (`leftout.go`, `leftout_mend.go`, 2026-11-04); open in ROADMAP |
+| 15 | Model to script export | D5 | `Doc.Script`; damaged files open in part through `pkg/sketch/mend.go`, what they leave out kept for a save and mended in the model (`leftout.go`, `leftout_mend.go`, 2026-11-04): an entity the file lacks by one of the kind its use needs (`leftout_kind.go`, a group's axis, direction or plane by `predefRoles`), a group by one of the model's (`leftout_mend_group.go`) |
 | 16 | More MCP tools and a filesystem allowlist | A2, D3 | `pkg/mcpserver`; `doc/guide/ai.md` |
 | 17 | Incremental regeneration | D4 | `pkg/sketch/solid_cache.go`. Parallel commits (recommendation 11 of `performance.md`) were measured on 2026-11-02 and declined: under 1% of the time |
 | 18 | glTF export | A2 | Binary `.glb`, lengths in metres |

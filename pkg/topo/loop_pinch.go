@@ -1,6 +1,8 @@
 package topo
 
 import (
+	"slices"
+
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
 )
@@ -31,6 +33,74 @@ func (t *Topology) splitPinchedLoops(s *srf.SSurface, loops [][]int) [][]int {
 		out[i], out[j] = out[j], out[i]
 	}
 	return out
+}
+
+// splitTouchingHoles takes apart each outer loop of a surface and a hole
+// of it that touch at two or more vertices. Chained by the sharpest left
+// turn, a plate's top whose fillet's foot just reaches both its sides
+// comes out as the plate's outline with the foot's circle as a hole,
+// touching at the two points where the foot meets the sides; the top is
+// two faces there, one either side of the circle, touching at those
+// points. The two loops' co-edges are chained again turning most
+// sharply right, which goes round each piece alone, and that is kept
+// where every loop it makes runs as an outer one does. A hole touching
+// its outer loop at one vertex is one face with a hole, and is left so.
+func (t *Topology) splitTouchingHoles(s *srf.SSurface, loops [][]int) [][]int {
+	if len(loops) < 2 {
+		return loops
+	}
+	for i, li := range loops {
+		if !outerUV(t.loopUV(s, li)) {
+			continue
+		}
+		at := map[int]bool{}
+		for _, ce := range li {
+			at[t.Start(ce)] = true
+		}
+		for j, lj := range loops {
+			if j == i || t.sharedVertices(lj, at) < 2 || outerUV(t.loopUV(s, lj)) {
+				continue
+			}
+			pieces, err := t.chainTurning(slices.Concat(li, lj), true)
+			if err != nil || len(pieces) < 2 || !t.allOuter(s, pieces) {
+				continue
+			}
+			var out [][]int
+			for k, l := range loops {
+				switch k {
+				case i:
+					out = append(out, pieces...)
+				case j:
+				default:
+					out = append(out, l)
+				}
+			}
+			return t.splitTouchingHoles(s, out)
+		}
+	}
+	return loops
+}
+
+// sharedVertices counts the co-edges of loop l that start at a vertex
+// of at.
+func (t *Topology) sharedVertices(l []int, at map[int]bool) int {
+	n := 0
+	for _, ce := range l {
+		if at[t.Start(ce)] {
+			n++
+		}
+	}
+	return n
+}
+
+// allOuter reports whether every loop runs as an outer loop does.
+func (t *Topology) allOuter(s *srf.SSurface, loops [][]int) bool {
+	for _, l := range loops {
+		if !outerUV(t.loopUV(s, l)) {
+			return false
+		}
+	}
+	return true
 }
 
 // pinch finds a vertex the loop passes twice and, if the loop is an

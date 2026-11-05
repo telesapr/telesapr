@@ -7,6 +7,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 )
 
 // roundFaceIn is the cylinder or cone among sh's surfaces.
@@ -266,8 +267,10 @@ func TestWrapRectangleOnCone(t *testing.T) {
 	if v := shellVolume(band); math.Abs(v-want) > 1e-2*want {
 		t.Fatalf("band: volume %g, want %g", v, want)
 	}
-	if testing.Short() {
-		t.Skip("the union with the cone, meshed finely, takes 15 s")
+	if testing.Short() || fixtures.RaceDetector {
+		// Under the race detector the cylinder's union in
+		// TestWrapRoundMostOfTheWay runs the same Boolean.
+		t.Skip("the union with the cone, meshed finely, takes 15 s, many minutes under the race detector")
 	}
 	out := SShell{Tol: tol}
 	out.MakeFromUnionOf(body, band)
@@ -304,6 +307,11 @@ func TestWrapRoundMostOfTheWay(t *testing.T) {
 		t.Fatal("the union is not sound")
 	}
 	checkAdded(t, "embossed", body, &out, cylinderBand(160, 5, 0, 1), 1e-3)
+	if fixtures.RaceDetector {
+		// The cone's band, meshed finely, takes ten minutes there; the
+		// cylinder's ran the same wrap and Boolean.
+		return
+	}
 
 	cone := lathedCone(8, 16, tol)
 	cface := roundFaceIn(t, cone)

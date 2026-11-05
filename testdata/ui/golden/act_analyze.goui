@@ -1,5 +1,5 @@
 dialog 0 The volume of the solid model is:|0.97 mm³\nThe volume of current group mesh is:\n\n    0.03 mm³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
-dialog 0 The mesh is not self-intersecting (okay, valid).|The mesh is watertight (okay, valid).\n\nZero problematic edges, good.\n\nThe model contains 80 triangles, from 7 surfaces.
+dialog 0 The mesh is not self-intersecting (okay, valid).|The mesh is watertight (okay, valid).\n\nZero problematic edges, good.\n\nThe model contains 112 triangles, from 7 surfaces.
 dialog 0 The assembly does not interfere, good.|
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
@@ -71,8 +71,8 @@ group 2 0 0 1 1
 group 3 0 0 1 1
 group 4 0 0 1 1
 group 5 0 0 1 1
-dialog 0 The volume of the solid model is:|59377.087 mil³\nThe volume of current group mesh is:\n\n    1646.657 mil³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
-dialog 0 The volume of the solid model is:|34.362 ft³\nThe volume of current group mesh is:\n\n    1646.657 mil³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
+dialog 0 The volume of the solid model is:|59379.619 mil³\nThe volume of current group mesh is:\n\n    1644.125 mil³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
+dialog 0 The volume of the solid model is:|34.363 ft³\nThe volume of current group mesh is:\n\n    1644.125 mil³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
 dialog 0 The volume of the solid model is:|0.97 mm³\nThe volume of current group mesh is:\n\n    0.03 mm³\n\nCurved surfaces have been approximated as triangles.\nThis introduces error, typically of around 1%.
 row 0  home › preferences   drawing / constraining in 3d
  0-0 64 64 0
@@ -139,7 +139,7 @@ row 25
 row 27  chord tolerance (in percents)
  0-29 74 64 0
  30-99 64 64 0
-row 29    0.10 % [change]; 0.00 mm, 80 triangles
+row 29    0.10 % [change]; 0.00 mm, 112 triangles
  0-9 64 61 0
  10-17 6c 61 108 0 1 0
  18-99 64 61 0
@@ -454,7 +454,7 @@ row 25
 row 27  chord tolerance (in percents)
  0-29 74 64 0
  30-99 64 64 0
-row 29    0.10 % [change]; 0.00 mm, 80 triangles
+row 29    0.10 % [change]; 0.00 mm, 112 triangles
  0-9 64 61 0
  10-17 6c 61 108 0 1 0
  18-99 64 61 0

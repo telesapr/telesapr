@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "TeleSAPR AI relay",
+  "version": "0.1.0",
+  "description": "Lets telesapr-cli mcp, and so an AI model's program, reach the drawing open in TeleSAPR's browser version.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiKInBzk99NFW8o3BeD0ysGOiB0JHc82fxoaKctOrUWeGQjXvpHE2UsBy/124Ftq8I0KlzZ76UGLnROyldrYPQW21GD7DlBGHHTT1e4dsirctzrCLTPtekPo/dfxZrc2mOJxj/d7W5oXeB6v1NlxvLXbbhx2sJr9qf9jWAaTAREQ7zS8WnIL5iQ/qHPGeVE7WlSBCSFD6PhKU4jURqjjJB31Y+K3aorhcuOICc4H6L7kLLwPpAQ37w38uDnXf/gnXzeruHvJZ0MEcigjzM7MeIJMOBCoujqXGGB8tw3JLtD2juXY1FzDJa3sWZeVZJlO3jXca/eZeCntPxgxAMcNTUQIDAQAB",
+  "permissions": ["nativeMessaging"],
+  "background": {
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://telesapr.sourceforge.io/app/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": { "id": "relay@telesapr.org", "strict_min_version": "128.0" }
+  }
+}

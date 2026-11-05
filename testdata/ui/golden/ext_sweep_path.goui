@@ -335,7 +335,7 @@ row 67    (none)
  0-99 64 61 0
 row 69 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 3, of 14 patches\nTriangles: 1156\nVolume: 6.9 cm³\nCenter of mass: (3.57, 0.00001, 29.32)\nExtent: 26.00 x 12.00 x 56.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 3, of 14 patches\nTriangles: 1798\nVolume: 6.91 cm³\nCenter of mass: (3.58, -0.00, 29.34)\nExtent: 26.00 x 12.00 x 56.00
 dialog 3 Select the path to sweep along, line segments, arcs and cubics or edges of the solid before the sweep, then click [take the selection].|
 row 0  home › g005-sweep   in plane: g004-profile
  0-0 64 64 0
@@ -508,7 +508,7 @@ row 69    (none)
  0-99 64 61 0
 row 71 
  0-99 64 64 0
-dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 3, of 18 patches\nTriangles: 1220\nVolume: 10.27 cm³\nCenter of mass: (13.89, 0.00001, 36.11)\nExtent: 56.00 x 12.00 x 56.00
+dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 3, of 18 patches\nTriangles: 1988\nVolume: 10.28 cm³\nCenter of mass: (13.88, -0.00, 36.12)\nExtent: 56.00 x 12.00 x 56.00
 pending 0 0 "" 0 0 0 0
 hover 0 0 0
 selection 0

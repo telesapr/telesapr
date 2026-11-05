@@ -60,8 +60,18 @@ software there with the same results.
   clicks and keys meanwhile; the event queue's `after` hook takes it away once the function
   that started the work returns. Every regeneration on the loop goes through it: an edit, Open,
   a script's. Measured (headless Chrome, CDP, machine loaded): opening `bolt_m8x30` took 15 s
-  and drew 6 frames with the box counting, where before it drew none. One group is not split:
-  the thread's Boolean holds the page for its length.
+  and drew 6 frames with the box counting, where before it drew none.
+- Inside a group too (2026-11-04): a Boolean made into a shell given a pace
+  (`srf.SShell.PaceBy`) calls it between the pairs of surfaces it intersects, the curves and
+  surfaces it splits and trims, a surface's intersection curves and chains, and its stages. The
+  sketch gives the group's Boolean the pace its hooks have (`sketch.KernelPacer`); the
+  application's is the platform's `Yield` where the platform is a `platform.Yielder`, and nil
+  elsewhere, where the loops run at once as before. Paced, the loops run in order on the
+  regenerating goroutine, which gives what they give at once (js/wasm has one thread anyway).
+  The pace is given, not global: a shell job on another goroutine has none. Measured with
+  `bolt_m8x30` regenerated under node (`go_js_wasm_exec`, machine loaded): the longest stretch
+  without a yield was 8 to 50 s, the thread's union, and is 0.16 to 0.46 s, in 7362 paces;
+  the whole took as long (8.5 to 14 s, noisy). Natively unpaced, nothing changed.
 - The keys a browser keeps (Ctrl+N, Ctrl+T, Ctrl+W, with Shift too) are taken as Ctrl+Alt and the
   key (`browserCtrlKey`, `keys.go`); full screen, `navigator.keyboard.lock` gives the page the
   Ctrl keys themselves where the browser has it (Chromium). Alt alone still opens the menus by
@@ -103,6 +113,10 @@ code pages 0.2 MB.
 | Package `net` left out (below) | 42.26 MB | 11.51 MB | |
 | Before, after `wasm-opt -Oz` (what `make wasm` ships) | 40.21 MB | 11.71 MB | 10.44 MB |
 | After, after `wasm-opt -Oz` | 38.99 MB | 11.45 MB | 10.23 MB |
+| Before the cache's format (ab4c11a4, 2026-11-04), `go build -ldflags=-s` | 42.72 MB | 11.62 MB | |
+| The STEP cache without `encoding/gob`, `go build -ldflags=-s` | 42.18 MB | 11.53 MB | |
+| Before the cache's format, after `wasm-opt -Oz` | 39.42 MB | 11.57 MB | 10.33 MB |
+| The STEP cache without `encoding/gob`, after `wasm-opt -Oz` | 38.96 MB | 11.47 MB | 10.22 MB |
 
 Brotli at its highest quality takes the first row to 8.92 MB; a host that compresses on the way
 uses a faster level, which is nearer the column's.
@@ -115,11 +129,19 @@ uses a faster level, which is nearer the column's.
   being in already. `-ldflags=-w` changes nothing (no DWARF in wasm). `GOEXPERIMENT=nojsonv2`
   (encoding/json's old, smaller implementation; v2's packages are 0.8 MB of code) doesn't build:
   the scripts' symbol tables name v2's options.
-- Left, each with a cost: `encoding/gob` (0.3 MB of code) is the STEP tessellation cache's format,
-  which the browser keeps in IndexedDB; a format of its own would drop it. `docs.json` embedded
-  gzipped would save 0.65 MB raw but nothing over the wire, and the generator would write a second
-  file. yaegi with `go/build`, `go/doc`, `math/big` and `regexp` behind it, and the symbol tables,
-  are the scripting console, which the browser has.
+- `encoding/gob` came in only for the STEP tessellation cache, which the browser keeps in
+  IndexedDB. The cache is now written in a format of its own (`pkg/persist/link/stepdisk_format.go`,
+  version 2 of `stepDiskVersion`, files `.mesh`): a cache, not a user's file, so one of another
+  version is simply made again. 0.46 MB after `wasm-opt`, 93 kB gzipped, 110 kB brotli.
+- Tried, left: `docs.json` embedded gzipped (measured 2026-11-04) takes 0.63 MB off the raw module
+  but 2 kB off it gzipped and 6 kB brotli, since the wire's compression already takes the JSON to
+  the same 172 kB; not worth the generator's second file.
+- What else is large is the browser's own features, by function bodies summed per package in an
+  unstripped build (2026-11-04): yaegi's interpreter 2.0 MB with `go/parser`, `go/build`, `go/doc`
+  and `math/big` (0.4) behind it, and the symbol tables (0.8), are the scripting console;
+  `encoding/json/v2` with `jsontext` 0.75 is the files' and the agent's JSON; `compress/flate`,
+  `archive/zip` and `image/png` (0.4 together) are the fonts, packed models and pictures. No other
+  package a browser can't use is left in (`os/exec` 55 kB comes with `go/build`).
 
 ## The spike probe
 
@@ -139,14 +161,27 @@ headless platform, timed under node) was removed on 2026-11-03; it is in `git sh
 
 ## Open
 
-- One slow group (a thread's Boolean) holds the page for its length: the yields are between groups.
+- Only a group's Boolean is paced: a group's own long work (a sweep, a fillet's rolling ball, the
+  mesh for display) and the Booleans inside features (`pkg/topo`'s shells, a sweep's stretches)
+  still hold the page for their length; each would take a pace the same way.
 - The agent's connection comes through postMessage (`pkg/script/agent/socket_js.go`,
-  `msgconn.go`, `web/agent-client.js`), carrying the agent's own protocol, not MCP. Nothing yet
-  carries MCP to it from a client outside the browser: the MCP server in the page would bring
-  `net/http` back with the go-sdk (the 1.2 MB of Size), so a relay outside the page (an extension
-  with native messaging to `telesapr-cli mcp`) is the likelier way. A site other than the page's
-  is asked about in a dialog, which a headless browser can't answer, so only the page's own site
-  was tried end to end.
+  `msgconn.go`, `web/agent-client.js`), carrying the agent's own protocol, not MCP. An MCP client
+  outside the browser reaches it through the extension in `cmd/telesapr-web/extension` and
+  `telesapr-cli browser-relay` (`pkg/script/agent/relay.go`, `native.go`), which the extension
+  starts by native messaging and which listens on a socket as the window does, so
+  `telesapr-cli mcp` is unchanged; the MCP server stays out of the page, which would bring
+  `net/http` back. Native messages are a megabyte at most from the relay, so a longer line (a
+  picture) goes in parts. `TestRelay` tries the relay with a stand-in extension serving a
+  `MessageConn` as the page does; the extension's JavaScript has no test of its own. Tried by hand
+  2026-11-04 in headless Chrome 156: `run_script`, `render` and an answer of 660 kB (in parts)
+  came through from `telesapr-cli mcp`, and with AI connections off the client was told to turn
+  them on. Chrome ignores `--load-extension` now; `Extensions.loadUnpacked` over
+  `--remote-debugging-pipe` with `--enable-unsafe-extension-debugging` loads it, and a
+  `NativeMessagingHosts` folder in the `--user-data-dir` holds the relay's manifest. Firefox was
+  not tried. Left: the
+  extension is loaded unpacked from the sources, in no store, and nothing ships it with a
+  release. A site other than the page's is asked about in a dialog, which a headless browser
+  can't answer, so only the page's own site was tried end to end.
 - `testdata/ui/scripts` are not run against this platform (they use the headless platform's
   recorded dialogs). CI neither builds nor tests the js/wasm target, so a
   change can break it unseen; `make wasm` is the check.

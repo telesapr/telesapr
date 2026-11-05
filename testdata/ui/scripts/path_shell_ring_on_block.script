@@ -6,7 +6,5 @@
 file $testdata/ui/ring_on_block.tlspr
 menu File|Open...
 view default
-move 360 250
-down L 360 250
-up L 360 250
+click-face top face of g004-extrude
 menu Features|Shell Solid

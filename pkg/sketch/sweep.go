@@ -14,8 +14,10 @@ import (
 
 // A sweep moves the loops of its profile group along a path, a chain
 // of line segments, arcs and cubics that meet tangent, keeping the
-// profile's attitude to the path. It starts at the end of the chain
-// nearest the profile's plane, with the profile where it is drawn. Its
+// profile's attitude to the path. An open path is swept from the end
+// the profile is drawn across, with the profile where it is drawn; one
+// drawn partway along it is carried back to the end nearest its plane
+// first, so the whole path is swept through it (sweep_partway.go). Its
 // entities are copies of the profile at both ends, numeric like a
 // lathe's, and the faces of the two caps.
 //
@@ -219,24 +221,49 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 			return nil, err
 		}
 	}
+	// Open, the path is taken from the end the profile is drawn across;
+	// drawn partway along it, the profile is carried back to the start
+	// (sweep_partway.go).
+	g.sweepFrom = nil
+	partway := false
+	reachAt := chain[0].start
+	if !closed {
+		chain, partway = startAtProfile(chain, sbls)
+		reachAt = chain[0].start
+		if partway {
+			_, _, _, reachAt, _ = profileOnPath(chain, sbls)
+		}
+	}
+	reach := profileReach(sbls, reachAt)
 	cornerAt := func(k int) bool {
 		return k > 0 && chain[k-1].tangentAt(true).Dot(chain[k].tangentAt(false)) < sweepTangentCos
 	}
-	if math.Abs(chain[0].tangentAt(false).Dot(normal)) < 1e-3 {
+	if !partway && math.Abs(chain[0].tangentAt(false).Dot(normal)) < 1e-3 {
 		return nil, pathErr(&chain[0].start, "the path runs along the profile's plane: it must leave it")
 	}
 	g.sweepRuns = nil
 	if at := cubicCorners(chain); len(at) > 0 {
 		g.fittedPath = nil
-		sr, err := sk.fitRuns(g, chain, at, closed, profileReach(sbls, chain[0].start))
+		sr, err := sk.fitRuns(g, chain, at, closed, reach)
 		if err != nil {
 			return nil, err
 		}
 		g.sweepRuns = sr
+		if partway {
+			from := runsTo(sr, sbls)
+			g.sweepFrom = &from
+		}
 		return nil, nil
 	}
 	if g.sweepFitted(chain) {
-		return nil, sk.fitCornered(g, chain, closed, profileReach(sbls, chain[0].start))
+		if err := sk.fitCornered(g, chain, closed, reach); err != nil {
+			return nil, err
+		}
+		if partway {
+			from := fittedTo(g.fittedPath, sbls)
+			g.sweepFrom = &from
+		}
+		return nil, nil
 	}
 	g.fittedPath = nil
 	if g.ValB > 0 {
@@ -244,6 +271,14 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 			return nil, err
 		}
 
+	}
+	if partway {
+		from, err := rigidTo(chain, sbls)
+		if err != nil {
+			return nil, err
+		}
+		g.sweepFrom = &from
+		sbls = g.sweepProfile(src)
 	}
 	besideArc := false
 	for k := range chain {
@@ -343,8 +378,8 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 		for si := range sbls.Sets {
 			if err := srf.CheckSweepCorners(&sbls.Sets[si], steps, closed); err != nil {
 				// A corner whose pieces' sides don't meet is filled by
-				// Booleans on an open path (sweepCornersFilled).
-				if !closed && errors.Is(err, srf.ErrCornerNoJoint) {
+				// Booleans (sweepCornersFilled).
+				if errors.Is(err, srf.ErrCornerNoJoint) {
 					continue
 				}
 				return nil, cornerJointError(err)
@@ -590,7 +625,10 @@ func (sk *Sketch) pathChainAny(edges []core.HEntity, extra []pathPiece, what str
 // generateSweep copies the profile's entities to both ends of the
 // path, and makes the faces of the two caps.
 func (g *Group) generateSweep(sk *Sketch, entity *[]core.Entity) {
-	end := srf.RigidIdentity
+	// begin takes the profile to the path's start, where it is drawn
+	// unless it is drawn partway along it (sweep_partway.go); end on to
+	// the path's end.
+	begin, end := srf.RigidIdentity, srf.RigidIdentity
 	if steps, err := g.sweepPath(sk); err == nil {
 		end = srf.SweepEnd(steps)
 		if g.fittedPath != nil {
@@ -598,6 +636,10 @@ func (g *Group) generateSweep(sk *Sketch, entity *[]core.Entity) {
 		}
 		if g.sweepRuns != nil {
 			end = g.sweepRuns.end()
+		}
+		if g.sweepFrom != nil {
+			begin = g.sweepStartMotion()
+			end = begin.Then(end)
 		}
 	}
 	var pt core.HEntity
@@ -611,23 +653,21 @@ func (g *Group) generateSweep(sk *Sketch, entity *[]core.Entity) {
 		}
 		e.CalculateNumerical(sk, false)
 		he := e.H
+		n := len(*entity)
 		g.copyEntityScaled(entity, sk.MustEntity(he), 0, RemapBottom,
 			core.NoParam, core.NoParam, core.NoParam,
 			core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
 			CopyAsNumeric, 1)
-		n := len(*entity)
+		if len(*entity) > n && g.sweepFrom != nil {
+			moveCopy(&(*entity)[n], begin)
+		}
+		n = len(*entity)
 		g.copyEntityScaled(entity, sk.MustEntity(he), 0, RemapTop,
 			core.NoParam, core.NoParam, core.NoParam,
 			core.NoParam, core.NoParam, core.NoParam, core.NoParam, core.NoParam,
 			CopyAsNumeric, 1)
 		if len(*entity) > n {
-			c := &(*entity)[n]
-			switch {
-			case c.IsPoint():
-				c.NumPoint = end.Apply(c.NumPoint)
-			case c.IsNormal():
-				c.NumNormal = end.Q.Times(c.NumNormal)
-			}
+			moveCopy(&(*entity)[n], end)
 		}
 	}
 	if pt.V == 0 || g.sweepClosed {
@@ -635,6 +675,9 @@ func (g *Group) generateSweep(sk *Sketch, entity *[]core.Entity) {
 		return
 	}
 	n := g.sourceLoopNormal(sk)
+	if g.sweepFrom != nil {
+		n = begin.Q.Rotate(n)
+	}
 	face := core.Entity{
 		Type:      core.EntityFaceNormalPt,
 		Group:     g.H,
@@ -643,11 +686,21 @@ func (g *Group) generateSweep(sk *Sketch, entity *[]core.Entity) {
 	face.H = g.RemapEntity(core.NoEntity, RemapBottom)
 	*entity = append(*entity, face)
 
-	ne := end.Q.Rotate(n)
+	ne := end.Q.Rotate(g.sourceLoopNormal(sk))
 	face.NumNormal = geom.Quaternion{X: ne.X, Y: ne.Y, Z: ne.Z}
 	face.Point[0] = g.RemapEntity(pt, RemapTop)
 	face.H = g.RemapEntity(core.NoEntity, RemapTop)
 	*entity = append(*entity, face)
+}
+
+// moveCopy moves a numeric copy of a profile's point or normal by r.
+func moveCopy(c *core.Entity, r srf.Rigid) {
+	switch {
+	case c.IsPoint():
+		c.NumPoint = r.Apply(c.NumPoint)
+	case c.IsNormal():
+		c.NumNormal = r.Q.Times(c.NumNormal)
+	}
 }
 
 // generateSweepShell sweeps each of the profile's loop sets along the
@@ -667,6 +720,7 @@ func (g *Group) generateSweepShell(sk *Sketch) {
 		}
 		return
 	}
+	prof := g.sweepProfile(src)
 	start := srf.FaceID(g.RemapEntity(core.NoEntity, RemapBottom).V)
 	end := srf.FaceID(g.RemapEntity(core.NoEntity, RemapTop).V)
 	if g.sweepRuns != nil {
@@ -675,27 +729,30 @@ func (g *Group) generateSweepShell(sk *Sketch) {
 	}
 	if g.fittedPath != nil {
 		g.generateFittedSweepShell(sk, src, uint32(start), uint32(end))
-		g.refuseCrossing(sk, func() bool { return curvesComeBack(&src.BezierLoops, g.fittedPath.Pieces()) }, nil)
+		g.refuseCrossing(sk, func() bool { return curvesComeBack(prof, g.fittedPath.Pieces()) },
+			func() *srf.SShell { return g.fittedInStretches(sk, src, uint32(start), uint32(end)) })
 		return
 	}
-	if !g.sweepClosed {
-		if unjoined := unjoinedCorners(&src.BezierLoops, steps); len(unjoined) > 0 {
-			g.generateFilledSweepShell(sk, src, steps, unjoined, start, end)
-			return
-		}
-	}
-	for i := range src.BezierLoops.Sets {
+	if unjoined := unjoinedCorners(prof, steps); len(unjoined) > 0 {
 		if g.sweepClosed {
-			g.ThisShell.MakeFromClosedSweepOf(&src.BezierLoops.Sets[i], steps, g.Color)
+			// Round a closed path the first run's start and the last's
+			// end meet flush where the profile is: no caps.
+			start, end = 0, 0
+		}
+		g.generateFilledSweepShell(sk, src, steps, unjoined, start, end)
+		return
+	}
+	for i := range prof.Sets {
+		if g.sweepClosed {
+			g.ThisShell.MakeFromClosedSweepOf(&prof.Sets[i], steps, g.Color)
 			continue
 		}
-		g.ThisShell.MakeFromSweepOf(&src.BezierLoops.Sets[i], steps, g.Color, start, end)
+		g.ThisShell.MakeFromSweepOf(&prof.Sets[i], steps, g.Color, start, end)
 	}
-	var remake func() *srf.SShell
-	if !g.sweepClosed {
-		remake = func() *srf.SShell { return sweepInStretches(&src.BezierLoops, steps, g.Color, start, end, sk.tol) }
+	remake := func() *srf.SShell {
+		return sweepInStretches(prof, steps, g.sweepClosed, g.Color, start, end, sk.tol)
 	}
-	g.refuseCrossing(sk, func() bool { return stepsComeBack(&src.BezierLoops, steps) }, remake)
+	g.refuseCrossing(sk, func() bool { return stepsComeBack(prof, steps) }, remake)
 }
 
 // ErrFittedSweep is SweepSteps' error for a sweep whose surface is
@@ -704,10 +761,10 @@ func (g *Group) generateSweepShell(sk *Sketch) {
 var ErrFittedSweep = errors.New("the sweep is fitted along its path, not moved rigidly")
 
 // SweepSteps are the rigid steps a sweep along lines and arcs moves its
-// profile by, in order from the profile where it is drawn: a line's
-// translation, an arc's turn, and at a mitred corner the turn between
-// two lines, where each is cut by the plane halving the corner (a
-// corner radius is an arc). ErrFittedSweep, wrapped, for a fitted
+// profile by, in order from the path's start, the profile there as
+// SweepProfile gives it: a line's translation, an arc's turn, and at a
+// mitred corner the turn between two lines, where each is cut by the
+// plane halving the corner (a corner radius is an arc). ErrFittedSweep, wrapped, for a fitted
 // sweep. The ray-cast oracle (pkg/check) rebuilds the solid from these.
 func (g *Group) SweepSteps(sk *Sketch) ([]srf.SweepStep, error) {
 	if g.Type != GroupSweep {
@@ -786,9 +843,10 @@ func sweepPathOf(chain []pathPiece, g *Group, reach float64) (*topo.SweepPath, e
 // the fitted path, the caps' identities start and end, the patches'
 // from the group's own.
 func (g *Group) generateFittedSweepShell(sk *Sketch, src *Group, start, end uint32) {
+	prof := g.sweepProfile(src)
 	next := srf.OriginFor(g.H.V, 0)
-	for i := range src.BezierLoops.Sets {
-		set := &src.BezierLoops.Sets[i]
+	for i := range prof.Sets {
+		set := &prof.Sets[i]
 		loops := [][]srf.SBezier{set.Outer.Curves}
 		for _, h := range set.Holes {
 			loops = append(loops, h.Curves)
@@ -806,6 +864,17 @@ func (g *Group) generateFittedSweepShell(sk *Sketch, src *Group, start, end uint
 			}
 		}
 		if err != nil {
+			// A sweep passing through itself can meet itself where its
+			// surfaces are joined, four faces along one edge, and fail to
+			// close: made in spans each clear of itself, it may.
+			if curvesComeBack(prof, g.fittedPath.Pieces()) {
+				if sh := g.fittedInStretches(sk, src, start, end); sh != nil {
+					g.ThisShell = *sh
+					return
+				}
+				g.setProblem(nil, "%v: move it apart, or make the profile smaller", ErrSweepCrossesItself)
+				return
+			}
 			g.setProblem(nil, "%v", err)
 			return
 		}

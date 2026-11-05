@@ -429,12 +429,6 @@ func TestThreadErrors(t *testing.T) {
 		{"too coarse a pitch", circle, func(o *sketch.ThreadOptions) { o.Spec.Pitch = 8 }},
 		{"a clearance that leaves nothing", circle, func(o *sketch.ThreadOptions) { o.Clearance = 4 }},
 		{"a clearance that isn't a number", circle, func(o *sketch.ThreadOptions) { o.Clearance = math.NaN() }},
-		// The part, 30 mm long, has a chord tolerance of 0.03 mm at 0.1%,
-		// coarser than a fifth of the root's 0.071 mm.
-		{"a rounded root at a coarse chord tolerance", circle, func(o *sketch.ThreadOptions) {
-			o.Spec = thread.Spec{Form: thread.FormButtressInch, Diameter: 7.9375, Pitch: 25.4 / 24}
-			o.RoundRoot = true
-		}},
 	} {
 		o := m8
 		c.edit(&o)
@@ -444,33 +438,6 @@ func TestThreadErrors(t *testing.T) {
 		if len(sk.Groups) != groups {
 			t.Fatalf("%s: groups were added", c.what)
 		}
-	}
-}
-
-// TestThreadRoundRootTolerance checks that a rounded root is refused at
-// a chord tolerance coarser than its arcs take, naming the tolerance
-// to set, and made at that one.
-func TestThreadRoundRootTolerance(t *testing.T) {
-	t.Parallel()
-	if testing.Short() {
-		t.Skip("a thread with rounded roots")
-	}
-	tc := threadCase{"", 12.7, 40, "1-12 BUTT", sketch.ThreadOptions{Length: 25, Clearance: 0.05, RoundRoot: true}}
-	_, _, _, err := tc.tryBuild(t, 0)
-	if !errors.Is(err, sketch.ErrRootRoundCoarse) {
-		t.Fatalf("at the default chord tolerance: %v", err)
-	}
-	msg := err.Error()
-	words := strings.Fields(msg)
-	if !strings.HasSuffix(msg, "% or less") || len(words) < 3 {
-		t.Fatalf("%q names no tolerance", msg)
-	}
-	pct, perr := strconv.ParseFloat(strings.TrimSuffix(words[len(words)-3], "%"), 64)
-	if perr != nil || !(pct > 0 && pct < 0.1) {
-		t.Fatalf("%q: tolerance %g, %v", msg, pct, perr)
-	}
-	if _, _, res, err := tc.tryBuild(t, pct); err != nil || !res.Sound {
-		t.Errorf("at %g%%: %v, sound %v", pct, err, res.Sound)
 	}
 }
 
@@ -630,11 +597,7 @@ func TestThreadSweep(t *testing.T) {
 	}
 	grid.Run(func(p sweep.Point) error {
 		_, _, res, err := byName[p.String("case")].tryBuild(t, p.Float("tol"))
-		switch {
-		case errors.Is(err, sketch.ErrRootRoundCoarse):
-			// Refused by name, as a rounded root is at coarse tolerances.
-			return nil
-		case err != nil:
+		if err != nil {
 			return err
 		}
 		if !res.Sound {

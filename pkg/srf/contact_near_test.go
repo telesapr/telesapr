@@ -168,7 +168,11 @@ func TestDisjointTurnedCylinder(t *testing.T) {
 			t.Errorf("turned %g°: failed %v, sound %v", turn, out.BooleanFailed, meshIsSound(&out))
 			continue
 		}
-		if got, want := shellVolume(&out), 200+shellVolume(b); math.Abs(got-want) > 1e-6*want {
+		// The cylinder is meshed again in the union, not point for point
+		// as on its own (the constrained Delaunay mesher's points inside a
+		// face fall by rounding): each within the chord tolerance of its
+		// curved side and ends, of area 2π·3·5 + 2·π·3².
+		if got, want := shellVolume(&out), 200+shellVolume(b); math.Abs(got-want) > tol.ChordTolMm()*(2*math.Pi*3*5+2*math.Pi*9) {
 			t.Errorf("turned %g°: volume %g, want %g", turn, got, want)
 		}
 	}

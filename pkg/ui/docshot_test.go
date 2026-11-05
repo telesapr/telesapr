@@ -29,6 +29,8 @@ type docShot struct {
 	x, y     float64
 	marks    []image.Rectangle
 	twCursor bool // the last mouse position is in the property browser
+
+	video docVideo // the video being recorded (docvideo_test.go)
 }
 
 // cursorMask is the pointer: 'o' outline, '.' fill.
@@ -80,6 +82,8 @@ func (r *uiScriptRunner) docStep(t []string) bool {
 			rc = rc.Add(image.Pt(r.gw().Frame.Bounds().Dx()+docGap, 0))
 		}
 		d.marks = append(d.marks, rc)
+	case "video", "caption", "pause":
+		r.videoCommand(t)
 	case "shot":
 		// shot name [gw|tw|both]: the picture name.png.
 		which := "both"
@@ -106,7 +110,9 @@ func (r *uiScriptRunner) noteMouse(t []string, inTW bool) {
 	default:
 		return
 	}
-	r.doc.x, r.doc.y = scriptFloat(xs), scriptFloat(ys)
+	x, y := scriptFloat(xs), scriptFloat(ys)
+	r.videoMouse(op, x, y, inTW)
+	r.doc.x, r.doc.y = x, y
 	r.doc.twCursor = inTW
 }
 
@@ -121,24 +127,7 @@ func (r *uiScriptRunner) writeShot(name, which string) {
 		return
 	}
 	r.settle()
-	gw, tw := r.gw().Frame, r.tw().Frame
-	var img *image.RGBA
-	gwOrigin, twOrigin := image.Point{}, image.Point{}
-	switch which {
-	case "gw":
-		img = cloneRGBA(gw)
-		twOrigin = image.Pt(-100000, 0)
-	case "tw":
-		img = cloneRGBA(tw)
-		gwOrigin = image.Pt(-100000, 0)
-	default:
-		gb, tb := gw.Bounds(), tw.Bounds()
-		twOrigin = image.Pt(gb.Dx()+docGap, 0)
-		img = image.NewRGBA(image.Rect(0, 0, gb.Dx()+docGap+tb.Dx(), max(gb.Dy(), tb.Dy())))
-		draw.Draw(img, img.Bounds(), image.NewUniform(color.RGBA{R: 64, G: 64, B: 64, A: 255}), image.Point{}, draw.Src)
-		draw.Draw(img, gb.Add(gwOrigin), gw, gb.Min, draw.Src)
-		draw.Draw(img, tb.Add(twOrigin), tw, tb.Min, draw.Src)
-	}
+	img, gwOrigin, twOrigin := r.composeShot(which)
 	for _, m := range d.marks {
 		if which == "tw" {
 			m = m.Sub(image.Pt(r.gw().Frame.Bounds().Dx()+docGap, 0))
@@ -155,6 +144,30 @@ func (r *uiScriptRunner) writeShot(name, which string) {
 	if err := writeDocPng(img, filepath.Join(d.dir, name+".png")); err != nil {
 		r.t.Fatal(err)
 	}
+}
+
+// composeShot copies what the windows show into one picture: the
+// graphics window, the property browser, or both side by side, and
+// says where in it each window's origin lies (far outside it for a
+// window it leaves out).
+func (r *uiScriptRunner) composeShot(which string) (img *image.RGBA, gwOrigin, twOrigin image.Point) {
+	gw, tw := r.gw().Frame, r.tw().Frame
+	switch which {
+	case "gw":
+		img = cloneRGBA(gw)
+		twOrigin = image.Pt(-100000, 0)
+	case "tw":
+		img = cloneRGBA(tw)
+		gwOrigin = image.Pt(-100000, 0)
+	default:
+		gb, tb := gw.Bounds(), tw.Bounds()
+		twOrigin = image.Pt(gb.Dx()+docGap, 0)
+		img = image.NewRGBA(image.Rect(0, 0, gb.Dx()+docGap+tb.Dx(), max(gb.Dy(), tb.Dy())))
+		draw.Draw(img, img.Bounds(), image.NewUniform(color.RGBA{R: 64, G: 64, B: 64, A: 255}), image.Point{}, draw.Src)
+		draw.Draw(img, gb.Add(gwOrigin), gw, gb.Min, draw.Src)
+		draw.Draw(img, tb.Add(twOrigin), tw, tb.Min, draw.Src)
+	}
+	return img, gwOrigin, twOrigin
 }
 
 func cloneRGBA(src *image.RGBA) *image.RGBA {
@@ -203,6 +216,7 @@ func drawCursor(img *image.RGBA, x, y int) {
 func runDocScenario(t *testing.T, path, dir string) string {
 	r := newUIScriptRunner(t)
 	r.doc.dir = dir
+	r.doc.video.dir = os.Getenv("TELESAPR_DOC_VIDEOS")
 	f, err := os.Open(path)
 	if err != nil {
 		t.Fatal(err)
@@ -218,6 +232,7 @@ func runDocScenario(t *testing.T, path, dir string) string {
 			t.Fatalf("%s:%d: the scenario stopped at %q:\n%s", filepath.Base(path), n, line, r.b.String())
 		}
 		r.settle()
+		r.videoStep(line)
 	}
 	if strings.Contains(r.b.String(), "menu missing") {
 		t.Fatalf("%s: %s", filepath.Base(path), r.b.String())
@@ -280,10 +295,13 @@ func TestDocScenarios(t *testing.T) {
 		t.Skip("no scenarios")
 	}
 	dir := os.Getenv("TELESAPR_DOC_SHOTS")
-	made := map[string]bool{}
+	made, videos := map[string]bool{}, map[string]bool{}
 	for _, f := range files {
 		for _, name := range shotNames(t, f) {
 			made[name] = true
+		}
+		for _, name := range videoNames(t, f) {
+			videos[name] = true
 		}
 		t.Run(strings.TrimSuffix(filepath.Base(f), ".scenario"), func(t *testing.T) {
 			t.Parallel()
@@ -295,6 +313,7 @@ func TestDocScenarios(t *testing.T) {
 		made[sh.name] = true
 	}
 	checkGuideImages(t, made)
+	checkGuideVideos(t, videos)
 }
 
 // shotNames lists the pictures a scenario makes.

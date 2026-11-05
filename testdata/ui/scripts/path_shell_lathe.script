@@ -26,7 +26,5 @@ move 300 250
 down L 300 250
 up L 300 250
 key l shift
-move 400 250
-down L 400 250
-up L 400 250
+click-face face 12 of g003-lathe
 menu Features|Shell Solid

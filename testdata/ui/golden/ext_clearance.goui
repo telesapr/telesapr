@@ -76,7 +76,7 @@ row 17    gap            parts
  23-99 64 64 0
 row 19    0.50           g006-plate and g00a-pin
  0-99 64 61 0
-row 21    Gaps are within 0.13; parts that touch may overlap:
+row 21    Gaps are within 0.15; parts that touch may overlap:
  0-99 64 64 0
 row 23    Show Interfering Parts tells.
  0-99 64 64 0
@@ -121,7 +121,7 @@ row 14    [check gaps]   [check walls]    solids within parts
  55-99 64 64 0
 row 17    The thinnest wall is 1.20, in g004-walls.
  0-99 64 64 0
-row 19    16076 of 136329 points are thinner than 1.50.
+row 19    16076 of 127560 points are thinner than 1.50.
  0-2 64 64 0
  3-47 78 64 0
  48-99 64 64 0
@@ -173,7 +173,7 @@ row 17    gap            parts
  23-99 64 64 0
 row 19    0.50           g006-plate and g00a-pin
  0-99 64 61 0
-row 21    Gaps are within 0.13; parts that touch may overlap:
+row 21    Gaps are within 0.15; parts that touch may overlap:
  0-99 64 64 0
 row 23    Show Interfering Parts tells.
  0-99 64 64 0

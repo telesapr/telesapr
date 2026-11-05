@@ -14,9 +14,10 @@ import (
 // where it has been, as an arc turning back over the line before it, so
 // the profile's two passes overlap. The kernel sweeps each piece of the
 // path on its own and joins only neighbours at their corner, so nothing
-// else would catch it. A sweep along lines and arcs is made in stretches
-// each clear of itself, joined (sweepInStretches); this is the problem
-// where that can't be done, and for a fitted or closed sweep.
+// else would catch it. A sweep along lines and arcs, open or closed, is
+// made in stretches each clear of itself, joined (sweepInStretches), and
+// a fitted one in spans of its path the same way (fittedInStretches);
+// this is the problem where that can't be done.
 var ErrSweepCrossesItself = errors.New("the sweep passes through itself where its path comes back near where it has been")
 
 // sweepCrossTurn is how far a path must turn between two of its
@@ -340,33 +341,71 @@ func stretches(set *srf.SBezierLoopSet, steps []srf.SweepStep, color core.RGBA, 
 
 // sweepInStretches is the solid a profile passes through along steps
 // whose sweep crosses itself: the union of stretches each clear of
-// itself, their ends meeting flush. Nil where it can't be made so, or
-// where the union is not sound.
-func sweepInStretches(sbls *srf.SBezierLoopSetSet, steps []srf.SweepStep, color core.RGBA, start, end srf.FaceID, tol srf.Tolerance) *srf.SShell {
+// itself, their ends meeting flush. Round a closed path, the steps from
+// the profile round to it, the steps are cut at least once, so that the
+// first stretch's start and the last's end meet flush where the profile
+// is drawn. Nil where it can't be made so, or where the union is not
+// sound.
+func sweepInStretches(sbls *srf.SBezierLoopSetSet, steps []srf.SweepStep, closed bool, color core.RGBA, start, end srf.FaceID, tol srf.Tolerance) *srf.SShell {
 	q := profileCentre(sbls)
 	reach := profileReach(sbls, q)
-	var out *srf.SShell
+	var parts []*srf.SShell
 	for i := range sbls.Sets {
+		set := &sbls.Sets[i]
 		budget := sweepStretchSweeps
-		parts, ok := stretches(&sbls.Sets[i], steps, color, start, end, tol, reach, sweepStretchDepth, &budget)
+		var p []*srf.SShell
+		ok := false
+		if closed {
+			p, ok = closedStretches(set, steps, color, start, end, tol, reach, &budget)
+		} else {
+			p, ok = stretches(set, steps, color, start, end, tol, reach, sweepStretchDepth, &budget)
+		}
 		if !ok {
 			return nil
 		}
+		parts = append(parts, p...)
+	}
+	return joinStretches(parts, tol)
+}
 
-		for _, p := range parts {
-			p.Tol = tol
-			if out == nil {
-				out = p
-				continue
-			}
-			var joined srf.SShell
-			joined.Tol = tol
-			joined.MakeFromUnionOf(out, p)
-			if joined.BooleanFailed {
-				return nil
-			}
-			out = &joined
+// closedStretches are stretches round a closed path, cut at least once:
+// one stretch would end flush on its own start, its caps touching.
+func closedStretches(set *srf.SBezierLoopSet, steps []srf.SweepStep, color core.RGBA, start, end srf.FaceID, tol srf.Tolerance, reach float64, budget *int) ([]*srf.SShell, bool) {
+	for _, f := range sweepCuts {
+		first, second, ok := cutSteps(steps, reach, f)
+		if !ok {
+			continue
 		}
+		a, ok := stretches(set, first, color, start, end, tol, reach, sweepStretchDepth-1, budget)
+		if !ok {
+			continue
+		}
+		b, ok := stretches(srf.TransformedLoopSet(set, srf.SweepEnd(first)), second, color, start, end, tol, reach, sweepStretchDepth-1, budget)
+		if !ok {
+			continue
+		}
+		return append(a, b...), true
+	}
+	return nil, false
+}
+
+// joinStretches is the union of a sweep's stretches, each clear of
+// itself, or nil where a Boolean fails or the union is not sound.
+func joinStretches(parts []*srf.SShell, tol srf.Tolerance) *srf.SShell {
+	var out *srf.SShell
+	for _, p := range parts {
+		p.Tol = tol
+		if out == nil {
+			out = p
+			continue
+		}
+		var joined srf.SShell
+		joined.Tol = tol
+		joined.MakeFromUnionOf(out, p)
+		if joined.BooleanFailed {
+			return nil
+		}
+		out = &joined
 	}
 	if out == nil {
 		return nil

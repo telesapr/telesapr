@@ -408,6 +408,9 @@ func TestDamagedMendScript(t *testing.T) {
 	if len(missing) != 1 || missing[0].H.V != 0x70001 {
 		t.Fatalf("missing %v", missing)
 	}
+	if k := d.Features.LeftOutMissingKind(missing[0]); k != "a point" {
+		t.Errorf("kind %q", k)
+	}
 	failsWith(t, "as a point", func() { d.Features.MendLeftOut(missing[0], d.Entity(0x10000)) })
 	d.Features.MendLeftOut(missing[0], d.Entity(0x10001))
 	if got := d.Features.LeftOut(); len(got) != 0 || len(d.Groups()) != 2 {
@@ -415,6 +418,60 @@ func TestDamagedMendScript(t *testing.T) {
 	}
 	d.Edit.Undo()
 	if got := d.Features.LeftOut(); len(got) != 2 || len(d.Groups()) != 1 {
+		t.Errorf("after undo: left out %q, %d groups", got, len(d.Groups()))
+	}
+}
+
+// A script mends a group a damaged file lacks, an extrusion's sketch,
+// as the window does: one of the model's groups in its place brings the
+// extrusion back; a group after it is refused; undo takes it back.
+func TestDamagedMendGroupScript(t *testing.T) {
+	t.Parallel()
+	d, err := Open(filepath.Join("..", "..", "..", "testdata", "tlspr", "damaged", "group_missing_operand.tlspr"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	missing := d.Features.LeftOutMissingGroups()
+	if len(missing) != 1 || missing[0].H.V != 9 {
+		t.Fatalf("missing %v", missing)
+	}
+	failsWith(t, "other than the references", func() { d.Features.MendLeftOutGroup(missing[0], d.Group("#references")) })
+	if len(d.Features.LeftOutMissingGroups()) != 1 {
+		t.Fatal("a refused mend changed what was left out")
+	}
+	d.Features.MendLeftOutGroup(missing[0], d.Groups()[0])
+	if got := d.Features.LeftOut(); len(got) != 0 || len(d.Groups()) != 2 {
+		t.Errorf("mended: left out %q, %d groups", got, len(d.Groups()))
+	}
+	d.Edit.Undo()
+	if got := d.Features.LeftOut(); len(got) != 1 || len(d.Groups()) != 1 {
+		t.Errorf("after undo: left out %q, %d groups", got, len(d.Groups()))
+	}
+}
+
+// A script mends a lathe's axis a damaged file lacks, as the window
+// does: the kind is named, a circle is refused, the file's line brings
+// the lathe back, and undo takes it back.
+func TestDamagedMendAxisScript(t *testing.T) {
+	t.Parallel()
+	d, err := Open(filepath.Join("..", "..", "..", "testdata", "tlspr", "damaged", "lathe_missing_axis.tlspr"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	missing := d.Features.LeftOutMissing()
+	if len(missing) != 1 || missing[0].H.V != 0x90000 {
+		t.Fatalf("missing %v", missing)
+	}
+	if k := d.Features.LeftOutMissingKind(missing[0]); k != "a line or a normal" {
+		t.Errorf("kind %q", k)
+	}
+	failsWith(t, "as a line or a normal", func() { d.Features.MendLeftOut(missing[0], d.Entity(0x40000)) })
+	d.Features.MendLeftOut(missing[0], d.Entity(0x50000))
+	if got := d.Features.LeftOut(); len(got) != 0 || len(d.Groups()) != 2 {
+		t.Errorf("mended: left out %q, %d groups", got, len(d.Groups()))
+	}
+	d.Edit.Undo()
+	if got := d.Features.LeftOut(); len(got) != 1 || len(d.Groups()) != 1 {
 		t.Errorf("after undo: left out %q, %d groups", got, len(d.Groups()))
 	}
 }

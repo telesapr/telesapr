@@ -6,7 +6,7 @@ formdialog Plate|&Run|Cancel
   check solid "Extrude" 1 [] ""
   choice finish "finish" 0 ["matte" "metal"] ""
 console 4 run $testdata/ui/scriptform/plate.go\n
-console 0 g004-base metal, volume 4466\n
+console 0 g004-base metal, volume 4463\n
 console 3 plate.go done.\n
 filedialog open
 formdialog Plate|&Run|Cancel

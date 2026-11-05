@@ -84,83 +84,110 @@ func readRibOracle(t *testing.T) []ribOracle {
 // that roll round the foot (ballHeight).
 func TestFilletRibAllOverOracle(t *testing.T) {
 	t.Parallel()
-	// Under the race detector two rows of the fifth fixtures.Sample keeps:
-	// the 24 took half of the package's time there, and the five 55
-	// minutes of processor.
-	rows := fixtures.Sample(readRibOracle(t))
-	if fixtures.RaceDetector {
-		rows = rows[:min(2, len(rows))]
+	ribAllOverRows(t, srf.MesherEarClip)
+}
+
+// TestFilletRibAllOverOracleCDT is the same with every curved face meshed
+// by the CDT, which is to become the default mesher (ROADMAP K4): until it
+// is, this keeps its meshes of the rib checked. Heavy (HEAVY in
+// scripts/go-test.sh): the 24 cases take some 25 minutes of processor.
+func TestFilletRibAllOverOracleCDT(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("rounds 24 ribs all over, meshed by the CDT, minutes")
 	}
-	for _, o := range rows {
-		if testing.Short() && (o.h != 10 || o.lean != 2 || o.r != 1) {
+	if fixtures.RaceDetector {
+		// The race stage is near its limit, and the meshing it would
+		// check is the same as the ear clipper's test's but for the mesher.
+		t.Skip("the CDT's rib, not under the race detector")
+	}
+	ribAllOverRows(t, srf.MesherCDT)
+}
+
+// ribAllOverRows runs ribAllOver over the oracle's rows.
+func ribAllOverRows(t *testing.T, mesher srf.Mesher) {
+	t.Helper()
+	// Under the race detector only the short run's row: the 24 took half
+	// of the package's time there, and h5 lean -4 r 0.5 alone eleven
+	// minutes beside the rest of the stage (2026-11-04).
+	for _, o := range readRibOracle(t) {
+		if (testing.Short() || fixtures.RaceDetector) && (o.h != 10 || o.lean != 2 || o.r != 1) {
 			// Each case takes 10 to 20 s; the short run keeps one.
 			continue
 		}
 		name := fmt.Sprintf("h%g_lean%g_r%g", o.h, o.lean, o.r)
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			rb := rib{o.h, o.lean}
-			sides, ends := rb.foot()
-			tol := srf.Tol(0.0003*o.r, 400)
-			topOnly := rb.shell(tol)
-			if err := topo.FilletEdges(topOnly, rb.top(), o.r, 1<<30); err != nil {
-				t.Fatal(err)
-			}
-			sh := rb.shell(tol)
-			all := append(append(append([][2]geom.Vector{}, sides...), ends...), rb.top()...)
-			if err := topo.FilletEdges(sh, all, o.r, 1<<30); err != nil {
-				t.Fatal(err)
-			}
-			var m srf.SMesh
-			sh.TriangulateInto(&m)
-			rep := check.Solid(sh, &m)
-			tp, err := topo.Build(sh)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !rep.Sound() {
-				t.Fatalf("unsound: %s", rep.String())
-			}
-			if p := tp.Validate(); len(p) > 0 {
-				t.Fatalf("topology: %s", p[0].Msg)
-			}
-			var top srf.SMesh
-			topOnly.TriangulateInto(&top)
-			if o.lean == 0 && !o.refused {
-				added, want := rep.Volume-meshVolume(topOnly), o.both-o.top
-				// The foot's fillet runs about 46 round a rib of 14 by
-				// 10; its chords lose less than the tolerance over it,
-				// and the top's fillets' chords, meshed again where the
-				// foot's cut them, as much.
-				allow := 2*0.0003*o.r*math.Pi/2*o.r*(2*(ribFoot+ribWide)+8*o.r) + 0.002
-				if math.Abs(added-want) > allow {
-					t.Errorf("the foot added %.6f, OpenCASCADE %.6f, allowed %.4f", added, want, allow)
-				}
-			}
-			// Where the width leans, OpenCASCADE's fillet lies inside the
-			// balls' envelope beside the front corners, up to 0.009 of a
-			// radius of 1 at h 40 (its volume 1.5% off): the heights are
-			// checked against the balls themselves.
-			for _, q := range ribBallPoints(rb, o.r) {
-				if !math.IsInf(firstHeight(&top, q), 1) {
-					// Under the rib.
-					continue
-				}
-				want := ballHeight(&top, q, o.r)
-				if want <= 0.01*o.r || want >= 0.95*o.r {
-					continue
-				}
-				got := firstHeight(&m, q)
-				// Compared up or sideways, as the ball's centre is found:
-				// near the walls the fillet stands steep, and its height
-				// moves by many times a shift sideways.
-				side := func(z float64) float64 { return math.Sqrt(math.Max(0, o.r*o.r-(o.r-z)*(o.r-z))) }
-				allow := 4 * 0.0003 * o.r
-				if math.Abs(got-want) > allow && math.Abs(side(got)-side(want)) > allow {
-					t.Errorf("at (%.2f, %.2f) the fillet is %.5f high, the balls' envelope %.5f", q.X, q.Y, got, want)
-				}
-			}
+			ribAllOver(t, o, mesher)
 		})
+	}
+}
+
+// ribAllOver rounds the rib of o all over at o's radius, its curved faces
+// meshed by mesher, and checks it against o and the balls' envelope.
+func ribAllOver(t *testing.T, o ribOracle, mesher srf.Mesher) {
+	t.Helper()
+	rb := rib{o.h, o.lean}
+	sides, ends := rb.foot()
+	tol := srf.Tol(0.0003*o.r, 400).WithMesher(mesher)
+	topOnly := rb.shell(tol)
+	if err := topo.FilletEdges(topOnly, rb.top(), o.r, 1<<30); err != nil {
+		t.Fatal(err)
+	}
+	sh := rb.shell(tol)
+	all := append(append(append([][2]geom.Vector{}, sides...), ends...), rb.top()...)
+	if err := topo.FilletEdges(sh, all, o.r, 1<<30); err != nil {
+		t.Fatal(err)
+	}
+	var m srf.SMesh
+	sh.TriangulateInto(&m)
+	rep := check.Solid(sh, &m)
+	tp, err := topo.Build(sh)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !rep.Sound() {
+		t.Fatalf("unsound: %s", rep.String())
+	}
+	if p := tp.Validate(); len(p) > 0 {
+		t.Fatalf("topology: %s", p[0].Msg)
+	}
+	var top srf.SMesh
+	topOnly.TriangulateInto(&top)
+	if o.lean == 0 && !o.refused {
+		added, want := rep.Volume-meshVolume(topOnly), o.both-o.top
+		// The foot's fillet runs about 46 round a rib of 14 by
+		// 10; its chords lose less than the tolerance over it,
+		// and the top's fillets' chords, meshed again where the
+		// foot's cut them, as much.
+		allow := 2*0.0003*o.r*math.Pi/2*o.r*(2*(ribFoot+ribWide)+8*o.r) + 0.002
+		if math.Abs(added-want) > allow {
+			t.Errorf("the foot added %.6f, OpenCASCADE %.6f, allowed %.4f", added, want, allow)
+		}
+	}
+	// Where the width leans, OpenCASCADE's fillet lies inside the
+	// balls' envelope beside the front corners, up to 0.009 of a
+	// radius of 1 at h 40 (its volume 1.5% off): the heights are
+	// checked against the balls themselves.
+	g := ballGrid(&top, o.r)
+	for _, q := range ribBallPoints(rb, o.r) {
+		if !math.IsInf(firstHeight(&top, q), 1) {
+			// Under the rib.
+			continue
+		}
+		want := ballHeight(g, q, o.r)
+		if want <= 0.01*o.r || want >= 0.95*o.r {
+			continue
+		}
+		got := firstHeight(&m, q)
+		// Compared up or sideways, as the ball's centre is found:
+		// near the walls the fillet stands steep, and its height
+		// moves by many times a shift sideways.
+		side := func(z float64) float64 { return math.Sqrt(math.Max(0, o.r*o.r-(o.r-z)*(o.r-z))) }
+		allow := 4 * 0.0003 * o.r
+		if math.Abs(got-want) > allow && math.Abs(side(got)-side(want)) > allow {
+			t.Errorf("at (%.2f, %.2f) the fillet is %.5f high, the balls' envelope %.5f", q.X, q.Y, got, want)
+		}
 	}
 }
 
@@ -205,31 +232,14 @@ func firstHeight(m *srf.SMesh, q geom.Vector) float64 {
 }
 
 // ballHeight is how high the fillet of radius r at the foot of the solid
-// meshed by m stands over q, on the plate: the lowest point over q that
-// a ball on the plate, clear of the solid, reaches. The ball's centre
-// nearest q sideways is found along directions round it, as far as the
-// ball is clear (closer, it would cut into the solid).
-func ballHeight(m *srf.SMesh, q geom.Vector, r float64) float64 {
-	var near []srf.STriangle
-	for _, tr := range m.Triangles {
-		// By its box: a large triangle passes near with its corners far.
-		hi, lo := tr.A, tr.A
-		tr.B.MakeMaxMin(&hi, &lo)
-		tr.C.MakeMaxMin(&hi, &lo)
-		dx := math.Max(0, math.Max(lo.X-q.X, q.X-hi.X))
-		dy := math.Max(0, math.Max(lo.Y-q.Y, q.Y-hi.Y))
-		if hi.Z > 1e-9 && lo.Z < 3*r && dx < 3*r && dy < 3*r {
-			near = append(near, tr)
-		}
-	}
+// whose triangles near the plate are g (ballGrid) stands over q, on the
+// plate: the lowest point over q that a ball on the plate, clear of the
+// solid, reaches. The ball's centre nearest q sideways is found along
+// directions round it, as far as the ball is clear (closer, it would cut
+// into the solid).
+func ballHeight(g *triGrid, q geom.Vector, r float64) float64 {
 	free := func(a, d float64) bool {
-		c := v(q.X+d*math.Cos(a), q.Y+d*math.Sin(a), r)
-		for i := range near {
-			if triangleDistance(&near[i], c) < r-1e-9 {
-				return false
-			}
-		}
-		return true
+		return !g.within(v(q.X+d*math.Cos(a), q.Y+d*math.Sin(a), r), r-1e-9)
 	}
 	reach := func(a float64) float64 {
 		if !free(a, r) {
@@ -268,6 +278,90 @@ func ballHeight(m *srf.SMesh, q geom.Vector, r float64) float64 {
 	return r - math.Sqrt(math.Max(0, r*r-best*best))
 }
 
+// ballGrid is the triangles of m that a ball of radius r resting on the
+// plate can touch: those above the plate and below 3r, in cells of r/2.
+func ballGrid(m *srf.SMesh, r float64) *triGrid {
+	var near []srf.STriangle
+	for _, tr := range m.Triangles {
+		hi, lo := tr.A, tr.A
+		tr.B.MakeMaxMin(&hi, &lo)
+		tr.C.MakeMaxMin(&hi, &lo)
+		if hi.Z > 1e-9 && lo.Z < 3*r {
+			near = append(near, tr)
+		}
+	}
+	return newTriGrid(near, r/2, 3*r)
+}
+
+// triGrid sorts triangles into cubic cells by their boxes, so that what
+// lies near a point is found without walking them all: ballHeight asks
+// thousands of times per point whether a ball is clear, and the CDT's
+// mesh of the rib has some 90 000 triangles.
+type triGrid struct {
+	tris  []srf.STriangle
+	boxes [][2]geom.Vector
+	cell  float64
+	cells map[[3]int][]int32
+	seen  []int32
+	stamp int32
+}
+
+// newTriGrid sorts tris into cells of size cell; below zTop, as no
+// point higher is asked about.
+func newTriGrid(tris []srf.STriangle, cell, zTop float64) *triGrid {
+	g := &triGrid{tris: tris, cell: cell, cells: map[[3]int][]int32{}, seen: make([]int32, len(tris))}
+	for i, tr := range tris {
+		hi, lo := tr.A, tr.A
+		tr.B.MakeMaxMin(&hi, &lo)
+		tr.C.MakeMaxMin(&hi, &lo)
+		g.boxes = append(g.boxes, [2]geom.Vector{lo, hi})
+		a, b := g.key(lo), g.key(hi)
+		b[2] = min(b[2], g.key(v(0, 0, zTop))[2])
+		for x := a[0]; x <= b[0]; x++ {
+			for y := a[1]; y <= b[1]; y++ {
+				for z := a[2]; z <= b[2]; z++ {
+					k := [3]int{x, y, z}
+					g.cells[k] = append(g.cells[k], int32(i))
+				}
+			}
+		}
+	}
+	return g
+}
+
+func (g *triGrid) key(p geom.Vector) [3]int {
+	return [3]int{int(math.Floor(p.X / g.cell)), int(math.Floor(p.Y / g.cell)), int(math.Floor(p.Z / g.cell))}
+}
+
+// within reports whether a triangle comes closer to c than d.
+func (g *triGrid) within(c geom.Vector, d float64) bool {
+	g.stamp++
+	a, b := g.key(c.Minus(v(d, d, d))), g.key(c.Plus(v(d, d, d)))
+	for x := a[0]; x <= b[0]; x++ {
+		for y := a[1]; y <= b[1]; y++ {
+			for z := a[2]; z <= b[2]; z++ {
+				for _, i := range g.cells[[3]int{x, y, z}] {
+					if g.seen[i] == g.stamp {
+						continue
+					}
+					g.seen[i] = g.stamp
+					lo, hi := g.boxes[i][0], g.boxes[i][1]
+					dx := math.Max(0, math.Max(lo.X-c.X, c.X-hi.X))
+					dy := math.Max(0, math.Max(lo.Y-c.Y, c.Y-hi.Y))
+					dz := math.Max(0, math.Max(lo.Z-c.Z, c.Z-hi.Z))
+					if dx*dx+dy*dy+dz*dz >= d*d {
+						continue
+					}
+					if triangleDistance(&g.tris[i], c) < d {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
 // triangleDistance is how far p lies from triangle tr.
 func triangleDistance(tr *srf.STriangle, p geom.Vector) float64 {
 	a, b, c := tr.A, tr.B, tr.C
@@ -304,6 +398,12 @@ func TestFilletRibFootAfterTop(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("fills a rib's foot twice, about 15 s")
+	}
+	if fixtures.RaceDetector {
+		// 6 minutes there for one chain at 0.0003, which no coarser
+		// tolerance makes; the chains' fill runs on the same goroutines
+		// in TestFilletChainsMitred and the rest under the race detector.
+		t.Skip("a rib's foot filled at a fine tolerance, too slow under the race detector")
 	}
 	rb := rib{10, 2}
 	tol := srf.Tol(0.0003, 400)

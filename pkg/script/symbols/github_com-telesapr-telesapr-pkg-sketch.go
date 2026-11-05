@@ -47,6 +47,7 @@ func init() {
 		"ErrConstraintSelection":       reflect.ValueOf(&sketch.ErrConstraintSelection).Elem(),
 		"ErrEqualSelection":            reflect.ValueOf(&sketch.ErrEqualSelection).Elem(),
 		"ErrFittedSweep":               reflect.ValueOf(&sketch.ErrFittedSweep).Elem(),
+		"ErrGroupNotMissing":           reflect.ValueOf(&sketch.ErrGroupNotMissing).Elem(),
 		"ErrLoadFlanksSameWay":         reflect.ValueOf(&sketch.ErrLoadFlanksSameWay).Elem(),
 		"ErrMendKind":                  reflect.ValueOf(&sketch.ErrMendKind).Elem(),
 		"ErrMeshNotSound":              reflect.ValueOf(&sketch.ErrMeshNotSound).Elem(),
@@ -67,7 +68,6 @@ func init() {
 		"ErrNotTextRequest":            reflect.ValueOf(&sketch.ErrNotTextRequest).Elem(),
 		"ErrNotThread":                 reflect.ValueOf(&sketch.ErrNotThread).Elem(),
 		"ErrNothingLeftOut":            reflect.ValueOf(&sketch.ErrNothingLeftOut).Elem(),
-		"ErrRootRoundCoarse":           reflect.ValueOf(&sketch.ErrRootRoundCoarse).Elem(),
 		"ErrSplinePointsFull":          reflect.ValueOf(&sketch.ErrSplinePointsFull).Elem(),
 		"ErrSweepCrossesItself":        reflect.ValueOf(&sketch.ErrSweepCrossesItself).Elem(),
 		"ErrSweepJoined":               reflect.ValueOf(&sketch.ErrSweepJoined).Elem(),
@@ -214,6 +214,7 @@ func init() {
 		"Image":                reflect.ValueOf((*sketch.Image)(nil)),
 		"Implied":              reflect.ValueOf((*sketch.Implied)(nil)),
 		"Interference":         reflect.ValueOf((*sketch.Interference)(nil)),
+		"KernelPacer":          reflect.ValueOf((*sketch.KernelPacer)(nil)),
 		"LeftOut":              reflect.ValueOf((*sketch.LeftOut)(nil)),
 		"LeftOutEdges":         reflect.ValueOf((*sketch.LeftOutEdges)(nil)),
 		"LinkParam":            reflect.ValueOf((*sketch.LinkParam)(nil)),
@@ -254,6 +255,7 @@ func init() {
 		// interface wrapper definitions
 		"_EntityBezierResolver": reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_sketch_EntityBezierResolver)(nil)),
 		"_Hooks":                reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_sketch_Hooks)(nil)),
+		"_KernelPacer":          reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_sketch_KernelPacer)(nil)),
 	}
 }
 
@@ -311,4 +313,14 @@ func (W _github_com_telesapr_telesapr_pkg_sketch_Hooks) RegenerateAfterDelete() 
 }
 func (W _github_com_telesapr_telesapr_pkg_sketch_Hooks) ScheduleGenerateAll() {
 	W.WScheduleGenerateAll()
+}
+
+// _github_com_telesapr_telesapr_pkg_sketch_KernelPacer is an interface wrapper for KernelPacer type
+type _github_com_telesapr_telesapr_pkg_sketch_KernelPacer struct {
+	IValue      interface{}
+	WKernelPace func() func()
+}
+
+func (W _github_com_telesapr_telesapr_pkg_sketch_KernelPacer) KernelPace() func() {
+	return W.WKernelPace()
 }

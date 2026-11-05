@@ -304,6 +304,11 @@ type Group struct {
 	// sweepClosed marks a sweep whose path closes, made with the
 	// group's shell: it has no caps.
 	sweepClosed bool
+	// sweepFrom is, for a profile drawn across an open path partway
+	// along it, the motion that takes the section at the path's start to
+	// where the profile is drawn, made with the group's shell; nil for
+	// one drawn at the start (sweep_partway.go).
+	sweepFrom *srf.Rigid
 	// LoftAlongSides has a loft leave its first profile ([0]) or reach
 	// its last ([1]) along the sides of the solid the profile is drawn
 	// on, rather than square to its plane (loft.go).

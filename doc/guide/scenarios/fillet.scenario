@@ -1,6 +1,9 @@
 # The pictures of fillet.md: a rectangle, extruded, two top edges
 # picked and rounded. Coordinates are those of the 600x600 headless
 # window.
+# The video of the whole page (scripts/regen-guide-videos.sh).
+video start fillet-edges
+caption A rectangle (R), extruded (Shift+X).
 cursor on
 key r
 move 200 200
@@ -18,6 +21,7 @@ cursor off
 shot fillet-2-extruded
 # Back to the view from above, where the edges are picked.
 view default
+caption Click the edges to round, then Features > Fillet Edges.
 cursor on
 move 382.5 232.5
 down L 382.5 232.5
@@ -31,6 +35,7 @@ view rotated
 menu View|Zoom To Fit
 cursor off
 shot fillet-4-filleted
+caption Click the radius in the property browser and type a new one.
 cursor on
 twmove 150 125
 mark 28 122 190 22 tw
@@ -40,3 +45,6 @@ twup L 150 125
 edit 10
 cursor off
 shot fillet-6-radius-10
+caption Rounded at 10 mm.
+pause 1
+video end

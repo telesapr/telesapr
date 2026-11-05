@@ -296,7 +296,7 @@ func Build(sh *srf.SShell) (*Topology, error) {
 		if err != nil {
 			problems = append(problems, fmt.Sprintf("surface %d: %v", s.H.V, err))
 		}
-		t.makeFaces(s, t.splitPinchedLoops(s, loops))
+		t.makeFaces(s, t.splitPinchedLoops(s, t.splitTouchingHoles(s, loops)))
 	}
 	t.findSheets()
 	t.nameEdges()
@@ -447,6 +447,13 @@ func reversed(pts []geom.Vector) []geom.Vector {
 // loop passes twice, the one that turns most sharply left is taken,
 // which keeps loops from crossing.
 func (t *Topology) chain(ces []int) ([][]int, error) {
+	return t.chainTurning(ces, false)
+}
+
+// chainTurning is chain, taking at a vertex the loop passes twice the
+// co-edge that turns most sharply left, or with right most sharply
+// right.
+func (t *Topology) chainTurning(ces []int, right bool) ([][]int, error) {
 	byStart := map[int][]int{}
 	for _, ce := range ces {
 		byStart[t.Start(ce)] = append(byStart[t.Start(ce)], ce)
@@ -475,7 +482,7 @@ func (t *Topology) chain(ces []int) ([][]int, error) {
 			}
 			next := cands[0]
 			if len(cands) > 1 {
-				next = t.sharpestLeft(cur, cands)
+				next = t.sharpestTurn(cur, cands, right)
 			}
 			used[next] = true
 			loop = append(loop, next)
@@ -515,10 +522,10 @@ func (t *Topology) direction(ce int, out bool) geom.Vector {
 	return pts[len(pts)-1].Minus(pts[len(pts)-2])
 }
 
-// sharpestLeft picks, of the co-edges leaving the vertex where cur
+// sharpestTurn picks, of the co-edges leaving the vertex where cur
 // ends, the one that turns most to the left about the surface's normal
-// there.
-func (t *Topology) sharpestLeft(cur int, cands []int) int {
+// there, or with right most to the right.
+func (t *Topology) sharpestTurn(cur int, cands []int, right bool) int {
 	s := t.shell.FindSurface(t.CoEdges[cur].Surface)
 	p := t.Vertices[t.End(cur)].P
 	var n geom.Vector
@@ -535,6 +542,9 @@ func (t *Topology) sharpestLeft(cur int, cands []int) int {
 		a := math.Atan2(in.Cross(out).Dot(n.WithMagnitude(1)), in.Dot(out))
 		// Most to the left is the largest turn; take the smallest
 		// complement.
+		if right {
+			a = -a
+		}
 		if r := math.Pi - a; r < bestA {
 			best, bestA = c, r
 		}

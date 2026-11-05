@@ -4,6 +4,8 @@ import (
 	"math"
 	"path/filepath"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 )
 
 // buttressNut saves an S20x4 nut, a Ø40 disc 16 mm high with its hole
@@ -158,7 +160,7 @@ func TestScrewFitsButtressLoadWays(t *testing.T) {
 		}
 		return path
 	}
-	for _, c := range []struct {
+	cases := []struct {
 		rod, nut string
 		mates    bool
 	}{
@@ -166,7 +168,15 @@ func TestScrewFitsButtressLoadWays(t *testing.T) {
 		{"1-12 BUTT", "1-12 PULL-BUTT", true},
 		{"1-12 PUSH-BUTT", "1-12 BUTT", false},
 		{"1-12 BUTT", "1-12 PUSH-BUTT", false},
-	} {
+	}
+	if fixtures.RaceDetector {
+		// Minutes each there: one pair that mates, one that doesn't.
+		cases = []struct {
+			rod, nut string
+			mates    bool
+		}{cases[0], cases[2]}
+	}
+	for _, c := range cases {
 		d := New()
 		shank := d.Sketch.Circle(V(0, 0, 0), r)
 		d.Constrain.Coincident(shank.Center(), d.Origin())
@@ -197,5 +207,60 @@ func TestScrewFitsButtressLoadWays(t *testing.T) {
 		mustFail(t, c.rod+" on "+c.nut, "load flanks face the same way", func() {
 			d.Assembly.Screw(end, hole, 0)
 		})
+	}
+}
+
+// TestThreadRoundRootOnHeadedRod threads a rod with a head added after
+// it, its roots rounded, at chord tolerances far coarser than the
+// roots' arcs take: the rod and its head, two groups before the
+// thread, are made at the thread's tolerance, and the screw comes out
+// sound at the same volume at each. With only the group before the
+// thread made at it, the rod's edges kept its coarse chords through
+// the head's union, and the 3/4-10 BUTT screw had edges open along
+// its root from 0.5%.
+func TestThreadRoundRootOnHeadedRod(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("threads with rounded roots")
+	}
+	var first float64
+	tols := []float64{0.1, 0.5, 2}
+	if fixtures.RaceDetector {
+		// Each thread is made at its roots' own tolerance, minutes there;
+		// the coarsest is the one the rod's head broke.
+		tols = tols[2:]
+	}
+	for _, tol := range tols {
+		d := New()
+		d.Edit.SetChordTolerance(tol)
+		shank := d.Sketch.Circle(V(0, 0, 0), 9.525)
+		d.Constrain.Coincident(shank.Center(), d.Origin())
+		rod := d.Features.Extrude(40, "rod")
+		rod.AsExtrude().SetDepth(40)
+		var bottom Entity
+		for _, e := range rod.Entities() {
+			if e.Kind() == "circle" && e.Center().Pos().Z < 1 {
+				bottom = e
+			}
+		}
+		d.Features.SketchOnFace(rod.Solid().FaceAt(V(0, 0, 40)), "head")
+		head := d.Sketch.Circle(V(0, 0, 0), 15)
+		d.Constrain.Coincident(d.Sketch.ActiveWorkplane().Points()[0], head.Center())
+		d.Features.Extrude(6, "headx").AsExtrude().SetDepth(6)
+		g := d.Features.Thread(bottom, ThreadOptions{Designation: "3/4-10 BUTT", Length: 25, RoundRoot: true})
+		tg, ok := g.ThreadOf()
+		if !ok {
+			t.Fatalf("at %g%%: no thread", tol)
+		}
+		gs := tg.Groups()
+		r := gs[len(gs)-1].Analyze().Check()
+		if !r.Sound() {
+			t.Errorf("at %g%%: not sound", tol)
+		}
+		if first == 0 {
+			first = r.Volume
+		} else if math.Abs(r.Volume-first) > 1e-6*first {
+			t.Errorf("at %g%%: %.3f mm³, %.3f at 0.1%%", tol, r.Volume, first)
+		}
 	}
 }

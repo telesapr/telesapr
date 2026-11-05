@@ -54,13 +54,18 @@ func main() {
 	doc.Features.SketchIn(doc.Workplane("XY"), "post-sketch")
 	doc.Sketch.Circle(api.V(0, 0, 0), 1.5)
 	post := doc.Features.Extrude(10, "post")
-	one := post.Analyze().Check().Volume
 
 	pegs := doc.Features.PatternAlongPath([]api.Entity{run, bend, tail}, copies, "pegs")
+	// The post measured with the pegs there, at the chord tolerance the
+	// whole model is meshed at.
+	one := post.Analyze().Check().Volume
 	r := pegs.Analyze().Check()
 	fmt.Printf("%d pegs: sound %v, %d faces, volume %.1f mm³ (one %.1f)\n",
 		pegs.AsRepeat().Copies(), r.Sound(), r.Faces, r.Volume, one)
-	if !r.Sound() || math.Abs(r.Volume-float64(copies)*one) > 1e-6*r.Volume {
+	// Each peg is meshed on its own, its points not quite the post's: the
+	// volumes agree to a few parts in ten thousand, where pegs that
+	// overlapped would lose their overlap.
+	if !r.Sound() || math.Abs(r.Volume-float64(copies)*one) > 1e-3*r.Volume {
 		fmt.Fprintln(os.Stderr, "the pegs overlap or the solid is not sound")
 		os.Exit(1)
 	}

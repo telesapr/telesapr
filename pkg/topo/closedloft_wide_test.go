@@ -9,6 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
@@ -191,6 +192,12 @@ func TestClosedLoftWideSweep(t *testing.T) {
 		},
 	}
 	grid.Run(func(p sweep.Point) error {
+		if fixtures.RaceDetector && p.String("path") != "circle" {
+			// Under the race detector, on top of the grid's fifth, the
+			// circle only: the ellipse and the wavy path loft on the
+			// same goroutines.
+			return nil
+		}
 		var at []float64
 		a := p.Float("start")
 		gaps := splitFloats(p.String("gaps"))

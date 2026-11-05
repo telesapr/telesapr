@@ -4,6 +4,8 @@ import (
 	"math"
 	"strings"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
 // A cosmetic thread is one group on a rod of its size, reads back as
@@ -107,7 +109,11 @@ func TestThreadCosmeticNut(t *testing.T) {
 	if gs := again.AsThread().Groups(); len(gs) != 1 {
 		t.Errorf("on the hole: groups %v", gs)
 	}
-	if v := d.Active().Analyze().Check().Volume; math.Abs(v-bored) > 1e-6*bored {
+	// The same solid, meshed again: within the chord tolerance over the
+	// hole's wall, of radius 3.32 and 10 long, of the mesh before.
+	var chord float64
+	d.With(func(sk *sketch.Sketch) { chord = sk.Tol().ChordTolMm() })
+	if v := d.Active().Analyze().Check().Volume; math.Abs(v-bored) > chord*2*math.Pi*3.32*10 {
 		t.Errorf("on the hole: volume %.3f, was %.3f", v, bored)
 	}
 }

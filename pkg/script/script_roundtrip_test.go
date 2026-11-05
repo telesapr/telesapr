@@ -46,28 +46,45 @@ func roundVolume(s string) string {
 // agree when their bounds are within a thousandth.
 var bounds = regexp.MustCompile(`bounds \(([^)]*)\) to \(([^)]*)\)`)
 
-// sameLine reports whether two lines of a summary agree.
+// sameLine reports whether two lines of a summary agree: the same but
+// for their bounds, within a thousandth, and their volumes, within one
+// in the last of their four figures. A rounding at the fourth figure
+// falls either way as the meshes' points do, and the constrained
+// Delaunay mesher's points inside a face fall by rounding too.
 func sameLine(a, b string) bool {
 	if a == b {
 		return true
 	}
-	ma, mb := bounds.FindStringSubmatch(a), bounds.FindStringSubmatch(b)
-	if ma == nil || mb == nil || bounds.ReplaceAllString(a, "") != bounds.ReplaceAllString(b, "") {
+	rest := func(s string) string { return volume.ReplaceAllString(bounds.ReplaceAllString(s, ""), "") }
+	if rest(a) != rest(b) {
 		return false
 	}
-	na := strings.Split(ma[1]+", "+ma[2], ", ")
-	nb := strings.Split(mb[1]+", "+mb[2], ", ")
-	if len(na) != len(nb) {
-		return false
+	near := func(xs, ys []string, within func(x, y float64) bool) bool {
+		if len(xs) != len(ys) {
+			return false
+		}
+		for i := range xs {
+			x, errX := strconv.ParseFloat(xs[i], 64)
+			y, errY := strconv.ParseFloat(ys[i], 64)
+			if errX != nil || errY != nil || !within(x, y) {
+				return false
+			}
+		}
+		return true
 	}
-	for i := range na {
-		x, errX := strconv.ParseFloat(na[i], 64)
-		y, errY := strconv.ParseFloat(nb[i], 64)
-		if errX != nil || errY != nil || math.Abs(x-y) > 0.0011 {
+	if va, vb := volume.FindStringSubmatch(a), volume.FindStringSubmatch(b); va != nil || vb != nil {
+		if va == nil || vb == nil || !near(va[1:], vb[1:], func(x, y float64) bool { return math.Abs(x-y) <= 1.01e-3*math.Max(math.Abs(x), math.Abs(y)) }) {
 			return false
 		}
 	}
-	return true
+	ma, mb := bounds.FindStringSubmatch(a), bounds.FindStringSubmatch(b)
+	if ma == nil && mb == nil {
+		return true
+	}
+	if ma == nil || mb == nil {
+		return false
+	}
+	return near(strings.Split(ma[1]+", "+ma[2], ", "), strings.Split(mb[1]+", "+mb[2], ", "), func(x, y float64) bool { return math.Abs(x-y) <= 0.0011 })
 }
 
 // modelSummary is what the round trip compares: each group's kind,

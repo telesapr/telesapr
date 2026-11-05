@@ -3,7 +3,6 @@ package srf
 import (
 	"fmt"
 	"math"
-	"os"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -50,18 +49,16 @@ func TestCoaxialContactSweep(t *testing.T) {
 	coaxialSweep(t, []string{"cone"}, 0)
 }
 
-// TestCoaxialSeatProbe is the same for a ball in a seat of its radius,
-// which is not yet right: the seat's rim on the block's top is the
-// marched curve of the Boolean that made it, and the ball's own crossing
-// of the top is marched again through other points, so the two faces'
-// meshes do not meet there (roadmap K3). It fails nothing unless
-// TELESAPR_K3_PROBE is set: on 2026-11-04, 50 of 96 within the fuse
-// wrong, all unions and differences (88 before snapToSpheres and
-// classifyOnCoincident).
-func TestCoaxialSeatProbe(t *testing.T) {
-	if os.Getenv("TELESAPR_K3_PROBE") == "" {
-		t.Skip("the K3 probe of a ball in its seat: set TELESAPR_K3_PROBE=1")
-	}
+// TestCoaxialSeatSweep is the same for a ball in a seat of its radius.
+// On 2026-11-04 50 of 96 within the fuse were wrong (88 before
+// snapToSpheres and classifyOnCoincident), all unions and differences:
+// the seat's rim was the marched curve of the Boolean that made it, and
+// the ball's crossing of the block's top was marched again through other
+// points. A plane now meets a sphere in an exact circle
+// (intersectPlaneAndSphere), the same in both Booleans, and an edge on a
+// sphere lying on another is classified coincident where the edge's
+// chord dips off it (roadmap K3).
+func TestCoaxialSeatSweep(t *testing.T) {
 	t.Parallel()
 	coaxialSweep(t, []string{"seat"}, 0)
 }

@@ -180,6 +180,18 @@ func TestOpenDamagedFixtures(t *testing.T) {
 		{"request_missing_group", nil,
 			[]string{"deleted r006-datum-point of g009, which used g009"},
 			2, 5, 0},
+		{"constraint_missing_circle", nil,
+			[]string{"deleted c001-diameter of g002-sketch-in-plane, which used r009"},
+			2, 4, 0},
+		{"group_missing_operand", nil,
+			[]string{"deleted g003-extrude, which used g009"},
+			2, 4, 0},
+		{"lathe_missing_axis", nil,
+			[]string{"deleted g003-lathe, which used r009"},
+			2, 5, 0},
+		{"mirror_missing_plane", nil,
+			[]string{"deleted g004-mirror, which used r009"},
+			3, 4, 0},
 		{"missing_references", []string{
 			"the reference workplane YZ was missing and was made again",
 			"the reference workplane ZX was missing and was made again"}, nil,
@@ -222,6 +234,10 @@ func TestDamagedSaveKeepsLeftOut(t *testing.T) {
 		{"constraint_missing_entity", []string{"c001-pt-pt-distance of g002-sketch-in-plane"}},
 		{"group_missing_workplane", []string{"g003-on-missing", "r008-datum-point of g003-on-missing"}},
 		{"request_missing_group", []string{"r006-datum-point of g009"}},
+		{"constraint_missing_circle", []string{"c001-diameter of g002-sketch-in-plane"}},
+		{"group_missing_operand", []string{"g003-extrude"}},
+		{"lathe_missing_axis", []string{"g003-lathe"}},
+		{"mirror_missing_plane", []string{"g004-mirror"}},
 		{"missing_references", nil},
 		{"chamfer_missing_edge", []string{"edge of g004-chamfer: entity 3853 of g003-extrude"}},
 	} {
@@ -369,6 +385,18 @@ func TestDamagedMendInModel(t *testing.T) {
 			}},
 		{"constraint_missing_entity", core.HEntity{V: 0x60000}, core.HEntity{V: 0x50000},
 			func(sk *sketch.Sketch) bool { return sk.Constraint(core.HConstraint{V: 1}) != nil }},
+		{"constraint_missing_circle", core.HEntity{V: 0x90000}, core.HEntity{V: 0x40000},
+			func(sk *sketch.Sketch) bool { return sk.Constraint(core.HConstraint{V: 1}) != nil }},
+		{"lathe_missing_axis", core.HEntity{V: 0x90000}, core.HEntity{V: 0x50000},
+			func(sk *sketch.Sketch) bool {
+				g := sk.Group(core.HGroup{V: 3})
+				return g != nil && g.Predef.EntityB.V == 0x50000 && g.IsSolvedOkay()
+			}},
+		{"mirror_missing_plane", core.HEntity{V: 0x90000}, core.HEntity{V: 0x20000},
+			func(sk *sketch.Sketch) bool {
+				g := sk.Group(core.HGroup{V: 4})
+				return g != nil && g.Predef.EntityB.V == 0x20000 && g.Problem.Msg == ""
+			}},
 		{"chamfer_missing_edge", core.HEntity{V: 0x80030f0d}, core.HEntity{V: 0x8003000d},
 			func(sk *sketch.Sketch) bool {
 				g := sk.Group(core.HGroup{V: 4})
@@ -417,5 +445,133 @@ func TestDamagedMendRefused(t *testing.T) {
 	}
 	if sk.LeftOut != kept {
 		t.Error("a refused mend changed what was left out")
+	}
+}
+
+// What a damaged file's load left out says what kind each entity it
+// lacks was, from how it was used, and a mend takes only that kind: a
+// diameter's entity is a circle or an arc.
+func TestDamagedMissingKind(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		file    string
+		missing core.HEntity
+		kind    string
+	}{
+		{"group_missing_workplane", core.HEntity{V: 0x70001}, "a point"},
+		{"constraint_missing_entity", core.HEntity{V: 0x60000}, "a point"},
+		{"constraint_missing_circle", core.HEntity{V: 0x90000}, "a circle or an arc"},
+		{"chamfer_missing_edge", core.HEntity{V: 0x80030f0d}, "a curve"},
+		{"lathe_missing_axis", core.HEntity{V: 0x90000}, "a line or a normal"},
+		{"mirror_missing_plane", core.HEntity{V: 0x90000}, "a workplane or a planar face"},
+	} {
+		if got := openFixture(t, tc.file).LeftOutMissingKind(tc.missing); got != tc.kind {
+			t.Errorf("%s: kind %q, want %q", tc.file, got, tc.kind)
+		}
+	}
+	sk := openFixture(t, "constraint_missing_circle")
+	// The circle's centre is a point, not a circle.
+	err := sk.MendLeftOut(core.HEntity{V: 0x90000}, core.HEntity{V: 0x40001})
+	if !errors.Is(err, sketch.ErrMendKind) || !strings.Contains(err.Error(), "as a circle or an arc") {
+		t.Errorf("mend of a circle with a point: %v", err)
+	}
+	// A lathe's axis is a line or a normal, not a circle; a mirror's
+	// plane a workplane or a face, not a line.
+	for _, tc := range []struct {
+		file string
+		with core.HEntity
+		need string
+	}{
+		{"lathe_missing_axis", core.HEntity{V: 0x40000}, "as a line or a normal"},
+		{"mirror_missing_plane", core.HEntity{V: 0x30000 + 0x20}, "as a workplane or a planar face"},
+	} {
+		sk := openFixture(t, tc.file)
+		kept := sk.LeftOut
+		err := sk.MendLeftOut(core.HEntity{V: 0x90000}, tc.with)
+		if !errors.Is(err, sketch.ErrMendKind) || !strings.Contains(err.Error(), tc.need) {
+			t.Errorf("%s: mend with %x: %v", tc.file, tc.with.V, err)
+		}
+		if sk.LeftOut != kept {
+			t.Errorf("%s: a refused mend changed what was left out", tc.file)
+		}
+	}
+}
+
+// A group a damaged file lacks, a request's group or an extrusion's
+// sketch, is mended by giving one of the model's groups in its place;
+// what then has all it uses comes back, in one undo step that redo
+// makes again.
+func TestDamagedMendGroup(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		file string
+		back func(sk *sketch.Sketch) bool
+	}{
+		{"request_missing_group", func(sk *sketch.Sketch) bool {
+			r := sk.Request(core.HRequest{V: 6})
+			return r != nil && r.Group == core.HGroup{V: 2}
+		}},
+		{"group_missing_operand", func(sk *sketch.Sketch) bool {
+			g := sk.Group(core.HGroup{V: 3})
+			return g != nil && g.OpA == core.HGroup{V: 2} && g.IsSolvedOkay()
+		}},
+	} {
+		t.Run(tc.file, func(t *testing.T) {
+			t.Parallel()
+			sk := openFixture(t, tc.file)
+			if got := sk.LeftOutMissingGroups(); !slices.Equal(got, []core.HGroup{{V: 9}}) {
+				t.Fatalf("missing groups %v, want g009", got)
+			}
+			if got := sk.LeftOutMissingGroupName(core.HGroup{V: 9}); got != "g009" {
+				t.Errorf("named %q", got)
+			}
+			before := string(tlspr.Encode(sk, tlspr.Options{}))
+			if err := sk.UndoRememberFor(func() error {
+				return sk.MendLeftOutGroup(core.HGroup{V: 9}, core.HGroup{V: 2})
+			}); err != nil {
+				t.Fatal(err)
+			}
+			sk.GenerateAll()
+			if !tc.back(sk) || sk.LeftOut != nil {
+				t.Fatalf("not brought back; left out %q", sk.LeftOutNames())
+			}
+			after := string(tlspr.Encode(sk, tlspr.Options{}))
+			sk.UndoUndo()
+			if got := string(tlspr.Encode(sk, tlspr.Options{})); got != before {
+				t.Error("undo didn't bring back the damaged model")
+			}
+			sk.UndoRedo()
+			if got := string(tlspr.Encode(sk, tlspr.Options{})); got != after {
+				t.Error("redo didn't make the mend again")
+			}
+		})
+	}
+}
+
+// A mend of a group is refused, changing nothing: for a group nothing
+// left out uses, a group the model doesn't hold, the references for a
+// request's group, and for an operand a group that doesn't come
+// before the group using it.
+func TestDamagedMendGroupRefused(t *testing.T) {
+	t.Parallel()
+	sk := openFixture(t, "request_missing_group")
+	kept := sk.LeftOut
+	if err := sk.MendLeftOutGroup(core.HGroup{V: 2}, core.HGroup{V: 2}); !errors.Is(err, sketch.ErrGroupNotMissing) {
+		t.Errorf("mend of a group that isn't missing: %v", err)
+	}
+	if err := sk.MendLeftOutGroup(core.HGroup{V: 9}, core.HGroup{V: 7}); !errors.Is(err, sketch.ErrMendKind) {
+		t.Errorf("mend with a group not in the model: %v", err)
+	}
+	if err := sk.MendLeftOutGroup(core.HGroup{V: 9}, core.HGroup{V: 1}); !errors.Is(err, sketch.ErrMendKind) {
+		t.Errorf("mend with the references: %v", err)
+	}
+	if sk.LeftOut != kept {
+		t.Error("a refused mend changed what was left out")
+	}
+	sk = openFixture(t, "group_missing_operand")
+	later := sk.AddGroup(sketch.Group{Type: sketch.GroupDrawingWorkplane, Order: 5, Name: "later"})
+	err := sk.MendLeftOutGroup(core.HGroup{V: 9}, later)
+	if !errors.Is(err, sketch.ErrMendKind) || !strings.Contains(err.Error(), "a group before g003-extrude") {
+		t.Errorf("mend of an operand with a later group: %v", err)
 	}
 }

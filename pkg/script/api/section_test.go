@@ -164,24 +164,26 @@ func TestSectionThroughAxis(t *testing.T) {
 		doc   func() *Doc
 		plane string
 		loops int
-		area  float64
+		// area is the cap's, 0 for not checked, and outline the length of
+		// its outline.
+		area, outline float64
 	}{
-		{"lathe XY", func() *Doc { return turned(360) }, "XY", 2, 80},
-		{"lathe YZ", func() *Doc { return turned(360) }, "YZ", 2, 80},
-		{"revolve half YZ", func() *Doc { return turned(180) }, "YZ", 1, 40},
+		{"lathe XY", func() *Doc { return turned(360) }, "XY", 2, 80, 56},
+		{"lathe YZ", func() *Doc { return turned(360) }, "YZ", 2, 80, 56},
+		{"revolve half YZ", func() *Doc { return turned(180) }, "YZ", 1, 40, 28},
 		{"cylinder", func() *Doc {
 			d := New()
 			d.Sketch.Circle(V(0, 0, 0), 4)
 			d.Features.Extrude(30, "rod")
 			return d
-		}, "YZ", 1, 240},
+		}, "YZ", 1, 240, 76},
 		{"thread", func() *Doc {
 			d := New()
 			rod := d.Sketch.Circle(V(0, 0, 0), 4)
 			d.Features.Extrude(30, "rod")
 			d.Features.Thread(rod, ThreadOptions{Designation: "M8", Length: 12})
 			return d
-		}, "YZ", 1, 0},
+		}, "YZ", 1, 0, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			d := tc.doc()
@@ -190,7 +192,12 @@ func TestSectionThroughAxis(t *testing.T) {
 			if !s.Closed || s.Loops != tc.loops {
 				t.Errorf("cap in %d loops (closed %v), want %d closed", s.Loops, s.Closed, tc.loops)
 			}
-			if tc.area != 0 && math.Abs(s.Area-tc.area) > 1e-6*tc.area {
+			// The cap is cut from the mesh, each of whose triangles keeps
+			// within the chord tolerance of its surface: along its outline
+			// it may gain or lose that much.
+			var chord float64
+			d.With(func(sk *sketch.Sketch) { chord = sk.Tol().ChordTolMm() })
+			if tc.area != 0 && math.Abs(s.Area-tc.area) > chord*tc.outline {
 				t.Errorf("cap %v mm², want %v", s.Area, tc.area)
 			}
 		})

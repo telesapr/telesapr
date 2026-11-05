@@ -8,7 +8,5 @@ file $testdata/topo/boss.tlspr
 menu File|Open...
 view under
 menu View|Zoom To Fit
-move 408.4 279.9
-down L 408.4 279.9
-up L 408.4 279.9
+click-edge the edge between face 2 of g005-boss and bottom face of g003-block
 menu Features|Fillet Edges

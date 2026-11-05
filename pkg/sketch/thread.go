@@ -88,10 +88,11 @@ type ThreadOptions struct {
 	// RoundRoot rounds the roots of an ASME B1.9 buttress thread as its
 	// standard does, by an arc tangent to both flanks
 	// (thread.Profile.RootArcs); otherwise they are flat, at the
-	// standard's truncation. The arcs are small, 0.07 of a pitch, and
-	// the Booleans that put them on the part need a chord tolerance of
-	// at most a fifth of their radius (ErrRootRoundCoarse). Other
-	// threads' roots are flat, and it leaves them so.
+	// standard's truncation. The arcs are small, 0.07 of a pitch: where
+	// the sketch's chord tolerance is coarser than they take, the thread
+	// and the part it is made in are made at a finer one
+	// (threadSolidTol). Other threads' roots are flat, and it leaves
+	// them so.
 	RoundRoot bool
 	// Cosmetic records the thread on the part without modelling its
 	// turns (thread_cosmetic_build.go): a screw is left at, or turned
@@ -389,30 +390,6 @@ func (l *threadLayout) layChamfer(o ThreadOptions, try chamferTry) {
 	l.chamferPast = over + 0.25*pitch
 }
 
-// ErrRootRoundCoarse is returned for a rounded root (RoundRoot) on a
-// part whose chord tolerance is coarser than rootChordLimit of the
-// root's radius: the Booleans then fail where the root's arcs cross
-// the turned or bored surface.
-var ErrRootRoundCoarse = errors.New("the thread's rounded root is too fine for the chord tolerance")
-
-// rootChordLimit is the coarsest chord tolerance, as a part of a
-// rounded root's radius, at which every B1.9 thread came out sound
-// (sizes 1/2 to 4 inches, 4 to 20 threads per inch, screws and nuts;
-// all of them at 0.17, most at 0.24).
-const rootChordLimit = 0.2
-
-// checkRoundRoot refuses a rounded root too fine for the chord
-// tolerance, saying what tolerance it needs.
-func (sk *Sketch) checkRoundRoot(l threadLayout) error {
-	r := l.profile.RootRoundRadius
-	chord := sk.Tol().ChordTolMm()
-	if r == 0 || chord <= rootChordLimit*r {
-		return nil
-	}
-	return fmt.Errorf("%w: make the chord tolerance %.2g%% or less", ErrRootRoundCoarse,
-		sk.ChordTolPercent()*rootChordLimit*r/chord)
-}
-
 // ErrChamferTooFine is returned for a chamfered screw so small for its
 // pitch that the cones, which run on past the end by a pitch, would
 // reach the axis there (a Tr12x3).
@@ -584,9 +561,6 @@ func (sk *Sketch) checkThread(he core.HEntity, o ThreadOptions, part *Group) err
 	}
 	l, err := o.layout(circle.CircleGetRadiusNum(sk))
 	if err != nil {
-		return err
-	}
-	if err := sk.checkRoundRoot(l); err != nil {
 		return err
 	}
 	return sk.checkThreadPart(he, o, l, part)

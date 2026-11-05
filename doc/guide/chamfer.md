@@ -168,8 +168,13 @@ cubic millimetre at distances of 1 mm.
 **Three of a saddle's four edges.** At the middle of a saddle, where two ridges and two valleys
 meet, three edges can be chamfered with the fourth left sharp. The two chamfers beside the sharp
 edge are cut up to it, the third is set back, and curved patches fill the corner between them,
-as [Fillet](fillet.md) rounds the same corner. Where the two reach the sharp edge at different
-points, or the saddle is steep, the corner is refused with a message.
+as [Fillet](fillet.md) rounds the same corner, also where the two have different distances and
+reach the sharp edge at two points. Where the saddle is steep and the three have one distance,
+the patches would fold, so the chamfers are cut in two goes, the ridges and the valleys apart,
+each ending on the faces across the middle. One of the four edges chamfered alone runs on into the two
+faces across the middle, and two opposite ones meet in a mitre in the plane of the two left
+sharp; a ridge and a valley side by side are each cut up to the sharp edge beside it, and
+patches fill the corner between.
 
 OpenCASCADE differs from this in two places. At a corner of three where one crossing point lies
 close to the line between the other two, it makes the triangle of the three points, where

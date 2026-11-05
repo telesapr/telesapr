@@ -16,7 +16,8 @@
 // with a point drawn in it. It opens that file, saves it, opens the
 // save, mends the file's text and opens it whole, and last discards
 // what was left out. Between those, it mends the model from the
-// script, giving the origin the file lacks.
+// script, giving the origin the file lacks, and then the group a point
+// is in when the file lacks that group.
 package main
 
 import (
@@ -140,14 +141,30 @@ func main() {
 	must(os.WriteFile(path, []byte(damaged), 0o644))
 	doc = open()
 	missing := doc.Features.LeftOutMissing()
-	if len(missing) != 1 {
-		fail("missing %v, want the one origin", missing)
+	if len(missing) != 1 || doc.Features.LeftOutMissingKind(missing[0]) != "a point" {
+		fail("missing %v, want the one origin, a point", missing)
 	}
 	doc.Features.MendLeftOut(missing[0], doc.Entity(0x10001))
 	if len(doc.Features.LeftOut()) != 0 || len(doc.Groups()) != 2 {
 		fail("the mend didn't bring the sketch back")
 	}
 	fmt.Println("mended in the model:", len(doc.Groups()), "groups")
+
+	// A group the file lacks is given the same way: here the point's
+	// group, 9, which the file doesn't hold, is given the second sketch.
+	lacksGroup := strings.Replace(strings.Replace(damaged, "origin 0x70001", "origin 0x10001", 1),
+		"  group 0x3\n  workplane 0x80030000", "  group 0x9\n  workplane 0x80030000", 1)
+	must(os.WriteFile(path, []byte(lacksGroup), 0o644))
+	doc = open()
+	groups := doc.Features.LeftOutMissingGroups()
+	if len(groups) != 1 {
+		fail("missing groups %v, want the point's", groups)
+	}
+	doc.Features.MendLeftOutGroup(groups[0], doc.Group("on-missing"))
+	if len(doc.Features.LeftOut()) != 0 {
+		fail("the mend didn't bring the point back")
+	}
+	fmt.Println("group mended in the model:", len(doc.Groups()), "groups")
 
 	// Or what was left out is discarded, and the next save drops it.
 	must(os.WriteFile(path, []byte(damaged), 0o644))

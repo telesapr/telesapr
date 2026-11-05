@@ -77,6 +77,13 @@ and the goldens go in a commit of their own.
 | P11 | `offPatch` and `onSurface` reject a point far from the surface's control-point box before searching | Open, same bytes: a failed search leaves `Cached` alone. How many points it catches is not measured |
 | P12 | A text-window benchmark | Worth adding before any work on the text window, which paints a rectangle and a pixmap per character cell |
 
+- **The CDT at fine chord tolerances** (2026-11-04): with it the default, tests at 1e-4 to
+  0.00085 mm took 7 to 18 times as long and `make ci` timed out; a budget gives the faces it
+  would fill with more than 24 times the ear clipper's grid back to the ear clipper. Still
+  above the ear clipper there: the CDT's sag measured between parametric middles, and
+  `faceModeOf`'s `FaceAt` per triangle in a joined shell (`doc/dev-notes/k4-cdt-spike.md`,
+  "Fine tolerances").
+
 ## Decided against, and why
 
 - OpenGL vertex buffers kept between frames: meshes are under a tenth of a GL frame, and a kept
@@ -94,10 +101,10 @@ and the goldens go in a commit of their own.
 - GOGC in the window: 400 saved 0.1 ms a drag step for a heap up to four times the live one.
   `telesapr-cli` runs at 400 unless `GOGC` is set (`gcPercent`): a run lives for one model, and
   it is 15–20% faster for more peak memory.
-- CDT as the mesher on every face: 1.43 times the ear clipper's triangles and 1.64 times its
-  regeneration time with the chart scaled by curvature, 2.00 and 1.85 by speed, over the 84 solid
-  and thread goldens (`BenchmarkMeshers`, 2026-11-04; `k4-cdt-spike.md`). It mends the faces the
-  ear clipper gets wrong.
+- The CDT as the mesher of every curved face, the default since 2026-11-04: 1.44 times the ear
+  clipper's triangles over the 87 solid and thread goldens, their regeneration 0.99 times its
+  time, one model at a time (`BenchmarkMeshers`; `k4-cdt-spike.md`). A run earlier that day, under
+  other load and before the changes of the switch, measured 1.43 and 1.64.
 - Robust predicates in the mesh BSP: no failing case, no cost in a profile. Shewchuk's are a few
   hundred lines to port if ever needed.
 - `GOAMD64=v3`: 91 of 296 fixtures regenerated otherwise (FMA, `pkg/libm` included), with the

@@ -1,0 +1,12 @@
+# A damaged file's diameter whose circle the file lacks, given the
+# file's circle in its place: Broken References' [use the selected]
+# clicked with nothing selected waits while the circle is picked, then
+# [take the selection]; the same as path_damaged_mend_circle.go makes
+# (TestPathEquivalence/damaged_mend_circle, ROADMAP D5).
+answer ok
+load tlspr/damaged/constraint_missing_circle.tlspr
+menu Features|Broken References...
+answer ok
+click-tw [use the selected]
+click-entity 40000
+click-tw [take the selection]

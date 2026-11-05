@@ -2,7 +2,6 @@ package topo_test
 
 import (
 	"math"
-	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -69,41 +68,6 @@ func TestShellRevolvedInsideCornerStep(t *testing.T) {
 		if got := sound(t, out); math.Abs(got-c.want) > 0.002*c.want {
 			t.Errorf("%s: volume %g, want %g", c.name, got, c.want)
 		}
-	}
-}
-
-// Where the face beside the inside corner is curved or sloping, the
-// step has no plane to run along: refused, saying so.
-func TestShellRevolvedInsideCornerSloping(t *testing.T) {
-	t.Parallel()
-	// A cylinder of radius 6 standing on a cone that falls from 10 to 6.
-	pts := [][2]float64{{0, 0}, {10, 0}, {10, 3}, {6, 5}, {6, 10}, {0, 10}}
-	sh, rev := turned(meridian(t, pts, nil, srf.Tolerance{}), 0, 2*math.Pi, srf.Tolerance{})
-	tp := build(t, sh)
-	var open []int
-	for k := range 4 {
-		a := math.Pi/4 + float64(k)*math.Pi/2
-		f, _ := tp.FaceAt(v(6*math.Cos(a), 6*math.Sin(a), 8))
-		open = append(open, f)
-	}
-	_, err := topo.ShellRevolved(sh, rev, open, 1, 1<<30)
-	if err == nil || !strings.Contains(err.Error(), "inside corner") {
-		t.Errorf("beside a cone: %v", err)
-	}
-	// A step 0.5 wide, then a second rise: the run-out by the thickness,
-	// 1, would cut into the rise.
-	pts = [][2]float64{{0, 0}, {10, 0}, {10, 8}, {6.5, 8}, {6.5, 5}, {6, 5}, {6, 10}, {0, 10}}
-	sh, rev = turned(meridian(t, pts, nil, srf.Tolerance{}), 0, 2*math.Pi, srf.Tolerance{})
-	tp = build(t, sh)
-	open = open[:0]
-	for k := range 4 {
-		a := math.Pi/4 + float64(k)*math.Pi/2
-		f, _ := tp.FaceAt(v(6*math.Cos(a), 6*math.Sin(a), 8))
-		open = append(open, f)
-	}
-	_, err = topo.ShellRevolved(sh, rev, open, 1, 1<<30)
-	if err == nil || !strings.Contains(err.Error(), "narrower") {
-		t.Errorf("beside a narrow step: %v", err)
 	}
 }
 

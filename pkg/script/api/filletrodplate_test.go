@@ -57,64 +57,93 @@ func ringPastSides(r float64, flat, down bool) float64 {
 // plate's sides, whose planes cut it, the sides grown up by its
 // sections, and the top split in two: made by widening the plate, then
 // cutting it back (filletPastSides). At 2 the foot just reaches the
-// sides, which would pinch the top to points, and is refused, as a
-// size within a hundredth of it may be; it was made open (69 naked
-// edges at a fillet of 2, 256 past it) until 2026-11-03, then refused
-// at every size past 2.
+// sides and pinches the top to a point at each, two faces touching
+// there; sizes within a tenth of the chord tolerance (0.00085 mm) of 2
+// are made as 2. It was made open (69 naked edges at a fillet of 2, 256
+// past it) until 2026-11-03, then refused within a hundredth of 2 until
+// 2026-11-04. A fillet running only just past the sides may still be
+// refused (TestFilletRodJustPastSides).
 func TestFilletRodThroughPlate(t *testing.T) {
 	t.Parallel()
-	plate := 12.0*30*4 + math.Pi*16*16 - math.Pi*16*4
 	for _, flat := range []bool{false, true} {
-		for _, r := range []float64{1, 1.9, 2, 2.1, 2.5, 3.5} {
+		for _, r := range []float64{1, 1.9, 1.99, 1.999, 1.9999, 2, 2.00001, 2.0001, 2.005, 2.01, 2.1, 2.5, 3.5} {
 			what := "fillet"
 			if flat {
 				what = "chamfer"
 			}
 			t.Run(fmt.Sprintf("%s %g", what, r), func(t *testing.T) {
 				t.Parallel()
-				d := New()
-				d.Edit.SetChordTolerance(0.003)
-				rod, e := rodThroughPlate(d)
-				if p := rod.Problem(); p != "" {
-					t.Fatal(p)
-				}
-				var vol float64
-				msg := func() (msg string) {
-					defer func() {
-						if x := recover(); x != nil {
-							msg = fmt.Sprint(x)
-						}
-					}()
-					var g Group
-					if flat {
-						g = d.Features.ChamferSolid([]SolidEdge{e}, r, "")
-					} else {
-						g = d.Features.FilletSolid([]SolidEdge{e}, r, "")
-					}
-					if p := g.Problem(); p != "" {
-						return p
-					}
-					if rep := g.Analyze().Check(); !rep.Sound() {
-						return "unsound: " + rep.Summary()
-					}
-					vol = g.Analyze().Volume()
-					return ""
-				}()
-				if r == 2 {
-					if !strings.Contains(msg, "just reaches the side") {
-						t.Errorf("not refused as just reaching the plate's side: %q", msg)
-					}
-					return
-				}
+				vol, msg := rodPlateRounded(r, flat)
 				if msg != "" {
 					t.Fatalf("not made: %s", msg)
 				}
-				want := plate + ringPastSides(r, flat, false)
+				want := rodPlateVolume + ringPastSides(r, flat, false)
 				if rel := math.Abs(vol-want) / want; rel > 5e-4 {
 					t.Errorf("volume %.4f, want %.4f (off by %.1e)", vol, want, rel)
 				}
 			})
 		}
+	}
+}
+
+// rodPlateVolume is rodThroughPlate's volume.
+const rodPlateVolume = 12.0*30*4 + math.Pi*16*16 - math.Pi*16*4
+
+// rodPlateRounded is the volume of rodThroughPlate with the fillet, or
+// chamfer, of size r round the rod at the plate's top, at a chord
+// tolerance of 0.003; or why it was not made.
+func rodPlateRounded(r float64, flat bool) (vol float64, msg string) {
+	d := New()
+	d.Edit.SetChordTolerance(0.003)
+	rod, e := rodThroughPlate(d)
+	if p := rod.Problem(); p != "" {
+		return 0, p
+	}
+	defer func() {
+		if x := recover(); x != nil {
+			msg = fmt.Sprint(x)
+		}
+	}()
+	var g Group
+	if flat {
+		g = d.Features.ChamferSolid([]SolidEdge{e}, r, "")
+	} else {
+		g = d.Features.FilletSolid([]SolidEdge{e}, r, "")
+	}
+	if p := g.Problem(); p != "" {
+		return 0, p
+	}
+	if rep := g.Analyze().Check(); !rep.Sound() {
+		return 0, "unsound: " + rep.Summary()
+	}
+	return g.Analyze().Volume(), ""
+}
+
+// A fillet whose foot runs past the plate's sides by more than a tenth
+// of the chord tolerance (0.00085 mm at the setting of 0.003) and less
+// than a few times it: the plane that cuts
+// the widened plate back meets the fillet nearly tangent, where the
+// foot's chords may lie inside the side, and some such sizes come out
+// open. Swept 2026-11-04 from 1.997 to 2.006 by 0.0001: of 91 fillets
+// 17 were refused, all from 2.0002 to 2.0028; of 91 chamfers none. A
+// refused one says why; a made one is sound.
+func TestFilletRodJustPastSides(t *testing.T) {
+	t.Parallel()
+	for _, r := range []float64{2.001, 2.0015} {
+		t.Run(fmt.Sprint(r), func(t *testing.T) {
+			t.Parallel()
+			vol, msg := rodPlateRounded(r, false)
+			if msg != "" {
+				if !strings.Contains(msg, "only just runs past the side") {
+					t.Errorf("refused, but not as only just past the side: %q", msg)
+				}
+				return
+			}
+			want := rodPlateVolume + ringPastSides(r, false, false)
+			if rel := math.Abs(vol-want) / want; rel > 5e-4 {
+				t.Errorf("volume %.4f, want %.4f (off by %.1e)", vol, want, rel)
+			}
+		})
 	}
 }
 

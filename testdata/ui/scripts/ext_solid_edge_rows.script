@@ -8,9 +8,7 @@ file $testdata/topo/slot.tlspr
 menu File|Open...
 view rotated
 menu View|Zoom To Fit
-move 378.3 404.6
-down L 378.3 404.6
-up L 378.3 404.6
+click-edge the edge between side face of g003-block from r005-line-segment and side face of g005-slot from r00a-line-segment
 menu Features|Chamfer Edges
 tw
 twmove 96 185

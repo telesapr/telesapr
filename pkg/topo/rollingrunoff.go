@@ -60,6 +60,13 @@ type rbRunOff struct {
 	// thinner than that, which its mesh left open; the curves' ends move
 	// by no more, and both faces take them at w.
 	p1At geom.Vector
+	// consumed marks an end of a fillet that takes side j's face whole
+	// (rollingrunoff_consumed.go): the next face's edge with side j's
+	// face goes as far as r, the end of the edge it meets the other end's
+	// next face along, and it takes the line from r on to x, where the
+	// two next faces' planes meet across the fillet, in place of p2.
+	consumed bool
+	r, x     geom.Vector
 }
 
 // runOffSliver is, in chord tolerances, how near w the end section
@@ -186,6 +193,16 @@ func bezierRoot(sb *srf.SBezier, h func(geom.Vector) float64, a, b float64) floa
 // contact curve (p2), and splits the next face's edges with the end face
 // and with side j's face there.
 func (rb *rollingBall) runOffCuts(sh *srf.SShell, row []srf.SSurface, k int, ro *rbRunOff) error {
+	if err := rb.runOffCross(sh, row, k, ro); err != nil {
+		return err
+	}
+	return rb.runOffContact(sh, row, k, ro)
+}
+
+// runOffCross finds where the end section of the end k that runs off
+// crosses the next face, p1, and refuses the end where that is not past
+// w along the end face's edge with the next face.
+func (rb *rollingBall) runOffCross(sh *srf.SShell, row []srf.SSurface, k int, ro *rbRunOff) error {
 	t := rb.t
 	m := len(row)
 	w := t.Vertices[ro.w].P
@@ -222,6 +239,20 @@ func (rb *rollingBall) runOffCuts(sh *srf.SShell, row []srf.SSurface, k int, ro 
 		// sound.
 		return filletErr(ro.p1, "the fillet's end runs off the face on side %d here onto the next face, which a fillet "+
 			"that takes material away can't yet follow: make it smaller", ro.j+1)
+	}
+	return nil
+}
+
+// runOffContact finds where side j's contact curve comes back under the
+// next face, p2, and the patches the next face cuts, and splits the next
+// face's edge with side j's face there.
+func (rb *rollingBall) runOffContact(sh *srf.SShell, row []srf.SSurface, k int, ro *rbRunOff) error {
+	t := rb.t
+	m := len(row)
+	w := t.Vertices[ro.w].P
+	sec := row[0].EdgeCurve(0)
+	if k == 1 {
+		sec = row[m-1].EdgeCurve(2)
 	}
 	// Side j's contact curve, in from the end, to where it comes back
 	// under the plane.
@@ -336,6 +367,26 @@ func patchSideUV(i int, t float64) (float64, float64) {
 // curves across the patch in the plane between), and those curves
 // across; no loop when none of it is under.
 func clipPatch(p *srf.SSurface, ro *rbRunOff, tol float64) ([]srf.SBezier, []srf.SBezier, error) {
+	loop, isAcross, err := clipLoop(p, patchLoop(p), patchSideUV, ro, tol)
+	if err != nil || loop == nil {
+		return nil, nil, err
+	}
+	var across []srf.SBezier
+	for i, a := range isAcross {
+		if a {
+			across = append(across, loop[i])
+		}
+	}
+	return loop, across, nil
+}
+
+// clipLoop is the part under the plane ro gives of the region of patch
+// p inside loop, as clipPatch gives it, uvAt giving the (u, v) at t
+// along the loop's curve i; and which of its curves lie across the
+// patch in the plane. A loop wholly under the plane is loop itself,
+// none across.
+func clipLoop(p *srf.SSurface, loop []srf.SBezier, uvAt func(i int, t float64) (float64, float64), ro *rbRunOff,
+	tol float64) ([]srf.SBezier, []bool, error) {
 	type seg struct {
 		side   int
 		t0, t1 float64
@@ -344,7 +395,7 @@ func clipPatch(p *srf.SSurface, ro *rbRunOff, tol float64) ([]srf.SBezier, []srf
 	}
 	var segs []seg
 	anyOut := false
-	for i, sb := range patchLoop(p) {
+	for i, sb := range loop {
 		const n = 64
 		ts := []float64{0}
 		prev := ro.h(sb.PointAt(0))
@@ -369,7 +420,7 @@ func clipPatch(p *srf.SSurface, ro *rbRunOff, tol float64) ([]srf.SBezier, []srf
 		}
 	}
 	if !anyOut {
-		return patchLoop(p), nil, nil
+		return loop, make([]bool, len(loop)), nil
 	}
 	start := -1
 	for i := range segs {
@@ -381,13 +432,15 @@ func clipPatch(p *srf.SSurface, ro *rbRunOff, tol float64) ([]srf.SBezier, []srf
 	if start < 0 {
 		return nil, nil, nil
 	}
-	var loop, across []srf.SBezier
+	var out []srf.SBezier
+	var isAcross []bool
 	for c := range segs {
 		sg := segs[(start+c)%len(segs)]
 		if !sg.in {
 			continue
 		}
-		loop = append(loop, sg.sb)
+		out = append(out, sg.sb)
+		isAcross = append(isAcross, false)
 		next := segs[(start+c+1)%len(segs)]
 		if next.in {
 			continue
@@ -399,16 +452,18 @@ func clipPatch(p *srf.SSurface, ro *rbRunOff, tol float64) ([]srf.SBezier, []srf
 			d++
 		}
 		back := segs[(start+d)%len(segs)]
-		u0, v0 := patchSideUV(sg.side, sg.t1)
-		u1, v1 := patchSideUV(back.side, back.t0)
+		u0, v0 := uvAt(sg.side, sg.t1)
+		u1, v1 := uvAt(back.side, back.t0)
 		cs, err := acrossPatch(p, ro, u0, v0, u1, v1, sg.sb.Finish(), back.sb.Start(), tol)
 		if err != nil {
 			return nil, nil, err
 		}
-		loop = append(loop, cs...)
-		across = append(across, cs...)
+		out = append(out, cs...)
+		for range cs {
+			isAcross = append(isAcross, true)
+		}
 	}
-	return loop, across, nil
+	return out, isAcross, nil
 }
 
 // acrossPatch is the curve in ro's plane on patch p from a, at (u0, v0),
@@ -654,7 +709,11 @@ func (rb *rollingBall) closeRunOff(sh *srf.SShell, cut rbEndCut, endSec srf.SBez
 			}
 		}
 	}
-	if _, err := put(ro.n, [][2]geom.Vector{{w, ro.p2}}, across, ro.p2, ro.p1); err != nil {
+	gap, fill := ro.p2, across
+	if ro.consumed {
+		gap, fill = ro.r, append([]srf.SBezier{srf.SBezierFrom2(ro.r, ro.x)}, across...)
+	}
+	if _, err := put(ro.n, [][2]geom.Vector{{w, gap}}, fill, gap, ro.p1); err != nil {
 		return err
 	}
 	if ro.p1.Equals(w) {
@@ -696,11 +755,17 @@ func (rb *rollingBall) sharedCurve(ns *srf.SSurface, end *rbEnd, p1, w geom.Vect
 	if onNs {
 		return []srf.SBezier{line}, nil
 	}
-	if end.curved {
-		return nil, filletErr(p1, "the fillet's end runs off onto a curved face here, and the face it ends at is "+
-			"curved too: make it smaller")
-	}
+	// The end face's plane, or its surface where it is curved: the edge
+	// is then where the two surfaces meet, carried on past their edges.
 	plane := &rbRunOff{np: end.n, nd: end.d}
+	if end.curved {
+		s := rb.t.Surface(end.f)
+		if s == nil {
+			return nil, filletErr(p1, "the curved face the fillet ends at is not in the shell")
+		}
+		es := *s
+		plane = &rbRunOff{ns: &es, sign: 1}
+	}
 	u0, v0, _ := nearestOnWithin(ns, p1, 0)
 	u1, v1, _ := nearestOnWithin(ns, w, 0)
 	cs, err := acrossPatch(ns, plane, u0, v0, u1, v1, p1, w, tol)

@@ -5248,7 +5248,15 @@
 					},
 					"LeftOutMissing": {
 						"decl": "func (m FeaturesMenu) LeftOutMissing() (missing []Entity)",
-						"text": "LeftOutMissing are the entities what LeftOut lists uses and the file\nlacks, which MendLeftOut can replace: a group's origin, a request's\nworkplane, a constraint's point or workplane, or a dropped edge.\nThey are not in the model."
+						"text": "LeftOutMissing are the entities what LeftOut lists uses and the file\nlacks, which MendLeftOut can replace: a group's origin, axis,\ndirection or plane, a request's workplane, a constraint's point,\nworkplane, line, circle or face, or a dropped edge. They are not in\nthe model; LeftOutMissingKind says what kind each must be replaced\nby."
+					},
+					"LeftOutMissingGroups": {
+						"decl": "func (m FeaturesMenu) LeftOutMissingGroups() (missing []Group)",
+						"text": "LeftOutMissingGroups are the groups what LeftOut lists uses and the\nfile lacks, which MendLeftOutGroup can replace: the group a request\nor a constraint is in, or a group's operand. They are not in the\nmodel."
+					},
+					"LeftOutMissingKind": {
+						"decl": "func (m FeaturesMenu) LeftOutMissingKind(missing Entity) (kind string)",
+						"text": "LeftOutMissingKind says what kind of entity missing, one\nLeftOutMissing gives, must be replaced by, from how what LeftOut lists\nuses it: \"a point\", \"a workplane\", \"a curve\", \"a line\", \"a circle or\nan arc\", \"a face\", a lathe's axis \"a line or a normal\", a mirror's\nplane \"a workplane or a planar face\", and so on."
 					},
 					"Loft": {
 						"decl": "func (m FeaturesMenu) Loft(from, to Group, name string) Group",
@@ -5260,7 +5268,11 @@
 					},
 					"MendLeftOut": {
 						"decl": "func (m FeaturesMenu) MendLeftOut(missing, with Entity)",
-						"text": "MendLeftOut puts with, an entity of the model, in the place of\nmissing, one LeftOutMissing gives, wherever what LeftOut lists used\nit as with's kind: a point for a group's origin or a constraint's\npoint, a workplane for a request's or a constraint's workplane, a\ncurve for an edge. What then has all it uses comes back into the\nmodel; the rest stays left out. It fails, changing nothing, when\nnothing left out uses missing or with is of none of the kinds it is\nused as. Undo takes it back."
+						"text": "MendLeftOut puts with, an entity of the model, in the place of\nmissing, one LeftOutMissing gives, wherever what LeftOut lists used\nit as with's kind: a point for a group's origin or a constraint's\npoint, a workplane for a request's or a constraint's workplane, a\ncurve for an edge, and for a group's axis, direction or plane and a\nconstraint's other entities the kind LeftOutMissingKind names. What\nthen has all it uses comes back into the model; the rest stays left\nout. It fails, changing nothing, when nothing left out uses missing\nor with is of none of the kinds it is used as. Undo takes it back."
+					},
+					"MendLeftOutGroup": {
+						"decl": "func (m FeaturesMenu) MendLeftOutGroup(missing, with Group)",
+						"text": "MendLeftOutGroup puts with, a group of the model, in the place of\nmissing, one LeftOutMissingGroups gives, wherever what LeftOut lists\nused it, never the references: as the group a request or a\nconstraint is in, or as a group's operand, a group before it. What\nthen has all it uses comes back into the model; the rest stays left\nout.\nIt fails, changing nothing, when nothing left out uses missing or\nwith fits none of its uses. Undo takes it back."
 					},
 					"Mended": {
 						"decl": "func (m FeaturesMenu) Mended() (mended []string)",
@@ -7586,9 +7598,13 @@
 						"decl": "func (g *Group) SetRemapEntry(input core.HEntity, copyNumber int, id core.EntityID)",
 						"text": "SetRemapEntry installs an entry in this group's remap table."
 					},
+					"SweepProfile": {
+						"decl": "func (g *Group) SweepProfile(sk *Sketch) (*srf.SBezierLoopSetSet, error)",
+						"text": "SweepProfile is the profile's loops as the sweep moves them along the path from its start, by SweepSteps or FittedSweepPath: where the profile is drawn, or, drawn across an open path partway along it, carried back along the path to its start."
+					},
 					"SweepSteps": {
 						"decl": "func (g *Group) SweepSteps(sk *Sketch) ([]srf.SweepStep, error)",
-						"text": "SweepSteps are the rigid steps a sweep along lines and arcs moves its profile by, in order from the profile where it is drawn: a line's translation, an arc's turn, and at a mitred corner the turn between two lines, where each is cut by the plane halving the corner (a corner radius is an arc)."
+						"text": "SweepSteps are the rigid steps a sweep along lines and arcs moves its profile by, in order from the path's start, the profile there as SweepProfile gives it: a line's translation, an arc's turn, and at a mitred corner the turn between two lines, where each is cut by the plane halving the corner (a corner radius is an arc)."
 					},
 					"Topology": {
 						"decl": "func (g *Group) Topology() (*topo.Topology, error)",
@@ -7696,6 +7712,10 @@
 			"Interference": {
 				"text": "Interference is two parts that overlap: the groups that made them, the volume they share, and its triangles.",
 				"kind": "struct"
+			},
+			"KernelPacer": {
+				"text": "KernelPacer is Hooks whose owner has the thread that regenerates and nothing else, as a browser page has: KernelPace is what the long loops of a group's Boolean call now and then, on the goroutine regenerating, to let the owner draw (srf.SShell.PaceBy), or nil for nothing, as on a platform with threads of its own, where the loops run at once.",
+				"kind": "interface"
 			},
 			"LeftOut": {
 				"text": "LeftOut is what the load of a damaged file left out of the model, each item as the file held it: the groups, requests and constraints that used something the file lacked, with the values of their parameters.",
@@ -8400,6 +8420,18 @@
 						"decl": "func (sk *Sketch) LeftOutMissing() []core.HEntity",
 						"text": "LeftOutMissing are the entities that what the load of a damaged file left out uses, the model doesn't hold, and a mend (MendLeftOut) may replace, in the order of their handles."
 					},
+					"LeftOutMissingGroupName": {
+						"decl": "func (sk *Sketch) LeftOutMissingGroupName(h core.HGroup) string",
+						"text": "LeftOutMissingGroupName names a group LeftOutMissingGroups gives, as what the load left out knew it: \"g009\"."
+					},
+					"LeftOutMissingGroups": {
+						"decl": "func (sk *Sketch) LeftOutMissingGroups() []core.HGroup",
+						"text": "LeftOutMissingGroups are the groups that what the load of a damaged file left out uses and neither the model nor what was left out holds, which a mend (MendLeftOutGroup) may replace, in the order of their handles."
+					},
+					"LeftOutMissingKind": {
+						"decl": "func (sk *Sketch) LeftOutMissingKind(he core.HEntity) string",
+						"text": "LeftOutMissingKind says what kind of entity he, one LeftOutMissing gives, must be replaced by, from how what was left out uses it: \"a point\", \"a circle or an arc\", \"a face\"."
+					},
 					"LeftOutMissingName": {
 						"decl": "func (sk *Sketch) LeftOutMissingName(he core.HEntity) string",
 						"text": "LeftOutMissingName names an entity LeftOutMissing gives, as what the load left out knew it: \"r007\" or \"point 1 of r007\"."
@@ -8454,7 +8486,11 @@
 					},
 					"MendLeftOut": {
 						"decl": "func (sk *Sketch) MendLeftOut(missing, with core.HEntity) error",
-						"text": "MendLeftOut puts with in the place of missing, an entity the file lacks, wherever what the load left out used it in a role with fits: a group's origin or a constraint's point takes a point, a request's or a constraint's workplane a workplane, a dropped edge a curve."
+						"text": "MendLeftOut puts with in the place of missing, an entity the file lacks, wherever what the load left out used it in a role with fits: a group's origin or a constraint's point takes a point, a request's or a constraint's workplane a workplane, a dropped edge a curve, a group's axis, direction or plane what its kind of group uses (a line or a normal for a lathe's axis, a workplane or a planar face for a mirror's plane), a constraint's entity what its kind of constraint uses there (a line for a point-to-line distance, a circle or an arc for a diameter, a face for a point on a face; LeftOutMissingKind says which)."
+					},
+					"MendLeftOutGroup": {
+						"decl": "func (sk *Sketch) MendLeftOutGroup(missing, with core.HGroup) error",
+						"text": "MendLeftOutGroup puts with, a group of the model, in the place of missing, a group the file lacks, wherever what the load left out used it: as the group a request or a constraint is in, or as a group's operand, which must come before the group; the references is none of them."
 					},
 					"MeshProblems": {
 						"decl": "func (sk *Sketch) MeshProblems() (naked srf.SEdgeList, inters, leaks bool)",
@@ -9559,6 +9595,10 @@
 				"decl": "var ErrFittedSweep",
 				"text": "ErrFittedSweep is SweepSteps' error for a sweep whose surface is fitted, not made of rigid steps: along a cubic, twisted, or held to a direction."
 			},
+			"ErrGroupNotMissing": {
+				"decl": "var ErrGroupNotMissing",
+				"text": "ErrGroupNotMissing is MendLeftOutGroup's error when nothing left out uses the group it is to replace."
+			},
 			"ErrLoadFlanksSameWay": {
 				"decl": "var ErrLoadFlanksSameWay",
 				"text": "ErrLoadFlanksSameWay is ThreadFitMove's error for two buttress threads whose load flanks face the same way along their axis, which no move fits: one of them must be made with its load flank turned (ThreadOptions.LoadFlankBack)."
@@ -9638,10 +9678,6 @@
 			"ErrNothingLeftOut": {
 				"decl": "var ErrNothingLeftOut",
 				"text": "ErrNothingLeftOut is DiscardLeftOut's error when the load left nothing out."
-			},
-			"ErrRootRoundCoarse": {
-				"decl": "var ErrRootRoundCoarse",
-				"text": "ErrRootRoundCoarse is returned for a rounded root (RoundRoot) on a part whose chord tolerance is coarser than rootChordLimit of the root's radius: the Booleans then fail where the root's arcs cross the turned or bored surface."
 			},
 			"ErrSplinePointsFull": {
 				"decl": "var ErrSplinePointsFull",
@@ -10184,8 +10220,8 @@
 				"text": "Mesher is how a curved surface's trimmed region is triangulated.",
 				"kind": "uint8",
 				"values": [
-					"MesherEarClip",
-					"MesherCDT"
+					"MesherCDT",
+					"MesherEarClip"
 				]
 			},
 			"OutlineInto": {
@@ -11260,6 +11296,10 @@
 					"MergeCoincidentSurfaces": {
 						"decl": "func (s *SShell) MergeCoincidentSurfaces()",
 						"text": "MergeCoincidentSurfaces merges coincident, same-color planes that share an edge into one surface carrying all of their trims."
+					},
+					"PaceBy": {
+						"decl": "func (s *SShell) PaceBy(pace func())",
+						"text": "PaceBy has the next Boolean made into s call pace between the steps of its long loops (the curves split, the intersection curves, the surfaces trimmed), on the goroutine that called it: a platform with one thread, a browser page's, lets the page draw there during a Boolean that takes seconds."
 					},
 					"Pieces": {
 						"decl": "func (s *SShell) Pieces() []*SShell",

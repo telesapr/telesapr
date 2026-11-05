@@ -50,9 +50,11 @@ func (m FeaturesMenu) LeftOut() (names []string) {
 }
 
 // LeftOutMissing are the entities what LeftOut lists uses and the file
-// lacks, which MendLeftOut can replace: a group's origin, a request's
-// workplane, a constraint's point or workplane, or a dropped edge.
-// They are not in the model.
+// lacks, which MendLeftOut can replace: a group's origin, axis,
+// direction or plane, a request's workplane, a constraint's point,
+// workplane, line, circle or face, or a dropped edge. They are not in
+// the model; LeftOutMissingKind says what kind each must be replaced
+// by.
 func (m FeaturesMenu) LeftOutMissing() (missing []Entity) {
 	m.d.read(func(sk *sketch.Sketch) {
 		for _, he := range sk.LeftOutMissing() {
@@ -62,14 +64,54 @@ func (m FeaturesMenu) LeftOutMissing() (missing []Entity) {
 	return missing
 }
 
+// LeftOutMissingKind says what kind of entity missing, one
+// LeftOutMissing gives, must be replaced by, from how what LeftOut lists
+// uses it: "a point", "a workplane", "a curve", "a line", "a circle or
+// an arc", "a face", a lathe's axis "a line or a normal", a mirror's
+// plane "a workplane or a planar face", and so on.
+func (m FeaturesMenu) LeftOutMissingKind(missing Entity) (kind string) {
+	m.d.read(func(sk *sketch.Sketch) { kind = sk.LeftOutMissingKind(missing.H) })
+	return kind
+}
+
+// LeftOutMissingGroups are the groups what LeftOut lists uses and the
+// file lacks, which MendLeftOutGroup can replace: the group a request
+// or a constraint is in, or a group's operand. They are not in the
+// model.
+func (m FeaturesMenu) LeftOutMissingGroups() (missing []Group) {
+	m.d.read(func(sk *sketch.Sketch) {
+		for _, h := range sk.LeftOutMissingGroups() {
+			missing = append(missing, Group{m.d, h})
+		}
+	})
+	return missing
+}
+
+// MendLeftOutGroup puts with, a group of the model, in the place of
+// missing, one LeftOutMissingGroups gives, wherever what LeftOut lists
+// used it, never the references: as the group a request or a
+// constraint is in, or as a group's operand, a group before it. What
+// then has all it uses comes back into the model; the rest stays left
+// out.
+// It fails, changing nothing, when nothing left out uses missing or
+// with fits none of its uses. Undo takes it back.
+func (m FeaturesMenu) MendLeftOutGroup(missing, with Group) {
+	m.d.change(func(sk *sketch.Sketch) {
+		if err := sk.MendLeftOutGroup(missing.H, with.H); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
 // MendLeftOut puts with, an entity of the model, in the place of
 // missing, one LeftOutMissing gives, wherever what LeftOut lists used
 // it as with's kind: a point for a group's origin or a constraint's
 // point, a workplane for a request's or a constraint's workplane, a
-// curve for an edge. What then has all it uses comes back into the
-// model; the rest stays left out. It fails, changing nothing, when
-// nothing left out uses missing or with is of none of the kinds it is
-// used as. Undo takes it back.
+// curve for an edge, and for a group's axis, direction or plane and a
+// constraint's other entities the kind LeftOutMissingKind names. What
+// then has all it uses comes back into the model; the rest stays left
+// out. It fails, changing nothing, when nothing left out uses missing
+// or with is of none of the kinds it is used as. Undo takes it back.
 func (m FeaturesMenu) MendLeftOut(missing, with Entity) {
 	m.d.change(func(sk *sketch.Sketch) {
 		if err := sk.MendLeftOut(missing.H, with.H); err != nil {

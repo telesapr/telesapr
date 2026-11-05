@@ -9,6 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -150,6 +151,11 @@ func TestPathSweepTwistedCorner(t *testing.T) {
 	for _, c := range []struct{ angle, lean, twist float64 }{{30, 0, 1}, {90, 0, -2}, {120, 0, 3}, {60, 40, 1.5}} {
 		path := cornerPath(r, c.angle, c.lean)
 		for kind := range 3 {
+			if fixtures.RaceDetector && kind != 1 {
+				// Under the race detector one profile of the three: they
+				// sweep on the same goroutines.
+				continue
+			}
 			loops, area := profileAcross(path, kind)
 			sp := newPath(t, path, topo.PathSweepOptions{Tol: 5e-4, Twist: c.twist, Reach: profileReach(path, loops)})
 			if len(sp.Pieces()) <= len(path) {

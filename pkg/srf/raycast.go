@@ -148,6 +148,36 @@ func (s *SShell) classifyEdgeOn(own *SSurface, indir, outdir *Class, ea, eb, p, 
 			*indir, *outdir = c, c
 			return true
 		}
+		// One curved face at the edge lies on the surface being classified
+		// and the other doesn't, as a seat's sphere and the block's top at
+		// its rim where a ball of its radius stands in it: the side that
+		// runs onto that face is coincident with it, and the other is
+		// classified against the other face. Taken as the tangent case
+		// below, the edge's normal dips off a sphere by its curvature, past
+		// the tangency test, and both sides read as outside.
+		if !smooth {
+			for i := range 2 {
+				if _, _, ok := sphereOfPatch(interSrf[i]); !ok {
+					continue
+				}
+				if !coincidesWith(own, interSrf[i], p, step(i)) {
+					continue
+				}
+				en := [2]geom.Vector{edgeNIn, edgeNOut}
+				dirs := [2]*Class{indir, outdir}
+				for d := range 2 {
+					if en[d].Dot(interEdgeN[i]) < 0 {
+						*dirs[d] = SurfCoincOpp
+						if surfN.Dot(interSurfN[i]) > 0 {
+							*dirs[d] = SurfCoincSame
+						}
+						continue
+					}
+					*dirs[d] = s.ClassifyRegion(en[d], interSurfN[1-i], surfN)
+				}
+				return true
+			}
+		}
 	}
 	if edgeInters == 2 {
 		// Two faces meet at the shell's edge. Classify each side.
@@ -380,6 +410,31 @@ func (s *SShell) classifyEdgeOn(own *SSurface, indir, outdir *Class, ea, eb, p, 
 		surfNOut := srf.NormalAt(pout.U, pout.V)
 		*indir = s.ClassifyRegion(edgeNIn, surfNIn, surfN)
 		*outdir = s.ClassifyRegion(edgeNOut, surfNOut, surfN)
+		// A curved face the edge's curved surface lies on, as a ball's in
+		// the seat of its radius at the seat's rim: the edge's normals,
+		// taken along chords, dip off a sphere by its curvature, past the
+		// coincidence test of ClassifyRegion. A side that runs onto the
+		// face, within its trim, is coincident with it.
+		if own != nil && isSpherePatch(own) && isSpherePatch(srf) {
+			en := [2]geom.Vector{edgeNIn, edgeNOut}
+			ns := [2]geom.Vector{surfNIn, surfNOut}
+			uvs := [2]geom.Point2d{pin, pout}
+			dirs := [2]*Class{indir, outdir}
+			for d := range 2 {
+				if *dirs[d] == SurfCoincSame || *dirs[d] == SurfCoincOpp {
+					continue
+				}
+				if srf.Bsp != nil && srf.Bsp.ClassifyPoint(uvs[d], geom.Point2d{}, srf) == BspUvOutside {
+					continue
+				}
+				if coincidesWith(own, srf, p, en[d]) {
+					*dirs[d] = SurfCoincOpp
+					if ns[d].Dot(surfN) > 0 {
+						*dirs[d] = SurfCoincSame
+					}
+				}
+			}
+		}
 		return true
 	}
 
@@ -483,7 +538,11 @@ func (s *SShell) classifyOnCoincident(own *SSurface, near []int, indir, outdir *
 		if srf.PointAt(puv.U, puv.V).Minus(p).Magnitude() > lengthEps {
 			continue
 		}
-		if srf.Bsp != nil && srf.Bsp.ClassifyPoint(puv, geom.Point2d{}, srf) == BspUvOutside {
+		// p is on the true curve, which bulges past a curved face's
+		// chorded outline by up to its sag: a seat's rim, cut by an exact
+		// circle, lies outside its sphere's trim by that much.
+		if srf.Bsp != nil && srf.Bsp.ClassifyPoint(puv, geom.Point2d{}, srf) == BspUvOutside &&
+			(!isSpherePatch(srf) || srf.Bsp.MinimumDistanceToEdge(puv, srf) > s.Tol.ChordTolMm()) {
 			continue
 		}
 		on = append(on, srf)

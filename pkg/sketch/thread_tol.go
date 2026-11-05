@@ -2,7 +2,9 @@ package sketch
 
 import (
 	"math"
+	"slices"
 
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
 )
@@ -88,54 +90,115 @@ func chordsDipInto(sh *srf.SShell, pt, axis geom.Vector, r float64) bool {
 // trims that don't close even without a chamfer: a 1-12 and a 2-8 BUTT
 // nut 20 mm long, flat crest, at 1% (0.25 and 0.31 of the pitch). At
 // these, every such nut measured comes out sound at chord tolerances
-// up to 1%.
+// up to 1%. A rounded root (RoundRoot) is made at threadOwnRootTol of
+// its arcs' radius: coarser, the Booleans fail where the arcs, 0.07 of
+// a pitch, cross the turned or bored surface (every B1.9 thread from
+// 1/2 to 4 inches and 4 to 20 threads per inch was sound at 0.17 of
+// the radius, most at 0.24).
 const (
 	threadOwnPitchTol = 0.05
 	threadOwnCrestTol = 0.1
+	threadOwnRootTol  = 0.17
 )
 
 // hasOwnTol tells whether a thread made with the options o is made at
 // a tolerance of its own where the sketch's is coarser
-// (threadSolidTol): a modelled thread with a chamfer, or a buttress
-// nut's.
+// (threadSolidTol): a modelled thread with a chamfer or a rounded
+// root, or a buttress nut's.
 func (o ThreadOptions) hasOwnTol() bool {
-	return !o.Cosmetic && (o.Chamfer || o.Internal && o.Spec.Buttress())
+	return !o.Cosmetic && (o.Chamfer || o.RoundRoot || o.Internal && o.Spec.Buttress())
 }
 
 // threadSolidTol is the tolerance the group g's solid is made at when
 // g is one of the groups of a thread of its own tolerance (hasOwnTol)
 // and the sketch's tolerance is coarser than the thread can be made at
-// (threadOwnPitchTol, threadOwnCrestTol), and whether it is. Its
-// sketches are made at it too: a Boolean takes each surface it copies
-// to its result's tolerance, so the part's surfaces reach the thread's
-// turning at the thread's tolerance through the sketch before it, as
-// the cones and the ridges need them (at the sketch's, the end's plane
-// meets the cones, and the bore the ridges, in chords too coarse for
-// the ridges' curves to close on). The groups after the thread take
-// the part back to the sketch's.
+// (ownTolLimit), and whether it is. Its sketches are made at it too: a
+// Boolean takes each surface it copies to its result's tolerance, so
+// the part's surfaces reach the thread's turning at the thread's
+// tolerance through the sketch before it, as the cones and the ridges
+// need them (at the sketch's, the end's plane meets the cones, and the
+// bore the ridges, in chords too coarse for the ridges' curves to close
+// on). The groups after the thread take the part back to the sketch's.
+//
+// A rounded root's thread needs the part it is turned or bored in made
+// at its tolerance too, every group before it (partTolLimit).
 func (sk *Sketch) threadSolidTol(g *Group) (srf.Tolerance, bool) {
 	// Most models have no such thread: they are told apart without
 	// finding every thread's groups, for every group.
 	if !sk.hasThreadOfOwnTol() {
 		return srf.Tolerance{}, false
 	}
-	helix, ok := sk.ThreadOfGroup(g.H)
-	if !ok {
-		return srf.Tolerance{}, false
-	}
-	o := sk.Group(helix).Thread.LoadStated()
-	if !o.hasOwnTol() {
-		return srf.Tolerance{}, false
-	}
-	limit := threadOwnPitchTol * o.Spec.Pitch
-	if l, err := o.layout(0); err == nil && l.profile.CrestRoundRadius > 0 {
-		limit = min(limit, threadOwnCrestTol*l.profile.CrestRoundRadius)
+	of := sk.ThreadOfGroups()
+	limit := sk.partTolLimit(g, of)
+	if helix, ok := of[g.H]; ok {
+		if o := sk.Group(helix).Thread.LoadStated(); o.hasOwnTol() {
+			limit = finer(limit, o.ownTolLimit())
+		}
 	}
 	t := sk.tol
 	if !(limit > 0) || t.ChordTolMm() <= limit {
 		return srf.Tolerance{}, false
 	}
 	return srf.Tol(limit, t.MaxSegments()).WithMesher(t.Mesher()).WithAngle(t.AngleDeg()), true
+}
+
+// ownTolLimit is the chord tolerance a thread of its own tolerance
+// (hasOwnTol) is made at where the sketch's is coarser: a part of its
+// pitch, or of a rounded crest's or root's radius where that is finer
+// (threadOwnPitchTol, threadOwnCrestTol, threadOwnRootTol).
+func (o ThreadOptions) ownTolLimit() float64 {
+	limit := threadOwnPitchTol * o.Spec.Pitch
+	if l, err := o.layout(0); err == nil {
+		if r := l.profile.CrestRoundRadius; r > 0 {
+			limit = min(limit, threadOwnCrestTol*r)
+		}
+		if r := l.profile.RootRoundRadius; r > 0 {
+			limit = min(limit, threadOwnRootTol*r)
+		}
+	}
+	return limit
+}
+
+// partTolLimit is the finest tolerance of the threads with rounded
+// roots (RoundRoot) whose groups come after g, of the threads of
+// (ThreadOfGroups), or 0 for none: g's solid is part of what such a
+// thread is turned or bored in, and is made at the thread's tolerance
+// (threadSolidTol). Made at a coarser one, the part's edges keep its
+// chords through the Booleans after it, which take its surfaces to
+// their own tolerance but not its curves, and the ridges' union with
+// the turned part left edges open along the root between the turns,
+// though every group of the thread was made at the finer tolerance: a
+// 3/4-10 BUTT screw at 0.5% had 34, on a rod alone or with a head
+// added after it.
+func (sk *Sketch) partTolLimit(g *Group, of map[core.HGroup]core.HGroup) float64 {
+	i := slices.Index(sk.GroupOrder, g.H)
+	if i < 0 {
+		return 0
+	}
+	limit := 0.0
+	seen := map[core.HGroup]bool{}
+	for _, h := range sk.GroupOrder[i+1:] {
+		helix, ok := of[h]
+		if !ok || seen[helix] || helix == of[g.H] {
+			continue
+		}
+		seen[helix] = true
+		if o := sk.Group(helix).Thread.LoadStated(); o.RoundRoot && o.hasOwnTol() {
+			limit = finer(limit, o.ownTolLimit())
+		}
+	}
+	return limit
+}
+
+// finer is the finer of two chord tolerances, where 0 is none.
+func finer(a, b float64) float64 {
+	switch {
+	case a <= 0:
+		return b
+	case b <= 0:
+		return a
+	}
+	return min(a, b)
 }
 
 // hasThreadOfOwnTol tells whether a group keeps a modelled thread made

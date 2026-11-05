@@ -40,8 +40,7 @@ shot interface-4-group tw
 cursor on
 move 450 285
 shot interface-5-hover gw
-down L 450 285
-up L 450 285
+click-face top face of g003-block
 shot interface-6-selected
 key esc
 # The sketch made active from the home screen, seen from above, with

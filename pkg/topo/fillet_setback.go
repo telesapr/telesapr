@@ -89,6 +89,21 @@ type setbackSide struct {
 	// it short of the fold.
 	fold bool
 	lean float64
+	// smooth: the hole's corner at the side's start is no corner, the
+	// side going on from the one before it, a curve split in two so that
+	// the hole has an even number of sides (saddleSharpAt); a rung of the
+	// ladder must end there.
+	smooth bool
+	// free: the patch need not be tangent to anything along the side, a
+	// piece of an edge left sharp that the patch meets at an angle, as
+	// the face it replaces met the face beyond (saddleSideAt); e is then
+	// only the plane the row beside it leans into the hole in.
+	free bool
+	// reflex: the hole's corner at the side's start is wider than a
+	// straight angle, as where two edges left sharp meet (saddleSideAt):
+	// a rung leaves it against the sum of the legs either side, and
+	// beta there is negated.
+	reflex bool
 }
 
 func (s setbackSide) bezier() srf.SBezier {
@@ -504,7 +519,9 @@ func setbackPatches(sides []setbackSide, out geom.Vector) ([]srf.SSurface, error
 		rot := append(append([]setbackSide{}, sides[start:]...), sides[:start]...)
 		ps, err := setbackLayout(rot)
 		if err != nil {
-			if firstErr == nil {
+			// A layout that can't be laid out at this start says less than
+			// one that was laid out and folded.
+			if fx, ok := errors.AsType[*FilletError](firstErr); firstErr == nil || ok && fx.Msg == msgNoRung {
 				firstErr = err
 			}
 			continue
@@ -560,6 +577,10 @@ func foldFree(ps []srf.SSurface, out geom.Vector, folds bool) float64 {
 	}
 	return worst
 }
+
+// msgNoRung refuses a ladder laid out from a corner that leaves a side
+// split where no rung ends.
+const msgNoRung = "a corner's hole split where no rung ends"
 
 // setbackLayout is setbackPatches with the layout started at the
 // sides' first corner.
@@ -638,9 +659,28 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 		rev        bool
 	}
 	var quads [][4]ref
-	// beta1 is beta at a curve's far end: -1 where it ends at a corner of
-	// the hole, 1 where it ends in the middle.
-	var beta1 []float64
+	// beta0 and beta1 are beta at a curve's start and far end: 1 at the
+	// start and -1 at the end where it is a corner of the hole, 1 where
+	// it ends in the middle, and 0 where it is a point a side was split
+	// at (setbackSide.smooth), whose legs either side sum to nothing.
+	var beta0, beta1 []float64
+	// rung puts in the betas of a ladder's rung from corner a to corner b.
+	rung := func(a, b int) {
+		b0, b1 := 1.0, -1.0
+		if sides[a].smooth {
+			b0 = 0
+		}
+		if sides[b].smooth {
+			b1 = 0
+		}
+		if sides[a].reflex {
+			b0 = -1
+		}
+		if sides[b].reflex {
+			b1 = 1
+		}
+		beta0, beta1 = append(beta0, b0), append(beta1, b1)
+	}
 	h := func(i int) ref { return ref{hole: (i + ns) % ns, diag: -1} }
 	if k := ns / 2; k%2 == 1 {
 		// An odd number of fillets: a star, curves from every other corner
@@ -650,7 +690,15 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 		for m := range k {
 			quads = append(quads, [4]ref{h(2 * m), h(2*m + 1),
 				{hole: -1, diag: (m + 1) % k}, {hole: -1, diag: m, rev: true}})
-			beta1 = append(beta1, 1)
+			beta0, beta1 = append(beta0, 1), append(beta1, 1)
+		}
+		for _, sd := range sides {
+			if sd.smooth {
+				return nil, filletErr(sd.ctrl[0], "a corner's hole split where a star has no spoke")
+			}
+			if sd.reflex {
+				return nil, filletErr(sd.ctrl[0], "a corner's hole wider than a straight angle where a star has no spoke")
+			}
 		}
 	} else {
 		// An even number: a ladder of rungs across the hole, each from a
@@ -660,7 +708,8 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 		// the last the rung before and three sides.
 		nq := k - 1
 		quads = append(quads, [4]ref{h(0), h(1), h(2), {hole: -1, diag: 0, rev: true}})
-		beta1 = append(beta1, -1)
+		rung(0, 3)
+		ends := map[int]bool{0: true, 3: true}
 		ra, rb := 0, 3
 		for q := 1; q < nq; q++ {
 			prev := ref{hole: -1, diag: q - 1}
@@ -670,8 +719,16 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 			}
 			na, nb := (ra-1+ns)%ns, rb+1
 			quads = append(quads, [4]ref{prev, h(rb), {hole: -1, diag: q, rev: true}, h(na)})
-			beta1 = append(beta1, -1)
+			rung(na, nb)
+			ends[na], ends[nb] = true, true
 			ra, rb = na, nb
+		}
+		// A side split elsewhere than at a rung's end would leave a patch
+		// with a corner that is no corner, where it has no normal.
+		for i, sd := range sides {
+			if sd.smooth && !ends[i] {
+				return nil, filletErr(sd.ctrl[0], "%s", msgNoRung)
+			}
 		}
 	}
 	nq := len(quads)
@@ -770,7 +827,7 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 						co[pv(q, ib1, jb1, d)]++
 						co[pv(o[0], ia, ja, d)] -= 2
 						if k < n {
-							f := float64(n-k) / n
+							f := beta0[r.diag] * float64(n-k) / n
 							i2, j2 := dk(k + 1)
 							co[pv(o[0], i2, j2, d)] -= f
 							co[pv(o[0], ia, ja, d)] += f
@@ -803,6 +860,9 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 				for d := range 3 {
 					eq(map[int]float64{pv(q, i, j, d): 1}, comp(ctrl[k], d), hard)
 				}
+			}
+			if side.free {
+				continue
 			}
 			if !side.arc {
 				for k := 0; k <= n; k++ {
@@ -1019,6 +1079,9 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 				}
 				var want geom.Vector
 				switch {
+				case r.hole >= 0 && sides[r.hole].free:
+					// Meets what is beyond at an angle: nothing to be tangent to.
+					continue
 				case r.hole >= 0 && sides[r.hole].arc:
 					sb := sides[r.hole].bezier()
 					want = sides[r.hole].e.Cross(sb.TangentAt(tk))

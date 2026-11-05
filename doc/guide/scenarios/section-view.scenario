@@ -19,9 +19,7 @@ key esc
 key x shift
 view rotated
 menu View|Zoom To Fit
-move 420 370
-down L 420 370
-up L 420 370
+click-face side face of g003-extrude from r005-line-segment
 shot section-view-1-face gw
 menu View|Section View
 # At offset 0 the plane lies on the face clicked; the screen moves it.
