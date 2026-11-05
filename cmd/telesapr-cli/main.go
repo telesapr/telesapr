@@ -136,7 +136,6 @@ File formats:
 		list(platform.SurfaceFileFilters))
 	_, _ = io.WriteString(w, scriptUsage)
 	_, _ = io.WriteString(w, mcpUsage)
-	_, _ = io.WriteString(w, relayUsage)
 	_, _ = io.WriteString(w, profileUsage)
 }
 
@@ -648,8 +647,6 @@ func runCommandLine(ctx context.Context, args []string, stdin io.Reader, stdout,
 		return runScript(ctx, args, stdin, stdout, stderr)
 	case args[1] == "mcp":
 		return runMCP(ctx, args, stdin, stdout, stderr)
-	case args[1] == "browser-relay" || startedByBrowser(args):
-		return runRelay(args, stdin, stdout, stderr)
 	}
 	if !runCommand(args, stderr, rep) {
 		return 1

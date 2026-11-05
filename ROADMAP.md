@@ -22,7 +22,7 @@ item is sized only after a two-day spike on its hardest fixture.
 | 5 | [K3 contact](#k3-coincident-and-tangent-contact) | kernel foundation | S | Sides closer than the chord tolerance, more than a tenth of it |
 | 6 | [F9 Mechanisms](#f9-mechanisms) | feature | M | Asked for 2026-11-04: pull a part and the parts joined to it move; planned, not begun |
 | 7 | [F5 small conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
-| 8 | [F8 TeleSAPR in a browser](#f8-telesapr-in-a-browser) | feature | S each | Built; publishing the extension |
+| 8 | [F8 TeleSAPR in a browser](#f8-telesapr-in-a-browser) | feature | S each | Built; module size only |
 | 9 | [F6 IGES](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
 ## Open defects
@@ -197,7 +197,6 @@ Built: `cmd/telesapr-web` on `pkg/platform/web` and a WebGL 2 renderer, `make wa
 | Item | Size |
 |---|---|
 | Module size: 39.0 MB after `wasm-opt`, 11.47 MB gzipped, since 2026-11-04 without package `net` (1.2 MB) or `encoding/gob` (the STEP cache's own format, 0.46 MB). What is left is the browser's features (scripting 3 MB of code, JSON, fonts, packs) and Go's tables; `docs.json` gzipped saves nothing over the wire. Further cuts would cost a feature (`doc/dev-notes/browser.md` Size) | open, nothing cheap left |
-| The AI relay extension in a store, shipped with a release | Built 2026-11-04 (`cmd/telesapr-web/extension`, `telesapr-cli browser-relay`): an MCP client reaches the page through it, loaded unpacked from the sources. Left: publishing it (Chrome Web Store, addons.mozilla.org) and a zip of it with the site or the release | S |
 
 ## Waiting for the user
 

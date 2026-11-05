@@ -188,22 +188,11 @@ headless platform, timed under node) was removed on 2026-11-03; it is in `git sh
 
 - The agent's connection comes through postMessage (`pkg/script/agent/socket_js.go`,
   `msgconn.go`, `web/agent-client.js`), carrying the agent's own protocol, not MCP. An MCP client
-  outside the browser reaches it through the extension in `cmd/telesapr-web/extension` and
-  `telesapr-cli browser-relay` (`pkg/script/agent/relay.go`, `native.go`), which the extension
-  starts by native messaging and which listens on a socket as the window does, so
-  `telesapr-cli mcp` is unchanged; the MCP server stays out of the page, which would bring
-  `net/http` back. Native messages are a megabyte at most from the relay, so a longer line (a
-  picture) goes in parts. `TestRelay` tries the relay with a stand-in extension serving a
-  `MessageConn` as the page does; the extension's JavaScript has no test of its own. Tried by hand
-  2026-11-04 in headless Chrome 156: `run_script`, `render` and an answer of 660 kB (in parts)
-  came through from `telesapr-cli mcp`, and with AI connections off the client was told to turn
-  them on. Chrome ignores `--load-extension` now; `Extensions.loadUnpacked` over
-  `--remote-debugging-pipe` with `--enable-unsafe-extension-debugging` loads it, and a
-  `NativeMessagingHosts` folder in the `--user-data-dir` holds the relay's manifest. Firefox was
-  not tried. Left: the
-  extension is loaded unpacked from the sources, in no store, and nothing ships it with a
-  release. A site other than the page's is asked about in a dialog, which a headless browser
-  can't answer, so only the page's own site was tried end to end.
+  outside the browser has no way in: the MCP server in the page would bring `net/http` back, and a
+  relay through a browser extension (`telesapr-cli browser-relay`, built 2026-11-04) was removed
+  on 2026-11-05 as needing a local `telesapr-cli` that can as well drive the window. A site other
+  than the page's is asked about in a dialog, which a headless browser can't answer, so only the
+  page's own site was tried end to end.
 - `testdata/ui/scripts` are not run against this platform (they use the headless platform's
   recorded dialogs). CI neither builds nor tests the js/wasm target, so a
   change can break it unseen; `make wasm` is the check.
