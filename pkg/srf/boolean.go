@@ -13,9 +13,8 @@ import (
 // MakeFromBoolean sets s to the boolean combination of a and b.
 func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 	defer trace.StartRegion(context.Background(), "boolean").End()
-	// stage marks a step of the Boolean in an execution trace.
-	stage := func(name string) func() { return trace.StartRegion(context.Background(), name).End }
 	s.BooleanFailed = false
+	s.Fused = 0
 	s.Tol = s.Tol.Or(a.Tol).Or(b.Tol)
 	if s.pace == nil {
 		s.pace = a.pace
@@ -23,8 +22,18 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 	if s.pace == nil {
 		s.pace = b.pace
 	}
-	b = snapTangent(a, snapToSpheres(a, snapToCones(a, snapToCylinders(a, snapToPlanes(a, b)))))
+	b = snapTangent(a, snapToSpheres(a, snapToCones(a, snapToCylinders(a, snapToPlanes(a, b), 0), 0), 0), 0)
+	wide := snapBetween(a, b)
+	s.makeBoolean(a, b, op)
+	if wide != b {
+		s.retryFused(a, b, wide, op)
+	}
+}
 
+// makeBoolean is MakeFromBoolean once its operands are fused.
+func (s *SShell) makeBoolean(a, b *SShell, op SurfaceCombineAs) {
+	// stage marks a step of the Boolean in an execution trace.
+	stage := func(name string) func() { return trace.StartRegion(context.Background(), name).End }
 	end := stage("classifying bsps")
 	a.MakeClassifyingBsps(nil)
 	s.paced()

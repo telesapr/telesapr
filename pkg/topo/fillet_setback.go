@@ -169,7 +169,6 @@ func (t *Topology) setbackCornerAt(v int, edges []filletEdge, byEdge map[int]int
 		return nil, filletErr(p, "fillets of radius %s meet here above an edge left sharp; "+
 			"round that edge too, or give the fillets one radius", strings.Join(names, " and "))
 	}
-	rmax := 0.0
 	for _, x := range t.Vertices[v].Edges {
 		i := byEdge[x]
 		fe := &edges[i]
@@ -177,7 +176,6 @@ func (t *Topology) setbackCornerAt(v int, edges []filletEdge, byEdge map[int]int
 			return nil, filletErr(p, "a circular edge's fillet meets other fillets of other radii here")
 		}
 		round = append(round, fe)
-		rmax = math.Max(rmax, fe.r)
 	}
 	if len(round) < 3 || len(t.facesAt(v)) != len(round) {
 		return nil, filletErr(p, "the corner's edges and faces don't go round it one after another")
@@ -189,6 +187,21 @@ func (t *Topology) setbackCornerAt(v int, edges []filletEdge, byEdge map[int]int
 			return nil, filletErr(p, "a face at the corner is curved")
 		}
 		normal[f] = n
+	}
+	return setbackHole(p, v, round, t.facesAt(v), normal)
+}
+
+// setbackHole is the setback corner at p of the rounded edges round,
+// which meet at vertex v (an edge's end away from p is its other
+// vertex), between the flat faces faces of outward normals normal: each
+// face lies between two of the edges, and every edge's line passes
+// through p. At a vertex of the solid p is the vertex; at the foot of an
+// edge rounded after its foot was filled it is where the edge and the
+// filled ones met before (footCornerAt).
+func setbackHole(p geom.Vector, v int, round []*filletEdge, faces []int, normal map[int]geom.Vector) (*filletCorner, error) {
+	rmax := 0.0
+	for _, fe := range round {
+		rmax = math.Max(rmax, fe.r)
 	}
 	away := func(fe *filletEdge) geom.Vector {
 		if fe.v[1] == v {
@@ -213,7 +226,7 @@ func (t *Topology) setbackCornerAt(v int, edges []filletEdge, byEdge map[int]int
 	}
 	// Where the tangent lines of two fillets cross on their face.
 	cross := map[int]geom.Vector{}
-	for _, f := range t.facesAt(v) {
+	for _, f := range faces {
 		var two []*filletEdge
 		for _, g := range round {
 			if g.f[0] == f || g.f[1] == f {

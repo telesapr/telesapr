@@ -289,7 +289,7 @@ func widenedFillet(sh *srf.SShell, picks []FilletPick, r float64, origin uint32,
 		}
 		cuts = append(cuts, cut)
 	}
-	if err := filletPicksWith(&wide, picks, r, origin, flat, nil, false, false); err != nil {
+	if err := filletPicksWith(&wide, picks, r, origin, flat, nil, false, false, false); err != nil {
 		return srf.SShell{}, false
 	}
 	out := wide

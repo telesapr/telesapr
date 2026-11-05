@@ -47,12 +47,14 @@ func flatPlanesOf(sh *SShell, grow geom.Vector) []flatPlane {
 // manifold along the line, as the true union of solids that touch, and
 // Check Solid says so; the difference and the intersection are sound).
 // Every match must ask the same move, or nothing moves; a never moves.
-// It returns b if nothing moved, or a moved copy.
-func snapTangent(a, b *SShell) *SShell {
+// It returns b if nothing moved, or a moved copy. A reach over delta
+// takes gaps up to it (snapBetween).
+func snapTangent(a, b *SShell, reach float64) *SShell {
 	delta := a.Tol.Or(b.Tol).ChordTolMm() / snapPlaneDiv
 	if delta <= snapPlaneFloor {
 		return b
 	}
+	reach = max(reach, delta)
 	grow := geom.Vector{X: 2 * delta, Y: 2 * delta, Z: 2 * delta}
 	var move geom.Vector
 	found, conflict := false, false
@@ -62,7 +64,7 @@ func snapTangent(a, b *SShell) *SShell {
 	// way to touch a's round.
 	ask := func(n geom.Vector, s, r, bMoves float64) {
 		gap := math.Abs(s) - r
-		if math.Abs(gap) <= snapPlaneFloor || math.Abs(gap) >= delta {
+		if math.Abs(gap) <= snapPlaneFloor || math.Abs(gap) >= reach {
 			return
 		}
 		sign := 1.0

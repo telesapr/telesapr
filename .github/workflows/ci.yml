@@ -189,8 +189,9 @@ jobs:
     # master; make ci runs it before a merge. scripts/go-test.sh runs the slow packages
     # as several processes, and the shards take about the same time;
     # with the build cache, a package no commit touched since the last
-    # run is a cached result. pkg/ui and pkg/script/api run under the
-    # detector in the nightly workflow.
+    # run is a cached result. As in make ci, the HEAVY tests are left
+    # out (RACE_TESTS=light); pkg/ui, pkg/script/api and the heavy tests
+    # run under the detector in the nightly workflow.
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 40

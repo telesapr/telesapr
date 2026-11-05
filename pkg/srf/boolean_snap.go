@@ -172,12 +172,14 @@ func cylindersOf(sh *SShell, grow geom.Vector) []cylinder {
 // its arcs' middle control points, so that b's caps and arcs stay what
 // they were, a hair larger or smaller. A pin a hair under or over a
 // bore's size then fills it; the Boolean meets coincident sides, which
-// classifyEdgeOn takes as such.
-func snapToCylinders(a, b *SShell) *SShell {
+// classifyEdgeOn takes as such. A reach over delta takes radii off by up
+// to it (snapBetween), the axes still within delta.
+func snapToCylinders(a, b *SShell, reach float64) *SShell {
 	delta := a.Tol.Or(b.Tol).ChordTolMm() / snapPlaneDiv
 	if delta <= snapPlaneFloor {
 		return b
 	}
+	reach = max(reach, delta)
 	grow := geom.Vector{X: delta, Y: delta, Z: delta}
 	type match struct {
 		c, dir geom.Vector
@@ -196,7 +198,7 @@ func snapToCylinders(a, b *SShell) *SShell {
 			if cb.c.DistanceToLine(ca.c, ca.dir) > delta {
 				continue
 			}
-			if d := math.Abs(ca.r - cb.r); d > snapPlaneFloor && d < delta {
+			if d := math.Abs(ca.r - cb.r); d > snapPlaneFloor && d < reach {
 				ms = append(ms, match{ca.c, ca.dir, cb.r, ca.r})
 			}
 		}

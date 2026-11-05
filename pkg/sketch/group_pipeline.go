@@ -300,6 +300,7 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		// If the Boolean failed, then we should note that in the text screen
 		// for this group.
 		g.BooleanFailed = g.RunningShell.BooleanFailed
+		g.noteFused(g.RunningShell.Fused)
 	} else {
 		g.combineMeshes(prevg, srcg.MeshCombine)
 	}

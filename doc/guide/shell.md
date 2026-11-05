@@ -109,9 +109,16 @@ meets a flat side kept at an inside corner, as a round lobe on a block's edge do
 wall under the flat side stops a little short of the corner: the corner moves along a curve going
 up, and the inside's faces are flat. On a lobe of radius 4 on a block 10 high it stops about a
 fiftieth of the thickness short at small drafts and up to 0.25 at a draft of 10°, and the volume
-stays within 0.22% of a shell whose walls reach the corner. The group says how far short in a
-note on its screen (and in a script, `Note()` on the group). A
-two-sided draft's inside leans both ways from its neutral plane, as the solid does. (A drafted
+stays within 0.22% of a shell whose walls reach the corner. Beside a round side kept, as a lobe
+on a disc's rim, the wall under the rim stops short the same way, on a flat face square to the
+rim at the inside's foot; there the step can be set further back, to leave room outside the rim:
+on a lobe of radius 3 on a disc of radius 10, 10 high, from 0.01 short at small drafts up to
+nearly 1 at a draft of 8° and a thickness of 0.5, the volume within 1.3% of walls reaching the
+corner. The group says how far short in a note on its screen (and in a
+script, `Note()` on the group). A
+two-sided draft's inside leans both ways from its neutral plane, as the solid does, and each half
+of a side, above and below that plane, is a face of its own: one can be taken away and the other
+kept, as a lobe opened above the sketch only, whose half below stays a wall. (A drafted
 extrusion of lines only has flat faces, and is hollowed like any solid of flat faces.)
 
 **A union of such parts.** A solid joined by unions from lathes, revolves and extrusions,
@@ -157,9 +164,12 @@ through it.
   twice the thickness.
 - A revolve's curved face opened where the solid comes back within an eighth of the thickness
   outside it, as across a slot that narrow, is refused: the inside would cut into the far side.
-  A drafted extrusion's round side opened at an inside corner beside a round side kept is
-  refused, and beside a flat side kept where the corner is too tight for the wall's end to step
-  round it.
+  A drafted extrusion's round side opened at an inside corner is refused where the corner is too
+  tight for the wall's end to step round it, beside a flat or a round side kept.
+- A two-sided draft whose round sides are kept on both sides of the neutral plane, at a steep
+  draft, is refused: the two halves of a round side meet there in a crease, and the Boolean that
+  takes the inside away leaves that seam open (a disc drafted 10° both ways; the lobed block
+  opened at its lobe above only, from 7°). Make the draft smaller, or take the round sides away.
 - A profile of curves other than lines and arcs is refused.
 - Beside a round hole, walls thinner than about twice the chord tolerance (how far the mesh may
   stray from the true surface, set on the configuration screen) can come out unsound: the hole's

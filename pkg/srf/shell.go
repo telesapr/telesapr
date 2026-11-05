@@ -69,6 +69,13 @@ type SShell struct {
 
 	BooleanFailed bool
 
+	// Fused is how far the last Boolean made into s moved round faces of
+	// its second operand onto the first's, past a tenth of the chord
+	// tolerance and under the tolerance (snapBetween), because the
+	// Boolean of the two as drawn failed or left its mesh open; 0 if it
+	// moved none so far. A feature says so on its group.
+	Fused float64
+
 	// index finds the surfaces a line meets, while a Boolean
 	// classifies against the shell: MakeClassifyingBsps makes it,
 	// CleanupAfterBoolean drops it.
@@ -109,6 +116,7 @@ func (s *SShell) Clear() {
 	s.Curve = nil
 	s.Surface = nil
 	s.BooleanFailed = false
+	s.Fused = 0
 	s.index = nil
 }
 
@@ -1451,7 +1459,7 @@ func (s *SShell) FindCurveBySurface(h core.HSSurface) []*SCurve {
 // a triangulation (the trims' BSPs and edge lists) is left for the copy
 // to build again.
 func (s *SShell) Clone() SShell {
-	out := SShell{Tol: s.Tol, BooleanFailed: s.BooleanFailed, pace: s.pace}
+	out := SShell{Tol: s.Tol, BooleanFailed: s.BooleanFailed, Fused: s.Fused, pace: s.pace}
 	out.Surface = make([]SSurface, len(s.Surface))
 	for i := range s.Surface {
 		ss := s.Surface[i]

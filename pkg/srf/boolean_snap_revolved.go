@@ -77,12 +77,13 @@ func conesOf(sh *SShell, grow geom.Vector) []cone {
 // every point of b over that side's heights between a little inside its
 // radius there and a little past its arcs' middle control points. A cone
 // a hair larger or smaller than a countersink of its angle then fills
-// it, as a pin does a bore.
-func snapToCones(a, b *SShell) *SShell {
+// it, as a pin does a bore. reach is snapToCylinders'.
+func snapToCones(a, b *SShell, reach float64) *SShell {
 	delta := a.Tol.Or(b.Tol).ChordTolMm() / snapPlaneDiv
 	if delta <= snapPlaneFloor {
 		return b
 	}
+	reach = max(reach, delta)
 	grow := geom.Vector{X: delta, Y: delta, Z: delta}
 	type match struct {
 		a          cone
@@ -112,7 +113,7 @@ func snapToCones(a, b *SShell) *SShell {
 				continue
 			}
 			off := cb.r0 - ca.radiusAt(h0)
-			if d := math.Abs(off) / math.Sqrt(1+ca.k*ca.k); d > snapPlaneFloor && d < delta {
+			if d := math.Abs(off) / math.Sqrt(1+ca.k*ca.k); d > snapPlaneFloor && d < reach {
 				ms = append(ms, match{ca, off, min(h0, h1), max(h0, h1)})
 			}
 		}
@@ -209,11 +210,13 @@ func spheresOf(sh *SShell, grow geom.Vector) []sphere {
 // onto a's sphere, and with it every point of b within that patch's box
 // between a little inside its radius and its control net's reach. A ball
 // a hair larger or smaller than a seat of its radius then fills it.
-func snapToSpheres(a, b *SShell) *SShell {
+// reach is snapToCylinders'.
+func snapToSpheres(a, b *SShell, reach float64) *SShell {
 	delta := a.Tol.Or(b.Tol).ChordTolMm() / snapPlaneDiv
 	if delta <= snapPlaneFloor {
 		return b
 	}
+	reach = max(reach, delta)
 	grow := geom.Vector{X: 2 * delta, Y: 2 * delta, Z: 2 * delta}
 	type match struct {
 		a, b sphere
@@ -228,7 +231,7 @@ func snapToSpheres(a, b *SShell) *SShell {
 			if sb.c.Minus(sa.c).Magnitude() > delta {
 				continue
 			}
-			if d := math.Abs(sa.r - sb.r); d > snapPlaneFloor && d < delta {
+			if d := math.Abs(sa.r - sb.r); d > snapPlaneFloor && d < reach {
 				ms = append(ms, match{sa, sb})
 			}
 		}

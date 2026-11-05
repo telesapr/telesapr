@@ -41,6 +41,21 @@ type DraftedSet struct {
 // those of the drafted extrusion it was given.
 var ErrNotDrafted = errors.New("the solid is not one drafted extrusion of its profile")
 
+// errTwoSidedSeamOpen is ShellDrafted's error when the shell of a
+// two-sided draft comes out open, as it does along the neutral plane
+// where round sides kept meet at a steep draft.
+var errTwoSidedSeamOpen = errors.New("the Boolean that takes the inside away left no closed solid: where round sides " +
+	"drafted both ways meet on the neutral plane, a steep draft leaves that seam open; make the draft smaller, " +
+	"or take the round sides away too")
+
+// errTwoSidedJoin is draftedInsideOf's error when the parts of a
+// two-sided draft's inside, one each way from the neutral plane, don't
+// join: as the shell's seam (errTwoSidedSeamOpen), where round sides
+// kept meet there at a steep draft.
+var errTwoSidedJoin = errors.New("the Boolean that joins the inside's two drafted parts on the neutral plane failed: " +
+	"where round sides drafted both ways meet there, a steep draft leaves that seam open; make the draft smaller, " +
+	"or take the round sides away too")
+
 // ShellDrafted hollows sh, which is d, to walls thick, taking away faces
 // open (indices into its topology). The faces of the cavity get origins
 // from origin up. note, when not empty, says how the shell differs from
@@ -73,8 +88,20 @@ func ShellDrafted(sh *srf.SShell, d DraftedSolid, open []int, thick float64, ori
 	if out.BooleanFailed {
 		return nil, "", errors.New("the Boolean that takes the inside away failed")
 	}
+	// A result that is no closed solid, from one that was, is refused,
+	// never made. So far only two-sided drafts come to it: where their
+	// round sides kept meet on the neutral plane at a crease of twice a
+	// steep draft (the lobed block at 9° and thickness 1, a disc at 10°),
+	// the Boolean leaves the seam open, even cutting a small box out of
+	// the middle of the solid, far from it.
+	if unsound(out) && !unsound(sh) {
+		if d.Lo < -geom.LengthEps && d.Hi > geom.LengthEps {
+			return nil, "", errTwoSidedSeamOpen
+		}
+		return nil, "", errors.New("the Boolean that takes the inside away left no closed solid")
+	}
 	if short > 0 {
-		note = fmt.Sprintf("the wall under a flat face stops up to %.3g short of the inside corner "+
+		note = fmt.Sprintf("the wall under a face kept stops up to %.3g short of the inside corner "+
 			"where a round face taken away meets it", short)
 	}
 	return out, note, nil
@@ -111,9 +138,28 @@ func draftedInsideOf(t *Topology, d DraftedSolid, modeOf func(f int) faceMode, t
 	if zhi-zlo <= geom.LengthEps {
 		return nil, 0, shellErr(t.faceAnchor(0), "a thickness of %g makes the walls meet, closing up the inside", thick)
 	}
-	sides, steps, err := draftedSides(t, d, modeOf)
-	if err != nil {
-		return nil, 0, err
+	// A side is moved as its faces each way from the neutral plane say: a
+	// two-sided draft's side is two faces, one each way, and one may be
+	// taken away and the other kept.
+	type moved struct {
+		sides [][][]float64
+		steps [][][]draftStep
+	}
+	byWay := map[float64]moved{}
+	for _, w := range []float64{-1, 1} {
+		lo, hi := d.Lo, d.Hi
+		if lo < -geom.LengthEps && hi > geom.LengthEps {
+			if w < 0 {
+				hi = 0
+			} else {
+				lo = 0
+			}
+		}
+		sides, steps, err := draftedSides(t, d, modeOf, lo, hi)
+		if err != nil {
+			return nil, 0, err
+		}
+		byWay[w] = moved{sides, steps}
 	}
 
 	for k, set := range d.Sets {
@@ -135,7 +181,8 @@ func draftedInsideOf(t *Topology, d DraftedSolid, modeOf func(f int) faceMode, t
 			if w.to-w.from <= geom.LengthEps {
 				continue
 			}
-			part, sh, err := draftedInside(set, sides[k], steps[k], dir, w.way, w.from, w.to, thick, tol)
+			m := byWay[w.way]
+			part, sh, err := draftedInside(set, m.sides[k], m.steps[k], dir, w.way, w.from, w.to, thick, tol)
 			if err != nil {
 				return nil, 0, err
 			}
@@ -147,6 +194,9 @@ func draftedInsideOf(t *Topology, d DraftedSolid, modeOf func(f int) faceMode, t
 			u := &srf.SShell{Tol: tol}
 			u.MakeFromUnionOf(inner, part)
 			if u.BooleanFailed {
+				if len(ways) > 1 {
+					return nil, 0, errTwoSidedJoin
+				}
 				return nil, 0, errors.New("the Boolean that joins the inside's drafted parts failed")
 			}
 			inner = u
@@ -194,10 +244,11 @@ func strongest(modes []faceMode) faceMode {
 
 // draftedSides is, of each set's loops' curves, how far in units of the
 // thickness its side moves in square to itself, found from the faces of
-// t its side lies on, at points between its ends and the solid's; and
+// t its side lies on, at points between its ends and the solid's from
+// lo to hi along the extrusion (distances from the neutral plane); and
 // at which inside corners a curved side taken away steps beside a flat
 // side kept (shelldraft_corner.go).
-func draftedSides(t *Topology, d DraftedSolid, modeOf func(f int) faceMode) ([][][]float64, [][][]draftStep, error) {
+func draftedSides(t *Topology, d DraftedSolid, modeOf func(f int) faceMode, lo, hi float64) ([][][]float64, [][][]draftStep, error) {
 	dir := d.Dir.WithMagnitude(1)
 	out := make([][][]float64, len(d.Sets))
 	steps := make([][][]draftStep, len(d.Sets))
@@ -231,8 +282,7 @@ func draftedSides(t *Topology, d DraftedSolid, modeOf func(f int) faceMode) ([][
 				p := pieces[pieceOf(i)]
 				tan := math.Tan(set.Angles[l][i])
 				var ms []faceMode
-				for _, h := range []float64{0.25, 0.5, 0.75} {
-					s := d.Lo + (d.Hi-d.Lo)*h
+				for _, s := range sideHeights(lo, hi) {
 					for _, u := range []float64{0.25, 0.5, 0.75} {
 						q := sb.PointAt(u)
 						into := p.into
@@ -270,7 +320,7 @@ func draftedSides(t *Topology, d DraftedSolid, modeOf func(f int) faceMode) ([][
 					}
 					// Run out past the solid's side, which it would lie on.
 					// Where it meets a neighbour at an inside corner,
-					// running out would cut into it: beside a flat side kept,
+					// running out would cut into it: beside a side kept,
 					// the inside steps; beside one taken away, both run out
 					// or the flat one stays, clear of the solid.
 					p.mid = sb.PointAt(0.5)
@@ -284,9 +334,9 @@ func draftedSides(t *Topology, d DraftedSolid, modeOf func(f int) faceMode) ([][
 							continue
 						}
 						j := pieceOf(c.next)
-						switch {
-						case modes[j] == openFace:
-						case modes[j] == keptFace && !pieces[c.next].arc:
+						switch modes[j] {
+						case openFace:
+						case keptFace:
 							// In the loop's own order, the corner with the curve
 							// before or after this one.
 							if (c.next == (pi+nl-1)%nl) != flip {
@@ -295,9 +345,9 @@ func draftedSides(t *Topology, d DraftedSolid, modeOf func(f int) faceMode) ([][
 								st[i].next = true
 							}
 						default:
-							return nil, nil, shellErr(p.mid, "a curved face taken away meets a curved face kept, or one lying "+
-								"inside another part, at an inside corner; a shell opens a drafted extrusion's curved faces "+
-								"at an inside corner only beside a flat face, kept or taken away, or a curved one taken away")
+							return nil, nil, shellErr(p.mid, "a curved face taken away meets a face lying inside another part "+
+								"at an inside corner; a shell opens a drafted extrusion's curved faces at an inside corner "+
+								"only beside a face kept or taken away")
 						}
 					}
 					moves[i] = -1
@@ -308,6 +358,26 @@ func draftedSides(t *Topology, d DraftedSolid, modeOf func(f int) faceMode) ([][
 		}
 	}
 	return out, steps, nil
+}
+
+// sideHeights is where along the extrusion, as distances from the
+// neutral plane between lo ≤ 0 and hi ≥ 0, draftedSides probes a side:
+// a quarter, a half and three quarters of the way each way the solid
+// reaches from that plane, never on it. A two-sided draft's side is two
+// faces meeting there, and a point on their seam lies on neither, off
+// both by the sag of the seam's chords: probed there, the lobed block
+// drafted both ways was taken for no drafted extrusion at all.
+func sideHeights(lo, hi float64) []float64 {
+	var hs []float64
+	for _, end := range []float64{lo, hi} {
+		if math.Abs(end) <= geom.LengthEps {
+			continue
+		}
+		for _, h := range []float64{0.25, 0.5, 0.75} {
+			hs = append(hs, end*h)
+		}
+	}
+	return hs
 }
 
 // draftedInside is the inside of set's drafted prism going way along

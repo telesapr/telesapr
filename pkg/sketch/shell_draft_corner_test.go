@@ -157,36 +157,3 @@ func TestShellDraftedInsideCorner(t *testing.T) {
 		})
 	}
 }
-
-// A drafted disc with a lobe on its rim, the lobe's cone meeting the
-// rim's at inside corners, is still refused open at the lobe: there is
-// no plane to step along beside a curved side kept.
-func TestShellDraftedInsideCornerBesideCurve(t *testing.T) {
-	t.Parallel()
-	d := api.New()
-	d.Edit.SetChordTolerance(0.005)
-	// A disc of radius 10 about the origin and a lobe of radius 3 about
-	// (10, 0), meeting at x = 9.55.
-	cx := (100 - 9 + 100) / 20.0
-	cy := math.Sqrt(100 - cx*cx)
-	d.Sketch.Arc(api.V(0, 0, 0), api.V(cx, cy, 0), api.V(cx, -cy, 0))
-	d.Sketch.Arc(api.V(10, 0, 0), api.V(cx, -cy, 0), api.V(cx, cy, 0))
-	ex := d.Features.Extrude(10, "")
-	ex.AsExtrude().SetDraft(3)
-	if p := ex.Problem(); p != "" {
-		t.Fatal(p)
-	}
-	// The lobe's cone, in as many faces as it was put in as.
-	r2 := 3 - 2*math.Tan(3*math.Pi/180)
-	var lobe []api.SolidFace
-	seen := map[api.SolidFace]bool{}
-	for k := -4; k <= 4; k++ {
-		a := float64(k) * math.Pi / 8
-		f := ex.Solid().FaceAt(api.V(10+r2*math.Cos(a), r2*math.Sin(a), 2))
-		if !seen[f] {
-			seen[f] = true
-			lobe = append(lobe, f)
-		}
-	}
-	refusedWith(t, "inside corner", func() { d.Features.ShellSolid(lobe, 1, "") })
-}

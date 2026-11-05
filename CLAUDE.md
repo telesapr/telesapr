@@ -84,14 +84,15 @@ three reach the same `pkg/sketch` entry point, and the documents describe it as 
   takes more than a few seconds skips itself under `testing.Short()`, saying what it is.
   `make test` runs every test but the heavy ones, `make test-heavy` only those, and `make ci` is
   what the GitHub workflow runs on `master` (checks, test, test-heavy, lint, vuln; the
-  workflow gives `test` and `test-heavy` a runner each) and the race detector besides, which the
+  workflow gives `test` and `test-heavy` a runner each) and, after them, the race detector over
+  every test but the heavy ones (`make test-race`), which the
   workflow runs only on request (workflow_dispatch); on a branch the workflow runs
   `make test-fast` in place of test and test-heavy, which run on `master` and on request, so
   `make ci` before the merge is what catches the rest. The nightly workflow, on
   `master`, runs what is too slow or costs too many minutes for a push: `make coverage` (the 85%
   rule, several times slower than `make test`), `make test-sweeps`,
   `make fuzz`, `make bench`, govulncheck as a failing job, the race detector over `pkg/ui`
-  and `pkg/script/api`, and the quick tests on Windows and macOS. `make lint-new` lints what a branch changed.
+  and `pkg/script/api` and over the heavy tests (`make test-race-heavy`), and the quick tests on Windows and macOS. `make lint-new` lints what a branch changed.
 - `scripts/go-test.sh` runs the tests in one `go test`; every test target goes through it, and
   `TESTS=light|heavy|all` picks whether its heaviest tests (`HEAVY`) are left out, run alone or
   run with the rest. A new test of a minute or more goes into `HEAVY`, which takes it out of

@@ -31,18 +31,25 @@ func (rb rib) top() [][2]geom.Vector {
 	}
 }
 
-// ribOracle is a line of testdata/topo/fillet-rib-all-over.txt: what
-// OpenCASCADE's volumes are with the rib's top rounded, and with its foot
-// filled after; refused where it made none.
+// ribOracle is a line of testdata/topo/fillet-rib-all-over.txt or
+// fillet-rib-foot-first.txt: what OpenCASCADE's volumes are with the
+// rib's top rounded (or its foot filled) first, and with the rest
+// rounded after; refused where it made none.
 type ribOracle struct {
-	h, lean, r float64
-	top, both  float64
-	refused    bool
+	h, lean, r  float64
+	first, both float64
+	refused     bool
 }
 
 func readRibOracle(t *testing.T) []ribOracle {
 	t.Helper()
-	f, err := os.Open("../../testdata/topo/fillet-rib-all-over.txt")
+	return readRibOracleFile(t, "../../testdata/topo/fillet-rib-all-over.txt")
+}
+
+// readRibOracleFile reads the lines of a rib's oracle file.
+func readRibOracleFile(t *testing.T, name string) []ribOracle {
+	t.Helper()
+	f, err := os.Open(name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +70,7 @@ func readRibOracle(t *testing.T) []ribOracle {
 				}
 			}
 		}
-		o.h, o.lean, o.r, o.top, o.both = x[0], x[1], x[2], x[3], x[4]
+		o.h, o.lean, o.r, o.first, o.both = x[0], x[1], x[2], x[3], x[4]
 		out = append(out, o)
 	}
 	if err := sc.Err(); err != nil {
@@ -155,7 +162,7 @@ func ribAllOver(t *testing.T, o ribOracle, mesher srf.Mesher) {
 	var top srf.SMesh
 	topOnly.TriangulateInto(&top)
 	if o.lean == 0 && !o.refused {
-		added, want := rep.Volume-meshVolume(topOnly), o.both-o.top
+		added, want := rep.Volume-meshVolume(topOnly), o.both-o.first
 		// The foot's fillet runs about 46 round a rib of 14 by
 		// 10; its chords lose less than the tolerance over it,
 		// and the top's fillets' chords, meshed again where the

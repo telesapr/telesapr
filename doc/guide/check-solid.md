@@ -49,6 +49,15 @@ or into one another". Such a union is the right shape, but it is not a closed so
 touch, and the naked or self-intersecting edges there are where the mesh meets itself. In a
 script, `Report.Touches` is set and `Report.TouchAt` is a point of the contact.
 
+Round faces that lie closer to the solid's than the chord tolerance, as a pin drawn 0.03 mm over a
+bore's size at a tolerance of 0.1 mm, or a cone a little off a countersink of its angle, are
+closer than the mesh can show. Where their Boolean as drawn fails or leaves the mesh open, the
+group's round faces are moved onto the solid's (the pin made the bore's size, a ball resting on
+a plate moved to touch it) and the group says so in a note on its screen and in the list of
+groups ("(note)"): "round faces 0.03 mm off the solid's, under the chord tolerance, were made to
+meet them". In a script, `Group.Note()` gives it. Within a tenth of the chord tolerance they are
+moved without a note, as are planes. To keep such a gap, set the chord tolerance finer than it.
+
 ### About the volume
 
 The volume is the mesh's. The mesh follows the curved faces with straight chords, within the

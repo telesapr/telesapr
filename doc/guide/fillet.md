@@ -106,6 +106,14 @@ doc.Features.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 0, 5))}, 1.5, "")
   fillets meet below a sharp convex edge, they are mitred outside the rib, beyond that edge.
   Where they turn by different angles, as below a sloping top, the sloping face grows out to the
   mitre. The sharp edge is shortened to where the fillets reach up it.
+- A rib's top edges can be rounded after its foot was filled, in a fillet of their own. Where an
+  upright or a slope's edge runs down onto the foot's fillets, its fillet is cut short (set
+  back), the foot's two fillets are cut at their sections too, and patches tangent to the three
+  fillets, the two faces and the floor fill the corner: the setback corner below of the three
+  edges that met there before the foot was filled. OpenCASCADE fills those corners with smaller
+  patches: its top's fillets take 1.4 r³ to 4.8 r³ less in all, the most where a low slope meets
+  the floor at a sharp angle. The foot's fillets must be straight, of one radius between flat
+  faces; a chamfered foot is not taken.
 
 **Edges of different radii, or of both kinds.** Where edges of different radii meet, or convex
 edges meet concave ones, the fillet rounds them one radius and one kind at a time, the larger
@@ -240,8 +248,6 @@ Examples: [`examples/scripts/tee`](../../examples/scripts/tee/tee.go),
 
 These are refused with a message:
 
-- The edges of a rib's top rounded after its foot was filled. Pick the top's edges and the
-  foot's together, or round the top first and fill the foot after: both are made.
 - A fillet between curved faces along an edge that ends at a curved face which the side faces go
   on past.
 - Chamfers meeting above an edge left sharp that they would cut at two points, or at a corner

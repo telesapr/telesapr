@@ -210,7 +210,11 @@ func roundInStages(orig *srf.SShell, t *Topology, picks []FilletPick, edgeOf, ke
 			if own {
 				sr = r
 			}
-			err = filletPicks(&sh, stage, sr, origin+uint32(n)*stageOrigins, flat, forbid)
+			// A stage's edges ending on an earlier stage's fillets go on
+			// round them, as the stages are for, not set back as on a foot
+			// filled in an edit before (footCornerAt): that order is
+			// tried only where the stages fail.
+			err = filletPicksWith(&sh, stage, sr, origin+uint32(n)*stageOrigins, flat, forbid, false, false, false)
 			if (curvedEndRefusal(err) || rollingAloneRefusal(err)) && n > 0 {
 				// The stage's picks may go on round the corners an earlier
 				// stage rounded, onto its fillets, as one closed chain the

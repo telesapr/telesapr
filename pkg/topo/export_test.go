@@ -27,3 +27,10 @@ func RollingBallAlong(sh *srf.SShell, a, b geom.Vector, r float64, flat bool) er
 func FilletPicksSetback(sh *srf.SShell, picks []FilletPick, r float64, origin uint32) error {
 	return filletPicksSetback(sh, picks, r, origin, true)
 }
+
+// FilletPicksSetbackMixed rounds the picks in one stage, with a setback
+// at each corner a sphere doesn't fit, as one of convex and concave
+// edges, where FilletPicks rounds them in stages.
+func FilletPicksSetbackMixed(sh *srf.SShell, picks []FilletPick, r float64, origin uint32) error {
+	return filletPicksSetback(sh, picks, r, origin, false)
+}

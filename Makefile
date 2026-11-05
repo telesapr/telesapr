@@ -11,7 +11,8 @@ help:
 	@echo "  make test-sweeps  - Run the robustness sweeps over their whole grids"
 	@echo "  make bench        - Run every benchmark once"
 	@echo "  make test-gui     - Run the GUI backend tests under Xvfb"
-	@echo "  make test-race    - Run the engine packages' tests under the race detector"
+	@echo "  make test-race    - Run the tests but the heavy ones under the race detector"
+	@echo "  make test-race-heavy - Run the engine packages' heavy tests under it"
 	@echo "  make coverage     - Run all tests with coverage, and apply the 85% rule"
 	@echo "  make fuzz         - Run each fuzz target for FUZZTIME ($(FUZZTIME))"
 	@echo "  make checks       - fmt-check, tidy-check, generate-check and build"
@@ -47,7 +48,7 @@ help:
 	@echo "  make deploy-site  - Build the guide, copy site/ to telesapr.sourceforge.io (SF_USER=<user>)"
 	@echo ""
 
-.PHONY: guide-site test test-heavy test-fast test-sweeps bench test-gui test-race coverage fuzz checks ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
+.PHONY: guide-site test test-heavy test-fast test-sweeps bench test-gui test-race test-race-heavy coverage fuzz checks ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
 	dist dist-linux dist-windows dist-macos release release-notes
 
 # The version is pkg/version.Version; a release's tag is v$(VERSION).
@@ -63,7 +64,7 @@ ICON_SIZES = 16x16 24x24 32x32 48x48
 # on a workstation), test for the tests but the heavy ones, test-heavy for
 # those, ci for what the GitHub workflow runs;
 # the nightly workflow adds test-sweeps, fuzz, bench and the race detector
-# over pkg/ui and pkg/script/api. All of them go through scripts/go-test.sh,
+# over pkg/ui and pkg/script/api and over the heavy tests. All of them go through scripts/go-test.sh,
 # which picks the light or the heavy part, as CI does.
 # Every test, the OpenGL and GUI ones under Xvfb where xvfb-run is
 # installed; their display numbers start apart from test-gui's, which
@@ -118,10 +119,19 @@ test-gui:
 # workflow runs the set in shards, each a RACE_PACKAGES of its own, on
 # request (workflow_dispatch) and not on a push, without pkg/ui and
 # pkg/script/api, which the nightly workflow runs.
-RACE_PACKAGES ?= ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/... \
+RACE_ENGINE_PACKAGES = ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/... \
 	./pkg/script ./pkg/script/agent ./pkg/mcpserver ./pkg/platform/... ./pkg/render ./pkg/render/soft ./cmd/... \
-	./pkg/core ./pkg/geom ./pkg/libm ./pkg/internal/... ./pkg/check ./pkg/thread ./pkg/res ./pkg/ttf ./pkg/topo \
-	./pkg/ui ./pkg/script/api
+	./pkg/core ./pkg/geom ./pkg/libm ./pkg/internal/... ./pkg/check ./pkg/thread ./pkg/res ./pkg/ttf ./pkg/topo
+RACE_PACKAGES ?= $(RACE_ENGINE_PACKAGES) ./pkg/ui ./pkg/script/api
+
+# RACE_TESTS is scripts/go-test.sh's TESTS for test-race: light, the
+# suite without its HEAVY tests, by default. The heavy tests of
+# pkg/sketch, pkg/topo, pkg/script/api and pkg/ui were most of the race
+# stage's time, which took those packages within five minutes of the
+# limit inside make ci; the nightly workflow runs them under the
+# detector instead (test-race-heavy for the engine packages, and
+# RACE_TESTS=all over pkg/ui and pkg/script/api).
+RACE_TESTS ?= light
 
 # The fixture loops and the sweeps take a fifth under the race detector
 # (fixtures.Sample in pkg/internal/fixtures, sweep.Grid.Run), which needs
@@ -134,8 +144,13 @@ RACE_PACKAGES ?= ./pkg/srf/... ./pkg/sketch/... ./pkg/solver/... ./pkg/persist/.
 RACE_TIMEOUT ?= 30m
 
 test-race:
-	@echo "==> go test -race $(RACE_PACKAGES)"
-	GOCACHE=$(PWD)/.gocache PACKAGES='$(RACE_PACKAGES)' scripts/go-test.sh -race -timeout $(RACE_TIMEOUT)
+	@echo "==> go test -race $(RACE_PACKAGES) (TESTS=$(RACE_TESTS))"
+	GOCACHE=$(PWD)/.gocache TESTS=$(RACE_TESTS) PACKAGES='$(RACE_PACKAGES)' scripts/go-test.sh -race -timeout $(RACE_TIMEOUT)
+
+# The HEAVY tests of the engine packages under the race detector, which
+# make ci leaves out; the nightly workflow runs it.
+test-race-heavy:
+	@$(MAKE) --no-print-directory test-race RACE_TESTS=heavy RACE_PACKAGES='$(RACE_ENGINE_PACKAGES)'
 
 # Every test, with a coverage profile over ./pkg/...; fails when a
 # package listed in scripts/coverage-packages.txt is under 85%. The
@@ -166,12 +181,17 @@ fuzz:
 checks: fmt-check tidy-check generate-check build
 
 # What .github/workflows/ci.yml runs on a push to master, and the race
-# detector, in one go: the checks, then the rest side by side, each
-# target's output printed when it is done. govet is in the lint; the GUI
-# packages run under Xvfb inside test. The workflow runs test-race only
-# on request (workflow_dispatch), on master as on a branch.
+# detector, in one go: the checks, then test, test-heavy, lint and vuln
+# side by side, each target's output printed when it is done, then
+# test-race alone. Run beside test and test-heavy, the race stage's
+# slowest packages came within five minutes of RACE_TIMEOUT, and the
+# heavy tests' too: after them it has the machine to itself. govet is in
+# the lint; the GUI packages run under Xvfb inside test. The workflow
+# runs test-race only on request (workflow_dispatch), on master as on a
+# branch, on runners of its own.
 ci: checks
-	@$(MAKE) --no-print-directory -j --output-sync=target test test-heavy test-race lint vuln
+	@$(MAKE) --no-print-directory -j --output-sync=target test test-heavy lint vuln
+	@$(MAKE) --no-print-directory test-race
 
 fmt-check:
 	@echo "==> gofmt -l"

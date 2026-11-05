@@ -290,3 +290,39 @@ Boolean. Threads are not
 touched: the rule asks for two cylinders of one radius, which a thread's ridges and rod are not
 (`TestOpenDamaged` and `pkg/sketch`'s thread tests keep their times).
 
+
+## Between a tenth and the tolerance (rd10, 2026-11-05)
+
+What the fuses left: faces off each other by more than a tenth of the chord tolerance and less
+than it. `TestBetweenContactSweep` (`pkg/srf/contact_between_test.go`) takes the curved fixtures
+of the sweeps above (a lathed pin in a tube, a pin in a drilled bore, a cone in a countersink, a
+ball in a seat, a ball on a plate, a cylinder lying on one) at 0.15, 0.3, 0.6 and 0.9 of the
+tolerance either way, two tolerances, two turns, three Booleans: 576. A probe over the planar
+fixtures of `TestNearContactSweep` (stack, side, flushtop, a cylinder's end on a block) at the
+same offsets had all 384 right, so planes are left as they are.
+
+Before: 143 failed and 31 left the mesh open (pin 32, drilled 32, cone 53, seat 51, ball 6), all
+coaxial pairs within 0.6 of the tolerance and balls sunk into the plate. Regeneration meshes no
+group, so the open ones showed as solids.
+
+The fuse can't simply reach further: a gap a user drew wider than a tenth of the tolerance was to
+stay. So it reaches further only where the result as drawn is bad. `snapBetween`
+(`pkg/srf/boolean_snap_between.go`) runs the coaxial and tangent fuses with their radius or gap
+window widened to the chord tolerance (the axes still within the tenth); if that moves nothing,
+nothing more is done and no mesh is made. If it moves something, the Boolean is made as drawn
+first, and if it failed or its mesh has naked or self-intersecting edges, made again from the
+fused operand (`retryFused`). Kept if sound, with `SShell.Fused` the largest move of a grid over
+b's curved patches (control points move further: an arc's middle one by √2; a flat cap's
+corners, outside its trim, likewise); `Group.noteFused` puts it on the group's note. Where neither
+is sound and both operands are, the Boolean fails rather than show an open mesh.
+
+After: 0 of 576 wrong. A pin over its bore is made to fill it, and its volume is the two's taken
+as touching, off by at most the contact's area times the offset. A ball sunk 0.9 of the tolerance
+into a plate moves up to touch it: the union then touches at a point, which meshes closed.
+
+In the repository's tests (`make test-fast`, with a log of each trigger) the widened fuse moved
+something in one Boolean: `TestThreadOnHoleAtRoot`, an M10 nut thread in a hole of 10, whose
+thread's bore is 0.029 mm off the hole's at that model's tolerance. Its first Boolean as drawn
+failed, and the group came out sound before too, by the thread's later tries; now that Boolean
+is made, fused, and the group carries the note. No
+golden moved.

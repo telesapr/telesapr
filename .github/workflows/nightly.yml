@@ -1,9 +1,10 @@
 # What is too slow, or changes too little from commit to commit, for
 # every push: the vulnerability report as a job that fails, the
 # robustness sweeps over their whole grids, the fuzz targets, every
-# benchmark once, the race detector over pkg/ui and pkg/script/api, the
-# coverage rule (85% of the packages in scripts/coverage-packages.txt),
-# and the quick tests on Windows and macOS.
+# benchmark once, the race detector over pkg/ui and pkg/script/api and
+# over the heavy tests, the coverage rule (85% of the packages in
+# scripts/coverage-packages.txt), and the quick tests on Windows and
+# macOS.
 # Each step is a make target, so any of it runs locally the same way.
 #
 # On a schedule it runs only when master moved since the last nightly
@@ -81,7 +82,12 @@ jobs:
           - name: coverage
             target: coverage
           - name: race-ui-api
-            target: test-race RACE_PACKAGES='./pkg/ui ./pkg/script/api' RACE_TIMEOUT=90m
+            target: test-race RACE_PACKAGES='./pkg/ui ./pkg/script/api' RACE_TESTS=all RACE_TIMEOUT=90m
+          # The engine packages' heavy tests under the detector, which
+          # make ci's race stage leaves out (pkg/ui's and pkg/script/api's
+          # are in race-ui-api).
+          - name: race-heavy
+            target: test-race-heavy RACE_TIMEOUT=90m
     name: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v7

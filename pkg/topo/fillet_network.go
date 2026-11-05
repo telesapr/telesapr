@@ -225,6 +225,10 @@ type filletCorner struct {
 	// each face's boundary there, by face, between its two edges' ends.
 	ends   map[int][]geom.Vector
 	chains map[int][]geom.Vector
+	// cuts, by face, are what a corner on a foot filled before takes off
+	// faces along no rounded edge (footCornerAt): the foot's fillets
+	// either side, cut at their sections, and the plate's corner.
+	cuts map[int][]faceCut
 }
 
 // seam is the kind of a corner where two pieces of a circular edge meet.
@@ -431,16 +435,21 @@ func filletOnCurvedEnd(sh *srf.SShell, p FilletPick, r float64, origin uint32, f
 // filletPicks is FilletPicks in one stage. A rounded edge's chain does
 // not go on into an edge forbid reports.
 func filletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool, forbid func(t *Topology, e int) bool) error {
-	return filletPicksWith(sh, picks, r, origin, flat, forbid, false, false)
+	return filletPicksWith(sh, picks, r, origin, flat, forbid, false, false, true)
 }
 
 // filletPicksSetback is filletPicks with setback corners where no
 // sphere fits.
 func filletPicksSetback(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, forceSetback bool) error {
-	return filletPicksWith(sh, picks, r, origin, false, nil, true, forceSetback)
+	return filletPicksWith(sh, picks, r, origin, false, nil, true, forceSetback, true)
 }
 
-func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool, forbid func(t *Topology, e int) bool, setback, forceSetback bool) error {
+// filletPicksWith rounds the picks in one stage: with setback, a setback
+// corner where no sphere fits (forceSetback: even where one does); with
+// feet, an edge ending on a foot filled before is set back there
+// (footCornerAt), which a stage of filletInStages, going on round an
+// earlier stage's fillets, does not take.
+func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool, forbid func(t *Topology, e int) bool, setback, forceSetback, feet bool) error {
 	what := "fillet"
 	if flat {
 		what = "chamfer"
@@ -592,6 +601,16 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 			}
 			var c *filletCorner
 			var err error
+			if feet && !flat {
+				// The end of an edge on a foot filled before: set back as
+				// the one edit would have set it back (fillet_foot_corner.go).
+				// Where that can't be made, as a foot whose fillet is no
+				// cylinder, as before: the rolling ball may end it there.
+				if cc, ok, ferr := t.footCornerAt(v, edges, byEdge); ok && ferr == nil {
+					corners[v] = cc
+					continue
+				}
+			}
 			mixed := flat && t.mixedAt(v, edges, byEdge)
 			if flat && t.chamferCornerTakes(v, edges, byEdge) {
 				c, err = t.chamferCornerAt(v, edges, byEdge)
@@ -722,6 +741,9 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 		for f := range c.chains {
 			redo[f] = true
 		}
+		for f := range c.cuts {
+			redo[f] = true
+		}
 	}
 	faces := make([]int, 0, len(redo))
 	for f := range redo {
@@ -738,6 +760,13 @@ func filletPicksWith(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 		loops, err := t.filletLoops(f, edges, byEdge, corners, flat)
 		if err != nil {
 			return err
+		}
+		for _, v := range cornerOrder(corners) {
+			for _, cut := range corners[v].cuts[f] {
+				if loops, err = applyCut(loops, cut); err != nil {
+					return err
+				}
+			}
 		}
 		again = append(again, rebuilt{t.planeUnder(f, loops), loops})
 	}
@@ -1839,7 +1868,13 @@ func (t *Topology) filletLoops(f int, edges []filletEdge, byEdge map[int]int, co
 				// The face's curve between the two fillets, where the hole's
 				// patches meet it.
 				p, q := point(x, vb), point(nx, vb)
-				if pcs, ok := c.faceSplits[f]; ok && !p.Equals(q) {
+				if c.cuts != nil && !p.Equals(q) {
+					// On a foot filled before the face's curve goes on to
+					// a point of an edge beyond the vertex: a line to the
+					// vertex here, which the corner's cut takes off
+					// (footCornerAt).
+					loop = append(loop, srf.SBezierFrom2(p, q))
+				} else if pcs, ok := c.faceSplits[f]; ok && !p.Equals(q) {
 					loop = append(loop, chainFrom(pcs, p)...)
 				} else if sb, ok := c.faceCurves[f]; ok && !p.Equals(q) {
 					if !sb.Start().Equals(p) {
