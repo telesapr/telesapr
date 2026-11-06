@@ -216,35 +216,48 @@ func TestLoftSweep(t *testing.T) {
 func TestLoftOnBlock(t *testing.T) {
 	t.Parallel()
 	for _, z0 := range []float64{5, 3, 0, -2, 7} {
+		// Under -short on the block and through it, of the 8 s of
+		// processor the five heights took.
+		if testing.Short() && z0 != 5 && z0 != 0 {
+			continue
+		}
 		for _, kind := range []string{"flat", "twisted", "circle"} {
-			d := api.New()
-			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.01 })
-			block(d, -10, -10, 10, 10, 5)
-			bottom := d.Features.SketchAt(above(d, z0), api.V(1, 0, 0), api.V(0, 1, 0), "")
-			if kind == "circle" {
-				d.Sketch.Circle(api.V(0, 0, z0), 8)
-			} else {
-				d.Sketch.Rect(api.V(-8, -8, z0), api.V(8, 8, z0))
-			}
-			top := d.Features.SketchAt(above(d, 15), api.V(1, 0, 0), api.V(0, 1, 0), "")
-			d.Sketch.Rect(api.V(-4, -4, 15), api.V(4, 4, 15))
-			l := d.Features.Loft(bottom, top, "")
-			turn := 0.0
-			if kind == "twisted" {
-				l.AsLoft().SetTurn(1)
-				turn = math.Pi / 2
-			}
-			r := l.Analyze().Check()
-			if !r.Sound() || l.Problem() != "" {
-				t.Errorf("%s from z %g: %s %s", kind, z0, r.String(), l.Problem())
-				continue
-			}
-			if z0 == 5 && kind != "circle" {
-				want := 2000 + twistedVolume(10, 256, 0.5, turn)
-				if math.Abs(r.Volume-want) > 0.005*want {
-					t.Errorf("%s on the block: volume %g, want %g", kind, r.Volume, want)
-				}
-			}
+			t.Run(fmt.Sprintf("%s from %g", kind, z0), func(t *testing.T) {
+				t.Parallel()
+				loftOnBlock(t, z0, kind)
+			})
+		}
+	}
+}
+
+// loftOnBlock is a case of TestLoftOnBlock: the loft of kind from z0 to
+// a square at 15, on a block 5 high.
+func loftOnBlock(t *testing.T, z0 float64, kind string) {
+	d := api.New()
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0.01 })
+	block(d, -10, -10, 10, 10, 5)
+	bottom := d.Features.SketchAt(above(d, z0), api.V(1, 0, 0), api.V(0, 1, 0), "")
+	if kind == "circle" {
+		d.Sketch.Circle(api.V(0, 0, z0), 8)
+	} else {
+		d.Sketch.Rect(api.V(-8, -8, z0), api.V(8, 8, z0))
+	}
+	top := d.Features.SketchAt(above(d, 15), api.V(1, 0, 0), api.V(0, 1, 0), "")
+	d.Sketch.Rect(api.V(-4, -4, 15), api.V(4, 4, 15))
+	l := d.Features.Loft(bottom, top, "")
+	turn := 0.0
+	if kind == "twisted" {
+		l.AsLoft().SetTurn(1)
+		turn = math.Pi / 2
+	}
+	r := l.Analyze().Check()
+	if !r.Sound() || l.Problem() != "" {
+		t.Fatalf("%s from z %g: %s %s", kind, z0, r.String(), l.Problem())
+	}
+	if z0 == 5 && kind != "circle" {
+		want := 2000 + twistedVolume(10, 256, 0.5, turn)
+		if math.Abs(r.Volume-want) > 0.005*want {
+			t.Errorf("%s on the block: volume %g, want %g", kind, r.Volume, want)
 		}
 	}
 }

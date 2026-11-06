@@ -89,14 +89,14 @@ func TestBetweenContactSweep(t *testing.T) {
 		if out.BooleanFailed {
 			return errUnsound(true)
 		}
-		got := shellVolume(&out)
+		got, sound := soundVolume(&out)
 		if want <= slack {
 			if math.Abs(got) > slack {
 				return fmt.Errorf("%w: %g, want none", errNearVolume, got)
 			}
 			return nil
 		}
-		if !meshIsSound(&out) {
+		if !sound {
 			return errUnsound(false)
 		}
 		if math.Abs(got-want) > slack {

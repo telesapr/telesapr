@@ -126,6 +126,7 @@ func TestSweepGrid(t *testing.T) {
 		},
 		MaxFailRate: sweepGridMaxFailRate,
 		Sample:      12,
+		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
 		rho, r, up := p.Float("rho"), p.Float("r"), p.Float("up")

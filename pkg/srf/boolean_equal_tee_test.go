@@ -3,6 +3,7 @@ package srf
 import (
 	"fmt"
 	"math"
+	"sync/atomic"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -98,45 +99,57 @@ func meshVolume(sh *SShell) float64 {
 // of the circles. Those are refused (failCrossingTouch), and counted:
 // the mesher's, as other faces closer than the chord tolerance are
 // (roadmap K3).
+//
+// The cases run side by side; under -short 8 of the 48, at 90° and 45°,
+// the seams on and off the touching points, crosses and tees.
 func TestBooleanEqualCylindersCrossing(t *testing.T) {
 	t.Parallel()
 	tol := sweepTol()
 	const teeDiffCrossing = 3
-	crossing := 0
-	for _, c := range teeCases() {
-		a, b := c.shells(tol)
-		va, vb := meshVolume(a), meshVolume(b)
-		inter := c.inter()
-		for _, op := range []struct {
-			name string
-			typ  SurfaceCombineAs
-			want float64
-		}{
-			{"union", SurfaceUnion, va + vb - inter},
-			{"difference", SurfaceDiff, va - inter},
-			{"intersection", SurfaceInter, inter},
-		} {
-			out := SShell{Tol: tol}
-			out.MakeFromBoolean(a, b, op.typ)
-			if out.BooleanFailed || !meshIsSound(&out) {
-				if c.tee && c.deg == 45 && op.typ == SurfaceDiff && out.BooleanFailed {
-					crossing++
-					continue
-				}
-				t.Errorf("%v %s: %v", c, op.name, errUnsound(out.BooleanFailed))
+	var crossing atomic.Int32
+	t.Run("cases", func(t *testing.T) {
+		for _, c := range teeCases() {
+			if testing.Short() && (c.deg != 90 && c.deg != 45 || !(c.phaseA == 0 && c.phaseB == 0 || c.phaseA == 0.3 && c.phaseB == 1.2)) {
 				continue
 			}
-			// The shared part's curved sides, 16 r² / sin θ (half for a
-			// tee), are meshed apart from the cylinders: chords of the
-			// tolerance over them, twice for the two pipes' sides.
-			slack := 2 * tol.ChordTolMm() * c.inter() * 3 / c.r
-			got := meshVolume(&out)
-			if math.Abs(got-op.want) > slack {
-				t.Errorf("%v %s: volume %.5g, want %.5g", c, op.name, got, op.want)
-			}
+			t.Run(c.String(), func(t *testing.T) {
+				t.Parallel()
+				a, b := c.shells(tol)
+				va, vb := meshVolume(a), meshVolume(b)
+				inter := c.inter()
+				for _, op := range []struct {
+					name string
+					typ  SurfaceCombineAs
+					want float64
+				}{
+					{"union", SurfaceUnion, va + vb - inter},
+					{"difference", SurfaceDiff, va - inter},
+					{"intersection", SurfaceInter, inter},
+				} {
+					out := SShell{Tol: tol}
+					out.MakeFromBoolean(a, b, op.typ)
+					got, sound := soundVolume(&out)
+					if out.BooleanFailed || !sound {
+						if c.tee && c.deg == 45 && op.typ == SurfaceDiff && out.BooleanFailed {
+							crossing.Add(1)
+							continue
+						}
+						t.Errorf("%s: %v", op.name, errUnsound(out.BooleanFailed))
+						continue
+					}
+					// The shared part's curved sides, 16 r² / sin θ (half
+					// for a tee), are meshed apart from the cylinders:
+					// chords of the tolerance over them, twice for the two
+					// pipes' sides.
+					slack := 2 * tol.ChordTolMm() * c.inter() * 3 / c.r
+					if math.Abs(got-op.want) > slack {
+						t.Errorf("%s: volume %.5g, want %.5g", op.name, got, op.want)
+					}
+				}
+			})
 		}
-	}
-	if crossing > teeDiffCrossing {
+	})
+	if crossing := crossing.Load(); crossing > teeDiffCrossing {
 		t.Errorf("%d tee differences at 45° refused, want at most %d", crossing, teeDiffCrossing)
 	}
 }

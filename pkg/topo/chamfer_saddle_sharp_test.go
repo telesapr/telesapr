@@ -82,9 +82,9 @@ func TestChamferSaddleSharpOracle(t *testing.T) {
 	}
 	var made atomic.Int32
 	t.Run("lines", func(t *testing.T) {
-		// Under the race detector three lines (saddleLines): the
-		// corner is made on the same goroutines for each.
-		for _, line := range saddleLines(strings.Split(strings.TrimSpace(string(data)), "\n")) {
+		// One line per mirror image, and under -short and the race
+		// detector three (saddleLines).
+		for _, line := range saddleLines(strings.Split(strings.TrimSpace(string(data)), "\n"), saddleSharpRadii) {
 			t.Run(line, func(t *testing.T) {
 				t.Parallel()
 				var x [5]float64

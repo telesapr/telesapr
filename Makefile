@@ -8,6 +8,7 @@ help:
 	@echo "  make test-fast    - Run the quick tests (go test -short)"
 	@echo "  make test         - Run the tests except the heavy ones"
 	@echo "  make test-heavy   - Run only the heavy tests (HEAVY in scripts/go-test.sh)"
+	@echo "  make test-cost    - List the costliest quick tests; fail past TEST_COST_LIMIT"
 	@echo "  make test-sweeps  - Run the robustness sweeps over their whole grids"
 	@echo "  make bench        - Run every benchmark once"
 	@echo "  make test-gui     - Run the GUI backend tests under Xvfb"
@@ -48,7 +49,7 @@ help:
 	@echo "  make deploy-site  - Build the guide, copy site/ to telesapr.sourceforge.io (SF_USER=<user>)"
 	@echo ""
 
-.PHONY: guide-site test test-heavy test-fast test-sweeps bench test-gui test-race test-race-heavy coverage fuzz checks ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
+.PHONY: guide-site test test-heavy test-fast test-cost test-sweeps bench test-gui test-race test-race-heavy coverage fuzz checks ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
 	dist dist-linux dist-windows dist-macos release release-notes
 
 # The version is pkg/version.Version; a release's tag is v$(VERSION).
@@ -86,20 +87,41 @@ test-heavy:
 	GOCACHE=$(PWD)/.gocache $(XVFB) env TESTS=heavy scripts/go-test.sh
 
 # A test that takes more than a few seconds skips itself under -short
-# (testing.Short), so this is what is quick enough before every commit;
-# the Windows and macOS jobs run it too.
+# (testing.Short), or shrinks to a case or two, and a sweep takes a fifth
+# of its sample (sweep.Thin); the HEAVY tests don't run at all. So this
+# is what is quick enough before every commit; the Windows and macOS
+# jobs run it too (scripts/test-os.sh).
 test-fast:
-	@echo "==> go test -short ./..."
-	GOCACHE=$(PWD)/.gocache scripts/go-test.sh -short
+	@echo "==> go test -short ./... (without the heavy tests)"
+	GOCACHE=$(PWD)/.gocache TESTS=light scripts/go-test.sh -short
 
-# The robustness sweeps over their whole grids (pkg/internal/sweep),
-# rather than the sample the ordinary run takes; the packages are those
-# with sweeps, and their other tests run too.
-SWEEP_PACKAGES = ./pkg/script/api ./pkg/sketch ./pkg/srf ./pkg/topo
+# What each test of make test-fast costs, the most costly first, and a
+# failure when one costs more than TEST_COST_LIMIT seconds (its subtests'
+# times summed, beside the other tests: about three times its processor
+# time alone on 32 threads), so that a slow test is seen before it makes
+# the quick tier slow. The limit leaves out the interface's collections of
+# scenarios (TEST_COST_EXEMPT), a hundred cheap scripts each. At
+# 2026-11-06 the costliest test under it was pkg/ui's TestDocScenarios at
+# 85 s, the whole of make test-fast 44 s of wall and 1,200 s of
+# processor.
+TEST_COST_LIMIT ?= 100
+TEST_COST_EXEMPT = TestGoScripts TestPathEquivalence
+test-cost:
+	@echo "==> go test -short ./... (without the heavy tests), the costliest tests"
+	GOCACHE=$(PWD)/.gocache TESTS=light scripts/go-test.sh -short -json | \
+		scripts/test-cost.py --limit $(TEST_COST_LIMIT) --exempt '$(TEST_COST_EXEMPT)'
 
+# Every test with the robustness sweeps over their whole grids, every
+# case of the oracle tables and every fixture (pkg/internal/sweep: Full,
+# Pick, Without), rather than the sample the ordinary run takes. Nothing
+# runs it on its own while the nightly workflow is off: run it by hand
+# after a change to what a sweep or a sampled table covers.
+SWEEP_PACKAGES = ./...
+
+test-sweeps: XVFB_N = 180
 test-sweeps:
 	@echo "==> TELESAPR_SWEEP=1 go test $(SWEEP_PACKAGES)"
-	GOCACHE=$(PWD)/.gocache TELESAPR_SWEEP=1 PACKAGES='$(SWEEP_PACKAGES)' scripts/go-test.sh -timeout 180m
+	GOCACHE=$(PWD)/.gocache $(XVFB) env TELESAPR_SWEEP=1 PACKAGES='$(SWEEP_PACKAGES)' scripts/go-test.sh -timeout 180m
 
 # Every benchmark once: they are run so that they keep working, not
 # timed; the nightly workflow keeps the output.

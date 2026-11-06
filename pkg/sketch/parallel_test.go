@@ -14,6 +14,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/internal/par"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
 )
@@ -125,20 +126,26 @@ func eachFixture(t *testing.T, fn func(path string)) {
 
 // TestParallelSameAsSerial generates every fixture on one goroutine and
 // on several, and requires the same shells, meshes, save and STL file
-// to the bit.
+// to the bit. The parallel mode on one worker too, in make
+// test-sweeps: it runs the parallel code on a single goroutine, which
+// eight workers run as well, and took a third of the test's time.
 func TestParallelSameAsSerial(t *testing.T) {
 	if testing.Short() {
 		t.Skip("every fixture, twice")
 	}
 	stl := filepath.Join(t.TempDir(), "out.stl")
 	count := 0
+	workerCounts := []int{8}
+	if sweep.Full() {
+		workerCounts = []int{1, 8}
+	}
 	eachFixture(t, func(path string) {
 		serial := generatedWith(t, srf.ParallelOff, 1, path, stl)
 		if serial == nil {
 			return // not a valid file
 		}
 		count++
-		for _, workers := range []int{1, 8} {
+		for _, workers := range workerCounts {
 			if !bytes.Equal(serial, generatedWith(t, srf.ParallelOn, workers, path, stl)) {
 				t.Errorf("%s: generated on %d goroutines differs from serial", path, workers)
 			}

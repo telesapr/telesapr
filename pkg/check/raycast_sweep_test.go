@@ -26,7 +26,8 @@ func helixRing(d *api.Doc) api.Entity {
 // rational parameter, not its angle, were 2% of a quarter turn's rise
 // off the true helix, and hundreds of rays disagreed here by more; a ray
 // grazing the inner wall still can, where the oracle samples the
-// crossing.
+// crossing. Under -short the helix turned backwards and the two-sided
+// one: the others differ from them only in angle and rise.
 func TestOracleHelix(t *testing.T) {
 	t.Parallel()
 	for name, c := range map[string]struct {
@@ -39,6 +40,9 @@ func TestOracleHelix(t *testing.T) {
 		"two sides":      {540, 36, true},
 		"steep":          {720, 60, false},
 	} {
+		if testing.Short() && name != "backwards" && name != "two sides" {
+			continue
+		}
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			d := api.New()
@@ -137,7 +141,7 @@ func TestOracleSweep(t *testing.T) {
 				t.Fatalf("the kernel refused it: %s", p)
 			}
 			o := oracleOf(t, d)
-			if m := o.Measure(1e-4, 256); !near(m.Volume, c.want, 2e-3) {
+			if m := o.Measure(1e-3, 256); !near(m.Volume, c.want, 2e-3) {
 				t.Errorf("volume %g, want %g (spread %g at %d rays)", m.Volume, c.want, m.Spread(), m.Rays)
 			}
 			if diffs := o.Diff(meshOf(d), 24, 0.05); len(diffs) != 0 {

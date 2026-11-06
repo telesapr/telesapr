@@ -3,10 +3,12 @@ package topo_test
 import (
 	"fmt"
 	"math"
+	"slices"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -65,8 +67,9 @@ func ribTopAfterFoot(t *testing.T, sh *srf.SShell, rb rib) []topo.FilletPick {
 // the top's fillets take more: OpenCASCADE's four-sided patches at the
 // four corners lie nearer the corner than the setback's, by 1.4 r³ in all
 // at h 20 to 4.8 r³ at h 5, whose slope meets the plate at 20 degrees and
-// whose front corners are set back the furthest. Heavy (HEAVY in
-// scripts/go-test.sh): the 18 rows take some 4 minutes of processor.
+// whose front corners are set back the furthest. The ordinary run takes
+// 6 of the 18 rows (ribFootFirstRows), TELESAPR_SWEEP=1 all; heavy (HEAVY
+// in scripts/go-test.sh): the 18 take some 9 minutes of processor.
 func TestFilletRibFootFirstOracle(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -76,6 +79,9 @@ func TestFilletRibFootFirstOracle(t *testing.T) {
 		if fixtures.RaceDetector && (o.h != 10 || o.lean != 2 || o.r != 1) {
 			// One row under the race detector: the rest round on the
 			// same goroutines.
+			continue
+		}
+		if !sweep.Full() && !ribFootFirstRows(o) {
 			continue
 		}
 		t.Run(fmt.Sprintf("h%g_lean%g_r%g", o.h, o.lean, o.r), func(t *testing.T) {
@@ -119,6 +125,14 @@ func TestFilletRibFootFirstOracle(t *testing.T) {
 			}
 		})
 	}
+}
+
+// ribFootFirstRows are the rows of TestFilletRibFootFirstOracle in the
+// ordinary run: each height, each lean and each radius twice or more, the
+// race detector's row among them.
+func ribFootFirstRows(o ribOracle) bool {
+	return slices.Contains([][3]float64{{5, -4, 0.5}, {5, 2, 1}, {10, 0, 1}, {10, 2, 1}, {20, -4, 1}, {20, 0, 0.5}},
+		[3]float64{o.h, o.lean, o.r})
 }
 
 // soundRib is the volume of sh, which must be sound and its topology

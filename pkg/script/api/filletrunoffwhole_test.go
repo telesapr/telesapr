@@ -3,9 +3,11 @@ package api
 import (
 	"fmt"
 	"math"
+	"slices"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
@@ -72,7 +74,9 @@ func blendSectionTop(r float64, chamfer bool) (func(y float64) float64, float64)
 // as the chord tolerance is made finer). Under the ear clipper, which
 // meshed curved faces before the constrained Delaunay mesher, the
 // fillets came out up to 0.02 short, at any chord tolerance: its
-// triangles strayed past the tolerance.
+// triangles strayed past the tolerance. The ordinary run takes the
+// largest blend of each kind on each plate, and the smallest on the
+// shortest: 12 of the 20, side by side; make test-sweeps all of them.
 func TestBlendTakesSideFaceWhole(t *testing.T) {
 	t.Parallel()
 	type tc struct {
@@ -85,8 +89,25 @@ func TestBlendTakesSideFaceWhole(t *testing.T) {
 		{true, 1.5, 1}, {true, 1.5, 1.4}, {true, 2, 1.4}, {true, 2, 1.8}, {true, 2.5, 1.4}, {true, 2.5, 1.8},
 		{true, 2.5, 2.2}, {true, 3, 1.4}, {true, 3, 1.8}, {true, 3.5, 1.8}, {true, 3.5, 2.2},
 	}
-	if testing.Short() || fixtures.RaceDetector {
+	switch {
+	case sweep.Full():
+	case testing.Short() || fixtures.RaceDetector:
 		cases = []tc{{false, 2.5, 2.2}, {true, 3, 1.4}}
+	default:
+		type kl struct {
+			chamfer bool
+			l       float64
+		}
+		largest, smallest := map[kl]float64{}, map[bool]float64{}
+		for _, c := range cases {
+			largest[kl{c.chamfer, c.l}] = max(largest[kl{c.chamfer, c.l}], c.r)
+			if c.l == 1.5 && (smallest[c.chamfer] == 0 || c.r < smallest[c.chamfer]) {
+				smallest[c.chamfer] = c.r
+			}
+		}
+		cases = slices.DeleteFunc(cases, func(c tc) bool {
+			return c.r != largest[kl{c.chamfer, c.l}] && (c.l != 1.5 || c.r != smallest[c.chamfer])
+		})
 	}
 	for _, c := range cases {
 		kind := "fillet"
@@ -94,30 +115,37 @@ func TestBlendTakesSideFaceWhole(t *testing.T) {
 			kind = "chamfer"
 		}
 		name := fmt.Sprintf("%s l %g r %g", kind, c.l, c.r)
-		d := New()
-		d.Edit.SetChordTolerance(0.003)
-		d.Edit.SetMaxSegments(200)
-		hMid := 0.58 + c.l/4
-		edge, before := gabledPlateOnRod(d, 10, c.l, 0.58, hMid)
-		g, err := blendOrRefusal(d, edge, c.r, c.chamfer)
-		if err != nil {
-			t.Errorf("%s: %v", name, err)
-			continue
-		}
-		rep := g.Analyze().Check()
-		if !rep.Sound() {
-			t.Errorf("%s: %s", name, rep.Summary())
-			continue
-		}
-		added, want := rep.Volume-before, gabledAdded(c.l, 0.58, hMid, c.r, c.chamfer)
-		var chord float64
-		d.With(func(sk *sketch.Sketch) { chord = sk.Tol().ChordTolMm() })
-		tol := 6 * chord
-		if c.chamfer {
-			tol = 0.003 * want
-		}
-		if math.Abs(added-want) > tol {
-			t.Errorf("%s added %g, %g integrated", name, added, want)
-		}
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			blendTakesSideFaceWhole(t, c.chamfer, c.l, c.r)
+		})
+	}
+}
+
+// blendTakesSideFaceWhole is a case of TestBlendTakesSideFaceWhole: the
+// blend of size r on the plate l long, a chamfer or a fillet.
+func blendTakesSideFaceWhole(t *testing.T, chamfer bool, l, r float64) {
+	d := New()
+	d.Edit.SetChordTolerance(0.003)
+	d.Edit.SetMaxSegments(200)
+	hMid := 0.58 + l/4
+	edge, before := gabledPlateOnRod(d, 10, l, 0.58, hMid)
+	g, err := blendOrRefusal(d, edge, r, chamfer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rep := g.Analyze().Check()
+	if !rep.Sound() {
+		t.Fatal(rep.Summary())
+	}
+	added, want := rep.Volume-before, gabledAdded(l, 0.58, hMid, r, chamfer)
+	var chord float64
+	d.With(func(sk *sketch.Sketch) { chord = sk.Tol().ChordTolMm() })
+	tol := 6 * chord
+	if chamfer {
+		tol = 0.003 * want
+	}
+	if math.Abs(added-want) > tol {
+		t.Errorf("added %g, %g integrated", added, want)
 	}
 }

@@ -28,6 +28,12 @@ func threadedNut(t *testing.T, class string) string {
 // threadedRod is an M10 rod 30 mm long threaded along all of it, of
 // the class given, and the circle at its top that the thread is on.
 func threadedRod(d *Doc, class string) Entity {
+	return threadedRodWith(d, ThreadOptions{Class: class})
+}
+
+// threadedRodWith is threadedRod with the thread's other options as o
+// gives them (Cosmetic, say).
+func threadedRodWith(d *Doc, o ThreadOptions) Entity {
 	shank := d.Sketch.Circle(V(0, 0, 0), 5)
 	d.Constrain.Coincident(shank.Center(), d.Origin())
 	rod := d.Features.Extrude(30, "rod")
@@ -37,7 +43,8 @@ func threadedRod(d *Doc, class string) Entity {
 			end = e
 		}
 	}
-	d.Features.Thread(end, ThreadOptions{Designation: "M10", Length: 30, Reverse: true, Through: true, Class: class})
+	o.Designation, o.Length, o.Reverse, o.Through = "M10", 30, true, true
+	d.Features.Thread(end, o)
 	return end
 }
 
@@ -58,7 +65,8 @@ func lowestCircle(g Group) Entity {
 // classes 6H and 6g: placed half a pitch from where it fits, it
 // collides, and the screw mate, picked on the other rim of
 // the nut's hole and with the threads' own lead, moves it to fit, and it
-// fits at every turn after.
+// fits at every turn after: where the mate puts it and more than a turn
+// on (TestScrewFitsFaceThreads turns its nut by a quarter more).
 func TestScrewFitsThreads(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -83,7 +91,7 @@ func TestScrewFitsThreads(t *testing.T) {
 	if lead, _ := d.Params.Get(mate.Lead); math.Abs(lead.Value-1.5) > 1e-9 {
 		t.Errorf("lead %v, want the M10's 1.5", lead.Value)
 	}
-	for _, turn := range []string{"0", "90", "-200", "450"} {
+	for _, turn := range []string{"0", "450"} {
 		if err := d.Params.Set(mate.Turn, turn); err != nil {
 			t.Fatal(err)
 		}
@@ -94,11 +102,13 @@ func TestScrewFitsThreads(t *testing.T) {
 }
 
 // TestScrewThreadsRefused checks a screw mate of threads that don't
-// mate, and of a circle without one: a lead of 0 needs a thread.
+// mate, and of a circle without one: a lead of 0 needs a thread. The
+// threads are cosmetic: both refusals come before a cosmetic thread's
+// fit (sketch.ThreadFitMove), and a modelled M10 by 30 took 13 seconds.
 func TestScrewThreadsRefused(t *testing.T) {
 	t.Parallel()
 	d := New()
-	end := threadedRod(d, "")
+	end := threadedRodWith(d, ThreadOptions{Cosmetic: true})
 	d.Features.SketchIn(d.Workplane("XY"), "other")
 	other := d.Sketch.Circle(V(40, 0, 0), 5)
 	ex := d.Features.Extrude(5, "other")
@@ -111,7 +121,7 @@ func TestScrewThreadsRefused(t *testing.T) {
 	d.Sketch.Anywhere3D()
 	mustFail(t, "no thread", "unless a thread on its circles gives it", func() { d.Assembly.Screw(other, rim, 0) })
 	// Two screws' threads.
-	d.Features.Thread(rim, ThreadOptions{Designation: "M10", Length: 5, Reverse: true})
+	d.Features.Thread(rim, ThreadOptions{Designation: "M10", Length: 5, Reverse: true, Cosmetic: true})
 	d.Sketch.Anywhere3D()
 	mustFail(t, "two screws", "both screws'", func() { d.Assembly.Screw(end, rim, 0) })
 }

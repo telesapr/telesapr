@@ -162,7 +162,8 @@ func elevatedShell(t *testing.T, sh *SShell, m, n, up int) *SShell {
 
 // TestElevatedSolids builds solids from patches of degree 4 and 5 and
 // checks their meshes and Booleans against the same solids of the
-// patches they were raised from.
+// patches they were raised from; under -short at the highest degree
+// only.
 func TestElevatedSolids(t *testing.T) {
 	t.Parallel()
 	tol := fineTol()
@@ -176,14 +177,19 @@ func TestElevatedSolids(t *testing.T) {
 		{"tube", func() *SShell { return lathedTube(1, 2, 0, 1, tol) }, 3 * math.Pi},
 		{"cylinder", func() *SShell { return lathedTube(0, 2, -0.5, 1.5, tol) }, 8 * math.Pi},
 	}
-	for _, deg := range [][2]int{{4, 4}, {MaxDegree, MaxDegree}, {MaxDegree, 2}} {
+	degrees := [][2]int{{4, 4}, {MaxDegree, MaxDegree}, {MaxDegree, 2}}
+	if testing.Short() {
+		degrees = degrees[1:2]
+	}
+	for _, deg := range degrees {
 		for _, s := range solids {
 			name := fmt.Sprintf("%s raised to %dx%d", s.name, deg[0], deg[1])
 			sh := elevatedShell(t, s.sh(), deg[0], deg[1], 2)
-			if !meshIsSound(sh) {
+			v, sound := soundVolume(sh)
+			if !sound {
 				t.Errorf("%s: the mesh is not sound", name)
 			}
-			checkVolume(t, name, shellVolume(sh), s.vol)
+			checkVolume(t, name, v, s.vol)
 		}
 		// A Boolean between raised solids: a tube through a box, so the
 		// intersection runs over raised planes and raised cylinders.
@@ -195,10 +201,11 @@ func TestElevatedSolids(t *testing.T) {
 		if diff.BooleanFailed {
 			t.Errorf("%s: the Boolean failed", name)
 		}
-		if !meshIsSound(&diff) {
+		v, sound := soundVolume(&diff)
+		if !sound {
 			t.Errorf("%s: the mesh is not sound", name)
 		}
-		checkVolume(t, name, shellVolume(&diff), 36-3*math.Pi)
+		checkVolume(t, name, v, 36-3*math.Pi)
 	}
 }
 

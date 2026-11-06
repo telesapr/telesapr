@@ -9,7 +9,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -68,7 +67,7 @@ func saddleOne(t *testing.T, name string, flat bool, allow func(r float64) float
 	}
 	var made atomic.Int32
 	t.Run("lines", func(t *testing.T) {
-		for _, line := range saddleLines(strings.Split(strings.TrimSpace(string(data)), "\n")) {
+		for _, line := range saddleLines(strings.Split(strings.TrimSpace(string(data)), "\n"), saddleEdgesRadii) {
 			t.Run(line, func(t *testing.T) {
 				t.Parallel()
 				fs := strings.Fields(line)
@@ -105,17 +104,4 @@ func saddleOne(t *testing.T, name string, flat bool, allow func(r float64) float
 		}
 	})
 	t.Logf("%d made", made.Load())
-}
-
-// saddleLines is the OpenCASCADE fixture lines a saddle test rounds:
-// all of them, or under the race detector three of the fifth
-// fixtures.Sample keeps. A saddle's corner is made on the same goroutines
-// whatever its slopes, and the ten saddle tests took a fifth each of
-// pkg/topo's time there, with the stage over its limit (2026-11-04).
-func saddleLines(lines []string) []string {
-	lines = fixtures.Sample(lines)
-	if fixtures.RaceDetector {
-		lines = lines[:min(3, len(lines))]
-	}
-	return lines
 }

@@ -6,21 +6,23 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 )
 
-// buttressNut saves an S20x4 nut, a Ø40 disc 16 mm high with its hole
+// buttressNut saves an S20x4 nut, a Ø40 disc 8 mm high with its hole
 // threaded through from the bottom up, its load flank turned back or
-// not, its crest as named, and returns its path.
+// not, its crest as named, and returns its path. Two turns of thread
+// are enough to collide or not, and half the cost of four.
 func buttressNut(t *testing.T, back bool, crest string) string {
 	t.Helper()
 	nut := New()
 	disc := nut.Sketch.Circle(V(0, 0, 0), 20)
 	nut.Constrain.Coincident(disc.Center(), nut.Origin())
-	nut.Features.Extrude(16, "disc")
+	nut.Features.Extrude(8, "disc")
 	nut.Features.SketchIn(nut.Workplane("XY"), "hole")
 	hole := nut.Sketch.Circle(V(0, 0, 0), 10)
 	nut.Constrain.Coincident(hole.Center(), nut.Origin())
-	nut.Features.Thread(hole, ThreadOptions{Designation: "S20x4", Internal: true, Through: true, Length: 16,
+	nut.Features.Thread(hole, ThreadOptions{Designation: "S20x4", Internal: true, Through: true, Length: 8,
 		Clearance: 0.1, LoadFlankBack: back, Crest: crest})
 	path := filepath.Join(t.TempDir(), "nut.tlspr")
 	if err := nut.File.Save(path); err != nil {
@@ -29,19 +31,19 @@ func buttressNut(t *testing.T, back bool, crest string) string {
 	return path
 }
 
-// buttressRod is a Ø20 rod 48 mm long threaded S20x4 down from its
+// buttressRod is a Ø20 rod 24 mm long threaded S20x4 down from its
 // top, its crest as named, and the circle there that the thread is on.
 func buttressRod(d *Doc, crest string) Entity {
 	shank := d.Sketch.Circle(V(0, 0, 0), 10)
 	d.Constrain.Coincident(shank.Center(), d.Origin())
-	rod := d.Features.Extrude(48, "rod")
+	rod := d.Features.Extrude(24, "rod")
 	var end Entity
 	for _, e := range rod.Entities() {
-		if e.Kind() == "circle" && e.Center().Pos().Z > 24 {
+		if e.Kind() == "circle" && e.Center().Pos().Z > 12 {
 			end = e
 		}
 	}
-	d.Features.Thread(end, ThreadOptions{Designation: "S20x4", Length: 48, Reverse: true, Through: true, Clearance: 0.1, Crest: crest})
+	d.Features.Thread(end, ThreadOptions{Designation: "S20x4", Length: 24, Reverse: true, Through: true, Clearance: 0.1, Crest: crest})
 	return end
 }
 
@@ -138,7 +140,9 @@ func screwButtress(t *testing.T, crest string) {
 // down from its top, which goes into the nut first, and the nut's up
 // from its bottom, which meets the rod first: a screw and a nut that
 // both push (PUSH-BUTT) or both pull (BUTT) mate, their load flanks
-// facing each other, and one of each is refused.
+// facing each other, and one of each is refused. Only the way of each
+// thread's load matters, so the rod is 10 mm long and the nut 6: the
+// modelled threads were all the cost, at 40 and 15.
 func TestScrewFitsButtressLoadWays(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -149,11 +153,11 @@ func TestScrewFitsButtressLoadWays(t *testing.T) {
 		nut := New()
 		disc := nut.Sketch.Circle(V(0, 0, 0), 25)
 		nut.Constrain.Coincident(disc.Center(), nut.Origin())
-		nut.Features.Extrude(15, "disc")
+		nut.Features.Extrude(6, "disc")
 		nut.Features.SketchIn(nut.Workplane("XY"), "hole")
 		hole := nut.Sketch.Circle(V(0, 0, 0), r)
 		nut.Constrain.Coincident(hole.Center(), nut.Origin())
-		nut.Features.Thread(hole, ThreadOptions{Designation: designation, Internal: true, Through: true, Length: 15, Class: "2B"})
+		nut.Features.Thread(hole, ThreadOptions{Designation: designation, Internal: true, Through: true, Length: 6, Class: "2B"})
 		path := filepath.Join(t.TempDir(), "nut.tlspr")
 		if err := nut.File.Save(path); err != nil {
 			t.Fatal(err)
@@ -180,14 +184,14 @@ func TestScrewFitsButtressLoadWays(t *testing.T) {
 		d := New()
 		shank := d.Sketch.Circle(V(0, 0, 0), r)
 		d.Constrain.Coincident(shank.Center(), d.Origin())
-		rod := d.Features.Extrude(40, "rod")
+		rod := d.Features.Extrude(10, "rod")
 		var end Entity
 		for _, e := range rod.Entities() {
-			if e.Kind() == "circle" && e.Center().Pos().Z > 20 {
+			if e.Kind() == "circle" && e.Center().Pos().Z > 5 {
 				end = e
 			}
 		}
-		d.Features.Thread(end, ThreadOptions{Designation: c.rod, Length: 40, Reverse: true, Through: true, Class: "2A"})
+		d.Features.Thread(end, ThreadOptions{Designation: c.rod, Length: 10, Reverse: true, Through: true, Class: "2A"})
 		g, err := d.Assembly.Link(nutFile(c.nut), "nut")
 		if err != nil {
 			t.Fatal(err)
@@ -217,18 +221,22 @@ func TestScrewFitsButtressLoadWays(t *testing.T) {
 // sound at the same volume at each. With only the group before the
 // thread made at it, the rod's edges kept its coarse chords through
 // the head's union, and the 3/4-10 BUTT screw had edges open along
-// its root from 0.5%.
+// its root from 0.5%. The ordinary run takes 0.5 and 2, where the head
+// broke it, and make test-sweeps the finer 0.1 too.
 func TestThreadRoundRootOnHeadedRod(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("threads with rounded roots")
 	}
 	var first float64
-	tols := []float64{0.1, 0.5, 2}
-	if fixtures.RaceDetector {
+	tols := []float64{0.5, 2}
+	switch {
+	case sweep.Full():
+		tols = []float64{0.1, 0.5, 2}
+	case fixtures.RaceDetector:
 		// Each thread is made at its roots' own tolerance, minutes there;
 		// the coarsest is the one the rod's head broke.
-		tols = tols[2:]
+		tols = tols[1:]
 	}
 	for _, tol := range tols {
 		d := New()
@@ -260,7 +268,7 @@ func TestThreadRoundRootOnHeadedRod(t *testing.T) {
 		if first == 0 {
 			first = r.Volume
 		} else if math.Abs(r.Volume-first) > 1e-6*first {
-			t.Errorf("at %g%%: %.3f mm³, %.3f at 0.1%%", tol, r.Volume, first)
+			t.Errorf("at %g%%: %.3f mm³, %.3f at %g%%", tol, r.Volume, first, tols[0])
 		}
 	}
 }

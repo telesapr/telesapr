@@ -2,6 +2,7 @@ package topo_test
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"math/rand"
 	"testing"
@@ -10,6 +11,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -44,31 +46,42 @@ func TestPathSweepCorner(t *testing.T) {
 	tol := srf.Tol(0.005, 100)
 	col := core.NewRGBA(100, 100, 100, 255)
 	r := rand.New(rand.NewSource(3))
-	for _, c := range []struct{ angle, lean float64 }{{30, 0}, {90, 0}, {120, 0}, {60, 40}, {90, 90}} {
-		path := cornerPath(r, c.angle, c.lean)
-		for kind := range 3 {
-			loops, area := profileAcross(path, kind)
-			sp := newPath(t, path, topo.PathSweepOptions{Tol: 5e-4})
-			sh, err := topo.MakePathSweep(sp, loops, col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2), tol)
-			if err != nil {
-				t.Errorf("corner %g leaning %g, profile %d: %v", c.angle, c.lean, kind, err)
-				continue
+	cases := []struct{ angle, lean float64 }{{30, 0}, {90, 0}, {120, 0}, {60, 40}, {90, 90}}
+	// The paths drawn first, in order, so that the random numbers are
+	// what they were; the corners swept side by side, a fifth under
+	// -short and the race detector (sweep.Pick).
+	paths := make([][]srf.SBezier, len(cases))
+	for i, c := range cases {
+		paths[i] = cornerPath(r, c.angle, c.lean)
+	}
+	for _, i := range sweep.Pick(indexes(len(cases)), 0) {
+		c, path := cases[i], paths[i]
+		t.Run(fmt.Sprintf("corner %g leaning %g", c.angle, c.lean), func(t *testing.T) {
+			t.Parallel()
+			for kind := range 3 {
+				loops, area := profileAcross(path, kind)
+				sp := newPath(t, path, topo.PathSweepOptions{Tol: 5e-4})
+				sh, err := topo.MakePathSweep(sp, loops, col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2), tol)
+				if err != nil {
+					t.Errorf("corner %g leaning %g, profile %d: %v", c.angle, c.lean, kind, err)
+					continue
+				}
+				var m srf.SMesh
+				sh.TriangulateInto(&m)
+				rep := check.Solid(sh, &m)
+				perimeter := 0.0
+				for _, l := range loops {
+					perimeter += pathLength(l)
+				}
+				want := area * pathLength(path)
+				allow := tol.ChordTolMm() * perimeter * pathLength(path)
+				t.Logf("corner %g leaning %g, profile %d: volume %.4f, want %.4f within %.3g", c.angle, c.lean, kind, rep.Volume, want, allow)
+				if !rep.Sound() || math.Abs(rep.Volume-want) > allow {
+					t.Errorf("corner %g leaning %g, profile %d: %s, want volume %.4f within %.3g",
+						c.angle, c.lean, kind, rep.String(), want, allow)
+				}
 			}
-			var m srf.SMesh
-			sh.TriangulateInto(&m)
-			rep := check.Solid(sh, &m)
-			perimeter := 0.0
-			for _, l := range loops {
-				perimeter += pathLength(l)
-			}
-			want := area * pathLength(path)
-			allow := tol.ChordTolMm() * perimeter * pathLength(path)
-			t.Logf("corner %g leaning %g, profile %d: volume %.4f, want %.4f within %.3g", c.angle, c.lean, kind, rep.Volume, want, allow)
-			if !rep.Sound() || math.Abs(rep.Volume-want) > allow {
-				t.Errorf("corner %g leaning %g, profile %d: %s, want volume %.4f within %.3g",
-					c.angle, c.lean, kind, rep.String(), want, allow)
-			}
-		}
+		})
 	}
 }
 
@@ -148,59 +161,80 @@ func TestPathSweepTwistedCorner(t *testing.T) {
 	tol := srf.Tol(0.005, 100)
 	col := core.NewRGBA(100, 100, 100, 255)
 	r := rand.New(rand.NewSource(3))
-	for _, c := range []struct{ angle, lean, twist float64 }{{30, 0, 1}, {90, 0, -2}, {120, 0, 3}, {60, 40, 1.5}} {
-		path := cornerPath(r, c.angle, c.lean)
-		for kind := range 3 {
-			if fixtures.RaceDetector && kind != 1 {
-				// Under the race detector one profile of the three: they
-				// sweep on the same goroutines.
-				continue
-			}
-			loops, area := profileAcross(path, kind)
-			sp := newPath(t, path, topo.PathSweepOptions{Tol: 5e-4, Twist: c.twist, Reach: profileReach(path, loops)})
-			if len(sp.Pieces()) <= len(path) {
-				t.Errorf("corner %g, profile %d: no line split for the held stretch", c.angle, kind)
-			}
-			// The frames don't turn along a piece beside the corner.
-			ps := sp.Pieces()
-			sharp := func(k int) bool {
-				return k > 0 && k < len(ps) && ps[k-1].TangentAt(1).WithMagnitude(1).Dot(ps[k].TangentAt(0).WithMagnitude(1)) < 0.99
-			}
-			q := path[0].Start().Plus(v(0, 0, 1))
-			for i, pc := range ps {
-				if !sharp(i) && !sharp(i+1) {
+	cases := []struct{ angle, lean, twist float64 }{{30, 0, 1}, {90, 0, -2}, {120, 0, 3}, {60, 40, 1.5}}
+	// The paths drawn first, in order, so that the random numbers are
+	// what they were; the corners swept side by side, a fifth under
+	// -short and the race detector (sweep.Pick).
+	paths := make([][]srf.SBezier, len(cases))
+	for i, c := range cases {
+		paths[i] = cornerPath(r, c.angle, c.lean)
+	}
+	for _, i := range sweep.Pick(indexes(len(cases)), 0) {
+		c, path := cases[i], paths[i]
+		t.Run(fmt.Sprintf("corner %g leaning %g twist %g", c.angle, c.lean, c.twist), func(t *testing.T) {
+			t.Parallel()
+			for kind := range 3 {
+				if (fixtures.RaceDetector || testing.Short()) && kind != 1 {
+					// Under -short and the race detector one profile of the
+					// three: they sweep on the same goroutines.
 					continue
 				}
-				// Short of the piece's end: at it the frame is the next piece's.
-				const e = 1e-3
-				d := pc.Finish().Minus(pc.Start())
-				turned := sp.Motion(float64(i) + 1 - e)(q).Minus(sp.Motion(float64(i))(q)).Minus(d.ScaledBy(1 - e))
-				if turned.Magnitude() > 1e-9 {
-					t.Errorf("corner %g: piece %d beside the corner turns the frames by %g", c.angle, i, turned.Magnitude())
+				loops, area := profileAcross(path, kind)
+				sp := newPath(t, path, topo.PathSweepOptions{Tol: 5e-4, Twist: c.twist, Reach: profileReach(path, loops)})
+				if len(sp.Pieces()) <= len(path) {
+					t.Errorf("corner %g, profile %d: no line split for the held stretch", c.angle, kind)
+				}
+				// The frames don't turn along a piece beside the corner.
+				ps := sp.Pieces()
+				sharp := func(k int) bool {
+					return k > 0 && k < len(ps) && ps[k-1].TangentAt(1).WithMagnitude(1).Dot(ps[k].TangentAt(0).WithMagnitude(1)) < 0.99
+				}
+				q := path[0].Start().Plus(v(0, 0, 1))
+				for i, pc := range ps {
+					if !sharp(i) && !sharp(i+1) {
+						continue
+					}
+					// Short of the piece's end: at it the frame is the next piece's.
+					const e = 1e-3
+					d := pc.Finish().Minus(pc.Start())
+					turned := sp.Motion(float64(i) + 1 - e)(q).Minus(sp.Motion(float64(i))(q)).Minus(d.ScaledBy(1 - e))
+					if turned.Magnitude() > 1e-9 {
+						t.Errorf("corner %g: piece %d beside the corner turns the frames by %g", c.angle, i, turned.Magnitude())
+					}
+				}
+				if s := sp.TwistShare(sp.Length()); math.Abs(s-1) > 1e-12 {
+					t.Errorf("corner %g: twist share %g at the end", c.angle, s)
+				}
+				sh, err := topo.MakePathSweep(sp, loops, col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2), tol)
+				if err != nil {
+					t.Errorf("corner %g leaning %g twist %g, profile %d: %v", c.angle, c.lean, c.twist, kind, err)
+					continue
+				}
+				var m srf.SMesh
+				sh.TriangulateInto(&m)
+				rep := check.Solid(sh, &m)
+				perimeter := 0.0
+				for _, l := range loops {
+					perimeter += pathLength(l)
+				}
+				want := area * pathLength(path)
+				allow := tol.ChordTolMm() * perimeter * pathLength(path)
+				t.Logf("corner %g leaning %g twist %g, profile %d: volume %.4f, want %.4f within %.3g", c.angle, c.lean, c.twist, kind, rep.Volume, want, allow)
+				if !rep.Sound() || math.Abs(rep.Volume-want) > allow {
+					t.Errorf("corner %g leaning %g twist %g, profile %d: %s, want volume %.4f within %.3g",
+						c.angle, c.lean, c.twist, kind, rep.String(), want, allow)
 				}
 			}
-			if s := sp.TwistShare(sp.Length()); math.Abs(s-1) > 1e-12 {
-				t.Errorf("corner %g: twist share %g at the end", c.angle, s)
-			}
-			sh, err := topo.MakePathSweep(sp, loops, col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2), tol)
-			if err != nil {
-				t.Errorf("corner %g leaning %g twist %g, profile %d: %v", c.angle, c.lean, c.twist, kind, err)
-				continue
-			}
-			var m srf.SMesh
-			sh.TriangulateInto(&m)
-			rep := check.Solid(sh, &m)
-			perimeter := 0.0
-			for _, l := range loops {
-				perimeter += pathLength(l)
-			}
-			want := area * pathLength(path)
-			allow := tol.ChordTolMm() * perimeter * pathLength(path)
-			t.Logf("corner %g leaning %g twist %g, profile %d: volume %.4f, want %.4f within %.3g", c.angle, c.lean, c.twist, kind, rep.Volume, want, allow)
-			if !rep.Sound() || math.Abs(rep.Volume-want) > allow {
-				t.Errorf("corner %g leaning %g twist %g, profile %d: %s, want volume %.4f within %.3g",
-					c.angle, c.lean, c.twist, kind, rep.String(), want, allow)
-			}
-		}
+		})
 	}
+}
+
+// indexes is 0 to n-1: a table's cases by number, for sweep.Pick to take
+// some of where each case's input was drawn in order beforehand.
+func indexes(n int) []int {
+	out := make([]int, n)
+	for i := range out {
+		out[i] = i
+	}
+	return out
 }

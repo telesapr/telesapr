@@ -1,10 +1,12 @@
 package srf
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 )
 
 // TestCurvedContactSweep is the K3 spike's probe of curved contact
@@ -18,9 +20,12 @@ import (
 // manifold there, as the true union of solids that touch; its volume is
 // theirs added. On 2026-11-04 the probe had pin 77 of 108 wrong, ball 12,
 // cylinder 30; on 2026-11-05 before snapTangent, ball 3, cylinder 30.
+// The pin is TestPinInBoreSweep's lathed fixture, but at offsets past the
+// fuse too, which that sweep leaves out. The ordinary run takes 36 of
+// the 324 Booleans, make test-sweeps all of them.
 func TestCurvedContactSweep(t *testing.T) {
 	if testing.Short() {
-		t.Skip("curved contact sweep: 324 Booleans, about 40 s")
+		t.Skip("curved contact sweep: 324 Booleans, a sample of 36")
 	}
 	t.Parallel()
 	v := func(x, z float64) geom.Vector { return geom.Vector{X: x, Z: z} }
@@ -40,38 +45,38 @@ func TestCurvedContactSweep(t *testing.T) {
 		}
 		return a, b
 	}
-	volume := func(sh *SShell) float64 {
-		var m SMesh
-		sh.TriangulateInto(&m)
-		return m.CalculateVolume()
+	grid := sweep.Grid{
+		Axes: []sweep.Axis{
+			sweep.Strings("fixture", "pin", "ball", "lying"),
+			sweep.Floats("eps", -1e-2, -1e-3, -1e-5, -1e-6, 0, 1e-6, 1e-5, 1e-3, 1e-2),
+			sweep.Floats("chord", 0.1, 0.01),
+			sweep.Floats("turn", 0, 35),
+			sweep.Strings("op", "union", "difference", "intersection"),
+		},
+		MaxFailRate: 0,
+		Sample:      36,
+		Parallel:    true,
 	}
-	for _, fx := range []string{"pin", "ball", "lying"} {
-		for _, eps := range []float64{-1e-2, -1e-3, -1e-5, -1e-6, 0, 1e-6, 1e-5, 1e-3, 1e-2} {
-			for _, chord := range []float64{0.1, 0.01} {
-				for _, turn := range []float64{0, 35} {
-					a, b := pair(fx, eps, Tol(chord, 20))
-					a, b = nearTurn(a, turn), nearTurn(b, turn)
-					for _, op := range []SurfaceCombineAs{SurfaceUnion, SurfaceDiff, SurfaceInter} {
-						var out SShell
-						out.MakeFromBoolean(a, b, op)
-						if out.BooleanFailed {
-							t.Errorf("%s eps %g chord %g turn %g op %d: the Boolean failed", fx, eps, chord, turn, op)
-							continue
-						}
-						got := volume(&out)
-						if got < 1e-3 || meshIsSound(&out) {
-							continue
-						}
-						// Two solids touching along a line: their volumes
-						// added, the round's chords inside its true side.
-						slack := 3 * a.Tol.ChordTolMm() * 100
-						if op == SurfaceUnion && fx == "lying" && math.Abs(got-volume(a)-volume(b)) < slack {
-							continue
-						}
-						t.Errorf("%s eps %g chord %g turn %g op %d: not sound, volume %.5f", fx, eps, chord, turn, op, got)
-					}
-				}
-			}
+	ops := map[string]SurfaceCombineAs{"union": SurfaceUnion, "difference": SurfaceDiff, "intersection": SurfaceInter}
+	grid.Run(func(p sweep.Point) error {
+		fx, op := p.String("fixture"), ops[p.String("op")]
+		a, b := pair(fx, p.Float("eps"), Tol(p.Float("chord"), 20))
+		a, b = nearTurn(a, p.Float("turn")), nearTurn(b, p.Float("turn"))
+		var out SShell
+		out.MakeFromBoolean(a, b, op)
+		if out.BooleanFailed {
+			return errUnsound(true)
 		}
-	}
+		got, sound := soundVolume(&out)
+		if got < 1e-3 || sound {
+			return nil
+		}
+		// Two solids touching along a line: their volumes added, the
+		// round's chords inside its true side.
+		slack := 3 * a.Tol.ChordTolMm() * 100
+		if op == SurfaceUnion && fx == "lying" && math.Abs(got-shellVolume(a)-shellVolume(b)) < slack {
+			return nil
+		}
+		return fmt.Errorf("not sound, volume %.5f", got)
+	}).Require(t)
 }

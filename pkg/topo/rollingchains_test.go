@@ -1,6 +1,7 @@
 package topo_test
 
 import (
+	"fmt"
 	"math"
 	"slices"
 	"testing"
@@ -61,11 +62,11 @@ func topPicks(cubics [][4]geom.Vector) []topo.FilletPick {
 	return picks
 }
 
-// hasVertex reports whether sh's solid has a vertex within 1e-4 of p.
-func hasVertex(t *testing.T, sh *srf.SShell, p geom.Vector) bool {
-	t.Helper()
-	tp := build(t, sh)
-	for _, x := range tp.Vertices {
+// hasVertex reports whether a solid whose vertices are vs has one
+// within 1e-4 of p: the solid's topology is built once for all the
+// points asked about, not once for each.
+func hasVertex(vs []topo.Vertex, p geom.Vector) bool {
+	for _, x := range vs {
 		if x.P.Minus(p).Magnitude() < 1e-4 {
 			return true
 		}
@@ -96,8 +97,9 @@ func TestFilletChainsMitred(t *testing.T) {
 		t.Fatalf("lens: %v", err)
 	}
 	sound(t, sh)
+	vs := build(t, sh).Vertices
 	for _, p := range []geom.Vector{v(0, 0, 4), v(1.195537, 0, 5), v(20, 0, 4), v(18.804463, 0, 5)} {
-		if !hasVertex(t, sh, p) {
+		if !hasVertex(vs, p) {
 			t.Errorf("lens: no vertex at %v", p)
 		}
 	}
@@ -108,7 +110,7 @@ func TestFilletChainsMitred(t *testing.T) {
 		t.Fatalf("three cubics: %v", err)
 	}
 	sound(t, sh)
-	if !hasVertex(t, sh, v(0, 0, 4.5)) {
+	if !hasVertex(build(t, sh).Vertices, v(0, 0, 4.5)) {
 		t.Errorf("three cubics: no mitre down the crease at the origin")
 	}
 }
@@ -204,20 +206,24 @@ func TestFilletChainsPartlyMitred(t *testing.T) {
 		{[]int{1, 2, 3}, []geom.Vector{v(0, 0, 4), v(16, 0, 4), v(0, 13, 4), v(16, 13, 4),
 			v(2.470344, -1.210272, 5), v(13.529656, -1.210272, 5), v(0.684251, 12.242896, 5), v(15.315749, 12.242896, 5)}},
 	}) {
-		var picks []topo.FilletPick
-		for _, i := range c.picks {
-			picks = append(picks, all[i])
-		}
-		sh := cubicPrism(four, fine(tol))
-		if err := topo.FilletPicks(sh, picks, 1, 1<<30, false); err != nil {
-			t.Fatalf("%v: %v", c.picks, err)
-		}
-		sound(t, sh)
-		for _, p := range c.verts {
-			if !hasVertex(t, sh, p) {
-				t.Errorf("%v: no vertex at %v", c.picks, p)
+		t.Run(fmt.Sprint(c.picks), func(t *testing.T) {
+			t.Parallel()
+			var picks []topo.FilletPick
+			for _, i := range c.picks {
+				picks = append(picks, all[i])
 			}
-		}
+			sh := cubicPrism(four, fine(tol))
+			if err := topo.FilletPicks(sh, picks, 1, 1<<30, false); err != nil {
+				t.Fatalf("%v: %v", c.picks, err)
+			}
+			sound(t, sh)
+			vs := build(t, sh).Vertices
+			for _, p := range c.verts {
+				if !hasVertex(vs, p) {
+					t.Errorf("%v: no vertex at %v", c.picks, p)
+				}
+			}
+		})
 	}
 }
 
@@ -253,27 +259,30 @@ func TestChamferChainsMitred(t *testing.T) {
 			[]geom.Vector{v(0, 0, 4), v(16, 0, 4), v(0, 13, 4), v(16, 13, 4), v(0.68425, 12.24290, 5), v(15.31575, 12.24290, 5)},
 			[]geom.Vector{v(2.46653, -1.20879, 5), v(13.53347, -1.20879, 5)}},
 	}) {
-		all := topPicks(c.prof)
-		var picks []topo.FilletPick
-		for _, i := range c.picks {
-			picks = append(picks, all[i])
-		}
-		sh := cubicPrism(c.prof, fine(0.002))
-		if err := topo.FilletPicks(sh, picks, 1, 1<<30, true); err != nil {
-			t.Fatalf("%s: %v", c.name, err)
-		}
-		sound(t, sh)
-		got := build(t, sh).Vertices
-		for _, p := range c.verts {
-			if !hasVertex(t, sh, p) {
-				t.Errorf("%s: no vertex at %v", c.name, p)
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			all := topPicks(c.prof)
+			var picks []topo.FilletPick
+			for _, i := range c.picks {
+				picks = append(picks, all[i])
 			}
-		}
-		for _, p := range c.ends {
-			if !slices.ContainsFunc(got, func(x topo.Vertex) bool { return x.P.Minus(p).Magnitude() < 1e-3 }) {
-				t.Errorf("%s: no vertex near %v", c.name, p)
+			sh := cubicPrism(c.prof, fine(0.002))
+			if err := topo.FilletPicks(sh, picks, 1, 1<<30, true); err != nil {
+				t.Fatalf("%s: %v", c.name, err)
 			}
-		}
+			sound(t, sh)
+			got := build(t, sh).Vertices
+			for _, p := range c.verts {
+				if !hasVertex(got, p) {
+					t.Errorf("%s: no vertex at %v", c.name, p)
+				}
+			}
+			for _, p := range c.ends {
+				if !slices.ContainsFunc(got, func(x topo.Vertex) bool { return x.P.Minus(p).Magnitude() < 1e-3 }) {
+					t.Errorf("%s: no vertex near %v", c.name, p)
+				}
+			}
+		})
 	}
 }
 
@@ -318,22 +327,26 @@ func TestFilletChainsRadii(t *testing.T) {
 			v(9.914273, 16.892687, 4.5), v(0.044188, 0.131604, 4.5), v(0.770595, 0.690535, 5), v(18.795553, 0.42032, 5),
 			v(9.682331, 15.791699, 5)}},
 	}) {
-		picks := topPicks(c.prof)
-		for i := range picks {
-			picks[i].R = c.radii[i]
-		}
-		for _, tol := range fixtures.Sample([]float64{0.01, 0.002}) {
-			sh := cubicPrism(c.prof, fine(tol))
-			if err := topo.FilletPicks(sh, picks, c.radii[0], 1<<30, false); err != nil {
-				t.Fatalf("%s at %g: %v", c.name, tol, err)
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			picks := topPicks(c.prof)
+			for i := range picks {
+				picks[i].R = c.radii[i]
 			}
-			sound(t, sh)
-			for _, p := range c.verts {
-				if !hasVertex(t, sh, p) {
-					t.Errorf("%s at %g: no vertex at %v", c.name, tol, p)
+			for _, tol := range fixtures.Sample([]float64{0.01, 0.002}) {
+				sh := cubicPrism(c.prof, fine(tol))
+				if err := topo.FilletPicks(sh, picks, c.radii[0], 1<<30, false); err != nil {
+					t.Fatalf("%s at %g: %v", c.name, tol, err)
+				}
+				sound(t, sh)
+				vs := build(t, sh).Vertices
+				for _, p := range c.verts {
+					if !hasVertex(vs, p) {
+						t.Errorf("%s at %g: no vertex at %v", c.name, tol, p)
+					}
 				}
 			}
-		}
+		})
 	}
 }
 
@@ -371,25 +384,28 @@ func TestChamferChainsRadii(t *testing.T) {
 			v(19.566064, -0.280173, 4.5), v(20, 0, 4), v(10, 17, 4), v(9.840126, 16.799621, 4.25), v(0.816112, 0.071241, 5),
 			v(9.841377, 15.589126, 5), v(18.964969, -0.060909, 5)}, nil},
 	}) {
-		picks := topPicks(c.prof)
-		for i := range picks {
-			picks[i].R = c.radii[i]
-		}
-		sh := cubicPrism(c.prof, fine(0.002))
-		if err := topo.FilletPicks(sh, picks, c.radii[0], 1<<30, true); err != nil {
-			t.Fatalf("%s: %v", c.name, err)
-		}
-		sound(t, sh)
-		for _, p := range c.verts {
-			if !hasVertex(t, sh, p) {
-				t.Errorf("%s: no vertex at %v", c.name, p)
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			picks := topPicks(c.prof)
+			for i := range picks {
+				picks[i].R = c.radii[i]
 			}
-		}
-		got := build(t, sh).Vertices
-		for _, p := range c.loose {
-			if !slices.ContainsFunc(got, func(x topo.Vertex) bool { return x.P.Minus(p).Magnitude() < 3e-4 }) {
-				t.Errorf("%s: no vertex near %v", c.name, p)
+			sh := cubicPrism(c.prof, fine(0.002))
+			if err := topo.FilletPicks(sh, picks, c.radii[0], 1<<30, true); err != nil {
+				t.Fatalf("%s: %v", c.name, err)
 			}
-		}
+			sound(t, sh)
+			got := build(t, sh).Vertices
+			for _, p := range c.verts {
+				if !hasVertex(got, p) {
+					t.Errorf("%s: no vertex at %v", c.name, p)
+				}
+			}
+			for _, p := range c.loose {
+				if !slices.ContainsFunc(got, func(x topo.Vertex) bool { return x.P.Minus(p).Magnitude() < 3e-4 }) {
+					t.Errorf("%s: no vertex near %v", c.name, p)
+				}
+			}
+		})
 	}
 }

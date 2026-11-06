@@ -51,7 +51,8 @@ func roundRootCases() []threadCase {
 // came out crossing themselves at every tolerance until their boring's
 // cone was made shallower (turnSlope); a chamfered 2-8 nut until its
 // ridges were tried a tenth of a pitch further past the ends (the last
-// of chamferTries). An even sample by default, the whole grid (320
+// of chamferTries). An even sample of 6 by default, about 8 s of
+// processor each, which meets every tolerance; the whole grid (320
 // threads) with TELESAPR_SWEEP=1.
 func TestThreadRoundRootSweep(t *testing.T) {
 	t.Parallel()
@@ -70,7 +71,7 @@ func TestThreadRoundRootSweep(t *testing.T) {
 			sweep.Floats("tol", 2, 1, 0.5, 0.2, 0.1),
 			sweep.Strings("case", names...),
 		},
-		Sample: 12,
+		Sample: 6,
 	}
 	grid.Run(func(p sweep.Point) error {
 		sk, _, res, err := byName[p.String("case")].tryBuild(t, p.Float("tol"))

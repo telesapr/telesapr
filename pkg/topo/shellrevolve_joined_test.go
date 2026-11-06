@@ -1,10 +1,12 @@
 package topo_test
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -105,41 +107,44 @@ func TestJoinedRevolutionArcs(t *testing.T) {
 	ball := [][2]float64{{0, 5}, {5, 10}, {0, 15}}
 	arcs := map[int][2]float64{0: {0, 10}, 1: {0, 10}}
 	stem := [][2]float64{{0, 0}, {3, 0}, {3, 10}, {0, 10}}
-	for _, op := range []srf.SurfaceCombineAs{srf.SurfaceUnion, srf.SurfaceDiff, srf.SurfaceInter} {
-		pa := meridian(t, ball, arcs, tol)
-		pb := turnedTo(meridian(t, stem, nil, tol), math.Pi/3)
-		sa, _ := turned(pa, 0, 2*math.Pi, tol)
-		sb := &srf.SShell{Tol: tol}
-		sb.MakeFromRevolutionOf(&pb.Sets[0], v(0, 0, 0), v(0, 0, 1), core.NewRGBA(100, 100, 100, 255), noGroup{})
-		sh := &srf.SShell{Tol: tol}
-		sh.MakeFromBoolean(sa, sb, op)
-		want := sound(t, sh)
-		rev, err := topo.JoinedRevolution(v(0, 0, 0), v(0, 0, 1),
-			[]topo.RevolvedPart{{Profile: pa, Combine: srf.SurfaceUnion}, {Profile: pb, Combine: op}}, tol)
-		if err != nil {
-			t.Fatalf("%v: %v", op, err)
-		}
-		again, _ := turned(rev.Profile, 0, 2*math.Pi, tol)
-		if got := sound(t, again); math.Abs(got-want) > 0.002*want {
-			t.Errorf("%v: the joined profile turned is %g, the lathes joined %g", op, got, want)
-		}
-		if op != srf.SurfaceUnion {
-			continue
-		}
-		// Hollowed, open at the stem's foot: a ball 1 thick on a tube.
-		tp := build(t, sh)
-		out, err := topo.ShellRevolved(sh, rev, facesOn(t, tp, v(0, 0, 0), v(0, 0, 1)), 1, 1<<30)
-		if err != nil {
-			t.Fatalf("ball on a stem: %v", err)
-		}
-		// What a ball of radius r about z = 10 leaves of a cylinder of
-		// radius c from z = 0 up into it.
-		below := func(r, c float64) float64 {
-			return 2 * math.Pi * (5*c*c + (math.Pow(r*r-c*c, 1.5)-r*r*r)/3)
-		}
-		walls := 4*math.Pi/3*(125-64) + below(5, 3) - below(4, 2)
-		if got := sound(t, out); math.Abs(got-walls) > 0.002*walls {
-			t.Errorf("ball on a stem hollowed: volume %g, want %g", got, walls)
-		}
+	for _, op := range sweep.Pick([]srf.SurfaceCombineAs{srf.SurfaceUnion, srf.SurfaceDiff, srf.SurfaceInter}, 0) {
+		t.Run(fmt.Sprint(op), func(t *testing.T) {
+			t.Parallel()
+			pa := meridian(t, ball, arcs, tol)
+			pb := turnedTo(meridian(t, stem, nil, tol), math.Pi/3)
+			sa, _ := turned(pa, 0, 2*math.Pi, tol)
+			sb := &srf.SShell{Tol: tol}
+			sb.MakeFromRevolutionOf(&pb.Sets[0], v(0, 0, 0), v(0, 0, 1), core.NewRGBA(100, 100, 100, 255), noGroup{})
+			sh := &srf.SShell{Tol: tol}
+			sh.MakeFromBoolean(sa, sb, op)
+			want := sound(t, sh)
+			rev, err := topo.JoinedRevolution(v(0, 0, 0), v(0, 0, 1),
+				[]topo.RevolvedPart{{Profile: pa, Combine: srf.SurfaceUnion}, {Profile: pb, Combine: op}}, tol)
+			if err != nil {
+				t.Fatalf("%v: %v", op, err)
+			}
+			again, _ := turned(rev.Profile, 0, 2*math.Pi, tol)
+			if got := sound(t, again); math.Abs(got-want) > 0.002*want {
+				t.Errorf("%v: the joined profile turned is %g, the lathes joined %g", op, got, want)
+			}
+			if op != srf.SurfaceUnion {
+				return
+			}
+			// Hollowed, open at the stem's foot: a ball 1 thick on a tube.
+			tp := build(t, sh)
+			out, err := topo.ShellRevolved(sh, rev, facesOn(t, tp, v(0, 0, 0), v(0, 0, 1)), 1, 1<<30)
+			if err != nil {
+				t.Fatalf("ball on a stem: %v", err)
+			}
+			// What a ball of radius r about z = 10 leaves of a cylinder of
+			// radius c from z = 0 up into it.
+			below := func(r, c float64) float64 {
+				return 2 * math.Pi * (5*c*c + (math.Pow(r*r-c*c, 1.5)-r*r*r)/3)
+			}
+			walls := 4*math.Pi/3*(125-64) + below(5, 3) - below(4, 2)
+			if got := sound(t, out); math.Abs(got-walls) > 0.002*walls {
+				t.Errorf("ball on a stem hollowed: volume %g, want %g", got, walls)
+			}
+		})
 	}
 }

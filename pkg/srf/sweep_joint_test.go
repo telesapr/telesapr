@@ -199,20 +199,24 @@ func jointPaths() map[string][]pathPart {
 
 // A square swept along paths with corners beside arcs: sound, and the
 // volume of the pieces and the fills between them carried on, slice by
-// slice across the arcs' axis.
+// slice across the arcs' axis. The areas are integrated by 1000 rows,
+// within 2e-4 of 1500 rows' for every path, of the check's 1e-3; the
+// integral was two thirds of the test's time.
 func TestSweepJointedCorners(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("the volumes are integrated by rows: a few seconds")
 	}
 	for name, parts := range jointPaths() {
-		steps, pieces := testPath(parts)
-		if err := CheckSweepCorners(squareAt(0, 0, 2), steps, false); err != nil {
-			t.Errorf("%s: %v", name, err)
-			continue
-		}
-		want := 2 * joinedArea(pieces, 1, 1500)
-		sweepCheck(t, name, squareAt(0, 0, 2), steps, want, Tol(1e-4, 100))
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			steps, pieces := testPath(parts)
+			if err := CheckSweepCorners(squareAt(0, 0, 2), steps, false); err != nil {
+				t.Fatal(err)
+			}
+			want := 2 * joinedArea(pieces, 1, 1000)
+			sweepCheck(t, name, squareAt(0, 0, 2), steps, want, Tol(1e-4, 100))
+		})
 	}
 }
 
@@ -349,11 +353,12 @@ func TestSweepJointedCornerSweep(t *testing.T) {
 		}
 		s := SShell{Tol: fineTol()}
 		s.MakeFromSweepOf(prof, steps, core.RGBA{}, 0, 0)
-		if !meshIsSound(&s) {
+		v, sound := soundVolume(&s)
+		if !sound {
 			return errors.New("not watertight")
 		}
 		want := areas[p.String("profile")] * (10 + p.Float("r")*deg(p.Float("turn")))
-		if v := shellVolume(&s); math.Abs(v-want) > 0.05*want {
+		if math.Abs(v-want) > 0.05*want {
 			return fmt.Errorf("volume %g, want about %g", v, want)
 		}
 		return nil

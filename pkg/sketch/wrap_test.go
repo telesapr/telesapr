@@ -141,6 +141,7 @@ func TestWrapRoundMostOfTheWay(t *testing.T) {
 		hole    bool
 	}{{"raised", false, false}, {"sunk", true, false}, {"raised with a hole", false, true}, {"sunk with a hole", true, true}} {
 		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
 			d := api.New()
 			// The narrow ring left round the hole is small beside the
 			// cylinder's chords.
@@ -328,6 +329,7 @@ func wrapTextGrid(face string, maxFail, sampleMaxFail float64) sweep.Grid {
 		MaxFailRate:       maxFail,
 		Sample:            8,
 		SampleMaxFailRate: sampleMaxFail,
+		Parallel:          true,
 	}
 }
 

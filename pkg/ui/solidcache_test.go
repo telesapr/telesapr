@@ -13,6 +13,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/platform/headless"
 	"github.com/telesapr/telesapr/pkg/sketch"
@@ -29,9 +30,10 @@ import (
 // what a cache gives is what making it again would give. Where the two
 // differ, the model is edited again with one cache off at a time, to say
 // which cache is at fault. Models saved twice under testdata are edited
-// once. Under -short a sample of the models. Not parallel:
-// Application.Init sets the link package's hooks, which are the
-// process's.
+// once. Of the modelled threads, which differ only in their thread's
+// options (fixtures.ThreadVariant) and took four fifths of the test's
+// time, the ordinary run keeps cacheKeptThreads, and TELESAPR_SWEEP=1
+// all of them. Under -short every 20th model and cacheThread.
 func TestCachesSameAsWithout(t *testing.T) {
 	t.Parallel()
 	all, err := fixtures.Walk(".tlspr")
@@ -50,6 +52,10 @@ func TestCachesSameAsWithout(t *testing.T) {
 			files = append(files, f)
 		}
 	}
+	// The old format's thread is screw_m8 again, as far as the caches go.
+	files = sweep.Without(files, func(f string) bool {
+		return (fixtures.ThreadVariant(f) || f == "tlspr/v1/thread.tlspr") && !slices.Contains(cacheKeptThreads, f)
+	})
 	noCaches := func(sk *sketch.Sketch) { sk.NoSolidCache, sk.NoSolverCache = true, true }
 	var hits atomic.Int64
 	t.Run("models", func(t *testing.T) {
@@ -60,8 +66,8 @@ func TestCachesSameAsWithout(t *testing.T) {
 			// The sample keeps a thread, whose lathes come from the
 			// cache, so that a model added elsewhere doesn't leave it
 			// without a solid kept.
-			if (testing.Short() && i%20 != 0 || !slices.Contains(sampled, f)) && f != "thread/screw_m8.tlspr" ||
-				raceLeavesOut(f, "thread/screw_m8.tlspr") {
+			if (testing.Short() && i%20 != 0 || !slices.Contains(sampled, f)) && f != cacheThread ||
+				threadLeftOut(f, cacheThread) {
 				continue
 			}
 			t.Run(f, func(t *testing.T) {
@@ -94,6 +100,17 @@ func TestCachesSameAsWithout(t *testing.T) {
 		t.Error("no solid was taken from a cache")
 	}
 }
+
+// cacheThread is the thread every run of TestCachesSameAsWithout edits,
+// the cheapest of them: an internal one, its helix taken out of the
+// lathe, whose solids come from the cache.
+const cacheThread = "thread/nut_m8.tlspr"
+
+// cacheKeptThreads are the thread variants TestCachesSameAsWithout keeps
+// in the ordinary run: the nut, and the thread whose length follows a
+// face, which regenerates by a way of its own when a dimension changes.
+// The cosmetic threads and the linked pair are no variants and stay.
+var cacheKeptThreads = []string{cacheThread, "thread/face_m8.tlspr"}
 
 // sameDigests says whether the steps of two edits gave the same models,
 // and if not, the first step at which they differ.

@@ -65,7 +65,16 @@ func TestThreadChamfer(t *testing.T) {
 	if testing.Short() {
 		t.Skip("thread solids")
 	}
-	for _, tc := range fixtures.Sample(chamferCases) {
+	// Each case is a thread and its chamfer at the default tolerance,
+	// some 3 s of processor: the ordinary run takes one of each form,
+	// end, hand, direction, crest, run-out, level and phased start, and
+	// the stud whose far cone grazed a flank; make test-sweeps all 33.
+	ordinary := map[string]bool{"screw_m8": true, "stud_m8_30": true, "nut_m8": true, "blind_m6": true,
+		"screw_m8_lh": true, "nut_m6_down_lh": true, "lead_tr20": true, "screw_unc": true, "triple_m12": true,
+		"screw_bsw": true, "nut_g": true, "screw_acme": true, "truncated_m8": true, "rounded_nut_m10": true,
+		"runout_blind_m6": true, "level_nut_tr20": true, "phased_nut_m10": true}
+	cases := sweep.Without(chamferCases, func(tc threadCase) bool { return !ordinary[tc.name] })
+	for _, tc := range fixtures.Sample(cases) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			sk, _, res := tc.build(t, 0)

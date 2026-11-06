@@ -17,17 +17,19 @@ import (
 
 // filletTally is how fillets of every edge of a solid fared: made and
 // sound, made but not sound, or refused, with the reasons; smooth edges,
-// seams with no corner to round, are left out and counted apart.
+// seams with no corner to round, are left out and counted apart, and so
+// are the edges the run leaves to other tests (left).
 type filletTally struct {
-	sound, unsound, refused, smooth int
-	reasons                         map[string]int
+	sound, unsound, refused, smooth, left int
+	reasons                               map[string]int
 }
 
-// cutEveryEdge fillets each of the edges of the solid build makes, up
-// to limit, alone in a document of its own, with radius r, or with flat
+// cutEveryEdge fillets each of the edges of the solid build makes that
+// keep names (all of them for nil, and all in a full sweep), up to limit
+// of them, alone in a document of its own, with radius r, or with flat
 // chamfers them at distance r, and tallies how they fare. The edges are
 // cut side by side, each in a subtest of its own.
-func cutEveryEdge(t *testing.T, build func(t *testing.T, d *Doc) Group, r float64, limit int, flat bool) filletTally {
+func cutEveryEdge(t *testing.T, build func(t *testing.T, d *Doc) Group, r float64, limit int, flat bool, keep []int) filletTally {
 	tl := filletTally{reasons: map[string]int{}}
 	var smooth []bool
 	{
@@ -37,18 +39,23 @@ func cutEveryEdge(t *testing.T, build func(t *testing.T, d *Doc) Group, r float6
 		if p := g.Problem(); p != "" {
 			t.Fatal(p)
 		}
-		edges := g.Solid().Edges()
-		for _, e := range edges[:min(len(edges), limit)] {
+		for _, e := range g.Solid().Edges() {
 			smooth = append(smooth, e.Smooth())
 		}
 	}
 	var mu sync.Mutex
 	t.Run("edges", func(t *testing.T) {
+		cut := 0
 		for i, sm := range smooth {
 			if sm {
 				tl.smooth++
 				continue
 			}
+			if keep != nil && !slices.Contains(keep, i) && !sweep.Full() || cut == limit {
+				tl.left++
+				continue
+			}
+			cut++
 			t.Run(strconv.Itoa(i), func(t *testing.T) {
 				t.Parallel()
 				outcome, reason := cutEdge(t, build, i, r, flat)
@@ -110,13 +117,17 @@ func (tl filletTally) String() string {
 		rs = append(rs, fmt.Sprintf("%d× %s", n, r))
 	}
 	slices.Sort(rs)
-	return fmt.Sprintf("%d sound, %d unsound, %d refused, %d smooth left out [%s]", tl.sound, tl.unsound, tl.refused, tl.smooth, strings.Join(rs, "; "))
+	return fmt.Sprintf("%d sound, %d unsound, %d refused, %d smooth and %d others' left out [%s]",
+		tl.sound, tl.unsound, tl.refused, tl.smooth, tl.left, strings.Join(rs, "; "))
 }
 
 // Fillets on lofts, sweeps and imported solids (roadmap 22.5): every edge
 // of a smooth loft, a swept tube and STEP solids read as solids, each
 // filleted alone, the rate measured. A fillet that is made must be
 // sound; what is refused is counted, and the counts may only get better.
+// The ordinary run leaves out the edges that are mirror images of edges
+// it fillets and those other tests fillet the same way or more finely
+// (otherSolid.filletEdges); make test-sweeps fillets every one.
 func TestFilletOnOtherSolids(t *testing.T) {
 	if testing.Short() {
 		t.Skip("STEP solids at a fine tolerance")
@@ -128,13 +139,13 @@ func TestFilletOnOtherSolids(t *testing.T) {
 		for _, c := range raceSolids() {
 			t.Run(c.name, func(t *testing.T) {
 				t.Parallel()
-				tl := cutEveryEdge(t, c.build, c.r, edgesPerSolid(), false)
+				tl := cutEveryEdge(t, c.build, c.r, edgesPerSolid(), false, c.filletEdges)
 				t.Logf("r %g: %s", c.r, tl)
 				if tl.unsound > 0 {
 					t.Errorf("%d fillets made but not sound", tl.unsound)
 				}
-				if !fixtures.RaceDetector && tl.sound < c.minMade {
-					t.Errorf("%d fillets made, %d were", tl.sound, c.minMade)
+				if !fixtures.RaceDetector && tl.sound < c.minMade-tl.left {
+					t.Errorf("%d fillets made of %d edges tried, %d of all were", tl.sound, tl.sound+tl.unsound+tl.refused, c.minMade)
 				}
 				mu.Lock()
 				defer mu.Unlock()
@@ -169,11 +180,17 @@ func edgesPerSolid() int {
 
 // otherSolid is a solid of TestFilletOnOtherSolids: how to build it, the
 // radius its edges are filleted at, and how many fillets were sound.
+// filletEdges and chamferEdges are the edges the ordinary run of the
+// fillet and the chamfer test cut, nil for every one (a full sweep cuts
+// every one): the others are mirror images of edges kept, or cut alone
+// by a test of their own, at a finer chord tolerance or against a
+// closed form or OpenCASCADE's volume.
 type otherSolid struct {
-	name    string
-	build   func(t *testing.T, d *Doc) Group
-	r       float64
-	minMade int
+	name                      string
+	build                     func(t *testing.T, d *Doc) Group
+	r                         float64
+	minMade                   int
+	filletEdges, chamferEdges []int
 }
 
 // otherSolids are the loft, the sweep and the STEP solids whose every
@@ -202,7 +219,11 @@ func otherSolids() []otherSolid {
 				d.Sketch.Circle(V(0, 0, p.z), p.r)
 			}
 			return d.Features.LoftThrough(ps, "vase")
-		}, 2, 12},
+		}, 2, 12,
+			// The loft is the same under a quarter turn: one edge of its
+			// foot (0), one crease (1) and one edge of its top ring (2) of
+			// four each. The foot's chamfer is TestChamferLoftFoot's.
+			[]int{0, 1, 2}, []int{1, 2}},
 		{"sweep", func(_ *testing.T, d *Doc) Group {
 			d.Features.SketchIn(d.Workplane("ZX"), "path")
 			up := d.Sketch.Line(V(0, 0, 0), V(0, 0, 30))
@@ -215,13 +236,25 @@ func otherSolids() []otherSolid {
 			d.Features.SketchIn(d.Workplane("XY"), "ring")
 			d.Sketch.Rect(V(-6, -6, 0), V(6, 6, 0))
 			return d.Features.Sweep([]Entity{up, bend, along}, "bar")
-		}, 1, 12},
-		{"box_hole", step("shapes/box_hole.step"), 1, 14},
-		{"cylinder", step("shapes/cylinder.step"), 1, 2},
-		{"blob_extruded", step("shapes/blob_extruded.step"), 1, 3},
-		{"sphere_bored", step("shapes/sphere_bored.step"), 1, 2},
-		{"vase_revolved", step("shapes/vase_revolved.step"), 1, 2},
-		{"lid_degree7", step("degree/lid_degree7.step"), 1, 12},
+		}, 1, 12, nil, nil},
+		{"box_hole", step("shapes/box_hole.step"), 1, 14, nil, nil},
+		// Both rims' fillets: TestFilletCylinderFineTolerance, and against
+		// Pappus TestFilletStepCylinder.
+		{"cylinder", step("shapes/cylinder.step"), 1, 2, []int{}, nil},
+		// The rims (0, 2): TestFilletRimMitre and TestChamferRimMitre,
+		// the same calculations; the upright (1) is kept.
+		{"blob_extruded", step("shapes/blob_extruded.step"), 1, 3, []int{1}, []int{1}},
+		// The rims are mirror images of each other; the lower one's fillet
+		// is TestFilletOnOtherSolidsVolumes', at a finer chord.
+		{"sphere_bored", step("shapes/sphere_bored.step"), 1, 2, []int{}, []int{0}},
+		// The foot's and the lip's fillets: TestFilletOnOtherSolidsVolumes'.
+		{"vase_revolved", step("shapes/vase_revolved.step"), 1, 2, []int{}, nil},
+		// The dome's edges (0 to 3) are a minute each: one along x and one
+		// along y are kept, and the fillet of 0 is
+		// TestFilletOnOtherSolidsVolumes'. The uprights (4, 6, 7, 9) are
+		// TestFilletEndsOnCurvedFace's and TestChamferEndsOnCurvedFace's,
+		// at a finer chord; the foot's edges (5, 8, 10, 11) are kept.
+		{"lid_degree7", step("degree/lid_degree7.step"), 1, 12, []int{1, 3, 5, 8, 10, 11}, []int{0, 1, 5, 8, 10, 11}},
 	}
 	return cases
 }
@@ -303,39 +336,42 @@ func TestFilletCreaseFades(t *testing.T) {
 		cases = cases[:2]
 	}
 	for _, c := range cases {
-		flat := c.flat
-		d := New()
-		if c.chord > 0 {
-			d.Edit.SetChordTolerance(c.chord)
-		}
-		g := loft.build(t, d)
-		var e SolidEdge
-		for _, x := range g.Solid().Edges() {
-			if a, b := x.Ends(); a.Minus(V(18, -18, 0)).Magnitude() < 1e-6 && b.Minus(V(14, 0, 60)).Magnitude() < 1e-6 {
-				e = x
+		t.Run(fmt.Sprintf("chamfer %v at %g", c.flat, c.chord), func(t *testing.T) {
+			t.Parallel()
+			flat := c.flat
+			d := New()
+			if c.chord > 0 {
+				d.Edit.SetChordTolerance(c.chord)
 			}
-		}
-		var f Group
-		if flat {
-			f = d.Features.ChamferSolid([]SolidEdge{e}, 2, "")
-		} else {
-			f = d.Features.FilletSolid([]SolidEdge{e}, 2, "")
-		}
-		if p := f.Problem(); p != "" {
-			t.Fatalf("chamfer %v at %g: %s", flat, c.chord, p)
-		}
-		if rep := f.Analyze().Check(); !rep.Sound() {
-			t.Errorf("chamfer %v at %g: %s", flat, c.chord, rep.Summary())
-		}
-		for _, x := range f.Solid().Edges() {
-			a, b := x.Ends()
-			if a.Z > b.Z {
-				a, b = b, a
+			g := loft.build(t, d)
+			var e SolidEdge
+			for _, x := range g.Solid().Edges() {
+				if a, b := x.Ends(); a.Minus(V(18, -18, 0)).Magnitude() < 1e-6 && b.Minus(V(14, 0, 60)).Magnitude() < 1e-6 {
+					e = x
+				}
 			}
-			if math.Abs(a.Z-24) < 0.2 && b.Minus(V(14, 0, 60)).Magnitude() < 1e-6 {
-				t.Errorf("chamfer %v at %g: the crease goes on unrounded from %v", flat, c.chord, a)
+			var f Group
+			if flat {
+				f = d.Features.ChamferSolid([]SolidEdge{e}, 2, "")
+			} else {
+				f = d.Features.FilletSolid([]SolidEdge{e}, 2, "")
 			}
-		}
+			if p := f.Problem(); p != "" {
+				t.Fatalf("chamfer %v at %g: %s", flat, c.chord, p)
+			}
+			if rep := f.Analyze().Check(); !rep.Sound() {
+				t.Errorf("chamfer %v at %g: %s", flat, c.chord, rep.Summary())
+			}
+			for _, x := range f.Solid().Edges() {
+				a, b := x.Ends()
+				if a.Z > b.Z {
+					a, b = b, a
+				}
+				if math.Abs(a.Z-24) < 0.2 && b.Minus(V(14, 0, 60)).Magnitude() < 1e-6 {
+					t.Errorf("chamfer %v at %g: the crease goes on unrounded from %v", flat, c.chord, a)
+				}
+			}
+		})
 	}
 }
 
@@ -401,56 +437,68 @@ func TestSolidEdgeSmooth(t *testing.T) {
 // OpenCASCADE's makeFillet takes from the same edges of the same file
 // (scripts/fillet-step-volumes.py) within half a percent; the same after
 // saving and loading, and gone with one undo. Ours take 0.1 to 0.2% more
-// at this chord tolerance.
+// at this chord tolerance. The ordinary run fillets the first upright,
+// the one saved and loaded; TestFilletEndsOnCurvedFaceApart holds the
+// four together to what OpenCASCADE takes from them, and make
+// test-sweeps fillets each alone too, side by side.
 func TestFilletEndsOnCurvedFace(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("fillets over curved faces, slow")
 	}
 	lid := filepath.Join("..", "..", "..", "testdata", "step", "degree", "lid_degree7.step")
-	// Under the race detector the first upright only, the one saved and
-	// loaded (fixtures.Sample): the four took 6 minutes there.
-	for _, c := range fixtures.Sample([]struct {
+	for _, c := range sweep.Pick([]struct {
 		at   Vec
 		want float64
-	}{{V(0, 0, 5), 2.173344}, {V(40, 0, 5), 2.292926}, {V(40, 30, 5), 2.025750}, {V(0, 30, 4), 1.804228}}) {
-		d := New()
-		d.Edit.SetChordTolerance(0.002)
-		g, err := d.Assembly.LinkStep(lid, "", true)
-		if err != nil {
-			t.Fatal(err)
-		}
-		before := g.Analyze().Check().Volume
-		f := d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(c.at)}, 1, "")
-		if p := f.Problem(); p != "" {
-			t.Fatalf("at %v: %s", c.at, p)
-		}
-		rep := f.Analyze().Check()
-		took := before - rep.Volume
-		t.Logf("at %v: took %.6g, OpenCASCADE %g", c.at, took, c.want)
-		if !rep.Sound() || math.Abs(took-c.want) > 0.005*c.want {
-			t.Errorf("at %v: %s, took %g, OpenCASCADE %g", c.at, rep.Summary(), took, c.want)
-		}
-		if c.at.X != 0 || c.at.Y != 0 {
-			continue
-		}
-		path := filepath.Join(t.TempDir(), "lid.tlspr")
-		if err := d.File.Save(path); err != nil {
-			t.Fatal(err)
-		}
-		l := New()
-		if err := l.File.Load(path); err != nil {
-			t.Fatal(err)
-		}
-		l.Edit.SetChordTolerance(0.002)
-		gs := l.Groups()
-		if r2 := gs[len(gs)-1].Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-rep.Volume) > 1e-6*rep.Volume {
-			t.Errorf("loaded: %s, volume %g, saved %g", r2.Summary(), r2.Volume, rep.Volume)
-		}
-		n := len(d.Groups())
-		if !d.Edit.Undo() || len(d.Groups()) >= n {
-			t.Errorf("undo left %d groups of %d", len(d.Groups()), n)
-		}
+	}{{V(0, 0, 5), 2.173344}, {V(40, 0, 5), 2.292926}, {V(40, 30, 5), 2.025750}, {V(0, 30, 4), 1.804228}}, 1) {
+		t.Run(fmt.Sprint(c.at), func(t *testing.T) {
+			t.Parallel()
+			filletLidUpright(t, lid, c.at, c.want)
+		})
+	}
+}
+
+// filletLidUpright is a case of TestFilletEndsOnCurvedFace: the lid's
+// upright at at filleted at radius 1 takes want, and the one at the
+// origin comes back after saving and loading and goes with one undo.
+func filletLidUpright(t *testing.T, lid string, at Vec, want float64) {
+	t.Helper()
+	d := New()
+	d.Edit.SetChordTolerance(0.002)
+	g, err := d.Assembly.LinkStep(lid, "", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := g.Analyze().Check().Volume
+	f := d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(at)}, 1, "")
+	if p := f.Problem(); p != "" {
+		t.Fatalf("at %v: %s", at, p)
+	}
+	rep := f.Analyze().Check()
+	took := before - rep.Volume
+	t.Logf("at %v: took %.6g, OpenCASCADE %g", at, took, want)
+	if !rep.Sound() || math.Abs(took-want) > 0.005*want {
+		t.Errorf("at %v: %s, took %g, OpenCASCADE %g", at, rep.Summary(), took, want)
+	}
+	if at.X != 0 || at.Y != 0 {
+		return
+	}
+	path := filepath.Join(t.TempDir(), "lid.tlspr")
+	if err := d.File.Save(path); err != nil {
+		t.Fatal(err)
+	}
+	l := New()
+	if err := l.File.Load(path); err != nil {
+		t.Fatal(err)
+	}
+	l.Edit.SetChordTolerance(0.002)
+	gs := l.Groups()
+	if r2 := gs[len(gs)-1].Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-rep.Volume) > 1e-6*rep.Volume {
+		t.Errorf("loaded: %s, volume %g, saved %g", r2.Summary(), r2.Volume, rep.Volume)
+	}
+	n := len(d.Groups())
+	if !d.Edit.Undo() || len(d.Groups()) >= n {
+		t.Errorf("undo left %d groups of %d", len(d.Groups()), n)
 	}
 }
 
@@ -475,6 +523,20 @@ func TestFilletEndsOnCurvedFaceApart(t *testing.T) {
 		t.Skip("the lid's uprights rounded together, minutes under the race detector")
 	}
 	lid := filepath.Join("..", "..", "..", "testdata", "step", "degree", "lid_degree7.step")
+	// The uprights together and the corner, side by side.
+	t.Run("uprights", func(t *testing.T) {
+		t.Parallel()
+		filletLidUprightsApart(t, lid)
+	})
+	t.Run("corner", func(t *testing.T) {
+		t.Parallel()
+		filletLidCorner(t, lid)
+	})
+}
+
+// filletLidUprightsApart is TestFilletEndsOnCurvedFaceApart's four
+// uprights picked together.
+func filletLidUprightsApart(t *testing.T, lid string) {
 	d := New()
 	d.Edit.SetChordTolerance(0.002)
 	g, err := d.Assembly.LinkStep(lid, "", true)
@@ -497,15 +559,15 @@ func TestFilletEndsOnCurvedFaceApart(t *testing.T) {
 	if !rep.Sound() || math.Abs(took-want) > 0.005*want {
 		t.Errorf("%s, took %g, OpenCASCADE %g", rep.Summary(), took, want)
 	}
-	if fixtures.RaceDetector {
-		// The corner's four fillets run on the goroutines the uprights'
-		// did, and took another 3 minutes there.
-		return
-	}
+}
 
-	d = New()
+// filletLidCorner is TestFilletEndsOnCurvedFaceApart's upright picked
+// with the bottom edge it meets, against each filleted alone.
+func filletLidCorner(t *testing.T, lid string) {
+	d := New()
 	d.Edit.SetChordTolerance(0.002)
-	if g, err = d.Assembly.LinkStep(lid, "", true); err != nil {
+	g, err := d.Assembly.LinkStep(lid, "", true)
+	if err != nil {
 		t.Fatal(err)
 	}
 	var bottom SolidEdge
@@ -519,8 +581,8 @@ func TestFilletEndsOnCurvedFaceApart(t *testing.T) {
 	if !found {
 		t.Fatal("no bottom edge at the origin")
 	}
-	before = g.Analyze().Check().Volume
-	took = 0.0
+	before := g.Analyze().Check().Volume
+	took := 0.0
 	for _, at := range []Vec{V(0, 0, 5), V(0, 15, 0)} {
 		da := New()
 		da.Edit.SetChordTolerance(0.002)
@@ -531,11 +593,11 @@ func TestFilletEndsOnCurvedFaceApart(t *testing.T) {
 		took += before - da.Features.FilletSolid([]SolidEdge{ga.Solid().EdgeAt(at)}, 1, "").Analyze().Check().Volume
 	}
 	const corner = 5.0/3 - math.Pi/2
-	f = d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(V(0, 0, 5)), bottom}, 1, "")
+	f := d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(V(0, 0, 5)), bottom}, 1, "")
 	if p := f.Problem(); p != "" {
 		t.Fatalf("an upright with the bottom edge it meets: %s", p)
 	}
-	rep = f.Analyze().Check()
+	rep := f.Analyze().Check()
 	both := before - rep.Volume
 	t.Logf("together took %.6g, alone %.6g less the corner %.6g", both, took, corner)
 	// Three solids filleted and meshed apart, each within the chord
@@ -550,33 +612,37 @@ func TestFilletEndsOnCurvedFaceApart(t *testing.T) {
 // dome, too wide a corner for one quintic to follow: the sections are
 // split in two spans (rollingBall.splitEnds), and take what OpenCASCADE's
 // makeFillet takes within half a percent (ours 0.12 to 0.17% more at
-// this chord tolerance, as at radius 1).
+// this chord tolerance, as at radius 1). The ordinary run fillets one
+// upright, and make test-sweeps all four, side by side
+// (TestFilletEndsOnCurvedFaceSweep makes each at 2.5 there too).
 func TestFilletEndsOnCurvedFaceWide(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("fillets over curved faces, slow")
 	}
 	lid := filepath.Join("..", "..", "..", "testdata", "step", "degree", "lid_degree7.step")
-	// Under the race detector the first upright only (fixtures.Sample).
-	for _, c := range fixtures.Sample([]struct {
+	for _, c := range sweep.Pick([]struct {
 		at   Vec
 		want float64
-	}{{V(0, 0, 4), 13.812062}, {V(40, 0, 4), 14.384156}, {V(40, 30, 4), 12.747386}, {V(0, 30, 4), 11.556165}}) {
-		d := New()
-		d.Edit.SetChordTolerance(0.002)
-		g, err := d.Assembly.LinkStep(lid, "", true)
-		if err != nil {
-			t.Fatal(err)
-		}
-		before := g.Analyze().Check().Volume
-		f := d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(c.at)}, 2.5, "")
-		if p := f.Problem(); p != "" {
-			t.Fatalf("at %v: %s", c.at, p)
-		}
-		rep := f.Analyze().Check()
-		if took := before - rep.Volume; !rep.Sound() || math.Abs(took-c.want) > 0.005*c.want {
-			t.Errorf("at %v: %s, took %g, OpenCASCADE %g", c.at, rep.Summary(), took, c.want)
-		}
+	}{{V(0, 0, 4), 13.812062}, {V(40, 0, 4), 14.384156}, {V(40, 30, 4), 12.747386}, {V(0, 30, 4), 11.556165}}, 1) {
+		t.Run(fmt.Sprint(c.at), func(t *testing.T) {
+			t.Parallel()
+			d := New()
+			d.Edit.SetChordTolerance(0.002)
+			g, err := d.Assembly.LinkStep(lid, "", true)
+			if err != nil {
+				t.Fatal(err)
+			}
+			before := g.Analyze().Check().Volume
+			f := d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(c.at)}, 2.5, "")
+			if p := f.Problem(); p != "" {
+				t.Fatalf("at %v: %s", c.at, p)
+			}
+			rep := f.Analyze().Check()
+			if took := before - rep.Volume; !rep.Sound() || math.Abs(took-c.want) > 0.005*c.want {
+				t.Errorf("at %v: %s, took %g, OpenCASCADE %g", c.at, rep.Summary(), took, c.want)
+			}
+		})
 	}
 }
 
@@ -630,7 +696,10 @@ func TestFilletEndsOnCurvedFaceSweep(t *testing.T) {
 // of the same edges has its vertices there (0, 0, 4) and (0.0842189,
 // 2.4007678, 5), and every point of our fillet's surfaces lies within
 // 8e-5 mm of its result (sampled 2026-10-11). Both rims are sound and
-// take alike; the top one comes back alike after saving and loading.
+// take alike; in a full sweep the top one comes back alike after saving
+// and loading, which makes its fillet again and doubles the test's time
+// (a rolling ball's fillet over a curved face comes back from its file
+// in TestFilletEndsOnCurvedFace).
 func TestFilletRimMitre(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -687,7 +756,7 @@ func TestFilletRimMitre(t *testing.T) {
 				if !ends[0] || !ends[1] {
 					t.Errorf("rim at z %g: the mitre's ends %v and %v are not both vertices (%v)", z, low, high, ends)
 				}
-				if k == 1 {
+				if k == 1 || !sweep.Full() {
 					return
 				}
 				path := filepath.Join(t.TempDir(), "blob.tlspr")
@@ -719,7 +788,10 @@ func TestFilletRimMitre(t *testing.T) {
 // chain across many of the dense edge's points, and the planes they lie
 // in turned with a corner at each (rollingBall.along), which no quintic
 // follows; past that, at radius 1, they take four spans (mitreSpans).
-// Each takes what it takes at 0.01% within the meshes' difference.
+// Each is made and sound at 0.002%, past where the refusals began, and
+// in a full sweep at 0.0005% too, taking there what it takes at 0.002%
+// within the meshes' difference: radius 1 at 0.0005% alone is some
+// three quarters of the test's processor time and four minutes.
 func TestFilletRimMitreFine(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -768,14 +840,14 @@ func TestFilletRimMitreFine(t *testing.T) {
 					a = took(t, r, 0.002)
 				})
 				t.Run("0.0005", func(t *testing.T) {
-					if fixtures.RaceDetector {
-						t.Skip("the finer tolerance under the race detector, slow")
+					if fixtures.RaceDetector || !sweep.Full() {
+						t.Skip("the finer tolerance, minutes: make test-sweeps")
 					}
 					t.Parallel()
 					b = took(t, r, 0.0005)
 				})
 			})
-			if !t.Failed() && !fixtures.RaceDetector && math.Abs(a-b) > 1e-3*b {
+			if !t.Failed() && b != 0 && math.Abs(a-b) > 1e-3*b {
 				t.Errorf("r %g takes %g at 0.002%%, %g at 0.0005%%", r, a, b)
 			}
 		})
@@ -808,31 +880,34 @@ func TestFilletCornerRadii(t *testing.T) {
 		cases = cases[:1]
 	}
 	for _, c := range cases {
-		d := New()
-		d.Edit.SetChordTolerance(0.002)
-		g, err := d.Assembly.LinkStep(lid, "", true)
-		if err != nil {
-			t.Fatal(err)
-		}
-		before := g.Analyze().Check().Volume
-		f := d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(V(0, 0, 5)), g.Solid().EdgeAt(V(0, 15, 0))}, c.up, "")
-		f.AsFillet().SetEdgeRadius(1, c.bottom)
-		if p := f.Problem(); p != "" {
-			t.Fatalf("radii %g and %g: %s", c.up, c.bottom, p)
-		}
-		rep := f.Analyze().Check()
-		took := before - rep.Volume
-		t.Logf("radii %g and %g took %.6g, OpenCASCADE %g", c.up, c.bottom, took, c.took)
-		if !rep.Sound() || math.Abs(took-c.took) > 0.005*c.took {
-			t.Errorf("radii %g and %g: %s, took %g, OpenCASCADE %g", c.up, c.bottom, rep.Summary(), took, c.took)
-		}
-		found := false
-		for _, e := range f.Solid().Edges() {
-			a, b := e.Ends()
-			found = found || a.Minus(c.kink).Magnitude() < 1e-4 || b.Minus(c.kink).Magnitude() < 1e-4
-		}
-		if !found {
-			t.Errorf("radii %g and %g: no vertex at the kink %v", c.up, c.bottom, c.kink)
-		}
+		t.Run(fmt.Sprintf("radii %g and %g", c.up, c.bottom), func(t *testing.T) {
+			t.Parallel()
+			d := New()
+			d.Edit.SetChordTolerance(0.002)
+			g, err := d.Assembly.LinkStep(lid, "", true)
+			if err != nil {
+				t.Fatal(err)
+			}
+			before := g.Analyze().Check().Volume
+			f := d.Features.FilletSolid([]SolidEdge{g.Solid().EdgeAt(V(0, 0, 5)), g.Solid().EdgeAt(V(0, 15, 0))}, c.up, "")
+			f.AsFillet().SetEdgeRadius(1, c.bottom)
+			if p := f.Problem(); p != "" {
+				t.Fatalf("radii %g and %g: %s", c.up, c.bottom, p)
+			}
+			rep := f.Analyze().Check()
+			took := before - rep.Volume
+			t.Logf("radii %g and %g took %.6g, OpenCASCADE %g", c.up, c.bottom, took, c.took)
+			if !rep.Sound() || math.Abs(took-c.took) > 0.005*c.took {
+				t.Errorf("radii %g and %g: %s, took %g, OpenCASCADE %g", c.up, c.bottom, rep.Summary(), took, c.took)
+			}
+			found := false
+			for _, e := range f.Solid().Edges() {
+				a, b := e.Ends()
+				found = found || a.Minus(c.kink).Magnitude() < 1e-4 || b.Minus(c.kink).Magnitude() < 1e-4
+			}
+			if !found {
+				t.Errorf("radii %g and %g: no vertex at the kink %v", c.up, c.bottom, c.kink)
+			}
+		})
 	}
 }

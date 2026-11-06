@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
@@ -152,8 +153,35 @@ func roundTrip(t *testing.T, path string) (string, []string) {
 	return "differs", notes
 }
 
+// roundTripKeptThreads are the thread variants (fixtures.ThreadVariant)
+// TestScriptRoundTrip writes and runs in the ordinary run: one for each
+// field the thread call writes (the hand, reversed, internal and not
+// through, through and the back load flank, the round root and
+// clearance, a class and phase, a run-out, starts, a thread along a
+// face's edge) and the bolt's plain helix. The other variants differ
+// in their designation, whose text pkg/thread's round trip covers.
+var roundTripKeptThreads = []string{
+	"thread/screw_m8.tlspr", "thread/screw_m8_lh.tlspr", "thread/screw_m6_down.tlspr",
+	"thread/blind_m6.tlspr", "thread/nut_s20_back.tlspr", "thread/screw_butt_round.tlspr",
+	"thread/screw_m10_6g.tlspr", "thread/phased_runout_m8.tlspr", "thread/lead_tr20.tlspr",
+	"thread/face_m8.tlspr", "thread/bolt_m8x30.tlspr",
+}
+
+// roundTripLarge are the imported drawings whose scripts replay hundreds
+// of requests and constraints, half a minute or more each, and add no
+// call the other imports don't write: text_alignments keeps the text,
+// in both import modes.
+var roundTripLarge = []string{
+	"importdxf/golden/ezdxf/text_negative_extrusion.tlspr",
+	"importdxf/golden/ezdxf/text_negative_extrusion.3d.tlspr",
+	"importdxf/golden/ezdxf/insert_bricscad_level_1.tlspr",
+	"importdxf/golden/ezdxf/insert_bricscad_level_1.3d.tlspr",
+}
+
 // Every fixture's script builds its model again, but those listed in
-// scriptRoundTripKnown.
+// scriptRoundTripKnown. The ordinary run leaves out the thread variants
+// but roundTripKeptThreads and the drawings of roundTripLarge, which
+// were two thirds of its time; TELESAPR_SWEEP=1 runs every fixture.
 func TestScriptRoundTrip(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -163,6 +191,15 @@ func TestScriptRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	for _, p := range slices.Concat(roundTripKeptThreads, roundTripLarge) {
+		if !slices.Contains(paths, p) {
+			t.Errorf("no fixture %s", p)
+		}
+	}
+	paths = sweep.Without(paths, func(p string) bool {
+		return fixtures.ThreadVariant(p) && !slices.Contains(roundTripKeptThreads, p) ||
+			slices.Contains(roundTripLarge, p)
+	})
 	type outcome struct{ path, diff string }
 	results := make([]outcome, len(paths))
 	t.Run("fixtures", func(t *testing.T) {

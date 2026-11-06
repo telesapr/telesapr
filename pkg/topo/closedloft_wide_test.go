@@ -85,7 +85,9 @@ func TestClosedLoftWide(t *testing.T) {
 		}
 		return loops
 	}
-	for _, c := range []struct {
+	// Every case in the ordinary run, a fifth under -short and the race
+	// detector (sweep.Pick).
+	for _, c := range sweep.Pick([]struct {
 		name  string
 		loops [][]srf.SBezier
 		want  float64
@@ -100,7 +102,7 @@ func TestClosedLoftWide(t *testing.T) {
 		{"squares", profilesAt(degs(0, 150, 210), onCircle(big), func(int) []srf.SBezier { return polygonAt(4, r, 0, 0, 0, math.Pi/4) }), 2 * r * r * 2 * math.Pi * big},
 		{"ellipse", profilesAt(degs(0, 150, 210), onEllipse(25, 18), round), 0},
 		{"ellipse, long gap", profilesAt(degs(-30, 0, 30), onEllipse(25, 18), round), 0},
-	} {
+	}, 0) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			sh, err := topo.MakeClosedLoft(c.loops, col, srf.OriginFor(9, 0), tol)
@@ -138,7 +140,9 @@ func TestClosedLoftWideHeldGuided(t *testing.T) {
 		}
 		return 1.5 * math.Pow(math.Sin(math.Pi*(a-math.Pi/3)/(5*math.Pi/3)), 2)
 	})
-	for _, c := range []struct {
+	// Every case in the ordinary run, a fifth under -short and the race
+	// detector (sweep.Pick).
+	for _, c := range sweep.Pick([]struct {
 		name string
 		make func() (*srf.SShell, error)
 		want float64
@@ -152,7 +156,7 @@ func TestClosedLoftWideHeldGuided(t *testing.T) {
 		{"guided held", func() (*srf.SShell, error) {
 			return topo.MakeClosedGuidedLoftHeld(loops(), []float64{1}, []topo.LoftGuide{guide}, col, 9, tol, nil)
 		}, 0},
-	} {
+	}, 0) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			sh, err := c.make()
@@ -176,7 +180,10 @@ func TestClosedLoftWideHeldGuided(t *testing.T) {
 // angles round the ring with gaps of a sixth to most of a turn, on a
 // circle or an ellipse, flat or rising and falling and leaning with it,
 // of circles, squares and blobs, and requires sound solids. None of
-// the whole grid, 126, failed when written.
+// the whole grid, 126, failed when written; the ordinary run takes 32,
+// every value of each axis among them, TELESAPR_SWEEP=1 all (some 216
+// CPU-s). The hand-made rings of TestClosedLoftWide, several of them
+// points of this grid, check volumes too.
 func TestClosedLoftWideSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep of closed lofts with profiles far apart round the ring")
@@ -192,6 +199,7 @@ func TestClosedLoftWideSweep(t *testing.T) {
 			sweep.Strings("profile", "circle", "square", "blob"),
 			sweep.Floats("start", 0, 100),
 		},
+		Sample: 32,
 	}
 	grid.Run(func(p sweep.Point) error {
 		if fixtures.RaceDetector && p.String("path") != "circle" {

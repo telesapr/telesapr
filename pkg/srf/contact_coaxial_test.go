@@ -111,7 +111,7 @@ func coaxialSweep(t *testing.T, fixtures []string, failRate float64) {
 			}
 			return nil
 		}
-		if !meshIsSound(&out) {
+		if !meshSound(&m) {
 			return errUnsound(false)
 		}
 		if math.Abs(got-want) > 2e-3*want {

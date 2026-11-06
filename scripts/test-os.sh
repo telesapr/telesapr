@@ -3,7 +3,8 @@
 # system it runs on, without the tests scripts/os-skip/<GOOS>.txt lists:
 # those fail there for a reason of the platform and are to be fixed.
 # The nightly and Release workflows run it on Windows and macOS; on Linux
-# nothing is skipped and it is make test-fast.
+# nothing is skipped and it is make test-fast: the light part (no HEAVY
+# test), under -short.
 #
 # Usage:
 #     scripts/test-os.sh [go test flags]
@@ -17,6 +18,7 @@ if [ -f "$list" ]; then
 fi
 if [ -n "$skip" ]; then
 	echo "skipping, as $list lists: $skip"
-	exec scripts/go-test.sh -short -skip "^($skip)\$" "$@"
+	SKIP="^($skip)\$"
+	export SKIP
 fi
-exec scripts/go-test.sh -short "$@"
+TESTS=light exec scripts/go-test.sh -short "$@"

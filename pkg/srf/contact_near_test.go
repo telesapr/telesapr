@@ -107,7 +107,7 @@ func nearOutcome(c nearCase, op SurfaceCombineAs, want, eps float64) error {
 		}
 		return fmt.Errorf("%w: %g, want none", errNearVolume, got)
 	}
-	if !meshIsSound(&out) {
+	if !meshSound(&m) {
 		return errUnsound(false)
 	}
 	if math.Abs(got-want) > c.relTol*math.Max(want, 1)+2*c.meshed*want+slack {
@@ -248,7 +248,7 @@ func TestPinInBoreSweep(t *testing.T) {
 			}
 			return nil
 		}
-		if !meshIsSound(&out) {
+		if !meshSound(&m) {
 			return errUnsound(false)
 		}
 		if math.Abs(got-want) > 2e-3*want {

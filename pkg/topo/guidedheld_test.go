@@ -6,6 +6,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -56,7 +57,9 @@ func TestClosedGuidedLoftHeld(t *testing.T) {
 	up := []topo.LoftGuide{ringGuide(big, r, top, bulge)}
 	out := []topo.LoftGuide{ringGuide(big, r, top, bulge), ringGuide(big, r, bottom, bulge)}
 	winding := []topo.LoftGuide{ringGuide(big, r, func(a float64) float64 { return math.Pi/2 + a }, flat)}
-	for _, c := range []struct {
+	// Every case in the ordinary run, a fifth under -short and the race
+	// detector (sweep.Pick).
+	for _, c := range sweep.Pick([]struct {
 		name   string
 		guides []topo.LoftGuide
 		held   []float64
@@ -69,7 +72,7 @@ func TestClosedGuidedLoftHeld(t *testing.T) {
 		{"one up, the first and the last held", up, []float64{1, 0, 0, 0, 0, 0, 0, 0.8}, freeVol, 1e-3},
 		{"two out, every one held", out, []float64{1, 1, 1, 1, 1, 1, 1, 1}, 0, 1e-3},
 		{"winding, two held", winding, []float64{0, 1, 0, 0, 0, 1}, freeVol, 0.05},
-	} {
+	}, 0) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			bss, err := topo.ClosedGuidedLoftSurfaces(loops, c.held, c.guides)
@@ -150,7 +153,9 @@ func TestGuidedLoftHeld(t *testing.T) {
 	loops := [][]srf.SBezier{circleAt(5, 0, 0, 0), circleAt(5, 0, 0, 10), circleAt(5, 0, 0, 20)}
 	col := core.NewRGBA(100, 100, 100, 255)
 	tol := srf.Tol(0.001, 20)
-	for _, c := range []struct {
+	// Every case in the ordinary run, a fifth under -short and the race
+	// detector (sweep.Pick).
+	for _, c := range sweep.Pick([]struct {
 		name   string
 		guides []topo.LoftGuide
 		ends   topo.LoftEnds
@@ -160,7 +165,7 @@ func TestGuidedLoftHeld(t *testing.T) {
 		{"one guide, ends square", []topo.LoftGuide{g}, topo.LoftEnds{Start: 0.5, End: 0.5}, math.Pi * 25 * 20},
 		// r(z) = 5 + 2 sin²: π∫r² over 20 is π(25·20 + 20·10 + 4·7.5).
 		{"two guides", []topo.LoftGuide{g, other}, topo.LoftEnds{}, math.Pi * (500 + 200 + 30)},
-	} {
+	}, 0) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			bss, err := topo.GuidedLoftThroughSurfaces(loops, 0, c.ends, topo.LoftSides{}, []float64{0.5}, c.guides)

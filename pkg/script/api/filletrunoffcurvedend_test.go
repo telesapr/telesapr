@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
@@ -83,31 +84,38 @@ func curvedEndAdded(rc, r float64, chamfer bool) float64 {
 // which was refused before 2026-11-04 ("the face it ends at is curved
 // too"). Sound, and adding what curvedEndAdded integrates within 0.2%
 // and 0.02: the curved faces' meshes, the ends' hollow, add a little.
+// The ordinary run takes the smallest chamfer of the ends hollowed at 3
+// and the smallest and largest at 4, side by side; make test-sweeps all
+// six.
 func TestChamferRunsOffCurvedEndOntoCurvedTop(t *testing.T) {
 	t.Parallel()
 	cases := [][2]float64{{3, 1.6}, {3, 1.8}, {4, 1.8}, {4, 2}, {4, 2.2}, {4, 2.4}}
-	if testing.Short() || fixtures.RaceDetector {
+	switch {
+	case sweep.Full():
+	case testing.Short() || fixtures.RaceDetector:
 		cases = cases[2:3]
+	default:
+		cases = [][2]float64{cases[0], cases[2], cases[5]}
 	}
 	for _, c := range cases {
-		name := fmt.Sprintf("ends hollowed at %g, chamfer of %g", c[0], c[1])
-		d := New()
-		d.Edit.SetChordTolerance(0.003)
-		d.Edit.SetMaxSegments(200)
-		edge, before := curvedEndPlateOnRod(d, c[0])
-		g, err := blendOrRefusal(d, edge, c[1], true)
-		if err != nil {
-			t.Errorf("%s: %v", name, err)
-			continue
-		}
-		rep := g.Analyze().Check()
-		if !rep.Sound() {
-			t.Errorf("%s: %s", name, rep.Summary())
-			continue
-		}
-		added, want := rep.Volume-before, curvedEndAdded(c[0], c[1], true)
-		if math.Abs(added-want) > 0.02+0.002*want {
-			t.Errorf("%s added %g, %g integrated", name, added, want)
-		}
+		t.Run(fmt.Sprintf("ends hollowed at %g, chamfer of %g", c[0], c[1]), func(t *testing.T) {
+			t.Parallel()
+			d := New()
+			d.Edit.SetChordTolerance(0.003)
+			d.Edit.SetMaxSegments(200)
+			edge, before := curvedEndPlateOnRod(d, c[0])
+			g, err := blendOrRefusal(d, edge, c[1], true)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rep := g.Analyze().Check()
+			if !rep.Sound() {
+				t.Fatal(rep.Summary())
+			}
+			added, want := rep.Volume-before, curvedEndAdded(c[0], c[1], true)
+			if math.Abs(added-want) > 0.02+0.002*want {
+				t.Errorf("added %g, %g integrated", added, want)
+			}
+		})
 	}
 }

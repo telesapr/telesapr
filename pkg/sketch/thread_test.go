@@ -634,12 +634,20 @@ func TestThreadNutCoarse(t *testing.T) {
 const threadSweepMaxFailRate = 0
 
 // TestThreadGoldensSound checks the solid of every thread golden with
-// the invariant oracle.
+// the invariant oracle. Under -short the cosmetic ones and an M8 screw
+// and nut: the 21 took 22 s of processor, and a golden changes only in
+// a commit of its own.
 func TestThreadGoldensSound(t *testing.T) {
 	t.Parallel()
 	files, err := filepath.Glob(fixtures.Path("thread/*.tlspr"))
 	if err != nil || len(files) == 0 {
 		t.Fatalf("no thread goldens: %v", err)
+	}
+	if testing.Short() {
+		files = sweep.Without(files, func(f string) bool {
+			name := filepath.Base(f)
+			return fixtures.ThreadVariant("thread/"+name) && name != "screw_m8.tlspr" && name != "nut_m8.tlspr"
+		})
 	}
 	for _, f := range files {
 		t.Run(filepath.Base(f), func(t *testing.T) {

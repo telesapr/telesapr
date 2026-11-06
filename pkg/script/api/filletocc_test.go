@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 )
 
 // Fillets of radius 1 on edges of STEP solids (roadmap 22.5) take the
@@ -78,33 +79,40 @@ func TestFilletOnOtherSolidsVolumes(t *testing.T) {
 // span of the fillet's surface lies just over the tolerance at its first
 // sections, and each section put in tipped the span beside it over, one
 // a round round the edge, until the rounds ran out (misfit 2.67e-5 at
-// 2.4e-5). The late rounds split the spans near the tolerance too.
+// 2.4e-5). The late rounds split the spans near the tolerance too. The
+// ordinary run takes the finer tolerance, which runs the same rounds
+// longer, make test-sweeps 0.002 as well; the rims side by side.
 func TestFilletCylinderFineTolerance(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("STEP solids at a fine tolerance")
 	}
-	chords := []float64{0.002, 0.001}
-	if fixtures.RaceDetector {
-		// Ten minutes there; the finer runs the same rounds longer.
-		chords = chords[:1]
+	chords := []float64{0.001}
+	switch {
+	case sweep.Full():
+		chords = []float64{0.002, 0.001}
+	case fixtures.RaceDetector:
+		// Ten minutes there at 0.002.
+		chords = []float64{0.002}
 	}
 	for _, chord := range chords {
 		for i := range 2 {
-			d := New()
-			d.Edit.SetChordTolerance(chord)
-			g, err := d.Assembly.LinkStep(filepath.Join("..", "..", "..", "testdata", "step", "shapes", "cylinder.step"), "", true)
-			if err != nil {
-				t.Fatal(err)
-			}
-			f := d.Features.FilletSolid([]SolidEdge{g.Solid().Edges()[i]}, 1, "")
-			if p := f.Problem(); p != "" {
-				t.Errorf("chord %g%%, rim %d: %s", chord, i, p)
-				continue
-			}
-			if r := f.Analyze().Check(); !r.Sound() {
-				t.Errorf("chord %g%%, rim %d: %s", chord, i, r.Summary())
-			}
+			t.Run(fmt.Sprintf("%g%% rim %d", chord, i), func(t *testing.T) {
+				t.Parallel()
+				d := New()
+				d.Edit.SetChordTolerance(chord)
+				g, err := d.Assembly.LinkStep(filepath.Join("..", "..", "..", "testdata", "step", "shapes", "cylinder.step"), "", true)
+				if err != nil {
+					t.Fatal(err)
+				}
+				f := d.Features.FilletSolid([]SolidEdge{g.Solid().Edges()[i]}, 1, "")
+				if p := f.Problem(); p != "" {
+					t.Fatal(p)
+				}
+				if r := f.Analyze().Check(); !r.Sound() {
+					t.Error(r.Summary())
+				}
+			})
 		}
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -79,47 +80,68 @@ func readRibOracleFile(t *testing.T, name string) []ribOracle {
 	return out
 }
 
-// TestFilletRibAllOverOracle rounds a rib all over: its top's edges and
-// its foot's picked together, in one edit. The top's convex edges are
-// rounded first (filletInStages), which leaves its foot one closed chain
-// going round from its flat sides onto the fillets of its uprights and,
-// where they lean, of its slope's edges; the rolling ball fills it
+// TestFilletRibAllOverOracleCDT rounds a rib all over: its top's edges
+// and its foot's picked together, in one edit, every curved face meshed
+// by the CDT, the default mesher. The top's convex edges are rounded
+// first (filletInStages), which leaves its foot one closed chain going
+// round from its flat sides onto the fillets of its uprights and, where
+// they lean, of its slope's edges; the rolling ball fills it
 // (filletOneChain). The volume the foot adds is checked against
 // OpenCASCADE's, made the same way (scripts/fillet-rib-fixtures.py),
 // where the rib's width stands square; and everywhere, OpenCASCADE's
 // refusals too, the fillet's height over the plate against the balls
-// that roll round the foot (ballHeight).
-func TestFilletRibAllOverOracle(t *testing.T) {
-	t.Parallel()
-	ribAllOverRows(t, srf.MesherEarClip)
-}
-
-// TestFilletRibAllOverOracleCDT is the same with every curved face meshed
-// by the CDT, which is to become the default mesher (ROADMAP K4): until it
-// is, this keeps its meshes of the rib checked. Heavy (HEAVY in
-// scripts/go-test.sh): the 24 cases take some 25 minutes of processor.
+// that roll round the foot (ballHeight). The ordinary run takes 12 of the
+// 24 rows (ribAllOverCDTRows), TELESAPR_SWEEP=1 all; heavy (HEAVY in
+// scripts/go-test.sh): the 24 take some 25 minutes of processor.
 func TestFilletRibAllOverOracleCDT(t *testing.T) {
 	t.Parallel()
-	if testing.Short() {
-		t.Skip("rounds 24 ribs all over, meshed by the CDT, minutes")
-	}
-	if fixtures.RaceDetector {
-		// The race stage is near its limit, and the meshing it would
-		// check is the same as the ear clipper's test's but for the mesher.
-		t.Skip("the CDT's rib, not under the race detector")
-	}
-	ribAllOverRows(t, srf.MesherCDT)
+	ribAllOverRows(t, srf.MesherCDT, ribAllOverCDTRows)
 }
 
-// ribAllOverRows runs ribAllOver over the oracle's rows.
-func ribAllOverRows(t *testing.T, mesher srf.Mesher) {
+// TestFilletRibAllOverOracleEarClip is TestFilletRibAllOverOracleCDT
+// with the curved faces ear-clipped, the mesher a Tolerance can still ask
+// for and the CDT's mender falls back to: the same B-rep, other meshes,
+// which the fillet's own soundness checks mesh as it goes. Four rows in
+// the ordinary run, one of each height (ribAllOverEarClipRows), all 24
+// under TELESAPR_SWEEP=1; not under -short or the race detector, where
+// the CDT's test keeps its row.
+func TestFilletRibAllOverOracleEarClip(t *testing.T) {
+	t.Parallel()
+	if testing.Short() || fixtures.RaceDetector {
+		t.Skip("ear-clipped ribs rounded all over, minutes; the CDT's test keeps a row")
+	}
+	ribAllOverRows(t, srf.MesherEarClip, ribAllOverEarClipRows)
+}
+
+// ribAllOverCDTRows are the rows of the CDT's test in the ordinary run:
+// the eight whose width stands square, the only ones whose volume is
+// checked against OpenCASCADE's, OpenCASCADE's refusal at h 5 lean -4 r
+// 0.5, and a leaning row of each other height, both leans and both
+// radii among them.
+func ribAllOverCDTRows(o ribOracle) bool {
+	return o.lean == 0 || slices.Contains([][3]float64{{5, -4, 0.5}, {10, 2, 1}, {20, -4, 1}, {40, 2, 0.5}}, [3]float64{o.h, o.lean, o.r})
+}
+
+// ribAllOverEarClipRows are the rows of the ear clipper's test in the
+// ordinary run: one of each height at radius 1, two of them square.
+func ribAllOverEarClipRows(o ribOracle) bool {
+	return slices.Contains([][3]float64{{5, 0, 1}, {10, 2, 1}, {20, -4, 1}, {40, 0, 1}}, [3]float64{o.h, o.lean, o.r})
+}
+
+// ribAllOverRows runs ribAllOver over the oracle's rows that keep says
+// to, every row under TELESAPR_SWEEP=1 (sweep.Full). Under -short and the
+// race detector only h 10 lean 2 r 1: each row takes 10 to 40 s, the 24
+// took half of the package's time under the race detector, and h 5 lean
+// -4 r 0.5 alone eleven minutes beside the rest of the stage
+// (2026-11-04).
+func ribAllOverRows(t *testing.T, mesher srf.Mesher, keep func(ribOracle) bool) {
 	t.Helper()
-	// Under the race detector only the short run's row: the 24 took half
-	// of the package's time there, and h5 lean -4 r 0.5 alone eleven
-	// minutes beside the rest of the stage (2026-11-04).
 	for _, o := range readRibOracle(t) {
-		if (testing.Short() || fixtures.RaceDetector) && (o.h != 10 || o.lean != 2 || o.r != 1) {
-			// Each case takes 10 to 20 s; the short run keeps one.
+		if testing.Short() || fixtures.RaceDetector {
+			if o.h != 10 || o.lean != 2 || o.r != 1 {
+				continue
+			}
+		} else if !sweep.Full() && !keep(o) {
 			continue
 		}
 		name := fmt.Sprintf("h%g_lean%g_r%g", o.h, o.lean, o.r)
@@ -159,10 +181,12 @@ func ribAllOver(t *testing.T, o ribOracle, mesher srf.Mesher) {
 	if p := tp.Validate(); len(p) > 0 {
 		t.Fatalf("topology: %s", p[0].Msg)
 	}
+	// The top alone, meshed once: its volume, where the width stands
+	// square, and the triangles the balls roll against.
 	var top srf.SMesh
 	topOnly.TriangulateInto(&top)
 	if o.lean == 0 && !o.refused {
-		added, want := rep.Volume-meshVolume(topOnly), o.both-o.first
+		added, want := rep.Volume-top.CalculateVolume(), o.both-o.first
 		// The foot's fillet runs about 46 round a rib of 14 by
 		// 10; its chords lose less than the tolerance over it,
 		// and the top's fillets' chords, meshed again where the
@@ -440,24 +464,25 @@ func TestFilletRibFootAfterTop(t *testing.T) {
 	if len(loop) != 8 {
 		t.Fatalf("the foot has %d edges, want 8", len(loop))
 	}
+	// The two fills side by side, each on a copy made here, before
+	// either starts: one after the other they were pkg/topo's longest
+	// wait, 63 s.
 	for _, c := range []struct {
 		name  string
 		picks []topo.FilletPick
 	}{{"all", loop}, {"one", loop[1:2]}} {
-		if fixtures.RaceDetector && c.name == "one" {
-			// The same chain filled on the same goroutines, 6 minutes
-			// more under the race detector.
-			continue
-		}
 		var sh srf.SShell
 		sh.MakeFromCopyOf(before)
-		if err := topo.FilletPicks(&sh, c.picks, 1, 1<<29, false); err != nil {
-			t.Fatalf("%s: %v", c.name, err)
-		}
-		var m srf.SMesh
-		sh.TriangulateInto(&m)
-		if rep := check.Solid(&sh, &m); !rep.Sound() {
-			t.Errorf("%s: unsound: %s", c.name, rep.String())
-		}
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			if err := topo.FilletPicks(&sh, c.picks, 1, 1<<29, false); err != nil {
+				t.Fatal(err)
+			}
+			var m srf.SMesh
+			sh.TriangulateInto(&m)
+			if rep := check.Solid(&sh, &m); !rep.Sound() {
+				t.Errorf("unsound: %s", rep.String())
+			}
+		})
 	}
 }

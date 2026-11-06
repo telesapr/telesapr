@@ -130,6 +130,11 @@ func TestEditCosmeticThread(t *testing.T) {
 		{"chamfered screw", 4, 30, "M8", sketch.ThreadOptions{Length: 12, Chamfer: true}},
 		{"chamfered nut", 7, 6.5, "M8", sketch.ThreadOptions{Length: 6.5, Through: true, Internal: true, Chamfer: true}},
 	} {
+		// Each makes three modelled threads; under -short the screw
+		// alone, of the 18 s of processor the five took.
+		if testing.Short() && tc.name != "screw" {
+			continue
+		}
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			modelled := tc.options(t)

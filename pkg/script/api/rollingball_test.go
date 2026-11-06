@@ -9,11 +9,13 @@ import (
 // A fillet where a branch pipe meets a pipe, two cylinders along a
 // closed edge no circle or line is: the rolling ball (roadmap 22.2),
 // through the script path, sound and of OpenCASCADE's volume; one step
-// of undo; and the same after saving and loading.
+// of undo; and the same after saving and loading. At the coarse chord
+// tolerance of 0.01: the volume to a finer one is topo's
+// TestRollingBallTee's, and this is the path through the script.
 func TestFilletBetweenCylinders(t *testing.T) {
 	t.Parallel()
 	d := New()
-	d.Edit.SetChordTolerance(0.002)
+	d.Edit.SetChordTolerance(0.01)
 	d.Features.SketchIn(d.Workplane("XY"), "")
 	d.Sketch.Circle(V(0, 0, 0), 10)
 	d.Features.Extrude(40, "pipe")
@@ -28,7 +30,7 @@ func TestFilletBetweenCylinders(t *testing.T) {
 	}
 	r := fill.Analyze().Check()
 	// OpenCASCADE adds 15.769; the mesh's chords at the edge count for
-	// about a tenth of a mm³.
+	// about a quarter of a mm³ (15.997, 2026-11-06).
 	if added := r.Volume - before; !r.Sound() || math.Abs(added-15.769) > 0.3 {
 		t.Fatalf("the fillet: %s, added %g", r.Summary(), r.Volume-before)
 	}
@@ -47,7 +49,7 @@ func TestFilletBetweenCylinders(t *testing.T) {
 		t.Fatal(err)
 	}
 	// The tolerance is the session's, not the file's.
-	e.Edit.SetChordTolerance(0.002)
+	e.Edit.SetChordTolerance(0.01)
 	g := e.Groups()
 	again := g[len(g)-1]
 	if p := again.Problem(); p != "" {

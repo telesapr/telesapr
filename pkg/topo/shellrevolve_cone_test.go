@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -246,17 +247,23 @@ func TestShellRevolvedInsideCornerSloping(t *testing.T) {
 	}
 	var cases []shellCase
 	// A cylinder of radius r0 above a cone from the outside's radius 10
-	// at h1 to r0 at 5, rising or falling, its top taken away too.
-	for _, r0 := range []float64{4, 6} {
-		for _, h1 := range []float64{2, 3.5, 6.5, 8} {
-			cases = append(cases, shellCase{fmt.Sprintf("a cylinder of %g on a cone from %g", r0, h1),
-				[][2]float64{{0, 0}, {10, 0}, {10, h1}, {r0, 5}, {r0, 10}, {0, 10}}, nil,
-				[][2]float64{{r0, 8}, {r0 / 2, 10}}})
+	// at h1 to r0 at 5, rising or falling, its top taken away too. In the
+	// ordinary run each radius with each height once, either way up, so
+	// half of the 16; all under TELESAPR_SWEEP=1.
+	for i, r0 := range []float64{4, 6} {
+		for j, h1 := range []float64{2, 3.5, 6.5, 8} {
+			if sweep.Full() || (i+j)%2 == 0 {
+				cases = append(cases, shellCase{fmt.Sprintf("a cylinder of %g on a cone from %g", r0, h1),
+					[][2]float64{{0, 0}, {10, 0}, {10, h1}, {r0, 5}, {r0, 10}, {0, 10}}, nil,
+					[][2]float64{{r0, 8}, {r0 / 2, 10}}})
+			}
 			// Upside down: the cylinder below the cone, the corner at the
 			// curved face's end, its bottom taken away.
-			cases = append(cases, shellCase{fmt.Sprintf("a cylinder of %g below a cone to %g", r0, 10-h1),
-				[][2]float64{{0, 0}, {r0, 0}, {r0, 5}, {10, 10 - h1}, {10, 10}, {0, 10}}, nil,
-				[][2]float64{{r0, 2}, {r0 / 2, 0}}})
+			if sweep.Full() || (i+j)%2 == 1 {
+				cases = append(cases, shellCase{fmt.Sprintf("a cylinder of %g below a cone to %g", r0, 10-h1),
+					[][2]float64{{0, 0}, {r0, 0}, {r0, 5}, {10, 10 - h1}, {10, 10}, {0, 10}}, nil,
+					[][2]float64{{r0, 2}, {r0 / 2, 0}}})
+			}
 		}
 	}
 	// A torus beside the cylinder: a cove, its material outside its

@@ -8,6 +8,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/check"
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -80,7 +81,9 @@ func TestClosedGuidedLoft(t *testing.T) {
 	var fm srf.SMesh
 	freeSh.TriangulateInto(&fm)
 	free := check.Solid(freeSh, &fm).Volume
-	for _, c := range []struct {
+	// Every case in the ordinary run, a fifth under -short and the race
+	// detector (sweep.Pick).
+	for _, c := range sweep.Pick([]struct {
 		name   string
 		guides []topo.LoftGuide
 		volume float64 // within 2% of it, or 0
@@ -88,7 +91,7 @@ func TestClosedGuidedLoft(t *testing.T) {
 		{"one up", []topo.LoftGuide{ringGuide(big, r, top, bulge)}, free},
 		{"two out", []topo.LoftGuide{ringGuide(big, r, top, bulge), ringGuide(big, r, bottom, bulge)}, 0},
 		{"winding", []topo.LoftGuide{ringGuide(big, r, func(a float64) float64 { return math.Pi/2 + a }, flat)}, free},
-	} {
+	}, 0) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			sh, err := topo.MakeClosedGuidedLoft(loops, c.guides, col, srf.OriginFor(9, 0), tol)

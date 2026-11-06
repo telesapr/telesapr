@@ -228,3 +228,52 @@ func TestParallelFailsAtSamePoints(t *testing.T) {
 		}
 	}
 }
+
+// Pick takes a table's cases as a grid's sample takes points: spread,
+// in order, all of them in a full sweep, a fifth under -short and the
+// race detector.
+func TestPick(t *testing.T) {
+	t.Setenv("TELESAPR_SWEEP", "")
+	xs := make([]int, 30)
+	for i := range xs {
+		xs[i] = i
+	}
+	got := Pick(xs, 10)
+	want := 10
+	if Thin() {
+		want = 2
+	}
+	if len(got) != want || !slices.IsSorted(got) {
+		t.Errorf("picked %v", got)
+	}
+	if !Thin() && (got[0] != 0 || got[len(got)-1] < 20) {
+		t.Errorf("not spread over the table: %v", got)
+	}
+	short := 3
+	if Thin() {
+		short = 1
+	}
+	if got := Pick(xs[:3], 10); len(got) != short {
+		t.Errorf("a short table: %v", got)
+	}
+	t.Setenv("TELESAPR_SWEEP", "1")
+	if got := Pick(xs, 10); len(got) != 30 {
+		t.Errorf("full: %d", len(got))
+	}
+	if Thin() {
+		t.Error("a full sweep is thinned")
+	}
+}
+
+func TestWithout(t *testing.T) {
+	t.Setenv("TELESAPR_SWEEP", "")
+	xs := []string{"a", "bb", "c", "dd"}
+	long := func(s string) bool { return len(s) > 1 }
+	if got := Without(xs, long); !slices.Equal(got, []string{"a", "c"}) || len(xs) != 4 || xs[1] != "bb" {
+		t.Errorf("without: %v, from %v", got, xs)
+	}
+	t.Setenv("TELESAPR_SWEEP", "1")
+	if got := Without(xs, long); !slices.Equal(got, xs) {
+		t.Errorf("full: %v", got)
+	}
+}

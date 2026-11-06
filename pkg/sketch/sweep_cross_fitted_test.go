@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
@@ -227,6 +228,12 @@ func TestSweepCrossesItselfFittedOrClosed(t *testing.T) {
 		if fixtures.RaceDetector && c.name != "hairpin, square, twisted" {
 			continue
 		}
+		// The round profile held refuses after 80 s of processor, four
+		// times the next case; the square held is refused the same way
+		// in 5, so the round one waits for make test-sweeps.
+		if c.name == "hairpin, held" && !sweep.Full() {
+			continue
+		}
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			d := api.New()
@@ -275,7 +282,9 @@ func TestSweepCrossesItselfFittedOrClosed(t *testing.T) {
 // grid's 54 points, 33 are made sound and 21 are a problem, where before
 // spans 21 were made (those that don't come back over themselves) and
 // 33 refused; TestSweepCrossesItselfFittedOrClosed says which kinds are
-// still refused.
+// still refused. The loop has no gap, so 9 of the 54 were the same
+// sweep again: of the 45 left, 31 are made sound and 14 a problem
+// (2026-11-06).
 func TestSweepCrossesItselfFittedSweep(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -290,14 +299,20 @@ func TestSweepCrossesItselfFittedSweep(t *testing.T) {
 		},
 		MaxFailRate: 0,
 		Sample:      12,
+		Parallel:    true,
 	}
-	made, refused := 0, 0
+	var made, refused atomic.Int64
 	rep := grid.Run(func(p sweep.Point) error {
 		d := api.New()
 		var path []api.Entity
 		at := api.V(0, 0, 0)
 		switch p.String("path") {
 		case "cubic":
+			// The loop has no gap: its second gap is the first's point
+			// again, left out.
+			if p.Float("gap") != 3.5 {
+				return nil
+			}
 			path, at = loopCubic(d), api.V(-20, 0, 0)
 		default:
 			path = drawParts(d, hairpinParts(20, p.Float("gap"), p.String("path") == "ring"))
@@ -323,15 +338,15 @@ func TestSweepCrossesItselfFittedSweep(t *testing.T) {
 			s.AsSweep().SetTwist(turn)
 		}
 		if s.Problem() != "" {
-			refused++
+			refused.Add(1)
 			return nil
 		}
 		if r := s.Analyze().Check(); !r.Sound() {
 			return fmt.Errorf("made unsound, with no problem: %s", r.String())
 		}
-		made++
+		made.Add(1)
 		return nil
 	})
-	t.Logf("%d made sound, %d a problem", made, refused)
+	t.Logf("%d made sound, %d a problem", made.Load(), refused.Load())
 	rep.Require(t)
 }

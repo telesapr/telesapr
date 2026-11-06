@@ -10,7 +10,7 @@ import (
 // chamfer reads back, edits off and on in one step of undo each, comes
 // back on redo, is written to a script, and is made on a rounded crest
 // too.
-func TestThreadChamfer(t *testing.T) {
+func TestThreadChamferEdit(t *testing.T) {
 	t.Parallel()
 	d := New()
 	rod := d.Sketch.Circle(V(0, 0, 0), 4)

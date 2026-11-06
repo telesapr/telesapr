@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
@@ -48,22 +49,24 @@ func TestChamferRunsOffBothEnds(t *testing.T) {
 		cases = cases[2:3]
 	}
 	for _, c := range cases {
-		d := New()
-		d.Edit.SetChordTolerance(0.003)
-		d.Edit.SetMaxSegments(200)
-		edge, before := gabledPlateOnRod(d, 10, c.l, 0.58, 0.58+c.l/4)
-		g, err := blendOrRefusal(d, edge, c.r, true)
-		if err != nil {
-			t.Errorf("plate %g long, chamfer of %g: %v", c.l, c.r, err)
-			continue
-		}
-		rep := g.Analyze().Check()
-		added := rep.Volume - before
-		if !rep.Sound() {
-			t.Errorf("plate %g long, chamfer of %g: %s", c.l, c.r, rep.Summary())
-		}
-		if math.Abs(added-c.occ) > 0.003*c.occ {
-			t.Errorf("plate %g long, chamfer of %g added %g, OpenCASCADE's %g", c.l, c.r, added, c.occ)
-		}
+		t.Run(fmt.Sprintf("plate %g long, chamfer of %g", c.l, c.r), func(t *testing.T) {
+			t.Parallel()
+			d := New()
+			d.Edit.SetChordTolerance(0.003)
+			d.Edit.SetMaxSegments(200)
+			edge, before := gabledPlateOnRod(d, 10, c.l, 0.58, 0.58+c.l/4)
+			g, err := blendOrRefusal(d, edge, c.r, true)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rep := g.Analyze().Check()
+			added := rep.Volume - before
+			if !rep.Sound() {
+				t.Error(rep.Summary())
+			}
+			if math.Abs(added-c.occ) > 0.003*c.occ {
+				t.Errorf("added %g, OpenCASCADE's %g", added, c.occ)
+			}
+		})
 	}
 }

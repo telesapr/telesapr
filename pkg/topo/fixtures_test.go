@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/persist/tlspr"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -20,7 +21,8 @@ var testdata = filepath.Join("..", "..", "testdata")
 
 // solidFixtures lists the models under testdata with a solid to check: the
 // .tlspr files, the corpus of testdata/tlspr/golden among them, but for
-// the old formats' and the interface scenarios' folders.
+// the old formats' and the interface scenarios' folders, and in the
+// ordinary run but for the thread variants not in keptThreads.
 func solidFixtures(t *testing.T) []string {
 	files, err := fixtures.Walk(".tlspr")
 	if err != nil {
@@ -34,7 +36,18 @@ func solidFixtures(t *testing.T) []string {
 			out = append(out, f)
 		}
 	}
-	return out
+	return sweep.Without(out, func(f string) bool { return fixtures.ThreadVariant(f) && !slices.Contains(keptThreads, f) })
+}
+
+// keptThreads are the thread variants TestFixtures checks in the ordinary
+// run, one of each kind of solid a thread makes: a V profile, a curved
+// root, a flat crest of two starts, three starts, run-out ends and an
+// internal thread. The others differ only in their thread's options and
+// took three quarters of the test's time; pkg/sketch's TestThreadGoldens
+// and TestThreadGoldensSound check every one, TELESAPR_SWEEP=1 here.
+var keptThreads = []string{
+	"thread/screw_m8.tlspr", "thread/screw_butt_round.tlspr", "thread/lead_tr20.tlspr",
+	"thread/triple_m12.tlspr", "thread/phased_runout_m8.tlspr", "thread/nut_m8.tlspr",
 }
 
 // load reads and regenerates a fixture.
@@ -102,8 +115,16 @@ func TestFixtures(t *testing.T) {
 	c := fixtureCounts{reasons: map[string]int{}}
 	var mu sync.Mutex
 	t.Run("models", func(t *testing.T) {
-		// A fifth of them under the race detector (fixtures.Sample).
-		for _, f := range fixtures.Sample(solidFixtures(t)) {
+		// A fifth of them under the race detector (fixtures.Sample),
+		// and under -short, with the knife edge.
+		files := fixtures.Sample(solidFixtures(t))
+		if knife := "tlspr/golden/group/boolean_knife_edge/normal.tlspr"; testing.Short() && !fixtures.RaceDetector {
+			files = fixtures.Thin(files)
+			if !slices.Contains(files, knife) {
+				files = append(files, knife)
+			}
+		}
+		for _, f := range files {
 			t.Run(f, func(t *testing.T) {
 				t.Parallel()
 				sk := load(t, f)

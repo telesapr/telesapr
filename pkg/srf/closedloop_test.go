@@ -58,13 +58,28 @@ func capVolume(r, k float64) float64 { return math.Pi * k * k * (3*r - k) / 3 }
 func meshIsSound(sh *SShell) bool {
 	var m SMesh
 	sh.TriangulateInto(&m)
+	return meshSound(&m)
+}
+
+// meshSound reports whether m is watertight and does not cross itself.
+func meshSound(m *SMesh) bool {
 	if m.IsEmpty() {
 		return false
 	}
 	var naked SEdgeList
 	var inters, leaks bool
-	SKdNodeFrom(&m).MakeCertainEdgesInto(&naked, EdgeNakedOrSelfInter, true, &inters, &leaks, 0)
+	SKdNodeFrom(m).MakeCertainEdgesInto(&naked, EdgeNakedOrSelfInter, true, &inters, &leaks, 0)
 	return !inters && !leaks && len(naked.Edges) == 0
+}
+
+// soundVolume meshes sh once and gives the mesh's volume and whether it
+// is sound, as meshIsSound says. A test that asks both of meshIsSound
+// and shellVolume meshes the shell twice, and at a fine chord the
+// meshing, not the Boolean, is most of its time.
+func soundVolume(sh *SShell) (float64, bool) {
+	var m SMesh
+	sh.TriangulateInto(&m)
+	return m.CalculateVolume(), meshSound(&m)
 }
 
 // TestSphereThroughFace unites a box with a sphere that bulges through
@@ -124,10 +139,11 @@ func sphereFaceCase(r, top float64, c geom.Vector, tol Tolerance) error {
 		if out.BooleanFailed {
 			return fmt.Errorf("%v: boolean failed", op)
 		}
-		if !meshIsSound(&out) {
+		v, sound := soundVolume(&out)
+		if !sound {
 			return fmt.Errorf("%v: mesh not watertight", op)
 		}
-		vols[op] = shellVolume(&out)
+		vols[op] = v
 	}
 	boxV, sphereV := shellVolume(box()), shellVolume(patchUpSphere(r, c, tol))
 	allow := 1e-2 * sphereV
@@ -200,10 +216,11 @@ func cylinderCase(r, dy, angle float64, tol Tolerance) error {
 		if out.BooleanFailed {
 			return fmt.Errorf("%v: boolean failed", op)
 		}
-		if !meshIsSound(&out) {
+		v, sound := soundVolume(&out)
+		if !sound {
 			return fmt.Errorf("%v: mesh not watertight", op)
 		}
-		vols[op] = shellVolume(&out)
+		vols[op] = v
 	}
 	a, b := shellVolume(upright()), shellVolume(crossedCylinder(r, dy, angle, tol))
 	allow := 1e-2 * math.Min(a, b)

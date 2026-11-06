@@ -7,6 +7,8 @@ import (
 	"runtime/debug"
 	"slices"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -21,6 +23,10 @@ import (
 // or by another program would.
 type damage struct {
 	name string
+	// kind is the damage less the handle: what is cut, of what type
+	// of group, request or constraint. Two damages of a kind in one
+	// model take the same way through the load.
+	kind string
 	cut  func(sk *sketch.Sketch)
 }
 
@@ -38,12 +44,13 @@ var (
 // constraint's and a datum's references pointed at what isn't there.
 func damages(sk *sketch.Sketch) []damage {
 	var out []damage
-	group := func(h core.HGroup, what string, f func(g *sketch.Group)) {
-		out = append(out, damage{fmt.Sprintf("group %x %s", h.V, what), func(sk *sketch.Sketch) { f(sk.Group(h)) }})
-	}
 	for _, g := range sk.Groups {
-		h := g.H
-		out = append(out, damage{fmt.Sprintf("group %x", h.V), func(sk *sketch.Sketch) {
+		h, k := g.H, fmt.Sprintf("group %v", g.Type)
+		group := func(h core.HGroup, what string, f func(g *sketch.Group)) {
+			out = append(out, damage{fmt.Sprintf("group %x %s", h.V, what), k + " " + what,
+				func(sk *sketch.Sketch) { f(sk.Group(h)) }})
+		}
+		out = append(out, damage{fmt.Sprintf("group %x", h.V), k, func(sk *sketch.Sketch) {
 			sk.Groups = slices.DeleteFunc(sk.Groups, func(g sketch.Group) bool { return g.H == h })
 			sk.GroupOrder = slices.DeleteFunc(sk.GroupOrder, func(o core.HGroup) bool { return o == h })
 		}})
@@ -74,26 +81,40 @@ func damages(sk *sketch.Sketch) []damage {
 		}
 	}
 	for _, r := range sk.Requests {
-		h := r.H
+		h, k := r.H, fmt.Sprintf("request %v", r.Type)
 		out = append(out,
-			damage{fmt.Sprintf("request %x", h.V), func(sk *sketch.Sketch) {
+			damage{fmt.Sprintf("request %x", h.V), k, func(sk *sketch.Sketch) {
 				sk.Requests = slices.DeleteFunc(sk.Requests, func(r sketch.Request) bool { return r.H == h })
 			}},
-			damage{fmt.Sprintf("request %x workplane", h.V), func(sk *sketch.Sketch) { sk.Request(h).Workplane = noGroupEntity }},
-			damage{fmt.Sprintf("request %x group", h.V), func(sk *sketch.Sketch) { sk.Request(h).Group = noGroup }},
-			damage{fmt.Sprintf("request %x style", h.V), func(sk *sketch.Sketch) { sk.Request(h).Style = noStyle }})
+			damage{fmt.Sprintf("request %x workplane", h.V), k + " workplane", func(sk *sketch.Sketch) { sk.Request(h).Workplane = noGroupEntity }},
+			damage{fmt.Sprintf("request %x group", h.V), k + " group", func(sk *sketch.Sketch) { sk.Request(h).Group = noGroup }},
+			damage{fmt.Sprintf("request %x style", h.V), k + " style", func(sk *sketch.Sketch) { sk.Request(h).Style = noStyle }})
 	}
 	for _, c := range sk.Constraints {
-		h := c.H
+		h, k := c.H, fmt.Sprintf("constraint %v", c.Type)
 		out = append(out,
-			damage{fmt.Sprintf("constraint %x point", h.V), func(sk *sketch.Sketch) { sk.Constraint(h).PtA = noEntity }},
-			damage{fmt.Sprintf("constraint %x entity", h.V), func(sk *sketch.Sketch) { sk.Constraint(h).EntityA = noGroupEntity }},
-			damage{fmt.Sprintf("constraint %x style", h.V), func(sk *sketch.Sketch) { sk.Constraint(h).Disp.Style = noStyle }})
+			damage{fmt.Sprintf("constraint %x point", h.V), k + " point", func(sk *sketch.Sketch) { sk.Constraint(h).PtA = noEntity }},
+			damage{fmt.Sprintf("constraint %x entity", h.V), k + " entity", func(sk *sketch.Sketch) { sk.Constraint(h).EntityA = noGroupEntity }},
+			damage{fmt.Sprintf("constraint %x style", h.V), k + " style", func(sk *sketch.Sketch) { sk.Constraint(h).Disp.Style = noStyle }})
 	}
 	for i := range sk.Datums {
-		out = append(out, damage{fmt.Sprintf("datum %d", i), func(sk *sketch.Sketch) { sk.Datums[i].Entity = noEntity }})
+		out = append(out, damage{fmt.Sprintf("datum %d", i), "datum", func(sk *sketch.Sketch) { sk.Datums[i].Entity = noEntity }})
 	}
 	return out
+}
+
+// eachKind is the first damage of each kind in ds, in their order: a
+// sketch of hundreds of lines and constraints, as an imported drawing
+// is, has thousands of damages of a few dozen kinds.
+func eachKind(ds []damage) []damage {
+	seen := map[string]bool{}
+	return slices.DeleteFunc(ds, func(d damage) bool {
+		if seen[d.kind] {
+			return true
+		}
+		seen[d.kind] = true
+		return false
+	})
 }
 
 // openDamaged writes sk with d done to it, opens what was written and
@@ -120,13 +141,24 @@ func openDamaged(path string, data []byte, d damage) (err error) {
 }
 
 // damageEvery thins the damages of each fixture to one in so many,
-// a different one in each fixture, unless the whole sweep is asked for:
-// all of them take some eight minutes.
+// a different one in each fixture, of one damage of each kind
+// (eachKind), unless the whole sweep is asked for: all of them take
+// some eight minutes, and the thousands of an imported drawing's
+// sketch, serial in its subtest, two.
 const damageEvery = 16
+
+// damagedKeptThreads are the thread variants (fixtures.ThreadVariant)
+// TestOpenDamaged cuts up in the ordinary run: a thread's damages are
+// to its references, the same whatever the thread's options, and each
+// one regenerates the thread.
+var damagedKeptThreads = []string{"thread/screw_m8.tlspr", "thread/face_m8.tlspr"}
 
 // A file with an item cut out of it or a reference pointed at nothing
 // opens: what can't be made is left out and said, never a panic or an
-// error.
+// error. The ordinary run takes every kind of damage once, in the first
+// fixture that has it, and a sixteenth of the kinds of each fixture,
+// and leaves out the thread variants but damagedKeptThreads;
+// TELESAPR_SWEEP=1 takes every damage of every fixture.
 func TestOpenDamaged(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -136,7 +168,34 @@ func TestOpenDamaged(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for i, p := range fixtures.Sample(paths) {
+	paths = fixtures.Sample(sweep.Without(paths, func(p string) bool {
+		return fixtures.ThreadVariant(p) && !slices.Contains(damagedKeptThreads, p)
+	}))
+	// first is the fixture each kind of damage is first met in.
+	first := map[string]string{}
+	for _, p := range paths {
+		data, err := os.ReadFile(fixtures.Path(p))
+		if err != nil {
+			t.Fatal(err)
+		}
+		doc, err := tlspr.Decode(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, d := range damages(doc.Sketch) {
+			if _, ok := first[d.kind]; !ok {
+				first[d.kind] = p
+			}
+		}
+	}
+	var opened atomic.Int64
+	var kinds sync.Map
+	t.Cleanup(func() {
+		n := 0
+		kinds.Range(func(any, any) bool { n++; return true })
+		t.Logf("%d fixtures, %d damaged files opened, %d kinds of damage", len(paths), opened.Load(), n)
+	})
+	for i, p := range paths {
 		t.Run(p, func(t *testing.T) {
 			t.Parallel()
 			path := fixtures.Path(p)
@@ -148,10 +207,16 @@ func TestOpenDamaged(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			for j, d := range damages(doc.Sketch) {
-				if !sweep.Full() && (i+j)%damageEvery != 0 {
+			ds := damages(doc.Sketch)
+			if !sweep.Full() {
+				ds = eachKind(ds)
+			}
+			for j, d := range ds {
+				if !sweep.Full() && (i+j)%damageEvery != 0 && first[d.kind] != p {
 					continue
 				}
+				opened.Add(1)
+				kinds.Store(d.kind, true)
 				if err := openDamaged(path, data, d); err != nil {
 					t.Errorf("%s cut out: %v", d.name, err)
 				}

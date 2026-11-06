@@ -1009,7 +1009,7 @@ func TestPathEquivalence(t *testing.T) {
 			continue
 		}
 		seen[name] = true
-		if raceLeavesOut(name, "thread") {
+		if threadLeftOut(name, "thread") {
 			continue
 		}
 		t.Run(name, func(t *testing.T) {

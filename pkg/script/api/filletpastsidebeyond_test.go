@@ -5,6 +5,8 @@ import (
 	"math"
 	"strings"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 )
 
 // beyondSide is what stands past the plate's side at x = 6 that a
@@ -73,17 +75,24 @@ func plateBeyond(d *Doc, b beyondSide, hole bool) (Group, SolidEdge, float64) {
 // high), the solid before it is put back there (keepBeyond). Of the 72
 // cases all are made sound, their volumes within 5e-4 of the ring's
 // integral, as on a plate with nothing past its sides; refused before
-// 2026-11-05 as running off the top.
+// 2026-11-05 as running off the top. The ordinary run takes each of the
+// solids past the side with a rod's and a hole's fillet and chamfer at
+// one size each, the size turning from solid to solid so that each kind
+// meets every size twice: 24 of the 72, the chamfer cutting into the
+// ledge 3 high among them. make test-sweeps runs all of them.
 func TestFilletPastSideSolidBeyond(t *testing.T) {
 	t.Parallel()
-	for _, b := range beyondSides {
+	for i, b := range beyondSides {
 		for _, hole := range []bool{false, true} {
 			for _, flat := range []bool{false, true} {
-				for _, r := range []float64{2.01, 2.5, 3.5} {
+				for k, r := range []float64{2.01, 2.5, 3.5} {
 					// Under -short, a tab past a rod's fillet and the
 					// chamfer that cuts into the ledge past a hole's rim.
-					if testing.Short() && !(b.name == "tab" && !hole && !flat && r == 2.5) &&
+					if testing.Short() && !sweep.Full() && !(b.name == "tab" && !hole && !flat && r == 2.5) &&
 						!(b.name == "ledge 3" && hole && flat && r == 3.5) {
+						continue
+					}
+					if !testing.Short() && !sweep.Full() && k != (i+2*b2i(hole)+b2i(flat))%3 {
 						continue
 					}
 					what := map[bool]string{false: "fillet", true: "chamfer"}[flat]
@@ -96,6 +105,15 @@ func TestFilletPastSideSolidBeyond(t *testing.T) {
 			}
 		}
 	}
+}
+
+// b2i is 1 for true, 0 for false: what turns a sampled grid's size
+// from one case to the next.
+func b2i(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 // checkFilletBeyond rounds plateBeyond's edge at size r and checks the
@@ -137,13 +155,19 @@ func checkFilletBeyond(t *testing.T, b beyondSide, hole, flat bool, r float64) {
 // plate's side at x = 6, 3 deep, away from the rod's fillet, or (near)
 // under it. The fillet is cut back by the side's plane as where the
 // side has none; the bore's mouth stays open. Refused before 2026-11-05
-// as running off the top.
+// as running off the top. The ordinary run drills the bore under the
+// fillet, make test-sweeps the one away from it too.
 func TestFilletPastSideWithHole(t *testing.T) {
 	t.Parallel()
 	for _, y := range []float64{10, 2} {
 		for _, flat := range []bool{false, true} {
-			if testing.Short() && (y != 2 || !flat) {
+			if testing.Short() && !sweep.Full() && (y != 2 || !flat) {
 				continue // the chamfer above the bore, a few seconds
+			}
+			// The far bore is TestFilletRodThroughPlate's 2.5 with a hole
+			// away from the blend.
+			if y == 10 && !sweep.Full() {
+				continue
 			}
 			what := map[bool]string{false: "fillet", true: "chamfer"}[flat]
 			t.Run(fmt.Sprintf("bore at %g/%s", y, what), func(t *testing.T) {
@@ -254,17 +278,23 @@ func ringSlanted(r float64, flat, down bool, k float64) float64 {
 // integral, leaning in by 0.4 to out by 1 (45°). Refused, as running
 // off the face: a rod's past sides leaning out by 1, whose planes run
 // on above the top into the rod (at x = 6 - (z - 4), through its axis
-// at z = 10), so that cutting back by them would cut the rod.
+// at z = 10), so that cutting back by them would cut the rod. The
+// ordinary run takes each lean with a rod's and a hole's fillet and
+// chamfer at one of the two sizes, turning, 16 of the 32 and a refusal
+// of each kind among them; make test-sweeps all of them.
 func TestFilletPastSlantedSides(t *testing.T) {
 	t.Parallel()
-	for _, k := range []float64{-0.4, 0.1, 0.5, 1} {
+	for i, k := range []float64{-0.4, 0.1, 0.5, 1} {
 		for _, hole := range []bool{false, true} {
 			for _, flat := range []bool{false, true} {
-				for _, r := range []float64{2.5, 3.5} {
+				for j, r := range []float64{2.5, 3.5} {
 					what := map[bool]string{false: "fillet", true: "chamfer"}[flat]
 					where := map[bool]string{false: "rod", true: "hole"}[hole]
-					if testing.Short() && (k != 0.5 || hole || flat || r != 2.5) {
+					if testing.Short() && !sweep.Full() && (k != 0.5 || hole || flat || r != 2.5) {
 						continue // a rod's fillet past sides leaning out
+					}
+					if !testing.Short() && !sweep.Full() && j != (i+b2i(hole)+b2i(flat))%2 {
+						continue
 					}
 					t.Run(fmt.Sprintf("lean %g/%s/%s %g", k, where, what, r), func(t *testing.T) {
 						t.Parallel()

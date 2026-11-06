@@ -8,6 +8,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -165,38 +166,41 @@ func TestShellRevolved(t *testing.T) {
 			[][2]geom.Vector{{v(0, 0, 10), v(0, 0, 1)}}, nil, 1,
 			math.Pi*25*10*0.95 - 9*(8*1.9*math.Pi-2*strip(4, 1)-0.9*math.Pi/2)},
 	}
-	for _, c := range cases {
-		sh, rev := turned(meridian(t, c.pts, c.arcs, tol), c.start, c.end, tol)
-		tp := build(t, sh)
-		var open []int
-		for _, o := range c.open {
-			for _, f := range facesOn(t, tp, o[0], o[1]) {
-				// A plane through the axis holds both ends of a half turn:
-				// only the end on the given point's side.
-				if o[1].Z == 0 && o[0].Magnitude() > 0 && tp.Vertices[tp.Start(tp.Loops[tp.Faces[f].Loops[0]].CoEdges[0])].P.Dot(o[0]) < -1e-9 {
-					continue
+	for _, c := range sweep.Pick(cases, 0) {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			sh, rev := turned(meridian(t, c.pts, c.arcs, tol), c.start, c.end, tol)
+			tp := build(t, sh)
+			var open []int
+			for _, o := range c.open {
+				for _, f := range facesOn(t, tp, o[0], o[1]) {
+					// A plane through the axis holds both ends of a half turn:
+					// only the end on the given point's side.
+					if o[1].Z == 0 && o[0].Magnitude() > 0 && tp.Vertices[tp.Start(tp.Loops[tp.Faces[f].Loops[0]].CoEdges[0])].P.Dot(o[0]) < -1e-9 {
+						return
+					}
+					open = append(open, f)
 				}
-				open = append(open, f)
 			}
-		}
-		for _, rz := range c.round {
-			for k := range 4 {
-				a := math.Pi/4 + float64(k)*math.Pi/2
-				f, d := tp.FaceAt(v(rz[0]*math.Cos(a), rz[0]*math.Sin(a), rz[1]))
-				if f < 0 || d > 1e-6 {
-					t.Fatalf("%s: no face at %v", c.name, rz)
+			for _, rz := range c.round {
+				for k := range 4 {
+					a := math.Pi/4 + float64(k)*math.Pi/2
+					f, d := tp.FaceAt(v(rz[0]*math.Cos(a), rz[0]*math.Sin(a), rz[1]))
+					if f < 0 || d > 1e-6 {
+						t.Fatalf("%s: no face at %v", c.name, rz)
+					}
+					open = append(open, f)
 				}
-				open = append(open, f)
 			}
-		}
-		out, err := topo.ShellRevolved(sh, rev, open, c.thick, 1<<30)
-		if err != nil {
-			t.Errorf("%s: %v", c.name, err)
-			continue
-		}
-		if got := sound(t, out); math.Abs(got-c.want) > 0.002*c.want {
-			t.Errorf("%s: volume %g, want %g", c.name, got, c.want)
-		}
+			out, err := topo.ShellRevolved(sh, rev, open, c.thick, 1<<30)
+			if err != nil {
+				t.Errorf("%s: %v", c.name, err)
+				return
+			}
+			if got := sound(t, out); math.Abs(got-c.want) > 0.002*c.want {
+				t.Errorf("%s: volume %g, want %g", c.name, got, c.want)
+			}
+		})
 	}
 }
 

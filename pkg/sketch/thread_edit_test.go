@@ -2,8 +2,10 @@ package sketch_test
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"slices"
+	"sync"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/check"
@@ -261,17 +263,27 @@ func TestThreadLengthExpression(t *testing.T) {
 // turned or bored part, from their meshes.
 func ridgesVolume(t *testing.T, sk *sketch.Sketch, hg core.HGroup) float64 {
 	t.Helper()
+	v, err := ridgesVolumeOf(sk, hg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return v
+}
+
+// ridgesVolumeOf is ridgesVolume, returning what is wrong with the
+// meshes as an error.
+func ridgesVolumeOf(sk *sketch.Sketch, hg core.HGroup) (float64, error) {
 	// The thread's groups: the blank, the turned part, the ridge's
 	// sketch and the helix.
 	turned, bad := meshStats(sk, sk.GroupOrder[sk.Group(hg).Order-2])
 	if bad != 0 {
-		t.Fatalf("turned part: %d naked or self-intersecting edges", bad)
+		return 0, fmt.Errorf("turned part: %d naked or self-intersecting edges", bad)
 	}
 	mesh, bad := meshStats(sk, hg)
 	if bad != 0 {
-		t.Fatalf("%d naked or self-intersecting edges", bad)
+		return 0, fmt.Errorf("%d naked or self-intersecting edges", bad)
 	}
-	return mesh.CalculateVolume() - turned.CalculateVolume()
+	return mesh.CalculateVolume() - turned.CalculateVolume(), nil
 }
 
 // ridgeSection is the cross-section of a ridge above the root, in a
@@ -319,6 +331,14 @@ func ridgeSection(p thread.Profile) (area, centroid float64) {
 	return math.Abs(a / 2), m / (3 * a)
 }
 
+// crestTol is the chord tolerance, in percent, TestThreadCrests makes
+// its threads at. The crest's arc is a fraction of a millimetre across,
+// so the chords miss part of what a shaped crest takes off; against the
+// standard crest made at the same tolerance the take comes within 8.4%
+// of the sections' at worst (2026-11-06), inside the 25% the test
+// allows, and 0.003 took twice the processor.
+const crestTol = 0.01
+
 // TestThreadCrests makes threads with truncated and rounded crests and
 // requires a sound solid with nothing to drag, of the volume the
 // shaped ridges sweep.
@@ -350,13 +370,28 @@ func TestThreadCrests(t *testing.T) {
 	if fixtures.RaceDetector {
 		cases = cases[:1]
 	}
+	// The ridges' volume of the same thread with the standard crest, the
+	// reference each case is measured against, made once for the cases
+	// that share it (the truncated and rounded M8 screw, and nut).
+	refs := map[string]func() (float64, error){}
+	for _, tc := range cases {
+		flat := tc
+		flat.name, flat.o.Crest = "", thread.CrestStandard
+		key := fmt.Sprintf("%+v", flat)
+		if refs[key] == nil {
+			refs[key] = sync.OnceValues(func() (float64, error) {
+				sk, _, res, err := flat.tryBuild(t, crestTol)
+				if err != nil {
+					return 0, err
+				}
+				return ridgesVolumeOf(sk, res.Group)
+			})
+		}
+	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			// The crest's arc is a fraction of a millimetre across: at the
-			// usual test tolerance its chords cut a fifth of a percent
-			// off the ridges.
-			sk, _, res := tc.build(t, 0.003)
+			sk, _, res := tc.build(t, crestTol)
 			if !res.Sound {
 				t.Error("the solid isn't sound")
 			}
@@ -387,10 +422,14 @@ func TestThreadCrests(t *testing.T) {
 			// the turned part miss, as much as a crest takes on the larger
 			// parts (1.7 mm³ of a 1-12 BUTT nut's ridges at 0.003%),
 			// cancels.
-			flatCase := tc
-			flatCase.o.Crest = thread.CrestStandard
-			fsk, _, fres := flatCase.build(t, 0.003)
-			got := ridgesVolume(t, fsk, fres.Group) - ridgesVolume(t, sk, res.Group)
+			flat := tc
+			flat.name, flat.o.Crest = "", thread.CrestStandard
+			ref, err := refs[fmt.Sprintf("%+v", flat)]()
+			if err != nil {
+				t.Fatalf("the standard crest: %v", err)
+			}
+			got := ref - ridgesVolume(t, sk, res.Group)
+			t.Logf("the crest takes %.5f off the ridges, want %.5f (%+.1f%%)", got, want, 100*(got/want-1))
 			if math.Abs(got-want) > 0.25*math.Abs(want) {
 				t.Errorf("the crest takes %.5f off the ridges, want %.5f", got, want)
 			}

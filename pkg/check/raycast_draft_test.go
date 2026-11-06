@@ -27,7 +27,7 @@ func TestOracleDraftedBlock(t *testing.T) {
 	area := func(z float64) float64 { s := z / 10 * x; return (20 - 2*s) * (10 - 2*s) }
 	want := 10.0 / 6 * (area(0) + 4*area(5) + area(10))
 	o := oracleOf(t, d)
-	if m := o.Measure(1e-4, 256); !near(m.Volume, want, 2e-3) {
+	if m := o.Measure(1e-3, 256); !near(m.Volume, want, 2e-3) {
 		t.Errorf("volume %g, want %g (spread %g at %d rays)", m.Volume, want, m.Spread(), m.Rays)
 	}
 	if iv := o.Probe(api.V(-5, 5, 9.99), api.V(1, 0, 0)); len(iv) != 1 || math.Abs(iv[0].From-5-x) > 1e-3 || math.Abs(iv[0].To-25+x) > 1e-3 {
@@ -73,7 +73,7 @@ func TestOracleDraftedRound(t *testing.T) {
 	frustum := func(r0, r1 float64) float64 { return math.Pi * 10 / 3 * (r0*r0 + r0*r1 + r1*r1) }
 	want := frustum(10, 10-x) - frustum(4, 4+x)
 	o := oracleOf(t, d)
-	if m := o.Measure(1e-4, 256); !near(m.Volume, want, 2e-3) {
+	if m := o.Measure(1e-3, 256); !near(m.Volume, want, 2e-3) {
 		t.Errorf("volume %g, want %g (spread %g at %d rays)", m.Volume, want, m.Spread(), m.Rays)
 	}
 	if o.Inside(api.V(4.1, 0, 9.9)) || !o.Inside(api.V(4.1, 0, 0.1)) || o.Inside(api.V(9.9, 0, 9.9)) {
@@ -127,7 +127,7 @@ func TestOracleDraftVariants(t *testing.T) {
 			}
 			kernel := g.Analyze().Check()
 			o := oracleOf(t, d)
-			if m := o.Measure(1e-4, 256); !near(m.Volume, kernel.Volume, 3e-3) {
+			if m := o.Measure(1e-3, 256); !near(m.Volume, kernel.Volume, 3e-3) {
 				t.Errorf("volume %g, the kernel's %g (spread %g at %d rays)", m.Volume, kernel.Volume, m.Spread(), m.Rays)
 			}
 			if diffs := o.Diff(meshOf(d), 24, 0.05); len(diffs) != 0 {

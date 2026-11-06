@@ -5,14 +5,17 @@
 // "Definition of done"), and a sweep over it fails the test.
 //
 // By default a sweep runs an even sample of its grid, so that it fits
-// in the ordinary test run, and under the race detector a fifth of that
-// (fixtures.Thin); TELESAPR_SWEEP=1 runs all of it.
+// in the ordinary test run, and under the race detector and go test
+// -short a fifth of that (Thin); TELESAPR_SWEEP=1 (make test-sweeps)
+// runs all of it. Pick and Without make the same choice for a table of
+// cases or a list of fixtures.
 package sweep
 
 import (
 	"fmt"
 	"math"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -127,6 +130,45 @@ func (g Grid) At(i int) Point {
 // TELESAPR_SWEEP is set.
 func Full() bool { return os.Getenv("TELESAPR_SWEEP") != "" }
 
+// Thin reports whether a sweep takes a fifth of its sample: in a run
+// that is not full, under the race detector, which is about eight
+// times slower, and under go test -short, the run before every commit.
+func Thin() bool {
+	return !Full() && (fixtures.RaceDetector || testing.Short())
+}
+
+// Pick is the cases of a table, such as an oracle's lines, that a run
+// takes: all of them in a full sweep, otherwise n of them spread over
+// the table as a grid's sample is (all when n is 0 or at least
+// len(xs)), in their order, and a fifth of those when Thin.
+func Pick[T any](xs []T, n int) []T {
+	if Full() || n <= 0 {
+		n = len(xs)
+	}
+	ks := spread(len(xs), n)
+	slices.Sort(ks)
+	if Thin() {
+		ks = fixtures.Thin(ks)
+	}
+	out := make([]T, len(ks))
+	for i, k := range ks {
+		out[i] = xs[k]
+	}
+	return out
+}
+
+// Without is xs less those out says to leave out, in a run that is not
+// full, and all of xs in a full sweep: for cases that other tests
+// already cover, such as the thread variants among the fixtures
+// (fixtures.ThreadVariant), which a test over every fixture regenerates
+// for nothing but the time.
+func Without[T any](xs []T, out func(T) bool) []T {
+	if Full() {
+		return xs
+	}
+	return slices.DeleteFunc(slices.Clone(xs), out)
+}
+
 // Failure is a point the function failed on, and why.
 type Failure struct {
 	Point Point
@@ -167,7 +209,7 @@ func (r Report) String() string {
 // that runs on several goroutines rather than every point, it takes
 // every fifth point of those (fixtures.Thin).
 func (g Grid) Run(fn func(p Point) error) Report {
-	return g.run(Full(), !Full() && fixtures.RaceDetector, fn)
+	return g.run(Full(), Thin(), fn)
 }
 
 // RunAll calls fn on every point of the grid.
@@ -185,20 +227,11 @@ func (g Grid) run(full, thin bool, fn func(p Point) error) Report {
 		r.MaxFailRate = g.SampleMaxFailRate
 	}
 	start := time.Now()
-	n, stride := size, 1
+	n := size
 	if !r.Full {
-		// A stride coprime with the size visits n distinct points
-		// spread over every axis; one that divides it would keep to a
-		// few values of the faster axes.
-		n, stride = g.Sample, max(1, size/g.Sample)
-		for gcd(stride, size) != 1 {
-			stride++
-		}
+		n = g.Sample
 	}
-	ks := make([]int, n)
-	for k := range n {
-		ks[k] = k * stride % size
-	}
+	ks := spread(size, n)
 	if thin {
 		ks = fixtures.Thin(ks)
 	}
@@ -223,6 +256,28 @@ func (g Grid) run(full, thin bool, fn func(p Point) error) Report {
 	r.Runs = len(ks)
 	r.Elapsed = time.Since(start)
 	return r
+}
+
+// spread is n of the indices 0 to size-1, all of them when n >= size,
+// in the order a stride coprime with size visits them: a stride that
+// divided size would keep to a few values of a grid's faster axes, or
+// of a table sorted by several columns.
+func spread(size, n int) []int {
+	if n >= size {
+		n = size
+	}
+	stride := 1
+	if n < size {
+		stride = max(1, size/n)
+		for gcd(stride, size) != 1 {
+			stride++
+		}
+	}
+	ks := make([]int, n)
+	for k := range n {
+		ks[k] = k * stride % size
+	}
+	return ks
 }
 
 func gcd(a, b int) int {

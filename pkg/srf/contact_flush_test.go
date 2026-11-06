@@ -3,6 +3,7 @@ package srf
 import (
 	"fmt"
 	"math"
+	"sync"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -127,6 +128,12 @@ func endBand(y, top, sag float64, flip bool, tol Tolerance) *SShell {
 // its trims run round as one loop through the point twice; the mesh
 // closes, and pkg/topo splits the loop into the two faces
 // (TestPinchedLoopSplit).
+//
+// The ordinary run takes 12 of the 40 points: every top, both values of
+// each other axis, and the pinch (top 21, sag -1); make test-sweeps all
+// 40. Each result is meshed once (soundVolume), and the cone's volume
+// once for each way of making it: at this chord the meshing, not the
+// Booleans, was two thirds of the time.
 func TestBandEndOnCone(t *testing.T) {
 	t.Parallel()
 	tol := Tol(0.0008544921875, 200)
@@ -138,11 +145,19 @@ func TestBandEndOnCone(t *testing.T) {
 			sweep.Bools("quarters"),
 		},
 		MaxFailRate: 0,
+		Sample:      12,
 		Parallel:    true,
+	}
+	// A Boolean writes its operands' classifying BSPs, so each point
+	// makes its own cone and band; only the cone's volume is shared.
+	coneVolume := map[bool]func() float64{}
+	for _, q := range []bool{false, true} {
+		coneVolume[q] = sync.OnceValue(func() float64 { return shellVolume(lathedFrustum(q, tol)) })
 	}
 	grid.Run(func(p sweep.Point) error {
 		cone := lathedFrustum(p.Bool("quarters"), tol)
 		band := endBand(3, p.Float("top"), p.Float("sag"), p.Bool("flip"), tol)
+		bv := shellVolume(band)
 		var vol [4]float64
 		for k, op := range []SurfaceCombineAs{SurfaceUnion, SurfaceInter, SurfaceDiff, SurfaceDiff} {
 			a, b := cone, band
@@ -151,15 +166,16 @@ func TestBandEndOnCone(t *testing.T) {
 			}
 			out := SShell{Tol: tol}
 			out.MakeFromBoolean(a, b, op)
-			if out.BooleanFailed || !meshIsSound(&out) {
+			v, sound := soundVolume(&out)
+			if out.BooleanFailed || !sound {
 				return fmt.Errorf("%v: %w", op, errUnsound(out.BooleanFailed))
 			}
-			vol[k] = shellVolume(&out)
+			vol[k] = v
 		}
 		// The cone's side is meshed by other chords where the band cuts
 		// it, which moves its volume by up to a few cubic millimetres; a
 		// lost piece of either solid is tens.
-		cv, bv := shellVolume(cone), shellVolume(band)
+		cv := coneVolume[p.Bool("quarters")]()
 		for _, c := range []struct {
 			name      string
 			got, want float64

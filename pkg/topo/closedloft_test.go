@@ -48,7 +48,9 @@ func TestClosedLoft(t *testing.T) {
 	tol := srf.Tol(0.005, 100)
 	col := core.NewRGBA(100, 100, 100, 255)
 	const big, r = 20.0, 4.0
-	for _, c := range []struct {
+	// Every case in the ordinary run, a fifth under -short and the race
+	// detector (sweep.Pick).
+	for _, c := range sweep.Pick([]struct {
 		name  string
 		n     int
 		loop  func(i int) []srf.SBezier
@@ -61,7 +63,7 @@ func TestClosedLoft(t *testing.T) {
 		{"four profiles", 4, func(int) []srf.SBezier { return circle(r, 0, 0) }, 2 * math.Pi * math.Pi * big * r * r, 0.002},
 		{"three profiles", 3, func(int) []srf.SBezier { return circle(r, 0, 0) }, 2 * math.Pi * math.Pi * big * r * r, 0.002},
 		{"square ring of four", 4, func(int) []srf.SBezier { return polygonAt(4, r, 0, 0, 0, math.Pi/4) }, 2 * r * r * 2 * math.Pi * big, 0.002},
-	} {
+	}, 0) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			loops := ringProfiles(c.n, big, c.loop)
@@ -144,7 +146,11 @@ func TestClosedLoftRefusals(t *testing.T) {
 // between their ends, and requires sound solids; a torus of eight or
 // more and a stack of one circle moved have the volumes Pappus and
 // Cavalieri give. The rate
-// allowed was fixed at none before either was written.
+// allowed was fixed at none before either was written. The points whose
+// volume is not checked, swelling or not of circles, are lofted at a
+// chord tolerance of 0.005% in the ordinary run, at 0.002% as the rest
+// under TELESAPR_SWEEP=1: their soundness is what is asked, and the
+// finer tolerance doubled the test's 380 CPU-s.
 func TestClosedLoftSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep of closed lofts and lofts held square to a middle profile")
@@ -169,6 +175,10 @@ func TestClosedLoftSweep(t *testing.T) {
 			// of four and five only, half its points: eight and twelve
 			// loft on the same goroutines, in about the same time each.
 			return nil
+		}
+		tol := tol
+		if !sweep.Full() && (p.Float("swell") != 0 || p.String("profile") != "circle") {
+			tol = srf.Tol(0.005, 100)
 		}
 		size := func(i int) float64 { return 4 * (1 + p.Float("swell")*float64(i%2)) }
 		shape := func(i int, z float64) []srf.SBezier {
@@ -274,7 +284,9 @@ func TestClosedLoftHeld(t *testing.T) {
 	col := core.NewRGBA(100, 100, 100, 255)
 	const n, big, r = 8, 20.0, 4.0
 	want := 2 * math.Pi * math.Pi * big * r * r
-	for _, c := range []struct {
+	// Every case in the ordinary run, a fifth under -short and the race
+	// detector (sweep.Pick).
+	for _, c := range sweep.Pick([]struct {
 		name  string
 		held  []float64
 		allow float64
@@ -285,7 +297,7 @@ func TestClosedLoftHeld(t *testing.T) {
 		{"the first and the last", []float64{0.8, 0, 0, 0, 0, 0, 0, 1.2}, 0.003},
 		{"two", []float64{0, 0.8, 0, 0, 0, 1.2}, 0.003},
 		{"every one", []float64{1, 1, 1, 1, 1, 1, 1, 1}, 0.006},
-	} {
+	}, 0) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			loops := ringProfiles(n, big, func(int) []srf.SBezier { return circle(r, 0, 0) })
@@ -403,7 +415,9 @@ func TestClosedLoftOnPaths(t *testing.T) {
 	t.Parallel()
 	tol := srf.Tol(0.002, 100)
 	col := core.NewRGBA(1, 1, 1, 255)
-	for _, c := range []struct {
+	// Every case in the ordinary run, a fifth under -short and the race
+	// detector (sweep.Pick).
+	for _, c := range sweep.Pick([]struct {
 		name  string
 		n     int
 		at    func(a float64) (geom.Vector, geom.Vector)
@@ -415,7 +429,7 @@ func TestClosedLoftOnPaths(t *testing.T) {
 		{"saddle", 6, func(a float64) (geom.Vector, geom.Vector) {
 			return v(25*math.Cos(a), 25*math.Sin(a), 6*math.Sin(2*a)), v(-25*math.Sin(a), 25*math.Cos(a), 12*math.Cos(2*a))
 		}, 0.012},
-	} {
+	}, 0) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			sh, err := topo.MakeClosedLoft(pathProfiles(c.n, 4, c.at), col, 9, tol)

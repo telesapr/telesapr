@@ -44,3 +44,20 @@ func TestSample(t *testing.T) {
 		t.Errorf("not thinned %v", got)
 	}
 }
+
+func TestThreadVariant(t *testing.T) {
+	t.Parallel()
+	for rel, want := range map[string]bool{
+		"thread/screw_m8.tlspr":        true,
+		"thread/cosmetic_nut_m8.tlspr": false,
+		"ui/thread_bolt.tlspr":         true,
+		"ui/thread_pair.tlspr":         false,
+		"tlspr/v1/thread.tlspr":        false,
+		"solid/fillet-box.tlspr":       false,
+		"tlspr/golden/thread/x.tlspr":  false,
+	} {
+		if got := ThreadVariant(rel); got != want {
+			t.Errorf("%s: %t", rel, got)
+		}
+	}
+}

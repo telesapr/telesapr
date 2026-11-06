@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 )
 
 // rodThroughPlate is a plate 12 wide, 30 long and 4 thick with a rod of
@@ -64,24 +64,32 @@ func ringPastSides(r float64, flat, down bool) float64 {
 // are made as 2. It was made open (69 naked edges at a fillet of 2, 256
 // past it) until 2026-11-03, then refused within a hundredth of 2 until
 // 2026-11-04. A fillet running only just past the sides may still be
-// refused (TestFilletRodJustPastSides).
+// refused (TestFilletRodJustPastSides). A fillet of 2.5, cut at the
+// size asked for, says nothing on the group. Under -short the fillets
+// of 2 and 2.0001 and the chamfers of 2 and 2.5: six seconds a blend.
 func TestFilletRodThroughPlate(t *testing.T) {
 	t.Parallel()
 	for _, flat := range []bool{false, true} {
 		for _, r := range []float64{1, 1.9, 1.99, 1.999, 1.9999, 2, 2.00001, 2.0001, 2.005, 2.01, 2.1, 2.5, 3.5} {
+			if testing.Short() && !sweep.Full() && r != 2 && (flat || r != 2.0001) && (!flat || r != 2.5) {
+				continue
+			}
 			what := "fillet"
 			if flat {
 				what = "chamfer"
 			}
 			t.Run(fmt.Sprintf("%s %g", what, r), func(t *testing.T) {
 				t.Parallel()
-				vol, msg := rodPlateRounded(r, flat)
+				vol, msg, notice := rodPlateRoundedNote(r, flat)
 				if msg != "" {
 					t.Fatalf("not made: %s", msg)
 				}
 				want := rodPlateVolume + ringPastSides(r, flat, false)
 				if rel := math.Abs(vol-want) / want; rel > 5e-4 {
 					t.Errorf("volume %.4f, want %.4f (off by %.1e)", vol, want, rel)
+				}
+				if r == 2.5 && notice != "" {
+					t.Errorf("notice %q, want none", notice)
 				}
 			})
 		}
@@ -91,15 +99,9 @@ func TestFilletRodThroughPlate(t *testing.T) {
 // rodPlateVolume is rodThroughPlate's volume.
 const rodPlateVolume = 12.0*30*4 + math.Pi*16*16 - math.Pi*16*4
 
-// rodPlateRounded is the volume of rodThroughPlate with the fillet, or
-// chamfer, of size r round the rod at the plate's top, at a chord
-// tolerance of 0.003; or why it was not made.
-func rodPlateRounded(r float64, flat bool) (vol float64, msg string) {
-	vol, msg, _ = rodPlateRoundedNote(r, flat)
-	return vol, msg
-}
-
-// rodPlateRoundedNote is rodPlateRounded and the group's Note.
+// rodPlateRoundedNote is the volume of rodThroughPlate with the fillet,
+// or chamfer, of size r round the rod at the plate's top, at a chord
+// tolerance of 0.003, and the group's Note; or why it was not made.
 func rodPlateRoundedNote(r float64, flat bool) (vol float64, msg, notice string) {
 	d := New()
 	d.Edit.SetChordTolerance(0.003)
@@ -137,17 +139,19 @@ func rodPlateRoundedNote(r float64, flat bool) (vol float64, msg, notice string)
 // clipper. Since 2026-11-05 each is made at the nearest size the kernel
 // can cut that moves its surface by no more than the chord tolerance
 // (nearSize): all 91, sound, within the volume of the size asked for.
+// Of the 31 sizes from 2 to 2.003 the ordinary run takes 7 spread over
+// the band, a fifth of those under the race detector (sweep.Pick);
+// make test-sweeps all of them.
 func TestFilletRodJustPastSides(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("a fillet per size across the band; a minute or more")
 	}
-	n := 31
-	if fixtures.RaceDetector {
-		n = 3
+	var sizes []float64
+	for i := range 31 {
+		sizes = append(sizes, 2+0.0001*float64(i))
 	}
-	for i := range n {
-		r := 2 + 0.0001*float64(i*30/(n-1))
+	for _, r := range sweep.Pick(sizes, 7) {
 		t.Run(fmt.Sprintf("%.4f", r), func(t *testing.T) {
 			t.Parallel()
 			vol, msg, notice := rodPlateRoundedNote(r, false)
@@ -169,7 +173,7 @@ func TestFilletRodJustPastSides(t *testing.T) {
 
 // A fillet just past the sides that the kernel can't cut at the size
 // asked for says on the group what size it was made at; one it can cut
-// says nothing.
+// says nothing (TestFilletRodThroughPlate's of 2.5).
 func TestFilletRodJustPastSidesNote(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -181,9 +185,6 @@ func TestFilletRodJustPastSidesNote(t *testing.T) {
 	}
 	if !strings.HasPrefix(notice, "made at radius ") || !strings.Contains(notice, "the nearest the kernel can cut to 2.001 mm") {
 		t.Errorf("notice %q, want the radius made and 2.001 asked for", notice)
-	}
-	if _, msg, notice := rodPlateRoundedNote(2.5, false); msg != "" || notice != "" {
-		t.Errorf("a fillet of 2.5: problem %q, notice %q, want neither", msg, notice)
 	}
 }
 
@@ -223,11 +224,14 @@ func TestFilletRodJustPastSidesFine(t *testing.T) {
 
 // A hole's rim rounded where the plate's sides come closer than the
 // fillet's foot: the rounding cut back by the sides' planes, as the
-// rod's is.
+// rod's is. Under -short the fillet of 2.5.
 func TestFilletHoleRimPastSides(t *testing.T) {
 	t.Parallel()
 	plate := 12.0*30*4 - math.Pi*16*4
 	for _, r := range []float64{1.5, 2.5, 3.5} {
+		if testing.Short() && !sweep.Full() && r != 2.5 {
+			continue
+		}
 		t.Run(fmt.Sprint(r), func(t *testing.T) {
 			t.Parallel()
 			d := New()

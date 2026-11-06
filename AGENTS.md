@@ -80,8 +80,10 @@ three reach the same `pkg/sketch` entry point, and the documents describe it as 
 - Scripting: a method on `pkg/script/api` per feature with a doc comment (`help()` and
   `docs.json` come from it), `make generate` run and `make generate-check` passing, an example
   under `examples/scripts` that a test executes.
-- Three tiers. `make test-fast` (`go test -short`) is the check before a commit: a test that
-  takes more than a few seconds skips itself under `testing.Short()`, saying what it is.
+- Three tiers. `make test-fast` (`go test -short`, without the `HEAVY` tests) is the check
+  before a commit, under a minute on a workstation: a test that takes more than a few seconds
+  of processor skips itself under `testing.Short()`, saying what it is, or keeps a case or two.
+  `make test-cost` lists what each of its tests costs and fails past a limit.
   `make test` runs every test but the heavy ones, `make test-heavy` only those, and `make ci` is
   what the GitHub workflow runs on `master` (checks, test, test-heavy, lint, vuln; the
   workflow gives `test` and `test-heavy` a runner each) and, after them, the race detector over
@@ -92,12 +94,24 @@ three reach the same `pkg/sketch` entry point, and the documents describe it as 
   `master`, runs what is too slow or costs too many minutes for a push: `make coverage` (the 85%
   rule, several times slower than `make test`), `make test-sweeps`,
   `make fuzz`, `make bench`, govulncheck as a failing job, the race detector over `pkg/ui`
-  and `pkg/script/api` and over the heavy tests (`make test-race-heavy`), and the quick tests on Windows and macOS. `make lint-new` lints what a branch changed.
+  and `pkg/script/api` and over the heavy tests (`make test-race-heavy`), and the quick tests on
+  Windows and macOS; it is switched off in the repository's settings, so `make test-sweeps` is
+  run by hand, after a change to what a sweep or a sampled table covers. `make lint-new` lints
+  what a branch changed.
+- A grid of cases (sizes × angles × shapes, …) is a `sweep.Grid` with a `Sample`, and a table of
+  cases or oracle lines goes through `sweep.Pick`: the ordinary run takes an even sample, `-short`
+  and the race detector a fifth of it (`sweep.Thin`), `make test-sweeps` all of it. Cases other
+  tests already cover are left out of the ordinary run with `sweep.Without` (a test over every
+  fixture keeps a few of the thread variants, `fixtures.ThreadVariant`). A table that is the
+  mirror image of itself is checked on one case per mirror pair. Cases are parallel subtests, not
+  a serial loop, unless they must run in order; a base solid all cases share is built once.
 - `scripts/go-test.sh` runs the tests in one `go test`; every test target goes through it, and
   `TESTS=light|heavy|all` picks whether its heaviest tests (`HEAVY`) are left out, run alone or
-  run with the rest. A new test of a minute or more goes into `HEAVY`, which takes it out of
-  `make test`. A test whose package's tests are parallel and that cannot be, because it sets
-  something of the process's, says so in a comment.
+  run with the rest. A new test of a minute or more of processor goes into `HEAVY`, which takes
+  it out of `make test` and `make test-fast`; a name in `HEAVY` is defined in one package only
+  (`TestHeavyNamesUnique`), since `-run` and `-skip` match it in every package. A test whose
+  package's tests are parallel and that cannot be, because it sets something of the process's,
+  says so in a comment.
 - On Windows and macOS the workflows run `scripts/test-os.sh`: the quick tests without those
   `scripts/os-skip/<GOOS>.txt` lists, each with why it fails there. A fix takes its test off the
   list; a new test that fails there for a reason of the platform goes on it, with the reason.
@@ -110,7 +124,7 @@ three reach the same `pkg/sketch` entry point, and the documents describe it as 
 |---|---|
 | `TELESAPR_GUI_TESTS=1` | Runs the tests that open windows (`pkg/platform/tkgui`, `pkg/render/gl`); `make test-gui` sets it under Xvfb. They are skipped without it, and without `DISPLAY`. |
 | `TELESAPR_REGEN_GOLDEN=1` | The golden tests rewrite their goldens instead of comparing; set by `scripts/regen-golden.sh`. |
-| `TELESAPR_SWEEP=1` | Robustness sweeps run their whole grid instead of a sample (`pkg/internal/sweep`). |
+| `TELESAPR_SWEEP=1` | Robustness sweeps run their whole grid instead of a sample, and sampled tables and fixture lists all their cases (`pkg/internal/sweep`); set by `make test-sweeps`. |
 | `TELESAPR_STEP_CORPUS=dir` | `TestExternalCorpus` reads the STEP files `external.txt` lists from `dir`. |
 | `TELESAPR_STEP_OUT=dir`, `TELESAPR_KEEP_STEP=1`, `TELESAPR_RENDER_DIR=dir`, `TELESAPR_PATHEQUIV_DIR=dir`, `TELESAPR_GL_DUMP=dir` | Tests in `pkg/ui` and `pkg/render/gl` keep what they produced there, for a diff. |
 | `TELESAPR_DOC_WINDOW_SHOTS=dir` | `TestDocWindowShots` (`pkg/ui`) writes the guide's pictures of the real window's menus and dialogs there; it needs `DISPLAY`, and `scripts/regen-doc-window-images.sh` gives it an Xvfb of its own. Skipped without it, `make test` included. |

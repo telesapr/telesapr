@@ -146,7 +146,10 @@ committed; see Traps).
   of its trim points has as many triangles either way.
 - **Result.** `TestFilletRibAllOverOracleCDT` (the oracle test with the CDT on every curved face)
   passes all 24 cases: no self-intersecting or naked edge, the volumes and the balls' heights
-  within the ear clipper's allowances. It is in `HEAVY` and skipped under the race detector.
+  within the ear clipper's allowances. It is in `HEAVY`. Since the CDT became the default it is
+  the main test of the rib (12 of the 24 rows unless `TELESAPR_SWEEP=1`, one under `-short` and the
+  race detector), and the ear clipper's, then `TestFilletRibAllOverOracle`, is
+  `TestFilletRibAllOverOracleEarClip` (4 rows, all under `TELESAPR_SWEEP=1`).
 - **Cost under the CDT, beyond the mesh.** In a case of radius 0.5, a third of the time is the
   fillet's own check of its result (`topo.unsound`: `mendCrossings` and the edge search over
   some 120 000 triangles), which every fillet pays at regeneration once the CDT is the default.

@@ -5,6 +5,8 @@ import (
 	"math"
 	"runtime"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 )
 
 // twoArcPath sketches, in the ZX plane, an arc of radius 15 from the origin
@@ -33,20 +35,24 @@ func twoArcPath(d *Doc, sgn, sgn2, turn1, turn2 float64) (Entity, Entity) {
 // problem on the group or is refused with an error, never a runtime panic
 // (two arcs alike about the corner put the cut of a sweep crossing itself
 // exactly on the corner, and the stretch after it indexed a piece at -1).
+// Side by side; under -short the four bends at 90 degrees, flat.
 func TestSweepTwoArcsAboutCorner(t *testing.T) {
 	t.Parallel()
 	for _, sgn := range []float64{1, -1} {
 		for _, sgn2 := range []float64{1, -1} {
 			for _, turn := range []float64{30, 60, 90} {
 				for _, twist := range []float64{0, 90} {
-					name := fmt.Sprintf("sgn %v sgn2 %v turn %v twist %v", sgn, sgn2, turn, twist)
-					func() {
+					if testing.Short() && !sweep.Full() && (turn != 90 || twist != 0) {
+						continue
+					}
+					t.Run(fmt.Sprintf("sgn %v sgn2 %v turn %v twist %v", sgn, sgn2, turn, twist), func(t *testing.T) {
+						t.Parallel()
 						defer func() {
 							if r := recover(); r != nil {
 								if _, ok := r.(runtime.Error); ok {
-									t.Errorf("%s: %v", name, r)
+									t.Error(r)
 								} else if _, ok := r.(error); !ok {
-									t.Errorf("%s: panic %v", name, r)
+									t.Errorf("panic %v", r)
 								}
 							}
 						}()
@@ -58,9 +64,9 @@ func TestSweepTwoArcsAboutCorner(t *testing.T) {
 						}
 						c := g.Analyze().Check()
 						if p := g.Problem(); p == "" && !c.Sound() {
-							t.Errorf("%s: unsound with no problem: %s", name, c.Summary())
+							t.Errorf("unsound with no problem: %s", c.Summary())
 						}
-					}()
+					})
 				}
 			}
 		}

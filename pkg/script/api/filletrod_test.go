@@ -1,10 +1,12 @@
 package api
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 )
 
 // plateOnRod is a rod of radius 8 along x, 30 long, with a plate 6 thick
@@ -29,7 +31,10 @@ func plateOnRod(d *Doc, l float64) SolidEdge {
 // its foot, at chord tolerances of 0.002% to 0.005% (radii of 1.9 and
 // 2.1 were sound). A curved face's sliver makes it a candidate for the
 // constrained Delaunay mesher's mending (srf's earMeshSlivers), and each
-// is sound. Under -short, two of the cases that crossed.
+// is sound. Under -short and the race detector, two of the cases that
+// crossed; in the ordinary run those and four more, every length,
+// tolerance and segment count twice or more, side by side; make
+// test-sweeps all eighteen.
 func TestFilletFootAlongRodRow(t *testing.T) {
 	t.Parallel()
 	type tc struct {
@@ -37,9 +42,8 @@ func TestFilletFootAlongRodRow(t *testing.T) {
 		segs   int
 	}
 	cases := []tc{{6, 0.003, 20}, {2, 0.005, 20}}
-	if !testing.Short() && !fixtures.RaceDetector {
-		// Under the race detector the short run's two: the eighteen took
-		// eleven minutes there (2026-11-04).
+	switch {
+	case sweep.Full():
 		cases = cases[:0]
 		for _, l := range []float64{2, 6, 10} {
 			for _, tol := range []float64{0.002, 0.003, 0.005} {
@@ -48,18 +52,24 @@ func TestFilletFootAlongRodRow(t *testing.T) {
 				}
 			}
 		}
+	case !testing.Short() && !fixtures.RaceDetector:
+		// Under the race detector the short run's two: the eighteen took
+		// eleven minutes there (2026-11-04).
+		cases = append(cases, tc{10, 0.002, 200}, tc{2, 0.002, 200}, tc{6, 0.005, 200}, tc{10, 0.003, 20})
 	}
 	for _, c := range cases {
-		d := New()
-		d.Edit.SetChordTolerance(c.tol)
-		d.Edit.SetMaxSegments(c.segs)
-		g := d.Features.FilletSolid([]SolidEdge{plateOnRod(d, c.l)}, 2, "")
-		if p := g.Problem(); p != "" {
-			t.Errorf("plate %g long, chord %g%%, %d segments: %s", c.l, c.tol, c.segs, p)
-			continue
-		}
-		if r := g.Analyze().Check(); !r.Sound() {
-			t.Errorf("plate %g long, chord %g%%, %d segments: %s", c.l, c.tol, c.segs, r.Summary())
-		}
+		t.Run(fmt.Sprintf("plate %g long, chord %g%%, %d segments", c.l, c.tol, c.segs), func(t *testing.T) {
+			t.Parallel()
+			d := New()
+			d.Edit.SetChordTolerance(c.tol)
+			d.Edit.SetMaxSegments(c.segs)
+			g := d.Features.FilletSolid([]SolidEdge{plateOnRod(d, c.l)}, 2, "")
+			if p := g.Problem(); p != "" {
+				t.Fatal(p)
+			}
+			if r := g.Analyze().Check(); !r.Sound() {
+				t.Error(r.Summary())
+			}
+		})
 	}
 }

@@ -22,10 +22,11 @@ func sweepCheck(t *testing.T, name string, sbls *SBezierLoopSet, steps []SweepSt
 	t.Helper()
 	s := SShell{Tol: tol}
 	s.MakeFromSweepOf(sbls, steps, core.RGBA{}, 0, 0)
-	if !meshIsSound(&s) {
+	v, sound := soundVolume(&s)
+	if !sound {
 		t.Errorf("%s: the sweep is not watertight", name)
 	}
-	if v := shellVolume(&s); math.Abs(v-want) > 1e-3*want {
+	if math.Abs(v-want) > 1e-3*want {
 		t.Errorf("%s: volume %g, want %g", name, v, want)
 	}
 	return &s

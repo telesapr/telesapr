@@ -1,6 +1,7 @@
 package sketch_test
 
 import (
+	"fmt"
 	"math"
 	"path/filepath"
 	"strings"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
@@ -310,55 +312,68 @@ func spandrelLoss(rad, r float64, hole bool) float64 {
 }
 
 // A cylinder's top circle rounded and chamfered, by its entity and by
-// one of its solid edges, through the groups; the loss by Pappus.
+// one of its solid edges, through the groups; the loss by Pappus. By
+// name picks the same edge, so the ordinary run rounds it by its entity
+// and chamfers it by its name, and make test-sweeps does all four.
 func TestFilletCircle(t *testing.T) {
 	t.Parallel()
 	byNames := []bool{false, true}
 	if fixtures.RaceDetector {
-		// Minutes a case there; by name picks the same edge.
+		// Minutes a case there.
 		byNames = byNames[:1]
 	}
 	for _, flat := range []bool{false, true} {
 		for _, byName := range byNames {
-			d := api.New()
-			d.Edit.SetChordTolerance(0.005)
-			d.Sketch.Circle(api.V(0, 0, 0), 5)
-			ex := d.Features.Extrude(10, "")
-			before := ex.Analyze().Check().Volume
-			step(d)
-			saveBefore := saved(t, d)
-			var g api.Group
-			switch {
-			case flat && byName:
-				g = d.Features.ChamferSolid([]api.SolidEdge{ex.Solid().EdgeAt(api.V(5, 0, 10))}, 2, "")
-			case flat:
-				g = d.Features.Chamfer([]api.Entity{circleOf(t, ex, 10)}, 2, "")
-			case byName:
-				g = d.Features.FilletSolid([]api.SolidEdge{ex.Solid().EdgeAt(api.V(5, 0, 10))}, 2, "")
-			default:
-				g = d.Features.Fillet([]api.Entity{circleOf(t, ex, 10)}, 2, "")
+			if flat != byName && !sweep.Full() && !fixtures.RaceDetector {
+				continue
 			}
-			if p := g.Problem(); p != "" {
-				t.Fatalf("flat %v by name %v: %s", flat, byName, p)
-			}
-			r := g.Analyze().Check()
-			want := spandrelLoss(5, 2, false)
-			if flat {
-				want = 2 * 2 / 2.0 * 2 * math.Pi * (5 - 2/3.0)
-			}
-			if !r.Sound() || math.Abs(before-r.Volume-want) > 0.02*want {
-				t.Fatalf("flat %v by name %v: %s, took %g, want %g", flat, byName, r.String(), before-r.Volume, want)
-			}
-			undoRedo(t, d, saveBefore)
-			// A reopened file meshes at the default tolerance.
-			d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
-			d.Edit.Regen()
-			r = g.Analyze().Check()
-			back := roundTrip(t, d)
-			if br := back.Group(g.Name()).Analyze().Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
-				t.Fatalf("flat %v by name %v reopened: %s", flat, byName, br.String())
-			}
+			t.Run(fmt.Sprintf("flat %v by name %v", flat, byName), func(t *testing.T) {
+				t.Parallel()
+				filletCircle(t, flat, byName)
+			})
 		}
+	}
+}
+
+// filletCircle is a case of TestFilletCircle.
+func filletCircle(t *testing.T, flat, byName bool) {
+	d := api.New()
+	d.Edit.SetChordTolerance(0.005)
+	d.Sketch.Circle(api.V(0, 0, 0), 5)
+	ex := d.Features.Extrude(10, "")
+	before := ex.Analyze().Check().Volume
+	step(d)
+	saveBefore := saved(t, d)
+	var g api.Group
+	switch {
+	case flat && byName:
+		g = d.Features.ChamferSolid([]api.SolidEdge{ex.Solid().EdgeAt(api.V(5, 0, 10))}, 2, "")
+	case flat:
+		g = d.Features.Chamfer([]api.Entity{circleOf(t, ex, 10)}, 2, "")
+	case byName:
+		g = d.Features.FilletSolid([]api.SolidEdge{ex.Solid().EdgeAt(api.V(5, 0, 10))}, 2, "")
+	default:
+		g = d.Features.Fillet([]api.Entity{circleOf(t, ex, 10)}, 2, "")
+	}
+	if p := g.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	r := g.Analyze().Check()
+	want := spandrelLoss(5, 2, false)
+	if flat {
+		want = 2 * 2 / 2.0 * 2 * math.Pi * (5 - 2/3.0)
+	}
+	if !r.Sound() || math.Abs(before-r.Volume-want) > 0.02*want {
+		t.Fatalf("%s, took %g, want %g", r.String(), before-r.Volume, want)
+	}
+	undoRedo(t, d, saveBefore)
+	// A reopened file meshes at the default tolerance.
+	d.With(func(sk *sketch.Sketch) { sk.ChordTolPct = 0 })
+	d.Edit.Regen()
+	r = g.Analyze().Check()
+	back := roundTrip(t, d)
+	if br := back.Group(g.Name()).Analyze().Check(); !br.Sound() || math.Abs(br.Volume-r.Volume) > 1e-6*r.Volume {
+		t.Fatalf("reopened: %s", br.String())
 	}
 }
 
@@ -547,21 +562,23 @@ func TestFilletRibFoot(t *testing.T) {
 		t.Fatal(p)
 	}
 	r := f.Analyze().Check()
-	if fixtures.RaceDetector {
+	if fixtures.RaceDetector || testing.Short() {
 		// The sides' and the ends' fillets alone, to measure the corners
-		// by, take three more minutes there and round on the same
-		// goroutines.
+		// by, take three more minutes under the race detector and round
+		// on the same goroutines, and two thirds of the test's processor
+		// under -short.
 		if !r.Sound() {
 			t.Fatalf("%s", r.String())
 		}
 	} else {
-		corners := r.Volume - volume(true, false) - volume(false, true) + bare
+		ends := volume(false, true)
+		corners := r.Volume - volume(true, false) - ends + bare
 		if want := 4 * 0.0600158; !r.Sound() || math.Abs(corners-want) > 0.1*want {
 			t.Fatalf("%s: the corners hold %g, want %g", r.String(), corners, want)
 		}
 		// The ends' fillets alone, by their section: the top meets the
 		// floor and the wall at 145 degrees outside the rib.
-		if got, want := volume(false, true)-bare, 2*filletLoss(2, 145*math.Pi/180, 10); math.Abs(got-want) > 0.01 {
+		if got, want := ends-bare, 2*filletLoss(2, 145*math.Pi/180, 10); math.Abs(got-want) > 0.01 {
 			t.Fatalf("the ends' fillets hold %g, want %g", got, want)
 		}
 	}

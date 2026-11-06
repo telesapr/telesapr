@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
@@ -153,14 +154,24 @@ func (c crescent) fullArea(tan, z float64) float64 {
 // integral, the mesh fine enough to come within 1e-4 of it (4e-5 found). Of the 27,
 // one is refused for its walls, not the corner: the hollow of 9 drafted
 // 5° leaves the crescent's middle too thin at the head for walls of 2.
+// Each case takes some 16 s of processor at that mesh, so the ordinary
+// run takes a Latin square of 9 (every hollow, draft and thickness
+// three times, every pair of two of them once) and the refused one;
+// make test-sweeps takes all 27.
 func TestShellDraftedInsideCornerBesideHollow(t *testing.T) {
 	t.Parallel()
 	type tcase struct{ rc, draft, thick float64 }
 	var cases []tcase
-	for _, rc := range []float64{4, 6, 9} {
-		for _, draft := range []float64{0.5, 3, 5} {
-			for _, thick := range []float64{0.5, 1, 2} {
-				cases = append(cases, tcase{rc, draft, thick})
+	for i, rc := range []float64{4, 6, 9} {
+		for j, draft := range []float64{0.5, 3, 5} {
+			for k, thick := range []float64{0.5, 1, 2} {
+				// The square's thickness for hollow i and draft j keeps
+				// hollow 6, draft 3, thickness 1, the short run's case.
+				square := k == (i+j+2)%3
+				refused := i == 2 && j == 2 && k == 2
+				if sweep.Full() || square || refused {
+					cases = append(cases, tcase{rc, draft, thick})
+				}
 			}
 		}
 	}

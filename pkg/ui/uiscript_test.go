@@ -637,7 +637,7 @@ func compareUIScripts(t *testing.T, prefix string) {
 		t.Fatalf("no scripts %s*", prefix)
 	}
 	for _, name := range names {
-		if raceLeavesOut(name, prefix+"thread") {
+		if threadLeftOut(name, prefix+"thread") {
 			continue
 		}
 		t.Run(name, func(t *testing.T) {
@@ -647,14 +647,18 @@ func compareUIScripts(t *testing.T, prefix string) {
 	}
 }
 
-// raceLeavesOut reports whether a script or model of a thread, name, is
-// left out under the race detector, all but kept: a thread's solid takes
-// minutes there, and the threads' scripts came to 90 minutes of
-// processor between them in pkg/ui alone. Their solids are made on the
-// goroutines kept's is, and pkg/sketch's thread tests make them under
-// the race detector too; the plain run keeps every one.
-func raceLeavesOut(name, kept string) bool {
-	return fixtures.RaceDetector && strings.Contains(name, "thread") && name != kept
+// threadLeftOut reports whether a script or model of a modelled thread,
+// name, is left out under the race detector and under -short, all but
+// kept: a thread's solid takes minutes under the race detector, and
+// the threads' scripts came to 90 minutes of processor between them in
+// pkg/ui alone there; under -short they were half of pkg/ui's
+// scripts' time. Their solids are made on the goroutines kept's is, and
+// pkg/sketch's thread tests make them under the race detector too; the
+// plain run keeps every one. A cosmetic thread is drawn, not modelled,
+// and stays.
+func threadLeftOut(name, kept string) bool {
+	return (fixtures.RaceDetector || testing.Short()) && strings.Contains(name, "thread") &&
+		!strings.Contains(name, "cosmetic") && name != kept
 }
 
 // compareUIScript compares a script's output with its golden, or

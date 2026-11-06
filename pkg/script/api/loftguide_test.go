@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 )
 
 // guidedProfiles draws circles of radius 10 at z 0 and 40 and, in a
@@ -144,7 +146,8 @@ func TestLoftGuideMisuse(t *testing.T) {
 // bowing out between them, kinked where it passes the middle one. The
 // loft keeps its sections' size, so its volume is the cylinder's
 // (Cavalieri); it reaches out to the guide; and it is the same after
-// saving and loading.
+// saving and loading. Under -short the loft held free is not measured
+// first, a third of the test.
 func TestLoftGuideHeldSquare(t *testing.T) {
 	t.Parallel()
 	d := New()
@@ -168,7 +171,10 @@ func TestLoftGuideHeldSquare(t *testing.T) {
 	if p := g.Problem(); p != "" {
 		t.Fatal(p)
 	}
-	free := g.Analyze().Check()
+	free := -1.0
+	if !testing.Short() || sweep.Full() {
+		free = g.Analyze().Check().Volume
+	}
 	loft.SetProfileTangency(middle, 0.5)
 	if p := g.Problem(); p != "" {
 		t.Fatal(p)
@@ -181,7 +187,7 @@ func TestLoftGuideHeldSquare(t *testing.T) {
 	if !r.Sound() || math.Abs(r.Volume-want) > 3e-3*want {
 		t.Fatalf("guided and held square: %s, want volume %g", r.Summary(), want)
 	}
-	if math.Abs(r.Volume-free.Volume) < 1e-9 {
+	if free >= 0 && math.Abs(r.Volume-free) < 1e-9 {
 		t.Error("holding it square changed nothing")
 	}
 	if _, hi := g.Analyze().Bounds(); hi.X < 12.9 {

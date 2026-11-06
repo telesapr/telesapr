@@ -134,12 +134,13 @@ func TestThreadOnHoleAtRoot(t *testing.T) {
 }
 
 // A thread made on a face is saved and read back with its datum, and
-// follows the face when the part changes after.
+// follows the face when the part changes after. The rod is 10 long: the
+// thread along it is the test's whole cost, twice.
 func TestThreadOnFaceRoundTrip(t *testing.T) {
 	t.Parallel()
 	d := New()
 	d.Sketch.Circle(V(0, 0, 0), 4)
-	rod := d.Features.Extrude(30, "rod")
+	rod := d.Features.Extrude(10, "rod")
 	g := d.Features.ThreadOnFace(rod.Solid().FaceAt(V(4, 0, 5)), ThreadOptions{FullLength: true, Designation: "M8x1"})
 	want := g.AsThread().Options()
 	path := filepath.Join(t.TempDir(), "rod.tlspr")

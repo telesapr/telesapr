@@ -194,7 +194,9 @@ func TestSweepClosedSkewArc(t *testing.T) {
 // TestSweepClosedSkewSweep sweeps a square or a circle round the skew
 // quadrilateral and pentagon, sharp or rounded, twisted or not, and
 // requires a sound solid of the profile's area times the path's length.
-// The rate allowed was fixed at none before the feature was written.
+// The rate allowed was fixed at none before the feature was written. A
+// sample of 5, some 5 s of processor each: TestSweepClosedSkewCorners
+// makes the named cases, three of which a sample of 8 made again.
 func TestSweepClosedSkewSweep(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -210,7 +212,7 @@ func TestSweepClosedSkewSweep(t *testing.T) {
 			sweep.Floats("twist", 0, 360),
 		},
 		MaxFailRate: 0,
-		Sample:      8,
+		Sample:      5,
 	}
 	grid.Run(func(p sweep.Point) error {
 		d := api.New()

@@ -53,7 +53,7 @@ func saddlePairUnlike(t *testing.T, name string, flat bool, mean, occ func(r flo
 	}
 	var made atomic.Int32
 	t.Run("lines", func(t *testing.T) {
-		for _, line := range saddleLines(strings.Split(strings.TrimSpace(string(data)), "\n")) {
+		for _, line := range saddleLines(strings.Split(strings.TrimSpace(string(data)), "\n"), saddlePairUnlikeRadii) {
 			t.Run(line, func(t *testing.T) {
 				t.Parallel()
 				fs := strings.Fields(line)

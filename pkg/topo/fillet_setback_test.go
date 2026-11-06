@@ -228,7 +228,9 @@ func TestFilletSetbackSweep(t *testing.T) {
 // each with radii 5 or 6 to 1 side by side), the face's curves all
 // parabolas; with curves nearer their chords where those fold
 // (setbackLegs) none since 2026-10-29, and the grid took radii of 0.25
-// then, kept at none. The whole grid always runs.
+// then, kept at none. The ordinary run takes 32 of the 96 points and
+// the corners that were refused, and the furthest apart (extremeSetbacks);
+// TELESAPR_SWEEP=1 the whole grid.
 func TestFilletSetbackExtremeSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
@@ -243,6 +245,7 @@ func TestFilletSetbackExtremeSweep(t *testing.T) {
 			sweep.Floats("r3", 0.25, 0.75, 2.5),
 		},
 		MaxFailRate: 0,
+		Sample:      32,
 	}
 	// The points run side by side, so the count is atomic.
 	var bad atomic.Int32
@@ -254,7 +257,32 @@ func TestFilletSetbackExtremeSweep(t *testing.T) {
 		}
 		return err
 	}).Require(t)
+	if !sweep.Full() {
+		for _, c := range extremeSetbacks {
+			t.Run(fmt.Sprintf("%s %g %g %g", c.corner, c.r1, c.r2, c.r3), func(t *testing.T) {
+				t.Parallel()
+				if refused, err := setbackCase(t, c.corner, c.r1, c.r2, c.r3); err != nil {
+					if !refused {
+						bad.Add(1)
+					}
+					t.Errorf("refused %t: %v", refused, err)
+				}
+			})
+		}
+	}
 	if n := bad.Load(); n > 0 {
 		t.Errorf("%d corners made unsound or not tangent", n)
 	}
+}
+
+// extremeSetbacks are points of TestFilletSetbackExtremeSweep's grid its
+// ordinary run takes besides the sample: the box's corner of 3, 0.5 and
+// 0.75 either way round and apexes of 6 to 1 side by side, refused until
+// 2026-10-29, and the radii furthest apart, 12 to 1.
+var extremeSetbacks = []struct {
+	corner     string
+	r1, r2, r3 float64
+}{
+	{"box", 3, 0.5, 0.75}, {"box", 0.5, 3, 0.75}, {"apex", 3, 0.5, 2.5}, {"apex", 0.25, 1.5, 0.75},
+	{"apex", 3, 0.25, 0.25}, {"box", 0.25, 3, 2.5},
 }

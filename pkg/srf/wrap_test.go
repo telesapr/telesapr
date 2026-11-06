@@ -2,12 +2,14 @@ package srf
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 )
 
 // roundFaceIn is the cylinder or cone among sh's surfaces.
@@ -144,28 +146,47 @@ func cylinderBand(a, r, h0, h1 float64) float64 {
 // difference a band makes to a body's volume is measured to 1e-3 of it.
 func fineMeshTol() Tolerance { return Tol(1e-4, 2000) }
 
-// checkAdded compares what a Boolean added to body's volume (taken
-// away, if negative) against want, within rel of it.
+// checkAdded requires out, a Boolean of body and a band, to be sound,
+// and compares what it added to body's volume (taken away, if
+// negative) against want, within rel of it. Each shell is meshed once:
+// at fineMeshTol the meshing is most of a wrap test's time.
 func checkAdded(t *testing.T, name string, body, out *SShell, want, rel float64) {
 	t.Helper()
-	got := shellVolume(out) - shellVolume(body)
+	v, sound := soundVolume(out)
+	if out.BooleanFailed || !sound {
+		t.Fatalf("%s: the Boolean is not sound", name)
+	}
+	got := v - shellVolume(body)
 	if math.Abs(got-want) > rel*math.Abs(want) {
 		t.Errorf("%s: added %v, want %v (rel err %.2g)", name, got, want, (got-want)/want)
 	}
 }
 
+// soundBand requires the band to be sound and gives its volume.
+func soundBand(t *testing.T, name string, band *SShell) float64 {
+	t.Helper()
+	v, sound := soundVolume(band)
+	if !sound {
+		t.Fatalf("%s is not sound", name)
+	}
+	return v
+}
+
+// TestWrapRectangleOnCylinder wraps a rectangle onto a cylinder from a
+// sketch facing it either way; under -short the one way.
 func TestWrapRectangleOnCylinder(t *testing.T) {
 	t.Parallel()
 	tol := fineMeshTol()
 	body := lathedTube(0, 5, 0, 20, tol)
 	face := roundFaceIn(t, body)
-	for _, n := range []geom.Vector{{Y: -1}, {Y: 1}} {
+	normals := []geom.Vector{{Y: -1}, {Y: 1}}
+	if testing.Short() {
+		normals = normals[:1]
+	}
+	for _, n := range normals {
 		sbls := sketchLoop(rectIn(-20, -3, 3, 5, 15), n)
 		band, w := wrapBand(t, face, geom.Vector{Y: -20}, n, sbls, -0.25, 1, tol)
-		if !meshIsSound(band) {
-			t.Fatalf("normal %v: the band is not sound", n)
-		}
-		checkVolume(t, "band", shellVolume(band), cylinderBand(60, 5, -0.25, 1))
+		checkVolume(t, "band", soundBand(t, fmt.Sprintf("normal %v: the band", n), band), cylinderBand(60, 5, -0.25, 1))
 		// The lines across the axis are exact arcs, those along it lines.
 		for _, l := range sbls.loops() {
 			for _, b := range l.Curves {
@@ -181,10 +202,7 @@ func TestWrapRectangleOnCylinder(t *testing.T) {
 		}
 		out := SShell{Tol: tol}
 		out.MakeFromUnionOf(body, band)
-		if out.BooleanFailed || !meshIsSound(&out) {
-			t.Fatalf("normal %v: the union is not sound", n)
-		}
-		checkAdded(t, "embossed", body, &out, cylinderBand(60, 5, 0, 1), 1e-3)
+		checkAdded(t, fmt.Sprintf("normal %v: embossed", n), body, &out, cylinderBand(60, 5, 0, 1), 1e-3)
 	}
 }
 
@@ -196,9 +214,7 @@ func TestWrapCircleEngravedInCylinder(t *testing.T) {
 	n := geom.Vector{Y: -1}
 	sbls := sketchLoop(circleArcs(geom.Vector{X: 1, Y: -20, Z: 10}, n, 2.5), n)
 	band, w := wrapBand(t, face, geom.Vector{Y: -20}, n, sbls, -1, 0.25, tol)
-	if !meshIsSound(band) {
-		t.Fatal("the band is not sound")
-	}
+	bandVol := soundBand(t, "the band", band)
 	// Fitted pieces lie on the face.
 	for _, l := range sbls.loops() {
 		for _, b := range l.Curves {
@@ -216,12 +232,9 @@ func TestWrapCircleEngravedInCylinder(t *testing.T) {
 		}
 	}
 	a := math.Pi * 2.5 * 2.5
-	checkVolume(t, "band", shellVolume(band), cylinderBand(a, 5, -1, 0.25))
+	checkVolume(t, "band", bandVol, cylinderBand(a, 5, -1, 0.25))
 	out := SShell{Tol: tol}
 	out.MakeFromDifferenceOf(body, band)
-	if out.BooleanFailed || !meshIsSound(&out) {
-		t.Fatal("the engraving is not sound")
-	}
 	checkAdded(t, "engraved", body, &out, -cylinderBand(a, 5, -1, 0), 1e-3)
 }
 
@@ -257,14 +270,11 @@ func TestWrapRectangleOnCone(t *testing.T) {
 	n := geom.Vector{Y: -1}
 	sbls := sketchLoop(rectIn(-20, -2, 2, 3, 7), n)
 	band, w := wrapBand(t, face, geom.Vector{Y: -20}, n, sbls, -0.25, 1, tol)
-	if !meshIsSound(band) {
-		t.Fatal("the band is not sound")
-	}
 	// From the apex the rectangle runs 9 to 13 along the axis. The band's
 	// mesh comes to its volume slowly: 7e-3 short at a chord of 1e-4,
 	// 3e-4 at 3e-5, where meshing it takes 20 s.
 	want := coneBand(w, -2, 2, 9, 13, -0.25, 1)
-	if v := shellVolume(band); math.Abs(v-want) > 1e-2*want {
+	if v := soundBand(t, "the band", band); math.Abs(v-want) > 1e-2*want {
 		t.Fatalf("band: volume %g, want %g", v, want)
 	}
 	if testing.Short() || fixtures.RaceDetector {
@@ -272,16 +282,19 @@ func TestWrapRectangleOnCone(t *testing.T) {
 		// TestWrapRoundMostOfTheWay runs the same Boolean.
 		t.Skip("the union with the cone, meshed finely, takes 15 s, many minutes under the race detector")
 	}
+	// The ordinary run's one union with a cone: TestWrapRoundMostOfTheWay's
+	// runs only in a full sweep.
 	out := SShell{Tol: tol}
 	out.MakeFromUnionOf(body, band)
-	if out.BooleanFailed || !meshIsSound(&out) {
-		t.Fatal("the union is not sound")
-	}
 	checkAdded(t, "embossed", body, &out, coneBand(w, -2, 2, 9, 13, 0, 1), 1e-2)
 }
 
 // A loop round 275° of a cylinder has caps of three patches, and of a
-// cone too; the seams between them cross it, and the hole in it.
+// cone too; the seams between them cross it, and the hole in it. The
+// union with the cone, some 40 s of processor at fineMeshTol, runs in a
+// full sweep only (make test-sweeps): the ordinary run unites a cone
+// with a band in TestWrapRectangleOnCone, and the cone's band here is
+// still checked sound and of its volume.
 func TestWrapRoundMostOfTheWay(t *testing.T) {
 	t.Parallel()
 	tol := fineMeshTol()
@@ -297,15 +310,9 @@ func TestWrapRoundMostOfTheWay(t *testing.T) {
 	if err != nil || len(caps) != 3 || len(seams) != 2 {
 		t.Fatalf("%d caps, %d seams, %v", len(caps), len(seams), err)
 	}
-	if !meshIsSound(band) {
-		t.Fatal("the band is not sound")
-	}
-	checkVolume(t, "band", shellVolume(band), cylinderBand(240-80, 5, -0.25, 1))
+	checkVolume(t, "band", soundBand(t, "the band", band), cylinderBand(240-80, 5, -0.25, 1))
 	out := SShell{Tol: tol}
 	out.MakeFromUnionOf(body, band)
-	if out.BooleanFailed || !meshIsSound(&out) {
-		t.Fatal("the union is not sound")
-	}
 	checkAdded(t, "embossed", body, &out, cylinderBand(160, 5, 0, 1), 1e-3)
 	if fixtures.RaceDetector {
 		// The cone's band, meshed finely, takes ten minutes there; the
@@ -320,20 +327,14 @@ func TestWrapRoundMostOfTheWay(t *testing.T) {
 	if _, seams, _ := cw.capPatches(csbls, -0.25, 1); len(seams) == 0 {
 		t.Fatal("the cone's band has caps of one patch")
 	}
-	if !meshIsSound(cband) {
-		t.Fatal("the cone's band is not sound")
-	}
-	if v, want := shellVolume(cband), coneBand(cw, -12, 12, 9, 13, -0.25, 1); math.Abs(v-want) > 1e-2*want {
+	if v, want := soundBand(t, "the cone's band", cband), coneBand(cw, -12, 12, 9, 13, -0.25, 1); math.Abs(v-want) > 1e-2*want {
 		t.Fatalf("the cone's band: volume %g, want %g", v, want)
 	}
-	if testing.Short() {
-		t.Skip("the union with the cone, meshed finely, takes 15 s")
+	if !sweep.Full() {
+		return
 	}
 	cout := SShell{Tol: tol}
 	cout.MakeFromUnionOf(cone, cband)
-	if cout.BooleanFailed || !meshIsSound(&cout) {
-		t.Fatal("the union with the cone is not sound")
-	}
 	checkAdded(t, "embossed on the cone", cone, &cout, coneBand(cw, -12, 12, 9, 13, 0, 1), 1e-2)
 }
 

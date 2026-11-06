@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"slices"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/check"
@@ -11,6 +12,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/internal/par"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -335,7 +337,8 @@ func BenchmarkBSplineLid(b *testing.B) {
 // TestBSplineSweep is step 11.2's sweep: lids of degrees 2 to 5, their
 // knots once or twice, each with a hole, a block put through its top,
 // or a block taken out of it, placed at random, against the volumes by
-// quadrature; 96 points. The rate set before: 0 failures. The points
+// quadrature; 96 points, 48 in the ordinary run. The rate set before:
+// 0 failures. The points
 // are drawn in order, so that the random numbers stay the same, and
 // built side by side.
 func TestBSplineSweep(t *testing.T) {
@@ -370,8 +373,13 @@ func TestBSplineSweep(t *testing.T) {
 	// What each point found wrong, logged in order afterwards.
 	found := make([][]string, len(cases))
 	// Under the race detector every fifth case (fixtures.Cases), drawn
-	// after all of them so that the random numbers stay the same.
+	// after all of them so that the random numbers stay the same; in the
+	// ordinary run the first two lids of each four, both counts of knots
+	// across among them, all 96 under TELESAPR_SWEEP=1.
 	run := fixtures.Cases(len(cases))
+	if !sweep.Full() {
+		run = slices.DeleteFunc(run, func(i int) bool { return i%4 >= 2 })
+	}
 	par.For(len(run), func(k int) {
 		i := run[k]
 		c := cases[i]

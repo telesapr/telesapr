@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/check"
@@ -333,102 +334,116 @@ func TestChamferCornerOracle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	triangles, plates, meets, curved, below := 0, 0, 0, 0, 0
-	for line := range strings.SplitSeq(strings.TrimSpace(string(data)), "\n") {
-		head, corners, _ := strings.Cut(line, "|")
-		f := strings.Fields(head)
-		var d []float64
-		for _, x := range f[1 : len(f)-2] {
-			y, err := strconv.ParseFloat(x, 64)
-			if err != nil {
-				t.Fatalf("%q: %v", line, err)
-			}
-			d = append(d, y)
-		}
-		want, _ := strconv.ParseFloat(f[len(f)-2], 64)
-		faces, _ := strconv.Atoi(f[len(f)-1])
-		var occ []geom.Vector
-		for c := range strings.FieldsSeq(corners) {
-			var p geom.Vector
-			if _, err := fmt.Sscanf(c, "%g,%g,%g", &p.X, &p.Y, &p.Z); err != nil {
-				t.Fatalf("%q: %v", line, err)
-			}
-			occ = append(occ, p)
-		}
-		sh, err := chamferOracleCase(f[0], d, srf.Tol(0.002, 20))
-		if err != nil {
-			t.Errorf("%s: %v", head, err)
-			continue
-		}
-		got := sound(t, sh)
-		tp := build(t, sh)
-		if strings.HasSuffix(f[0], "some") {
-			// Less taken from the pyramid, less filled in the pocket.
-			less := want - got
-			if f[0] == "pocketsome" {
-				less = -less
-			}
-			switch {
-			case len(tp.Faces) == faces && math.Abs(got-want) <= 0.005:
-			case len(tp.Faces) == faces-1 && less < 0 && less > -0.3:
-				meets++
-			default:
-				t.Errorf("%s: %d faces, OpenCASCADE's %d; volume %.6f, %+.3g", head, len(tp.Faces), faces, got, got-want)
-			}
-			continue
-		}
-		if len(tp.Faces) != faces {
-			t.Errorf("%s: %d faces, OpenCASCADE's %d", head, len(tp.Faces), faces)
-		}
-		dmax := slices.Max(d)
-		if f[0] == "prism" || f[0] == "prismpair" {
-			dmax = slices.Max(d[1:])
-		}
-		ours := cornerPoints(tp, chamferOracleCorner[f[0]], 3*dmax+0.5)
-		if f[0] == "ledgetwo" || f[0] == "ribtwo" {
-			switch {
-			case len(occ) == 0 && f[0] == "ledgetwo":
-				// OpenCASCADE's corner without its patch, which takes more
-				// than the convex chamfer alone does.
-				alone, err := chamferOracleCase("ledgeone", d[:1], srf.Tol(0.002, 20))
+	var triangles, plates, meets, curved, below atomic.Int32
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	// Every line in the ordinary run, side by side; a fifth under -short
+	// and the race detector (sweep.Pick), and the counts only of all.
+	picked := sweep.Pick(lines, 0)
+	t.Run("lines", func(t *testing.T) {
+		for _, line := range picked {
+			head, corners, _ := strings.Cut(line, "|")
+			t.Run(head, func(t *testing.T) {
+				t.Parallel()
+				f := strings.Fields(head)
+				var d []float64
+				for _, x := range f[1 : len(f)-2] {
+					y, err := strconv.ParseFloat(x, 64)
+					if err != nil {
+						t.Fatalf("%q: %v", line, err)
+					}
+					d = append(d, y)
+				}
+				want, _ := strconv.ParseFloat(f[len(f)-2], 64)
+				faces, _ := strconv.Atoi(f[len(f)-1])
+				var occ []geom.Vector
+				for c := range strings.FieldsSeq(corners) {
+					var p geom.Vector
+					if _, err := fmt.Sscanf(c, "%g,%g,%g", &p.X, &p.Y, &p.Z); err != nil {
+						t.Fatalf("%q: %v", line, err)
+					}
+					occ = append(occ, p)
+				}
+				sh, err := chamferOracleCase(f[0], d, srf.Tol(0.002, 20))
 				if err != nil {
-					t.Fatal(err)
+					t.Errorf("%s: %v", head, err)
+					return
 				}
-				if lone := sound(t, alone); got <= lone || want >= lone {
-					t.Errorf("%s: volume %.6f, the convex chamfer alone %.6f", head, got, lone)
+				got := sound(t, sh)
+				tp := build(t, sh)
+				if strings.HasSuffix(f[0], "some") {
+					// Less taken from the pyramid, less filled in the pocket.
+					less := want - got
+					if f[0] == "pocketsome" {
+						less = -less
+					}
+					switch {
+					case len(tp.Faces) == faces && math.Abs(got-want) <= 0.005:
+					case len(tp.Faces) == faces-1 && less < 0 && less > -0.3:
+						meets.Add(1)
+					default:
+						t.Errorf("%s: %d faces, OpenCASCADE's %d; volume %.6f, %+.3g", head, len(tp.Faces), faces, got, got-want)
+					}
+					return
 				}
-				below++
-			case samePoints(ours, occ) && math.Abs(got-want) <= 0.15*dmax*dmax*dmax:
-				t.Logf("%s: OpenCASCADE's plate, %+.3g", head, got-want)
-				curved++
-			default:
-				t.Errorf("%s: corners %v, OpenCASCADE's %v; volume %.6f, %+.3g", head, ours, occ, got, got-want)
-			}
-			continue
+				if len(tp.Faces) != faces {
+					t.Errorf("%s: %d faces, OpenCASCADE's %d", head, len(tp.Faces), faces)
+				}
+				dmax := slices.Max(d)
+				if f[0] == "prism" || f[0] == "prismpair" {
+					dmax = slices.Max(d[1:])
+				}
+				ours := cornerPoints(tp, chamferOracleCorner[f[0]], 3*dmax+0.5)
+				if f[0] == "ledgetwo" || f[0] == "ribtwo" {
+					switch {
+					case len(occ) == 0 && f[0] == "ledgetwo":
+						// OpenCASCADE's corner without its patch, which takes more
+						// than the convex chamfer alone does.
+						alone, err := chamferOracleCase("ledgeone", d[:1], srf.Tol(0.002, 20))
+						if err != nil {
+							t.Fatal(err)
+						}
+						if lone := sound(t, alone); got <= lone || want >= lone {
+							t.Errorf("%s: volume %.6f, the convex chamfer alone %.6f", head, got, lone)
+						}
+						below.Add(1)
+					case samePoints(ours, occ) && math.Abs(got-want) <= 0.15*dmax*dmax*dmax:
+						t.Logf("%s: OpenCASCADE's plate, %+.3g", head, got-want)
+						curved.Add(1)
+					default:
+						t.Errorf("%s: corners %v, OpenCASCADE's %v; volume %.6f, %+.3g", head, ours, occ, got, got-want)
+					}
+					return
+				}
+				switch {
+				case f[0] == "apex":
+					if !samePoints(ours, occ) || got > want || got < want-0.003*want {
+						t.Errorf("%s: corners %v, volume %.6f, %+.3g: OpenCASCADE's plate has the same corners and a little more", head, ours, got, got-want)
+					}
+					plates.Add(1)
+				case math.Abs(got-want) <= 0.005:
+					// OpenCASCADE's volume; where the corners differ, two strips of
+					// the largest distance could each be the pivot, mirror images.
+				case len(occ) == 3 && !samePoints(ours, occ) && math.Abs(got-want) <= 0.5+0.005:
+					// Our corner a setback where OpenCASCADE's is a triangle: half
+					// a cubic millimetre apart at most, and the mesh's own error on
+					// the curved setback, as the OpenCASCADE volume case above allows.
+					t.Logf("%s: OpenCASCADE's triangle, %+.3g", head, got-want)
+					triangles.Add(1)
+				default:
+					t.Errorf("%s: corners %v, OpenCASCADE's %v; volume %.6f, %+.3g", head, ours, occ, got, got-want)
+				}
+			})
 		}
-		switch {
-		case f[0] == "apex":
-			if !samePoints(ours, occ) || got > want || got < want-0.003*want {
-				t.Errorf("%s: corners %v, volume %.6f, %+.3g: OpenCASCADE's plate has the same corners and a little more", head, ours, got, got-want)
-			}
-			plates++
-		case math.Abs(got-want) <= 0.005:
-			// OpenCASCADE's volume; where the corners differ, two strips of
-			// the largest distance could each be the pivot, mirror images.
-		case len(occ) == 3 && !samePoints(ours, occ) && math.Abs(got-want) <= 0.5+0.005:
-			// Our corner a setback where OpenCASCADE's is a triangle: half
-			// a cubic millimetre apart at most, and the mesh's own error on
-			// the curved setback, as the OpenCASCADE volume case above allows.
-			t.Logf("%s: OpenCASCADE's triangle, %+.3g", head, got-want)
-			triangles++
-		default:
-			t.Errorf("%s: corners %v, OpenCASCADE's %v; volume %.6f, %+.3g", head, ours, occ, got, got-want)
-		}
+	})
+	if len(picked) < len(lines) {
+		return
 	}
-	if triangles > 9 || plates != 7 || meets != 14 {
-		t.Errorf("%d of OpenCASCADE's triangles, 9 when this was written; %d apexes, 7; %d planes meeting where it fills, 14", triangles, plates, meets)
+	if triangles.Load() > 9 || plates.Load() != 7 || meets.Load() != 14 {
+		t.Errorf("%d of OpenCASCADE's triangles, 9 when this was written; %d apexes, 7; %d planes meeting where it fills, 14",
+			triangles.Load(), plates.Load(), meets.Load())
 	}
-	if curved != 9 || below != 3 {
-		t.Errorf("%d convex and concave pairs with OpenCASCADE's corners, 9 when this was written; %d below the convex chamfer alone, 3", curved, below)
+	if curved.Load() != 9 || below.Load() != 3 {
+		t.Errorf("%d convex and concave pairs with OpenCASCADE's corners, 9 when this was written; %d below the convex chamfer alone, 3",
+			curved.Load(), below.Load())
 	}
 }

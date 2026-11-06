@@ -1,9 +1,11 @@
 package step
 
 import (
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/check"
@@ -44,20 +46,22 @@ func TestSolidShapes(t *testing.T) {
 	const tol = 0.005
 	fine := fineMesh(tol)
 	for _, e := range readShapes(t) {
-		m := readModel(t, filepath.Join(shapesDir, e.name+".step"))
-		sh, err := m.ShellOf(0, srf.OriginFor(9, 0), fine)
-		if err != nil {
-			t.Errorf("%s: %v", e.name, err)
-			continue
-		}
-		r := solidReport(sh)
-		allow := e.area*tol + 1e-9*e.volume
-		if !r.Sound() || math.Abs(r.Volume-e.volume) > allow {
-			t.Errorf("%s: %s, want volume %.6g within %.3g", e.name, r.String(), e.volume, allow)
-			for _, p := range r.Topology {
-				t.Logf("  %s at %v", p.Msg, p.At)
+		t.Run(e.name, func(t *testing.T) {
+			t.Parallel()
+			m := readModel(t, filepath.Join(shapesDir, e.name+".step"))
+			sh, err := m.ShellOf(0, srf.OriginFor(9, 0), fine)
+			if err != nil {
+				t.Fatal(err)
 			}
-		}
+			r := solidReport(sh)
+			allow := e.area*tol + 1e-9*e.volume
+			if !r.Sound() || math.Abs(r.Volume-e.volume) > allow {
+				t.Errorf("%s, want volume %.6g within %.3g", r.String(), e.volume, allow)
+				for _, p := range r.Topology {
+					t.Logf("  %s at %v", p.Msg, p.At)
+				}
+			}
+		})
 	}
 }
 
@@ -202,170 +206,80 @@ var solidCorpusSound = map[string]bool{
 	"NIST_MBE_PMI_5.stp": true, "NIST_MBE_PMI_6.stp": true, "Schenkel.stp": true,
 }
 
-// TestSolidCorpus reads the vendor files as solids: each shape of those
-// listed sound built, sound, and the placed shapes' volume the
-// reference's within the mesh's tolerance.
+// TestSolidCorpus reads the vendor files as solids, side by side: each
+// shape of those listed sound built, sound (no naked edges, no mesh
+// edge crossing a triangle, every edge between two faces running it
+// opposite ways), its mesh of its shell's Euler characteristic, and the
+// placed shapes' volume the reference's within the mesh's tolerance.
+//
+// Among them, the two NIST files whose faces meet along another face's
+// seam or a line of its grid (package 27.3): an edge along a
+// sphere-like face's knot line, within the file's tolerance of it but
+// not on it, and two halves of such a face bounded by meridians through
+// its poles. NIST_MBE_PMI_6's ear-clipped mesh has slivers in the
+// meridian plane at two of its three poles, where a trim runs up a
+// meridian into the pole: the mesher, out of other ears, joins the
+// trim's points to the pole, as the face beyond does, so the slivers lie
+// on each other. And Schenkel: a wedge of a sphere from a circle of
+// latitude up to its pole was turned over, its pole's parameter along
+// the folded side being any, which left 40 naked edges round it, and
+// its shell's Euler characteristic differed from its mesh's (-34
+// against -6) where two faces fanned from one corner along the curve
+// they share, their slivers lying on each other. The mender meshes
+// those faces again (roadmap K5).
 func TestSolidCorpus(t *testing.T) {
 	if testing.Short() {
 		t.Skip("the corpus")
 	}
 	t.Parallel()
 	dir := filepath.Join("..", "..", "..", "testdata", "step", "corpus")
-	sound := 0
-	for _, e := range readReference(t, filepath.Join(dir, "reference.txt")) {
-		if e.expect != "ok" {
-			continue
-		}
-		m := readModel(t, filepath.Join(dir, e.name))
-		tol := math.Max(1e-3, math.Cbrt(e.volume)*5e-4)
-		fine := fineMesh(tol)
-		vol := 0.0
-		var why string
-		for _, pl := range m.Placements {
-			sh, err := m.ShellOf(pl.Shape, srf.OriginFor(9, 0), fine)
-			if err != nil {
-				why = err.Error()
-				break
+	var sound atomic.Int32
+	t.Run("files", func(t *testing.T) {
+		for _, e := range readReference(t, filepath.Join(dir, "reference.txt")) {
+			if e.expect != "ok" {
+				continue
 			}
-			r := solidReport(sh)
-			if !r.Sound() {
-				why = r.String()
-				break
-			}
-			vol += r.Volume
+			t.Run(e.name, func(t *testing.T) {
+				t.Parallel()
+				m := readModel(t, filepath.Join(dir, e.name))
+				tol := math.Max(1e-3, math.Cbrt(e.volume)*5e-4)
+				fine := fineMesh(tol)
+				vol := 0.0
+				var why string
+				for _, pl := range m.Placements {
+					sh, err := m.ShellOf(pl.Shape, srf.OriginFor(9, 0), fine)
+					if err != nil {
+						why = err.Error()
+						break
+					}
+					var mesh srf.SMesh
+					sh.TriangulateInto(&mesh)
+					r := check.Solid(sh, &mesh)
+					if !r.Sound() {
+						why = r.String()
+						break
+					}
+					if d := topo.MeshEuler(&mesh) - r.Euler; d != 0 {
+						why = fmt.Sprintf("%s, mesh Euler off by %d", r.String(), d)
+						break
+					}
+					vol += r.Volume
+				}
+				allow := e.area*tol + 1e-6*e.volume
+				ok := why == "" && math.Abs(vol-e.volume) <= allow
+				if ok {
+					sound.Add(1)
+				}
+				switch {
+				case solidCorpusSound[e.name] && !ok:
+					t.Errorf("not read as a sound solid: %s; volume %.6g, want %.6g within %.3g", why, vol, e.volume, allow)
+				case !solidCorpusSound[e.name] && ok:
+					t.Log("now read as a sound solid; list it")
+				}
+			})
 		}
-		allow := e.area*tol + 1e-6*e.volume
-		ok := why == "" && math.Abs(vol-e.volume) <= allow
-		if ok {
-			sound++
-		}
-		switch {
-		case solidCorpusSound[e.name] && !ok:
-			t.Errorf("%s: not read as a sound solid: %s; volume %.6g, want %.6g within %.3g", e.name, why, vol, e.volume, allow)
-		case !solidCorpusSound[e.name] && ok:
-			t.Logf("%s: now read as a sound solid; list it", e.name)
-		}
-	}
-	t.Logf("%d sound", sound)
-}
-
-// TestSolidCorpusCDT reads the vendor files as solids meshed by the
-// constrained Delaunay mesher (roadmap K4): all nine are sound, at the
-// reference's volume within the mesh's tolerance. The ear clipper alone
-// leaves NIST_MBE_PMI_6 with slivers at its poles, where the polar
-// chart makes a pole one point, and Schenkel's mesh off its shell's
-// Euler characteristic.
-func TestSolidCorpusCDT(t *testing.T) {
-	if testing.Short() {
-		t.Skip("the corpus")
-	}
-	t.Parallel()
-	dir := filepath.Join("..", "..", "..", "testdata", "step", "corpus")
-	for _, e := range readReference(t, filepath.Join(dir, "reference.txt")) {
-		if e.expect != "ok" {
-			continue
-		}
-		m := readModel(t, filepath.Join(dir, e.name))
-		tol := math.Max(1e-3, math.Cbrt(e.volume)*5e-4)
-		fine := fineMesh(tol).WithMesher(srf.MesherCDT)
-		vol := 0.0
-		var why string
-		for _, pl := range m.Placements {
-			sh, err := m.ShellOf(pl.Shape, srf.OriginFor(9, 0), fine)
-			if err != nil {
-				why = err.Error()
-				break
-			}
-			r := solidReport(sh)
-			if !r.Sound() {
-				why = r.String()
-				break
-			}
-			vol += r.Volume
-		}
-		if allow := e.area*tol + 1e-6*e.volume; why != "" || math.Abs(vol-e.volume) > allow {
-			t.Errorf("%s: not read as a sound solid: %s; volume %.6g, want %.6g within %.3g", e.name, why, vol, e.volume, allow)
-		}
-	}
-}
-
-// TestSolidSeamEdges reads the two NIST files whose faces meet along
-// another face's seam or a line of its grid (package 27.3): an edge
-// along a sphere-like face's knot line, within the file's tolerance of
-// it but not on it, and two halves of such a face bounded by meridians
-// through its poles. They close now: no naked edges, every edge between
-// two faces running it opposite ways, and the volume FreeCAD gives
-// within the mesh's tolerance, and no mesh edge crossing a triangle.
-func TestSolidSeamEdges(t *testing.T) {
-	if testing.Short() {
-		t.Skip("the corpus")
-	}
-	t.Parallel()
-	dir := filepath.Join("..", "..", "..", "testdata", "step", "corpus")
-	for _, e := range readReference(t, filepath.Join(dir, "reference.txt")) {
-		if e.name != "NIST_MBE_PMI_5.stp" && e.name != "NIST_MBE_PMI_6.stp" {
-			continue
-		}
-		m := readModel(t, filepath.Join(dir, e.name))
-		tol := math.Max(1e-3, math.Cbrt(e.volume)*5e-4)
-		fine := fineMesh(tol)
-		sh, err := m.ShellOf(m.Placements[0].Shape, srf.OriginFor(9, 0), fine)
-		if err != nil {
-			t.Errorf("%s: %v", e.name, err)
-			continue
-		}
-		var mesh srf.SMesh
-		sh.TriangulateInto(&mesh)
-		r := check.Solid(sh, &mesh)
-		allow := e.area*tol + 1e-6*e.volume
-		// NIST_MBE_PMI_6's ear-clipped mesh has slivers in the meridian
-		// plane at two of its three poles, where a trim runs up a
-		// meridian into the pole: the mesher, out of other ears, joins
-		// the trim's points to the pole, as the face beyond does, so the
-		// slivers lie on each other. The mender meshes those faces again
-		// (roadmap K5), and the mesh's Euler characteristic is the
-		// shell's.
-		if d := topo.MeshEuler(&mesh) - r.Euler; r.NakedEdges != 0 || r.SelfIntersecting != 0 || r.TopologyProblems != 0 || d != 0 ||
-			math.Abs(r.Volume-e.volume) > allow {
-			t.Errorf("%s: %s, mesh Euler off by %d; want volume %.6g within %.3g", e.name, r.String(), d, e.volume, allow)
-		}
-	}
-}
-
-// TestSolidSchenkelClosed reads Schenkel as a solid: its mesh closes and
-// doesn't cross itself, at FreeCAD's volume within the mesh's tolerance.
-// A wedge of a sphere from a circle of latitude up to its pole was
-// turned over, its pole's parameter along the folded side being any,
-// which left 40 naked edges round it. Its shell's Euler characteristic
-// differed from its mesh's (-34 against -6) where two faces fanned from
-// one corner along the curve they share, their slivers lying on each
-// other; the mender meshes those faces again (roadmap K5).
-func TestSolidSchenkelClosed(t *testing.T) {
-	if testing.Short() {
-		t.Skip("the corpus")
-	}
-	t.Parallel()
-	dir := filepath.Join("..", "..", "..", "testdata", "step", "corpus")
-	for _, e := range readReference(t, filepath.Join(dir, "reference.txt")) {
-		if e.name != "Schenkel.stp" {
-			continue
-		}
-		m := readModel(t, filepath.Join(dir, e.name))
-		tol := math.Max(1e-3, math.Cbrt(e.volume)*5e-4)
-		fine := fineMesh(tol)
-		sh, err := m.ShellOf(m.Placements[0].Shape, srf.OriginFor(9, 0), fine)
-		if err != nil {
-			t.Fatal(err)
-		}
-		r := solidReport(sh)
-		allow := e.area*tol + 1e-6*e.volume
-		var mesh srf.SMesh
-		sh.TriangulateInto(&mesh)
-		if d := topo.MeshEuler(&mesh) - r.Euler; r.NakedEdges != 0 || r.SelfIntersecting != 0 || r.TopologyProblems != 0 || d != 0 ||
-			math.Abs(r.Volume-e.volume) > allow {
-			t.Errorf("%s: %s, mesh Euler off by %d; want volume %.6g within %.3g", e.name, r.String(), d, e.volume, allow)
-		}
-	}
+	})
+	t.Logf("%d sound", sound.Load())
 }
 
 // TestTurnedLoopsAtPole: a bound through a pole of a closed surface is
@@ -427,7 +341,8 @@ func cutters(lo, hi geom.Vector, tol srf.Tolerance) []*srf.SShell {
 
 // D3.3: shapes read as solids, cut by a block and a cylinder: the part
 // cut away and the part kept are sound and make up the whole. Rate:
-// see solidBooleanMaxFail.
+// see solidBooleanMaxFail. The shapes run side by side, each whole
+// meshed once, for its check and its box.
 func TestSolidBooleans(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a sweep")
@@ -435,49 +350,48 @@ func TestSolidBooleans(t *testing.T) {
 	t.Parallel()
 	const tol = 0.01
 	fine := fineMesh(tol)
-	type part struct {
-		name string
-		sh   *srf.SShell
-	}
-	var parts []part
-	for _, e := range readShapes(t) {
-		m := readModel(t, filepath.Join(shapesDir, e.name+".step"))
-		if sh, err := m.ShellOf(0, srf.OriginFor(9, 0), fine); err == nil {
-			parts = append(parts, part{e.name, sh})
-		}
-	}
-	points, failed := 0, 0
-	for _, p := range parts {
-		whole := solidReport(p.sh)
-		var lo, hi geom.Vector
-		var mm srf.SMesh
-		p.sh.TriangulateInto(&mm)
-		for i, tr := range mm.Triangles {
-			for k, q := range []geom.Vector{tr.A, tr.B, tr.C} {
-				if i == 0 && k == 0 {
-					lo, hi = q, q
+	var points, failed atomic.Int32
+	t.Run("shapes", func(t *testing.T) {
+		for _, e := range readShapes(t) {
+			t.Run(e.name, func(t *testing.T) {
+				t.Parallel()
+				m := readModel(t, filepath.Join(shapesDir, e.name+".step"))
+				sh, err := m.ShellOf(0, srf.OriginFor(9, 0), fine)
+				if err != nil {
+					return
 				}
-				growBox(q, &lo, &hi)
-			}
+				var mm srf.SMesh
+				sh.TriangulateInto(&mm)
+				whole := check.Solid(sh, &mm)
+				var lo, hi geom.Vector
+				for i, tr := range mm.Triangles {
+					for k, q := range []geom.Vector{tr.A, tr.B, tr.C} {
+						if i == 0 && k == 0 {
+							lo, hi = q, q
+						}
+						growBox(q, &lo, &hi)
+					}
+				}
+				for ci, cut := range cutters(lo, hi, fine) {
+					points.Add(1)
+					kept, gone := srf.SShell{Tol: fine}, srf.SShell{Tol: fine}
+					kept.MakeFromDifferenceOf(sh, cut)
+					gone.MakeFromIntersectionOf(sh, cut)
+					rk, rg := solidReport(&kept), solidReport(&gone)
+					sum := rk.Volume + rg.Volume
+					allow := 2e-3 * whole.Volume
+					if !rk.Sound() || !rg.Sound() || math.Abs(sum-whole.Volume) > allow {
+						failed.Add(1)
+						t.Logf("cutter %d: kept %s; cut %s; %.6g + %.6g against %.6g",
+							ci, rk.String(), rg.String(), rk.Volume, rg.Volume, whole.Volume)
+					}
+				}
+			})
 		}
-		for ci, cut := range cutters(lo, hi, fine) {
-			points++
-			kept, gone := srf.SShell{Tol: fine}, srf.SShell{Tol: fine}
-			kept.MakeFromDifferenceOf(p.sh, cut)
-			gone.MakeFromIntersectionOf(p.sh, cut)
-			rk, rg := solidReport(&kept), solidReport(&gone)
-			sum := rk.Volume + rg.Volume
-			allow := 2e-3 * whole.Volume
-			if !rk.Sound() || !rg.Sound() || math.Abs(sum-whole.Volume) > allow {
-				failed++
-				t.Logf("%s, cutter %d: kept %s; cut %s; %.6g + %.6g against %.6g",
-					p.name, ci, rk.String(), rg.String(), rk.Volume, rg.Volume, whole.Volume)
-			}
-		}
-	}
-	t.Logf("%d points, %d failed", points, failed)
-	if failed > solidBooleanMaxFail {
-		t.Errorf("%d of %d failed, more than %d", failed, points, solidBooleanMaxFail)
+	})
+	t.Logf("%d points, %d failed", points.Load(), failed.Load())
+	if failed.Load() > solidBooleanMaxFail {
+		t.Errorf("%d of %d failed, more than %d", failed.Load(), points.Load(), solidBooleanMaxFail)
 	}
 }
 

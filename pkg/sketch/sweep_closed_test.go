@@ -108,6 +108,12 @@ func TestSweepClosed(t *testing.T) {
 		if fixtures.RaceDetector && (c.name == "stadium" || c.name == "twisted ring") {
 			continue
 		}
+		// Under -short the frame and the twisted ring, of the 49 s of
+		// processor the five took: TestSweepClosedSweep's grid has the
+		// ring, the rounded frame and the stadium's kinds of path.
+		if testing.Short() && c.name != "frame" && c.name != "twisted ring" {
+			continue
+		}
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			d := api.New()

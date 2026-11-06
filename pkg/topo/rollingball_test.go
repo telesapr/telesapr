@@ -69,22 +69,26 @@ func fine(tol float64) srf.Tolerance { return srf.Tol(tol, 2000) }
 // ours to them).
 func TestRollingBallTee(t *testing.T) {
 	t.Parallel()
-	for _, c := range []struct {
+	// Side by side, a fifth under -short and the race detector
+	// (sweep.Pick).
+	for _, c := range sweep.Pick([]struct {
 		hole    bool
 		r, want float64
 	}{
 		{false, 1, 3.9617}, {false, 2, 15.769}, {false, 3, 35.370},
 		{true, 1, -16.865}, {true, 2, -93.63},
-	} {
-		sh, at := branched(0.5, math.Pi/2, 0, c.hole, fine(0.002))
-		got, err := filletVolume(t, sh, at, c.r)
-		if err != nil {
-			t.Errorf("hole %t r %g: %v", c.hole, c.r, err)
-			continue
-		}
-		if math.Abs(got-c.want) > 0.03*math.Abs(c.want)+0.02 {
-			t.Errorf("hole %t r %g: added %g, want %g", c.hole, c.r, got, c.want)
-		}
+	}, 0) {
+		t.Run(fmt.Sprintf("hole %t r %g", c.hole, c.r), func(t *testing.T) {
+			t.Parallel()
+			sh, at := branched(0.5, math.Pi/2, 0, c.hole, fine(0.002))
+			got, err := filletVolume(t, sh, at, c.r)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if math.Abs(got-c.want) > 0.03*math.Abs(c.want)+0.02 {
+				t.Errorf("added %g, want %g", got, c.want)
+			}
+		})
 	}
 }
 
@@ -154,26 +158,33 @@ func sphereShell(rad float64, tol srf.Tolerance) *srf.SShell {
 func TestRollingBallSphere(t *testing.T) {
 	t.Parallel()
 	tol := fine(0.003)
-	last := 0.0
 	radii := []float64{1, 2, 3}
-	if fixtures.RaceDetector {
+	if fixtures.RaceDetector || testing.Short() {
 		// The smallest and the largest only: each fills on the same
-		// goroutines, over a minute apiece there.
+		// goroutines, over a minute apiece under the race detector.
 		radii = []float64{1, 3}
 	}
-	for _, r := range radii {
-		cy, u := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
-		cy.MakeFromTransformationOf(cylinder(4, 25, tol), v(0, 3, 0), geom.QuaternionFromAxisAngle(v(0, 1, 0), math.Pi/2), 1)
-		u.MakeFromUnionOf(sphereShell(10, tol), &cy)
-		got, err := filletVolume(t, &u, v(math.Sqrt(75), 3, 4), r)
-		if err != nil {
-			t.Errorf("r %g: %v", r, err)
-			continue
+	// The radii side by side, the volumes compared once all are made.
+	added := make([]float64, len(radii))
+	t.Run("radii", func(t *testing.T) {
+		for i, r := range radii {
+			t.Run(fmt.Sprint(r), func(t *testing.T) {
+				t.Parallel()
+				cy, u := srf.SShell{Tol: tol}, srf.SShell{Tol: tol}
+				cy.MakeFromTransformationOf(cylinder(4, 25, tol), v(0, 3, 0), geom.QuaternionFromAxisAngle(v(0, 1, 0), math.Pi/2), 1)
+				u.MakeFromUnionOf(sphereShell(10, tol), &cy)
+				got, err := filletVolume(t, &u, v(math.Sqrt(75), 3, 4), r)
+				if err != nil {
+					t.Fatal(err)
+				}
+				added[i] = got
+			})
 		}
-		if got <= last {
-			t.Errorf("r %g: added %g, no more than %g for the smaller radius", r, got, last)
+	})
+	for i := 1; i < len(radii); i++ {
+		if added[i] <= added[i-1] && added[i-1] != 0 {
+			t.Errorf("r %g: added %g, no more than %g for the smaller radius", radii[i], added[i], added[i-1])
 		}
-		last = got
 	}
 }
 

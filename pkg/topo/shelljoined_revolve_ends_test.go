@@ -6,7 +6,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
-	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -23,7 +23,6 @@ import (
 func TestShellJoinedRevolveEndsMovedUnlike(t *testing.T) {
 	t.Parallel()
 	tol := srf.Tol(0.001, 20)
-	profile := meridian(t, [][2]float64{{5, 0}, {10, 0}, {10, 10}, {5, 10}}, nil, tol)
 	annulus := func(in func(x, y float64) bool) float64 { return discArea(9, in) - discArea(6, in) }
 	cases := []struct {
 		name           string
@@ -66,33 +65,38 @@ func TestShellJoinedRevolveEndsMovedUnlike(t *testing.T) {
 		{"half, a wall at the start", -22, -2, -20, 0, 0, math.Pi, 18 * 18 * 9,
 			func(x, y float64) bool { return (x > -1 && y > 1) || (x <= -1 && y > -1) }, nil},
 	}
-	// Under the race detector every fifth case (fixtures.Sample): the
-	// shell runs on the same goroutines in each, 4 minutes for the nine.
-	for _, c := range fixtures.Sample(cases) {
-		body := &srf.SShell{Tol: tol}
-		body.MakePrism([]geom.Vector{v(c.x0, c.y0, 0), v(c.x1, c.y0, 0), v(c.x1, c.y1, 0), v(c.x0, c.y1, 0)}, v(0, 0, 0), v(0, 0, 10),
-			core.NewRGBA(100, 100, 100, 255))
-		ring, rev := turned(profile, c.start, c.end, tol)
-		sh := &srf.SShell{Tol: tol}
-		sh.MakeFromUnionOf(body, ring)
-		parts := []topo.ShellPart{{Shell: body}, {Rev: &rev}}
-		top := v((c.x0+c.x1)/2, (c.y0+c.y1)/2, 10)
-		if c.x0 < 0 && c.x1 > 0 {
-			top = v(15, -15, 10)
-		}
-		out, err := topo.ShellJoined(sh, parts, facesAt(t, sh, append([]geom.Vector{top}, c.open...)...), 1, 1000)
-		if err != nil {
-			t.Errorf("%s: %v", c.name, err)
-			continue
-		}
-		solid := (c.x1-c.x0)*(c.y1-c.y0)*10 + 75*math.Abs(c.end-c.start)/2*10
-		if c.x0 < 0 && c.x1 > 0 {
-			// The quarter from π to 3π/2 lies inside the block.
-			solid = 8000 + 375*math.Pi
-		}
-		want := solid - (c.blockInner + 8*annulus(c.in))
-		if r := soundness(out); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
-			t.Errorf("%s: %s, want %g", c.name, r.String(), want)
-		}
+	// Side by side, each with a profile of its own, which the solid holds;
+	// a fifth under -short and the race detector (sweep.Pick): the shell
+	// runs on the same goroutines in each, 4 minutes for the nine there.
+	for _, c := range sweep.Pick(cases, 0) {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			profile := meridian(t, [][2]float64{{5, 0}, {10, 0}, {10, 10}, {5, 10}}, nil, tol)
+			body := &srf.SShell{Tol: tol}
+			body.MakePrism([]geom.Vector{v(c.x0, c.y0, 0), v(c.x1, c.y0, 0), v(c.x1, c.y1, 0), v(c.x0, c.y1, 0)}, v(0, 0, 0), v(0, 0, 10),
+				core.NewRGBA(100, 100, 100, 255))
+			ring, rev := turned(profile, c.start, c.end, tol)
+			sh := &srf.SShell{Tol: tol}
+			sh.MakeFromUnionOf(body, ring)
+			parts := []topo.ShellPart{{Shell: body}, {Rev: &rev}}
+			top := v((c.x0+c.x1)/2, (c.y0+c.y1)/2, 10)
+			if c.x0 < 0 && c.x1 > 0 {
+				top = v(15, -15, 10)
+			}
+			out, err := topo.ShellJoined(sh, parts, facesAt(t, sh, append([]geom.Vector{top}, c.open...)...), 1, 1000)
+			if err != nil {
+				t.Errorf("%s: %v", c.name, err)
+				return
+			}
+			solid := (c.x1-c.x0)*(c.y1-c.y0)*10 + 75*math.Abs(c.end-c.start)/2*10
+			if c.x0 < 0 && c.x1 > 0 {
+				// The quarter from π to 3π/2 lies inside the block.
+				solid = 8000 + 375*math.Pi
+			}
+			want := solid - (c.blockInner + 8*annulus(c.in))
+			if r := soundness(out); !r.Sound() || math.Abs(r.Volume-want) > 0.002*want {
+				t.Errorf("%s: %s, want %g", c.name, r.String(), want)
+			}
+		})
 	}
 }

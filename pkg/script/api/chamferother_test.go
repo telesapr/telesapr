@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 )
 
 // Chamfers on the solids of TestFilletOnOtherSolids, every edge alone at
@@ -19,6 +20,9 @@ import (
 // rolling ball's, flat, as its fillet is, and where the rolling ball
 // refuses, so does the chamfer. Since 2026-10-28 the blob's two rims are
 // mitred at their creases, as their fillets are (TestChamferRimMitre).
+// The ordinary run leaves out the edges that are mirror images of edges
+// it chamfers and those other tests chamfer (otherSolid.chamferEdges);
+// make test-sweeps chamfers every one.
 func TestChamferOnOtherSolids(t *testing.T) {
 	if testing.Short() {
 		t.Skip("STEP solids at a fine tolerance")
@@ -32,13 +36,13 @@ func TestChamferOnOtherSolids(t *testing.T) {
 		for _, c := range raceSolids() {
 			t.Run(c.name, func(t *testing.T) {
 				t.Parallel()
-				tl := cutEveryEdge(t, c.build, c.r, edgesPerSolid(), true)
+				tl := cutEveryEdge(t, c.build, c.r, edgesPerSolid(), true, c.chamferEdges)
 				t.Logf("d %g: %s", c.r, tl)
 				if tl.unsound > 0 {
 					t.Errorf("%d chamfers made but not sound", tl.unsound)
 				}
-				if !fixtures.RaceDetector && tl.sound < minMade[c.name] {
-					t.Errorf("%d chamfers made, %d were", tl.sound, minMade[c.name])
+				if !fixtures.RaceDetector && tl.sound < minMade[c.name]-tl.left {
+					t.Errorf("%d chamfers made of %d edges tried, %d of all were", tl.sound, tl.sound+tl.unsound+tl.refused, minMade[c.name])
 				}
 				mu.Lock()
 				defer mu.Unlock()
@@ -99,62 +103,70 @@ func lidStep(t *testing.T, d *Doc) Group {
 // way there along the chamfer's own surface (a fillet's is the wall's).
 // It takes what OpenCASCADE's makeChamfer takes within 0.05% (ours
 // within 1.2e-4 at this chord tolerance); the first comes back alike
-// after saving and loading and goes with one undo.
+// after saving and loading and goes with one undo. The ordinary run
+// chamfers the first upright at both distances and the third at 2,
+// side by side (TestChamferEndsOnCurvedFaceApart holds the four at 1
+// together to OpenCASCADE's), make test-sweeps all eight; -short the
+// first at 1 without saving it.
 func TestChamferEndsOnCurvedFace(t *testing.T) {
 	t.Parallel()
-	cases := lidUprights
-	if testing.Short() {
-		cases = cases[:1]
-	}
-	// Under the race detector the first upright at distance 1 alone, the
-	// one saved and loaded: the eight took 6 minutes there.
-	if fixtures.RaceDetector {
-		cases = cases[:1]
-	}
-	for i, c := range cases {
+	for i, c := range lidUprights {
 		for _, dist := range []float64{1, 2} {
-			if (testing.Short() || fixtures.RaceDetector) && dist != 1 {
+			switch {
+			case sweep.Full():
+			case testing.Short() || fixtures.RaceDetector:
+				// Under the race detector the first upright at distance 1
+				// alone, the one saved and loaded: the eight took 6
+				// minutes there.
+				if i != 0 || dist != 1 {
+					continue
+				}
+			case i != 0 && (i != 2 || dist != 2):
 				continue
 			}
 			want := c.d1
 			if dist == 2 {
 				want = c.d2
 			}
-			d := New()
-			d.Edit.SetChordTolerance(0.002)
-			g := lidStep(t, d)
-			before := g.Analyze().Check().Volume
-			f := d.Features.ChamferSolid([]SolidEdge{g.Solid().EdgeAt(c.at)}, dist, "")
-			if p := f.Problem(); p != "" {
-				t.Fatalf("at %v, %g: %s", c.at, dist, p)
-			}
-			rep := f.Analyze().Check()
-			took := before - rep.Volume
-			if !rep.Sound() || math.Abs(took-want) > 5e-4*want {
-				t.Errorf("at %v, %g: %s, took %g, OpenCASCADE %g", c.at, dist, rep.Summary(), took, want)
-			}
-			if i != 0 || dist != 1 {
-				continue
-			}
-			if dir := t.TempDir(); sameVolume(t, dir, lidStepFile) {
-				path := filepath.Join(dir, "lid.tlspr")
-				if err := d.File.Save(path); err != nil {
-					t.Fatal(err)
+			t.Run(fmt.Sprintf("%v at %g", c.at, dist), func(t *testing.T) {
+				t.Parallel()
+				d := New()
+				d.Edit.SetChordTolerance(0.002)
+				g := lidStep(t, d)
+				before := g.Analyze().Check().Volume
+				f := d.Features.ChamferSolid([]SolidEdge{g.Solid().EdgeAt(c.at)}, dist, "")
+				if p := f.Problem(); p != "" {
+					t.Fatal(p)
 				}
-				l := New()
-				if err := l.File.Load(path); err != nil {
-					t.Fatal(err)
+				rep := f.Analyze().Check()
+				took := before - rep.Volume
+				if !rep.Sound() || math.Abs(took-want) > 5e-4*want {
+					t.Errorf("%s, took %g, OpenCASCADE %g", rep.Summary(), took, want)
 				}
-				l.Edit.SetChordTolerance(0.002)
-				gs := l.Groups()
-				if r2 := gs[len(gs)-1].Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-rep.Volume) > 1e-6*rep.Volume {
-					t.Errorf("loaded: %s, volume %g, saved %g", r2.Summary(), r2.Volume, rep.Volume)
+				if i != 0 || dist != 1 {
+					return
 				}
-			}
-			n := len(d.Groups())
-			if !d.Edit.Undo() || len(d.Groups()) >= n {
-				t.Errorf("undo left %d groups of %d", len(d.Groups()), n)
-			}
+				// Loading regenerates the chamfer: another rolling ball.
+				if dir := t.TempDir(); !(testing.Short() && !sweep.Full()) && sameVolume(t, dir, lidStepFile) {
+					path := filepath.Join(dir, "lid.tlspr")
+					if err := d.File.Save(path); err != nil {
+						t.Fatal(err)
+					}
+					l := New()
+					if err := l.File.Load(path); err != nil {
+						t.Fatal(err)
+					}
+					l.Edit.SetChordTolerance(0.002)
+					gs := l.Groups()
+					if r2 := gs[len(gs)-1].Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-rep.Volume) > 1e-6*rep.Volume {
+						t.Errorf("loaded: %s, volume %g, saved %g", r2.Summary(), r2.Volume, rep.Volume)
+					}
+				}
+				n := len(d.Groups())
+				if !d.Edit.Undo() || len(d.Groups()) >= n {
+					t.Errorf("undo left %d groups of %d", len(d.Groups()), n)
+				}
+			})
 		}
 	}
 }

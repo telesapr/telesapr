@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 )
 
 // curvedBandOnCone is bandOnCone with the band's top a cylinder rising
@@ -151,60 +152,83 @@ var runOffRefused = map[string]string{}
 // OpenCASCADE's makeFillet adds within 1%, at 200 segments a curve, as
 // for the flat top (TestChamferRunsOffBand), and where it refuses (every
 // run-off but the y bands' at 18) ours adds no less than at the smaller
-// radius. Chamfers are made at one sag each.
+// radius. Chamfers are made at one sag each. The blends are made side by
+// side and each series compared after. The ordinary run takes the
+// oracle's smallest and largest sizes, 1.5 and 2.5, and make
+// test-sweeps the 2 between too.
 func TestFilletRunsOffOntoCylinder(t *testing.T) {
 	t.Parallel()
 	cases := readRunOffOracle(t)
-	if testing.Short() || fixtures.RaceDetector {
+	if (testing.Short() || fixtures.RaceDetector) && !sweep.Full() {
 		// One case that runs off onto the cylinder: the grid takes half a
 		// minute, ten times that under the race detector.
 		cases = slices.DeleteFunc(cases, func(o runOffOracle) bool {
 			return o.kind != "y" || o.y != 2.5 || o.sag != 1 || o.r != 2
 		})
+	} else if !sweep.Full() {
+		cases = slices.DeleteFunc(cases, func(o runOffOracle) bool { return o.r == 2 })
 	}
-	prev := map[string]float64{}
-	for _, o := range cases {
-		for _, chamfer := range []bool{false, true} {
-			if chamfer && o.sag != 1 {
-				continue
-			}
-			series := fmt.Sprintf("%s band %g wide, top %g sag %g", o.kind, 2*o.y, o.top, o.sag)
-			name := fmt.Sprintf("%s r %g", series, o.r)
-			if chamfer {
-				name, series = "chamfer, "+name, "chamfer, "+series
-			}
-			d := New()
-			d.Edit.SetChordTolerance(0.003)
-			d.Edit.SetMaxSegments(200)
-			edge, before := curvedBandOnCone(d, o.kind, o.y, o.top, o.sag)
-			g, err := blendOrRefusal(d, edge, o.r, chamfer)
-			if want, ok := runOffRefused[name]; ok {
-				if err == nil || !strings.Contains(err.Error(), want) {
-					t.Errorf("%s: %v, want a refusal saying %q", name, err, want)
+	type blend struct {
+		series string
+		r      float64
+		added  float64
+		made   bool
+	}
+	var blends []*blend
+	t.Run("blends", func(t *testing.T) {
+		for _, o := range cases {
+			for _, chamfer := range []bool{false, true} {
+				if chamfer && o.sag != 1 {
+					continue
 				}
-				continue
-			}
-			if err != nil {
-				t.Errorf("%s: %v", name, err)
-				continue
-			}
-			rep := g.Analyze().Check()
-			if !rep.Sound() {
-				t.Errorf("%s: %s", name, rep.Summary())
-				continue
-			}
-			added := rep.Volume - before
-			if added <= prev[series] {
-				t.Errorf("%s added %g, no more than at a smaller size, %g", name, added, prev[series])
-			}
-			prev[series] = added
-			if chamfer || o.refused {
-				continue
-			}
-			if occ := o.after - o.before; math.Abs(added-occ) > 0.01*occ {
-				t.Errorf("%s added %g, OpenCASCADE's %g", name, added, occ)
+				series := fmt.Sprintf("%s band %g wide, top %g sag %g", o.kind, 2*o.y, o.top, o.sag)
+				name := fmt.Sprintf("%s r %g", series, o.r)
+				if chamfer {
+					name, series = "chamfer, "+name, "chamfer, "+series
+				}
+				b := &blend{series: series, r: o.r}
+				blends = append(blends, b)
+				t.Run(name, func(t *testing.T) {
+					t.Parallel()
+					d := New()
+					d.Edit.SetChordTolerance(0.003)
+					d.Edit.SetMaxSegments(200)
+					edge, before := curvedBandOnCone(d, o.kind, o.y, o.top, o.sag)
+					g, err := blendOrRefusal(d, edge, o.r, chamfer)
+					if want, ok := runOffRefused[name]; ok {
+						if err == nil || !strings.Contains(err.Error(), want) {
+							t.Errorf("%v, want a refusal saying %q", err, want)
+						}
+						return
+					}
+					if err != nil {
+						t.Fatal(err)
+					}
+					rep := g.Analyze().Check()
+					if !rep.Sound() {
+						t.Fatal(rep.Summary())
+					}
+					b.added, b.made = rep.Volume-before, true
+					if chamfer || o.refused {
+						return
+					}
+					if occ := o.after - o.before; math.Abs(b.added-occ) > 0.01*occ {
+						t.Errorf("added %g, OpenCASCADE's %g", b.added, occ)
+					}
+				})
 			}
 		}
+	})
+	// The oracle's lines rise in size within a series.
+	prev := map[string]float64{}
+	for _, b := range blends {
+		if !b.made {
+			continue
+		}
+		if b.added <= prev[b.series] {
+			t.Errorf("%s r %g added %g, no more than at a smaller size, %g", b.series, b.r, b.added, prev[b.series])
+		}
+		prev[b.series] = b.added
 	}
 }
 
@@ -218,19 +242,23 @@ func TestFilletRunsOffOntoCylinder(t *testing.T) {
 // on the top was meshed by the two faces 1e-6 apart; and 1.925 on the
 // top at 21, whose end crosses the top just short of the band's side,
 // was refused as a fillet that takes material away: every one is sound
-// now, adding more than the size before.
+// now, adding more than the size before. The ordinary run takes each top
+// at one of the tolerances, every tolerance once, and make test-sweeps
+// all nine.
 func TestFilletRunsOffOntoCylinderBetween(t *testing.T) {
 	t.Parallel()
 	type key struct{ top, sag, ct float64 }
 	keys := []key{}
-	for _, ts := range [][2]float64{{20, -1}, {20, 1}, {21, 1}} {
-		for _, ct := range []float64{0.002, 0.003, 0.005} {
-			keys = append(keys, key{ts[0], ts[1], ct})
+	for i, ts := range [][2]float64{{20, -1}, {20, 1}, {21, 1}} {
+		for j, ct := range []float64{0.002, 0.003, 0.005} {
+			if i == j || sweep.Full() {
+				keys = append(keys, key{ts[0], ts[1], ct})
+			}
 		}
 	}
 	rs := []float64{1.475, 1.5, 1.525, 1.725, 1.75, 1.775, 1.8, 1.925, 1.975, 2, 2.025, 2.3}
-	if testing.Short() || fixtures.RaceDetector {
-		keys, rs = keys[1:2], []float64{1.475, 1.5, 1.725, 1.75}
+	if (testing.Short() || fixtures.RaceDetector) && !sweep.Full() {
+		keys, rs = []key{{20, -1, 0.003}}, []float64{1.475, 1.5, 1.725, 1.75}
 	}
 	for _, k := range keys {
 		t.Run(fmt.Sprintf("top %g sag %g at %g%%", k.top, k.sag, k.ct), func(t *testing.T) {
@@ -241,30 +269,39 @@ func TestFilletRunsOffOntoCylinderBetween(t *testing.T) {
 }
 
 // blendsBetween fillets the x band's edge on the cone, its top at top
-// with sag, at chord tolerance ct, at each of the sizes rs, rising: each
-// sound, adding more than the one before.
+// with sag, at chord tolerance ct, at each of the sizes rs, rising, side
+// by side: each sound, adding more than the one before.
 func blendsBetween(t *testing.T, top, sag, ct float64, rs []float64) {
 	t.Helper()
+	added := make([]float64, len(rs))
+	made := make([]bool, len(rs))
+	t.Run("sizes", func(t *testing.T) {
+		for i, r := range rs {
+			t.Run(fmt.Sprint(r), func(t *testing.T) {
+				t.Parallel()
+				d := New()
+				d.Edit.SetChordTolerance(ct)
+				edge, before := curvedBandOnCone(d, "x", 3, top, sag)
+				g, err := blendOrRefusal(d, edge, r, false)
+				if err != nil {
+					t.Fatal(err)
+				}
+				rep := g.Analyze().Check()
+				if !rep.Sound() {
+					t.Fatal(rep.Summary())
+				}
+				added[i], made[i] = rep.Volume-before, true
+			})
+		}
+	})
 	prev := 0.0
-	for _, r := range rs {
-		name := fmt.Sprintf("x band, top %g sag %g, %g%%, r %g", top, sag, ct, r)
-		d := New()
-		d.Edit.SetChordTolerance(ct)
-		edge, before := curvedBandOnCone(d, "x", 3, top, sag)
-		g, err := blendOrRefusal(d, edge, r, false)
-		if err != nil {
-			t.Errorf("%s: %v", name, err)
+	for i, r := range rs {
+		if !made[i] {
 			continue
 		}
-		rep := g.Analyze().Check()
-		if !rep.Sound() {
-			t.Errorf("%s: %s", name, rep.Summary())
-			continue
+		if added[i] <= prev {
+			t.Errorf("x band, top %g sag %g, %g%%, r %g added %g, no more than at a smaller size, %g", top, sag, ct, r, added[i], prev)
 		}
-		added := rep.Volume - before
-		if added <= prev {
-			t.Errorf("%s added %g, no more than at a smaller size, %g", name, added, prev)
-		}
-		prev = added
+		prev = added[i]
 	}
 }

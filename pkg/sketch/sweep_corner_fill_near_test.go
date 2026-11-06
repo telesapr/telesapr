@@ -231,7 +231,8 @@ func TestSweepCornerFillNear(t *testing.T) {
 			sweep.Floats("rad", 4, 12, 15, 20),
 			sweep.Floats("profile", 0, 2),
 		},
-		Sample: sample,
+		Sample:   sample,
+		Parallel: true,
 	}
 	open.Run(func(p sweep.Point) error {
 		af, corner, turn, lead, rad := p.Bool("arcFirst"), p.Float("corner"), p.Float("turn"), p.Float("lead"), p.Float("rad")
@@ -248,7 +249,8 @@ func TestSweepCornerFillNear(t *testing.T) {
 			sweep.Floats("lead", 20, 30),
 			sweep.Floats("profile", 0, 2),
 		},
-		Sample: sample,
+		Sample:   sample,
+		Parallel: true,
 	}
 	closed.Run(func(p sweep.Point) error {
 		c := closedCornerCase{p.Float("corner"), p.Float("turn"), p.Float("lead"), p.Float("rad"), p.Float("profile")}

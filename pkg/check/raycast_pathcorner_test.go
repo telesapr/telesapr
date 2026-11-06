@@ -97,6 +97,9 @@ func TestOracleFittedCorner(t *testing.T) {
 // the corner and turns along the rest: the profile still about the path,
 // the volume is its area times the path's length, and the kernel's mesh
 // agrees with the oracle's, whose frames twist as the path spreads it.
+// The volume is measured in a full sweep only: TestOracleFittedCorner
+// measures the same sweep untwisted, and pkg/topo's
+// TestPathSweepTwistedCorner the twisted corners' volumes.
 func TestOracleFittedTwistedCorner(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -113,7 +116,7 @@ func TestOracleFittedTwistedCorner(t *testing.T) {
 	dir := end.Minus(top).WithMagnitude(1)
 	want := 80 * (55 + cubicLength(slantCubic(end, dir)))
 	o := oracleOf(t, d)
-	if measuresVolume() {
+	if measuresEvery() {
 		if m := o.Measure(1e-3, 256); !near(m.Volume, want, 2e-3) {
 			t.Errorf("volume %g, want %g (spread %g at %d rays)", m.Volume, want, m.Spread(), m.Rays)
 		}

@@ -9,6 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -45,6 +46,13 @@ func near(a, b, rel float64) bool { return math.Abs(a-b) <= rel*math.Abs(b) }
 // test; what the detector is for, the kernel's regeneration, and the
 // oracle's rays against its mesh (Oracle.Diff) still run.
 func measuresVolume() bool { return !fixtures.RaceDetector }
+
+// measuresEvery reports whether a test of several cases by rays takes the
+// volume of every case, not only of those it names: in a full sweep
+// (make test-sweeps). Measuring is nearly all of such a test's time and
+// runs on one goroutine; the ordinary run still checks every case's rays
+// against the kernel's mesh (Oracle.Diff).
+func measuresEvery() bool { return measuresVolume() && sweep.Full() }
 
 // A box's volume and centroid come out exact on the coarsest grid,
 // and a probe through it enters and leaves at its faces.
@@ -87,7 +95,7 @@ func TestOracleBooleans(t *testing.T) {
 	d.Features.Extrude(20, "boss")
 	want := 40*40*10 - math.Pi*25*10 + 20*20*20 - 10*10*10
 	o := oracleOf(t, d)
-	m := o.Measure(1e-4, 256)
+	m := o.Measure(1e-3, 256)
 	if !near(m.Volume, want, 2e-3) {
 		t.Errorf("volume %g, want %g (spread %g at %d rays)", m.Volume, want, m.Spread(), m.Rays)
 	}

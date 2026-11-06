@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
@@ -104,9 +104,11 @@ func TestSweepProfilePartway(t *testing.T) {
 			switch {
 			case c.path == "cubic-corner":
 				// The oracle refuses corners beside a cubic.
-			case (testing.Short() || fixtures.RaceDetector) && (c.up || c.path == "cubic"):
+			case !sweep.Full() && (c.up || c.path == "cubic"):
 				// The oracle's own frames along a fitted path take a minute,
-				// ten under the race detector.
+				// ten under the race detector, and pkg/script/api's
+				// TestRayCheckFittedSweep holds the oracle on a fitted
+				// sweep: these two only in make test-sweeps.
 			default:
 				if rc := s.Analyze().RayCheck(); len(rc.Disagree) > 0 {
 					t.Errorf("the ray-cast oracle disagrees on %d of %d rays", len(rc.Disagree), rc.Rays)

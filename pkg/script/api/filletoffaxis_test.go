@@ -89,67 +89,81 @@ func bandOnCone(d *Doc, y, top float64) (SolidEdge, float64) {
 // the default of 20 segments a curve the cone's circle is capped, so
 // that the difference jumps by 0.07 mm³ (1.5% of the fillet) at some
 // chord tolerances, 0.00285% among them; at 200 it stays within 0.5% of
-// OpenCASCADE's from 0.0015% to 0.003%.
+// OpenCASCADE's from 0.0015% to 0.003%. Under -short the fillet of 2,
+// saved and loaded.
 func TestChamferRunsOffBand(t *testing.T) {
+	t.Parallel()
 	occ := map[float64]float64{2: 4.579086, 2.5: 6.797516}
 	sizes := []float64{2, 2.5}
-	if fixtures.RaceDetector {
+	if fixtures.RaceDetector || testing.Short() && !sweep.Full() {
 		// Three and a half minutes there; 2 is the size saved and loaded.
 		sizes = sizes[:1]
 	}
 	for _, what := range []string{"a chamfer", "a fillet"} {
-		for _, r := range sizes {
-			d := New()
-			d.Edit.SetChordTolerance(0.003)
-			d.Edit.SetMaxSegments(200)
-			edge, before := bandOnCone(d, 3, 25)
-			var g Group
-			if what == "a chamfer" {
-				g = d.Features.ChamferSolid([]SolidEdge{edge}, r, "")
-			} else {
-				g = d.Features.FilletSolid([]SolidEdge{edge}, r, "")
-			}
-			if p := g.Problem(); p != "" {
-				t.Errorf("%s of %g: %s", what, r, p)
-				continue
-			}
-			rep := g.Analyze().Check()
-			added := rep.Volume - before
-			if !rep.Sound() {
-				t.Errorf("%s of %g: %s", what, r, rep.Summary())
-			}
-			if what == "a fillet" && math.Abs(added-occ[r]) > 0.015*occ[r] {
-				t.Errorf("%s of %g added %g, OpenCASCADE's %g", what, r, added, occ[r])
-			}
-			// The chamfer adds about its section's area along the edge, which
-			// grows as the square of its size: 7.88 at 1.
-			if what == "a chamfer" && math.Abs(added/(r*r)-7.9) > 0.1 {
-				t.Errorf("%s of %g added %g, %g per size squared", what, r, added, added/(r*r))
-			}
-			if r != 2 {
-				continue
-			}
-			// The same after saving and loading, and gone with one undo.
-			path := filepath.Join(t.TempDir(), "runoff.tlspr")
-			if err := d.File.Save(path); err != nil {
-				t.Fatal(err)
-			}
-			e := New()
-			if err := e.File.Load(path); err != nil {
-				t.Fatal(err)
-			}
-			e.Edit.SetChordTolerance(0.003)
-			e.Edit.SetMaxSegments(200)
-			gs := e.Groups()
-			if r2 := gs[len(gs)-1].Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-rep.Volume) > 1e-6*rep.Volume {
-				t.Errorf("%s, loaded: %s, volume %g, saved %g", what, r2.Summary(), r2.Volume, rep.Volume)
-			}
-			// A Go program's document is one step of undo throughout.
-			n := len(d.Groups())
-			if !d.Edit.Undo() || len(d.Groups()) >= n {
-				t.Errorf("%s: undo left %d groups of %d", what, len(d.Groups()), n)
-			}
+		if testing.Short() && !sweep.Full() && what != "a fillet" {
+			continue
 		}
+		for _, r := range sizes {
+			t.Run(fmt.Sprintf("%s of %g", what, r), func(t *testing.T) {
+				t.Parallel()
+				blendRunsOffBand(t, what, r, occ[r])
+			})
+		}
+	}
+}
+
+// blendRunsOffBand is a case of TestChamferRunsOffBand: what ("a
+// chamfer" or "a fillet") of size r, OpenCASCADE's fillet adding occ.
+func blendRunsOffBand(t *testing.T, what string, r, occ float64) {
+	t.Helper()
+	d := New()
+	d.Edit.SetChordTolerance(0.003)
+	d.Edit.SetMaxSegments(200)
+	edge, before := bandOnCone(d, 3, 25)
+	var g Group
+	if what == "a chamfer" {
+		g = d.Features.ChamferSolid([]SolidEdge{edge}, r, "")
+	} else {
+		g = d.Features.FilletSolid([]SolidEdge{edge}, r, "")
+	}
+	if p := g.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	rep := g.Analyze().Check()
+	added := rep.Volume - before
+	if !rep.Sound() {
+		t.Errorf("%s of %g: %s", what, r, rep.Summary())
+	}
+	if what == "a fillet" && math.Abs(added-occ) > 0.015*occ {
+		t.Errorf("%s of %g added %g, OpenCASCADE's %g", what, r, added, occ)
+	}
+	// The chamfer adds about its section's area along the edge, which
+	// grows as the square of its size: 7.88 at 1.
+	if what == "a chamfer" && math.Abs(added/(r*r)-7.9) > 0.1 {
+		t.Errorf("%s of %g added %g, %g per size squared", what, r, added, added/(r*r))
+	}
+	if r != 2 {
+		return
+	}
+	// The same after saving and loading, and gone with one undo.
+	path := filepath.Join(t.TempDir(), "runoff.tlspr")
+	if err := d.File.Save(path); err != nil {
+		t.Fatal(err)
+	}
+	e := New()
+	if err := e.File.Load(path); err != nil {
+		t.Fatal(err)
+	}
+	e.Edit.SetChordTolerance(0.003)
+	e.Edit.SetMaxSegments(200)
+	gs := e.Groups()
+	if r2 := gs[len(gs)-1].Analyze().Check(); !r2.Sound() || math.Abs(r2.Volume-rep.Volume) > 1e-6*rep.Volume {
+		t.Errorf("%s, loaded: %s, volume %g, saved %g", what, r2.Summary(), r2.Volume, rep.Volume)
+	}
+	// A Go program's document is one step of undo throughout.
+	n := len(d.Groups())
+	if !d.Edit.Undo() || len(d.Groups()) >= n {
+		t.Errorf("%s: undo left %d groups of %d", what, len(d.Groups()), n)
 	}
 }
 
@@ -227,17 +241,19 @@ func TestRunOffFittedCuts(t *testing.T) {
 		tops = tops[:1]
 	}
 	for _, top := range tops {
-		d := New()
-		d.Edit.SetChordTolerance(0.003)
-		edge, before := bandOnCone(d, 2, top)
-		f := d.Features.FilletSolid([]SolidEdge{edge}, 3, "")
-		if p := f.Problem(); p != "" {
-			t.Errorf("top %g: %s", top, p)
-			continue
-		}
-		if r := f.Analyze().Check(); !r.Sound() || r.Volume <= before {
-			t.Errorf("top %g: %s, volume %g, before %g", top, r.Summary(), r.Volume, before)
-		}
+		t.Run(fmt.Sprint(top), func(t *testing.T) {
+			t.Parallel()
+			d := New()
+			d.Edit.SetChordTolerance(0.003)
+			edge, before := bandOnCone(d, 2, top)
+			f := d.Features.FilletSolid([]SolidEdge{edge}, 3, "")
+			if p := f.Problem(); p != "" {
+				t.Fatal(p)
+			}
+			if r := f.Analyze().Check(); !r.Sound() || r.Volume <= before {
+				t.Errorf("%s, volume %g, before %g", r.Summary(), r.Volume, before)
+			}
+		})
 	}
 }
 
@@ -249,31 +265,42 @@ func TestRunOffFittedCuts(t *testing.T) {
 // away; at 3 six naked edges stayed where the chamfer reaches the slot's
 // floor, gone by 2026-10-29 (the mender's slivers, srf's
 // earMeshSlivers), sound from 2.75 to 3.25 at chord tolerances of
-// 0.002% to 0.005%.
+// 0.002% to 0.005%. Under -short the chamfer of 3, side by side
+// otherwise.
 func TestChamferSlotOnCone(t *testing.T) {
 	t.Parallel()
 	for _, r := range []float64{1, 1.5, 2, 2.5, 3} {
-		d := New()
-		d.Edit.SetChordTolerance(0.003)
-		d.Features.SketchIn(d.Workplane("ZX"), "")
-		axis := d.Sketch.Line(V(0, 0, -2), V(0, 0, 32))
-		axis.SetConstruction(true)
-		d.Sketch.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(4, 0, 30), V(0, 0, 30))
-		d.Features.Lathe(axis, "")
-		d.Features.SketchIn(d.Workplane("XY"), "")
-		d.Sketch.Rect(V(6, -3, 0), V(20, 3, 0))
-		slot := d.Features.Extrude(22, "slot")
-		slot.SetCombine(Difference)
-		before := slot.Analyze().Check().Volume
-		g := d.Features.ChamferSolid([]SolidEdge{slot.Solid().EdgeAt(V(math.Sqrt(64-9), 3, 10))}, r, "")
-		if p := g.Problem(); p != "" {
-			t.Errorf("chamfer of %g: %s", r, p)
+		if testing.Short() && !sweep.Full() && r != 3 {
 			continue
 		}
-		rep := g.Analyze().Check()
-		if !rep.Sound() || rep.Volume >= before {
-			t.Errorf("chamfer of %g: %s, volume %g, before %g", r, rep.Summary(), rep.Volume, before)
-		}
+		t.Run(fmt.Sprint(r), func(t *testing.T) {
+			t.Parallel()
+			chamferSlotOnCone(t, r)
+		})
+	}
+}
+
+// chamferSlotOnCone is TestChamferSlotOnCone's chamfer of r.
+func chamferSlotOnCone(t *testing.T, r float64) {
+	d := New()
+	d.Edit.SetChordTolerance(0.003)
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	axis := d.Sketch.Line(V(0, 0, -2), V(0, 0, 32))
+	axis.SetConstruction(true)
+	d.Sketch.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(4, 0, 30), V(0, 0, 30))
+	d.Features.Lathe(axis, "")
+	d.Features.SketchIn(d.Workplane("XY"), "")
+	d.Sketch.Rect(V(6, -3, 0), V(20, 3, 0))
+	slot := d.Features.Extrude(22, "slot")
+	slot.SetCombine(Difference)
+	before := slot.Analyze().Check().Volume
+	g := d.Features.ChamferSolid([]SolidEdge{slot.Solid().EdgeAt(V(math.Sqrt(64-9), 3, 10))}, r, "")
+	if p := g.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	rep := g.Analyze().Check()
+	if !rep.Sound() || rep.Volume >= before {
+		t.Errorf("chamfer of %g: %s, volume %g, before %g", r, rep.Summary(), rep.Volume, before)
 	}
 }
 
@@ -286,33 +313,44 @@ func TestChamferSlotOnCone(t *testing.T) {
 // back, so the chamfer's trim on the cone ran back on itself and the
 // meshes were open (5 naked edges at 2.5; at 3, 38 naked and 60
 // crossing). The feet are eased off the ball's pace where the skin's
-// sides run back (topo's rampS), and both are sound.
+// sides run back (topo's rampS), and both are sound. Under -short the
+// chamfer of 3, side by side otherwise.
 func TestChamferRaisedBand(t *testing.T) {
 	t.Parallel()
 	for _, r := range []float64{2, 2.5, 3} {
-		d := New()
-		d.Edit.SetChordTolerance(0.003)
-		d.Features.SketchIn(d.Workplane("ZX"), "")
-		axis := d.Sketch.Line(V(0, 0, -2), V(0, 0, 32))
-		axis.SetConstruction(true)
-		d.Sketch.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(4, 0, 30), V(0, 0, 30))
-		d.Features.Lathe(axis, "")
-		d.Features.Sketch3D("raised")
-		d.Features.SketchIn(d.Sketch.NewWorkplane(V(0, 0, 5), V(1, 0, 0), V(0, 1, 0)), "")
-		d.Sketch.Rect(V(6, -3, 5), V(20, 3, 5))
-		band := d.Features.Extrude(20, "band")
-		before := band.Analyze().Check().Volume
-		g := d.Features.ChamferSolid([]SolidEdge{band.Solid().EdgeAt(V(math.Sqrt(64-9), 3, 10))}, r, "")
-		if p := g.Problem(); p != "" {
-			t.Errorf("chamfer of %g: %s", r, p)
+		if testing.Short() && !sweep.Full() && r != 3 {
 			continue
 		}
-		rep := g.Analyze().Check()
-		// It adds about its section's area along the edge, as on the band
-		// standing on the base (TestChamferRunsOffBand), less what the
-		// raised band's bottom leaves out.
-		if added := rep.Volume - before; !rep.Sound() || added <= 0 || added > 8*r*r {
-			t.Errorf("chamfer of %g: %s, added %g", r, rep.Summary(), added)
-		}
+		t.Run(fmt.Sprint(r), func(t *testing.T) {
+			t.Parallel()
+			chamferRaisedBand(t, r)
+		})
+	}
+}
+
+// chamferRaisedBand is TestChamferRaisedBand's chamfer of r.
+func chamferRaisedBand(t *testing.T, r float64) {
+	d := New()
+	d.Edit.SetChordTolerance(0.003)
+	d.Features.SketchIn(d.Workplane("ZX"), "")
+	axis := d.Sketch.Line(V(0, 0, -2), V(0, 0, 32))
+	axis.SetConstruction(true)
+	d.Sketch.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(4, 0, 30), V(0, 0, 30))
+	d.Features.Lathe(axis, "")
+	d.Features.Sketch3D("raised")
+	d.Features.SketchIn(d.Sketch.NewWorkplane(V(0, 0, 5), V(1, 0, 0), V(0, 1, 0)), "")
+	d.Sketch.Rect(V(6, -3, 5), V(20, 3, 5))
+	band := d.Features.Extrude(20, "band")
+	before := band.Analyze().Check().Volume
+	g := d.Features.ChamferSolid([]SolidEdge{band.Solid().EdgeAt(V(math.Sqrt(64-9), 3, 10))}, r, "")
+	if p := g.Problem(); p != "" {
+		t.Fatal(p)
+	}
+	rep := g.Analyze().Check()
+	// It adds about its section's area along the edge, as on the band
+	// standing on the base (TestChamferRunsOffBand), less what the
+	// raised band's bottom leaves out.
+	if added := rep.Volume - before; !rep.Sound() || added <= 0 || added > 8*r*r {
+		t.Errorf("chamfer of %g: %s, added %g", r, rep.Summary(), added)
 	}
 }

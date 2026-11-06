@@ -5,19 +5,18 @@ import (
 	"math"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// meshAbove is the volume of the model up to and with group g that
-// lies over the box [x0, x1] by [y0, y1] and above the height zMin(y)
-// there, by vertical lines through the centres of n by n cells: each
-// crosses the mesh where it goes in and out, so that the lengths inside
-// above zMin add up. The mesh must be closed there.
-func meshAbove(g Group, x0, x1, y0, y1 float64, n int, zMin func(y float64) float64) float64 {
+// meshOver is the triangles of the mesh of the model up to and with
+// group g whose boxes meet the box [x0, x1] by [y0, y1] in x and y.
+func meshOver(g Group, x0, x1, y0, y1 float64) []srf.STriangle {
 	var tris []srf.STriangle
 	g.d.readMesh(func(sk *sketch.Sketch) {
 		for _, tr := range displayMesh(sk, g.get(sk)).Triangles {
@@ -28,6 +27,16 @@ func meshAbove(g Group, x0, x1, y0, y1 float64, n int, zMin func(y float64) floa
 			tris = append(tris, tr)
 		}
 	})
+	return tris
+}
+
+// volumeAbove is the volume of a mesh, of which tris are the triangles
+// over the box [x0, x1] by [y0, y1] (meshOver), that lies over the box
+// and above the height zMin(y) there, by vertical lines through the
+// centres of n by n cells: each crosses the mesh where it goes in and
+// out, so that the lengths inside above zMin add up. The mesh must be
+// closed there.
+func volumeAbove(tris []srf.STriangle, x0, x1, y0, y1 float64, n int, zMin func(y float64) float64) float64 {
 	// The triangles by the cells their boxes cover.
 	dx, dy := (x1-x0)/float64(n), (y1-y0)/float64(n)
 	cells := make([][]int, n*n)
@@ -74,29 +83,44 @@ func meshAbove(g Group, x0, x1, y0, y1 float64, n int, zMin func(y float64) floa
 	return vol
 }
 
-// tangentOracle is what a blend of size r on the x band's edge on the
-// cone adds where its top, at top with sag, is carried on past the
-// band's side by its tangent plane there: the same blend of the band
-// with a flat top at 30, which ends on the end face as no run-off does,
-// less what of it lies above that plane (meshAbove). Past the band's
-// side and the end face's plane nothing but the blend lies above it.
-func tangentOracle(chamfer bool, top, sag, r float64) (float64, error) {
+// flatTopBlend is the blend of size r on the x band's edge on the cone
+// of a band with a flat top at 30, which ends on the end face as no
+// run-off does: the volume it adds and its mesh over the box past the
+// band's side and the end face's plane that tangentOracle measures in.
+type flatTopBlend struct {
+	added float64
+	tris  []srf.STriangle
+}
+
+// makeFlatTopBlend makes the flatTopBlend of size r, a chamfer or a
+// fillet. It depends on neither the top's height nor its sag, so a test
+// makes it once for every top and sag (TestChamferRunsOffPastRoundTop).
+func makeFlatTopBlend(chamfer bool, r float64) (flatTopBlend, error) {
 	d := New()
 	d.Edit.SetChordTolerance(0.003)
 	d.Edit.SetMaxSegments(200)
 	edge, before := bandOnCone(d, 3, 30)
 	g, err := blendOrRefusal(d, edge, r, chamfer)
 	if err != nil {
-		return 0, err
+		return flatTopBlend{}, err
 	}
 	rep := g.Analyze().Check()
 	if !rep.Sound() {
-		return 0, fmt.Errorf("the band with a flat top: %s", rep.Summary())
+		return flatTopBlend{}, fmt.Errorf("the band with a flat top: %s", rep.Summary())
 	}
+	return flatTopBlend{rep.Volume - before, meshOver(g, 6, 12, 3, 9)}, nil
+}
+
+// tangentOracle is what a blend on the x band's edge on the cone adds
+// where its top, at top with sag, is carried on past the band's side by
+// its tangent plane there: the same blend of the band with a flat top
+// at 30 (flat), less what of it lies above that plane (volumeAbove).
+// Past the band's side and the end face's plane nothing but the blend
+// lies above it.
+func tangentOracle(flat flatTopBlend, top, sag float64) float64 {
 	// The arc's centre lies c under the band's edge at y = 3.
 	c := (9 - sag*sag) / (2 * sag)
-	above := meshAbove(g, 6, 12, 3, 9, 600, func(y float64) float64 { return top - 3*(y-3)/c })
-	return rep.Volume - before - above, nil
+	return flat.added - volumeAbove(flat.tris, 6, 12, 3, 9, 600, func(y float64) float64 { return top - 3*(y-3)/c })
 }
 
 // pastRoundTopRefused are the blends of TestChamferRunsOffPastRoundTop
@@ -120,28 +144,52 @@ var pastRoundTopRefused = map[string]string{
 // tangentIfPast): every blend of the grid but one is sound and adds,
 // within 0.1% (0.06% measured), what the same blend of a band with a
 // flat top at 30 adds less what of it lies above that plane, by
-// vertical lines through a grid of 600 by 600 (meshAbove). The blends
-// the top's circle carried on takes are within that too: by the band's
-// side the circle lies under its tangent by less than the mesh tells.
+// vertical lines through a grid of 600 by 600 (tangentOracle). The
+// blends the top's circle carried on takes are within that too: by the
+// band's side the circle lies under its tangent by less than the mesh
+// tells. The blend with the flat top depends only on the kind and the
+// size, so it is made once for each of the 10 and measured for every
+// top and sag. The ordinary run takes every top and sag at 2.5, where
+// most were refused and the one still refused is, and each other size
+// at one top and sag a kind, 26 of the 90; make test-sweeps all of them.
 func TestChamferRunsOffPastRoundTop(t *testing.T) {
 	t.Parallel()
 	type key struct {
 		chamfer     bool
 		top, sag, r float64
 	}
+	// The top and sag each size but 2.5 is tried at, by kind, in the
+	// ordinary run: every top, sag and size met at least once a kind.
+	at := map[bool]map[float64][2]float64{
+		true:  {2: {20, 0.5}, 2.25: {21, 1}, 2.75: {22, 2}, 3: {21, 2}},
+		false: {2: {22, 1}, 2.25: {20, 2}, 2.75: {21, 0.5}, 3: {20, 1}},
+	}
 	var keys []key
 	for _, chamfer := range []bool{true, false} {
 		for _, top := range []float64{20, 21, 22} {
 			for _, sag := range []float64{0.5, 1, 2} {
 				for _, r := range []float64{2, 2.25, 2.5, 2.75, 3} {
-					keys = append(keys, key{chamfer, top, sag, r})
+					if r == 2.5 || at[chamfer][r] == [2]float64{top, sag} || sweep.Full() {
+						keys = append(keys, key{chamfer, top, sag, r})
+					}
 				}
 			}
 		}
 	}
-	if testing.Short() || fixtures.RaceDetector {
+	if (testing.Short() || fixtures.RaceDetector) && !sweep.Full() {
 		// Two seconds a blend, four under the race detector.
 		keys = []key{{true, 20, 1, 2.5}, {false, 22, 2, 2.5}}
+	}
+	type blend struct {
+		chamfer bool
+		r       float64
+	}
+	flat := map[blend]func() (flatTopBlend, error){}
+	for _, k := range keys {
+		b := blend{k.chamfer, k.r}
+		if flat[b] == nil {
+			flat[b] = sync.OnceValues(func() (flatTopBlend, error) { return makeFlatTopBlend(b.chamfer, b.r) })
+		}
 	}
 	for _, k := range keys {
 		what := "fillet"
@@ -170,11 +218,11 @@ func TestChamferRunsOffPastRoundTop(t *testing.T) {
 				t.Fatalf("%s", rep.Summary())
 			}
 			added := rep.Volume - before
-			want, err := tangentOracle(k.chamfer, k.top, k.sag, k.r)
+			f, err := flat[blend{k.chamfer, k.r}]()
 			if err != nil {
 				t.Fatalf("oracle: %v", err)
 			}
-			if math.Abs(added-want) > 0.001*want {
+			if want := tangentOracle(f, k.top, k.sag); math.Abs(added-want) > 0.001*want {
 				t.Errorf("added %g, the oracle %g", added, want)
 			}
 		})

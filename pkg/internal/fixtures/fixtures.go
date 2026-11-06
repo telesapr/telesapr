@@ -5,6 +5,7 @@ package fixtures
 
 import (
 	"io/fs"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -83,4 +84,22 @@ func sample[T any](xs []T, thin bool) []T {
 		}
 	}
 	return out
+}
+
+// ThreadVariant reports whether rel, a path as Walk gives it, is one of
+// the modelled-thread fixtures that differ from each other only in the
+// options of their thread (designation, starts, run-out, hand, ...):
+// those of testdata/thread but the cosmetic ones, which are cheap, and
+// the interface's saved bolt and nut. pkg/sketch's thread goldens build
+// and check every one of them; a test over every fixture needs only the
+// few it names to keep (sweep.Without).
+func ThreadVariant(rel string) bool {
+	dir, name := path.Split(rel)
+	switch dir {
+	case "thread/":
+		return !strings.HasPrefix(name, "cosmetic_")
+	case "ui/":
+		return name == "thread_bolt.tlspr" || name == "thread_nut.tlspr"
+	}
+	return false
 }

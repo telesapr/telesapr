@@ -58,7 +58,8 @@ func TestPathSweepArcCorner(t *testing.T) {
 	t.Parallel()
 	tol := srf.Tol(0.005, 100)
 	col := core.NewRGBA(100, 100, 100, 255)
-	for _, c := range []struct {
+	// Side by side, a fifth under -short and the race detector (sweep.Pick).
+	for _, c := range sweep.Pick([]struct {
 		corner, turn float64
 		opts         topo.PathSweepOptions
 	}{
@@ -68,44 +69,47 @@ func TestPathSweepArcCorner(t *testing.T) {
 		// Held to the arc's axis, and twisted along the cubic only.
 		{60, 60, topo.PathSweepOptions{Up: v(0, 0, 1)}},
 		{-45, 80, topo.PathSweepOptions{Twist: 2, Reach: 6}},
-	} {
-		for kind := range 3 {
-			path := arcCornerPath(c.corner, c.turn, true)
-			loops, area := profileAcross(path, kind)
-			opts := c.opts
-			opts.Tol = 5e-4
-			sp := newPath(t, path, opts)
-			sh, err := topo.MakePathSweep(sp, loops, col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2), tol)
-			if err != nil {
-				t.Errorf("corner %g turn %g, profile %d: %v", c.corner, c.turn, kind, err)
-				continue
-			}
-			var m srf.SMesh
-			sh.TriangulateInto(&m)
-			rep := check.Solid(sh, &m)
+	}, 0) {
+		t.Run(fmt.Sprintf("corner %g turn %g %+v", c.corner, c.turn, c.opts), func(t *testing.T) {
+			t.Parallel()
+			for kind := range 3 {
+				path := arcCornerPath(c.corner, c.turn, true)
+				loops, area := profileAcross(path, kind)
+				opts := c.opts
+				opts.Tol = 5e-4
+				sp := newPath(t, path, opts)
+				sh, err := topo.MakePathSweep(sp, loops, col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2), tol)
+				if err != nil {
+					t.Errorf("corner %g turn %g, profile %d: %v", c.corner, c.turn, kind, err)
+					continue
+				}
+				var m srf.SMesh
+				sh.TriangulateInto(&m)
+				rep := check.Solid(sh, &m)
 
-			// The rigid run alone.
-			run := newPath(t, arcCornerPath(c.corner, c.turn, false), topo.PathSweepOptions{Tol: 5e-4})
-			rs, err := topo.MakePathSweep(run, loops, col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2), tol)
-			if err != nil {
-				t.Fatalf("corner %g turn %g, the run alone: %v", c.corner, c.turn, err)
+				// The rigid run alone.
+				run := newPath(t, arcCornerPath(c.corner, c.turn, false), topo.PathSweepOptions{Tol: 5e-4})
+				rs, err := topo.MakePathSweep(run, loops, col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2), tol)
+				if err != nil {
+					t.Fatalf("corner %g turn %g, the run alone: %v", c.corner, c.turn, err)
+				}
+				var rm srf.SMesh
+				rs.TriangulateInto(&rm)
+				rrep := check.Solid(rs, &rm)
+				perimeter := 0.0
+				for _, l := range loops {
+					perimeter += pathLength(l)
+				}
+				tail := pathLength(path[2:])
+				want := rrep.Volume + area*tail
+				allow := tol.ChordTolMm() * perimeter * pathLength(path)
+				t.Logf("corner %g turn %g, profile %d: volume %.4f, want %.4f within %.3g", c.corner, c.turn, kind, rep.Volume, want, allow)
+				if !rep.Sound() || !rrep.Sound() || math.Abs(rep.Volume-want) > allow {
+					t.Errorf("corner %g turn %g, profile %d: %s (run %s), want volume %.4f within %.3g",
+						c.corner, c.turn, kind, rep.String(), rrep.String(), want, allow)
+				}
 			}
-			var rm srf.SMesh
-			rs.TriangulateInto(&rm)
-			rrep := check.Solid(rs, &rm)
-			perimeter := 0.0
-			for _, l := range loops {
-				perimeter += pathLength(l)
-			}
-			tail := pathLength(path[2:])
-			want := rrep.Volume + area*tail
-			allow := tol.ChordTolMm() * perimeter * pathLength(path)
-			t.Logf("corner %g turn %g, profile %d: volume %.4f, want %.4f within %.3g", c.corner, c.turn, kind, rep.Volume, want, allow)
-			if !rep.Sound() || !rrep.Sound() || math.Abs(rep.Volume-want) > allow {
-				t.Errorf("corner %g turn %g, profile %d: %s (run %s), want volume %.4f within %.3g",
-					c.corner, c.turn, kind, rep.String(), rrep.String(), want, allow)
-			}
-		}
+		})
 	}
 }
 
@@ -170,7 +174,8 @@ func TestPathSweepTwistedRun(t *testing.T) {
 	t.Parallel()
 	tol := srf.Tol(0.005, 100)
 	col := core.NewRGBA(100, 100, 100, 255)
-	for _, c := range []struct {
+	// Side by side, a fifth under -short and the race detector (sweep.Pick).
+	for _, c := range sweep.Pick([]struct {
 		lead, corner, turn, twist float64
 		after                     bool
 	}{
@@ -179,51 +184,54 @@ func TestPathSweepTwistedRun(t *testing.T) {
 		{30, 90, -30, 3, false},
 		{40, 60, 60, 1.5, true},
 		{30, -50, 45, -1, true},
-	} {
-		for kind := range 3 {
-			if fixtures.RaceDetector && kind != 1 {
-				// Under the race detector one profile of the three: they
-				// sweep on the same goroutines.
-				continue
-			}
-			path := twistedRunPath(c.lead, c.corner, c.turn, c.after)
-			loops, _ := profileAcross(path, kind)
-			reach := profileReach(path, loops)
-			sp := newPath(t, path, topo.PathSweepOptions{Tol: 5e-4, Twist: c.twist, Reach: reach})
-			if len(sp.Pieces()) <= len(path) {
-				t.Errorf("%+v, profile %d: the line isn't split where its joint's reach ends", c, kind)
-			}
-			if s := sp.TwistShare(sp.Length()); math.Abs(s-1) > 1e-12 {
-				t.Errorf("%+v: twist share %g at the end", c, s)
-			}
-			sh, err := topo.MakePathSweep(sp, loops, col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2), tol)
-			if err != nil {
-				t.Errorf("%+v, profile %d: %v", c, kind, err)
-				continue
-			}
-			var m srf.SMesh
-			sh.TriangulateInto(&m)
-			rep := check.Solid(sh, &m)
+	}, 0) {
+		t.Run(fmt.Sprintf("%+v", c), func(t *testing.T) {
+			t.Parallel()
+			for kind := range 3 {
+				if (fixtures.RaceDetector || testing.Short()) && kind != 1 {
+					// Under -short and the race detector one profile of the
+					// three: they sweep on the same goroutines.
+					continue
+				}
+				path := twistedRunPath(c.lead, c.corner, c.turn, c.after)
+				loops, _ := profileAcross(path, kind)
+				reach := profileReach(path, loops)
+				sp := newPath(t, path, topo.PathSweepOptions{Tol: 5e-4, Twist: c.twist, Reach: reach})
+				if len(sp.Pieces()) <= len(path) {
+					t.Errorf("%+v, profile %d: the line isn't split where its joint's reach ends", c, kind)
+				}
+				if s := sp.TwistShare(sp.Length()); math.Abs(s-1) > 1e-12 {
+					t.Errorf("%+v: twist share %g at the end", c, s)
+				}
+				sh, err := topo.MakePathSweep(sp, loops, col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2), tol)
+				if err != nil {
+					t.Errorf("%+v, profile %d: %v", c, kind, err)
+					continue
+				}
+				var m srf.SMesh
+				sh.TriangulateInto(&m)
+				rep := check.Solid(sh, &m)
 
-			flat := newPath(t, path, topo.PathSweepOptions{Tol: 5e-4})
-			fs, err := topo.MakePathSweep(flat, arrivingLoops(path, loops, c.twist, c.after), col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2), tol)
-			if err != nil {
-				t.Fatalf("%+v, untwisted: %v", c, err)
+				flat := newPath(t, path, topo.PathSweepOptions{Tol: 5e-4})
+				fs, err := topo.MakePathSweep(flat, arrivingLoops(path, loops, c.twist, c.after), col, srf.OriginFor(9, 0), srf.OriginFor(9, 1), srf.OriginFor(9, 2), tol)
+				if err != nil {
+					t.Fatalf("%+v, untwisted: %v", c, err)
+				}
+				var fm srf.SMesh
+				fs.TriangulateInto(&fm)
+				frep := check.Solid(fs, &fm)
+				perimeter := 0.0
+				for _, l := range loops {
+					perimeter += pathLength(l)
+				}
+				allow := tol.ChordTolMm() * perimeter * pathLength(path)
+				t.Logf("%+v, profile %d: volume %.4f, untwisted %.4f within %.3g", c, kind, rep.Volume, frep.Volume, allow)
+				if !rep.Sound() || !frep.Sound() || math.Abs(rep.Volume-frep.Volume) > allow {
+					t.Errorf("%+v, profile %d: %s (untwisted %s), want volume %.4f within %.3g",
+						c, kind, rep.String(), frep.String(), frep.Volume, allow)
+				}
 			}
-			var fm srf.SMesh
-			fs.TriangulateInto(&fm)
-			frep := check.Solid(fs, &fm)
-			perimeter := 0.0
-			for _, l := range loops {
-				perimeter += pathLength(l)
-			}
-			allow := tol.ChordTolMm() * perimeter * pathLength(path)
-			t.Logf("%+v, profile %d: volume %.4f, untwisted %.4f within %.3g", c, kind, rep.Volume, frep.Volume, allow)
-			if !rep.Sound() || !frep.Sound() || math.Abs(rep.Volume-frep.Volume) > allow {
-				t.Errorf("%+v, profile %d: %s (untwisted %s), want volume %.4f within %.3g",
-					c, kind, rep.String(), frep.String(), frep.Volume, allow)
-			}
-		}
+		})
 	}
 	// A lead line within its joint's reach: the arc twists past its own
 	// joint's reach instead. The lead is then too short for the joint, a

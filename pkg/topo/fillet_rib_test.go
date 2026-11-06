@@ -1,9 +1,11 @@
 package topo_test
 
 import (
+	"cmp"
 	"fmt"
 	"math"
 	"runtime"
+	"slices"
 	"sync"
 	"testing"
 
@@ -56,10 +58,22 @@ func (rb rib) foot() (sides, ends [][2]geom.Vector) {
 // height's sum, less the rib's own, over a grid whose lines the upright
 // walls lie along, so that a step never falls inside a cell.
 func (rb rib) filled(r float64, sides, ends bool) float64 {
+	return rb.filledAt(r, sides, ends, ribFilledStep)
+}
+
+// ribFilledStep is the side of filled's cells: the walls' lines fall on
+// the grid's, and at it the sum is good to a few thousandths.
+const ribFilledStep = 0.005
+
+// filledAt is filled summed over cells of side step.
+func (rb rib) filledAt(r float64, sides, ends bool, step float64) float64 {
 	wall := func(theta, r float64) func(s float64) float64 {
 		// s is how far outside the wall's foot a point of the plate lies.
 		ss := r * math.Tan(theta/2)
 		touch := -ss * math.Cos(theta)
+		// The slope's height outside the foot, worked out once a wall
+		// and not once a cell: it was a third of the sum's time.
+		tan := math.Tan(theta)
 		return func(s float64) float64 {
 			switch {
 			case s <= touch && theta > math.Pi/2-1e-12:
@@ -68,7 +82,7 @@ func (rb rib) filled(r float64, sides, ends bool) float64 {
 				}
 				return 0
 			case s <= touch:
-				return math.Max(0, -s*math.Tan(theta))
+				return math.Max(0, -s*tan)
 			case s >= ss:
 				return 0
 			}
@@ -87,27 +101,75 @@ func (rb rib) filled(r float64, sides, ends bool) float64 {
 	side, back := wall(math.Pi/2, radius(sides)), wall(math.Pi/2, radius(ends))
 	front := wall(slope, radius(ends))
 	side0, back0, front0 := wall(math.Pi/2, 0), wall(math.Pi/2, 0), wall(slope, 0)
-	const step, margin = 0.005, 4.0
+	// Where a wall's fillet is, s from where it touches the wall to where
+	// it touches the plate, its height differs from the bare wall's; out
+	// of every wall's band the cell adds exactly nothing, so only the
+	// bands' cells are summed, in the order they come: the same sum, in a
+	// third of the time.
+	band := func(theta, r float64) (lo, hi float64, on bool) {
+		if r == 0 {
+			return 0, 0, false
+		}
+		ss := r * math.Tan(theta/2)
+		return -ss * math.Cos(theta), ss, true
+	}
+	sLo, sHi, sOn := band(math.Pi/2, radius(sides))
+	bLo, bHi, bOn := band(math.Pi/2, radius(ends))
+	fLo, fHi, fOn := band(slope, radius(ends))
+	const margin = 4.0
 	nu, ny := int(math.Round((ribFoot+2*margin)/step)), int(math.Round((ribWide+2*margin)/step))
+	// The cells, with three to spare either side, whose u (along the foot,
+	// s = k u from the back wall's foot) puts s between lo and hi.
+	k := ribWide / dl
+	cells := func(lo, hi, from float64) [2]int {
+		u0, u1 := min(from+lo/k, from+hi/k), max(from+lo/k, from+hi/k)
+		i0 := int(math.Floor((u0+margin)/step-0.5)) - 3
+		i1 := int(math.Ceil((u1+margin)/step-0.5)) + 3
+		return [2]int{max(0, i0), min(nu, i1+1)}
+	}
+	var spans [][2]int
+	if bOn {
+		spans = append(spans, cells(-bHi, -bLo, 0))
+	}
+	if fOn {
+		spans = append(spans, cells(fLo, fHi, ribFoot))
+	}
+	slices.SortFunc(spans, func(a, b [2]int) int { return cmp.Compare(a[0], b[0]) })
+	merged := [][2]int{}
+	for _, sp := range spans {
+		if n := len(merged); n > 0 && sp[0] <= merged[n-1][1] {
+			merged[n-1][1] = max(merged[n-1][1], sp[1])
+			continue
+		}
+		merged = append(merged, sp)
+	}
+	slack := 3 * step
+	near := func(s, lo, hi float64) bool { return s > lo-slack && s < hi+slack }
 	// The rows are summed side by side, in the order they come.
 	rows := make([]float64, ny)
 	var wg sync.WaitGroup
-	for k := range runtime.GOMAXPROCS(0) {
+	for g := range runtime.GOMAXPROCS(0) {
 		wg.Add(1)
-		go func(k int) {
+		go func(g int) {
 			defer wg.Done()
-			for j := k; j < ny; j += runtime.GOMAXPROCS(0) {
+			for j := g; j < ny; j += runtime.GOMAXPROCS(0) {
 				y := -margin + (float64(j)+0.5)*step
-				for i := range nu {
-					// u runs along the foot from the back wall, at any y.
-					u := -margin + (float64(i)+0.5)*step
-					sb, sf := -u*ribWide/dl, (u-ribFoot)*ribWide/dl
-					with := math.Min(math.Min(side(-y), side(y-ribWide)), math.Min(back(sb), front(sf)))
-					bare := math.Min(math.Min(side0(-y), side0(y-ribWide)), math.Min(back0(sb), front0(sf)))
-					rows[j] += with - bare
+				spans := merged
+				if sOn && (near(-y, sLo, sHi) || near(y-ribWide, sLo, sHi)) {
+					spans = [][2]int{{0, nu}}
+				}
+				for _, sp := range spans {
+					for i := sp[0]; i < sp[1]; i++ {
+						// u runs along the foot from the back wall, at any y.
+						u := -margin + (float64(i)+0.5)*step
+						sb, sf := -u*ribWide/dl, (u-ribFoot)*ribWide/dl
+						with := math.Min(math.Min(side(-y), side(y-ribWide)), math.Min(back(sb), front(sf)))
+						bare := math.Min(math.Min(side0(-y), side0(y-ribWide)), math.Min(back0(sb), front0(sf)))
+						rows[j] += with - bare
+					}
 				}
 			}
-		}(k)
+		}(g)
 	}
 	wg.Wait()
 	sum := 0.0

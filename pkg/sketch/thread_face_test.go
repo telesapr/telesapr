@@ -151,6 +151,11 @@ func TestThreadOnFaceFullLength(t *testing.T) {
 	if !res.Sound {
 		t.Error("not sound")
 	}
+	if testing.Short() {
+		// The rod grown and the thread edited make it twice more; the
+		// thread follows its face as the rod grows (TestThreadFollowsFace).
+		return
+	}
 	sk.MustParam(part.Param(2)).Val = 12.5
 	sk.MarkGroupDirty(part, false)
 	sk.GenerateAllTyped(sketch.GenerateAll)

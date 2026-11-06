@@ -79,6 +79,14 @@ func TestEveryFacePicked(t *testing.T) {
 				faces[uint32(tr.Meta.Face)] = true
 			}
 			delete(faces, 0)
+			// One frame, for the hover tests only once the window has
+			// painted (graphicsWindow.havePainted, which only a pan or a
+			// zoom by the mouse clears). What is hovered is found from the
+			// view, the window's size and the display mesh, not from the
+			// frame, so the views below are set without painting them:
+			// painting each, 1200 by 900 in software, was nineteen
+			// twentieths of the test's time.
+			w.Render()
 			// Fitted to the window, then zoomed in four times on each face
 			// still unpicked: a narrow face, as a fillet's strip, hovers
 			// only once its edges are more than their pick radius apart.
@@ -87,7 +95,6 @@ func TestEveryFacePicked(t *testing.T) {
 					gw.view.ProjRight, gw.view.ProjUp = v[0], v[1]
 					gw.ZoomToFit(false, false)
 					gw.view.Scale *= zoom
-					w.Render()
 					// The largest triangles of each face on the screen; the
 					// first eight are tried, a face's largest may lie behind
 					// another or under an entity.
@@ -110,7 +117,6 @@ func TestEveryFacePicked(t *testing.T) {
 						for k := 0; k < len(cs) && k < 8 && !picked[f]; k++ {
 							if zoom != 1 {
 								gw.view.Offset = cs[k].p.ScaledBy(-1)
-								w.Render()
 							}
 							q := gw.ProjectPoint(cs[k].p)
 							w.Mouse(platform.MouseEvent{Type: platform.MouseMotion, X: w.Width/2 + q.U, Y: w.Height/2 - q.V})
@@ -151,7 +157,6 @@ func TestEveryFacePicked(t *testing.T) {
 						}
 						gw.view.ProjRight, gw.view.ProjUp = pl.right, n.Cross(pl.right)
 						gw.ZoomToFit(false, false)
-						w.Render()
 						q := gw.ProjectPoint(p)
 						w.Mouse(platform.MouseEvent{Type: platform.MouseMotion, X: w.Width/2 + q.U, Y: w.Height/2 - q.V})
 						if gw.hover.Entity.V == f || uint32(gw.hover.Face) == f {

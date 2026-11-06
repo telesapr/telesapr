@@ -69,7 +69,9 @@ func TestFilletBlendCornerOracle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for line := range strings.SplitSeq(strings.TrimSpace(string(data)), "\n") {
+	// Every line in the ordinary run, a fifth under -short and the
+	// race detector (sweep.Pick).
+	for _, line := range sweep.Pick(strings.Split(strings.TrimSpace(string(data)), "\n"), 0) {
 		t.Run(line, func(t *testing.T) {
 			t.Parallel()
 			f := strings.Fields(line)

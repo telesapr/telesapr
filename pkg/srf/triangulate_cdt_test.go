@@ -57,35 +57,6 @@ func TestCDTShapes(t *testing.T) {
 	}
 }
 
-// TestCDTBoreToLathedTipSweep is TestBoreToLathedTipSweep meshed by the
-// CDT mesher: none fails. The ear clipper fans long chords across the
-// thin lens of the bore's wall where the bore breaks out through the
-// spout's side, and 20 of 80 failed.
-func TestCDTBoreToLathedTipSweep(t *testing.T) {
-	t.Parallel()
-	tol := cdtTol(0.01)
-	grid := boreTipGrid()
-	grid.Parallel = true
-	grid.Run(boreToLathedTipAt(tol)).Require(t)
-}
-
-// TestCDTHandleOnPotSweep is TestHandleOnPotSweep meshed by the CDT
-// mesher: none fails. On the spike 6 of 144 failed, against the ear
-// clipper's 9, all tilted, with a seam of the ring inside the pot by
-// less than the chord tolerance (roadmap K3, mended since).
-func TestCDTHandleOnPotSweep(t *testing.T) {
-	if testing.Short() {
-		t.Skip("a sweep")
-	}
-	t.Parallel()
-	tol := cdtTol(0.01)
-	grid := handleGrid()
-	grid.MaxFailRate = 0
-	grid.SampleMaxFailRate = 2.0 / 24
-	grid.Parallel = true
-	grid.Run(handleOnPotAt(tol)).Require(t)
-}
-
 // TestCDTFlatWithHole meshes a square with a square hole on a plane:
 // no point is added inside, and the triangles cover the square less
 // the hole.
@@ -199,7 +170,7 @@ func TestSegBoxCross(t *testing.T) {
 func TestCDTLeavesPlanes(t *testing.T) {
 	t.Parallel()
 	prof := []geom.Vector{{}, {X: 30}, {X: 20, Z: 40}, {Z: 40}}
-	cdtSh, earSh := lathedProfile(prof, cdtTol(0.01)), lathedProfile(prof, Tol(0.01, 20))
+	cdtSh, earSh := lathedProfile(prof, cdtTol(0.01)), lathedProfile(prof, Tol(0.01, 20).WithMesher(MesherEarClip))
 	flat := 0
 	for i := range cdtSh.Surface {
 		if !cdtSh.Surface[i].flat() {

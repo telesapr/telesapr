@@ -43,7 +43,9 @@ func fittedBar(d *api.Doc, a float64, draw func(d *api.Doc) []api.Entity) api.Sw
 // the path's length, however the frames turn about the path (Pappus), so
 // twisted, held to a direction or along a cubic, in a plane or out of
 // it, the volume is known. Each agrees with the kernel's fitted mesh,
-// ray by ray.
+// ray by ray. The volume, 97% of the time and some 17 s a case on one
+// goroutine, is measured for the twisted bend and the twisted cubic out
+// of its plane in the ordinary run, for all six in a full sweep.
 func TestOracleFittedSweep(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -72,19 +74,20 @@ func TestOracleFittedSweep(t *testing.T) {
 	// Under the race detector the first and the last (fixtures.Sample),
 	// the six took 50 minutes of processor there between them.
 	for _, c := range fixtures.Sample([]struct {
-		name  string
-		a     float64
-		draw  func(d *api.Doc) []api.Entity
-		twist float64
-		up    api.Vec
-		want  float64
+		name    string
+		a       float64
+		draw    func(d *api.Doc) []api.Entity
+		twist   float64
+		up      api.Vec
+		want    float64
+		measure bool
 	}{
-		{"twisted line", 12, line, 90, api.Vec{}, 144 * 60},
-		{"twisted bend", 12, bend, 45, api.Vec{}, 144 * (70 + 25*math.Pi/2)},
-		{"cubic", 6, cubic(flat), 0, api.Vec{}, 36 * cubicLength(flat)},
-		{"cubic out", 6, cubic(skew), 0, api.Vec{}, 36 * cubicLength(skew)},
-		{"cubic held", 6, cubic(skew), 0, api.V(1, 0, 0), 36 * cubicLength(skew)},
-		{"cubic twisted", 6, cubic(skew), 120, api.Vec{}, 36 * cubicLength(skew)},
+		{"twisted line", 12, line, 90, api.Vec{}, 144 * 60, false},
+		{"twisted bend", 12, bend, 45, api.Vec{}, 144 * (70 + 25*math.Pi/2), true},
+		{"cubic", 6, cubic(flat), 0, api.Vec{}, 36 * cubicLength(flat), false},
+		{"cubic out", 6, cubic(skew), 0, api.Vec{}, 36 * cubicLength(skew), false},
+		{"cubic held", 6, cubic(skew), 0, api.V(1, 0, 0), 36 * cubicLength(skew), false},
+		{"cubic twisted", 6, cubic(skew), 120, api.Vec{}, 36 * cubicLength(skew), true},
 	}) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
@@ -101,7 +104,7 @@ func TestOracleFittedSweep(t *testing.T) {
 				t.Fatalf("the kernel refused it: %s", p)
 			}
 			o := oracleOf(t, d)
-			if measuresVolume() {
+			if measuresVolume() && c.measure || measuresEvery() {
 				if m := o.Measure(1e-3, 128); !near(m.Volume, c.want, 2e-3) {
 					t.Errorf("volume %g, want %g (spread %g at %d rays)", m.Volume, c.want, m.Spread(), m.Rays)
 				}
