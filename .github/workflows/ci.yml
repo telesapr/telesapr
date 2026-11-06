@@ -138,8 +138,9 @@ jobs:
   heavy:
     if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    # 8 minutes at 0.5.16, 26 at 0.6.0.
-    timeout-minutes: 45
+    # 8 minutes at 0.5.16, 20 to 26 at 0.6.0, before the sweeps of rd5 to
+    # rd11 of a minute or more of CPU moved here from tests.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7

@@ -26,13 +26,19 @@ TestFilletOnOtherSolids TestChamferOnOtherSolids TestFilletOnOtherSolidsVolumes 
 TestFilletRibAllOverOracleCDT TestFilletRibFootFirstOracle \
 TestCachesSameAsWithout \
 TestParallelSameAsSerial TestThreadSolids TestThreadGoldens TestThreadSweep TestEditThreadShape TestThreadChamfer \
-TestFreedomVsShowDof TestMoveGroupSweep TestSuppressAllSweep}
+TestFreedomVsShowDof TestMoveGroupSweep TestSuppressAllSweep \
+TestShellDraftedInsideCornerBesideHollow TestChamferSaddleSharpUnlike TestSweepCrossesItselfFittedOrClosed \
+TestFilletSaddleSharpUnlike TestFilletSaddleSharpOracle TestChamferSaddleSide TestChamferSaddleSharpOracle TestFilletSaddleSide \
+TestChamferRunsOffPastRoundTop TestFilletPastSideSolidBeyond TestFilletRodJustPastSides TestFilletPastSlantedSides \
+TestFilletRodThroughPlate TestChamferFootOnRodGrid}
 TESTS=${TESTS:-all}
 # The heavy names as one regular expression, for -run and -skip.
 heavy_re="^($(echo $HEAVY | tr ' ' '|'))\$"
 # go test's default of 10 minutes is too short under the race detector
-# and with coverage; a -timeout among the arguments comes later and wins.
-TEST_TIMEOUT=${TEST_TIMEOUT:-30m}
+# and with coverage, and a package's tests on a CI runner of four cores
+# took 23 to 30 minutes at 0.6.0; a -timeout among the arguments comes
+# later and wins.
+TEST_TIMEOUT=${TEST_TIMEOUT:-60m}
 cover=""
 if [ -n "${COVERPROFILE:-}" ]; then
 	cover="-coverprofile=$COVERPROFILE"
