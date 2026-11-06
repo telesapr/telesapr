@@ -523,6 +523,9 @@ func (w *scriptWriter) writeKindOptions(g *sketch.Group, v string) {
 		if g.LinkAsSolid {
 			w.line("%s.AsLink().SetAsSolid(true)", v)
 		}
+		if g.LinkMoves {
+			w.line("%s.AsLink().SetMoves(true)", v)
+		}
 		if g.Scale != 1 && g.ExprScale == "" {
 			w.line("must(%s.SetExpr(sketch.GroupScale, %q))", v, num(g.Scale))
 		}

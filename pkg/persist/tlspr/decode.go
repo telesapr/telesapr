@@ -841,6 +841,8 @@ func (d *decoder) group(n *Node) (sketch.Group, bool) {
 			g.LinkFile = d.strField(c)
 		case "link-as-solid":
 			g.LinkAsSolid = d.flag(c)
+		case "link-moves":
+			g.LinkMoves = d.flag(c)
 		case "link-configuration":
 			g.LinkConfiguration = d.strField(c)
 		case "link-param":

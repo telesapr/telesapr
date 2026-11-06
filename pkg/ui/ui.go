@@ -191,6 +191,8 @@ const (
 	cmdClearance
 	cmdDatums
 	cmdExportScript
+	cmdMateHingeDriven
+	cmdMateConcentricDriven
 )
 
 // Pending is an operation to be completed by doing something with the

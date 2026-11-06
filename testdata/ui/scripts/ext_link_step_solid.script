@@ -8,9 +8,7 @@ menu File|Open...
 file $testdata/step/shapes/box_hole.step
 menu Assembly|Link / Assemble...
 tw
-twmove 289 165
-twdown L 289 165
-twup L 289 165
+click-tw solid
 tw
 answer ok
 menu Analyze|Check Solid
@@ -19,7 +17,5 @@ answer ok
 menu Analyze|Check Solid
 file $testdata/step/corpus/ap203e2_csg.stp
 menu Assembly|Link / Assemble...
-twmove 289 165
-twdown L 289 165
-twup L 289 165
+click-tw solid
 tw

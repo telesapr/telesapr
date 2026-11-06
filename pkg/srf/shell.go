@@ -84,6 +84,13 @@ type SShell struct {
 	// result takes both operands'.
 	Touch []geom.Vector
 
+	// parts are where the parts of an assembly (MakeFromAssemblyOf)
+	// start among the surfaces, in order, the first at 0; none for a
+	// shell made otherwise, which is one part. The display mesh mends
+	// each part alone (TriangulateBySurface). A transformed copy keeps
+	// them; a Boolean makes a shell of one part.
+	parts []int
+
 	// index finds the surfaces a line meets, while a Boolean
 	// classifies against the shell: MakeClassifyingBsps makes it,
 	// CleanupAfterBoolean drops it.
@@ -126,6 +133,7 @@ func (s *SShell) Clear() {
 	s.BooleanFailed = false
 	s.Fused = 0
 	s.index = nil
+	s.parts = nil
 }
 
 // MakeFromCopyOf copies src: a transformation by the identity, which
@@ -356,14 +364,25 @@ func (s *SShell) MakeFromExtrusionOf(sbls *SBezierLoopSet, t0, t1 geom.Vector, c
 // addSurfaceAssignID adds ss with a fresh handle (one more than the
 // largest in use), leaving its Face alone.
 func (s *SShell) addSurfaceAssignID(ss SSurface) core.HSSurface {
-	ss.Tol = s.Tol.Or(ss.Tol)
+	return s.addSurfaceAs(ss, s.nextSurfaceID())
+}
+
+// nextSurfaceID is the handle addSurfaceAssignID gives the next
+// surface: one more than the largest in use.
+func (s *SShell) nextSurfaceID() core.HSSurface {
 	var maxV uint32
 	for i := range s.Surface {
 		if s.Surface[i].H.V > maxV {
 			maxV = s.Surface[i].H.V
 		}
 	}
-	h := core.HSSurface{V: maxV + 1}
+	return core.HSSurface{V: maxV + 1}
+}
+
+// addSurfaceAs appends ss to s.Surface with handle h, which is
+// nextSurfaceID, at the shell's tolerance where ss has none.
+func (s *SShell) addSurfaceAs(ss SSurface, h core.HSSurface) core.HSSurface {
+	ss.Tol = s.Tol.Or(ss.Tol)
 	ss.H = h
 	s.Surface = append(s.Surface, ss)
 	return h
@@ -795,6 +814,14 @@ func (s *SShell) makeFirstOrderRevolvedRange(pt, axis geom.Vector, i0, i1 int) {
 // MakeFromTransformationOf adds the surfaces and curves of a, scaled,
 // then rotated, then translated, keeping their handles.
 func (s *SShell) MakeFromTransformationOf(a *SShell, t geom.Vector, q geom.Quaternion, scale float64) {
+	// Its parts are a's, moved on past what s holds already, which is
+	// then one part before them.
+	switch {
+	case len(s.Surface) == 0:
+		s.parts = partStarts(a, 0)
+	case len(a.Surface) > 0:
+		s.parts = append(partStarts(s, 0), partStarts(a, len(s.Surface))...)
+	}
 	s.BooleanFailed = false
 	s.Tol = s.Tol.Or(a.Tol)
 	if s.pace == nil {
@@ -841,8 +868,68 @@ func (s *SShell) TriangulateBySurface() []SMesh {
 			strays[i] = s.Surface[i].triangulate(s, &ms[i], meshByTol)
 		})
 	}
-	s.mendCrossings(ms, strays)
+	// Each part of an assembly is mended alone: a part's mesh crossing
+	// another's, where they touch, as about a hinge's pin, is no fault
+	// of either, and checked together every part's triangles would be
+	// searched against all the others' at each regeneration.
+	for _, part := range s.surfaceParts() {
+		if len(part) == len(s.Surface) {
+			surfs := make([]*SSurface, len(s.Surface))
+			for i := range s.Surface {
+				surfs[i] = &s.Surface[i]
+			}
+			s.mendCrossings(ms, strays, surfs)
+			break
+		}
+		pms, pstrays, surfs := make([]SMesh, len(part)), make([]bool, len(part)), make([]*SSurface, len(part))
+		for k, i := range part {
+			pms[k], pstrays[k], surfs[k] = ms[i], strays[i], &s.Surface[i]
+		}
+		s.mendCrossings(pms, pstrays, surfs)
+		for k, i := range part {
+			ms[i] = pms[k]
+		}
+	}
 	return ms
+}
+
+// surfaceParts are the shell's surfaces, by index, in the parts of an
+// assembly (MakeFromAssemblyOf), each part's surfaces in order; a shell
+// made any other way is one part.
+func (s *SShell) surfaceParts() [][]int {
+	starts := s.parts
+	if len(starts) == 0 {
+		starts = []int{0}
+	}
+	var out [][]int
+	for k, from := range starts {
+		to := len(s.Surface)
+		if k+1 < len(starts) {
+			to = starts[k+1]
+		}
+		part := make([]int, 0, to-from)
+		for i := from; i < to; i++ {
+			part = append(part, i)
+		}
+		out = append(out, part)
+	}
+	return out
+}
+
+// partStarts are where the parts of shell a start among its surfaces,
+// moved on by base: a's own parts, or a alone.
+func partStarts(a *SShell, base int) []int {
+	if len(a.Surface) == 0 {
+		return nil
+	}
+	if len(a.parts) == 0 {
+		return []int{base}
+	}
+	out := make([]int, len(a.parts))
+	for i, p := range a.parts {
+		out[i] = base + p
+	}
+	return out
 }
 
 // TriangulateInto is the per-surface version: build the uv-space trim

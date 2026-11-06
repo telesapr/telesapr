@@ -1,0 +1,21 @@
+# A bar of 60 and one of 50 linked, the second set to move in a mechanism on its
+# group screen and hinged to the first by a driven hinge, its turn the
+# new parameter angle; the same as path_mechanism.go makes
+# (TestPathEquivalence/mechanism). An empty model beside the parts is
+# opened first, so that the links name them relative to it. The view is
+# turned so that the upright edges, points seen from above, can be
+# picked; both parts start where their files put them, and the second
+# is the shorter, so that the first's far edge lies under none of it; it is hinged
+# by its own far edge, as its first lies on the first part's.
+file $testdata/ui/mechanism/host.tlspr
+menu File|Open...
+file $testdata/ui/mechanism/bar60.tlspr
+menu Assembly|Link / Assemble...
+file $testdata/ui/mechanism/bar50.tlspr
+menu Assembly|Link / Assemble...
+click-tw moves in a mechanism
+view rotated
+menu View|Zoom To Fit
+click-entity 80030032
+click-entity 80040032
+menu Assembly|Mate Hinge, Driven

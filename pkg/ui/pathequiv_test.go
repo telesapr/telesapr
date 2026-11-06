@@ -731,6 +731,7 @@ var pathEquivalences = map[string]pathCheck{
 	},
 	// Two circles picked with the mouse and made a concentric mate, and the
 	// same made by a script (roadmap 16.9).
+	"mechanism": nil,
 	"mate": func(t *testing.T, ui, _ *sketch.Sketch) {
 		n := 0
 		for _, c := range ui.Constraints {

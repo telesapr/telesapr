@@ -175,6 +175,8 @@ Asse&mbly ind=0 en=1 act=0
   Mate &Flush ind=0 en=1 act=0
   Mate &Hinge ind=0 en=1 act=0
   Mate &Screw ind=0 en=1 act=0
+  Mate Hinge, &Driven ind=0 en=1 act=0
+  Mate Concentric, D&riven ind=0 en=1 act=0
   ---
   Show &Interfering Parts [Ctrl+Shift+I] ind=0 en=1 act=0
   &Bill of Materials ind=0 en=1 act=0
@@ -1014,6 +1016,8 @@ Asse&mbly ind=0 en=1 act=0
   Mate &Flush ind=0 en=1 act=0
   Mate &Hinge ind=0 en=1 act=0
   Mate &Screw ind=0 en=1 act=0
+  Mate Hinge, &Driven ind=0 en=1 act=0
+  Mate Concentric, D&riven ind=0 en=1 act=0
   ---
   Show &Interfering Parts [Ctrl+Shift+I] ind=0 en=1 act=0
   &Bill of Materials ind=0 en=1 act=0
@@ -1223,6 +1227,8 @@ Asse&mbly ind=0 en=1 act=0
   Mate &Flush ind=0 en=1 act=0
   Mate &Hinge ind=0 en=1 act=0
   Mate &Screw ind=0 en=1 act=0
+  Mate Hinge, &Driven ind=0 en=1 act=0
+  Mate Concentric, D&riven ind=0 en=1 act=0
   ---
   Show &Interfering Parts [Ctrl+Shift+I] ind=0 en=1 act=0
   &Bill of Materials ind=0 en=1 act=0

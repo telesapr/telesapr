@@ -1,6 +1,9 @@
 package ui
 
 import (
+	"fmt"
+	"math"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -88,3 +91,115 @@ func benchmarkDrag(b *testing.B, n int) {
 func BenchmarkDrag20(b *testing.B)  { benchmarkDrag(b, 20) }
 func BenchmarkDrag150(b *testing.B) { benchmarkDrag(b, 150) }
 func BenchmarkDrag400(b *testing.B) { benchmarkDrag(b, 400) }
+
+// mechanismChain is a window showing a chain of n bars 30 x 6 x 3 that
+// move in a mechanism, each hinged to the one before and the first to
+// a ground bar held, at 1920 x 1080; it returns the window and the
+// chain's far end.
+func mechanismChain(tb testing.TB, n int) (*Application, *headless.Window, api.Entity) {
+	tb.Helper()
+	p := headless.New()
+	ss := New(p)
+	ss.Init()
+	doc := api.NewDoc(ss.ScriptHost())
+	bar := api.New()
+	bar.Sketch.Rect(api.V(0, 0, 0), api.V(30, 6, 0))
+	bar.Sketch.Circle(api.V(3, 3, 0), 1.5)
+	bar.Sketch.Circle(api.V(27, 3, 0), 1.5)
+	bar.Features.Extrude(3, "")
+	path := filepath.Join(tb.TempDir(), "bar.tlspr")
+	if err := bar.File.Save(path); err != nil {
+		tb.Fatal(err)
+	}
+	// Each bar's upright edges at its origin and at its far end, found
+	// where its link put it, before anything turned it.
+	uprights := func(g api.Group) (near, far api.Entity) {
+		x0, y0 := math.Inf(1), math.Inf(1)
+		for _, e := range g.Entities() {
+			if e.Kind() == "line" {
+				x0, y0 = min(x0, e.Start().Pos().X), min(y0, e.Start().Pos().Y)
+			}
+		}
+		for _, e := range g.Entities() {
+			if e.Kind() != "line" {
+				continue
+			}
+			s, f := e.Start().Pos(), e.End().Pos()
+			if math.Abs(s.X-f.X) > 1e-9 || math.Abs(s.Y-f.Y) > 1e-9 || math.Abs(s.Y-y0) > 1e-9 || s.Z < f.Z {
+				continue
+			}
+			switch math.Round(s.X - x0) {
+			case 0:
+				near = e
+			case 30:
+				far = e
+			}
+		}
+		return near, far
+	}
+	ground, err := doc.Assembly.Link(path, "ground")
+	if err != nil {
+		tb.Fatal(err)
+	}
+	_, prev := uprights(ground)
+	var end api.Entity
+	for i := range n {
+		g, err := doc.Assembly.Link(path, fmt.Sprintf("bar%d", i))
+		if err != nil {
+			tb.Fatal(err)
+		}
+		g.AsLink().SetMoves(true)
+		near, far := uprights(g)
+		doc.Assembly.Hinge(prev, near)
+		prev, end = far, far.Start()
+	}
+	doc.Edit.Regen()
+	w := ss.GW.window.(*headless.Window)
+	w.Width, w.Height = 1920, 1080
+	ss.GW.ZoomToFit(false, false)
+	w.Render()
+	return ss, w, end
+}
+
+// startDrag starts a drag of point he of the window, under the mouse at
+// q.
+func startDrag(ss *Application, he core.HEntity, q geom.Point2d) {
+	ss.GW.MouseLeftDown(q.U, q.V, false, false)
+	ss.GW.hover.Clear()
+	ss.GW.pending.operation = pendingDraggingPoints
+	ss.GW.pending.points = []core.HEntity{he}
+	ss.GW.orig.mouse = q
+}
+
+// BenchmarkDragMechanism10 times one step of dragging the end of a
+// chain of ten bars that move in a mechanism (mechanismChain): the
+// pull along the chain's ten freedoms, the solve of the mechanism, its
+// ten solids and the frame drawn after, drawn from the parts' own
+// meshes moved, as benchmarkDrag reports them.
+func BenchmarkDragMechanism10(b *testing.B) {
+	ss, w, end := mechanismChain(b, 10)
+	was := end.Pos()
+	q := ss.GW.ProjectPoint(was)
+	startDrag(ss, end.H, q)
+	var drag, paint time.Duration
+	b.ResetTimer()
+	for i := range b.N {
+		d := float64(i%20) - 10
+		t0 := time.Now()
+		ss.GW.dragPoints(q.U+d, q.V+d/2, false, false)
+		ss.Refresh()
+		t1 := time.Now()
+		ss.GW.Invalidate(false)
+		w.Render()
+		t2 := time.Now()
+		drag += t1.Sub(t0)
+		paint += t2.Sub(t1)
+	}
+	b.StopTimer()
+	if now := end.Pos(); now == was {
+		b.Fatal("the chain's end did not move")
+	}
+	ss.GW.MouseLeftUp(q.U, q.V, false, false)
+	b.ReportMetric(float64(drag.Microseconds())/float64(b.N)/1000, "drag-ms/op")
+	b.ReportMetric(float64(paint.Microseconds())/float64(b.N)/1000, "paint-ms/op")
+}

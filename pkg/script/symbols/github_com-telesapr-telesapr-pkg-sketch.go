@@ -190,6 +190,7 @@ func init() {
 		"CopyPlacement":        reflect.ValueOf((*sketch.CopyPlacement)(nil)),
 		"Datum":                reflect.ValueOf((*sketch.Datum)(nil)),
 		"Dependency":           reflect.ValueOf((*sketch.Dependency)(nil)),
+		"DragWatcher":          reflect.ValueOf((*sketch.DragWatcher)(nil)),
 		"Drawing":              reflect.ValueOf((*sketch.Drawing)(nil)),
 		"DrawingDetail":        reflect.ValueOf((*sketch.DrawingDetail)(nil)),
 		"DrawingDimension":     reflect.ValueOf((*sketch.DrawingDimension)(nil)),
@@ -253,10 +254,21 @@ func init() {
 		"WallReport":           reflect.ValueOf((*sketch.WallReport)(nil)),
 
 		// interface wrapper definitions
+		"_DragWatcher":          reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_sketch_DragWatcher)(nil)),
 		"_EntityBezierResolver": reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_sketch_EntityBezierResolver)(nil)),
 		"_Hooks":                reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_sketch_Hooks)(nil)),
 		"_KernelPacer":          reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_sketch_KernelPacer)(nil)),
 	}
+}
+
+// _github_com_telesapr_telesapr_pkg_sketch_DragWatcher is an interface wrapper for DragWatcher type
+type _github_com_telesapr_telesapr_pkg_sketch_DragWatcher struct {
+	IValue    interface{}
+	WDragging func() bool
+}
+
+func (W _github_com_telesapr_telesapr_pkg_sketch_DragWatcher) Dragging() bool {
+	return W.WDragging()
 }
 
 // _github_com_telesapr_telesapr_pkg_sketch_EntityBezierResolver is an interface wrapper for EntityBezierResolver type

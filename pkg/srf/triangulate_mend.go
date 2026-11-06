@@ -31,8 +31,11 @@ import (
 // edge and fans a strip over the face beyond. The CDT is sound there, at
 // more triangles, so it takes only those surfaces, and a sound mesh is
 // left as it is.
-func (s *SShell) mendCrossings(ms []SMesh, strays []bool) {
-	s.mendDelaunayCrossings(ms)
+//
+// surfs are the surfaces ms are the meshes of, one each: the shell's,
+// or those of one of its parts (TriangulateBySurface).
+func (s *SShell) mendCrossings(ms []SMesh, strays []bool, surfs []*SSurface) {
+	s.mendDelaunayCrossings(ms, surfs)
 	s.paced()
 	stacked := stackedFaces(ms)
 	s.paced()
@@ -62,11 +65,11 @@ func (s *SShell) mendCrossings(ms []SMesh, strays []bool) {
 		// A face whose edge runs along another's open edge is the one to
 		// mesh again, flagged or not: the long edge's own triangles are
 		// whole, and only the face beyond, left open, was flagged.
-		if !bad && !runsAlongOpen(&ms[i], openEdges(), s.Surface[i].Tol.ChordTolMm()) {
+		if !bad && !runsAlongOpen(&ms[i], openEdges(), surfs[i].Tol.ChordTolMm()) {
 			continue
 		}
 		var m SMesh
-		s.Surface[i].triangulate(s, &m, meshCDT)
+		surfs[i].triangulate(s, &m, meshCDT)
 		ms[i] = m
 	}
 }
@@ -80,11 +83,11 @@ func (s *SShell) mendCrossings(ms []SMesh, strays []bool) {
 // trims, keep clear of each other (TestLoftSweep). A face meshed again
 // is checked again against the faces beside it, and they against it,
 // for a few rounds.
-func (s *SShell) mendDelaunayCrossings(ms []SMesh) {
+func (s *SShell) mendDelaunayCrossings(ms []SMesh, surfs []*SSurface) {
 	byCDT := make([]bool, len(ms))
 	some := false
 	for i := range ms {
-		byCDT[i] = s.Surface[i].byCDT()
+		byCDT[i] = surfs[i].byCDT()
 		some = some || byCDT[i]
 	}
 	if !some || len(ms) < 2 {
@@ -104,7 +107,7 @@ func (s *SShell) mendDelaunayCrossings(ms []SMesh) {
 		}
 		for _, i := range bad {
 			var m SMesh
-			s.Surface[i].triangulate(s, &m, meshEar)
+			surfs[i].triangulate(s, &m, meshEar)
 			ms[i] = m
 			byCDT[i] = false
 		}

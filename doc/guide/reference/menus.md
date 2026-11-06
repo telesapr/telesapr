@@ -175,6 +175,8 @@ Every entry of the main menu, its keys, and what a script calls to do the same (
 | Mate Flush |  | `Assembly.Flush` |
 | Mate Hinge |  | `Assembly.Hinge` |
 | Mate Screw |  | `Assembly.Screw` |
+| Mate Hinge, Driven |  | `Assembly.HingeDriven` |
+| Mate Concentric, Driven |  | `Assembly.ConcentricDriven` |
 | Show Interfering Parts | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd> | `Assembly.Interferences` |
 | Bill of Materials |  | `Assembly.BillOfMaterials`, `Assembly.ExportBOM` |
 | Motion Study... |  | `Assembly.MotionStudy` |

@@ -250,6 +250,7 @@ func (g *Group) defining() Group {
 		Remap:                  maps.Clone(g.Remap),
 		LinkFile:               g.LinkFile,
 		LinkAsSolid:            g.LinkAsSolid,
+		LinkMoves:              g.LinkMoves,
 		LinkParts:              slices.Clone(g.LinkParts),
 		LinkConfiguration:      g.LinkConfiguration,
 		LinkParams:             slices.Clone(g.LinkParams),

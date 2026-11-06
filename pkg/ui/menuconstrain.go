@@ -219,6 +219,15 @@ func (k *constraining) constrainBound(id Command) {
 			return
 		}
 		ss.UndoRemember()
+		// A dimension an expression drives, as a driven mate's angle,
+		// keeps its drive: the bound is put beside it, at its value now,
+		// for the user to change.
+		if c.Expr != "" && c.Limit == core.LimitNone {
+			if _, err := sk.AddBoundOf(c.H, limit, c.ValA); err != nil {
+				ss.Report(err)
+			}
+			return
+		}
 		if c.Limit == limit {
 			limit = core.LimitNone
 		}

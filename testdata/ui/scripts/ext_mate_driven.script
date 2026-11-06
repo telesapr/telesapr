@@ -1,0 +1,24 @@
+# Driven mates (F9 Mechanisms): with nothing fitting selected, each says
+# what to select; a driven hinge of two bars' upright edges, the second
+# moving in a mechanism, makes the parameter angle and leaves no
+# freedom; one step of undo takes the whole mate back.
+answer ok
+menu Assembly|Mate Hinge, Driven
+answer ok
+menu Assembly|Mate Concentric, Driven
+file $testdata/ui/mechanism/host.tlspr
+menu File|Open...
+file $testdata/ui/mechanism/bar60.tlspr
+menu Assembly|Link / Assemble...
+file $testdata/ui/mechanism/bar50.tlspr
+menu Assembly|Link / Assemble...
+click-tw moves in a mechanism
+view rotated
+key f
+click-entity 80030032
+click-entity 80040032
+menu Assembly|Mate Hinge, Driven
+params
+tw
+key z ctrl
+params

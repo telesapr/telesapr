@@ -15,6 +15,8 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 	defer trace.StartRegion(context.Background(), "boolean").End()
 	s.BooleanFailed = false
 	s.Fused = 0
+	// A Boolean's result is one part, whatever its operands were.
+	s.parts = nil
 	s.Touch = unionTouch(a.Touch, b.Touch)
 	s.Tol = s.Tol.Or(a.Tol).Or(b.Tol)
 	if s.pace == nil {
@@ -188,7 +190,10 @@ func (s *SShell) MakeFromAssemblyOf(a, b *SShell) {
 	q := geom.QuaternionIdentity
 
 	// First, copy over all the curves. Note which shell (a or b) each
-	// curve came from, but assign it a new ID.
+	// curve came from, but assign it a new ID: the handles adding them
+	// one at a time would give, counted on from the largest once, as an
+	// assembly of many links has thousands of curves.
+	next := s.nextCurveID()
 	for i, ab := range [2]*SShell{a, b} {
 		for k := range ab.Curve {
 			c := &ab.Curve[k]
@@ -200,11 +205,14 @@ func (s *SShell) MakeFromAssemblyOf(a, b *SShell) {
 			}
 			// surfA and surfB are wrong now, and we can't fix them until
 			// we've assigned IDs to the surfaces. So we'll get that later.
-			c.NewH = s.addAndAssignCurveID(cn)
+			c.NewH = s.addCurveAs(cn, next)
+			next.V++
 		}
 	}
 
-	// Likewise copy over all the surfaces.
+	// Likewise copy over all the surfaces, a's parts and then b's.
+	s.parts = append(append(partStarts(s, 0), partStarts(a, len(s.Surface))...), partStarts(b, len(s.Surface)+len(a.Surface))...)
+	nextSurface := s.nextSurfaceID()
 	for _, ab := range [2]*SShell{a, b} {
 		for k := range ab.Surface {
 			ss := &ab.Surface[k]
@@ -214,7 +222,8 @@ func (s *SShell) MakeFromAssemblyOf(a, b *SShell) {
 			for m := range sn.Trim {
 				sn.Trim[m].Curve = ab.FindCurve(sn.Trim[m].Curve).NewH
 			}
-			ss.NewH = s.addSurfaceAssignID(sn)
+			ss.NewH = s.addSurfaceAs(sn, nextSurface)
+			nextSurface.V++
 		}
 	}
 

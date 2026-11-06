@@ -53,7 +53,7 @@ axis, not a line, and `CanLimit` (`pkg/core/constraint_inequality.go`) excludes 
   file: flagged link groups standing in a row in the group order are one mechanism; unflagged
   links and everything before are the ground, held as today. Old files have no flag and behave
   as before.
-- Branch `f9-mechanism` from devel, size M. `make test-fast` after each commit, the documents in
+- Branch `mechanism` from devel, size M. `make test-fast` after each commit, the documents in
   the same commit, `make ci` before the merge.
 
 ## Design
@@ -150,6 +150,46 @@ In scripts `LinkGroup.Moves()`, `SetMoves(on)`, `Mechanism() []Group` beside `As
    about 200 faces, all dirty: `generateLinkedShell` ten times and the assemble. Over about 30 ms
    the leftover "draw by placement matrix while dragging" joins the package.
 
+Done 2026-11-05 (a prototype test, not kept):
+
+1. `PointForceTo` on the far corner of a bar hinged at its origin's upright edge, pulled 30° round
+   the hinge: the bar comes back exactly where it was (0.000 mm moved, 31.5 mm from the target),
+   as foreseen. The null-space pull (the group's Jacobian reduced to row echelon form, its null
+   vectors read off the free columns, the least-squares step in them toward the target, then the
+   group solved) reaches the target: one step leaves 0.01 mm at 5°, 2 mm at 30°, 38 mm at 90°;
+   two steps 0 at 5° and 0.0006 at 30°; three steps 0.003 at 90°. So the pull iterates, up to
+   three steps a frame, each a solve of the block; nine steps in a few milliseconds.
+2. Ten links of a 60 x 20 x 4 plate with 96 holes, each moved 0.5 mm, regenerated dirty: 78 ms a
+   frame, of which 60% was `MakeFromAssemblyOf` scanning the shell's curves for the next handle
+   once per curve added (quadratic). Counting the handles on from the largest, once, as the
+   Booleans already do, gives the same handles and 17 ms a frame. Under the 30 ms, so drawing by
+   placement matrices stays a leftover.
+3. Measured again with the window's drag built (`BenchmarkDragMechanism10`, a chain of ten bars
+   of 30 x 6 x 3 at 1920 x 1080): the drag, the pull and the regeneration, 18 ms a frame; the
+   paint, 175 ms, of which 86% is triangulating the assembly's shell for display
+   (`TriangulateBySurface`, `mendCrossings`), once per frame for the active group, as a drag of any
+   linked part in an assembly does. So drawing by placement matrices joins the package after
+   all, after the driven joints: each part's own mesh moved by its placement, the assembly's
+   mesh made on release.
+4. Most of that triangulation was the mend of crossing faces (`mendCrossings`) searching every
+   part's triangles against all the others', which touch along their hinges. An assembly now
+   records where its parts' surfaces start (`SShell.parts`, set by `MakeFromAssemblyOf`, kept by
+   copies, cleared by a Boolean), and the display mesh mends each part alone: paint 177 → 118
+   ms, the drag 19 ms, no golden moved. Splitting a shell by the curves its surfaces share was
+   tried first and moved single solids' meshes (a two-sided draft, mitred bars, a loft), whose
+   surfaces are not always trimmed by one curve: the record is exact. What is left, about 9 ms
+   a part, is each part's own triangulation and mend, which only meshes kept per part and moved
+   by their placement while dragging would save.
+5. Built (`pkg/sketch/display_parts.go`): a link group keeps its display mesh and outlines in
+   its part's own frame, made again when the linked shell, the scale, the tolerance or the
+   outlines shown change; while the window says a drag is on (`DragWatcher`), the display of an
+   assembly of linked parts only, each read as a shell and assembled, is those meshes moved by
+   each part's placement, and the drag's end makes it again as ever
+   (`RemakeMovedDisplays`). Paint 118 → 18 ms, a frame 36 ms in all with the drag. The moved
+   mesh isn't the assembly's own: a part meshed turned can be cut otherwise (1700 triangles
+   against 1684 for four bars, the volumes 7e-6 apart), so it is only drawn, during the drag.
+   Left: drawing each part by a model matrix in GL, which would save the moving too.
+
 ## Commits
 
 1. `sketch, tlspr, api: a link group that moves in a mechanism`. `LinkMoves`, `SetLinkMoves`,
@@ -223,3 +263,18 @@ In scripts `LinkGroup.Moves()`, `SetMoves(on)`, `Mechanism() []Group` beside `As
 A drag drawing the parts by their placement matrices, the solids remade on release; a 3D sketch
 as a member; a drag written back into a driving parameter; several driven parameters in one
 motion study; glTF animation channels from a study.
+
+## The examples (2026-11-06)
+
+The first examples, bars hinged by their upright edges (`hinge`, and a four-bar as `mechanism`),
+were replaced at the user's asking by things one recognises: `examples/scripts/lid`, a box's lid
+on a driven hinge kept between 0 and 110°, and `examples/scripts/engine`, a slider-crank of a
+frame, a crank, a connecting rod and a piston, each joint a pin in its hole (Concentric and Flush;
+`HingeDriven` takes two circles since, a pin and its hole) and the piston's slide a point on the
+cylinder's axis and a line parallel to it, both made in the XY workplane, where the stacked parts
+hold in projection: that closes the loop with no redundancy, one freedom left, the crank's. Its
+stroke read every 5° is 23.99 against 24. The guide page follows the lid, its fixtures
+`testdata/ui/mechanism/box.tlspr` and `lid.tlspr`, the lid drawn beside the box at the rim's
+height: drawn on the box, its back edge lay on the box's and the one of the active group is the
+only one a click picks; drawn at the box's bottom, the hinge's solve tilted it on the way up,
+turning being the cheaper change of its unknowns.

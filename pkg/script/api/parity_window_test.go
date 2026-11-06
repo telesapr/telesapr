@@ -238,6 +238,7 @@ var windowActions = map[string]string{
 	"ScreenChangeGroupScale":          "Group.SetExpr",
 	"ScreenChangeHelixPitch":          "Group.SetExpr FilletGroup.SetRadius ChamferGroup.SetDistance ShellGroup.SetThickness SweepGroup.SetCornerRadius ExtrudeGroup.SetDraftNeutral",
 	"ScreenChangeLinkAsSolid":         "LinkGroup.SetAsSolid",
+	"ScreenChangeLinkMoves":           "LinkGroup.SetMoves",
 	"ScreenRelink":                    "LinkGroup.SetFile",
 	"ScreenChangeLinkConfiguration":   "LinkGroup.SetConfiguration",
 	"ScreenChangeLinkParam":           "LinkGroup.SetParam",
@@ -1049,6 +1050,9 @@ SetProfiles  ScreenChangeInputs
 	"LinkGroup": `
 AsSolid         -q
 SetAsSolid      ScreenChangeLinkAsSolid
+Moves           -q
+SetMoves        ScreenChangeLinkMoves
+Mechanism       -q
 File            -q
 SetFile         ScreenRelink
 Configuration   -q

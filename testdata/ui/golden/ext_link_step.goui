@@ -55,30 +55,38 @@ row 16    read as  reference mesh   solid
  27-28 64 61 0
  29-35 64 61 115 0 1 0
  36-99 64 61 0
-row 18    STEP AP214, in millimetres
+row 18    part  fixed   moves in a mechanism
+ 0-2 64 64 0
+ 3-6 74 64 0
+ 7-7 64 64 0
+ 8-14 64 64 102 0 1 0
+ 15-16 64 64 0
+ 17-38 64 64 109 0 1 0
+ 39-99 64 64 0
+row 20    STEP AP214, in millimetres
  0-99 64 64 0
-row 20    1 shape, 3 faces, 526 triangles
+row 22    1 shape, 3 faces, 526 triangles
  0-99 64 64 0
-row 22    chord tolerance 0.012 mm
+row 24    chord tolerance 0.012 mm
  0-99 64 64 0
-row 24 
+row 26 
  0-99 64 64 0
-row 26  solid model as
+row 28  solid model as
  0-0 64 64 0
  1-99 74 64 0
-row 28     union   assemble
+row 30     union   assemble
  0-2 64 61 0
  3-9 64 61 99 0 1 0
  10-11 64 61 0
  12-21 64 61 99 2 1 0
  22-99 64 61 0
-row 30     difference   intersection
+row 32     difference   intersection
  0-2 64 61 0
  3-14 64 61 99 1 1 0
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 32    appearance   matte   plastic   glossy   metal   density not set [change]
+row 34    appearance   matte   plastic   glossy   metal   density not set [change]
  0-2 64 64 0
  3-12 74 64 0
  13-14 64 64 0
@@ -94,51 +102,51 @@ row 32    appearance   matte   plastic   glossy   metal   density no
  62-70 64 64 0
  71-78 6c 64 102 0 1 0
  79-99 64 64 0
-row 34      suppress this group's solid model
+row 36      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 36 
+row 38 
  0-99 64 64 0
-row 38    show entities from this group
+row 40    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 40    suppress this group and the groups that use it
+row 42    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 42  (model already forced to triangle mesh)
+row 44  (model already forced to triangle mesh)
  0-99 64 64 0
-row 45    relax constraints and dimensions
+row 47    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 47    allow redundant constraints
+row 49    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 49    suppress dof calculation (improves solver performance)
+row 51    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 51    treat all dimensions as reference
+row 53    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 53 
+row 55 
  0-99 64 64 0
-row 55  requests in group
+row 57  requests in group
  0-99 74 64 0
-row 57    (none)
+row 59    (none)
  0-99 64 61 0
-row 59 
+row 61 
  0-99 64 64 0
-row 61  constraints in group (6 DOF)
+row 63  constraints in group (6 DOF)
  0-99 74 64 0
-row 63    (none)
+row 65    (none)
  0-99 64 61 0
-row 65 
+row 67 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 0\nTriangles: 526\nVolume: 940.43 mm³\nCenter of mass: (0.0002, -0.00, 6.00)\nExtent: 10.00 x 10.00 x 12.00
 filedialog open
@@ -189,46 +197,54 @@ row 16    read as  reference mesh   solid
  27-28 64 61 0
  29-35 64 61 115 0 1 0
  36-99 64 61 0
-row 18    STEP AP203 edition 2, in millimetres
+row 18    part  fixed   moves in a mechanism
+ 0-2 64 64 0
+ 3-6 74 64 0
+ 7-7 64 64 0
+ 8-14 64 64 102 0 1 0
+ 15-16 64 64 0
+ 17-38 64 64 109 0 1 0
+ 39-99 64 64 0
+row 20    STEP AP203 edition 2, in millimetres
  0-99 64 64 0
-row 20    0 shapes, 0 faces, 0 triangles
+row 22    0 shapes, 0 faces, 0 triangles
  0-99 64 64 0
-row 22    chord tolerance 0.1 mm
+row 24    chord tolerance 0.1 mm
  0-99 64 64 0
-row 24    Not all of the file was read: the file holds no solid or shell that can be read; it holds
+row 26    Not all of the file was read: the file holds no solid or shell that can be read; it holds
  0-2 64 64 0
  3-91 78 64 0
  92-99 64 64 0
-row 26      BLOCK (1), BOOLEAN_RESULT (6), CSG_SOLID (1), HALF_SPACE_SOLID (1), RIGHT_ANGULAR_WEDGE (1),
+row 28      BLOCK (1), BOOLEAN_RESULT (6), CSG_SOLID (1), HALF_SPACE_SOLID (1), RIGHT_ANGULAR_WEDGE (1),
  0-4 64 64 0
  5-96 78 64 0
  97-99 64 64 0
-row 28      RIGHT_CIRCULAR_CONE (1), RIGHT_CIRCULAR_CYLINDER (1), SPHERE (1), TORUS (1), which this reader
+row 30      RIGHT_CIRCULAR_CONE (1), RIGHT_CIRCULAR_CYLINDER (1), SPHERE (1), TORUS (1), which this reader
  0-4 64 64 0
  5-98 78 64 0
  99-99 64 64 0
-row 30      does not support.
+row 32      does not support.
  0-4 64 64 0
  5-21 78 64 0
  22-99 64 64 0
-row 32 
+row 34 
  0-99 64 64 0
-row 34  solid model as
+row 36  solid model as
  0-0 64 64 0
  1-99 74 64 0
-row 36     union   assemble
+row 38     union   assemble
  0-2 64 61 0
  3-9 64 61 99 0 1 0
  10-11 64 61 0
  12-21 64 61 99 2 1 0
  22-99 64 61 0
-row 38     difference   intersection
+row 40     difference   intersection
  0-2 64 61 0
  3-14 64 61 99 1 1 0
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 40    appearance   matte   plastic   glossy   metal   density not set [change]
+row 42    appearance   matte   plastic   glossy   metal   density not set [change]
  0-2 64 64 0
  3-12 74 64 0
  13-14 64 64 0
@@ -244,49 +260,49 @@ row 40    appearance   matte   plastic   glossy   metal   density no
  62-70 64 64 0
  71-78 6c 64 102 0 1 0
  79-99 64 64 0
-row 42      suppress this group's solid model
+row 44      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 44 
+row 46 
  0-99 64 64 0
-row 46    show entities from this group
+row 48    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 48    suppress this group and the groups that use it
+row 50    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 50  (model already forced to triangle mesh)
+row 52  (model already forced to triangle mesh)
  0-99 64 64 0
-row 53    relax constraints and dimensions
+row 55    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 55    allow redundant constraints
+row 57    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 57    suppress dof calculation (improves solver performance)
+row 59    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 59    treat all dimensions as reference
+row 61    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 61 
+row 63 
  0-99 64 64 0
-row 63  requests in group
+row 65  requests in group
  0-99 74 64 0
-row 65    (none)
+row 67    (none)
  0-99 64 61 0
-row 67 
+row 69 
  0-99 64 64 0
-row 69  constraints in group (6 DOF)
+row 71  constraints in group (6 DOF)
  0-99 74 64 0
-row 71    (none)
+row 73    (none)
  0-99 64 61 0
-row 73 
+row 75 
  0-99 64 64 0

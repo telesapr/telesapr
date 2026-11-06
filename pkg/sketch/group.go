@@ -151,6 +151,10 @@ type Group struct {
 		FindToFixTimeout int
 		Timeout          bool
 		Remove           []core.HConstraint
+		// RedundantAllowed is that the system the group was solved in
+		// allowed redundant constraints: the group's own setting, or
+		// that of another group of its mechanism.
+		RedundantAllowed bool
 	}
 
 	Subtype   GroupSubtype
@@ -186,6 +190,12 @@ type Group struct {
 	// rather than as a reference mesh (roadmap D3); a file that can't be
 	// read as one links as a mesh, with the reason in LinkProblem.
 	LinkAsSolid bool
+	// LinkMoves makes the linked part move in a mechanism: flagged link
+	// groups standing in a row in the group order are solved as one
+	// system (mechanism.go), so that a mate in one moves the others; an
+	// unflagged link is held where its own group puts it, as is every
+	// group before the mechanism.
+	LinkMoves bool
 	// LinkInfo describes the linked file as its loader read it, a line
 	// each, such as a STEP file's unit and how many faces it has; and
 	// LinkProblem says what of the file could not be used. Neither is
@@ -258,6 +268,11 @@ type Group struct {
 	// DisplayDirty is set when the shell or mesh changed, so the
 	// display items need making again.
 	DisplayDirty bool
+	// displayMoved is that the display was made from moved parts'
+	// meshes during a drag (display_parts.go), and partDisplay a link
+	// group's own display in its part's frame for that.
+	displayMoved bool
+	partDisplay  *partDisplay
 
 	ImpMesh   srf.SMesh
 	ImpShell  srf.SShell
@@ -436,7 +451,7 @@ func (g *Group) Topology() (*topo.Topology, error) {
 
 func (g *Group) IsSolvedOkay() bool {
 	return g.Solved.How == core.SolveOkay ||
-		(g.AllowRedundant && g.Solved.How == core.SolveRedundantOkay)
+		((g.AllowRedundant || g.Solved.RedundantAllowed) && g.Solved.How == core.SolveRedundantOkay)
 }
 
 func (g *Group) IsVisible() bool {

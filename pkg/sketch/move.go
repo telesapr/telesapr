@@ -41,8 +41,21 @@ func (sk *Sketch) MovePointsBy(points []core.HEntity, d geom.Vector) {
 			continue
 		}
 		done = append(done, hp)
-		p := sk.Entity(hp)
-		p.PointForceTo(sk, p.PointGetNum(sk).Plus(d))
-		sk.MarkGroupDirtyByEntity(hp)
+		sk.MovePointTo(hp, sk.Entity(hp).PointGetNum(sk).Plus(d))
 	}
+}
+
+// MovePointTo puts point he at p, as dragging it there does, and marks
+// what it moves to be solved again. A point of a part that moves in a
+// mechanism is pulled along the mechanism's freedom (pullPoint): the
+// part turns and slides as its joints let it, and the parts joined to
+// it move with it. Any other point is put at p (PointForceTo), and the
+// solve then moves it as its constraints require.
+func (sk *Sketch) MovePointTo(he core.HEntity, p geom.Vector) {
+	if sk.pullable(he) {
+		sk.pullPoint(he, p)
+		return
+	}
+	sk.Entity(he).PointForceTo(sk, p)
+	sk.MarkGroupDirtyByEntity(he)
 }

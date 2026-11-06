@@ -104,6 +104,7 @@ this order still work.
 | [STEP links](step-links.md) | A STEP file, or an STL or OBJ mesh, linked as a reference or as a solid | `step` |
 | [Datums](datums.md) | Names for what a part offers, on entities or on its solid's faces and edges; mates by name | `datums`, `datums_solid` |
 | [Assemblies](bill-of-materials.md) | Links relinked, or given a configuration and parameter values; mates, a screw among them; the parts counted, with their masses, to a CSV file; interfering parts; STEP with its structure | `partsizes`, `mates`, `screw`, `bom` |
+| [Mechanisms](mechanisms.md) (experimental) | Linked parts that move together: a lid on its hinge pulled open in the window, an engine's crank and piston driven round through a motion study | `lid`, `engine` |
 | [Density and mass](mass.md) | A density for each part; the mass, centre of mass and inertia of each and of the whole | `mass` |
 | [Scripts](scripts.md) | The console's keys; forms that ask for a script's values; packages of your own in a script library folder; a model written as a script | `form`, `library`, `exportscript`, `describe` |
 | [Drawing with an AI model](ai.md) | Letting an AI program draw in your window over the Model Context Protocol; what it can do, what it may touch | (none) |

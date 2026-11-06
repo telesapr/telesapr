@@ -57,7 +57,8 @@ func (sk *Sketch) GroupFreedom(hg core.HGroup) map[core.HParam]bool {
 	var free map[core.HParam]bool
 	if g != nil && g.IsSolvedOkay() && hg.V != HGroupReferences {
 		_ = catchPanic(func() {
-			sys, sg := sk.writeEqSystemForGroup(hg, sk.groupParams(hg))
+			hgs := sk.Mechanism(hg)
+			sys, sg := sk.writeEqSystem(hgs, sk.groupParams(hgs...))
 			free = sys.FreeParams(sg)
 		})
 	}

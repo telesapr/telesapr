@@ -163,6 +163,11 @@ type Sketch struct {
 	// saves.
 	NoSolverCache bool
 	systems       map[core.HGroup]*solver.System
+	// pulled are the params of a mechanism's part pulled since the last
+	// regeneration (mechanism_pull.go), which its solve keeps as near
+	// as it can, as it does the window's dragged ones; cleared at the
+	// end of each regeneration.
+	pulled []core.HParam
 
 	// Clipboard holds what was copied.
 	Clipboard Clipboard

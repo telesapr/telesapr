@@ -236,6 +236,8 @@ var menuTable = []menuEntry{
 	{1, "Mate &Flush", cmdMateFlush, 0, kn, func(ss *Application, c Command) { ss.MenuMate(c) }},
 	{1, "Mate &Hinge", cmdMateHinge, 0, kn, func(ss *Application, c Command) { ss.MenuMate(c) }},
 	{1, "Mate &Screw", cmdMateScrew, 0, kn, func(ss *Application, c Command) { ss.MenuMate(c) }},
+	{1, "Mate Hinge, &Driven", cmdMateHingeDriven, 0, kn, func(ss *Application, c Command) { ss.MenuMate(c) }},
+	{1, "Mate Concentric, D&riven", cmdMateConcentricDriven, 0, kn, func(ss *Application, c Command) { ss.MenuMate(c) }},
 	{1, "", cmdNone, 0, kn, nil},
 	{1, "Show &Interfering Parts", cmdInterference, ctrl | shift | 'i', kn, mAna},
 	{1, "&Bill of Materials", cmdBillOfMaterials, 0, kn, mAna},

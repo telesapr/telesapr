@@ -32,6 +32,7 @@ func fullDocument() *Document {
 		MeshCombine: sketch.CombineIntersection, ForceToMesh: true,
 		Remap:             core.EntityMap{{Input: core.HEntity{V: 0x40001}, CopyNumber: 2}: {V: 5}},
 		LinkFile:          "dir/part.tlspr",
+		LinkMoves:         true,
 		Color:             core.RGBA{Red: 1, Green: 2, Blue: 3, Alpha: 4},
 		Density:           7.85,
 		LinkConfiguration: "long",

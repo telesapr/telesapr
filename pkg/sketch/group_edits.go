@@ -32,6 +32,28 @@ func (sk *Sketch) SetGroupLinkAsSolid(hg core.HGroup, on bool) error {
 	return nil
 }
 
+// SetLinkMoves makes link group hg's part move in a mechanism (on), or
+// be held where its group puts it. Every group of the mechanism it
+// joins or leaves is solved again. The caller remembers the undo state.
+func (sk *Sketch) SetLinkMoves(hg core.HGroup, on bool) error {
+	g := sk.Group(hg)
+	if g == nil {
+		return fmt.Errorf("no group %08x", hg.V)
+	}
+	if g.Type != GroupLinked {
+		return errors.New("only a linked part moves in a mechanism")
+	}
+	// Dirty from the first group of the mechanism before the change, so
+	// that the parts it held as one are solved apart, or the other way.
+	from := sk.Mechanism(hg)[0]
+	g.LinkMoves = on
+	if now := sk.Mechanism(hg)[0]; sk.GroupsInOrder(now, from) {
+		from = now
+	}
+	sk.MarkGroupDirty(from, false)
+	return nil
+}
+
 // SetSweepUp holds a sweep's frames to the direction up, made a unit
 // vector, or lets them turn least when up is zero. The caller remembers
 // the undo state.

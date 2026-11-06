@@ -16,6 +16,7 @@ func (s *SShell) ExactCopy() SShell {
 	for i := range c.Curve {
 		c.Curve[i].Points = slices.Clone(c.Curve[i].Points)
 	}
+	c.parts = slices.Clone(s.parts)
 	c.Surface = slices.Clone(s.Surface)
 	for i := range c.Surface {
 		sf := &c.Surface[i]

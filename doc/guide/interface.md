@@ -124,8 +124,12 @@ Edit > Select All (Ctrl+A) selects everything shown in the active group. Edit > 
 Chain (Ctrl+E) adds the lines and curves of the active group joined end to end with those
 selected.
 
-**Dragging.** Drag a point or a line to move it; what is not held follows. Drag a dimension's
-label to move the label. The arrow keys move what is selected by one pixel, ten with Shift.
+**Dragging.** Drag a point or a line to move it; what is not held follows. A point of a part
+that moves in a mechanism is pulled along the mechanism's freedom: the part turns about its
+hinges and the parts joined to it move with it ([mechanisms](mechanisms.md), experimental).
+While a linked part moves, an assembly is drawn from each part's mesh moved where its link puts
+it, and meshed again when the drag ends.
+Drag a dimension's label to move the label. The arrow keys move what is selected by one pixel, ten with Shift.
 Delete removes what is selected.
 
 ## The context menu

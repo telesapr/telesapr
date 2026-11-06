@@ -148,7 +148,7 @@ func TestConstraintRoles(t *testing.T) {
 		{core.ConstraintSameOrientation, mendNormal, mendNormal},
 		{core.ConstraintParallel, mendVector, mendVector},
 		{core.ConstraintEqualAngle, mendVector, mendVector},
-		{core.ConstraintAxisAngle, mendNormal, mendAny},
+		{core.ConstraintAxisAngle, mendAxis, mendAny},
 		{core.ConstraintArcLineTangent, mendArc, mendLine},
 		{core.ConstraintCubicLineTangent, mendCubic, mendLine},
 		{core.ConstraintCurveCurveTangent, mendArcOrCubic, mendArcOrCubic},

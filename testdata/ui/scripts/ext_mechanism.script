@@ -1,0 +1,18 @@
+# A four-bar linkage (F9 Mechanisms): a ground bar held, and a crank,
+# a coupler and a rocker that move in a mechanism, hinged in a loop.
+# Dragging the coupler by one of its lines turns the crank and the
+# rocker with it, the loop kept closed; params prints the parts'
+# placements before and after. One step of undo puts them back.
+file $testdata/ui/mechanism/fourbar.tlspr
+menu File|Open...
+params
+freedom
+down L 405 135
+move 410 125 L
+move 415 115 L
+move 420 105 L
+up L 420 105
+params
+freedom
+key z ctrl
+params

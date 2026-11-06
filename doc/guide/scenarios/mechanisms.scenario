@@ -1,0 +1,64 @@
+# The pictures of mechanisms.md: a box and a lid linked, the lid set to
+# move in a mechanism and hinged on the box's back edge, then swung
+# open; the hinge made a driven one, opened to 100° in the parameter
+# table.
+file $testdata/ui/mechanism/host.tlspr
+menu File|Open...
+file $testdata/ui/mechanism/box.tlspr
+menu Assembly|Link / Assemble...
+file $testdata/ui/mechanism/lid.tlspr
+menu Assembly|Link / Assemble...
+view rotated
+key f
+click-tw moves in a mechanism
+cursor off
+shot mechanisms-1-parts both
+# The view turned to look from behind, where the back edges show: the
+# box's top one, then the lid's bottom one.
+move 300 300
+down M 300 300
+move 500 300 M
+move 700 300 M
+up M 700 300
+key f
+click-entity 80030037
+click-entity 8004003a
+shot mechanisms-2-edges gw
+menu Assembly|Mate Hinge
+key esc
+view rotated
+key f
+shot mechanisms-3-closed gw
+# The lid's front edge pulled up: it swings open about the hinge.
+cursor on
+move 480 268
+down L 480 268
+move 480 240 L
+move 478 210 L
+move 474 180 L
+move 468 150 L
+move 460 120 L
+move 450 95 L
+shot mechanisms-4-open gw
+up L 450 95
+key esc
+# The drag and the hinge taken back, and the hinge made again, driven.
+key z ctrl
+key z ctrl
+move 300 300
+down M 300 300
+move 500 300 M
+move 700 300 M
+up M 700 300
+key f
+click-entity 80030037
+click-entity 8004003a
+menu Assembly|Mate Hinge, Driven
+key esc
+view rotated
+key f
+menu Edit|Parameters...
+click-tw [edit]
+edit 60
+cursor off
+shot mechanisms-5-driven both

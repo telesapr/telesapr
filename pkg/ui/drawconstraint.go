@@ -1070,8 +1070,7 @@ func (d *constraintDrawer) layoutAxisAngle() {
 	sk := d.gw.sk()
 	c := d.c
 	foot, r := c.AxisAngleOffset(sk)
-	n := sk.Entity(c.EntityA)
-	u := n.NormalU(sk)
+	_, u, _ := c.AxisFrameNum(sk)
 	p := d.pointNum(c.PtB)
 	zero := foot.Plus(u.ScaledBy(r))
 	d.doStippledLine(d.hcs, foot, zero)

@@ -122,6 +122,11 @@ mate := doc.Assembly.Screw(holeA, holeB, 1.25) // lead in mm
 frames, err := doc.Assembly.MotionStudy(mate.Turn, 0, 720, 8, "")
 ```
 
+## Mechanisms
+
+Parts that move together, a lid on its hinge or an engine's crank and piston, pulled in the
+window or driven by a parameter: see [mechanisms](mechanisms.md), an experimental feature.
+
 ## Bill of materials
 
 Example: [`examples/scripts/bom`](../../examples/scripts/bom/bom.go). It saves a plate and a

@@ -187,15 +187,16 @@ Neosolve reads and writes IGES. STEP covers the exchange; take it when a user as
 Planned 2026-11-05, nothing built: `doc/dev-notes/f9-mechanism-plan.md` has what was found, the
 design and the commits. Today each group is solved alone with every earlier group held, so a mate
 in part B's group moves only B, a loop of parts cannot be solved, and a linked part pulled in the
-window snaps back. Branch `f9-mechanism`, after a half-day spike on the pull and the cost of a
-drag frame.
+window snaps back. Branch `mechanism`; the spike (2026-11-05) found the pull sound and a drag
+frame of ten links 17 ms, with the assembly's handles counted on once.
 
 | Item | State | Size |
 |---|---|---|
-| A link group flagged "moves in a mechanism" (`link-moves` in the file), flagged links in a row solved as one system, unflagged ones and everything before them the ground; old files unchanged | planned | S |
-| Pulling a part along the mechanism's freedom: a null-space step shared by the window's drag and `Entity.MoveTo`, through one `pkg/sketch` entry point | planned | S |
-| Driven hinge and concentric mates making `angle` and `travel` parameters, as Screw makes `turn`; the axis-angle constraint about a line and under a minimum or maximum | planned | S |
-| Left out until asked for: a drag drawn by placement matrices, a 3D sketch as a member, a drag written back into its driving parameter, several parameters in one motion study, glTF animation channels | not planned | |
+| A link group flagged "moves in a mechanism" (`link-moves` in the file), flagged links in a row solved as one system, unflagged ones and everything before them the ground; old files unchanged | built 2026-11-05 (`Sketch.Mechanism`, `solveBlock`; `TestFourBarSolves`, `TestCrankSlider`) | S |
+| Pulling a part along the mechanism's freedom: a null-space step shared by the window's drag and `Entity.MoveTo`, through one `pkg/sketch` entry point | built 2026-11-05 (`Sketch.MovePointTo`, `pullPoint`, `solver.System.NullSpace`; `TestPullHingedBar`, `TestPullStopsAtBound`, `ext_mechanism`); turning by a normal or with Shift and Ctrl is not a pull yet | S |
+| Driven hinge and concentric mates making `angle` and `travel` parameters, as Screw makes `turn`; the axis-angle constraint about a line and under a minimum or maximum | built 2026-11-05 (`Assembly.HingeDriven`, `ConcentricDriven`, `DrivenMate.SetRange`, `Sketch.AddBoundOf`; `TestDrivenCrankFourBar`, `examples/scripts/lid`, `examples/scripts/engine`; a hinge of a pin in its hole since 2026-11-06) | S |
+| A drag drawn from each part's mesh moved by its placement, the assembly meshed again on release | built 2026-11-05 (`pkg/sketch/display_parts.go`; `BenchmarkDragMechanism10` paint 177 → 18 ms, `TestDragDrawsMovedParts`); drawing by a model matrix in GL left | S |
+| Left out until asked for: a 3D sketch as a member, a drag written back into its driving parameter, several parameters in one motion study, glTF animation channels | not planned | |
 
 ### F8 TeleSAPR in a browser
 

@@ -76,6 +76,15 @@ func (h appHooks) RegenerateAfterDelete() bool {
 }
 func (h appHooks) DraggedParams() []core.HParam { return h.ss.MarkDraggedParams() }
 
+// Dragging reports whether a point or a normal is being dragged: the
+// display of an assembly of linked parts is then made from their own
+// meshes moved, and made again as ever when the drag ends
+// (sketch.DragWatcher).
+func (h appHooks) Dragging() bool {
+	op := h.ss.GW.pending.operation
+	return op == pendingDraggingPoints || op == pendingDraggingNormal
+}
+
 // Cancel never stops a regeneration on the interface's thread; it is
 // asked between groups, where a platform with no thread but the loop's
 // (a browser page) is let to draw and show progress.

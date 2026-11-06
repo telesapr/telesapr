@@ -87,6 +87,7 @@ func init() {
 		"DrawingMenu":      reflect.ValueOf((*api.DrawingMenu)(nil)),
 		"DrawingSection":   reflect.ValueOf((*api.DrawingSection)(nil)),
 		"DrawingView":      reflect.ValueOf((*api.DrawingView)(nil)),
+		"DrivenMate":       reflect.ValueOf((*api.DrivenMate)(nil)),
 		"EditMenu":         reflect.ValueOf((*api.EditMenu)(nil)),
 		"Entity":           reflect.ValueOf((*api.Entity)(nil)),
 		"ExportCanvas":     reflect.ValueOf((*api.ExportCanvas)(nil)),

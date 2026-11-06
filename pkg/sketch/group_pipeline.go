@@ -828,6 +828,11 @@ func (g *Group) GenerateDisplayItems(sk *Sketch) {
 // generateOwnDisplayItems triangulates the running shell and adds the
 // running mesh, for a group that contributes new solid model.
 func (g *Group) generateOwnDisplayItems(sk *Sketch) {
+	// During a drag an assembly of linked parts is drawn from their own
+	// meshes moved (display_parts.go).
+	if sk.dragging() && g.generateMovedDisplayItems(sk) {
+		return
+	}
 	// We do contribute new solid model, so we have to triangulate the
 	// shell, and edge-find the mesh.
 	g.DisplayMesh.Clear()

@@ -178,10 +178,10 @@ func fixedColumns(a [][]float64, m, n int) []bool {
 	return fixed
 }
 
-// rrefFixedColumns reduces a, m rows of n, to reduced row echelon
-// form in place, with partial pivoting, and reports for each column
-// whether its unit vector lies in the row space.
-func rrefFixedColumns(a [][]float64, m, n int) []bool {
+// rref reduces a, m rows of n, to reduced row echelon form in place,
+// with partial pivoting, and returns for each column the row of its
+// pivot, or -1 where the column has none: a free column.
+func rref(a [][]float64, m, n int) []int {
 	maxAbs := 0.0
 	for i := range m {
 		for _, v := range a[i] {
@@ -228,6 +228,14 @@ func rrefFixedColumns(a [][]float64, m, n int) []bool {
 		pivotRow[j] = row
 		row++
 	}
+	return pivotRow
+}
+
+// rrefFixedColumns reduces a, m rows of n, to reduced row echelon
+// form in place, with partial pivoting, and reports for each column
+// whether its unit vector lies in the row space.
+func rrefFixedColumns(a [][]float64, m, n int) []bool {
+	pivotRow := rref(a, m, n)
 	fixed := make([]bool, n)
 	for j := range n {
 		r := pivotRow[j]

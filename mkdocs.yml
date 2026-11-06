@@ -66,6 +66,7 @@ nav:
   - Assemblies:
       - STEP and links: step-links.md
       - Bill of materials: bill-of-materials.md
+      - Mechanisms (experimental): mechanisms.md
   - Drawings and files:
       - Drawings: drawings.md
       - Export and import: export-import.md

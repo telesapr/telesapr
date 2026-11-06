@@ -48,6 +48,11 @@ const (
 // run.
 func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass) {
 	defer func() { sk.Generation++ }()
+	// What a pull asked to keep holds for the regeneration after it; the
+	// build pass is the last.
+	if pass == passBuild {
+		defer func() { sk.pulled = nil }()
+	}
 	name := "regenerate"
 	switch pass {
 	case passSize:
@@ -112,6 +117,9 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 		}
 		first, last = 0, i
 	}
+
+	// A mechanism's groups are solved together, all or none.
+	first, last = sk.widenToMechanism(first, last)
 
 	// If we're generating entities for display, first we need to find
 	// the bounding box to turn relative chord tolerance to absolute.
@@ -197,10 +205,8 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 		pg := sk.Group(sk.GroupOrder[start-1])
 		prefix, prevSolid = pg.prefixKey, sk.chainKey(pg)
 	}
-	for i, hg := range sk.GroupOrder {
-		if i < start {
-			continue
-		}
+	for i := start; i < len(sk.GroupOrder); i++ {
+		hg := sk.GroupOrder[i]
 		if sk.hooks().Cancel() {
 			return
 		}
@@ -216,60 +222,29 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 			}
 			continue
 		}
-		// The group may depend on entities or other groups, to define its
-		// workplane geometry or for its operands. Those must already exist
-		// in a previous group, so check them before generating.
-		if sk.PruneGroups(hg) {
-			sk.generateAllPruned(prev, typ, andFindFree, pass)
-			return
-		}
-		g := sk.Group(hg)
-
-		prevGroupParams := make(map[core.HParam]bool, len(sk.Params))
-		for _, p := range sk.Params {
-			prevGroupParams[p.H] = true
-		}
-		groupRequestIndex := 0
-		for ri := range sk.Requests {
-			r := &sk.Requests[ri]
-			if r.Group != hg {
-				continue
+		// The groups of a mechanism are made one after another and then
+		// solved as one system, since a mate in one moves the others;
+		// any other group is a block of one.
+		block := sk.blockFrom(i)
+		blockParams := make([][]core.HParam, len(block))
+		for m, bh := range block {
+			// The group may depend on entities or other groups, to
+			// define its workplane geometry or for its operands. Those
+			// must already exist in a previous group, so check them
+			// before generating.
+			if sk.PruneGroups(bh) {
+				sk.generateAllPruned(prev, typ, andFindFree, pass)
+				return
 			}
-			r.GroupRequestIndex = groupRequestIndex
-			groupRequestIndex++
-
-			entities := core.EntityList(sk.Entities)
-			params := core.ParamList(sk.Params)
-			r.Generate(sk, &entities, &params)
-			sk.Entities = []core.Entity(entities)
-			sk.Params = []core.Param(params)
+			g := sk.Group(bh)
+			was := g.Predef
+			blockParams[m] = sk.generateGroup(bh)
+			resolve = resolve || (pass == passBuild && g.facePlaneMoved(was.Q, was.At))
 		}
-		for ci := range sk.Constraints {
-			c := &sk.Constraints[ci]
-			if c.Group != hg {
-				continue
-			}
-			GenerateConstraint(c, &sk.Params)
-		}
-		// The entity and param lists are kept sorted by handle; the
-		// group iterates over them in that order.
-		sk.sortByHandle()
-		was := g.Predef
-		g.Generate(sk, &sk.Entities, &sk.Params)
-		sk.sortByHandle()
-		resolve = resolve || (pass == passBuild && g.facePlaneMoved(was.Q, was.At))
-		// The params this group's solve may change: those its requests,
-		// its constraints and the group itself generate.
-		groupParams := make([]core.HParam, 0, len(sk.Params)-len(prevGroupParams))
-		for _, p := range sk.Params {
-			if !prevGroupParams[p.H] {
-				groupParams = append(groupParams, p.H)
-			}
-		}
-
 		// The requests and constraints depend on stuff in this or the
-		// previous group, so check them after generating.
-		if sk.PruneRequestsAndConstraints(hg) {
+		// previous groups, so check them after generating: those of a
+		// mechanism's group may name the entities of any of its groups.
+		if slices.ContainsFunc(block, sk.PruneRequestsAndConstraints) {
 			sk.generateAllPruned(prev, typ, andFindFree, pass)
 			return
 		}
@@ -286,73 +261,83 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 				newp.Free = prevp.Free
 			}
 		}
-		sk.recalculateGroupEntities(hg)
+		for _, bh := range block {
+			sk.recalculateGroupEntities(bh)
+		}
 
-		switch {
-		case hg.V == HGroupReferences:
-			sk.ForceReferences()
-			g.Solved.How = core.SolveOkay
-			g.Clean = true
-			if keys {
-				g.prefixKey = sk.prefixKey(prefix, g, groupParams)
-				g.solidKey = sk.solidKeyOf(g, g.prefixKey, prevSolid)
-			}
-
-		case i >= first && i <= last:
-			// The group falls inside the range, so really solve it,
-			// and then regenerate the mesh based on the solved stuff.
+		// A block is in the range whole (widenToMechanism), so its first
+		// group answers for it.
+		inRange := i >= first && i <= last
+		if inRange && hg.V != HGroupReferences {
+			all := slices.Concat(blockParams...)
 			if pass == passOne {
-				for _, h := range groupParams {
+				for _, h := range all {
 					if !sk.Param(h).Known {
 						unknown = append(unknown, h)
 					}
 				}
 			}
-			if pass != passBuild {
-				sk.SolveGroupAndReport(hg, groupParams, andFindFree)
-				g.GenerateLoops(sk, rt)
-			}
-			switch {
-			case pass == passSize:
-				// Its solid waits for the pass that builds.
-			case sk.DeferShells:
-				if resolve && pass == passBuild {
-					sk.SolveGroupAndReport(hg, groupParams, andFindFree)
-					g.GenerateLoops(sk, rt)
+			// Solved, and then the loops made from what is solved; the
+			// build pass solves only where a sketch on a face found its
+			// face moved.
+			if pass != passBuild || resolve {
+				sk.solveBlock(block, all, andFindFree)
+				for _, bh := range block {
+					sk.Group(bh).GenerateLoops(sk, rt)
 				}
-				// The solid as it was, to be made off the thread; its
-				// key stays that of the solid it holds.
-				g.prefixKey = sk.prefixKey(prefix, g, groupParams)
-				g.ShellsStale = true
+			}
+		}
+
+		for m, bh := range block {
+			g, groupParams := sk.Group(bh), blockParams[m]
+			switch {
+			case bh.V == HGroupReferences:
+				sk.ForceReferences()
+				g.Solved.How = core.SolveOkay
 				g.Clean = true
+				if keys {
+					g.prefixKey = sk.prefixKey(prefix, g, groupParams)
+					g.solidKey = sk.solidKeyOf(g, g.prefixKey, prevSolid)
+				}
+
+			case inRange:
+				// The group falls inside the range, so it was really
+				// solved; now its solid is made from the solved stuff.
+				switch {
+				case pass == passSize:
+					// Its solid waits for the pass that builds.
+				case sk.DeferShells:
+					// The solid as it was, to be made off the thread;
+					// its key stays that of the solid it holds.
+					g.prefixKey = sk.prefixKey(prefix, g, groupParams)
+					g.ShellsStale = true
+					g.Clean = true
+
+				default:
+					g.prefixKey = sk.prefixKey(prefix, g, groupParams)
+					sk.makeSolid(g, sk.solidKeyOf(g, g.prefixKey, prevSolid))
+					g.ShellsStale = false
+					g.Clean = true
+				}
 
 			default:
-				if resolve && pass == passBuild {
-					sk.SolveGroupAndReport(hg, groupParams, andFindFree)
-					g.GenerateLoops(sk, rt)
+				// The group falls outside the range, so just assume
+				// that it's good wherever we left it. The mesh is
+				// unchanged, and the parameters must be marked as known.
+				for pi := range sk.Params {
+					if prevByHandle[sk.Params[pi].H] != nil {
+						sk.Params[pi].Known = true
+					}
 				}
-				g.prefixKey = sk.prefixKey(prefix, g, groupParams)
-				sk.makeSolid(g, sk.solidKeyOf(g, g.prefixKey, prevSolid))
-				g.ShellsStale = false
-				g.Clean = true
-			}
-
-		default:
-			// The group falls outside the range, so just assume that
-			// it's good wherever we left it. The mesh is unchanged,
-			// and the parameters must be marked as known.
-			for pi := range sk.Params {
-				if prevByHandle[sk.Params[pi].H] != nil {
-					sk.Params[pi].Known = true
+				if keys {
+					g.prefixKey = sk.prefixKey(prefix, g, groupParams)
 				}
 			}
 			if keys {
-				g.prefixKey = sk.prefixKey(prefix, g, groupParams)
+				prefix, prevSolid = g.prefixKey, sk.chainKey(g)
 			}
 		}
-		if keys {
-			prefix, prevSolid = g.prefixKey, sk.chainKey(g)
-		}
+		i += len(block) - 1
 	}
 
 	for _, h := range unknown {
@@ -764,15 +749,16 @@ func (sk *Sketch) WriteEquationsExceptFor(hg core.HGroup, hc core.HConstraint, l
 	g.GenerateEquations(sk, l)
 }
 
-// writeEqSystemForGroup is the system that solves group hg for
-// groupParams, the params its requests, constraints and the group
-// itself generate, holding every other param fixed, and marks the
-// params being dragged.
-func (sk *Sketch) writeEqSystemForGroup(hg core.HGroup, groupParams []core.HParam) (*solver.System, *solver.Group) {
-	g := sk.Group(hg)
-
-	sys := sk.keptSystem(hg, groupParams)
-	for _, h := range sk.hooks().DraggedParams() {
+// writeEqSystem is the system that solves the block of groups hgs, a
+// mechanism (Sketch.Mechanism) or one group, together for params, the
+// params their requests, constraints and the groups themselves
+// generate, holding every other param fixed, and marks the params
+// being dragged. The block allows redundancy, or doesn't count its
+// freedom, when any of its groups says so. Its system is kept under
+// its first group.
+func (sk *Sketch) writeEqSystem(hgs []core.HGroup, params []core.HParam) (*solver.System, *solver.Group) {
+	sys := sk.keptSystem(hgs[0], params)
+	for _, h := range slices.Concat(sk.hooks().DraggedParams(), sk.pulled) {
 		if sys.Dragged == nil {
 			sys.Dragged = make(map[core.HParam]bool)
 		}
@@ -781,24 +767,29 @@ func (sk *Sketch) writeEqSystemForGroup(hg core.HGroup, groupParams []core.HPara
 
 	var constraints []*core.Constraint
 	for ci := range sk.Constraints {
-		if sk.Constraints[ci].Group == hg {
+		if slices.Contains(hgs, sk.Constraints[ci].Group) {
 			constraints = append(constraints, &sk.Constraints[ci])
 		}
 	}
 	slices.SortStableFunc(constraints, func(a, b *core.Constraint) int { return cmp.Compare(a.H.V, b.H.V) })
 	sg := &solver.Group{
-		SuppressDofCalculation: g.SuppressDofCalculation,
-		AllowRedundant:         g.AllowRedundant,
-		FindToFixTimeout:       sk.findToFixTimeout(),
-		Constraints:            constraints,
+		FindToFixTimeout: sk.findToFixTimeout(),
+		Constraints:      constraints,
 		WriteEquationsExceptFor: func(hc core.HConstraint, l *[]core.Equation) {
-			sk.WriteEquationsExceptFor(hg, hc, l)
+			for _, hg := range hgs {
+				sk.WriteEquationsExceptFor(hg, hc, l)
+			}
 		},
+	}
+	for _, hg := range hgs {
+		g := sk.Group(hg)
+		sg.SuppressDofCalculation = sg.SuppressDofCalculation || g.SuppressDofCalculation
+		sg.AllowRedundant = sg.AllowRedundant || g.AllowRedundant
 	}
 	return sys, sg
 }
 
-// solveHoldingBounds solves group hg by solve, whose result how
+// solveHoldingBounds solves the block of groups hgs by solve, whose result how
 // reads, holding its inequalities at their bounds where the sketch
 // would cross them (core.Constraint.Bound). It solves with every bound
 // free, then holds the one crossed furthest and solves again, until
@@ -808,10 +799,10 @@ func (sk *Sketch) writeEqSystemForGroup(hg core.HGroup, groupParams []core.HPara
 // freedom left at the solution, unless holding them makes the group
 // redundant: a length dimension with a maximum of the same value is
 // no conflict.
-func (sk *Sketch) solveHoldingBounds(hg core.HGroup, solve func(), how func() core.SolveResult) {
+func (sk *Sketch) solveHoldingBounds(hgs []core.HGroup, solve func(), how func() core.SolveResult) {
 	var bounds []*core.Constraint
 	for ci := range sk.Constraints {
-		if c := &sk.Constraints[ci]; c.Group == hg && c.IsInequality() {
+		if c := &sk.Constraints[ci]; slices.Contains(hgs, c.Group) && c.IsInequality() {
 			c.Bound = core.BoundFree
 			if !c.Reference {
 				// A point on a segment starts at its foot on it, which
@@ -865,27 +856,31 @@ func (sk *Sketch) solveHoldingBounds(hg core.HGroup, solve func(), how func() co
 	}
 }
 
-// groupParams lists the params group hg's requests, constraints and
-// the group itself generate, in handle order: what
-// WriteEqSystemForGroup generates into the system.
-func (sk *Sketch) groupParams(hg core.HGroup) []core.HParam {
-	var entities core.EntityList
-	var params core.ParamList
-	for ri := range sk.Requests {
-		r := &sk.Requests[ri]
-		if r.Group == hg {
-			r.Generate(sk, &entities, &params)
+// groupParams lists the params the requests, constraints and groups of
+// the block of groups hgs generate, in handle order: what writeEqSystem
+// generates into the system.
+func (sk *Sketch) groupParams(hgs ...core.HGroup) []core.HParam {
+	var ps []core.Param
+	for _, hg := range hgs {
+		var entities core.EntityList
+		var params core.ParamList
+		for ri := range sk.Requests {
+			r := &sk.Requests[ri]
+			if r.Group == hg {
+				r.Generate(sk, &entities, &params)
+			}
 		}
-	}
-	ps := []core.Param(params)
-	for ci := range sk.Constraints {
-		c := &sk.Constraints[ci]
-		if c.Group == hg {
-			GenerateConstraint(c, &ps)
+		gps := []core.Param(params)
+		for ci := range sk.Constraints {
+			c := &sk.Constraints[ci]
+			if c.Group == hg {
+				GenerateConstraint(c, &gps)
+			}
 		}
+		es := []core.Entity(entities)
+		sk.Group(hg).Generate(sk, &es, &gps)
+		ps = append(ps, gps...)
 	}
-	es := []core.Entity(entities)
-	sk.Group(hg).Generate(sk, &es, &ps)
 
 	hs := make([]core.HParam, 0, len(ps))
 	for _, p := range ps {
@@ -897,17 +892,18 @@ func (sk *Sketch) groupParams(hg core.HGroup) []core.HParam {
 	return hs
 }
 
-// TestRankForGroup reports whether group hg would be redundantly
-// constrained, and its rank; a group that allows redundancy or doesn't
-// count its freedom is okay with rank 0.
+// TestRankForGroup reports whether group hg, with the mechanism it is
+// a part of, would be redundantly constrained, and its rank; a group
+// that allows redundancy or doesn't count its freedom is okay with
+// rank 0.
 func (sk *Sketch) TestRankForGroup(hg core.HGroup) (core.SolveResult, int) {
-	g := sk.Group(hg)
+	hgs := sk.Mechanism(hg)
+	sys, sg := sk.writeEqSystem(hgs, sk.groupParams(hgs...))
 	// If we don't calculate dof or redundant is allowed, there is
 	// no point to solve rank because this result is not meaningful
-	if g.SuppressDofCalculation || g.AllowRedundant {
+	if sg.SuppressDofCalculation || sg.AllowRedundant {
 		return core.SolveOkay, 0
 	}
-	sys, sg := sk.writeEqSystemForGroup(hg, sk.groupParams(hg))
 	how, rank, _, _ := sys.SolveRank(sg, false, false)
 	return how, rank
 }
@@ -916,36 +912,55 @@ func (sk *Sketch) TestRankForGroup(hg core.HGroup) (core.SolveResult, int) {
 // requests, constraints and the group itself generate, holding every
 // other param fixed.
 func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam, andFindFree bool) {
-	defer trace.StartRegion(context.Background(), "solve").End()
-	defer sk.timed(hg, timingSolve)()
-	g := sk.Group(hg)
-	g.SketchDiagnostic = nil
+	sk.solveBlock([]core.HGroup{hg}, groupParams, andFindFree)
+}
 
-	g.Solved.Remove = nil
+// solveBlock solves the block of groups hgs, a mechanism or one group,
+// as one system for params, the params their requests, constraints and
+// the groups themselves generate, holding every other param fixed. The
+// result, the freedom left and the constraints to remove are written to
+// every group of the block alike, so that any of them answers for the
+// mechanism.
+func (sk *Sketch) solveBlock(hgs []core.HGroup, params []core.HParam, andFindFree bool) {
+	defer trace.StartRegion(context.Background(), "solve").End()
+	defer sk.timed(hgs[0], timingSolve)()
+	var diagnostic *SketchDiagnostic
 	var how core.SolveResult
+	var dof int
+	var remove []core.HConstraint
 	var sg *solver.Group
+	dofCheckOk := true
+	for _, hg := range hgs {
+		dofCheckOk = dofCheckOk && sk.Group(hg).DofCheckOk
+	}
 	solve := func() {
 		var sys *solver.System
-		sys, sg = sk.writeEqSystemForGroup(hg, groupParams)
+		sys, sg = sk.writeEqSystem(hgs, params)
 		err := catchPanic(func() {
-			how, g.Solved.Dof, g.Solved.Remove = sys.Solve(sg, !g.AllowRedundant, andFindFree, !g.DofCheckOk)
+			how, dof, remove = sys.Solve(sg, !sg.AllowRedundant, andFindFree, !dofCheckOk)
 		})
 		if err != nil {
 			// A malformed sketch is reported, not a crash.
-			g.SketchDiagnostic = &SketchDiagnostic{AddConstraintErrors: []string{
-				fmt.Sprintf("group %v: %v", hg, err)}}
+			diagnostic = &SketchDiagnostic{AddConstraintErrors: []string{
+				fmt.Sprintf("group %v: %v", hgs[0], err)}}
 			how = core.SolveDidntConverge
 		}
-		sk.keepSystem(hg, sys)
+		sk.keepSystem(hgs[0], sys)
 	}
-	sk.seedAxisAngles(hg)
-	sk.solveHoldingBounds(hg, solve, func() core.SolveResult { return how })
-	g.Solved.Timeout = sg.Timeout
-	if how == core.SolveOkay {
-		g.DofCheckOk = true
+	sk.seedAxisAngles(hgs)
+	sk.solveHoldingBounds(hgs, solve, func() core.SolveResult { return how })
+	for _, hg := range hgs {
+		g := sk.Group(hg)
+		g.SketchDiagnostic = diagnostic
+		g.Solved.Dof, g.Solved.Remove = dof, remove
+		g.Solved.Timeout = sg.Timeout
+		g.Solved.RedundantAllowed = sg.AllowRedundant
+		if how == core.SolveOkay {
+			g.DofCheckOk = true
+		}
+		g.Solved.How = how
+		sk.recalculateGroupEntities(hg)
 	}
-	g.Solved.How = how
-	sk.recalculateGroupEntities(hg)
 }
 
 // recalculateGroupEntities refreshes the cached Act* values of group

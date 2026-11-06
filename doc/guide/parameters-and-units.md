@@ -151,7 +151,10 @@ parameter, the value to start from, the value to end at, and the number of steps
 
 Afterwards the parameter gets its own expression back. The `turn` parameter of a
 [screw mate](bill-of-materials.md#mates) is such a parameter: a study of it runs a nut up its
-screw.
+screw. So are the `angle` of a driven hinge and the `travel` of a driven concentric mate
+([mechanisms](mechanisms.md), experimental): a study of an engine's crank angle from 0 to 360
+turns the crank round and runs the piston up and down. A step past a range set on the joint,
+as a lid's past its 110°, is marked unsolved.
 
 ```go
 frames, err := doc.Assembly.MotionStudy("w", 20, 80, 6, "frames/plate-%02d.stl")

@@ -421,6 +421,48 @@ func (v LinkGroup) AsSolid() (on bool) {
 	return on
 }
 
+// Moves reports whether a link group's part moves in a mechanism.
+func (v LinkGroup) Moves() (on bool) {
+	g := v.g
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		g.mustBe(group, sketch.GroupLinked, "Moves")
+		on = group.LinkMoves
+	})
+	return on
+}
+
+// SetMoves makes a link group's part move in a mechanism (on), or be
+// held where its group puts it. The flagged link groups standing in a
+// row in the list of groups are one mechanism, solved as one system: a
+// mate in any of them moves the others, and a loop of parts, as a
+// four-bar linkage, can be closed. An unflagged link, and every group
+// before the mechanism, is the ground, held where it is.
+func (v LinkGroup) SetMoves(on bool) {
+	g := v.g
+	g.d.change(func(sk *sketch.Sketch) {
+		g.mustBe(g.get(sk), sketch.GroupLinked, "SetMoves")
+		if err := sk.SetLinkMoves(g.H, on); err != nil {
+			fail("%v", err)
+		}
+	})
+}
+
+// Mechanism is the mechanism the link group's part moves in: the link
+// groups flagged to move (SetMoves) standing in a row with it in the
+// list of groups, in their order. A part that doesn't move is a
+// mechanism of its own group alone.
+func (v LinkGroup) Mechanism() (groups []Group) {
+	g := v.g
+	g.d.read(func(sk *sketch.Sketch) {
+		g.mustBe(g.get(sk), sketch.GroupLinked, "Mechanism")
+		for _, h := range sk.Mechanism(g.H) {
+			groups = append(groups, Group{g.d, h})
+		}
+	})
+	return groups
+}
+
 // SetAsSolid reads a link group's STEP file as a solid, or as a
 // reference mesh, and reads it again.
 func (v LinkGroup) SetAsSolid(on bool) {

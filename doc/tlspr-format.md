@@ -261,6 +261,7 @@ group <handle> <type> <name> {
   scale <real>              # left out when 1, or 0, which is no scale; "scale = <expression>" for an expression
   link <string>             # linked file, relative to this file, with / separators
   link-as-solid             # a linked STEP file read as a solid, not a reference mesh
+  link-moves                # the linked part moves in a mechanism: solved with the flagged links beside it in the group order
   link-configuration <string>    # a linked model regenerated in its configuration of this name; left out for the one it was saved in
   link-param <name> = <expression>  # a value passed to the linked model's parameter name, an expression in this file's parameters; one line each
   remap { ... }

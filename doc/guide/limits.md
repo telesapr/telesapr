@@ -53,6 +53,10 @@ With a dimension selected, the same menu entries turn it into a bound. If it is 
 bound, they turn it back into a dimension. A distance from a line or a plane keeps to its side,
 as the dimension does, and the bound is on how far.
 
+A turn about an axis takes a bound too: the `turn` of a screw mate, or a part's turn about a
+hinge's pin. A negative turn is a turn the other way, not the other side, and its minimum is
+the least turn, as for a positive one. So a hinge can be kept between 0 and 90°.
+
 Constrain > On Segment keeps a point on a line segment, between its ends. On Point / Curve /
 Plane, by contrast, lets the point go anywhere along the segment's line.
 

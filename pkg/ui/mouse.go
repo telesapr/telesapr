@@ -19,10 +19,11 @@ import (
 // UpdateDraggedPoint moves a point with the mouse.
 func (gw *graphicsWindow) UpdateDraggedPoint(hp core.HEntity, mx, my float64) {
 	sk := gw.sk()
-	p := sk.Entity(hp)
-	pos := p.PointGetNum(sk)
+	pos := sk.Entity(hp).PointGetNum(sk)
 	gw.UpdateDraggedNum(&pos, mx, my)
-	p.PointForceTo(sk, pos)
+	// Through the sketch's entry point, as a script's move: a point of a
+	// mechanism's part is pulled along the mechanism's freedom.
+	sk.MovePointTo(hp, pos)
 	gw.ss.ScheduleShowTW()
 }
 
@@ -1322,6 +1323,8 @@ func (gw *graphicsWindow) MouseLeftUp(mx, my float64, shiftDown, ctrlDown bool) 
 		gw.hoverWasSelectedOnMousedown = false
 		gw.extraLine.Draw = false
 		gw.ClearPending(true)
+		// What a drag drew from moved parts' meshes is meshed as ever.
+		gw.sk().RemakeMovedDisplays()
 		gw.Invalidate(false)
 
 	case pendingDraggingMarquee:

@@ -587,6 +587,21 @@ func (tw *textWindow) ScreenChangeLinkAsSolid(link int, v uint32) {
 	ss.GW.ClearSuper()
 }
 
+// ScreenChangeLinkMoves makes a linked part move in a mechanism ('m')
+// or be held where its group puts it.
+func (tw *textWindow) ScreenChangeLinkMoves(link int, v uint32) {
+	ss := tw.ss
+	g := ss.SK.Group(tw.shown.group)
+	if g == nil || g.Type != sketch.GroupLinked || g.LinkMoves == (link == 'm') {
+		return
+	}
+	ss.UndoRemember()
+	if err := ss.SK.SetLinkMoves(g.H, link == 'm'); err != nil {
+		ss.Report(err)
+	}
+	ss.GW.ClearSuper()
+}
+
 // ScreenChangeSweepUp holds a sweep's frames to an axis, by the link's
 // letter, or ('n') lets them turn least.
 func (tw *textWindow) ScreenChangeSweepUp(link int, v uint32) {
@@ -1522,6 +1537,15 @@ func (tw *textWindow) showLinkedInfo(g *sketch.Group) {
 			lf(tw.ScreenChangeLinkAsSolid), radioMark(!g.LinkAsSolid),
 			lf(tw.ScreenChangeLinkAsSolid), radioMark(g.LinkAsSolid))
 	}
+	// The rows alternate their background; the one above is the scale's
+	// or, for a STEP file, the reading's.
+	bg := "%Ba"
+	if link.IsStep(g.LinkFile) {
+		bg = "%Bd"
+	}
+	tw.Printf(false, bg+"   %Ftpart%E %f%Lf%Fd%s fixed%E  %f%Lm%Fd%s moves in a mechanism%E",
+		lf(tw.ScreenChangeLinkMoves), radioMark(!g.LinkMoves),
+		lf(tw.ScreenChangeLinkMoves), radioMark(g.LinkMoves))
 	tw.showLinkModel(g)
 	for _, line := range g.LinkInfo {
 		tw.Printf(false, "   %Fd%s%E", line)

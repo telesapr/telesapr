@@ -36,11 +36,13 @@ func (l Limit) String() string {
 }
 
 // CanLimit reports whether the constraint is a dimension that can be
-// a bound: a distance of any kind, a diameter or radius, an angle.
+// a bound: a distance of any kind, a diameter or radius, an angle, a
+// turn about an axis.
 func (c *ConstraintBase) CanLimit() bool {
 	switch c.Type {
 	case ConstraintPtPtDistance, ConstraintProjPtDistance, ConstraintPtLineDistance,
-		ConstraintPtPlaneDistance, ConstraintPtFaceDistance, ConstraintDiameter, ConstraintAngle:
+		ConstraintPtPlaneDistance, ConstraintPtFaceDistance, ConstraintDiameter, ConstraintAngle,
+		ConstraintAxisAngle:
 		return true
 	}
 	return false
@@ -106,8 +108,12 @@ func (c *Constraint) Crossed(sk EntitySketch) (by float64, bound int) {
 		}
 		// A negative value is a signed distance on the other side of
 		// a line or a plane, and the bound is on its size: further
-		// that way is more.
-		if c.ValA < 0 {
+		// that way is more. A turn about an axis is signed itself: a
+		// negative one is a turn the other way, and its bound is on the
+		// turn, as for a positive one. Its equation is the point's
+		// distance across the half-plane, r·sin of how far it has
+		// turned past the bound, which grows the same way.
+		if c.ValA < 0 && c.Type != ConstraintAxisAngle {
 			by = -by
 		}
 		return by, BoundHeld

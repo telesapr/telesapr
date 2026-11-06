@@ -27,6 +27,8 @@ const (
 	mendCubic
 	mendFace
 	mendNormal
+	// mendAxis is an axis an angle turns about: a normal or a line.
+	mendAxis
 	mendVector
 	mendArcOrCubic
 	mendPlane
@@ -36,7 +38,7 @@ const (
 // String names the kind for a message.
 func (r mendRole) String() string {
 	return [...]string{"a point", "a workplane", "a curve", "a line", "a circle or an arc",
-		"an arc", "a cubic", "a face", "a normal", "a line or a normal", "an arc or a cubic",
+		"an arc", "a cubic", "a face", "a normal", "a normal or a line segment", "a line or a normal", "an arc or a cubic",
 		"a workplane or a planar face", "an entity"}[r]
 }
 
@@ -59,6 +61,8 @@ func (r mendRole) fits(e *core.Entity) bool {
 		return e.IsFace()
 	case mendNormal:
 		return e.IsNormal()
+	case mendAxis:
+		return e.IsNormal() || e.Type == core.EntityLineSegment
 	case mendVector:
 		return e.HasVector()
 	case mendArcOrCubic:
@@ -112,7 +116,7 @@ func constraintRoles(t core.ConstraintType) [4]mendRole {
 	case core.ConstraintEqualAngle:
 		r = [4]mendRole{mendVector, mendVector, mendVector, mendVector}
 	case core.ConstraintAxisAngle:
-		r[0] = mendNormal
+		r[0] = mendAxis
 	case core.ConstraintArcLineTangent:
 		r[0], r[1] = mendArc, mendLine
 	case core.ConstraintCubicLineTangent:

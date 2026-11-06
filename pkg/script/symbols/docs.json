@@ -1882,6 +1882,10 @@
 						"decl": "func (c *Constraint) AxisAngleOffset(sk EntitySketch) (foot geom.Vector, r float64)",
 						"text": "AxisAngleOffset is how far a ConstraintAxisAngle's point is from its axis, and the foot of that on the axis: what a drawing of it needs."
 					},
+					"AxisFrameNum": {
+						"decl": "func (c *Constraint) AxisFrameNum(sk EntitySketch) (n, u, v geom.Vector)",
+						"text": "AxisFrameNum is a ConstraintAxisAngle's axis direction and the u and v its angle is counted in, where they are now, unit vectors: a normal's, or a line's (axisFrame)."
+					},
 					"Crossed": {
 						"decl": "func (c *Constraint) Crossed(sk EntitySketch) (by float64, bound int)",
 						"text": "Crossed is how far the sketch is past the inequality's bound, in mm, and the bound it is past or nearest: positive where it is crossed, and within atBound of zero at the bound (IsAtBound)."
@@ -1921,7 +1925,7 @@
 				"methods": {
 					"CanLimit": {
 						"decl": "func (c *ConstraintBase) CanLimit() bool",
-						"text": "CanLimit reports whether the constraint is a dimension that can be a bound: a distance of any kind, a diameter or radius, an angle."
+						"text": "CanLimit reports whether the constraint is a dimension that can be a bound: a distance of any kind, a diameter or radius, an angle, a turn about an axis."
 					},
 					"Clear": {
 						"decl": "func (c *ConstraintBase) Clear()"
@@ -4306,6 +4310,10 @@
 						"decl": "func (m AssemblyMenu) Concentric(a, b Entity) []Constraint",
 						"text": "Concentric puts two circles or arcs on one axis. Drawing free in 3d,\ntheir axes are made parallel and the second's centre put on the\nfirst's axis, by its distance from the first's centre along two\ndirections square to the axis, each zero; one part may still turn\nabout the axis and slide along it, as a pin in a hole. The directions\nare lines or normals of the first circle's group, or the reference\naxes; with none square to the axis, the centres are put on each\nother. In a workplane, the centres are put on each other. A\nworkplane, or a normal with a point, is taken as an axis, the normal\nthrough its origin, as a datum on a round face or edge of a solid is\n(Datums.NameFace); a datum on a flat face, whose normal runs through\na corner of the face, is refused."
 					},
+					"ConcentricDriven": {
+						"decl": "func (m AssemblyMenu) ConcentricDriven(a, b Entity) DrivenMate",
+						"text": "ConcentricDriven puts two circles or arcs on one axis as Concentric\ndoes, and drives the second's travel along the first's normal by a\nnew parameter, \"travel\" (or with a number after), in the document's\nunit from where it is, so that a motion study of it slides the part.\nThe part may still turn about the axis; hold that by another mate, as\na flat face on a flat face. The mate is made in 3d."
+					},
 					"ExportBOM": {
 						"decl": "func (m AssemblyMenu) ExportBOM(path string) error",
 						"text": "ExportBOM writes the bill of materials to a CSV file: part, count,\nfile and the groups that place them, the files named as\nBillOfMaterials names them."
@@ -4317,6 +4325,10 @@
 					"Hinge": {
 						"decl": "func (m AssemblyMenu) Hinge(a, b Entity) []Constraint",
 						"text": "Hinge puts the start of line b on the start of line a, and the end of\nb on a's line: b may only turn about a, as on a pin."
+					},
+					"HingeDriven": {
+						"decl": "func (m AssemblyMenu) HingeDriven(a, b Entity) DrivenMate",
+						"text": "HingeDriven puts line b on line a as Hinge does, and drives b's turn\nabout a by a new parameter, \"angle\" (or with a number after for a\nsecond), in degrees from where the part is, so that a motion study of\nit turns the part, and the parts of a mechanism joined to it with\nit. Of two circles or arcs, a pin in its hole, it puts them on one\naxis as Concentric does and drives the turn about the first one's\naxis; the second part may still slide along the axis, which a Flush\nof its face on the first part's holds. The turn is held by the\nhalf-plane through the axis in which the point of b's part farthest\nfrom it lies (an axis-angle constraint), which counts whole turns and\neither way. A driven joint has no freedom left: dragging the part\nmoves nothing, the parameter does. The mate is made in 3d."
 					},
 					"Interferences": {
 						"decl": "func (m AssemblyMenu) Interferences() (found []Interference, meshOnly []Group)",
@@ -4847,6 +4859,20 @@
 				"text": "DrawingView is a view on the sheet, see sketch.DrawingView.",
 				"kind": "sketch.DrawingView"
 			},
+			"DrivenMate": {
+				"text": "DrivenMate is what HingeDriven or ConcentricDriven made: the\nparameter that drives the joint, and the mate's constraints, the one\nthe parameter drives last.",
+				"kind": "struct",
+				"methods": {
+					"SetRange": {
+						"decl": "func (dm DrivenMate) SetRange(lo, hi float64) []Constraint",
+						"text": "SetRange keeps the driven joint between lo and hi of its parameter,\nas two bounds beside the dimension it drives (a minimum and a\nmaximum): a value of the parameter past them fails to solve, and a\nmotion study marks that step unsolved. lo must be less than hi. It\nreturns the two bounds."
+					},
+					"String": {
+						"decl": "func (dm DrivenMate) String() string",
+						"text": "String is the mate's parameter and its constraints, for a script's\nprint."
+					}
+				}
+			},
 			"EditMenu": {
 				"text": "EditMenu holds the calls of the Edit menu: undo, regeneration, the\nclipboard, the selection, commands and preferences. A script reaches\nit as doc.Edit.",
 				"kind": "struct",
@@ -5011,7 +5037,7 @@
 					},
 					"MoveTo": {
 						"decl": "func (e Entity) MoveTo(p Vec)",
-						"text": "MoveTo puts a point at p, as dragging it there does: the solver\nthen moves it as the constraints require."
+						"text": "MoveTo puts a point at p, as dragging it there does: the solver\nthen moves it as the constraints require. A point of a part that\nmoves in a mechanism (LinkGroup.SetMoves) is pulled toward p along\nthe mechanism's freedom instead: the part turns and slides as its\nmates let it, the parts joined to it with it, and stops as near p as\nthey can bring it."
 					},
 					"Normal": {
 						"decl": "func (e Entity) Normal() (n Entity)",
@@ -5892,6 +5918,10 @@
 						"decl": "func (v LinkGroup) Info() (lines []string)",
 						"text": "Info describes the file a link group links, a line each, as the\ngroup's screen shows it: for a STEP file its schema and unit, how\nmany shapes, faces and triangles it gave, and the chord tolerance it\nwas tessellated to. A sketch or STL file gives none."
 					},
+					"Mechanism": {
+						"decl": "func (v LinkGroup) Mechanism() (groups []Group)",
+						"text": "Mechanism is the mechanism the link group's part moves in: the link\ngroups flagged to move (SetMoves) standing in a row with it in the\nlist of groups, in their order. A part that doesn't move is a\nmechanism of its own group alone."
+					},
 					"ModelConfigurations": {
 						"decl": "func (v LinkGroup) ModelConfigurations() (names []string)",
 						"text": "ModelConfigurations are the names of the linked model's\nconfigurations."
@@ -5903,6 +5933,10 @@
 					"Move": {
 						"decl": "func (v LinkGroup) Move(t Vec)",
 						"text": "Move moves the part by t, in mm, and regenerates it."
+					},
+					"Moves": {
+						"decl": "func (v LinkGroup) Moves() (on bool)",
+						"text": "Moves reports whether a link group's part moves in a mechanism."
 					},
 					"Offset": {
 						"decl": "func (v LinkGroup) Offset() (offset Vec)",
@@ -5939,6 +5973,10 @@
 					"SetFile": {
 						"decl": "func (v LinkGroup) SetFile(path string)",
 						"text": "SetFile points the link at another file and reads it, keeping where\nthe part is placed, its scale and what the link passes into it: a\nnewer revision of a part saved under another name, or a STEP file in\nplace of a model. What later groups use of the old part and the new\none lacks is removed with them, as when a linked file is missing."
+					},
+					"SetMoves": {
+						"decl": "func (v LinkGroup) SetMoves(on bool)",
+						"text": "SetMoves makes a link group's part move in a mechanism (on), or be\nheld where its group puts it. The flagged link groups standing in a\nrow in the list of groups are one mechanism, solved as one system: a\nmate in any of them moves the others, and a loop of parts, as a\nfour-bar linkage, can be closed. An unflagged link, and every group\nbefore the mechanism, is the ground, held where it is."
 					},
 					"SetOrientation": {
 						"decl": "func (v LinkGroup) SetOrientation(u, w Vec)",
@@ -7239,6 +7277,10 @@
 				"text": "Dependency is one group that another group needs, and the first reason found for it.",
 				"kind": "struct"
 			},
+			"DragWatcher": {
+				"text": "DragWatcher is Hooks whose owner can say a drag is going on, as the window can: the display of an assembly of linked parts is then made from their meshes moved (display_parts.go).",
+				"kind": "interface"
+			},
 			"Drawing": {
 				"text": "Drawing is the model's sheet.",
 				"kind": "struct",
@@ -8002,6 +8044,10 @@
 						"decl": "func (sk *Sketch) ActiveWorkplane() core.HEntity",
 						"text": "ActiveWorkplane is the active group's workplane."
 					},
+					"AddBoundOf": {
+						"decl": "func (sk *Sketch) AddBoundOf(hc core.HConstraint, l core.Limit, v float64) (core.HConstraint, error)",
+						"text": "AddBoundOf adds a bound beside dimension hc, which keeps holding: a copy of it made a minimum or a maximum (l) of value v, in its own units, with no expression or name."
+					},
 					"AddConfiguration": {
 						"decl": "func (sk *Sketch) AddConfiguration(name string) error",
 						"text": "AddConfiguration adds a configuration of the table's expressions as they are, and makes it active."
@@ -8488,6 +8534,10 @@
 						"decl": "func (sk *Sketch) Measure(entities ...core.HEntity) (Measurement, error)",
 						"text": "Measure measures entities, as the description of the selection does: one line segment or circle; two points; a point and a circle, line segment or plane face; two lines, normals or plane faces; or two points and a line along which to project their distance."
 					},
+					"Mechanism": {
+						"decl": "func (sk *Sketch) Mechanism(hg core.HGroup) []core.HGroup",
+						"text": "Mechanism is the mechanism group hg is a part of, its groups in the group order: the longest run of consecutive groups that move in a mechanism (movesInMechanism) containing hg."
+					},
 					"MendLeftOut": {
 						"decl": "func (sk *Sketch) MendLeftOut(missing, with core.HEntity) error",
 						"text": "MendLeftOut puts with in the place of missing, an entity the file lacks, wherever what the load left out used it in a role with fits: a group's origin or a constraint's point takes a point, a request's or a constraint's workplane a workplane, a dropped edge a curve, a group's axis, direction or plane what its kind of group uses (a line or a normal for a lathe's axis, a workplane or a planar face for a mirror's plane), a constraint's entity what its kind of constraint uses there (a line for a point-to-line distance, a circle or an arc for a diameter, a face for a point on a face; LeftOutMissingKind says which)."
@@ -8519,6 +8569,10 @@
 					"MoveGroupWithSources": {
 						"decl": "func (sk *Sketch) MoveGroupWithSources(h, before core.HGroup) ([]core.HGroup, error)",
 						"text": "MoveGroupWithSources moves group h, with its OwnSources in their order, to just before group before, or to the end for the zero handle, as MoveGroup moves one group: a move that would put a group ahead of one it refers to is refused with a *MoveError, and nothing moves."
+					},
+					"MovePointTo": {
+						"decl": "func (sk *Sketch) MovePointTo(he core.HEntity, p geom.Vector)",
+						"text": "MovePointTo puts point he at p, as dragging it there does, and marks what it moves to be solved again."
 					},
 					"MovePointsBy": {
 						"decl": "func (sk *Sketch) MovePointsBy(points []core.HEntity, d geom.Vector)",
@@ -8691,6 +8745,10 @@
 						"decl": "func (s *Sketch) PushFromCurrentOnto(uk *UndoStack)",
 						"text": "PushFromCurrentOnto records the current state on uk, over its oldest one when it's full."
 					},
+					"RangeMovedDisplays": {
+						"decl": "func (sk *Sketch) RangeMovedDisplays(fn func())",
+						"text": "RangeMovedDisplays calls fn once for each group whose display is made from moved parts' meshes now; for a test of the window."
+					},
 					"Refresh": {
 						"decl": "func (sk *Sketch) Refresh()",
 						"text": "Refresh does the scheduled regeneration."
@@ -8702,6 +8760,10 @@
 					"RegionArea": {
 						"decl": "func (sk *Sketch) RegionArea(hg core.HGroup) (float64, error)",
 						"text": "RegionArea is the area of the closed region group hg's sketch draws, holes taken out."
+					},
+					"RemakeMovedDisplays": {
+						"decl": "func (sk *Sketch) RemakeMovedDisplays()",
+						"text": "RemakeMovedDisplays has the display of every group drawn from moved parts' meshes during a drag made again as ever, as the window asks when the drag ends."
 					},
 					"RemakeStaleMeshes": {
 						"decl": "func (sk *Sketch) RemakeStaleMeshes() bool",
@@ -8892,6 +8954,10 @@
 					"SetLinkFile": {
 						"decl": "func (sk *Sketch) SetLinkFile(hg core.HGroup, file string) error",
 						"text": "SetLinkFile points the link group hg at another file, named as the group names its file (relative to the sketch's file, or absolute), and reads it, keeping the group's placement, scale and what it passes into the model."
+					},
+					"SetLinkMoves": {
+						"decl": "func (sk *Sketch) SetLinkMoves(hg core.HGroup, on bool) error",
+						"text": "SetLinkMoves makes link group hg's part move in a mechanism (on), or be held where its group puts it."
 					},
 					"SetLinkParam": {
 						"decl": "func (sk *Sketch) SetLinkParam(hg core.HGroup, name, expr string) error",
@@ -9098,7 +9164,7 @@
 					},
 					"TestRankForGroup": {
 						"decl": "func (sk *Sketch) TestRankForGroup(hg core.HGroup) (core.SolveResult, int)",
-						"text": "TestRankForGroup reports whether group hg would be redundantly constrained, and its rank; a group that allows redundancy or doesn't count its freedom is okay with rank 0."
+						"text": "TestRankForGroup reports whether group hg, with the mechanism it is a part of, would be redundantly constrained, and its rank; a group that allows redundancy or doesn't count its freedom is okay with rank 0."
 					},
 					"ThreadBands": {
 						"decl": "func (sk *Sketch) ThreadBands(hg core.HGroup) []ThreadBand",

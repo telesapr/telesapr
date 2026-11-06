@@ -7,10 +7,12 @@ import (
 )
 
 // MenuMate makes a mate of the selection (roadmap 16.9): the
-// constraints api.Doc.Concentric, Flush, Hinge or Screw make, as one
-// step of undo, in the active group. Concentric and Flush take datums
-// on a solid selected as their workplanes or, through a link, their
-// normals, as the datums screen's [mate] does. A screw's lead is the
+// constraints api.Doc.Concentric, Flush, Hinge, Screw, HingeDriven or
+// ConcentricDriven make, as one step of undo, in the active group; a
+// driven mate's parameter, angle or travel, is changed in the table.
+// Concentric and Flush take datums on a solid selected as their
+// workplanes or, through a link, their normals, as the datums screen's
+// [mate] does. A screw's lead is the
 // lead of the screw thread a circle carries, and the part is moved to
 // where the threads fit (api.AssemblyMenu.Screw); without threads it is
 // the coarse pitch of the ISO metric thread of the first circle's
@@ -58,6 +60,22 @@ func (ss *Application) MenuMate(id Command) {
 		what, need = "hinge", "two line segments"
 		run = func(d *api.Doc, a, b api.Entity) { d.Assembly.Hinge(a, b) }
 		if gs.lineSegments == 2 && gs.n == 2 {
+			for _, h := range gs.entity {
+				picked = append(picked, h.V)
+			}
+		}
+	case cmdMateHingeDriven:
+		what, need = "driven hinge", "two line segments, or two circles or arcs (a pin and its hole)"
+		run = func(d *api.Doc, a, b api.Entity) { d.Assembly.HingeDriven(a, b) }
+		if (gs.lineSegments == 2 || gs.circlesOrArcs == 2) && gs.n == 2 {
+			for _, h := range gs.entity {
+				picked = append(picked, h.V)
+			}
+		}
+	case cmdMateConcentricDriven:
+		what, need = "driven concentric", "two circles or arcs"
+		run = func(d *api.Doc, a, b api.Entity) { d.Assembly.ConcentricDriven(a, b) }
+		if gs.circlesOrArcs == 2 && gs.n == 2 {
 			for _, h := range gs.entity {
 				picked = append(picked, h.V)
 			}

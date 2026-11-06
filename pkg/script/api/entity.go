@@ -155,15 +155,18 @@ func (e Entity) Pos() (p Vec) {
 }
 
 // MoveTo puts a point at p, as dragging it there does: the solver
-// then moves it as the constraints require.
+// then moves it as the constraints require. A point of a part that
+// moves in a mechanism (LinkGroup.SetMoves) is pulled toward p along
+// the mechanism's freedom instead: the part turns and slides as its
+// mates let it, the parts joined to it with it, and stops as near p as
+// they can bring it.
 func (e Entity) MoveTo(p Vec) {
 	e.d.change(func(sk *sketch.Sketch) {
 		ent := e.get(sk)
 		if !ent.IsPoint() {
 			fail("%s isn't a point", e.describe(sk))
 		}
-		ent.PointForceTo(sk, p)
-		sk.MarkGroupDirtyByEntity(e.H)
+		sk.MovePointTo(e.H, p)
 	})
 }
 

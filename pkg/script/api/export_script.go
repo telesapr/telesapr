@@ -480,9 +480,18 @@ func (w *scriptWriter) ref(h core.HEntity) string {
 		return fmt.Sprintf("doc.Entity(0x%x)", h.V)
 	}
 	for k, id := range g.Remap {
-		if g.H.Entity(int(id.V)) == h {
-			return fmt.Sprintf("%s.Made(%s, %d)", v, w.ref(k.Input), k.CopyNumber)
+		if g.H.Entity(int(id.V)) != h {
+			continue
 		}
+		// A link's remap is keyed by the entities of the file it links,
+		// whose handles mean nothing in this model: one of the linked
+		// file's own groups' copies, 0x80030001 say, would be named as
+		// this model's group 3's. Named by its handle, it is the key
+		// Made looks up.
+		if g.Type == sketch.GroupLinked {
+			return fmt.Sprintf("%s.Made(doc.Entity(0x%x), %d)", v, k.Input.V, k.CopyNumber)
+		}
+		return fmt.Sprintf("%s.Made(%s, %d)", v, w.ref(k.Input), k.CopyNumber)
 	}
 	return fmt.Sprintf("doc.Entity(0x%x)", h.V)
 }
