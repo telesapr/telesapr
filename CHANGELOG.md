@@ -9,6 +9,18 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+### Added
+- AI connection: a long run_script reports how far it has got while it runs, so a client no longer waits minutes with nothing to show, or gives up, while a large model regenerates. A client that asked for progress is told the group being regenerated ("regenerating g007-plate, 3 of 12") and the last line printed. A client that shows logs gets each line the script prints as it is printed. The browser's `agent-client.js` `run` takes a callback for the same reports. `telesapr-cli mcp` and the window must be the same version (the protocol is now 6).
+- `telesapr-cli mcp --record <file>` appends every message the AI client sends to a file, one per line, in the window mode and with `--headless`: a session with a model to send to the developers or to keep as a test.
+- AI connection: get_drawing and measure return, beside their text, the same as data a program can read (MCP's structured content, with an output schema): the groups with how they solved, their volume and bounds, the requests with their points, the constraints with their values, the faces and edges of a solid; the volume, centre of mass, bounds, soundness, gaps and walls measured. A client, an evaluation or a test no longer parses the prose. Scripts: `Doc.Description`, `Group.Description`, `Group.SolidDescription`; in a browser, `agent-client.js` has `described` and `measured`. `telesapr-cli mcp` and the window must be the same version (the protocol is now 6).
+- AI connection: get_drawing with `solid` lists the faces and edges of the solid up to a group (the active one by default): each face with its ID, name, shape (flat with its normal, cylinder or cone with its axis, sphere, or curved) and a point on it, each edge with the name `Solid().Edge` takes, its shape, length and ends, and its two faces; at most 40 faces and 60 edges. A model picking edges to fillet or a face to sketch on no longer has to find them by trial scripts. Scripts: `Group.DescribeSolid`. `telesapr-cli mcp` and the window must be the same version (the protocol is now 5).
+- AI connection: get_drawing with `script` returns the whole drawing as the Go script that builds it again, as File > Export > Script (.go) writes it, the quickest way for a model to see how a drawing it didn't make is built.
+
+### Changed
+- A script's run-time error names the statement that failed, in plain words: `script:2:1: index out of range` and the line quoted below it, where it said `panic: reflect: slice index out of range`. The console, `telesapr-cli` and the AI tools all show it.
+- AI connection: render sends a line of text with the picture (the view, its size, the group drawn, the section, and the solid's bounds in mm), and with only `width` or only `height` given the other side follows at 4:3. `telesapr-cli mcp` and the window must be the same version.
+- AI connection: after a script was stopped, run_script says that the interpreter started afresh and the variables of earlier calls are gone (it used to say they were still defined). The primer's example rounds the plate's edges, its "Checking the result" lines are real calls, and it no longer sends a model to `SolidEdges` (a chamfer group's) for an extrusion's edges. The error of a call made on a group of the wrong kind says "an extrude" for "a extrude".
+
 ## [0.6.1] - 2026-11-06
 
 ### Fixed

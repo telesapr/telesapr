@@ -13,8 +13,8 @@ import (
 // describer is a Backend that answers Describe with what it was asked.
 type describer struct{ Backend }
 
-func (describer) Describe(_ context.Context, group string) (string, error) {
-	return "group " + group, nil
+func (describer) Describe(_ context.Context, d Describing) (Described, error) {
+	return Described{Text: "group " + d.Group, Data: Description{Group: d.Group}}, nil
 }
 
 // TestMessageConnServe serves a Backend over a MessageConn as the
@@ -54,7 +54,7 @@ func TestMessageConnServe(t *testing.T) {
 		t.Fatalf("hello answered %+v", r)
 	}
 	conn.Deliver(`{"id":2,"op":"describe","group":"g001"}`)
-	if r := next(); r.ID != 2 || r.Text != "group g001" || r.Error != "" {
+	if r := next(); r.ID != 2 || r.Text != "group g001" || string(r.Data) != `{"group":"g001"}` || r.Error != "" {
 		t.Fatalf("describe answered %+v", r)
 	}
 	conn.Deliver(`not json`)

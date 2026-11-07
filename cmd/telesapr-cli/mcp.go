@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -24,7 +25,7 @@ import (
 
 const mcpUsage = `
 AI commands:
-    mcp [--socket <path>]
+    mcp [--socket <path>] [--record <file>]
         Serves the drawing that is open in TeleSAPR to a Model Context
         Protocol client, such as an AI model's program, on standard input
         and output: the client runs scripts on the drawing, reads what is
@@ -32,9 +33,12 @@ AI commands:
         Script > Allow AI Connections turned on, or be started with
         --agent; it may be started after this command. <path> is the
         socket of the TeleSAPR to talk to, if not the last one started.
+        --record appends every message the client sends to <file>, one per
+        line, as it arrives (also with --headless): a session with a model
+        kept to send to the developers or to replay as a test.
         A client is told to start this command, for example:
             claude mcp add telesapr -- telesapr-cli mcp
-    mcp --headless [--lib <dir>] [--allow <dir>...] [--unguarded] [<sketch.tlspr>]
+    mcp --headless [--record <file>] [--lib <dir>] [--allow <dir>...] [--unguarded] [<sketch.tlspr>]
         Serves a drawing of its own instead, with no window: the sketch
         file, or a new sketch. Nothing is saved unless a script does it.
         <dir> is the script library, as for run; the window's is the one
@@ -44,6 +48,35 @@ AI commands:
         own; they read the library. --unguarded lets them use any file
         you may. The window has the same in its configuration.
 `
+
+// recorder is a reader that writes each complete line it passes on to
+// a file as well, so that what a client sent can be replayed. A line
+// is written when its newline has arrived, and the file is written
+// through with it.
+type recorder struct {
+	r       io.Reader
+	w       io.Writer
+	pending []byte
+}
+
+// Read implements io.Reader.
+func (c *recorder) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	c.pending = append(c.pending, p[:n]...)
+	for {
+		i := bytes.IndexByte(c.pending, '\n')
+		if i < 0 {
+			break
+		}
+		if line := bytes.TrimSpace(c.pending[:i]); len(line) > 0 {
+			if _, werr := c.w.Write(append(line, '\n')); werr != nil && err == nil {
+				err = werr
+			}
+		}
+		c.pending = c.pending[i+1:]
+	}
+	return n, err
+}
 
 // nopWriteCloser is a writer that isn't closed with the transport.
 type nopWriteCloser struct{ io.Writer }
@@ -68,7 +101,7 @@ func sketchFolder(host api.Host) func() string {
 // runMCP performs the mcp command, and returns the tool's exit
 // status. It returns when the client closes its end.
 func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	headless, sketchFile, socket, library := false, "", "", ""
+	headless, sketchFile, socket, library, record := false, "", "", "", ""
 	unguarded, folders := false, []string(nil)
 	rest := args[2:]
 	for i := 0; i < len(rest); i++ {
@@ -82,6 +115,13 @@ func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr 
 			}
 			i++
 			socket = rest[i]
+		case arg == "--record":
+			if i+1 >= len(rest) {
+				_, _ = fmt.Fprintln(stderr, "--record needs a file.")
+				return exitUsage
+			}
+			i++
+			record = rest[i]
 		case arg == "--lib":
 			if i+1 >= len(rest) {
 				_, _ = fmt.Fprintln(stderr, "--lib needs the library's folder.")
@@ -115,6 +155,16 @@ func runMCP(ctx context.Context, args []string, stdin io.Reader, stdout, stderr 
 	}
 	if library == "" {
 		library = script.DefaultLibrary()
+	}
+
+	if record != "" {
+		f, err := os.OpenFile(record, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "Cannot record to '%s': %v\n", record, err)
+			return exitLoad
+		}
+		defer func() { _ = f.Close() }()
+		stdin = &recorder{r: stdin, w: f}
 	}
 
 	var backend agent.Backend

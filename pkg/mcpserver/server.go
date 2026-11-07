@@ -44,19 +44,21 @@ Call api_help with no name before the first script.`
 
 	describeDescription = `Returns the drawing that is open in TeleSAPR, in words: the unit, the parameters, every group in the order the model is built with how it solved, its degrees of freedom, what is wrong with it, and the volume and bounds of the solid up to it; then the requests of the active group with where they are, in mm, its constraints with their values and what they are on, and what the user has selected.
 
-The names it gives (g003-plate, r004-line-segment, c00a-pt-pt-distance) are the ones doc.Group, doc.Request and doc.Constraint take in a script. With group, it lists the requests and constraints of that group instead of the active one's.`
+The names it gives (g003-plate, r004-line-segment, c00a-pt-pt-distance) are the ones doc.Group, doc.Request and doc.Constraint take in a script. With group, it lists the requests and constraints of that group instead of the active one's. With script, it returns instead the whole drawing (group is not used) as the Go script that builds it again, as File > Export > Script (.go) writes it: the way to see how a drawing you didn't make is built.
+
+With solid, it lists instead the faces and edges of the solid up to the group (the active one if group is left out): each face with its ID, shape and a point on it, each edge with its name, shape, length and ends, the names g.Solid().Face, g.Solid().FaceAt and g.Solid().Edge take, to pick what to fillet, chamfer, shell or sketch on. Script wins over solid.`
 
 	renderDescription = `Returns a picture (PNG) of the drawing that is open in TeleSAPR, fitted to the picture: the solid shaded, with the sketch of the active group and its dimensions. Look at it to check that what was drawn is what was asked for.
 
 The view is "isometric" (the default), "front" (the XY plane, where a new drawing's first sketch is: x to the right, y up), "back", "top", "bottom", "left" or "right", fitted; or "window", the view the user has in the window, as they see it. With group, the drawing is drawn as it is up to that group, as if it were active.
 
-With section ("XY", "YZ" or "ZX"), the solid is drawn cut by a plane parallel to that workplane, to see inside it: section_offset moves the plane along the workplane's normal (a number or an expression, in the drawing's unit), and the side the normal points to is taken away, or the other side with section_flip. The user's own section view is left as it was.`
+With section ("XY", "YZ" or "ZX"), the solid is drawn cut by a plane parallel to that workplane, to see inside it: section_offset moves the plane along the workplane's normal (a number or an expression, in the drawing's unit), and the side the normal points to is taken away, or the other side with section_flip. The user's own section view is left as it was. A line of text beside the picture says what it shows, with the solid's bounds in mm.`
 
-	measureDescription = `Measures the drawing that is open in TeleSAPR, as Analyze > Check Solid does: the volume, the area of the surface, the centre of mass and the bounding box of the solid, in mm, and whether it is sound (closed, not crossing itself, its Boolean worked), with the faces and edges in trouble if not. With group, the model as it is up to that group; the active group's if left out.
+	measureDescription = `Measures the drawing that is open in TeleSAPR, as Analyze > Check Solid does: the volume, the centre of mass and the bounding box of the solid, in mm, and whether it is sound (closed, not crossing itself, its Boolean worked), with the faces and edges in trouble if not. With group, the model as it is up to that group; the active group's if left out.
 
 With gaps, it also lists the gaps between the parts of an assembly less than that many mm, as Analyze > Clearance and Walls does, each with the nearest points; within_parts takes a part made of several solids, as a linked assembly, by its solids. With walls, it also measures the thickness of the walls and lists where they are thinner than that many mm.
 
-With selected, it measures what the user has selected instead, as Analyze > Measure does: a line's length, a circle's radius, the distance between two points, from a point to a line or a face, or the angle between two lines or faces. To measure other things, use run_script with doc.Analyze.`
+With selected, it measures what the user has selected instead, as Analyze > Measure Selection does: a line's length, a circle's radius, the distance between two points, from a point to a line or a face, or the angle between two lines or faces. To measure other things, use run_script with doc.Analyze.`
 
 	exportDescription = `Writes the drawing that is open in TeleSAPR to a file, in the format the file's extension names: a mesh of the solid (.stl, .3mf, .glb, .obj, .wrl), its exact surfaces (.step), a 2d view (.svg, .dxf, .pdf, .eps), a picture (.png), or a Go program that builds the model again (.go), with what it couldn't write listed. It says where it wrote and how many bytes. A relative path is taken from the directory TeleSAPR works in; list_files shows which that is.
 
@@ -79,15 +81,17 @@ type RunInput struct {
 
 // DescribeInput is what get_drawing takes.
 type DescribeInput struct {
-	Group string `json:"group,omitempty" jsonschema:"a group whose requests and constraints to list, by its name or as g003; the whole drawing if left out"`
+	Group  string `json:"group,omitempty" jsonschema:"a group whose requests and constraints to list, by its name or as g003; the whole drawing if left out"`
+	Script bool   `json:"script,omitempty" jsonschema:"return the drawing as the Go script that builds it again, as File > Export > Script (.go) writes it, instead of the description"`
+	Solid  bool   `json:"solid,omitempty" jsonschema:"list the faces and edges of the solid up to the group (the active one if none), by the names a script uses, for Fillet, Chamfer, Shell and SketchOnFace"`
 }
 
 // RenderInput is what render takes.
 type RenderInput struct {
 	View          string `json:"view,omitempty" jsonschema:"isometric (the default), front, back, top, bottom, left, right, or window for what the user sees"`
 	Group         string `json:"group,omitempty" jsonschema:"a group to draw the drawing up to, as if it were active, by its name or as g003; the active group if left out"`
-	Width         int    `json:"width,omitempty" jsonschema:"the picture's width in pixels, 800 if left out"`
-	Height        int    `json:"height,omitempty" jsonschema:"the picture's height in pixels, 600 if left out"`
+	Width         int    `json:"width,omitempty" jsonschema:"the picture's width in pixels, 800 if left out; the other side follows at 4:3 if only one is given"`
+	Height        int    `json:"height,omitempty" jsonschema:"the picture's height in pixels, 600 if left out; the other side follows at 4:3 if only one is given"`
 	Section       string `json:"section,omitempty" jsonschema:"XY, YZ or ZX: draw the solid cut by a plane parallel to that workplane; no cut if left out"`
 	SectionOffset string `json:"section_offset,omitempty" jsonschema:"the cutting plane's distance from the workplane along its normal, a number or an expression in the drawing's unit; 0 if left out"`
 	SectionFlip   bool   `json:"section_flip,omitempty" jsonschema:"take away the side the normal points away from, instead of the side it points to"`
@@ -121,6 +125,7 @@ type RunOutput struct {
 	Value            string              `json:"value,omitempty" jsonschema:"the value of the script's last statement, if that is an expression"`
 	Error            string              `json:"error,omitempty" jsonschema:"why the script stopped, with its line and column; empty if it ran to its end"`
 	RolledBack       bool                `json:"rolledBack,omitempty" jsonschema:"whether what the script changed was taken back"`
+	Restarted        bool                `json:"restarted,omitempty" jsonschema:"whether the interpreter was started afresh, so the variables of earlier calls are gone"`
 	Groups           []agent.GroupStatus `json:"groups" jsonschema:"the active group, then every group in trouble: not solved, or with a problem"`
 	ExpressionErrors []string            `json:"expressionErrors,omitempty" jsonschema:"expressions that can't be worked out"`
 }
@@ -138,6 +143,9 @@ func text(s string) *mcp.CallToolResult {
 // RunText is the result of a script as a model reads it.
 func RunText(res agent.Result) string {
 	var b strings.Builder
+	if res.Restarted {
+		b.WriteString("The interpreter was started afresh after the last stop: the variables of earlier calls are gone; define them again.\n")
+	}
 	if res.Output != "" {
 		b.WriteString("output:\n" + res.Output)
 		if !strings.HasSuffix(res.Output, "\n") {
@@ -150,7 +158,7 @@ func RunText(res agent.Result) string {
 	if res.Error != "" {
 		b.WriteString("error: " + res.Error + "\n")
 		if res.RolledBack {
-			b.WriteString("What the script changed was taken back: the drawing is as it was before this call. Variables it defined before the error are still defined, but what they drew is gone.\n")
+			b.WriteString("What the script changed was taken back: the drawing is as it was before this call. Variables it defined before the error are still defined, but what they drew is gone (unless the script was stopped: the next call then starts the interpreter afresh).\n")
 		} else {
 			b.WriteString("The script changed nothing in the drawing.\n")
 		}
@@ -175,7 +183,7 @@ func New(b agent.Backend, version string) *mcp.Server {
 		Title:       "Run a script on the drawing",
 		Description: runDescription,
 		Annotations: &mcp.ToolAnnotations{OpenWorldHint: &closed},
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in RunInput) (*mcp.CallToolResult, RunOutput, error) {
+	}, func(ctx context.Context, req *mcp.CallToolRequest, in RunInput) (*mcp.CallToolResult, RunOutput, error) {
 		code, err := script.ApplyForm(in.Code, in.Form)
 		if err != nil {
 			out := text("error: " + err.Error() + "\nThe script did not run.\n")
@@ -183,7 +191,12 @@ func New(b agent.Backend, version string) *mcp.Server {
 			// The values don't fit the form: the tool's error, as a script's is, not the protocol's.
 			return out, RunOutput{Error: err.Error(), Groups: []agent.GroupStatus{}}, nil //nolint:nilerr // reported in the result
 		}
-		res, err := b.Run(ctx, code)
+		var res agent.Result
+		if pr, ok := b.(agent.ProgressRunner); ok {
+			res, err = pr.RunWithProgress(ctx, code, runReporter(ctx, req))
+		} else {
+			res, err = b.Run(ctx, code)
+		}
 		if err != nil {
 			return nil, RunOutput{}, err
 		}
@@ -194,7 +207,7 @@ func New(b agent.Backend, version string) *mcp.Server {
 			groups = []agent.GroupStatus{}
 		}
 		return out, RunOutput{
-			Output: res.Output, Value: res.Value, Error: res.Error, RolledBack: res.RolledBack, Groups: groups, ExpressionErrors: res.ExpressionErrors}, nil
+			Output: res.Output, Value: res.Value, Error: res.Error, RolledBack: res.RolledBack, Restarted: res.Restarted, Groups: groups, ExpressionErrors: res.ExpressionErrors}, nil
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -202,12 +215,12 @@ func New(b agent.Backend, version string) *mcp.Server {
 		Title:       "Describe the drawing",
 		Description: describeDescription,
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, OpenWorldHint: &closed},
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in DescribeInput) (*mcp.CallToolResult, any, error) {
-		s, err := b.Describe(ctx, in.Group)
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in DescribeInput) (*mcp.CallToolResult, agent.Description, error) {
+		d, err := b.Describe(ctx, agent.Describing{Group: in.Group, Script: in.Script, Solid: in.Solid})
 		if err != nil {
-			return nil, nil, err
+			return nil, agent.Description{}, err
 		}
-		return text(s), nil, nil
+		return text(d.Text), d.Data, nil
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -216,12 +229,16 @@ func New(b agent.Backend, version string) *mcp.Server {
 		Description: renderDescription,
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, OpenWorldHint: &closed},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in RenderInput) (*mcp.CallToolResult, any, error) {
-		png, err := b.Render(ctx, agent.Picture{View: in.View, Group: in.Group, Width: in.Width, Height: in.Height,
+		pic, err := b.Render(ctx, agent.Picture{View: in.View, Group: in.Group, Width: in.Width, Height: in.Height,
 			Section: in.Section, SectionOffset: in.SectionOffset, SectionFlip: in.SectionFlip})
 		if err != nil {
 			return nil, nil, err
 		}
-		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.ImageContent{Data: png, MIMEType: "image/png"}}}, nil, nil
+		content := []mcp.Content{&mcp.ImageContent{Data: pic.PNG, MIMEType: "image/png"}}
+		if pic.Caption != "" {
+			content = append(content, &mcp.TextContent{Text: pic.Caption})
+		}
+		return &mcp.CallToolResult{Content: content}, nil, nil
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -242,13 +259,13 @@ func New(b agent.Backend, version string) *mcp.Server {
 		Title:       "Measure the drawing",
 		Description: measureDescription,
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, OpenWorldHint: &closed},
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in MeasureInput) (*mcp.CallToolResult, any, error) {
-		s, err := b.Measure(ctx, agent.Measuring{Group: in.Group, Selected: in.Selected,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in MeasureInput) (*mcp.CallToolResult, agent.Measurement, error) {
+		m, err := b.Measure(ctx, agent.Measuring{Group: in.Group, Selected: in.Selected,
 			Gaps: in.Gaps, Within: in.Within, Walls: in.Walls})
 		if err != nil {
-			return nil, nil, err
+			return nil, agent.Measurement{}, err
 		}
-		return text(s), nil, nil
+		return text(m.Text), m.Data, nil
 	})
 
 	// Writing a file replaces any of that name, so export is

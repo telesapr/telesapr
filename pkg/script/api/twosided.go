@@ -9,8 +9,8 @@ func mustBeSided(group *sketch.Group, what string) {
 	case sketch.GroupExtrude, sketch.GroupRotate, sketch.GroupTranslate, sketch.GroupRevolve, sketch.GroupHelix:
 		return
 	}
-	fail("%s is for an extrude, step and repeat, revolve or helix group, and %s is a %s",
-		what, groupDescription(group), kindName(group.Type))
+	fail("%s is for an extrude, step and repeat, revolve or helix group, and %s is %s",
+		what, groupDescription(group), withArticle(kindName(group.Type)))
 }
 
 // TwoSided reports whether an extrusion, step and repeat, revolve or

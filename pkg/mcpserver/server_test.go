@@ -30,18 +30,18 @@ type painter struct {
 	asked agent.Picture
 }
 
-func (p *painter) Render(_ context.Context, pic agent.Picture) ([]byte, error) {
+func (p *painter) Render(_ context.Context, pic agent.Picture) (agent.Rendered, error) {
 	p.asked = pic
 	if pic.View == "inside" {
-		return nil, errors.New("no view 'inside'")
+		return agent.Rendered{}, errors.New("no view 'inside'")
 	}
 	img := image.NewRGBA(image.Rect(0, 0, 4, 3))
 	img.Set(1, 1, color.RGBA{R: 200, A: 255})
 	var b bytes.Buffer
 	if err := png.Encode(&b, img); err != nil {
-		return nil, err
+		return agent.Rendered{}, err
 	}
-	return b.Bytes(), nil
+	return agent.Rendered{PNG: b.Bytes(), Caption: "painted " + pic.View}, nil
 }
 
 // connect is a client's session with a server on a new sketch.
@@ -88,6 +88,15 @@ func call(t *testing.T, cs *mcp.ClientSession, tool string, args map[string]any)
 	return res, strings.Join(parts, "\n")
 }
 
+// structured reads a result's structured content into v.
+func structured(t *testing.T, res *mcp.CallToolResult, v any) {
+	t.Helper()
+	raw, err := json.Marshal(res.StructuredContent)
+	if err != nil || json.Unmarshal(raw, v) != nil || res.StructuredContent == nil {
+		t.Fatalf("the structured result is %v, %v", res.StructuredContent, err)
+	}
+}
+
 // A client is told what the server is for, and offered the tools,
 // each described within what clients keep.
 func TestToolsAndInstructions(t *testing.T) {
@@ -121,6 +130,18 @@ func TestToolsAndInstructions(t *testing.T) {
 		schema, _ := tool.InputSchema.(map[string]any)
 		if schema["type"] != "object" {
 			t.Errorf("%s: the input's schema is %v", tool.Name, tool.InputSchema)
+		}
+		// The tools whose text a program would otherwise parse say what
+		// their data holds.
+		fields := map[string][]string{ToolRun: {"output", "groups"}, ToolFiles: {"dir", "entries"},
+			ToolDescribe: {"unit", "groups", "requests", "constraints", "selected", "hover", "solid", "faces", "edges", "script"},
+			ToolMeasure:  {"group", "sound", "volume", "centerOfMass", "bounds", "gaps", "walls", "selection"}}[tool.Name]
+		out, _ := tool.OutputSchema.(map[string]any)
+		props, _ := out["properties"].(map[string]any)
+		for _, f := range fields {
+			if props[f] == nil {
+				t.Errorf("%s: the output's schema has no %q: %v", tool.Name, f, tool.OutputSchema)
+			}
 		}
 	}
 	// Each tool the instructions name is one there is.
@@ -174,11 +195,28 @@ func TestDescribeHelpRender(t *testing.T) {
 	if res.IsError || !strings.HasPrefix(text, "sketch: unit mm") || !strings.Contains(text, "g003-disc, extrude: solved") {
 		t.Errorf("the drawing is described as\n%s", text)
 	}
+	var drawing agent.Description
+	if structured(t, res, &drawing); drawing.Unit != "mm" || len(drawing.Groups) != 2 || drawing.Groups[1].Name != "g003-disc" ||
+		drawing.Groups[1].Volume == nil || len(drawing.Requests) != 0 {
+		t.Errorf("the drawing's data is %+v", drawing)
+	}
 	if res, text = call(t, cs, ToolDescribe, map[string]any{"group": "g002"}); res.IsError || !strings.Contains(text, "r004-circle: circle at (0, 0, 0), radius 5") {
 		t.Errorf("the sketch is described as\n%s", text)
 	}
 	if res, text = call(t, cs, ToolDescribe, map[string]any{"group": "disk"}); !res.IsError || !strings.Contains(text, "g003-disc") {
 		t.Errorf("a group that isn't there: error %v, text %q", res.IsError, text)
+	}
+	if res, text = call(t, cs, ToolDescribe, map[string]any{"solid": true}); res.IsError ||
+		!strings.Contains(text, "3 faces, 2 edges") || !strings.Contains(text, `"edge `) || !strings.Contains(text, "cylinder, axis") {
+		t.Errorf("the solid is described as\n%s", text)
+	}
+	var solid agent.Description
+	if structured(t, res, &solid); solid.Solid == nil || len(solid.Faces) != 3 || len(solid.Edges) != 2 || solid.Edges[0].Shape != "circle" {
+		t.Errorf("the solid's data is %+v", solid)
+	}
+	if res, text = call(t, cs, ToolDescribe, map[string]any{"script": true}); res.IsError ||
+		!strings.Contains(text, "package main") || !strings.Contains(text, `"disc"`) || strings.HasPrefix(text, "sketch: unit") {
+		t.Errorf("the drawing as a script reads\n%s", text)
 	}
 
 	if res, text = call(t, cs, ToolHelp, nil); res.IsError || text != agent.Primer() {
@@ -192,8 +230,11 @@ func TestDescribeHelpRender(t *testing.T) {
 	}
 
 	res, _ = call(t, cs, ToolRender, map[string]any{"view": "front", "group": "g002", "width": 320, "height": 200})
-	if res.IsError || len(res.Content) != 1 {
+	if res.IsError || len(res.Content) != 2 {
 		t.Fatalf("the picture's result is %+v", res)
+	}
+	if c, ok := res.Content[1].(*mcp.TextContent); !ok || c.Text != "painted front" {
+		t.Errorf("the picture's caption is %+v", res.Content[1])
 	}
 	img, ok := res.Content[0].(*mcp.ImageContent)
 	if !ok || img.MIMEType != "image/png" {
@@ -218,6 +259,18 @@ func TestDescribeHelpRender(t *testing.T) {
 	}
 }
 
+// The hand-written descriptions name only calls that exist.
+func TestDescriptionsNameRealCalls(t *testing.T) {
+	t.Parallel()
+	for name, text := range map[string]string{"run": runDescription, "describe": describeDescription,
+		"render": renderDescription, "measure": measureDescription, "export": exportDescription,
+		"open": openDescription, "files": filesDescription, "help": helpDescription} {
+		if bad := agent.UnknownCalls(text); len(bad) > 0 {
+			t.Errorf("the %s description names calls that do not exist: %v", name, bad)
+		}
+	}
+}
+
 func TestRunText(t *testing.T) {
 	t.Parallel()
 	for _, c := range []struct {
@@ -226,6 +279,7 @@ func TestRunText(t *testing.T) {
 	}{
 		{agent.Result{}, ""},
 		{agent.Result{Output: "no newline", Status: "s"}, "output:\nno newline\nstatus:\ns\n"},
+		{agent.Result{Restarted: true, Value: "1"}, "The interpreter was started afresh after the last stop: the variables of earlier calls are gone; define them again.\nvalue: 1\n"},
 		{agent.Result{Error: "1:1: bad"}, "error: 1:1: bad\nThe script changed nothing in the drawing.\n"},
 	} {
 		if got := RunText(c.res); got != c.want {
@@ -299,12 +353,21 @@ func TestMeasureExportOpenFiles(t *testing.T) {
 	if res.IsError || !strings.Contains(text, "the model up to g003-plate") || !strings.Contains(text, "1000") {
 		t.Errorf("the plate measures as\n%s", text)
 	}
+	var m agent.Measurement
+	if structured(t, res, &m); m.Group != "g003-plate" || m.Volume != 1000 || !m.Sound || m.Bounds.Hi != [3]float64{10, 20, 5} {
+		t.Errorf("the plate's data is %+v", m)
+	}
 	// A second plate beside the first, 2 off its side, assembled.
 	call(t, cs, ToolRun, map[string]any{"code": "doc.Features.SketchIn(doc.Workplane(\"XY\"), \"\")\n" +
 		"doc.Sketch.Rect(V(12, 0, 0), V(20, 20, 0))\ndoc.Features.Extrude(5, \"beside\").SetCombine(Assemble)"})
 	res, text = call(t, cs, ToolMeasure, map[string]any{"gaps": 3, "walls": 6})
 	if res.IsError || !strings.Contains(text, "  2 between g003-plate at ") || !strings.Contains(text, "The thinnest wall is 5 mm") {
 		t.Errorf("the plates' gaps and walls are\n%s", text)
+	}
+	m = agent.Measurement{}
+	if structured(t, res, &m); m.Gaps == nil || len(m.Gaps.Gaps) != 1 || m.Gaps.Gaps[0].Distance != 2 || m.Gaps.Gaps[0].A != "g003-plate" ||
+		m.Walls == nil || m.Walls.Thinnest != 5 {
+		t.Errorf("the plates' gaps and walls are as data %+v, %+v", m.Gaps, m.Walls)
 	}
 	if res, text = call(t, cs, ToolMeasure, map[string]any{"group": "g099"}); !res.IsError || !strings.Contains(text, "no group") {
 		t.Errorf("measuring a group that isn't there: error %v, %q", res.IsError, text)

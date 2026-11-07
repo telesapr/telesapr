@@ -61,7 +61,7 @@ type Measuring struct {
 // Measure is the solid up to m.Group as Check Solid reports it, with
 // the gaps and walls m asks about, or what the user has selected,
 // measured.
-func (s *Session) Measure(_ context.Context, m Measuring) (text string, err error) {
+func (s *Session) Measure(_ context.Context, m Measuring) (out Measured, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	doc := s.engine.Doc()
@@ -77,7 +77,8 @@ func (s *Session) Measure(_ context.Context, m Measuring) (text string, err erro
 			if m.Kind == sketch.MeasureAngle {
 				unit = "degrees"
 			}
-			text = fmt.Sprintf("%s: %.6g %s", m.What, m.Value, unit)
+			out.Text = fmt.Sprintf("%s: %.6g %s", m.What, m.Value, unit)
+			out.Data = Measurement{Selection: &Selection{Kind: m.What, Value: g6(m.Value), Unit: unit}}
 			return
 		}
 		g := doc.Active()
@@ -85,29 +86,36 @@ func (s *Session) Measure(_ context.Context, m Measuring) (text string, err erro
 			g = groupNamed(doc, group)
 		}
 		r := g.Analyze().Check()
-		text = fmt.Sprintf("the model up to %s:\n%s", g.String(), r.Summary())
+		out.Text = fmt.Sprintf("the model up to %s:\n%s", g.String(), r.Summary())
+		out.Data = checkMeasurement(g.String(), &r)
 		if m.Gaps > 0 {
-			text += "\n" + gapsText(g, m.Gaps, m.Within)
+			text, gaps := gapsText(g, m.Gaps, m.Within)
+			out.Text += "\n" + text
+			out.Data.Gaps = &gaps
 		}
 		if m.Walls > 0 {
-			text += "\n" + wallsText(g, m.Walls)
+			text, walls := wallsText(g, m.Walls)
+			out.Text += "\n" + text
+			out.Data.Walls = &walls
 		}
 	})
-	return text, err
+	return out, err
 }
 
 // mostListed is how many gaps or thin spots a measure lists: a thin
 // wall is thin at every point measured on it.
 const mostListed = 20
 
-// gapsText lists the gaps less than below between the parts up to g.
-func gapsText(g api.Group, below float64, within bool) string {
+// gapsText lists the gaps less than below between the parts up to g,
+// in words and as data.
+func gapsText(g api.Group, below float64, within bool) (string, GapReport) {
 	cs := g.Analyze().Clearances(below)
 	if within {
 		cs = g.Analyze().ClearancesWithin(below)
 	}
+	data := GapReport{Below: below}
 	if len(cs) == 0 {
-		return fmt.Sprintf("No two parts are nearer than %g mm.", below)
+		return fmt.Sprintf("No two parts are nearer than %g mm.", below), data
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "Gaps less than %g mm, in mm, 0 where parts touch or overlap:\n", below)
@@ -115,13 +123,17 @@ func gapsText(g api.Group, below float64, within bool) string {
 	for i, c := range cs {
 		tol = max(tol, c.Tolerance)
 		if i == mostListed {
+			data.More = len(cs) - i
 			fmt.Fprintf(&b, "  and %d more\n", len(cs)-i)
 			break
 		}
-		fmt.Fprintf(&b, "  %.6g between %s at %s and %s at %s\n", c.Gap, solidLabel(c.A, c.SolidA), point(c.PA), solidLabel(c.B, c.SolidB), point(c.PB))
+		a, bb := solidLabel(c.A, c.SolidA), solidLabel(c.B, c.SolidB)
+		data.Gaps = append(data.Gaps, GapInfo{Distance: g6(c.Gap), A: a, B: bb, PointA: v6(c.PA), PointB: v6(c.PB)})
+		fmt.Fprintf(&b, "  %.6g between %s at %s and %s at %s\n", c.Gap, a, point(c.PA), bb, point(c.PB))
 	}
+	data.Tolerance = g3(tol)
 	fmt.Fprintf(&b, "Each gap is within %.3g mm of the true one.", tol)
-	return b.String()
+	return b.String(), data
 }
 
 // point is a point as a measure writes it, in mm.
@@ -139,20 +151,27 @@ func solidLabel(g api.Group, solid int) string {
 }
 
 // wallsText says how thick the walls of the parts up to g are, and
-// where they are thinner than below.
-func wallsText(g api.Group, below float64) string {
+// where they are thinner than below, in words and as data.
+func wallsText(g api.Group, below float64) (string, WallInfo) {
 	r := g.Analyze().WallThickness(below)
+	data := WallInfo{Below: below}
 	if r.Samples == r.Unmeasured {
-		return "No wall could be measured."
+		return "No wall could be measured.", data
 	}
 	var b strings.Builder
 	t := r.Thinnest
+	from, to := v6(t.From), v6(t.To)
+	data.Measured, data.Thinnest, data.At, data.To = true, g6(t.Thickness), &from, &to
+	data.Samples, data.Thin = r.Samples, len(r.Thin)
+	data.Tolerance, data.Step = g3(r.Tolerance), g3(r.Step)
+	data.Unmeasured, data.NearCut = r.Unmeasured, r.NearCut
 	fmt.Fprintf(&b, "The thinnest wall is %.6g mm, from %s to %s.\n", t.Thickness, point(t.From), point(t.To))
 	if len(r.Thin) == 0 {
 		fmt.Fprintf(&b, "No wall is thinner than %g mm.\n", below)
 	} else {
 		fmt.Fprintf(&b, "%d of %d points measured are thinner than %g mm; the thinnest:\n", len(r.Thin), r.Samples, below)
 		for _, s := range r.Thin[:min(len(r.Thin), mostListed)] {
+			data.ThinSpots = append(data.ThinSpots, ThinSpot{Thickness: g6(s.Thickness), At: v6(s.From)})
 			fmt.Fprintf(&b, "  %.6g at %s\n", s.Thickness, point(s.From))
 		}
 	}
@@ -163,7 +182,7 @@ func wallsText(g api.Group, below float64) string {
 	if r.NearCut {
 		b.WriteString("\nA part has more triangles facing each other within its thinnest wall than are measured: a thinner wall between two of those left may be missed.")
 	}
-	return b.String()
+	return b.String(), data
 }
 
 // Export writes the drawing to a file.

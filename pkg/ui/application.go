@@ -9,6 +9,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -96,6 +97,10 @@ type Application struct {
 	// a message dialog.
 	scriptHost  *ScriptHost
 	messageSink func(text string, isError bool)
+	// regenWatch, while a program waits on a script, is told each group
+	// a regeneration begins (ScriptHost.WatchRegeneration); it is set
+	// on the script's goroutine and read on the loop's.
+	regenWatch atomic.Pointer[func(group string, before, total int)]
 	// console is the window scripts are typed in, see Console.
 	console *ScriptConsole
 	// ScriptHistory is the file what is typed in the console is kept

@@ -186,8 +186,8 @@ type ThreadGroup struct{ g Group }
 func (g Group) AsThread() ThreadGroup {
 	g.d.read(func(sk *sketch.Sketch) {
 		if group := g.get(sk); !group.Thread.IsThread() {
-			fail("AsThread is for the group that keeps a screw thread, and %s is a %s that keeps none",
-				groupDescription(group), kindName(group.Type))
+			fail("AsThread is for the group that keeps a screw thread, and %s is %s that keeps none",
+				groupDescription(group), withArticle(kindName(group.Type)))
 		}
 	})
 	return ThreadGroup{g}

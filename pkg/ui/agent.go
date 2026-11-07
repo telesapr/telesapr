@@ -118,7 +118,10 @@ type consoleBackend struct {
 	c *ScriptConsole
 }
 
-var _ agent.Backend = consoleBackend{}
+var (
+	_ agent.Backend        = consoleBackend{}
+	_ agent.ProgressRunner = consoleBackend{}
+)
 
 // errLoopEnded is the error of a request that came as the application
 // closed.
@@ -173,6 +176,13 @@ func (b consoleBackend) confirmed(code string) bool {
 // at a time, shown in the console with what it prints, and stopped by
 // Script > Stop.
 func (b consoleBackend) Run(ctx context.Context, code string) (agent.Result, error) {
+	return b.RunWithProgress(ctx, code, nil)
+}
+
+// RunWithProgress is Run that reports, if report is not nil, what the
+// script prints and the groups it regenerates while it runs
+// (agent.Session.RunWithProgress).
+func (b consoleBackend) RunWithProgress(ctx context.Context, code string, report func(agent.Progress)) (agent.Result, error) {
 	c := b.c
 	type outcome struct {
 		res agent.Result
@@ -197,7 +207,7 @@ func (b consoleBackend) Run(ctx context.Context, code string) (agent.Result, err
 			// The program's request ending stops the script too.
 			runCtx, cancel := context.WithCancel(jobCtx)
 			stop := context.AfterFunc(ctx, cancel)
-			res, err := session.Run(runCtx, code)
+			res, err := session.RunWithProgress(runCtx, code, report)
 			stop()
 			cancel()
 			return func() {
@@ -242,26 +252,26 @@ func (b consoleBackend) session() (s *agent.Session, err error) {
 	return s, err
 }
 
-func (b consoleBackend) Describe(ctx context.Context, group string) (string, error) {
+func (b consoleBackend) Describe(ctx context.Context, d agent.Describing) (agent.Described, error) {
 	s, err := b.session()
 	if err != nil {
-		return "", err
+		return agent.Described{}, err
 	}
-	return s.Describe(ctx, group)
+	return s.Describe(ctx, d)
 }
 
-func (b consoleBackend) Render(ctx context.Context, p agent.Picture) ([]byte, error) {
+func (b consoleBackend) Render(ctx context.Context, p agent.Picture) (agent.Rendered, error) {
 	s, err := b.session()
 	if err != nil {
-		return nil, err
+		return agent.Rendered{}, err
 	}
 	return s.Render(ctx, p)
 }
 
-func (b consoleBackend) Measure(ctx context.Context, m agent.Measuring) (string, error) {
+func (b consoleBackend) Measure(ctx context.Context, m agent.Measuring) (agent.Measured, error) {
 	s, err := b.session()
 	if err != nil {
-		return "", err
+		return agent.Measured{}, err
 	}
 	return s.Measure(ctx, m)
 }

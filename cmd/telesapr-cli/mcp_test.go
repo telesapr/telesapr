@@ -161,8 +161,9 @@ func TestMCPBracket(t *testing.T) {
 	}
 
 	picture := answers[9].Result.Content
-	if len(picture) != 1 || picture[0].Type != "image" || picture[0].MIMEType != "image/png" {
-		t.Fatalf("the picture is %+v", answers[9].Result)
+	if len(picture) != 2 || picture[0].Type != "image" || picture[0].MIMEType != "image/png" ||
+		picture[1].Type != "text" || !strings.Contains(picture[1].Text, "solid bounds (0, 0, 0) to (60, 20, 4) mm") {
+		t.Fatalf("the picture has %d parts, the last %q", len(picture), picture[len(picture)-1].Text)
 	}
 	data, err := base64.StdEncoding.DecodeString(picture[0].Data)
 	if err != nil {

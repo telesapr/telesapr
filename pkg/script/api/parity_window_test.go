@@ -701,6 +701,7 @@ Quality  -q
 	"Doc": `
 Dimension      -q
 Describe       -q
+Description    -q
 Host           -raw
 With           -raw
 Batch          -script-only: groups many calls into one step; the window's steps are its own
@@ -724,6 +725,9 @@ Script         menu:File/Export/Script (.go)...
 Appearance            -q
 SetAppearance         ScreenChangeAppearance
 Describe              -q
+DescribeSolid         -q
+Description           -q
+SolidDescription      -q
 String                -q
 Valid                 -q
 Name                  -q

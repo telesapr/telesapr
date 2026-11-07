@@ -349,3 +349,22 @@ func TestNamesThroughThreadLength(t *testing.T) {
 		t.Errorf("of %d names, %d resolve and %d are gone", len(names), resolved, gone)
 	}
 }
+
+// A group kind is named with the article that fits it.
+func TestKindArticle(t *testing.T) {
+	t.Parallel()
+	if got := withArticle("extrude"); got != "an extrude" {
+		t.Errorf("got %q", got)
+	}
+	if got := withArticle("chamfer"); got != "a chamfer" {
+		t.Errorf("got %q", got)
+	}
+	d := openSlot(t)
+	defer func() {
+		err, _ := recover().(error)
+		if err == nil || !strings.Contains(err.Error(), "is for a chamfer group, and") || strings.Contains(err.Error(), "is a extrude") {
+			t.Errorf("SolidEdges on an extrude failed with %v", err)
+		}
+	}()
+	d.Group("slot").SolidEdges()
+}

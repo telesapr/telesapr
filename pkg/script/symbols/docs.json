@@ -1768,6 +1768,10 @@
 						"decl": "func (r *Report) Empty() bool",
 						"text": "Empty reports whether there is no solid at all."
 					},
+					"Faults": {
+						"decl": "func (r *Report) Faults() []string",
+						"text": "Faults are what Summary lists of a solid that isn't sound, one phrase each: the naked and self-intersecting edges, a Boolean that failed, the topology's problems, and where parts only touch."
+					},
 					"Sound": {
 						"decl": "func (r *Report) Sound() bool",
 						"text": "Sound reports whether the solid is closed, does not cross itself, and came from a Boolean that succeeded, and the group made its part of it (no Problem)."
@@ -4352,6 +4356,10 @@
 					}
 				}
 			},
+			"Bounds": {
+				"text": "Bounds are the corners of a box, in mm.",
+				"kind": "struct"
+			},
 			"BrokenReference": {
 				"text": "BrokenReference is something a regeneration deleted because what it\nused was gone: a group whose sketch was deleted, or a constraint on a\nline that was.",
 				"kind": "struct"
@@ -4642,6 +4650,10 @@
 					}
 				}
 			},
+			"ConstraintInfo": {
+				"text": "ConstraintInfo is a constraint of a group.",
+				"kind": "struct"
+			},
 			"Datum": {
 				"text": "Datum is a name and the entity it names, as Datums.List gives them.",
 				"kind": "struct"
@@ -4688,6 +4700,10 @@
 					}
 				}
 			},
+			"Description": {
+				"text": "Description is the drawing, a group of it or the solid at a group,\nas Doc.Describe, Group.Describe and Group.DescribeSolid say it in\nwords. What a description doesn't hold is left empty, and out of its\nJSON.",
+				"kind": "struct"
+			},
 			"Doc": {
 				"text": "Doc is a sketch: the drawing a script reads and changes. Its own\nmethods find what the drawing holds; what changes it is in the\nfields, one for each menu of the window, so that a call is where\nthe command it does is: doc.Sketch.Line is Sketch \u003e Line Segment,\ndoc.Features.Extrude is Features \u003e Extrude.",
 				"kind": "struct",
@@ -4710,7 +4726,11 @@
 					},
 					"Describe": {
 						"decl": "func (d *Doc) Describe() (s string)",
-						"text": "Describe says what the drawing is, as text, for a reader that can't\nsee it: the document's unit, the parameters, every group in order\nwith how it solved, its degrees of freedom, what is wrong with it,\nand the volume and bounds of the model up to it, then the active\ngroup's requests and constraints as Group.Describe lists them, and\nwhat is selected. Lengths are in mm. The names it gives are the\nones Doc.Group, Doc.Request and Doc.Constraint take."
+						"text": "Describe says what the drawing is, as text, for a reader that can't\nsee it: the document's unit, the parameters, every group in order\nwith how it solved, its degrees of freedom, what is wrong with it,\nand the volume and bounds of the model up to it, then the active\ngroup's requests and constraints as Group.Describe lists them, and\nwhat is selected. Lengths are in mm. The names it gives are the\nones Doc.Group, Doc.Request and Doc.Constraint take. Doc.Description\nis the same as data."
+					},
+					"Description": {
+						"decl": "func (d *Doc) Description() (data Description)",
+						"text": "Description is Describe's data: the drawing's unit, parameters and\ngroups, the active group's requests and constraints, what is\nselected and what is under the mouse."
 					},
 					"Dimension": {
 						"decl": "func (d *Doc) Dimension(name string) (c Constraint)",
@@ -4872,6 +4892,10 @@
 						"text": "String is the mate's parameter and its constraints, for a script's\nprint."
 					}
 				}
+			},
+			"EdgeInfo": {
+				"text": "EdgeInfo is an edge of a solid.",
+				"kind": "struct"
 			},
 			"EditMenu": {
 				"text": "EditMenu holds the calls of the Edit menu: undo, regeneration, the\nclipboard, the selection, commands and preferences. A script reaches\nit as doc.Edit.",
@@ -5207,6 +5231,10 @@
 						"text": "Skewed reports whether an extrusion leans with its sketch's normal\nrather than standing straight, as the group screen's \"skewed\" says."
 					}
 				}
+			},
+			"FaceInfo": {
+				"text": "FaceInfo is a face of a solid.",
+				"kind": "struct"
 			},
 			"FeaturesMenu": {
 				"text": "FeaturesMenu holds the calls of the Features menu: the groups that\nstart a sketch or make a solid. Each adds a group after the active\none and makes it active. A script reaches it as doc.Features.",
@@ -5602,7 +5630,15 @@
 					},
 					"Describe": {
 						"decl": "func (g Group) Describe() (s string)",
-						"text": "Describe lists what the group holds, as text: how it solved, each\nrequest with where it is, in mm, and each constraint with its value\nand what it is on. The names it gives are the ones Doc.Request and\nDoc.Constraint take."
+						"text": "Describe lists what the group holds, as text: how it solved, each\nrequest with where it is, in mm, and each constraint with its value\nand what it is on. The names it gives are the ones Doc.Request and\nDoc.Constraint take. Group.Description is the same as data."
+					},
+					"DescribeSolid": {
+						"decl": "func (g Group) DescribeSolid() (s string)",
+						"text": "DescribeSolid lists the faces and edges of the solid at the group,\nthe solid of every group up to it, as text: first how many faces,\nedges and vertices it has and whether it is sound, then each face\nwith the ID Solid.Face takes, its name, its shape (flat with its\nnormal, a cylinder or a cone with its axis, a sphere, or curved), a\npoint of it that Solid.FaceAt finds it by and how many edges it has,\nthen each edge with the name Solid.Edge takes, its shape, its length\nin mm (an arc's or a circle's as the circle has it), its ends and the\nIDs of its two faces. It lists at most 40 faces and 60 edges. A group\nwith no solid up to it says so, with the group's problem if it has\none. Group.SolidDescription is the same as data."
+					},
+					"Description": {
+						"decl": "func (g Group) Description() (data Description)",
+						"text": "Description is Describe's data: how the group came out, and its\nrequests and constraints."
 					},
 					"Dof": {
 						"decl": "func (g Group) Dof() (dof int)",
@@ -5743,6 +5779,10 @@
 					"Solid": {
 						"decl": "func (g Group) Solid() Solid",
 						"text": "Solid is the solid at this group: the solid of every group up to it."
+					},
+					"SolidDescription": {
+						"decl": "func (g Group) SolidDescription() (data Description)",
+						"text": "SolidDescription is DescribeSolid's data: the solid at the group,\nand its faces and edges."
 					},
 					"SolidEdges": {
 						"decl": "func (g Group) SolidEdges() (edges []SolidEdge)",
@@ -5889,6 +5929,10 @@
 						"text": "UsedBy lists the groups that refer to this group directly, in\nhistory order."
 					}
 				}
+			},
+			"GroupInfo": {
+				"text": "GroupInfo is how a group came out of the last regeneration.",
+				"kind": "struct"
 			},
 			"Host": {
 				"text": "Host owns a sketch on behalf of a Doc: it is the program around the\nsketch, with or without windows. All of it but Run must be called\ninside Run.",
@@ -6110,6 +6154,10 @@
 					}
 				}
 			},
+			"ParamInfo": {
+				"text": "ParamInfo is a parameter of the drawing.",
+				"kind": "struct"
+			},
 			"Parameter": {
 				"text": "Parameter is a named value of the document's parameter table, which\nexpressions on dimensions and group values can name, as Edit \u003e\nParameters shows it. It is not a Param, which is one of the solver's\nunknowns.",
 				"kind": "struct"
@@ -6243,6 +6291,10 @@
 						"text": "Valid reports whether the request exists."
 					}
 				}
+			},
+			"RequestInfo": {
+				"text": "RequestInfo is a request, what was drawn, and where it is.",
+				"kind": "struct"
 			},
 			"RevolveGroup": {
 				"text": "RevolveGroup is the view of a revolve or a helix: the angle it turns\nby.",
@@ -6652,6 +6704,10 @@
 						"text": "Patches is how many patches the face is made of: one for a flat\nface, four for an extruded circle's side, more for a surface cut\ninto patches at its knots."
 					}
 				}
+			},
+			"SolidInfo": {
+				"text": "SolidInfo is the solid DescribeSolid lists the faces and edges of.",
+				"kind": "struct"
 			},
 			"SolidVertex": {
 				"text": "SolidVertex is a vertex of a solid, by position.",
@@ -7891,6 +7947,10 @@
 			"PartMass": {
 				"text": "PartMass is the mass properties of one part.",
 				"kind": "struct"
+			},
+			"RegenerationWatcher": {
+				"text": "RegenerationWatcher is Hooks whose owner is told how far a regeneration is, as a program that waits for a long one is told (package agent): Regenerating is called on the goroutine regenerating as each group of a pass over the groups begins, with the group, how many groups of the pass come before it and how many there are.",
+				"kind": "interface"
 			},
 			"Request": {
 				"kind": "struct",

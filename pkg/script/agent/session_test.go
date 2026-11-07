@@ -73,8 +73,9 @@ func TestPrimerExample(t *testing.T) {
 		t.Fatalf("the primer's example fails: %s\n%s", res.Error, res.Output)
 	}
 	lines := strings.Split(strings.TrimSpace(res.Output), "\n")
-	if len(lines) != 3 || lines[0] != "solved: true DOF: 0" ||
-		!strings.HasPrefix(lines[1], "sound: true volume: ") || !strings.HasPrefix(lines[2], "sound: true volume: ") {
+	if len(lines) != 4 || lines[0] != "solved: true DOF: 0" ||
+		!strings.HasPrefix(lines[1], "sound: true volume: ") || lines[2] != "sound: true edges rounded: 4" ||
+		!strings.HasPrefix(lines[3], "sound: true volume: ") {
 		t.Fatalf("the example printed\n%s", res.Output)
 	}
 	doc := s.Engine().Doc()
@@ -87,8 +88,20 @@ func TestPrimerExample(t *testing.T) {
 	if g := doc.Group("pocket-outline"); g.Dof() != 0 {
 		t.Errorf("the pocket's outline has %d degrees of freedom, want 0", g.Dof())
 	}
-	if !strings.HasPrefix(res.Status, "active group g005-pocket, extrude: solved, ") || strings.Contains(res.Status, "in trouble") {
+	if !strings.HasPrefix(res.Status, "active group g006-pocket, extrude: solved, ") || strings.Contains(res.Status, "in trouble") {
 		t.Errorf("the status after the example is\n%s", res.Status)
+	}
+}
+
+// The lines the primer shows for checking a result run.
+func TestPrimerChecks(t *testing.T) {
+	t.Parallel()
+	s := newSession(t)
+	if res := run(t, s, primerExample); res.Error != "" {
+		t.Fatalf("the primer's example fails: %s", res.Error)
+	}
+	if res := run(t, s, primerChecks); res.Error != "" {
+		t.Fatalf("the primer's checks fail: %s", res.Error)
 	}
 }
 
@@ -310,21 +323,64 @@ func TestSessionStopAndBusy(t *testing.T) {
 	<-done
 }
 
+// After a stop the interpreter starts afresh, and the run says so.
+func TestSessionRestartedAfterStop(t *testing.T) {
+	t.Parallel()
+	s := newSession(t)
+	if res := run(t, s, "kept := 7"); res.Restarted {
+		t.Errorf("the first run reports a restart: %+v", res)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+	}()
+	res, err := s.Run(ctx, "for {\n\ttime.Sleep(time.Millisecond)\n}")
+	if err != nil || res.Error != "the script was stopped" || res.Restarted {
+		t.Fatalf("the stopped script gave %+v, %v", res, err)
+	}
+	res = run(t, s, "kept")
+	if !res.Restarted || res.Error == "" {
+		t.Errorf("after the stop, the variable is %+v; want a restart and an error", res)
+	}
+	if res = run(t, s, "kept := 8"); res.Restarted {
+		t.Errorf("the run after that reports a restart again: %+v", res)
+	}
+}
+
 func TestSessionDescribeHelpRender(t *testing.T) {
 	t.Parallel()
 	s := newSession(t)
 	ctx := context.Background()
 	run(t, s, "doc.Sketch.Circle(V(0, 0, 0), 5)\ndoc.Features.Extrude(3, \"disc\")")
 
-	text, err := s.Describe(ctx, "")
+	text, err := describeText(s.Describe(ctx, Describing{}))
 	if err != nil || text != s.Engine().Doc().Describe() || !strings.Contains(text, "g003-disc, extrude") {
 		t.Errorf("the drawing is described as %q, %v", text, err)
 	}
-	if text, err = s.Describe(ctx, "g002"); err != nil || !strings.Contains(text, "r004-circle: circle at (0, 0, 0), radius 5") {
+	if text, err = describeText(s.Describe(ctx, Describing{Script: true})); err != nil || !strings.Contains(text, "package main") || !strings.Contains(text, `"disc"`) {
+		t.Errorf("the drawing as a script is %q, %v", text, err)
+	}
+	if text, err = describeText(s.Describe(ctx, Describing{Group: "g002"})); err != nil || !strings.Contains(text, "r004-circle: circle at (0, 0, 0), radius 5") {
 		t.Errorf("the sketch is described as %q, %v", text, err)
 	}
-	if _, err = s.Describe(ctx, "disk"); err == nil || !strings.Contains(err.Error(), "g003-disc") {
+	if _, err = s.Describe(ctx, Describing{Group: "disk"}); err == nil || !strings.Contains(err.Error(), "g003-disc") {
 		t.Errorf("describing a group that isn't there: %v, want the groups named", err)
+	}
+	// The solid at the active group, and at a group by name; the script
+	// wins over it.
+	if text, err = describeText(s.Describe(ctx, Describing{Solid: true})); err != nil || !strings.HasPrefix(text, "solid at g003-disc: 3 faces, 2 edges, ") ||
+		!strings.Contains(text, ": circle about (0, 0, 3), radius 5, 31.416 mm, closed") {
+		t.Errorf("the solid is described as %q, %v", text, err)
+	}
+	if text, err = describeText(s.Describe(ctx, Describing{Solid: true, Group: "g002"})); err != nil || text != "no solid yet at g002-sketch-in-plane\n" {
+		t.Errorf("the solid at the sketch is described as %q, %v", text, err)
+	}
+	if text, err = describeText(s.Describe(ctx, Describing{Solid: true, Script: true})); err != nil || !strings.Contains(text, "package main") {
+		t.Errorf("the script with solid is %q, %v", text, err)
+	}
+	if _, err = s.Describe(ctx, Describing{Solid: true, Group: "disk"}); err == nil || !strings.Contains(err.Error(), "g003-disc") {
+		t.Errorf("the solid at a group that isn't there: %v", err)
 	}
 
 	if text, err = s.Help(ctx, ""); err != nil || text != Primer() {
@@ -347,5 +403,45 @@ func TestSessionDescribeHelpRender(t *testing.T) {
 	}
 	if _, err = s.Render(ctx, Picture{View: "sideways", Width: 10, Height: 10}); err == nil || !strings.Contains(err.Error(), "no view") {
 		t.Errorf("a picture from nowhere: %v", err)
+	}
+}
+
+// One side of a picture given, the other follows at 4:3.
+func TestPictureSize(t *testing.T) {
+	t.Parallel()
+	for _, c := range []struct{ w, h, wantW, wantH int }{
+		{0, 0, DefaultWidth, DefaultHeight},
+		{400, 0, 400, 300},
+		{0, 300, 400, 300},
+		{101, 0, 101, 76},
+		{1, 0, 1, 1},
+		{0, 1, 1, 1},
+		{640, 100, 640, 100},
+	} {
+		p := Picture{Width: c.w, Height: c.h}
+		p.size()
+		if p.Width != c.wantW || p.Height != c.wantH {
+			t.Errorf("%d by %d became %d by %d, want %d by %d", c.w, c.h, p.Width, p.Height, c.wantW, c.wantH)
+		}
+	}
+	s := newSession(t)
+	if _, err := s.Render(context.Background(), Picture{View: "front", Width: MaxSide + 1}); err == nil || !strings.Contains(err.Error(), "each side") {
+		t.Errorf("a picture too wide, with the height derived, gave %v", err)
+	}
+}
+
+// A caption names the view, the size, the group and the solid's bounds.
+func TestRenderCaption(t *testing.T) {
+	t.Parallel()
+	s := newSession(t)
+	doc := s.Engine().Doc()
+	if got := caption(doc, Picture{View: "top", Width: 80, Height: 60}); !strings.HasPrefix(got, "top view, 80 by 60 pixels, up to g002") || !strings.HasSuffix(got, "no solid yet") {
+		t.Errorf("an empty drawing's caption is %q", got)
+	}
+	run(t, s, "doc.Sketch.Rect(V(0, 0, 0), V(60, 20, 0))\ndoc.Features.Extrude(4, \"plate\")")
+	got := caption(doc, Picture{View: "isometric", Width: 800, Height: 600, Group: "g003", Section: "XY", SectionOffset: "2", SectionFlip: true})
+	want := "isometric view, 800 by 600 pixels, up to g003-plate, cut by a plane parallel to XY at 2 with the other side kept; solid bounds (0, 0, 0) to (60, 20, 4) mm"
+	if got != want {
+		t.Errorf("the caption is\n%q\nwant\n%q", got, want)
 	}
 }

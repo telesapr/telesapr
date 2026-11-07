@@ -40,10 +40,29 @@ func (t *Topology) facePointFrameAt(id srf.FaceID, place []float64) (FaceFrame, 
 	if len(fs) == 0 {
 		return FaceFrame{}, fmt.Errorf("face %x is no longer in the solid", uint32(id))
 	}
-	f := fs[0]
+	s, uv, err := t.patchPoint(fs[0], place)
+	if err != nil {
+		return FaceFrame{}, err
+	}
+	n := s.NormalAt(uv.X, uv.Y)
+	if n.Magnitude() < geom.LengthEps {
+		return FaceFrame{}, fmt.Errorf("face %x has no normal at its middle", uint32(id))
+	}
+	n = n.WithMagnitude(1)
+	var tu, tv geom.Vector
+	s.TangentsAt(uv.X, uv.Y, &tu, &tv, false)
+	return FaceFrame{Origin: s.PointAt(uv.X, uv.Y), U: frameU(tu, n), N: n}, nil
+}
+
+// patchPoint is the point of patch f that facePointFrameAt takes, in
+// the parameters of the patch's surface (a copy, uncached): the middle
+// of its outer loop, or of place in the loop's bounds, or the point of
+// the patch nearest that.
+func (t *Topology) patchPoint(f int, place []float64) (*srf.SSurface, geom.Vector, error) {
+	id := t.Faces[f].ID
 	s := uncached(t.Surface(f))
 	if s == nil {
-		return FaceFrame{}, fmt.Errorf("face %x has no surface", uint32(id))
+		return nil, geom.Vector{}, fmt.Errorf("face %x has no surface", uint32(id))
 	}
 	var outer []geom.Vector
 	var holes [][]geom.Vector
@@ -56,7 +75,7 @@ func (t *Topology) facePointFrameAt(id srf.FaceID, place []float64) (FaceFrame, 
 		}
 	}
 	if len(outer) < 3 {
-		return FaceFrame{}, fmt.Errorf("face %x has no outer loop", uint32(id))
+		return nil, geom.Vector{}, fmt.Errorf("face %x has no outer loop", uint32(id))
 	}
 	want := polygonMiddle(outer)
 	if len(place) == 2 {
@@ -65,16 +84,9 @@ func (t *Topology) facePointFrameAt(id srf.FaceID, place []float64) (FaceFrame, 
 	}
 	uv, ok := insideNear(want, outer, holes)
 	if !ok {
-		return FaceFrame{}, fmt.Errorf("face %x has no point inside its loops", uint32(id))
+		return nil, geom.Vector{}, fmt.Errorf("face %x has no point inside its loops", uint32(id))
 	}
-	n := s.NormalAt(uv.X, uv.Y)
-	if n.Magnitude() < geom.LengthEps {
-		return FaceFrame{}, fmt.Errorf("face %x has no normal at its middle", uint32(id))
-	}
-	n = n.WithMagnitude(1)
-	var tu, tv geom.Vector
-	s.TangentsAt(uv.X, uv.Y, &tu, &tv, false)
-	return FaceFrame{Origin: s.PointAt(uv.X, uv.Y), U: frameU(tu, n), N: n}, nil
+	return s, uv, nil
 }
 
 // uncached is a copy of s whose search for the closest point starts

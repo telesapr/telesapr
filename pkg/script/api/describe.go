@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 
@@ -11,7 +10,8 @@ import (
 )
 
 // This file is Describe: the drawing in words, for a reader that
-// can't see it, such as a program that writes scripts.
+// can't see it, such as a program that writes scripts. The same walk
+// fills the Description that a program reads as data (description.go).
 
 // unitNames are the units as a .tlspr file names them.
 var unitNames = map[core.Unit]string{
@@ -23,11 +23,7 @@ var unitNames = map[core.Unit]string{
 
 // shortNum is a number with at most three decimals, and no "-0".
 func shortNum(v float64) string {
-	v = math.Round(v*1000) / 1000
-	if v == 0 {
-		v = 0
-	}
-	return strconv.FormatFloat(v, 'g', -1, 64)
+	return strconv.FormatFloat(round3(v), 'g', -1, 64)
 }
 
 // shortVec is a point as "(x, y, z)".
@@ -41,56 +37,76 @@ func isDrawing(t sketch.GroupType) bool {
 	return t == sketch.GroupDrawing3D || t == sketch.GroupDrawingWorkplane
 }
 
-// groupState says how a group came out of the last regeneration.
-func groupState(sk *sketch.Sketch, group *sketch.Group) string {
+// groupState says how a group came out of the last regeneration, in
+// words and as data.
+func groupState(sk *sketch.Sketch, group *sketch.Group) (string, GroupInfo) {
+	info := GroupInfo{Name: groupDescription(group), Kind: kindName(group.Type), DOF: -1}
 	if why := sk.SuppressedReason(group.H); why != "" {
-		return "left out (" + why + ")"
+		info.LeftOut = why
+		return "left out (" + why + ")", info
 	}
 	parts := []string{"solved"}
-	if !group.IsSolvedOkay() {
+	info.Solved = group.IsSolvedOkay()
+	if !info.Solved {
 		parts[0] = "NOT SOLVED"
 	}
 	if group.Solved.Dof < 0 {
 		parts = append(parts, "DOF not counted")
 	} else {
+		info.DOF = group.Solved.Dof
 		parts = append(parts, fmt.Sprintf("%d DOF", group.Solved.Dof))
 	}
 	if msg := problemOf(sk, group); msg != "" {
+		info.Problem = msg
 		parts = append(parts, "problem: "+msg)
 	}
 	if !isDrawing(group.Type) {
 		if m := displayMesh(sk, group); !m.IsEmpty() {
 			hi, lo := m.Bounding()
-			parts = append(parts, "volume "+shortNum(m.CalculateVolume())+" mm³",
+			vol := m.CalculateVolume()
+			info.Volume = new(round3(vol))
+			info.Bounds = &Bounds{Lo: vec3(lo), Hi: vec3(hi)}
+			parts = append(parts, "volume "+shortNum(vol)+" mm³",
 				"bounds "+shortVec(lo)+" to "+shortVec(hi))
 		}
 	}
-	return strings.Join(parts, ", ")
+	return strings.Join(parts, ", "), info
 }
 
-// requestGeometry says where what a request drew is.
-func requestGeometry(sk *sketch.Sketch, req *sketch.Request) string {
+// requestGeometry says where what a request drew is, in words and as
+// data.
+func requestGeometry(sk *sketch.Sketch, req *sketch.Request) (string, RequestInfo) {
+	info := RequestInfo{Name: req.DescriptionString(), Construction: req.Construction, Text: req.Str}
 	ent := sk.Entity(req.H.Entity(0))
 	if ent == nil {
-		return "not generated"
+		return "not generated", info
 	}
+	info.Kind = kindOf(ent)
+	// at is a point in words, and adds it to the data; what isn't a
+	// point is "(?)" in words and left out of the data.
 	at := func(h core.HEntity) string {
 		if p := sk.Entity(h); p != nil && p.IsPoint() {
-			return shortVec(p.PointGetNum(sk))
+			v := p.PointGetNum(sk)
+			info.Points = append(info.Points, vec3(v))
+			return shortVec(v)
 		}
 		return "(?)"
 	}
 	var s string
 	switch {
 	case ent.IsPoint():
-		s = "point " + shortVec(ent.PointGetNum(sk))
+		s = "point " + at(ent.H)
 	case ent.Type == core.EntityLineSegment:
-		s = "line " + at(ent.Point[0]) + " to " + at(ent.Point[1])
+		s = "line " + at(ent.Point[0])
+		s += " to " + at(ent.Point[1])
 	case ent.Type == core.EntityCircle:
-		s = "circle at " + at(ent.Point[0]) + ", radius " + shortNum(ent.CircleGetRadiusNum(sk))
+		info.Radius = round3(ent.CircleGetRadiusNum(sk))
+		s = "circle at " + at(ent.Point[0]) + ", radius " + shortNum(info.Radius)
 	case ent.Type == core.EntityArcOfCircle:
-		s = "arc at " + at(ent.Point[0]) + ", radius " + shortNum(ent.CircleGetRadiusNum(sk)) +
-			", from " + at(ent.Point[1]) + " to " + at(ent.Point[2])
+		info.Radius = round3(ent.CircleGetRadiusNum(sk))
+		s = "arc at " + at(ent.Point[0]) + ", radius " + shortNum(info.Radius)
+		s += ", from " + at(ent.Point[1])
+		s += " to " + at(ent.Point[2])
 	default:
 		var points []string
 		for _, hp := range ent.Point {
@@ -98,7 +114,7 @@ func requestGeometry(sk *sketch.Sketch, req *sketch.Request) string {
 				points = append(points, at(hp))
 			}
 		}
-		s = kindOf(ent)
+		s = info.Kind
 		if len(points) > 0 {
 			s += " " + strings.Join(points, " ")
 		}
@@ -109,7 +125,7 @@ func requestGeometry(sk *sketch.Sketch, req *sketch.Request) string {
 	if req.Construction {
 		s += ", construction"
 	}
-	return s
+	return s, info
 }
 
 // constraintDescription is a constraint as the property browser names
@@ -124,9 +140,23 @@ func constraintDescription(c *core.Constraint) string {
 	return c.DescriptionString()
 }
 
+// constraintInfo is a constraint as data.
+func constraintInfo(sk *sketch.Sketch, c *core.Constraint) ConstraintInfo {
+	name := c.DescriptionString()
+	_, typ, _ := strings.Cut(name, "-")
+	info := ConstraintInfo{Name: name, Type: typ, Expr: c.Expr, Reference: c.Reference, On: constraintOn(sk, c)}
+	switch {
+	case c.Type == core.ConstraintComment:
+		info.Comment = c.Comment
+	case c.HasLabel():
+		info.Value = new(shownValue(c))
+	}
+	return info
+}
+
 // constraintOn names the requests and groups whose entities a
 // constraint is on.
-func constraintOn(sk *sketch.Sketch, c *core.Constraint) string {
+func constraintOn(sk *sketch.Sketch, c *core.Constraint) []string {
 	var owners []string
 	for _, h := range []core.HEntity{c.PtA, c.PtB, c.EntityA, c.EntityB, c.EntityC, c.EntityD} {
 		if h.V == 0 {
@@ -141,13 +171,16 @@ func constraintOn(sk *sketch.Sketch, c *core.Constraint) string {
 			owners = append(owners, owner)
 		}
 	}
-	return strings.Join(owners, ", ")
+	return owners
 }
 
-// describeGroup lists a group's requests and constraints.
-func describeGroup(sk *sketch.Sketch, group *sketch.Group) string {
+// describeGroup lists a group's requests and constraints, and puts
+// them in data; it returns the group's state as data too.
+func describeGroup(sk *sketch.Sketch, group *sketch.Group, data *Description) (string, GroupInfo) {
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s, %s: %s\n", groupDescription(group), kindName(group.Type), groupState(sk, group))
+	state, info := groupState(sk, group)
+	data.Group = info.Name
+	fmt.Fprintf(&b, "%s, %s: %s\n", groupDescription(group), kindName(group.Type), state)
 	first := true
 	for i := range sk.Requests {
 		req := &sk.Requests[i]
@@ -158,7 +191,9 @@ func describeGroup(sk *sketch.Sketch, group *sketch.Group) string {
 			b.WriteString("  requests:\n")
 			first = false
 		}
-		fmt.Fprintf(&b, "    %s: %s\n", req.DescriptionString(), requestGeometry(sk, req))
+		where, r := requestGeometry(sk, req)
+		data.Requests = append(data.Requests, r)
+		fmt.Fprintf(&b, "    %s: %s\n", req.DescriptionString(), where)
 	}
 	first = true
 	for i := range sk.Constraints {
@@ -177,20 +212,22 @@ func describeGroup(sk *sketch.Sketch, group *sketch.Group) string {
 		if c.Reference {
 			line += ", reference"
 		}
-		if on := constraintOn(sk, c); on != "" {
-			line += ", on " + on
+		ci := constraintInfo(sk, c)
+		data.Constraints = append(data.Constraints, ci)
+		if len(ci.On) > 0 {
+			line += ", on " + strings.Join(ci.On, ", ")
 		}
 		fmt.Fprintf(&b, "    %s\n", line)
 	}
-	return b.String()
+	return b.String(), info
 }
 
 // Describe lists what the group holds, as text: how it solved, each
 // request with where it is, in mm, and each constraint with its value
 // and what it is on. The names it gives are the ones Doc.Request and
-// Doc.Constraint take.
+// Doc.Constraint take. Group.Description is the same as data.
 func (g Group) Describe() (s string) {
-	g.d.read(func(sk *sketch.Sketch) { s = describeGroup(sk, g.get(sk)) })
+	g.d.read(func(sk *sketch.Sketch) { s, _ = describeGroup(sk, g.get(sk), &Description{}) })
 	return s
 }
 
@@ -200,89 +237,103 @@ func (g Group) Describe() (s string) {
 // and the volume and bounds of the model up to it, then the active
 // group's requests and constraints as Group.Describe lists them, and
 // what is selected. Lengths are in mm. The names it gives are the
-// ones Doc.Group, Doc.Request and Doc.Constraint take.
+// ones Doc.Group, Doc.Request and Doc.Constraint take. Doc.Description
+// is the same as data.
 func (d *Doc) Describe() (s string) {
-	d.read(func(sk *sketch.Sketch) {
-		var b strings.Builder
-		fmt.Fprintf(&b, "sketch: unit %s", unitNames[sk.Units])
-		if sk.Unsaved {
-			b.WriteString(", unsaved changes")
-		}
-		b.WriteString("\n")
+	d.read(func(sk *sketch.Sketch) { s, _ = describeDoc(d, sk) })
+	return s
+}
 
-		if len(sk.Parameters) > 0 {
-			b.WriteString("parameters:\n")
-			for _, p := range sk.Parameters {
-				fmt.Fprintf(&b, "    %s = %s", p.Name, p.Expr)
-				if shortNum(p.Value) != strings.TrimSpace(p.Expr) {
-					fmt.Fprintf(&b, " = %s", shortNum(p.Value))
-				}
-				if p.Err != "" {
-					fmt.Fprintf(&b, " (error: %s)", p.Err)
-				}
-				b.WriteString("\n")
-			}
-		}
-		for _, e := range sk.ExprErrors {
-			fmt.Fprintf(&b, "expression error: %s\n", e.Error())
-		}
+// describeDoc is Describe, in words and as data.
+func describeDoc(d *Doc, sk *sketch.Sketch) (string, Description) {
+	var data Description
+	var b strings.Builder
+	data.Unit, data.Unsaved = unitNames[sk.Units], sk.Unsaved
+	fmt.Fprintf(&b, "sketch: unit %s", unitNames[sk.Units])
+	if sk.Unsaved {
+		b.WriteString(", unsaved changes")
+	}
+	b.WriteString("\n")
 
-		active := sk.ActiveGroup()
-		b.WriteString("groups, in the order the model is built:\n")
-		for _, hg := range sk.GroupOrder {
-			group := sk.Group(hg)
-			if hg.V == core.HGroupReferences || group == nil {
-				continue
+	if len(sk.Parameters) > 0 {
+		b.WriteString("parameters:\n")
+		for _, p := range sk.Parameters {
+			data.Params = append(data.Params, ParamInfo{Name: p.Name, Expr: p.Expr, Value: p.Value, Error: p.Err})
+			fmt.Fprintf(&b, "    %s = %s", p.Name, p.Expr)
+			if shortNum(p.Value) != strings.TrimSpace(p.Expr) {
+				fmt.Fprintf(&b, " = %s", shortNum(p.Value))
 			}
-			fmt.Fprintf(&b, "    %s, %s: %s", groupDescription(group), kindName(group.Type), groupState(sk, group))
-			if hg == active {
-				b.WriteString("; active")
+			if p.Err != "" {
+				fmt.Fprintf(&b, " (error: %s)", p.Err)
 			}
 			b.WriteString("\n")
 		}
-		if group := sk.Group(active); group != nil {
-			b.WriteString("active group " + describeGroup(sk, group))
-		}
+	}
+	for _, e := range sk.ExprErrors {
+		data.ExprErrors = append(data.ExprErrors, e.Error())
+		fmt.Fprintf(&b, "expression error: %s\n", e.Error())
+	}
 
-		first := true
-		for _, sel := range d.h.Selection() {
-			var what string
-			switch {
-			case sel.Entity.V != 0:
-				what = Entity{d, sel.Entity}.describe(sk)
-			case sel.Constraint.V != 0:
-				if c := sk.Constraint(sel.Constraint); c != nil {
-					what = constraintDescription(c)
-				}
-			}
-			if what == "" {
-				continue
-			}
-			if first {
-				b.WriteString("selected:\n")
-				first = false
-			}
-			fmt.Fprintf(&b, "    %s\n", what)
+	active := sk.ActiveGroup()
+	b.WriteString("groups, in the order the model is built:\n")
+	for _, hg := range sk.GroupOrder {
+		group := sk.Group(hg)
+		if hg.V == core.HGroupReferences || group == nil {
+			continue
 		}
-		// What the user points at, which "this" or "here" may mean.
-		hv := d.h.Hovered()
-		var over string
+		state, info := groupState(sk, group)
+		info.Active = hg == active
+		data.Groups = append(data.Groups, info)
+		fmt.Fprintf(&b, "    %s, %s: %s", groupDescription(group), kindName(group.Type), state)
+		if hg == active {
+			b.WriteString("; active")
+		}
+		b.WriteString("\n")
+	}
+	if group := sk.Group(active); group != nil {
+		text, _ := describeGroup(sk, group, &data)
+		b.WriteString("active group " + text)
+	}
+
+	first := true
+	for _, sel := range d.h.Selection() {
+		var what string
 		switch {
-		case hv.Entity.V != 0 && sk.Entity(hv.Entity) != nil:
-			over = Entity{d, hv.Entity}.describe(sk)
-		case hv.Constraint.V != 0:
-			if c := sk.Constraint(hv.Constraint); c != nil {
-				over = constraintDescription(c)
+		case sel.Entity.V != 0:
+			what = Entity{d, sel.Entity}.describe(sk)
+		case sel.Constraint.V != 0:
+			if c := sk.Constraint(sel.Constraint); c != nil {
+				what = constraintDescription(c)
 			}
-		case hv.Edge.A != 0:
-			over = "the solid's " + hv.Edge.String()
-		case hv.Face != 0:
-			over = "the solid's face " + sk.FaceName(hv.Face)
 		}
-		if over != "" {
-			fmt.Fprintf(&b, "under the mouse:\n    %s\n", over)
+		if what == "" {
+			continue
 		}
-		s = b.String()
-	})
-	return s
+		if first {
+			b.WriteString("selected:\n")
+			first = false
+		}
+		data.Selected = append(data.Selected, what)
+		fmt.Fprintf(&b, "    %s\n", what)
+	}
+	// What the user points at, which "this" or "here" may mean.
+	hv := d.h.Hovered()
+	var over string
+	switch {
+	case hv.Entity.V != 0 && sk.Entity(hv.Entity) != nil:
+		over = Entity{d, hv.Entity}.describe(sk)
+	case hv.Constraint.V != 0:
+		if c := sk.Constraint(hv.Constraint); c != nil {
+			over = constraintDescription(c)
+		}
+	case hv.Edge.A != 0:
+		over = "the solid's " + hv.Edge.String()
+	case hv.Face != 0:
+		over = "the solid's face " + sk.FaceName(hv.Face)
+	}
+	if over != "" {
+		data.Hover = over
+		fmt.Fprintf(&b, "under the mouse:\n    %s\n", over)
+	}
+	return b.String(), data
 }

@@ -113,7 +113,7 @@ func (g Group) is(view, what string, types ...sketch.GroupType) {
 	g.d.read(func(sk *sketch.Sketch) {
 		group := g.get(sk)
 		if !slices.Contains(types, group.Type) {
-			fail("%s is for %s, and %s is a %s", view, what, groupDescription(group), kindName(group.Type))
+			fail("%s is for %s, and %s is %s", view, what, groupDescription(group), withArticle(kindName(group.Type)))
 		}
 	})
 }
@@ -163,7 +163,7 @@ func (v RepeatGroup) SetSkipFirst(skip bool) {
 // mustBeStepAndRepeat fails unless the group is a translate or a rotate.
 func (g Group) mustBeStepAndRepeat(group *sketch.Group, what string) {
 	if group.Type != sketch.GroupTranslate && group.Type != sketch.GroupRotate {
-		fail("%s is for a step and repeat, and %s is a %s", what, groupDescription(group), kindName(group.Type))
+		fail("%s is for a step and repeat, and %s is %s", what, groupDescription(group), withArticle(kindName(group.Type)))
 	}
 }
 

@@ -228,7 +228,7 @@ Each stays out until its reason stops holding.
 | Open thread ends in STEP | Closing them would invent geometry |
 | CSG and swept solids in STEP | No vendor file in the corpus has them; the export half is cheap once the group tree is walkable |
 | A chat window, MCP resources and prompts, an HTTP transport | "An MCP server, and nothing else" until a user needs more (`doc/guide/ai.md`) |
-| `make ai-eval` | Needs a model and an account, outside CI |
+| `make ai-eval` | Needs a model and an account, outside CI; sessions recorded with `mcp --record` replay in the tests without one (`doc/dev-notes/mcp.md`) |
 | Tolerances per edge and vertex | Healing within a file's tolerance suffices so far |
 | Generated entities left out of `.tlspr` | Possible behind the version number; no need yet |
 | Threads: tapered (NPT, BSPT), variable pitch, a fastener library, a thread attribute in STEP | Never asked for |

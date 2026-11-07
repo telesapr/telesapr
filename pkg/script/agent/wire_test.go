@@ -82,11 +82,17 @@ func TestRemoteSession(t *testing.T) {
 		t.Errorf("a failing script gave %+v, %v", res, err)
 	}
 
-	text, err := r.Describe(ctx, "")
-	if direct, _ := s.Describe(ctx, ""); err != nil || text != direct || !strings.Contains(text, "r004-circle") {
+	text, err := describeText(r.Describe(ctx, Describing{}))
+	if direct, _ := describeText(s.Describe(ctx, Describing{})); err != nil || text != direct || !strings.Contains(text, "r004-circle") {
 		t.Errorf("the drawing is described as %q, %v; the session says %q", text, err, direct)
 	}
-	if _, err = r.Describe(ctx, "nothing"); err == nil || !strings.Contains(err.Error(), `no group is called "nothing"`) {
+	if text, err = describeText(r.Describe(ctx, Describing{Script: true})); err != nil || !strings.Contains(text, "package main") {
+		t.Errorf("the drawing as a script through the wire is %q, %v", text, err)
+	}
+	if text, err = describeText(r.Describe(ctx, Describing{Solid: true})); err != nil || text != "no solid yet at g002-sketch-in-plane\n" {
+		t.Errorf("the solid through the wire is %q, %v", text, err)
+	}
+	if _, err = r.Describe(ctx, Describing{Group: "nothing"}); err == nil || !strings.Contains(err.Error(), `no group is called "nothing"`) {
 		t.Errorf("describing a group that isn't there: %v", err)
 	}
 	if _, err = r.Render(ctx, Picture{View: "top", Width: 40, Height: 30}); err == nil || !strings.Contains(err.Error(), "not available") {
@@ -100,12 +106,28 @@ func TestRemoteSession(t *testing.T) {
 	if res, err = r.Run(ctx, "doc.Features.Extrude(2, \"disc\")"); err != nil || res.Error != "" {
 		t.Fatalf("the extrusion gave %+v, %v", res, err)
 	}
-	if text, err = r.Measure(ctx, Measuring{}); err != nil || !strings.Contains(text, "the model up to g003-disc") {
+	if text, err = measureText(r.Measure(ctx, Measuring{})); err != nil || !strings.Contains(text, "the model up to g003-disc") {
 		t.Errorf("the disc measures as %q, %v", text, err)
 	}
-	if text, err = r.Measure(ctx, Measuring{Gaps: 1, Walls: 3}); err != nil || !strings.Contains(text, "No two parts are nearer than 1 mm.") ||
+	if text, err = measureText(r.Measure(ctx, Measuring{Gaps: 1, Walls: 3})); err != nil || !strings.Contains(text, "No two parts are nearer than 1 mm.") ||
 		!strings.Contains(text, "The thinnest wall is 2 mm") || !strings.Contains(text, "points measured are thinner than 3 mm") {
 		t.Errorf("the disc's gaps and walls are %q, %v", text, err)
+	}
+	// The data crosses the wire as it left the session.
+	for _, d := range []Describing{{}, {Solid: true}, {Group: "g002"}, {Script: true}} {
+		far, err := r.Describe(ctx, d)
+		near, _ := s.Describe(ctx, d)
+		if err != nil || !reflect.DeepEqual(far, near) {
+			t.Errorf("described %+v through the wire as %+v, %v; the session says %+v", d, far.Data, err, near.Data)
+		}
+	}
+	if d, _ := r.Describe(ctx, Describing{Solid: true}); len(d.Data.Faces) != 3 || d.Data.Solid == nil || !d.Data.Solid.Sound {
+		t.Errorf("the disc's solid through the wire is %+v", d.Data)
+	}
+	far, err := r.Measure(ctx, Measuring{Gaps: 1, Walls: 3})
+	if near, _ := s.Measure(ctx, Measuring{Gaps: 1, Walls: 3}); err != nil || !reflect.DeepEqual(far, near) ||
+		far.Data.Group != "g003-disc" || !far.Data.Sound || far.Data.Walls == nil || far.Data.Walls.Thinnest != 2 {
+		t.Errorf("the disc measures through the wire as %+v, %v; the session says %+v", far.Data, err, near.Data)
 	}
 	if _, err = r.Measure(ctx, Measuring{Selected: true}); err == nil || !strings.Contains(err.Error(), "nothing is selected") {
 		t.Errorf("measuring no selection: %v", err)
@@ -139,7 +161,7 @@ func TestRemoteConnectsWhenNeeded(t *testing.T) {
 	defer r.Close()
 	ctx := context.Background()
 
-	if _, err := r.Describe(ctx, ""); !errors.Is(err, ErrNotRunning) {
+	if _, err := r.Describe(ctx, Describing{}); !errors.Is(err, ErrNotRunning) {
 		t.Fatalf("with nothing listening: %v, want ErrNotRunning", err)
 	}
 	if text, err := r.Help(ctx, ""); err != nil || text != Primer() {
@@ -378,7 +400,54 @@ func TestRemoteProtocolMismatch(t *testing.T) {
 	}()
 	r := remote(dir)
 	defer r.Close()
-	if _, err := r.Describe(context.Background(), ""); err == nil || !strings.Contains(err.Error(), "install the same version") {
+	if _, err := r.Describe(context.Background(), Describing{}); err == nil || !strings.Contains(err.Error(), "install the same version") {
 		t.Errorf("a program of another version: %v", err)
+	}
+}
+
+// twice is a Backend whose run reports twice before it ends.
+type twice struct{ Backend }
+
+func (twice) Run(ctx context.Context, code string) (Result, error) {
+	return twice{}.RunWithProgress(ctx, code, nil)
+}
+
+func (twice) RunWithProgress(_ context.Context, code string, report func(Progress)) (Result, error) {
+	if report != nil {
+		report(Progress{Message: "regenerating g002-a, 1 of 2", Done: 1, Total: 2})
+		report(Progress{Message: "printed", Output: "printed\n"})
+	}
+	return Result{Output: "printed\n", Value: code}, nil
+}
+
+// The reports of a run come through the connection to the caller, in
+// order and before the result; a caller with no callback, or a
+// program that sends progress for a request it didn't make, has them
+// dropped.
+func TestRemoteProgress(t *testing.T) {
+	t.Parallel()
+	dir := socketDir(t)
+	serve(t, dir, twice{})
+	r := remote(dir)
+	defer r.Close()
+	ctx := context.Background()
+
+	var got []Progress
+	res, err := r.RunWithProgress(ctx, "x", func(p Progress) { got = append(got, p) })
+	if err != nil || res.Value != "x" {
+		t.Fatalf("the run gave %+v, %v", res, err)
+	}
+	want := []Progress{{Message: "regenerating g002-a, 1 of 2", Done: 1, Total: 2}, {Message: "printed", Output: "printed\n"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("the reports were %+v, want %+v", got, want)
+	}
+	if res, err := r.Run(ctx, "y"); err != nil || res.Value != "y" {
+		t.Errorf("a run with no callback gave %+v, %v", res, err)
+	}
+
+	// On the wire: progress lines with the run's id, then the response.
+	lines := exchange(t, twice{}, `{"id":7,"op":"run","code":"z"}`)
+	if len(lines) != 1 || lines[0].Op != opProgress || lines[0].ID != 7 || lines[0].Progress == nil || lines[0].Progress.Done != 1 {
+		t.Errorf("the first line of a run is %+v, want its progress", lines)
 	}
 }

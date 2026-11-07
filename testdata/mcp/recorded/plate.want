@@ -1,0 +1,10 @@
+# get_drawing: the groups
+    g002-sketch-in-plane, sketch-in-plane: solved, 0 DOF
+    g003-plate, extrude: solved, 1 DOF, volume 4567.273 mm³, bounds (0, 0, 0) to (60, 20, 4)
+    g004-rounded, fillet: solved, 0 DOF, volume 4552.774 mm³, bounds (0, 0, 0) to (60, 20, 4)
+    g005-pocket-outline, sketch-in-plane: solved, 0 DOF
+    g006-pocket, extrude: solved, 1 DOF, volume 4496.593 mm³, bounds (0, 0, 0) to (60, 20, 4); active
+# measure
+The solid is sound: closed, not self-intersecting, and its Boolean succeeded.
+Volume: 4496.59 mm^3
+Extent: 60 x 20 x 4 mm

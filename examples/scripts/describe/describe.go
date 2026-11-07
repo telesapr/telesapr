@@ -1,5 +1,5 @@
-// A drawing in words: what Doc.Describe and Group.Describe say of a
-// plate with a hole, which is what an AI program reads of a drawing
+// A drawing in words: what Doc.Describe, Group.Describe and
+// Group.DescribeSolid say of a plate with a hole, which is what an AI program reads of a drawing
 // before it writes a script for it (telesapr-cli mcp, doc/guide/ai.md).
 //
 // Without a window:
@@ -49,4 +49,16 @@ func main() {
 	// The names it gives are the ones the lookups take.
 	side := doc.Request("r005").Entity()
 	fmt.Printf("%s is %g mm long\n", side, side.Length())
+
+	// The solid's faces and edges, by the IDs and names Solid.Face and
+	// Solid.Edge take: what a fillet or a sketch on a face picks from.
+	plate := doc.Group("plate")
+	solid := plate.DescribeSolid()
+	fmt.Print(solid)
+	if !strings.Contains(solid, "7 faces, 14 edges") {
+		fmt.Fprintln(os.Stderr, "the solid isn't the plate with a hole")
+		os.Exit(1)
+	}
+	top := plate.Solid().FaceAt(api.V(20, 10, 4))
+	fmt.Printf("the top is %s, with %d edges\n", top.Name(), len(top.Edges()))
 }

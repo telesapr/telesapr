@@ -156,14 +156,14 @@ func main() {
 		t.Errorf("the script is %d steps of undo, want 1", got)
 	}
 
-	// A file that fails says where.
+	// A file that fails says where, and quotes the line.
 	bad := filepath.Join(dir, "bad.go")
 	if err := os.WriteFile(bad, []byte("a := 1\nb := a + c\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	n := len(w.Texts)
 	ss.Console().RunFile(bad)
-	if got, want := after(w, n), "run "+bad+"\nerror: "+bad+":2:10: undefined: c\n"; got != want {
+	if got, want := after(w, n), "run "+bad+"\nerror: "+bad+":2:10: undefined: c\n    b := a + c\n"; got != want {
 		t.Errorf("the console showed %q, want %q", got, want)
 	}
 }

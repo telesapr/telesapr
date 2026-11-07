@@ -22,7 +22,7 @@ const Instructions = `TeleSAPR is a parametric CAD program: sketches of lines, c
 
 To draw what the user asks for:
 1. Call api_help with no name, once, before the first script: it explains the scripting interface and lists every call. api_help with a name, as "Features.Extrude", "Group" or a menu entry, "Features > Fillet Edges", says more.
-2. Call get_drawing to see what is there: groups, requests, constraints, the selection.
+2. Call get_drawing to see what is there: groups, requests, constraints, the selection; with solid, the solid's faces and edges by the names a script uses.
 3. Call run_script with Go statements. doc is the drawing; lengths are mm, angles degrees. Variables stay defined between calls. Each call is one step of undo for the user. If a script fails, what it changed is taken back: correct it and send the whole of it again.
 4. Read the status run_script returns. A sketch should be "solved", and a finished one has 0 DOF: constrain it with dimensions and with a point on the origin. A "problem" means a group made no solid.
 5. Call render and look at the picture before saying the work is done.
@@ -45,7 +45,7 @@ A script is Go, run by an interpreter inside TeleSAPR. In run_script, write stat
     V(x, y, z)           a point or a direction, in mm
     fmt, math, strings, sort, strconv, os, time and others of Go's library
 
-A variable defined in one run_script call is there in the next, until the program (or telesapr-cli mcp) is restarted: opening or starting another drawing doesn't clear the names. Defining one again with := gives it a new value and type; inside a loop or an if, := makes a variable of the block's own, as in Go. The value of the last statement, if it is an expression, is returned, as are the things printed with fmt.Println.
+A variable defined in one run_script call is there in the next, until the program (or telesapr-cli mcp) is restarted or a script is stopped (Script > Stop, or the client cancelling): the interpreter then starts afresh and the variables are gone, which run_script says: opening or starting another drawing doesn't clear the names. Defining one again with := gives it a new value and type; inside a loop or an if, := makes a variable of the block's own, as in Go. The value of the last statement, if it is an expression, is returned, as are the things printed with fmt.Println.
 
 ## How a drawing is built
 
@@ -57,19 +57,20 @@ A drawing is a list of groups, built in order. A sketch group holds what is draw
 - doc.Sketch.Rect returns its four sides, bottom first and going around counter-clockwise, already joined, horizontal and vertical. doc.Sketch.Polyline(true, points...) is a closed outline, joined but otherwise free.
 - A solid needs closed outlines in the sketch. A circle or outline inside another is a hole.
 - doc.Features.Extrude(depth, "name") makes a solid of the active sketch along its workplane's normal and becomes the active group. To add to that solid, start another sketch (doc.Features.SketchIn(doc.Workplane("XY"), "name"), doc.Features.SketchAt(point, u, v, "name"), or doc.Features.SketchOnFace(g.Solid().FaceAt(point), "name") in a flat face of the solid at group g, which follows the face), draw, and extrude again; g.SetCombine(Difference) makes the new solid a cut, Intersection keeps what is common.
-- doc.Features.Fillet, doc.Features.Chamfer and doc.Features.Shell work on the solid so far; g.SolidEdges() and g.Solid() name its edges and faces.
+- doc.Features.Fillet, doc.Features.Chamfer and doc.Features.Shell work on the solid so far. The edges and faces of the solid up to a group g come from g.Solid(): .Edges(), .Edge("name"), .EdgesAlong(dir), .EdgesBetween(a, b), .FaceAt(point) and .Faces(); doc.Features.FilletSolid(edges, radius, name) and ChamferSolid take those edges (Fillet takes the []Entity of the sketch's lines). g.SolidEdges() is only for a chamfer group.
 - What only one kind of group has is on a view of it: g.AsFillet().SetRadius(3), g.AsExtrude().SetDraft(2). g.History() moves a group, g.Analyze() measures the solid up to it.
 - To change what exists, look it up by the names get_drawing gives: doc.Group("plate"), doc.Request("r004").Entity(), doc.Constraint("c00a").Set(50). doc.Activate(g) goes back to an earlier group to draw more in it.
 - A parameter is a named number: doc.Params.Set("width", "60"), then c.SetExpr("width/2") on a dimension.
 
 ## Checking the result
 
-    g.Solved()  g.Dof()  g.Problem()  g.Conflicts()     how a group came out
-    a := g.Analyze()
-    a.Analyze().Volume()  a.Analyze().Bounds()  a.Analyze().Check().Sound()           the solid up to and with the group
-    doc.Describe()                                      what get_drawing returns
+` + primerChecks + `
+
+doc.Script() is the whole drawing as a script, the quickest way to see how a drawing you didn't make is built (get_drawing with script does the same).
 
 A sketch should have 0 degrees of freedom when it is done. An extrusion keeps 1, its depth, which nothing holds unless a dimension is put on it; that is as the program's own users leave it.
+
+To fillet, chamfer, shell or sketch on a face, ask get_drawing with solid (or print g.DescribeSolid()): it lists the faces of the solid up to the group with their IDs, shapes and a point on each, and its edges with the names g.Solid().Edge takes, their shapes, lengths and ends, so the edges and faces can be picked by name rather than found by trial.
 
 get_drawing lists the requests and constraints of the active group only, which after an Extrude is the extrusion; ask for the sketch by name (get_drawing with group "g002") to see what is in it.
 
@@ -84,7 +85,7 @@ A call that can't do what it is asked stops the script with an error that says w
 
 ## Example
 
-A plate of 60 by 20 mm, 4 mm thick, with three 5 mm holes in a row, then a round pocket 2 mm deep cut into its underside:
+A plate of 60 by 20 mm, 4 mm thick, with three 5 mm holes in a row, its four vertical edges rounded, then a round pocket 2 mm deep cut into its underside:
 
 ` + primerExample + `
 ## Every call
@@ -111,6 +112,10 @@ const primerExample = `    width, height, thick, bore := 60.0, 20.0, 4.0, 5.0
     plate := doc.Features.Extrude(thick, "plate")
     fmt.Println("sound:", plate.Analyze().Check().Sound(), "volume:", plate.Analyze().Volume())
 
+    edges := plate.Solid().EdgesAlong(V(0, 0, 1))
+    rounded := doc.Features.FilletSolid(edges, 2, "rounded")
+    fmt.Println("sound:", rounded.Analyze().Check().Sound(), "edges rounded:", len(edges))
+
     doc.Features.SketchIn(doc.Workplane("XY"), "pocket-outline")
     round := doc.Sketch.Circle(V(7, 10, 0), 3)
     doc.Constrain.Diameter(round, 6)
@@ -120,6 +125,20 @@ const primerExample = `    width, height, thick, bore := 60.0, 20.0, 4.0, 5.0
     pocket.SetCombine(Difference)
     fmt.Println("sound:", pocket.Analyze().Check().Sound(), "volume:", pocket.Analyze().Volume())
 `
+
+// primerChecks is the primer's lines on checking a result; a test runs
+// them with g defined as the active group.
+const primerChecks = `    g := doc.Active()                    // or doc.Group("plate")
+    g.Solved()                           // did the sketch solve
+    g.Dof()                              // degrees of freedom left
+    g.Problem()                          // why the group made no solid, or ""
+    g.Conflicts()                        // the constraints at odds
+    a := g.Analyze()                     // the solid up to and with the group
+    a.Volume()
+    a.Bounds()
+    a.Check().Sound()
+    g.DescribeSolid()                    // the solid's faces and edges by name
+    doc.Describe()                       // what get_drawing returns`
 
 // primerTypes are the types of package api whose methods the Primer
 // lists after Doc's and Group's.

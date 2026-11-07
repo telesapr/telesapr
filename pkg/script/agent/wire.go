@@ -16,12 +16,17 @@ import (
 // with a Remote. Each side writes one JSON value to a line: a request
 // with an id, and the response with that id. A request may be sent
 // before the last was answered, which is how one that runs is
-// cancelled.
+// cancelled. Before the response to a run, lines of op "progress" with
+// the run's id may come, each with a Progress, which the side that
+// asked passes on or, for an id it doesn't know, drops.
 
 // Protocol is the version of what goes over the connection; both
 // sides must have the same. Version 2 added measure, export, open and
-// files, and the section of a picture.
-const Protocol = 2
+// files, and the section of a picture; version 3 the script option of
+// describe; version 4 the caption of a picture; version 5 the solid
+// option of describe; version 6 the progress of a run and the data of
+// describe and measure.
+const Protocol = 6
 
 // The operations of a request.
 const (
@@ -35,6 +40,9 @@ const (
 	opOpen     = "open"
 	opFiles    = "files"
 	opCancel   = "cancel"
+	// opProgress is not a request but a line that comes before the
+	// response to a run.
+	opProgress = "progress"
 )
 
 type request struct {
@@ -47,6 +55,10 @@ type request struct {
 	// Group is what describe describes, the whole drawing for "", and
 	// the group measure measures up to.
 	Group string `json:"group,omitempty"`
+	// Script has describe return the drawing as a script.
+	Script bool `json:"script,omitempty"`
+	// Solid has describe list the faces and edges of the solid.
+	Solid bool `json:"solid,omitempty"`
 	// Picture is what render draws.
 	Picture *Picture `json:"picture,omitempty"`
 	// Selected has measure measure the selection.
@@ -63,20 +75,31 @@ type request struct {
 	Name string `json:"name,omitempty"`
 	// Target is the id of the request cancel stops.
 	Target int `json:"target,omitempty"`
+
+	// report, if not nil, is given the progress of a run that comes
+	// before its response; it is the caller's and isn't sent.
+	report func(Progress)
 }
 
 type response struct {
 	ID int `json:"id"`
+	// Op is "progress" for a line that tells how far a run is, with
+	// Progress, and "" for the response.
+	Op       string    `json:"op,omitempty"`
+	Progress *Progress `json:"progress,omitempty"`
 	// Error is why the request couldn't be done.
 	Error string `json:"error,omitempty"`
 	// Protocol answers a hello.
 	Protocol int `json:"protocol,omitempty"`
 	// Result answers run; Text describe, help, measure, export and
-	// open; PNG render; Listing files.
-	Result  *Result  `json:"result,omitempty"`
-	Text    string   `json:"text,omitempty"`
-	PNG     []byte   `json:"png,omitempty"`
-	Listing *Listing `json:"listing,omitempty"`
+	// open; PNG and Caption render; Listing files. Data is describe's
+	// text as a Description, and measure's as a Measurement.
+	Result  *Result         `json:"result,omitempty"`
+	Text    string          `json:"text,omitempty"`
+	Data    json.RawMessage `json:"data,omitempty"`
+	PNG     []byte          `json:"png,omitempty"`
+	Caption string          `json:"caption,omitempty"`
+	Listing *Listing        `json:"listing,omitempty"`
 }
 
 // maxLine is the longest line either side reads: a picture of
@@ -129,7 +152,8 @@ func Serve(ctx context.Context, conn io.ReadWriter, b Backend) error {
 		running[req.ID] = cancel
 		mu.Unlock()
 		wg.Go(func() {
-			res := answer(rctx, b, req)
+			report := func(p Progress) { reply(response{ID: req.ID, Op: opProgress, Progress: &p}) }
+			res := answer(rctx, b, req, report)
 			mu.Lock()
 			delete(running, req.ID)
 			mu.Unlock()
@@ -141,29 +165,46 @@ func Serve(ctx context.Context, conn io.ReadWriter, b Backend) error {
 	return scan.Err()
 }
 
-// answer does what a request asks of a Backend.
-func answer(ctx context.Context, b Backend, req request) response {
+// answer does what a request asks of a Backend; report tells the
+// progress of a run, if b says it (ProgressRunner).
+func answer(ctx context.Context, b Backend, req request, report func(Progress)) response {
 	res := response{ID: req.ID}
 	var err error
 	switch req.Op {
 	case opRun:
 		var r Result
-		if r, err = b.Run(ctx, req.Code); err == nil {
+		if pr, ok := b.(ProgressRunner); ok {
+			r, err = pr.RunWithProgress(ctx, req.Code, report)
+		} else {
+			r, err = b.Run(ctx, req.Code)
+		}
+		if err == nil {
 			res.Result = &r
 		}
 	case opDescribe:
-		res.Text, err = b.Describe(ctx, req.Group)
+		var d Described
+		if d, err = b.Describe(ctx, Describing{Group: req.Group, Script: req.Script, Solid: req.Solid}); err == nil {
+			res.Text = d.Text
+			res.Data, err = json.Marshal(d.Data)
+		}
 	case opRender:
 		var p Picture
 		if req.Picture != nil {
 			p = *req.Picture
 		}
-		res.PNG, err = b.Render(ctx, p)
+		var r Rendered
+		if r, err = b.Render(ctx, p); err == nil {
+			res.PNG, res.Caption = r.PNG, r.Caption
+		}
 	case opHelp:
 		res.Text, err = b.Help(ctx, req.Name)
 	case opMeasure:
-		res.Text, err = b.Measure(ctx, Measuring{Group: req.Group, Selected: req.Selected,
-			Gaps: req.Gaps, Walls: req.Walls, Within: req.Within})
+		var m Measured
+		if m, err = b.Measure(ctx, Measuring{Group: req.Group, Selected: req.Selected,
+			Gaps: req.Gaps, Walls: req.Walls, Within: req.Within}); err == nil {
+			res.Text = m.Text
+			res.Data, err = json.Marshal(m.Data)
+		}
 	case opExport:
 		res.Text, err = b.Export(ctx, req.Path)
 	case opOpen:
@@ -202,9 +243,14 @@ type Remote struct {
 	enc     *json.Encoder
 	next    int
 	pending map[int]chan response
+	// reports are the callers' progress callbacks, by request id.
+	reports map[int]func(Progress)
 }
 
-var _ Backend = (*Remote)(nil)
+var (
+	_ Backend        = (*Remote)(nil)
+	_ ProgressRunner = (*Remote)(nil)
+)
 
 // link is the connection, made if there is none.
 func (r *Remote) link() (Conn, error) {
@@ -226,7 +272,7 @@ func (r *Remote) link() (Conn, error) {
 		_ = conn.Close()
 		return r.link()
 	}
-	r.conn, r.enc, r.pending = conn, json.NewEncoder(conn), map[int]chan response{}
+	r.conn, r.enc, r.pending, r.reports = conn, json.NewEncoder(conn), map[int]chan response{}, map[int]func(Progress){}
 	r.mu.Unlock()
 	go r.read(conn)
 
@@ -250,6 +296,16 @@ func (r *Remote) read(conn Conn) {
 	for scan.Scan() {
 		var res response
 		if err := json.Unmarshal(scan.Bytes(), &res); err != nil {
+			continue
+		}
+		if res.Op == opProgress {
+			// Passed on here, before the response that follows it is.
+			r.mu.Lock()
+			report := r.reports[res.ID]
+			r.mu.Unlock()
+			if report != nil && res.Progress != nil {
+				report(*res.Progress)
+			}
 			continue
 		}
 		r.mu.Lock()
@@ -276,6 +332,7 @@ func (r *Remote) drop(conn Conn) {
 		close(ch)
 		delete(r.pending, id)
 	}
+	clear(r.reports)
 	r.conn, r.enc = nil, nil
 }
 
@@ -294,6 +351,14 @@ func (r *Remote) roundTrip(ctx context.Context, conn Conn, req request) (respons
 	req.ID = r.next
 	ch := make(chan response, 1)
 	r.pending[req.ID] = ch
+	if req.report != nil {
+		r.reports[req.ID] = req.report
+		defer func() {
+			r.mu.Lock()
+			delete(r.reports, req.ID)
+			r.mu.Unlock()
+		}()
+	}
 	err := r.enc.Encode(req)
 	r.mu.Unlock()
 	if err != nil {
@@ -368,7 +433,34 @@ func (r *Remote) Close() {
 }
 
 func (r *Remote) Run(ctx context.Context, code string) (Result, error) {
-	res, err := r.call(ctx, request{Op: opRun, Code: code})
+	return r.RunWithProgress(ctx, code, nil)
+}
+
+// RunWithProgress is Run that passes report what the program says of
+// how far the script is, on the goroutine that reads the connection.
+func (r *Remote) RunWithProgress(ctx context.Context, code string, report func(Progress)) (Result, error) {
+	req := request{Op: opRun, Code: code}
+	if report != nil {
+		// A run that was cancelled may return while a report is read:
+		// that one, and any after, is dropped.
+		var (
+			mu    sync.Mutex
+			ended bool
+		)
+		req.report = func(p Progress) {
+			mu.Lock()
+			defer mu.Unlock()
+			if !ended {
+				report(p)
+			}
+		}
+		defer func() {
+			mu.Lock()
+			ended = true
+			mu.Unlock()
+		}()
+	}
+	res, err := r.call(ctx, req)
 	if err != nil {
 		return Result{}, err
 	}
@@ -378,20 +470,46 @@ func (r *Remote) Run(ctx context.Context, code string) (Result, error) {
 	return *res.Result, nil
 }
 
-func (r *Remote) Describe(ctx context.Context, group string) (string, error) {
-	res, err := r.call(ctx, request{Op: opDescribe, Group: group})
-	return res.Text, err
+func (r *Remote) Describe(ctx context.Context, d Describing) (Described, error) {
+	res, err := r.call(ctx, request{Op: opDescribe, Group: d.Group, Script: d.Script, Solid: d.Solid})
+	if err != nil {
+		return Described{}, err
+	}
+	out := Described{Text: res.Text}
+	if err := unpack(res.Data, &out.Data); err != nil {
+		return Described{}, err
+	}
+	return out, nil
 }
 
-func (r *Remote) Render(ctx context.Context, p Picture) ([]byte, error) {
+func (r *Remote) Render(ctx context.Context, p Picture) (Rendered, error) {
 	res, err := r.call(ctx, request{Op: opRender, Picture: &p})
-	return res.PNG, err
+	return Rendered{PNG: res.PNG, Caption: res.Caption}, err
 }
 
-func (r *Remote) Measure(ctx context.Context, m Measuring) (string, error) {
+func (r *Remote) Measure(ctx context.Context, m Measuring) (Measured, error) {
 	res, err := r.call(ctx, request{Op: opMeasure, Group: m.Group, Selected: m.Selected,
 		Gaps: m.Gaps, Walls: m.Walls, Within: m.Within})
-	return res.Text, err
+	if err != nil {
+		return Measured{}, err
+	}
+	out := Measured{Text: res.Text}
+	if err := unpack(res.Data, &out.Data); err != nil {
+		return Measured{}, err
+	}
+	return out, nil
+}
+
+// unpack reads a response's data into v; a response with none leaves
+// v as it is.
+func unpack(data json.RawMessage, v any) error {
+	if len(data) == 0 {
+		return nil
+	}
+	if err := json.Unmarshal(data, v); err != nil {
+		return fmt.Errorf("reading what TeleSAPR answered: %w", err)
+	}
+	return nil
 }
 
 func (r *Remote) Export(ctx context.Context, path string) (string, error) {

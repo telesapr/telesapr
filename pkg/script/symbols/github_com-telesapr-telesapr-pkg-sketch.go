@@ -230,6 +230,7 @@ func init() {
 		"Overlap":              reflect.ValueOf((*sketch.Overlap)(nil)),
 		"Parameter":            reflect.ValueOf((*sketch.Parameter)(nil)),
 		"PartMass":             reflect.ValueOf((*sketch.PartMass)(nil)),
+		"RegenerationWatcher":  reflect.ValueOf((*sketch.RegenerationWatcher)(nil)),
 		"Request":              reflect.ValueOf((*sketch.Request)(nil)),
 		"RequestList":          reflect.ValueOf((*sketch.RequestList)(nil)),
 		"RequestType":          reflect.ValueOf((*sketch.RequestType)(nil)),
@@ -258,6 +259,7 @@ func init() {
 		"_EntityBezierResolver": reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_sketch_EntityBezierResolver)(nil)),
 		"_Hooks":                reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_sketch_Hooks)(nil)),
 		"_KernelPacer":          reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_sketch_KernelPacer)(nil)),
+		"_RegenerationWatcher":  reflect.ValueOf((*_github_com_telesapr_telesapr_pkg_sketch_RegenerationWatcher)(nil)),
 	}
 }
 
@@ -335,4 +337,14 @@ type _github_com_telesapr_telesapr_pkg_sketch_KernelPacer struct {
 
 func (W _github_com_telesapr_telesapr_pkg_sketch_KernelPacer) KernelPace() func() {
 	return W.WKernelPace()
+}
+
+// _github_com_telesapr_telesapr_pkg_sketch_RegenerationWatcher is an interface wrapper for RegenerationWatcher type
+type _github_com_telesapr_telesapr_pkg_sketch_RegenerationWatcher struct {
+	IValue        interface{}
+	WRegenerating func(g *sketch.Group, before int, total int)
+}
+
+func (W _github_com_telesapr_telesapr_pkg_sketch_RegenerationWatcher) Regenerating(g *sketch.Group, before int, total int) {
+	W.WRegenerating(g, before, total)
 }

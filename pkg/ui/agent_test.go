@@ -85,6 +85,9 @@ func newAgentApp(t *testing.T) *agentApp {
 	return a
 }
 
+// describeText is a Describe's text, for the tests that read only that.
+func describeText(d agent.Described, err error) (string, error) { return d.Text, err }
+
 // A program that connected runs scripts on the drawing on screen: the
 // console shows them, each is one step of undo, and a picture is the
 // drawing's.
@@ -158,9 +161,12 @@ func TestAgentDraws(t *testing.T) {
 	if res, err = a.r.Run(ctx, "doc.Features.Extrude(5, \"plate\")"); err != nil || res.Error != "" {
 		t.Fatalf("the extrusion gave %+v, %v", res, err)
 	}
-	text, err := a.r.Describe(ctx, "")
+	text, err := describeText(a.r.Describe(ctx, agent.Describing{}))
 	if err != nil || !strings.Contains(text, "g003-plate, extrude: solved") {
 		t.Errorf("the drawing is described as %q, %v", text, err)
+	}
+	if text, err = describeText(a.r.Describe(ctx, agent.Describing{Solid: true})); err != nil || !strings.HasPrefix(text, "solid at g003-plate: ") {
+		t.Errorf("the solid is described as %q, %v", text, err)
 	}
 	var active core.HGroup
 	a.on(func() { active = a.ss.SK.Active })
@@ -171,7 +177,16 @@ func TestAgentDraws(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%v: %v", c, err)
 		}
-		img, err := png.Decode(bytes.NewReader(data))
+		// The plate has a solid; the sketch before it has none.
+		want := c[0] + " view, 200 by 150 pixels, up to g00"
+		tail := "solid bounds ("
+		if c[1] != "" {
+			tail = "no solid yet"
+		}
+		if !strings.Contains(data.Caption, want) || !strings.Contains(data.Caption, tail) {
+			t.Errorf("%v: the caption is %q, want %q and %q", c, data.Caption, want, tail)
+		}
+		img, err := png.Decode(bytes.NewReader(data.PNG))
 		if err != nil || img.Bounds().Dx() != 200 || img.Bounds().Dy() != 150 {
 			t.Errorf("%v: the picture doesn't decode as 200 by 150: %v", c, err)
 		}
@@ -193,7 +208,7 @@ func TestAgentDraws(t *testing.T) {
 			}
 		}
 	})
-	if text, err := a.r.Describe(ctx, ""); err != nil || !strings.Contains(text, "under the mouse:\n    ") {
+	if text, err := describeText(a.r.Describe(ctx, agent.Describing{})); err != nil || !strings.Contains(text, "under the mouse:\n    ") {
 		t.Errorf("the hovered line isn't described: %v\n%s", err, text)
 	}
 	a.on(func() { a.ss.GW.hover.Clear() })
@@ -250,7 +265,7 @@ func TestAgentConfirm(t *testing.T) {
 	}
 
 	// Reading the drawing asks nothing.
-	if _, err := a.r.Describe(ctx, ""); err != nil {
+	if _, err := a.r.Describe(ctx, agent.Describing{}); err != nil {
 		t.Errorf("describing with the setting on: %v", err)
 	}
 	var asked int
@@ -323,7 +338,7 @@ func TestAgentBusyStopAndOff(t *testing.T) {
 	if _, err := os.Stat(socket); !os.IsNotExist(err) {
 		t.Errorf("the socket %s is still there: %v", socket, err)
 	}
-	if _, err := a.r.Describe(ctx, ""); err == nil || !strings.Contains(err.Error(), "Allow AI Connections") {
+	if _, err := a.r.Describe(ctx, agent.Describing{}); err == nil || !strings.Contains(err.Error(), "Allow AI Connections") {
 		t.Errorf("describing after connections were turned off: %v", err)
 	}
 }

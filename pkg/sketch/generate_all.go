@@ -210,6 +210,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 		if sk.hooks().Cancel() {
 			return
 		}
+		sk.regenerating(i)
 		// A group suppressed whole, or using one that is, is left out
 		// before anything could prune what it refers to.
 		if g := sk.Group(hg); g.SuppressedBy.V != 0 {

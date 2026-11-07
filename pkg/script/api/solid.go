@@ -51,7 +51,7 @@ func problemOf(sk *sketch.Sketch, group *sketch.Group) string {
 // mustBe fails unless the group is of type t.
 func (g Group) mustBe(group *sketch.Group, t sketch.GroupType, what string) {
 	if group.Type != t {
-		fail("%s is for a %s group, and %s is a %s", what, kindName(t), groupDescription(group), kindName(group.Type))
+		fail("%s is for %s group, and %s is %s", what, withArticle(kindName(t)), groupDescription(group), withArticle(kindName(group.Type)))
 	}
 }
 
@@ -62,7 +62,7 @@ func (g Group) Edges() (edges []Entity) {
 		group := g.get(sk)
 		if group.Type != sketch.GroupChamfer && group.Type != sketch.GroupSweep && group.Type != sketch.GroupFillet &&
 			group.Type != sketch.GroupPathPattern {
-			fail("Edges is for a chamfer, a fillet, a sweep or a pattern, and %s is a %s", groupDescription(group), kindName(group.Type))
+			fail("Edges is for a chamfer, a fillet, a sweep or a pattern, and %s is %s", groupDescription(group), withArticle(kindName(group.Type)))
 		}
 		for _, he := range group.Edges {
 			edges = append(edges, Entity{d: g.d, H: he})

@@ -31,8 +31,9 @@ func TestAgentFiles(t *testing.T) {
 		t.Fatalf("the plate gave %+v, %v", res, err)
 	}
 
-	if text, err := a.r.Measure(ctx, agent.Measuring{}); err != nil || !strings.Contains(text, "g003-plate") || !strings.Contains(text, "1000") {
-		t.Errorf("the plate measures as %q, %v", text, err)
+	if m, err := a.r.Measure(ctx, agent.Measuring{}); err != nil || !strings.Contains(m.Text, "g003-plate") || !strings.Contains(m.Text, "1000") ||
+		m.Data.Group != "g003-plate" || m.Data.Volume != 1000 || !m.Data.Sound {
+		t.Errorf("the plate measures as %+v, %v", m, err)
 	}
 
 	whole, err := a.r.Render(ctx, agent.Picture{View: "isometric", Width: 200, Height: 150})
@@ -43,10 +44,13 @@ func TestAgentFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if img, err := png.Decode(bytes.NewReader(cut)); err != nil || img.Bounds().Dx() != 200 {
+	if img, err := png.Decode(bytes.NewReader(cut.PNG)); err != nil || img.Bounds().Dx() != 200 {
 		t.Errorf("the section doesn't decode as 200 wide: %v", err)
 	}
-	if bytes.Equal(whole, cut) {
+	if !strings.Contains(cut.Caption, "cut by a plane parallel to YZ at 5") || !strings.Contains(cut.Caption, "solid bounds (") {
+		t.Errorf("the section's caption is %q", cut.Caption)
+	}
+	if bytes.Equal(whole.PNG, cut.PNG) {
 		t.Errorf("the section is drawn as the whole plate")
 	}
 	var section bool

@@ -32,6 +32,19 @@ What you enter is kept between runs in `telesapr/script_history` in your configu
 The window and `telesapr-cli repl` share it. At a terminal the keys are those of
 [reeflective/readline](https://github.com/reeflective/readline), which reads `~/.inputrc`.
 
+An error says what went wrong in plain words, where (line and column), and quotes the line it is
+on, so that in an entry of several lines, or a script file, you see which statement failed:
+
+```
+error: plate.go:2:1: index out of range
+    fmt.Println(gs[0].Requests()[0].Entity().Start().Pos())
+```
+
+The place starts with the file's name for a script file, `script` for one an AI program ran,
+and nothing for an entry at the console. A one-line entry gives only the message, since the line
+is the one you typed. What a call of the scripting interface can't do, it says in its own words
+(`line r004-line-segment isn't a circle or an arc`).
+
 ## Forms
 
 A script can ask for its values when it runs. It declares them with an `api.Form`, a variable at
@@ -199,8 +212,39 @@ g002-sketch-in-plane, sketch-in-plane: solved, 2 DOF
     c00b-pt-pt-distance = 20, on r004-line-segment
     c00c-diameter = 6, on r008-circle
 line r005-line-segment is 40 mm long
+...
+```
+
+`Group.DescribeSolid()` lists the faces and edges of the solid up to a group, by the IDs and
+names a script picks them by: first how many faces, edges and vertices there are and whether the
+solid is sound, then each face with its ID (`Solid().Face(id)`), its name, its shape (flat with
+its normal, a cylinder or a cone with its axis, a sphere, or curved), a point on it that
+`Solid().FaceAt` finds it by and its number of edges, then each edge with its name
+(`Solid().Edge(name)`), its shape, its length and ends in mm, and its two faces. It lists at most
+40 faces and 60 edges; on a larger solid, narrow the choice with `Solid().EdgesAlong`,
+`EdgesBetween` or `FaceAt`. The example ends with it, for the plate:
+
+```
+solid at g003-plate: 7 faces, 14 edges, 8 vertices; sound
+faces, by the ID Solid().Face takes, with a point Solid().FaceAt finds them by:
+    0x80030035 top face of g003-plate: flat, normal (0, 0, 1); at (20, 10, 4); 5 edges
+    ...
+    0x40030006 face 6 of g003-plate: cylinder, axis (0, 0, -1) through (10, 10, 4), radius 3; at (12.121, 12.121, 2); 2 edges
+edges, by the name Solid().Edge takes:
+    "edge 80030007 80030035 0 of 1": straight, 20 mm, (40, 20, 4) to (40, 0, 4); faces 0x80030035 and 0x80030007
+    ...
+    "edge 40030006 80030035 0 of 1": circle about (10, 10, 4), radius 3, 18.85 mm, closed; faces 0x80030035 and 0x40030006
+    ...
+the top is top face of g003-plate, with 5 edges
 describe.go done.
 ```
+
+`Doc.Description()`, `Group.Description()` and `Group.SolidDescription()` are the same as data,
+for a script or a program that reads numbers and names rather than text: the groups with how
+they solved, their volume and bounds, the requests with their points, the constraints with their
+values and what they are on, the faces with their shapes and points and the edges with their
+lengths and ends, rounded as the text rounds them. The AI connection's `get_drawing` sends it
+beside the text.
 
 File > Export > Script (.go) writes this plate back as a program. Its `main` begins:
 

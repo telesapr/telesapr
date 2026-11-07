@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/traefik/yaegi/interp"
 
@@ -88,6 +89,8 @@ type Engine struct {
 	// goroutine runs on until the statement it is in ends, and there is
 	// no waiting for it, so the next step starts a new interpreter.
 	stale bool
+	// generation counts the interpreters the engine has replaced.
+	generation atomic.Int64
 
 	// pending is the lines of a statement that isn't complete yet.
 	pending []string
@@ -245,9 +248,15 @@ func (e *Engine) newInterpreter() error {
 	return nil
 }
 
+// Generation counts how many times the engine has started a new
+// interpreter after a cancelled step, which loses every name defined
+// before it: a caller that sees it change knows its variables are gone.
+func (e *Engine) Generation() int { return int(e.generation.Load()) }
+
 // restart replaces the interpreter after a cancelled step, as New
 // made it: what the console had defined is gone with the old one.
 func (e *Engine) restart() error {
+	e.generation.Add(1)
 	if err := e.newInterpreter(); err != nil {
 		return err
 	}
@@ -470,9 +479,10 @@ func (e *Engine) step(ctx context.Context, fn func(ctx context.Context) (reflect
 // Eval runs source: statements, declarations or an expression, whose
 // value it returns.
 func (e *Engine) Eval(ctx context.Context, src string) (reflect.Value, error) {
-	return e.step(ctx, func(ctx context.Context) (reflect.Value, error) {
+	v, err := e.step(ctx, func(ctx context.Context) (reflect.Value, error) {
 		return e.eval(ctx, src)
 	})
+	return v, quote(err, src)
 }
 
 // eval runs source in the interpreter and says where an error is.
@@ -856,21 +866,57 @@ type Error struct {
 	File string
 	// Line and Col count from 1; Line is 0 if the place isn't known.
 	Line, Col int
-	Err       error
+	// Source is the script's line at Line, trimmed and cut short if
+	// long, or "" if it isn't known: the place alone leaves whoever
+	// reads the error, a model over MCP as much as a person, to count
+	// lines to find what failed.
+	Source string
+	Err    error
 }
 
+// Unwrap returns the error the script met.
 func (e *Error) Unwrap() error { return e.Err }
 
+// Error is the place, the message and, on a line of its own and
+// indented, the source quoted.
 func (e *Error) Error() string {
+	var s string
 	switch {
 	case e.Line == 0 && e.File == "":
-		return e.Err.Error()
+		s = e.Err.Error()
 	case e.Line == 0:
-		return fmt.Sprintf("%s: %v", e.File, e.Err)
+		s = fmt.Sprintf("%s: %v", e.File, e.Err)
 	case e.File == "":
-		return fmt.Sprintf("%d:%d: %v", e.Line, e.Col, e.Err)
+		s = fmt.Sprintf("%d:%d: %v", e.Line, e.Col, e.Err)
+	default:
+		s = fmt.Sprintf("%s:%d:%d: %v", e.File, e.Line, e.Col, e.Err)
 	}
-	return fmt.Sprintf("%s:%d:%d: %v", e.File, e.Line, e.Col, e.Err)
+	if e.Source != "" && e.Line > 0 {
+		s += "\n    " + e.Source
+	}
+	return s
+}
+
+// maxSource is how many runes of a line an Error quotes.
+const maxSource = 120
+
+// quote gives an Error in err the line of src it points at, if it
+// has none yet; Line must count from the start of src.
+func quote(err error, src string) error {
+	serr, ok := errors.AsType[*Error](err)
+	if !ok || serr.Source != "" || serr.Line < 1 {
+		return err
+	}
+	lines := strings.Split(src, "\n")
+	if serr.Line > len(lines) {
+		return err
+	}
+	line := strings.TrimSpace(lines[serr.Line-1])
+	if r := []rune(line); len(r) > maxSource {
+		line = string(r[:maxSource-1]) + "…"
+	}
+	serr.Source = line
+	return err
 }
 
 var positioned = regexp.MustCompile(`^(\d+):(\d+): (.*)$`)
@@ -897,10 +943,8 @@ func (e *Engine) locate(err error, src string) error {
 		switch v := p.Value.(type) {
 		case symbols.Exit:
 			return Exit(v)
-		case error:
-			out.Err = v
 		default:
-			out.Err = fmt.Errorf("panic: %v", p.Value)
+			out.Err = panicError(v)
 		}
 		out.Line, out.Col = e.panicPlace()
 	case errors.As(err, &list) && len(list) > 0:
@@ -1012,10 +1056,11 @@ func (e *Engine) Feed(ctx context.Context, line string) (shown string, more bool
 	e.pending = nil
 	var serr *Error
 	if errors.As(err, &serr) && !strings.Contains(src, "\n") {
-		// Where on the one line it is says little.
+		// Where on the one line it is says little, and the line is
+		// the one just typed.
 		err = serr.Err
 	}
-	return shown, false, err
+	return shown, false, quote(err, src)
 }
 
 // show runs src, and if it is an expression returns its values as a
@@ -1140,7 +1185,7 @@ func RunSource(ctx context.Context, opts Options, name, src string) error {
 				serr.Line, serr.Col = unplace(src, inserts, serr.Line, serr.Col)
 			}
 		}
-		return named(name, 0, err)
+		return quote(named(name, 0, err), src)
 	}
 
 	e, err := New(opts)
@@ -1186,7 +1231,7 @@ func (e *Engine) statements(ctx context.Context, name, src string, show bool) (s
 			continue
 		}
 		if err != nil {
-			return "", named(name, start, err)
+			return "", quote(named(name, start, err), src)
 		}
 		chunk = nil
 	}

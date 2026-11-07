@@ -77,7 +77,7 @@ i 1
 "ABC"
 error: line r004-line-segment isn't a circle or an arc
 error: undefined: undefined
-error: panic: reflect: slice index out of range
+error: index out of range
 4
 (0, 0, 0)
 (0, 0, 0), (0, 0, 0)
@@ -178,13 +178,13 @@ doc.Sketch.Circle(V(1, 1, 0), 2).Pos()
 	if !errors.As(err, &serr) || serr.Line != 14 {
 		t.Fatalf("the error is %v, want one at line 14", err)
 	}
-	if got, want := err.Error(), "plate.go:14:1: circle r008-circle, radius 2.000 isn't a point; see Start, End, Center and Points"; got != want {
+	if got, want := err.Error(), "plate.go:14:1: circle r008-circle, radius 2.000 isn't a point; see Start, End, Center and Points\n    doc.Sketch.Circle(V(1, 1, 0), 2).Pos()"; got != want {
 		t.Errorf("the error is %q, want %q", got, want)
 	}
 
 	err = RunSource(context.Background(), Options{Host: newHost(), Stdout: &out, Stderr: &out}, "bad.go",
 		"x := 1\n\ny := x +\n\tnope\n")
-	if err == nil || err.Error() != "bad.go:4:2: undefined: nope" {
+	if err == nil || err.Error() != "bad.go:4:2: undefined: nope\n    nope" {
 		t.Errorf("the error is %v, want bad.go:4:2: undefined: nope", err)
 	}
 
@@ -192,13 +192,13 @@ doc.Sketch.Circle(V(1, 1, 0), 2).Pos()
 	// expression's error at its place.
 	err = RunSource(context.Background(), Options{Host: newHost(), Stdout: &out, Stderr: &out}, "def.go",
 		"x := 1\n\ng := doc.Groups()[nope]\n")
-	if err == nil || err.Error() != "def.go:3:19: undefined: nope" {
+	if err == nil || err.Error() != "def.go:3:19: undefined: nope\n    g := doc.Groups()[nope]" {
 		t.Errorf("the error is %v, want def.go:3:19: undefined: nope", err)
 	}
 
 	err = RunSource(context.Background(), Options{Host: newHost(), Stdout: &out, Stderr: &out}, "open.go",
 		"x := 1\nif x > 0 {\n\tx++\n")
-	if err == nil || err.Error() != "open.go:2:1: the script ends in the middle of a statement" {
+	if err == nil || err.Error() != "open.go:2:1: the script ends in the middle of a statement\n    if x > 0 {" {
 		t.Errorf("the error is %v, want open.go:2:1: the script ends in the middle of a statement", err)
 	}
 }
@@ -331,10 +331,10 @@ func TestInterpreterForms(t *testing.T) {
 func TestInterpreterFormErrors(t *testing.T) {
 	t.Parallel()
 	for src, want := range map[string]string{
-		"g := doc.Active()\nx := g.Analyze().Bounds()":             `script:2:6: assignment mismatch: 1 variable(s) but g.Analyze().Bounds() has more values; name each, as in "lo, hi := g.Analyze().Bounds()"`,
-		"var n = strconv.Atoi(\"3\")":                              `script:1:9: assignment mismatch: 1 variable(s) but strconv.Atoi("3") has more values; name each, as in "lo, hi := g.Analyze().Bounds()"`,
-		"var k = 3; k += nope":                                     "script:1:17: undefined: nope",
-		"x := 1\nfor i := 0; i < 2; i++ {\n\tfmt.Println(nope)\n}": "script:3:14: undefined: nope",
+		"g := doc.Active()\nx := g.Analyze().Bounds()":             `script:2:6: assignment mismatch: 1 variable(s) but g.Analyze().Bounds() has more values; name each, as in "lo, hi := g.Analyze().Bounds()"` + "\n    x := g.Analyze().Bounds()",
+		"var n = strconv.Atoi(\"3\")":                              `script:1:9: assignment mismatch: 1 variable(s) but strconv.Atoi("3") has more values; name each, as in "lo, hi := g.Analyze().Bounds()"` + "\n    var n = strconv.Atoi(\"3\")",
+		"var k = 3; k += nope":                                     "script:1:17: undefined: nope\n    var k = 3; k += nope",
+		"x := 1\nfor i := 0; i < 2; i++ {\n\tfmt.Println(nope)\n}": "script:3:14: undefined: nope\n    fmt.Println(nope)",
 	} {
 		e, err := New(Options{Host: newHost(), Stdout: io.Discard, Stderr: io.Discard})
 		if err != nil {

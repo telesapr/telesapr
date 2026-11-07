@@ -199,6 +199,30 @@ func (r *Report) String() string {
 	return b.String()
 }
 
+// Faults are what Summary lists of a solid that isn't sound, one
+// phrase each: the naked and self-intersecting edges, a Boolean that
+// failed, the topology's problems, and where parts only touch. A
+// group's Problem is not among them.
+func (r *Report) Faults() []string {
+	var out []string
+	if r.NakedEdges > 0 {
+		out = append(out, fmt.Sprintf("%d naked edges, so it is not closed", r.NakedEdges))
+	}
+	if r.SelfIntersecting > 0 {
+		out = append(out, fmt.Sprintf("%d self-intersecting edges", r.SelfIntersecting))
+	}
+	if r.BooleanFailed {
+		out = append(out, "the Boolean failed")
+	}
+	if r.TopologyProblems > 0 {
+		out = append(out, fmt.Sprintf("%d topology problems, the first: %s", r.TopologyProblems, r.Topology[0].Msg))
+	}
+	if r.Touches {
+		out = append(out, r.TouchText())
+	}
+	return out
+}
+
 // Summary is the report for a person, in millimetres.
 func (r *Report) Summary() string {
 	if r.Empty() {
@@ -218,20 +242,8 @@ func (r *Report) Summary() string {
 		b.WriteString("The solid so far is closed, not self-intersecting, and its Boolean succeeded.\n\n")
 	default:
 		b.WriteString("The solid is NOT sound:\n")
-		if r.NakedEdges > 0 {
-			fmt.Fprintf(&b, "    %d naked edges, so it is not closed\n", r.NakedEdges)
-		}
-		if r.SelfIntersecting > 0 {
-			fmt.Fprintf(&b, "    %d self-intersecting edges\n", r.SelfIntersecting)
-		}
-		if r.BooleanFailed {
-			b.WriteString("    the Boolean failed\n")
-		}
-		if r.TopologyProblems > 0 {
-			fmt.Fprintf(&b, "    %d topology problems, the first: %s\n", r.TopologyProblems, r.Topology[0].Msg)
-		}
-		if r.Touches {
-			b.WriteString("    " + r.TouchText() + "\n")
+		for _, f := range r.Faults() {
+			b.WriteString("    " + f + "\n")
 		}
 		b.WriteString("\n")
 	}

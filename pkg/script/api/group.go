@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/sketch"
@@ -106,6 +107,14 @@ func (g Group) Type() (t sketch.GroupType) {
 // "mirror", "chamfer", "sweep", "fillet", "loft", "shell", "pattern",
 // "wrap" or "link".
 func (g Group) Kind() string { return kindName(g.Type()) }
+
+// withArticle is a kind name with "a" or "an" before it, as "an extrude".
+func withArticle(kind string) string {
+	if kind != "" && strings.ContainsRune("aeiou", rune(kind[0])) {
+		return "an " + kind
+	}
+	return "a " + kind
+}
 
 // kindName is the Kind of a group type.
 func kindName(t sketch.GroupType) string {
