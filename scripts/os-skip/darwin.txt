@@ -42,3 +42,9 @@ TestTTF
 # 0.36% over its volume where amd64 is within the 0.2% allowed.
 TestDescribe
 TestPinInBoreSweep
+#
+# Found by the Release run of 0.6.2 (2026-11-08): a recorded MCP
+# session's final drawing is compared as text, and the fused
+# multiply-add moves its volumes in the third decimal (the plate's
+# 4567.273 mm³ is 4567.287).
+TestMCPRecorded

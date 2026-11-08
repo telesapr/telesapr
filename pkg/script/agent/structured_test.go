@@ -50,7 +50,9 @@ func TestDescriptionOfPlate(t *testing.T) {
 	if !sk.Active || !sk.Solved || sk.DOF != 0 || sk.Volume != nil || plate.Name != "g003-plate" || plate.Kind != "extrude" || plate.Active {
 		t.Errorf("the groups are %+v and %+v", sk, plate)
 	}
-	if plate.Volume == nil || math.Abs(*plate.Volume-4567.27) > 0.01 || plate.Bounds == nil ||
+	// The volume is within 0.05 mm³, not 0.01: on arm64 the fused
+	// multiply-add makes it 4567.29 (scripts/os-skip/darwin.txt).
+	if plate.Volume == nil || math.Abs(*plate.Volume-4567.27) > 0.05 || plate.Bounds == nil ||
 		plate.Bounds.Lo != [3]float64{0, 0, 0} || plate.Bounds.Hi != [3]float64{60, 20, 4} {
 		t.Errorf("the plate's volume is %v and bounds %+v", plate.Volume, plate.Bounds)
 	}
@@ -125,7 +127,7 @@ func TestMeasurementOfPlate(t *testing.T) {
 	}
 	data := m.Data
 	if data.Group != "g003-plate" || !data.Sound || len(data.Problems) != 0 || data.Faces != 9 || data.Triangles == 0 ||
-		math.Abs(data.Volume-4567.27) > 0.01 || data.Bounds.Hi != [3]float64{60, 20, 4} || data.CenterOfMass[2] != 2 {
+		math.Abs(data.Volume-4567.27) > 0.05 /* arm64: see TestDescriptionOfPlate */ || data.Bounds.Hi != [3]float64{60, 20, 4} || data.CenterOfMass[2] != 2 {
 		t.Errorf("the plate measures as %+v:\n%s", data, m.Text)
 	}
 	if data.Gaps == nil || data.Gaps.Below != 1 || len(data.Gaps.Gaps) != 0 {
