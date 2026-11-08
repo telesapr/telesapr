@@ -9,6 +9,8 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-11-08
+
 ### Added
 - Fillets and chamfers of a pocket's rim turn its inside corners. Picking two edges of the rim that meet there, three, or all of them, of a pocket cut into a curved face such as a dish, used to be refused ("the fillet's mitre doesn't reach the crease"): the two now end where the ball touches the sharp edge between the pocket's walls, and a corner patch, tangent to both and to the face they share, fills between them. In a flat face the two are mitred instead, as OpenCASCADE does. Any one, two or three edges of a pocket's rim in a flat face, which were refused ("an edge at the end of the fillet runs back along it"), are rounded or chamfered too.
 - AI connection: a long run_script reports how far it has got while it runs, so a client no longer waits minutes with nothing to show, or gives up, while a large model regenerates. A client that asked for progress is told the group being regenerated ("regenerating g007-plate, 3 of 12") and the last line printed. A client that shows logs gets each line the script prints as it is printed. The browser's `agent-client.js` `run` takes a callback for the same reports. `telesapr-cli mcp` and the window must be the same version (the protocol is now 6).
