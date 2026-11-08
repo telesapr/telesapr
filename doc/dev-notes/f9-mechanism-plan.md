@@ -327,6 +327,16 @@ does not cover. Kramer's patents on the method (US 5,410,496 and 5,452,238) have
 The order that pays first: item 1 (counting and status, no new solving), then 3 and 4 (serial
 placement, the compiled plan), then 2 and 5.
 
+**The alternative without the table** (`solver-literature.md`, read 2026-11-08): body-and-cad
+rigidity (Haller, Lee-St.John, Sitharam, Streinu, White, CGTA 45, 2012; Lee-St.John and Sidman,
+CAD 45, 2013) counts the generic freedom and the dependencies of rigid bodies joined by
+coincidence, angular and distance constraints combinatorially, by a pebble game over the
+constraint graph, with a proved characterisation for 20 of its 21 constraint types (all but
+point–point coincidence, which no mate here is). That gives items 1 and 2 with no hand-written
+fragments and is right at full stretch, where the rank is not; positions would still come from
+`solveBlock` and the root from continuity. Lee-St.John's joint recognition (CCCG 2012) names the
+revolute and prismatic joints a pair of mates implies, which is the status text of item 1.
+
 ## The examples (2026-11-06)
 
 The first examples, bars hinged by their upright edges (`hinge`, and a four-bar as `mechanism`),
