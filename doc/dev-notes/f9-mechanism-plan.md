@@ -264,6 +264,69 @@ A drag drawing the parts by their placement matrices, the solids remade on relea
 as a member; a drag written back into a driving parameter; several driven parameters in one
 motion study; glTF animation channels from a study.
 
+## Degrees of freedom analysis (Kramer 1992), read 2026-11-08
+
+Glenn Kramer, *Solving Geometric Constraint Systems: A Case Study in Kinematics* (MIT Press, 1992;
+the short form is his AAAI 1990 paper of the same title) solves exactly what a mechanism is here:
+rigid parts joined by mates, each part with six freedoms. It reasons about the parts' freedom
+instead of about the equations, and would answer several things the block solve and the pull
+above leave open. Nothing of it is built; the ROADMAP's F9 table carries the items.
+
+**The method.** A part has a translational freedom count (0 to 3) and a rotational one (0 to 3),
+and an *invariant*: nothing, a fixed point, a fixed axis or a fixed plane. Mates are between
+*markers*, points with a frame, and seven kinds cover every lower-pair joint: coincident, in-line,
+in-plane, parallel-z, offset-z, offset-x and helical. A mate added to a part consumes a known
+number of freedoms given the part's current counts and invariant; a table of *plan fragments*,
+indexed by (counts, invariant, mate kind), gives the rigid motion (a translation, a turn about a
+point or about an axis) that satisfies the new mate and keeps the earlier ones. Satisfying the
+mates one after the other is *incremental assembly*, and every part a chain of mates reaches from
+the ground is placed in closed form. Where a marker is confined to a locus (line, circle, sphere,
+plane, helix) the new mate is met at a locus intersection, also closed form, and of two roots the
+one nearest the previous configuration is taken. A closed loop is cut: the open chain is placed
+symbolically and the closing mate leaves one scalar unknown, found by a 1-D search. The plan is
+compiled once and run per step, so a simulation is a few dozen rigid transforms a frame, no
+Newton. The final freedom status of a part does not depend on the order the mates are taken in
+(proved), and redundancy and inconsistency are found by counting, before any numerics.
+
+**What it would change here**, against what the guide's "Closing a loop", "Dragging" and "Not
+yet" describe:
+
+1. *Exact freedom with a meaning.* The group screen's DOF is `unknowns - rank` at the current
+   position (`TestRank`, `FreeParams`): first order, and wrong at a singular position such as full
+   stretch. Counting gives each part a status, "turns about this axis", "slides along this line
+   and turns about it", "fixed", that the group screen, the mate's dimension and the drag can show.
+   The seven marker kinds also give the mates a model: Hinge is in-line + in-plane, Concentric
+   in-line, Flush in-plane, Screw helical; ball (coincident), cylindrical (in-line alone), planar
+   (in-plane alone) and slot (point in-plane + in-line) are the joints missing, each with a known
+   freedom cost.
+2. *The closing hinge accepted.* A planar four-bar closed with a Hinge is redundant in 3D and
+   `addUnlessRedundant` refuses it, so the guide tells the user to close with a point on a line or
+   allow redundancy. Counting knows the last part has one freedom left and a hinge wants more: the
+   extra conditions (axes parallel) are checked for consistency instead of failing the rank test,
+   and the mate the user meant is kept as redundant but consistent.
+3. *No start position.* Tree-connected parts are placed in closed form, and the loop-closing mate
+   is a 1-D search over the remaining freedom (the crank's angle), which finds its root from any
+   start on a bounded interval. Dead-centre configurations stop being special.
+4. *Drag and motion study as plan execution.* The pull is up to three null-space steps a frame
+   (2 mm of error at 30° in one step), and a motion study solves Newton at every step. With a
+   compiled plan, a driven angle places every part in closed form, a drag maps the pointer to the
+   one freedom and runs the same plan, and so writes back into the driving parameter, one of the
+   "Not yet" items.
+5. *Root choice by continuity.* The crank-rod loop has two assemblies for one crank angle; Newton
+   takes whichever it converges to, which is what makes a mechanism flip during a drag. Nearest
+   previous configuration is the rule, and fits the existing pull as it is.
+
+**What it does not change.** Nothing for the 2D sketch solver: the book has no tangency, free
+radii or dimension-driven curves, and Newton with the rank test stays right there (sketch
+decomposition is Owen and Fudos–Hoffmann, not this). The plan fragment table is hand-written,
+the method's own weakness (Bhansali, Kramer and Hoar, JAIR 4, 1996, synthesise the fragments from
+first principles): TeleSAPR would write the entries for its mate kinds and the four invariants, a
+few dozen short closed-form motions, and keep `solveBlock` as the fallback for whatever the table
+does not cover. Kramer's patents on the method (US 5,410,496 and 5,452,238) have expired.
+
+The order that pays first: item 1 (counting and status, no new solving), then 3 and 4 (serial
+placement, the compiled plan), then 2 and 5.
+
 ## The examples (2026-11-06)
 
 The first examples, bars hinged by their upright edges (`hinge`, and a four-bar as `mechanism`),
