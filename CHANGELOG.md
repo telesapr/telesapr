@@ -9,6 +9,11 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-11-08
+
+### Fixed
+- The packages of 0.6.2, which its release didn't build: three tests that fail only on macOS for its fused multiply-add stopped the build there. The program is that of 0.6.2.
+
 ## [0.6.2] - 2026-11-08
 
 ### Added
