@@ -176,6 +176,14 @@ faces across the middle, and two opposite ones meet in a mitre in the plane of t
 sharp, with a flat step in that plane between their ends where their distances differ; a ridge and a valley side by side are each cut up to the sharp edge beside it, and
 patches fill the corner between.
 
+**An inside corner of a pocket's rim.** Where two chamfers of a pocket's rim, picked together,
+meet at an inside corner whose third edge stays sharp, each ends where its cut on its wall reaches
+the sharp edge between the pocket's walls. In a flat face the two meet in a mitre, carried on past
+the sharp edge, as OpenCASCADE's makeChamfer cuts them. In a curved face, where they reach the
+sharp edge at different depths, a ruled face fills between their ends, from the sharp edge to the
+face the two share, as [Fillet](fillet.md) rounds the same corner; OpenCASCADE's makeChamfer
+refuses these.
+
 OpenCASCADE differs from this in two places. At a corner of three where one crossing point lies
 close to the line between the other two, it makes the triangle of the three points, where
 TeleSAPR cuts the chamfers as above (a few tenths of a cubic millimetre apart at distances of 1

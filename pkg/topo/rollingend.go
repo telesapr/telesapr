@@ -58,8 +58,18 @@ type rbEnd struct {
 	// it, and -1 on the side whose face both chains share.
 	mitre bool
 	ban   [2]int
-	mate  *rollingBall
-	mateK int
+	// pivot marks an end that meets mate's end mateK at a concave crease,
+	// an inside corner, as a pocket's rim turns at: there the ball swings
+	// round the crease's line between the two, and the fillet ends at the
+	// ball's section whose foot on the creased side is on the crease
+	// (rollingpivot.go).
+	pivot bool
+	// concave marks a mitre end at a concave crease, where two pivot ends
+	// met the crease at one point and were made a mitre instead
+	// (rollingmitre_inside.go).
+	concave bool
+	mate    *rollingBall
+	mateK   int
 	// shared is the mitre, the last section of both ends, once one of
 	// them is fitted: the other copies it.
 	shared *rbSection
@@ -448,9 +458,20 @@ func (rb *rollingBall) endDerivative(k int) ([]geom.Vector4, error) {
 // coordinates, of the ball's sections at end k where the crease fades
 // out (rbEnd.fade), one-sided, from sections in from it.
 func (rb *rollingBall) fadeDerivative(k int) ([]geom.Vector4, error) {
-	s, in := 0.0, 1.0
+	s := 0.0
 	if k == 1 {
-		s, in = rb.length, -1
+		s = rb.length
+	}
+	return rb.inwardDerivative(k, s)
+}
+
+// inwardDerivative is the derivative along the edge, in homogeneous
+// coordinates, of the ball's sections at arc length s, the end of the
+// fillet at end k, one-sided, from sections in from it.
+func (rb *rollingBall) inwardDerivative(k int, s float64) ([]geom.Vector4, error) {
+	in := 1.0
+	if k == 1 {
+		in = -1
 	}
 	h := math.Min(rb.r/16, rb.length/256)
 	var hs [3][]geom.Vector4
@@ -494,6 +515,15 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 			return nil, nil, nil, filletErr(rb.t.Vertices[end.v].P, "the edge meets the flat face it ends at almost "+
 				"along it: a fillet between curved faces ends where its edge crosses a flat face")
 		}
+		if end.pivot {
+			// The ball's own sections run to the one on the crease.
+			s, err := rb.pivotS(k)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			inner[k] = s
+			continue
+		}
 		sec, in, err := rb.endSection(k, 0)
 		if err != nil {
 			return nil, nil, nil, err
@@ -512,7 +542,7 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	// in the oblique cut's spread.
 	var ramp [2]float64
 	for k, end := range rb.ends {
-		if end.fade {
+		if end.fade || end.pivot {
 			continue
 		}
 		theta := math.Acos(math.Min(1, end.n.Dot(beyond[k])))
@@ -523,9 +553,12 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	quartic := rb.anyCurvedEnd() || rb.fitCuts
 	for k := range rb.ends {
 		var err error
-		if rb.ends[k].fade {
+		switch {
+		case rb.ends[k].fade:
 			deriv[k], err = rb.fadeDerivative(k)
-		} else {
+		case rb.ends[k].pivot:
+			deriv[k], err = rb.inwardDerivative(k, inner[k])
+		default:
 			deriv[k], err = rb.endDerivative(k)
 		}
 		if err != nil {
@@ -573,7 +606,7 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	var specs []rbSpec
 	const steps = 4
 	for i := range steps {
-		if rb.ends[0].fade {
+		if rb.ends[0].fade || rb.ends[0].pivot {
 			break
 		}
 		specs = append(specs, rbSpec{end: 0, lam: float64(i) / steps})
@@ -590,7 +623,7 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	}
 	specs = append(specs, rbSpec{end: -1, s: r1})
 	for i := steps - 1; i >= 0; i-- {
-		if rb.ends[1].fade {
+		if rb.ends[1].fade || rb.ends[1].pivot {
 			break
 		}
 		specs = append(specs, rbSpec{end: 1, lam: float64(i) / steps})

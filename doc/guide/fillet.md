@@ -196,6 +196,21 @@ and the larger's end turns there onto that wall, down to the corner, at each of 
 whatever the radii beyond. Chamfers of different distances are mitred alike. Any other meeting
 at a vertex the two share is refused there, with the message "pick it alone".
 
+Where that corner is an inside one, as where the rim of a pocket turns, each fillet ends where its
+ball touches its wall on the sharp edge between the pocket's walls. Where the two reach that edge
+at one point, as in a flat face, each is carried on past the sharp edge along its own wall's plane
+and they are mitred where they cross, as OpenCASCADE does it. Where the face they share slopes
+differently each way, as a dish's does, the two ends lie at different depths on the sharp edge:
+the ball swings round the sharp edge between them, and a corner patch, tangent to both fillets and
+to the shared face, fills between their ends. The sharp edge stops at the deeper end, and between
+the two it is the shallower fillet's wall's edge with the corner. OpenCASCADE fills such corners
+too, or runs each fillet on into the other with its wall grown a hundredth of a millimetre past the
+sharp edge: the two differ by a few hundredths of a millimetre at a radius of 1 mm, the corner
+patch leaving a little more. Chamfers turn such corners the same way, the corner patch ruled
+between the sharp edge and the shared face. A rim that comes back to its own inside corner, as a
+teardrop pocket's, is rounded the same way. Any one, two or three edges of a pocket's rim in a
+flat face are rounded so too, those that meet no other ending at the pocket's walls.
+
 An edge along a crease that fades out, as a loft's crease from a corner of its square foot up to
 where its sides meet smoothly, is rounded or chamfered up to where its faces turn by almost
 nothing, and ends there. Where the crease turns back above that, its faces meeting at an angle
@@ -269,6 +284,9 @@ These are refused with a message:
 - A corner where a convex edge meets a concave one at a vertex that the stages can't round while
   some edge there is left sharp, but for one, two opposite or three of a saddle's four edges as
   above, fillets or chamfers, and a ridge and a valley side by side.
+- At an inside corner between two fillets between curved faces (above): fillets of different
+  radii, a fillet meeting a chamfer, a sharp edge that is curved, or a corner that would cross a
+  seam of the face the two share (make them smaller).
 - A blend that takes material away and runs off onto the next face, and a chamfer whose end
   runs off both its faces onto the next one (the end lies wholly past the next face) where that
   face is flat, or curved along a curved edge, so that no tangent plane takes it on.

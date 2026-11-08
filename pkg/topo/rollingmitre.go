@@ -65,27 +65,35 @@ func (rb *rollingBall) anyMitre() bool {
 
 // rbNear is the end of a mitred chain a section is nearer (end), and
 // whether past it; end is -1 on any other chain, and away from an end
-// that isn't a mitre.
+// that isn't a mitre. An end that pivots (rollingpivot.go) bans the face
+// across its crease as a mitre's does: pivot says so.
 type rbNear struct {
-	end  int
-	past bool
+	end   int
+	past  bool
+	pivot bool
 }
 
-// nearEnd is the end of a mitred chain that arc length s is nearer.
+// nearEnd is the end of a mitred or pivoting chain that arc length s is
+// nearer.
 func (rb *rollingBall) nearEnd(s float64) rbNear {
+	if rb.closed {
+		return rbNear{end: -1}
+	}
+	k := 0
+	past := s < 0
+	if s >= rb.length/2 {
+		k, past = 1, s > rb.length
+	}
+	end := rb.ends[k]
 	switch {
-	case !rb.anyMitre():
+	case end == nil:
 		return rbNear{end: -1}
-	case s < rb.length/2:
-		if !rb.mitreAt(0) {
-			return rbNear{end: -1}
-		}
-		return rbNear{end: 0, past: s < 0}
+	case end.mitre:
+		return rbNear{end: k, past: past}
+	case end.pivot:
+		return rbNear{end: k, past: past, pivot: true}
 	}
-	if !rb.mitreAt(1) {
-		return rbNear{end: -1}
-	}
-	return rbNear{end: 1, past: s > rb.length}
+	return rbNear{end: -1}
 }
 
 // markMitre makes the ends of an open chain mitre ends when both are at
@@ -108,6 +116,12 @@ func (rb *rollingBall) markMitre() {
 			return
 		}
 	}
+	if rb.concaveAt(0) {
+		for k, end := range rb.ends {
+			end.pivot, end.ban, end.mate, end.mateK = true, ban[k], rb, 1-k
+		}
+		return
+	}
 	for k, end := range rb.ends {
 		end.mitre, end.curved, end.ban = true, true, ban[k]
 		end.mate, end.mateK = rb, 1-k
@@ -120,7 +134,8 @@ func (rb *rollingBall) markMitre() {
 // other side's face, and each one's end face is the other's creased
 // face. It reports whether every end of every chain is linked so, and
 // for chamfers to one of the same distance (fillets of two radii are
-// mitred too, rollingkink.go). With partial, an end at a vertex no
+// mitred too, rollingkink.go). Where the crease is concave the two
+// ends pivot instead (rollingpivot.go). With partial, an end at a vertex no
 // other chain's end shares may stay an end at a face, flat or curved,
 // and it reports whether every end that shares its vertex with another
 // chain's is linked, and at least one is.
@@ -132,14 +147,14 @@ func linkMitresAt(rbs []*rollingBall, partial bool) bool {
 				return false
 			}
 			for _, o := range rbs {
-				if end.mitre {
+				if end.mitre || end.pivot {
 					break
 				}
 				if o == rb || o.closed || o.flat != rb.flat {
 					continue
 				}
 				for ok, oe := range o.ends {
-					if oe.v != end.v || oe.mitre {
+					if oe.v != end.v || oe.mitre || oe.pivot {
 						continue
 					}
 					ban, ok0 := mitreBan(end, oe, o)
@@ -147,12 +162,18 @@ func linkMitresAt(rbs []*rollingBall, partial bool) bool {
 					if !ok0 || !ok1 {
 						continue
 					}
+					if rb.concaveAt(k) {
+						// An inside corner: the ball swings round the crease.
+						end.pivot, end.ban, end.mate, end.mateK = true, ban, o, ok
+						oe.pivot, oe.ban, oe.mate, oe.mateK = true, oban, rb, k
+						break
+					}
 					end.mitre, end.curved, end.ban, end.mate, end.mateK = true, true, ban, o, ok
 					oe.mitre, oe.curved, oe.ban, oe.mate, oe.mateK = true, true, oban, rb, k
 					break
 				}
 			}
-			if end.mitre {
+			if end.mitre || end.pivot {
 				linked = true
 				continue
 			}
@@ -412,6 +433,9 @@ func (rb *rollingBall) mitreFoot(k, i int) (float64, rbSection, error) {
 		}
 		return x
 	}
+	if rb.ends[k].concave {
+		return rb.insideMitreFoot(k, i, gap, arc, zone, step)
+	}
 	if rb.ends[k].ban[i] >= 0 || rb.flat {
 		// A chamfer's surfaces cross the face both share, not touching
 		// it: a root there too.
@@ -497,6 +521,9 @@ func (rb *rollingBall) mitreRoot(k int, g func(rbSection) float64) (float64, rbS
 			return math.NaN(), sec
 		}
 		return g(sec), sec
+	}
+	if rb.ends[k].concave {
+		return rb.insideMitreRoot(k, h, arc, zone)
 	}
 	lo, hi := -rb.r, zone
 	gl, _ := h(lo)
