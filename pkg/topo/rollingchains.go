@@ -57,10 +57,16 @@ func rollingBallFilletsAt(sh *srf.SShell, t *Topology, edges []int, radii []floa
 		}
 	}
 	for _, rb := range rbs {
+		rb.turn()
+	}
+	// Pivots whose feet on the crease are one point meet in a mitre.
+	if err := insideMitres(rbs); err != nil {
+		return err
+	}
+	for _, rb := range rbs {
 		if err := rb.mitrePlane(); err != nil {
 			return err
 		}
-		rb.turn()
 	}
 	if err := setKinks(rbs); err != nil {
 		return err

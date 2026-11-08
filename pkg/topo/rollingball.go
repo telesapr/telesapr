@@ -437,7 +437,7 @@ func (t *Topology) newChain(e int, r float64, flat bool) (*rollingBall, error) {
 // and finds which way it turns (turn).
 func (rb *rollingBall) finish() error {
 	err := rb.trace()
-	if !rb.closed && rb.ends[0] != nil && !rb.ends[0].mitre && (errors.Is(err, errFadeStart) || err != nil && len(rb.pts) == 0) {
+	if !rb.closed && rb.ends[0] != nil && !rb.ends[0].mitre && !rb.ends[0].pivot && (errors.Is(err, errFadeStart) || err != nil && len(rb.pts) == 0) {
 		// The crease fades out where the chain starts, or is tangent
 		// there: from its other end it may fade out towards this one.
 		first := err
@@ -466,11 +466,11 @@ func (rb *rollingBall) finish() error {
 	if err != nil {
 		return err
 	}
-	if err := rb.mitrePlane(); err != nil {
+	rb.turn()
+	if err := insideMitres([]*rollingBall{rb}); err != nil {
 		return err
 	}
-	rb.turn()
-	return nil
+	return rb.mitrePlane()
 }
 
 // turn sets sigma, which way the edge turns.
@@ -730,19 +730,19 @@ func (rb *rollingBall) trace() error {
 	// Pieces short against the radius and the edge, so that the edge's
 	// tangent turns little from one to the next.
 	h := math.Min(rb.r/4, total/256)
-	// Along a mitred chain the faces across its crease are not taken
-	// near each end (footNear): at the crease itself the wall's two
-	// patches are both nearest, and the tangent must be its own side's.
+	// Along a mitred or pivoting chain the faces across its crease are
+	// not taken near each end (footNear): at the crease itself the wall's
+	// two patches are both nearest, and the tangent must be its own side's.
 	run := 0.0
 	near := func() rbNear {
 		k := 1
 		if run < total/2 {
 			k = 0
 		}
-		if !rb.mitreAt(k) {
+		if !rb.mitreAt(k) && !rb.pivotAt(k) {
 			return rbNear{end: -1}
 		}
-		return rbNear{end: k}
+		return rbNear{end: k, pivot: rb.pivotAt(k)}
 	}
 	// The crease's turn at a point: the sine of the angle between the
 	// faces, signed by which way they turn about the edge.
@@ -757,12 +757,12 @@ func (rb *rollingBall) trace() error {
 		}
 		return p, tn, tn.Dot(d), true
 	}
-	fades := !rb.closed && rb.ends[1] != nil && !rb.ends[1].mitre
+	fades := !rb.closed && rb.ends[1] != nil && !rb.ends[1].mitre && !rb.ends[1].pivot
 	// fadesIn: the crease may fade out at the chain's start too, as one
 	// that turns back past where it faded does from there; its first
 	// points, where the faces meet tangent, are passed over until the
 	// crease turns (fadeIn).
-	fadesIn := !rb.closed && rb.ends[0] != nil && !rb.ends[0].mitre && rb.fadeIn
+	fadesIn := !rb.closed && rb.ends[0] != nil && !rb.ends[0].mitre && !rb.ends[0].pivot && rb.fadeIn
 	sign0 := 0.0
 	if fadesIn {
 		// Which way the crease turns is where it turns most: at its
@@ -1286,7 +1286,7 @@ func (rb *rollingBall) misfit(sf *srf.BSplineSurface, t, s float64, near bool) (
 			// Elsewhere near the ends a chamfer's rulings run between the
 			// points its oblique sections touch the faces: flat across.
 			d := distanceToPolyline(p, line)
-			if nr.end >= 0 {
+			if nr.end >= 0 && !nr.pivot {
 				// Near a mitre, against sections fitted a few times the
 				// tolerance, as a fillet's are.
 				d /= 3
@@ -1306,7 +1306,7 @@ func (rb *rollingBall) misfit(sf *srf.BSplineSurface, t, s float64, near bool) (
 	}
 	for _, u := range across {
 		p := sf.PointAt(u, t)
-		if near && !rb.flat && nr.end >= 0 {
+		if near && !rb.flat && nr.end >= 0 && !nr.pivot {
 			// Near a mitre's ends the ball's centres are kept densely
 			// (centresNear): the nearest of them, not a search of
 			// sections.
@@ -1681,6 +1681,10 @@ func putBlends(sh *srf.SShell, bls []*rbBlend, origin uint32) error {
 	slices.SortStableFunc(order, func(a, b int) int {
 		return cmp.Compare(len(bls[b].rb.kinks), len(bls[a].rb.kinks))
 	})
+	corners, err := pivotCorners(bls)
+	if err != nil {
+		return err
+	}
 	for _, i := range order {
 		var err error
 		if loops[i], err = bls[i].cutBack(sh); err != nil {
@@ -1688,6 +1692,14 @@ func putBlends(sh *srf.SShell, bls []*rbBlend, origin uint32) error {
 		}
 	}
 	dropUnusedCurves(sh)
+	for _, c := range corners {
+		if err := c.cut(sh); err != nil {
+			return err
+		}
+	}
+	if len(corners) > 0 {
+		dropUnusedCurves(sh)
+	}
 
 	// The fillet's patches.
 	patchLoops := make([][][][]srf.SBezier, len(bls))
@@ -1724,6 +1736,12 @@ func putBlends(sh *srf.SShell, bls []*rbBlend, origin uint32) error {
 			}
 		}
 		if err := bl.rb.putTangentFaces(fa); err != nil {
+			return err
+		}
+	}
+	for _, c := range corners {
+		i := slices.Index(bls, c.a)
+		if err := c.put(fa, t.Surface(c.a.rb.side[0][0]).Color, origin+uint32(i)); err != nil {
 			return err
 		}
 	}
@@ -1944,9 +1962,10 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 			drop = append(drop, pair{q, v})
 		}
 		for k, end := range rb.ends {
-			if end.mitre || end.fade {
-				// endCuts is by end: a mitre end cuts nothing more, and
-				// where the crease fades out there is no face to cut.
+			if end.mitre || end.fade || end.pivot {
+				// endCuts is by end: a mitre end cuts nothing more, nor
+				// does a pivot's, whose corner cuts the crease (pivotCorner),
+				// and where the crease fades out there is no face to cut.
 				endCuts = append(endCuts, rbEndCut{})
 				continue
 			}

@@ -183,7 +183,7 @@ func (t *Topology) pointAlong(x, v int, into geom.Vector, s float64, back bool) 
 		return from.Plus(d.ScaledBy(s / k)), nil
 	}
 	if k < 1e-9 {
-		return geom.Vector{}, filletErr(from, "an edge at the end of the fillet runs back along it")
+		return geom.Vector{}, filletErr(from, runsBackMsg)
 	}
 	k = s / k
 	if k >= l-geom.LengthEps {

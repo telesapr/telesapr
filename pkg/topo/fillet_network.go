@@ -337,6 +337,14 @@ func filletPicksOther(sh *srf.SShell, picks []FilletPick, r float64, origin uint
 			return byRollingBall(rerr)
 		}
 	}
+	if runsBackRefusal(err) {
+		// Edges between flat faces that end at an inside corner, as part
+		// of a pocket's rim: the rolling ball, whose ends there pivot
+		// round the corner where two picks meet (rollingpivot.go).
+		if rerr := filletRunsBack(sh, picks, r, origin, flat); !errors.Is(rerr, errNotRolling) && !errors.Is(rerr, errNotMitred) {
+			return byRollingBall(rerr)
+		}
+	}
 	if (curvedEndRefusal(err) || rollingAloneRefusal(err)) && len(picks) > 1 {
 		// Picks that are the pieces of one closed chain, some of them
 		// the rolling ball's: the chain at once.
@@ -388,6 +396,70 @@ func filletPicksOther(sh *srf.SShell, picks []FilletPick, r float64, origin uint
 		why = sx.Msg
 	}
 	return filletErr(fx.At, "%s, and rounded one radius at a time they don't go on round each other's corners: %s", fx.Msg, why)
+}
+
+// runsBackMsg is step 10's refusal of an edge whose fillet would end at
+// an inside corner, the edge there running back along it.
+const runsBackMsg = "an edge at the end of the fillet runs back along it"
+
+// runsBackRefusal reports whether err is step 10's refusal of an edge
+// that ends at an inside corner.
+func runsBackRefusal(err error) bool {
+	var fx *FilletError
+	return errors.As(err, &fx) && fx.Msg == runsBackMsg
+}
+
+// filletRunsBack rounds picks that step 10 refused at an inside corner
+// by the rolling ball: one alone, several together where they meet
+// there (filletCornerPicks); where none meets another, one after
+// another, each as FilletPicks rounds it alone, in its own stage's
+// origins as filletApart's are.
+func filletRunsBack(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) error {
+	var cp srf.SShell
+	cp.MakeFromCopyOf(sh)
+	if len(picks) == 1 {
+		if err := filletOnCurvedEnd(&cp, picks[0], r, origin, flat); err != nil {
+			return err
+		}
+		*sh = cp
+		return nil
+	}
+	if err := filletCornerPicks(sh, picks, r, origin, flat); !errors.Is(err, errNotMitred) {
+		return err
+	}
+	if len(picks) > maxApart || picksMeet(sh, picks) {
+		return errNotMitred
+	}
+	for k, p := range picks {
+		if err := FilletPicks(&cp, []FilletPick{p}, r, origin+apartOrigins+uint32(k)*stageOrigins, flat); err != nil {
+			return err
+		}
+	}
+	*sh = cp
+	return nil
+}
+
+// picksMeet reports whether two of the picks' edges in sh share a
+// vertex, or one can't be found.
+func picksMeet(sh *srf.SShell, picks []FilletPick) bool {
+	t, err := Build(sh)
+	if err != nil {
+		return true
+	}
+	seen := map[int]bool{}
+	for _, p := range picks {
+		e, err := t.pickEdge(p)
+		if err != nil {
+			return true
+		}
+		for _, v := range t.Edges[e].V {
+			if seen[v] {
+				return true
+			}
+			seen[v] = true
+		}
+	}
+	return false
 }
 
 // curvedEndMsg is step 10's refusal of an edge that ends at a curved
