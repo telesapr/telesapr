@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make test-fast*)",
+      "Bash(make test-cost*)",
+      "Bash(make checks)",
+      "Bash(make agents-check)",
+      "Bash(make lint*)",
+      "Bash(make generate*)",
+      "Bash(make build)",
+      "Bash(go build*)",
+      "Bash(go vet*)",
+      "Bash(go test*)",
+      "Bash(go list*)",
+      "Bash(gofmt*)",
+      "Bash(scripts/go-test.sh*)",
+      "Bash(scripts/agents-check.sh*)"
+    ],
+    "deny": [
+      "Bash(git stash*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/gofmt-edited.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
