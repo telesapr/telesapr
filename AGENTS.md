@@ -55,8 +55,8 @@ does not exist: keep them true, in the same commit as the change.
   identifiers have a doc comment that starts with their name; every package has a package
   comment.
 - Comments say why, in terms of this code. They do not describe the code by reference to
-  SolveSpace's C++: since 2026-10-01 TeleSAPR tracks neither SolveSpace's behaviour nor its
-  file format, and the provenance is in `NOTICE`.
+  SolveSpace's C++: TeleSAPR tracks neither SolveSpace's behaviour nor its file format, and
+  the provenance is in `NOTICE`.
 - Lint is `golangci-lint` with `.golangci.yml`, pinned in `tools/lint/go.mod`; the tree is
   clean. A `//nolint` carries a reason. `examples/` keeps the older loop forms (yaegi has no
   range over an integer or a function) and is not run through `--fix`.
@@ -83,6 +83,9 @@ screen; a method on `pkg/script/api` with a doc comment, `make generate` run; an
   and then say so. Solids are checked with the oracle `pkg/check`. Bad input gives a diagnostic
   on the group, never a panic. Every creating and editing action is one undo step and comes
   back identical on redo.
+- Tests use the standard `testing` package and no mocking library. A test is named for what
+  it checks, MixedCaps with no underscore (`TestExamplesRun`). A test file is in the package it
+  tests, or in its `_test` package where it needs only the exported API, as its neighbours are.
 - A golden changes only in a commit of its own that says why, made with its `scripts/regen-*.sh`
   script (the `regen-goldens` skill).
 
