@@ -6,7 +6,12 @@ bin
 coverage.out
 # go-winres writes these for the Windows build (scripts/dist-windows.sh)
 *.syso
-.claude
+# Claude Code: the shared rules, skills and settings are tracked; what is
+# personal is not.
+.claude/settings.local.json
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+CLAUDE.local.md
 
 # Built by make guide-site.
 /site/guide/

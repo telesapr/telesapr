@@ -16,7 +16,8 @@ help:
 	@echo "  make test-race-heavy - Run the engine packages' heavy tests under it"
 	@echo "  make coverage     - Run all tests with coverage, and apply the 85% rule"
 	@echo "  make fuzz         - Run each fuzz target for FUZZTIME ($(FUZZTIME))"
-	@echo "  make checks       - fmt-check, tidy-check, generate-check and build"
+	@echo "  make checks       - fmt-check, tidy-check, generate-check, agents-check and build"
+	@echo "  make agents-check - Fail if AGENTS.md or .claude/ names what does not exist"
 	@echo "  make ci           - Everything the GitHub workflow runs"
 	@echo "  make fmt          - Format code"
 	@echo "  make fmt-check    - Fail if gofmt would change a tracked file"
@@ -49,7 +50,7 @@ help:
 	@echo "  make deploy-site  - Build the guide, copy site/ to telesapr.sourceforge.io (SF_USER=<user>)"
 	@echo ""
 
-.PHONY: guide-site test test-heavy test-fast test-cost test-sweeps bench test-gui test-race test-race-heavy coverage fuzz checks ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check build install uninstall clean distclean \
+.PHONY: guide-site test test-heavy test-fast test-cost test-sweeps bench test-gui test-race test-race-heavy coverage fuzz checks ci fmt fmt-check vet tidy tidy-check vuln lint lint-new generate generate-check agents-check build install uninstall clean distclean \
 	dist dist-linux dist-windows dist-macos release release-notes
 
 # The version is pkg/version.Version; a release's tag is v$(VERSION).
@@ -200,7 +201,11 @@ fuzz:
 # standard library or a dependency fails it with no commit at all, so
 # the workflow runs vuln as a job of its own that only warns, and the
 # nightly and Release workflows as one that fails.
-checks: fmt-check tidy-check generate-check build
+checks: fmt-check tidy-check generate-check agents-check build
+
+agents-check:
+	@echo "==> scripts/agents-check.sh"
+	@scripts/agents-check.sh
 
 # What .github/workflows/ci.yml runs on a push to master, and the race
 # detector, in one go: the checks, then test, test-heavy, lint and vuln

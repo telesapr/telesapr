@@ -8,7 +8,7 @@ empty. A new feature adds its row in the commit that makes it.
 
 A feature is done when it is tested, has a user interface and has scripting support, and the
 three paths, interface, script and file, reach the same entry point in `pkg/sketch`
-(`CLAUDE.md`, "Tests and the definition of done"). The order inside a feature: entry point in
+(`AGENTS.md`, "Definition of done"). The order inside a feature: entry point in
 `pkg/sketch`, save and load, interface, script API, path equivalence test. Document state a
 feature adds goes into `UndoState` in `pkg/sketch/undo.go`, or it is lost on undo.
 
