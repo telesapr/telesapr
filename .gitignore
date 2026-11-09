@@ -23,3 +23,6 @@ __pycache__/
 /telesapr
 /telesapr-cli
 /telesapr-web
+
+# The codebase-memory MCP server's index of this checkout.
+.codebase-memory/
