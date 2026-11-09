@@ -16,7 +16,10 @@ import (
 // dragApp is a window showing a zigzag polyline of n segments, each
 // horizontal or vertical in turn, which leaves its first point free to
 // drag; it returns the window and that point's position on the screen.
-func dragApp(b *testing.B, n int) (*Application, *headless.Window, api.Entity, geom.Point2d) {
+// With lengths, each segment also has its length, so the drag carries
+// the polyline whole and every corner is one whose orientation a drag
+// keeps (pkg/sketch flip.go).
+func dragApp(b *testing.B, n int, lengths bool) (*Application, *headless.Window, api.Entity, geom.Point2d) {
 	b.Helper()
 	p := headless.New()
 	ss := New(p)
@@ -35,6 +38,9 @@ func dragApp(b *testing.B, n int) (*Application, *headless.Window, api.Entity, g
 			} else {
 				doc.Constrain.Vertical(s)
 			}
+			if lengths {
+				doc.Constrain.Length(s, 10)
+			}
 		}
 		first = segs[0].Points()[0]
 	})
@@ -52,8 +58,8 @@ func dragApp(b *testing.B, n int) (*Application, *headless.Window, api.Entity, g
 // which solves the sketch and regenerates it, and the frame drawn
 // after it, reported apart as drag-ms and paint-ms. The hit test that
 // finds the point under the mouse is BenchmarkPaintHover's.
-func benchmarkDrag(b *testing.B, n int) {
-	ss, w, first, q := dragApp(b, n)
+func benchmarkDrag(b *testing.B, n int, lengths bool) {
+	ss, w, first, q := dragApp(b, n, lengths)
 	was := first.Pos()
 	gen := ss.SK.Generation
 	ss.GW.MouseLeftDown(q.U, q.V, false, false)
@@ -88,9 +94,13 @@ func benchmarkDrag(b *testing.B, n int) {
 	b.ReportMetric(float64(paint.Microseconds())/float64(b.N)/1000, "paint-ms/op")
 }
 
-func BenchmarkDrag20(b *testing.B)  { benchmarkDrag(b, 20) }
-func BenchmarkDrag150(b *testing.B) { benchmarkDrag(b, 150) }
-func BenchmarkDrag400(b *testing.B) { benchmarkDrag(b, 400) }
+func BenchmarkDrag20(b *testing.B)  { benchmarkDrag(b, 20, false) }
+func BenchmarkDrag150(b *testing.B) { benchmarkDrag(b, 150, false) }
+func BenchmarkDrag400(b *testing.B) { benchmarkDrag(b, 400, false) }
+
+// BenchmarkDragDimensioned150 drags a polyline of 150 segments with
+// their lengths, whose orientation the drag checks at every corner.
+func BenchmarkDragDimensioned150(b *testing.B) { benchmarkDrag(b, 150, true) }
 
 // mechanismChain is a window showing a chain of n bars 30 x 6 x 3 that
 // move in a mechanism, each hinged to the one before and the first to

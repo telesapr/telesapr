@@ -1,6 +1,7 @@
 // What a sketch tells a script about itself: the document's unit,
 // measurements that add no constraint, how free each entity still is,
-// and which constraints keep a group from solving.
+// and which constraints keep a group from solving, or say again what
+// others say.
 //
 // Without a window:
 //
@@ -11,8 +12,9 @@
 //	telesapr --script examples/scripts/feedback/feedback.go
 //
 // It draws a plate 2 by 1 inches in a document whose unit is the inch,
-// dimensions it until nothing can move, then over-constrains it and
-// takes the extra dimension back. It writes nothing.
+// dimensions it until nothing can move, then over-constrains it, first
+// at odds and then redundantly, and takes the extra dimension back. It
+// writes nothing.
 package main
 
 import (
@@ -72,9 +74,11 @@ func main() {
 	}
 
 	// The top's length would over-constrain the rectangle, so it is made
-	// a reference dimension, as the window makes it. Made to drive, it
-	// contradicts the bottom's: the group no longer solves, and
-	// Conflicts names what could be removed to fix it.
+	// a reference dimension, as the window makes it, at the length it
+	// measures. Made to drive, it says again what the bottom's length
+	// and the sides say: the group no longer solves, Redundancies names
+	// each set of constraints that over-determine each other, any one
+	// of a set to go, and Conflicts every constraint of the sets.
 	extra := doc.Constrain.Length(sides[2], 60)
 	if !extra.Reference() {
 		fail("the third length should be made a reference")
@@ -82,12 +86,26 @@ func main() {
 	extra.SetReference(false)
 	g := doc.Active()
 	fmt.Printf("with a third length, solved: %v\n", g.Solved())
+	sets := g.Redundancies()
+	for i, set := range sets {
+		fmt.Printf("  set %d over-determines itself:\n", i+1)
+		for _, c := range set {
+			fmt.Printf("    could remove %s\n", c)
+		}
+	}
+	if g.Solved() || len(sets) != 1 || len(g.Conflicts()) != len(sets[0]) {
+		fail("the third length should make one redundant set, not %v", sets)
+	}
+
+	// Made 3 inches, it contradicts the bottom's: there is no solution,
+	// and Conflicts names the constraints left unsatisfied.
+	must(extra.SetExpr("3"))
 	conflicts := g.Conflicts()
 	for _, c := range conflicts {
-		fmt.Printf("  could remove %s\n", c)
+		fmt.Printf("  at 3 in, unsatisfied: %s\n", c)
 	}
-	if g.Solved() || len(conflicts) == 0 {
-		fail("the third length should conflict")
+	if g.Solved() || len(conflicts) == 0 || len(g.Redundancies()) != 0 {
+		fail("the third length at 3 in should conflict")
 	}
 	extra.Delete()
 	fmt.Printf("without it, solved: %v\n", g.Solved())

@@ -49,6 +49,10 @@ func groupState(sk *sketch.Sketch, group *sketch.Group) (string, GroupInfo) {
 	info.Solved = group.IsSolvedOkay()
 	if !info.Solved {
 		parts[0] = "NOT SOLVED"
+		if why := sk.RedundancyText(group.H); why != "" {
+			info.Redundant = why
+			parts[0] += " (" + why + ")"
+		}
 	}
 	if group.Solved.Dof < 0 {
 		parts = append(parts, "DOF not counted")

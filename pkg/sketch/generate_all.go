@@ -52,6 +52,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 	// build pass is the last.
 	if pass == passBuild {
 		defer func() { sk.pulled = nil }()
+		defer sk.forgetMotion()
 	}
 	name := "regenerate"
 	switch pass {
@@ -949,11 +950,30 @@ func (sk *Sketch) solveBlock(hgs []core.HGroup, params []core.HParam, andFindFre
 		sk.keepSystem(hgs[0], sys)
 	}
 	sk.seedAxisAngles(hgs)
+	// An edit or a drag the user made is followed in steps, and checked
+	// for corners turned over (continuation.go); nothing else is.
+	m := sk.takeMotion(hgs)
+	var f *following
+	if m != nil {
+		f = sk.followMotion(m, hgs, params, func() core.SolveResult {
+			return sk.solveStep(hgs, params, dofCheckOk)
+		})
+	}
 	sk.solveHoldingBounds(hgs, solve, func() core.SolveResult { return how })
+	note := ""
+	if f != nil {
+		note = f.settle(sk, func() core.SolveResult {
+			sk.solveHoldingBounds(hgs, solve, func() core.SolveResult { return how })
+			return how
+		})
+	}
 	for _, hg := range hgs {
 		g := sk.Group(hg)
+		if m != nil {
+			g.SolveNote = note
+		}
 		g.SketchDiagnostic = diagnostic
-		g.Solved.Dof, g.Solved.Remove = dof, remove
+		g.Solved.Dof, g.Solved.Remove, g.Solved.Groups = dof, remove, sg.Dependent
 		g.Solved.Timeout = sg.Timeout
 		g.Solved.RedundantAllowed = sg.AllowRedundant
 		if how == core.SolveOkay {
@@ -962,6 +982,22 @@ func (sk *Sketch) solveBlock(hgs []core.HGroup, params []core.HParam, andFindFre
 		g.Solved.How = how
 		sk.recalculateGroupEntities(hg)
 	}
+}
+
+// solveStep solves the block of groups hgs for params as solveBlock
+// does, for a step of an edit or a drag followed (followMotion): without
+// finding which params are free, and leaving the groups' results to the
+// solve of the last step.
+func (sk *Sketch) solveStep(hgs []core.HGroup, params []core.HParam, dofCheckOk bool) core.SolveResult {
+	var how core.SolveResult
+	sk.solveHoldingBounds(hgs, func() {
+		sys, sg := sk.writeEqSystem(hgs, params)
+		if err := catchPanic(func() { how, _, _ = sys.Solve(sg, !sg.AllowRedundant, false, !dofCheckOk) }); err != nil {
+			how = core.SolveDidntConverge
+		}
+		sk.keepSystem(hgs[0], sys)
+	}, func() core.SolveResult { return how })
+	return how
 }
 
 // recalculateGroupEntities refreshes the cached Act* values of group

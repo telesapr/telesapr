@@ -195,7 +195,7 @@ var windowActions = map[string]string{
 	"ScreenShowGroupsSpecial/c": "Group.SetVisible Group.Dof",
 	"ScreenShowGroupsSpecial/h": "Group.SetVisible",
 	"ScreenActivateGroup":       "Doc.Activate",
-	"ScreenHowGroupSolved":      "Group.Conflicts Group.Solved",
+	"ScreenHowGroupSolved":      "Group.Conflicts Group.Redundancies Group.Solved",
 	"ScreenShowConfiguration":   "- navigation",
 	"ScreenShowEditView":        "- navigation",
 	"ScreenGoToWebsite":         "- opens the project's page in a browser",
@@ -768,6 +768,7 @@ SetDensity            ScreenDensity; editGroupDensity
 Delete                ScreenDeleteGroup; ctx:Delete Group; menu:Edit/Delete
 Face                  -q
 Conflicts             ScreenHowGroupSolved
+Redundancies          ScreenHowGroupSolved
 History               -an accessor for GroupHistory
 Analyze               -an accessor for GroupAnalysis
 AsExtrude             -an accessor for the typed group

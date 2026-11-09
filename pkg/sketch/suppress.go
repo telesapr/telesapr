@@ -124,7 +124,7 @@ func (sk *Sketch) skipGroup(g *Group, prev []core.Param, inRange, makeSolid bool
 	g.PolyError.How = int(core.PolyGood)
 	g.Solved.How = core.SolveOkay
 	g.Solved.Dof = 0
-	g.Solved.Remove = nil
+	g.Solved.Remove, g.Solved.Groups = nil, nil
 	g.Solved.Timeout = false
 	g.SketchDiagnostic = nil
 	g.BooleanFailed = false

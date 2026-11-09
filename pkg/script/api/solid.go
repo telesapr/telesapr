@@ -23,10 +23,12 @@ func (g Group) Problem() (msg string) {
 
 // Note says how the group's solid, though made, differs from what the
 // group asks for, as a shell's wall stopping short of an inside corner
-// where a drafted round face taken away meets a flat one; or "" when it
-// is as asked.
+// where a drafted round face taken away meets a flat one, and how its
+// sketch does, as a triangle that the last dimension edit or drag
+// turned over where no solution near kept it the way it was; or "" when
+// it is as asked.
 func (g Group) Note() (msg string) {
-	g.d.read(func(sk *sketch.Sketch) { msg = g.get(sk).Note })
+	g.d.read(func(sk *sketch.Sketch) { msg = g.get(sk).Notes() })
 	return msg
 }
 

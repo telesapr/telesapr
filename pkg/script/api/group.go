@@ -582,8 +582,10 @@ func axisOf(sk *sketch.Sketch, point, vector Entity, what string) (origin, dir c
 }
 
 // Conflicts lists the constraints that keep the group from solving,
-// as its solve-failure screen does, any one of which could be removed
-// to fix it; none when the group solved.
+// as its solve-failure screen does; none when the group solved. Where
+// the constraints over-determine each other, these are every one of
+// Redundancies, each once; where they cannot all be satisfied, those
+// left unsatisfied.
 func (g Group) Conflicts() (constraints []Constraint) {
 	g.d.read(func(sk *sketch.Sketch) {
 		group := g.get(sk)
@@ -597,6 +599,30 @@ func (g Group) Conflicts() (constraints []Constraint) {
 		}
 	})
 	return constraints
+}
+
+// Redundancies are the sets of the group's constraints that
+// over-determine each other, when the group failed to solve for that:
+// in each set the constraints say again together what one of them says,
+// so that any one of the set can go, and a constraint may be in more
+// than one set. One of each set is to go for the group to solve. None
+// when the group solved, allows redundant constraints, or failed for
+// constraints that cannot all hold (Conflicts names those).
+func (g Group) Redundancies() (sets [][]Constraint) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		if group.IsSolvedOkay() {
+			return
+		}
+		for _, hs := range sk.RedundantGroups(group.H) {
+			set := make([]Constraint, len(hs))
+			for i, hc := range hs {
+				set[i] = Constraint{g.d, hc}
+			}
+			sets = append(sets, set)
+		}
+	})
+	return sets
 }
 
 func (g Group) moveWithSources(before core.HGroup) (moved []Group, err error) {

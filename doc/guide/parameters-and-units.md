@@ -206,9 +206,13 @@ always take millimetres. Only text, as in `SetExpr("2")`, is in the document's u
 - **Freedom.** Entities are drawn in one colour when the constraints fix them, and in another
   while they can still move. From a script, `entity.Free()` is `sketch.FreedomFixed`,
   `sketch.FreedomPartly` or `sketch.FreedomFree`.
-- **Conflicts.** When a group's constraints contradict each other, its screen lists the
-  constraints. Removing any one of them would resolve the conflict. The canvas marks them too.
-  From a script, `group.Conflicts()`.
+- **Conflicts.** When a group does not solve, its screen lists the constraints to blame, and
+  the canvas marks them. When the constraints cannot all hold, these are the ones left
+  unsatisfied. When they say again what others say (two horizontal lines also made parallel),
+  the screen lists the whole set that over-determines itself, and any one of the set can go.
+  A group can hold more than one such set; the screen then lists each set under its own
+  heading, and one constraint of each set is to go. From a script, `group.Conflicts()` lists
+  every constraint to blame, and `group.Redundancies()` the sets.
 - **Measure.** Analyze > Measure Selection shows the length, radius, distance or angle of what
   you selected on the canvas, without adding a constraint. From a script,
   `doc.Analyze.Measure(a, b)`.

@@ -1,0 +1,56 @@
+# Two pairs of lines, each line vertical and each pair parallel too: the
+# group over-determines itself in two sets of three. The same as
+# path_redundant_sets.go makes (TestPathEquivalence/redundant_sets).
+key s
+move 100 150
+down L 100 150
+up L 100 150
+move 130 300
+down L 130 300
+up L 130 300
+key esc
+key s
+move 200 150
+down L 200 150
+up L 200 150
+move 240 300
+down L 240 300
+up L 240 300
+key esc
+key s
+move 300 150
+down L 300 150
+up L 300 150
+move 350 300
+down L 350 300
+up L 350 300
+key esc
+key s
+move 400 150
+down L 400 150
+up L 400 150
+move 460 300
+down L 460 300
+up L 460 300
+key esc
+key esc
+click-entity 40000
+key v
+key esc
+click-entity 50000
+key v
+key esc
+click-entity 40000
+click-entity 50000
+key l
+key esc
+click-entity 60000
+key v
+key esc
+click-entity 70000
+key v
+key esc
+click-entity 60000
+click-entity 70000
+key l
+key esc

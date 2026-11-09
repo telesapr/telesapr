@@ -188,6 +188,7 @@ func (s *Sketch) PopOntoCurrentFrom(uk *UndoStack) {
 	if s.ReloadAllLinked != nil {
 		s.ReloadAllLinked(s)
 	}
+	s.forgetMotion()
 	s.GenerateAll()
 }
 

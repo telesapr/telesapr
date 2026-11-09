@@ -861,7 +861,8 @@ func SetConstraintValue(c *core.Constraint, v float64) {
 // number is stored as its value, as SetConstraintValue does; any other
 // text is kept and evaluated again at each regeneration, so that "1/4"
 // and "wall*2" come back as they were typed. The constraint's group is
-// marked dirty.
+// marked dirty, and its next solve follows the change in steps where it
+// is large (continuation.go).
 func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string) error {
 	c := sk.Constraint(hc)
 	if c == nil {
@@ -875,6 +876,7 @@ func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string) error {
 	if err != nil {
 		return err
 	}
+	from := c.ValA
 	if v, plain := plainNumber(text, names); plain {
 		if IsLengthValue(c.Type) {
 			v *= sk.Units.MmPer()
@@ -899,6 +901,26 @@ func (sk *Sketch) SetConstraintText(hc core.HConstraint, text string) error {
 			}
 		}
 	}
+	sk.noteEdit(c, from)
+	sk.MarkGroupDirty(c.Group, false)
+	return nil
+}
+
+// EditConstraintValue gives constraint hc the value v, as SetConstraintValue
+// does, as the user's edit of it: the next solve of its group follows the
+// change in steps where it is large (continuation.go). The constraint's
+// group is marked dirty.
+func (sk *Sketch) EditConstraintValue(hc core.HConstraint, v float64) error {
+	c := sk.Constraint(hc)
+	if c == nil {
+		return fmt.Errorf("no constraint %08x", hc.V)
+	}
+	if !c.HasLabel() {
+		return fmt.Errorf("%s has no value", c.DescriptionString())
+	}
+	from := c.ValA
+	SetConstraintValue(c, v)
+	sk.noteEdit(c, from)
 	sk.MarkGroupDirty(c.Group, false)
 	return nil
 }

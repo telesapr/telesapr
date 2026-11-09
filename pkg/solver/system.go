@@ -48,6 +48,10 @@ type Group struct {
 	// reports that it ran out.
 	FindToFixTimeout time.Duration
 	Timeout          bool
+	// Dependent is what a solve that finds the group redundant and is
+	// asked for the constraints to blame sets: the constraints of each
+	// dependency, which over-determine each other (DependentConstraints).
+	Dependent [][]core.HConstraint
 	// Constraints are the group's constraints, in handle order.
 	Constraints []*core.Constraint
 	// WriteEquationsExceptFor appends the equations of the group's
@@ -792,8 +796,11 @@ func (s *System) referencedParam(e *core.Expr) (h core.HParam, none, multiple bo
 // Solve solves the group's equations, writes the solution back to the
 // sketch, and reports the result, the degrees of freedom (-1 when they
 // were not counted) and, when the system is inconsistent or didn't
-// converge, the constraints to blame, found only if andFindBad.
+// converge, the constraints to blame, found only if andFindBad. A
+// redundant group's constraints to blame are those of every dependency,
+// which it also sets as g.Dependent.
 func (s *System) Solve(g *Group, andFindBad, andFindFree, forceDofCheck bool) (how core.SolveResult, dof int, bad []core.HConstraint) {
+	g.Dependent = nil
 	s.writeEquationsExceptFor(core.NoConstraint, g)
 
 	rankOk := false
@@ -870,7 +877,7 @@ func (s *System) Solve(g *Group, andFindBad, andFindFree, forceDofCheck bool) (h
 	}
 	if !rankOk {
 		if andFindBad {
-			bad = s.FindWhichToRemoveToFixJacobian(g, forceDofCheck)
+			bad = s.findDependent(g, subMap, forceDofCheck)
 		}
 	} else {
 		s.MarkParamsFree(andFindFree)
@@ -940,6 +947,7 @@ func (g *Group) hasConstraint(hc core.HConstraint) bool {
 // when the group is redundantly constrained and andFindBad, the
 // constraints to blame.
 func (s *System) SolveRank(g *Group, andFindBad, andFindFree bool) (how core.SolveResult, rank, dof int, bad []core.HConstraint) {
+	g.Dependent = nil
 	s.writeEquationsExceptFor(core.NoConstraint, g)
 
 	// All params and equations are assigned to group zero.
@@ -958,7 +966,7 @@ func (s *System) SolveRank(g *Group, andFindBad, andFindFree bool) (how core.Sol
 		// about redundants since this test is working only for single redundant constraint
 		if !g.SuppressDofCalculation && !g.AllowRedundant {
 			if andFindBad {
-				bad = s.FindWhichToRemoveToFixJacobian(g, true)
+				bad = s.findDependent(g, nil, true)
 			}
 		}
 	} else {

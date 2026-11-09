@@ -133,6 +133,7 @@ const primerChecks = `    g := doc.Active()                    // or doc.Group("
     g.Dof()                              // degrees of freedom left
     g.Problem()                          // why the group made no solid, or ""
     g.Conflicts()                        // the constraints at odds
+    g.Redundancies()                     // the sets of them that say each other again
     a := g.Analyze()                     // the solid up to and with the group
     a.Volume()
     a.Bounds()

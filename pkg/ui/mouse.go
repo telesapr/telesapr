@@ -27,6 +27,17 @@ func (gw *graphicsWindow) UpdateDraggedPoint(hp core.HEntity, mx, my float64) {
 	gw.ss.ScheduleShowTW()
 }
 
+// UpdatePlacedPoint moves a point being drawn with the mouse: a point
+// of a line, an arc or a cubic not yet put down, which is not followed
+// as a drag of the sketch is (Sketch.PlacePointTo).
+func (gw *graphicsWindow) UpdatePlacedPoint(hp core.HEntity, mx, my float64) {
+	sk := gw.sk()
+	pos := sk.Entity(hp).PointGetNum(sk)
+	gw.UpdateDraggedNum(&pos, mx, my)
+	sk.PlacePointTo(hp, pos)
+	gw.ss.ScheduleShowTW()
+}
+
 // UpdateDraggedNum moves pos by the mouse's movement.
 func (gw *graphicsWindow) UpdateDraggedNum(pos *geom.Vector, mx, my float64) {
 	v := &gw.view
@@ -440,7 +451,7 @@ func (gw *graphicsWindow) dragNewPoint(x, y float64, ctrlDown bool) {
 			gw.pending.hasSuggestion = false
 		}
 	}
-	gw.UpdateDraggedPoint(gw.pending.point, x, y)
+	gw.UpdatePlacedPoint(gw.pending.point, x, y)
 	gw.HitTestMakeSelection(mp)
 	sk.MarkGroupDirtyByEntity(gw.pending.point)
 	gw.orig.mouse = mp
@@ -451,7 +462,7 @@ func (gw *graphicsWindow) dragNewCubicPoint(x, y float64) {
 	sk := gw.sk()
 	mp := geom.Point2d{U: x, V: y}
 
-	gw.UpdateDraggedPoint(gw.pending.point, x, y)
+	gw.UpdatePlacedPoint(gw.pending.point, x, y)
 	gw.HitTestMakeSelection(mp)
 
 	hr := gw.pending.point.Request()
@@ -483,7 +494,7 @@ func (gw *graphicsWindow) dragNewArcPoint(x, y float64, ctrlDown bool) {
 	sk := gw.sk()
 	mp := geom.Point2d{U: x, V: y}
 
-	gw.UpdateDraggedPoint(gw.pending.point, x, y)
+	gw.UpdatePlacedPoint(gw.pending.point, x, y)
 	gw.HitTestMakeSelection(mp)
 
 	hr := gw.pending.point.Request()

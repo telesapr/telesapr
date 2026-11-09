@@ -151,6 +151,11 @@ type Group struct {
 		FindToFixTimeout int
 		Timeout          bool
 		Remove           []core.HConstraint
+		// Groups are the dependencies of a redundant group's
+		// constraints: each the constraints that over-determine each
+		// other, any one of which could be removed to undo that
+		// dependency (redundancy.go). Remove is their union.
+		Groups [][]core.HConstraint
 		// RedundantAllowed is that the system the group was solved in
 		// allowed redundant constraints: the group's own setting, or
 		// that of another group of its mechanism.
@@ -383,12 +388,29 @@ type Group struct {
 	// group asks for, though it made it, such as a shell's wall stopping
 	// short of an inside corner. It is not saved.
 	Note string
+	// SolveNote is what the last solve that followed an edit or a drag
+	// of the group's sketch could not keep, such as a triangle the edit
+	// turned over (continuation.go); "" when it kept the orientation. It
+	// stays until the next edit or drag of the group, and is not saved.
+	SolveNote string
 
 	// prefixKey and solidKey name what the group's entities and its
 	// solid were made from (solid_cache.go); zero when unknown.
 	prefixKey, solidKey solidKey
 
 	Name string
+}
+
+// Notes are the group's Note and SolveNote, as one text: "" when it has
+// neither.
+func (g *Group) Notes() string {
+	switch {
+	case g.Note == "":
+		return g.SolveNote
+	case g.SolveNote == "":
+		return g.Note
+	}
+	return g.Note + "; " + g.SolveNote
 }
 
 // GroupProblem is a diagnostic on a group: a message and, when the
@@ -414,7 +436,7 @@ func (g *Group) setProblem(at *geom.Vector, format string, args ...any) {
 // Clear drops everything regeneration makes, and the remap table.
 func (g *Group) Clear() {
 	g.prefixKey, g.solidKey = solidKey{}, solidKey{}
-	g.Solved.Remove = nil
+	g.Solved.Remove, g.Solved.Groups = nil, nil
 	g.PolyLoops.Clear()
 	g.BezierLoops.Clear()
 	g.BezierOpens = nil

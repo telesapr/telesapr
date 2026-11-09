@@ -96,7 +96,31 @@ A text's screen changes its string, its font and its kerning. The text keeps its
 direction, height and constraints. In a script: `Entity.SetText`, `Entity.SetFont` (a name
 from `Sketch.Fonts()`, or "" for the built-in font) and `Entity.SetKerning`.
 
+## Large edits and drags
+
+A sketch has more than one shape that meets its constraints: a triangle given its three sides
+can be drawn either way round, an arm given the length of its two links can bend its elbow
+either way. TeleSAPR keeps the one you drew. When a dimension changes by more than a quarter of
+its value, as a side typed two and a half times longer, the sketch is moved to the new value in
+steps, each solved from the one before; a point dragged far in one move is moved in steps the
+same way. After each step the corners between dimensioned lengths are checked: one that turned
+over is put back to its side, and an arc's sweep may not wrap round past its start.
+
+The edit is never refused. Where no shape near the new one keeps the sketch the way it was, the
+sketch takes the new shape, and the group is marked "(note)" in the list of groups; its screen
+says which corner or arc turned over. In a script, `Group.Note` says the same. The note stays
+until the next edit or drag of the group.
+
+Only an edit or a drag does this: opening a file or regenerating solves the sketch as before,
+from where it is. A dimension changed through a parameter's value, or by Step Dimension in the
+text window, is solved in one step.
+
 ## Not yet
 
 A ratio or difference takes the lengths of lines and arcs only. It does not take cubics, or the
 radii of circles.
+
+The corners a large edit or drag keeps are those between two lengths held by dimensions (or by
+an equal-length, ratio, difference, angle or perpendicular constraint), in a workplane. A sketch
+in 3d, and the turn of a curve, are not checked. A parameter's new value is not followed in
+steps.

@@ -19,7 +19,6 @@ item is sized only after a two-day spike on its hardest fixture.
 | 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Round profiles at a cubic corner of 150°; fitted and closed paths crossing themselves; shells beside a rise within the thickness |
 | 3 | [Thread leftovers](#thread-leftovers) | feature | S each | DIN 513's nut deviation, B1.9's pitches and multi-start allowances wait for sources |
 | 4 | [K3 contact](#k3-coincident-and-tangent-contact) | kernel foundation | ? | Touching points the marcher finds itself; two fitted-tube Booleans; rims grazing a tube |
-| 4a | [Solver](#solver) | solver | S each | From the literature check of 2026-11-08: the whole group of redundant constraints named, and sketches that keep their orientation through an edit or a drag |
 | 5 | [F9 Mechanisms](#f9-mechanisms) | feature | M | Asked for 2026-11-04: pull a part and the parts joined to it move; planned, not begun |
 | 6 | [F5 small conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
 | 7 | [F8 TeleSAPR in a browser](#f8-telesapr-in-a-browser) | feature | S each | Built; module size only |
@@ -68,17 +67,6 @@ DIN 513-3:2020 (free text), NBS H28 (1957) Part III, Machinery's Handbook, Engin
 | DIN 513-3's nut deviation | 7H, 8H, 9H taken as basic | EI = 3.1758·a (2/(tan 3° + tan 30°) times DIN 513-1's axial play a, not found free); with a, `buttressClearance` adds it |
 | B1.9's preferred pitches | `buttressInchTPI` follows H28's ranges | amesweb's calculator lists three a diameter (B1.9 Table 1?); B1.9 itself would settle it, and the default pitch per size |
 | Multi-start allowances | left out for B1.5 (appendix B) and B1.9; DIN 513-3's factors are in | H28 (1957) has none for ACME, only its gauges' lead tolerance times 1.5. Machining Doctor says B1.5 adds K × es to a nut's diameters by its number of starts; K not found free |
-
-### Solver
-
-Code: `pkg/solver`, `pkg/sketch/generate_all.go`, `constraint.go`. From the literature check of
-2026-11-08 (`doc/dev-notes/solver-literature.md`, which has the sources and what was ruled out).
-
-| Item | State | Approach |
-|---|---|---|
-| The group of constraints that over-determine each other named, not one of them | `FindWhichToRemoveToFixJacobian` drops each constraint in turn and re-tests the rank, 1 s timeout, names the first found; the choice depends on the order tried (Zou and Feng 2019, their Eq. 6) | The left null space of the Jacobian from the rank-revealing QR already computed: each null vector's rows are one group, in one factorisation. Group text, text window and script name the group; while there, check that `TryConstrain` decides on a rank taken where the new constraint is satisfied (a witness), not before the solve |
-| A sketch that keeps its orientation through a dimension edit or a drag | Newton takes whichever root it reaches, so a large edit or a fast drag can mirror a triangle or flip an elbow (SolidCraft measured 407 of 500 edits, 356 of 1000 drags, before stepping) | Continuation: a dimension changed by more than a fraction stepped from old to new value, a long drag split into steps, each solved from the last (the mechanism pull's clamping); then an order-type check (the sign of each constrained triple's oriented area, an arc's sweep not wrapping) that retries from a reflected seed and otherwise notes the flip on the group. Regeneration never engages it, so no golden moves |
-| Later, if those leave flips or large edits fail to converge | not planned | A backtracking line search in `NewtonSolve`, engaged only when the full step raises the residual (measure golden moves first); a constructive pre-pass (Owen, Fudos–Hoffmann) placing what two constraints determine |
 
 ### Guide tooling
 

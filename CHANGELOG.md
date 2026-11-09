@@ -9,6 +9,10 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+### Changed
+- A group whose constraints say again what others say names every set of constraints that over-determine each other, found at once from the sketch's equations. It used to try removing one constraint at a time, for up to a second, and named nothing when the group held two such sets, since no one removal fixed both. The group's screen lists each set under its own heading, the canvas marks them all, and a constraint the solve sets aside (a horizontal, or two points made one) is named with the rest. Scripts: `Group.Redundancies`; `Group.Conflicts` lists every constraint of the sets, and the drawing's description says which constraints over-determine each other.
+- A large dimension edit or a long drag keeps the sketch the way it was drawn. A dimension changed by more than a quarter of its value, or a point dragged more than a quarter of the sketch's size in one move, is moved there in steps, each solved from the last, and a corner between dimensioned lengths that turned over is put back to its side: a two-link arm's elbow no longer bends the other way when its hand is dragged far (109 of 288 such drags flipped it; none does now), and an arc's end dragged past its start takes the start along rather than wrap the arc round to 345°. Where nothing keeps the orientation, as an arc whose start is locked, the edit is made and the group is marked "(note)" with what turned over (`Group.Note` in a script). Opening a file or regenerating solves as before.
+
 ## [0.6.3] - 2026-11-08
 
 ### Fixed

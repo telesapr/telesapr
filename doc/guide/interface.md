@@ -129,6 +129,12 @@ that moves in a mechanism is pulled along the mechanism's freedom: the part turn
 hinges and the parts joined to it move with it ([mechanisms](mechanisms.md), experimental).
 While a linked part moves, an assembly is drawn from each part's mesh moved where its link puts
 it, and meshed again when the drag ends.
+A drag keeps the sketch the way it was: a point moved far in one go, more than a quarter of the
+sketch's size, is moved there in steps, so an arm's elbow stays bent the way it was and a
+triangle does not turn over. An arc's end dragged past its start takes the start along rather
+than wrap the arc round. Where no solution keeps the sketch the way it was, as an arc whose
+start is locked, the drag still moves it, and the group is marked "(note)" in the list of groups,
+its screen saying what turned over ([constraints](constraints.md#large-edits-and-drags)).
 Drag a dimension's label to move the label. The arrow keys move what is selected by one pixel, ten with Shift.
 Delete removes what is selected.
 

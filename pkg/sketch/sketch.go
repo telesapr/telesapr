@@ -168,6 +168,22 @@ type Sketch struct {
 	// as it can, as it does the window's dragged ones; cleared at the
 	// end of each regeneration.
 	pulled []core.HParam
+	// edits and moves are the dimensions the user changed and the points
+	// they moved since the last solve of their groups, which that solve
+	// follows (continuation.go); cleared at the end of each regeneration.
+	edits []dimEdit
+	moves []pointMove
+	// NoFollow has every solve take an edit or a drag in one step and
+	// leave what turned over, as before continuation.go; for a measure
+	// of what following them saves.
+	NoFollow bool
+	// Followed counts the solves that followed an edit or a drag, and
+	// FollowSteps the steps they took before the last (continuation.go):
+	// a regeneration with nothing edited or dragged adds to neither.
+	Followed, FollowSteps int
+	// orderCache is the order shape a follow built last
+	// (flip_shape_cache.go).
+	orderCache *orderShapeCache
 
 	// Clipboard holds what was copied.
 	Clipboard Clipboard
@@ -261,6 +277,11 @@ func (s *Sketch) SeedParam(h core.HParam, v float64) {
 }
 
 func (s *Sketch) Param(h core.HParam) *core.Param {
+	// An entity's unused param slots hold NoParam, which no param has;
+	// looked up, it would miss the index and build it again whole.
+	if h == core.NoParam {
+		return nil
+	}
 	if i, ok := s.paramIndex[h]; ok && i < len(s.Params) && s.Params[i].H == h {
 		return &s.Params[i]
 	}

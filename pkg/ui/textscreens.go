@@ -278,9 +278,10 @@ func (tw *textWindow) ShowListOfGroups() {
 		if g.Suppress || g.SuppressedBy.V != 0 {
 			fgName = 'g'
 		}
-		// A group whose solid came out other than it asks (Group.Note)
-		// is marked, as one with a problem is coloured.
-		if g.Note != "" && g.Problem.Msg == "" {
+		// A group whose solid came out other than it asks (Group.Note),
+		// or whose sketch an edit turned over (Group.SolveNote), is
+		// marked, as one with a problem is coloured.
+		if g.Note != "" && g.Problem.Msg == "" || g.SolveNote != "" {
 			suffix += " (note)"
 		}
 		// A group left out says so, and what left it out.
@@ -1145,6 +1146,10 @@ func (tw *textWindow) ShowGroupInfo() {
 		tw.Printf(false, "")
 		tw.Printf(false, "%FdNote: %s.%E", g.Note)
 	}
+	if g.SolveNote != "" {
+		tw.Printf(false, "")
+		tw.Printf(false, "%FdNote: %s.%E", g.SolveNote)
+	}
 
 	if g.BooleanFailed {
 		tw.Printf(false, "")
@@ -1773,6 +1778,10 @@ func (tw *textWindow) ShowGroupSolveInfo() {
 
 	case core.SolveRedundantOkay:
 		tw.Printf(true, "%FxSOLVE FAILED!%Fd redundant constraints")
+		if groups := sk.RedundantGroups(g.H); len(groups) > 1 {
+			tw.showRedundantGroups(g, groups)
+			return
+		}
 		tw.Printf(true, "remove any one of these to fix it")
 
 	case core.SolveTooManyUnknowns:
@@ -1783,7 +1792,15 @@ func (tw *textWindow) ShowGroupSolveInfo() {
 		panic("ui: unexpected solve result")
 	}
 
-	for i, hc := range g.Solved.Remove {
+	tw.showConstraintRows(g.Solved.Remove)
+	tw.showSolveInfoEnd(g)
+}
+
+// showConstraintRows lists constraints hcs, a row each in alternating
+// shades, each linked to select it and with a [show] that zooms to it.
+func (tw *textWindow) showConstraintRows(hcs []core.HConstraint) {
+	sk := tw.ss.SK
+	for i, hc := range hcs {
 		c := sk.Constraint(hc)
 		if c == nil {
 			continue
@@ -1797,7 +1814,24 @@ func (tw *textWindow) ShowGroupSolveInfo() {
 			bg, c.H.V, lf(tw.ScreenSelectConstraint), lf(tw.ScreenHoverConstraint),
 			c.DescriptionString(), c.H.V, lf(tw.ScreenShowConstraint), lf(tw.ScreenHoverConstraint))
 	}
+}
 
+// showRedundantGroups lists group g's dependencies, each the constraints
+// that over-determine each other, under a heading of its own: one
+// constraint of each set is to go. The canvas marks them all.
+func (tw *textWindow) showRedundantGroups(g *sketch.Group, groups [][]core.HConstraint) {
+	tw.Printf(true, "%d sets of constraints over-determine", len(groups))
+	tw.Printf(false, "the sketch: remove one of each set")
+	for i, hcs := range groups {
+		tw.Printf(true, "%Ftset %d%E", i+1)
+		tw.showConstraintRows(hcs)
+	}
+	tw.showSolveInfoEnd(g)
+}
+
+// showSolveInfoEnd is the end of the solve-failure screen: what was left
+// out, and how to undo the failure or allow it.
+func (tw *textWindow) showSolveInfoEnd(g *sketch.Group) {
 	if g.Solved.Timeout {
 		tw.Printf(true, "%FxSome items in list have been omitted%Fd")
 		tw.Printf(false, "%Fxbecause the operation timed out.%Fd")

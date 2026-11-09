@@ -92,8 +92,9 @@ func (c Constraint) Set(v float64) {
 		if !constraint.HasLabel() {
 			fail("%s has no value", constraint.DescriptionString())
 		}
-		sketch.SetConstraintValue(constraint, v)
-		sk.MarkGroupDirty(constraint.Group, false)
+		if err := sk.EditConstraintValue(c.H, v); err != nil {
+			fail("%v", err)
+		}
 	})
 }
 

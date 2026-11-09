@@ -5614,7 +5614,7 @@
 					},
 					"Conflicts": {
 						"decl": "func (g Group) Conflicts() (constraints []Constraint)",
-						"text": "Conflicts lists the constraints that keep the group from solving,\nas its solve-failure screen does, any one of which could be removed\nto fix it; none when the group solved."
+						"text": "Conflicts lists the constraints that keep the group from solving,\nas its solve-failure screen does; none when the group solved. Where\nthe constraints over-determine each other, these are every one of\nRedundancies, each once; where they cannot all be satisfied, those\nleft unsatisfied."
 					},
 					"Constraints": {
 						"decl": "func (g Group) Constraints() (constraints []Constraint)",
@@ -5694,7 +5694,7 @@
 					},
 					"Note": {
 						"decl": "func (g Group) Note() (msg string)",
-						"text": "Note says how the group's solid, though made, differs from what the\ngroup asks for, as a shell's wall stopping short of an inside corner\nwhere a drafted round face taken away meets a flat one; or \"\" when it\nis as asked."
+						"text": "Note says how the group's solid, though made, differs from what the\ngroup asks for, as a shell's wall stopping short of an inside corner\nwhere a drafted round face taken away meets a flat one, and how its\nsketch does, as a triangle that the last dimension edit or drag\nturned over where no solution near kept it the way it was; or \"\" when\nit is as asked."
 					},
 					"Opacity": {
 						"decl": "func (g Group) Opacity() (alpha float64)",
@@ -5707,6 +5707,10 @@
 					"Problem": {
 						"decl": "func (g Group) Problem() (msg string)",
 						"text": "Problem says what the last regeneration found wrong with the\ngroup's input, as an edge a chamfer can't cut, a sweep path with\na corner, or a sketch that crosses itself, is open, is not flat or\nhas a curve of no length, with the point where; or \"\" when there is\nnothing. A group with a problem adds no solid. A sketch says what is\nwrong with its contours only when a solid is made from it, since a\nsweep's path may be open and not flat; the group making the solid\nsays it too. It also says when the Boolean that joins the group's\nsolid to the solid so far failed: the group's solid is then\nunsound, and Check says where. When the solid so far holds parts\nassembled side by side, which may stand in each other, it says so:\na Boolean with such a solid is not defined."
+					},
+					"Redundancies": {
+						"decl": "func (g Group) Redundancies() (sets [][]Constraint)",
+						"text": "Redundancies are the sets of the group's constraints that\nover-determine each other, when the group failed to solve for that:\nin each set the constraints say again together what one of them says,\nso that any one of the set can go, and a constraint may be in more\nthan one set. One of each set is to go for the group to solve. None\nwhen the group solved, allows redundant constraints, or failed for\nconstraints that cannot all hold (Conflicts names those)."
 					},
 					"RelaxConstraints": {
 						"decl": "func (g Group) RelaxConstraints() (on bool)",
@@ -7682,6 +7686,10 @@
 						"decl": "func (g *Group) MeasuredExtent(sk *Sketch) float64",
 						"text": "MeasuredExtent is the group's extent as its parameters have it now, held or not: an extrusion's depth in millimetres, signed along the normal of its workplane, or a revolve's or helix's angle in degrees."
 					},
+					"Notes": {
+						"decl": "func (g *Group) Notes() string",
+						"text": "Notes are the group's Note and SolveNote, as one text: \"\" when it has neither."
+					},
 					"PolyProblem": {
 						"decl": "func (g *Group) PolyProblem() (msg string, at geom.Vector, ok bool)",
 						"text": "PolyProblem says what is wrong with a sketch's contours, as GenerateLoops found it, and where: an open end, a point off the plane of the rest, where the contour crosses itself, or a curve of no length."
@@ -8400,6 +8408,10 @@
 						"decl": "func (sk *Sketch) DuplicateConstraint(hc core.HConstraint) (core.HConstraint, error)",
 						"text": "DuplicateConstraint adds a second constraint equal to hc, in its group and workplane, with a new handle."
 					},
+					"EditConstraintValue": {
+						"decl": "func (sk *Sketch) EditConstraintValue(hc core.HConstraint, v float64) error",
+						"text": "EditConstraintValue gives constraint hc the value v, as SetConstraintValue does, as the user's edit of it: the next solve of its group follows the change in steps where it is large (continuation.go)."
+					},
 					"EditThread": {
 						"decl": "func (sk *Sketch) EditThread(hg core.HGroup, o ThreadOptions) (ThreadResult, error)",
 						"text": "EditThread makes the thread whose helix group is hg again with the options o: its sketches are drawn again in their planes, the requests they had taken first, their dimensions made anew, and the helices given their pitch and length."
@@ -8773,6 +8785,10 @@
 						"decl": "func (sk *Sketch) PerpendicularConstraint(base core.Constraint, a, b core.HEntity) (core.Constraint, error)",
 						"text": "PerpendicularConstraint makes the constraint that makes a and b perpendicular, as a copy of base: two line segments or normals in any mix, or two faces."
 					},
+					"PlacePointTo": {
+						"decl": "func (sk *Sketch) PlacePointTo(he core.HEntity, p geom.Vector)",
+						"text": "PlacePointTo puts point he at p as the tool drawing it does, while the point is placed: as MovePointTo, but its solve is not followed in steps nor checked for corners turned over (continuation.go), since what is being drawn has no shape yet to keep, and its points are put down far from where they were made in one move."
+					},
 					"PointIsCoincident": {
 						"decl": "func (sk *Sketch) PointIsCoincident(hp core.HEntity) bool",
 						"text": "PointIsCoincident reports whether a constraint makes point hp coincident with another."
@@ -8808,6 +8824,14 @@
 					"RangeMovedDisplays": {
 						"decl": "func (sk *Sketch) RangeMovedDisplays(fn func())",
 						"text": "RangeMovedDisplays calls fn once for each group whose display is made from moved parts' meshes now; for a test of the window."
+					},
+					"RedundancyText": {
+						"decl": "func (sk *Sketch) RedundancyText(hg core.HGroup) string",
+						"text": "RedundancyText says which of group hg's constraints over-determine each other, a clause for each dependency, as \"c001-horizontal, c002-horizontal and c003-parallel over-determine each other\"; \"\" when the group is not redundant."
+					},
+					"RedundantGroups": {
+						"decl": "func (sk *Sketch) RedundantGroups(hg core.HGroup) [][]core.HConstraint",
+						"text": "RedundantGroups are the dependencies of group hg's constraints after its last solve, each the constraints that over-determine each other, in handle order with the point-coincident ones last, those the sketch no longer has left out; none when the group is not redundant."
 					},
 					"Refresh": {
 						"decl": "func (sk *Sketch) Refresh()",

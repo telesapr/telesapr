@@ -72,6 +72,9 @@ type GroupInfo struct {
 	// Problem is why the group made no solid, or that its Boolean
 	// failed.
 	Problem string `json:"problem,omitempty"`
+	// Redundant says which constraints over-determine each other, when
+	// the group failed to solve for that (Group.Redundancies).
+	Redundant string `json:"redundant,omitempty"`
 	// LeftOut is why the group is left out of the model; such a group
 	// is neither solved nor counted.
 	LeftOut string `json:"leftOut,omitempty"`

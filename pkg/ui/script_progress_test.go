@@ -11,7 +11,10 @@ import (
 
 // A program's script run in the window reports, through the
 // connection, the groups the regeneration after it begins and what it
-// printed, before its result.
+// printed, before its result. The script waits past the pacer's
+// interval before it prints: reports closer together are merged, and
+// the line's report, which has no count, would take the place of the
+// regeneration's on a loaded machine.
 func TestAgentRunProgress(t *testing.T) {
 	t.Parallel()
 	a := newAgentApp(t)
@@ -20,7 +23,7 @@ func TestAgentRunProgress(t *testing.T) {
 		got []agent.Progress
 	)
 	res, err := a.r.RunWithProgress(context.Background(),
-		"doc.Sketch.Rect(V(0, 0, 0), V(10, 20, 0))\ndoc.Features.Extrude(5, \"plate\")\nfmt.Println(\"extruded\")",
+		"doc.Sketch.Rect(V(0, 0, 0), V(10, 20, 0))\ndoc.Features.Extrude(5, \"plate\")\ntime.Sleep(time.Second)\nfmt.Println(\"extruded\")",
 		func(p agent.Progress) {
 			mu.Lock()
 			defer mu.Unlock()

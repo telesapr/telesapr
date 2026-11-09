@@ -715,6 +715,15 @@ var pathEquivalences = map[string]pathCheck{
 			t.Errorf("%d reference dimensions, want 1", refs)
 		}
 	},
+	// Two sets of constraints that over-determine each other, made with
+	// the mouse and by a script alike: the group names both sets.
+	"redundant_sets": func(t *testing.T, ui, script *sketch.Sketch) {
+		for _, sk := range []*sketch.Sketch{ui, script} {
+			if groups := sk.RedundantGroups(sk.ActiveGroup()); len(groups) != 2 || len(groups[0]) != 3 || len(groups[1]) != 3 {
+				t.Errorf("redundant sets %v, want two of three", groups)
+			}
+		}
+	},
 	// A dimension named in its label's editor and read by name in another
 	// one's, and the same made by a script (roadmap 16.1).
 	"dimension_name": func(t *testing.T, ui, _ *sketch.Sketch) {
