@@ -1,6 +1,6 @@
 # Roadmap
 
-What is left to build, as of 2026-11-05. Only open work is listed. What is built is described in
+What is left to build, as of 2026-11-09. Only open work is listed. What is built is described in
 `doc/guide`, `doc/guide/ai.md` and `doc/dev-notes/done-audit.md`; `doc/dev-notes/done-audit.md` also holds the definition of
 done. The dated "Done" and "Tried" notes of every item, cut from this file on 2026-10-30, are in
 `git show af848717:ROADMAP.md`; read an item's there before taking it up, so as not to try again
@@ -19,7 +19,7 @@ item is sized only after a two-day spike on its hardest fixture.
 | 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Round profiles at a cubic corner of 150°; fitted and closed paths crossing themselves; shells beside a rise within the thickness |
 | 3 | [Thread leftovers](#thread-leftovers) | feature | S each | DIN 513's nut deviation, B1.9's pitches and multi-start allowances wait for sources |
 | 4 | [K3 contact](#k3-coincident-and-tangent-contact) | kernel foundation | ? | Touching points the marcher finds itself; two fitted-tube Booleans; rims grazing a tube |
-| 5 | [F9 Mechanisms](#f9-mechanisms) | feature | M | Asked for 2026-11-04: pull a part and the parts joined to it move; planned, not begun |
+| 5 | [F9 Mechanisms](#f9-mechanisms) | feature | M | Built 2026-11-06; next the degrees of freedom analysis, then plan fragments if asked |
 | 6 | [F5 small conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
 | 7 | [F8 TeleSAPR in a browser](#f8-telesapr-in-a-browser) | feature | S each | Built; module size only |
 | 8 | [F6 IGES](#f6-iges-import-and-export) | feature | L | Only if asked for |
@@ -185,20 +185,15 @@ Neosolve reads and writes IGES. STEP covers the exchange; take it when a user as
 
 ### F9 Mechanisms
 
-Planned 2026-11-05, nothing built: `doc/dev-notes/f9-mechanism-plan.md` has what was found, the
-design and the commits. Today each group is solved alone with every earlier group held, so a mate
-in part B's group moves only B, a loop of parts cannot be solved, and a linked part pulled in the
-window snaps back. Branch `mechanism`; the spike (2026-11-05) found the pull sound and a drag
-frame of ten links 17 ms, with the assembly's handles counted on once.
+Built 2026-11-06 (`doc/guide/mechanisms.md`, the done-audit row "Mechanisms"): link groups flagged
+"moves in a mechanism" solved as one system, a pull along the mechanism's freedom from the window
+and `Entity.MoveTo`, driven hinge and concentric mates with limits, and a drag drawn from each part's
+moved mesh. `doc/dev-notes/f9-mechanism-plan.md` has the design. Left:
 
 | Item | State | Size |
 |---|---|---|
-| A link group flagged "moves in a mechanism" (`link-moves` in the file), flagged links in a row solved as one system, unflagged ones and everything before them the ground; old files unchanged | built 2026-11-05 (`Sketch.Mechanism`, `solveBlock`; `TestFourBarSolves`, `TestCrankSlider`) | S |
-| Pulling a part along the mechanism's freedom: a null-space step shared by the window's drag and `Entity.MoveTo`, through one `pkg/sketch` entry point | built 2026-11-05 (`Sketch.MovePointTo`, `pullPoint`, `solver.System.NullSpace`; `TestPullHingedBar`, `TestPullStopsAtBound`, `ext_mechanism`); turning by a normal or with Shift and Ctrl is not a pull yet | S |
-| Driven hinge and concentric mates making `angle` and `travel` parameters, as Screw makes `turn`; the axis-angle constraint about a line and under a minimum or maximum | built 2026-11-05 (`Assembly.HingeDriven`, `ConcentricDriven`, `DrivenMate.SetRange`, `Sketch.AddBoundOf`; `TestDrivenCrankFourBar`, `examples/scripts/lid`, `examples/scripts/engine`; a hinge of a pin in its hole since 2026-11-06) | S |
-| A drag drawn from each part's mesh moved by its placement, the assembly meshed again on release | built 2026-11-05 (`pkg/sketch/display_parts.go`; `BenchmarkDragMechanism10` paint 177 → 18 ms, `TestDragDrawsMovedParts`); drawing by a model matrix in GL left | S |
 | Left out until asked for: a 3D sketch as a member, a drag written back into its driving parameter, several parameters in one motion study, glTF animation channels | not planned | |
-| Degrees of freedom analysis (Kramer 1992; `doc/dev-notes/f9-mechanism-plan.md`, "Degrees of freedom analysis"): each part's translational and rotational freedom counted from its mates with its invariant (fixed point, axis or plane), shown as "turns about this axis" on the group screen and the mate; a redundant closing hinge of a planar loop accepted as consistent instead of refused by the rank test; the mates given their marker model (Hinge = in-line + in-plane, Concentric, Flush, Screw) and the missing joints (ball, cylindrical, planar, slot) with their freedom cost; or the same count without the hand-written table by body-and-cad rigidity (Haller et al. 2012, Lee-St.John and Sidman 2013; `doc/dev-notes/solver-literature.md`) | from the reading of 2026-11-08, not planned | M |
+| Degrees of freedom analysis (Kramer 1992; `doc/dev-notes/f9-mechanism-plan.md`, "Degrees of freedom analysis"): each part's translational and rotational freedom counted from its mates with its invariant (fixed point, axis or plane), shown as "turns about this axis" on the group screen and the mate; a redundant closing hinge of a planar loop accepted as consistent instead of refused by the rank test; the mates given their marker model (Hinge = in-line + in-plane, Concentric, Flush, Screw) and the missing joints (ball, cylindrical, planar, slot) with their freedom cost; or the same count without the hand-written table by body-and-cad rigidity (Haller et al. 2012, Lee-St.John and Sidman 2013; `doc/dev-notes/solver-literature.md`) | from the reading of 2026-11-08; being built (rd12-dof) | M |
 | Incremental assembly: parts a chain of mates reaches from the ground placed in closed form by plan fragments, the loop-closing mate left as a 1-D search over the remaining freedom, so parts need no start position and a loop closes from full stretch; `solveBlock` the fallback for what the table does not cover | from the reading of 2026-11-08, not planned | L |
 | The plan compiled once and run per step: a motion study and a drag place the parts by rigid transforms, no Newton a frame, the drag writing back into its driving parameter; of two roots at a locus intersection the one nearest the previous configuration, so a mechanism does not flip during a drag | from the reading of 2026-11-08, not planned | M |
 
