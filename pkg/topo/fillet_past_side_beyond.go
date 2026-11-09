@@ -45,7 +45,11 @@ func beyondCutter(box *srf.SShell, sh *srf.SShell) (srf.SShell, bool) {
 // left as out has it.
 func keepBeyond(out, sh *srf.SShell, off *runOff, r float64) (srf.SShell, bool) {
 	tol := sh.Tol.ChordTolMm() * r * r
-	for _, s := range off.sides {
+	for _, s := range off.distinct() {
+		if s.curved != nil {
+			// Nothing of sh lies past a curved side (curvedCutter).
+			continue
+		}
 		was := volumeBeyond(sh, s.p0, s.n)
 		if was <= geom.LengthEps {
 			continue

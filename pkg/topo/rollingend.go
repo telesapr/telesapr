@@ -895,7 +895,13 @@ func (rb *rollingBall) cutEnd(sh *srf.SShell, end *rbEnd, arc srf.BSplineCurve) 
 		switch alongFrom(q, v, t.Edges[end.a[k]].Points) {
 		case 1:
 			ro, err := rb.runOffAt(end, k)
-			if err != nil || cut.off != nil {
+			if err == nil && cut.off != nil {
+				// Both sides run off, each onto the face past it: the end
+				// would be cut by both those faces (roadmap, run-offs left).
+				return cut, filletErr(q, "the fillet's end runs off both its faces here, each past the end of its "+
+					"edge with the flat face the edge ends at: make it smaller")
+			}
+			if err != nil {
 				return cut, filletErr(q, "the fillet's end runs off the face on side %d here, past the end of its edge with "+
 					"the flat face the edge ends at, and the face there is curved or meets the others otherwise: make it smaller",
 					k+1)

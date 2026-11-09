@@ -90,24 +90,32 @@ row 16    part  fixed   moves in a mechanism
  15-16 64 61 0
  17-38 64 61 109 0 1 0
  39-99 64 61 0
-row 18 
+row 18    mechanism of 1 part, 0 DOF
+ 0-2 64 64 0
+ 3-11 74 64 0
+ 12-99 64 64 0
+row 20    freedom: turns about the axis through (88.28, 28.28, 0.00) along (0, 0, 1), driven by angle
+ 0-2 64 64 0
+ 3-10 74 64 0
+ 11-99 64 64 0
+row 22 
  0-99 64 64 0
-row 20  solid model as
+row 24  solid model as
  0-0 64 64 0
  1-99 74 64 0
-row 22     union   assemble
+row 26     union   assemble
  0-2 64 61 0
  3-9 64 61 99 0 1 0
  10-11 64 61 0
  12-21 64 61 99 2 1 0
  22-99 64 61 0
-row 24     difference   intersection
+row 28     difference   intersection
  0-2 64 61 0
  3-14 64 61 99 1 1 0
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 26    appearance   matte   plastic   glossy   metal   density not set [change]
+row 30    appearance   matte   plastic   glossy   metal   density not set [change]
  0-2 64 64 0
  3-12 74 64 0
  13-14 64 64 0
@@ -123,63 +131,63 @@ row 26    appearance   matte   plastic   glossy   metal   density no
  62-70 64 64 0
  71-78 6c 64 102 0 1 0
  79-99 64 64 0
-row 28      suppress this group's solid model
+row 32      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 30 
+row 34 
  0-99 64 64 0
-row 32    show entities from this group
+row 36    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 34    suppress this group and the groups that use it
+row 38    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 36    force NURBS surfaces to triangle mesh
+row 40    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 39    relax constraints and dimensions
+row 43    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 41    allow redundant constraints
+row 45    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 43    suppress dof calculation (improves solver performance)
+row 47    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 45    treat all dimensions as reference
+row 49    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 47 
+row 51 
  0-99 64 64 0
-row 49  requests in group
+row 53  requests in group
  0-99 74 64 0
-row 51    (none)
+row 55    (none)
  0-99 64 61 0
-row 53 
+row 57 
  0-99 64 64 0
-row 55  constraints in group (0 DOF)
+row 59  constraints in group (0 DOF)
  0-99 74 64 0
-row 57    c001-pts-coincident
+row 61    c001-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 1 1 1
  22-99 64 61 0
-row 59    c002-pt-on-line
+row 63    c002-pt-on-line
  0-2 64 64 0
  3-17 6c 64 108 2 1 1
  18-99 64 64 0
-row 61    c003-axis-angle
+row 65    c003-axis-angle
  0-2 64 61 0
  3-17 6c 61 108 3 1 1
  18-99 64 61 0
-row 63 
+row 67 
  0-99 64 64 0
 param 10010 0 0 1
 param 10011 0 0 1

@@ -769,6 +769,7 @@ Delete                ScreenDeleteGroup; ctx:Delete Group; menu:Edit/Delete
 Face                  -q
 Conflicts             ScreenHowGroupSolved
 Redundancies          ScreenHowGroupSolved
+Implied               -q
 History               -an accessor for GroupHistory
 Analyze               -an accessor for GroupAnalysis
 AsExtrude             -an accessor for the typed group
@@ -1058,6 +1059,7 @@ SetAsSolid      ScreenChangeLinkAsSolid
 Moves           -q
 SetMoves        ScreenChangeLinkMoves
 Mechanism       -q
+Freedom         -q
 File            -q
 SetFile         ScreenRelink
 Configuration   -q

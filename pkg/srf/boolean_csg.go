@@ -294,6 +294,7 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 	}
 	var touches []geom.Vector
 	touchesOn(&touches, c, srfA, srfB, agnstA)
+	known := knownTouches(agnstA, agnstB)
 
 	if len(c.Points) == 0 {
 		return ret
@@ -365,6 +366,7 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 				}
 				refine(pi.Srf, &puv)
 				pi.P = pi.Srf.PointAt(puv.U, puv.V)
+				pi.P = splitWhereGrazing(c, pi.Srf, puv, pi.P, tolOf(srfA), agnstA, agnstB)
 				// Where the curve crosses pi.Srf at a grazing angle, as a
 				// turned part's circle crosses a thread's flank, the
 				// segment can hit pi.Srf where the curve crosses its
@@ -440,6 +442,7 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 				il = append(il, SInter{P: vtx})
 			}
 		}
+		il = snapToKnownTouches(il, known, prev.P, p.P, tolOf(srfA).ChordTolMm())
 		// And where the curve passes a point where an equal cylinder
 		// touches its own tangent, unless a split or an end lies there.
 		for _, vtx := range touches {

@@ -286,7 +286,8 @@ which already reports solve status, and asks nothing of `pkg/solver`.
    - The constructive pre-pass: a second solver, for flips that no longer occur ("Constructive
      solving").
    - Body-and-cad counting and joint recognition: F9's, in `f9-mechanism-plan.md` and ROADMAP's
-     F9 rows.
+     F9 rows. The freedom per part was built on 2026-11-09 from the Jacobian's null space instead
+     (`f9-mechanism-plan.md`, "Built 2026-11-09").
 
 These are out of `ROADMAP.md` since 2026-11-09. A sketch found to flip unnoted, or an edit that
 can be solved and fails with following, is the reason to read this note again.

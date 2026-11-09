@@ -967,11 +967,13 @@ func (sk *Sketch) solveBlock(hgs []core.HGroup, params []core.HParam, andFindFre
 			return how
 		})
 	}
+	implied := how == core.SolveRedundantOkay && !sg.AllowRedundant && sk.impliedByMates(hgs, sg.Dependent, remove)
 	for _, hg := range hgs {
 		g := sk.Group(hg)
 		if m != nil {
 			g.SolveNote = note
 		}
+		g.Solved.Implied = implied
 		g.SketchDiagnostic = diagnostic
 		g.Solved.Dof, g.Solved.Remove, g.Solved.Groups = dof, remove, sg.Dependent
 		g.Solved.Timeout = sg.Timeout

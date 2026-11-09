@@ -182,7 +182,10 @@ the sharp edge between the pocket's walls. In a flat face the two meet in a mitr
 the sharp edge, as OpenCASCADE's makeChamfer cuts them. In a curved face, where they reach the
 sharp edge at different depths, a ruled face fills between their ends, from the sharp edge to the
 face the two share, as [Fillet](fillet.md) rounds the same corner; OpenCASCADE's makeChamfer
-refuses these.
+refuses these. Chamfers of different distances meet in a mitre too, in a flat face or a curved
+one: the smaller is carried past the sharp edge up to the larger's cut, and the larger ends on the
+smaller's cut above the smaller's depth and on the smaller's wall, grown past the sharp edge, below
+it. In a flat face that takes exactly what OpenCASCADE's makeChamfer does.
 
 OpenCASCADE differs from this in two places. At a corner of three where one crossing point lies
 close to the line between the other two, it makes the triangle of the three points, where

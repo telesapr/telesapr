@@ -48,6 +48,17 @@ type runOffSide struct {
 	// set where the side leans to the face (slabAlong).
 	along geom.Vector
 	slant bool
+	// curved is set where the side is a cylinder square to the face
+	// (fillet_past_side_curved.go); p0 and n are then unused.
+	curved *curvedSide
+}
+
+// pastOf is how far p lies past the side, out of the solid.
+func (s *runOffSide) pastOf(p geom.Vector) float64 {
+	if s.curved != nil {
+		return s.curved.past(p)
+	}
+	return p.Minus(s.p0).Dot(s.n)
 }
 
 // offInto adds to off the side the foot's point p runs into: past the
@@ -68,9 +79,6 @@ func (t *Topology) offInto(off *runOff, p, n geom.Vector, others [][]geom.Vector
 		return nil
 	}
 	e := otherEdges[best]
-	if !straightPoints(t.Edges[e].Points) {
-		return nil
-	}
 	var s = -1
 	for _, f := range t.EdgeFaces(e) {
 		if f >= 0 && f != off.face {
@@ -80,7 +88,13 @@ func (t *Topology) offInto(off *runOff, p, n geom.Vector, others [][]geom.Vector
 	if s < 0 {
 		return nil
 	}
+	if !straightPoints(t.Edges[e].Points) {
+		return t.offIntoCurved(off, s, p, n)
+	}
 	side := off.sides[s]
+	if side != nil && side.curved != nil {
+		return nil
+	}
 	if side == nil {
 		ns, ok := t.planarNormal(s)
 		if !ok {
@@ -97,7 +111,7 @@ func (t *Topology) offInto(off *runOff, p, n geom.Vector, others [][]geom.Vector
 		side = &runOffSide{p0: poly[0], n: ns, poly: poly, past: math.Inf(-1), surf: t.Surface(s), along: along, slant: slant}
 		off.sides[s] = side
 	}
-	side.past = math.Max(side.past, p.Minus(side.p0).Dot(side.n))
+	side.past = math.Max(side.past, side.pastOf(p))
 	return off
 }
 
@@ -225,8 +239,9 @@ func sidesPast(picks []FilletPick, off *runOff, within func(float64) bool) (floa
 	}
 	for _, s := range off.sides {
 		// Past a leaning side the foot moves with the size along the
-		// face, not along the side's normal.
-		if s.slant {
+		// face, not along the side's normal, and past a curved one not
+		// one for one either.
+		if s.slant || s.curved != nil {
 			return 0, false
 		}
 	}
@@ -291,7 +306,15 @@ func nearSize(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, off 
 func widenedFillet(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool, off *runOff) (srf.SShell, bool) {
 	wide := sh.Clone()
 	var cuts []srf.SShell
-	for _, s := range off.sides {
+	for _, s := range off.distinct() {
+		if s.curved != nil {
+			cut, ok := widenPastCurved(&wide, sh, s, off, r)
+			if !ok {
+				return srf.SShell{}, false
+			}
+			cuts = append(cuts, cut)
+			continue
+		}
 		depth := math.Max(s.past, 0) + r + 1
 		var slab srf.SShell
 		slab.MakePrism(s.poly, geom.Vector{}, s.along.ScaledBy(depth/s.along.Dot(s.n)), off.color)

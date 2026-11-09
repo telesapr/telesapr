@@ -5672,6 +5672,10 @@
 						"decl": "func (g Group) History() GroupHistory",
 						"text": "History is what the group depends on, and where it sits in the list\nof groups."
 					},
+					"Implied": {
+						"decl": "func (g Group) Implied() (constraints []Constraint)",
+						"text": "Implied are the constraints of the group that over-determine each\nother only as the mates of a mechanism do, consistently, which the\ngroup is solved with: the hinge that closes a planar loop of parts,\nwhose axes the loop's other hinges already hold parallel, says again\nwhat they say. None when the group isn't redundant, or is refused for\nit (Redundancies), or allows redundant constraints."
+					},
 					"IsThread": {
 						"decl": "func (g Group) IsThread() (is bool)",
 						"text": "IsThread reports whether the group keeps a screw thread (a helix\ngroup, or a cosmetic thread's sketch), which AsThread edits."
@@ -5962,6 +5966,10 @@
 						"decl": "func (v LinkGroup) File() (path string)",
 						"text": "File is the file the link links, as the group names it: relative to\nthe drawing's file once that is saved, else absolute."
 					},
+					"Freedom": {
+						"decl": "func (v LinkGroup) Freedom() (out PartFreedom)",
+						"text": "Freedom is how the link group's part can move, counted from the mates\nof its mechanism at the position of the last regeneration: how many\nways it turns and slides, and what stays put while it does, its\ninvariant (Kramer's degrees of freedom analysis). A part that doesn't\nmove in a mechanism is counted from its own group's mates. It fails\nfor a group that isn't a link, and where the mechanism did not solve.\nThe count is first order, as the group's DOF is: at a singular\nposition, as a chain at full stretch, it is what the rank there gives."
+					},
 					"Info": {
 						"decl": "func (v LinkGroup) Info() (lines []string)",
 						"text": "Info describes the file a link group links, a line each, as the\ngroup's screen shows it: for a STEP file its schema and unit, how\nmany shapes, faces and triangles it gave, and the chord tolerance it\nwas tessellated to. A sketch or STL file gives none."
@@ -6223,6 +6231,10 @@
 						"text": "Users describes what names the parameter: other\nparameters, constraints and group values."
 					}
 				}
+			},
+			"PartFreedom": {
+				"text": "PartFreedom is how a part of a mechanism can move, as\nLinkGroup.Freedom counts it from its mates.",
+				"kind": "struct"
 			},
 			"RepeatGroup": {
 				"text": "RepeatGroup is the view of a step and repeat, translating or\nrotating, or of a pattern along a path: how many copies it makes.",
@@ -7823,6 +7835,22 @@
 				"text": "Interference is two parts that overlap: the groups that made them, the volume they share, and its triangles.",
 				"kind": "struct"
 			},
+			"Invariant": {
+				"text": "Invariant is what a part's freedom leaves still (PartFreedom).",
+				"kind": "int",
+				"methods": {
+					"String": {
+						"decl": "func (iv Invariant) String() string"
+					}
+				},
+				"values": [
+					"InvariantNone",
+					"InvariantPoint",
+					"InvariantAxis",
+					"InvariantPlane",
+					"InvariantDirection"
+				]
+			},
 			"KernelPacer": {
 				"text": "KernelPacer is Hooks whose owner has the thread that regenerates and nothing else, as a browser page has: KernelPace is what the long loops of a group's Boolean call now and then, on the goroutine regenerating, to let the owner draw (srf.SShell.PaceBy), or nil for nothing, as on a platform with threads of its own, where the loops run at once.",
 				"kind": "interface"
@@ -7951,6 +7979,20 @@
 			"Parameter": {
 				"text": "Parameter is a named value that expressions can use.",
 				"kind": "struct"
+			},
+			"PartFreedom": {
+				"text": "PartFreedom is how a part of a mechanism can move: how many ways it turns and slides, and what stays put while it does.",
+				"kind": "struct",
+				"methods": {
+					"String": {
+						"decl": "func (f PartFreedom) String() string",
+						"text": "String is Text with lengths in mm."
+					},
+					"Text": {
+						"decl": "func (f PartFreedom) Text(length func(float64) string) string",
+						"text": "Text says how the part can move, as \"turns about the axis through (0, 0, 0) along (0, 0, 1)\", its lengths written by length."
+					}
+				}
 			},
 			"PartMass": {
 				"text": "PartMass is the mass properties of one part.",
@@ -8530,6 +8572,10 @@
 						"decl": "func (sk *Sketch) GroupsInOrder(before, after core.HGroup) bool",
 						"text": "groupsInOrder reports whether before comes before after."
 					},
+					"ImpliedConstraints": {
+						"decl": "func (sk *Sketch) ImpliedConstraints(hg core.HGroup) []core.HConstraint",
+						"text": "ImpliedConstraints are the constraints of group hg whose redundancy its last solve found implied by the mates of its mechanism (Group.Solved.Implied), each once in handle order; none when it found none."
+					},
 					"Interferences": {
 						"decl": "func (sk *Sketch) Interferences(upTo core.HGroup) (found []Interference, meshOnly []core.HGroup)",
 						"text": "Interferences checks the parts of the model up to group upTo against each other."
@@ -8776,6 +8822,14 @@
 					"ParamsToMap": {
 						"decl": "func (s *Sketch) ParamsToMap() map[core.HParam]float64",
 						"text": "ParamsToMap returns the current param values as a map from handle to float64."
+					},
+					"PartFreedomOf": {
+						"decl": "func (sk *Sketch) PartFreedomOf(hg core.HGroup) (PartFreedom, error)",
+						"text": "PartFreedomOf is the PartFreedom of link group hg alone, of those PartFreedoms gives."
+					},
+					"PartFreedoms": {
+						"decl": "func (sk *Sketch) PartFreedoms(hg core.HGroup) ([]PartFreedom, error)",
+						"text": "PartFreedoms is how each part of the mechanism group hg is a part of can move (PartFreedom), in the group order, counted from its mates at the values of the last regeneration; a link group that doesn't move in a mechanism is a mechanism of one, its own mates the ones that count."
 					},
 					"PasteClipboard": {
 						"decl": "func (sk *Sketch) PasteClipboard(trans geom.Vector, theta, scale float64) []Selection",
@@ -9817,9 +9871,17 @@
 				"decl": "var ErrNotMissing",
 				"text": "ErrNotMissing is MendLeftOut's error when nothing left out uses the entity it is to replace."
 			},
+			"ErrNotPart": {
+				"decl": "var ErrNotPart",
+				"text": "ErrNotPart is the error of PartFreedoms for a group that is not a link group, a part."
+			},
 			"ErrNotPoint": {
 				"decl": "var ErrNotPoint",
 				"text": "ErrNotPoint is returned by Overlap for an entity that isn't a point."
+			},
+			"ErrNotSolved": {
+				"decl": "var ErrNotSolved",
+				"text": "ErrNotSolved is the error of PartFreedoms for a part whose mechanism did not solve."
 			},
 			"ErrNotTextRequest": {
 				"decl": "var ErrNotTextRequest",
@@ -9997,6 +10059,21 @@
 			},
 			"HRequestReferenceZX": {
 				"decl": "var HRequestReferenceZX"
+			},
+			"InvariantAxis": {
+				"decl": "const InvariantAxis"
+			},
+			"InvariantDirection": {
+				"decl": "const InvariantDirection"
+			},
+			"InvariantNone": {
+				"decl": "const InvariantNone"
+			},
+			"InvariantPlane": {
+				"decl": "const InvariantPlane"
+			},
+			"InvariantPoint": {
+				"decl": "const InvariantPoint"
 			},
 			"MaxUndo": {
 				"decl": "const MaxUndo",

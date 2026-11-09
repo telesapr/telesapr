@@ -32,11 +32,39 @@ func meshOver(g Group, x0, x1, y0, y1 float64) []srf.STriangle {
 
 // volumeAbove is the volume of a mesh, of which tris are the triangles
 // over the box [x0, x1] by [y0, y1] (meshOver), that lies over the box
-// and above the height zMin(y) there, by vertical lines through the
+// and above the height zMin(x, y) there, by vertical lines through the
 // centres of n by n cells: each crosses the mesh where it goes in and
 // out, so that the lengths inside above zMin add up. The mesh must be
 // closed there.
-func volumeAbove(tris []srf.STriangle, x0, x1, y0, y1 float64, n int, zMin func(y float64) float64) float64 {
+func volumeAbove(tris []srf.STriangle, x0, x1, y0, y1 float64, n int, zMin func(x, y float64) float64) float64 {
+	col := meshColumns(tris, x0, x1, y0, y1, n)
+	dx, dy := (x1-x0)/float64(n), (y1-y0)/float64(n)
+	vol := 0.0
+	for a := range n {
+		for b := range n {
+			x, y := x0+(float64(a)+0.5)*dx, y0+(float64(b)+0.5)*dy
+			vol += lengthAbove(col(x, y), zMin(x, y)) * dx * dy
+		}
+	}
+	return vol
+}
+
+// lengthAbove is how much of a vertical line, which goes in and out of
+// a closed mesh at the heights zs, lies inside it above lo.
+func lengthAbove(zs []float64, lo float64) float64 {
+	l := 0.0
+	for i := 0; i+1 < len(zs); i += 2 {
+		if a, b := math.Max(zs[i], lo), zs[i+1]; b > a {
+			l += b - a
+		}
+	}
+	return l
+}
+
+// meshColumns gives, for a point over the box [x0, x1] by [y0, y1], the
+// heights at which the vertical line through it crosses the triangles
+// tris, from the lowest up, which it finds by the cell, of n by n, it is in.
+func meshColumns(tris []srf.STriangle, x0, x1, y0, y1 float64, n int) func(x, y float64) []float64 {
 	// The triangles by the cells their boxes cover.
 	dx, dy := (x1-x0)/float64(n), (y1-y0)/float64(n)
 	cells := make([][]int, n*n)
@@ -48,39 +76,28 @@ func volumeAbove(tris []srf.STriangle, x0, x1, y0, y1 float64, n int, zMin func(
 			}
 		}
 	}
-	vol := 0.0
-	var zs []float64
-	for a := range n {
-		for b := range n {
-			x, y := x0+(float64(a)+0.5)*dx, y0+(float64(b)+0.5)*dy
-			zs = zs[:0]
-			for _, i := range cells[a*n+b] {
-				tr := &tris[i]
-				// Where the line through (x, y) crosses the triangle, by its
-				// barycentric coordinates in the plane z = 0.
-				d := (tr.B.Y-tr.C.Y)*(tr.A.X-tr.C.X) + (tr.C.X-tr.B.X)*(tr.A.Y-tr.C.Y)
-				if d == 0 {
-					continue
-				}
-				l1 := ((tr.B.Y-tr.C.Y)*(x-tr.C.X) + (tr.C.X-tr.B.X)*(y-tr.C.Y)) / d
-				l2 := ((tr.C.Y-tr.A.Y)*(x-tr.C.X) + (tr.A.X-tr.C.X)*(y-tr.C.Y)) / d
-				l3 := 1 - l1 - l2
-				if l1 < 0 || l2 < 0 || l3 < 0 {
-					continue
-				}
-				zs = append(zs, l1*tr.A.Z+l2*tr.B.Z+l3*tr.C.Z)
+	return func(x, y float64) []float64 {
+		a, b := cell(x, x0, dx), cell(y, y0, dy)
+		var zs []float64
+		for _, i := range cells[a*n+b] {
+			tr := &tris[i]
+			// Where the line through (x, y) crosses the triangle, by its
+			// barycentric coordinates in the plane z = 0.
+			d := (tr.B.Y-tr.C.Y)*(tr.A.X-tr.C.X) + (tr.C.X-tr.B.X)*(tr.A.Y-tr.C.Y)
+			if d == 0 {
+				continue
 			}
-			slices.Sort(zs)
-			zs = slices.CompactFunc(zs, func(p, q float64) bool { return math.Abs(q-p) < 1e-9 })
-			lo := zMin(y)
-			for i := 0; i+1 < len(zs); i += 2 {
-				if a, b := math.Max(zs[i], lo), zs[i+1]; b > a {
-					vol += (b - a) * dx * dy
-				}
+			l1 := ((tr.B.Y-tr.C.Y)*(x-tr.C.X) + (tr.C.X-tr.B.X)*(y-tr.C.Y)) / d
+			l2 := ((tr.C.Y-tr.A.Y)*(x-tr.C.X) + (tr.A.X-tr.C.X)*(y-tr.C.Y)) / d
+			l3 := 1 - l1 - l2
+			if l1 < 0 || l2 < 0 || l3 < 0 {
+				continue
 			}
+			zs = append(zs, l1*tr.A.Z+l2*tr.B.Z+l3*tr.C.Z)
 		}
+		slices.Sort(zs)
+		return slices.CompactFunc(zs, func(p, q float64) bool { return math.Abs(q-p) < 1e-9 })
 	}
-	return vol
 }
 
 // flatTopBlend is the blend of size r on the x band's edge on the cone
@@ -120,7 +137,7 @@ func makeFlatTopBlend(chamfer bool, r float64) (flatTopBlend, error) {
 func tangentOracle(flat flatTopBlend, top, sag float64) float64 {
 	// The arc's centre lies c under the band's edge at y = 3.
 	c := (9 - sag*sag) / (2 * sag)
-	return flat.added - volumeAbove(flat.tris, 6, 12, 3, 9, 600, func(y float64) float64 { return top - 3*(y-3)/c })
+	return flat.added - volumeAbove(flat.tris, 6, 12, 3, 9, 600, func(_, y float64) float64 { return top - 3*(y-3)/c })
 }
 
 // pastRoundTopRefused are the blends of TestChamferRunsOffPastRoundTop

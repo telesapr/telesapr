@@ -1,8 +1,8 @@
 # Mechanisms
 
 > **Experimental.** Mechanisms are new and still being worked on. What the menus, the group
-> screen's **part** row and the script calls (`SetMoves`, `HingeDriven`, `ConcentricDriven`,
-> `SetRange`) do may change in a later version, and a drag may move the parts otherwise than it
+> screen's **part** and **freedom** rows and the script calls (`SetMoves`, `HingeDriven`,
+> `ConcentricDriven`, `SetRange`, `Freedom`) do may change in a later version, and a drag may move the parts otherwise than it
 > does now. A model saved with parts that move in a mechanism (`link-moves` in the file) opens in
 > later versions, but its parts may come to rest elsewhere. Check what a mechanism does before
 > relying on it, and say where it goes wrong.
@@ -95,14 +95,46 @@ stacked at different heights, couldn't hold in 3D.
 ## Closing a loop
 
 The crank, the rod and the piston make a loop with the frame: the last joint, the piston's slide,
-closes it. In 3D a loop of hinges about parallel axes has more equations than it needs: a last
-hinge would be redundant, and the mechanism would fail to solve. Close the loop with a point on a
-line instead, or a slide made in a workplane, which give as many equations as the loop needs. Or
-allow redundant constraints in one group of the mechanism, which then holds for all of it.
+closes it. A four-bar linkage, a crank, a coupler and a rocker hinged on a ground bar, closes its
+loop with a last hinge. In 3D that hinge says again something the other hinges already hold: that
+the rocker's axis is parallel to the ground's. Its constraints over-determine the others, but only
+as mates do, and they stay consistent however the linkage moves. A mechanism accepts that: it
+solves, keeps its freedom, and the constraints that say the same thing again are marked
+`(implied)` in the group's list of constraints. A point on a line, or a slide made in a workplane,
+closes a loop as well, with no repetition.
+
+What is still refused is a repetition that isn't a mate's: a dimension with a value, which another
+dimension could contradict, is made a reference dimension, as in any sketch. And a loop that can't
+close, as a chain too short for the gap it spans, doesn't solve at all.
 
 Put the parts roughly where they go before the last joint closes the loop. Parts lying in one
 straight line are at full stretch, where the loop's end can't move along it at first, and the
 solve can't close the loop from there.
+
+## How each part can move
+
+A link group's screen, for a part that moves in a mechanism, shows two more rows: the mechanism's
+size and its degrees of freedom (`mechanism of 3 parts, 1 DOF`), and how the part can move in it,
+counted from its mates:
+
+- `fixed`: the part can't move.
+- `turns about the axis through (x, y, z) along (dx, dy, dz)`: a part on a hinge, as a four-bar's
+  crank and rocker, or a pin flush in its hole.
+- `turns about and slides along the axis ...`: a pin in a hole that isn't held flush.
+- `screws along the axis ..., 2.00 a turn`: a part on a screw mate.
+- `moves in the plane through ... normal to ...`: a part flush on a face, free to slide and turn
+  on it.
+- `slides along (dx, dy, dz)`: the engine's piston.
+- `turns about the point (x, y, z)`: a ball joint, a point of the part on a point.
+- `turns about an axis that moves with the mechanism`: a four-bar's coupler, or an engine's rod.
+  At each moment it turns about some point, but that point moves as the linkage does, so nothing
+  of the part stays put.
+- `free`, or a count such as `turns 1 way and slides 1 way` where nothing stays put.
+
+A driven joint adds `driven by angle`: the count is what the mates allow, with the driving
+dimension and any minimum or maximum let go, so a driven lid still `turns about` its hinge. The
+count is taken where the parts are now. At a position where the mechanism locks up for a moment,
+as a chain pulled straight, it counts what the mechanism can do there, as the group's DOF does.
 
 ## Dragging
 
@@ -166,6 +198,19 @@ fmt.Println(piston.AsLink().Mechanism(), piston.Dof())
 ```
 
 `Moves` reads the flag back, and `Mechanism` lists the groups of the link's mechanism, in order.
+`Freedom` says how the part can move, as the link group's screen does:
+
+```go
+f := piston.AsLink().Freedom()
+fmt.Println(f.Text)                 // slides along (0, 1, 0), driven by angle
+fmt.Println(f.Turns, f.Slides)      // 0 1
+fmt.Println(f.Invariant, f.Dir)     // direction (0, 1, 0)
+```
+
+`Turns` and `Slides` count the ways it turns and slides; `Invariant` is what stays put, `"point"`,
+`"axis"`, `"plane"`, `"direction"` or `"none"`, at `Point` along or normal to `Dir`; `Lead` is a
+screw's travel a turn, `Moving` a turn about an axis that moves, `DrivenBy` the parameters that
+drive it. `Group.Implied` lists the constraints a closed loop repeats.
 
 ## Not yet
 
@@ -175,6 +220,8 @@ fmt.Println(piston.AsLink().Mechanism(), piston.Dof())
   it is turned and solves, as for any part: it doesn't follow the mechanism's freedom.
 - A drag of an assembly with a Boolean among its groups (a cut through two parts) meshes the
   assembly again at every step, which is slower.
+- The joints are the mates there are: no ball, cylindrical, planar or slot mate of their own yet.
+  A point on a point makes a ball joint, a Concentric alone a cylindrical one.
 - A 3D sketch can't be a part of a mechanism, and a drag doesn't write back into a driving
   parameter.
 - Edges that lie on each other, as a closed lid's on its box's, can't both be picked where they

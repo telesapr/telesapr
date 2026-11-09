@@ -625,6 +625,25 @@ func (g Group) Redundancies() (sets [][]Constraint) {
 	return sets
 }
 
+// Implied are the constraints of the group that over-determine each
+// other only as the mates of a mechanism do, consistently, which the
+// group is solved with: the hinge that closes a planar loop of parts,
+// whose axes the loop's other hinges already hold parallel, says again
+// what they say. None when the group isn't redundant, or is refused for
+// it (Redundancies), or allows redundant constraints.
+func (g Group) Implied() (constraints []Constraint) {
+	g.d.read(func(sk *sketch.Sketch) {
+		group := g.get(sk)
+		if !group.Solved.Implied || !group.IsSolvedOkay() {
+			return
+		}
+		for _, hc := range sk.ImpliedConstraints(group.H) {
+			constraints = append(constraints, Constraint{g.d, hc})
+		}
+	})
+	return constraints
+}
+
 func (g Group) moveWithSources(before core.HGroup) (moved []Group, err error) {
 	g.d.read(func(sk *sketch.Sketch) {
 		g.get(sk)

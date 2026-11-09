@@ -160,6 +160,11 @@ type Group struct {
 		// allowed redundant constraints: the group's own setting, or
 		// that of another group of its mechanism.
 		RedundantAllowed bool
+		// Implied is that the group's constraints over-determine each
+		// other only as the mates of a mechanism do, consistently: a
+		// planar loop closed by a hinge, whose axes the loop already
+		// holds parallel (impliedByMates). Such a group is solved.
+		Implied bool
 	}
 
 	Subtype   GroupSubtype
@@ -473,7 +478,7 @@ func (g *Group) Topology() (*topo.Topology, error) {
 
 func (g *Group) IsSolvedOkay() bool {
 	return g.Solved.How == core.SolveOkay ||
-		((g.AllowRedundant || g.Solved.RedundantAllowed) && g.Solved.How == core.SolveRedundantOkay)
+		((g.AllowRedundant || g.Solved.RedundantAllowed || g.Solved.Implied) && g.Solved.How == core.SolveRedundantOkay)
 }
 
 func (g *Group) IsVisible() bool {

@@ -23,7 +23,7 @@ import (
 // directory (scripts/regen-guide-videos.sh): a frame after each step,
 // the pointer gliding between the places it is moved to, a ring where
 // it presses, the keys pressed, and a caption under the windows. The
-// frames go to ffmpeg, which writes NAME.webm. Without the variable the
+// frames go to ffmpeg, which writes NAME.webm and NAME.mp4. Without the variable the
 // commands do nothing, so the scenarios run as tests as before. Videos
 // are not goldens: ffmpeg's bytes differ between its versions.
 
@@ -133,6 +133,18 @@ func (r *uiScriptRunner) videoEnd() {
 		"-row-mt", "1", "-deadline", "good", "-an", out)
 	if b, err := cmd.CombinedOutput(); err != nil {
 		r.t.Fatalf("ffmpeg for %s: %v\n%s", out, err, b)
+	}
+	// H.264 beside it, for the browsers and players that lack VP9.
+	// yuv420p and +faststart make it play in all of them and start
+	// before it is all loaded; the frames are as flat as the WebM's, so
+	// a constant quality keeps it small too.
+	mp4 := filepath.Join(v.dir, v.name+".mp4")
+	cmd = exec.Command("ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+		"-f", "concat", "-safe", "0", "-i", listPath,
+		"-vf", "fps=25,format=yuv420p", "-c:v", "libx264", "-preset", "slow", "-crf", "30",
+		"-movflags", "+faststart", "-an", mp4)
+	if b, err := cmd.CombinedOutput(); err != nil {
+		r.t.Fatalf("ffmpeg for %s: %v\n%s", mp4, err, b)
 	}
 	v.name = ""
 }
@@ -386,22 +398,34 @@ func checkGuideVideos(t *testing.T, made map[string]bool) {
 		for _, name := range videoRefs(string(data)) {
 			shown[name] = true
 			if !made[name] {
-				t.Errorf("%s shows videos/%s.webm, which no scenario records", filepath.Base(p), name)
+				t.Errorf("%s shows videos/%s, which no scenario records", filepath.Base(p), name)
 			}
 		}
 	}
-	files, err := filepath.Glob(filepath.Join(docScenarioDir, "..", "videos", "*.webm"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, f := range files {
-		if name := strings.TrimSuffix(filepath.Base(f), ".webm"); !shown[name] || !made[name] {
-			t.Errorf("videos/%s.webm is shown by no page or recorded by no scenario", name)
+	// Each video is a WebM and an MP4 side by side.
+	for _, ext := range []string{".webm", ".mp4"} {
+		files, err := filepath.Glob(filepath.Join(docScenarioDir, "..", "videos", "*"+ext))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, f := range files {
+			name := strings.TrimSuffix(filepath.Base(f), ext)
+			if !shown[name] || !made[name] {
+				t.Errorf("videos/%s%s is shown by no page or recorded by no scenario", name, ext)
+			}
+			other := ".mp4"
+			if ext == ".mp4" {
+				other = ".webm"
+			}
+			if _, err := os.Stat(filepath.Join(filepath.Dir(f), name+other)); err != nil {
+				t.Errorf("videos/%s%s has no %s beside it", name, ext, other)
+			}
 		}
 	}
 }
 
-// videoRefs lists the names of the videos/<name>.webm a page shows.
+// videoRefs lists the names of the videos/<name>.webm and
+// videos/<name>.mp4 a page shows.
 func videoRefs(page string) []string {
 	var names []string
 	for rest := page; ; {
@@ -410,8 +434,14 @@ func videoRefs(page string) []string {
 			return names
 		}
 		rest = rest[i+len("videos/"):]
-		if j := strings.Index(rest, ".webm"); j >= 0 && !strings.ContainsAny(rest[:j], " )\"\n") {
-			names = append(names, rest[:j])
+		end := strings.IndexAny(rest, " )\"\n")
+		if end < 0 {
+			end = len(rest)
+		}
+		if name, ok := strings.CutSuffix(rest[:end], ".webm"); ok {
+			names = append(names, name)
+		} else if name, ok := strings.CutSuffix(rest[:end], ".mp4"); ok {
+			names = append(names, name)
 		}
 	}
 }
@@ -429,9 +459,9 @@ func TestKeyLabel(t *testing.T) {
 
 func TestVideoRefs(t *testing.T) {
 	t.Parallel()
-	page := "<video src=\"videos/a-b.webm\" controls></video>\n([a-b.webm](videos/a-b.webm))\nvideos/ and more.webm"
+	page := "<video controls><source src=\"videos/a-b.webm\"><source src=\"videos/a-b.mp4\"></video>\n([a-b.webm](videos/a-b.webm))\nvideos/ and more.webm"
 	got := videoRefs(page)
-	if len(got) != 2 || got[0] != "a-b" || got[1] != "a-b" {
+	if len(got) != 3 || got[0] != "a-b" || got[1] != "a-b" || got[2] != "a-b" {
 		t.Errorf("videoRefs = %q", got)
 	}
 }
@@ -466,11 +496,13 @@ video end
 		t.Fatal(err)
 	}
 	runDocScenario(t, scenario, "")
-	fi, err := os.Stat(filepath.Join(dir, "v.webm"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if fi.Size() < 1000 {
-		t.Errorf("v.webm is %d bytes", fi.Size())
+	for _, name := range []string{"v.webm", "v.mp4"} {
+		fi, err := os.Stat(filepath.Join(dir, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if fi.Size() < 1000 {
+			t.Errorf("%s is %d bytes", name, fi.Size())
+		}
 	}
 }

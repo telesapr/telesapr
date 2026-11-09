@@ -65,3 +65,35 @@ func unionTouch(a, b []geom.Vector) []geom.Vector {
 	}
 	return out
 }
+
+// knownTouches are the touching points the operands' features gave
+// (SShell.Touch), each once.
+func knownTouches(a, b *SShell) []geom.Vector {
+	var out []geom.Vector
+	for _, sh := range []*SShell{a, b} {
+		if sh != nil {
+			out = unionTouch(out, sh.Touch)
+		}
+	}
+	return out
+}
+
+// snapToKnownTouches splits the segment from a to b at each known
+// touching point it passes within reach of, in place of the splits
+// lying within reach of that point. An edge of one operand running
+// through the point (a fitted tube's seam, which passes where the
+// profile crosses the turn's axis) meets the other operand's surface
+// there at a grazing angle, both being tangent: its crossing, refined,
+// lands a little along it, a hair from where the marched curves end at
+// the sink (2e-4 at a sweep's tube coming back across the line before
+// its corner), and the two vertices leave the mesh split there.
+func snapToKnownTouches(il []SInter, known []geom.Vector, a, b geom.Vector, reach float64) []SInter {
+	for _, q := range known {
+		if !q.OnLineSegment(a, b, reach) || q.EqualsTol(a, splitEndTol) || q.EqualsTol(b, splitEndTol) {
+			continue
+		}
+		il = slices.DeleteFunc(il, func(o SInter) bool { return o.P.Minus(q).Magnitude() < reach })
+		il = append(il, SInter{P: q})
+	}
+	return il
+}

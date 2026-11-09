@@ -14,8 +14,21 @@ import (
 // to where both touch the face they share, a radius past the vertex.
 // That is what the balls take away; a corner swung round the crease
 // would leave the overlap and come to a cusp on it. Where the two feet
-// lie at different depths the walls would have to grow past the crease
-// between them, and the ends pivot instead.
+// lie at different depths, as round a pocket in a cone, the fillets'
+// ends pivot instead (a corner patch, rollingpivot_corner.go).
+//
+// Fillets of two radii meet in a mitre too, at one depth or two: the
+// kinked mitre of rollingkink.go, turned inside out. The smaller fillet,
+// carried on past the crease, ends where it crosses the larger's swept
+// surface; the larger is kinked where its arcs pass the smaller's foot
+// on the smaller's wall: above that it ends at the smaller's swept
+// surface, below it at the smaller's wall's plane carried past the
+// crease. That wall grows past the crease along the larger's end section,
+// from the crease at the larger's depth up to the kink, where at a convex
+// crease it is cut back the same way. It is what the two balls carried
+// past the crease take away, as OpenCASCADE's makeFillet and makeChamfer
+// make it: chamfers to the closed form d²D/2 − d³/6 at each such corner
+// of a flat face, d the smaller distance and D the larger.
 //
 // Past the crease an end's point on its own wall lies inside the mate's
 // swept surface and in along the chain outside it, the other way round
@@ -29,7 +42,7 @@ import (
 const pivotSameFoot = 10 * geom.LengthEps
 
 // insideMitres makes a mitre of each pair of pivot ends of rbs, traced,
-// whose feet on the crease are one point.
+// whose feet on the crease are one point or whose radii differ.
 func insideMitres(rbs []*rollingBall) error {
 	for _, rb := range rbs {
 		if rb.closed {
@@ -40,16 +53,18 @@ func insideMitres(rbs []*rollingBall) error {
 				continue
 			}
 			mate := end.mate
-			qa, err := rb.creaseFoot(k)
-			if err != nil {
-				return err
-			}
-			qb, err := mate.creaseFoot(end.mateK)
-			if err != nil {
-				return err
-			}
-			if qa.Minus(qb).Magnitude() > math.Max(rb.tol, pivotSameFoot) {
-				continue
+			if rb.r == mate.r {
+				qa, err := rb.creaseFoot(k)
+				if err != nil {
+					return err
+				}
+				qb, err := mate.creaseFoot(end.mateK)
+				if err != nil {
+					return err
+				}
+				if qa.Minus(qb).Magnitude() > math.Max(rb.tol, pivotSameFoot) {
+					continue
+				}
 			}
 			oe := mate.ends[end.mateK]
 			for _, x := range []*rbEnd{end, oe} {
@@ -88,7 +103,7 @@ func (rb *rollingBall) creaseFoot(k int) (geom.Vector, error) {
 func (rb *rollingBall) insideMitreFoot(k, i int, gap func(float64) (float64, rbSection, bool),
 	arc func(float64) float64, zone, step float64) (float64, rbSection, error) {
 	at := rb.t.Vertices[rb.ends[k].v].P
-	from := -3 * rb.r
+	from := -3 * rb.pastR(k)
 	if rb.ends[k].ban[i] >= 0 || rb.flat {
 		prev, prevG := math.NaN(), math.NaN()
 		for x := from; x <= zone; x += step {
@@ -151,7 +166,7 @@ func (rb *rollingBall) insideMitreFoot(k, i int, gap func(float64) (float64, rbS
 func (rb *rollingBall) insideMitreRoot(k int, h func(float64) (float64, rbSection),
 	arc func(float64) float64, zone float64) (float64, rbSection, error) {
 	at := rb.t.Vertices[rb.ends[k].v].P
-	lo, hi := -3*rb.r, zone
+	lo, hi := -3*rb.pastR(k), zone
 	gl, _ := h(lo)
 	gh, _ := h(hi)
 	if !(gl > 0) || !(gh > 0) {
@@ -185,4 +200,12 @@ func (rb *rollingBall) insideMitreRoot(k int, h func(float64) (float64, rbSectio
 	x := (in + out) / 2
 	_, sec := h(x)
 	return arc(x), sec, nil
+}
+
+// pastR is the radius by which, three times over, the searches of the
+// mitre at end k start past the vertex: the larger of the chain's and
+// its mate's, since with two radii the mate's swept surface, carried on
+// past the crease, reaches past it by twice its own radius.
+func (rb *rollingBall) pastR(k int) float64 {
+	return math.Max(rb.r, rb.ends[k].mate.r)
 }

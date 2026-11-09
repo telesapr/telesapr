@@ -463,6 +463,56 @@ func (v LinkGroup) Mechanism() (groups []Group) {
 	return groups
 }
 
+// PartFreedom is how a part of a mechanism can move, as
+// LinkGroup.Freedom counts it from its mates.
+type PartFreedom struct {
+	// Turns is the ways the part can turn, 0 to 3, and Slides the ways
+	// it can slide without turning; both 0 for a part held fixed.
+	Turns, Slides int
+	// Invariant is what stays put while the part moves: "point" (it
+	// turns about Point), "axis" (it turns about the axis through Point
+	// along Dir, and may slide or screw along it), "plane" (it moves in
+	// the plane through Point normal to Dir), "direction" (it slides
+	// along Dir) or "none".
+	Invariant  string
+	Point, Dir Vec
+	// Lead is how far a part that screws along its axis goes along Dir
+	// in a turn, in mm; 0 for a plain turn.
+	Lead float64
+	// Moving is that the part turns about an axis that moves as the
+	// mechanism does, as a four-bar's coupler does: no invariant.
+	Moving bool
+	// DrivenBy are the parameters that drive the part, as a driven
+	// hinge's angle: the counts are the mates' freedom with the drives
+	// and the bounds let go.
+	DrivenBy []string
+	// Text says it in words, as the link group's screen does: "turns
+	// about the axis through (0, 0, 0) along (0, 0, 1)", in mm.
+	Text string
+}
+
+// Freedom is how the link group's part can move, counted from the mates
+// of its mechanism at the position of the last regeneration: how many
+// ways it turns and slides, and what stays put while it does, its
+// invariant (Kramer's degrees of freedom analysis). A part that doesn't
+// move in a mechanism is counted from its own group's mates. It fails
+// for a group that isn't a link, and where the mechanism did not solve.
+// The count is first order, as the group's DOF is: at a singular
+// position, as a chain at full stretch, it is what the rank there gives.
+func (v LinkGroup) Freedom() (out PartFreedom) {
+	g := v.g
+	g.d.read(func(sk *sketch.Sketch) {
+		g.mustBe(g.get(sk), sketch.GroupLinked, "Freedom")
+		f, err := sk.PartFreedomOf(g.H)
+		if err != nil {
+			fail("the freedom of %s: %v", sk.GroupName(g.H), err)
+		}
+		out = PartFreedom{Turns: f.Turns, Slides: f.Slides, Invariant: f.Invariant.String(),
+			Point: f.Point, Dir: f.Dir, Lead: f.Lead, Moving: f.Moving, DrivenBy: f.DrivenBy, Text: f.String()}
+	})
+	return out
+}
+
 // SetAsSolid reads a link group's STEP file as a solid, or as a
 // reference mesh, and reads it again.
 func (v LinkGroup) SetAsSolid(on bool) {

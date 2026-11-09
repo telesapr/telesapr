@@ -24,11 +24,11 @@ def on_page_markdown(markdown, page, config, files):
     return _LINK.sub(repl, markdown)
 
 
-# A page's <video src="videos/..."> is HTML, which mkdocs leaves as it
+# A page's <video src="videos/..."> or <source src="videos/..."> is HTML, which mkdocs leaves as it
 # is, while it moves the page into a directory of its own
 # (fillet.md -> fillet/index.html): the source is made relative to where
 # the page ends up, as mkdocs does for Markdown links.
-_VIDEO = re.compile(r'(<video\b[^>]*\bsrc=")([^":#]+)(")')
+_VIDEO = re.compile(r'(<(?:video|source)\b[^>]*\bsrc=")([^":#]+)(")')
 
 
 def on_page_content(html, page, config, files):

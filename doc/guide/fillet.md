@@ -19,9 +19,12 @@ Examples:
 
 Round two top edges of a block. The video shows the steps below from start to end:
 
-<video src="videos/fillet-edges.webm" controls muted loop playsinline style="width:100%"></video>
+<video controls muted loop playsinline style="width:100%">
+<source src="videos/fillet-edges.webm" type="video/webm">
+<source src="videos/fillet-edges.mp4" type="video/mp4">
+</video>
 
-([fillet-edges.webm](videos/fillet-edges.webm), where the page shows no video.)
+([fillet-edges.webm](videos/fillet-edges.webm), [fillet-edges.mp4](videos/fillet-edges.mp4), where the page shows no video.)
 
 1. Press R for a rectangle and click two corners.
 
@@ -103,7 +106,10 @@ doc.Features.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 0, 5))}, 1.5, "")
   have cut down into it, and a side with holes in it, as a cross bore, keeps them. A side
   that leans to the face, as a drafted plate's, cuts the fillet along its own plane, up to
   about 53° off square, unless that plane runs on above the face into the solid (as into the
-  rod beside a side leaning out by 45°). A curved side is still refused.
+  rod beside a side leaning out by 45°). A curved side square to the face, as a disc's round
+  rim, the arc of a plate's rounded end or the wall of a bore beside a rod, cuts the fillet
+  along its own cylinder in the same way, unless the solid goes on past it (a ledge round the
+  disc). A side curved some other way, as a cone, is still refused.
 - A rounded edge takes with it the edges it meets smoothly, as round a rounded rectangle.
 - Where two rounded edges meet, they are mitred. Where three meet at the corner of a block, a
   sphere rounds the corner.
@@ -211,6 +217,13 @@ between the sharp edge and the shared face. A rim that comes back to its own ins
 teardrop pocket's, is rounded the same way. Any one, two or three edges of a pocket's rim in a
 flat face are rounded so too, those that meet no other ending at the pocket's walls.
 
+Fillets of different radii meet at such a corner too, in a flat face or a curved one. Each is
+carried on past the sharp edge, as the balls rolling along both edges would cut it: the smaller
+ends where it meets the larger, and the larger ends partly on the smaller, partly on the smaller
+one's wall, which grows a little way past the sharp edge, from the larger fillet's depth on that
+edge up to the smaller's. OpenCASCADE rounds them the same way. Chamfers of different distances
+meet the same way.
+
 An edge along a crease that fades out, as a loft's crease from a corner of its square foot up to
 where its sides meet smoothly, is rounded or chamfered up to where its faces turn by almost
 nothing, and ends there. Where the crease turns back above that, its faces meeting at an angle
@@ -238,7 +251,9 @@ past it, it comes round under the fillet's end again, as a band's top rounded ti
 narrow band, would cut the end in the wrong place: there that face is carried on flat instead,
 by the plane tangent to it along its edge, where that edge is straight. The plane becomes a flat
 face beside the curved one, meeting it smoothly and counted as the same face, and the fillet's
-end runs onto it as onto a flat face. A wide chamfer of the band's side whose end lay wholly past
+end runs onto it as onto a flat face. Where that edge is curved, as the edge of a ring-shaped
+band's rounded top with its side, the face is carried on by its tangents across the edge instead:
+a curved face beside it, meeting it smoothly along the whole edge and counted as the same face. A wide chamfer of the band's side whose end lay wholly past
 the rounded top carried on is made so; so is any blend there of a top that sags 2 across a band
 6 wide. Where the end runs off only just, so that the flat face would be a sliver of no area, the
 fillet is refused, saying so.
@@ -252,11 +267,16 @@ on, each slope grows over the fillet up to that line, and the side goes. This ho
 the blend: where an end's section reaches above the far slope carried on past the ridge, it is
 above the near slope there too, which cuts that part away.
 
+A fillet that takes material away may run off too, as one of an arched bar's top edge whose side
+is lower at the end than the fillet reaches. Its end then crosses the next face (the bar's bottom)
+on the end face's own edge with it, and the faces shrink instead of growing: the end face and the
+bottom both lose their corner with the side, up to the fillet's end and its cut by the bottom.
+
 The fillet is refused at the place in these cases:
 
 - the ball can't touch both faces (the radius is too large for the room beside a hole);
-- the fillet's end runs off both faces;
-- a fillet that takes material away runs off onto the next face.
+- the fillet's end runs off both its faces at once, each past the end of its edge with the end
+  face.
 
 **A curved end face.** The end face may be curved too, as a box's upright edge between flat walls
 ends at the top on a domed lid. The ball's sweep is cut by the dome, and the fillet's end is a
@@ -284,12 +304,13 @@ These are refused with a message:
 - A corner where a convex edge meets a concave one at a vertex that the stages can't round while
   some edge there is left sharp, but for one, two opposite or three of a saddle's four edges as
   above, fillets or chamfers, and a ridge and a valley side by side.
-- At an inside corner between two fillets between curved faces (above): fillets of different
-  radii, a fillet meeting a chamfer, a sharp edge that is curved, or a corner that would cross a
-  seam of the face the two share (make them smaller).
-- A blend that takes material away and runs off onto the next face, and a chamfer whose end
-  runs off both its faces onto the next one (the end lies wholly past the next face) where that
-  face is flat, or curved along a curved edge, so that no tangent plane takes it on.
+- At an inside corner between two fillets between curved faces (above): a sharp edge that is
+  curved, or a corner that would cross a seam of the face the two share (make them smaller). Nor
+  can a fillet that meets one of another radius at one inside corner turn another where the two
+  fillets there, of one radius, reach the sharp edge at different depths (give them all one
+  radius).
+- A blend whose end runs off both its faces, each onto the face past it, as a plate's foot on a
+  cone cut flat beside the plate where the plate's top is low too.
 
 Also:
 

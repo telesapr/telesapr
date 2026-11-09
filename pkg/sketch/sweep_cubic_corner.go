@@ -273,6 +273,7 @@ func (sr *sweepRuns) sweepRunsJoined(sbls *srf.SBezierLoopSetSet, color core.RGB
 			fills = append(fills, fill)
 			touch = append(touch, sr.cornerTouches(set, sr.atCorner(starts, k), k, tol)...)
 		}
+		touch = append(touch, sr.crossingTouches(set, starts, tol)...)
 	}
 	for _, sh := range slices.Concat(fills, fitted, exact) {
 		sh.Touch = touch
@@ -324,14 +325,31 @@ func (g *Group) generateRunsSweepShell(sk *Sketch, src *Group, start, end uint32
 }
 
 // topologySound reports whether the shell's topology is a closed solid
-// whose holes its mesh counts the same: joinFlush checks the mesh's
-// edges, but a join can leave the faces' loops wrong where the mesh
-// closes. It looks at a copy, so that the caches meshing and building
-// the topology fill don't move the last bits of the solid's own mesh.
+// whose holes its mesh counts the same, and whether the solid the group
+// makes of it (united with nothing, as joinFlush checks it) has a mesh
+// no edge passes through, counting faces lying flat on each other as
+// Check Solid does: joinFlush checks the mesh's edges, but a join can
+// leave the faces' loops wrong where the mesh closes, and only faces
+// crossing where it looks. A run's end cap lying inside a tube the path
+// comes back through (a cubic bent back across the line after its
+// corner) was kept overlapping itself so, in a solid joinFlush passed.
+// It looks at copies, so that the caches meshing and building the
+// topology fill don't move the last bits of the solid's own mesh.
 func topologySound(orig *srf.SShell) bool {
 	c := orig.Clone()
 	var m srf.SMesh
 	c.TriangulateInto(&m)
 	t, err := topo.Build(&c)
-	return err == nil && len(t.Validate()) == 0 && t.Euler() == topo.MeshEuler(&m)
+	if err != nil || len(t.Validate()) != 0 || t.Euler() != topo.MeshEuler(&m) {
+		return false
+	}
+	c = orig.Clone()
+	final := srf.SShell{Tol: orig.Tol}
+	final.MakeFromUnionOf(&srf.SShell{Tol: orig.Tol}, &c)
+	final.MergeCoincidentSurfaces()
+	var fm srf.SMesh
+	final.TriangulateInto(&fm)
+	inter := false
+	srf.SKdNodeFrom(&fm).MakeCertainEdgesInto(&srf.SEdgeList{}, srf.EdgeSelfInter, true, &inter, nil, 0)
+	return !inter
 }

@@ -163,10 +163,11 @@ func TestSweepSharpCornerBesideCubic(t *testing.T) {
 // Sharp corners beside cubics over both orders, corners either way,
 // cubics bent either way, two leads and four profiles: every sweep made
 // sound, or a problem naming the corner; none unsound. Over the whole
-// grid at lead 10, bars of 2 by 4 either way and a diamond are made at
-// every corner and bend, 60 of 60 each, and a circle at 56: refused at
-// a turn of 150° with the cubic bent 90° the same way, where the
-// corner's fill fails.
+// grid at lead 10, bars of 2 by 4 either way, a diamond and a circle
+// are made at every corner and bend, 60 of 60 each; the circle at a
+// turn of 150° with the cubic bent 90° the same way, where the cubic
+// comes back across the line, since 2026-11-09
+// (TestSweepSharpCornerBesideCubicComesBack).
 func TestSweepSharpCornerBesideCubicSweep(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {

@@ -1,5 +1,8 @@
 # F9 Mechanisms: the plan (2026-11-05)
 
+Refreshed 2026-11-09: the degrees of freedom analysis, items 1 and 2, is built ("Built
+2026-11-09" under "Degrees of freedom analysis").
+
 The user asked whether a mechanism can be moved: parts linked and joined, one pulled in the
 window and the others turning and sliding with it. This is what was found on devel `19f6d08f`,
 what is decided, and the order of work. It is the working note of the package: its commits add
@@ -336,6 +339,56 @@ point–point coincidence, which no mate here is). That gives items 1 and 2 with
 fragments and is right at full stretch, where the rank is not; positions would still come from
 `solveBlock` and the root from continuity. Lee-St.John's joint recognition (CCCG 2012) names the
 revolute and prismatic joints a pair of mates implies, which is the status text of item 1.
+
+**Built 2026-11-09: the count, numerically, and the closing hinge.** Items 1 and 2, on branch
+`rd12-dof`.
+
+*The decision: the null space, not the table.* Kramer's fragments are a hand-written table, one
+entry per (counts, invariant, mate kind), and know only the mate kinds written into it; a user's
+own constraints between parts (a point on a line, a parallel, a workplane-projected slide, as the
+engine's piston) would each need an entry. The mechanism's Jacobian already holds every
+constraint there is, and `System.NullSpace` gives every first-order motion of the block. Each
+null vector, read through a part's seven placement parameters, is a twist of the part: its turn
+ω, read off R'·Rᵀ by a central difference of the quaternion's rotation (exact: the rotation is
+quadratic in q), and the speed of its origin. The span of a part's twists is its freedom: the
+rank of the turns is `Turns`, the rest `Slides`, and the invariant is what every twist leaves
+still: the screw axis of a single turn (pitch zero a hinge, else a screw with its lead), the
+common point of two or three turns (a ball), the normal of two slides with or without a turn
+about it (a plane), the direction of one slide. Body-and-cad counting (`solver-literature.md`)
+would be generic too and right at full stretch, but it is a second, combinatorial model of the
+constraints to keep in step with the first; the numeric count is a few dozen lines on top of
+what the pull already uses. Its weakness is the rank's: at a singular position it counts what
+the rank there gives, as the group's DOF does, which the guide says.
+
+*The invariant made reliable.* A null space is first order: a four-bar's coupler turns, at each
+position, about its instant centre, which first order can't tell from a fixed pin. So each
+invariant found is checked at a second position, a step of some 0.1° along each motion of the
+block, solved on a system of its own (`freeSystem`), and the params put back: an invariant that
+moved more than 1e-4 there is none, and the part is `Moving` ("turns about an axis that moves
+with the mechanism"). The crank's and rocker's axes stay put to round-off, the coupler's centre
+moves some 0.1 mm.
+
+*Drives and bounds.* A driven joint leaves no freedom, so a count with it would say every
+driven part is fixed. The count is of the mates' freedom instead: the bounds are let go, and each
+parameter that is all of some dimension's expression (`angle` of "angle + 12.5", `turn` of a
+screw's "turn - 18.4") is a drive whose motion, by a central difference of ±0.001 in it with the
+dimensions it drives re-evaluated, joins the null space; `DrivenBy` names the drives that add to
+what the null space gives the part. A screw's `lead` appears only beside `turn` (turn·lead/360)
+and so isn't a drive: the screw counts helical, not cylindrical.
+
+*The closing hinge* (`mechanism_implied.go`). A solve that converges with a rank deficit is
+consistent; the rank test refused it all the same. In a mechanism, when every constraint of every
+dependency the solver names (`Solved.Groups`) is a mate's, an incidence with no value or a
+distance of zero with no expression, the block is solved, `Solved.Implied`, and the group's
+screen marks those constraints "(implied)". A dimension in a dependency is refused as before
+(`TestFourBarRedundancyRefused`), and a loop that can't close doesn't converge. One consequence
+had to be met: in a mechanism already redundant this way, `SettleConstraint` found every
+dimension added after redundant and made it a reference, which broke the engine's flush and
+concentric mates (4 DOF left, no stroke); it now compares the rank with and without the
+dimension there (`addsRank`).
+
+*Left*: item 1's marker model and the missing joints (ball, cylindrical, planar and slot as mates
+of their own; a point on a point already makes a ball joint); items 3 to 5. In `ROADMAP.md`.
 
 ## The examples (2026-11-06)
 

@@ -70,8 +70,15 @@ type rbRunOff struct {
 	// tangent marks a curved next face replaced by its tangent plane
 	// along its edge with side j's face (rollingrunoff_tangent.go): the
 	// plane is np, nd, ns is nil, and the fillet's end goes on a new
-	// flat face there.
+	// flat face there; or, along a curved edge, its tangents across
+	// the edge (rollingrunoff_ruled.go): ns is then that surface, and
+	// ruled what it is made of.
 	tangent bool
+	ruled   *rbRuled
+	// away marks the end of a fillet that takes material away, whose p1
+	// lies on the end face's edge with the next face, between w and that
+	// edge's far end (rollingrunoff_away.go).
+	away bool
 }
 
 // runOffSliver is, in chord tolerances, how near w the end section
@@ -241,10 +248,8 @@ func (rb *rollingBall) runOffCross(sh *srf.SShell, row []srf.SSurface, k int, ro
 		return filletErr(ro.p1, "the fillet's end runs off the face past the next one too here: make it smaller")
 	case 0:
 		// The end face's edge with the next face cut back: a fillet that
-		// takes material away, where no case has yet shown the result
-		// sound.
-		return filletErr(ro.p1, "the fillet's end runs off the face on side %d here onto the next face, which a fillet "+
-			"that takes material away can't yet follow: make it smaller", ro.j+1)
+		// takes material away (rollingrunoff_away.go).
+		return rb.runOffAway(ro)
 	}
 	return nil
 }
@@ -562,6 +567,11 @@ func (rb *rollingBall) closeRunOff(sh *srf.SShell, cut rbEndCut, endSec srf.SBez
 	ro := cut.off
 	v, w := t.Vertices[cut.end.v].P, t.Vertices[ro.w].P
 	q := cut.q[1-ro.j]
+	if ro.away {
+		if err := rb.splitAway(sh, ro, h); err != nil {
+			return err
+		}
+	}
 	is := func(tb srf.STrimBy, a, b geom.Vector) bool {
 		return tb.StartP.Equals(a) && tb.FinishP.Equals(b) || tb.StartP.Equals(b) && tb.FinishP.Equals(a)
 	}
@@ -661,6 +671,10 @@ func (rb *rollingBall) closeRunOff(sh *srf.SShell, cut rbEndCut, endSec srf.SBez
 	pieces := append(append([]srf.SBezier(nil), cut.goes[1-j]...), endSec)
 	from := q
 	pairs := [][2]geom.Vector{{v, w}}
+	if ro.away && !ro.p1.Equals(w) {
+		// The end face's edge with the next face goes from w up to p1.
+		pairs = append(pairs, [2]geom.Vector{w, ro.p1})
+	}
 	if cut.goes[1-j] == nil {
 		pairs = append(pairs, [2]geom.Vector{q, v})
 	} else {
@@ -690,12 +704,29 @@ func (rb *rollingBall) closeRunOff(sh *srf.SShell, cut rbEndCut, endSec srf.SBez
 			Start: 0, Finish: 1, Backwards: true})
 	}
 	forget(sideS)
+	if ro.away {
+		// The next face shrinks: it loses its corner at w, up to the
+		// fillet's cut, and shares no new edge with the end face.
+		pairs := [][2]geom.Vector{{w, ro.p2}}
+		if !ro.p1.Equals(w) {
+			pairs = append(pairs, [2]geom.Vector{w, ro.p1})
+		}
+		_, err := put(ro.n, pairs, across, ro.p2, ro.p1)
+		return err
+	}
 	// shared is the end face's and the next face's edge from p1 to w: a
 	// line, or on a curved next face the curve where the end face's plane
 	// meets its surface carried on.
 	shared := []srf.SBezier{srf.SBezierFrom2(ro.p1, w)}
 	var ns *srf.SSurface
-	if ro.ns != nil {
+	if ro.ruled != nil && !ro.p1.Equals(w) {
+		// The top carried on along its curved edge is a new face: it
+		// shares with the end face where the end face's plane meets it.
+		var err error
+		if shared, err = rb.sharedCurve(ro.ns, cut.end, ro.p1, w); err != nil {
+			return err
+		}
+	} else if ro.ns != nil && ro.ruled == nil {
 		// The next face grows past its edge with side j: its surface is
 		// carried on to hold what it takes.
 		if ns = sh.FindSurface(t.Faces[ro.n].Surface); ns == nil {
@@ -722,7 +753,7 @@ func (rb *rollingBall) closeRunOff(sh *srf.SShell, cut rbEndCut, endSec srf.SBez
 	if ro.tangent {
 		// The next face is the tangent plane's new face, put in with the
 		// fillet's patches: its outline is kept for then.
-		if err := rb.keepTangentFace(ro, across); err != nil {
+		if err := rb.keepTangentFace(ro, across, shared); err != nil {
 			return err
 		}
 	} else if _, err := put(ro.n, [][2]geom.Vector{{w, gap}}, fill, gap, ro.p1); err != nil {

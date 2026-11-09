@@ -1,0 +1,21 @@
+# How each part of a mechanism can move (F9, degrees of freedom
+# analysis): the four-bar's crank and rocker each turn about their pin
+# on the ground, a fixed axis, and the coupler about an axis that moves
+# with the linkage, as the link screens say. The same four-bar closed by
+# a hinge in place of the point on a line (fourbar_hinged.tlspr), which
+# says again what the loop holds already, still solves, the hinges'
+# constraints marked implied, the rocker turning about the same pin.
+file $testdata/ui/mechanism/fourbar.tlspr
+menu File|Open...
+click-tw g004-crank
+tw
+click-tw home
+click-tw g005-coupler
+tw
+click-tw home
+click-tw g006-rocker
+tw
+file $testdata/ui/mechanism/fourbar_hinged.tlspr
+menu File|Open...
+click-tw g006-rocker
+tw

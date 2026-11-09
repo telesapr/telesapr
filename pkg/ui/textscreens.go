@@ -1551,6 +1551,9 @@ func (tw *textWindow) showLinkedInfo(g *sketch.Group) {
 	tw.Printf(false, bg+"   %Ftpart%E %f%Lf%Fd%s fixed%E  %f%Lm%Fd%s moves in a mechanism%E",
 		lf(tw.ScreenChangeLinkMoves), radioMark(!g.LinkMoves),
 		lf(tw.ScreenChangeLinkMoves), radioMark(g.LinkMoves))
+	if g.LinkMoves {
+		tw.showPartFreedom(g)
+	}
 	tw.showLinkModel(g)
 	for _, line := range g.LinkInfo {
 		tw.Printf(false, "   %Fd%s%E", line)
@@ -1721,12 +1724,17 @@ func (tw *textWindow) showGroupItems(g *sketch.Group) {
 	a = 0
 	tw.Printf(false, "")
 	tw.Printf(false, "%Ft constraints in group (%d DOF)", g.Solved.Dof)
+	// A mechanism's mates that say again what others say, as the hinge
+	// closing a planar loop does, are solved with, and marked.
+	implied := sk.ImpliedConstraints(g.H)
 	for i := range sk.Constraints {
 		c := &sk.Constraints[i]
 		if c.Group == tw.shown.group {
 			ref := ""
 			if c.Reference {
 				ref = "(ref)"
+			} else if slices.Contains(implied, c.H) {
+				ref = "(implied)"
 			}
 			tw.Printf(false, "%Bp   %Fl%Ll%D%f%h%s%E %s",
 				parity(a), c.H.V,

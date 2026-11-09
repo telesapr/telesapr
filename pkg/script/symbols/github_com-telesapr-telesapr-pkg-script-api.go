@@ -123,6 +123,7 @@ func init() {
 		"ParamInfo":        reflect.ValueOf((*api.ParamInfo)(nil)),
 		"Parameter":        reflect.ValueOf((*api.Parameter)(nil)),
 		"ParamsMenu":       reflect.ValueOf((*api.ParamsMenu)(nil)),
+		"PartFreedom":      reflect.ValueOf((*api.PartFreedom)(nil)),
 		"RepeatGroup":      reflect.ValueOf((*api.RepeatGroup)(nil)),
 		"Request":          reflect.ValueOf((*api.Request)(nil)),
 		"RequestInfo":      reflect.ValueOf((*api.RequestInfo)(nil)),

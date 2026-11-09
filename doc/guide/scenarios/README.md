@@ -28,22 +28,22 @@ dialogs); a picture is taken once the screen has stayed the same for half a seco
 `examples/scripts/fillet` in the nearest isometric view, the graphics window 800×600 with the
 property browser 440 wide beside it, since no window manager places them. The test runs only when
 the script sets `TELESAPR_DOC_WINDOW_SHOTS`, never in `make test`. Its pictures are the same bytes
-on every run on one machine; the fonts are the machine's, so another machine's fonts change them
-all.
+on every run: the script gives the Xvfb a fontconfig that sees only the Liberation fonts (Sans, Serif
+and Mono), so another machine with the same Liberation version makes the same bytes.
 
 ## Videos
 
 A scenario records a video of some of its steps between `video start NAME` and `video end`:
 a frame after each step, the pointer gliding to where it is moved, a ring where it presses, the
 key a step presses at the bottom right, and the scenario's `caption` under the windows. ffmpeg
-makes `../videos/NAME.webm` of the frames:
+makes `../videos/NAME.webm` (VP9) and `../videos/NAME.mp4` (H.264, yuv420p, faststart) of the frames:
 
     ./scripts/regen-guide-videos.sh                    # every scenario that records one
     ./scripts/regen-guide-videos.sh getting-started   # one
 
 The commands do nothing unless `TELESAPR_DOC_VIDEOS` names a directory, which the script sets, so
 the scenarios run as tests and make their pictures as before. A page shows a video with
-`<video src="videos/NAME.webm" controls muted loop playsinline style="width:100%"></video>` and a link to the file
+`<video controls muted loop playsinline style="width:100%">` holding `<source src="videos/NAME.webm" type="video/webm">` and then `<source src="videos/NAME.mp4" type="video/mp4">`, and links to the files
 beside it, for where the page shows none (the site's build, `tools/docs/hooks.py`, makes the
 source relative to where the page ends up); `TestDocScenarios` fails on a video a page shows that no
 scenario records, and on one in `videos/` that no page shows. Videos are not goldens: ffmpeg's
@@ -78,7 +78,7 @@ browser beside it 600×600. Coordinates are pixels from the window's top left.
 | `mark X Y W H [tw]` | An orange box round something, on the next shot only (`tw`: property browser coordinates) |
 | `shot NAME [gw\|tw\|both]` | Saves `images/NAME.png`: the graphics window, the property browser, or both side by side (default) |
 | `size gw\|tw W H` | Resizes a window |
-| `video start NAME [gw\|tw\|both]`, `video end` | Records the steps between them as `videos/NAME.webm` (see Videos), of the graphics window, the property browser or both (default) |
+| `video start NAME [gw\|tw\|both]`, `video end` | Records the steps between them as `videos/NAME.webm` and `NAME.mp4` (see Videos), of the graphics window, the property browser or both (default) |
 | `caption TEXT`, `pause S` | The caption under the video's frames from here on; hold the last frame S seconds longer |
 | `dump`, `tw`, `hover`, `hovergrid N` | Print the model, the property browser's rows, what is under the mouse, or what is under each point of an N×N grid: use them to find where to click |
 

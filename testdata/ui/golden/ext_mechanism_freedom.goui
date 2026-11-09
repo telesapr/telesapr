@@ -1,0 +1,602 @@
+filedialog open
+row 0  home › g004-crank   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-20 64 64 0
+ 21-48 74 64 0
+ 49-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g004-crank [rename/del] [activate/hide/↑/↓]
+ 0-6 74 64 0
+ 7-18 64 64 0
+ 19-24 6c 64 108 4 1 0
+ 25-25 64 64 0
+ 26-28 6c 64 108 4 1 0
+ 29-31 64 64 0
+ 32-39 6c 64 97 4 1 0
+ 40-40 64 64 0
+ 41-44 6c 64 115 4 1 0
+ 45-45 64 64 0
+ 46-46 6c 64 117 4 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 100 4 1 0
+ 49-99 64 64 0
+row 10  link geometry from file
+ 0-0 64 64 0
+ 1-23 74 64 0
+ 24-99 64 64 0
+row 12    'bar20.tlspr' [relink]
+ 0-16 64 61 0
+ 17-24 6c 61 108 4 1 0
+ 25-99 64 61 0
+row 14    scaled by 1.000 [change]
+ 0-2 64 64 0
+ 3-11 74 64 0
+ 12-18 64 64 0
+ 19-26 6c 64 108 4 1 0
+ 27-99 64 64 0
+row 16    part  fixed   moves in a mechanism
+ 0-2 64 61 0
+ 3-6 74 61 0
+ 7-7 64 61 0
+ 8-14 64 61 102 0 1 0
+ 15-16 64 61 0
+ 17-38 64 61 109 0 1 0
+ 39-99 64 61 0
+row 18    mechanism of 3 parts, 1 DOF
+ 0-2 64 64 0
+ 3-11 74 64 0
+ 12-99 64 64 0
+row 20    freedom: turns about the axis through (28.28, 28.28, 0.00) along (0, 0, 1)
+ 0-2 64 64 0
+ 3-10 74 64 0
+ 11-99 64 64 0
+row 22 
+ 0-99 64 64 0
+row 24  solid model as
+ 0-0 64 64 0
+ 1-99 74 64 0
+row 26     union   assemble
+ 0-2 64 61 0
+ 3-9 64 61 99 0 1 0
+ 10-11 64 61 0
+ 12-21 64 61 99 2 1 0
+ 22-99 64 61 0
+row 28     difference   intersection
+ 0-2 64 61 0
+ 3-14 64 61 99 1 1 0
+ 15-16 64 61 0
+ 17-30 64 61 99 3 1 0
+ 31-99 64 61 0
+row 30    appearance   matte   plastic   glossy   metal   density not set [change]
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-54 64 64 0
+ 55-61 74 64 0
+ 62-70 64 64 0
+ 71-78 6c 64 102 0 1 0
+ 79-99 64 64 0
+row 32      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 34 
+ 0-99 64 64 0
+row 36    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 38    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 40    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 43    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 45    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 47    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 49    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 51 
+ 0-99 64 64 0
+row 53  requests in group
+ 0-99 74 64 0
+row 55    (none)
+ 0-99 64 61 0
+row 57 
+ 0-99 64 64 0
+row 59  constraints in group (1 DOF)
+ 0-99 74 64 0
+row 61    (none)
+ 0-99 64 61 0
+row 63 
+ 0-99 64 64 0
+row 0  home › g005-coupler   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-22 64 64 0
+ 23-50 74 64 0
+ 51-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g005-coupler [rename/del] [activate/hide/↑/↓]
+ 0-6 74 64 0
+ 7-20 64 64 0
+ 21-26 6c 64 108 5 1 0
+ 27-27 64 64 0
+ 28-30 6c 64 108 5 1 0
+ 31-33 64 64 0
+ 34-41 6c 64 97 5 1 0
+ 42-42 64 64 0
+ 43-46 6c 64 115 5 1 0
+ 47-47 64 64 0
+ 48-48 6c 64 117 5 1 0
+ 49-49 64 64 0
+ 50-50 6c 64 100 5 1 0
+ 51-99 64 64 0
+row 10  link geometry from file
+ 0-0 64 64 0
+ 1-23 74 64 0
+ 24-99 64 64 0
+row 12    'bar60.tlspr' [relink]
+ 0-16 64 61 0
+ 17-24 6c 61 108 5 1 0
+ 25-99 64 61 0
+row 14    scaled by 1.000 [change]
+ 0-2 64 64 0
+ 3-11 74 64 0
+ 12-18 64 64 0
+ 19-26 6c 64 108 5 1 0
+ 27-99 64 64 0
+row 16    part  fixed   moves in a mechanism
+ 0-2 64 61 0
+ 3-6 74 61 0
+ 7-7 64 61 0
+ 8-14 64 61 102 0 1 0
+ 15-16 64 61 0
+ 17-38 64 61 109 0 1 0
+ 39-99 64 61 0
+row 18    mechanism of 3 parts, 1 DOF
+ 0-2 64 64 0
+ 3-11 74 64 0
+ 12-99 64 64 0
+row 20    freedom: turns about an axis that moves with the mechanism
+ 0-2 64 64 0
+ 3-10 74 64 0
+ 11-99 64 64 0
+row 22 
+ 0-99 64 64 0
+row 24  solid model as
+ 0-0 64 64 0
+ 1-99 74 64 0
+row 26     union   assemble
+ 0-2 64 61 0
+ 3-9 64 61 99 0 1 0
+ 10-11 64 61 0
+ 12-21 64 61 99 2 1 0
+ 22-99 64 61 0
+row 28     difference   intersection
+ 0-2 64 61 0
+ 3-14 64 61 99 1 1 0
+ 15-16 64 61 0
+ 17-30 64 61 99 3 1 0
+ 31-99 64 61 0
+row 30    appearance   matte   plastic   glossy   metal   density not set [change]
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-54 64 64 0
+ 55-61 74 64 0
+ 62-70 64 64 0
+ 71-78 6c 64 102 0 1 0
+ 79-99 64 64 0
+row 32      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 34 
+ 0-99 64 64 0
+row 36    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 38    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 40    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 43    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 45    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 47    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 49    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 51 
+ 0-99 64 64 0
+row 53  requests in group
+ 0-99 74 64 0
+row 55    (none)
+ 0-99 64 61 0
+row 57 
+ 0-99 64 64 0
+row 59  constraints in group (1 DOF)
+ 0-99 74 64 0
+row 61    (none)
+ 0-99 64 61 0
+row 63 
+ 0-99 64 64 0
+row 0  home › g006-rocker   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g006-rocker [rename/del] [active/hide/↑/↓]
+ 0-6 74 64 0
+ 7-19 64 64 0
+ 20-25 6c 64 108 6 1 0
+ 26-26 64 64 0
+ 27-29 6c 64 108 6 1 0
+ 30-32 64 64 0
+ 33-38 73 64 0
+ 39-39 64 64 0
+ 40-43 6c 64 115 6 1 0
+ 44-44 64 64 0
+ 45-45 6c 64 117 6 1 0
+ 46-46 64 64 0
+ 47-47 6c 64 100 6 1 0
+ 48-99 64 64 0
+row 10  link geometry from file
+ 0-0 64 64 0
+ 1-23 74 64 0
+ 24-99 64 64 0
+row 12    'bar50.tlspr' [relink]
+ 0-16 64 61 0
+ 17-24 6c 61 108 6 1 0
+ 25-99 64 61 0
+row 14    scaled by 1.000 [change]
+ 0-2 64 64 0
+ 3-11 74 64 0
+ 12-18 64 64 0
+ 19-26 6c 64 108 6 1 0
+ 27-99 64 64 0
+row 16    part  fixed   moves in a mechanism
+ 0-2 64 61 0
+ 3-6 74 61 0
+ 7-7 64 61 0
+ 8-14 64 61 102 0 1 0
+ 15-16 64 61 0
+ 17-38 64 61 109 0 1 0
+ 39-99 64 61 0
+row 18    mechanism of 3 parts, 1 DOF
+ 0-2 64 64 0
+ 3-11 74 64 0
+ 12-99 64 64 0
+row 20    freedom: turns about the axis through (88.28, 28.28, 0.00) along (0, 0, 1)
+ 0-2 64 64 0
+ 3-10 74 64 0
+ 11-99 64 64 0
+row 22 
+ 0-99 64 64 0
+row 24  solid model as
+ 0-0 64 64 0
+ 1-99 74 64 0
+row 26     union   assemble
+ 0-2 64 61 0
+ 3-9 64 61 99 0 1 0
+ 10-11 64 61 0
+ 12-21 64 61 99 2 1 0
+ 22-99 64 61 0
+row 28     difference   intersection
+ 0-2 64 61 0
+ 3-14 64 61 99 1 1 0
+ 15-16 64 61 0
+ 17-30 64 61 99 3 1 0
+ 31-99 64 61 0
+row 30    appearance   matte   plastic   glossy   metal   density not set [change]
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-54 64 64 0
+ 55-61 74 64 0
+ 62-70 64 64 0
+ 71-78 6c 64 102 0 1 0
+ 79-99 64 64 0
+row 32      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 34 
+ 0-99 64 64 0
+row 36    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 38    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 40    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 43    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 45    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 47    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 49    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 51 
+ 0-99 64 64 0
+row 53  requests in group
+ 0-99 74 64 0
+row 55    (none)
+ 0-99 64 61 0
+row 57 
+ 0-99 64 64 0
+row 59  constraints in group (1 DOF)
+ 0-99 74 64 0
+row 61    c001-pts-coincident
+ 0-2 64 61 0
+ 3-21 6c 61 108 1 1 1
+ 22-99 64 61 0
+row 63    c002-pt-on-line
+ 0-2 64 64 0
+ 3-17 6c 64 108 2 1 1
+ 18-99 64 64 0
+row 65    c003-pts-coincident
+ 0-2 64 61 0
+ 3-21 6c 61 108 3 1 1
+ 22-99 64 61 0
+row 67    c004-pt-on-line
+ 0-2 64 64 0
+ 3-17 6c 64 108 4 1 1
+ 18-99 64 64 0
+row 69    c005-pts-coincident
+ 0-2 64 61 0
+ 3-21 6c 61 108 5 1 1
+ 22-99 64 61 0
+row 71    c006-pt-on-line
+ 0-2 64 64 0
+ 3-17 6c 64 108 6 1 1
+ 18-99 64 64 0
+row 73    c007-pt-on-line
+ 0-2 64 61 0
+ 3-17 6c 61 108 7 1 1
+ 18-99 64 61 0
+row 75 
+ 0-99 64 64 0
+filedialog open
+row 0  home › g006-rocker   drawing / constraining in 3d
+ 0-0 64 64 0
+ 1-4 6c 64 104 0 1 0
+ 5-21 64 64 0
+ 22-49 74 64 0
+ 50-99 64 64 0
+row 2 
+ 0-99 64 64 0
+row 4 
+ 0-99 64 64 0
+row 7 GROUP  g006-rocker [rename/del] [active/hide/↑/↓]
+ 0-6 74 64 0
+ 7-19 64 64 0
+ 20-25 6c 64 108 6 1 0
+ 26-26 64 64 0
+ 27-29 6c 64 108 6 1 0
+ 30-32 64 64 0
+ 33-38 73 64 0
+ 39-39 64 64 0
+ 40-43 6c 64 115 6 1 0
+ 44-44 64 64 0
+ 45-45 6c 64 117 6 1 0
+ 46-46 64 64 0
+ 47-47 6c 64 100 6 1 0
+ 48-99 64 64 0
+row 10  link geometry from file
+ 0-0 64 64 0
+ 1-23 74 64 0
+ 24-99 64 64 0
+row 12    'bar50.tlspr' [relink]
+ 0-16 64 61 0
+ 17-24 6c 61 108 6 1 0
+ 25-99 64 61 0
+row 14    scaled by 1.000 [change]
+ 0-2 64 64 0
+ 3-11 74 64 0
+ 12-18 64 64 0
+ 19-26 6c 64 108 6 1 0
+ 27-99 64 64 0
+row 16    part  fixed   moves in a mechanism
+ 0-2 64 61 0
+ 3-6 74 61 0
+ 7-7 64 61 0
+ 8-14 64 61 102 0 1 0
+ 15-16 64 61 0
+ 17-38 64 61 109 0 1 0
+ 39-99 64 61 0
+row 18    mechanism of 3 parts, 1 DOF
+ 0-2 64 64 0
+ 3-11 74 64 0
+ 12-99 64 64 0
+row 20    freedom: turns about the axis through (88.28, 28.28, 0.00) along (0, 0, 1)
+ 0-2 64 64 0
+ 3-10 74 64 0
+ 11-99 64 64 0
+row 22 
+ 0-99 64 64 0
+row 24  solid model as
+ 0-0 64 64 0
+ 1-99 74 64 0
+row 26     union   assemble
+ 0-2 64 61 0
+ 3-9 64 61 99 0 1 0
+ 10-11 64 61 0
+ 12-21 64 61 99 2 1 0
+ 22-99 64 61 0
+row 28     difference   intersection
+ 0-2 64 61 0
+ 3-14 64 61 99 1 1 0
+ 15-16 64 61 0
+ 17-30 64 61 99 3 1 0
+ 31-99 64 61 0
+row 30    appearance   matte   plastic   glossy   metal   density not set [change]
+ 0-2 64 64 0
+ 3-12 74 64 0
+ 13-14 64 64 0
+ 15-21 64 64 97 0 1 0
+ 22-23 64 64 0
+ 24-32 64 64 97 1 1 0
+ 33-34 64 64 0
+ 35-42 64 64 97 2 1 0
+ 43-44 64 64 0
+ 45-51 64 64 97 3 1 0
+ 52-54 64 64 0
+ 55-61 74 64 0
+ 62-70 64 64 0
+ 71-78 6c 64 102 0 1 0
+ 79-99 64 64 0
+row 32      suppress this group's solid model
+ 0-2 64 64 0
+ 3-38 64 64 80 0 1 0
+ 39-99 64 64 0
+row 34 
+ 0-99 64 64 0
+row 36    show entities from this group
+ 0-0 64 64 0
+ 1-32 64 64 118 0 1 0
+ 33-99 64 64 0
+row 38    suppress this group and the groups that use it
+ 0-0 64 64 0
+ 1-49 64 64 65 0 1 0
+ 50-99 64 64 0
+row 40    force NURBS surfaces to triangle mesh
+ 0-0 64 64 0
+ 1-40 64 64 102 0 1 0
+ 41-99 64 64 0
+row 43    relax constraints and dimensions
+ 0-0 64 64 0
+ 1-35 64 64 114 0 1 0
+ 36-99 64 64 0
+row 45    allow redundant constraints
+ 0-0 64 64 0
+ 1-30 64 64 101 0 1 0
+ 31-99 64 64 0
+row 47    suppress dof calculation (improves solver performance)
+ 0-0 64 64 0
+ 1-57 64 64 68 0 1 0
+ 58-99 64 64 0
+row 49    treat all dimensions as reference
+ 0-0 64 64 0
+ 1-36 64 64 100 0 1 0
+ 37-99 64 64 0
+row 51 
+ 0-99 64 64 0
+row 53  requests in group
+ 0-99 74 64 0
+row 55    (none)
+ 0-99 64 61 0
+row 57 
+ 0-99 64 64 0
+row 59  constraints in group (1 DOF)
+ 0-99 74 64 0
+row 61    c001-pts-coincident (implied)
+ 0-2 64 61 0
+ 3-21 6c 61 108 1 1 1
+ 22-99 64 61 0
+row 63    c002-pt-on-line (implied)
+ 0-2 64 64 0
+ 3-17 6c 64 108 2 1 1
+ 18-99 64 64 0
+row 65    c003-pts-coincident (implied)
+ 0-2 64 61 0
+ 3-21 6c 61 108 3 1 1
+ 22-99 64 61 0
+row 67    c004-pt-on-line (implied)
+ 0-2 64 64 0
+ 3-17 6c 64 108 4 1 1
+ 18-99 64 64 0
+row 69    c005-pts-coincident (implied)
+ 0-2 64 61 0
+ 3-21 6c 61 108 5 1 1
+ 22-99 64 61 0
+row 71    c006-pt-on-line (implied)
+ 0-2 64 64 0
+ 3-17 6c 64 108 6 1 1
+ 18-99 64 64 0
+row 73    c007-pts-coincident (implied)
+ 0-2 64 61 0
+ 3-21 6c 61 108 7 1 1
+ 22-99 64 61 0
+row 75    c008-pt-on-line (implied)
+ 0-2 64 64 0
+ 3-17 6c 64 108 8 1 1
+ 18-99 64 64 0
+row 77 
+ 0-99 64 64 0

@@ -108,7 +108,7 @@ func (t *Topology) contactsClear(fe *filletEdge, rounded map[int]int, flat bool)
 // reaches is more than the distance to tell (filletPastSides).
 func furthestPast(foot func(u float64) geom.Vector, side *runOffSide) float64 {
 	const n = 16 * contactSamples
-	past := func(u float64) float64 { return foot(u).Minus(side.p0).Dot(side.n) }
+	past := func(u float64) float64 { return side.pastOf(foot(u)) }
 	best, bu := math.Inf(-1), 0.0
 	for i := range n + 1 {
 		u := float64(i) / n
@@ -166,7 +166,14 @@ func (t *Topology) clearOfFaces(edges []filletEdge, byEdge map[int]int, flat boo
 		}
 		for s, side := range fx.off.sides {
 			if have := first.off.sides[s]; have != nil {
+				if (have.curved == nil) != (side.curved == nil) {
+					first.off = nil
+					return first
+				}
 				have.past = math.Max(have.past, side.past)
+				if have.curved != nil && have.curved != side.curved {
+					have.curved.angles = append(have.curved.angles, side.curved.angles...)
+				}
 			} else {
 				first.off.sides[s] = side
 			}

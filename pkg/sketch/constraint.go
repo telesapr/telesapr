@@ -75,12 +75,31 @@ func (sk *Sketch) SettleConstraint(hc core.HConstraint) (existing core.HConstrai
 	if !c.IsInequality() && c.HasLabel() {
 		g := sk.Group(c.Group)
 		if g != nil && !g.AllowRedundant {
-			if how, _ := sk.TestRankForGroup(c.Group); how == core.SolveRedundantOkay {
+			if how, rank := sk.TestRankForGroup(c.Group); how == core.SolveRedundantOkay && !sk.addsRank(c, rank) {
 				c.Reference = true
 			}
 		}
 	}
 	return hc, false
+}
+
+// addsRank reports whether dimension c, with which its group's rank is
+// rank, raises it: whether it fixes something the rest did not, in a
+// mechanism whose mates over-determine each other already, as the hinge
+// closing a planar loop does (Group.Solved.Implied). There every
+// dimension made after would find the group redundant, and only the
+// rank without it tells. In any other group it doesn't count: one that
+// is redundant already fails to solve, and a dimension added to it is
+// made a reference, as ever.
+func (sk *Sketch) addsRank(c *core.Constraint, rank int) bool {
+	g := sk.Group(c.Group)
+	if !movesInMechanism(g) || !g.Solved.Implied {
+		return false
+	}
+	c.Reference = true
+	_, without := sk.TestRankForGroup(c.Group)
+	c.Reference = false
+	return rank > without
 }
 
 // AddConstraints adds cs, and returns the handle of each: the one made,

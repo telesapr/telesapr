@@ -68,16 +68,23 @@ func fittedTubeZ(t *testing.T, r, z0, z1, phase float64, tol srf.Tolerance) *srf
 // circles' seams on the points and off: every union, difference and
 // intersection is sound, and the intersection is the Steinmetz solid's
 // share, 16/3 r³ for the cross, half for the tee and a quarter for the
-// L, within what the chords lose. Two of the 45 are left open, the
-// curves complete but a trim not assembling where the seams lie off the
-// points (open names them); the rest are required sound.
+// L, within what the chords lose. One of the 45 is left open (open
+// names it): the cross's difference with the seams at 0.3 and 1.1, whose
+// trims assemble but whose two sheets, the fitted tube's kept outside
+// the exact one and the exact one's kept inside the fitted, close to the
+// touching points as (z² − x²)/2, under the chord tolerance within a few
+// tenths of a radius of them, and their meshes cross there (the mesher's,
+// roadmap K4). The cross's intersection with the seams at 0.3 and 0
+// failed before 2026-11-09: the fitted tube's seam, through a touching
+// point, met the exact tube at a grazing angle 2e-4 along from it, and
+// the vertex there split the mesh from the branches ending at the point
+// (srf snapToKnownTouches).
 func TestFittedTubeTouchingExact(t *testing.T) {
 	t.Parallel()
 	tol := srf.Tol(0.01, 30)
 	const r = 1.0
 	open := map[string]bool{
-		"cross, seams at 0.30 and 0.00, intersection": true,
-		"cross, seams at 0.30 and 1.10, difference":   true,
+		"cross, seams at 0.30 and 1.10, difference": true,
 	}
 	bad := 0
 	for _, c := range []struct {

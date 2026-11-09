@@ -1,5 +1,9 @@
 # K3 spike: fuse first (2026-11-04)
 
+Refreshed 2026-11-09 (rd12-k3-graze): the sweep corner's last 4 circles are made, and what made
+them fail was not the corner's fill; one of the two open fitted-tube Booleans is sound, the other
+is the mesher's. See "The path coming back across itself" at the end.
+
 The roadmap's rule for a kernel item: a spike on its hardest fixture before it is sized. This is
 the spike for what was left of K3, "fuse first, then classify by identity" (BRL-CAD libnmg), run on
 2026-11-04 from devel `3b4c15d6` on branch `rd7-k3-fuse-spike`.
@@ -370,3 +374,67 @@ of `TestSweepSharpCornerBesideCubicSweep`'s grid at lead 10 (both orders, ±30°
 4 circles refused turn 150° with the cubic bent 90° the same way; there the corner's fill, two
 exact equal tubes carried past the corner and intersected, fails, its caps' rims grazing the other
 tube near the touching points as above.
+
+## The path coming back across itself (rd12, 2026-11-09)
+
+The roadmap had the 4 circles refused at 150° beside a cubic bent 90° the same way down to the
+corner's fill, two exact equal tubes carried past the corner, whose caps' rims graze the other
+tube. Instrumented, the fill was made every time (and is the same at a bend of −90°, which was
+made: the cubic leaves the corner with the same tangent whatever its bend). What failed was the
+join of the runs: at that corner and bend the cubic comes back across the line before the corner
+(at z = 2.2 of a lead of 10, line first), so the cubic's fitted tube and the line's exact one, of
+one radius with axes crossing, touch tangent at two more points, which no one had told the
+Booleans. Every order of the joins failed, or joined with a topology whose Euler number the mesh
+didn't share. The refusal, "the pieces either side, swept and joined, don't make a closed solid",
+was by name, so the sweep test passed it.
+
+Three changes, each needed:
+
+1. The sweep finds where the runs' path pieces cross (`crossingTouches`,
+   `pkg/sketch/sweep_cubic_corner_touch.go`, by `SBezier.AllIntersectionsWith` between pieces of
+   different runs, a shared end aside) and gives the Booleans the points of the profile lying, in
+   both runs' sections there, on the line through the crossing square to both tangents, as
+   `cornerTouches` does at the corner: for a circle, the crossing ± r along that line. With the
+   points, two of the six orders joined, but the mesh's Euler number was 4 against the
+   topology's 2.
+2. At each of those points the mesh had a second vertex 2.2e-4 along from it: the fitted tube's
+   seam runs through the point (the profile's quarter points are on the line square to both
+   tangents), meets the exact tube there at a grazing angle, both being tangent, and its crossing,
+   refined, lands a little along it; the marched branches end at the sink, the seam's split
+   doesn't, and the mesh is split between them. `MakeCopySplitAgainst` now splits a segment
+   passing within the chord tolerance of a known touching point (`SShell.Touch`) at the point, in
+   place of the splits within that reach of it (`snapToKnownTouches`, `pkg/srf/surfinter_touch.go`).
+   Nothing changes for shells with no touching points, which every one but the sweep's runs is.
+   Widening `dropSeedsAt`'s reach instead (chord/100 to twice the chord tolerance) changed
+   nothing: the stray vertex was the seam's split, not a seed.
+3. One case, cubic first, then joined with an edge through a triangle that `joinFlush` doesn't
+   look for and Check Solid does: the line's end cap, lying inside the cubic's tube near where the
+   cubic starts, overlapping itself flat. `topologySound` now also meshes the solid as the group
+   holds it (united with nothing) and refuses an edge through a triangle counting faces lying
+   flat on each other, as Check Solid does; the next order joined sound.
+
+Of the 60 corners at lead 10 (both orders, ±30° to ±150°, bends −90° to 90°): circles 60 (56
+before), rectangles either way and the diamond 60 as before. The four made are within 0.9% of a
+sampled volume (the union of the two tubes, flat-ended, and the fill; the mesh is short of it by
+its chords, 1%), where the runs counted twice where they overlap would be 29% over
+(`TestSweepSharpCornerBesideCubicComesBack`). `TestSweepSharpCornerBesideCubicSweep` over its
+whole grid (leads 5 and 20) holds.
+
+`TestFittedTubeTouchingExact`: 44 of 45 (43 before). The cross's intersection with the seams at 0.3
+and 0 failed by change 2's cause (34 naked edges before, sound after). The cross's difference with
+the seams at 0.3 and 1.1 is not a trim: its trims assemble (two loops of the exact tube's patch
+touching at the point, both outer, as `splitAtJunctions` and `FixContourDirections` make them),
+both meshers mesh each face without a fold, and the edges flagged pass through the other
+sheet's triangles. Near the touching point the difference has two sheets, the fitted tube kept
+outside the exact one and the exact one kept inside the fitted, a gap (z² − x²)/2 apart, under
+the chord tolerance (0.01) within about 0.15 of the point: the meshes cross there, as the exact
+tees' at 45°. That is K4's, the mesher's.
+
+Threads: no change can reach them (no shell of theirs has touching points, and the sweep's
+changes are on its cubic-corner runs only). `pkg/sketch`'s thread tests took 955 and 975
+processor-seconds before, 958 and 964 after; `TestOpenDamaged` 26 and 29 before, 26 and 26 after.
+No golden moved.
+
+Not done: touching points the marcher finds itself (target 3 of the round); the crossing touches
+are found only where the feature's own path pieces cross exactly, as a path drawn in one
+workplane does.

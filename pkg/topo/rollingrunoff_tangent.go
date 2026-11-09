@@ -3,6 +3,7 @@ package topo
 import (
 	"math"
 
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
 )
@@ -34,6 +35,9 @@ import (
 type tangentFace struct {
 	n    int
 	loop []srf.SBezier
+	// ruled is the face's surface where it is not flat: the top carried
+	// on along a curved edge (rollingrunoff_ruled.go).
+	ruled *srf.SSurface
 }
 
 // tangentIfPast replaces ro's curved next face by its tangent plane
@@ -72,6 +76,9 @@ func (rb *rollingBall) tangentIfPast(row []srf.SSurface, k int, ro *rbRunOff) {
 	tol := math.Max(t.shell.Tol.ChordTolMm()/10, 1e-6)
 	for _, p := range pts {
 		if math.Abs(plane.h(p)) > tol || p.DistanceToLine(a, b.Minus(a)) > tol {
+			// A curved edge: the top is carried on along it by its
+			// tangents across it instead (rollingrunoff_ruled.go).
+			rb.ruledIfPast(sec, vp, ro)
 			return
 		}
 	}
@@ -92,12 +99,16 @@ func crossesOut(ro *rbRunOff, j int, sec srf.SBezier) bool {
 	return inSide < 0 && outSide > 0
 }
 
-// keepTangentFace keeps the outline of the flat face ro's end adds:
-// from w along the top's edge with side j's face to p2, the fillet's cut
-// across to p1, and the end face's line back to w.
-func (rb *rollingBall) keepTangentFace(ro *rbRunOff, across []srf.SBezier) error {
+// keepTangentFace keeps the outline of the face ro's end adds: from w
+// along the top's edge with side j's face to p2, the fillet's cut across
+// to p1, and the end face's edge with it, shared, back to w.
+func (rb *rollingBall) keepTangentFace(ro *rbRunOff, across, shared []srf.SBezier) error {
 	w := rb.t.Vertices[ro.w].P
-	loop := []srf.SBezier{srf.SBezierFrom2(w, ro.p2)}
+	first := srf.SBezierFrom2(w, ro.p2)
+	if ro.ruled != nil {
+		first = ro.ruled.along(ro.p2)
+	}
+	loop := []srf.SBezier{first}
 	left := append([]srf.SBezier(nil), across...)
 	at := ro.p2
 	for len(left) > 0 {
@@ -123,7 +134,7 @@ func (rb *rollingBall) keepTangentFace(ro *rbRunOff, across []srf.SBezier) error
 		return filletErr(at, "the fillet's cut by the plane its end runs onto doesn't reach its end here")
 	}
 	if !ro.p1.Equals(w) {
-		loop = append(loop, srf.SBezierFrom2(ro.p1, w))
+		loop = append(loop, shared...)
 	}
 	var poly []geom.Vector
 	for _, sb := range loop {
@@ -138,7 +149,11 @@ func (rb *rollingBall) keepTangentFace(ro *rbRunOff, across []srf.SBezier) error
 		return filletErr(ro.p2, "the fillet's end only just runs off the face on side %d here: make it a little "+
 			"smaller or larger", ro.j+1)
 	}
-	rb.tangentFaces = append(rb.tangentFaces, tangentFace{n: ro.n, loop: loop})
+	tf := tangentFace{n: ro.n, loop: loop}
+	if ro.ruled != nil {
+		tf.ruled = &ro.ruled.s
+	}
+	rb.tangentFaces = append(rb.tangentFaces, tf)
 	return nil
 }
 
@@ -151,8 +166,16 @@ func (rb *rollingBall) putTangentFaces(fa *FaceAdder) error {
 		if s == nil {
 			return filletErr(tf.loop[0].Start(), "the face the fillet's end runs onto is not in the shell")
 		}
-		var n geom.Vector
-		h, err := fa.AddPlanarFaceWithin([][]srf.SBezier{tf.loop}, s.Origin, s.Color, n, geom.LengthEps)
+		var h core.HSSurface
+		var err error
+		if tf.ruled != nil {
+			rs := *tf.ruled
+			rs.Origin, rs.Color, rs.Tol = s.Origin, s.Color, s.Tol
+			h, err = fa.Add(rs, [][]srf.SBezier{tf.loop})
+		} else {
+			var n geom.Vector
+			h, err = fa.AddPlanarFaceWithin([][]srf.SBezier{tf.loop}, s.Origin, s.Color, n, geom.LengthEps)
+		}
 		if err != nil {
 			return filletErr(tf.loop[0].Start(), "the flat face the fillet's end runs onto can't be put in: %v", err)
 		}

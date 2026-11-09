@@ -22,7 +22,9 @@
 // the cylinder: its pin's centre on the frame's axis and its own line
 // parallel to it, both in the XY workplane, where they hold in
 // projection what the stacked parts can't hold in 3d. That leaves the
-// mechanism one freedom, which angle takes. A motion study of angle
+// mechanism one freedom, which angle takes; the script prints how each
+// part moves, its freedom counted from its mates (Freedom), and checks
+// that the piston slides. A motion study of angle
 // round a turn solves at every step; the piston's stroke, read every
 // 5°, is twice the crank's throw, 24. The script checks both, and
 // saves engine.tlspr, unless given "-".
@@ -181,6 +183,12 @@ func main() {
 	doc.Sketch.Anywhere3D()
 	fmt.Println("the engine:", piston.AsLink().Mechanism(), "driven by", mate.Param, "solved", piston.Solved(),
 		"with", piston.Dof(), "degrees of freedom")
+	// How each part moves, counted from its mates: the crank turns about
+	// its bearing, the rod about an axis that moves, the piston slides.
+	for _, g := range []api.Group{crank, rod, piston} {
+		fmt.Printf("the %s %s\n", g.Name(), g.AsLink().Freedom().Text)
+	}
+	slides := piston.AsLink().Freedom().Invariant == "direction"
 
 	frames, err := doc.Assembly.MotionStudy(mate.Param, 0, 360, 24, "")
 	must(err)
@@ -203,7 +211,7 @@ func main() {
 	}
 	must(doc.Params.Set(mate.Param, "0"))
 	fmt.Printf("stroke %.3f, twice the throw 24\n", hi-lo)
-	if !ok || math.Abs(hi-lo-24) > 0.05 {
+	if !ok || !slides || math.Abs(hi-lo-24) > 0.05 {
 		os.Exit(1)
 	}
 	if write {

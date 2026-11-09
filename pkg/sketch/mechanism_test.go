@@ -175,6 +175,22 @@ func fourBarDriven(t *testing.T) (d *api.Doc, ground, crank, coupler, rocker api
 // makeFourBar is fourBar, its crank's hinge driven when driven.
 func makeFourBar(t *testing.T, moving, driven bool) (d *api.Doc, ground, crank, coupler, rocker api.Group, closeAt func() float64) {
 	t.Helper()
+	return buildFourBar(t, fourBarOpts{moving: moving, driven: driven, ground: 60})
+}
+
+// fourBarOpts say how buildFourBar makes a four-bar: its three bars
+// moving, the crank's hinge driven, the ground's length (its second
+// pin's distance from its first) and whether a hinge closes the loop
+// rather than a point on a line.
+type fourBarOpts struct {
+	moving, driven, closeByHinge bool
+	ground                       float64
+}
+
+// buildFourBar is fourBar as o says.
+func buildFourBar(t *testing.T, o fourBarOpts) (d *api.Doc, ground, crank, coupler, rocker api.Group, closeAt func() float64) {
+	t.Helper()
+	moving, driven := o.moving, o.driven
 	dir := t.TempDir()
 	d = api.New()
 	link := func(length float64, name string) api.Group {
@@ -184,7 +200,7 @@ func makeFourBar(t *testing.T, moving, driven bool) (d *api.Doc, ground, crank, 
 		}
 		return g
 	}
-	ground, crank, coupler, rocker = link(60, "ground"), link(20, "crank"), link(60, "coupler"), link(50, "rocker")
+	ground, crank, coupler, rocker = link(o.ground, "ground"), link(20, "crank"), link(60, "coupler"), link(50, "rocker")
 	if moving {
 		for _, g := range []api.Group{crank, coupler, rocker} {
 			g.AsLink().SetMoves(true)
@@ -209,10 +225,14 @@ func makeFourBar(t *testing.T, moving, driven bool) (d *api.Doc, ground, crank, 
 	}
 	d.Assembly.Hinge(ucr[20], uco[0])
 	d.Assembly.Hinge(uco[60], ur[0])
-	end := ur[50].Start()
-	d.Constrain.On(end, ug[60])
+	end, pin := ur[50].Start(), ug[o.ground]
+	if o.closeByHinge {
+		d.Assembly.Hinge(pin, ur[50])
+	} else {
+		d.Constrain.On(end, pin)
+	}
 	closeAt = func() float64 {
-		a, b := ug[60].Start().Pos(), ug[60].End().Pos()
+		a, b := pin.Start().Pos(), pin.End().Pos()
 		p := end.Pos()
 		return b.Minus(a).Cross(p.Minus(a)).Magnitude() / b.Minus(a).Magnitude()
 	}
@@ -601,4 +621,72 @@ func TestPullFreePartSlides(t *testing.T) {
 	if !near3(far.Pos(), to) || u0.Minus(u1).Magnitude() > 1e-3 || w0.Minus(w1).Magnitude() > 1e-3 {
 		t.Errorf("pulled 40 aside: the corner at %v, want %v; turned from %v, %v to %v, %v", far.Pos(), to, u0, w0, u1, w1)
 	}
+}
+
+// A planar four-bar closed by a hinge, as one means it, rather than by
+// a point on a line: the closing hinge says again that the rocker's
+// axis is upright, which the other hinges hold already, so its
+// constraints over-determine the others, but only as mates do, and
+// consistently. The mechanism is solved with the hinge kept whole, its
+// redundancy implied, one freedom left and the loop closed.
+func TestFourBarClosedByHinge(t *testing.T) {
+	t.Parallel()
+	_, _, crank, coupler, rocker, closeAt := buildFourBar(t, fourBarOpts{moving: true, ground: 60, closeByHinge: true})
+	for _, g := range []api.Group{crank, coupler, rocker} {
+		if !g.Solved() || g.Dof() != 1 {
+			t.Errorf("%s: solved %v, %d DOF; want solved, 1", g.Name(), g.Solved(), g.Dof())
+		}
+	}
+	if n := len(rocker.Constraints()); n != 3*2+2 {
+		t.Errorf("the rocker's group has %d constraints, want 8: four hinges of two", n)
+	}
+	if off := closeAt(); off > 1e-6 {
+		t.Errorf("the loop is open by %g", off)
+	}
+	if len(rocker.Implied()) == 0 {
+		t.Error("the closing hinge's redundancy isn't reported implied")
+	}
+}
+
+// What is redundant and inconsistent is refused as before: a ground
+// whose second pin is 200 from its first, which a chain of 20, 60 and
+// 50 cannot reach, leaves the loop unsolved; and a redundant dimension,
+// the rocker's end held at the distance the hinges give it, is a
+// dimension said twice, not a mate, and is refused though it is
+// consistent.
+func TestFourBarRedundancyRefused(t *testing.T) {
+	t.Parallel()
+	_, _, _, _, rocker, _ := buildFourBar(t, fourBarOpts{moving: true, ground: 200, closeByHinge: true})
+	if rocker.Solved() {
+		t.Error("a loop that cannot close solved")
+	}
+
+	d, ground, _, _, rocker, _ := buildFourBar(t, fourBarOpts{moving: true, ground: 60, closeByHinge: true})
+	ug := uprights(t, ground)
+	// The rocker's end, on the ground's second pin's top.
+	o, end := ug[0].Start(), nearestPoint(rocker, ug[60].Start().Pos())
+	// Added as it is: Constrain.Distance would settle it as a
+	// reference dimension, seeing it redundant.
+	d.With(func(sk *sketch.Sketch) {
+		c := core.Constraint{Group: sk.ActiveGroup(), Workplane: core.FreeIn3D, Type: core.ConstraintPtPtDistance,
+			PtA: o.H, PtB: end.H, ValA: end.Pos().Minus(o.Pos()).Magnitude()}
+		sk.AddConstraintRemember(&c, false)
+	})
+	if rocker.Solved() || len(rocker.Implied()) != 0 {
+		t.Errorf("a redundant dimension: solved %v, implied %v", rocker.Solved(), rocker.Implied())
+	}
+}
+
+// nearestPoint is the point of group g nearest p.
+func nearestPoint(g api.Group, p api.Vec) api.Entity {
+	var out api.Entity
+	best := math.Inf(1)
+	for _, e := range g.Entities() {
+		if e.Kind() == "point" {
+			if d := e.Pos().Minus(p).Magnitude(); d < best {
+				out, best = e, d
+			}
+		}
+	}
+	return out
 }

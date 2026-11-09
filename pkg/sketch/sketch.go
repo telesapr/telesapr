@@ -137,6 +137,8 @@ type Sketch struct {
 
 	// freedom caches GroupFreedom.
 	freedom []freedomCache
+	// partFreedom caches PartFreedoms.
+	partFreedom *partFreedomCache
 
 	// Deleted counts what regeneration pruned because it depended on
 	// something deleted, until GenerateAll reports it.
