@@ -332,8 +332,8 @@ func (rb *rollingBall) contactPiece(row []srf.SSurface, cuts []rbEndCut, k, b in
 	}
 	sb := row[b].EdgeCurve(ui)
 	for _, cut := range cuts {
-		ro := cut.off
-		if ro == nil || ro.j != k || b < ro.first || b >= ro.after {
+		ro := cut.offOn(k)
+		if ro == nil || b < ro.first || b >= ro.after {
 			continue
 		}
 		if ro.h(sb.Start()) > 0 && ro.h(sb.Finish()) > 0 {
@@ -556,6 +556,112 @@ func acrossPatch(p *srf.SSurface, ro *rbRunOff, u0, v0, u1, v1 float64, a, b geo
 	return nil, filletErr(a, "the fillet can't follow where the next face's plane cuts it here")
 }
 
+// runOffEdit is what closing an end that runs off works on: the shell,
+// and h, the next handle a curve it adds takes.
+type runOffEdit struct {
+	rb *rollingBall
+	sh *srf.SShell
+	h  *core.HSCurve
+}
+
+// runOffAdded is a curve put into a face, as the face runs it, and its
+// handle.
+type runOffAdded struct {
+	h  core.HSCurve
+	sb srf.SBezier
+}
+
+// sameEnds reports whether trim tb runs between a and b, either way.
+func sameEnds(tb srf.STrimBy, a, b geom.Vector) bool {
+	return tb.StartP.Equals(a) && tb.FinishP.Equals(b) || tb.StartP.Equals(b) && tb.FinishP.Equals(a)
+}
+
+// runOffChain runs pieces as a chain from from, and whether they make one.
+func runOffChain(pieces []srf.SBezier, from geom.Vector) ([]srf.SBezier, bool) {
+	left := append([]srf.SBezier(nil), pieces...)
+	var out []srf.SBezier
+	at := from
+	for len(left) > 0 {
+		found := false
+		for i, sb := range left {
+			if sb.Start().Equals(at) || sb.Finish().Equals(at) {
+				if !sb.Start().Equals(at) {
+					sb.Reverse()
+				}
+				out = append(out, sb)
+				at = sb.Finish()
+				left = append(left[:i], left[i+1:]...)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, false
+		}
+	}
+	return out, true
+}
+
+// add puts curve sb into surface s's trims, as a new curve of the shell
+// between s and other.
+func (e *runOffEdit) add(s *srf.SSurface, sb srf.SBezier, other core.HSSurface) core.HSCurve {
+	var pts []geom.Vector
+	sb.MakePwlIntoPoints(&pts, e.rb.t.shell.Tol, 0)
+	pts[0], pts[len(pts)-1] = sb.Start(), sb.Finish()
+	nc := srf.SCurve{H: *e.h, Exact: sb, IsExact: true, Deg: sb.Degree, SurfA: s.H, SurfB: other}
+	e.h.V++
+	for _, p := range pts {
+		nc.Points = append(nc.Points, srf.SCurvePt{Vertex: true, P: p})
+	}
+	s.Trim = append(s.Trim, srf.STrimBy{Curve: nc.H, StartP: sb.Start(), FinishP: sb.Finish(), Start: 0, Finish: 1})
+	e.sh.Curve = append(e.sh.Curve, nc)
+	return nc.H
+}
+
+// put drops face f's trims between the pairs, and adds the pieces from
+// a to b, run the way the face's loop goes: from a where a kept trim
+// finishes at lead, else from b. It gives their curves, as the face
+// runs them.
+func (e *runOffEdit) put(f int, pairs [][2]geom.Vector, pieces []srf.SBezier, a, b, lead geom.Vector) ([]runOffAdded, error) {
+	s := e.sh.FindSurface(e.rb.t.Faces[f].Surface)
+	if s == nil {
+		return nil, filletErr(a, "a face at the fillet's end is not in the shell")
+	}
+	var kept []srf.STrimBy
+	dropped := 0
+	for _, tb := range s.Trim {
+		if slices.ContainsFunc(pairs, func(pr [2]geom.Vector) bool { return sameEnds(tb, pr[0], pr[1]) }) {
+			dropped++
+			continue
+		}
+		kept = append(kept, tb)
+	}
+	if dropped != len(pairs) {
+		return nil, filletErr(a, "the faces at the fillet's end don't meet as its end needs here (%d of %d edges)",
+			dropped, len(pairs))
+	}
+	seq, ok := runOffChain(pieces, a)
+	if !ok {
+		return nil, filletErr(a, "the fillet's end curves don't join here")
+	}
+	into := slices.ContainsFunc(kept, func(tb srf.STrimBy) bool { return tb.FinishP.Equals(lead) })
+	s.Trim = kept
+	if !into {
+		seq, _ = runOffChain(pieces, b)
+	}
+	var out []runOffAdded
+	for _, sb := range seq {
+		out = append(out, runOffAdded{e.add(s, sb, core.HSSurface{}), sb})
+	}
+	forget(s)
+	return out, nil
+}
+
+// finishesAt reports whether any of the curves put in finishes at p.
+func finishesAt(got []runOffAdded, p geom.Vector) bool {
+	return slices.ContainsFunc(got, func(g runOffAdded) bool { return g.sb.Finish().Equals(p) })
+}
+
 // closeRunOff puts an end that runs off into the end face and the next
 // face: the end face loses its edges with the sides' faces up to side
 // 1-j's cut, and takes side 1-j's curve in its plane where that face goes
@@ -572,101 +678,7 @@ func (rb *rollingBall) closeRunOff(sh *srf.SShell, cut rbEndCut, endSec srf.SBez
 			return err
 		}
 	}
-	is := func(tb srf.STrimBy, a, b geom.Vector) bool {
-		return tb.StartP.Equals(a) && tb.FinishP.Equals(b) || tb.StartP.Equals(b) && tb.FinishP.Equals(a)
-	}
-	add := func(s *srf.SSurface, sb srf.SBezier, other core.HSSurface) core.HSCurve {
-		var pts []geom.Vector
-		sb.MakePwlIntoPoints(&pts, rb.t.shell.Tol, 0)
-		pts[0], pts[len(pts)-1] = sb.Start(), sb.Finish()
-		nc := srf.SCurve{H: *h, Exact: sb, IsExact: true, Deg: sb.Degree, SurfA: s.H, SurfB: other}
-		h.V++
-		for _, p := range pts {
-			nc.Points = append(nc.Points, srf.SCurvePt{Vertex: true, P: p})
-		}
-		s.Trim = append(s.Trim, srf.STrimBy{Curve: nc.H, StartP: sb.Start(), FinishP: sb.Finish(), Start: 0, Finish: 1})
-		sh.Curve = append(sh.Curve, nc)
-		return nc.H
-	}
-	// chain runs pieces as a chain from a.
-	chain := func(pieces []srf.SBezier, from geom.Vector) ([]srf.SBezier, bool) {
-		left := append([]srf.SBezier(nil), pieces...)
-		var out []srf.SBezier
-		at := from
-		for len(left) > 0 {
-			found := false
-			for i, sb := range left {
-				if sb.Start().Equals(at) || sb.Finish().Equals(at) {
-					if !sb.Start().Equals(at) {
-						sb.Reverse()
-					}
-					out = append(out, sb)
-					at = sb.Finish()
-					left = append(left[:i], left[i+1:]...)
-					found = true
-					break
-				}
-			}
-			if !found {
-				return nil, false
-			}
-		}
-		return out, true
-	}
-	// put drops the face's trims between the pairs, and adds the pieces
-	// from a to b, run the way the face's kept trim at a goes on: their
-	// curves, as the face runs them.
-	type added struct {
-		h  core.HSCurve
-		sb srf.SBezier
-	}
-	put := func(f int, pairs [][2]geom.Vector, pieces []srf.SBezier, a, b geom.Vector) ([]added, error) {
-		s := sh.FindSurface(t.Faces[f].Surface)
-		if s == nil {
-			return nil, filletErr(w, "a face at the fillet's end is not in the shell")
-		}
-		var kept []srf.STrimBy
-		dropped := 0
-		for _, tb := range s.Trim {
-			gone := false
-			for _, pr := range pairs {
-				if is(tb, pr[0], pr[1]) {
-					gone = true
-				}
-			}
-			if gone {
-				dropped++
-				continue
-			}
-			kept = append(kept, tb)
-		}
-		if dropped != len(pairs) {
-			return nil, filletErr(w, "the faces at the fillet's end don't meet as its end needs here (%d of %d edges)",
-				dropped, len(pairs))
-		}
-		seq, ok := chain(pieces, a)
-		if !ok {
-			return nil, filletErr(a, "the fillet's end curves don't join here")
-		}
-		// The loop goes from a's trim into the pieces, or comes out of them
-		// into it.
-		into := false
-		for _, tb := range kept {
-			if tb.FinishP.Equals(a) {
-				into = true
-			}
-		}
-		s.Trim = kept
-		if !into {
-			seq, _ = chain(pieces, b)
-		}
-		var out []added
-		for _, sb := range seq {
-			out = append(out, added{add(s, sb, core.HSSurface{}), sb})
-		}
-		forget(s)
-		return out, nil
-	}
+	e := &runOffEdit{rb: rb, sh: sh, h: h}
 	j := ro.j
 	pieces := append(append([]srf.SBezier(nil), cut.goes[1-j]...), endSec)
 	from := q
@@ -684,7 +696,7 @@ func (rb *rollingBall) closeRunOff(sh *srf.SShell, cut rbEndCut, endSec srf.SBez
 	if sideS == nil {
 		return filletErr(v, "a face at the edge is not in the shell")
 	}
-	got, err := put(cut.end.f, pairs, pieces, from, ro.p1)
+	got, err := e.put(cut.end.f, pairs, pieces, from, ro.p1, from)
 	if err != nil {
 		return err
 	}
@@ -711,9 +723,21 @@ func (rb *rollingBall) closeRunOff(sh *srf.SShell, cut rbEndCut, endSec srf.SBez
 		if !ro.p1.Equals(w) {
 			pairs = append(pairs, [2]geom.Vector{w, ro.p1})
 		}
-		_, err := put(ro.n, pairs, across, ro.p2, ro.p1)
+		_, err := e.put(ro.n, pairs, across, ro.p2, ro.p1, ro.p2)
 		return err
 	}
+	return e.closeNext(cut, ro, across, finishesAt(got, ro.p1))
+}
+
+// closeNext puts the end's run-off ro into the next face, where the
+// fillet fills a corner: the next face loses its edge with side j's
+// face up to p2 and takes the curve across the fillet from p2 to p1,
+// and it and the end face share the edge from p1 to w, which the end
+// face runs on from p1 where the end section, as the end face runs it,
+// finishes there (endsAtP1), and into p1 where not.
+func (e *runOffEdit) closeNext(cut rbEndCut, ro *rbRunOff, across []srf.SBezier, endsAtP1 bool) error {
+	rb, sh, t := e.rb, e.sh, e.rb.t
+	w := t.Vertices[ro.w].P
 	// shared is the end face's and the next face's edge from p1 to w: a
 	// line, or on a curved next face the curve where the end face's plane
 	// meets its surface carried on.
@@ -756,7 +780,7 @@ func (rb *rollingBall) closeRunOff(sh *srf.SShell, cut rbEndCut, endSec srf.SBez
 		if err := rb.keepTangentFace(ro, across, shared); err != nil {
 			return err
 		}
-	} else if _, err := put(ro.n, [][2]geom.Vector{{w, gap}}, fill, gap, ro.p1); err != nil {
+	} else if _, err := e.put(ro.n, [][2]geom.Vector{{w, gap}}, fill, gap, ro.p1, gap); err != nil {
 		return err
 	}
 	if ro.p1.Equals(w) {
@@ -769,7 +793,7 @@ func (rb *rollingBall) closeRunOff(sh *srf.SShell, cut rbEndCut, endSec srf.SBez
 	if !ro.tangent {
 		ns = sh.FindSurface(t.Faces[ro.n].Surface)
 	}
-	if !got[len(got)-1].sb.Finish().Equals(ro.p1) {
+	if !endsAtP1 {
 		slices.Reverse(shared)
 		for i := range shared {
 			shared[i].Reverse()
@@ -777,10 +801,10 @@ func (rb *rollingBall) closeRunOff(sh *srf.SShell, cut rbEndCut, endSec srf.SBez
 	}
 	for _, sb := range shared {
 		if ns == nil {
-			add(es, sb, core.HSSurface{})
+			e.add(es, sb, core.HSSurface{})
 			continue
 		}
-		lh := add(es, sb, ns.H)
+		lh := e.add(es, sb, ns.H)
 		ns.Trim = append(ns.Trim, srf.STrimBy{Curve: lh, StartP: sb.Finish(), FinishP: sb.Start(), Start: 0, Finish: 1,
 			Backwards: true})
 	}

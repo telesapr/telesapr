@@ -9,6 +9,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
 	"github.com/telesapr/telesapr/pkg/internal/sweep"
+	"github.com/telesapr/telesapr/pkg/srf"
 )
 
 // ringAxis is how far in y from the x band's middle ringBandOnCone's
@@ -63,13 +64,14 @@ func ringBandOnCone(d *Doc, top, sag float64) (SolidEdge, float64) {
 var ringBox = [4]float64{5, 22, 0, 12}
 
 // makeFlatRingBlend is the blend of size r of the ring band with a flat
-// top at 30, which no blend runs off: what it adds and its mesh over
-// ringBox. It depends on neither the top's height nor its sag.
+// top at 30, which no blend runs off: what it adds, as ringAdded
+// measures it, and its mesh over ringBox. It depends on neither the
+// top's height nor its sag.
 func makeFlatRingBlend(chamfer bool, r float64) (flatTopBlend, error) {
 	d := New()
 	d.Edit.SetChordTolerance(0.003)
 	d.Edit.SetMaxSegments(200)
-	edge, before := ringBandOnCone(d, 30, 0)
+	edge, _ := ringBandOnCone(d, 30, 0)
 	g, err := blendOrRefusal(d, edge, r, chamfer)
 	if err != nil {
 		return flatTopBlend{}, err
@@ -78,7 +80,34 @@ func makeFlatRingBlend(chamfer bool, r float64) (flatTopBlend, error) {
 	if !rep.Sound() {
 		return flatTopBlend{}, fmt.Errorf("the ring band with a flat top: %s", rep.Summary())
 	}
-	return flatTopBlend{rep.Volume - before, meshOver(g, ringBox[0], ringBox[1], ringBox[2], ringBox[3])}, nil
+	tris := meshOver(g, ringBox[0], ringBox[1], ringBox[2], ringBox[3])
+	return flatTopBlend{ringAdded(tris), tris}, nil
+}
+
+// ringAdded is what a blend of the ring band's outer edge adds, from the
+// mesh tris over ringBox: the volume over the band's span out from its
+// outer side by up to 6, above the lathe's exact cone (radius 10 - z/5),
+// where nothing but the blend lies; by vertical lines as ringOracle's.
+// The solid's volume less the band's would also count the slivers
+// between the exact side and the side's chords in the band's mesh,
+// which the blend fills where it takes the side away: more where the
+// end runs off and takes the side up to the top (0.09 mm³, 0.18%, of a
+// chamfer of 2.5 at the top of 22), and between the cone's chords and
+// the cone under the blend.
+func ringAdded(tris []srf.STriangle) float64 {
+	const n, step = 1200, 0.005
+	col := meshColumns(tris, ringBox[0], ringBox[1], ringBox[2], ringBox[3], n)
+	turn := ringTurn * math.Pi / 180
+	vol := 0.0
+	for i := range int(turn * (ringAxis + 3) / step) {
+		th := (float64(i) + 0.5) * step / (ringAxis + 3)
+		for out := 3 + step/2; out < 9; out += step {
+			rho := ringAxis + out
+			x, y := 6+rho*math.Sin(th), -ringAxis+rho*math.Cos(th)
+			vol += lengthAbove(col(x, y), (10-math.Hypot(x, y))*5) * step * step * rho / (ringAxis + 3)
+		}
+	}
+	return vol
 }
 
 // ringOracle is what a blend of the ring band's edge adds where its top,
@@ -132,14 +161,14 @@ var ringRefused = map[string]string{
 // new face of the top's sheet beside it: every blend but one
 // (ringRefused) is sound and adds what the same blend of the ring band
 // with a flat top at 30 adds less what of it lies above the cone those
-// tangents make out from the side (ringOracle), within 0.5%. That is
-// loose: chamfers come out up to 0.28% over at the tops of 21 and 22 and
-// 0.07% under at 20, fillets 0.17% over and 0.42% under, the same at
-// every sag of a top and as much for the 31 blends made before, where
-// the top's circle takes the end, as for those the tangents take: what
-// is off lies in what every run-off of this band shares, not in the
-// tangents (at 20 the band's top touches the cone at its end, a contact
-// case). The ordinary run takes the chamfers and fillets of 2.5 at each
+// tangents make out from the side (ringOracle), within 0.1% (0.04%
+// measured), both measured over the blend's region above the exact cone
+// (ringAdded). Measured as the solid's volume less the band's, they
+// were up to 0.42% apart, the same at every sag of a top and for the 31
+// made before the tangents (2026-11-09): that also counts the slivers
+// between the band's exact side and its chords, which the blend fills
+// where it takes the side away, further up the side where the end runs
+// off. The ordinary run takes the chamfers and fillets of 2.5 at each
 // top and sag, -short two, make test-sweeps the sizes of 2 and 3 too.
 func TestBlendRunsOffPastRingTop(t *testing.T) {
 	t.Parallel()
@@ -184,7 +213,7 @@ func TestBlendRunsOffPastRingTop(t *testing.T) {
 			d := New()
 			d.Edit.SetChordTolerance(0.003)
 			d.Edit.SetMaxSegments(200)
-			edge, before := ringBandOnCone(d, k.top, k.sag)
+			edge, _ := ringBandOnCone(d, k.top, k.sag)
 			g, err := blendOrRefusal(d, edge, k.r, k.chamfer)
 			if want, ok := ringRefused[name]; ok {
 				if err == nil || !strings.Contains(err.Error(), want) {
@@ -199,12 +228,13 @@ func TestBlendRunsOffPastRingTop(t *testing.T) {
 			if !rep.Sound() {
 				t.Fatalf("%s", rep.Summary())
 			}
-			added := rep.Volume - before
+			added := ringAdded(meshOver(g, ringBox[0], ringBox[1], ringBox[2], ringBox[3]))
 			f, err := flat[blend{k.chamfer, k.r}]()
 			if err != nil {
 				t.Fatalf("oracle: %v", err)
 			}
-			if want := ringOracle(f, k.top, k.sag); math.Abs(added-want) > 0.005*want {
+			want := ringOracle(f, k.top, k.sag)
+			if math.Abs(added-want) > 0.001*want {
 				t.Errorf("added %g, the oracle %g", added, want)
 			}
 		})

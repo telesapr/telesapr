@@ -44,12 +44,17 @@ func TestFilletPocketRimRadii(t *testing.T) {
 		{[]string{"y-", "x+", "y+"}, []float64{1, 1.5, 1}, false, 13.756485},
 		{[]string{"y-", "x+", "y+"}, []float64{1, 1, 2}, false, 23.955571},
 		{[]string{"y-", "x+", "y+"}, []float64{2, 1, 0.5}, false, 20.672361},
+		// The mirror image of the line above, kept: the chain kinked at its
+		// first end and copying the larger's mitre at its second, whose
+		// mate must cut the crease first (cutOrder).
+		{[]string{"y-", "x+", "y+"}, []float64{0.5, 1, 2}, false, 20.672361},
 		{[]string{"y-", "x+", "y+", "x-"}, []float64{1, 1.5, 1, 1.5}, false, 18.928896},
 		{[]string{"y-", "x+"}, []float64{1, 1.5}, true, 21.833333},
 		{[]string{"y-", "x+"}, []float64{2, 1}, true, 45.833333},
 		{[]string{"y-", "x+"}, []float64{0.5, 2}, true, 22.729167},
 		{[]string{"y-", "x+", "y+"}, []float64{1, 1.5, 1}, true, 32.416667},
 		{[]string{"y-", "x+", "y+"}, []float64{2, 1, 0.5}, true, 48.4375},
+		{[]string{"y-", "x+", "y+"}, []float64{0.5, 1, 2}, true, 48.4375},
 		{[]string{"y-", "x+", "y+", "x-"}, []float64{1, 1.5, 1, 1.5}, true, 44.833333},
 	}, 0) {
 		t.Run(fmt.Sprintf("%s %v flat %v", strings.Join(c.picks, ","), c.radii, c.flat), func(t *testing.T) {
@@ -80,11 +85,16 @@ func TestFilletPocketRimRadii(t *testing.T) {
 // fillets' feet lie at two depths on the crease. OpenCASCADE's
 // makeFillet took the volumes below (2026-11-09). Its faces and ours,
 // our solid exported as STEP, lie within 0.0006 mm of each other within
-// 4 mm of the corner (12, 6), sampled both ways, for the first five
-// lines; the meshes here are coarser, some 4% off, and the volume only
-// rules out a corner gone wrong. A chain that meets one of
-// another radius at one corner and turns another by a corner patch, of
-// one radius but at two depths, is refused by name.
+// 4 mm of each corner both chains reach, sampled both ways, but where
+// the smaller fillet's wall grows past the crease beyond the wall's own
+// patch: the STEP file bounds the face by its patch and leaves the
+// growth out, 0.11 mm off at a radius of 1 beside 2. The meshes here
+// are coarser, some 4% off, and the volume only rules out a corner gone
+// wrong. A chain that meets one of another radius at one corner meets
+// one of its own radius at its other end in a kinked mitre too, kinked
+// at the deeper foot, in place of a corner patch (insideMitres), and so
+// on round the rim: the last five lines, whose corners of one radius
+// lie within 0.0005 mm of OpenCASCADE's (2026-11-09).
 func TestFilletPivotRadii(t *testing.T) {
 	if testing.Short() {
 		t.Skip("rolling-ball fillets of two radii of a pocket's rim in a cone, slow")
@@ -94,16 +104,19 @@ func TestFilletPivotRadii(t *testing.T) {
 		picks []string
 		radii []float64
 		occ   float64
-		err   string
 	}{
-		{[]string{"x+", "y+"}, []float64{1, 1.5}, 7.369233, ""},
-		{[]string{"x+", "y+"}, []float64{1.5, 1}, 5.308922, ""},
-		{[]string{"x+", "y+"}, []float64{1, 2}, 12.112489, ""},
-		{[]string{"x+", "y+"}, []float64{2, 1}, 7.238776, ""},
-		{[]string{"x+", "y+"}, []float64{0.5, 2}, 11.227978, ""},
-		{[]string{"x+", "x-", "y+"}, []float64{1, 1, 1.5}, 8.513201, ""},
-		{[]string{"x+", "y+", "x-", "y-"}, []float64{1, 1.5, 1, 1.5}, 14.852177, ""},
-		{[]string{"x+", "y+", "x-"}, []float64{2, 1, 1}, 0, "can't yet turn another"},
+		{[]string{"x+", "y+"}, []float64{1, 1.5}, 7.369233},
+		{[]string{"x+", "y+"}, []float64{1.5, 1}, 5.308922},
+		{[]string{"x+", "y+"}, []float64{1, 2}, 12.112489},
+		{[]string{"x+", "y+"}, []float64{2, 1}, 7.238776},
+		{[]string{"x+", "y+"}, []float64{0.5, 2}, 11.227978},
+		{[]string{"x+", "x-", "y+"}, []float64{1, 1, 1.5}, 8.513201},
+		{[]string{"x+", "y+", "x-", "y-"}, []float64{1, 1.5, 1, 1.5}, 14.852177},
+		{[]string{"x+", "y+", "x-"}, []float64{2, 1, 1}, 8.356940},
+		{[]string{"x+", "y+", "x-", "y-"}, []float64{2, 1, 1, 1}, 11.289349},
+		{[]string{"x+", "y+", "x-", "y-"}, []float64{1, 1, 1.5, 1}, 9.319660},
+		{[]string{"y+", "x-", "y-"}, []float64{1, 1, 2}, 14.927771},
+		{[]string{"x+", "y+", "x-", "y-"}, []float64{2, 1, 2, 1}, 14.671230},
 	}, 0)
 	for _, c := range cases {
 		t.Run(fmt.Sprintf("%s %v", strings.Join(c.picks, ","), c.radii), func(t *testing.T) {
@@ -114,14 +127,7 @@ func TestFilletPivotRadii(t *testing.T) {
 			for i := range picks {
 				picks[i].R = c.radii[i]
 			}
-			err := topo.FilletPicks(sh, picks, 1, 1<<30, false)
-			if c.err != "" {
-				if err == nil || !strings.Contains(err.Error(), c.err) {
-					t.Fatalf("got %v, want %q", err, c.err)
-				}
-				return
-			}
-			if err != nil {
+			if err := topo.FilletPicks(sh, picks, 1, 1<<30, false); err != nil {
 				t.Fatal(err)
 			}
 			took := before - sound(t, sh)

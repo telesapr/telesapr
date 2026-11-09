@@ -135,10 +135,21 @@ carried on past it along their tangents, overlap, all joined. With the cubic str
 the mitre two lines make. A round profile's two sides touch at the two points where the profile
 crosses the corner's axis, and the joins are made to meet there; where the cubic bends back
 across the line before the corner, the two sides touch where the path crosses itself too, and
-meet there the same way. It is made on an open path with
-no twist, no frames held to a direction and no corner radius (a radius rounds only corners between
-lines and arcs). Where the pieces don't join into a closed solid, the corner is a problem on the
-group: round it in the path with an arc or a tangent cubic.
+meet there the same way. Such a corner is made on a closed path too, and with a
+twist, frames held to a direction or a corner radius:
+
+- Twisted, the twist is held still beside the corner, as beside a corner between two lines, over
+  the stretch the corner spans, and turns along the rest of the path.
+- Held to a direction, the frames must turn at the corner as the path does, so the held
+  direction must be the corner's axis (across the path's plane); held otherwise, the corner is a
+  problem on the group.
+- A corner radius rounds the path's other corners, between lines and arcs, and leaves the corner
+  next to the cubic sharp.
+- Round a closed path, the frames' turn where it closes is taken out as a twist, held still beside
+  the corner the same way.
+
+Where the pieces don't join into a closed solid, the corner is a problem on the group: round it
+in the path with an arc or a tangent cubic.
 
 **Along a cubic, or held to a direction.** Such a sweep is fitted, but a corner between two
 lines is still mitred: along a line its frames do not turn, so the two straight runs are prisms
@@ -240,8 +251,9 @@ passes through itself, and makes no solid: move the pieces apart or make the pro
 
 ## Not yet
 
-A sharp corner next to a cubic is made only on an open path with no twist, held frames or corner
-radius, and only where its pieces join.
+A sharp corner next to a cubic is made only where its pieces join, and, twisted, where the path
+has a stretch left to twist on away from the corner. Its frames held to a direction other than
+the corner's axis are refused.
 
 A path that comes back over itself is refused where its stretches can't be cut clear of a
 corner or don't join. Round lines and arcs that is about half of such paths: of the 1440 paths

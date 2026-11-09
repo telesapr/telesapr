@@ -364,8 +364,8 @@ func (v SweepGroup) CornerRadius() (mm float64) {
 // too sharp for that to join is a problem on the group until it has a
 // radius. A fitted sweep (along a cubic, twisted, or held to a
 // direction) mitres a corner between two lines when it isn't twisted,
-// and needs a radius at any other; a corner beside a cubic can't be
-// rounded. A radius too large for a piece, too small for the profile to
+// and needs a radius at any other; a corner beside a cubic isn't
+// rounded, and is left sharp. A radius too large for a piece, too small for the profile to
 // clear the arc's axis, or a corner out of an arc's plane, is a problem
 // on the group. SetExpr with sketch.GroupPitch gives it an expression.
 func (v SweepGroup) SetCornerRadius(mm float64) {

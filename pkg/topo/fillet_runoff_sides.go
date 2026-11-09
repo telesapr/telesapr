@@ -205,6 +205,20 @@ func filletPastSides(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 				"the side to cut it back: make it a little smaller or larger", what)
 		}
 	}
+	for _, s := range off.sides {
+		if s.curved != nil && s.curved.blocked {
+			what := "fillet"
+			if flat {
+				what = "chamfer"
+			}
+			var at geom.Vector
+			if fx, ok := errors.AsType[*FilletError](refusal); ok {
+				at = fx.At
+			}
+			return r, filletErr(at, "the %s runs off the face here into a curved side, and the solid stands where that side, "+
+				"carried on past the face, would cut the %s back: make it smaller", what, what)
+		}
+	}
 	return r, refusal
 }
 

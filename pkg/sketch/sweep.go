@@ -724,6 +724,11 @@ func (g *Group) generateSweepShell(sk *Sketch) {
 	start := srf.FaceID(g.RemapEntity(core.NoEntity, RemapBottom).V)
 	end := srf.FaceID(g.RemapEntity(core.NoEntity, RemapTop).V)
 	if g.sweepRuns != nil {
+		if g.sweepClosed {
+			// Round a closed path the last run ends flush on the first's
+			// start where the profile is: no caps.
+			start, end = 0, 0
+		}
 		g.generateRunsSweepShell(sk, src, uint32(start), uint32(end))
 		return
 	}
@@ -815,17 +820,7 @@ func (g *Group) sweepFitted(chain []pathPiece) bool {
 // sweepPathOf is the fitted sweep's path along the chain, twisted and
 // held as the group says, for a profile reaching reach from its start.
 func sweepPathOf(chain []pathPiece, g *Group, reach float64) (*topo.SweepPath, error) {
-	var curves []srf.SBezier
-	for _, p := range chain {
-		for _, c := range p.curves {
-			if n := len(curves); n > 0 {
-				// The pieces' ends meet within sweepTol; make them meet.
-				prev := curves[n-1].Finish()
-				c.Ctrl[0] = prev
-			}
-			curves = append(curves, c)
-		}
-	}
+	curves := chainCurves(chain)
 	if g.sweepClosed {
 		last := &curves[len(curves)-1]
 		last.Ctrl[last.Degree] = curves[0].Ctrl[0]
@@ -837,6 +832,35 @@ func sweepPathOf(chain []pathPiece, g *Group, reach float64) (*topo.SweepPath, e
 		Closed: g.sweepClosed,
 		Reach:  reach,
 	})
+}
+
+// runPathOf is the fitted path of one run of a sweep cut at its corners
+// beside a cubic (sweep_cubic_corner.go): open, whatever the whole path
+// is, its frames held to up (zero for none), and twisted by its own
+// share of the twist.
+func runPathOf(chain []pathPiece, up geom.Vector, reach, twist float64) (*topo.SweepPath, error) {
+	t0 := chain[0].tangentAt(false)
+	return topo.NewSweepPath(chainCurves(chain), t0.NormalDir(0), topo.PathSweepOptions{
+		Twist: twist,
+		Up:    up,
+		Reach: reach,
+	})
+}
+
+// chainCurves are the chain's pieces' curves end to end.
+func chainCurves(chain []pathPiece) []srf.SBezier {
+	var curves []srf.SBezier
+	for _, p := range chain {
+		for _, c := range p.curves {
+			if n := len(curves); n > 0 {
+				// The pieces' ends meet within sweepTol; make them meet.
+				prev := curves[n-1].Finish()
+				c.Ctrl[0] = prev
+			}
+			curves = append(curves, c)
+		}
+	}
+	return curves
 }
 
 // generateFittedSweepShell sweeps each of the profile's loop sets along

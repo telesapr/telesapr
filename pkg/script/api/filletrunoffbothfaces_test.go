@@ -3,9 +3,10 @@ package api
 import (
 	"fmt"
 	"math"
-	"strings"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
@@ -40,28 +41,117 @@ func flatConePlate(d *Doc, c, h0 float64) (SolidEdge, float64) {
 	return plate.Solid().EdgeAt(V(5, 1, math.Sqrt(5.5*5.5-1))), plate.Analyze().Check().Volume
 }
 
-// Blends of the edge a plate stands on a cone by whose end runs off
+// flatConeTop is the height of flatConePlate's top at x, for h0.
+func flatConeTop(h0, x float64) float64 {
+	z0 := math.Sqrt(48) + h0
+	return z0 + (9-z0)*x/10
+}
+
+// bothFacesOracle is what a blend of size r of flatConePlate's edge adds
+// where its end runs off both its faces, the top at h0 and the flat at
+// c: the same blend of the plate whose top is at 4 on the cone uncut,
+// which runs off neither, less what of it lies above the top's plane
+// at h0 and past the flat's plane, measured by vertical lines through
+// its mesh (volumeAbove) above the plane and above the cone's own
+// surface. Nothing but the blend lies there: the plate stands at y up
+// to 1, the cone under its surface. The two pieces lie apart, one
+// beside the plate's top, the other low on the cone.
+func bothFacesOracle(chamfer bool, r, c, h0 float64) (float64, error) {
+	d := New()
+	d.Edit.SetChordTolerance(0.003)
+	d.Edit.SetMaxSegments(200)
+	edge, before := flatConePlate(d, 0, 4)
+	g, err := blendOrRefusal(d, edge, r, chamfer)
+	if err != nil {
+		return 0, err
+	}
+	rep := g.Analyze().Check()
+	if !rep.Sound() {
+		return 0, fmt.Errorf("the blend that runs off no face: %s", rep.Summary())
+	}
+	const x1 = 5
+	top := volumeAbove(meshOver(g, 0, x1, 1, 8), 0, x1, 1, 8, 800, func(x, _ float64) float64 {
+		return flatConeTop(h0, x)
+	})
+	cone := func(x, y float64) float64 {
+		rx := 7 - 0.3*x
+		return math.Sqrt(math.Max(0, rx*rx-y*y))
+	}
+	past := volumeAbove(meshOver(g, 0, x1, c, 8), 0, x1, c, 8, 800, cone)
+	return rep.Volume - before - top - past, nil
+}
+
+// Blends of the edge a plate stands on a cone by, whose end runs off
 // both its faces at the plate's end: the plate's side past its top,
-// which is low there, and the cone past its flat (flatConePlate). Each
-// side's run-off alone is made, onto the plate's top (the cone uncut)
-// and onto the flat (the plate's top high); both at once the end would
-// be cut by both next faces and the end face grow by the end section
-// between their two cuts. That is not made: the blend is refused at the
-// place, saying so. Before 2026-11-09 no test reached this, and the
-// refusal said the face past the end "is curved or meets the others
-// otherwise".
-func TestBlendRunsOffBothFacesRefused(t *testing.T) {
+// which is low there, and the cone past its flat (flatConePlate). Made
+// since 2026-11-09 (topo's rollingrunoff_both.go): the end patches are
+// cut by both next faces in turn, and the end face grows by the end
+// section between their cuts; refused before as running off both its
+// faces. Sound, and adding what bothFacesOracle measures: chamfers of
+// 1.6 to 2.3 and fillets of 3 to 5.5 within 0.3% (0.15% measured at
+// most, the fillet of 5.5; the rest 0.08%: the oracle's columns and the
+// meshes' chords). Where the two cuts would cross on the fillet, the two
+// next faces meeting across it, the blend is refused (bothRunOffs,
+// clipRunOffs); no size here reaches that before its foot on the cone
+// runs past the flat all along the edge. The ordinary run takes a
+// sample, -short one chamfer and one fillet; make test-sweeps all.
+func TestBlendRunsOffBothFaces(t *testing.T) {
+	t.Parallel()
+	type tc struct {
+		chamfer  bool
+		c, h0, r float64
+	}
+	cases := []tc{
+		{true, 3, 1, 2.15}, {true, 3, 1, 2.3}, {true, 3, 0.5, 2.3}, {true, 2.5, 0.5, 1.6}, {true, 3, 0.2, 2.3},
+		{false, 3, 1, 4}, {false, 3, 0.5, 4}, {false, 2.5, 1, 3.5}, {false, 3, 1, 4.5}, {false, 3, 1, 5}, {false, 2.5, 0.5, 3}, {false, 3, 0.2, 5.5},
+	}
+	cases = sweep.Pick(cases, 4)
+	if (testing.Short() || fixtures.RaceDetector) && !sweep.Full() {
+		cases = []tc{{true, 3, 1, 2.15}, {false, 3, 1, 4}}
+	}
+	for _, c := range cases {
+		kind := "fillet"
+		if c.chamfer {
+			kind = "chamfer"
+		}
+		t.Run(fmt.Sprintf("%s of %g, flat at %g, top %g", kind, c.r, c.c, c.h0), func(t *testing.T) {
+			t.Parallel()
+			d := New()
+			d.Edit.SetChordTolerance(0.003)
+			d.Edit.SetMaxSegments(200)
+			edge, before := flatConePlate(d, c.c, c.h0)
+			g, err := blendOrRefusal(d, edge, c.r, c.chamfer)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rep := g.Analyze().Check()
+			if !rep.Sound() {
+				t.Fatal(rep.Summary())
+			}
+			want, err := bothFacesOracle(c.chamfer, c.r, c.c, c.h0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			added := rep.Volume - before
+			t.Logf("added %.5f, oracle %.5f (%.3f%%)", added, want, 100*(added-want)/want)
+			if math.Abs(added-want) > 0.003*want {
+				t.Errorf("adds %.5f, want %.5f", added, want)
+			}
+		})
+	}
+}
+
+// Each side's run-off of flatConePlate's edge alone is made, onto the
+// plate's top (the cone uncut) and onto the flat (the plate's top high).
+func TestBlendRunsOffOneOfTwoFaces(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		chamfer   bool
-		c, h0, r  float64
-		bothFaces bool
+		chamfer  bool
+		c, h0, r float64
 	}{
-		{true, 3, 1, 2.15, true},
-		{false, 3, 1, 4, true},
-		{true, 0, 1, 2.15, false},
-		{true, 3, 4, 2.15, false},
-		{false, 3, 4, 4, false},
+		{true, 0, 1, 2.15},
+		{true, 3, 4, 2.15},
+		{false, 3, 4, 4},
 	}
 	for _, c := range cases {
 		kind := "fillet"
@@ -75,12 +165,6 @@ func TestBlendRunsOffBothFacesRefused(t *testing.T) {
 			d.Edit.SetMaxSegments(200)
 			edge, _ := flatConePlate(d, c.c, c.h0)
 			g, err := blendOrRefusal(d, edge, c.r, c.chamfer)
-			if c.bothFaces {
-				if err == nil || !strings.Contains(err.Error(), "runs off both its faces") {
-					t.Fatalf("%v, want a refusal saying it runs off both its faces", err)
-				}
-				return
-			}
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -59,7 +59,9 @@ func (sk *Sketch) roundCorners(chain []pathPiece, r float64) ([]pathPiece, error
 	out := []pathPiece{chain[0]}
 	for k := 1; k < len(chain); k++ {
 		a, b := out[len(out)-1], chain[k]
-		if a.tangentAt(true).Dot(b.tangentAt(false)) >= sweepTangentCos {
+		// A corner beside a cubic stays sharp: only lines and arcs take
+		// a radius (sweep_cubic_corner.go makes the sharp corner).
+		if a.free || b.free || a.tangentAt(true).Dot(b.tangentAt(false)) >= sweepTangentCos {
 			out = append(out, b)
 			continue
 		}

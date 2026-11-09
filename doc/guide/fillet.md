@@ -108,8 +108,12 @@ doc.Features.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 0, 5))}, 1.5, "")
   about 53° off square, unless that plane runs on above the face into the solid (as into the
   rod beside a side leaning out by 45°). A curved side square to the face, as a disc's round
   rim, the arc of a plate's rounded end or the wall of a bore beside a rod, cuts the fillet
-  along its own cylinder in the same way, unless the solid goes on past it (a ledge round the
-  disc). A side curved some other way, as a cone, is still refused.
+  along its own cylinder in the same way, and a side on a cone about an axis square to the
+  face, as a drafted disc's rim or a drafted bore, along its cone carried on past the face. A
+  ledge round the disc below such a side is left as it was. Refused: a curved side's surface,
+  carried on past the face, running into the solid (a rod close beside a bore that widens
+  toward the face), and the fillet of a hole's rim cutting down past such a side's foot into a
+  ledge.
 - A rounded edge takes with it the edges it meets smoothly, as round a rounded rectangle.
 - Where two rounded edges meet, they are mitred. Where three meet at the corner of a block, a
   sphere rounds the corner.
@@ -222,7 +226,10 @@ carried on past the sharp edge, as the balls rolling along both edges would cut 
 ends where it meets the larger, and the larger ends partly on the smaller, partly on the smaller
 one's wall, which grows a little way past the sharp edge, from the larger fillet's depth on that
 edge up to the smaller's. OpenCASCADE rounds them the same way. Chamfers of different distances
-meet the same way.
+meet the same way. Round a dish, a fillet that meets one of another radius at one corner meets
+one of its own radius at its other corner the same way too, not by a corner patch: the fillet
+whose end lies deeper on the sharp edge takes the larger one's part. So a rim of 2, 1 and 1 mm is
+rounded all round, as OpenCASCADE rounds it.
 
 An edge along a crease that fades out, as a loft's crease from a corner of its square foot up to
 where its sides meet smoothly, is rounded or chamfered up to where its faces turn by almost
@@ -305,10 +312,7 @@ These are refused with a message:
   some edge there is left sharp, but for one, two opposite or three of a saddle's four edges as
   above, fillets or chamfers, and a ridge and a valley side by side.
 - At an inside corner between two fillets between curved faces (above): a sharp edge that is
-  curved, or a corner that would cross a seam of the face the two share (make them smaller). Nor
-  can a fillet that meets one of another radius at one inside corner turn another where the two
-  fillets there, of one radius, reach the sharp edge at different depths (give them all one
-  radius).
+  curved, or a corner that would cross a seam of the face the two share (make them smaller).
 - A blend whose end runs off both its faces, each onto the face past it, as a plate's foot on a
   cone cut flat beside the plate where the plate's top is low too.
 

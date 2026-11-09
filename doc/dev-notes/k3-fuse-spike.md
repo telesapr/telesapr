@@ -1,8 +1,10 @@
 # K3 spike: fuse first (2026-11-04)
 
-Refreshed 2026-11-09 (rd12-k3-graze): the sweep corner's last 4 circles are made, and what made
-them fail was not the corner's fill; one of the two open fitted-tube Booleans is sound, the other
-is the mesher's. See "The path coming back across itself" at the end.
+Refreshed 2026-11-09 (rd13-sweep-cubic-paths): the sweep corner beside a cubic is made on
+twisted, held, rounded and closed paths too; see "Twisted, held, rounded and closed paths" at the
+end. Before that, 2026-11-09 (rd12-k3-graze): the sweep corner's last 4 circles are made, and what
+made them fail was not the corner's fill; one of the two open fitted-tube Booleans is sound, the
+other is the mesher's. See "The path coming back across itself".
 
 The roadmap's rule for a kernel item: a spike on its hardest fixture before it is sized. This is
 the spike for what was left of K3, "fuse first, then classify by identity" (BRL-CAD libnmg), run on
@@ -438,3 +440,50 @@ No golden moved.
 Not done: touching points the marcher finds itself (target 3 of the round); the crossing touches
 are found only where the feature's own path pieces cross exactly, as a path drawn in one
 workplane does.
+
+## Twisted, held, rounded and closed paths (rd13, 2026-11-09)
+
+The corner's fill and the touching points are made from the two runs' sections at the corner
+being one section turned about the corner's axis. Each run's fitted path moves the profile
+relative to its own first frame, and the next run takes the profile from where the last left it,
+turned by the corner (`sweepRuns.starts`), so that holds for any frames as long as the runs agree
+at the corner (`pkg/sketch/sweep_cubic_corner_frames.go`):
+
+- Held to a direction: each run's frame at the corner is the held one, so the corner is made only
+  where the held frame before it, turned by the corner, is the one after it (`heldAgree`): the
+  direction along the corner's axis. Held otherwise the sections differ and are refused by name,
+  as the kernel refuses a corner between two lines (`topo.ErrPathCornerHeld`). Runs of lines and
+  of arcs about the held direction stay exact. The runs' own corners between lines are now
+  mitred exactly too (`rigidSteps`, where the line is longer than its mitres reach), which a
+  fitted line beside a straight cubic needed: two fitted runs' coplanar flattened patches failed
+  to join at a corner of 90° (held, bend 0; a closed loop of a straight cubic).
+- Twisted: the runs twisted up to the corner, the twist spread over them by length, never joined
+  (every twisted case of the table refused): the twisted skins overlapping inside the turn, beside
+  an exact prism (the cubic alone twisted) as beside a fitted one. A hold at the runs' ends through
+  topo's twist law (a `HoldEnds` option, reverted) slowed the twist there but left each skin in
+  some 55 patches, with the same failure. Kept: the path is cut smoothly where the hold ends
+  (`heldCuts`, `cutSmooth`), the stretches at the corner swept untwisted, and the twist spread over
+  the rest at full rate from the cut, the runs meeting flush there. The hold is as far as a mitre
+  would reach (the kernel's `holdReach`); where the cubic bends beside the corner, its tube
+  overlaps the line's further, and the runs are tried again held twice as far (`holdScales`):
+  bars 2×4 twisted, 36 of 60 made held twice as far alone (which left 150° nowhere to twist), 58
+  held once and then twice. A path held whole is refused by name.
+- A corner radius rounds the path's other corners and leaves the corner beside the cubic sharp
+  (`roundCorners` skips a corner beside a free piece). A closed path rounded before this treated
+  the cubic as a line beside such a corner and replaced it by one. The profile is checked clear of
+  each arc's axis (`clearOfArcs`), as a rigid sweep's path is: a bar 4 wide at a radius of 2 made
+  a shell of ten faces along one edge.
+- Closed: the runs fitted untwisted come back turned about the tangent by the loop's holonomy,
+  which is taken out as a twist on top of the user's whole turns (`closingTwist`), held still
+  beside the corners as a twist is; the runs must then bring the profile back within `sweepTol`
+  (`closes`). The last run ends flush on the first's start where the profile is, with no caps. A
+  plane loop comes back unturned and its runs stay exact.
+
+`TestSweepSharpCornerBesideCubicFramesSweep` and `TestSweepSharpCornerBesideCubicLoopSweep`, the
+whole grids: 60 corners each (both orders, ±30° to ±150°, bends −90° to 90°, lead 10), bars 2×4,
+a circle, bars 4×2, a diamond: held to the corner's axis 60, 60, 60, 60; twisted 90° 58, 43, 59,
+56; rounded (radius 3 at a corner between lines after the cubic) 60, 51, 60, 59. Of 26 loops (a
+line up through the profile, the cubic, two lines back): 26, 26, 20, 24; twisted a whole turn 20,
+12, 16, 24. Every other one refused by name; none unsound. What is left are joins that fail, the
+most of them round: twisted circles at 150° and with the cubic bent 90° against the line, circles
+at a corner rounded after a cubic first, twisted loops. No change in `pkg/srf` or `pkg/topo`.

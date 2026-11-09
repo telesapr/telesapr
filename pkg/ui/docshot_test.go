@@ -313,7 +313,9 @@ func TestDocScenarios(t *testing.T) {
 		made[sh.name] = true
 	}
 	checkGuideImages(t, made)
-	checkGuideVideos(t, videos)
+	// The scenarios are parallel subtests, which run once this function
+	// has returned and write the videos: the check waits for them.
+	t.Cleanup(func() { checkGuideVideos(t, videos) })
 }
 
 // shotNames lists the pictures a scenario makes.

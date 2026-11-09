@@ -47,6 +47,9 @@ const (
 	settlePoll = 100 * time.Millisecond
 	settleSame = 5
 	settleMost = 60 * time.Second
+	// settleRetry looks at the model's own screen, after an action that
+	// should have changed it, before the action is done again.
+	settleRetry = 30
 )
 
 // docWindowShots are the pictures, in the order taken.
@@ -147,8 +150,8 @@ func TestDocWindowShots(t *testing.T) {
 	}
 
 	i := -1 // the shot being waited for; -1 is the model drawn
-	var prev []byte
-	same := 0
+	var prev, clean []byte
+	same, stalled := 0, 0
 	deadline := time.Now().Add(settleMost)
 	var look func()
 	look = func() {
@@ -158,12 +161,32 @@ func TestDocWindowShots(t *testing.T) {
 			p.Exit()
 			return
 		}
-		if prev != nil && bytes.Equal(img.Pix, prev) {
+		// A shot's screen is never the model's own: on a busy machine
+		// the menu or dialog opens late, and the screen is the same
+		// for the whole wait, so a screen equal to the model's is not
+		// settled yet.
+		switch {
+		case i >= 0 && bytes.Equal(img.Pix, clean):
+			same = 0
+			// Past settleRetry the action is taken to have been lost
+			// (a click or key the busy server dropped): undo it and do
+			// it again.
+			if stalled++; stalled%settleRetry == 0 {
+				sh := docWindowShots[i]
+				if sh.after != nil {
+					sh.after(s)
+				}
+				p.App().After(settlePoll, func() { sh.before(s) })
+			}
+		case prev != nil && bytes.Equal(img.Pix, prev):
 			same++
-		} else {
+		default:
 			same = 0
 		}
 		prev = img.Pix
+		if i < 0 && same >= settleSame {
+			clean = img.Pix
+		}
 		if same < settleSame {
 			if time.Now().After(deadline) {
 				t.Errorf("shot %d: the screen did not settle in %v", i, settleMost)
@@ -188,6 +211,7 @@ func TestDocWindowShots(t *testing.T) {
 			p.App().After(10*settlePoll, p.Exit)
 			return
 		}
+		stalled = 0
 		prev, same, deadline = nil, 0, time.Now().Add(settleMost)
 		p.App().After(settlePoll, look)
 		// A shot's action may open a modal dialog, whose loop runs the

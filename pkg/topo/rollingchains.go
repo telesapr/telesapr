@@ -254,7 +254,7 @@ func setKinks(rbs []*rollingBall) error {
 		changed := false
 		for _, rb := range rbs {
 			for _, end := range rb.ends {
-				if rb.closed || end == nil || !end.mitre || end.mate == rb || end.mate.r != rb.r {
+				if rb.closed || end == nil || !end.mitre || end.mate == rb || end.mate.r != rb.r || end.deeper || end.mate.ends[end.mateK].deeper {
 					continue
 				}
 				back := (end.ban[0] < 0) != (end.mate.ends[end.mateK].ban[0] < 0)

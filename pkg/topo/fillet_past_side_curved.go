@@ -30,9 +30,12 @@ import (
 // itself (curvedCutter): its curved face, where it is kept, is the side
 // again, grown up by the fillet's sections where the cylinder cuts them.
 //
-// Only a cylinder square to the face is taken, standing wholly below the
-// face, whose edge with the face is one arc or the whole circle; the
-// solid going on past it (a ledge round a disc) is refused.
+// Only a cylinder or cone (fillet_past_side_cone.go) about an axis
+// square to the face is taken, standing wholly below the face, whose
+// edge with the face is one arc or the whole circle. Where the solid
+// goes on below the side (a ledge round a disc), the cutter starts at
+// the side's foot; where it stands in the cutter above the face or
+// beside the side, the fillet is refused (curvedCutter).
 
 // curvedSide is the cylinder a curved side lies on: a point o of its
 // axis in the plane of the face the fillet rolls on, the axis (the
@@ -44,11 +47,22 @@ import (
 type curvedSide struct {
 	o, axis geom.Vector
 	r, sgn  float64
-	lo      float64
-	e1, e2  geom.Vector
-	a0, a1  float64
-	full    bool
-	angles  []float64
+	// k is how much the radius grows per unit up the axis from o: 0
+	// on a cylinder, the tangent of a cone's half angle, signed, on a
+	// cone (fillet_past_side_cone.go), r being its radius in the face's
+	// plane.
+	k      float64
+	lo     float64
+	e1, e2 geom.Vector
+	a0, a1 float64
+	full   bool
+	angles []float64
+	// blocked is set where the solid stands in the cutter above the
+	// face or beside the side (curvedCutter), which the refusal says.
+	blocked bool
+	// below is set where the solid goes on below the side, and the
+	// cutter starts at the side's foot.
+	below bool
 }
 
 // curvedStep is the most angle a polygon side of the slab spans: its
@@ -58,6 +72,9 @@ const curvedStep = math.Pi / 32
 // curvedInset is how far inside the rim, as a share of the radius and
 // at most 0.5, the slab's wall toward the solid stands.
 const curvedInset = 0.05
+
+// coneInset is curvedInset on a cone.
+const coneInset = 0.02
 
 // curvedSideOf is the cylinder face s lies on, as a side the foot on a
 // flat face of outward normal n at height top (along n) runs into, or
@@ -72,7 +89,7 @@ func (t *Topology) curvedSideOf(s int, n geom.Vector, top float64) (*curvedSide,
 	var axis, centre, a, b geom.Vector
 	var r float64
 	if !sf.IsCylinder(&axis, &centre, &r, &a, &b) || r <= geom.LengthEps {
-		return nil, false
+		return t.coneSideOf(s, n, top)
 	}
 	if axis.Magnitude() <= geom.LengthEps || math.Abs(axis.Normal().Dot(n)) < 1-1e-9 {
 		return nil, false
@@ -100,6 +117,9 @@ func (t *Topology) onCylinder(f int, c *curvedSide) bool {
 	sf := t.Surface(f)
 	if sf == nil {
 		return false
+	}
+	if c.k != 0 {
+		return onCone(sf, c)
 	}
 	var axis, centre, a, b geom.Vector
 	var r float64
@@ -209,7 +229,7 @@ func turn(a, b float64) float64 {
 
 // same reports whether c and d lie on one cylinder.
 func (c *curvedSide) same(d *curvedSide) bool {
-	return math.Abs(c.r-d.r) <= geom.LengthEps && c.sgn == d.sgn &&
+	return math.Abs(c.r-d.r) <= geom.LengthEps && c.sgn == d.sgn && math.Abs(c.k-d.k) <= 1e-9 &&
 		c.o.Minus(d.o).Magnitude() <= geom.LengthEps && c.axis.Dot(d.axis) > 1-1e-9
 }
 
@@ -223,7 +243,17 @@ func (c *curvedSide) radial(p geom.Vector) (float64, float64) {
 // past is how far p lies past the cylinder, out of the solid.
 func (c *curvedSide) past(p geom.Vector) float64 {
 	d, _ := c.radial(p)
-	return c.sgn * (d - c.r)
+	return c.sgn * (d - c.radiusAt(p.Minus(c.o).Dot(c.axis)))
+}
+
+// radiusAt is the side's radius at h up the axis from o.
+func (c *curvedSide) radiusAt(h float64) float64 { return c.r + c.k*h }
+
+// radii is the least and the most of the side's radius from h0 up to
+// h1.
+func (c *curvedSide) radii(h0, h1 float64) (lo, hi float64) {
+	a, b := c.radiusAt(h0), c.radiusAt(h1)
+	return math.Min(a, b), math.Max(a, b)
 }
 
 // at is the point at distance d from the axis, angle a about it, and h
@@ -241,30 +271,52 @@ type curvedLayout struct {
 	in, out, far float64
 }
 
-// layout is the slab and cutter reaching depth past the side, and
-// whether the side allows them: a bore's arc whose cut would reach near
-// its axis does not.
-func (c *curvedSide) layout(depth float64) (curvedLayout, bool) {
+// layout is the slab and cutter reaching depth past the side, for a
+// fillet of size r, and whether the side allows them: a bore's arc
+// whose cut would reach near its axis does not, nor a cone whose apex
+// the cutter, from below the side to r above the face, would reach.
+// On a cone the slab's corners clear the side at every height of it,
+// and the cutter's far side clears the cone over the cutter's height.
+func (c *curvedSide) layout(depth, r float64) (curvedLayout, bool) {
 	span := c.a1 - c.a0
 	steps := max(2, int(math.Ceil(span/curvedStep)))
 	w := math.Cos(span / float64(steps) / 2)
 	inset := math.Min(curvedInset*c.r, 0.5)
+	if c.k != 0 {
+		// The slab's wall clears the cone at every height of the side,
+		// so at one end it stands off the rim by the cone's spread over
+		// the side as well: the inset is kept small.
+		inset = math.Min(coneInset*c.r, 0.2)
+	}
+	rmin, rmax := c.radii(c.lo, 0)
+	cmin, cmax := c.radii(c.lo-1, r+1)
+	if cmin < 0.25*c.r {
+		return curvedLayout{}, false
+	}
 	if c.sgn > 0 {
 		// Corners away from the solid stand out so that the chords
 		// between them lie past the depth.
-		out := (c.r + depth) / w
-		return curvedLayout{steps: steps, in: c.r - inset, out: out, far: out + 1}, true
+		out := (rmax + depth) / w
+		if rmin-inset <= 0 {
+			return curvedLayout{}, false
+		}
+		return curvedLayout{steps: steps, in: rmin - inset, out: out, far: math.Max(out, cmax) + 1}, true
 	}
 	// Corners toward the solid of a bore stand out so that the chords
 	// between them stay in the solid.
-	in := (c.r + inset) / w
+	in := (rmax + inset) / w
 	if c.full {
 		return curvedLayout{steps: steps, in: in}, true
 	}
-	if c.r-depth < 0.25*c.r {
+	out := rmin - depth
+	if out < 0.25*c.r {
 		return curvedLayout{}, false
 	}
-	return curvedLayout{steps: steps, in: in, out: c.r - depth, far: math.Max(c.r-depth-1, 0.25*c.r)}, true
+	far := math.Max(out-1, 0.25*c.r)
+	if far >= cmin {
+		return curvedLayout{}, false
+	}
+	return curvedLayout{steps: steps, in: in, out: out, far: far}, true
 }
 
 // ring is the corners at distance d from the axis at the layout's steps
@@ -276,8 +328,16 @@ func (c *curvedSide) ring(l curvedLayout, d, h float64) []geom.Vector {
 	if c.full {
 		n--
 	}
+	shift := 0.0
+	if c.full && c.k != 0 {
+		// Round a drafted disc a corner on the solid's seam (angle 0,
+		// where the sketch's circle starts) left a face of the slab's
+		// outer wall standing after the cut back (2026-11-09); half a
+		// step round, none is there.
+		shift = 0.5
+	}
 	for i := range n + 1 {
-		pts = append(pts, c.at(d, c.a0+(c.a1-c.a0)*float64(i)/float64(l.steps), h))
+		pts = append(pts, c.at(d, c.a0+(c.a1-c.a0)*(float64(i)+shift)/float64(l.steps), h))
 	}
 	return pts
 }
@@ -420,36 +480,78 @@ func (c *curvedSide) curvedSlab(l curvedLayout, color core.RGBA, tol srf.Toleran
 		curves = lines(append(in, reversed(c.ring(l, l.out, 0))...))
 	}
 	slab, ok := prismOf(curves, c.axis.ScaledBy(c.lo), color, tol)
-	past := -c.lo * math.Abs(c.fan(l, l.out)-c.r*c.r*(c.a1-c.a0)) / 2
+	past := math.Abs(-c.lo*c.fan(l, l.out)-(c.a1-c.a0)*c.squared()) / 2
 	return slab, past, ok
 }
 
+// squared is the integral of the square of the side's radius down its
+// height, from lo up to the face: r² times the height on a cylinder.
+func (c *curvedSide) squared() float64 {
+	a, b := c.radiusAt(c.lo), c.r
+	return -c.lo * (a*a + a*b + b*b) / 3
+}
+
 // curvedCutter is the solid that cuts the widened solid back to the
-// side's cylinder: its ring or sector from the rim out past the slab, or
-// a bore's cylinder, from below the side to above the face by more than
-// the fillet's size r. Its faces take the side's colour and identity, so
+// side's cylinder or cone: its ring or sector from the rim out past the
+// slab, or a bore's cylinder or cone, from below the side (from its foot
+// where the solid goes on below it) to above the face by more than the
+// fillet's size r. Its faces take the side's colour and identity, so
 // that its curved face, where it is kept, is the side again. ok is false
-// where any of sh lies in it.
+// where the solid stands in it above the face or beside the side, which
+// sets c.blocked.
 func (c *curvedSide) curvedCutter(l curvedLayout, r float64, side *srf.SSurface, sh *srf.SShell) (srf.SShell, bool) {
 	h0, h1 := c.lo-1, r+1
 	in := func(p geom.Vector) bool {
 		d, a := c.radial(p)
 		h := p.Minus(c.o).Dot(c.axis)
+		rh := c.radiusAt(h)
 		// A bore's wall is chorded inside its cylinder, by up to the chord
 		// tolerance.
-		inside := c.sgn*(d-c.r) > 2*sh.Tol.ChordTolMm()+10*geom.LengthEps && h > h0 && h < h1
+		inside := c.sgn*(d-rh) > 2*sh.Tol.ChordTolMm()+10*geom.LengthEps && h > h0 && h < h1
 		if l.far != 0 {
-			inside = inside && math.Abs(d-c.r) < math.Abs(l.far-c.r)
+			inside = inside && math.Abs(d-rh) < math.Abs(l.far-rh)
 		}
 		return inside && (c.full || turn(c.a0, a) < c.a1-c.a0)
 	}
 	var m srf.SMesh
 	cs := sh.Clone()
 	cs.TriangulateInto(&m)
+	// What of sh lies in the cutter below the side (a ledge round a
+	// disc) is kept by starting the cutter at the side's foot, its
+	// bottom on the ledge's top: cut by the solid instead, as past a flat
+	// side (beyondCutter), the cutter's curved face would lie on the
+	// side, and Booleans do not join coincident curved faces (tried
+	// 2026-11-09: the cone cutter less the block round a drafted bore
+	// lost the loops of the face it shares with the bore). What lies in
+	// it above the face, where the side carried on runs into the solid
+	// (a rod beside a bore that widens toward the face), or beside the
+	// side, is refused.
+	below := false
+	eps := 2*sh.Tol.ChordTolMm() + 10*geom.LengthEps
 	for _, tr := range m.Triangles {
-		if in(tr.A) || in(tr.B) || in(tr.C) || in(tr.A.Plus(tr.B).Plus(tr.C).ScaledBy(1.0/3)) {
-			return srf.SShell{}, false
+		for _, p := range []geom.Vector{tr.A, tr.B, tr.C, tr.A.Plus(tr.B).Plus(tr.C).ScaledBy(1.0 / 3)} {
+			if !in(p) {
+				continue
+			}
+			if p.Minus(c.o).Dot(c.axis) > c.lo+eps {
+				c.blocked = true
+				return srf.SShell{}, false
+			}
+			below = true
 		}
+	}
+	c.below = below
+	if below {
+		h0 = c.lo
+	}
+	return c.cutterShell(l, h0, h1, side, sh.Tol)
+}
+
+// cutterShell is curvedCutter's solid from h0 up to h1 along the axis:
+// a prism on a cylinder, a revolved profile on a cone.
+func (c *curvedSide) cutterShell(l curvedLayout, h0, h1 float64, side *srf.SSurface, tol srf.Tolerance) (srf.SShell, bool) {
+	if c.k != 0 {
+		return c.coneCutter(l, h0, h1, side, tol)
 	}
 	breaks := c.arcBreaks()
 	back := slices.Clone(breaks)
@@ -466,16 +568,22 @@ func (c *curvedSide) curvedCutter(l curvedLayout, r float64, side *srf.SSurface,
 		curves = append(curves, c.arcs(l.far, back, h0)...)
 		curves = append(curves, srf.SBezierFrom2(c.at(l.far, c.a0, h0), c.at(c.r, c.a0, h0)))
 	}
-	cut, ok := prismOf(curves, c.axis.ScaledBy(h1-h0), side.Color, sh.Tol)
+	cut, ok := prismOf(curves, c.axis.ScaledBy(h1-h0), side.Color, tol)
 	if !ok {
 		return srf.SShell{}, false
 	}
+	asSide(&cut, side)
+	return cut, true
+}
+
+// asSide gives cut's faces side's identity, so that a face of it kept
+// in the solid is the side again.
+func asSide(cut *srf.SShell, side *srf.SSurface) {
 	for i := range cut.Surface {
 		cut.Surface[i].Face = side.Face
 		cut.Surface[i].Origin = side.Origin
 		cut.Surface[i].Sheet = side.Sheet
 	}
-	return cut, true
 }
 
 // meshVolume is the volume of sh's mesh.
@@ -493,7 +601,7 @@ func meshVolume(sh *srf.SShell) float64 {
 // filled a hole or a notch near the side.
 func widenPastCurved(wide *srf.SShell, sh *srf.SShell, s *runOffSide, off *runOff, r float64) (srf.SShell, bool) {
 	c := s.curved
-	l, ok := c.layout(math.Max(s.past, 0) + r + 1)
+	l, ok := c.layout(math.Max(s.past, 0)+r+1, r)
 	if !ok {
 		return srf.SShell{}, false
 	}

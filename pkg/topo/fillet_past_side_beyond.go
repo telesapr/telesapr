@@ -47,7 +47,18 @@ func keepBeyond(out, sh *srf.SShell, off *runOff, r float64) (srf.SShell, bool) 
 	tol := sh.Tol.ChordTolMm() * r * r
 	for _, s := range off.distinct() {
 		if s.curved != nil {
-			// Nothing of sh lies past a curved side (curvedCutter).
+			// Nothing of sh lies past a curved side but below its foot
+			// (curvedCutter), which the cutter leaves alone: a fillet
+			// that takes material away down past the foot, there, cut
+			// into what goes on below it, and is refused.
+			c := s.curved
+			if !c.below {
+				continue
+			}
+			p0, n := c.o.Plus(c.axis.ScaledBy(c.lo)), c.axis.ScaledBy(-1)
+			if math.Abs(volumeBeyond(out, p0, n)-volumeBeyond(sh, p0, n)) > tol {
+				return srf.SShell{}, false
+			}
 			continue
 		}
 		was := volumeBeyond(sh, s.p0, s.n)

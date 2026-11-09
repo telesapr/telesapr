@@ -89,8 +89,8 @@ func cubicCornerRefused(p string) bool {
 // along a curve has its length times its width, and near the corner the
 // cubic's curve makes the inside's overlap and the outside's fill differ
 // from a mitre's by a little: 0.05% at 45° and 90°, 0.3% at 120°). One step of undo takes the
-// sweep back. A twist or a corner radius leaves it refused, by name,
-// with no solid.
+// sweep back. Twisted, held, rounded and closed paths are
+// TestSweepSharpCornerBesideCubicFrames'.
 func TestSweepSharpCornerBesideCubic(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -139,23 +139,6 @@ func TestSweepSharpCornerBesideCubic(t *testing.T) {
 		}
 		if !d.Edit.Redo() || len(d.Groups()) != groups+1 {
 			t.Errorf("%s: redo didn't bring the sweep back", name)
-		}
-	}
-	// Twisted or rounded: refused by name.
-	for _, how := range []string{"twist", "radius"} {
-		d := api.New()
-		path := cubicCornerPath(d, false, 90, 40, 10, 12)
-		bar(d)
-		s := d.Features.Sweep(path, "")
-		switch how {
-		case "twist":
-			s.AsSweep().SetTwist(90)
-		case "radius":
-			s.AsSweep().SetCornerRadius(2)
-		}
-		r := s.Analyze().Check()
-		if p := s.Problem(); !strings.Contains(p, "next to a cubic") || !r.Empty() {
-			t.Errorf("%s: %q, want refused naming the cubic, with no solid", how, p)
 		}
 	}
 }

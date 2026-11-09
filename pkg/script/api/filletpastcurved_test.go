@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"math"
-	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/internal/sweep"
@@ -186,35 +185,5 @@ func checkFilletCurved(t *testing.T, p curvedPlate, flat bool, r float64) {
 	}
 	if got := g.Analyze().Volume(); math.Abs(got-want)/want > 5e-4 {
 		t.Errorf("volume %.4f, want %.4f (off by %.1e)", got, want, math.Abs(got-want)/want)
-	}
-}
-
-// A fillet past a disc's rim where the solid goes on past the rim, a
-// wider disc below it as a ledge, is refused saying it runs off the
-// face, not made unsound: the cut back by the rim's cylinder would cut
-// the ledge away too (curvedCutter).
-func TestFilletPastCurvedSideRefused(t *testing.T) {
-	t.Parallel()
-	d := New()
-	d.Edit.SetChordTolerance(0.003)
-	d.Features.SketchIn(d.Workplane("XY"), "")
-	d.Sketch.Circle(V(0, 0, 0), 10)
-	d.Features.Extrude(1, "ledge")
-	d.Features.Sketch3D("disc")
-	d.Features.SketchIn(d.Workplane("XY"), "")
-	d.Sketch.Circle(V(0, 0, 0), 8)
-	d.Features.Extrude(4, "disc")
-	rod, _ := rodUp(d, 2, 0, 4)
-	e := rod.Solid().EdgeAt(V(6, 0, 4))
-	msg := func() (msg string) {
-		defer func() {
-			if x := recover(); x != nil {
-				msg = fmt.Sprint(x)
-			}
-		}()
-		return d.Features.FilletSolid([]SolidEdge{e}, 2.5, "").Problem()
-	}()
-	if !strings.Contains(msg, "runs off the face") {
-		t.Errorf("got %q, want it refused as running off the face", msg)
 	}
 }

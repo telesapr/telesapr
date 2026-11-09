@@ -6908,7 +6908,7 @@
 					},
 					"SetCornerRadius": {
 						"decl": "func (v SweepGroup) SetCornerRadius(mm float64)",
-						"text": "SetCornerRadius rounds a sweep's corners on its path by mm: at each\ncorner the pieces either side are cut back to where an arc of the\nradius, tangent to both, joins them, and the profile turns about the\narc's axis, so the solid is exact and needs no surface intersected.\nWith none, corners between lines are mitred and corners beside an\narc joined where the profile's paths along the pieces cross; a corner\ntoo sharp for that to join is a problem on the group until it has a\nradius. A fitted sweep (along a cubic, twisted, or held to a\ndirection) mitres a corner between two lines when it isn't twisted,\nand needs a radius at any other; a corner beside a cubic can't be\nrounded. A radius too large for a piece, too small for the profile to\nclear the arc's axis, or a corner out of an arc's plane, is a problem\non the group. SetExpr with sketch.GroupPitch gives it an expression."
+						"text": "SetCornerRadius rounds a sweep's corners on its path by mm: at each\ncorner the pieces either side are cut back to where an arc of the\nradius, tangent to both, joins them, and the profile turns about the\narc's axis, so the solid is exact and needs no surface intersected.\nWith none, corners between lines are mitred and corners beside an\narc joined where the profile's paths along the pieces cross; a corner\ntoo sharp for that to join is a problem on the group until it has a\nradius. A fitted sweep (along a cubic, twisted, or held to a\ndirection) mitres a corner between two lines when it isn't twisted,\nand needs a radius at any other; a corner beside a cubic isn't\nrounded, and is left sharp. A radius too large for a piece, too small for the profile to\nclear the arc's axis, or a corner out of an arc's plane, is a problem\non the group. SetExpr with sketch.GroupPitch gives it an expression."
 					},
 					"SetPath": {
 						"decl": "func (v SweepGroup) SetPath(path []Entity, solid []SolidEdge)",
@@ -11496,6 +11496,10 @@
 					"MakeFromPiecewiseOf": {
 						"decl": "func (s *SShell) MakeFromPiecewiseOf(a, b *SShell, intersect bool) bool",
 						"text": "MakeFromPiecewiseOf cuts a by b, or keeps what of a is in b with intersect, piece by piece, and assembles what comes of each: a Boolean of a shell of parts assembled side by side fails where the parts touch face to face, as a shaft standing on its gearbox cut across the plane they share, though each part's Boolean with b is sound."
+					},
+					"MakeFromRevolutionBetween": {
+						"decl": "func (s *SShell) MakeFromRevolutionBetween(sbls *SBezierLoopSet, pt, axis geom.Vector, color core.RGBA, group ShellGroup, breaks []float64)",
+						"text": "MakeFromRevolutionBetween revolves a planar BezierLoopSet about the axis (pt, axis) through the angles breaks, in increasing order and measured from the loop set's own plane: each curve sweeps one surface of revolution between each pair of neighbouring breaks, so the seams of the swept surfaces lie where the caller puts them, not at the quarter turns MakeFromRevolutionOf takes."
 					},
 					"MakeFromRevolutionOf": {
 						"decl": "func (s *SShell) MakeFromRevolutionOf(sbls *SBezierLoopSet, pt, axis geom.Vector, color core.RGBA, group ShellGroup)",

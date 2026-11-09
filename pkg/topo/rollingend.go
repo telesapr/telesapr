@@ -79,6 +79,11 @@ type rbEnd struct {
 	// wallSign turns to point on past the end (rollingkink.go).
 	kink     float64
 	wallSign float64
+	// deeper marks, at a concave mitre of one radius whose feet lie at
+	// two depths on the crease, the end whose foot lies further from the
+	// vertex: it is kinked there as the larger of two radii is
+	// (rollingmitre_inside.go).
+	deeper bool
 	// fade marks an end where the crease fades out part way along the
 	// edge, at p: the faces turn less and less, and the fillet narrows to
 	// nothing. It ends there with no face of its own, its last section
@@ -879,8 +884,31 @@ type rbEndCut struct {
 	arc  srf.BSplineCurve
 	goes [2][]srf.SBezier
 	// off is where the end runs off a side's face onto the next face
-	// (roadmap 22.3), or nil.
-	off *rbRunOff
+	// (roadmap 22.3), or nil; also is where it runs off the other side's
+	// face too, each onto the face past it (rollingrunoff_both.go), or
+	// nil.
+	off, also *rbRunOff
+}
+
+// runOffs is the end's run-offs, none, one or one a side.
+func (cut *rbEndCut) runOffs() []*rbRunOff {
+	var out []*rbRunOff
+	for _, ro := range []*rbRunOff{cut.off, cut.also} {
+		if ro != nil {
+			out = append(out, ro)
+		}
+	}
+	return out
+}
+
+// offOn is the end's run-off off side k's face, or nil.
+func (cut *rbEndCut) offOn(k int) *rbRunOff {
+	for _, ro := range cut.runOffs() {
+		if ro.j == k {
+			return ro
+		}
+	}
+	return nil
 }
 
 // cutEnd splits each side's edge with the flat face where the fillet's
@@ -895,18 +923,22 @@ func (rb *rollingBall) cutEnd(sh *srf.SShell, end *rbEnd, arc srf.BSplineCurve) 
 		switch alongFrom(q, v, t.Edges[end.a[k]].Points) {
 		case 1:
 			ro, err := rb.runOffAt(end, k)
-			if err == nil && cut.off != nil {
-				// Both sides run off, each onto the face past it: the end
-				// would be cut by both those faces (roadmap, run-offs left).
-				return cut, filletErr(q, "the fillet's end runs off both its faces here, each past the end of its "+
-					"edge with the flat face the edge ends at: make it smaller")
-			}
 			if err != nil {
 				return cut, filletErr(q, "the fillet's end runs off the face on side %d here, past the end of its edge with "+
 					"the flat face the edge ends at, and the face there is curved or meets the others otherwise: make it smaller",
 					k+1)
 			}
-			cut.off = ro
+			if cut.off == nil {
+				cut.off = ro
+				continue
+			}
+			// Both sides run off, each onto the face past it: the end is
+			// cut by both those faces (rollingrunoff_both.go).
+			if ro.n == cut.off.n {
+				return cut, filletErr(q, "the fillet's end runs off both its faces here onto one face past both: "+
+					"make it smaller")
+			}
+			cut.also = ro
 			continue
 		case -1:
 			if end.mitre {

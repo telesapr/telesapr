@@ -30,6 +30,15 @@ import (
 // make it: chamfers to the closed form d²D/2 − d³/6 at each such corner
 // of a flat face, d the smaller distance and D the larger.
 //
+// A chain of one radius whose other end is so kinked, or copies such a
+// mitre, meets a chain of its own radius at two depths in the same
+// kinked mitre, the end whose foot lies deeper on the crease taking the
+// larger's part (rbEnd.deeper): a corner patch doesn't join the sections
+// a kink splits. It is what the two balls carried past the crease take
+// away, and OpenCASCADE's makeFillet makes such a corner so, its faces
+// within 0.0005 mm of ours (TestFilletPivotRadii); where it meets no
+// kink the corner is a patch, as OpenCASCADE's is.
+//
 // Past the crease an end's point on its own wall lies inside the mate's
 // swept surface and in along the chain outside it, the other way round
 // from a mitre at a convex crease: on the creased side the root is where
@@ -42,34 +51,72 @@ import (
 const pivotSameFoot = 10 * geom.LengthEps
 
 // insideMitres makes a mitre of each pair of pivot ends of rbs, traced,
-// whose feet on the crease are one point or whose radii differ.
+// whose feet on the crease are one point or whose radii differ; and then
+// of each pair of one radius at two depths where either chain is kinked,
+// or copies a kink, at its other end, kinked at the deeper foot
+// (rbEnd.deeper): a corner patch doesn't join the sections a kink
+// splits, and a mitre goes on along the rim, a chain at a time, as far
+// as such corners go.
 func insideMitres(rbs []*rollingBall) error {
-	for _, rb := range rbs {
-		if rb.closed {
-			continue
+	mitre := func(rb *rollingBall, k int) {
+		end := rb.ends[k]
+		for _, x := range []*rbEnd{end, end.mate.ends[end.mateK]} {
+			x.pivot, x.mitre, x.curved, x.concave = false, true, true, true
 		}
-		for k, end := range rb.ends {
-			if end == nil || !end.pivot || end.mate == nil {
+	}
+	feet := func(rb *rollingBall, k int) (geom.Vector, geom.Vector, error) {
+		end := rb.ends[k]
+		qa, err := rb.creaseFoot(k)
+		if err != nil {
+			return qa, qa, err
+		}
+		qb, err := end.mate.creaseFoot(end.mateK)
+		return qa, qb, err
+	}
+	pivots := func(yield func(*rollingBall, int) bool) {
+		for _, rb := range rbs {
+			if rb.closed {
 				continue
 			}
-			mate := end.mate
-			if rb.r == mate.r {
-				qa, err := rb.creaseFoot(k)
-				if err != nil {
-					return err
-				}
-				qb, err := mate.creaseFoot(end.mateK)
-				if err != nil {
-					return err
-				}
-				if qa.Minus(qb).Magnitude() > math.Max(rb.tol, pivotSameFoot) {
-					continue
+			for k, end := range rb.ends {
+				if end != nil && end.pivot && end.mate != nil && !yield(rb, k) {
+					return
 				}
 			}
-			oe := mate.ends[end.mateK]
-			for _, x := range []*rbEnd{end, oe} {
-				x.pivot, x.mitre, x.curved, x.concave = false, true, true, true
+		}
+	}
+	for rb, k := range pivots {
+		if rb.r == rb.ends[k].mate.r {
+			qa, qb, err := feet(rb, k)
+			if err != nil {
+				return err
 			}
+			if qa.Minus(qb).Magnitude() > math.Max(rb.tol, pivotSameFoot) {
+				continue
+			}
+		}
+		mitre(rb, k)
+	}
+	ranked := func(rb *rollingBall) bool { return rb.mateRank(0) != 0 || rb.mateRank(1) != 0 }
+	for changed := true; changed; {
+		changed = false
+		for rb, k := range pivots {
+			end := rb.ends[k]
+			if !ranked(rb) && !ranked(end.mate) {
+				continue
+			}
+			qa, qb, err := feet(rb, k)
+			if err != nil {
+				return err
+			}
+			at := rb.t.Vertices[end.v].P
+			mitre(rb, k)
+			if qa.Minus(at).Magnitude() > qb.Minus(at).Magnitude() {
+				end.deeper = true
+			} else {
+				end.mate.ends[end.mateK].deeper = true
+			}
+			changed = true
 		}
 	}
 	return nil

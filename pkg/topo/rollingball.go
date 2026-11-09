@@ -1,8 +1,8 @@
 package topo
 
 import (
-	"cmp"
 	"errors"
+	"maps"
 	"math"
 	"slices"
 	"sort"
@@ -1672,15 +1672,10 @@ func putBlends(sh *srf.SShell, bls []*rbBlend, origin uint32) error {
 	at := midpoint(bls[0].rb.pts)
 	t := bls[0].rb.t
 	loops := make([]map[int][]srf.SBezier, len(bls))
-	// A kinked mitre's chain cuts the crease the smaller chain's wall
-	// then drops a piece of: it goes first.
-	order := make([]int, len(bls))
-	for i := range order {
-		order[i] = i
+	order, err := cutOrder(bls)
+	if err != nil {
+		return err
 	}
-	slices.SortStableFunc(order, func(a, b int) int {
-		return cmp.Compare(len(bls[b].rb.kinks), len(bls[a].rb.kinks))
-	})
 	corners, err := pivotCorners(bls)
 	if err != nil {
 		return err
@@ -1978,7 +1973,7 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 				return nil, err
 			}
 			for i := range 2 {
-				if cut.goes[i] == nil && (cut.off == nil || cut.off.j != i) {
+				if cut.goes[i] == nil && cut.offOn(i) == nil {
 					drop = append(drop, pair{cut.q[i], t.Vertices[end.v].P})
 				}
 			}
@@ -1988,6 +1983,10 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 			}
 			endCuts = append(endCuts, cut)
 		}
+	}
+	if otherEndRunsOff(endCuts) {
+		return nil, filletErr(at, "the fillet runs off both its faces at one end and a face at the other: "+
+			"make it smaller")
 	}
 	// Ends that run off: where the fillet takes side j's face whole, only
 	// where the end sections cross the next faces; else where the
@@ -2002,6 +2001,20 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 			continue
 		}
 		w := t.Vertices[ro.w].P
+		if cut.also != nil {
+			// Both sides run off (rollingrunoff_both.go).
+			for _, ro := range cut.runOffs() {
+				if err := rb.runOffCuts(sh, row, k, ro); err != nil {
+					return nil, err
+				}
+				drop = append(drop, pair{t.Vertices[cut.end.v].P, t.Vertices[ro.w].P},
+					pair{t.Vertices[ro.w].P, ro.p2})
+			}
+			if err := rb.bothRunOffs(row, k, cut); err != nil {
+				return nil, err
+			}
+			continue
+		}
 		if cons != nil {
 			if err := rb.runOffCross(sh, row, k, ro); err != nil {
 				return nil, err
@@ -2024,40 +2037,26 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 			return nil, err
 		}
 	}
+	acrossOf := map[*rbRunOff][]srf.SBezier{}
 	for k, cut := range endCuts {
-		if cons != nil {
-			break
-		}
-		ro := cut.off
-		if ro == nil {
+		if cut.off == nil {
 			continue
 		}
-		for b := ro.first; b < ro.after; b++ {
+		if cons != nil {
+			acrossOf[cut.off] = across[k]
+			continue
+		}
+		ls, as, err := rb.clipRunOffs(sh, row, cut)
+		if err != nil {
+			return nil, err
+		}
+		for b, l := range ls {
 			if _, ok := loops[b]; ok {
 				return nil, rb.runOffApart(endCuts, at)
 			}
-			tol := math.Max(sh.Tol.ChordTolMm()/10, 1e-6)
-			var l, a []srf.SBezier
-			err := errNotRolling
-			if ro.ns != nil {
-				// Across a curved next face, both faces mesh the same cubics
-				// but each through its own surface: within a tenth of the chord
-				// tolerance of both, their points still parted by 1e-6 there,
-				// past the mesh's join (naked edges on a band's end at 20 on the
-				// cone, its fillets of 1.725 to 1.8 and 2.3 at 21). Nearer
-				// first, where 64 cubics follow it.
-				l, a, err = clipPatch(&row[b], ro, runOffAcrossTol)
-			}
-			if err != nil {
-				if l, a, err = clipPatch(&row[b], ro, tol); err != nil {
-					return nil, err
-				}
-			}
-			snapEnds(l, ro.p1At, ro.p1)
-			snapEnds(a, ro.p1At, ro.p1)
 			loops[b] = l
-			across[k] = append(across[k], a...)
 		}
+		maps.Copy(acrossOf, as)
 	}
 
 	// Where the crease fades out, the edge goes on past the fillet: it
@@ -2213,23 +2212,17 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 			continue
 		}
 		if ro := cut.off; ro != nil {
-			// The end section's part under the next face's plane, from side
-			// 1-j's cut to p1.
-			endP, endSide := 0, 0
-			if k == 1 {
-				endP, endSide = m-1, 2
+			// The end section's part under the next faces' planes, from side
+			// 1-j's cut, or the other p1, to p1.
+			part := endSectionPart(row, k, cut)
+			if cut.also != nil {
+				e := &runOffEdit{rb: rb, sh: sh, h: &nextH}
+				if err := e.closeRunOffBoth(cut, part, acrossOf); err != nil {
+					return nil, err
+				}
+				continue
 			}
-			sec := row[endP].EdgeCurve(endSide)
-			tp := bezierRoot(&sec, ro.h, 0, 1)
-			var part srf.SBezier
-			if ro.j == 1 {
-				part = sec.Sub(0, tp)
-				part.Ctrl[0], part.Ctrl[part.Degree] = sec.Start(), ro.p1
-			} else {
-				part = sec.Sub(tp, 1)
-				part.Ctrl[0], part.Ctrl[part.Degree] = ro.p1, sec.Finish()
-			}
-			if err := rb.closeRunOff(sh, cut, part, across[k], &nextH); err != nil {
+			if err := rb.closeRunOff(sh, cut, part, acrossOf[ro], &nextH); err != nil {
 				return nil, err
 			}
 			continue

@@ -27,15 +27,32 @@ import (
 // kinkedEnd reports whether end k of the chain is the larger at a mitre
 // of two radii.
 func (rb *rollingBall) kinkedEnd(k int) bool {
-	end := rb.ends[k]
-	return !rb.closed && end != nil && end.mitre && end.mate != rb && end.mate.r < rb.r
+	return rb.mateRank(k) < 0
 }
 
 // mateKinked reports whether end k's mate is the larger at a mitre of
 // two radii, so that end k copies the first span of its kinked mitre.
 func (rb *rollingBall) mateKinked(k int) bool {
+	return rb.mateRank(k) > 0
+}
+
+// mateRank is, at mitre end k, -1 where the mate is the smaller of two
+// radii, so that this end is kinked, 1 where it is the larger, and 0
+// where the two are alike or k is no mitre with another end. Of one
+// radius, the end whose foot lies deeper on the crease of a concave
+// mitre is ranked as the larger (rbEnd.deeper).
+func (rb *rollingBall) mateRank(k int) int {
 	end := rb.ends[k]
-	return !rb.closed && end != nil && end.mitre && end.mate != rb && end.mate.r > rb.r
+	if rb.closed || end == nil || !end.mitre || end.mate == rb {
+		return 0
+	}
+	switch {
+	case end.mate.r < rb.r || end.mate.r == rb.r && end.deeper:
+		return -1
+	case end.mate.r > rb.r || end.mate.r == rb.r && end.mate.ends[end.mateK].deeper:
+		return 1
+	}
+	return 0
 }
 
 // sharedSide is the side of end k whose face both chains share, at a
@@ -467,4 +484,43 @@ func (rb *rollingBall) matchParams(k int, span srf.BSplineCurve) srf.BSplineCurv
 		return scaled(best)
 	}
 	return span
+}
+
+// cutOrder is the order in which the blends cut the faces at their edges
+// back: a kinked mitre's chain cuts the crease that its mate's wall then
+// drops a piece of, so it goes before every chain that copies it. A
+// chain kinked at one end and copying at the other, as round a rim of
+// several radii, waits for the chain it copies; where the copies go
+// round in a ring the rim is refused.
+func cutOrder(bls []*rbBlend) ([]int, error) {
+	placed := make([]bool, len(bls))
+	ready := func(i int) bool {
+		rb := bls[i].rb
+		for k := range rb.ends {
+			if !rb.mateKinked(k) {
+				continue
+			}
+			j := slices.IndexFunc(bls, func(o *rbBlend) bool { return o.rb == rb.ends[k].mate })
+			if j >= 0 && j != i && !placed[j] {
+				return false
+			}
+		}
+		return true
+	}
+	var order []int
+	for len(order) < len(bls) {
+		next := -1
+		for i := range bls {
+			if !placed[i] && ready(i) && (next < 0 || len(bls[i].rb.kinks) > len(bls[next].rb.kinks)) {
+				next = i
+			}
+		}
+		if next < 0 {
+			rb := bls[0].rb
+			return nil, filletErr(midpoint(rb.pts), "the fillets' mitres of two radii go round the rim in a ring: give two that meet one radius")
+		}
+		placed[next] = true
+		order = append(order, next)
+	}
+	return order, nil
 }

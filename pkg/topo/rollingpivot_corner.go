@@ -105,11 +105,12 @@ func newPivotFrame(a *rbBlend, ka int, b *rbBlend, kb int) (*pivotFrame, error) 
 		return nil, filletErr(vp, "fillets of two radii can't meet in a corner patch at an inside corner")
 	}
 	if len(ra.kinks) > 0 || len(rbb.kinks) > 0 || ra.copiesKink() || rbb.copiesKink() {
-		// A chain that copies a kinked mitre at one end has sections the
-		// corner patch at its other end doesn't join soundly (seen on the
-		// dish: x+ at 2, y+ and x- at 1).
-		return nil, filletErr(vp, "a fillet that meets one of another radius at one inside corner can't yet turn another "+
-			"where the fillets' feet lie at two depths: give them all one radius")
+		// A chain kinked or copying a kinked mitre at one end has sections
+		// a corner patch at its other end doesn't join soundly (seen on
+		// the dish: x+ at 2, y+ and x- at 1): insideMitres makes such a
+		// corner a kinked mitre instead, so none should come here.
+		return nil, filletErr(vp, "a fillet that meets one of another radius at one inside corner can't "+
+			"turn another by a corner patch: give them all one radius")
 	}
 	ia, ib := ra.creaseSide(ka), rbb.creaseSide(kb)
 	if ia < 0 || ib < 0 {
