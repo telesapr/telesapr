@@ -5,13 +5,7 @@ package cgl
 /*
 #cgo CFLAGS: -fobjc-arc -Wno-deprecated-declarations
 #cgo LDFLAGS: -framework Cocoa -framework OpenGL
-#include <stdint.h>
 #include "cgl_darwin.h"
-
-// cglParent turns the toolkit's window handle back into the NSView.
-static void *cglParent(unsigned long long v) {
-	return (void *)(uintptr_t)v;
-}
 */
 import "C"
 
@@ -27,14 +21,15 @@ type Context struct {
 	double bool
 }
 
-// NewForWindow makes a context drawing over the NSView with the
-// handle view, which the toolkit keeps as its canvas's platform ID.
-func NewForWindow(view uint64) (*Context, error) {
-	if view == 0 {
+// NewForWindow makes a context drawing over the toolkit's view with the
+// window ID id, which is its canvas's platform ID (an index into
+// takigo's registry, not an NSView pointer).
+func NewForWindow(id uint64) (*Context, error) {
+	if id == 0 {
 		return nil, errors.New("cgl: no view")
 	}
 	var why *C.char
-	box := C.cglNew(C.cglParent(C.ulonglong(view)), (**C.char)(unsafe.Pointer(&why)))
+	box := C.cglNew(C.uint64_t(id), (**C.char)(unsafe.Pointer(&why)))
 	if box == nil {
 		return nil, fmt.Errorf("cgl: %s", C.GoString(why))
 	}

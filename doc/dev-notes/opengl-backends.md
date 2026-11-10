@@ -2,7 +2,7 @@
 
 `pkg/render/gl` draws with fixed-function GL 2.1 into a context it is given. The context comes
 from `gl.NewWindowContext(id)`, which makes one on the toolkit window with the platform handle
-`id` (`window.Window.PlatformID`: an X Window, an HWND, an NSView). It returns a
+`id` (`window.Window.PlatformID`: an X Window, an HWND, and on macOS takigo's own view ID, which cgl looks up among the application's views by their `windowID` property). It returns a
 `gl.WindowContext`; any error, or a build without the backend, sends the window to the software
 renderer (`pkg/render/soft`) with one log line.
 

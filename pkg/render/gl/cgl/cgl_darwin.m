@@ -35,11 +35,45 @@ static void onMain(dispatch_block_t f) {
 	}
 }
 
-cglBox cglNew(void *parentPtr, const char **err) {
+// findView looks through the application's windows for the toolkit view
+// with the ID wid. takigo hands out its own window IDs (small integers
+// kept in a registry it doesn't export), not view pointers, and every
+// one of its views has a windowID property.
+static NSView *findView(NSView *v, uint64_t wid) {
+	if ([v respondsToSelector:NSSelectorFromString(@"windowID")]) {
+		NSNumber *id = [v valueForKey:@"windowID"];
+		if (id != nil && [id unsignedLongLongValue] == wid) {
+			return v;
+		}
+	}
+	for (NSView *sub in v.subviews) {
+		NSView *found = findView(sub, wid);
+		if (found != nil) {
+			return found;
+		}
+	}
+	return nil;
+}
+
+static NSView *viewForID(uint64_t wid) {
+	for (NSWindow *w in [NSApp windows]) {
+		NSView *found = findView(w.contentView, wid);
+		if (found != nil) {
+			return found;
+		}
+	}
+	return nil;
+}
+
+cglBox cglNew(uint64_t wid, const char **err) {
 	__block TeleSAPRGLBox *box = nil;
 	__block const char *why = NULL;
 	onMain(^{
-		NSView *parent = (__bridge NSView *)parentPtr;
+		NSView *parent = viewForID(wid);
+		if (parent == nil) {
+			why = "no view with the toolkit's window ID";
+			return;
+		}
 		NSOpenGLPixelFormatAttribute attrs[] = {
 			NSOpenGLPFADoubleBuffer,
 			NSOpenGLPFAAccelerated,
