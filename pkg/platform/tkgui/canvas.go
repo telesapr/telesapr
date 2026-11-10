@@ -14,7 +14,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/render"
-	"github.com/telesapr/telesapr/pkg/render/gl/glx"
+	"github.com/telesapr/telesapr/pkg/render/gl"
 )
 
 // canvas is the drawing area: a widget showing the last frame the
@@ -32,7 +32,7 @@ type canvas struct {
 	shownW, shownH int
 
 	// With OpenGL, the context and the renderer drawing with it.
-	glCtx *glx.Context
+	glCtx gl.WindowContext
 	glr   render.ViewportCanvas
 }
 

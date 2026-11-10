@@ -68,6 +68,17 @@ DIN 513-3:2020 (free text), NBS H28 (1957) Part III, Machinery's Handbook, Engin
 | B1.9's preferred pitches | `buttressInchTPI` follows H28's ranges | amesweb's calculator lists three a diameter (B1.9 Table 1?); B1.9 itself would settle it, and the default pitch per size |
 | Multi-start allowances | left out for B1.5 (appendix B) and B1.9; DIN 513-3's factors are in | H28 (1957) has none for ACME, only its gauges' lead tolerance times 1.5. Machining Doctor says B1.5 adds K × es to a nut's diameters by its number of starts; K not found free |
 
+### OpenGL leftovers
+
+Code: `pkg/render/gl/{wgl,cgl}`, `pkg/platform/tkgui/gl.go`; `doc/dev-notes/opengl-backends.md`.
+
+| Item | State |
+|---|---|
+| Windows start size | With OpenGL the window started small on one Windows machine and was right after a resize; software was right. Cause not found (a startup geometry race in `pkg/platform/tkgui/window.go` is the guess); not seen on Linux or macOS |
+| Windows arm64 | The release builds it without cgo, so it draws in software |
+| Offscreen contexts | `glx` has one for the GL tests; `wgl` has one no test uses yet; `cgl` has none, so the GL tests skip on macOS |
+| Windows high-DPI | `wgl` has no `gl.Scaled`: the viewport is in the window's pixels, which was right on the machine tried; unchecked at other scales |
+
 ### Guide tooling
 
 | Item | State |
@@ -231,7 +242,6 @@ Each stays out until its reason stops holding.
 |---|---|
 | E12 general shell | Open-ended; patch offsets size faces whose offsets don't cross themselves |
 | Topology made by the kernel (9.2) | Derived topology costs 7 ms for 270 faces; no feature needs identities kept through a Boolean |
-| OpenGL on Windows and macOS | takigo has backends for both; a port is a project of its own |
 | The section view saved in files | View state; goes with saved views, which nothing plans |
 | Open thread ends in STEP | Closing them would invent geometry |
 | CSG and swept solids in STEP | No vendor file in the corpus has them; the export half is cheap once the group tree is walkable |

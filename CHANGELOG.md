@@ -10,6 +10,7 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 ## [Unreleased]
 
 ### Added
+- The window draws with OpenGL on Windows (x64) and macOS, as it does on Linux; where a driver or a build has none it draws in software, as before. On a Retina screen the picture is sharp.
 - A pocket's rim in a curved face, such as a dish's, is filleted all round with fillets of different radii, as 2, 1 and 1 mm on three edges: a fillet that meets one of another radius at one inside corner and one of its own radius at the next meets that one in the same kind of mitre, the fillet whose end lies deeper on the sharp edge between the walls taking the larger one's part. It was refused ("can't yet turn another where the fillets' feet lie at two depths"). OpenCASCADE rounds such corners the same way, to within 0.0005 mm.
 - A sweep with a sharp corner next to a cubic is made on a twisted path, with its frames held to the corner's axis, with a corner radius and round a closed path. These were refused ("swept as a mitre only on an open path with no twist, no frames held and no corner radius"). A twist is held still beside the corner over the stretch the corner spans and turns along the rest; a corner radius rounds the path's other corners and leaves this one sharp; a closed path's frames are turned to meet round it. Frames held to another direction are still refused, as at a corner between two lines.
 - The guide's videos come as H.264 MP4 beside the WebM, so browsers and players without VP9 play them.

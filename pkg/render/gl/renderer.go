@@ -24,6 +24,7 @@ type Renderer struct {
 	ctx      Context
 	camera   render.Camera
 	lighting render.Lighting
+	viewport [2]int // pixels, as last set with glViewport
 
 	// The Shaded lighting's program, and what gives each face's
 	// material (shaded.go).
@@ -104,6 +105,9 @@ func (r *Renderer) pixelSize() (int, int) {
 	if pr == 0 {
 		pr = 1
 	}
+	if s, ok := r.ctx.(Scaled); ok {
+		pr *= s.PixelRatio()
+	}
 	return max(int(r.camera.Width*pr), 1), max(int(r.camera.Height*pr), 1)
 }
 
@@ -112,6 +116,7 @@ func (r *Renderer) pixelSize() (int, int) {
 func (r *Renderer) updateProjection() {
 	r.unSelectPrimitive()
 	w, h := r.pixelSize()
+	r.viewport = [2]int{w, h}
 	glapi.Viewport(0, 0, int32(w), int32(h))
 
 	c := &r.camera
@@ -146,6 +151,11 @@ func (r *Renderer) updateProjection() {
 // StartFrame sets up the state, the lights, and clears the frame.
 func (r *Renderer) StartFrame() {
 	r.makeCurrent()
+	// The drawable's scale changes when its window moves to another
+	// screen, with no new camera.
+	if w, h := r.pixelSize(); r.camera.Width > 0 && [2]int{w, h} != r.viewport {
+		r.updateProjection()
+	}
 	r.cur.hcs, r.cur.stroke, r.cur.hcf, r.cur.fill, r.cur.texture = 0, nil, 0, nil, nil
 	r.SetClipPlane(nil)
 

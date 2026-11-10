@@ -46,15 +46,15 @@ Each [release](https://github.com/telesapr/telesapr/releases) carries `telesapr`
 
 - **Linux x86_64**: a `.deb` (`sudo apt install ./telesapr_*.deb`), an `.rpm`
   (`sudo dnf install ./telesapr-*.rpm`), or a `.tar.gz` to unpack anywhere, with the desktop
-  entry, icons and MIME type under its `share/`. The window needs an X server with OpenGL;
-  without OpenGL it draws in software.
+  entry, icons and MIME type under its `share/`. The window draws with OpenGL on an X server
+  that has it, and in software without.
 - **Windows x64 and arm64**: a `-setup.exe` installer (Start Menu entry, `.tlspr` association,
-  and PATH for `telesapr-cli` if asked), or a `.zip` to run from any folder. The window draws in
-  software.
+  and PATH for `telesapr-cli` if asked), or a `.zip` to run from any folder. The x64 window draws
+  with OpenGL where the driver has it; the arm64 one draws in software.
 - **macOS 11 or later, Apple silicon and Intel**: a `.dmg` with `TeleSAPR.app`; drag it to
   Applications. The app is not notarized, so the first time Control-click it and choose Open.
-  `telesapr-cli` is inside, at `TeleSAPR.app/Contents/MacOS/telesapr-cli`. The window draws in
-  software.
+  `telesapr-cli` is inside, at `TeleSAPR.app/Contents/MacOS/telesapr-cli`. The window draws
+  with OpenGL, in software if that fails.
 
 - **In a browser**: [telesapr.sourceforge.io](https://telesapr.sourceforge.io) has a "Try in
   browser" page that runs the window as WebAssembly, with nothing to install. Files are kept in the
