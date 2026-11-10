@@ -17,6 +17,9 @@ func (c *Context) DoubleBuffered() bool { return false }
 // SwapBuffers does nothing.
 func (c *Context) SwapBuffers() {}
 
+// PixelRatio is 1.
+func (c *Context) PixelRatio() float64 { return 1 }
+
 // Size is zero.
 func (c *Context) Size() (width, height int) { return 0, 0 }
 

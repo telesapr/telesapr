@@ -13,3 +13,10 @@ type WindowContext interface {
 	// Destroy frees the context. The window stays.
 	Destroy()
 }
+
+// Scaled is a Context whose drawable has more pixels than points, as
+// on a Retina screen. The renderer multiplies the camera's size by
+// PixelRatio, read after MakeCurrent, to set its viewport.
+type Scaled interface {
+	PixelRatio() float64
+}

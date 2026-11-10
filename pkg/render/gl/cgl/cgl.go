@@ -60,6 +60,15 @@ func (c *Context) SwapBuffers() {
 	}
 }
 
+// PixelRatio is the pixels per point of the screen the view is on, as
+// of the last MakeCurrent (2 on Retina).
+func (c *Context) PixelRatio() float64 {
+	if c.box == nil {
+		return 1
+	}
+	return float64(C.cglScale(c.box))
+}
+
 // Size is the view's size in points.
 func (c *Context) Size() (width, height int) {
 	if c.box == nil {

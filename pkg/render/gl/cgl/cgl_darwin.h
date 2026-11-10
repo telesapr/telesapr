@@ -17,6 +17,9 @@ int cglMakeCurrent(cglBox b);
 void cglSwap(cglBox b);
 void cglSize(cglBox b, int *w, int *h);
 int cglDouble(cglBox b);
+// cglScale is the pixels per point of the screen the view is on, as of
+// the last cglMakeCurrent.
+double cglScale(cglBox b);
 void cglDestroy(cglBox b);
 
 #endif

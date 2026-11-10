@@ -20,6 +20,7 @@
 @property(strong) NSView *view;
 @property(weak) NSView *parent;
 @property int dbl;
+@property double scale;
 @end
 
 @implementation TeleSAPRGLBox
@@ -94,6 +95,9 @@ cglBox cglNew(uint64_t wid, const char **err) {
 			return;
 		}
 		NSView *v = [[TeleSAPRGLView alloc] initWithFrame:parent.bounds];
+		// The surface has a pixel per device pixel, so a Retina screen
+		// is sharp; the renderer sets its viewport by cglScale.
+		[v setWantsBestResolutionOpenGLSurface:YES];
 		[parent addSubview:v];
 		[ctx setView:v];
 		GLint one = 1;
@@ -103,6 +107,7 @@ cglBox cglNew(uint64_t wid, const char **err) {
 		box.view = v;
 		box.parent = parent;
 		box.dbl = 1;
+		box.scale = parent.window.backingScaleFactor > 0 ? parent.window.backingScaleFactor : 1;
 	});
 	if (box == nil) {
 		*err = why;
@@ -118,8 +123,16 @@ int cglMakeCurrent(cglBox b) {
 	}
 	onMain(^{
 		NSView *parent = box.parent;
-		if (parent != nil && !NSEqualRects(box.view.frame, parent.bounds)) {
+		if (parent == nil) {
+			return;
+		}
+		double scale = parent.window.backingScaleFactor;
+		if (scale <= 0) {
+			scale = 1;
+		}
+		if (!NSEqualRects(box.view.frame, parent.bounds) || scale != box.scale) {
 			[box.view setFrame:parent.bounds];
+			box.scale = scale;
 			[box.ctx update];
 		}
 	});
@@ -139,6 +152,10 @@ void cglSize(cglBox b, int *w, int *h) {
 	NSSize s = box.view.frame.size;
 	*w = (int)s.width;
 	*h = (int)s.height;
+}
+
+double cglScale(cglBox b) {
+	return ((__bridge TeleSAPRGLBox *)b).scale;
 }
 
 int cglDouble(cglBox b) {

@@ -6,8 +6,8 @@
 //
 // The context draws in a view of its own laid over the toolkit's
 // canvas view, which follows the canvas's size and passes mouse events
-// through. It draws in points, not pixels: on a Retina screen the
-// system scales the frame up.
+// through. Its surface has a pixel per device pixel, and PixelRatio
+// tells the renderer how many that is to a point.
 package cgl
 
 import "errors"
