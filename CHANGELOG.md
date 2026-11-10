@@ -9,6 +9,8 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-11-11
+
 ### Added
 - The window draws with OpenGL on Windows (x64) and macOS, as it does on Linux; where a driver or a build has none it draws in software, as before. On a Retina screen the picture is sharp.
 - A pocket's rim in a curved face, such as a dish's, is filleted all round with fillets of different radii, as 2, 1 and 1 mm on three edges: a fillet that meets one of another radius at one inside corner and one of its own radius at the next meets that one in the same kind of mitre, the fillet whose end lies deeper on the sharp edge between the walls taking the larger one's part. It was refused ("can't yet turn another where the fillets' feet lie at two depths"). OpenCASCADE rounds such corners the same way, to within 0.0005 mm.
