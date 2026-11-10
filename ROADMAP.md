@@ -231,7 +231,7 @@ Each stays out until its reason stops holding.
 |---|---|
 | E12 general shell | Open-ended; patch offsets size faces whose offsets don't cross themselves |
 | Topology made by the kernel (9.2) | Derived topology costs 7 ms for 270 faces; no feature needs identities kept through a Boolean |
-| OpenGL on Windows and macOS | takigo has backends for both; a port is a project of its own |
+| OpenGL on Windows and macOS | Written on branch `gl-win-mac` (`doc/dev-notes/opengl-backends.md`), waiting for a try on both systems; Retina, offscreen tests and Windows arm64 are left |
 | The section view saved in files | View state; goes with saved views, which nothing plans |
 | Open thread ends in STEP | Closing them would invent geometry |
 | CSG and swept solids in STEP | No vendor file in the corpus has them; the export half is cheap once the group tree is walkable |

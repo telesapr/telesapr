@@ -46,10 +46,15 @@ for arch in amd64 arm64; do
     rm -rf "$stage"
     mkdir -p "$stage"
 
-    echo "==> build $arch"
-    GOFLAGS="-trimpath -buildvcs=false" CGO_ENABLED=0 GOOS=windows GOARCH=$arch \
+    # OpenGL needs cgo and a C compiler (the runner's MinGW gcc builds
+    # amd64 only); the arm64 build is pure Go and draws in software.
+    cgo=0
+    if [[ $arch == amd64 ]]; then cgo=1; fi
+
+    echo "==> build $arch (cgo=$cgo)"
+    GOFLAGS="-trimpath -buildvcs=false" CGO_ENABLED=$cgo GOOS=windows GOARCH=$arch \
         go build -ldflags "-s -w -H windowsgui" -o "$stage/telesapr.exe" ./cmd/telesapr
-    GOFLAGS="-trimpath -buildvcs=false" CGO_ENABLED=0 GOOS=windows GOARCH=$arch \
+    GOFLAGS="-trimpath -buildvcs=false" CGO_ENABLED=$cgo GOOS=windows GOARCH=$arch \
         go build -ldflags "-s -w" -o "$stage/telesapr-cli.exe" ./cmd/telesapr-cli
     cp LICENSE NOTICE README.md "$stage"
 
