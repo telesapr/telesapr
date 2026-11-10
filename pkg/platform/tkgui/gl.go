@@ -7,14 +7,13 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/render"
 	"github.com/telesapr/telesapr/pkg/render/gl"
-	"github.com/telesapr/telesapr/pkg/render/gl/glx"
 )
 
 // The drawing area's OpenGL state. The context draws on the canvas's
-// X window from a second Xlib connection, since takigo's own has no
-// GLX; it is made once and kept while the window draws with GL. A
-// build without GL gets glx's stubs, which fail, and so the software
-// renderer.
+// native window (on X11 from a second Xlib connection, since takigo's
+// own has no GLX); it is made once and kept while the window draws
+// with GL. A build or a system without GL gets an error here, and so
+// the software renderer.
 
 // makeGL returns a new GL renderer on the canvas's window, making the
 // context the first time.
@@ -26,7 +25,7 @@ func (c *canvas) makeGL() (render.ViewportCanvas, error) {
 		// The window must exist on the server before the second
 		// connection looks at it.
 		c.w.p.app.Server().Flush()
-		ctx, err := glx.NewForWindow(uint64(c.Win.PlatformID))
+		ctx, err := gl.NewWindowContext(uint64(c.Win.PlatformID))
 		if err != nil {
 			return nil, err
 		}
