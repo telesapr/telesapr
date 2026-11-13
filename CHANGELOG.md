@@ -9,6 +9,11 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-11-13
+
+### Fixed
+- The window no longer aborts when the X server reports a protocol error: takigo 0.4.6 reads the events on the loop's own goroutine, and no longer asks for a pixmap larger than the protocol carries.
+
 ## [0.6.4] - 2026-11-11
 
 ### Added
