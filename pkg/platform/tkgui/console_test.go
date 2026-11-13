@@ -320,10 +320,21 @@ func TestConsoleLayout(t *testing.T) {
 	for i := range 100 {
 		c.Print(platform.ConsoleOutput, fmt.Sprintf("line %d\n", i))
 	}
+	// The layout takes as many event-loop passes as the machine gives it,
+	// so the test waits for panes with a height and a scrolled view, and
+	// the checks below say what is wrong if they never come.
 	var share, first, last float64
-	run(p, func() {}, func() {}, func() {
-		share = float64(c.input.Win.Height) / float64(c.input.Win.Height+c.log.Win.Height)
-		first, last = c.scroll.First, c.scroll.Last
+	runWaiting(t, p, step{
+		do: func() {},
+		done: func() bool {
+			in, lg := c.input.Win.Height, c.log.Win.Height
+			if in <= 0 || lg <= 0 {
+				return false
+			}
+			share = float64(in) / float64(in+lg)
+			first, last = c.scroll.First, c.scroll.Last
+			return last >= 0.99 && last-first >= 0.1
+		},
 	})
 	if share < 0.17 || share > 0.23 {
 		t.Errorf("what is typed has %.2f of the height, want 0.2", share)

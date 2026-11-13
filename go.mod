@@ -2,14 +2,14 @@ module github.com/telesapr/telesapr
 
 go 1.27.0
 
-toolchain go1.27.3
+toolchain go1.27.4
 
 require (
 	github.com/andybalholm/brotli v1.2.7
 	github.com/go-gl/gl v0.0.0-20260331235117-4566fea9a276
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/reeflective/readline v1.3.0
-	github.com/takigo/takigo v0.4.5
+	github.com/takigo/takigo v0.4.6
 	github.com/traefik/yaegi v0.16.1
 )
 
