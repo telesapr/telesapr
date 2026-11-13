@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -92,8 +93,19 @@ func TestRunScriptProgress(t *testing.T) {
 	if err != nil || res.IsError {
 		t.Fatalf("run_script gave %+v, %v", res, err)
 	}
-	// The client handles the notifications in the order they came,
-	// before the result.
+	// The client handles the notifications in the order they came, but the
+	// result is handed to the caller as it is read, so on a busy machine
+	// the last notification's handler may still be queued behind it: wait
+	// for them.
+	for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); {
+		mu.Lock()
+		got := len(logs) >= 2 && len(progress) >= 2
+		mu.Unlock()
+		if got {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
 	mu.Lock()
 	defer mu.Unlock()
 	if strings.Join(logs, "\n") != "first\nsecond" {
