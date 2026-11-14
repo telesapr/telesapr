@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"math"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -349,5 +350,36 @@ func TestScriptHostDeleteActiveAndUndo(t *testing.T) {
 	ss.UndoUndo()
 	if g := ss.SK.Group(ss.SK.Active); g == nil || g.Name != "box" {
 		t.Fatalf("one undo after the rounded corner leaves %+v active, want the box", g)
+	}
+}
+
+// TestScriptHostAddsSolidAtRead adds an extrusion between two groups
+// from a script in the window, then makes it a cut. It is made at the
+// next read, with the combine mode the script gave it, as SketchHost
+// makes it: made at once, the groups after it were made with the
+// extrusion as the union it starts as, and the change to a cut, which
+// regenerates only as far as the active group, left them so, as a
+// tube modelled over MCP on 2026-11-14 showed.
+func TestScriptHostAddsSolidAtRead(t *testing.T) {
+	t.Parallel()
+	ss, _ := newTestApp(t)
+	doc := api.NewDoc(ss.ScriptHost())
+	box := func(x0, y0, x1, y1 float64, name string) api.Group {
+		doc.Features.SketchAt(doc.Origin(), api.V(1, 0, 0), api.V(0, 1, 0), name+"-outline")
+		doc.Sketch.Rect(api.V(x0, y0, 0), api.V(x1, y1, 0))
+		return doc.Features.Extrude(10, name)
+	}
+	block := box(0, 0, 20, 20, "block")
+	hole := box(2, 2, 6, 6, "hole")
+	hole.SetCombine(api.Difference)
+	doc.Activate(block)
+	slot := box(18, 10, 24, 14, "slot")
+	if p := ss.SK.AddedPending(); p != slot.H {
+		t.Fatalf("the slot was made as it was added: pending %v", p)
+	}
+	slot.SetCombine(api.Difference)
+	// 80 mm³ of the slot is in the block.
+	if v := hole.Analyze().Volume(); math.Abs(v-(4000-160-80)) > 1e-6 {
+		t.Errorf("the hole after the slot reads %g mm³, want %d", v, 4000-160-80)
 	}
 }

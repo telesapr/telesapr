@@ -231,7 +231,7 @@ func describeGroup(sk *sketch.Sketch, group *sketch.Group, data *Description) (s
 // and what it is on. The names it gives are the ones Doc.Request and
 // Doc.Constraint take. Group.Description is the same as data.
 func (g Group) Describe() (s string) {
-	g.d.read(func(sk *sketch.Sketch) { s, _ = describeGroup(sk, g.get(sk), &Description{}) })
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) { s, _ = describeGroup(sk, g.get(sk), &Description{}) })
 	return s
 }
 
@@ -244,7 +244,7 @@ func (g Group) Describe() (s string) {
 // ones Doc.Group, Doc.Request and Doc.Constraint take. Doc.Description
 // is the same as data.
 func (d *Doc) Describe() (s string) {
-	d.read(func(sk *sketch.Sketch) { s, _ = describeDoc(d, sk) })
+	d.readSolidOf(core.HGroup{}, func(sk *sketch.Sketch) { s, _ = describeDoc(d, sk) })
 	return s
 }
 

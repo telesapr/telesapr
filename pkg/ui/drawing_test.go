@@ -25,6 +25,8 @@ func drawingModel(t *testing.T) (*Application, *api.Doc) {
 	doc.Sketch.Circle(api.V(30, 30, 0), 8)
 	hole := doc.Features.Extrude(40, "hole")
 	hole.SetCombine(api.Difference)
+	// The end of a script's step, which makes the hole it added.
+	ss.ScriptHost().Regenerate()
 	return ss, doc
 }
 

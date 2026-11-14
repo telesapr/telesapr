@@ -101,7 +101,7 @@ func TestDrawingScreenSections(t *testing.T) {
 	for _, c := range []struct {
 		meaning   Edit
 		text, say string
-	}{{editDrawingSection, "front 20", "within 20 mm"}, {editDrawingSection, "iso 0", "No section of"},
+	}{{editDrawingSection, "front 25", "within 20 mm"}, {editDrawingSection, "iso 0", "No section of"},
 		{editDrawingDetail, "front 61 0 5 2", "within 60 mm"}, {editDrawingDetail, "front 0 0 -5 2", "radius and scale"}} {
 		p.DialogResponses = []platform.Response{platform.ResponseOK}
 		said = ""

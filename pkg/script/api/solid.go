@@ -17,7 +17,7 @@ import (
 // assembled side by side, which may stand in each other, it says so:
 // a Boolean with such a solid is not defined.
 func (g Group) Problem() (msg string) {
-	g.d.read(func(sk *sketch.Sketch) { msg = problemOf(sk, g.get(sk)) })
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) { msg = problemOf(sk, g.get(sk)) })
 	return msg
 }
 
@@ -28,7 +28,7 @@ func (g Group) Problem() (msg string) {
 // turned over where no solution near kept it the way it was; or "" when
 // it is as asked.
 func (g Group) Note() (msg string) {
-	g.d.read(func(sk *sketch.Sketch) { msg = g.get(sk).Notes() })
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) { msg = g.get(sk).Notes() })
 	return msg
 }
 

@@ -18,11 +18,12 @@ item is sized only after a two-day spike on its hardest fixture.
 | 1 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Every case left refuses with a message |
 | 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Round profiles twisted at a cubic corner or round its loops; fitted and closed paths crossing themselves; drafted shells' corners |
 | 3 | [Thread leftovers](#thread-leftovers) | feature | S each | DIN 513's nut deviation, B1.9's pitches and multi-start allowances wait for sources |
-| 4 | [K3 contact](#k3-coincident-and-tangent-contact) | kernel foundation | ? | Touching points the marcher finds itself; one fitted-tube cross's difference; coincident curved faces, which fillets past a side carried on above its face wait for |
-| 5 | [F9 Mechanisms](#f9-mechanisms) | feature | M | Built 2026-11-06, freedom per part 2026-11-09; plan fragments if asked |
-| 6 | [F5 small conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
-| 7 | [F8 TeleSAPR in a browser](#f8-telesapr-in-a-browser) | feature | S each | Built; module size only |
-| 8 | [F6 IGES](#f6-iges-import-and-export) | feature | L | Only if asked for |
+| 4 | [Regeneration leftovers](#regeneration-leftovers) | defect | S each | A solve that moves a hair on each regeneration; the window showing groups after the active one as they were |
+| 5 | [K3 contact](#k3-coincident-and-tangent-contact) | kernel foundation | ? | Touching points the marcher finds itself; turned copies meeting face to face (worked round); one fitted-tube cross's difference; coincident curved faces, which fillets past a side carried on above its face wait for |
+| 6 | [F9 Mechanisms](#f9-mechanisms) | feature | M | Built 2026-11-06, freedom per part 2026-11-09; plan fragments if asked |
+| 7 | [F5 small conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
+| 8 | [F8 TeleSAPR in a browser](#f8-telesapr-in-a-browser) | feature | S each | Built; module size only |
+| 9 | [F6 IGES](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
 ## Open defects
 
@@ -67,6 +68,14 @@ DIN 513-3:2020 (free text), NBS H28 (1957) Part III, Machinery's Handbook, Engin
 | DIN 513-3's nut deviation | 7H, 8H, 9H taken as basic | EI = 3.1758·a (2/(tan 3° + tan 30°) times DIN 513-1's axial play a, not found free); with a, `buttressClearance` adds it |
 | B1.9's preferred pitches | `buttressInchTPI` follows H28's ranges | amesweb's calculator lists three a diameter (B1.9 Table 1?); B1.9 itself would settle it, and the default pitch per size |
 | Multi-start allowances | left out for B1.5 (appendix B) and B1.9; DIN 513-3's factors are in | H28 (1957) has none for ACME, only its gauges' lead tolerance times 1.5. Machining Doctor says B1.5 adds K × es to a nut's diameters by its number of starts; K not found free |
+
+### Regeneration leftovers
+
+| Item | State |
+|---|---|
+| A solve that moves on each regeneration | On a decorative tube modelled over MCP (not kept) each regeneration moves the solve by about 1e-15, and the tube's volume flips between 2302.057 (as loaded) and 2303.714 at the same tolerance and bounds; the trims later Booleans read flip with it (2026-11-14). Not looked into |
+| Reads of groups after the active one | A script's read of such a group makes the groups up to it since 2026-11-14 (`Sketch.MakeThrough`); the window still shows their solids and problems as they were until one is activated, and a read of the whole drawing's description makes every group, which is slow on a big model whose active group is early |
+| An exported thread whose groups were moved apart | Written group by group since 2026-11-14, its helix as a plain helix, so after the round trip it is no longer edited as a thread |
 
 ### OpenGL leftovers
 
@@ -181,6 +190,13 @@ side kept with its dropped cap move onto the face's curve along the same points 
   sweep corner's 4 circles; the fill was made each time). The coincident rules of the seat (`classifyEdgeOn`, `classifyOnCoincident`) stay on
   spheres: no case found that they would fix on another curved face, and on every curved face they
   broke threads and wrapped text.
+- **Turned copies meeting face to face, 2026-11-14:** the union of a Rotate's copies of a cut drawn
+  in a plane through the axis, with a corner on the axis (a triquetra at x 42.4 on the decorative
+  tube, 6 × 60°), fails: they overlap near the axis, and copies 0 and 3 meet on that plane (54
+  naked edges at 3 copies, 528 mm³ against about 607). `combineStepsInTurn`
+  (`pkg/sketch/group_pipeline.go`) works round it by taking the copies one at a time where the
+  union or its Boolean fails, which costs time (the tube's load 6.2 → 8.0 s); the union itself is
+  still to be made sound. Fixture: `TestRotateOverlappingCopies`.
 - Not recommended: a mesh Boolean with perturbation (only as an explicit "approximate" mode).
 
 ### K5 STEP repair and accounting rules

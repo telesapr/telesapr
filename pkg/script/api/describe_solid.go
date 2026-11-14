@@ -39,7 +39,7 @@ const describeNarrow = "narrow with Solid().EdgesAlong(dir), EdgesBetween(a, b) 
 // with no solid up to it says so, with the group's problem if it has
 // one. Group.SolidDescription is the same as data.
 func (g Group) DescribeSolid() (s string) {
-	g.d.read(func(sk *sketch.Sketch) { s, _ = describeSolid(sk, g.get(sk)) })
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) { s, _ = describeSolid(sk, g.get(sk)) })
 	return s
 }
 

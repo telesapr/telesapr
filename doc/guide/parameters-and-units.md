@@ -99,7 +99,10 @@ box beside it:
   it is now redundant.
 - Unchecked, the value is free again. You can drag it or dimension it.
 
-A revolve turns by 360 degrees at most. An extrusion of a sketch drawn in 3d has no normal to
+A revolve turns by 360 degrees at most. A positive angle turns the other way to the right-hand
+rule about the axis, taken from the line's first point to its second: with the axis along +x,
+a sketch on +y turns towards -z. A negative angle, or the axis line drawn the other way, turns
+it towards +z. An extrusion of a sketch drawn in 3d has no normal to
 hold its depth along, so it can't be held.
 
 ```go

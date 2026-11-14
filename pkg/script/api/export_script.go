@@ -213,19 +213,25 @@ func (w *scriptWriter) writeGroups() {
 		if g == nil || hg.V == core.HGroupReferences {
 			continue
 		}
-		if g.Thread.IsThread() {
-			if hs, err := sk.ThreadGroups(hg); err == nil {
-				for _, h := range hs {
-					if h != hg {
-						w.skip[h] = true
-					}
-				}
+		if !g.Thread.IsThread() {
+			continue
+		}
+		// A thread whose groups are no longer together, one moved on
+		// its own, is written group by group; its datum and sketches
+		// are then written as any are.
+		hs, err := sk.ThreadGroups(hg)
+		if err != nil {
+			continue
+		}
+		for _, h := range hs {
+			if h != hg {
+				w.skip[h] = true
 			}
-			// A thread made on a face makes its datum too.
-			if _, ok := sk.ThreadPlaceOf(hg); ok {
-				if c := sk.Entity(g.Thread.Circle); c != nil {
-					w.skip[c.Group] = true
-				}
+		}
+		// A thread written on the edge of its face makes its datum too.
+		if _, _, ok := w.threadOnEdge(g); ok {
+			if c := sk.Entity(g.Thread.Circle); c != nil {
+				w.skip[c.Group] = true
 			}
 		}
 	}
@@ -478,6 +484,19 @@ func (w *scriptWriter) ref(h core.HEntity) string {
 	g := w.sk.Group(h.Group())
 	if !ok || g == nil {
 		return fmt.Sprintf("doc.Entity(0x%x)", h.V)
+	}
+	if g.Type == sketch.GroupDrawingWorkplane {
+		// Every sketch in a workplane makes its workplane, normal and
+		// origin point as these three, whichever call made it, and a
+		// new drawing numbers its groups afresh.
+		switch h {
+		case g.H.Entity(0):
+			return v + ".Workplane()"
+		case g.H.Entity(1):
+			return v + ".Workplane().Normal()"
+		case g.H.Entity(2):
+			return v + ".Workplane().Center()"
+		}
 	}
 	for k, id := range g.Remap {
 		if g.H.Entity(int(id.V)) != h {

@@ -2,6 +2,7 @@ package script
 
 import (
 	"context"
+	"math"
 	"strings"
 	"testing"
 
@@ -131,4 +132,93 @@ func TestScriptFaceAppearance(t *testing.T) {
 	if a := made.View.FaceAppearance(g.Solid().FaceAt(api.V(5, 5, 0))); a == "metal" {
 		t.Errorf("the bottom face took the top's appearance")
 	}
+}
+
+// rebuildNoted runs d's script on a new document and gives it with the
+// script and its notes, failing the test on an error.
+func rebuildNoted(t *testing.T, d *api.Doc) (made *api.Doc, notes []string, src string) {
+	t.Helper()
+	src, notes = d.Script()
+	sk := sketch.NewSketch()
+	sk.NewFile()
+	host := api.NewSketchHost(sk, "")
+	if err := RunSource(context.Background(), Options{Host: host}, "model.go", src); err != nil {
+		t.Fatalf("running the script: %v\n%s", err, src)
+	}
+	return api.NewDoc(host), notes, src
+}
+
+// threadedPlate is a plate with a hole of 8.5, threaded M10 on the
+// hole's face, and a slot cut after it; and the thread's groups: blank,
+// lathe, ridge sketch and helix.
+func threadedPlate(t *testing.T) (*api.Doc, []api.Group) {
+	t.Helper()
+	d := api.New()
+	d.Sketch.Rect(api.V(-15, -15, 0), api.V(15, 15, 0))
+	d.Features.Extrude(10, "plate")
+	d.Features.SketchIn(d.Workplane("XY"), "hole")
+	d.Sketch.Circle(api.V(0, 0, 0), 4.25)
+	hole := d.Features.Extrude(12, "drill")
+	hole.SetCombine(sketch.CombineDifference)
+	th := d.Features.ThreadOnFace(hole.Solid().FaceAt(api.V(4.25, 0, 5)), api.ThreadOptions{Length: 6})
+	d.Features.SketchIn(d.Workplane("XY"), "slot-outline")
+	d.Sketch.Rect(api.V(10, -2, 0), api.V(14, 2, 0))
+	slot := d.Features.Extrude(12, "slot")
+	slot.SetCombine(sketch.CombineDifference)
+	return d, th.AsThread().Groups()
+}
+
+// sameSolid fails the test unless the last group of got is sound and
+// has the volume of want's, to the tolerance their curves are followed
+// at.
+func sameSolid(t *testing.T, want, got *api.Doc, src string) {
+	t.Helper()
+	wg, gg := want.Groups(), got.Groups()
+	w, g := wg[len(wg)-1].Analyze(), gg[len(gg)-1].Analyze()
+	r := g.Check()
+	if !r.Sound() || math.Abs(w.Volume()-g.Volume()) > 1e-3*w.Volume() {
+		t.Errorf("made again: volume %.4f, sound %v; want %.4f\n%s", g.Volume(), r.Sound(), w.Volume(), src)
+	}
+}
+
+// A thread made on a face whose lathe and helix were moved on their own
+// to the end, as one moves a bore after the cuts, is written group by
+// group: its datum and sketches with the rest, and its helix as a
+// helix, so that the script runs and makes the same part.
+func TestScriptThreadGroupsApart(t *testing.T) {
+	t.Parallel()
+	d, groups := threadedPlate(t)
+	for _, i := range []int{1, 3} {
+		if err := groups[i].History().MoveToEnd(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Made again up to the end, where the slot is cut first.
+	d.Activate(groups[3])
+	made, notes, src := rebuildNoted(t, d)
+	if !strings.Contains(strings.Join(notes, "\n"), "written as the helix of its ridge") {
+		t.Errorf("notes %q", notes)
+	}
+	sameSolid(t, d, made, src)
+}
+
+// A thread whose face is gone from the solid before it keeps its datum
+// where it was; the script draws the datum's sketch through a point
+// where it lies, and puts the thread's circle on that sketch's origin,
+// so that the thread is cut where it was.
+func TestScriptThreadDatumFaceGone(t *testing.T) {
+	t.Parallel()
+	d, _ := threadedPlate(t)
+	// The drill's solid left out: the hole's face is gone, and the
+	// thread's own boring makes the hole.
+	d.Group("drill").SetSuppress(api.SuppressSolid)
+	datum := d.Group("M10-end")
+	if p := datum.Problem(); !strings.Contains(p, "no longer in the solid") {
+		t.Fatalf("the datum's problem is %q", p)
+	}
+	made, _, src := rebuildNoted(t, d)
+	if !strings.Contains(src, ".Workplane().Center()") {
+		t.Errorf("the circle isn't put on its datum's origin:\n%s", src)
+	}
+	sameSolid(t, d, made, src)
 }

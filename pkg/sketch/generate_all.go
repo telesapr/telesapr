@@ -77,14 +77,15 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 		first, last = math.MaxInt, 0
 
 		// Start from the first dirty group, and solve until the active group,
-		// since all groups after the active group are hidden.
+		// since all groups after the active group are hidden; or until the
+		// group MakeThrough asks for, if that comes later.
 		active := sk.ActiveGroup()
 		for i, hg := range sk.GroupOrder {
 			g := sk.Group(hg)
 			if !g.Clean || !g.IsSolvedOkay() {
 				first = min(first, i)
 			}
-			if g.H == active {
+			if g.H == active || g.H == sk.makeThrough {
 				last = i
 			}
 		}
@@ -1176,6 +1177,44 @@ func (g *Group) profiles() []core.HGroup {
 		return g.LoftProfiles()
 	}
 	return nil
+}
+
+// MakeThrough brings the solids up to and with group hg up to date, hg
+// zero meaning every group. A change makes the group it changes and
+// every group after it dirty, and a regeneration goes only as far as the
+// active group: the groups after it keep the solids, the problems and the
+// volumes of the regeneration before the change, until one of them is
+// activated. A read of one of them, as a script measuring the last group
+// after changing an earlier one, would take those for the model's. So
+// the dirty groups up to hg are solved and made again here, as a
+// regeneration that reached them would; the active group stays. Nothing
+// is made while something is dragged. It reports whether it regenerated.
+func (sk *Sketch) MakeThrough(hg core.HGroup) bool {
+	if len(sk.hooks().DraggedParams()) > 0 {
+		return false
+	}
+	sk.Refresh()
+	sk.orderGroups()
+	if hg.V == 0 && len(sk.GroupOrder) > 0 {
+		hg = sk.GroupOrder[len(sk.GroupOrder)-1]
+	}
+	stale := false
+	for _, h := range sk.GroupOrder {
+		if !sk.Group(h).Clean {
+			stale = true
+			break
+		}
+		if h == hg {
+			break
+		}
+	}
+	if !stale {
+		return false
+	}
+	sk.makeThrough = hg
+	defer func() { sk.makeThrough = core.HGroup{} }()
+	sk.generateAll(GenerateDirty, false, passBuild)
+	return true
 }
 
 // RemakeStaleMeshes makes every group's solid again when one was made

@@ -3,6 +3,7 @@ package api
 import (
 	"math"
 
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
@@ -193,14 +194,14 @@ type EdgeInfo struct {
 // groups, the active group's requests and constraints, what is
 // selected and what is under the mouse.
 func (d *Doc) Description() (data Description) {
-	d.read(func(sk *sketch.Sketch) { _, data = describeDoc(d, sk) })
+	d.readSolidOf(core.HGroup{}, func(sk *sketch.Sketch) { _, data = describeDoc(d, sk) })
 	return data
 }
 
 // Description is Describe's data: how the group came out, and its
 // requests and constraints.
 func (g Group) Description() (data Description) {
-	g.d.read(func(sk *sketch.Sketch) {
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) {
 		var info GroupInfo
 		_, info = describeGroup(sk, g.get(sk), &data)
 		data.Groups = []GroupInfo{info}
@@ -211,7 +212,7 @@ func (g Group) Description() (data Description) {
 // SolidDescription is DescribeSolid's data: the solid at the group,
 // and its faces and edges.
 func (g Group) SolidDescription() (data Description) {
-	g.d.read(func(sk *sketch.Sketch) { _, data = describeSolid(sk, g.get(sk)) })
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) { _, data = describeSolid(sk, g.get(sk)) })
 	return data
 }
 

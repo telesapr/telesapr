@@ -208,9 +208,13 @@ func (h *ScriptHost) Regenerate() {
 	}
 }
 
+// AddGroup adds g after the active group and activates it, as the menu
+// does; a group that makes a solid is made at the next read, as
+// SketchHost.AddGroup makes it, so that what the script sets on it
+// first, as the combine mode, is made with it.
 func (h *ScriptHost) AddGroup(g sketch.Group, seed func(sk *sketch.Sketch, hg core.HGroup)) core.HGroup {
 	h.ss.GW.ClearSelection()
-	return h.ss.addNewGroupSeeded(g, false, seed)
+	return h.ss.addNewGroupSeeded(g, false, seed, true)
 }
 
 // DeleteGroup is textWindow.ScreenDeleteGroup for any group.
@@ -420,6 +424,9 @@ func (h *ScriptHost) Select(sel []sketch.Selection) {
 func (h *ScriptHost) Commands() []string { return h.ss.CommandLabels() }
 
 func (h *ScriptHost) RunCommand(label string) error {
+	// A solid the script added is made first (AddGroup): the command
+	// works on the model as it is.
+	h.Regenerate()
 	var err error
 	if cerr := h.collect(func() { err = h.ss.RunCommand(label) }); err == nil {
 		err = cerr

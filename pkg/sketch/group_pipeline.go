@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"runtime/trace"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -152,6 +153,8 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 	// made from it.
 	g.reportPolyProblem(sk)
 
+	// Whether a union of two of a step and repeat's copies failed.
+	copiesFailed := false
 	switch g.Type {
 	case GroupTranslate, GroupRotate:
 		// A step and repeat gets merged against the group's previous group,
@@ -160,7 +163,7 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 
 		if !srcg.Suppress {
 			if !g.IsForcedToMesh(sk) {
-				g.generateForStepAndRepeatShell(sk, &srcg.ThisShell, &g.ThisShell, srcg.MeshCombine)
+				copiesFailed = g.generateForStepAndRepeatShell(sk, &srcg.ThisShell, &g.ThisShell, srcg.MeshCombine)
 			} else {
 				var prevm srf.SMesh
 				prevm.MakeFromCopyOf(&srcg.ThisMesh)
@@ -292,6 +295,9 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		combines := len(g.ThisShell.Surface) > 0 && !g.Suppress
 		g.RunningShell.PaceBy(sk.kernelPace())
 		g.generateForBooleanShell(&prevs, &g.ThisShell, &g.RunningShell, srcg.MeshCombine)
+		if combines && (copiesFailed || g.RunningShell.BooleanFailed) && (g.Type == GroupTranslate || g.Type == GroupRotate) {
+			g.combineStepsInTurn(sk, &prevs, &srcg.ThisShell, srcg.MeshCombine)
+		}
 
 		if combines && srcg.MeshCombine != CombineAssemble {
 			g.RunningShell.MergeCoincidentSurfaces()
@@ -362,23 +368,20 @@ func (g *Group) stepTransforms(sk *Sketch, n int) ([]geom.Vector, []geom.Quatern
 
 // generateForStepAndRepeatShell makes the transformed copies of steps
 // and combines them, a pair at a time.
-func (g *Group) generateForStepAndRepeatShell(sk *Sketch, steps, outs *srf.SShell, forWhat CombineAs) {
+// It reports whether a union of two of them failed.
+func (g *Group) generateForStepAndRepeatShell(sk *Sketch, steps, outs *srf.SShell, forWhat CombineAs) (failed bool) {
 	n, a0 := g.stepsOf()
 	ts, qs := g.stepTransforms(sk, n)
-	g.unionCopies(sk, steps, outs, forWhat, ts, qs, a0, func(a int) int { return stepRemap(a, n) })
+	return g.unionCopies(sk, steps, outs, forWhat, ts, qs, a0, func(a int) int { return stepRemap(a, n) })
 }
 
-// unionCopies makes the copies of steps that ts and qs move it to, from
-// a0 on, with their faces remapped by remap, and combines them a pair
-// at a time.
-func (g *Group) unionCopies(sk *Sketch, steps, outs *srf.SShell, forWhat CombineAs,
-	ts []geom.Vector, qs []geom.Quaternion, a0 int, remap func(a int) int) {
+// transformedCopies are the copies of steps that ts and qs move it to,
+// from a0 on (those before a0 are left empty), with their faces
+// remapped by remap.
+func (g *Group) transformedCopies(sk *Sketch, steps *srf.SShell, ts []geom.Vector, qs []geom.Quaternion,
+	a0 int, remap func(a int) int) []srf.SShell {
 	n := len(ts)
-
-	// create all the transformed copies
 	transd := make([]srf.SShell, n)
-	workA := make([]srf.SShell, n)
-	// first generate a shell with each transformed copy
 	par.For(n-a0, func(i int) {
 		a := a0 + i
 		transd[a].MakeFromTransformationOf(steps, ts[a], qs[a], 1.0)
@@ -387,6 +390,50 @@ func (g *Group) unionCopies(sk *Sketch, steps, outs *srf.SShell, forWhat Combine
 		// We need to rewrite any plane face entities to the transformed ones.
 		transd[a].RemapFaces(shellGroup{g: g, sk: sk}, remap(a))
 	}
+	return transd
+}
+
+// combineStepsInTurn makes a step and repeat's running shell by
+// combining its copies of steps with the solid so far prevs one at a
+// time, as that many groups of one copy each would, where the union of
+// its copies, or that union's Boolean with prevs, failed: copies that
+// overlap, as those of a cut turned about an axis that runs through it,
+// meet one another in ways their union can fail on where each of them
+// meets the solid so far soundly. The running shell is left as it was
+// when the Boolean of a copy fails too, and for a combine other than a
+// union or a difference, which copies taken in turn don't give.
+func (g *Group) combineStepsInTurn(sk *Sketch, prevs, steps *srf.SShell, how CombineAs) {
+	if how != CombineUnion && how != CombineDifference {
+		return
+	}
+	n, a0 := g.stepsOf()
+	ts, qs := g.stepTransforms(sk, n)
+	copies := g.transformedCopies(sk, steps, ts, qs, a0, func(a int) int { return stepRemap(a, n) })
+	cur := *prevs
+	for a := a0; a < n; a++ {
+		var next srf.SShell
+		next.PaceBy(sk.kernelPace())
+		g.generateForBooleanShell(&cur, &copies[a], &next, how)
+		if next.BooleanFailed {
+			return
+		}
+		next.MergeCoincidentSurfaces()
+		cur = next
+	}
+	g.RunningShell = cur
+}
+
+// unionCopies makes the copies of steps that ts and qs move it to, from
+// a0 on, with their faces remapped by remap, and combines them a pair
+// at a time. It reports whether a union of two of them failed.
+func (g *Group) unionCopies(sk *Sketch, steps, outs *srf.SShell, forWhat CombineAs,
+	ts []geom.Vector, qs []geom.Quaternion, a0 int, remap func(a int) int) (failed bool) {
+	n := len(ts)
+
+	transd := g.transformedCopies(sk, steps, ts, qs, a0, remap)
+	workA := make([]srf.SShell, n)
+	// Each pair's union writes its own slot.
+	fails := make([]bool, n)
 
 	soFar, scratch := transd, workA
 	// do the boolean operations on pairs of equal size
@@ -415,6 +462,7 @@ func (g *Group) unionCopies(sk *Sketch, steps, outs *srf.SShell, forWhat Combine
 
 			default:
 				scratch[a/2].MakeFromUnionOf(&soFar[a], &soFar[a+1])
+				fails[a/2] = fails[a/2] || scratch[a/2].BooleanFailed
 				soFar[a].Clear()
 				soFar[a+1].Clear()
 			}
@@ -425,6 +473,7 @@ func (g *Group) unionCopies(sk *Sketch, steps, outs *srf.SShell, forWhat Combine
 	}
 	outs.Clear()
 	*outs = soFar[0]
+	return slices.Contains(fails, true)
 }
 
 // generateForStepAndRepeatMesh is generateForStepAndRepeatShell for a

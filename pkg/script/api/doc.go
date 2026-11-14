@@ -165,6 +165,19 @@ func (d *Doc) readMesh(fn func(sk *sketch.Sketch)) {
 	})
 }
 
+// readSolidOf is readMesh for what reads the solid, the volume or the
+// problem of the model at group hg, zero for every group: the groups up
+// to it that a change before them left as they were, past the active
+// group, are made again first (Sketch.MakeThrough), so that what is read
+// is what the model now makes there.
+func (d *Doc) readSolidOf(hg core.HGroup, fn func(sk *sketch.Sketch)) {
+	d.read(func(sk *sketch.Sketch) {
+		sk.MakeThrough(hg)
+		sk.RemakeStaleMeshes()
+		fn(sk)
+	})
+}
+
 // change runs fn, which changes the sketch.
 func (d *Doc) change(fn func(sk *sketch.Sketch)) {
 	d.changeOf(core.HGroup{}, fn)

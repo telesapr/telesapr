@@ -9,8 +9,14 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+### Changed
+- The way a revolve turns is written down, in `Features.Revolve`'s help, the guide and the primer an AI model reads: a positive angle turns the other way to the right-hand rule about the axis line, from its first point to its second. A band revolved from a pocket's edge over MCP went the other way, stayed inside the wall and added nothing, which read as a Boolean that failed silently.
+
 ### Fixed
 - A cut with a straight side slanted to a lathed part's axis, as a triangular or teardrop window through a tube's wall, sketched in a plane through the axis and turned about it, leaves the solid sound. The tube was left open along its bore, and past a step in the bore crossed itself.
+- A script that changes a group with others after it, such as a cut drawn between two others, reads the later groups as the model now makes them: their volume, check, problem and description. They kept the solid made before the change, as a regeneration goes only as far as the active group, so a cut turned from the union it starts as into a difference left the next cut reading 971 mm³ too much, sound and with no problem. In the window, a solid a script adds is made at the next read, as from the command line, so what the script sets on it first, as the combine mode, is made with it rather than after.
+- A step and repeat or a rotate whose copies overlap one another, as copies of a cut drawn in a plane through a tube's axis and turned about it, leaves the solid sound. Where the union of the copies failed, its Boolean with the solid so far failed from a few copies on, or came out a little off; the copies are now combined with the solid one at a time there, as separate cuts are, which takes longer.
+- File > Export > Script of a model with a thread made on a face writes a script that runs. Where the thread's lathe or helix had been moved on its own, the thread's datum was left out though its sketches were placed on it ("entity ... doesn't exist any more"): the thread is now written group by group, its helix as a helix. Where the datum's face is gone, the datum's sketch was put at the model's origin: it is drawn through a point where the datum lies.
 
 ## [0.6.5] - 2026-11-13
 

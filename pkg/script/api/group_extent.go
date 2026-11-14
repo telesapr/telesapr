@@ -81,8 +81,9 @@ func (v RevolveGroup) Angle() (degrees float64) {
 
 // SetAngle holds a revolve's or helix's angle at degrees, as Angle
 // measures it, in place of a dimension. A revolve turns by 360 degrees
-// at most. SetExpr with sketch.GroupExtent gives it an expression, and
-// FreeAngle frees it again.
+// at most, a positive angle the other way to the right-hand rule about
+// its axis (Features.Revolve). SetExpr with sketch.GroupExtent gives
+// it an expression, and FreeAngle frees it again.
 func (v RevolveGroup) SetAngle(degrees float64) {
 	g := v.g
 	g.d.change(func(sk *sketch.Sketch) {

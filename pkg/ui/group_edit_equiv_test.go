@@ -17,6 +17,8 @@ func buildGroupEditDoc(t *testing.T) (*Application, api.Group, api.Group) {
 	doc.Sketch.Rect(api.V(4, -1, 0), api.V(6, 1, 0))
 	ex := doc.Features.Extrude(2, "")
 	rot := doc.Features.Rotate(2, doc.Origin(), doc.Workplane("XY").Normal(), 90, "")
+	// The end of a script's step, which makes the solids it added.
+	ss.ScriptHost().Regenerate()
 	return ss, ex, rot
 }
 

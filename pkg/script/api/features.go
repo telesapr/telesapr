@@ -313,13 +313,19 @@ func (m FeaturesMenu) LatheAbout(point, vector Entity, name string) Group {
 
 // Revolve makes a solid of the active group's sketch by turning it by
 // an angle in degrees around a line segment. The new group becomes
-// active.
+// active. A positive angle turns the other way to the right-hand rule
+// about the line from its first point to its second: with the line
+// along +x, a sketch on +y turns towards -z. A negative angle, or the
+// line drawn the other way, turns it towards +z. SetTwoSided turns it
+// half the angle each way.
 func (m FeaturesMenu) Revolve(axis Entity, degrees float64, name string) Group {
 	return m.RevolveAbout(Entity{}, axis, degrees, name)
 }
 
 // RevolveAbout is Revolve about an axis through a point and parallel to
-// a vector, a line segment or a normal.
+// a vector, a line segment or a normal. The axis runs the way the
+// vector, the line from its first point to its second, or the normal
+// points, and the angle turns about it as Revolve's does.
 func (m FeaturesMenu) RevolveAbout(point, vector Entity, degrees float64, name string) Group {
 	d := m.d
 	return d.add(func(sk *sketch.Sketch) sketch.Group {

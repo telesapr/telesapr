@@ -136,10 +136,36 @@ func (w *scriptWriter) workplaneCall(g *sketch.Group, name string) string {
 	}
 	u, v := uvOf(p.Q)
 	origin := w.ref(p.Origin)
-	if p.Origin.V == 0 {
+	switch {
+	case g.Subtype == sketch.GroupWorkplaneByFace || g.Subtype == sketch.GroupWorkplaneByDatum:
+		// Its origin is where the face put it, which no entity holds:
+		// a point drawn there in 3d of its own holds it.
+		origin = w.originPoint(g)
+	case p.Origin.V == 0:
 		origin = "doc.Origin()"
 	}
 	return "doc.Features.SketchAt(" + origin + ", " + vecText(snapVec(u)) + ", " + vecText(snapVec(v)) + ", " + name + ")"
+}
+
+// originPoint draws the origin of a sketch on a face or a datum, which
+// can't be written as one, where the face last put it, so that the
+// sketch written in its place lies where it did: the model's origin
+// when it is there, otherwise a point of a 3d sketch made for it.
+func (w *scriptWriter) originPoint(g *sketch.Group) string {
+	at := g.Predef.At
+	if pt := w.sk.Entity(g.H.Entity(2)); pt != nil {
+		at = pt.PointGetNum(w.sk)
+	}
+	if at.Magnitude() < 1e-12 {
+		return "doc.Origin()"
+	}
+	name := g.Name + "-origin"
+	w.line("// The origin of %s, where its face put it.", g.Name)
+	w.line("doc.Features.Sketch3D(%q)", name)
+	w.wp = core.FreeIn3D
+	v := fmt.Sprintf("o%d", g.H.V)
+	w.line("%s := doc.Sketch.Point(%s)", v, vecText(at))
+	return v
 }
 
 // referenceQ is the orientation of a reference workplane.
@@ -180,7 +206,8 @@ func paramVal(sk *sketch.Sketch, h core.HParam) float64 {
 }
 
 // threadCall is a thread written as one call on its circle; its
-// groups are made by it.
+// groups are made by it. A thread whose groups are no longer together
+// has had them written one by one, and its helix is written as one.
 func (w *scriptWriter) threadCall(g *sketch.Group) (string, core.HGroup) {
 	sk := w.sk
 	o, err := sk.ThreadOf(g.H)
@@ -188,31 +215,40 @@ func (w *scriptWriter) threadCall(g *sketch.Group) (string, core.HGroup) {
 		w.notWritten("%s: %v", g.Name, err)
 		return "", core.HGroup{}
 	}
+	hs, err := sk.ThreadGroups(g.H)
+	if err != nil {
+		if g.Type == sketch.GroupHelix {
+			w.notWritten("%s: its thread, whose groups are not together (%v); written as the helix of its ridge", g.Name, err)
+			return "doc.Features.HelixAbout(" + w.ref(g.Predef.Origin) + ", " + w.ref(g.Predef.EntityB) + ", 360, 1, " + fmt.Sprintf("%q", g.Name) + ")", g.OpA
+		}
+		w.notWritten("%s: %v", g.Name, err)
+		return "", core.HGroup{}
+	}
 	t := threadOptionsOf(o)
 	// A thread made on a face is written on the rim it starts at, whose
 	// face sets which way it runs, a screw's or a nut's, and with
 	// FullLength its length and Through.
-	p, onFace := sk.ThreadPlaceOf(g.H)
+	at, fromEdge, onEdge := w.threadOnEdge(g)
 	var fields []string
 	fields = append(fields, fmt.Sprintf("Designation: %q", t.Designation))
 	if t.LeftHand {
 		fields = append(fields, "LeftHand: true")
 	}
-	if t.Internal && !onFace {
+	if t.Internal && !onEdge {
 		fields = append(fields, "Internal: true")
 	}
 	switch {
-	case onFace && t.FullLength:
+	case onEdge && t.FullLength:
 		fields = append(fields, "FullLength: true")
 	case t.LengthExpr != "":
 		fields = append(fields, fmt.Sprintf("LengthExpr: %q", t.LengthExpr))
 	default:
 		fields = append(fields, "Length: "+num(t.Length))
 	}
-	if t.Through && !onFace {
+	if t.Through && !onEdge {
 		fields = append(fields, "Through: true")
 	}
-	if t.Reverse && !onFace {
+	if t.Reverse && !onEdge {
 		fields = append(fields, "Reverse: true")
 	}
 	switch {
@@ -245,29 +281,57 @@ func (w *scriptWriter) threadCall(g *sketch.Group) (string, core.HGroup) {
 	if t.Chamfer {
 		fields = append(fields, "Chamfer: true")
 	}
-	// The thread is cut on the solid of the group before its sketch, or
-	// before the datum at its face's end.
-	hs, _ := sk.ThreadGroups(g.H)
-	from := core.HGroup{}
-	if len(hs) > 0 {
-		first := sk.Group(hs[0])
-		if onFace && first != nil {
-			first = first.PreviousGroup(sk)
-		}
-		if first != nil {
-			if prev := first.PreviousGroup(sk); prev != nil {
-				from = prev.H
-			}
-		}
-	}
 	opts := "api.ThreadOptions{" + strings.Join(fields, ", ") + "}"
-	if onFace {
-		if at, ok := threadRimPoint(sk, sk.Group(from), p); ok {
-			return "doc.Features.ThreadOnEdge(doc.Active().Solid().EdgeAt(" + vecText(at) + "), " + opts + ")", from
-		}
+	if onEdge {
+		return "doc.Features.ThreadOnEdge(doc.Active().Solid().EdgeAt(" + vecText(at) + "), " + opts + ")", fromEdge
+	}
+	if _, onFace := sk.ThreadPlaceOf(g.H); onFace {
 		w.notWritten("%s: the face it is on; written on its circle", g.Name)
 	}
+	// The thread is cut on the solid of the group before its sketch;
+	// its circle's datum, written, is that group or before it.
+	from := core.HGroup{}
+	if first := sk.Group(hs[0]); first != nil {
+		if prev := first.PreviousGroup(sk); prev != nil {
+			from = prev.H
+		}
+	}
 	return "doc.Features.Thread(" + w.ref(g.Thread.Circle) + ", " + opts + ")", from
+}
+
+// threadOnEdge is where a thread made on a face, its groups together,
+// is written with ThreadOnEdge: a point on the rim it starts at, in the
+// solid of the group before its datum, and that group, which is active
+// when the call is made. Not when the rim isn't found, as where the
+// face no longer meets its end in an edge: the thread is then written
+// on its circle, and its datum with it.
+func (w *scriptWriter) threadOnEdge(g *sketch.Group) (geom.Vector, core.HGroup, bool) {
+	sk := w.sk
+	p, onFace := sk.ThreadPlaceOf(g.H)
+	if !onFace {
+		return geom.Vector{}, core.HGroup{}, false
+	}
+	hs, err := sk.ThreadGroups(g.H)
+	if err != nil || len(hs) == 0 {
+		return geom.Vector{}, core.HGroup{}, false
+	}
+	first := sk.Group(hs[0])
+	if first == nil {
+		return geom.Vector{}, core.HGroup{}, false
+	}
+	datum := first.PreviousGroup(sk)
+	if c := sk.Entity(g.Thread.Circle); datum == nil || c == nil || c.Group != datum.H {
+		return geom.Vector{}, core.HGroup{}, false
+	}
+	before := datum.PreviousGroup(sk)
+	if before == nil {
+		return geom.Vector{}, core.HGroup{}, false
+	}
+	at, ok := threadRimPoint(sk, before, p)
+	if !ok {
+		return geom.Vector{}, core.HGroup{}, false
+	}
+	return at, before.H, true
 }
 
 // threadRimPoint is a point on the rim a thread made on a face starts
@@ -439,7 +503,11 @@ func (w *scriptWriter) writeKindOptions(g *sketch.Group, v string) {
 		}
 	case sketch.GroupRevolve, sketch.GroupHelix:
 		if g.Thread.IsThread() {
-			return
+			// The thread's call sets its turns, unless its groups are
+			// written one by one (threadCall).
+			if _, err := w.sk.ThreadGroups(g.H); err == nil {
+				return
+			}
 		}
 		if g.Type == sketch.GroupHelix && g.ExprB == "" {
 			w.line("must(%s.SetExpr(sketch.GroupPitch, %q))", v, num(g.ValB))

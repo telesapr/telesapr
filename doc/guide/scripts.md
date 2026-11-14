@@ -168,7 +168,11 @@ their own: an arc drawn in 3d (`doc.Sketch.ArcIn3D`), a workplane drawn in a wor
 (`doc.Sketch.NewWorkplaneIn`) and the same constraint twice (`doc.Constrain.Again`). An image
 whose file is missing is written as its frame (`doc.Sketch.ImageFrame`), and the window says
 so. What the script can't write is a comment in it starting `not written:`, and the window
-says so too. One such thing is a face's appearance on a face that no point finds. Handles are
+says so too. One such thing is a face's appearance on a face that no point finds. Another is a
+thread whose lathe or helix was moved on its own in the history: its groups are written one by
+one, and its helix as a plain helix, so the part comes out the same but is no longer a thread you
+can edit as one. A sketch on a face or a datum whose face is gone is drawn where it lies, through a
+point of a 3d sketch of its own named after it (`M8-end-origin`). Handles are
 numbered afresh, so the script names what a group made by what it was made from
 (`g3.Made(r4, 1002)`), and a request's points by their number (`r4.Part(1)`).
 

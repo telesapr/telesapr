@@ -568,13 +568,19 @@ func (ss *Application) groupLink(g *sketch.Group) bool {
 // addNewGroup adds g after the active group, activates it and
 // regenerates.
 func (ss *Application) addNewGroup(g sketch.Group, rememberForUndo bool) core.HGroup {
-	return ss.addNewGroupSeeded(g, rememberForUndo, nil)
+	return ss.addNewGroupSeeded(g, rememberForUndo, nil, false)
 }
 
 // addNewGroupSeeded is addNewGroup with the values the new group's
 // parameters start from, which seed gives them before its first
-// regeneration, as a script's Extrude gives its depth.
-func (ss *Application) addNewGroupSeeded(g sketch.Group, rememberForUndo bool, seed func(sk *sketch.Sketch, hg core.HGroup)) core.HGroup {
+// regeneration, as a script's Extrude gives its depth. With later, a
+// group that makes a solid is made at the next regeneration rather
+// than now (Sketch.ScheduleAdded), as a script's is: what the script
+// sets on it first, as the combine mode, is then made with it, once.
+// Made at once, the groups after it would be made with its first
+// combine mode, and a change of that regenerates only as far as the
+// active group.
+func (ss *Application) addNewGroupSeeded(g sketch.Group, rememberForUndo bool, seed func(sk *sketch.Sketch, hg core.HGroup), later bool) core.HGroup {
 	gw := ss.GW
 	sk := ss.SK
 
@@ -601,8 +607,12 @@ func (ss *Application) addNewGroupSeeded(g sketch.Group, rememberForUndo bool, s
 	}
 	gw.setActiveGroup(gg.H)
 	ss.applyEngineSettings()
-	sk.GenerateAdded(hg)
-	ss.afterGenerate()
+	if later && gg.IsMeshGroup() {
+		sk.ScheduleAdded(hg)
+	} else {
+		sk.GenerateAdded(hg)
+		ss.afterGenerate()
+	}
 	gg = sk.Group(hg)
 	if gg.Type == sketch.GroupDrawingWorkplane {
 		// Can't set the active workplane for this one until after we've

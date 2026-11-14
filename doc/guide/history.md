@@ -81,6 +81,10 @@ new can refer to it. A script is held to the same rule: a constraint on an entit
 group, or a new group that would use one, is refused. The message names the later group. The
 file keeps which group is active.
 
+A change while an earlier group is active is made as far as that group. A script can still read
+a later group: its volume, its check, its problem and its description are those of the model as
+it now is, since the groups up to it are made again first. The active group stays as it was.
+
 ```go
 doc.Activate(block)
 doc.Features.Chamfer(edges, 2, "")   // between block and what followed it

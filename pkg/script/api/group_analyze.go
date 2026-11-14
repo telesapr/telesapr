@@ -7,7 +7,10 @@ import (
 )
 
 // GroupAnalysis measures and checks the solid up to and with a group,
-// as the Analyze menu does for the active group: g.Analyze().
+// as the Analyze menu does for the active group: g.Analyze(). A group
+// after the active one is measured as the model now makes it: a change
+// before it is made as far as the active group, and the groups from
+// there up to this one are made again first.
 type GroupAnalysis struct{ g Group }
 
 // Area is the area in mm² of the closed region the group's sketch
@@ -29,7 +32,7 @@ func (v GroupAnalysis) Area() (mm2 float64) {
 // marks it.
 func (v GroupAnalysis) CenterOfMass() (p Vec) {
 	g := v.g
-	g.d.readMesh(func(sk *sketch.Sketch) {
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) {
 		group := g.get(sk)
 		displayMesh(sk, group)
 		var err error
@@ -52,7 +55,7 @@ func (v GroupAnalysis) CenterOfMass() (p Vec) {
 // tolerance.
 func (v GroupAnalysis) MassProperties() (r sketch.MassReport) {
 	g := v.g
-	g.d.readMesh(func(sk *sketch.Sketch) {
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) {
 		group := g.get(sk)
 		displayMesh(sk, group)
 		var err error
@@ -77,7 +80,7 @@ func (v GroupAnalysis) MassProperties() (r sketch.MassReport) {
 // thickness may be from the true one at its point.
 func (v GroupAnalysis) WallThickness(below float64) (r sketch.WallReport) {
 	g := v.g
-	g.d.readMesh(func(sk *sketch.Sketch) {
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) {
 		group := g.get(sk)
 		var err error
 		if r, err = sk.WallThickness(group.H, below); err != nil {
@@ -92,7 +95,7 @@ func (v GroupAnalysis) WallThickness(below float64) (r sketch.WallReport) {
 // regenerates.
 func (v GroupAnalysis) Mesh() (m *srf.SMesh) {
 	g := v.g
-	g.d.readMesh(func(sk *sketch.Sketch) { m = displayMesh(sk, g.get(sk)) })
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) { m = displayMesh(sk, g.get(sk)) })
 	return m
 }
 
@@ -100,14 +103,14 @@ func (v GroupAnalysis) Mesh() (m *srf.SMesh) {
 // like Mesh, it is the sketch's own.
 func (v GroupAnalysis) Shell() (s *srf.SShell) {
 	g := v.g
-	g.d.readMesh(func(sk *sketch.Sketch) { s = &g.get(sk).RunningShell })
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) { s = &g.get(sk).RunningShell })
 	return s
 }
 
 // Volume is the volume in mm³ of the model up to and with this group.
 func (v GroupAnalysis) Volume() (mm3 float64) {
 	g := v.g
-	g.d.readMesh(func(sk *sketch.Sketch) { mm3 = displayMesh(sk, g.get(sk)).CalculateVolume() })
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) { mm3 = displayMesh(sk, g.get(sk)).CalculateVolume() })
 	return mm3
 }
 
@@ -115,7 +118,7 @@ func (v GroupAnalysis) Volume() (mm3 float64) {
 // group.
 func (v GroupAnalysis) Triangles() (n int) {
 	g := v.g
-	g.d.readMesh(func(sk *sketch.Sketch) { n = len(displayMesh(sk, g.get(sk)).Triangles) })
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) { n = len(displayMesh(sk, g.get(sk)).Triangles) })
 	return n
 }
 
@@ -123,7 +126,7 @@ func (v GroupAnalysis) Triangles() (n int) {
 // this group.
 func (v GroupAnalysis) Bounds() (lo, hi Vec) {
 	g := v.g
-	g.d.readMesh(func(sk *sketch.Sketch) {
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) {
 		m := displayMesh(sk, g.get(sk))
 		if m.IsEmpty() {
 			return
@@ -144,7 +147,7 @@ func (v GroupAnalysis) Bounds() (lo, hi Vec) {
 // same report.
 func (v GroupAnalysis) Check() (r check.Report) {
 	g := v.g
-	g.d.readMesh(func(sk *sketch.Sketch) { r = check.Group(sk, g.get(sk)) })
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) { r = check.Group(sk, g.get(sk)) })
 	return r
 }
 
@@ -163,7 +166,7 @@ func (v GroupAnalysis) Check() (r check.Report) {
 // Analyze > Ray-Cast Check shows the same.
 func (v GroupAnalysis) RayCheck() (r check.RayReport) {
 	g := v.g
-	g.d.readMesh(func(sk *sketch.Sketch) {
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) {
 		var err error
 		if r, err = check.RayCheck(sk, g.get(sk), 24); err != nil {
 			fail("%v", err)
@@ -178,7 +181,7 @@ func (v GroupAnalysis) RayCheck() (r check.RayReport) {
 // dir's length to one. It fails as RayCheck does.
 func (v GroupAnalysis) Probe(from, dir Vec) (inside []check.Interval) {
 	g := v.g
-	g.d.readMesh(func(sk *sketch.Sketch) {
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) {
 		o, err := check.NewOracle(sk, g.get(sk).H)
 		if err != nil {
 			fail("%v", err)
@@ -206,7 +209,7 @@ func (v GroupAnalysis) ClearancesWithin(below float64) []Clearance {
 
 func (v GroupAnalysis) clearances(below float64, bySolid bool) (found []Clearance) {
 	g := v.g
-	g.d.readMesh(func(sk *sketch.Sketch) {
+	g.d.readSolidOf(g.H, func(sk *sketch.Sketch) {
 		group := g.get(sk)
 		cs := sk.Clearances(group.H, below)
 		if bySolid {

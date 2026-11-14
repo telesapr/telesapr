@@ -5342,11 +5342,11 @@
 					},
 					"Revolve": {
 						"decl": "func (m FeaturesMenu) Revolve(axis Entity, degrees float64, name string) Group",
-						"text": "Revolve makes a solid of the active group's sketch by turning it by\nan angle in degrees around a line segment. The new group becomes\nactive."
+						"text": "Revolve makes a solid of the active group's sketch by turning it by\nan angle in degrees around a line segment. The new group becomes\nactive. A positive angle turns the other way to the right-hand rule\nabout the line from its first point to its second: with the line\nalong +x, a sketch on +y turns towards -z. A negative angle, or the\nline drawn the other way, turns it towards +z. SetTwoSided turns it\nhalf the angle each way."
 					},
 					"RevolveAbout": {
 						"decl": "func (m FeaturesMenu) RevolveAbout(point, vector Entity, degrees float64, name string) Group",
-						"text": "RevolveAbout is Revolve about an axis through a point and parallel to\na vector, a line segment or a normal."
+						"text": "RevolveAbout is Revolve about an axis through a point and parallel to\na vector, a line segment or a normal. The axis runs the way the\nvector, the line from its first point to its second, or the normal\npoints, and the angle turns about it as Revolve's does."
 					},
 					"Rotate": {
 						"decl": "func (m FeaturesMenu) Rotate(n int, center, axis Entity, degrees float64, name string) Group",
@@ -5843,7 +5843,7 @@
 				}
 			},
 			"GroupAnalysis": {
-				"text": "GroupAnalysis measures and checks the solid up to and with a group,\nas the Analyze menu does for the active group: g.Analyze().",
+				"text": "GroupAnalysis measures and checks the solid up to and with a group,\nas the Analyze menu does for the active group: g.Analyze(). A group\nafter the active one is measured as the model now makes it: a change\nbefore it is made as far as the active group, and the groups from\nthere up to this one are made again first.",
 				"kind": "struct",
 				"methods": {
 					"Area": {
@@ -6330,7 +6330,7 @@
 					},
 					"SetAngle": {
 						"decl": "func (v RevolveGroup) SetAngle(degrees float64)",
-						"text": "SetAngle holds a revolve's or helix's angle at degrees, as Angle\nmeasures it, in place of a dimension. A revolve turns by 360 degrees\nat most. SetExpr with sketch.GroupExtent gives it an expression, and\nFreeAngle frees it again."
+						"text": "SetAngle holds a revolve's or helix's angle at degrees, as Angle\nmeasures it, in place of a dimension. A revolve turns by 360 degrees\nat most, a positive angle the other way to the right-hand rule about\nits axis (Features.Revolve). SetExpr with sketch.GroupExtent gives\nit an expression, and FreeAngle frees it again."
 					}
 				}
 			},
@@ -8635,6 +8635,10 @@
 					"MakeTangentArc": {
 						"decl": "func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) error",
 						"text": "MakeTangentArc rounds the corner at point hpt, where two non-construction line segments or arcs join, with a tangent arc."
+					},
+					"MakeThrough": {
+						"decl": "func (sk *Sketch) MakeThrough(hg core.HGroup) bool",
+						"text": "MakeThrough brings the solids up to and with group hg up to date, hg zero meaning every group."
 					},
 					"MarkGroupDirty": {
 						"decl": "func (sk *Sketch) MarkGroupDirty(hg core.HGroup, onlyThis bool)",

@@ -134,6 +134,9 @@ type Sketch struct {
 	// scheduled (ScheduleAdded), which Refresh then makes as
 	// GenerateAdded does; zero for none.
 	scheduledAdded core.HGroup
+	// makeThrough is the group past the active one that a regeneration
+	// solves and makes up to while MakeThrough runs; zero otherwise.
+	makeThrough core.HGroup
 
 	// freedom caches GroupFreedom.
 	freedom []freedomCache

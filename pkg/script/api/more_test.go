@@ -35,6 +35,42 @@ func TestRevolveAngle(t *testing.T) {
 	}
 }
 
+// A one-sided revolve turns a positive angle the other way to the
+// right-hand rule about its axis, from the line's first point to its
+// second; a negative angle, or the line drawn the other way, turns it
+// back. A band revolved under a pocket from the pocket's edge, as drawn
+// over MCP on 2026-11-14, went
+// the other way, stayed inside the wall and so added nothing: the
+// Boolean was right, the direction was not where the call said it was.
+func TestRevolveDirection(t *testing.T) {
+	t.Parallel()
+	for _, c := range []struct {
+		degrees  float64
+		reversed bool
+		wantZ    float64 // the sign of the solid's centre's z
+	}{
+		{90, false, 1},
+		{-90, false, -1},
+		{90, true, -1},
+		{-90, true, 1},
+	} {
+		d := New()
+		a, b := V(0, 0, 0), V(0, 10, 0)
+		if c.reversed {
+			a, b = b, a
+		}
+		axis := d.Sketch.Line(a, b)
+		axis.SetConstruction(true)
+		d.Sketch.Rect(V(10, 0, 0), V(20, 10, 0))
+		g := d.Features.Revolve(axis, c.degrees, "")
+		// The right-hand rule about +y takes +x to -z.
+		if z := g.Analyze().CenterOfMass().Z; z*c.wantZ < 5 {
+			t.Errorf("%g degrees about a line drawn reversed %v: the centre's z is %g, want its sign %g",
+				c.degrees, c.reversed, z, c.wantZ)
+		}
+	}
+}
+
 // A helix turns by its angle and moves along its axis by its length.
 func TestHelix(t *testing.T) {
 	t.Parallel()
