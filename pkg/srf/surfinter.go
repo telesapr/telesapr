@@ -375,6 +375,7 @@ func (s *SSurface) intersectPlaneAndExtrusion(b *SSurface, agnstA, agnstB *SShel
 	} else {
 		// Direction of extrusion is not parallel to plane; so
 		// intersection is projection of extruded curve into our plane.
+		spans := spansWithinExtrusion(&bezier, along, n, d)
 		for i := 0; i <= bezier.Degree; i++ {
 			p0 := bezier.Ctrl[i]
 			p1 := p0.Plus(along)
@@ -382,8 +383,96 @@ func (s *SSurface) intersectPlaneAndExtrusion(b *SSurface, agnstA, agnstB *SShel
 			bezier.Ctrl[i] = geom.AtIntersectionOfPlaneAndLine(n, d, p0, p1)
 		}
 
-		s.addExactIntersectionCurve(&bezier, b, agnstA, agnstB, into)
+		for _, sp := range spans {
+			piece := bezier
+			if sp != [2]float64{0, 1} {
+				piece = bezier.Sub(sp[0], sp[1])
+			}
+			s.addExactIntersectionCurve(&piece, b, agnstA, agnstB, into)
+		}
 	}
+}
+
+// spansWithinExtrusion are the pieces of the extruded curve of, as
+// parameter ranges, whose projection along the extrusion onto the plane
+// n·x = d lands within the patch's length, from of to of+along. A plane
+// slanted to a lathe's cylinder meets each of its patches in an ellipse
+// arc that runs on past the patch's ends wherever the plane crosses an
+// end within the arc's sweep; that piece lies on the cylinder's
+// extension, which can pass through the solid's material (a bore's
+// extension into the wall past a step), where the Boolean kept it as a
+// trim of the plane with nothing on the other side to meet it. A curve
+// within the patch, the usual case, is one span [0, 1], left whole.
+func spansWithinExtrusion(of *SBezier, along, n geom.Vector, d float64) [][2]float64 {
+	na := n.Dot(along)
+	// How far past the patch's ends, along the extrusion from 0 at of
+	// to 1 at of+along, the curve's point at t projects to: positive
+	// outside.
+	past := func(t float64) float64 {
+		h := (d - n.Dot(of.PointAt(t))) / na
+		return max(-h, h-1)
+	}
+	const samples = 64
+	var at [samples + 1]float64
+	for k := range at {
+		at[k] = past(float64(k) / samples)
+	}
+	// A curve past an end by no more than the length tolerance is the
+	// patch's curve, as one that ends on the patch's corner.
+	if slices.Max(at[:]) <= lengthEps/along.Magnitude() {
+		return [][2]float64{{0, 1}}
+	}
+	// The parameter where the curve crosses an end, between t0 and t1
+	// on either side of it.
+	edge := func(t0, t1 float64) float64 {
+		was := past(t0) <= 0
+		for range 60 {
+			if m := (t0 + t1) / 2; past(m) <= 0 == was {
+				t0 = m
+			} else {
+				t1 = m
+			}
+		}
+		return (t0 + t1) / 2
+	}
+	// short tells whether the curve from t0 to t1 is shorter than the
+	// length tolerance.
+	short := func(t0, t1 float64) bool {
+		p := of.PointAt(t0)
+		return p.Minus(of.PointAt(t1)).Magnitude() < lengthEps &&
+			p.Minus(of.PointAt((t0+t1)/2)).Magnitude() < lengthEps
+	}
+	var spans [][2]float64
+	start, inside := 0.0, at[0] <= 0
+	for k := 1; k <= samples; k++ {
+		if now := at[k] <= 0; now != inside {
+			e := edge(float64(k-1)/samples, float64(k)/samples)
+			switch {
+			case inside:
+				spans = append(spans, [2]float64{start, e})
+			case len(spans) > 0 && short(spans[len(spans)-1][1], e):
+				// Out and back in again within the tolerance: one span.
+				start = spans[len(spans)-1][0]
+				spans = spans[:len(spans)-1]
+			default:
+				start = e
+			}
+			inside = now
+		}
+	}
+	if inside {
+		spans = append(spans, [2]float64{start, 1})
+	}
+	for i := range spans {
+		if short(0, spans[i][0]) {
+			spans[i][0] = 0
+		}
+		if short(spans[i][1], 1) {
+			spans[i][1] = 1
+		}
+	}
+	// A sliver where the curve grazes an end is no curve.
+	return slices.DeleteFunc(spans, func(sp [2]float64) bool { return short(sp[0], sp[1]) })
 }
 
 // intersectCoaxialExtrusions is IntersectAgainst's case of two

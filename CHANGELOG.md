@@ -9,6 +9,9 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+### Fixed
+- A cut with a straight side slanted to a lathed part's axis, as a triangular or teardrop window through a tube's wall, sketched in a plane through the axis and turned about it, leaves the solid sound. The tube was left open along its bore, and past a step in the bore crossed itself.
+
 ## [0.6.5] - 2026-11-13
 
 ### Fixed
