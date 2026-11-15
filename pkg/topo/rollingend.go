@@ -96,27 +96,38 @@ type rbEnd struct {
 // faces[0] and faces[1], ends at: the third face at v, whose edges with
 // the two are the only others there.
 func (t *Topology) rbEndAt(v int, faces [2]int, edge int) (*rbEnd, error) {
+	// A seam at v, between two patches of a side's face, is no edge of
+	// the solid: the side's face goes on across it, as a cylinder's
+	// quarters do under a boss centred on one of their seams. Only the
+	// patches a seam at v joins count as one: a sheet may go round to
+	// the far side of a crease at v by seams elsewhere.
 	var others []int
+	joined := map[[2]int]bool{}
 	for _, x := range t.Vertices[v].Edges {
-		if x != edge {
+		switch {
+		case t.Edges[x].Seam:
+			fs := t.EdgeFaces(x)
+			joined[[2]int{fs[0], fs[1]}], joined[[2]int{fs[1], fs[0]}] = true, true
+		case x != edge:
 			others = append(others, x)
 		}
 	}
 	if len(others) != 2 {
 		return nil, errNotRolling
 	}
+	same := func(f, g int) bool { return f == g || joined[[2]int{f, g}] }
 	end := &rbEnd{v: v, f: -1, a: [2]int{-1, -1}, face: faces, ban: [2]int{-1, -1}}
 	for k := range 2 {
 		for _, x := range others {
 			fs := t.EdgeFaces(x)
 			g := -1
 			switch {
-			case fs[0] == faces[k]:
+			case same(fs[0], faces[k]):
 				g = fs[1]
-			case fs[1] == faces[k]:
+			case same(fs[1], faces[k]):
 				g = fs[0]
 			}
-			if g < 0 || g == faces[1-k] || end.f >= 0 && g != end.f {
+			if g < 0 || same(g, faces[1-k]) || end.f >= 0 && g != end.f {
 				continue
 			}
 			end.f, end.a[k] = g, x
@@ -1154,10 +1165,12 @@ func (rb *rollingBall) closeEnd(sh *srf.SShell, cut rbEndCut, h *core.HSCurve) e
 		return filletErr(v, "the fillet's end is not a curve")
 	}
 	fs.Trim = kept
-	if cut.end.curved && (cut.goes[0] != nil || cut.goes[1] != nil) {
+	if (cut.end.curved || fs.DegM != 1 || fs.DegN != 1) && (cut.goes[0] != nil || cut.goes[1] != nil) {
 		// A curved end face grows past its edge with a side's face that
 		// goes on past it: its surface is carried on to hold the fillet's
-		// end and the side's curve on it.
+		// end and the side's curve on it. So does a flat one held as a
+		// patch of higher degree, as a wrapped band's end is: it is
+		// meshed by its parameters, which stop at its sides.
 		var pts []geom.Vector
 		for _, b := range bz {
 			pts = append(pts, b.Start(), b.PointAt(0.5), b.Finish())

@@ -231,6 +231,16 @@ one of its own radius at its other corner the same way too, not by a corner patc
 whose end lies deeper on the sharp edge takes the larger one's part. So a rim of 2, 1 and 1 mm is
 rounded all round, as OpenCASCADE rounds it.
 
+The foot of a band raised on a cylinder or a cone ([Wrap](wrap.md)) is rounded the same way, all
+of its foot edges picked together: the ball rolls outside the solid, between the face and the
+band's sides. At a corner of the band, where its sides meet at a sharp edge that stays sharp, the
+two fillets meet as at a pocket's inside corner turned inside out: carried on past the sharp edge,
+each along its own side's plane, and mitred where they cross. Where the band's outline turns the
+other way, as inside a pointed arch's tip, the two fillets lie in the wedge between the sides and
+are mitred as a lid's upright edge and bottom edge are. A band's end square to the axis is a flat
+face that grows down to the face round the fillet's end. A corner may stand on a seam of the face,
+as a band centred on a quarter of a lathed tube does: the seam is cut where the mitre meets it.
+
 An edge along a crease that fades out, as a loft's crease from a corner of its square foot up to
 where its sides meet smoothly, is rounded or chamfered up to where its faces turn by almost
 nothing, and ends there. Where the crease turns back above that, its faces meeting at an angle
@@ -313,6 +323,9 @@ These are refused with a message:
   above, fillets or chamfers, and a ridge and a valley side by side.
 - At an inside corner between two fillets between curved faces (above): a sharp edge that is
   curved, or a corner that would cross a seam of the face the two share (make them smaller).
+- At a corner of a band raised on a cylinder: a seam of the face that passes the corner less than
+  about half a millimetre away without going through it (move the band a little), and chord
+  tolerances finer than about 0.01%, where the two fillets' meshes cross at the mitre.
 - A blend whose end runs off both its faces, each onto the face past it, as a plate's foot on a
   cone cut flat beside the plate where the plate's top is low too.
 

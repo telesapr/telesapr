@@ -29,7 +29,11 @@ import (
 // instead (rollingmitre_inside.go).
 
 // concaveAt reports whether the crease at end k of the open chain is
-// concave: the face the chain ends at faces back along it.
+// concave as the ball sees it: for a convex edge, whose ball lies
+// inside the solid, the face the chain ends at faces back along it, as
+// at a pocket's inside corner; for a concave edge, whose ball lies
+// outside, it faces on past the end, as at a boss's corner round whose
+// foot the fillet runs. The two are alike turned inside out.
 func (rb *rollingBall) concaveAt(k int) bool {
 	end := rb.ends[k]
 	x, v := rb.pieces[0].Edge, rb.verts[0]
@@ -37,7 +41,7 @@ func (rb *rollingBall) concaveAt(k int) bool {
 		x, v = rb.pieces[len(rb.pieces)-1].Edge, rb.verts[len(rb.verts)-1]
 	}
 	beyond := edgeDirAt(rb.t, x, v).ScaledBy(-1)
-	return end.n.Dot(beyond) < 0
+	return (end.n.Dot(beyond) < 0) == (rb.sigma >= 0)
 }
 
 // pivotAt reports whether end k of the open chain pivots.

@@ -428,6 +428,7 @@ func (t *Topology) newChain(e int, r float64, flat bool) (*rollingBall, error) {
 			}
 			rb.ends[k] = end
 		}
+		rb.edgeTurn()
 		rb.markMitre()
 	}
 	return rb, nil
@@ -485,6 +486,115 @@ func (rb *rollingBall) turn() {
 	if d0.Dot(b.n) > 0 {
 		rb.sigma = -1
 	}
+}
+
+// splitMitreSeams splits, once for each mitre, a seam of the face both
+// its chains share that leaves the mitre's vertex under it, as where a
+// boss's corner stands on the seam between a cylinder's quarters, at the
+// point the mitre meets it: each chain's cut back then drops the piece
+// back to the vertex from its own patch of the face.
+func splitMitreSeams(sh *srf.SShell, bls []*rbBlend) error {
+	done := map[int]bool{}
+	for _, bl := range bls {
+		rb := bl.rb
+		if rb.closed {
+			continue
+		}
+		for k, end := range rb.ends {
+			if end == nil || !end.mitre || done[end.v] {
+				continue
+			}
+			arc := bl.secs[0].arc
+			if k == 1 {
+				arc = bl.secs[len(bl.secs)-1].arc
+			}
+			qs, ok := rb.mitreSeam(k, arc)
+			if !ok {
+				continue
+			}
+			done[end.v] = true
+			if err := splitNearest(sh, qs, rb.t.Vertices[end.v].P); err != nil {
+				return filletErr(qs, "the fillet's mitre doesn't meet the seam it stands on here: make it smaller")
+			}
+		}
+	}
+	return nil
+}
+
+// mitreSeam is the point where the mitre arc at end k meets the face
+// both sides share, when a seam of that face leaves the end's vertex
+// through it.
+func (rb *rollingBall) mitreSeam(k int, arc srf.BSplineCurve) (geom.Vector, bool) {
+	t := rb.t
+	end := rb.ends[k]
+	qs := arc.Ctrl[len(arc.Ctrl)-1]
+	if end.ban[1] >= 0 {
+		qs = arc.Ctrl[0]
+	}
+	for _, x := range t.Vertices[end.v].Edges {
+		if !t.Edges[x].Seam {
+			continue
+		}
+		if distanceToPolyline(qs, t.Edges[x].Points) < math.Max(rb.tol, geom.LengthEps) {
+			return qs, true
+		}
+	}
+	return geom.Vector{}, false
+}
+
+// edgeTurn sets sigma before the chain is traced, as turn does from the
+// traced edge: an open chain's creases are told apart by the side its
+// ball lies on (concaveAt). The way into either side's face from the
+// edge, found by a step that lands on that face, says it: convex where
+// it runs away from the other face's outside. It is looked for at the
+// middle of each piece and a quarter of the way from each end, until a
+// step lands; where none does, sigma stays unset.
+func (rb *rollingBall) edgeTurn() {
+	step := math.Max(1e-4*rb.r, 1e-5)
+	for _, pc := range rb.pieces {
+		pts := rb.t.Edges[pc.Edge].Points
+		n := len(pts)
+		if n < 2 {
+			continue
+		}
+		for _, i := range []int{n / 2, n / 4, 3 * n / 4} {
+			i = min(max(i, 1), n-1)
+			a, b := pts[i-1], pts[i]
+			tan := b.Minus(a)
+			if tan.Magnitude() < geom.LengthEps {
+				continue
+			}
+			p := a.Plus(b).ScaledBy(0.5)
+			f := [2]rbFoot{rb.foot(0, p), rb.foot(1, p)}
+			if s, ok := rb.turnFrom(tan, f, step); ok {
+				rb.sigma = s
+				return
+			}
+		}
+	}
+}
+
+// turnFrom is which way the edge turns where the ball's feet on its two
+// sides are f, the edge running along tan there: whether a step of step
+// from either foot, square to the edge in its face, lands on that face,
+// and if so the sign of where it goes against the other face's normal.
+func (rb *rollingBall) turnFrom(tan geom.Vector, f [2]rbFoot, step float64) (float64, bool) {
+	for k := range 2 {
+		// From the face's own point: a curved edge's chord lies off it.
+		d := tan.Cross(f[k].n).WithMagnitude(1)
+		for _, sg := range []float64{1, -1} {
+			q := f[k].p.Plus(d.ScaledBy(sg * step))
+			x := rb.foot(k, q)
+			if !rb.t.onFace(x.f, x.p) || x.p.Minus(q).Magnitude() >= 0.1*step {
+				continue
+			}
+			if d.ScaledBy(sg).Dot(f[1-k].n) > 0 {
+				return -1, true
+			}
+			return 1, true
+		}
+	}
+	return 0, false
 }
 
 // foot is the point of side k's faces nearest x. Past an open chain's
@@ -1680,6 +1790,9 @@ func putBlends(sh *srf.SShell, bls []*rbBlend, origin uint32) error {
 	if err != nil {
 		return err
 	}
+	if err := splitMitreSeams(sh, bls); err != nil {
+		return err
+	}
 	for _, i := range order {
 		var err error
 		if loops[i], err = bls[i].cutBack(sh); err != nil {
@@ -1949,6 +2062,12 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 				if q, v, err = rb.mitreCut(sh, k, arc); err != nil {
 					return nil, err
 				}
+			}
+			// A seam of the face both sides share that leaves the vertex
+			// under the mitre, cut there before (splitMitreSeams): the piece
+			// back to the vertex goes from this chain's patch of the face.
+			if qs, ok := rb.mitreSeam(k, arc); ok {
+				drop = append(drop, pair{qs, t.Vertices[end.v].P})
 			}
 			if rb.mateKinked(k) {
 				// The larger end cut the crease, at its own depth.
