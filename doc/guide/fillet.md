@@ -241,6 +241,12 @@ are mitred as a lid's upright edge and bottom edge are. A band's end square to t
 face that grows down to the face round the fillet's end. A corner may stand on a seam of the face,
 as a band centred on a quarter of a lathed tube does: the seam is cut where the mitre meets it.
 
+The edges round the band's top are rounded or chamfered all round too, picked together. A
+chamfer's distance is measured along each face: down the side, and round the curved top. Inside a
+pointed arch's tip the band's sides meet at an edge that goes in, and the two fillets or chamfers
+meet there as at a pocket's inside corner turned inside out: each is carried on past that edge,
+along its own side, and they are mitred where they cross.
+
 An edge along a crease that fades out, as a loft's crease from a corner of its square foot up to
 where its sides meet smoothly, is rounded or chamfered up to where its faces turn by almost
 nothing, and ends there. Where the crease turns back above that, its faces meeting at an angle

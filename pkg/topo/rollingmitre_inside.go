@@ -216,24 +216,33 @@ func (rb *rollingBall) insideMitreRoot(k int, h func(float64) (float64, rbSectio
 	lo, hi := -3*rb.pastR(k), zone
 	gl, _ := h(lo)
 	gh, _ := h(hi)
-	if !(gl > 0) || !(gh > 0) {
+	// A chamfer's mate is a plane, not a ball's surface: carried on past
+	// the crease, it stays above the point all the way from three radii
+	// past the vertex, so the band reaches back past where the search
+	// starts and the height only rises through zero, as round the inner
+	// apex of a band wrapped onto a tube.
+	planeBand := rb.flat && gl <= 0
+	if !(gl > 0) && !planeBand || !(gh > 0) {
 		return 0, rbSection{}, filletErr(at, "the fillet's mitre at the inside corner can't be found")
 	}
-	a, b := lo, hi
-	gr := (math.Sqrt(5) - 1) / 2
-	for b-a > mitreBandEps*rb.r {
-		x1, x2 := b-gr*(b-a), a+gr*(b-a)
-		g1, _ := h(x1)
-		g2, _ := h(x2)
-		if g1 < g2 || math.IsNaN(g2) {
-			b = x2
-		} else {
-			a = x1
+	deep := lo
+	if !planeBand {
+		a, b := lo, hi
+		gr := (math.Sqrt(5) - 1) / 2
+		for b-a > mitreBandEps*rb.r {
+			x1, x2 := b-gr*(b-a), a+gr*(b-a)
+			g1, _ := h(x1)
+			g2, _ := h(x2)
+			if g1 < g2 || math.IsNaN(g2) {
+				b = x2
+			} else {
+				a = x1
+			}
 		}
-	}
-	deep := (a + b) / 2
-	if gd, _ := h(deep); !(gd <= 0) {
-		return 0, rbSection{}, filletErr(at, "the fillet's two sides don't meet in a mitre here")
+		deep = (a + b) / 2
+		if gd, _ := h(deep); !(gd <= 0) {
+			return 0, rbSection{}, filletErr(at, "the fillet's two sides don't meet in a mitre here")
+		}
 	}
 	in, out := deep, hi
 	for out-in > 1e-12*math.Max(1, rb.length) {

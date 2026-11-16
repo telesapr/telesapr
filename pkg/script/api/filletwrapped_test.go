@@ -108,21 +108,11 @@ func TestFilletWrappedStrip(t *testing.T) {
 	}
 }
 
-// A pointed arch of a band 1 wide wrapped onto the tube, as a Gothic
-// window's moulding, its foot rounded: straight legs going on smoothly
-// into arcs, ends square at the feet, a convex crease at the outer apex
-// and a concave one at the inner, where the balls lie in a wedge and the
-// fillets meet in a mitre as a rim's do. Centred on the seam between the
-// tube's quarters, both apexes stand on it, and each mitre's foot on the
-// tube with them, where the seam is cut (splitMitreSeams); off it, the
-// seam crosses the arcs.
-func TestFilletWrappedArch(t *testing.T) {
-	if testing.Short() {
-		t.Skip("ten rolling-ball chains meeting in mitres, half a minute")
-	}
-	t.Parallel()
-	d := New()
-	face := wrappedTube(d)
+// wrappedArch embosses h on face a pointed arch of a band 1 wide, as a
+// Gothic window's moulding: legs 20 long along the tube from 10 going on
+// smoothly into arcs of radius 2a - w and 2a, about centres a either
+// side, which meet at an outer apex 20 + sqrt(3)a and an inner one.
+func wrappedArch(d *Doc, face SolidFace, h float64) Group {
 	d.Features.SketchAt(d.Origin(), V(0, 1, 0), V(1, 0, 0), "")
 	const a, w, vs, base = 5.2, 1.0, 20.0, 10.0
 	outer := vs + math.Sqrt(3)*a
@@ -164,7 +154,24 @@ func TestFilletWrappedArch(t *testing.T) {
 	arc(a, vs, 0, outer, -a, vs, true)
 	arc(-a, vs, a, vs, 0, outer, true)
 	d.Constrain.Coincident(prev, first)
-	band := d.Features.Emboss(face, 0.3, "")
+	return d.Features.Emboss(face, h, "")
+}
+
+// A pointed arch of a band 1 wide wrapped onto the tube, as a Gothic
+// window's moulding, its foot rounded: straight legs going on smoothly
+// into arcs, ends square at the feet, a convex crease at the outer apex
+// and a concave one at the inner, where the balls lie in a wedge and the
+// fillets meet in a mitre as a rim's do. Centred on the seam between the
+// tube's quarters, both apexes stand on it, and each mitre's foot on the
+// tube with them, where the seam is cut (splitMitreSeams); off it, the
+// seam crosses the arcs.
+func TestFilletWrappedArch(t *testing.T) {
+	if testing.Short() {
+		t.Skip("ten rolling-ball chains meeting in mitres, half a minute")
+	}
+	t.Parallel()
+	d := New()
+	band := wrappedArch(d, wrappedTube(d), 0.3)
 	if p := band.Problem(); p != "" {
 		t.Fatal(p)
 	}

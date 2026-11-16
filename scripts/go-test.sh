@@ -33,7 +33,7 @@ PACKAGES=${PACKAGES:-./...}
 # interface's and the scripts' checks there.
 HEAVY=${HEAVY:-TestFilletRibAllOverOracleCDT TestFilletRibAllOverOracleEarClip TestFilletRibFootFirstOracle \
 TestFilletRibFootAfterTop TestClosedLoftSweep TestSmoothLoftSweep \
-TestFilletOnOtherSolids TestChamferOnOtherSolids TestFilletOnOtherSolidsVolumes TestFilletRimMitreFine \
+TestFilletOnOtherSolids TestChamferOnOtherSolids TestFilletOnOtherSolidsVolumes TestFilletRimMitreFine TestWrappedArchTop \
 TestFilletPastSideSolidBeyond TestFilletRodThroughPlate TestFilletRodJustPastSides TestFilletPastSlantedSides \
 TestChamferRunsOffPastRoundTop TestBlendRunsOffPastRingTop TestFilletRunsOffOntoCylinder TestFilletRunsOffOntoCylinderBetween \
 TestShellDraftedInsideCornerBesideHollow TestSweepCrossesItselfFittedOrClosed \
