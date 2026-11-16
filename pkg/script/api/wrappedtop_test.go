@@ -2,6 +2,7 @@ package api
 
 import (
 	"math"
+	"strings"
 	"testing"
 )
 
@@ -109,3 +110,35 @@ func TestWrappedArchTop(t *testing.T) {
 	}
 }
 
+// A chamfer the fillet's local edit can't make on curved faces says why
+// the edit can't: the wedges it falls back on cut only edges between
+// flat faces, and that they can't is no reason. Here the cut, 0.6 down
+// the sides of a strip raised 0.3, reaches past their foot.
+func TestWrappedTopRefusalSaysWhy(t *testing.T) {
+	t.Parallel()
+	d := New()
+	face := wrappedTube(d)
+	d.Features.SketchAt(d.Origin(), V(0, 1, 0), V(1, 0, 0), "")
+	d.Sketch.Rect(d.Sketch.UV(2.5, 10), d.Sketch.UV(3.5, 40))
+	band := d.Features.Emboss(face, 0.3, "")
+	var top []SolidEdge
+	for _, e := range band.Solid().Edges() {
+		on := true
+		for _, p := range e.Points() {
+			on = on && math.Abs(math.Hypot(p.Y, p.Z)-7.6) < 1e-6
+		}
+		if on {
+			top = append(top, e)
+		}
+	}
+	if len(top) != 4 {
+		t.Fatalf("the strip's top is %d edges, want 4", len(top))
+	}
+	defer func() {
+		err, _ := recover().(error)
+		if err == nil || strings.Contains(err.Error(), "flat faces") || !strings.Contains(err.Error(), "mitre") {
+			t.Errorf("refused with %v, want the edit's reason", err)
+		}
+	}()
+	d.Features.ChamferSolid(top, 0.6, "")
+}

@@ -121,21 +121,22 @@ func (sk *Sketch) chamferTrial(solid *Group, edges []core.HEntity, solidEdges []
 		return err
 	}
 	picks := chamferPicks(segs, d2, radii, seconds)
+	var editErr error
 	if !solid.IsForcedToMesh(sk) && len(solid.RunningShell.Surface) > 0 {
-		_, err := chamferByEdit(&solid.RunningShell, picks, distance, 1<<30)
-		if err == nil {
+		_, editErr = chamferByEdit(&solid.RunningShell, picks, distance, 1<<30)
+		if editErr == nil {
 			return nil
 		}
-		if topo.RollingRefusal(err) || topo.NotClosedRefusal(err) {
+		if topo.RollingRefusal(editErr) || topo.NotClosedRefusal(editErr) {
 			// No wedge cuts there soundly (generateChamferShell).
-			return err
+			return editErr
 		}
 	}
 	var mesh srf.SMesh
 	solidMesh(solid, &mesh)
 	first, err := firstFaces(solid, segs, picks)
 	if err != nil {
-		return err
+		return editReason(err, editErr)
 	}
 	var arcs []topo.FilletPick
 	for i, seg := range segs {
@@ -144,7 +145,7 @@ func (sk *Sketch) chamferTrial(solid *Group, edges []core.HEntity, solidEdges []
 			continue
 		}
 		if _, _, err := chamferWedge(&mesh, seg, pickDistance(picks[i], distance), picks[i].D2, first[i]); err != nil {
-			return err
+			return editReason(err, editErr)
 		}
 	}
 	if len(arcs) > 0 {
@@ -158,6 +159,22 @@ func (sk *Sketch) chamferTrial(solid *Group, edges []core.HEntity, solidEdges []
 		}
 	}
 	return nil
+}
+
+// errEdgeNotFlat is why a wedge can't cut an edge: it doesn't lie
+// between two flat faces. A wedge is the fallback of the fillet's local
+// edit, which cuts edges between curved faces too, so where the edit
+// failed first its reason is the one given (editReason).
+var errEdgeNotFlat = errors.New("not an edge between two flat faces of the solid")
+
+// editReason is the error a wedge's err stands for: the local edit's,
+// when the edit failed and the wedge fails only because the edge isn't
+// between flat faces, which says nothing of why the edit did.
+func editReason(err, edit error) error {
+	if edit != nil && errors.Is(err, errEdgeNotFlat) {
+		return edit
+	}
+	return err
 }
 
 // chamferSegment is an edge a chamfer cuts or a fillet rounds: a
@@ -198,7 +215,7 @@ func firstFaces(solid *Group, segs []chamferSegment, picks []topo.FilletPick) ([
 		}
 		n, ok := tp.FirstFaceNormal(seg.a, seg.b)
 		if !ok {
-			return nil, fmt.Errorf("%s is not an edge between two flat faces of the solid", seg.label)
+			return nil, fmt.Errorf("%s is %w", seg.label, errEdgeNotFlat)
 		}
 		out[i] = n
 	}
@@ -325,8 +342,7 @@ func chamferWedge(mesh *srf.SMesh, seg chamferSegment, d, d2 float64, first geom
 	ed := b.Minus(a).ScaledBy(1 / length)
 	normals := edgeFaceNormals(mesh, a, b)
 	if len(normals) != 2 {
-		return tri, along, fmt.Errorf("%s is not an edge between two flat faces of the solid (it touches %d)",
-			seg.label, len(normals))
+		return tri, along, fmt.Errorf("%s is %w (it touches %d)", seg.label, errEdgeNotFlat, len(normals))
 	}
 	n1, n2 := normals[0], normals[1]
 	// w1 is off plane 1 and in plane 2, w2 the other way round, so
@@ -466,10 +482,23 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 	// at a corner where a concave edge meets the cut, and on a solid
 	// forced to a mesh, which has no faces to edit, straight edges are
 	// cut by wedges and a Boolean, as before.
+	// failed is the problem a wedge's err gives, with where it is: the
+	// edit's own when the wedge only says the edge isn't between flat faces.
+	var editErr error
+	failed := func(err error, at *geom.Vector) {
+		if editErr != nil && errors.Is(err, errEdgeNotFlat) {
+			err, at = editErr, nil
+			if fe, ok := errors.AsType[*topo.FilletError](err); ok {
+				at = &fe.At
+			}
+		}
+		g.setProblem(at, "%v", err)
+	}
 	if !prev.IsForcedToMesh(sk) && len(prev.RunningShell.Surface) > 0 {
 		giveBack := sk.lendPace(&prev.RunningShell)
 		sh, err := chamferByEdit(&prev.RunningShell, picks, d, srf.OriginFor(g.H.V, 0))
 		giveBack()
+		editErr = err
 		if err == nil {
 			g.RunningShell = sh
 			g.ThisShell.MakeFromCopyOf(&sh)
@@ -491,7 +520,7 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 	}
 	first, err := firstFaces(prev, segs, picks)
 	if err != nil {
-		g.setProblem(nil, "%v", err)
+		failed(err, nil)
 		return false
 	}
 	var arcs []topo.FilletPick
@@ -512,7 +541,7 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 		tri, along, err := chamferWedge(&mesh, seg, pickDistance(pickOf[i], d), pickOf[i].D2, firstOf[i])
 		if err != nil {
 			m := seg.a.Plus(seg.b).ScaledBy(0.5)
-			g.setProblem(&m, "%v", err)
+			failed(err, &m)
 			return false
 		}
 		w := srf.SShell{Tol: sk.tol}

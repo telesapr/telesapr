@@ -64,9 +64,9 @@ func TestSolidFeatures(t *testing.T) {
 		t.Fatalf("the reflection alone: %s", r.String())
 	}
 	// The chamfer's edge has gone with the original: the chamfer says
-	// so, and cuts nothing.
+	// so, in the words of the edit that looked for it, and cuts nothing.
 	d.Activate(c)
-	if v := c.Analyze().Volume(); math.Abs(v-1000) > 1e-6 || !strings.Contains(c.Problem(), "not an edge") {
+	if v := c.Analyze().Volume(); math.Abs(v-1000) > 1e-6 || !strings.Contains(c.Problem(), "no edge of the solid runs there") {
 		t.Fatalf("the chamfer after the mirror leaves %g, problem %q", v, c.Problem())
 	}
 }

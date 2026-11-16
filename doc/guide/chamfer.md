@@ -210,4 +210,5 @@ In a script, `Solid` gives a group's faces, edges and vertices. `Edge(name)`, `E
 - A chamfer of two distances can't take circular edges that meet other chamfered edges at a
   corner.
 - Where the edit that cuts a chamfer can't make a corner, as where a concave edge meets the cut,
-  the chamfer falls back to a wedge and a Boolean. That fallback takes convex edges only.
+  the chamfer falls back to a wedge and a Boolean. That fallback takes convex edges between flat
+  faces only. Where it can't cut an edge either, the group gives the reason the edit couldn't.
