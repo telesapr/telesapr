@@ -321,9 +321,12 @@ func TestConsoleLayout(t *testing.T) {
 		c.Print(platform.ConsoleOutput, fmt.Sprintf("line %d\n", i))
 	}
 	// The layout takes as many event-loop passes as the machine gives it,
-	// so the test waits for panes with a height and a scrolled view, and
-	// the checks below say what is wrong if they never come.
+	// so the test waits for panes shared out and a scrolled view, and
+	// the checks below say what is wrong if they never come. On a loaded
+	// machine the view could be scrolled while the grid had not yet
+	// shared the height out, what is typed holding nearly all of it.
 	var share, first, last float64
+	shared := func() bool { return share >= 0.17 && share <= 0.23 }
 	runWaiting(t, p, step{
 		do: func() {},
 		done: func() bool {
@@ -333,10 +336,10 @@ func TestConsoleLayout(t *testing.T) {
 			}
 			share = float64(in) / float64(in+lg)
 			first, last = c.scroll.First, c.scroll.Last
-			return last >= 0.99 && last-first >= 0.1
+			return shared() && last >= 0.99 && last-first >= 0.1
 		},
 	})
-	if share < 0.17 || share > 0.23 {
+	if !shared() {
 		t.Errorf("what is typed has %.2f of the height, want 0.2", share)
 	}
 	// Scrolled past its end, the view would hold the last line alone.
