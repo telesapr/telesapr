@@ -107,6 +107,33 @@ func (ss *Application) pollShellJob() {
 	}
 }
 
+// settleShells puts in the solids a scheduled regeneration left to a
+// job, before a script reads them: a script's steps let the event loop
+// regenerate between them, so a solid read just after a group is added
+// would otherwise be the one before it, empty for a new feature, while
+// the job runs. It waits for the job, and makes on the thread what a
+// stopped job left out of date.
+func (ss *Application) settleShells() {
+	sj := &ss.shellJobs
+	for sj.job != nil {
+		job := <-sj.done
+		if job != sj.job {
+			continue // a job stopped for a later one
+		}
+		sj.job, sj.late = nil, false
+		if ss.SK.Apply(job) {
+			ss.afterGenerate()
+			ss.ScheduleShowTW()
+		}
+	}
+	if ss.SK.AnyShellsStale() {
+		ss.SK.MakeStaleShells()
+		ss.afterGenerate()
+		ss.ScheduleShowTW()
+	}
+	ss.UpdateWindowTitles()
+}
+
 // stopShellJob stops the running job, if there is one, and reports
 // whether there was.
 func (ss *Application) stopShellJob() bool {

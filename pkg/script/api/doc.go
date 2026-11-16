@@ -148,7 +148,9 @@ func fail(format string, args ...any) {
 // read runs fn on the sketch, regenerated if it was changed since.
 func (d *Doc) read(fn func(sk *sketch.Sketch)) {
 	d.h.Run(func() {
-		if d.h.Sketch().RegenerationPending() {
+		// A host that makes solids off its thread (the window's) may
+		// have left them out of date: Regenerate puts them in.
+		if sk := d.h.Sketch(); sk.RegenerationPending() || sk.AnyShellsStale() {
 			d.h.Regenerate()
 		}
 		fn(d.h.Sketch())

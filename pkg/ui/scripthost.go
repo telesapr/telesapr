@@ -198,13 +198,18 @@ func (h *ScriptHost) Rollback() bool {
 }
 
 // Regenerate does now the regeneration that the event loop would get
-// to after the script.
+// to after the script, and puts in the solids a job of the event loop's
+// is making (settleShells): a script reads the model as a regeneration
+// in full on the thread makes it.
 func (h *ScriptHost) Regenerate() {
 	ss := h.ss
 	if ss.SK.RegenerationPending() {
 		ss.scheduledGenerateAll = false
 		ss.SK.Refresh()
 		ss.afterGenerate()
+	}
+	if ss.shellJobs.job != nil || ss.SK.AnyShellsStale() {
+		ss.settleShells()
 	}
 }
 

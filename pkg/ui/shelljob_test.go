@@ -68,3 +68,38 @@ func TestBackgroundShells(t *testing.T) {
 		t.Error("a stopped job's solid isn't out of date")
 	}
 }
+
+// A script's read of a solid while a job is making it, as when the
+// event loop regenerated between two of its steps, gets the solid the
+// job makes, not the one before (empty for a feature just added); one
+// a stopped job left out of date is made on the thread.
+func TestScriptReadsSettleShells(t *testing.T) {
+	t.Parallel()
+	ss, _ := newTestApp(t)
+	ss.BackgroundShells = true
+	doc := api.NewDoc(ss.ScriptHost())
+	sides := doc.Sketch.Rect(api.V(0, 0, 0), api.V(20, 10, 0))
+	width := doc.Constrain.Length(sides[0], 20)
+	block := doc.Features.Extrude(10, "")
+	for _, c := range []struct {
+		width float64
+		stop  bool
+	}{{30, false}, {40, true}} {
+		k := ss.SK.Constraint(width.H)
+		k.ValA = c.width
+		ss.SK.MarkGroupDirty(k.Group, false)
+		ss.Refresh()
+		if c.stop && !ss.stopShellJob() {
+			t.Fatal("no job to stop")
+		}
+		if !ss.SK.Group(block.H).ShellsStale {
+			t.Fatal("the solid isn't left to a job")
+		}
+		if v := block.Analyze().Check().Volume; math.Abs(v-100*c.width) > 1e-6 {
+			t.Errorf("width %g (job stopped %v): volume %g, want %g", c.width, c.stop, v, 100*c.width)
+		}
+		if ss.shellJobs.job != nil || ss.SK.AnyShellsStale() {
+			t.Errorf("width %g: a job or a stale solid is left after the read", c.width)
+		}
+	}
+}

@@ -46,6 +46,9 @@ may be closed and opened again in the middle of a conversation.
   in plain words, and the text of the statement that failed. A script you stop (Script > Stop)
   takes the interpreter's variables with it; the model is told that too, and defines them again.
 - **Script > Stop** stops a script that is running.
+- The window makes a solid in the background after a change, while you go on working. A script
+  that reads a solid (its volume, its check, its problem, its faces and edges) waits until the
+  window has made it, so it never reads the one from before the change.
 - A long script is not silent while it runs. A client that shows progress is told which group a
   regeneration has reached ("regenerating g007-plate, 3 of 12") and the last line the script
   printed. A client that shows the server's log messages gets each line the script prints as it

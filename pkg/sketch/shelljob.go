@@ -33,6 +33,25 @@ func (sk *Sketch) AnyShellsStale() bool {
 	return false
 }
 
+// MakeStaleShells makes, on the goroutine that owns the sketch, the
+// solids a regeneration with DeferShells left out of date and no job
+// put in, as one stopped with Esc leaves them: what reads a solid for a
+// script must find the one the model makes, not the one before.
+func (sk *Sketch) MakeStaleShells() {
+	sk.orderGroups()
+	stale := false
+	for _, h := range sk.GroupOrder {
+		g := sk.Group(h)
+		stale = stale || g.ShellsStale
+		if stale {
+			g.Clean = false
+		}
+	}
+	if stale {
+		sk.generateAll(GenerateDirty, false, passBuild)
+	}
+}
+
 // NewShellJob copies what defines the sketch, for a job to regenerate.
 // It is called on the goroutine that owns the sketch.
 func (sk *Sketch) NewShellJob() *ShellJob {

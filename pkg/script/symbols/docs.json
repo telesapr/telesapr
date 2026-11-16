@@ -8632,6 +8632,10 @@
 						"decl": "func (sk *Sketch) MakeSplinePeriodic(he core.HEntity) error",
 						"text": "MakeSplinePeriodic closes the open cubic spline that entity he belongs to into a periodic one: its two ends become one, and the control points beside them are let go of, which the window does when a click lands on the spline's first point again while a point is being placed."
 					},
+					"MakeStaleShells": {
+						"decl": "func (sk *Sketch) MakeStaleShells()",
+						"text": "MakeStaleShells makes, on the goroutine that owns the sketch, the solids a regeneration with DeferShells left out of date and no job put in, as one stopped with Esc leaves them: what reads a solid for a script must find the one the model makes, not the one before."
+					},
 					"MakeTangentArc": {
 						"decl": "func (sk *Sketch) MakeTangentArc(hpt core.HEntity, settings TangentArcSettings) error",
 						"text": "MakeTangentArc rounds the corner at point hpt, where two non-construction line segments or arcs join, with a tangent arc."
