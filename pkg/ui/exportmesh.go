@@ -74,6 +74,6 @@ func (ss *Application) menuExportMesh() {
 	}
 	ss.takeExportMeshForm(v)
 	if filename, ok := ss.exportDialog(platform.MeshFileFilters, "ExportMesh"); ok {
-		ss.Report(ss.ExportMeshTo(filename))
+		ss.reportWithProgress(filename, func() error { return ss.ExportMeshTo(filename) })
 	}
 }

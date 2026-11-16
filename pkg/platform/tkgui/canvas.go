@@ -153,10 +153,24 @@ func (c *canvas) invalidate() {
 		if c.Destroyed() || c.Win.Width <= 1 || c.Win.Height <= 1 {
 			return
 		}
-		if c.w.events.OnRender != nil {
-			c.w.events.OnRender()
+		if c.w.events.OnRender == nil {
+			return
 		}
+		// While a progress window's work runs the model is half made:
+		// the frame on screen stays, and the render waits.
+		if pw := c.w.p.progress; pw != nil && pw.working {
+			c.w.p.held = append(c.w.p.held, c.invalidate)
+			return
+		}
+		c.w.events.OnRender()
 	})
+}
+
+// keepsGLFrame reports whether a GL canvas repaints from the copy of
+// its frame it kept as a progress window came up (canvas.presentGL).
+func (c *canvas) keepsGLFrame() bool {
+	pw := c.w.p.progress
+	return pw != nil && pw.working && c.frame != nil
 }
 
 // present shows a frame and keeps it for exposures. Only the rectangle
@@ -234,9 +248,10 @@ func changedRect(prev, next []byte, width, height int) (x0, y0, x1, y1 int, ok b
 }
 
 // blit copies the whole frame to the window.
-// With GL, whose back buffer is gone after a swap, it renders anew.
+// With GL, whose back buffer is gone after a swap, it renders anew,
+// unless a progress window's work runs and a copy was kept.
 func (c *canvas) blit() {
-	if c.glr != nil {
+	if c.glr != nil && !c.keepsGLFrame() {
 		c.invalidate()
 		return
 	}

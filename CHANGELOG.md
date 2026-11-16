@@ -9,6 +9,9 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+### Added
+- Opening a file and exporting one show a progress window: the file being read, each group as it is regenerated with a bar for how far it has got, then the file being written. The dialogs that chose the file and its options close before it comes up, and it closes when the work is done. The window used to stop drawing until the end, so the file dialog stayed painted over it and the program looked hung. In the browser the busy box shows the same, with a bar.
+
 ### Changed
 - The way a revolve turns is written down, in `Features.Revolve`'s help, the guide and the primer an AI model reads: a positive angle turns the other way to the right-hand rule about the axis line, from its first point to its second. A band revolved from a pocket's edge over MCP went the other way, stayed inside the wall and added nothing, which read as a Boolean that failed silently.
 

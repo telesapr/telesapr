@@ -1009,16 +1009,25 @@ function onKey(cb) {
 // page so that clicks and keys don't pile up behind it, and idle takes it
 // away.
 let busyEl = null;
-function busy(text) {
+// A fraction from 0 to 1 shows a bar that far along; one below 0, as
+// while a regeneration only says how long it has taken, shows none.
+function busy(text, fraction) {
 	if (!busyEl) {
 		busyEl = h("div", "t-busy");
-		busyEl.append(h("div", "t-busy-box"));
+		const box = h("div", "t-busy-box");
+		box.append(h("div", "t-busy-text"), h("div", "t-busy-bar"));
+		box.lastChild.append(h("div", "t-busy-fill"));
+		busyEl.append(box);
 		busyEl.addEventListener("pointerdown", (e) => e.preventDefault());
 		busyEl.addEventListener("wheel", (e) => e.preventDefault(), { passive: false });
 		busyEl.addEventListener("contextmenu", (e) => e.preventDefault());
 		doc.body.append(busyEl);
 	}
-	busyEl.firstChild.textContent = text;
+	const box = busyEl.firstChild;
+	box.firstChild.textContent = text;
+	const bar = box.lastChild;
+	bar.style.display = fraction === undefined || fraction < 0 ? "none" : "";
+	bar.firstChild.style.width = `${Math.round(100 * Math.min(Math.max(fraction ?? 0, 0), 1))}%`;
 }
 function idle() {
 	if (busyEl) { busyEl.remove(); busyEl = null; }

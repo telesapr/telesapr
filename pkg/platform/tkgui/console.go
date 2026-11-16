@@ -32,9 +32,9 @@ var (
 	_ platform.Console     = (*Console)(nil)
 )
 
-// PostToLoop has fn run on the event loop's goroutine; it may be
-// called from any goroutine.
-func (p *Platform) PostToLoop(fn func()) { p.app.RunOnMain(fn) }
+// PostToLoop has fn run on the event loop's goroutine, once no progress
+// window is up; it may be called from any goroutine.
+func (p *Platform) PostToLoop(fn func()) { p.app.RunOnMain(func() { p.runOrHold(fn) }) }
 
 // LoopDone is closed once the event loop was told to stop.
 func (p *Platform) LoopDone() <-chan struct{} { return p.app.Done() }
@@ -110,7 +110,7 @@ func (p *Platform) CreateConsole(platform.Window) platform.Console {
 	setWindowIcon(c.frame.topWin)
 	p.app.RegisterCloseHandler(c.frame.topWin.PlatformID, func() {
 		if c.events.OnClose != nil {
-			c.events.OnClose()
+			p.runOrHold(c.events.OnClose)
 		}
 	})
 	dark := widget.PaletteFor(p.app).Dark

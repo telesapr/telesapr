@@ -30,6 +30,14 @@ type Platform struct {
 	// The pointer's last position on the screen, where a popup menu
 	// opens.
 	pointerX, pointerY int
+
+	// The progress window up, if one is, and what waits for it to
+	// close (progress.go).
+	progress *progressWindow
+	held     []func()
+	// windows are the windows made, whose GL frames a progress window
+	// keeps copies of.
+	windows []*Window
 }
 
 var _ platform.Platform = (*Platform)(nil)
@@ -91,21 +99,32 @@ type Timer struct {
 	p         *Platform
 	onTimeout func()
 	cancel    func() bool
+	// gen counts the starts, so that a timeout held past a restart
+	// doesn't fire as well as the restarted one.
+	gen int
 }
 
 // SetOnTimeout sets what runs when the timer fires.
 func (t *Timer) SetOnTimeout(fn func()) { t.onTimeout = fn }
 
-// RunAfter (re)starts the timer.
+// RunAfter (re)starts the timer. A timeout while a progress window is
+// up waits for it to close, unless the timer is started again first.
 func (t *Timer) RunAfter(ms int) {
 	if t.cancel != nil {
 		t.cancel()
 	}
+	t.gen++
+	gen := t.gen
 	t.cancel = t.p.app.After(time.Duration(ms)*time.Millisecond, func() {
-		t.cancel = nil
-		if t.onTimeout != nil {
-			t.onTimeout()
-		}
+		t.p.runOrHold(func() {
+			if gen != t.gen {
+				return
+			}
+			t.cancel = nil
+			if t.onTimeout != nil {
+				t.onTimeout()
+			}
+		})
 	})
 }
 

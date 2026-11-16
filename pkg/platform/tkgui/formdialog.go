@@ -122,6 +122,7 @@ func (f *formField) set(v string) {
 // RunModal shows the form, with the rows packed from the top: a label
 // and the field's widgets side by side.
 func (d *FormDialog) RunModal() (platform.FormValues, bool) {
+	defer d.p.progressAside()()
 	title := d.title
 	if title == "" {
 		title = "Options"

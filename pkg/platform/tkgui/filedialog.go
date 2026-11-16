@@ -134,6 +134,7 @@ func fileStem(path string) string {
 // adds that filter's extension to a name typed without one and asks
 // before an existing file is replaced.
 func (d *FileDialog) RunModal() bool {
+	defer d.p.progressAside()()
 	if d.filter < 0 || d.filter >= len(d.filters) {
 		d.filter = 0
 	}

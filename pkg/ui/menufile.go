@@ -58,9 +58,18 @@ func errorStrings[E error](errs []E) []string {
 // LoadAutosaveFor offers to load filename's autosave file instead, and
 // loads it when the user agrees; loaded says whether it did.
 func (ss *Application) LoadAutosaveFor(filename string) (loaded bool, err error) {
+	if !ss.autosaveWanted(filename) {
+		return false, nil
+	}
+	return ss.loadAutosave(filename)
+}
+
+// autosaveWanted reports whether filename has an autosave file and the
+// user would rather load that.
+func (ss *Application) autosaveWanted(filename string) bool {
 	autosaveFile := withExtension(filename, backupExt)
 	if _, err := os.Stat(autosaveFile); err != nil {
-		return false, nil //nolint:nilerr // without an autosave there is nothing to load
+		return false
 	}
 
 	dialog := ss.Platform.CreateMessageDialog(ss.GW.window)
@@ -70,26 +79,43 @@ func (ss *Application) LoadAutosaveFor(filename string) (loaded bool, err error)
 	dialog.SetDescription("Do you want to load the autosave file instead?")
 	dialog.AddButton("&Load autosave", platform.ResponseYes, true)
 	dialog.AddButton("Do&n't Load", platform.ResponseNo, false)
+	return dialog.RunModal() == platform.ResponseYes
+}
 
-	if dialog.RunModal() == platform.ResponseYes {
-		if err := ss.LoadFromFile(autosaveFile); err != nil {
-			return false, err
-		}
-		ss.SK.Unsaved = true
-		return true, nil
+// loadAutosave loads filename's autosave file; loaded says whether it
+// did.
+func (ss *Application) loadAutosave(filename string) (loaded bool, err error) {
+	if err := ss.LoadFromFile(withExtension(filename, backupExt)); err != nil {
+		return false, err
 	}
-	return false, nil
+	ss.SK.Unsaved = true
+	return true, nil
 }
 
 // Load opens filename, or its autosave, as the sketch being edited; a
 // file that can't be read leaves a new sketch, and the error says why.
+// Once the user has answered whether to take the autosave, a progress
+// window shows the reading and the regeneration.
 func (ss *Application) Load(filename string) error {
 	// The links of the sketch are relative to the file it is read from,
 	// and reading it reads them, so the name is put in place before,
 	// not after: what reads them again while the sketch is being set up
 	// must know the file to read them relative to.
 	ss.SaveFile = filename
-	autosaveLoaded, err := ss.LoadAutosaveFor(filename)
+	useAutosave := ss.autosaveWanted(filename)
+	var err error
+	ss.withProgress(fileTitle("Opening", filename), func() { err = ss.load(filename, useAutosave) })
+	return err
+}
+
+// load is Load once the user has chosen whether to take the autosave.
+func (ss *Application) load(filename string, useAutosave bool) error {
+	ss.progressPhase("Reading " + filepath.Base(filename))
+	autosaveLoaded := false
+	var err error
+	if useAutosave {
+		autosaveLoaded, err = ss.loadAutosave(filename)
+	}
 	if !autosaveLoaded {
 		ss.Report(err)
 		err = ss.LoadFromFile(filename)
@@ -443,6 +469,14 @@ func (ss *Application) exportDialog(filters []platform.FileFilter, key string) (
 	return dialog.Filename(), true
 }
 
+// reportWithProgress runs export, which writes filename, with a
+// progress window up, then reports its error.
+func (ss *Application) reportWithProgress(filename string, export func() error) {
+	var err error
+	ss.withProgress(fileTitle("Exporting", filename), func() { err = export() })
+	ss.Report(err)
+}
+
 // menuExport runs the File menu's export and import commands.
 func (ss *Application) menuExport(id Command) {
 	switch id {
@@ -456,12 +490,12 @@ func (ss *Application) menuExport(id Command) {
 
 	case cmdExportWireframe:
 		if filename, ok := ss.exportDialog(platform.Vector3dFileFilters, "ExportWireframe"); ok {
-			ss.Report(ss.ExportViewOrWireframeTo(filename, true))
+			ss.reportWithProgress(filename, func() error { return ss.ExportViewOrWireframeTo(filename, true) })
 		}
 
 	case cmdExportSection:
 		if filename, ok := ss.exportDialog(platform.VectorFileFilters, "ExportSection"); ok {
-			ss.Report(ss.ExportSectionTo(filename))
+			ss.reportWithProgress(filename, func() error { return ss.ExportSectionTo(filename) })
 		}
 
 	case cmdExportMesh:
@@ -469,12 +503,12 @@ func (ss *Application) menuExport(id Command) {
 
 	case cmdExportSurfaces:
 		if filename, ok := ss.exportDialog(platform.SurfaceFileFilters, "ExportSurfaces"); ok {
-			ss.Report(ss.ExportSurfacesTo(filename))
+			ss.reportWithProgress(filename, func() error { return ss.ExportSurfacesTo(filename) })
 		}
 
 	case cmdExportScript:
 		if filename, ok := ss.exportDialog(platform.ScriptFileFilters, "ExportScript"); ok {
-			ss.Report(ss.ExportScriptTo(filename))
+			ss.reportWithProgress(filename, func() error { return ss.ExportScriptTo(filename) })
 		}
 
 	case cmdImport:
@@ -501,7 +535,7 @@ func (ss *Application) menuExportView() {
 			"text window.")
 	}
 
-	ss.Report(ss.ExportViewOrWireframeTo(filename, false))
+	ss.reportWithProgress(filename, func() error { return ss.ExportViewOrWireframeTo(filename, false) })
 }
 
 // menuImport runs the File menu's cmdImport.
@@ -520,9 +554,15 @@ func (ss *Application) menuImport() {
 	importFile := dialog.Filename()
 	switch {
 	case hasExtension(importFile, "dxf"):
-		ss.ImportDxf(importFile)
+		ss.withProgress(fileTitle("Importing", importFile), func() {
+			ss.ImportDxf(importFile)
+			ss.GenerateAll(sketch.GenerateUntilActive)
+		})
 	case hasExtension(importFile, "dwg"):
-		ss.ImportDwg(importFile)
+		ss.withProgress(fileTitle("Importing", importFile), func() {
+			ss.ImportDwg(importFile)
+			ss.GenerateAll(sketch.GenerateUntilActive)
+		})
 	case hasExtension(importFile, "slvs"):
 		// A whole model: it replaces the sketch.
 		ss.Report(ss.ImportSolveSpace(importFile))
@@ -532,7 +572,5 @@ func (ss *Application) menuImport() {
 			"filename '%s'; try .dxf, .dwg or .slvs.", importFile)
 		return
 	}
-
-	ss.GenerateAll(sketch.GenerateUntilActive)
 	ss.ScheduleShowTW()
 }

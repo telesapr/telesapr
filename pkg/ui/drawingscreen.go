@@ -48,7 +48,9 @@ func (ss *Application) MenuExportDrawing() {
 	if d == nil {
 		d = sketch.DefaultDrawing()
 	}
-	if err := ss.ExportDrawingTo(dialog.Filename(), d); err != nil {
+	var err error
+	ss.withProgress(fileTitle("Exporting", dialog.Filename()), func() { err = ss.ExportDrawingTo(dialog.Filename(), d) })
+	if err != nil {
 		ss.Error("Can't export the drawing: %s.", err.Error())
 	}
 }

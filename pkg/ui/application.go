@@ -101,6 +101,9 @@ type Application struct {
 	// a regeneration begins (ScriptHost.WatchRegeneration); it is set
 	// on the script's goroutine and read on the loop's.
 	regenWatch atomic.Pointer[func(group string, before, total int)]
+	// progress is the progress window of the file being opened or
+	// exported, while one is (progress.go).
+	progress platform.Progress
 	// console is the window scripts are typed in, see Console.
 	console *ScriptConsole
 	// ScriptHistory is the file what is typed in the console is kept

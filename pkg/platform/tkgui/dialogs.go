@@ -82,6 +82,7 @@ func (d *MessageDialog) AddButton(label string, r platform.Response, isDefault b
 // description) over the description, both wrapped and left-aligned,
 // and the buttons at the right.
 func (d *MessageDialog) RunModal() platform.Response {
+	defer d.p.progressAside()()
 	title := d.title
 	if title == "" {
 		title = "Message"

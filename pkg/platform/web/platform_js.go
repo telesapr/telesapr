@@ -56,6 +56,8 @@ type Platform struct {
 	stats      RenderStats
 	// busy times the work the loop is doing (busy.go).
 	busy busyClock
+	// progress is the progress shown, if one is (progress_js.go).
+	progress *progress
 }
 
 var (
@@ -143,9 +145,16 @@ func (p *Platform) Yield() {
 	if !yield {
 		return
 	}
-	if text != "" {
-		p.w.Call("busy", text)
+	// A progress shown says more than how long the work has taken.
+	if text != "" && p.progress == nil {
+		p.w.Call("busy", text, -1)
 	}
+	p.waitFrame()
+}
+
+// waitFrame waits for the page to draw a frame: the goroutine that waits
+// leaves the page's only thread to the browser.
+func (p *Platform) waitFrame() {
 	frame := make(chan struct{})
 	var f js.Func
 	f = js.FuncOf(func(js.Value, []js.Value) any {

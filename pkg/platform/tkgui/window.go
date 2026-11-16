@@ -88,8 +88,10 @@ func (p *Platform) CreateWindow(kind platform.WindowKind, parent platform.Window
 	// the default scene background rather than white.
 	w.topWin.SetBackgroundPixel(0)
 	p.app.RegisterCloseHandler(w.topWin.PlatformID, func() {
+		// Closing the main window quits, which must wait for the
+		// operation a progress window shows to end.
 		if w.events.OnClose != nil {
-			w.events.OnClose()
+			p.runOrHold(w.events.OnClose)
 		}
 	})
 	p.app.Dispatcher().Bind(w.topWin.PlatformID, event.StructureNotifyMask, func(ev *event.Event) {
@@ -107,6 +109,7 @@ func (p *Platform) CreateWindow(kind platform.WindowKind, parent platform.Window
 	w.canvas = newCanvas(w)
 	w.scrollbar = newScrollbar(w)
 	w.layout()
+	p.windows = append(p.windows, w)
 	return w
 }
 
@@ -174,6 +177,11 @@ func (w *Window) present() {
 	d := w.p.app.Server()
 	id := w.topWin.PlatformID
 	d.RaiseWindow(id)
+	// A window shown while a progress window is up, as the main window
+	// is when a file opens at startup, goes under it.
+	if pw := w.p.progress; pw != nil {
+		d.RaiseWindow(pw.top.Window().PlatformID)
+	}
 	if hasWindowManager(w.topWin) {
 		// Source 1: an application's request; timestamp 0: none.
 		d.SendClientMessage(id, d.DefaultRootWindow(),

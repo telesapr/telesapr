@@ -34,6 +34,8 @@ type Platform struct {
 	// them.
 	FormResponses []FormResponse
 	FormsShown    []*FormDialog
+	// ProgressShown records the progress windows shown (progress.go).
+	ProgressShown []*Progress
 	Fonts         []string
 	OpenedURLs    []string
 	ExitRequests  int

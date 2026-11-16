@@ -116,3 +116,5 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--t-bg);
 
 .t-busy { position: fixed; inset: 0; z-index: 3500; cursor: progress; display: flex; justify-content: center; align-items: flex-start; }
 .t-busy-box { margin-top: 64px; padding: 8px 16px; border-radius: 6px; background: var(--t-panel); color: var(--t-fg); border: 1px solid var(--t-line); box-shadow: 0 2px 12px rgba(0,0,0,.3); font-size: 14px; }
+.t-busy-bar { margin-top: 8px; width: 320px; height: 6px; border-radius: 3px; background: var(--t-line); overflow: hidden; }
+.t-busy-fill { height: 100%; width: 0; background: var(--t-fg); }

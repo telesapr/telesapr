@@ -305,6 +305,7 @@ func (ss *Application) ExportViewOrWireframeTo(filename string, exportWireframe 
 
 	ss.EnterExportMode()
 	ss.GenerateAll(sketch.GenerateAll)
+	ss.progressPhase("Writing " + filepath.Base(filename))
 
 	var sm *srf.SMesh
 	if gw.showShaded || gw.drawOccludedAs != occludedVisible {
@@ -732,6 +733,7 @@ func (ss *Application) ExportMeshTo(filename string) error {
 			return err
 		}
 	}
+	ss.progressPhase("Writing " + filepath.Base(filename))
 	f, err := os.Create(filename)
 	if err != nil {
 		return fmt.Errorf("couldn't write to '%s'", filename)
@@ -797,6 +799,7 @@ func (ss *Application) ExportAsPngTo(filename string) {
 // ExportSurfacesTo writes the active group's shell as STEP.
 func (ss *Application) ExportSurfacesTo(filename string) error {
 	g := ss.SK.Group(ss.GW.activeGroupH())
+	ss.progressPhase("Writing " + filepath.Base(filename))
 	var out bytes.Buffer
 	if err := export.WriteStep(&out, ss.SK, g, ss.exportOptions()); err != nil {
 		return err

@@ -55,6 +55,12 @@ func (c *canvas) presentGL() {
 	if c.Destroyed() || c.Win.PlatformID == 0 {
 		return
 	}
+	// A frame rendered as a progress window comes up is the last one
+	// before the work: kept, the window repaints from it as in software
+	// (canvas.blit), since its render must wait for the work to end.
+	if pw := c.w.p.progress; pw != nil && !pw.working {
+		c.frame, c.shown = c.glr.ReadFrame(), nil
+	}
 	c.glCtx.SwapBuffers()
 }
 

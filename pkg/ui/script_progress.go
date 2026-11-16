@@ -15,11 +15,12 @@ var (
 )
 
 // Regenerating passes on the group a regeneration begins to whoever
-// watches, if anyone does.
+// watches, if anyone does, and to the progress window, if one is up.
 func (h appHooks) Regenerating(g *sketch.Group, before, total int) {
 	if fn := h.ss.regenWatch.Load(); fn != nil {
 		(*fn)(g.DescriptionString(), before, total)
 	}
+	h.ss.progressRegenerating(g.DescriptionString(), before, total)
 }
 
 // WatchRegeneration has fn told, on the event loop's goroutine, each

@@ -114,6 +114,18 @@ ignored, err := doc.File.ImportDXF("plate.dxf")
 
 STEP, STL and OBJ files are linked rather than imported: see [STEP links](step-links.md).
 
+## While a file opens or is written
+
+Opening a large model, or exporting one, takes a while. Once you have chosen the file and its
+options, those dialogs close and a small window shows what is being done: the file being read,
+then each group as it is regenerated, with a bar for how far it has got, then the file being
+written. It closes when the work is done. Meanwhile the program takes no clicks or keys. A
+question the work has to ask, such as where a missing linked file is, comes up in its place.
+In the browser the same shows in a box over the page.
+
+This is so for File > Open and Open Recent, a file named on the command line, File > Import and
+every entry of File > Export but Image. A script's `File.Load` and `File.Export` show no window.
+
 ## The command line
 
 `telesapr-cli` exports without a window. Its commands are `thumbnail`, `export-view`,
