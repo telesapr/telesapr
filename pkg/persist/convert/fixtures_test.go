@@ -25,17 +25,6 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// notFixedPoints are the fixtures whose solve moves the last digits of
-// solved values when they are regenerated, whatever the format: loaded
-// from their own .slvs save they drift the same way. They round trip
-// through the format exactly, but not through a regeneration.
-var notFixedPoints = map[string]string{
-	"constraint/same_orientation/normal.slvs": "drifts at every regeneration",
-	// Written by older versions; they settle after two and three.
-	"constraint/large_dimensions/normal.slvs":   "settles after more regenerations",
-	"constraint/pt_on_circle/negative_dia.slvs": "settles after more regenerations",
-}
-
 // invalidFixture is not a valid SolveSpace file; it does not import.
 const invalidFixture = "solver/param_point_distance.slvs"
 
@@ -94,8 +83,8 @@ func goldenPath(rel string) string {
 //
 //   - decoding the .tlspr file and encoding it again gives the same
 //     bytes, so the format loses nothing;
-//   - loading it, regenerating and saving gives the same bytes, except
-//     for the fixtures in notFixedPoints;
+//   - loading it, regenerating and saving gives the same bytes: a
+//     solve that starts satisfied keeps its values to the bit;
 //   - every group's check report matches testdata/invariants.txt, and
 //     every line of it is produced; TELESAPR_REGEN_GOLDEN=1 rewrites it
 //     too;
@@ -163,7 +152,7 @@ func TestFixturesRoundTrip(t *testing.T) {
 			sk := loaded.Sketch
 			sk.GenerateAll()
 			resaved := tlspr.Encode(sk, tlspr.Options{})
-			if notFixedPoints[rel] == "" && !bytes.Equal(resaved, saved) {
+			if !bytes.Equal(resaved, saved) {
 				t.Errorf("load, regenerate and save changed the file: %s", golden.FirstDifference(saved, resaved))
 			}
 

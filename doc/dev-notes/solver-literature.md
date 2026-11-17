@@ -1,6 +1,7 @@
 # The constraint-solver literature against TeleSAPR's solver (read 2026-11-08)
 
-Refreshed 2026-11-09: the work this note suggested is finished. Items 1 and 2 are built, as the
+Refreshed 2026-11-17: a Newton solve that starts satisfied takes no step ("The solver as it
+stands"). Refreshed 2026-11-09: the work this note suggested is finished. Items 1 and 2 are built, as the
 two paragraphs below describe, and item 3 will not be done ("The work, and what came of it", at
 the end). The sections between keep the reading as it was on 2026-11-08, each closed by what came
 of it.
@@ -76,7 +77,11 @@ The Newton step (`NewtonSolve`) is the minimum-norm least-squares solution of `J
 dragged parameters scaled 1/20 so the step moves them more. There is no line search and no
 damping, only an abort on NaN or a value past 1e11; 50 iterations; convergence when every
 residual is under `LengthEps/100`. During a drag the factorisation is reused while each step
-halves the residual (`drag_step.go`).
+halves the residual (`drag_step.go`). Since 2026-11-17 values that already meet that test take
+no step: a step from a solved configuration moved the last bits, so every regeneration solved
+the sketch to other values than the last, which the solid cache, keyed by their bits, took for
+a change, and the solids made again from them differed (the rotated cut on a tube flipped
+between two volumes). A dimension edited by less than `LengthEps/100` moves nothing.
 
 Redundant constraints are found by `FindWhichToRemoveToFixJacobian` (`system.go`): for each
 constraint in turn the system is written without it and the rank re-tested; point-coincident

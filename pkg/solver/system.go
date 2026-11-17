@@ -644,8 +644,16 @@ func (s *System) NewtonSolve() bool {
 
 	// Evaluate the functions at our operating point.
 	s.mat.Bnum = make([]float64, s.mat.m)
+	satisfied := true
 	for i := range s.mat.m {
 		s.mat.Bnum[i] = s.mat.B[i].Eval(nil, nil)
+		satisfied = satisfied && math.Abs(s.mat.Bnum[i]) <= ConvergeTolerance
+	}
+	// Values that already satisfy every equation are kept as they are: a
+	// step from them moves the last bits, so each regeneration would give
+	// different values, and solids keyed by those bits, from the last.
+	if satisfied {
+		return true
 	}
 	// During a drag, steps are taken with a factorisation kept while
 	// they converge fast enough (drag_step.go).
