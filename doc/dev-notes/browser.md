@@ -61,7 +61,7 @@ software there with the same results.
   that started the work returns. Every regeneration on the loop goes through it: an edit, Open,
   a script's. Measured (headless Chrome, CDP, machine loaded): opening `bolt_m8x30` took 15 s
   and drew 6 frames with the box counting, where before it drew none.
-- Opening and exporting a file show a progress box (2026-11-15): `platform.ProgressShower`,
+- Opening, saving and exporting a file show a progress box (2026-11-15; saving 2026-11-17): `platform.ProgressShower`,
   which this platform implements in `progress_js.go` with the busy box, a bar added under its
   text. It shows at once, not after 300 ms, and its text is the group being regenerated; each
   update that shows waits for a frame, every 100 ms like `Yield`, and `Yield` leaves the box's

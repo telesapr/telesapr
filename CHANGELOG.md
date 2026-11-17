@@ -10,7 +10,7 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 ## [Unreleased]
 
 ### Added
-- Opening a file and exporting one show a progress window: the file being read, each group as it is regenerated with a bar for how far it has got, then the file being written. The dialogs that chose the file and its options close before it comes up, and it closes when the work is done. The window used to stop drawing until the end, so the file dialog stayed painted over it and the program looked hung. In the browser the busy box shows the same, with a bar.
+- Opening a file, saving one and exporting one show a progress window: the file being read when one is opened, each group as it is regenerated with a bar for how far it has got, then the file being written. The dialogs that chose the file and its options close before it comes up, and it closes when the work is done. The window used to stop drawing until the end, so the file dialog stayed painted over it and the program looked hung. In the browser the busy box shows the same, with a bar.
 
 ### Changed
 - Rounding or chamfering edges on curved faces made of several patches is faster, the same solid to the bit: the top edges of four rows of Gothic window mouldings raised on a pen's barrel are chamfered in 22 s, where they took two and a half minutes, and a pointed arch's foot is rounded in a third of the time.

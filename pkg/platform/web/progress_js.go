@@ -8,7 +8,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/platform"
 )
 
-// A file is opened and exported on the loop's goroutine, and the page
+// A file is opened, saved and exported on the loop's goroutine, and the page
 // has no other thread: the progress is the busy box over the page, its
 // text and a bar, and each update that shows lets the page draw a
 // frame. The dialogs that asked for the file are gone from the page by

@@ -1,11 +1,11 @@
 # The progress window
 
-Refreshed 2026-11-16.
+Refreshed 2026-11-17.
 
-Opening a file and exporting one show a window with a line of text and a bar, from when the
-dialogs that chose the file have closed until the work ends. `pkg/ui/progress.go` starts it
-(`withProgress`, around `Application.Load`, the File > Export entries, Import and the drawing's
-export) and feeds it: a phase ("Reading", "Writing") with no fraction, and the group a
+Opening a file, saving one and exporting one show a window with a line of text and a bar, from
+when the dialogs that chose the file have closed until the work ends. `pkg/ui/progress.go` starts
+it (`withProgress`, around `Application.Load`, `SaveToChosenFile`, the File > Export entries,
+Import and the drawing's export) and feeds it: a phase ("Reading", "Writing") with no fraction, and the group a
 regeneration begins (`appHooks.Regenerating`) with its fraction. The platforms show it through
 `platform.ProgressShower`; headless records it (`headless.Progress`), the browser shows it in
 its busy box (`browser.md`).
@@ -45,4 +45,7 @@ the window runs it until the window is mapped (300 ms at most) and 30 ms more.
 - A regeneration that makes two passes over the groups fills the bar twice.
 - No cancel button: the work has no way to stop between its steps except a regeneration's
   `Cancel`, and stopping an open half way leaves no model.
-- Saving, linking a part and the bill of materials and trace CSVs show no window.
+- The autosave shows no window: it comes from a timer while the user works, and a window that
+  took their input every few minutes would be worse than the pause. A script's `File.Save` shows
+  none either.
+- Linking a part and the bill of materials and trace CSVs show no window.

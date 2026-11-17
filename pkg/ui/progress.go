@@ -7,8 +7,8 @@ import (
 	"github.com/telesapr/telesapr/pkg/platform"
 )
 
-// Opening a file and exporting one run on the loop's goroutine, and a
-// large model takes them long: a progress window says how far they
+// Opening a file, saving one and exporting one run on the loop's
+// goroutine, and a large model takes them long: a progress window says how far they
 // have got (platform.Progress). It goes up once the dialogs that asked
 // for the file and its options have closed, and down when the work
 // ends, before what it has to say (an error, a warning) is shown.

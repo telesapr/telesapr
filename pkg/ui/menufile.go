@@ -200,6 +200,7 @@ func (ss *Application) SaveToFile(filename string) error {
 	// will be exported.
 	ss.ScheduleShowTW()
 	ss.GenerateAll(sketch.GenerateAll)
+	ss.progressPhase("Writing " + filepath.Base(filename))
 
 	err := tlspr.SaveFile(ss.SK, ss.SaveFile, filename, tlspr.Options{})
 	var le *tlspr.LinkError
@@ -229,7 +230,9 @@ func (ss *Application) AddToRecentList(filename string) {
 }
 
 // SaveToChosenFile saves the sketch, asking for a file name for a new
-// sketch or for Save As; errDeclined when the user gave up.
+// sketch or for Save As; errDeclined when the user gave up. Once the
+// file is chosen, a progress window shows the regeneration and the
+// writing.
 func (ss *Application) SaveToChosenFile(saveAs bool) error {
 	newSaveFile := ss.SaveFile
 
@@ -247,7 +250,9 @@ func (ss *Application) SaveToChosenFile(saveAs bool) error {
 		newSaveFile = modelFileName(dialog.Filename())
 	}
 
-	if err := ss.SaveToFile(newSaveFile); err != nil {
+	var err error
+	ss.withProgress(fileTitle("Saving", newSaveFile), func() { err = ss.SaveToFile(newSaveFile) })
+	if err != nil {
 		return err
 	}
 	ss.AddToRecentList(newSaveFile)

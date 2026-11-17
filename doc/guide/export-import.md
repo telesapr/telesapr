@@ -116,15 +116,18 @@ STEP, STL and OBJ files are linked rather than imported: see [STEP links](step-l
 
 ## While a file opens or is written
 
-Opening a large model, or exporting one, takes a while. Once you have chosen the file and its
-options, those dialogs close and a small window shows what is being done: the file being read,
-then each group as it is regenerated, with a bar for how far it has got, then the file being
-written. It closes when the work is done. Meanwhile the program takes no clicks or keys. A
-question the work has to ask, such as where a missing linked file is, comes up in its place.
+Opening a large model, saving it or exporting it takes a while. Once you have chosen the file
+and its options, those dialogs close and a small window shows what is being done: the file being
+read when one is opened, then each group as it is regenerated, with a bar for how far it has
+got, then the file being written. It closes when the work is done. Meanwhile the program takes
+no clicks or keys. A question the work has to ask, such as where a missing linked file is,
+comes up in its place.
 In the browser the same shows in a box over the page.
 
-This is so for File > Open and Open Recent, a file named on the command line, File > Import and
-every entry of File > Export but Image. A script's `File.Load` and `File.Export` show no window.
+This is so for File > Open and Open Recent, a file named on the command line, File > Save and
+Save As (also when closing asks whether to save), File > Import and every entry of File > Export
+but Image. The autosave shows no window, nor do a script's `File.Load`, `File.Save` and
+`File.Export`.
 
 ## The command line
 

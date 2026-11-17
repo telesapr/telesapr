@@ -131,3 +131,66 @@ func TestCancelledExportShowsNoProgress(t *testing.T) {
 		t.Errorf("%d progress windows after a cancel", len(p.ProgressShown))
 	}
 }
+
+// TestSaveShowsProgress saves through File > Save As: the progress
+// window goes up once the file dialog has closed, shows the groups
+// regenerating and the file being written, and is closed at the end.
+// File > Save of a file already named shows one with no dialog before.
+func TestSaveShowsProgress(t *testing.T) {
+	t.Parallel()
+	ss, p := newTestApp(t)
+	doc := api.NewDoc(ss.ScriptHost())
+	doc.Sketch.Circle(api.V(0, 0, 0), 10)
+	doc.Features.Extrude(5, "")
+
+	file := filepath.Join(t.TempDir(), "part.tlspr")
+	p.FilePaths = []string{file}
+	files := len(p.FileDialogs)
+	ss.MenuFile(cmdSaveAs)
+	pr := onlyProgress(t, p)
+	if pr.Title != "Saving part.tlspr" {
+		t.Errorf("title %q", pr.Title)
+	}
+	if pr.FileDialogsBefore != files+1 {
+		t.Errorf("shown after %d file dialogs, want %d", pr.FileDialogsBefore, files+1)
+	}
+	if updateWith(pr, "Regenerating ") == nil || updateWith(pr, "Writing part.tlspr") == nil {
+		t.Errorf("no regeneration or writing step in %v", pr.Updates)
+	}
+	if ss.SK.Unsaved || ss.SaveFile != file {
+		t.Errorf("not saved: unsaved %v, file %q", ss.SK.Unsaved, ss.SaveFile)
+	}
+
+	p.ProgressShown = nil
+	files = len(p.FileDialogs)
+	ss.MenuFile(cmdSave)
+	pr = onlyProgress(t, p)
+	if pr.Title != "Saving part.tlspr" || len(p.FileDialogs) != files {
+		t.Errorf("File > Save: title %q after %d new file dialogs", pr.Title, len(p.FileDialogs)-files)
+	}
+}
+
+// TestAutosaveShowsNoProgress: the autosave comes from a timer, while
+// the user works, and puts up no window that would take their input.
+func TestAutosaveShowsNoProgress(t *testing.T) {
+	t.Parallel()
+	ss, p := newTestApp(t)
+	ss.SaveFile = filepath.Join(t.TempDir(), "part.tlspr")
+	ss.SK.Unsaved = true
+	ss.Autosave()
+	if len(p.ProgressShown) != 0 {
+		t.Errorf("%d progress windows for an autosave", len(p.ProgressShown))
+	}
+}
+
+// TestCancelledSaveShowsNoProgress gives up at the Save As dialog: no
+// progress window goes up.
+func TestCancelledSaveShowsNoProgress(t *testing.T) {
+	t.Parallel()
+	ss, p := newTestApp(t)
+	p.FilePaths = []string{""}
+	ss.MenuFile(cmdSaveAs)
+	if len(p.ProgressShown) != 0 {
+		t.Errorf("%d progress windows after a cancel", len(p.ProgressShown))
+	}
+}
