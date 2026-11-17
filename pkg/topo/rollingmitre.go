@@ -743,6 +743,7 @@ func (rb *rollingBall) mitreFitted(ball rbSection, mean, inner float64, fit srf.
 	sec := ball
 	sec.s, sec.arc = mean, fit
 	sec.foot = [2]rbFoot{first.foot[0], last.foot[1]}
+	sec.footS, sec.hasFootS = [2]float64{first.s, last.s}, true
 	return sec, inner, nil
 }
 

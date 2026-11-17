@@ -1,8 +1,11 @@
 package api
 
 import (
+	"fmt"
 	"math"
 	"testing"
+
+	"github.com/telesapr/telesapr/pkg/internal/sweep"
 )
 
 // wrappedTube is a tube along x, radius 7.3, wall 0.8 and 60 long, as a
@@ -112,12 +115,18 @@ func TestFilletWrappedStrip(t *testing.T) {
 // Gothic window's moulding: legs 20 long along the tube from 10 going on
 // smoothly into arcs of radius 2a - w and 2a, about centres a either
 // side, which meet at an outer apex 20 + sqrt(3)a and an inner one.
+// Its middle is on the tube's seam at -z.
 func wrappedArch(d *Doc, face SolidFace, h float64) Group {
+	return wrappedArchAt(d, face, h, 0)
+}
+
+// wrappedArchAt is wrappedArch moved du round the tube, off its seam.
+func wrappedArchAt(d *Doc, face SolidFace, h, du float64) Group {
 	d.Features.SketchAt(d.Origin(), V(0, 1, 0), V(1, 0, 0), "")
 	const a, w, vs, base = 5.2, 1.0, 20.0, 10.0
 	outer := vs + math.Sqrt(3)*a
 	inner := vs + math.Sqrt((2*a-w)*(2*a-w)-a*a)
-	uv := func(u, v float64) Vec { return d.Sketch.UV(u, v+base) }
+	uv := func(u, v float64) Vec { return d.Sketch.UV(u+du, v+base) }
 	var first, prev Entity
 	n := 0
 	join := func(s, e Entity) {
@@ -188,5 +197,103 @@ func TestFilletWrappedArch(t *testing.T) {
 	r := f.Analyze().Check()
 	if added := r.Volume - before; !r.Sound() || added < 0.3 || added > 4 {
 		t.Errorf("%s, added %g", r.Summary(), added)
+	}
+}
+
+// The same arch moved off the seam by du, fillets and chamfers of 0.2:
+// the seam then passes the apexes a few tenths off, the feet crossing it
+// within the ramp of sections between the mitre and the ball's own
+// (rampCrossings), where no section was before, and each patch's loop
+// didn't close. Across the legs the side is a plane through the axis
+// and the tube a circle of radius R: the ball's centre lies r from the
+// side and R + r from the axis, so a fillet touches the side at
+// sqrt((R+r)²-r²) and the tube asin(r/(R+r)) round from the side; a
+// chamfer leaves the side at R + d and the tube d along it, d/R round.
+func TestFilletWrappedArchOffSeam(t *testing.T) {
+	if testing.Short() {
+		t.Skip("ten rolling-ball chains meeting in mitres off a seam, half a minute each")
+	}
+	t.Parallel()
+	const R, r = 7.3, 0.2
+	type tc struct {
+		du      float64
+		chamfer bool
+	}
+	cases := sweep.Pick([]tc{{0.1, false}, {0.3, true}, {0.5, false}, {0.05, true}, {0.2, false}, {0.8, true}}, 2)
+	for _, c := range cases {
+		t.Run(fmt.Sprintf("du %g chamfer %v", c.du, c.chamfer), func(t *testing.T) {
+			t.Parallel()
+			d := New()
+			band := wrappedArchAt(d, wrappedTube(d), 0.3, c.du)
+			if p := band.Problem(); p != "" {
+				t.Fatal(p)
+			}
+			foot := reliefFoot(band)
+			var legs []float64
+			for _, e := range foot {
+				if e.Straight() && e.Points()[0].X < 20 {
+					p := e.Points()[0]
+					legs = append(legs, math.Atan2(p.Y, -p.Z))
+				}
+			}
+			if len(foot) != 10 || len(legs) != 4 {
+				t.Fatalf("the arch's foot is %d edges, %d of them legs; want 10 and 4", len(foot), len(legs))
+			}
+			wall, round := math.Sqrt((R+r)*(R+r)-r*r), math.Asin(r/(R+r))
+			if c.chamfer {
+				wall, round = R+r, r/R
+			}
+			// A refusal is a panic of the call's, which would stop the
+			// other cases: it fails this one.
+			g, err := func() (g Group, err error) {
+				defer func() {
+					if e, ok := recover().(error); ok {
+						err = e
+					}
+				}()
+				if c.chamfer {
+					return d.Features.ChamferSolid(foot, r, ""), nil
+				}
+				return d.Features.FilletSolid(foot, r, ""), nil
+			}()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if p := g.Problem(); p != "" {
+				t.Fatal(p)
+			}
+			if rep := g.Analyze().Check(); !rep.Sound() {
+				t.Fatal(rep.Summary())
+			}
+			type near struct {
+				n     int
+				worst float64
+			}
+			for _, at := range legs {
+				var side, onTube near
+				for _, e := range g.Solid().Edges() {
+					for _, p := range e.Points() {
+						if p.X < 11 || p.X > 29 {
+							continue
+						}
+						rr := math.Hypot(p.Y, p.Z)
+						turn := math.Abs(math.Remainder(math.Atan2(p.Y, -p.Z)-at, 2*math.Pi))
+						for _, l := range []struct {
+							n      *near
+							r, off float64
+						}{{&side, wall, turn * rr}, {&onTube, R, math.Abs(turn-round) * R}} {
+							if dev := math.Hypot(rr-l.r, l.off); dev < 0.01 {
+								l.n.n++
+								l.n.worst = math.Max(l.n.worst, dev)
+							}
+						}
+					}
+				}
+				if side.n == 0 || onTube.n == 0 || side.worst > 5e-4 || onTube.worst > 5e-4 {
+					t.Errorf("the leg's foot at %.4f rad: on its side at %.4f %d points, off by %.2g; on the tube %.4f round %d, off by %.2g",
+						at, wall, side.n, side.worst, round, onTube.n, onTube.worst)
+				}
+			}
+		})
 	}
 }

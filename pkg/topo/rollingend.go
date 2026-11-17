@@ -304,7 +304,7 @@ func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error
 			return sec, 0, err
 		}
 		sec.s = (ss[0] + ss[1] + ss[2]) / 3
-		sec.footS = [2]float64{ss[0], ss[1]}
+		sec.footS, sec.hasFootS = [2]float64{ss[0], ss[1]}, true
 		inner := math.Max(ss[0], math.Max(ss[1], ss[2]))
 		if k == 1 {
 			inner = math.Min(ss[0], math.Min(ss[1], ss[2]))
@@ -381,7 +381,7 @@ func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error
 	}
 	rb.endS[k] = ss
 	sec.s = (ss[0] + ss[1] + ss[2]) / 3
-	sec.footS = [2]float64{ss[0], ss[1]}
+	sec.footS, sec.hasFootS = [2]float64{ss[0], ss[1]}, true
 	if end.mitre {
 		// As the sections near it are reckoned (mitreSection).
 		ms, err := rb.mitreRoots(k)
@@ -611,6 +611,13 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		cross = append(cross, rbCrossing{s: s, faces: pairs[i], side: sides[i]})
 		breaks = append(breaks, s)
 	}
+	// Where the feet cross seams within a ramp, as a seam of the tube a
+	// band stands on passing a corner of the band a few tenths off, each
+	// crossing gets a section of the ramp's whose foot is on the seam.
+	ramped, err := rb.rampCrossings()
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	for _, s := range rb.splitAt {
 		if s > r0 && s < r1 {
 			breaks = append(breaks, s)
@@ -643,6 +650,9 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 			break
 		}
 		specs = append(specs, rbSpec{end: 1, lam: float64(i) / steps})
+	}
+	for _, rc := range ramped {
+		specs = append(specs, rc.spec)
 	}
 	cache := map[rbSpec]rbSection{}
 	eval := func(sp rbSpec) (rbSection, error) {
@@ -696,6 +706,22 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 			cache[sp] = sec
 		}
 		return sec, err
+	}
+	if len(ramped) > 0 {
+		for _, rc := range ramped {
+			sec, err := eval(rc.spec)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			cross = append(cross, rbCrossing{s: sec.s, faces: rc.faces, side: rc.side})
+		}
+		for _, sp := range specs {
+			if _, err := eval(sp); err != nil {
+				return nil, nil, nil, err
+			}
+		}
+		slices.SortStableFunc(specs, func(a, b rbSpec) int { return cmp.Compare(cache[a].s, cache[b].s) })
+		slices.SortStableFunc(cross, func(a, b rbCrossing) int { return cmp.Compare(a.s, b.s) })
 	}
 	prevWorst := math.Inf(1)
 	for round := 0; ; round++ {

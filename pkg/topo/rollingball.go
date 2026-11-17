@@ -66,8 +66,18 @@ type rbSection struct {
 	cutN geom.Vector
 	cutD float64
 	// footS are, for an end section, the arc lengths of the ball's own
-	// sections each foot is taken from.
-	footS [2]float64
+	// sections each foot is taken from; hasFootS says it has them.
+	footS    [2]float64
+	hasFootS bool
+}
+
+// footAt is the arc length of the ball's own section side k's foot of
+// sec is taken from: its own, but for an end section's.
+func (sec *rbSection) footAt(k int) float64 {
+	if sec.hasFootS {
+		return sec.footS[k]
+	}
+	return sec.s
 }
 
 // rollingBall is a fillet's edge, its two sides, and the ball.
@@ -2224,7 +2234,10 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 		}
 		pieces := map[int][]int{}
 		for b := range m {
-			sec, err := rb.section((secs[b].s + secs[b+1].s) / 2)
+			// Between two sections' feet on this side, which near an end
+			// are the ball's own at arc lengths of their own (footAt): a
+			// seam crossed there is between those (rampCrossings).
+			sec, err := rb.section((secs[b].footAt(k) + secs[b+1].footAt(k)) / 2)
 			if err != nil {
 				return nil, err
 			}
