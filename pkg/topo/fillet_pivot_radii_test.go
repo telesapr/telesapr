@@ -69,6 +69,9 @@ func TestFilletPocketRimRadii(t *testing.T) {
 			if err := topo.FilletPicks(sh, picks, 1, 1<<30, c.flat); err != nil {
 				t.Fatal(err)
 			}
+			if off, where := stepEdgesOffFaces(t, sh); off > 1e-6 {
+				t.Errorf("written as STEP, an edge lies %.3g off its face: %s", off, where)
+			}
 			took := 40*30*20 - 20*10*12 - sound(t, sh)
 			lo, hi := c.occ*(1-1e-6), c.occ*(1+0.003)
 			if c.flat {
@@ -85,10 +88,12 @@ func TestFilletPocketRimRadii(t *testing.T) {
 // fillets' feet lie at two depths on the crease. OpenCASCADE's
 // makeFillet took the volumes below (2026-11-09). Its faces and ours,
 // our solid exported as STEP, lie within 0.0006 mm of each other within
-// 4 mm of each corner both chains reach, sampled both ways, but where
-// the smaller fillet's wall grows past the crease beyond the wall's own
-// patch: the STEP file bounds the face by its patch and leaves the
-// growth out, 0.11 mm off at a radius of 1 beside 2. The meshes here
+// 4 mm of each corner both chains reach, sampled both ways. Where the
+// smaller fillet's wall grows past the crease beyond the wall's own
+// patch, the STEP file bounded the face by its patch and left the
+// growth out, 0.14 mm off at a radius of 1 beside 2, until a plane face
+// was written over its trims (srf.SSurface.OverCurves, 2026-11-17;
+// within 0.00001 mm of our mesh since, read by FreeCADCmd). The meshes here
 // are coarser, some 4% off, and the volume only rules out a corner gone
 // wrong. A chain that meets one of another radius at one corner meets
 // one of its own radius at its other end in a kinked mitre too, kinked
@@ -129,6 +134,9 @@ func TestFilletPivotRadii(t *testing.T) {
 			}
 			if err := topo.FilletPicks(sh, picks, 1, 1<<30, false); err != nil {
 				t.Fatal(err)
+			}
+			if off, where := stepEdgesOffFaces(t, sh); off > 1e-6 {
+				t.Errorf("written as STEP, an edge lies %.3g off its face: %s", off, where)
 			}
 			took := before - sound(t, sh)
 			if math.Abs(took-c.occ) > 0.06*c.occ {

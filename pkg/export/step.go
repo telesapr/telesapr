@@ -507,6 +507,11 @@ func (w *stepFileWriter) ExportSurface(ss *srf.SSurface, sbl *srf.SBezierList) {
 	// Read the colour of the surface: use it to tell apart surfaces from
 	// different parts.
 	w.currentColor = ss.Color
+	// A plane face whose trims run past its patch is written on the
+	// plane carried on over them: a reader bounds the face by it.
+	if over, ok := ss.OverCurves(sbl.Curves); ok {
+		ss = &over
+	}
 
 	// First, define the control points for the untrimmed surface, if
 	// they were not already defined. We always specify a rational
