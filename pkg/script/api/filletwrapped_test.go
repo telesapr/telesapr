@@ -297,3 +297,26 @@ func TestFilletWrappedArchOffSeam(t *testing.T) {
 		})
 	}
 }
+
+// BenchmarkFilletWrappedArch is the fillet of a wrapped arch's foot,
+// ten rolling-ball chains meeting in mitres on a tube: most of its time
+// is the ball's feet found on the faces either side (footNear), as in a
+// barrel of four rows of Gothic windows. Each run makes the fillet
+// again from the arch.
+func BenchmarkFilletWrappedArch(b *testing.B) {
+	d := New()
+	band := wrappedArch(d, wrappedTube(d), 0.3)
+	foot := reliefFoot(band)
+	f := d.Features.FilletSolid(foot, 0.2, "")
+	sk := d.h.Sketch()
+	// Made again, not handed back by the solid cache.
+	sk.NoSolidCache = true
+	b.ResetTimer()
+	for range b.N {
+		sk.MarkGroupDirty(f.H, false)
+		sk.GenerateAll()
+		if p := f.Problem(); p != "" {
+			b.Fatal(p)
+		}
+	}
+}

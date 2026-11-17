@@ -1,7 +1,7 @@
 # Performance
 
 How to measure TeleSAPR's speed, where the time goes, what was decided and why, and what is open.
-Refreshed 2026-11-03 at `c4e18d1a`.
+Refreshed 2026-11-03 at `c4e18d1a`; the rolling ball's feet 2026-11-17.
 
 Two studies came before this note: the command line against solvespace-cli (branch `perf-study`,
 2026-10-10, items P1 to P9) and the solver, the kernel's Booleans and the drawing of frames
@@ -62,6 +62,13 @@ bin/telesapr-cli regenerate --cpuprofile cpu.out /tmp/m.tlspr
   merge classes, the top of the union tree). The parallel speedup on 32 threads was about 3.2x
   (2026-10-20).
 - In the window: a model's solids, and the two rank tests of a solve during a drag.
+- In a rolling-ball fillet or chamfer, finding the ball's feet (`footNear`, each a
+  `nearestOnWithin` on a face either side) was 89% of the time on a pen barrel's 40 band top
+  edges (2026-11-17), whose sides are up to 9 patches each. Since then a face whose patch's box
+  lies further off than a foot already found within its patch is not projected on, the face
+  last found tried first, and the foot is chosen among the rest as before, so the solid is the
+  same to the bit: that chamfer 155.8 s to 22.1 s, `BenchmarkFilletWrappedArch` 14.9 s to 4.8 s.
+  The chains of one mitred fillet are still made one after another, on one core.
 
 ## Open
 

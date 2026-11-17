@@ -89,13 +89,16 @@ type rollingBall struct {
 	// robust has the feet projected by srf.SSurface.Project, for a
 	// section whose plain steps didn't settle.
 	robust bool
-	r      float64
-	flat   bool
-	sigma  float64 // 1 for a convex edge, whose ball lies inside the solid
-	pieces []ChainPiece
-	verts  []int // the chain's vertices, verts[i] where piece i starts
-	side   [2][]int
-	closed bool
+	// lastFoot is, by side, the place among the side's faces of the one
+	// footNear last found a foot within; -1 for none.
+	lastFoot [2]int
+	r        float64
+	flat     bool
+	sigma    float64 // 1 for a convex edge, whose ball lies inside the solid
+	pieces   []ChainPiece
+	verts    []int // the chain's vertices, verts[i] where piece i starts
+	side     [2][]int
+	closed   bool
 	// For an open chain, the flat faces it ends at, at its start and its
 	// end.
 	ends [2]*rbEnd
@@ -392,7 +395,7 @@ func (t *Topology) newChain(e int, r float64, flat bool) (*rollingBall, error) {
 	if closed {
 		pieces, verts = t.closeAtSquareSeam(pieces, verts)
 	}
-	rb := &rollingBall{t: t, r: r, flat: flat, pieces: pieces, verts: verts, closed: closed}
+	rb := &rollingBall{t: t, r: r, flat: flat, pieces: pieces, verts: verts, closed: closed, lastFoot: [2]int{-1, -1}}
 	// Each piece's faces, side by side with the first's.
 	fs := t.EdgeFaces(pieces[0].Edge)
 	first := fs
@@ -616,6 +619,32 @@ func (rb *rollingBall) foot(k int, x geom.Vector) rbFoot {
 	return rb.footNear(k, x, rbNear{end: -1})
 }
 
+// rbTried is a face footNear projected on: the foot, how far it lies
+// past the face's patch in its parameters, and how far from the point.
+type rbTried struct {
+	ok   bool
+	foot rbFoot
+	out  float64
+	d    float64
+}
+
+// boxDistance is how far x lies from the box of patch s's control
+// points, which holds the patch.
+func boxDistance(s *srf.SSurface, x geom.Vector) float64 {
+	lo, hi := s.Ctrl[0][0], s.Ctrl[0][0]
+	for i := 0; i <= s.DegM; i++ {
+		for j := 0; j <= s.DegN; j++ {
+			c := s.Ctrl[i][j]
+			lo = geom.Vector{X: math.Min(lo.X, c.X), Y: math.Min(lo.Y, c.Y), Z: math.Min(lo.Z, c.Z)}
+			hi = geom.Vector{X: math.Max(hi.X, c.X), Y: math.Max(hi.Y, c.Y), Z: math.Max(hi.Z, c.Z)}
+		}
+	}
+	dx := math.Max(0, math.Max(lo.X-x.X, x.X-hi.X))
+	dy := math.Max(0, math.Max(lo.Y-x.Y, x.Y-hi.Y))
+	dz := math.Max(0, math.Max(lo.Z-x.Z, x.Z-hi.Z))
+	return math.Sqrt(dx*dx + dy*dy + dz*dz)
+}
+
 // footNear is foot near an end of a mitred chain (rollingmitre.go),
 // where side k's face across the crease is not taken, and past the end
 // only the end's own face is: the ball there runs on along its own face
@@ -634,13 +663,32 @@ func (rb *rollingBall) footNear(k int, x geom.Vector, nr rbNear) rbFoot {
 	if !rb.closed {
 		ext = 1
 	}
-	inside := 0
-	var held []rbFoot
-	for _, f := range rb.side[k] {
+	// Each face is projected on (nearestOnWithin, the most of a fillet's
+	// time), the face last found tried first: once a foot lies within
+	// its patch, a face whose patch's box lies further off than it can't
+	// do better, and is not projected on. A closed chain keeps every
+	// face that holds the point (trimmedFoot), and projects on them all.
+	side := rb.side[k]
+	tried := make([]rbTried, len(side))
+	order := make([]int, 0, len(side))
+	if l := rb.lastFoot[k]; l >= 0 && l < len(side) {
+		order = append(order, l)
+	}
+	for i := range side {
+		if len(order) == 0 || i != order[0] {
+			order = append(order, i)
+		}
+	}
+	nearest, nearestD := -1, math.Inf(1)
+	for _, i := range order {
+		f := side[i]
 		if f == ban || only >= 0 && f != only {
 			continue
 		}
 		s := rb.t.Surface(f)
+		if !rb.closed && nearestD < math.Inf(1) && boxDistance(s, x) > nearestD+geom.LengthEps {
+			continue
+		}
 		var u, v float64
 		var p geom.Vector
 		if rb.robust {
@@ -652,13 +700,29 @@ func (rb *rollingBall) footNear(k int, x geom.Vector, nr rbNear) rbFoot {
 		out := math.Max(math.Max(-u, u-1), math.Max(-v, v-1))
 		out = math.Max(0, out-1e-9)
 		d := p.Minus(x).Magnitude()
-		if out == 0 {
-			inside++
-			held = append(held, rbFoot{f: f, u: u, v: v, p: p})
+		tried[i] = rbTried{ok: true, foot: rbFoot{f: f, u: u, v: v, p: p}, out: out, d: d}
+		if out == 0 && d < nearestD {
+			nearest, nearestD = i, d
 		}
-		if out < bestOut-1e-12 || out <= bestOut+1e-12 && d < bestD {
-			bestD, bestOut = d, out
-			best = rbFoot{f: f, u: u, v: v, p: p}
+	}
+	if nearest >= 0 {
+		rb.lastFoot[k] = nearest
+	}
+	// Chosen as when every face is projected on, in their order: a face
+	// left out could not have been.
+	inside := 0
+	var held []rbFoot
+	for _, tr := range tried {
+		if !tr.ok {
+			continue
+		}
+		if tr.out == 0 {
+			inside++
+			held = append(held, tr.foot)
+		}
+		if tr.out < bestOut-1e-12 || tr.out <= bestOut+1e-12 && tr.d < bestD {
+			bestD, bestOut = tr.d, tr.out
+			best = tr.foot
 		}
 	}
 	if inside > 1 {
