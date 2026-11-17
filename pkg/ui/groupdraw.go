@@ -28,7 +28,10 @@ func (ss *Application) groupActivate(g *sketch.Group) {
 	} else {
 		gw.showFaces = gw.showFacesNonDrawing
 	}
-	ss.SK.MarkGroupDirty(g.H, false) // for good measure; shouldn't be needed
+	// Only the group itself is made again: the groups after it keep
+	// what they were made as until a change before them, so that one
+	// left as before (Sketch.LeftAsBefore) is one a change left so.
+	ss.SK.MarkGroupDirty(g.H, true)
 	ss.ScheduleShowTW()
 }
 

@@ -150,6 +150,25 @@ func (tw *textWindow) ScreenActivateGroup(link int, v uint32) {
 	ss.GW.ClearSuper()
 }
 
+// ScreenMakeGroupNow makes a group after the active one, and the groups
+// before it, as they now are, leaving the active group as it is: the
+// solid of each is made off the thread, as a regeneration's is.
+func (tw *textWindow) ScreenMakeGroupNow(link int, v uint32) {
+	ss := tw.ss
+	ss.applyEngineSettings()
+	ss.SK.DeferShells = ss.BackgroundShells
+	made := ss.SK.MakeThrough(core.HGroup{V: v})
+	ss.SK.DeferShells = false
+	if !made {
+		return
+	}
+	if ss.SK.AnyShellsStale() {
+		ss.startShellJobFor(false)
+	}
+	ss.afterGenerate()
+	ss.ScheduleShowTW()
+}
+
 // ReportHowGroupSolved shows why a group failed to solve.
 func (tw *textWindow) ReportHowGroupSolved(hg core.HGroup) {
 	tw.ss.GW.ClearSuper()
@@ -274,6 +293,13 @@ func (tw *textWindow) ShowListOfGroups() {
 		if ok {
 			solveText = pick(warn && ss.CheckClosedContour, "err", sdof)
 		}
+		errText := pick(ok, "", "ERR")
+		// A group after the active one that a change before it left as
+		// it was says so, not what it said then.
+		old := sk.LeftAsBefore(g.H)
+		if old {
+			fgSolve, solveText, errText = 'd', "old", ""
+		}
 		fgName := byte('l')
 		if g.Suppress || g.SuppressedBy.V != 0 {
 			fgName = 'g'
@@ -281,7 +307,7 @@ func (tw *textWindow) ShowListOfGroups() {
 		// A group whose solid came out other than it asks (Group.Note),
 		// or whose sketch an edit turned over (Group.SolveNote), is
 		// marked, as one with a problem is coloured.
-		if g.Note != "" && g.Problem.Msg == "" || g.SolveNote != "" {
+		if !old && (g.Note != "" && g.Problem.Msg == "" || g.SolveNote != "") {
 			suffix += " (note)"
 		}
 		// A group left out says so, and what left it out.
@@ -312,7 +338,7 @@ func (tw *textWindow) ShowListOfGroups() {
 			fgSolve,
 			g.H.V, lf(tw.ScreenHowGroupSolved),
 			solveText,
-			pick(ok, "", "ERR"),
+			errText,
 			// Link to a screen that gives more details on the group
 			fgName,
 			g.H.V, lf(tw.ScreenSelectGroup), s,
@@ -1127,6 +1153,17 @@ func (tw *textWindow) ShowGroupInfo() {
 
 	tw.Printf(false, " %f%Ld%Fd%s  treat all dimensions as reference",
 		lf(tw.ScreenChangeGroupOption), checkMark(g.AllDimsReference))
+
+	// What a group after the active one says is from before the last
+	// change, until it is made again.
+	if sk.LeftAsBefore(g.H) {
+		tw.Printf(false, "")
+		tw.Printf(false, "%FdNot made since the last change, as it comes after%E")
+		tw.Printf(false, "%Fdthe active group. [%Fl%Lm%D%fmake it now%E%Fd]%E",
+			g.H.V, lf(tw.ScreenMakeGroupNow))
+		tw.showGroupItems(g)
+		return
+	}
 
 	if g.Problem.Msg != "" {
 		tw.Printf(false, "")

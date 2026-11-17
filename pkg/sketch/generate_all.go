@@ -1217,6 +1217,29 @@ func (sk *Sketch) MakeThrough(hg core.HGroup) bool {
 	return true
 }
 
+// LeftAsBefore reports whether group hg comes after the active group
+// and a change to it or before it left it as the regeneration before
+// made it, since a regeneration goes only as far as the active group:
+// its solid, its problems and its degrees of freedom are those of then,
+// not of the model now. MakeThrough(hg) makes it again, as activating it
+// or a group after it does.
+func (sk *Sketch) LeftAsBefore(hg core.HGroup) bool {
+	g := sk.Group(hg)
+	if g == nil || g.Clean {
+		return false
+	}
+	active := sk.ActiveGroup()
+	for _, h := range sk.GroupOrder {
+		switch h {
+		case hg: // first, for the active group itself
+			return false
+		case active:
+			return true
+		}
+	}
+	return false
+}
+
 // RemakeStaleMeshes makes every group's solid again when one was made
 // at another chord tolerance than the sketch's: a regeneration of the
 // groups after it changed the model's size, and so the tolerance, and

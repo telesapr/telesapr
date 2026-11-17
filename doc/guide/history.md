@@ -81,9 +81,13 @@ new can refer to it. A script is held to the same rule: a constraint on an entit
 group, or a new group that would use one, is refused. The message names the later group. The
 file keeps which group is active.
 
-A change while an earlier group is active is made as far as that group. A script can still read
-a later group: its volume, its check, its problem and its description are those of the model as
-it now is, since the groups up to it are made again first. The active group stays as it was.
+A change while an earlier group is active is made as far as that group. The groups after it
+keep what they were made as: the home screen marks each "old", and its screen says it was not
+made since the change and offers **[make it now]**, which makes it and the groups before it as
+the model now is and leaves the active group as it was. Making a later group active makes it
+too. A script can still read a later group: its volume, its check, its problem and its
+description are those of the model as it now is, since the groups up to it are made again
+first. The active group stays as it was.
 
 ```go
 doc.Activate(block)

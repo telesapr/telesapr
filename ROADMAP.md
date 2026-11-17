@@ -18,7 +18,7 @@ item is sized only after a two-day spike on its hardest fixture.
 | 1 | [Fillet leftovers](#fillet-leftovers) | kernel | ? | Every case left refuses with a message |
 | 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Round profiles twisted at a cubic corner or round its loops; fitted and closed paths crossing themselves; drafted shells' corners |
 | 3 | [Thread leftovers](#thread-leftovers) | feature | S each | DIN 513's nut deviation, B1.9's pitches and multi-start allowances wait for sources |
-| 4 | [Regeneration leftovers](#regeneration-leftovers) | defect | S each | The window showing groups after the active one as they were |
+| 4 | [Regeneration leftovers](#regeneration-leftovers) | defect | S each | The whole drawing's description made to its last group; an exported thread moved apart |
 | 5 | [K3 contact](#k3-coincident-and-tangent-contact) | kernel foundation | ? | Touching points the marcher finds itself; turned copies meeting face to face (worked round); one fitted-tube cross's difference; coincident curved faces, which fillets past a side carried on above its face wait for |
 | 6 | [F9 Mechanisms](#f9-mechanisms) | feature | M | Built 2026-11-06, freedom per part 2026-11-09; plan fragments if asked |
 | 7 | [F5 small conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
@@ -74,7 +74,7 @@ DIN 513-3:2020 (free text), NBS H28 (1957) Part III, Machinery's Handbook, Engin
 
 | Item | State |
 |---|---|
-| Reads of groups after the active one | A script's read of such a group makes the groups up to it since 2026-11-14 (`Sketch.MakeThrough`); the window still shows their solids and problems as they were until one is activated, and a read of the whole drawing's description makes every group, which is slow on a big model whose active group is early |
+| Reads of groups after the active one | A script's read of such a group makes the groups up to it since 2026-11-14 (`Sketch.MakeThrough`); the window marks such a group "old" in the list and offers [make it now] on its screen since 2026-11-17 (`Sketch.LeftAsBefore`), and activating a group no longer leaves the groups after it marked dirty. Left: a read of the whole drawing's description makes every group, which is slow on a big model whose active group is early |
 | An exported thread whose groups were moved apart | Written group by group since 2026-11-14, its helix as a plain helix, so after the round trip it is no longer edited as a thread |
 
 ### OpenGL leftovers

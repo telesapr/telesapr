@@ -245,6 +245,11 @@ func (tw *textWindow) threadListRow(helix core.HGroup, members []core.HGroup, bg
 	if !ok {
 		solveText, errText = "", "ERR"
 	}
+	// A thread after the active group that a change left as it was says
+	// so, as one group's row does.
+	if slices.ContainsFunc(members, sk.LeftAsBefore) {
+		fgSolve, solveText, errText = 'd', "old", ""
+	}
 	fgName := byte('l')
 	suffix := ""
 	switch {

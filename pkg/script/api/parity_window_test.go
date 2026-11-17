@@ -196,6 +196,7 @@ var windowActions = map[string]string{
 	"ScreenShowGroupsSpecial/h": "Group.SetVisible",
 	"ScreenActivateGroup":       "Doc.Activate",
 	"ScreenHowGroupSolved":      "Group.Conflicts Group.Redundancies Group.Solved",
+	"ScreenMakeGroupNow":        "- a script's read of a group makes it first (Sketch.MakeThrough)",
 	"ScreenShowConfiguration":   "- navigation",
 	"ScreenShowEditView":        "- navigation",
 	"ScreenGoToWebsite":         "- opens the project's page in a browser",
