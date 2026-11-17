@@ -1145,19 +1145,27 @@ row 49    treat all dimensions as reference
  37-99 64 64 0
 row 51 
  0-99 64 64 0
-row 53  requests in group
- 0-99 74 64 0
-row 55    (none)
- 0-99 64 61 0
+row 53 Not made since the last change, as it comes after
+ 0-99 64 64 0
+row 55 the active group. [make it now]
+ 0-18 64 64 0
+ 19-29 6c 64 109 7 1 0
+ 30-99 64 64 0
 row 57 
  0-99 64 64 0
-row 59  constraints in group (0 DOF)
+row 59  requests in group
  0-99 74 64 0
-row 61    c01a-proj-pt-pt-distance
+row 61    (none)
+ 0-99 64 61 0
+row 63 
+ 0-99 64 64 0
+row 65  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 67    c01a-proj-pt-pt-distance
  0-2 64 61 0
  3-26 6c 61 108 1a 1 1
  27-99 64 61 0
-row 63 
+row 69 
  0-99 64 64 0
 pending 0 0 "" 0 0 0 0
 hover 0 0 0

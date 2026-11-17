@@ -207,17 +207,25 @@ row 39    treat all dimensions as reference
  37-99 64 64 0
 row 41 
  0-99 64 64 0
-row 43  requests in group
- 0-99 74 64 0
-row 45    (none)
- 0-99 64 61 0
+row 43 Not made since the last change, as it comes after
+ 0-99 64 64 0
+row 45 the active group. [make it now]
+ 0-18 64 64 0
+ 19-29 6c 64 109 4 1 0
+ 30-99 64 64 0
 row 47 
  0-99 64 64 0
-row 49  constraints in group (0 DOF)
+row 49  requests in group
  0-99 74 64 0
 row 51    (none)
  0-99 64 61 0
 row 53 
+ 0-99 64 64 0
+row 55  constraints in group (0 DOF)
+ 0-99 74 64 0
+row 57    (none)
+ 0-99 64 61 0
+row 59 
  0-99 64 64 0
 dialog 0 The solid is sound.|It is closed, it does not intersect itself, and its Boolean succeeded.\n\nFaces: 6\nTriangles: 28\nVolume: 20.8 cm³\nCenter of mass: (-0.00, 7.00, 10.00)\nExtent: 40.00 x 26.00 x 20.00
 pending 0 0 "" 0 0 0 0
