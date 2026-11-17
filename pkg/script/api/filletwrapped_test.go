@@ -63,9 +63,15 @@ func reliefFoot(g Group) []SolidEdge {
 // OpenCASCADE's fillet of the same solid built from exact cylinders
 // adds 0.247 along one long edge and 0.515 round all four; our faces
 // lie on its within 0.003 mm along the edges, 0.016 mm at the corners,
-// where it rounds the corner and ours is a mitre. The tube's mesh moves
-// the volume by tenths of a mm³ as the fillet cuts its face, so the
-// volume is checked loosely.
+// where it rounds the corner and ours is a mitre at the default chord
+// tolerance and, below about 0.045%, a corner patch swung round the
+// strip's corner (the two fillets' feet on it 0.0027 apart,
+// rollingpivot_corner.go). The tube's mesh moves the volume by tenths
+// of a mm³ as the fillet cuts its face, so the volume is checked
+// loosely; finer meshes come within a tenth of OpenCASCADE's. Until
+// 2026-11-17 the corner patches folded by a few thousandths of a
+// millimetre and the whole foot was refused as open at chord tolerances
+// of 0.015% and finer.
 func TestFilletWrappedStrip(t *testing.T) {
 	t.Parallel()
 	for _, c := range []struct {
@@ -73,11 +79,17 @@ func TestFilletWrappedStrip(t *testing.T) {
 		chord  float64
 		all    bool
 		lo, hi float64
+		long   bool
 	}{
-		{"one long edge", 0.005, false, 0.2, 0.32},
-		{"the whole foot", 0, true, 0.3, 1.2},
+		{"one long edge", 0.005, false, 0.2, 0.32, false},
+		{"the whole foot", 0, true, 0.3, 1.2, false},
+		{"the whole foot at 0.01%", 0.01, true, 0.45, 0.65, false},
+		{"the whole foot at 0.005%", 0.005, true, 0.45, 0.65, true},
 	} {
 		t.Run(c.what, func(t *testing.T) {
+			if c.long && testing.Short() {
+				t.Skip("the strip's whole foot at a chord tolerance of 0.005%, several seconds")
+			}
 			t.Parallel()
 			d := New()
 			if c.chord > 0 {
@@ -173,30 +185,54 @@ func wrappedArchAt(d *Doc, face SolidFace, h, du float64) Group {
 // fillets meet in a mitre as a rim's do. Centred on the seam between the
 // tube's quarters, both apexes stand on it, and each mitre's foot on the
 // tube with them, where the seam is cut (splitMitreSeams); off it, the
-// seam crosses the arcs.
+// seam crosses the arcs. At chord tolerances of 0.02% and finer the
+// corners at the legs' feet are corner patches (the two fillets' feet on
+// the crease 0.0027 apart, more than the tolerance), between a leg's
+// fitted sections in two spans and the foot's in one: until 2026-11-17
+// the foot's patch wasn't split where the corner's is (splitAtPivots),
+// and the solid was refused as open.
 func TestFilletWrappedArch(t *testing.T) {
 	if testing.Short() {
 		t.Skip("ten rolling-ball chains meeting in mitres, half a minute")
 	}
 	t.Parallel()
-	d := New()
-	band := wrappedArch(d, wrappedTube(d), 0.3)
-	if p := band.Problem(); p != "" {
-		t.Fatal(p)
-	}
-	before := band.Analyze().Check().Volume
-	foot := reliefFoot(band)
-	if len(foot) != 10 {
-		t.Fatalf("the arch's foot is %d edges, want 10", len(foot))
-	}
-	f := d.Features.FilletSolid(foot, 0.2, "")
-	if p := f.Problem(); p != "" {
-		t.Fatal(p)
-	}
-	// About 110 of edge at 0.0086 a unit, and the mesh's tenths.
-	r := f.Analyze().Check()
-	if added := r.Volume - before; !r.Sound() || added < 0.3 || added > 4 {
-		t.Errorf("%s, added %g", r.Summary(), added)
+	for _, c := range []struct {
+		chord  float64
+		lo, hi float64
+	}{
+		// About 110 of edge at 0.0086 a unit, and the mesh's tenths:
+		// up to 3 at the default tolerance, two at 0.01%.
+		{0, 0.3, 4},
+		{0.01, 0.8, 1.4},
+	} {
+		name := fmt.Sprintf("chord %g%%", c.chord)
+		if c.chord == 0 {
+			name = "default chord"
+		}
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			d := New()
+			if c.chord > 0 {
+				d.Edit.SetChordTolerance(c.chord)
+			}
+			band := wrappedArch(d, wrappedTube(d), 0.3)
+			if p := band.Problem(); p != "" {
+				t.Fatal(p)
+			}
+			before := band.Analyze().Check().Volume
+			foot := reliefFoot(band)
+			if len(foot) != 10 {
+				t.Fatalf("the arch's foot is %d edges, want 10", len(foot))
+			}
+			f := d.Features.FilletSolid(foot, 0.2, "")
+			if p := f.Problem(); p != "" {
+				t.Fatal(p)
+			}
+			r := f.Analyze().Check()
+			if added := r.Volume - before; !r.Sound() || added < c.lo || added > c.hi {
+				t.Errorf("%s, added %g", r.Summary(), added)
+			}
+		})
 	}
 }
 

@@ -1899,6 +1899,7 @@ func putBlends(sh *srf.SShell, bls []*rbBlend, origin uint32) error {
 		}
 	}
 	splitAtMitres(bls, patchLoops)
+	splitAtPivots(bls, corners, patchLoops)
 	fa := NewFaceAdder(sh)
 	for i, bl := range bls {
 		color := t.Surface(bl.rb.side[0][0]).Color
@@ -1986,8 +1987,10 @@ func splitAtPoints(c srf.SBezier, pts []geom.Vector) []srf.SBezier {
 		if p.Minus(c.Start()).Magnitude() < mitreCornerTol || p.Minus(c.Finish()).Magnitude() < mitreCornerTol {
 			continue
 		}
+		// Written so that a search that didn't converge, NaN, splits
+		// nothing.
 		t, _ := c.ClosestPointTo(p, true)
-		if t <= 0 || t >= 1 || c.PointAt(t).Minus(p).Magnitude() > mitreCornerTol {
+		if !(t > 0 && t < 1) || !(c.PointAt(t).Minus(p).Magnitude() <= mitreCornerTol) {
 			continue
 		}
 		ts = append(ts, t)
@@ -1996,6 +1999,8 @@ func splitAtPoints(c srf.SBezier, pts []geom.Vector) []srf.SBezier {
 		return []srf.SBezier{c}
 	}
 	slices.Sort(ts)
+	// A point given twice, as a corner two patches share, splits once.
+	ts = slices.CompactFunc(ts, func(a, b float64) bool { return c.PointAt(a).Minus(c.PointAt(b)).Magnitude() < mitreCornerTol })
 	var out []srf.SBezier
 	rest, done := c, 0.0
 	for _, t := range ts {

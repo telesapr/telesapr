@@ -21,8 +21,21 @@ import (
 // either end is the fillet's own section. A chamfer's corner is ruled
 // the same way: lines from the crease to the shared face, its foot
 // there at the chamfer's distance from the crease as the cut swings.
-// Across each end the skin takes the fillet's derivative, but at the
-// crease, where its foot runs along the crease.
+// Across each end the skin takes the corner's own sections' derivative,
+// not the fillet's. The corner turns about the crease, so a section's
+// point moves as fast as its distance from the crease, and the arc's
+// middle control point, on the crease below the vertex, not at all; the
+// fillet runs on along its edge, every point at about the ball's speed.
+// Both move a section's points square to its plane, and with its own the
+// corner's normals lie within 1e-4° of the fillet's along the end (the
+// dish's pocket, the strip wrapped onto a tube). Held to the fillet's
+// speeds, a quintic along the corner carried the points near the crease,
+// whose whole swing there is a few hundredths of a millimetre at a radius
+// of 0.2, a fifth of the ball's path out along the fillet's edge and
+// back: the corner folded by a few thousandths of a millimetre, a mesh
+// finer than that crossed itself (the strip's corners at chord
+// tolerances of 0.015% and finer), and its normals turned up to 4.7°
+// from the fillet's near the crease.
 
 // pivotMaxSections is how many sections a corner is skinned through at
 // most.
@@ -75,15 +88,7 @@ func newPivotCorner(a *rbBlend, ka int, b *rbBlend, kb int) (*pivotCorner, error
 	if err := pf.sectionsLike(); err != nil {
 		return nil, err
 	}
-	d0, err := pf.deriv(a, ka, pf.secA, pf.ia, endDir(ka), false)
-	if err != nil {
-		return nil, err
-	}
-	d1, err := pf.deriv(b, kb, pf.secB, pf.ib, -endDir(kb), pf.ia != pf.ib)
-	if err != nil {
-		return nil, err
-	}
-	all, err := pf.skin(d0, d1)
+	all, err := pf.skin()
 	if err != nil {
 		return nil, err
 	}
@@ -326,103 +331,20 @@ func (pf *pivotFrame) sectionsLike() error {
 	return nil
 }
 
-// deriv is the derivative across the corner's end where it meets the
-// end k of bl's fillet, whose section there is sec and creased side i,
-// per unit of the swing's path, the corner running into (into 1) or out
-// of that fillet; but at the crease, where the corner's foot runs along
-// it. flip turns it the corner's way where the fillet's sections run
-// the other way.
-func (pf *pivotFrame) deriv(bl *rbBlend, k int, sec rbSection, i int, into float64, flip bool) ([]geom.Vector4, error) {
-	rb := bl.rb
-	d, err := rb.inwardDerivative(k, sec.s)
-	if err != nil {
-		return nil, err
-	}
-	if pf.ref.Deg >= endDeg && len(d) < endDeg+1 {
-		d = elevateH(d)
-	}
-	if len(d) == endDeg+1 {
-		d = pf.refRb.splitDerivative(d)
-	}
-	h := math.Min(rb.r/16, rb.length/256) * -endDir(k)
-	in, err := rb.section(sec.s + h)
-	if err != nil {
-		return nil, err
-	}
-	// The speed of the point the swing's path follows.
-	a, b := sec.c, in.c
-	if pf.flat {
-		a, b = sec.foot[1-i].p, in.foot[1-i].p
-	}
-	speed := b.Minus(a).Magnitude() / math.Abs(h)
-	if speed < 1e-9 {
-		return nil, filletErr(sec.c, "the fillet stands still at the inside corner")
-	}
-	out := make([]geom.Vector4, len(d))
-	for j := range d {
-		out[j] = d[j].ScaledBy(into / speed)
-	}
-	if flip {
-		slices.Reverse(out)
-	}
-	ci := 0
-	if pf.c.creaseU == 1 {
-		ci = len(out) - 1
-	}
-	along := pf.c.qb.Minus(pf.c.qa).ScaledBy(1 / pf.total)
-	out[ci] = geom.Vector4{X: along.X, Y: along.Y, Z: along.Z}
-	return out, nil
-}
-
 // skin is the corner's surface, cut into its patches: through more
 // sections until it keeps to them within the fillets' tolerance. The
-// sections are the corner's own (curve), each moved in homogeneous
-// coordinates by the Hermite terms that give their run the fillets'
-// derivatives at its ends, d0 and d1 per unit of the swing's path, and
-// leave its ends where they are; else the skin, held to the fillets'
-// derivatives, would stray from them in proportion to its spacing.
-func (pf *pivotFrame) skin(d0, d1 []geom.Vector4) ([][]srf.SSurface, error) {
-	s0, s1 := make([]geom.Vector4, len(d0)), make([]geom.Vector4, len(d1))
-	for i := range d0 {
-		s0[i] = d0[i].ScaledBy(pf.total)
-	}
-	for i := range d1 {
-		s1[i] = d1[i].ScaledBy(pf.total)
-	}
-	sectionAt, err := pf.moved(s0, s1)
+// sections are the corner's own (curve), and so are the derivatives
+// across its ends (ownDerivatives), not the fillets' (the file's comment
+// says why).
+func (pf *pivotFrame) skin() ([][]srf.SSurface, error) {
+	s0, s1, err := pf.ownDerivatives()
 	if err != nil {
 		return nil, err
 	}
-	if all, ok := pf.oneSpan(s0, s1, sectionAt); ok {
+	if all, ok := pf.oneSpan(s0, s1, pf.curve); ok {
 		return all, nil
 	}
-	return pf.manySpans(s0, s1, sectionAt)
-}
-
-// moved is the corner's sections at t (curve), moved in homogeneous
-// coordinates by the Hermite terms t(1-t)² and t²(t-1) that turn their
-// own derivatives at the ends into s0 and s1.
-func (pf *pivotFrame) moved(s0, s1 []geom.Vector4) (func(float64) (srf.BSplineCurve, bool), error) {
-	c0, c1, err := pf.ownDerivatives()
-	if err != nil {
-		return nil, err
-	}
-	for i := range c0 {
-		c0[i] = s0[i].Minus(c0[i])
-		c1[i] = s1[i].Minus(c1[i])
-	}
-	return func(t float64) (srf.BSplineCurve, bool) {
-		x, ok := pf.curve(t)
-		if !ok {
-			return x, false
-		}
-		h0, h1 := t*(1-t)*(1-t), t*t*(t-1)
-		h := homog(x)
-		for i := range h {
-			h[i] = h[i].Plus(c0[i].ScaledBy(h0)).Plus(c1[i].ScaledBy(h1))
-		}
-		return withHomog(x, h), true
-	}, nil
+	return pf.manySpans(s0, s1, pf.curve)
 }
 
 // manySpans skins the corner through sections at even steps of t, twice
@@ -592,17 +514,6 @@ func (pf *pivotFrame) ownDerivatives() ([]geom.Vector4, []geom.Vector4, error) {
 		ends[k] = d
 	}
 	return ends[0], ends[1], nil
-}
-
-// withHomog is x with its control points and weights h, in homogeneous
-// coordinates.
-func withHomog(x srf.BSplineCurve, h []geom.Vector4) srf.BSplineCurve {
-	out := srf.BSplineCurve{Deg: x.Deg, Knots: slices.Clone(x.Knots)}
-	for _, p := range h {
-		out.Ctrl = append(out.Ctrl, p.PerspectiveProject())
-		out.Weight = append(out.Weight, p.W)
-	}
-	return out
 }
 
 // arcAbout is the arc of radius rho about c from f0 to f1.
