@@ -83,6 +83,7 @@ A call that can't do what it is asked stops the script with an error that says w
 - No generic functions without their type arguments; slices.Sort, slices.Max and maps.Clone are missing (sort.Ints and slices.Contains work).
 - A name that isn't defined is reported as "constant definition loop, or a name that isn't defined".
 - math.Pi and math's other float constants are float64: 2.0 * math.Pi works, a float32 needs float32(math.Pi).
+- A struct literal without field names, or a literal of a type the script declared, can't hold a method called on an element of a slice a call returned, as P{gs[0].Name()} with gs := doc.Groups(): put the value in a variable first, n := gs[0].Name(), then P{n}. The error says so. In a slice, array or map literal, as []api.Entity{lines[0].Start()}, it works.
 
 ## Example
 

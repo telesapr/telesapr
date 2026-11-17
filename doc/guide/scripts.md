@@ -280,5 +280,10 @@ The pictures and the console's text are made by
   seen after Script > Stop has stopped a script, or in a new window. A script file run from the
   menu starts a new interpreter each time, and sees the change at once.
 - There are no versions or downloads of packages: the library is a folder you keep.
+- The interpreter, yaegi, can't compile a method called on an element of a slice that a call
+  returned when it stands in a struct literal without field names, as `P{gs[0].Name()}` with
+  `gs := doc.Groups()`, or in a literal of a type the script declared. The error names the line
+  and says to put the value in a variable first: `n := gs[0].Name()`, then `P{n}`. In a slice,
+  array or map literal, as `[]api.Entity{lines[0].Start()}`, it works.
 - An AI program's scripts are kept to some folders ([Drawing with an AI model](ai.md#files));
   yours are not.

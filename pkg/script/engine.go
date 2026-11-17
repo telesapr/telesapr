@@ -488,18 +488,30 @@ func (e *Engine) Eval(ctx context.Context, src string) (reflect.Value, error) {
 // eval runs source in the interpreter and says where an error is.
 func (e *Engine) eval(ctx context.Context, src string) (reflect.Value, error) {
 	e.clearPanic()
+	keys := keyElements(src)
 	// The interpreter logs some of what it can't compile, besides
 	// returning the error.
 	logged := log.Writer()
 	log.SetOutput(io.Discard)
-	v, err := e.i.EvalWithContext(ctx, zeroNamedResults(src))
+	v, err := e.i.EvalWithContext(ctx, zeroNamedResults(keys.src))
 	log.SetOutput(logged)
 	// The interpreter says where a panic of the script was; one without
 	// a place is its own, from before the script ran.
 	var p interp.Panic
 	line, _ := e.panicPlace()
 	e.ran = err == nil || ctx.Err() != nil || (errors.As(err, &p) && line != 0)
-	return v, e.locate(err, src)
+	return v, unkey(e.locate(err, src), src, keys.inserts)
+}
+
+// unkey counts the place the interpreter gave an error in source that
+// keyElements put keys into from the source as it was.
+func unkey(err error, src string, inserts []insert) error {
+	serr, ok := errors.AsType[*Error](err)
+	if !ok || serr.Line < 1 || len(inserts) == 0 || errors.Is(serr.Err, errCompileFault) {
+		return err
+	}
+	serr.Line, serr.Col = unplace(src, inserts, serr.Line, serr.Col)
+	return err
 }
 
 // definition is a statement that defines variables from one
@@ -714,7 +726,7 @@ func (e *Engine) tooMany(d definition) error {
 	blanks := strings.Repeat("_, ", len(d.names)) + "_"
 	logged := log.Writer()
 	log.SetOutput(io.Discard)
-	_, err := e.i.Eval("_ = func() { " + blanks + " = " + d.value + " }")
+	_, err := e.i.Eval(keyElements("_ = func() { " + blanks + " = " + d.value + " }").src)
 	log.SetOutput(logged)
 	if err != nil {
 		return nil //nolint:nilerr // the probe failing means the count fits, which is no error
@@ -946,6 +958,9 @@ func (e *Engine) locate(err error, src string) error {
 		default:
 			out.Err = panicError(v)
 		}
+		if compiling(p) {
+			return compileFault(src, out.Err)
+		}
 		out.Line, out.Col = e.panicPlace()
 	case errors.As(err, &list) && len(list) > 0:
 		out.Line, out.Col, out.Err = list[0].Pos.Line, list[0].Pos.Column, errors.New(list[0].Msg)
@@ -1073,9 +1088,14 @@ func (e *Engine) show(ctx context.Context, src string) (string, error) {
 	// one; passed on to a function, they are all there. That doesn't
 	// compile for a call without a value, which is then just run.
 	e.clearTold()
-	_, err := e.i.EvalWithContext(ctx, "telesaprConsole.Show("+src+")")
+	const wrapper = "telesaprConsole.Show("
+	keys := keyElements(wrapper + src + ")")
+	_, err := e.i.EvalWithContext(ctx, keys.src)
 	var p interp.Panic
 	switch {
+	case errors.As(err, &p) && compiling(p):
+		// The interpreter failed on the wrapper: it is run as it is,
+		// below, so that what it says counts from src.
 	case err == nil:
 		values := e.shownValues()
 		parts := make([]string, len(values))
@@ -1085,7 +1105,10 @@ func (e *Engine) show(ctx context.Context, src string) (string, error) {
 		return strings.Join(parts, ", "), nil
 	case errors.As(err, &p), ctx.Err() != nil:
 		// It ran.
-		return "", e.locate(err, src)
+		for i := range keys.inserts {
+			keys.inserts[i].at -= len(wrapper)
+		}
+		return "", unkey(e.locate(err, src), src, keys.inserts)
 	}
 	_, err = e.eval(ctx, src)
 	return "", err
@@ -1177,6 +1200,12 @@ func RunSource(ctx context.Context, opts Options, name, src string) error {
 			return e.eval(ctx, placed)
 		})
 		var serr *Error
+		if errors.As(err, &serr) && serr.Line == 0 && errors.Is(serr.Err, errCompileFault) {
+			// Where in the program the interpreter failed isn't known,
+			// and 1:1 would say it was at the package clause.
+			serr.File = name
+			return err
+		}
 		if errors.As(err, &serr) && serr.Line > 0 {
 			// A place is known only if the program panicked.
 			if at := e.failedStatement(); at.line > 0 {
