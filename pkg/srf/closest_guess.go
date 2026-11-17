@@ -112,3 +112,14 @@ func (s *SShell) KeepClosestGuesses(keep bool) {
 		s.Surface[i].guess, s.Surface[i].rays = nil, nil
 	}
 }
+
+// ProjectIndependently runs fn with the closest-point caches of the
+// shell's surfaces off (SSurface.Cached), as a Boolean's loops run:
+// each point fn projects on them is found from the grid alone, not from
+// where the one before ended, so fn may project from several goroutines
+// and find the same points whatever their order.
+func (s *SShell) ProjectIndependently(fn func()) {
+	setNoCache(true, s)
+	defer setNoCache(false, s)
+	fn()
+}

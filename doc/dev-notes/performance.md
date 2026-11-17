@@ -68,7 +68,14 @@ bin/telesapr-cli regenerate --cpuprofile cpu.out /tmp/m.tlspr
   lies further off than a foot already found within its patch is not projected on, the face
   last found tried first, and the foot is chosen among the rest as before, so the solid is the
   same to the bit: that chamfer 155.8 s to 22.1 s, `BenchmarkFilletWrappedArch` 14.9 s to 4.8 s.
-  The chains of one mitred fillet are still made one after another, on one core.
+  Since then too the groups of chains a fillet's mitres join, which share nothing but the faces
+  they project on, are traced and blended at once, each group's chains in order, with the
+  faces' closest-point caches off (`SShell.ProjectIndependently`) so that no projection
+  depends on another group's: the barrel's four groups of six chains, 23.0 s to 12.0 s, the
+  saved file the same to the byte. Left of those 12 s: the check that the solid is closed
+  (`unsound`, 4 s, a mesh of the whole shell), putting the blends in (2.4 s, a linear
+  `FindSurface` among them) and the four groups' blends (4 s, one goroutine each). The chains
+  of one group are still made one after another.
 
 ## Open
 

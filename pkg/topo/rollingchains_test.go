@@ -9,6 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/internal/fixtures"
+	"github.com/telesapr/telesapr/pkg/internal/par"
 	"github.com/telesapr/telesapr/pkg/srf"
 	"github.com/telesapr/telesapr/pkg/topo"
 )
@@ -407,5 +408,48 @@ func TestChamferChainsRadii(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// shellPrint is a shell's surfaces and trim curves to the bit.
+func shellPrint(sh *srf.SShell) string {
+	var b []byte
+	for i := range sh.Surface {
+		s := &sh.Surface[i]
+		b = fmt.Appendf(b, "s%d %d %d %v %v\n", s.H.V, s.DegM, s.DegN, s.Ctrl, s.Weight)
+	}
+	for i := range sh.Curve {
+		c := &sh.Curve[i]
+		b = fmt.Appendf(b, "c%d %v %v\n", c.H.V, c.Exact, c.Points)
+	}
+	return string(b)
+}
+
+// The chains of one fillet that make separate groups, each joined by
+// mitres, are blended at once (rollingchains.go): the lens's top rim
+// and its bottom rim, rounded together, come out the same to the bit
+// on one goroutine as on several. It sets the process's number of
+// workers, so it doesn't run in parallel with other tests.
+func TestFilletChainGroupsAtOnce(t *testing.T) {
+	if testing.Short() {
+		t.Skip("rolling-ball fillets of several chains, slow")
+	}
+	lens := lensCubics()
+	picks := topPicks(lens)
+	for _, c := range lens {
+		picks = append(picks, topo.FilletPick{At: cubicMiddle(c, 0), Arc: true})
+	}
+	run := func(workers int) string {
+		defer par.SetWorkers(par.SetWorkers(workers))
+		sh := cubicPrism(lens, fine(0.002))
+		if err := topo.FilletPicks(sh, picks, 1, 1<<30, false); err != nil {
+			t.Fatalf("%d workers: %v", workers, err)
+		}
+		sound(t, sh)
+		return shellPrint(sh)
+	}
+	one := run(1)
+	if many := run(8); many != one {
+		t.Errorf("on eight goroutines the fillet differs from one's")
 	}
 }

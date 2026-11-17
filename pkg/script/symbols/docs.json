@@ -11561,6 +11561,10 @@
 						"decl": "func (s *SShell) Pieces() []*SShell",
 						"text": "Pieces are the shell's pieces: the sets of its surfaces that trim curves join, each as a shell of its own with the surfaces' and curves' handles kept."
 					},
+					"ProjectIndependently": {
+						"decl": "func (s *SShell) ProjectIndependently(fn func())",
+						"text": "ProjectIndependently runs fn with the closest-point caches of the shell's surfaces off (SSurface.Cached), as a Boolean's loops run: each point fn projects on them is found from the grid alone, not from where the one before ended, so fn may project from several goroutines and find the same points whatever their order."
+					},
 					"RemapFaces": {
 						"decl": "func (s *SShell) RemapFaces(group ShellGroup, remap int)",
 						"text": "RemapFaces rewrites each surface's face to the group's copy copyNumber of it."

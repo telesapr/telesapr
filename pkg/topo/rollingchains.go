@@ -5,6 +5,7 @@ import (
 	"math"
 	"slices"
 
+	"github.com/telesapr/telesapr/pkg/internal/par"
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
@@ -49,13 +50,32 @@ func rollingBallFilletsAt(sh *srf.SShell, t *Topology, edges []int, radii []floa
 	if !linkMitresAt(rbs, partial) {
 		return errNotMitred
 	}
-	// A mitre's plane halves the turn from one chain to the other: every
-	// chain is traced before any plane is set.
-	for _, rb := range rbs {
-		if err := rb.trace(); err != nil {
-			return err
+	// The groups of chains joined by mitres share nothing but the faces
+	// they project points on, which they find independently: each group
+	// is traced and blended on its own goroutine, its chains in order.
+	groups := mitreGroups(rbs)
+	var bls []*rbBlend
+	var err error
+	t.shell.ProjectIndependently(func() {
+		// A mitre's plane halves the turn from one chain to the other:
+		// every chain is traced before any plane is set.
+		if err = eachGroup(rbs, groups, func(rb *rollingBall) error { return rb.trace() }); err != nil {
+			return
 		}
+		if err = mitreChains(rbs); err != nil {
+			return
+		}
+		bls, err = blendGroups(rbs, groups)
+	})
+	if err != nil {
+		return err
 	}
+	return putBlends(sh, bls, origin)
+}
+
+// mitreChains sets the mitres of the traced chains rbs: their turns,
+// the inside mitres, the mitres' planes and kinks.
+func mitreChains(rbs []*rollingBall) error {
 	for _, rb := range rbs {
 		rb.turn()
 	}
@@ -76,9 +96,43 @@ func rollingBallFilletsAt(sh *srf.SShell, t *Topology, edges []int, radii []floa
 			return filletErr(midpoint(rb.pts), "the edges meeting in a mitre are one convex and one concave: round them one at a time")
 		}
 	}
+	return nil
+}
+
+// blendGroups blends the chains rbs, split into the groups of chains
+// joined by mitres, each group on its own goroutine; the blends are in
+// the order of rbs. The error is that of the first group that failed,
+// the groups in the order of their first chains.
+func blendGroups(rbs []*rollingBall, groups [][]int) ([]*rbBlend, error) {
+	bls := make([]*rbBlend, len(rbs))
+	errs := make([]error, len(groups))
+	par.For(len(groups), func(g int) {
+		grp := make([]*rollingBall, len(groups[g]))
+		for j, i := range groups[g] {
+			grp[j] = rbs[i]
+		}
+		gbls, err := blendGroup(grp)
+		if err != nil {
+			errs[g] = err
+			return
+		}
+		for j, i := range groups[g] {
+			bls[i] = gbls[j]
+		}
+	})
+	for _, err := range errs {
+		if err != nil {
+			return nil, err
+		}
+	}
+	return bls, nil
+}
+
+// blendGroup blends the chains rbs, which meet each other in mitres.
+func blendGroup(rbs []*rollingBall) ([]*rbBlend, error) {
 	// As one chain's mitre (blend): sections in two spans first, which
 	// follow it down to fine tolerances, then whole, then in four, finer
-	// still; every chain alike, as the chains share their mitres.
+	// still; every chain of the group alike, as they share their mitres.
 	// A chain mitred at one end only ends at its face at the other, and
 	// along a curved edge that end's conics stray from the swept surface
 	// as a lone chain's do (blend): its sections fitted to their cuts
@@ -104,9 +158,63 @@ func rollingBallFilletsAt(sh *srf.SShell, t *Topology, edges []int, radii []floa
 		}
 	}
 	if bls == nil {
-		return err
+		return nil, err
 	}
-	return putBlends(sh, bls, origin)
+	return bls, nil
+}
+
+// mitreGroups splits the chains rbs into the groups joined by mitres:
+// the indices into rbs of each, in order, the groups in the order of
+// their first chains.
+func mitreGroups(rbs []*rollingBall) [][]int {
+	group := make(map[*rollingBall]int, len(rbs))
+	var groups [][]int
+	for _, rb := range rbs {
+		if _, ok := group[rb]; ok {
+			continue
+		}
+		g := len(groups)
+		groups = append(groups, nil)
+		stack := []*rollingBall{rb}
+		group[rb] = g
+		for len(stack) > 0 {
+			cur := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			for _, end := range cur.ends {
+				if m := end.mate; m != nil {
+					if _, ok := group[m]; !ok {
+						group[m] = g
+						stack = append(stack, m)
+					}
+				}
+			}
+		}
+	}
+	for i, rb := range rbs {
+		g := group[rb]
+		groups[g] = append(groups[g], i)
+	}
+	return groups
+}
+
+// eachGroup calls fn on every chain of rbs, the groups at once and the
+// chains of each in order, a group stopping at its first error. The
+// error is that of the first chain in rbs that failed, as in one loop.
+func eachGroup(rbs []*rollingBall, groups [][]int, fn func(rb *rollingBall) error) error {
+	errs := make([]error, len(rbs))
+	par.For(len(groups), func(g int) {
+		for _, i := range groups[g] {
+			if errs[i] = fn(rbs[i]); errs[i] != nil {
+				return
+			}
+		}
+	})
+	for _, err := range errs {
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // partlyMitred reports whether a chain of rbs is mitred at one end only.
