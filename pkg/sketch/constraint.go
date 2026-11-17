@@ -3,8 +3,10 @@ package sketch
 import (
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/telesapr/telesapr/pkg/core"
+	"github.com/telesapr/telesapr/pkg/solver"
 )
 
 // This file ports the part of solvespace/src/constraint.cpp that makes
@@ -44,11 +46,19 @@ func (sk *Sketch) AddConstraintRemember(c *core.Constraint, rememberForUndo bool
 // equalConstraint returns the handle of a constraint other than skip
 // that has the same base as c: the same kind, entities and value. The
 // label and the offset are not compared, but for a comment, whose
-// offset is where it is.
+// offset is where it is. Values are equal within the tolerance the
+// solver holds a dimension to: a dimension measured where an equal one
+// holds the sketch (core.Constraint.ModifyToSatisfy) reads its value
+// only as closely as the solve that placed the geometry met it, and a
+// solve that starts satisfied moves nothing.
 func (sk *Sketch) equalConstraint(c *core.Constraint, skip core.HConstraint) (core.HConstraint, bool) {
 	for i := range sk.Constraints {
 		cc := &sk.Constraints[i]
-		if cc.H != skip && c.ConstraintBase.Equals(&cc.ConstraintBase) && //nolint:staticcheck // QF1008: the base is named on purpose
+		base := c.ConstraintBase
+		if math.Abs(base.ValA-cc.ValA) <= solver.ConvergeTolerance {
+			base.ValA = cc.ValA
+		}
+		if cc.H != skip && base.Equals(&cc.ConstraintBase) &&
 			(c.Type != core.ConstraintComment || c.Disp.Offset == cc.Disp.Offset) {
 			return cc.H, true
 		}

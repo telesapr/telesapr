@@ -33,3 +33,31 @@ func TestDuplicateConstraint(t *testing.T) {
 		t.Errorf("duplicating a missing constraint gave %v", err)
 	}
 }
+
+// A constraint whose value differs from one the sketch has by less than
+// the solver holds a dimension to is that one: measured where the other
+// holds the sketch, it reads the last bits of a solve that moved
+// nothing. Further off, it is another.
+func TestEqualConstraintWithinTolerance(t *testing.T) {
+	t.Parallel()
+	sk := NewSketch()
+	sk.NewFile()
+	sk.GenerateAll()
+	g := sk.Groups[len(sk.Groups)-1].H
+	c := core.Constraint{Group: g, Type: core.ConstraintComment}
+	c.Comment = "measured"
+	c.ValA = 12.803459707901933
+	near, far := c, c
+	near.ValA = 12.803459707901935
+	far.ValA = 12.8035
+	hs, err := sk.AddConstraints([]core.Constraint{c, near, far})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hs[1] != hs[0] {
+		t.Errorf("a value 2e-15 off made constraint %v beside %v", hs[1], hs[0])
+	}
+	if hs[2] == hs[0] {
+		t.Errorf("a value 4e-5 off was taken for constraint %v", hs[0])
+	}
+}
