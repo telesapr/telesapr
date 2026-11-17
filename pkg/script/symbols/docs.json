@@ -8580,6 +8580,10 @@
 						"decl": "func (sk *Sketch) Interferences(upTo core.HGroup) (found []Interference, meshOnly []core.HGroup)",
 						"text": "Interferences checks the parts of the model up to group upTo against each other."
 					},
+					"LeftAsBefore": {
+						"decl": "func (sk *Sketch) LeftAsBefore(hg core.HGroup) bool",
+						"text": "LeftAsBefore reports whether group hg comes after the active group and a change to it or before it left it as the regeneration before made it, since a regeneration goes only as far as the active group: its solid, its problems and its degrees of freedom are those of then, not of the model now."
+					},
 					"LeftOutEdgeNames": {
 						"decl": "func (sk *Sketch) LeftOutEdgeNames(hg core.HGroup) []string",
 						"text": "LeftOutEdgeNames names the edges the load of a damaged file dropped from group hg because the file doesn't hold them, and that a save still writes back; none once the group's edges have been edited."
