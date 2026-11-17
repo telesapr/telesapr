@@ -176,7 +176,7 @@ group/boolean_tangent_fillet/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed
 group/boolean_tangent_fillet/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 group/boolean_tangent_fillet/normal.slvs g3 tri=8 faces=5 naked=0 inter=0 failed=false vol=1 com=0.33333333333333331,-0.66666666666666663,-0.49999999999999994 min=0,-2,-1 max=1,0,0 topo=0 euler=2
 group/boolean_tangent_fillet/normal.slvs g4 tri=8 faces=5 naked=0 inter=0 failed=false vol=1 com=0.33333333333333331,-0.66666666666666663,-0.49999999999999994 min=0,-2,-1 max=1,0,0 topo=0 euler=2
-group/boolean_tangent_fillet/normal.slvs g5 tri=112 faces=7 naked=0 inter=0 failed=false vol=0.97305762369726412 com=0.33946246803092661,-0.68202525693004323,-0.50692209167432767 min=0,-2,-1 max=1,0,0 topo=0 euler=2
+group/boolean_tangent_fillet/normal.slvs g5 tri=112 faces=7 naked=0 inter=0 failed=false vol=0.97305762369724746 com=0.33946246803092761,-0.68202525693004534,-0.50692209167432833 min=0,-2,-1 max=1,0,0 topo=0 euler=2
 group/boolean_tangent_spline/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 group/boolean_tangent_spline/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 group/boolean_tangent_spline/normal.slvs g3 tri=12 faces=6 naked=0 inter=0 failed=false vol=216000 com=0,0,0 min=-30,-30,-30 max=30,30,30 topo=0 euler=2
@@ -253,10 +253,10 @@ request/line_segment/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 request/line_segment/normal.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 request/ttf_text/extrude.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 request/ttf_text/extrude.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-request/ttf_text/extrude.slvs g3 tri=3190 faces=43 naked=0 inter=0 failed=false vol=427.97654690828102 com=7.5350141277267424,-0.44005349101752961,3.0000208899194098 min=-5,-5.227792505174877,0 max=20.535175800323486,5,6.0000000000000027 topo=0 euler=0 patches=127
+request/ttf_text/extrude.slvs g3 tri=3180 faces=43 naked=0 inter=0 failed=false vol=427.98392500763333 com=7.5351455822359954,-0.44000260877120534,3.0000096792864288 min=-5,-5.227792505174877,0 max=20.535175800323486,5,6.0000000000000027 topo=0 euler=0 patches=127
 request/ttf_text/extrude_kerning.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 request/ttf_text/extrude_kerning.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
-request/ttf_text/extrude_kerning.slvs g3 tri=1810 faces=19 naked=0 inter=0 failed=false vol=229.49350767412412 com=3.0545737511544027,-0.32343717676105016,3.0000184855457945 min=-4.9241196503862739,-5.2277925051748753,0 max=10.167436599731445,4.5671337842941284,6.0000000000000018 topo=0 euler=2 patches=69
+request/ttf_text/extrude_kerning.slvs g3 tri=1818 faces=19 naked=0 inter=0 failed=false vol=229.49178059632692 com=3.0545591705171562,-0.32341535031880175,2.9999834297115169 min=-4.9241196503862739,-5.2277925051748753,0 max=10.167436599731445,4.5671337842941284,6.0000000000000018 topo=0 euler=2 patches=69
 request/ttf_text/kerning.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
 request/ttf_text/kerning.slvs g2 tri=0 faces=0 naked=0 inter=0 failed=false
 request/ttf_text/normal.slvs g1 tri=0 faces=0 naked=0 inter=0 failed=false
