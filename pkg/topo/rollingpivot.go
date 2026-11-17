@@ -127,6 +127,47 @@ func pivotCorners(bls []*rbBlend) ([]*pivotCorner, error) {
 	return out, nil
 }
 
+// splitAtPivots splits the sides of the fillets' patches at their
+// pivot ends where a corner's patch has a corner on them. A corner's
+// sections are of the degree and spans of the higher of the two fillets'
+// (sectionsLike): where the other's sections are of one span, as a
+// band's end across a tube beside its side's fitted quintics, the
+// corner's end there is cut into pieces its patch's side is not, and
+// the two would not share their edges.
+func splitAtPivots(bls []*rbBlend, corners []*pivotCorner, loops [][][][]srf.SBezier) {
+	// The corners of the corner's patches on its two ends, the fillets'
+	// last sections, and on no other edge of theirs.
+	var pts []geom.Vector
+	for _, c := range corners {
+		for _, row := range c.all {
+			first, last := &row[0], &row[len(row)-1]
+			pts = append(pts, first.PointAt(0, 0), first.PointAt(1, 0), last.PointAt(0, 1), last.PointAt(1, 1))
+		}
+	}
+	if len(pts) == 0 {
+		return
+	}
+	for i, bl := range bls {
+		if bl.rb.closed {
+			continue
+		}
+		m := len(bl.all[0])
+		for k, end := range bl.rb.ends {
+			if end == nil || !end.pivot {
+				continue
+			}
+			b := k * (m - 1)
+			for r := range loops[i] {
+				var out []srf.SBezier
+				for _, c := range loops[i][r][b] {
+					out = append(out, splitAtPoints(c, pts)...)
+				}
+				loops[i][r][b] = out
+			}
+		}
+	}
+}
+
 // endSec is the blend's last section at end k.
 func (bl *rbBlend) endSec(k int) rbSection {
 	if k == 0 {
