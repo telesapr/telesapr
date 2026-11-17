@@ -37,6 +37,10 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 func (s *SShell) makeBoolean(a, b *SShell, op SurfaceCombineAs) {
 	// stage marks a step of the Boolean in an execution trace.
 	stage := func(name string) func() { return trace.StartRegion(context.Background(), name).End }
+	// What the operands were projected on before must not steer this
+	// Boolean's projections (SSurface.forgetGuess).
+	a.forgetGuesses()
+	b.forgetGuesses()
 	end := stage("classifying bsps")
 	a.MakeClassifyingBsps(nil)
 	s.paced()

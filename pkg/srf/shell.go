@@ -967,6 +967,7 @@ func (s *SSurface) byCDT() bool { return s.Tol.Mesher() == MesherCDT && !s.flat(
 // (earMeshStrays), or holds a sliver (earMeshSlivers), and may cross
 // the faces beyond.
 func (s *SSurface) triangulate(shell *SShell, mesh *SMesh, with meshWith) (strays bool) {
+	s.forgetGuess()
 	if len(s.Trim) == 0 && !s.TrimBuilt {
 		// See SSurface.TrimBuilt: a constructor that doesn't build
 		// trims yet.

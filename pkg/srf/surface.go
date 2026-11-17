@@ -403,6 +403,22 @@ func FromTransformationOf(a *SSurface, t geom.Vector, q geom.Quaternion, scale f
 	return s
 }
 
+// forgetGuess drops the closest-point guess (Cached) a projection left.
+// Newton started from it can settle on another point within the
+// tolerance, so a mesh or a Boolean of a surface projected before would
+// differ from one of the same surface made afresh: a solid kept by the
+// solid cache and meshed again, or used as an operand again, would not
+// be the solid regenerated.
+func (s *SSurface) forgetGuess() { s.Cached = geom.Point2d{} }
+
+// forgetGuesses drops every surface's closest-point guess (see
+// SSurface.forgetGuess).
+func (s *SShell) forgetGuesses() {
+	for i := range s.Surface {
+		s.Surface[i].forgetGuess()
+	}
+}
+
 // ClosestPointTo finds the (u, v) of the point on the surface closest
 // to p. With mustConverge the Newton refinement starts from the last
 // result, is given more iterations, and stops once it reaches p.

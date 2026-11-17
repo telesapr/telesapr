@@ -20,7 +20,10 @@ import (
 // which they do afterwards, in order, and would read the closest-point
 // caches of the surfaces they project points on (SSurface.Cached),
 // which makes a projection depend on the one before it; so for operands
-// with curved surfaces the caches are off while they run. Planes have
+// with curved surfaces the caches are off while they run. Each Boolean
+// and each surface's mesh starts with its caches cleared
+// (SSurface.forgetGuess), so what a shell was projected on before, as a
+// solid kept from the last regeneration, doesn't change the result. Planes have
 // no use for them. The loops run the same way on one goroutine as on
 // several, so the result is the same to the bit whatever the number
 // (roadmap 17.1: there was an exact mode, which ran curved operands'
