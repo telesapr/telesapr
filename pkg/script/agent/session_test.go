@@ -237,6 +237,23 @@ func TestSessionRollback(t *testing.T) {
 	}
 }
 
+// A literal of methods called on the elements of a slice the scripting
+// interface returned runs over MCP, where the interpreter alone panics
+// while compiling it; one it can't be made to compile names the line.
+func TestSessionLiteralOfIndexedMethod(t *testing.T) {
+	t.Parallel()
+	s := newSession(t)
+	res := run(t, s, "tl := doc.Sketch.Polyline(true, V(0, 0, 0), V(10, 0, 0), V(10, 5, 0))\n"+
+		"ents := []api.Entity{tl[0].Start(), tl[1].Start(), tl[2].Start()}\nlen(ents)")
+	if res.Error != "" || res.Value != "3" {
+		t.Fatalf("the literal gave %+v", res)
+	}
+	res = run(t, s, "type P struct{ N string }\ngs := doc.Groups()\np := P{gs[0].Name()}")
+	if !strings.HasPrefix(res.Error, "script:3:8: ") || !strings.Contains(res.Error, "put it in a variable first") {
+		t.Errorf("a struct literal the interpreter can't compile gave %q", res.Error)
+	}
+}
+
 // A failed script is taken back whole though it called what remembers
 // its own step of undo, as TangentArc and Split do, before or after
 // its first other change.
