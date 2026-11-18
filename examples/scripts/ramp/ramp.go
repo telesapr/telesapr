@@ -15,8 +15,8 @@
 // cylinders meet along an ellipse; here the faces don't lie alike about
 // the edges, so the cylinder along the slope, which turns further, goes
 // on past the ellipse to where it meets the front. The script checks
-// the solid, compares its volume with OpenCASCADE's for a radius of 1,
-// 2 or 3, prints it, and saves ramp.tlspr, unless given "-".
+// the solid, compares its volume with the one expected for a radius of
+// 1, 2 or 3, prints it, and saves ramp.tlspr, unless given "-".
 package main
 
 import (
@@ -62,11 +62,11 @@ func main() {
 	r := rounded.Analyze().Check()
 	fmt.Printf("top rounded at %g mm: %s, %.1f mm³", radius,
 		map[bool]string{true: "sound", false: "NOT sound"}[r.Sound()], r.Volume)
-	// OpenCASCADE's volumes (FreeCAD's makeFillet), whose curves are
-	// exact for this ramp.
-	occ := map[float64]float64{1: 1742.944765, 2: 1721.888725, 3: 1686.996378}
-	if want, ok := occ[radius]; ok {
-		fmt.Printf(" (%.1f by OpenCASCADE)", want)
+	// The volumes of the ramp rounded by exact cylinders and their
+	// corners.
+	expected := map[float64]float64{1: 1742.944765, 2: 1721.888725, 3: 1686.996378}
+	if want, ok := expected[radius]; ok {
+		fmt.Printf(" (%.1f expected)", want)
 		if math.Abs(r.Volume-want) > 1e-3*want {
 			fmt.Println()
 			os.Exit(1)

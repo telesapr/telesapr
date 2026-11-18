@@ -25,8 +25,9 @@ import (
 // files, and the section of a picture; version 3 the script option of
 // describe; version 4 the caption of a picture; version 5 the solid
 // option of describe; version 6 the progress of a run and the data of
-// describe and measure.
-const Protocol = 6
+// describe and measure; version 7 the old groups of describe and of a
+// run's status.
+const Protocol = 7
 
 // The operations of a request.
 const (

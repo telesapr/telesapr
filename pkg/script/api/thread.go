@@ -215,6 +215,15 @@ func (v ThreadGroup) Options() (o ThreadOptions) {
 	return o
 }
 
+// Circle is the circle or arc the thread is on; for a thread made on a
+// face, the construction circle in the datum at the face's end, whose
+// Group is that datum.
+func (v ThreadGroup) Circle() (e Entity) {
+	g := v.g
+	g.d.read(func(sk *sketch.Sketch) { e = Entity{g.d, g.get(sk).Thread.Circle} })
+	return e
+}
+
 // Groups are the thread's groups: the sketch and the lathe that turn
 // the part down or bore it, the sketch of the ridge, and the helix that
 // sweeps it; then, with level starts, a ridge sketch and a helix for

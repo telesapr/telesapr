@@ -462,3 +462,49 @@ func TestRenderCaption(t *testing.T) {
 		t.Errorf("the caption is\n%q\nwant\n%q", got, want)
 	}
 }
+
+// A script that changes a group before others leaves the groups after
+// the active one as they were made: the status names them old and
+// reads nothing of them, which would make every group of the drawing
+// after every script.
+func TestStatusNamesOldGroups(t *testing.T) {
+	t.Parallel()
+	s := newSession(t)
+	res := run(t, s, `
+    box := func(x0, y0, x1, y1 float64, name string) Group {
+        doc.Features.SketchIn(doc.Workplane("XY"), name+"-outline")
+        doc.Sketch.Rect(V(x0, y0, 0), V(x1, y1, 0))
+        return doc.Features.Extrude(10, name)
+    }
+    block := box(0, 0, 20, 20, "block")
+    hole := box(2, 2, 6, 6, "hole")
+    hole.SetCombine(Difference)
+    fmt.Println(hole.Problem())
+    doc.Activate(block)
+    slot := box(18, 10, 24, 14, "slot")
+    slot.SetCombine(Difference)
+    fmt.Println(slot.Problem())`)
+	if res.Error != "" || strings.Contains(res.Status, "old") {
+		t.Fatalf("the drawing failed (%s) or is old:\n%s", res.Error, res.Status)
+	}
+	res = run(t, s, `slot.SetCombine(Union)`)
+	if res.Error != "" {
+		t.Fatal(res.Error)
+	}
+	if !strings.Contains(res.Status, "\nold, not made since the last change") ||
+		!strings.Contains(res.Status, "hole-outline, hole") {
+		t.Errorf("the status after the change is\n%s", res.Status)
+	}
+	var old []string
+	for _, g := range res.Groups {
+		if g.Old {
+			old = append(old, g.Name)
+		}
+	}
+	if !reflect.DeepEqual(old, []string{"hole-outline", "hole"}) {
+		t.Errorf("the old groups are %v", old)
+	}
+	if !s.Engine().Doc().Group("hole").Old() {
+		t.Error("the status made the hole")
+	}
+}

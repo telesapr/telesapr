@@ -3,7 +3,6 @@ package api
 import (
 	"math"
 
-	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
@@ -79,6 +78,11 @@ type GroupInfo struct {
 	// LeftOut is why the group is left out of the model; such a group
 	// is neither solved nor counted.
 	LeftOut string `json:"leftOut,omitempty"`
+	// Old is set for a group after the active one that a change left as
+	// it was made before (Group.Old): how it solved, its degrees of
+	// freedom (-1) and its volume are not given. A read of the group
+	// itself, as Group.Description, makes it.
+	Old bool `json:"old,omitempty"`
 	// Volume, in mm³, and Bounds are the model's up to the group, for a
 	// group that is not drawn in and has a solid.
 	Volume *float64 `json:"volume,omitempty"`
@@ -194,7 +198,7 @@ type EdgeInfo struct {
 // groups, the active group's requests and constraints, what is
 // selected and what is under the mouse.
 func (d *Doc) Description() (data Description) {
-	d.readSolidOf(core.HGroup{}, func(sk *sketch.Sketch) { _, data = describeDoc(d, sk) })
+	d.readDrawing(func(sk *sketch.Sketch) { _, data = describeDoc(d, sk) })
 	return data
 }
 

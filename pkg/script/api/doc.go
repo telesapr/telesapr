@@ -180,6 +180,18 @@ func (d *Doc) readSolidOf(hg core.HGroup, fn func(sk *sketch.Sketch)) {
 	})
 }
 
+// readDrawing is readSolidOf for what reads the whole drawing, as
+// Describe: it makes the groups through the active one, as a
+// regeneration does, and leaves those after it that a change left as
+// before for the reader to mark (Sketch.LeftAsBefore).
+func (d *Doc) readDrawing(fn func(sk *sketch.Sketch)) {
+	d.read(func(sk *sketch.Sketch) {
+		sk.MakeThrough(sk.ActiveGroup())
+		sk.RemakeStaleMeshes()
+		fn(sk)
+	})
+}
+
 // change runs fn, which changes the sketch.
 func (d *Doc) change(fn func(sk *sketch.Sketch)) {
 	d.changeOf(core.HGroup{}, fn)

@@ -26,6 +26,7 @@ func (s *SShell) MakeFromBoolean(a, b *SShell, op SurfaceCombineAs) {
 		s.pace = b.pace
 	}
 	b = snapTangent(a, snapToSpheres(a, snapToCones(a, snapToCylinders(a, snapToPlanes(a, b), 0), 0), 0), 0)
+	b = fuseCoincidentEdges(a, b)
 	wide := snapBetween(a, b)
 	s.makeBoolean(a, b, op)
 	if wide != b {
@@ -418,4 +419,6 @@ type SInter struct {
 	// nearTrim marks a hit that the trim BSP put inside or outside, but
 	// within the sag of a curved trim, where the BSP may be wrong.
 	nearTrim bool
+	// outsideTrim marks such a hit the BSP put outside.
+	outsideTrim bool
 }

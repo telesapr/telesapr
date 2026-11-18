@@ -338,6 +338,17 @@ func (s *SShell) classifyEdge(own *SSurface, indir, outdir *SShellClass,
 	*outdir = shellClassFromClass(outDir)
 }
 
+// keptAsEdge tells whether the edge from a to b in own's uv, taken for
+// a piece of own's outline, would be kept by the Boolean t of which
+// own is of the first operand if opA: own's side of it outside s, or
+// as the Boolean takes a region lying on a face of s, and the other
+// side not.
+func (s *SShell) keptAsEdge(own *SSurface, t SurfaceCombineAs, opA bool, a, b geom.Point2d, p, edgeNIn, edgeNOut, surfN geom.Vector) bool {
+	in, out := ShellOutside, ShellOutside
+	s.classifyEdge(own, &in, &out, own.PointAtUv(a), own.PointAtUv(b), p, edgeNIn, edgeNOut, surfN)
+	return keepEdge(t, opA, in, out, ShellInside, ShellOutside)
+}
+
 // makeCopyTrimAgainst is the per-surface counterpart of
 // SShell::MakeFromBoolean. For a single surface from `parent`, it
 // produces a trimmed copy whose boundary includes both the parent's
@@ -550,13 +561,21 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		if origBsp != nil {
 			cThis = origBsp.ClassifyEdge(auv, buv, ret)
 		}
-		if cThis == BspUvEdgeParallel && !final.hasSame(chain) && ret.offChord(auv, buv, pt) {
+		if cThis == BspUvEdgeParallel && !final.hasSame(chain) && ret.offChord(auv, buv, pt) &&
+			agnst.keptAsEdge(ret, t, opA, auv, buv, pt, enin, enout, surfN) {
 			// The curve runs along the patch's edge, which was dropped as
 			// inside the other shell: the other shell's patch crosses the
 			// edge and dips into this patch beside it by less than the
 			// chord tolerance (a ring's patch over a pot's seam, roadmap
 			// K3), so its chord lies on the edge. It is the outline there
-			// in the edge's place.
+			// in the edge's place, if it would be kept as one: not where the
+			// patch beside it lies on a face of the other shell, which
+			// dropped the edge (two turned copies' caps meeting face to
+			// face, the curve being where a third copy's side crosses the
+			// edge), nor where the patch is inside the other shell either
+			// side of it (where the edge lies along the other's edge, and
+			// the curve is where the other's face meets this patch there;
+			// roadmap K3).
 			for _, e := range chain.Edges {
 				final.AddEdge(e.A, e.B, e.AuxA, e.AuxB, 0)
 			}

@@ -52,7 +52,9 @@ func rollingBallFilletsAt(sh *srf.SShell, t *Topology, edges []int, radii []floa
 	}
 	// The groups of chains joined by mitres share nothing but the faces
 	// they project points on, which they find independently: each group
-	// is traced and blended on its own goroutine, its chains in order.
+	// is traced on its own goroutine, its chains in order, and blended
+	// on its own, its chains side by side once their mitres are fitted
+	// (blendChainsAtOnce).
 	groups := mitreGroups(rbs)
 	var bls []*rbBlend
 	var err error
@@ -100,7 +102,8 @@ func mitreChains(rbs []*rollingBall) error {
 }
 
 // blendGroups blends the chains rbs, split into the groups of chains
-// joined by mitres, each group on its own goroutine; the blends are in
+// joined by mitres, each group on its own goroutine and its chains on
+// goroutines of their own (blendChainsAtOnce); the blends are in
 // the order of rbs. The error is that of the first group that failed,
 // the groups in the order of their first chains.
 func blendGroups(rbs []*rollingBall, groups [][]int) ([]*rbBlend, error) {
@@ -225,7 +228,7 @@ func partlyMitred(rbs []*rollingBall) bool {
 // blendMitred blends each of the chains rbs, which meet in mitres, its
 // sections split into spans, and an end that meets no
 // mitre fitted to its cuts where fitCuts: an end fits the mitre where
-// the chain it meets there came later, and copies the other's.
+// the chain it meets there comes later in rbs, and copies the other's.
 func blendMitred(rbs []*rollingBall, spans int, fitCuts bool) ([]*rbBlend, error) {
 	for _, rb := range rbs {
 		rb.spans, rb.fitCuts = spans, fitCuts
@@ -247,19 +250,7 @@ func blendMitred(rbs []*rollingBall, spans int, fitCuts bool) ([]*rbBlend, error
 			rb.ends[k].shared = &sec
 		}
 	}
-	bls := make([]*rbBlend, 0, len(rbs))
-	for _, rb := range rbs {
-		sf, secs, cross, err := rb.blendOpen()
-		if err != nil {
-			return nil, err
-		}
-		bl, err := rb.patches(sf, secs, cross)
-		if err != nil {
-			return nil, err
-		}
-		bls = append(bls, bl)
-	}
-	return bls, nil
+	return blendChainsAtOnce(rbs)
 }
 
 // filletMitredPicks rounds the picked edges as chains that meet in

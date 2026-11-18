@@ -9,6 +9,16 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+### Changed
+- Rounding or chamfering edges that meet in mitres is faster on several cores, the same solid to the bit: the edges of one ring are now made side by side, not one after another. A pointed arch's foot of ten edges on a tube is rounded in 3 s, where it took 5 s, and the top edges of the four rows of mouldings on a pen's barrel are chamfered in 10 s, where they took 12 s.
+- The drawing's description (`doc.Describe()`, MCP's `get_drawing`) and the status a script run returns no longer make every group after the active one. On a big model whose active group is early, each script and each look at the drawing made the whole model again. A group after the active one that a change left as it was made is now marked "old", as the window's list of groups marks it, and `Group.Old()` says so. A read of the group itself still makes it.
+
+### Fixed
+- Copies of a cut turned about an axis its outline touches are cut from the solid at once, as a step and repeat cuts any copies, where their union failed and they were cut one at a time: a triquetra drawn in a plane through a tube's axis, one corner on it, turned six times by 60°, regenerates in about half the time. The union of such copies, which meet one another along the same curves in several places (two copies' sides in the plane of a third's cap, the caps of copies half a turn apart face to face), is sound by itself too.
+- The column of an error in a script points at the text you wrote when it is in a function literal or in a function that names its results, as `func() int { return nope }()` or `func() (r int) { return 1 }() + nope`, in the console, `telesapr-cli repl` and `run`, and `run_script`. It counted from characters the interpreter and the script engine put before the statement or into it, and came out 14 to 33 columns too far right.
+- Fillets of different radii of a pocket's rim in a flat face are made whichever order the edges are picked in. Picked against the way round the rim, as the right side and then the bottom, or 0.5, 1 and 2 mm from the top round to the bottom, they were refused, "an edge at the end of the fillet runs back along it", while the same edges picked the other way were made.
+- File > Export > Script of a model with a thread whose groups were moved apart, its lathe moved on its own past a later cut say, makes the thread again as a thread. It was written group by group, its helix as a plain helix, so the drawing the script made had lost the thread: moved back together, its groups were no thread to edit. The script now makes it with its thread call and moves its groups to where they stood, so the drawing made has the same groups in the same order and the same thread. The same holds for a thread with a sketch moved in between its blank sketch and its lathe, whose script failed to run, and for a cosmetic thread whose lathe no longer followed its sketch, whose lathe was made twice. A script reads the circle a thread is on with `ThreadGroup.Circle`.
+
 ## [0.6.6] - 2026-11-17
 
 ### Added

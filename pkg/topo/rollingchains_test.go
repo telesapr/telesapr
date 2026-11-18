@@ -426,10 +426,12 @@ func shellPrint(sh *srf.SShell) string {
 }
 
 // The chains of one fillet that make separate groups, each joined by
-// mitres, are blended at once (rollingchains.go): the lens's top rim
-// and its bottom rim, rounded together, come out the same to the bit
-// on one goroutine as on several. It sets the process's number of
-// workers, so it doesn't run in parallel with other tests.
+// mitres, are blended at once (rollingchains.go), and so are the chains
+// of each group, their mitres fitted first (rollingchains_atonce.go):
+// the lens's top rim, two chains meeting in two mitres, and its bottom
+// rim, rounded together, come out the same to the bit on one goroutine
+// as on several. It sets the process's number of workers, so it doesn't
+// run in parallel with other tests.
 func TestFilletChainGroupsAtOnce(t *testing.T) {
 	if testing.Short() {
 		t.Skip("rolling-ball fillets of several chains, slow")

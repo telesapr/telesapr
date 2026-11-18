@@ -69,6 +69,10 @@ type GroupStatus struct {
 	DOF int `json:"dof"`
 	// Problem is why the group made no solid, or "".
 	Problem string `json:"problem,omitempty"`
+	// Old is set for a group after the active one that the script left
+	// as it was made before (api.Group.Old); it is listed so, with
+	// nothing of how it came out.
+	Old bool `json:"old,omitempty"`
 }
 
 // Backend is a drawing as a program that writes scripts sees it. Its
@@ -351,14 +355,27 @@ func (s *Session) status(res *Result) error {
 			active := doc.Active()
 			lines := []string{"active group " + firstLine(active.Describe())}
 			groups := []GroupStatus{groupStatus(active, true)}
+			var old []string
 			for _, g := range doc.Groups() {
 				if g.H == active.H || g.LeftOut() != "" {
+					continue
+				}
+				// Reading its problem would make it, and so every
+				// group up to it: on a big model whose active group is
+				// early, after every script.
+				if g.Old() {
+					old = append(old, g.Name())
+					groups = append(groups, GroupStatus{Name: g.Name(), Kind: g.Kind(), DOF: -1, Old: true})
 					continue
 				}
 				if !g.Solved() || g.Problem() != "" {
 					lines = append(lines, "in trouble: "+firstLine(g.Describe()))
 					groups = append(groups, groupStatus(g, false))
 				}
+			}
+			if len(old) > 0 {
+				lines = append(lines, "old, not made since the last change as they come after the active group "+
+					"(a read of one makes it): "+strings.Join(old, ", "))
 			}
 			errs := doc.Params.Errors()
 			for _, e := range errs {

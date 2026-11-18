@@ -43,6 +43,7 @@ type solidResult struct {
 	thisShell, runningShell srf.SShell
 	thisMesh, runningMesh   srf.SMesh
 	booleanFailed           bool
+	stepsInTurn             bool
 	problem                 GroupProblem
 	note                    string
 	tol                     srf.Tolerance
@@ -63,6 +64,7 @@ func (g *Group) result() *solidResult {
 		thisMesh:      g.ThisMesh.ExactCopy(),
 		runningMesh:   g.RunningMesh.ExactCopy(),
 		booleanFailed: g.BooleanFailed,
+		stepsInTurn:   g.StepsInTurn,
 		problem:       g.Problem,
 		note:          g.Note,
 		tol:           g.solidTol,
@@ -84,6 +86,7 @@ func (g *Group) setResult(r *solidResult) {
 	g.ThisMesh = r.thisMesh.ExactCopy()
 	g.RunningMesh = r.runningMesh.ExactCopy()
 	g.BooleanFailed = r.booleanFailed
+	g.StepsInTurn = r.stepsInTurn
 	g.Problem = r.problem
 	g.Note = r.note
 	g.solidTol = r.tol

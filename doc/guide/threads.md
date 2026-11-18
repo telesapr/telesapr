@@ -340,6 +340,12 @@ So later groups that use the thread stay attached. A ridge taken away with a sta
 as a broken reference. You can still edit the groups one by one, but an edit of the thread
 draws them again from its screen.
 
+You can also move one of its groups on its own, with the arrows of its row under **[+]** or
+**Move Group to End**, as a bore moved past a later cut. The thread is then apart: its row is no
+longer one, and it is no longer edited as a thread. Its helix keeps what made it, so moved back
+together (the lathe just before the ridge's sketch, the starts and the chamfer just after the
+helix) it is a thread again. A file keeps it as it is, and so does File > Export > Script.
+
 From a script:
 
 ```go
@@ -355,6 +361,7 @@ t := g.AsThread() // g, the thread's helix group, as Features.Thread returns it
 o := t.Options()
 o.Designation, o.Crest, o.LengthExpr = "M8x1", "rounded", "len"
 t = t.Edit(o) // the view of the group that keeps it, another after Cosmetic changes
+t.Circle()    // the circle it is on; made on a face, in its datum, t.Circle().Group()
 
 t, ok := anyGroup.ThreadOf() // the thread a group is one of the groups of
 t.SetVisible(false)          // as the box of the thread's row

@@ -489,6 +489,15 @@ func (s *SShell) raycastClass(p geom.Vector) (Class, int) {
 			if t*ray.Magnitude() < -lengthEps {
 				continue
 			}
+			// A hit at p itself, on a face's surface outside its trim but
+			// within the sag of a curved edge, says nothing of the side p
+			// is on: its normal against the ray is any way round (an edge
+			// lying on the plane of a face of this shell just past the
+			// face's curved outline, as turned copies of a triquetra have
+			// where they meet, roadmap K3).
+			if si.outsideTrim && si.P.Minus(p).Magnitude() < lengthEps {
+				continue
+			}
 			if d := si.P.Minus(p).Magnitude(); d < dmin {
 				dmin = d
 				nearest = si

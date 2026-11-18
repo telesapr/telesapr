@@ -207,7 +207,10 @@ func paramVal(sk *sketch.Sketch, h core.HParam) float64 {
 
 // threadCall is a thread written as one call on its circle; its
 // groups are made by it. A thread whose groups are no longer together
-// has had them written one by one, and its helix is written as one.
+// is made by it where the first of them stands, and they are then put
+// where they stand (writeApart); where they can't be told from others
+// (ThreadGroupsApart), it has had them written one by one, and its
+// helix is written as one.
 func (w *scriptWriter) threadCall(g *sketch.Group) (string, core.HGroup) {
 	sk := w.sk
 	o, err := sk.ThreadOf(g.H)
@@ -216,7 +219,8 @@ func (w *scriptWriter) threadCall(g *sketch.Group) (string, core.HGroup) {
 		return "", core.HGroup{}
 	}
 	hs, err := sk.ThreadGroups(g.H)
-	if err != nil {
+	apart := w.apart[g.H]
+	if err != nil && apart == nil {
 		if g.Type == sketch.GroupHelix {
 			w.notWritten("%s: its thread, whose groups are not together (%v); written as the helix of its ridge", g.Name, err)
 			return "doc.Features.HelixAbout(" + w.ref(g.Predef.Origin) + ", " + w.ref(g.Predef.EntityB) + ", 360, 1, " + fmt.Sprintf("%q", g.Name) + ")", g.OpA
@@ -229,6 +233,9 @@ func (w *scriptWriter) threadCall(g *sketch.Group) (string, core.HGroup) {
 	// face sets which way it runs, a screw's or a nut's, and with
 	// FullLength its length and Through.
 	at, fromEdge, onEdge := w.threadOnEdge(g)
+	if apart != nil {
+		at, fromEdge, onEdge = apart.at, apart.before, apart.onEdge
+	}
 	var fields []string
 	fields = append(fields, fmt.Sprintf("Designation: %q", t.Designation))
 	if t.LeftHand {
@@ -289,12 +296,17 @@ func (w *scriptWriter) threadCall(g *sketch.Group) (string, core.HGroup) {
 		w.notWritten("%s: the face it is on; written on its circle", g.Name)
 	}
 	// The thread is cut on the solid of the group before its sketch;
-	// its circle's datum, written, is that group or before it.
+	// its circle's datum, written, is that group or before it. A thread
+	// apart is made where the first of its groups stands.
+	var first *sketch.Group
+	if apart != nil {
+		first = sk.Group(apart.first)
+	} else {
+		first = sk.Group(hs[0])
+	}
 	from := core.HGroup{}
-	if first := sk.Group(hs[0]); first != nil {
-		if prev := first.PreviousGroup(sk); prev != nil {
-			from = prev.H
-		}
+	if prev := first.PreviousGroup(sk); prev != nil {
+		from = prev.H
 	}
 	return "doc.Features.Thread(" + w.ref(g.Thread.Circle) + ", " + opts + ")", from
 }
@@ -323,6 +335,12 @@ func (w *scriptWriter) threadOnEdge(g *sketch.Group) (geom.Vector, core.HGroup, 
 	if c := sk.Entity(g.Thread.Circle); datum == nil || c == nil || c.Group != datum.H {
 		return geom.Vector{}, core.HGroup{}, false
 	}
+	return threadRimFrom(sk, datum, p)
+}
+
+// threadRimFrom is threadOnEdge for a thread made on a face at p whose
+// circle is in datum, wherever its other groups stand.
+func threadRimFrom(sk *sketch.Sketch, datum *sketch.Group, p sketch.ThreadPlace) (geom.Vector, core.HGroup, bool) {
 	before := datum.PreviousGroup(sk)
 	if before == nil {
 		return geom.Vector{}, core.HGroup{}, false
@@ -505,7 +523,7 @@ func (w *scriptWriter) writeKindOptions(g *sketch.Group, v string) {
 		if g.Thread.IsThread() {
 			// The thread's call sets its turns, unless its groups are
 			// written one by one (threadCall).
-			if _, err := w.sk.ThreadGroups(g.H); err == nil {
+			if _, err := w.sk.ThreadGroups(g.H); err == nil || w.apart[g.H] != nil {
 				return
 			}
 		}

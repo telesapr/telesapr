@@ -4726,7 +4726,7 @@
 					},
 					"Describe": {
 						"decl": "func (d *Doc) Describe() (s string)",
-						"text": "Describe says what the drawing is, as text, for a reader that can't\nsee it: the document's unit, the parameters, every group in order\nwith how it solved, its degrees of freedom, what is wrong with it,\nand the volume and bounds of the model up to it, then the active\ngroup's requests and constraints as Group.Describe lists them, and\nwhat is selected. Lengths are in mm. The names it gives are the\nones Doc.Group, Doc.Request and Doc.Constraint take. Doc.Description\nis the same as data."
+						"text": "Describe says what the drawing is, as text, for a reader that can't\nsee it: the document's unit, the parameters, every group in order\nwith how it solved, its degrees of freedom, what is wrong with it,\nand the volume and bounds of the model up to it, then the active\ngroup's requests and constraints as Group.Describe lists them, and\nwhat is selected. Lengths are in mm. The names it gives are the\nones Doc.Group, Doc.Request and Doc.Constraint take. Doc.Description\nis the same as data.\n\nA group after the active one that a change left as it was made\nbefore is said to be \"old\", with nothing of how it came out: making\nit here would make every group of the drawing, which on a big model\nwhose active group is early is slow. A read of the group makes it."
 					},
 					"Description": {
 						"decl": "func (d *Doc) Description() (data Description)",
@@ -5699,6 +5699,10 @@
 					"Note": {
 						"decl": "func (g Group) Note() (msg string)",
 						"text": "Note says how the group's solid, though made, differs from what the\ngroup asks for, as a shell's wall stopping short of an inside corner\nwhere a drafted round face taken away meets a flat one, and how its\nsketch does, as a triangle that the last dimension edit or drag\nturned over where no solution near kept it the way it was; or \"\" when\nit is as asked."
+					},
+					"Old": {
+						"decl": "func (g Group) Old() (old bool)",
+						"text": "Old reports whether the group comes after the active group and a\nchange to it or before it left it as it was made before: a\nregeneration goes only as far as the active group, so its Solved,\nits Dof and its solid are those of then. A read of its solid, its\nvolume or its problem makes it first; Doc.Describe marks it \"old\"\ninstead, as the window's list of groups does, so as not to make\nevery group of the drawing."
 					},
 					"Opacity": {
 						"decl": "func (g Group) Opacity() (alpha float64)",
@@ -6936,6 +6940,10 @@
 				"text": "ThreadGroup is the view of a screw thread, by the group that keeps\nit: the helix group, the fourth of the groups that Features.Thread\nmakes, or a cosmetic thread's sketch. It is what the thread was made\nwith, to read and to change as one.",
 				"kind": "struct",
 				"methods": {
+					"Circle": {
+						"decl": "func (v ThreadGroup) Circle() (e Entity)",
+						"text": "Circle is the circle or arc the thread is on; for a thread made on a\nface, the construction circle in the datum at the face's end, whose\nGroup is that datum."
+					},
 					"Delete": {
 						"decl": "func (v ThreadGroup) Delete()",
 						"text": "Delete deletes the whole thread, every one of its groups and what\nuses them, in one step: the part is left as it was before the thread."
@@ -9328,6 +9336,10 @@
 						"decl": "func (sk *Sketch) ThreadGroups(hg core.HGroup) ([]core.HGroup, error)",
 						"text": "ThreadGroups returns the thread's groups, from its blank sketch to its last, hg being the group that keeps it: four, then a sketch and a helix per further level start, then a sketch and a lathe for a chamfer; for a cosmetic thread its sketch, and the lathe after it when it turns or bores the part."
 					},
+					"ThreadGroupsApart": {
+						"decl": "func (sk *Sketch) ThreadGroupsApart(hg core.HGroup) ([]core.HGroup, error)",
+						"text": "ThreadGroupsApart returns the groups of the thread that group hg keeps, in the order ThreadGroups gives them, also where some were moved on their own in the history, so that ThreadGroups refuses them, or, for a cosmetic thread, leaves its lathe out."
+					},
 					"ThreadLengthText": {
 						"decl": "func (sk *Sketch) ThreadLengthText(text string) (float64, string, error)",
 						"text": "ThreadLengthText reads a thread's length as the user typed it, in the document's unit: a plain number, or an expression of the parameters, which it evaluates."
@@ -9918,6 +9930,10 @@
 			"ErrSweepJoined": {
 				"decl": "var ErrSweepJoined",
 				"text": "ErrSweepJoined is FittedSweepPath's error for a sweep made of runs joined at corners beside a cubic, which no one path describes."
+			},
+			"ErrThreadGroupsUnclear": {
+				"decl": "var ErrThreadGroupsUnclear",
+				"text": "ErrThreadGroupsUnclear is returned where the groups of a thread whose groups were moved apart can't be told from others: one of them is gone, or another group is made as they are, as a second thread's on the same circle."
 			},
 			"ErrThreadNoPart": {
 				"decl": "var ErrThreadNoPart",

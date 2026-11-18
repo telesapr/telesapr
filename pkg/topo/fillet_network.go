@@ -384,7 +384,13 @@ func filletPicksOther(sh *srf.SShell, picks []FilletPick, r float64, origin uint
 		if berr == nil {
 			return nil
 		}
+		if runsBackRefusal(serr) && runsBackRefusal(berr) {
+			return filletRunsBackLast(sh, picks, r, origin, flat, berr)
+		}
 		return berr
+	}
+	if runsBackRefusal(serr) {
+		return filletRunsBackLast(sh, picks, r, origin, flat, serr)
 	}
 	if serr == nil {
 		return err
@@ -396,6 +402,22 @@ func filletPicksOther(sh *srf.SShell, picks []FilletPick, r float64, origin uint
 		why = sx.Msg
 	}
 	return filletErr(fx.At, "%s, and rounded one radius at a time they don't go on round each other's corners: %s", fx.Msg, why)
+}
+
+// filletRunsBackLast rounds picks by the rolling ball (filletRunsBack)
+// where step 10 met a corner of two radii before an end running back
+// along a pocket's rim, as it does when the rim's edges are picked
+// against the way round it, and neither its stages nor its setbacks
+// could get past that end: picked the other way, step 10 meets the end
+// first and sends them to the rolling ball, whose mitres take both. It
+// comes after the setbacks, which make other such corners, a ledge's
+// of two radii, as OpenCASCADE does. err is the refusal it gives where
+// the rolling ball doesn't take the picks.
+func filletRunsBackLast(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool, err error) error {
+	if rerr := filletRunsBack(sh, picks, r, origin, flat); !errors.Is(rerr, errNotRolling) && !errors.Is(rerr, errNotMitred) {
+		return byRollingBall(rerr)
+	}
+	return err
 }
 
 // runsBackMsg is step 10's refusal of an edge whose fillet would end at

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/sketch"
 )
 
@@ -44,6 +45,10 @@ func TestThreadOnFace(t *testing.T) {
 	top := threadPlace(t, d, g).At.Frame.Origin.Z
 	if n := len(d.Groups()); n != groups+5 {
 		t.Errorf("%d groups, want %d: a datum and the thread's four", n, groups+5)
+	}
+	// Its circle is in the datum, the group before its four.
+	if c := g.AsThread().Circle(); c.Group() != d.Groups()[groups] || c.Type() != core.EntityCircle {
+		t.Errorf("the thread is on %v, in %s", c.Type(), c.Group().Name())
 	}
 
 	if !d.Edit.Undo() || len(d.Groups()) != groups {

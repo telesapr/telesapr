@@ -489,22 +489,25 @@ func (e *Engine) Eval(ctx context.Context, src string) (reflect.Value, error) {
 func (e *Engine) eval(ctx context.Context, src string) (reflect.Value, error) {
 	e.clearPanic()
 	keys := keyElements(src)
+	text, zeros := zeroNamedResults(keys.src)
 	// The interpreter logs some of what it can't compile, besides
 	// returning the error.
 	logged := log.Writer()
 	log.SetOutput(io.Discard)
-	v, err := e.i.EvalWithContext(ctx, zeroNamedResults(keys.src))
+	v, err := e.i.EvalWithContext(ctx, text)
 	log.SetOutput(logged)
 	// The interpreter says where a panic of the script was; one without
 	// a place is its own, from before the script ran.
 	var p interp.Panic
 	line, _ := e.panicPlace()
 	e.ran = err == nil || ctx.Err() != nil || (errors.As(err, &p) && line != 0)
-	return v, unkey(e.locate(err, src), src, keys.inserts)
+	// What was put in last is taken out first.
+	return v, unkey(unkey(e.locate(err, src), keys.src, zeros), src, keys.inserts)
 }
 
 // unkey counts the place the interpreter gave an error in source that
-// keyElements put keys into from the source as it was.
+// keyElements put keys into, or zeroNamedResults put statements into,
+// from the source as it was.
 func unkey(err error, src string, inserts []insert) error {
 	serr, ok := errors.AsType[*Error](err)
 	if !ok || serr.Line < 1 || len(inserts) == 0 || errors.Is(serr.Err, errCompileFault) {
@@ -684,7 +687,8 @@ func (e *Engine) run(ctx context.Context, src string) error {
 		var serr *Error
 		if errors.As(derr, &serr) && serr.Line > 0 {
 			if serr.Line == 1 {
-				serr.Col += d.col - 1 - len(wrapper)
+				// A place in the wrapper is the expression's start.
+				serr.Col = max(serr.Col-len(wrapper), 1) + d.col - 1
 			}
 			serr.Line += d.line - 1
 		}
@@ -860,16 +864,42 @@ func (f *panicFilter) Write(p []byte) (int, error) {
 // wrapped is how many characters the interpreter puts before source
 // that isn't a whole file, which its columns on the first line count.
 func wrapped(src string) int {
+	const decl, stmts = len("package main;"), len("package main; func main() {")
 	var s scanner.Scanner
 	fset := token.NewFileSet()
 	s.Init(fset.AddFile("", fset.Base(), len(src)), []byte(src), nil, 0)
 	switch _, tok, _ := s.Scan(); tok {
 	case token.PACKAGE:
 		return 0
-	case token.CONST, token.FUNC, token.IMPORT, token.TYPE, token.VAR:
-		return len("package main;")
+	case token.FUNC:
+		// A function literal or a call of one, as "func() int { ... }()",
+		// doesn't parse as a declaration, and the interpreter then takes
+		// the source for statements, as it does what starts with anything
+		// but a declaration. If neither parses, its error is the first
+		// parse's.
+		_, err := parser.ParseFile(token.NewFileSet(), "", "package main;"+src, parser.DeclarationErrors)
+		if err == nil {
+			return decl
+		}
+		if _, err := parser.ParseFile(token.NewFileSet(), "", "package main; func main() {"+src+"\n}", parser.DeclarationErrors); err == nil {
+			return stmts
+		}
+		return decl
+	case token.CONST, token.IMPORT, token.TYPE, token.VAR:
+		return decl
 	}
-	return len("package main; func main() {")
+	return stmts
+}
+
+// stripWrapper takes the n characters of a wrapper put before an
+// expression off the column of err's place, if that is on the
+// expression's first line. A place in the wrapper itself becomes the
+// expression's start.
+func stripWrapper(err error, n int) error {
+	if serr, ok := errors.AsType[*Error](err); ok && serr.Line == 1 {
+		serr.Col = max(serr.Col-n, 1)
+	}
+	return err
 }
 
 // Error is an error of a script, with where it is if that is known.
@@ -1105,10 +1135,13 @@ func (e *Engine) show(ctx context.Context, src string) (string, error) {
 		return strings.Join(parts, ", "), nil
 	case errors.As(err, &p), ctx.Err() != nil:
 		// It ran.
+		// The interpreter counted from the wrapper's start, and took a
+		// statement's prefix whatever src starts with.
+		err = stripWrapper(e.locate(err, wrapper+src), len(wrapper))
 		for i := range keys.inserts {
 			keys.inserts[i].at -= len(wrapper)
 		}
-		return "", unkey(e.locate(err, src), src, keys.inserts)
+		return "", unkey(err, src, keys.inserts)
 	}
 	_, err = e.eval(ctx, src)
 	return "", err

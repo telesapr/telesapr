@@ -125,9 +125,7 @@ doc.Features.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 0, 5))}, 1.5, "")
   upright or a slope's edge runs down onto the foot's fillets, its fillet is cut short (set
   back), the foot's two fillets are cut at their sections too, and patches tangent to the three
   fillets, the two faces and the floor fill the corner: the setback corner below of the three
-  edges that met there before the foot was filled. OpenCASCADE fills those corners with smaller
-  patches: its top's fillets take 1.4 r³ to 4.8 r³ less in all, the most where a low slope meets
-  the floor at a sharp angle. The foot's fillets must be straight, of one radius between flat
+  edges that met there before the foot was filled. The foot's fillets must be straight, of one radius between flat
   faces; a chamfered foot is not taken.
 
 **Edges of different radii, or of both kinds.** Where edges of different radii meet, or convex
@@ -176,8 +174,7 @@ middle, ending where its surface meets their planes, as a fillet ends on the fac
 corner. Round its two ridges, or its two valleys, with the other two left sharp, and the two
 fillets meet in a mitre in the plane of the two sharp edges. At different radii their ends lie
 apart in that plane, and the plane between them is a flat step from the smaller fillet's end to
-the larger's (OpenCASCADE blends the two instead, with a curved patch). Chamfers are cut the same
-way.
+the larger's. Chamfers are cut the same way.
 Round a ridge and a valley side by side, with the other two left sharp, and each fillet runs
 up to the sharp edge beside it; patches fill the corner between the two cuts and the sharp
 edges, which stay sharp. Chamfers are cut the same way.
@@ -209,14 +206,11 @@ at a vertex the two share is refused there, with the message "pick it alone".
 Where that corner is an inside one, as where the rim of a pocket turns, each fillet ends where its
 ball touches its wall on the sharp edge between the pocket's walls. Where the two reach that edge
 at one point, as in a flat face, each is carried on past the sharp edge along its own wall's plane
-and they are mitred where they cross, as OpenCASCADE does it. Where the face they share slopes
+and they are mitred where they cross. Where the face they share slopes
 differently each way, as a dish's does, the two ends lie at different depths on the sharp edge:
 the ball swings round the sharp edge between them, and a corner patch, tangent to both fillets and
 to the shared face, fills between their ends. The sharp edge stops at the deeper end, and between
-the two it is the shallower fillet's wall's edge with the corner. OpenCASCADE fills such corners
-too, or runs each fillet on into the other with its wall grown a hundredth of a millimetre past the
-sharp edge: the two differ by a few hundredths of a millimetre at a radius of 1 mm, the corner
-patch leaving a little more. Chamfers turn such corners the same way, the corner patch ruled
+the two it is the shallower fillet's wall's edge with the corner. Chamfers turn such corners the same way, the corner patch ruled
 between the sharp edge and the shared face. A rim that comes back to its own inside corner, as a
 teardrop pocket's, is rounded the same way. Any one, two or three edges of a pocket's rim in a
 flat face are rounded so too, those that meet no other ending at the pocket's walls.
@@ -225,11 +219,11 @@ Fillets of different radii meet at such a corner too, in a flat face or a curved
 carried on past the sharp edge, as the balls rolling along both edges would cut it: the smaller
 ends where it meets the larger, and the larger ends partly on the smaller, partly on the smaller
 one's wall, which grows a little way past the sharp edge, from the larger fillet's depth on that
-edge up to the smaller's. OpenCASCADE rounds them the same way. Chamfers of different distances
+edge up to the smaller's. Chamfers of different distances
 meet the same way. Round a dish, a fillet that meets one of another radius at one corner meets
 one of its own radius at its other corner the same way too, not by a corner patch: the fillet
 whose end lies deeper on the sharp edge takes the larger one's part. So a rim of 2, 1 and 1 mm is
-rounded all round, as OpenCASCADE rounds it.
+rounded all round.
 
 The foot of a band raised on a cylinder or a cone ([Wrap](wrap.md)) is rounded the same way, all
 of its foot edges picked together: the ball rolls outside the solid, between the face and the

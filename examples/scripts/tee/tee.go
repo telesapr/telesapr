@@ -14,8 +14,8 @@
 // closed edge between two cylinders, which no circle or line is: the
 // fillet there rolls a ball of the radius given, 2 mm unless given,
 // along it, touching both. The script checks the solid sound and the
-// volume the fillet adds against OpenCASCADE's for the same tee (3.96,
-// 15.77 and 35.37 mm³ for radii 1, 2 and 3), prints it, and saves
+// volume the fillet adds against the one expected for the same tee
+// (3.96, 15.77 and 35.37 mm³ for radii 1, 2 and 3), prints it, and saves
 // tee.tlspr, unless given "-".
 package main
 
@@ -65,7 +65,7 @@ func main() {
 	fmt.Printf("the joint filled round at %g mm: %s, %.2f mm³ added", radius,
 		map[bool]string{true: "sound", false: "NOT sound"}[r.Sound()], added)
 	if want != 0 {
-		fmt.Printf(" (OpenCASCADE %.2f)", want)
+		fmt.Printf(" (%.2f expected)", want)
 	}
 	fmt.Println()
 	// The mesh's chords along the edge, before and after, count for

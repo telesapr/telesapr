@@ -1,5 +1,9 @@
 # K3 spike: fuse first (2026-11-04)
 
+Refreshed 2026-11-18 (k3-turned-copies): the union of a Rotate's copies of a cut drawn in a plane
+through the axis with a corner on it, the decorative tube's triquetra, is sound and taken at once;
+see "Turned copies meeting face to face" at the end.
+
 Refreshed 2026-11-09 (rd13-sweep-cubic-paths): the sweep corner beside a cubic is made on
 twisted, held, rounded and closed paths too; see "Twisted, held, rounded and closed paths" at the
 end. Before that, 2026-11-09 (rd12-k3-graze): the sweep corner's last 4 circles are made, and what
@@ -487,3 +491,86 @@ line up through the profile, the cubic, two lines back): 26, 26, 20, 24; twisted
 12, 16, 24. Every other one refused by name; none unsound. What is left are joins that fail, the
 most of them round: twisted circles at 150° and with the cubic bent 90° against the line, circles
 at a corner rounded after a cubic first, twisted loops. No change in `pkg/srf` or `pkg/topo`.
+
+## Turned copies meeting face to face (k3-turned-copies, 2026-11-18)
+
+The fixture is the decorative tube's triquetra (`TestRotateOverlappingCopies`, `pkg/script/api`):
+six arcs of radius 3 about the corners of a triangle of side 3, one corner on the tube's axis,
+drawn in the plane through the axis turned 30° and extruded 10 along its normal, turned 6 × 60°.
+The copies' union failed from three copies, and `combineStepsInTurn` cut the copies from the tube
+one at a time. Reproduced in `pkg/srf` alone (`TestTurnedCopiesUnionSweep`): the union of copies
+0 and 1 is sound, and of those two with copy 2 it fails, at every chord tolerance.
+
+The cause is not the axis or the corner on it. The triquetra's three-fold symmetry and the 60°
+turns make curves of different Booleans lie exactly along one another:
+
+- Two copies' cylinders (arcs of radius 3 extruded along normals 60° apart) are tangent to one
+  circle about the axis, so their axes cross, and equal cylinders whose axes cross meet in two
+  ellipses (`intersectEqualCylinders`). One of them lies in the plane through the axis halfway
+  between the two copies' planes, which is a third copy's cap. The third copy's cap then meets
+  each cylinder in that whole ellipse (`intersectPlaneAndExtrusion`), where the union of the two
+  has it as an edge cut into two arcs at the touching point. The new curve was chorded afresh,
+  its chords parting from the edge's by up to the chord tolerance, and neither the cylinder's
+  trim nor the cap's assembled.
+- The other way round: a copy's cylinder meets a cylinder of the union along an edge of the union
+  (where a cap and that cylinder meet) over part of its length.
+- Copies half a turn apart have their caps face to face, and each cap is trimmed by the copies
+  beside it: the two caps are the same lens each side of the axis, each made in its own Boolean,
+  their outlines the same ellipses chorded at other points.
+
+What was built (`pkg/srf`; no golden moved):
+
+1. A new exact intersection curve that runs along an operand's own curved exact edge bounding
+   one of its two faces follows that edge's points there (`piecesAlongEdges`,
+   `surfinter_along.go`): cut where the edge starts and ends, a piece the edge covers end to end
+   is the edge's curve (followed by `findExact`, as an identical one always was), and a piece
+   along part of an edge takes the edge's points between the piece's ends, not split again (the
+   edge was split against the other operand already). Where both operands, or two curves of one,
+   have an edge along a stretch, the first operand's first is followed (`oneAlongEach`). Only
+   conics and higher: a line along an edge is split at the same points already.
+2. Before the Boolean, the second operand's curved exact edges that run along the first's take
+   the first's points over that stretch, in a copy of b (`fuseCoincidentEdges`,
+   `boolean_fuse_edges.go`), keeping every point of b's where a trim or another curve of b ends
+   (the first operand's curve is split there by `findVertsOnCurve`) and leaving a curve whose
+   points are already the same within LengthEps as it is, to the bit: a loft drawn from a post's
+   top shares the post's circle chorded alike, and taking the post's last bits moved the
+   `loft-sides` goldens and lost the loft's side (`TestLoftAlongSides`).
+3. `intersectEqualCylinders` cut its ellipses where a face's outline crossed the ellipse's plane;
+   an outline lying in that plane (a third copy's cap holding the ellipse) gave cuts anywhere
+   along the curve from the sign of rounding. Such an outline is skipped (`inPlane`).
+4. The ring-seam rule of the trim (a curve along a dropped edge of the patch kept as the outline in
+   its place) now asks first whether the curve, taken as an edge of the patch, would be kept
+   (`keptAsEdge`): not where the patch beside it lies on a face of the other shell (two caps face
+   to face, the curve where a third copy's side crosses their outline), nor where the patch is
+   inside the other shell on both sides (the edge lying along the other's edge). Both were kept,
+   and the trim held a dangling chain.
+5. The raycast fallback of the edge classification skips a hit at the point itself on a face's
+   surface just outside its curved trim (`raycastClass`, `SInter.outsideTrim`): an edge of the
+   second operand lay in the plane of a cap of the first, 0.03 mm past the cap's arc, and the
+   hit's normal against the ray was any way round, so the side read as inside.
+
+Tried on the way: following only an edge a new curve covers end to end (three copies still failed at two
+of three tolerances: the third copy's cylinders meet the union along part of an edge); preferring the
+first operand's edge where both have one, without fusing b's (four copies in pairs then failed at
+0.1, where they had passed, the two operands' coincident outlines chorded at other points).
+
+Results. `TestTurnedCopiesUnionSweep` (`pkg/srf`, the whole grid under `TELESAPR_SWEEP=1`: 2 to 6
+copies, 60° and 45° apart, planes at 30°, 0° and 13°, sides 3 and 2, chord tolerances 0.1 and
+0.03, united a pair at a time as a step and repeat does and one after another; sound, and the
+volume within the chords' bound of the union integrated along rays): 72 of 240 sound before, 234
+now. The 6 left: six copies 45° apart of the triquetra of side 2 in the plane at 0°, and five, a
+pair at a time, at both tolerances; six 60° apart of side 3 at 30° united one after another (in
+pairs, as the step and repeat does, they are sound), which fails or not on the last bits of the
+plane's angle (30·π/180 computed at run time fails, the constant does not). The failing trims are
+on cylinders where several copies' equal-cylinder ellipses and their touching points meet at the
+axis's corner: not followed further. `TestRotatedTriquetraSweep` (`pkg/script/api`): the copies
+as a solid of their own, 3, 4 and 6 copies, 60° and 45°, planes at 30° and 13°, the corner at x
+42.4 and 20: 22 of 24 united at once, sound, and every ray of `pkg/check`'s oracle agreeing with
+the mesh; the two left are six copies 45° apart, combined one at a time.
+
+The tube: `TestRotateOverlappingCopies` takes the union at once at 2 to 6 copies
+(`Group.StepsInTurn` false). The tube with the six windows and six triquetras, regenerated with
+its oracle: 1.13 s with the copies cut one at a time, 0.61 s now, both meshes within the chords of
+the ray-cast oracle (1556.43 mm³; meshes 1558.84 and 1559.22, no ray disagreeing). The model of
+2026-11-14 itself (6.2 → 8.0 s) is not in the repository and was not measured.
+`combineStepsInTurn` stays as the fallback for the cases above.

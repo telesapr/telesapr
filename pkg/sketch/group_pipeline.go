@@ -295,7 +295,8 @@ func (g *Group) GenerateShellAndMesh(sk *Sketch) {
 		combines := len(g.ThisShell.Surface) > 0 && !g.Suppress
 		g.RunningShell.PaceBy(sk.kernelPace())
 		g.generateForBooleanShell(&prevs, &g.ThisShell, &g.RunningShell, srcg.MeshCombine)
-		if combines && (copiesFailed || g.RunningShell.BooleanFailed) && (g.Type == GroupTranslate || g.Type == GroupRotate) {
+		g.StepsInTurn = combines && (copiesFailed || g.RunningShell.BooleanFailed) && (g.Type == GroupTranslate || g.Type == GroupRotate)
+		if g.StepsInTurn {
 			g.combineStepsInTurn(sk, &prevs, &srcg.ThisShell, srcg.MeshCombine)
 		}
 

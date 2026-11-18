@@ -73,6 +73,7 @@ func init() {
 		"ErrSplinePointsFull":          reflect.ValueOf(&sketch.ErrSplinePointsFull).Elem(),
 		"ErrSweepCrossesItself":        reflect.ValueOf(&sketch.ErrSweepCrossesItself).Elem(),
 		"ErrSweepJoined":               reflect.ValueOf(&sketch.ErrSweepJoined).Elem(),
+		"ErrThreadGroupsUnclear":       reflect.ValueOf(&sketch.ErrThreadGroupsUnclear).Elem(),
 		"ErrThreadNoPart":              reflect.ValueOf(&sketch.ErrThreadNoPart).Elem(),
 		"ErrThreadPastPart":            reflect.ValueOf(&sketch.ErrThreadPastPart).Elem(),
 		"ErrThreadThinPart":            reflect.ValueOf(&sketch.ErrThreadThinPart).Elem(),

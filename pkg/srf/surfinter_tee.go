@@ -219,6 +219,13 @@ func (s *SSurface) intersectEqualCylinders(b *SSurface, agnstA, agnstB *SShell, 
 				if !sc.IsExact {
 					return false
 				}
+				if inPlane(&sc.Exact, g) {
+					// An outline lying in the ellipse's plane, as where a
+					// third turned copy's cap holds the ellipse (roadmap
+					// K3), crosses it nowhere: its sign there is rounding,
+					// and the cuts it gave fell anywhere along the curve.
+					continue
+				}
 				side(sc.Exact.PointAt)
 			}
 		}
@@ -301,4 +308,15 @@ func (s *SShell) failCrossingTouch(a, b *SShell) {
 	if inters || leaks || len(naked.Edges) > 0 {
 		s.BooleanFailed = true
 	}
+}
+
+// inPlane tells whether the curve lies in the plane where g, its
+// signed distance, is zero: all its control points do.
+func inPlane(c *SBezier, g func(geom.Vector) float64) bool {
+	for _, p := range c.Ctrl[:c.Degree+1] {
+		if math.Abs(g(p)) > lengthEps {
+			return false
+		}
+	}
+	return true
 }

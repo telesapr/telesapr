@@ -309,12 +309,13 @@ func (s *SSurface) allPointsIntersecting(a, b geom.Vector, l *[]SInter,
 
 		// It does, so generate the intersection
 		*l = append(*l, SInter{
-			P:          pxyz,
-			SurfNormal: s.NormalAt(puv.U, puv.V),
-			PInter:     puv,
-			Srf:        s,
-			OnEdge:     c != BspUvInside || near,
-			nearTrim:   near && (c == BspUvInside || c == BspUvOutside),
+			P:           pxyz,
+			SurfNormal:  s.NormalAt(puv.U, puv.V),
+			PInter:      puv,
+			Srf:         s,
+			OnEdge:      c != BspUvInside || near,
+			nearTrim:    near && (c == BspUvInside || c == BspUvOutside),
+			outsideTrim: near && c == BspUvOutside,
 		})
 	}
 }

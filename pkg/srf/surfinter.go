@@ -20,6 +20,15 @@ func (s *SSurface) AddExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 }
 
 func (s *SSurface) addExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA, agnstB *SShell, into *curveSink) {
+	for _, piece := range s.piecesAlongEdges(sb, srfB, into) {
+		s.addExactIntersectionPiece(&piece.curve, piece.points, srfB, agnstA, agnstB, into)
+	}
+}
+
+// addExactIntersectionPiece is addExactIntersectionCurve for a piece of
+// the curve that runs along no operand's edge, or along part of one,
+// whose points it follows (piecesAlongEdges).
+func (s *SSurface) addExactIntersectionPiece(sb *SBezier, along []SCurvePt, srfB *SSurface, agnstA, agnstB *SShell, into *curveSink) {
 	// Important to keep the order of (surfA, surfB) consistent; when we later
 	// rewrite the identifiers, we rewrite surfA from A and surfB from B.
 	sc := SCurve{
@@ -35,7 +44,8 @@ func (s *SSurface) addExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 	var split SCurve
 	existing := into.findExact(sb)
 	ex := exactCurve{s: s, srfB: srfB, sb: *sb, agnstA: agnstA, agnstB: agnstB, match: existing}
-	if existing.curve != nil {
+	switch {
+	case existing.curve != nil:
 		sc.Points = append([]SCurvePt(nil), existing.curve.Points...)
 		if existing.backwards {
 			for i, j := 0, len(sc.Points)-1; i < j; i, j = i+1, j-1 {
@@ -43,7 +53,12 @@ func (s *SSurface) addExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 			}
 		}
 		split = sc
-	} else {
+	case along != nil:
+		// The edge was split against the other operand already, and
+		// bounds a face of its own: its points are the split ones.
+		sc.Points = along
+		split = sc
+	default:
 		sc.Points = makePwlSCurvePoints(sb, s.Tol, 0)
 		// and split the line where it intersects our existing surfaces
 		split = sc.MakeCopySplitAgainst(agnstA, agnstB, s, srfB)

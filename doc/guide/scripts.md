@@ -42,7 +42,9 @@ error: plate.go:2:1: index out of range
 
 The place starts with the file's name for a script file, `script` for one an AI program ran,
 and nothing for an entry at the console. A one-line entry gives only the message, since the line
-is the one you typed. What a call of the scripting interface can't do, it says in its own words
+is the one you typed. The column is in your text, not in what the engine runs: for an error the
+interpreter finds as it runs, it can name the start of the statement, or of the expression
+you entered, rather than the exact call. What a call of the scripting interface can't do, it says in its own words
 (`line r004-line-segment isn't a circle or an arc`).
 
 ## Forms
@@ -168,10 +170,15 @@ their own: an arc drawn in 3d (`doc.Sketch.ArcIn3D`), a workplane drawn in a wor
 (`doc.Sketch.NewWorkplaneIn`) and the same constraint twice (`doc.Constrain.Again`). An image
 whose file is missing is written as its frame (`doc.Sketch.ImageFrame`), and the window says
 so. What the script can't write is a comment in it starting `not written:`, and the window
-says so too. One such thing is a face's appearance on a face that no point finds. Another is a
-thread whose lathe or helix was moved on its own in the history: its groups are written one by
-one, and its helix as a plain helix, so the part comes out the same but is no longer a thread you
-can edit as one. A sketch on a face or a datum whose face is gone is drawn where it lies, through a
+says so too. One such thing is a face's appearance on a face that no point finds.
+
+A thread whose groups were moved apart in the history, its lathe moved on its own past a cut
+say, is no longer edited as a thread, but it is still one: move the groups back together and
+its screen comes back. The script makes it with its thread call, then moves its groups to where
+they stand (`g8.History().MoveToEnd()`), so the drawing it makes has the same groups in the same
+order, the same part, and the same thread. Only where its groups can't be told from others, as
+with a second thread on the same circle, are they written one by one, and its helix as a plain
+helix. A sketch on a face or a datum whose face is gone is drawn where it lies, through a
 point of a 3d sketch of its own named after it (`M8-end-origin`). Handles are
 numbered afresh, so the script names what a group made by what it was made from
 (`g3.Made(r4, 1002)`), and a request's points by their number (`r4.Part(1)`).
@@ -181,6 +188,10 @@ numbered afresh, so the script names what a group made by what it was made from
 `doc.Describe()` returns the drawing in words: the unit, the parameters, each group with how it
 solved, its degrees of freedom and its problems, and the volume and bounds of the solid. Then
 come the active group's requests and constraints with their names and values.
+A group after the active one that a change left as it was made is "old", with nothing of how
+it came out: reading it would make every group of the drawing, which is slow on a big model
+whose active group is early. A read of the group itself, as `Group.Describe()`, makes it
+([History](history.md)).
 `Group.Describe()` does the same for one group. It is what an AI program reads before writing a
 script ([Drawing with an AI model](ai.md)). Example:
 [`examples/scripts/describe`](../../examples/scripts/describe/describe.go).

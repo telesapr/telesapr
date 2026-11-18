@@ -279,7 +279,11 @@ func (h *SketchHost) DeleteGroup(hg core.HGroup) {
 // Activate makes a group the active one.
 func (h *SketchHost) Activate(hg core.HGroup) {
 	h.sk.Active = hg
-	h.sk.MarkGroupDirty(hg, false)
+	// Only the group itself is made again, as the window's activation
+	// does: the groups after it keep what they were made as until a
+	// change before them, so that one left as before
+	// (Sketch.LeftAsBefore) is one a change left so.
+	h.sk.MarkGroupDirty(hg, true)
 }
 
 // Undo takes back the last step, and reports whether there was one.

@@ -132,7 +132,7 @@ chamfer can't make by its normal edit, each straight edge is cut by a plain wedg
 
 **Every edge at the corner chamfered.** Where three or more straight edges between flat faces
 meet at a corner and all of them are chamfered, the chamfers' lines on each face cross, and the
-corner is cut the way OpenCASCADE cuts it:
+corner is cut this way:
 
 - Three chamfers of one distance at a square corner: the corner becomes the triangle between
   the three points where their lines cross.
@@ -162,8 +162,7 @@ block's upright edge with one of its foot edges. The two chamfers meet in a thre
 the face they share, their lines cross. One chamfer runs from there to the sharp edge; the other
 is cut square to its edge. The face the sharp edge bounds takes a curve from that cut, along its
 chamfer's line, round onto the sharp edge. The corner's face fills between that curve and the two
-ends, as OpenCASCADE's makeChamfer fills it. Our face bulges a little less, by about a tenth of a
-cubic millimetre at distances of 1 mm.
+ends.
 
 **Three of a saddle's four edges.** At the middle of a saddle, where two ridges and two valleys
 meet, three edges can be chamfered with the fourth left sharp. The two chamfers beside the sharp
@@ -179,19 +178,12 @@ patches fill the corner between.
 **An inside corner of a pocket's rim.** Where two chamfers of a pocket's rim, picked together,
 meet at an inside corner whose third edge stays sharp, each ends where its cut on its wall reaches
 the sharp edge between the pocket's walls. In a flat face the two meet in a mitre, carried on past
-the sharp edge, as OpenCASCADE's makeChamfer cuts them. In a curved face, where they reach the
+the sharp edge. In a curved face, where they reach the
 sharp edge at different depths, a ruled face fills between their ends, from the sharp edge to the
-face the two share, as [Fillet](fillet.md) rounds the same corner; OpenCASCADE's makeChamfer
-refuses these. Chamfers of different distances meet in a mitre too, in a flat face or a curved
+face the two share, as [Fillet](fillet.md) rounds the same corner. Chamfers of different distances meet in a mitre too, in a flat face or a curved
 one: the smaller is carried past the sharp edge up to the larger's cut, and the larger ends on the
 smaller's cut above the smaller's depth and on the smaller's wall, grown past the sharp edge, below
-it. In a flat face that takes exactly what OpenCASCADE's makeChamfer does.
-
-OpenCASCADE differs from this in two places. At a corner of three where one crossing point lies
-close to the line between the other two, it makes the triangle of the three points, where
-TeleSAPR cuts the chamfers as above (a few tenths of a cubic millimetre apart at distances of 1
-to 3 mm). At a corner of four or more, it fills the hole with a plate that bulges out past the
-plane of its corners, where TeleSAPR uses that plane.
+it.
 
 ## Edge names
 

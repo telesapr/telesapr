@@ -20,18 +20,16 @@ import (
 // "r = T{...}", in a place of its own, and the caller gets the zero
 // value: in parentheses, which mean nothing to Go, the literal is
 // assigned as any other value is. Source that doesn't parse is
-// returned as it is, for the interpreter to say what is wrong.
-func zeroNamedResults(src string) string {
+// returned as it is, for the interpreter to say what is wrong. The
+// inserts are what was put in, at offsets of the source as it was, in
+// order, so that a place the interpreter gives can be counted back.
+func zeroNamedResults(src string) (string, []insert) {
 	if !strings.Contains(src, "func") {
-		return src
+		return src, nil
 	}
 	f, offset, ok := parseAny(src)
 	if !ok {
-		return src
-	}
-	type insert struct {
-		at   int
-		text string
+		return src, nil
 	}
 	var inserts []insert
 	ast.Inspect(f, func(n ast.Node) bool {
@@ -85,14 +83,14 @@ func zeroNamedResults(src string) string {
 		return true
 	})
 	if len(inserts) == 0 {
-		return src
+		return src, nil
 	}
+	slices.SortStableFunc(inserts, func(a, b insert) int { return a.at - b.at })
 	// From the end, so that each offset still holds.
-	slices.SortFunc(inserts, func(a, b insert) int { return b.at - a.at })
-	for _, in := range inserts {
+	for _, in := range slices.Backward(inserts) {
 		src = src[:in.at] + in.text + src[in.at:]
 	}
-	return src
+	return src, inserts
 }
 
 // parseAny parses src as what the interpreter takes: a file, with a

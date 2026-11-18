@@ -527,7 +527,7 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		if end.n.Dot(beyond[k]) < 0 {
 			end.n, end.d, end.sign = end.n.ScaledBy(-1), -end.d, -end.sign
 		}
-		if end.n.Dot(beyond[k]) < 0.05 {
+		if end.n.Dot(beyond[k]) < endAlong {
 			return nil, nil, nil, filletErr(rb.t.Vertices[end.v].P, "the edge meets the flat face it ends at almost "+
 				"along it: a fillet between curved faces ends where its edge crosses a flat face")
 		}
@@ -689,6 +689,10 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 				// The mitre is both ends' last section, fitted by the end
 				// that came first.
 				sec = rb.fromMate(sp.end, sec)
+			case sp.end >= 0 && sp.lam == 0 && rb.ends[sp.end].mitre && rb.ends[sp.end].shared != nil:
+				// Fitted already, before any chain of the group was blended
+				// (fitMitres), or by this blend before it eased its ramps.
+				sec = *rb.ends[sp.end].shared
 			case sp.end >= 0 && sp.lam == 0 && rb.ends[sp.end].mitre:
 				if sec, err = rb.curvedEndSection(sp.end, sec); err == nil {
 					shared := sec
@@ -1266,6 +1270,10 @@ func (rb *rollingBall) closeEnd(sh *srf.SShell, cut rbEndCut, h *core.HSCurve) e
 
 // endDeg is the degree of the sections of a fillet with a curved end.
 const endDeg = 5
+
+// endAlong is the least cosine between an end's plane's normal and the
+// way on past the end: a plane nearer along the edge is refused.
+const endAlong = 0.05
 
 // anyCurvedEnd reports whether an end of the chain is on a curved face.
 func (rb *rollingBall) anyCurvedEnd() bool {

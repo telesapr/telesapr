@@ -73,7 +73,7 @@ A sketch should have 0 degrees of freedom when it is done. An extrusion keeps 1,
 
 To fillet, chamfer, shell or sketch on a face, ask get_drawing with solid (or print g.DescribeSolid()): it lists the faces of the solid up to the group with their IDs, shapes and a point on each, and its edges with the names g.Solid().Edge takes, their shapes, lengths and ends, so the edges and faces can be picked by name rather than found by trial.
 
-get_drawing lists the requests and constraints of the active group only, which after an Extrude is the extrusion; ask for the sketch by name (get_drawing with group "g002") to see what is in it.
+get_drawing lists the requests and constraints of the active group only, which after an Extrude is the extrusion; ask for the sketch by name (get_drawing with group "g002") to see what is in it. After doc.Activate of an earlier group, a change goes only as far as it: the groups after it are listed "old" by get_drawing and the status, not made, until one of them is read (g.Analyze(), g.Problem(), get_drawing with its group) or activated.
 
 A call that can't do what it is asked stops the script with an error that says why, and run_script then takes back what the script did.
 

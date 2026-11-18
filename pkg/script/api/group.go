@@ -171,6 +171,18 @@ func (g Group) Dof() (dof int) {
 	return dof
 }
 
+// Old reports whether the group comes after the active group and a
+// change to it or before it left it as it was made before: a
+// regeneration goes only as far as the active group, so its Solved,
+// its Dof and its solid are those of then. A read of its solid, its
+// volume or its problem makes it first; Doc.Describe marks it "old"
+// instead, as the window's list of groups does, so as not to make
+// every group of the drawing.
+func (g Group) Old() (old bool) {
+	g.d.read(func(sk *sketch.Sketch) { old = sk.LeftAsBefore(g.get(sk).H) })
+	return old
+}
+
 // Requests are what was drawn in the group.
 func (g Group) Requests() (requests []Request) {
 	g.d.read(func(sk *sketch.Sketch) {

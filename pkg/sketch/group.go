@@ -181,6 +181,12 @@ type Group struct {
 
 	BooleanFailed bool
 
+	// StepsInTurn is set by each regeneration of a step and repeat whose
+	// copies' union, or that union's Boolean with the solid so far,
+	// failed, and whose copies were then combined with that solid one at
+	// a time (combineStepsInTurn).
+	StepsInTurn bool
+
 	// SuppressedBy is set by each regeneration: the group whose
 	// SuppressAll leaves this one out, this group itself or one it
 	// uses, directly or not; zero for a group that is generated. A

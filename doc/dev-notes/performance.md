@@ -1,7 +1,7 @@
 # Performance
 
 How to measure TeleSAPR's speed, where the time goes, what was decided and why, and what is open.
-Refreshed 2026-11-03 at `c4e18d1a`; the rolling ball's feet 2026-11-17.
+Refreshed 2026-11-03 at `c4e18d1a`; the rolling ball's feet 2026-11-17, its mitred chains 2026-11-18.
 
 Two studies came before this note: the command line against solvespace-cli (branch `perf-study`,
 2026-10-10, items P1 to P9) and the solver, the kernel's Booleans and the drawing of frames
@@ -74,8 +74,11 @@ bin/telesapr-cli regenerate --cpuprofile cpu.out /tmp/m.tlspr
   depends on another group's: the barrel's four groups of six chains, 23.0 s to 12.0 s, the
   saved file the same to the byte. Left of those 12 s: the check that the solid is closed
   (`unsound`, 4 s, a mesh of the whole shell), putting the blends in (2.4 s, a linear
-  `FindSurface` among them) and the four groups' blends (4 s, one goroutine each). The chains
-  of one group are still made one after another.
+  `FindSurface` among them) and the four groups' blends (4 s, one goroutine each). Since
+  2026-11-18 the chains of one group are blended side by side as well, every mitre fitted first
+  (`blendChainsAtOnce`, `doc/dev-notes/rolling-ball-corners.md`): the four groups' blends 3.6 s
+  to 1.6 s, the regeneration about 12 s to 10 s, `BenchmarkFilletWrappedArch` 5.0 s to 2.9 s,
+  the same solids to the bit.
 
 ## Open
 

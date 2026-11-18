@@ -87,7 +87,9 @@ made since the change and offers **[make it now]**, which makes it and the group
 the model now is and leaves the active group as it was. Making a later group active makes it
 too. A script can still read a later group: its volume, its check, its problem and its
 description are those of the model as it now is, since the groups up to it are made again
-first. The active group stays as it was.
+first. The active group stays as it was. The drawing's own description, `doc.Describe()`,
+makes nothing past the active group: it marks such a group "old", as the home screen does, and
+`Group.Old()` says the same.
 
 ```go
 doc.Activate(block)

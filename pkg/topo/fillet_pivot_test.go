@@ -28,6 +28,18 @@ func dishPocket(tol srf.Tolerance) *srf.SShell {
 	return &out
 }
 
+// dishVolume is dishPocket's volume in closed form: the dish, ∫2πr(5 +
+// kr) dr out to 40, k = 15/40, less the pocket, 3 + k·hypot(x, y) high
+// over its 24 x 12 floor.
+func dishVolume() float64 {
+	// ∫∫ hypot(x, y) over [0, a] x [0, b].
+	quarter := func(a, b float64) float64 {
+		d := math.Hypot(a, b)
+		return (2*a*b*d + a*a*a*math.Log((b+d)/a) + b*b*b*math.Log((a+d)/b)) / 6
+	}
+	return 24000*math.Pi - (3*24*12 + 15.0/40*4*quarter(12, 6))
+}
+
 // dishRim are picks of the dish's pocket's rim edges, by a point on
 // each: "x+" the edge on the wall at x = 12, and so on.
 func dishRim(names ...string) []topo.FilletPick {
@@ -53,11 +65,13 @@ func dishRim(names ...string) []topo.FilletPick {
 // the volumes below from the dish; at these corners it runs each fillet
 // on into the other and the wall a hundredth of a millimetre past the
 // crease, where ours fills between their ends (the ball's own surface
-// would fold on the crease, rollingpivot_corner.go), and took 3.3% less
-// at a radius of 1, 2.4% at 2, measured by meshes at 0.002% (73 s a
-// case). Here the meshes are coarser, their volumes some 4% off either
-// way at a radius of 1: the volume only rules out a corner gone wrong,
-// the feet are the check.
+// would fold on the crease, rollingpivot_corner.go). Ours take 0.7% to
+// 1.7% less, about 0.03 mm³ a corner at a radius of 1 and 0.15 at 2:
+// the mesh carried to its surfaces (surfaceVolume) from the dish's
+// closed form. The meshes' own volumes, the dish meshed before less
+// after, were some 4% off either way, and 3.3% less at a radius of 1 at
+// 0.002%, the cone's chords sagging differently once it is trimmed anew
+// (2026-11-18).
 func TestFilletPivotCorner(t *testing.T) {
 	if testing.Short() {
 		t.Skip("rolling-ball fillets of a pocket's rim in a cone, with corners, slow")
@@ -79,12 +93,12 @@ func TestFilletPivotCorner(t *testing.T) {
 		t.Run(fmt.Sprintf("%s r%g", strings.Join(c.picks, ","), c.r), func(t *testing.T) {
 			t.Parallel()
 			sh := dishPocket(fine(0.01))
-			before := meshVolume(sh)
 			if err := topo.FilletPicks(sh, dishRim(c.picks...), c.r, 1<<30, false); err != nil {
 				t.Fatal(err)
 			}
-			took := before - sound(t, sh)
-			if took < c.occ*(1-0.08) || took > c.occ*(1+0.05) {
+			sound(t, sh)
+			took := dishVolume() - surfaceVolume(t, sh)
+			if took < c.occ*(1-0.025) || took > c.occ {
 				t.Errorf("took %g, OpenCASCADE %g", took, c.occ)
 			}
 			tp := build(t, sh)
@@ -97,6 +111,61 @@ func TestFilletPivotCorner(t *testing.T) {
 				if !hasVertex(tp.Vertices, p) {
 					t.Errorf("no fillet's foot at %v", p)
 				}
+			}
+		})
+	}
+}
+
+// The dish's pocket filleted and chamfered at a chord tolerance of
+// 0.002 mm, sound, and taking OpenCASCADE's volumes, the mesh carried to
+// its surfaces (surfaceVolume) from the dish's closed form: a lone
+// edge's and the chamfers' to a few parts in 1e5, a corner of two radii
+// within 0.06%, where its corner differs, and a corner patch 0.7% under,
+// as at 0.01 mm (TestFilletPivotCorner). The meshes' own volumes, the
+// dish's meshed before less after, swung by 1% to 8% between 0.01 mm
+// and 0.002 mm, a lone edge's too, and were taken for a fault at the
+// corners (2026-11-18): the cone's chords sag 0.1 mm³ over the whole
+// dish before and 0.66 mm³ after, once the cone is trimmed anew.
+func TestDishPocketFineVolumes(t *testing.T) {
+	if testing.Short() {
+		t.Skip("fillets and chamfers of a pocket's rim in a cone at a chord tolerance of 0.002 mm, slow")
+	}
+	t.Parallel()
+	t.Run("dish", func(t *testing.T) {
+		t.Parallel()
+		sh := dishPocket(fine(0.002))
+		sound(t, sh)
+		if got, want := surfaceVolume(t, sh), dishVolume(); math.Abs(got-want) > 1e-4 {
+			t.Errorf("volume %.6f, closed form %.6f", got, want)
+		}
+	})
+	for _, c := range sweep.Pick([]struct {
+		picks  []string
+		radii  []float64
+		flat   bool
+		occ    float64
+		lo, hi float64
+	}{
+		{[]string{"x+"}, []float64{1}, false, 1.087517, -1e-4, 1e-4},
+		{[]string{"x+", "y+"}, []float64{1, 1.5}, false, 7.369233, 0, 0.001},
+		{[]string{"x+", "y+"}, []float64{1, 1.5}, true, 32.852706, -1e-4, 1e-4},
+		{[]string{"x+", "y+"}, []float64{1, 1}, false, 3.920346, -0.025, 0},
+	}, 0) {
+		t.Run(fmt.Sprintf("%s %v flat %v", strings.Join(c.picks, ","), c.radii, c.flat), func(t *testing.T) {
+			t.Parallel()
+			sh := dishPocket(fine(0.002))
+			picks := dishRim(c.picks...)
+			for i := range picks {
+				picks[i].R = c.radii[i]
+			}
+			if err := topo.FilletPicks(sh, picks, 1, 1<<30, c.flat); err != nil {
+				t.Fatal(err)
+			}
+			sound(t, sh)
+			took := dishVolume() - surfaceVolume(t, sh)
+			t.Logf("took %.6f, OpenCASCADE %.6f, %+.5f", took, c.occ, took/c.occ-1)
+			if took < c.occ*(1+c.lo) || took > c.occ*(1+c.hi) {
+				t.Errorf("took %.6f, OpenCASCADE %.6f", took, c.occ)
 			}
 		})
 	}
@@ -124,9 +193,10 @@ func checkCreaseEnds(t *testing.T, tp *topo.Topology) {
 }
 
 // Chamfers of the same rim turn its inside corners the same way, their
-// corner ruled between the crease and the cone (OpenCASCADE's
-// makeChamfer refuses these). The solid must be sound, and every corner
-// split from its crease.
+// corner ruled between the crease and the cone. OpenCASCADE's
+// makeChamfer was thought to refuse these; on 2026-11-18 it made x+ and
+// y+ at a distance of 1 (17.8587 mm³), four edges not tried. The solid
+// must be sound, and every corner split from its crease.
 func TestChamferPivotCorner(t *testing.T) {
 	if testing.Short() {
 		t.Skip("rolling-ball chamfers of a pocket's rim in a cone, with corners, slow")

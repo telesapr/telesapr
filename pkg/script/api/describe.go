@@ -45,6 +45,11 @@ func groupState(sk *sketch.Sketch, group *sketch.Group) (string, GroupInfo) {
 		info.LeftOut = why
 		return "left out (" + why + ")", info
 	}
+	if sk.LeftAsBefore(group.H) {
+		info.Old = true
+		return "old (not made since the last change, as it comes after the active group; " +
+			"a read of the group makes it)", info
+	}
 	parts := []string{"solved"}
 	info.Solved = group.IsSolvedOkay()
 	if !info.Solved {
@@ -243,8 +248,13 @@ func (g Group) Describe() (s string) {
 // what is selected. Lengths are in mm. The names it gives are the
 // ones Doc.Group, Doc.Request and Doc.Constraint take. Doc.Description
 // is the same as data.
+//
+// A group after the active one that a change left as it was made
+// before is said to be "old", with nothing of how it came out: making
+// it here would make every group of the drawing, which on a big model
+// whose active group is early is slow. A read of the group makes it.
 func (d *Doc) Describe() (s string) {
-	d.readSolidOf(core.HGroup{}, func(sk *sketch.Sketch) { s, _ = describeDoc(d, sk) })
+	d.readDrawing(func(sk *sketch.Sketch) { s, _ = describeDoc(d, sk) })
 	return s
 }
 

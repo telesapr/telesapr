@@ -737,6 +737,7 @@ Type                  -q
 Kind                  -q
 Solved                -q
 Dof                   -q
+Old                   -q
 Requests              -q
 Entities              -q
 Made                  -q
@@ -964,6 +965,7 @@ FreeDepth        ScreenChangeExtentHeld
 `,
 	"ThreadGroup": `
 Options  -q
+Circle   -q
 Groups   -q
 Finished -q
 Edit     ScreenEditThread; ScreenMakeThread

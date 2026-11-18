@@ -66,7 +66,7 @@ for _, x := range []int{1, 2} {
 func TestZeroNamedResultsSource(t *testing.T) {
 	t.Parallel()
 	src := "func f() (n int, _ string, p *T) {\n\tp = &T{}\n\tn = 1\n\treturn\n}\nfunc g() (r R) { r = R{1}; return }\n"
-	got := zeroNamedResults(src)
+	got, _ := zeroNamedResults(src)
 	if want := strings.Count(src, "\n"); strings.Count(got, "\n") != want {
 		t.Errorf("lines moved:\n%s", got)
 	}
@@ -76,7 +76,7 @@ func TestZeroNamedResultsSource(t *testing.T) {
 		}
 	}
 	for _, same := range []string{"x := 1", "func f() int { return 1 }", "func ( {", "f := func() (n int) {"} {
-		if got := zeroNamedResults(same); got != same {
+		if got, _ := zeroNamedResults(same); got != same {
 			t.Errorf("%q became %q", same, got)
 		}
 	}

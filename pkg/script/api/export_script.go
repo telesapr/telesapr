@@ -74,6 +74,12 @@ type scriptWriter struct {
 	file string
 	// atEnd are lines written after every group.
 	atEnd []string
+	// apart are the threads whose groups were moved apart, by each of
+	// their groups (export_script_thread.go).
+	apart map[core.HGroup]*apartThread
+	// pending are the groups a thread's call made that are still to be
+	// put where they stand, in their order in the drawing made.
+	pending []core.HGroup
 }
 
 func newScriptWriter(sk *sketch.Sketch) *scriptWriter {
@@ -84,6 +90,7 @@ func newScriptWriter(sk *sketch.Sketch) *scriptWriter {
 		conVar:   map[core.HConstraint]string{},
 		styleVar: map[core.HStyle]string{},
 		skip:     map[core.HGroup]bool{},
+		apart:    map[core.HGroup]*apartThread{},
 	}
 }
 
@@ -213,12 +220,13 @@ func (w *scriptWriter) writeGroups() {
 		if g == nil || hg.V == core.HGroupReferences {
 			continue
 		}
-		if !g.Thread.IsThread() {
+		if !g.Thread.IsThread() || w.findApart(g) {
 			continue
 		}
 		// A thread whose groups are no longer together, one moved on
-		// its own, is written group by group; its datum and sketches
-		// are then written as any are.
+		// its own, and can't be told from others (findApart), is
+		// written group by group; its datum and sketches are then
+		// written as any are.
 		hs, err := sk.ThreadGroups(hg)
 		if err != nil {
 			continue
@@ -242,6 +250,15 @@ func (w *scriptWriter) writeGroups() {
 			continue
 		}
 		if w.skip[hg] {
+			continue
+		}
+		if t := w.apart[hg]; t != nil {
+			if first {
+				w.line("doc.Active().Delete() // the group a new drawing starts with")
+				first = false
+			}
+			w.b.WriteString("\n")
+			w.writeApart(t, hg)
 			continue
 		}
 		w.b.WriteString("\n")
@@ -319,7 +336,13 @@ func (w *scriptWriter) writeGroup(g *sketch.Group) {
 	}
 	v := w.groupName(g)
 	w.line("%s := %s", v, call)
-	if from.V != 0 && from != prev {
+	switch {
+	case from.V == 0 || from == prev || w.apart[g.H] != nil:
+	case len(w.pending) > 0:
+		// Made after what it is made from; it goes where it was, before
+		// the groups a thread's call made that stand later.
+		w.line("must(%s.History().MoveBefore(%s))", v, w.groupVar[w.pending[0]])
+	default:
 		// Made after what it is made from; it goes where it was.
 		w.line("must(%s.History().MoveToEnd())", v)
 	}
