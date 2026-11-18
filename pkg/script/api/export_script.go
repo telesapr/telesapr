@@ -34,7 +34,7 @@ func (d *Doc) Script() (src string, notes []string) {
 			w.file = fn.FileName()
 		}
 		w.write()
-		src, notes = w.String(), w.notes
+		src, notes = tidy(w.String()), w.notes
 	})
 	return src, notes
 }
@@ -346,6 +346,9 @@ func (w *scriptWriter) writeGroup(g *sketch.Group) {
 		// Made after what it is made from; it goes where it was.
 		w.line("must(%s.History().MoveToEnd())", v)
 	}
+	if g.Thread.IsThread() {
+		w.writeThreadGroups(g, v)
+	}
 	w.last = g.H
 	if g.Thread.IsThread() && g.Thread.Cosmetic {
 		// The thread's call draws its sketch and makes its lathe, and
@@ -393,16 +396,7 @@ func (w *scriptWriter) writeGroupParams(g *sketch.Group, v string) {
 
 // writeOptions sets what the group's call leaves at its default.
 func (w *scriptWriter) writeOptions(g *sketch.Group, v string) {
-	def := sketch.NewGroup()
-	if g.Color != def.Color && g.Color != (core.RGBA{}) {
-		w.line("%s.SetColor(%d, %d, %d)", v, g.Color.Red, g.Color.Green, g.Color.Blue)
-		if g.Color.Alpha != 255 {
-			w.line("%s.SetOpacity(%s)", v, num(float64(g.Color.Alpha)/255))
-		}
-	}
-	if !g.Visible {
-		w.line("%s.SetVisible(false)", v)
-	}
+	w.writeLook(g, v)
 	if g.RelaxConstraints {
 		w.line("%s.SetRelaxConstraints(true)", v)
 	}
@@ -417,9 +411,6 @@ func (w *scriptWriter) writeOptions(g *sketch.Group, v string) {
 	}
 	if g.ForceToMesh {
 		w.line("%s.SetForceToMesh(true)", v)
-	}
-	if g.Appearance != "" {
-		w.line("%s.SetAppearance(%q)", v, g.Appearance)
 	}
 	w.writeFaceAppearances(g, v)
 	if g.Density != 0 {
@@ -440,8 +431,30 @@ func (w *scriptWriter) writeOptions(g *sketch.Group, v string) {
 			w.line("must(%s.SetExpr(sketch.GroupValue(%d), %q))", v, int(ge.val), ge.expr)
 		}
 	}
-	// Left out once everything is made: what comes after is made from
-	// it as it was.
+	w.writeSuppress(g, v)
+}
+
+// writeLook sets g's colour, visibility and appearance, which every
+// kind of group has, and a call leaves at the default.
+func (w *scriptWriter) writeLook(g *sketch.Group, v string) {
+	def := sketch.NewGroup()
+	if g.Color != def.Color && g.Color != (core.RGBA{}) {
+		w.line("%s.SetColor(%d, %d, %d)", v, g.Color.Red, g.Color.Green, g.Color.Blue)
+		if g.Color.Alpha != 255 {
+			w.line("%s.SetOpacity(%s)", v, num(float64(g.Color.Alpha)/255))
+		}
+	}
+	if !g.Visible {
+		w.line("%s.SetVisible(false)", v)
+	}
+	if g.Appearance != "" {
+		w.line("%s.SetAppearance(%q)", v, g.Appearance)
+	}
+}
+
+// writeSuppress leaves g suppressed once everything is made: what comes
+// after is made from it as it was.
+func (w *scriptWriter) writeSuppress(g *sketch.Group, v string) {
 	switch {
 	case g.SuppressAll:
 		w.atEnd = append(w.atEnd, fmt.Sprintf("%s.SetSuppress(api.SuppressWhole)", v))

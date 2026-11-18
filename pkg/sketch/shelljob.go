@@ -64,6 +64,8 @@ func (sk *Sketch) NewShellJob() *ShellJob {
 		// The copy takes the solids the sketch made before, and keeps
 		// those it makes, in the sketch's cache, which locks.
 		NoSolidCache: sk.NoSolidCache, solids: sk.solidCache(),
+		// And the solids the trials of fillets and chamfers made.
+		trials: sk.editTrials(),
 	}
 	clone := sk.cloneState(st)
 	c.Groups, c.GroupOrder, c.Requests, c.Constraints = clone.Groups, clone.GroupOrder, clone.Requests, clone.Constraints

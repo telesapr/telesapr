@@ -3,8 +3,10 @@ package srf
 import (
 	"math"
 	"slices"
+	"sync"
 
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/par"
 )
 
 // This file ports the SKdNode part of solvespace/src/mesh.cpp: a
@@ -171,10 +173,28 @@ func skdNodeFromList(tll []*STriangle, pace func()) *SKdNode {
 
 	ret.Which = which
 	ret.C = split[which]
+	// Each side is built from its own list alone, so the two sides of
+	// a large node are built at once: the same tree. A paced build stays
+	// on its goroutine, which the pace must be called from.
+	if pace == nil && len(tll) >= kdAtOnceAt {
+		par.For(2, func(i int) {
+			if i == 0 {
+				ret.Gt = skdNodeFromList(lgt, nil)
+			} else {
+				ret.Lt = skdNodeFromList(llt, nil)
+			}
+		})
+		return ret
+	}
 	ret.Gt = skdNodeFromList(lgt, pace)
 	ret.Lt = skdNodeFromList(llt, pace)
 	return ret
 }
+
+// kdAtOnceAt is the fewest triangles a node of the tree holds for its
+// two sides to be built on goroutines of their own: below it, a side
+// takes less than starting one.
+const kdAtOnceAt = 4096
 
 // ClearTags zeroes the tags of every triangle in the tree.
 func (n *SKdNode) ClearTags() {
@@ -505,68 +525,72 @@ func (n *SKdNode) FindEdgeOn(a, b geom.Vector, cnt int, coplanarIsInter bool, in
 		if tr.Tag == cnt {
 			continue
 		}
+		tr.edgeOn(a, b, coplanarIsInter, info)
+		// Ensure that we don't count this triangle twice if it appears
+		// in two buckets of the kd tree.
+		tr.Tag = cnt
+	}
+}
 
-		// Test if this triangle matches up with the given edge
-		switch {
-		case (a.Equals(tr.B) && b.Equals(tr.A)) ||
-			(a.Equals(tr.C) && b.Equals(tr.B)) ||
-			(a.Equals(tr.A) && b.Equals(tr.C)):
+// edgeOn is FindEdgeOn's test of the edge a -> b against triangle tr:
+// a mate of it counted in info, or its crossing the triangle.
+func (tr *STriangle) edgeOn(a, b geom.Vector, coplanarIsInter bool, info *EdgeOnInfo) {
+	// Test if this triangle matches up with the given edge
+	switch {
+	case (a.Equals(tr.B) && b.Equals(tr.A)) ||
+		(a.Equals(tr.C) && b.Equals(tr.B)) ||
+		(a.Equals(tr.A) && b.Equals(tr.C)):
 
-			info.Count++
-			// Record whether this triangle is front- or back-facing.
-			info.FrontFacing = tr.Normal().Z > lengthEps
-			// Record the triangle
-			info.Tr = tr
-			// And record which vertices a and b correspond to
-			info.Ai = vertexIndex(tr, a)
-			info.Bi = vertexIndex(tr, b)
+		info.Count++
+		// Record whether this triangle is front- or back-facing.
+		info.FrontFacing = tr.Normal().Z > lengthEps
+		// Record the triangle
+		info.Tr = tr
+		// And record which vertices a and b correspond to
+		info.Ai = vertexIndex(tr, a)
+		info.Bi = vertexIndex(tr, b)
 
-		case (a.Equals(tr.A) && b.Equals(tr.B)) ||
-			(a.Equals(tr.B) && b.Equals(tr.C)) ||
-			(a.Equals(tr.C) && b.Equals(tr.A)):
+	case (a.Equals(tr.A) && b.Equals(tr.B)) ||
+		(a.Equals(tr.B) && b.Equals(tr.C)) ||
+		(a.Equals(tr.C) && b.Equals(tr.A)):
 
-			// It's an edge of this triangle, okay.
+		// It's an edge of this triangle, okay.
 
-		default:
-			// Check for self-intersection
-			nn := tr.Normal().WithMagnitude(1)
-			d := tr.A.Dot(nn)
-			pa, pb := a.Dot(nn)-d, b.Dot(nn)-d
-			// It's an intersection if neither point lies in-plane,
-			// and the edge crosses the plane (should handle in-plane
-			// intersections separately but don't yet).
-			if (pa < -lengthEps || pa > lengthEps) &&
-				(pb < -lengthEps || pb > lengthEps) &&
-				pa*pb < 0 {
-				// The edge crosses the plane of the triangle; now see if
-				// it crosses inside the triangle.
-				if tr.containsPointProjdWithin(b.Minus(a), a) && tr.edgeCrossesWithin(nn, d, a, b) {
-					if coplanarIsInter {
+	default:
+		// Check for self-intersection
+		nn := tr.Normal().WithMagnitude(1)
+		d := tr.A.Dot(nn)
+		pa, pb := a.Dot(nn)-d, b.Dot(nn)-d
+		// It's an intersection if neither point lies in-plane,
+		// and the edge crosses the plane (should handle in-plane
+		// intersections separately but don't yet).
+		if (pa < -lengthEps || pa > lengthEps) &&
+			(pb < -lengthEps || pb > lengthEps) &&
+			pa*pb < 0 {
+			// The edge crosses the plane of the triangle; now see if
+			// it crosses inside the triangle.
+			if tr.containsPointProjdWithin(b.Minus(a), a) && tr.edgeCrossesWithin(nn, d, a, b) {
+				if coplanarIsInter {
+					info.IntersectsMesh = true
+				} else {
+					p := geom.AtIntersectionOfPlaneAndLine(nn, d, a, b)
+					ta, tb, tc := tr.A, tr.B, tr.C
+					// An intersection on an edge of the triangle happens
+					// when our edge is from a triangle coplanar with
+					// another triangle in the mesh: the edge is not
+					// tested against the triangles whose plane holds
+					// it, but it is against the coplanar triangle's
+					// neighbours, which it meets on their edges. That
+					// is no intersection.
+					onEdge := p.DistanceToLine(ta, tb.Minus(ta)) < lengthEps ||
+						p.DistanceToLine(tb, tc.Minus(tb)) < lengthEps ||
+						p.DistanceToLine(tc, ta.Minus(tc)) < lengthEps
+					if !onEdge {
 						info.IntersectsMesh = true
-					} else {
-						p := geom.AtIntersectionOfPlaneAndLine(nn, d, a, b)
-						ta, tb, tc := tr.A, tr.B, tr.C
-						// An intersection on an edge of the triangle happens
-						// when our edge is from a triangle coplanar with
-						// another triangle in the mesh: the edge is not
-						// tested against the triangles whose plane holds
-						// it, but it is against the coplanar triangle's
-						// neighbours, which it meets on their edges. That
-						// is no intersection.
-						onEdge := p.DistanceToLine(ta, tb.Minus(ta)) < lengthEps ||
-							p.DistanceToLine(tb, tc.Minus(tb)) < lengthEps ||
-							p.DistanceToLine(tc, ta.Minus(tc)) < lengthEps
-						if !onEdge {
-							info.IntersectsMesh = true
-						}
 					}
 				}
 			}
 		}
-
-		// Ensure that we don't count this triangle twice if it appears
-		// in two buckets of the kd tree.
-		tr.Tag = cnt
 	}
 }
 
@@ -629,6 +653,10 @@ func (n *SKdNode) MakeCertainEdgesInto(sel *SEdgeList, how EdgeKind, coplanarIsI
 	n.ClearTags()
 	n.ListTrianglesInto(&tris)
 
+	if how == EdgeNakedOrSelfInter || how == EdgeSelfInter {
+		n.badEdgesInto(sel, tris, how, coplanarIsInter, inter, leaky, auxA)
+		return
+	}
 	edgeTris := map[triPair]bool{}
 	cnt := 1234
 	for _, tr := range tris {
@@ -640,34 +668,6 @@ func (n *SKdNode) MakeCertainEdgesInto(sel *SEdgeList, how EdgeKind, coplanarIsI
 			n.FindEdgeOn(a, b, cnt, coplanarIsInter, &info)
 
 			switch how {
-			case EdgeNakedOrSelfInter:
-				// there should be one anti-parllel edge
-				if info.Count != 1 {
-					// but there may be multiple parallel coincident edges
-					var parallelInfo EdgeOnInfo
-					n.FindEdgeOn(b, a, -cnt, coplanarIsInter, &parallelInfo)
-					if info.Count != parallelInfo.Count {
-						sel.AddEdge(a, b, auxA, 0, 0)
-						if leaky != nil {
-							*leaky = true
-						}
-					}
-				}
-				if info.IntersectsMesh {
-					sel.AddEdge(a, b, auxA, 0, 0)
-					if inter != nil {
-						*inter = true
-					}
-				}
-
-			case EdgeSelfInter:
-				if info.IntersectsMesh {
-					sel.AddEdge(a, b, auxA, 0, 0)
-					if inter != nil {
-						*inter = true
-					}
-				}
-
 			case EdgeTurning:
 				if tr.Normal().Z < lengthEps && info.Count == 1 && info.FrontFacing {
 					if checkAndAddTrianglePair(edgeTris, tr, info.Tr) {
@@ -704,6 +704,97 @@ func (n *SKdNode) MakeCertainEdgesInto(sel *SEdgeList, how EdgeKind, coplanarIsI
 
 			cnt++
 		}
+	}
+}
+
+// badEdgesChunk is how many triangles one iteration of badEdgesInto
+// looks at.
+const badEdgesChunk = 512
+
+// badEdgesInto is MakeCertainEdgesInto for the naked and the
+// self-intersecting edges (how), of the triangles tris listed from n.
+// Each edge's search of the tree is alone (findEdgeOnce), reading the
+// tree only, so the triangles are looked at in chunks at once and the
+// edges found added in their order: the list is the one a loop over
+// them makes. On a solid of a hundred thousand triangles this was a
+// second of the check that a fillet's result is closed. The tags are
+// left numbering the triangles, not as FindEdgeOn leaves them: what
+// reads them clears them first.
+func (n *SKdNode) badEdgesInto(sel *SEdgeList, tris []*STriangle, how EdgeKind, coplanarIsInter bool,
+	inter, leaky *bool, auxA int) {
+	for i, tr := range tris {
+		tr.Tag = i + 1
+	}
+	type found struct {
+		edges        [][2]geom.Vector
+		inter, leaky bool
+	}
+	chunks := make([]found, (len(tris)+badEdgesChunk-1)/badEdgesChunk)
+	seen := sync.Pool{New: func() any { s := make([]int32, len(tris)); return &s }}
+	par.For(len(chunks), func(c int) {
+		f := &chunks[c]
+		sp := seen.Get().(*[]int32)
+		defer seen.Put(sp)
+		lo := c * badEdgesChunk
+		for i, tr := range tris[lo:min(len(tris), lo+badEdgesChunk)] {
+			for j := range 3 {
+				a := tr.vertex(j)
+				b := tr.vertex((j + 1) % 3)
+				// Each search is numbered apart from every other, so that
+				// what one marked seen is no other's.
+				q := int32(2 * (3*(lo+i) + j))
+				var info EdgeOnInfo
+				n.findEdgeOnce(a, b, coplanarIsInter, &info, *sp, q+1)
+				if how == EdgeNakedOrSelfInter && info.Count != 1 {
+					// There should be one anti-parallel edge, but there
+					// may be several parallel coincident ones.
+					var parallelInfo EdgeOnInfo
+					n.findEdgeOnce(b, a, coplanarIsInter, &parallelInfo, *sp, q+2)
+					if info.Count != parallelInfo.Count {
+						f.edges = append(f.edges, [2]geom.Vector{a, b})
+						f.leaky = true
+					}
+				}
+				if info.IntersectsMesh {
+					f.edges = append(f.edges, [2]geom.Vector{a, b})
+					f.inter = true
+				}
+			}
+		}
+	})
+	for _, f := range chunks {
+		for _, e := range f.edges {
+			sel.AddEdge(e[0], e[1], auxA, 0, 0)
+		}
+		if inter != nil && f.inter {
+			*inter = true
+		}
+		if leaky != nil && f.leaky {
+			*leaky = true
+		}
+	}
+}
+
+// findEdgeOnce is FindEdgeOn for a tree whose triangles' tags number
+// them from 1 (badEdgesInto), the triangles this search q has seen
+// marked in seen, not in their tags: searches may run at once.
+func (n *SKdNode) findEdgeOnce(a, b geom.Vector, coplanarIsInter bool, info *EdgeOnInfo, seen []int32, q int32) {
+	if n.Gt != nil && n.Lt != nil {
+		ac, bc := a.Element(n.Which), b.Element(n.Which)
+		if ac < n.C+kdTreeEps || bc < n.C+kdTreeEps {
+			n.Lt.findEdgeOnce(a, b, coplanarIsInter, info, seen, q)
+		}
+		if ac > n.C-kdTreeEps || bc > n.C-kdTreeEps {
+			n.Gt.findEdgeOnce(a, b, coplanarIsInter, info, seen, q)
+		}
+		return
+	}
+	for _, tr := range n.Tris {
+		if seen[tr.Tag-1] == q {
+			continue
+		}
+		tr.edgeOn(a, b, coplanarIsInter, info)
+		seen[tr.Tag-1] = q
 	}
 }
 

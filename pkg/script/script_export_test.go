@@ -285,6 +285,62 @@ func TestScriptThreadGroupsApart(t *testing.T) {
 	}
 }
 
+// A thread's groups keep what the user set on them, their names, colours,
+// visibility and suppression, and its constraints name the entities of
+// its sketches as any are named, not by handle: the script made again
+// gives groups that match, together and apart.
+func TestScriptThreadGroupOptions(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name  string
+		apart bool
+	}{{"together", false}, {"apart", true}} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			d, groups := threadedPlate(t)
+			for i, g := range groups {
+				g.SetName("tg-" + string(rune('a'+i)))
+			}
+			groups[1].SetColor(11, 22, 33)
+			groups[3].SetColor(44, 55, 66)
+			groups[2].SetVisible(false)
+			groups[1].SetSuppress(api.SuppressSolid)
+			if tc.apart {
+				for _, i := range []int{1, 3} {
+					if err := groups[i].History().MoveToEnd(); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+			d.Activate(d.Groups()[len(d.Groups())-1])
+			made, notes, src := rebuildNoted(t, d)
+			if len(notes) > 0 {
+				t.Errorf("not written: %q", notes)
+			}
+			if strings.Contains(src, "doc.Entity(0x") {
+				t.Errorf("an entity is named by its handle:\n%s", src)
+			}
+			for _, g := range groups {
+				a := made.Group(g.Name())
+				if a.Visible() != g.Visible() || a.Suppression() != g.Suppression() {
+					t.Errorf("%s: visible %v, suppression %v; want %v, %v\n%s", g.Name(), a.Visible(), a.Suppression(),
+						g.Visible(), g.Suppression(), src)
+				}
+				if g.Name() == "tg-b" || g.Name() == "tg-d" {
+					ar, ag, ab := a.Color()
+					wr, wg, wb := g.Color()
+					if ar != wr || ag != wg || ab != wb {
+						t.Errorf("%s: colour %d %d %d; want %d %d %d", g.Name(), ar, ag, ab, wr, wg, wb)
+					}
+				}
+			}
+			if got, want := groupNames(made), groupNames(d); !slices.Equal(got, want) {
+				t.Fatalf("groups %q, want %q\n%s", got, want, src)
+			}
+		})
+	}
+}
+
 // groupNames are the names of d's groups, in its history's order.
 func groupNames(d *api.Doc) []string {
 	var names []string

@@ -21,13 +21,12 @@ import (
 // srf.OriginFor leaves the group's faces, clear of the first fillets'.
 const turnBackOrigin = 1 << 15
 
-// filletTurnedBack rounds, on sh, where FilletPicks has just made picks
-// on before, the pieces of the picked edges a fillet ended short of
-// because their creases faded out there and turned back. Where none is
-// left, or the pieces can't be rounded (the crease only fades out, the
-// faces past it tangent), sh is left as it is.
-func filletTurnedBack(sh, before *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) {
-	rest := turnedBackPicks(sh, before, picks)
+// filletTurnedBack rounds, on sh, the pieces rest of the picked edges a
+// fillet just made ended short of because their creases faded out there
+// and turned back (turnedBackPicks). Where none is left, or the pieces
+// can't be rounded (the crease only fades out, the faces past it
+// tangent), sh is left as it is.
+func filletTurnedBack(sh *srf.SShell, rest []FilletPick, r float64, origin uint32, flat bool) {
 	if len(rest) == 0 {
 		return
 	}
@@ -45,12 +44,16 @@ func turnedBackPicks(sh, before *srf.SShell, picks []FilletPick) []FilletPick {
 	// Built from copies: Build fills a shell's caches, which moves the
 	// last digits of what is made from it after.
 	bc, sc := before.Clone(), sh.Clone()
-	tb, err := Build(&bc)
-	if err != nil {
-		return nil
-	}
-	t, err := Build(&sc)
-	if err != nil {
+	var tb, t *Topology
+	var berr, err error
+	eachPaced(sh, 2, func(i int) {
+		if i == 0 {
+			tb, berr = Build(&bc)
+		} else {
+			t, err = Build(&sc)
+		}
+	})
+	if berr != nil || err != nil {
 		return nil
 	}
 	tol := math.Max(1e-6, sh.Tol.ChordTolMm()/10)

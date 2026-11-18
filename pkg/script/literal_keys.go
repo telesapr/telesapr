@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/scanner"
+	"go/token"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -201,6 +204,9 @@ func compiling(p interp.Panic) bool {
 func compileFault(src string, what error) *Error {
 	keys := keyElements(src)
 	if len(keys.left) == 0 {
+		if name, line, col, ok := undefinedAt(src, what); ok {
+			return &Error{Line: line, Col: col, Err: fmt.Errorf("undefined: %s (%w it, as %w)", name, errCompileFault, what)}
+		}
 		return &Error{Err: fmt.Errorf("%w the script (%w), which is no fault of the script's; "+
 			"writing the statement another way, as with a value put in a variable first, may get round it",
 			errCompileFault, what)}
@@ -215,4 +221,37 @@ func compileFault(src string, what error) *Error {
 	return &Error{Line: line, Col: col, Err: fmt.Errorf(
 		"%w %s as an element of a literal (%w); put it in a variable first and write the variable in the literal, as v := %s",
 		errCompileFault, text, what, text)}
+}
+
+// incompleteType is what the interpreter's compile fault says of a name
+// that nothing declares, as one in a slice literal inside a literal:
+// "CFG post-order panic: 1:44: incomplete type undefinedName". Its own
+// place is in a text it rewrote, which is not src's.
+var incompleteType = regexp.MustCompile(`incomplete type ([\p{L}_][\p{L}\p{N}_]*)`)
+
+// undefinedAt finds the name that a compile fault what says is
+// incomplete, where src first uses it: not after a dot, where it is a
+// field or a method.
+func undefinedAt(src string, what error) (name string, line, col int, ok bool) {
+	m := incompleteType.FindStringSubmatch(what.Error())
+	if m == nil {
+		return "", 0, 0, false
+	}
+	name = m[1]
+	fset := token.NewFileSet()
+	file := fset.AddFile("", fset.Base(), len(src))
+	var sc scanner.Scanner
+	sc.Init(file, []byte(src), func(token.Position, string) {}, 0)
+	dot := false
+	for {
+		pos, tok, lit := sc.Scan()
+		if tok == token.EOF {
+			return name, 0, 0, false
+		}
+		if tok == token.IDENT && lit == name && !dot {
+			p := fset.Position(pos)
+			return name, p.Line, p.Column, true
+		}
+		dot = tok == token.PERIOD
+	}
 }

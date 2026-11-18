@@ -110,3 +110,43 @@ func (sk *Sketch) ThreadGroupsApart(hg core.HGroup) ([]core.HGroup, error) {
 	}
 	return tg.all(), nil
 }
+
+// ThreadDefaultNames returns the name the thread's call gives each of
+// the groups of the thread whose helix group is hg, as ThreadGroupsApart
+// lists them, and its datum's, which a thread made on a face makes
+// first: what a name is compared with to tell whether the user changed
+// it. The map is empty when the groups can't be found.
+func (sk *Sketch) ThreadDefaultNames(hg core.HGroup) map[core.HGroup]string {
+	hs, err := sk.ThreadGroupsApart(hg)
+	if err != nil {
+		return nil
+	}
+	o := sk.Group(hg).Thread.ThreadOptions
+	d := threadDrawer{o: o}
+	var names []string
+	if o.Cosmetic {
+		names = []string{d.name("cosmetic"), d.name(d.latheName())}
+	} else {
+		names = []string{d.name("blank"), d.name(d.latheName()), d.name("profile"), d.name("thread")}
+		if o.levelStarts() {
+			for i := 1; i < o.Spec.NumStarts(); i++ {
+				names = append(names, d.name(startName("profile", i)), d.name(startName("thread", i)))
+			}
+		}
+		if o.Chamfer {
+			names = append(names, d.name("end"), d.name("chamfer"))
+		}
+	}
+	out := map[core.HGroup]string{}
+	for i, h := range hs {
+		if i < len(names) {
+			out[h] = names[i]
+		}
+	}
+	if c := sk.Entity(sk.Group(hg).Thread.Circle); c != nil {
+		if _, onFace := sk.ThreadPlaceOf(hg); onFace {
+			out[c.Group] = d.name("end")
+		}
+	}
+	return out
+}

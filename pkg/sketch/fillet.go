@@ -42,7 +42,7 @@ func (sk *Sketch) NewFillet(edges []core.HEntity, solidEdges []topo.Name, radius
 	if radius <= 0 || math.IsNaN(radius) || math.IsInf(radius, 0) {
 		return g, fmt.Errorf("a fillet's radius must be more than zero, not %g", radius)
 	}
-	if err := sk.filletTrial(sk.solidAt(sk.Active), edges, solidEdges, radius, nil); err != nil {
+	if err := sk.filletTrial(sk.solidAt(sk.Active), sk.nextGroupHandle(), edges, solidEdges, radius, nil); err != nil {
 		return g, err
 	}
 	g.Edges = append([]core.HEntity(nil), edges...)
@@ -74,7 +74,7 @@ func (sk *Sketch) SetFilletEdges(hg core.HGroup, edges []core.HEntity, solidEdge
 		return err
 	}
 	radii := carryEdgeRadii(g, edges, solidEdges)
-	if err := sk.filletTrial(sk.solidBefore(g), edges, solidEdges, g.ValB, radii); err != nil {
+	if err := sk.filletTrial(sk.solidBefore(g), hg, edges, solidEdges, g.ValB, radii); err != nil {
 		return err
 	}
 	g.Edges, g.SolidEdges, g.EdgeRadii = edges, solidEdges, radii
@@ -85,7 +85,10 @@ func (sk *Sketch) SetFilletEdges(hg core.HGroup, edges []core.HEntity, solidEdge
 // filletTrial rounds edges and solidEdges of solid's running shell on a
 // copy, with radius and the edges' own radii, or says why it can't:
 // what NewFillet and SetFilletEdges check before the fillet is made.
-func (sk *Sketch) filletTrial(solid *Group, edges []core.HEntity, solidEdges []topo.Name, radius float64, radii []EdgeRadius) error {
+// The faces it puts in are named as those of the group hg (the one
+// NewFillet's group will be added as), and what it made is kept for
+// that group's regeneration (edit_trial.go).
+func (sk *Sketch) filletTrial(solid *Group, hg core.HGroup, edges []core.HEntity, solidEdges []topo.Name, radius float64, radii []EdgeRadius) error {
 	if solid == nil || len(solid.RunningShell.Surface) == 0 {
 		return errors.New("there is no solid with surfaces to fillet")
 	}
@@ -96,9 +99,8 @@ func (sk *Sketch) filletTrial(solid *Group, edges []core.HEntity, solidEdges []t
 	if err != nil {
 		return err
 	}
-	var sh srf.SShell
-	sh.MakeFromCopyOf(&solid.RunningShell)
-	return topo.FilletPicks(&sh, filletPicks(segs, radii), radius, 1<<30, false)
+	_, _, err = sk.editSolid(&solid.RunningShell, filletPicks(segs, radii), radius, srf.OriginFor(hg.V, 0), false, trialKeep, nil)
+	return err
 }
 
 // filletPicks are the segments as topo picks them, each with its own
@@ -144,10 +146,7 @@ func (g *Group) generateFilletShell(sk *Sketch) {
 		return
 	}
 	picks := filletPicks(segs, g.EdgeRadii)
-	var sh srf.SShell
-	sh.PaceBy(sk.kernelPace())
-	sh.MakeFromCopyOf(&prev.RunningShell)
-	made, err := topo.FilletPicksMade(&sh, picks, g.ValB, srf.OriginFor(g.H.V, 0), false)
+	sh, made, err := sk.editSolid(&prev.RunningShell, picks, g.ValB, srf.OriginFor(g.H.V, 0), false, trialTake, sk.kernelPace())
 	if err != nil {
 		if fe, ok := errors.AsType[*topo.FilletError](err); ok {
 			at := fe.At

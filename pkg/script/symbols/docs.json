@@ -8466,6 +8466,10 @@
 						"decl": "func (sk *Sketch) EditThread(hg core.HGroup, o ThreadOptions) (ThreadResult, error)",
 						"text": "EditThread makes the thread whose helix group is hg again with the options o: its sketches are drawn again in their planes, the requests they had taken first, their dimensions made anew, and the helices given their pitch and length."
 					},
+					"EditTrialsTaken": {
+						"decl": "func (sk *Sketch) EditTrialsTaken() int",
+						"text": "EditTrialsTaken is how many fillets' and chamfers' solids a regeneration took from the trials that checked them, rather than making them again."
+					},
 					"EntitiesToMap": {
 						"decl": "func (s *Sketch) EntitiesToMap() map[core.HEntity]core.Entity",
 						"text": "EntitiesToMap returns the entities indexed by their handle."
@@ -9327,6 +9331,10 @@
 					"ThreadBands": {
 						"decl": "func (sk *Sketch) ThreadBands(hg core.HGroup) []ThreadBand",
 						"text": "ThreadBands are the threads of the solid of group hg: those whose helix group comes at or before it and is generated."
+					},
+					"ThreadDefaultNames": {
+						"decl": "func (sk *Sketch) ThreadDefaultNames(hg core.HGroup) map[core.HGroup]string",
+						"text": "ThreadDefaultNames returns the name the thread's call gives each of the groups of the thread whose helix group is hg, as ThreadGroupsApart lists them, and its datum's, which a thread made on a face makes first: what a name is compared with to tell whether the user changed it."
 					},
 					"ThreadFitMove": {
 						"decl": "func (sk *Sketch) ThreadFitMove(a, b core.HEntity) (float64, error)",

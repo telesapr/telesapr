@@ -3,7 +3,7 @@
 Found 2026-11-14 while modelling over MCP (version 0.6.5, yaegi v0.16.1). Worked round in
 TeleSAPR 2026-11-17; the fault itself is upstream and not fixed there.
 
-Refreshed 2026-11-17.
+Refreshed 2026-11-18.
 
 ## What happened
 
@@ -129,9 +129,13 @@ upgrade fixes it, and then `keyElements` can go.
   column: `the interpreter (yaegi) failed while compiling gs[0].Name() as an element of a
   literal (nil pointer); put it in a variable first and write the variable in the literal, as
   v := gs[0].Name()`. Any other panic while compiling says that the interpreter failed while
-  compiling, and that it is not the script's fault. Statements are compiled one at a time, so it
-  is placed at the statement's first line; in a program the place isn't known, and the error
-  carries the file's name only, not 1:1.
+  compiling, and that it is not the script's fault. A name nothing declares, in a slice literal
+  inside another literal (`[]int{1, nope}`, `T{E: []int{nope}}`), makes it panic with "incomplete
+  type nope" and a place of its own in the rewritten text: `undefinedAt` finds the name in the
+  script and reports it as undefined at its line and column. Other faults are placed at the
+  statement's first line, as statements are compiled one at a time (`named`, and `atStatement`
+  for `Eval` and a console); in a program the place isn't known, and the error carries the
+  file's name only, not 1:1.
 - The `api_help` primer's "What the interpreter can't do" and the guide's scripting page ("Not
   yet") say what is left: a struct literal without field names.
 

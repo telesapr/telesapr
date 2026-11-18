@@ -38,6 +38,9 @@ func TestErrorColumns(t *testing.T) {
 		{name: "compile error in a literal with a key", src: "len([]api.Entity{tl[0].Start(), tl[1].Start()}) + undefinedName", at: "undefinedName", message: "undefined"},
 		{name: "compile error after a named result", src: "func() (r int) { return 1 }() + undefinedName", at: "undefinedName", message: "undefined"},
 		{name: "compile error after a literal in a named result", src: "func() (r []int) { r = []int{1}; return }()[0] + undefinedName", at: "undefinedName", message: "undefined"},
+		{name: "compile fault of an undefined name in a literal in a literal", src: "[]int{1, undefinedName}", at: "undefinedName", message: "undefined: undefinedName"},
+		{name: "compile fault of an undefined name in a keyed literal", src: "struct{ E []int }{E: []int{undefinedName}}", at: "undefinedName", message: "undefined: undefinedName"},
+		{name: "panic in a function that names its results", src: "func() (r int) { return []int{1}[zero+5] }()", at: "func", message: "index out of range"},
 		{name: "panic in an expression", src: "1 + []int{1}[zero+5]", at: "[]int", showAt: "1", message: "index out of range"},
 		{name: "panic in a literal with a key", src: "[]api.Entity{tl[0].Start(), tl[9].Start()}", at: "tl[0]", showAt: "[]api", message: "index out of range"},
 		{name: "panic in a literal with a key as an argument", src: "len([]api.Entity{tl[0].Start(), tl[9].Start()})", at: "tl[0]", showAt: "len", message: "index out of range"},
@@ -131,5 +134,20 @@ func TestStripWrapper(t *testing.T) {
 		if serr, _ := errors.AsType[*Error](err); serr == nil || serr.Col != c.wantCol {
 			t.Errorf("%d:%d less %d is %d, want %d", c.line, c.col, c.n, serr.Col, c.wantCol)
 		}
+	}
+}
+
+// A compile fault of the interpreter's that says nowhere it is, taken
+// by a console or Eval, is at the start of the statement, as it is in a
+// script run.
+func TestAtStatement(t *testing.T) {
+	t.Parallel()
+	err := atStatement(&Error{Err: errCompileFault})
+	if serr, ok := errors.AsType[*Error](err); !ok || serr.Line != 1 || serr.Col != 1 {
+		t.Errorf("a compile fault is placed at %v, want 1:1", err)
+	}
+	other := &Error{Err: errors.New("x")}
+	if got := atStatement(other); !errors.Is(got, other) || other.Line != 0 {
+		t.Errorf("another error is placed at line %d, want none", other.Line)
 	}
 }

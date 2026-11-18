@@ -1,6 +1,7 @@
 package srf
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -95,5 +96,65 @@ func TestEdgeNearlyInSliverPlane(t *testing.T) {
 	SKdNodeFrom(&m2).MakeCertainEdgesInto(&inter, EdgeSelfInter, true, nil, nil, 0)
 	if len(inter.Edges) == 0 {
 		t.Error("a needle through a plate not taken to cross it")
+	}
+}
+
+// The naked and crossing edges are looked for in chunks of triangles at
+// once (badEdgesInto): the list is the one a loop over the triangles
+// with FindEdgeOn makes, in its order, on a mesh of several chunks and
+// a deep tree with gaps and crossings scattered through it.
+func TestBadEdgesAsInOrder(t *testing.T) {
+	t.Parallel()
+	var m SMesh
+	for i := range 20 {
+		for j := range 20 {
+			o := geom.Vector{X: 2 * float64(i), Y: 2 * float64(j)}
+			tetrahedron(&m, o, 1)
+			if (i+j)%7 == 0 {
+				m.Triangles = m.Triangles[:len(m.Triangles)-1]
+			}
+			if (i*j)%11 == 3 {
+				tetrahedron(&m, o.Plus(geom.Vector{X: 0.2, Y: 0.2, Z: 0.2}), 1)
+			}
+		}
+	}
+	if len(m.Triangles) < 3*badEdgesChunk {
+		t.Fatalf("%d triangles, want several chunks", len(m.Triangles))
+	}
+	for _, how := range []EdgeKind{EdgeNakedOrSelfInter, EdgeSelfInter} {
+		root := SKdNodeFrom(&m)
+		var want SEdgeList
+		var wantInter, wantLeaky bool
+		var tris []*STriangle
+		root.ClearTags()
+		root.ListTrianglesInto(&tris)
+		cnt := 1234
+		for _, tr := range tris {
+			for j := range 3 {
+				a, b := tr.vertex(j), tr.vertex((j+1)%3)
+				var info EdgeOnInfo
+				root.FindEdgeOn(a, b, cnt, true, &info)
+				if how == EdgeNakedOrSelfInter && info.Count != 1 {
+					var back EdgeOnInfo
+					root.FindEdgeOn(b, a, -cnt, true, &back)
+					if info.Count != back.Count {
+						want.AddEdge(a, b, 0, 0, 0)
+						wantLeaky = true
+					}
+				}
+				if info.IntersectsMesh {
+					want.AddEdge(a, b, 0, 0, 0)
+					wantInter = true
+				}
+				cnt++
+			}
+		}
+		var got SEdgeList
+		var inter, leaky bool
+		root.MakeCertainEdgesInto(&got, how, true, &inter, &leaky, 0)
+		if len(want.Edges) == 0 || !slices.Equal(got.Edges, want.Edges) || inter != wantInter || leaky != wantLeaky {
+			t.Errorf("kind %v: %d edges (inter %v, leaky %v), want %d in order (inter %v, leaky %v)",
+				how, len(got.Edges), inter, leaky, len(want.Edges), wantInter, wantLeaky)
+		}
 	}
 }

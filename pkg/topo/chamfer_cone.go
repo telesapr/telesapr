@@ -1,6 +1,7 @@
 package topo
 
 import (
+	"maps"
 	"math"
 	"slices"
 
@@ -93,9 +94,24 @@ type coneGeom struct {
 	away  []geom.Vector
 	reach float64
 	// The chamfers' planes, by edge, each with the sign of the side it
-	// keeps; and each face's plane, with the side of the cone.
+	// keeps; and each face's plane, with the side of the cone. A polygon
+	// is clipped by them in the order of their keys (clipAll): clipped in
+	// another order it comes out the same in exact arithmetic but not to
+	// the last bit, and a map's order changes from run to run, which made
+	// the corner, and so the solid, differ between runs.
 	cut   map[int]keptPlane
 	faces map[int]keptPlane
+}
+
+// clipAll is poly clipped by the planes ks but those whose keys skip
+// picks, in the order of their keys.
+func clipAll(poly []geom.Vector, ks map[int]keptPlane, skip func(int) bool) []geom.Vector {
+	for _, j := range slices.Sorted(maps.Keys(ks)) {
+		if !skip(j) {
+			poly = clipPolygon(poly, ks[j])
+		}
+	}
+	return poly
 }
 
 // keptPlane is a plane and the side of it kept: points x with
@@ -248,9 +264,7 @@ func (g *coneGeom) faceChain(f, ia, ib int) ([]geom.Vector, error) {
 	}
 	far := g.p.Plus(da.ScaledBy(g.reach))
 	poly := []geom.Vector{g.p, far, g.p.Plus(db.ScaledBy(g.reach))}
-	for _, k := range g.cut {
-		poly = clipPolygon(poly, k)
-	}
+	poly = clipAll(poly, g.cut, func(int) bool { return false })
 	// The far line, from the reach along a to the reach along b.
 	farN := db.Minus(da).Cross(da.Cross(db))
 	onFar := func(q geom.Vector) bool {
@@ -301,16 +315,8 @@ func (g *coneGeom) stripChain(i int) ([]geom.Vector, error) {
 		l0.Plus(d.ScaledBy(g.reach)), l0.Minus(d.ScaledBy(g.reach)),
 		l1.Minus(d.ScaledBy(g.reach)), l1.Plus(d.ScaledBy(g.reach)),
 	}
-	for f, k := range g.faces {
-		if f != fe.f[0] && f != fe.f[1] {
-			poly = clipPolygon(poly, k)
-		}
-	}
-	for j, k := range g.cut {
-		if j != i {
-			poly = clipPolygon(poly, k)
-		}
-	}
+	poly = clipAll(poly, g.faces, func(f int) bool { return f == fe.f[0] || f == fe.f[1] })
+	poly = clipAll(poly, g.cut, func(j int) bool { return j == i })
 	far := g.p.Plus(d.ScaledBy(g.reach))
 	onFar := func(q geom.Vector) bool { return math.Abs(q.Minus(far).Dot(d)) <= 10*geom.LengthEps }
 	for _, q := range poly {

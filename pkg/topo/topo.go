@@ -19,6 +19,7 @@ import (
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
+	"github.com/telesapr/telesapr/pkg/internal/par"
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
@@ -295,14 +296,20 @@ func Build(sh *srf.SShell) (*Topology, error) {
 			ces[pc.surf] = append(ces[pc.surf], ce)
 		}
 	}
+	// Each surface's loops are chained and projected on it at once: a
+	// surface's projections touch it alone (srf.SSurface.Cached), so
+	// each is projected on in the order one loop would, and the faces
+	// are made from them in order after.
+	loops := make([]surfaceLoops, len(sh.Surface))
+	eachPaced(sh, len(sh.Surface), func(si int) {
+		loops[si] = t.surfaceLoops(&sh.Surface[si], ces[si])
+	})
 	for si := range sh.Surface {
-		sh.Paced()
 		s := &sh.Surface[si]
-		loops, err := t.chain(ces[si])
-		if err != nil {
+		if err := loops[si].err; err != nil {
 			problems = append(problems, fmt.Sprintf("surface %d: %v", s.H.V, err))
 		}
-		t.makeFaces(s, t.splitPinchedLoops(s, t.splitTouchingHoles(s, loops)))
+		t.makeFaces(s, loops[si].loops)
 	}
 	t.findSheets()
 	t.nameEdges()
@@ -310,6 +317,20 @@ func Build(sh *srf.SShell) (*Topology, error) {
 		return t, fmt.Errorf("topo: %s", problems[0])
 	}
 	return t, nil
+}
+
+// eachPaced calls fn for every i in [0, n) at once (par.For), or, for
+// a shell paced (srf.SShell.PaceBy), in order on the caller, pacing
+// before each: the pace is the caller's goroutine's to call.
+func eachPaced(sh *srf.SShell, n int, fn func(i int)) {
+	if sh.Pace() == nil {
+		par.For(n, fn)
+		return
+	}
+	for i := range n {
+		sh.Paced()
+		fn(i)
+	}
 }
 
 // vertexCuts is a function that splits a polyline at the vertices that
@@ -558,23 +579,43 @@ func (t *Topology) sharpestTurn(cur int, cands []int, right bool) int {
 	return best
 }
 
+// surfaceLoops is a surface's loops, as makeFaces takes them, and the
+// error of chaining them.
+type surfaceLoops struct {
+	loops []loopInfo
+	err   error
+}
+
+// loopInfo is a loop's co-edges, its points in the surface's
+// parameters, the area they bound and whether it is an outer loop.
+type loopInfo struct {
+	ces   []int
+	area  float64
+	uv    []geom.Vector
+	outer bool
+}
+
+// surfaceLoops chains the co-edges ces of surface s into loops, split
+// where they touch (splitTouchingHoles, splitPinchedLoops), and projects
+// them on it. It reads t and projects on s only, so that the surfaces'
+// loops can be found at once.
+func (t *Topology) surfaceLoops(s *srf.SSurface, ces []int) surfaceLoops {
+	chained, err := t.chain(ces)
+	loops := t.splitPinchedLoops(s, t.splitTouchingHoles(s, chained))
+	infos := make([]loopInfo, len(loops))
+	for i, l := range loops {
+		uv := t.loopUV(s, l)
+		a := uvArea(uv)
+		infos[i] = loopInfo{ces: l, area: -a, uv: uv, outer: a < 0}
+	}
+	return surfaceLoops{loops: infos, err: err}
+}
+
 // makeFaces sorts a surface's loops into faces: each outer loop, and
 // the holes that lie inside it. A loop is a hole when it runs clockwise
 // about the surface's normal, as SolveSpace orients its trims (its
 // outer loops run clockwise in the surface's parameters).
-func (t *Topology) makeFaces(s *srf.SSurface, loops [][]int) {
-	type info struct {
-		ces   []int
-		area  float64
-		uv    []geom.Vector
-		outer bool
-	}
-	infos := make([]info, len(loops))
-	for i, l := range loops {
-		uv := t.loopUV(s, l)
-		a := uvArea(uv)
-		infos[i] = info{ces: l, area: -a, uv: uv, outer: a < 0}
-	}
+func (t *Topology) makeFaces(s *srf.SSurface, infos []loopInfo) {
 	// Outer loops, largest first, each taking the holes inside it.
 	var outers []int
 	for i := range infos {

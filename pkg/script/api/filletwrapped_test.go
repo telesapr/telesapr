@@ -356,3 +356,26 @@ func BenchmarkFilletWrappedArch(b *testing.B) {
 		}
 	}
 }
+
+// BenchmarkFilletWrappedArchAdd is the same fillet added: tried on a
+// copy of the solid, so that an edge it can't round is an error then,
+// and made. Each run adds it to the arch again, a hair larger so that
+// the solid cache doesn't hand back the last, and takes it back.
+func BenchmarkFilletWrappedArchAdd(b *testing.B) {
+	d := New()
+	band := wrappedArch(d, wrappedTube(d), 0.3)
+	foot := reliefFoot(band)
+	// The arch is one step of undo, each fillet the next.
+	d.h.(*SketchHost).BeginEval()
+	b.ResetTimer()
+	for i := range b.N {
+		f := d.Features.FilletSolid(foot, 0.2+1e-6*float64(i), "")
+		if p := f.Problem(); p != "" {
+			b.Fatal(p)
+		}
+		b.StopTimer()
+		d.Edit.Undo()
+		d.Groups()
+		b.StartTimer()
+	}
+}

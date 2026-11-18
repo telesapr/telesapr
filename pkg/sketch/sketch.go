@@ -163,6 +163,9 @@ type Sketch struct {
 	// (solid_cache.go); for a measure of what keeping them saves.
 	NoSolidCache bool
 	solids       *solidCache
+	// trials are the solids fillets' and chamfers' trials made, for
+	// the regeneration after to take (edit_trial.go).
+	trials *editTrials
 	// NoSolverCache has every group's equations written out again at
 	// each solve (solver_cache.go); for a measure of what keeping them
 	// saves.
@@ -361,13 +364,18 @@ func (s *Sketch) AddReferences() {
 // largest in use, counting what was left out (LeftOut).
 
 func (s *Sketch) AddGroup(g Group) core.HGroup {
+	g.H = s.nextGroupHandle()
+	s.Groups = append(s.Groups, g)
+	return g.H
+}
+
+// nextGroupHandle is the handle AddGroup gives the group it adds next.
+func (s *Sketch) nextGroupHandle() core.HGroup {
 	top, _, _ := s.LeftOut.topHandles()
 	for i := range s.Groups {
 		top = maxU32(top, s.Groups[i].H.V)
 	}
-	g.H.V = top + 1
-	s.Groups = append(s.Groups, g)
-	return g.H
+	return core.HGroup{V: top + 1}
 }
 
 func (s *Sketch) AddRequest(r Request) core.HRequest {

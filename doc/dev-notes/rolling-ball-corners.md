@@ -1,6 +1,6 @@
 # Rolling-ball corners: pivots and mitres at an inside corner
 
-Refreshed 2026-11-18 at branch `wrapped-band-speed`.
+Refreshed 2026-11-18 at branches `wrapped-band-speed` and `wrapped-put-speed`.
 
 Where two rolling-ball chains end at one vertex with a crease between their walls that the ball
 goes round (a pocket's rim in a curved face, the foot of a band raised on a tube at the band's
@@ -133,6 +133,16 @@ in one group) 2.9 to 3.5 s, 5.0 to 5.3 s before; on one core 5.4 s against 5.3 s
 of six chains, picked in a script after the chamfer is deleted; FilletSolid makes the fillet twice):
 each fillet's blends 1.1 s, 3.1 s before, and the whole 13 s, 15 s before, most of what is left
 `putBlends` (the topology built again, closest points, 3.5 s each) and `unsound`, on one core.
+Since then (branch `wrapped-put-speed`) those run on all cores, the same to the bit
+(`doc/dev-notes/performance.md`): the whole 5 to 6 s, `putBlends` about 2 s of each fillet and
+the check with the look for turned-back creases about 2.3 s, `BenchmarkFilletWrappedArch` 1.75 s.
+
+A chain's eased ramp (`easeRamp`, kept where the eased blend works) carries over to a later
+blend of the same chain, which starts eased: this is meant, and said so where the field is
+declared. The paces that made the skin run back come from the chain's ends and are the same in
+every blend of it, and an eased ramp is sound wherever an even one is. Only a chain with no
+mitre is eased, so no chain of a mitred group carries it; no test reaches a later blend of an
+eased chain.
 
 ## Left
 

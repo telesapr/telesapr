@@ -117,6 +117,8 @@ func (rb *rollingBall) fitMitres(pos map[*rollingBall]int) error {
 // rbBlendState is what a chain's blend changes of it that a later blend
 // of it reads: its ends' planes, turned to face on past the ends, the
 // ball's first and last own sections and whether its ramps are eased.
+// An eased ramp is kept for the chain's later blends on purpose
+// (rollingBall.easeRamp); only a chain with no mitre is ever eased.
 type rbBlendState struct {
 	n        [2]geom.Vector
 	d, sign  [2]float64

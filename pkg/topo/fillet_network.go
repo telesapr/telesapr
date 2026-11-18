@@ -268,11 +268,22 @@ func FilletPicksMade(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 	if err != nil {
 		return r, err
 	}
-	bad := unsound(sh)
+	// The check that the result is closed and the look for what it left
+	// of a crease that turned back each build the topology of a copy of
+	// sh, which neither changes: at once.
+	var bad bool
+	var rest []FilletPick
+	eachPaced(sh, 2, func(i int) {
+		if i == 0 {
+			bad = unsound(sh)
+		} else {
+			rest = turnedBackPicks(sh, &before, picks)
+		}
+	})
 	if !bad {
 		// What it leaves of a crease that turned back is rounded too,
 		// where that comes out sound.
-		filletTurnedBack(sh, &before, picks, r, origin, flat)
+		filletTurnedBack(sh, rest, r, origin, flat)
 	}
 	if bad && !unsound(&before) {
 		var at geom.Vector

@@ -386,6 +386,10 @@ func AddFace(sh *srf.SShell, s srf.SSurface, loops [][]srf.SBezier) (core.HSSurf
 type FaceAdder struct {
 	sh   *srf.SShell
 	open []openEdge
+	// byStart files the open edges by the cell their first point lies
+	// in (openKey), for along: a fillet's thousands of patches each
+	// looked through all of them.
+	byStart map[vertexKey][]int
 }
 
 // openEdge is an edge only one face has: its curve, and its points from
@@ -398,7 +402,7 @@ type openEdge struct {
 
 // NewFaceAdder starts adding faces to sh, finding its open edges once.
 func NewFaceAdder(sh *srf.SShell) *FaceAdder {
-	fa := &FaceAdder{sh: sh}
+	fa := &FaceAdder{sh: sh, byStart: map[vertexKey][]int{}}
 	t, _ := Build(sh)
 	if t == nil {
 		return fa
@@ -413,30 +417,66 @@ func NewFaceAdder(sh *srf.SShell) *FaceAdder {
 		if !pts[0].Equals(t.Vertices[t.Start(ce)].P) {
 			pts = reversed(pts)
 		}
-		fa.open = append(fa.open, openEdge{curve: t.CoEdges[ce].Curve, points: pts})
+		fa.addOpen(openEdge{curve: t.CoEdges[ce].Curve, points: pts})
 	}
 	return fa
 }
 
+// openCell is the size of the cells FaceAdder files the open edges'
+// first points in: more than the tolerance points are one within
+// (geom.Vector.Equals), so a point's equals lie in its cell or the ones
+// next to it.
+const openCell = 1e-3
+
+// openKey is the cell p lies in.
+func openKey(p geom.Vector) vertexKey {
+	q := func(x float64) int64 { return int64(math.Floor(x / openCell)) }
+	return vertexKey{q(p.X), q(p.Y), q(p.Z)}
+}
+
+// addOpen adds oe to the open edges.
+func (fa *FaceAdder) addOpen(oe openEdge) {
+	k := openKey(oe.points[0])
+	fa.byStart[k] = append(fa.byStart[k], len(fa.open))
+	fa.open = append(fa.open, oe)
+}
+
 // along is the open edge that runs between the ends of sb and along it,
-// or -1.
+// or -1: the first such in the open edges' order, found among those
+// starting at either end.
 func (fa *FaceAdder) along(sb srf.SBezier) int {
 	a, b := sb.Start(), sb.Finish()
 	mid := sb.PointAt(0.5)
-	for i := range fa.open {
-		oe := &fa.open[i]
-		if oe.gone {
-			continue
-		}
-		pa, pb := oe.points[0], oe.points[len(oe.points)-1]
-		if (!pa.Equals(a) || !pb.Equals(b)) && (!pa.Equals(b) || !pb.Equals(a)) {
-			continue
-		}
-		if distanceToPolyline(mid, oe.points) <= edgeTol(oe.points) {
-			return i
+	best := -1
+	for _, end := range [2]geom.Vector{a, b} {
+		k := openKey(end)
+		for dx := int64(-1); dx <= 1; dx++ {
+			for dy := int64(-1); dy <= 1; dy++ {
+				for dz := int64(-1); dz <= 1; dz++ {
+					for _, i := range fa.byStart[vertexKey{k[0] + dx, k[1] + dy, k[2] + dz}] {
+						if (best < 0 || i < best) && fa.runsAlong(i, a, b, mid) {
+							best = i
+						}
+					}
+				}
+			}
 		}
 	}
-	return -1
+	return best
+}
+
+// runsAlong reports whether open edge i runs between a and b, either
+// way, through mid.
+func (fa *FaceAdder) runsAlong(i int, a, b, mid geom.Vector) bool {
+	oe := &fa.open[i]
+	if oe.gone {
+		return false
+	}
+	pa, pb := oe.points[0], oe.points[len(oe.points)-1]
+	if (!pa.Equals(a) || !pb.Equals(b)) && (!pa.Equals(b) || !pb.Equals(a)) {
+		return false
+	}
+	return distanceToPolyline(mid, oe.points) <= edgeTol(oe.points)
 }
 
 // Add puts a face into the shell as AddFace does.
@@ -549,7 +589,7 @@ func (fa *FaceAdder) Add(s srf.SSurface, loops [][]srf.SBezier) (core.HSSurface,
 				Start: 0, Finish: 1})
 			if pc.fresh != nil {
 				sh.Curve = append(sh.Curve, *pc.fresh)
-				fa.open = append(fa.open, openEdge{curve: pc.curve, points: pc.points})
+				fa.addOpen(openEdge{curve: pc.curve, points: pc.points})
 			} else if pc.taken >= 0 {
 				fa.open[pc.taken].gone = true
 			}

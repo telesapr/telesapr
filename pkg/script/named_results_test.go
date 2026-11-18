@@ -81,3 +81,19 @@ func TestZeroNamedResultsSource(t *testing.T) {
 		}
 	}
 }
+
+// A console shows an expression through the same rewrites that run
+// makes, so a literal assigned to a result a closure sets, which the
+// interpreter alone returns as the zero value, shows what it holds.
+func TestShowNamedResults(t *testing.T) {
+	t.Parallel()
+	e, err := New(Options{Host: newHost(), Stdout: &bytes.Buffer{}, Stderr: &bytes.Buffer{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	const src = "func() (p struct{ A int }) { set := func() { p = struct{ A int }{A: 1} }; set(); return }()"
+	shown, err := e.show(context.Background(), src)
+	if err != nil || shown != "{A:1}" {
+		t.Errorf("show gave %q, %v, want {A:1}", shown, err)
+	}
+}

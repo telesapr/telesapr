@@ -482,7 +482,16 @@ func (e *Engine) Eval(ctx context.Context, src string) (reflect.Value, error) {
 	v, err := e.step(ctx, func(ctx context.Context) (reflect.Value, error) {
 		return e.eval(ctx, src)
 	})
-	return v, quote(err, src)
+	return v, quote(atStatement(err), src)
+}
+
+// atStatement gives a compile fault of the interpreter's whose place
+// isn't known the start of the statement, as named does for a script's.
+func atStatement(err error) error {
+	if serr, ok := errors.AsType[*Error](err); ok && serr.Line == 0 && errors.Is(serr.Err, errCompileFault) {
+		serr.Line, serr.Col = 1, 1
+	}
+	return err
 }
 
 // eval runs source in the interpreter and says where an error is.
@@ -1105,7 +1114,7 @@ func (e *Engine) Feed(ctx context.Context, line string) (shown string, more bool
 		// the one just typed.
 		err = serr.Err
 	}
-	return shown, false, quote(err, src)
+	return shown, false, quote(atStatement(err), src)
 }
 
 // show runs src, and if it is an expression returns its values as a
@@ -1120,7 +1129,9 @@ func (e *Engine) show(ctx context.Context, src string) (string, error) {
 	e.clearTold()
 	const wrapper = "telesaprConsole.Show("
 	keys := keyElements(wrapper + src + ")")
-	_, err := e.i.EvalWithContext(ctx, keys.src)
+	// The statements zeroNamedResults puts in, as eval puts them in.
+	text, zeros := zeroNamedResults(keys.src)
+	_, err := e.i.EvalWithContext(ctx, text)
 	var p interp.Panic
 	switch {
 	case errors.As(err, &p) && compiling(p):
@@ -1137,7 +1148,7 @@ func (e *Engine) show(ctx context.Context, src string) (string, error) {
 		// It ran.
 		// The interpreter counted from the wrapper's start, and took a
 		// statement's prefix whatever src starts with.
-		err = stripWrapper(e.locate(err, wrapper+src), len(wrapper))
+		err = stripWrapper(unkey(e.locate(err, wrapper+src), keys.src, zeros), len(wrapper))
 		for i := range keys.inserts {
 			keys.inserts[i].at -= len(wrapper)
 		}

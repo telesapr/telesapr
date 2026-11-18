@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -84,24 +85,11 @@ func (w *scriptWriter) writeApart(t *apartThread, hg core.HGroup) {
 	}
 	t.made = true
 	w.writeGroup(w.sk.Group(t.helix))
-	v, ok := w.groupVar[t.helix]
-	if !ok {
+	if _, ok := w.groupVar[t.helix]; !ok {
 		return
 	}
 	// The call made the thread's groups together after the active
 	// group, before the groups of another thread still to be put.
-	k := 0
-	for i, h := range t.groups {
-		g := w.sk.Group(h)
-		switch {
-		case t.onEdge && i == 0:
-			w.line("%s := %s.AsThread().Circle().Group()", w.groupName(g), v)
-			continue
-		case h != t.helix:
-			w.line("%s := %s.AsThread().Groups()[%d]", w.groupName(g), v, k)
-		}
-		k++
-	}
 	w.pending = append(slices.Clone(t.groups), w.pending...)
 	w.placeApart(hg)
 }
@@ -137,4 +125,91 @@ func (w *scriptWriter) endFree(h core.HGroup) bool {
 		}
 	}
 	return true
+}
+
+// writeThreadGroups writes what follows the call that made thread g,
+// held by v: its groups named, and their options.
+func (w *scriptWriter) writeThreadGroups(g *sketch.Group, v string) {
+	var groups []core.HGroup
+	onEdge := false
+	if t := w.apart[g.H]; t != nil {
+		groups, onEdge = t.groups, t.onEdge
+	} else {
+		hs, err := w.sk.ThreadGroups(g.H)
+		if err != nil {
+			return
+		}
+		groups = hs
+		if _, _, onEdge = w.threadOnEdge(g); onEdge {
+			groups = append([]core.HGroup{w.sk.Entity(g.Thread.Circle).Group}, hs...)
+		}
+	}
+	w.declareThreadGroups(v, g.H, groups, onEdge)
+	w.writeThreadMembers(g.H, groups)
+}
+
+// declareThreadGroups names the groups a thread's call made, held by v
+// (the helix group, or a cosmetic thread's sketch), each as the call's
+// view of the thread gives it. groups are in the order the call makes
+// them, with the datum first when onEdge.
+func (w *scriptWriter) declareThreadGroups(v string, helix core.HGroup, groups []core.HGroup, onEdge bool) {
+	k := 0
+	for i, h := range groups {
+		g := w.sk.Group(h)
+		switch {
+		case onEdge && i == 0:
+			w.line("%s := %s.AsThread().Circle().Group()", w.groupName(g), v)
+			continue
+		case h != helix:
+			w.line("%s := %s.AsThread().Groups()[%d]", w.groupName(g), v, k)
+		}
+		k++
+	}
+}
+
+// writeThreadMembers writes what a thread's call leaves for the user to
+// set on its groups, which are named by declareThreadGroups: each one's
+// name where it isn't the one the call gives, and for each but the
+// helix group (writeGroup writes that one's options) its colour,
+// visibility, appearance and suppression. Each sketch's requests are
+// named too, so that a constraint or a remapped entity of the thread
+// refers to them as the others are referred to, not by a handle that
+// the drawing made may number otherwise; tidy leaves out the names
+// nothing then uses.
+func (w *scriptWriter) writeThreadMembers(helix core.HGroup, groups []core.HGroup) {
+	defaults := w.sk.ThreadDefaultNames(helix)
+	for _, h := range groups {
+		g := w.sk.Group(h)
+		v, ok := w.groupVar[h]
+		if g == nil || !ok {
+			continue
+		}
+		// The call names its groups already; a name is set only where
+		// the user changed it.
+		if name, ok := defaults[h]; !ok || name != g.Name {
+			w.line("%s.SetName(%q)", v, g.Name)
+		}
+		if h == helix {
+			continue
+		}
+		w.writeLook(g, v)
+		w.writeSuppress(g, v)
+		w.nameRequests(g, v)
+	}
+}
+
+// nameRequests holds each request of group g, which is held by v and
+// whose call made them, in a variable.
+func (w *scriptWriter) nameRequests(g *sketch.Group, v string) {
+	i := 0
+	for j := range w.sk.Requests {
+		r := &w.sk.Requests[j]
+		if r.Group != g.H {
+			continue
+		}
+		name := fmt.Sprintf("r%d", r.H.V)
+		w.reqVar[r.H] = name
+		w.line("%s := %s.Requests()[%d].Entity()", name, v, i)
+		i++
+	}
 }

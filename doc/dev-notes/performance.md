@@ -1,7 +1,9 @@
 # Performance
 
 How to measure TeleSAPR's speed, where the time goes, what was decided and why, and what is open.
-Refreshed 2026-11-03 at `c4e18d1a`; the rolling ball's feet 2026-11-17, its mitred chains 2026-11-18.
+Refreshed 2026-11-03 at `c4e18d1a`; the rolling ball's feet 2026-11-17, its mitred chains 2026-11-18, putting its blends in
+and checking the result 2026-11-18, a fillet made once where it was made twice 2026-11-18. Refreshed
+2026-11-18 (branch `chamfer-nondeterminism`): a map's order in the kernel (Traps).
 
 Two studies came before this note: the command line against solvespace-cli (branch `perf-study`,
 2026-10-10, items P1 to P9) and the solver, the kernel's Booleans and the drawing of frames
@@ -78,7 +80,60 @@ bin/telesapr-cli regenerate --cpuprofile cpu.out /tmp/m.tlspr
   2026-11-18 the chains of one group are blended side by side as well, every mitre fitted first
   (`blendChainsAtOnce`, `doc/dev-notes/rolling-ball-corners.md`): the four groups' blends 3.6 s
   to 1.6 s, the regeneration about 12 s to 10 s, `BenchmarkFilletWrappedArch` 5.0 s to 2.9 s,
-  the same solids to the bit.
+  the same solids to the bit. Refreshed 2026-11-18 (branch `wrapped-put-speed`): what was left
+  on one core is on all of them now, or less work, the same solids to the bit. Building a
+  topology (`topo.Build`, five times over in a fillet: putting the blends in, the open edges they
+  join, the check, the creases turned back, before and after) was three quarters the seam test
+  (`smoothSeam`, three closest points on each surface of every edge between patches of one
+  sheet, thousands in a fillet's result): the edges are split into groups whose surfaces no
+  other group's edges touch and each group told in order on a goroutine (`Topology.seams`),
+  and each surface's loops chained and projected at once (`surfaceLoops`). A projection moves
+  where the surface's next one starts (`SSurface.Cached`), so every surface is projected on by
+  one goroutine in the order one loop would. The check's search for naked and crossing edges
+  (`SKdNode.MakeCertainEdgesInto`) runs in chunks of triangles at once (`badEdgesInto`), each
+  search marking what it saw in a slice of its own, not in the triangles' tags; the check and
+  the look for creases turned back run side by side (`FilletPicksMade`); the blends' patches
+  find the open edge they share by its ends, filed by cell (`FaceAdder.along`), and a mitre's
+  corners are looked for only on sides whose control points' box holds them
+  (`splitAtPoints`). The arches' feet 13 s to 5 to 6 s, the barrel's regeneration with its
+  chamfer 9.8 s to 6.2 s, `BenchmarkFilletWrappedArch` 2.9 s to 1.75 s. Left on one core, a few
+  tenths of a second each per fillet there: cutting the faces back (`cutBack`, the ball's
+  sections), the patches put in (`FaceAdder.Add`) and the check's kd-tree and Euler count.
+  Refreshed 2026-11-18 again (branch `fillet-twice-speed`): "FilletSolid makes the fillet twice" was
+  so, once per fillet or chamfer added and once per change of its edges, not per regeneration
+  (a counter in `topo.FilletPicksMade`: one call adding the arch's foot's fillet, one more at
+  the first read, one per regeneration). `NewFillet`, `NewChamfer`, `SetFilletEdges` and
+  `SetChamferEdges` try the edit on a copy of the solid so that an edge it can't round is an
+  error then (`filletTrial`, `chamferTrial`), and the regeneration that follows made the same
+  solid again. The trial now keeps what it made under a key of all it was made from: every field
+  of the fresh copy of the solid so far but its pace, the picks, the size, the origin and whether
+  it is flat (`pkg/sketch/edit_trial.go`). It is made at the origin the group will have
+  (`Sketch.nextGroupHandle`, the handle `AddGroup` gives), where it used a placeholder, and the
+  group's regeneration takes it when its own key is the same, else makes it as before. A
+  ShellJob's copy of the sketch shares the trials as it shares the solid cache; `NoSolidCache`
+  turns both off. `TestEditTrialTaken` compares each taken solid with one made afresh; while
+  the work was done each taken solid was also checked against one made again in place, over the
+  fillet and chamfer tests of `pkg/sketch` and `pkg/script/api`, and each result's digest
+  compared with the code before: the same to the bit. `BenchmarkFilletWrappedArchAdd`, the
+  arch's foot added, 3.4 s to 1.45 s. In the kernel, the check (`unsound`) meshes one copy of
+  the solid while it builds the topology of another, and finds the mesh's naked and crossing
+  edges and its Euler count side by side; its topology is built from the solid's own closest-
+  point guesses, not those its mesh left, which tell it nothing else. A kd-tree's two sides are
+  built at once above 4096 triangles (`skdNodeFromList`, the same tree), and a fillet's chains
+  are traced all at once, not each group's in order (`eachChain`: a chain is traced from its own
+  edges and faces, its projections independent of order). `BenchmarkFilletWrappedArch` 1.78 s to
+  1.48 s; the digests of every result of the fillet and chamfer tests of `pkg/topo` (1538),
+  `pkg/sketch` and `pkg/script/api` are those before, but for `TestChamferConeAsWedges`,
+  `TestChamferConeSweep` and `TestChamferCornerOracle`, whose results differ from run to run
+  before as after. Left on one core, about 0.1 s of the arch's 1.5 s: cutting the faces back
+  (`cutBack`) and the patches put in (`FaceAdder.Add`), which edit the shell in turn and whose
+  projections each start where the one before ended (`SSurface.Cached`). The rest is the
+  critical path of a group's blend: the first chain fits both its mitres in turn (0.5 s), then
+  the slowest chain blends (0.4 s). The two fits of one chain share its last foot found
+  (`rollingBall.lastFoot`, which only orders the search) and its faces' (u, v) loops
+  (`uvLoops`, filled on first use), so they would race as they are; starting each chain's blend
+  as soon as the fits it reads are done gains nothing on the arch, whose last chain reads the
+  first chain's fit.
 
 ## Open
 
@@ -158,5 +213,18 @@ and the goldens go in a commit of their own.
   kept systems cost 23% on a drag.
 - A test reading a script's sketch through `Doc.With` records an undo step and dirties the active
   group: read through the host.
+- A loop over a map whose order reaches the arithmetic gives a solid that differs from run to
+  run, with the parallel mode off too, since Go changes a map's order every time. The chamfer
+  corner cut from its cone (`chamferConeAt`, `pkg/topo/chamfer_cone.go`) clipped each face's
+  wedge and each chamfer's strip by its planes in the order of two maps: the same polygon in exact
+  arithmetic, other last bits in floating point, so one or more of four builds of 9 of the 198
+  lines of `testdata/topo/chamfer-corners.txt` (all `apexsome` and `pocketsome`, an apex with edges
+  left sharp) came out different. They are clipped in the order of the planes' keys now
+  (`clipAll`); `TestChamferConeSameEveryRun` builds five of them six times at once. A hash of
+  the shell (surfaces' control points and trims, curves' points, the mesh) over every line and
+  the 234 points of the cone sweep's grid, three processes with the parallel mode on and two off,
+  was the same each time afterwards, and the 189 lines that had not differed kept their hashes.
+  The other loops over maps in `pkg/topo`, `pkg/srf` and `pkg/geom` fill sets, write each key's
+  own entry, keep a maximum or sort what they gather, and were left.
 - One fixture fails in the hash script, before and after alike: `tlspr/v1/fields.tlspr`, whose
   linked file is not in `testdata/`.

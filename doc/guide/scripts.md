@@ -160,8 +160,9 @@ drawing. It writes:
   `doc.Sketch.PeriodicSpline`), kerned text, datum points in groups that aren't sketches, and
   faces' own appearances.
 
-An image's file is named where it is, as a link's is. Edit the script, give it a form, and run it
-as any script. `telesapr-cli export-script model.tlspr` does the same without a window. A
+A variable is declared only where a later line reads it, and a name is set only where it differs
+from the one the call gives. An image's file is named where it is, as a link's is. Edit the script,
+give it a form, and run it as any script. `telesapr-cli export-script model.tlspr` does the same without a window. A
 script calls `doc.File.ExportScript(path)`, or `doc.Script()` for the text and a list of what it
 left out. An AI program's `export` tool writes it for a file ending `.go`.
 
@@ -176,7 +177,9 @@ A thread whose groups were moved apart in the history, its lathe moved on its ow
 say, is no longer edited as a thread, but it is still one: move the groups back together and
 its screen comes back. The script makes it with its thread call, then moves its groups to where
 they stand (`g8.History().MoveToEnd()`), so the drawing it makes has the same groups in the same
-order, the same part, and the same thread. Only where its groups can't be told from others, as
+order, the same part, and the same thread. The thread's groups keep their names, colours,
+visibility and suppression, and its sketches' lines and points are named as any are
+(`r16.Part(2)`, from `g9.Requests()[2].Entity()`), not by a handle. Only where its groups can't be told from others, as
 with a second thread on the same circle, are they written one by one, and its helix as a plain
 helix. A sketch on a face or a datum whose face is gone is drawn where it lies, through a
 point of a 3d sketch of its own named after it (`M8-end-origin`). Handles are
@@ -267,7 +270,6 @@ File > Export > Script (.go) writes this plate back as a program. Its `main` beg
 func main() {
 	doc := api.Current()
 
-	g2 := doc.Active()
 	r4 := doc.Sketch.Line(api.V(40, 0, 0), api.V(40, 20, 0))
 	r5 := doc.Sketch.Line(api.V(0, 0, 0), api.V(40, 0, 0))
 	...

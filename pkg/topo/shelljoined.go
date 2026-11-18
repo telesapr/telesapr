@@ -156,25 +156,42 @@ func takeInside(sh, inner *srf.SShell, origin uint32) (*srf.SShell, error) {
 
 // unsound reports whether sh is not a closed solid: its mesh has an
 // edge with no mate or one passing through a triangle, its topology a
-// problem, or the two count its holes differently. It looks at a copy:
+// problem, or the two count its holes differently. It looks at copies:
 // meshing sh and building its topology fill caches in it that move the
 // last bits of a later mesh, and a check must leave the solid it
-// checks as it was.
+// checks as it was. The mesh and the topology are made from copies of
+// their own, at once, the topology from the solid's own closest-point
+// guesses rather than those the mesh left, which tell it nothing; and
+// from the mesh its naked and crossing edges and its count of holes,
+// which change nothing of it (the edges are looked for in the tree's
+// own copy of the triangles).
 func unsound(orig *srf.SShell) bool {
-	c := orig.Clone()
-	sh := &c
-	var m srf.SMesh
-	sh.TriangulateInto(&m)
-	if len(m.Triangles) == 0 {
-		return true
-	}
+	meshed, built := orig.Clone(), orig.Clone()
 	var bad srf.SEdgeList
-	srf.SKdNodeFrom(&m).MakeCertainEdgesInto(&bad, srf.EdgeNakedOrSelfInter, true, nil, nil, 0)
-	if len(bad.Edges) > 0 {
-		return true
-	}
-	t, err := Build(sh)
-	return err != nil || len(t.Validate()) > 0 || t.Euler() != MeshEuler(&m)
+	var empty, broken bool
+	var meshEuler, euler int
+	eachPaced(orig, 2, func(i int) {
+		if i == 1 {
+			t, err := Build(&built)
+			if broken = err != nil || len(t.Validate()) > 0; !broken {
+				euler = t.Euler()
+			}
+			return
+		}
+		var m srf.SMesh
+		meshed.TriangulateInto(&m)
+		if empty = len(m.Triangles) == 0; empty {
+			return
+		}
+		eachPaced(orig, 2, func(i int) {
+			if i == 0 {
+				srf.SKdNodeFrom(&m).MakeCertainEdgesInto(&bad, srf.EdgeNakedOrSelfInter, true, nil, nil, 0)
+			} else {
+				meshEuler = MeshEuler(&m)
+			}
+		})
+	})
+	return empty || len(bad.Edges) > 0 || broken || euler != meshEuler
 }
 
 // joinedInside is the inside of sh (topology t), made of parts, faces

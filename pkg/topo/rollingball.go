@@ -114,6 +114,19 @@ type rollingBall struct {
 	// easeRamp has the feet of the end sections between the flat face's
 	// conic and the ball's own leave the ball's at the ball's pace
 	// (rampS), for a skin whose sides ran back on themselves there.
+	// blendOpen sets it and keeps it where the eased blend works, and a
+	// later blend of the chain starts eased: one with a section more
+	// between two run-offs (rollingBallFillet's splitAt), or a lone
+	// chain's at other spans after its patches failed (blendGroup).
+	// That is meant. What made the skin run back is the feet's paces
+	// along the edge, which come from the ends (endS, target) and are
+	// the same in every blend of the chain, and an eased ramp is sound
+	// wherever an even one is: its feet each move one way, its sections
+	// are spaced as the even ramp's, and the misfit is checked as
+	// before. Only a chain with no mitre is eased (rampable), so a
+	// mitred group's chains never carry it (rbBlendState keeps it for
+	// the order's sake). No test reaches a later blend of an eased chain
+	// (2026-11-18).
 	easeRamp bool
 	// splitAt are arc lengths a section is put at besides the ball's
 	// own: between the cuts of two ends that run off, so that no patch
@@ -1983,8 +1996,16 @@ func splitAtMitres(bls []*rbBlend, loops [][][][]srf.SBezier) {
 // ends, within mitreCornerTol.
 func splitAtPoints(c srf.SBezier, pts []geom.Vector) []srf.SBezier {
 	var ts []float64
+	lo, hi, boxed := hullBox(&c)
 	for _, p := range pts {
 		if p.Minus(c.Start()).Magnitude() < mitreCornerTol || p.Minus(c.Finish()).Magnitude() < mitreCornerTol {
+			continue
+		}
+		// A point clear of the box of c's control points is clear of c
+		// (its weights all positive): not looked for along it, which on
+		// a ring of mitred chains was every patch's side against every
+		// corner.
+		if boxed && outsideBox(p, lo, hi, 2*mitreCornerTol) {
 			continue
 		}
 		// Written so that a search that didn't converge, NaN, splits
@@ -2010,6 +2031,28 @@ func splitAtPoints(c srf.SBezier, pts []geom.Vector) []srf.SBezier {
 		rest, done = aft, t
 	}
 	return append(out, rest)
+}
+
+// hullBox is the box of b's control points, and whether b lies in it:
+// a rational curve whose weights are all positive lies in the hull of
+// its control points.
+func hullBox(b *srf.SBezier) (lo, hi geom.Vector, ok bool) {
+	lo, hi = b.Ctrl[0], b.Ctrl[0]
+	for i := 0; i <= b.Degree; i++ {
+		if !(b.Weight[i] > 0) {
+			return lo, hi, false
+		}
+		p := b.Ctrl[i]
+		lo = geom.Vector{X: min(lo.X, p.X), Y: min(lo.Y, p.Y), Z: min(lo.Z, p.Z)}
+		hi = geom.Vector{X: max(hi.X, p.X), Y: max(hi.Y, p.Y), Z: max(hi.Z, p.Z)}
+	}
+	return lo, hi, true
+}
+
+// outsideBox reports whether p lies further than m outside the box lo,
+// hi along an axis.
+func outsideBox(p, lo, hi geom.Vector, m float64) bool {
+	return p.X < lo.X-m || p.X > hi.X+m || p.Y < lo.Y-m || p.Y > hi.Y+m || p.Z < lo.Z-m || p.Z > hi.Z+m
 }
 
 // mitreCornerTol is how near a side a corner of a patch across a mitre

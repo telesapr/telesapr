@@ -67,7 +67,7 @@ func (sk *Sketch) newChamferTwo(edges []core.HEntity, solidEdges []topo.Name, di
 		}
 		seenName[n] = true
 	}
-	if err := sk.chamferTrial(sk.solidAt(sk.Active), edges, solidEdges, distance, d2, nil, nil); err != nil {
+	if err := sk.chamferTrial(sk.solidAt(sk.Active), sk.nextGroupHandle(), edges, solidEdges, distance, d2, nil, nil); err != nil {
 		return g, err
 	}
 	g.Edges = append([]core.HEntity(nil), edges...)
@@ -99,7 +99,7 @@ func (sk *Sketch) SetChamferEdges(hg core.HGroup, edges []core.HEntity, solidEdg
 	}
 	radii := carryEdgeValues(g, g.EdgeRadii, edges, solidEdges)
 	seconds := carryEdgeValues(g, g.EdgeSeconds, edges, solidEdges)
-	if err := sk.chamferTrial(sk.solidBefore(g), edges, solidEdges, g.ValB, g.ValC, radii, seconds); err != nil {
+	if err := sk.chamferTrial(sk.solidBefore(g), hg, edges, solidEdges, g.ValB, g.ValC, radii, seconds); err != nil {
 		return err
 	}
 	g.Edges, g.SolidEdges, g.EdgeRadii, g.EdgeSeconds = edges, solidEdges, radii, seconds
@@ -111,8 +111,10 @@ func (sk *Sketch) SetChamferEdges(hg core.HGroup, edges []core.HEntity, solidEdg
 // and d2, or the edges' own (radii, seconds), as generateChamferShell
 // will, or says why it can't: by an edit of the solid's faces, failing
 // that by wedges and arcs. What NewChamfer and SetChamferEdges check
-// before the chamfer is made.
-func (sk *Sketch) chamferTrial(solid *Group, edges []core.HEntity, solidEdges []topo.Name, distance, d2 float64, radii, seconds []EdgeRadius) error {
+// before the chamfer is made. The faces it puts in are named as those of
+// the group hg, and what the edit made is kept for that group's
+// regeneration (edit_trial.go).
+func (sk *Sketch) chamferTrial(solid *Group, hg core.HGroup, edges []core.HEntity, solidEdges []topo.Name, distance, d2 float64, radii, seconds []EdgeRadius) error {
 	if solid == nil {
 		return errors.New("there is no solid to chamfer")
 	}
@@ -123,7 +125,7 @@ func (sk *Sketch) chamferTrial(solid *Group, edges []core.HEntity, solidEdges []
 	picks := chamferPicks(segs, d2, radii, seconds)
 	var editErr error
 	if !solid.IsForcedToMesh(sk) && len(solid.RunningShell.Surface) > 0 {
-		_, editErr = chamferByEdit(&solid.RunningShell, picks, distance, 1<<30)
+		_, _, editErr = sk.editSolid(&solid.RunningShell, picks, distance, srf.OriginFor(hg.V, 0), true, trialKeep, nil)
 		if editErr == nil {
 			return nil
 		}
@@ -152,9 +154,7 @@ func (sk *Sketch) chamferTrial(solid *Group, edges []core.HEntity, solidEdges []
 		if solid.IsForcedToMesh(sk) || len(solid.RunningShell.Surface) == 0 {
 			return errors.New("the solid is a triangle mesh, which has no circular edges to cut")
 		}
-		var sh srf.SShell
-		sh.MakeFromCopyOf(&solid.RunningShell)
-		if err := topo.FilletPicks(&sh, arcs, distance, 1<<30, true); err != nil {
+		if _, _, err := sk.editSolid(&solid.RunningShell, arcs, distance, srf.OriginFor(hg.V, 0), true, trialKeep, nil); err != nil {
 			return err
 		}
 	}
@@ -496,7 +496,7 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 	}
 	if !prev.IsForcedToMesh(sk) && len(prev.RunningShell.Surface) > 0 {
 		giveBack := sk.lendPace(&prev.RunningShell)
-		sh, err := chamferByEdit(&prev.RunningShell, picks, d, srf.OriginFor(g.H.V, 0))
+		sh, _, err := sk.editSolid(&prev.RunningShell, picks, d, srf.OriginFor(g.H.V, 0), true, trialTake, nil)
 		giveBack()
 		editErr = err
 		if err == nil {
@@ -557,10 +557,8 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 		g.setProblem(nil, "the solid so far is a triangle mesh, which has no circular edges to cut")
 		return true
 	}
-	var sh srf.SShell
-	sh.PaceBy(sk.kernelPace())
-	sh.MakeFromCopyOf(&prev.RunningShell)
-	if err := topo.FilletPicks(&sh, arcs, d, srf.OriginFor(g.H.V, 0), true); err != nil {
+	sh, _, err := sk.editSolid(&prev.RunningShell, arcs, d, srf.OriginFor(g.H.V, 0), true, trialTake, sk.kernelPace())
+	if err != nil {
 		if fe, ok := errors.AsType[*topo.FilletError](err); ok {
 			at := fe.At
 			g.setProblem(&at, "%v", err)
@@ -578,16 +576,6 @@ func (g *Group) generateChamferShell(sk *Sketch) (done bool) {
 	g.RunningShell = sh
 	g.ThisShell.MakeFromCopyOf(&sh)
 	return true
-}
-
-// chamferByEdit cuts every pick of a copy of solid at its own distance
-// or d, and its D2 on the second face when that is not 0, by the
-// fillet's edit, flat.
-func chamferByEdit(solid *srf.SShell, picks []topo.FilletPick, d float64, origin uint32) (srf.SShell, error) {
-	var sh srf.SShell
-	sh.MakeFromCopyOf(solid)
-	err := topo.FilletPicks(&sh, picks, d, origin, true)
-	return sh, err
 }
 
 // pickDistance is the distance a chamfer cuts pick p at: its own, or

@@ -50,10 +50,11 @@ func rollingBallFilletsAt(sh *srf.SShell, t *Topology, edges []int, radii []floa
 	if !linkMitresAt(rbs, partial) {
 		return errNotMitred
 	}
-	// The groups of chains joined by mitres share nothing but the faces
-	// they project points on, which they find independently: each group
-	// is traced on its own goroutine, its chains in order, and blended
-	// on its own, its chains side by side once their mitres are fitted
+	// A chain is traced from its own edges and faces alone, and the
+	// groups of chains joined by mitres share nothing but the faces they
+	// project points on, which they find independently: every chain is
+	// traced on its own goroutine, and each group blended on its own,
+	// its chains side by side once their mitres are fitted
 	// (blendChainsAtOnce).
 	groups := mitreGroups(rbs)
 	var bls []*rbBlend
@@ -61,7 +62,7 @@ func rollingBallFilletsAt(sh *srf.SShell, t *Topology, edges []int, radii []floa
 	t.shell.ProjectIndependently(func() {
 		// A mitre's plane halves the turn from one chain to the other:
 		// every chain is traced before any plane is set.
-		if err = eachGroup(rbs, groups, func(rb *rollingBall) error { return rb.trace() }); err != nil {
+		if err = eachChain(rbs, func(rb *rollingBall) error { return rb.trace() }); err != nil {
 			return
 		}
 		if err = mitreChains(rbs); err != nil {
@@ -200,17 +201,14 @@ func mitreGroups(rbs []*rollingBall) [][]int {
 	return groups
 }
 
-// eachGroup calls fn on every chain of rbs, the groups at once and the
-// chains of each in order, a group stopping at its first error. The
-// error is that of the first chain in rbs that failed, as in one loop.
-func eachGroup(rbs []*rollingBall, groups [][]int, fn func(rb *rollingBall) error) error {
+// eachChain calls fn on every chain of rbs at once. The error is that
+// of the first chain in rbs that failed, as in one loop: the chains
+// before it did as they would have, and what fn did to those after is
+// dropped with them, the caller going on with none.
+func eachChain(rbs []*rollingBall, fn func(rb *rollingBall) error) error {
 	errs := make([]error, len(rbs))
-	par.For(len(groups), func(g int) {
-		for _, i := range groups[g] {
-			if errs[i] = fn(rbs[i]); errs[i] != nil {
-				return
-			}
-		}
+	par.For(len(rbs), func(i int) {
+		errs[i] = fn(rbs[i])
 	})
 	for _, err := range errs {
 		if err != nil {

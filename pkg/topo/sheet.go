@@ -31,6 +31,7 @@ const seamCos = 1 - 1e-6
 
 // findSheets marks the seams and groups the faces into sheets.
 func (t *Topology) findSheets() {
+	seam := t.seams()
 	parent := make([]int, len(t.Faces))
 	for i := range parent {
 		parent[i] = i
@@ -44,7 +45,7 @@ func (t *Topology) findSheets() {
 	}
 	for e := range t.Edges {
 		t.shell.Paced()
-		if t.isSeam(e) {
+		if seam[e] {
 			t.Edges[e].Seam = true
 			fs := t.EdgeFaces(e)
 			parent[find(fs[0])] = find(fs[1])
@@ -64,30 +65,97 @@ func (t *Topology) findSheets() {
 	}
 }
 
-// isSeam reports whether edge e joins two patches of one face: two
-// faces swept from one sketch curve (srf.SSurface.Sheet), or of one
-// identity, whose normals agree along it.
-func (t *Topology) isSeam(e int) bool {
+// seams reports of each edge whether it is a seam (smoothSeam). Telling
+// one projects points on its two surfaces, which moves where the next
+// projection on each starts from (srf.SSurface.Cached): the edges are
+// split into the groups whose surfaces no other group's edges touch,
+// and each group's edges are told in order on a goroutine of its own,
+// so that every surface is projected on in the order one loop over
+// the edges would, and every point found and guess left is the same.
+// On a fillet's result (hundreds of patches of one sheet each) this
+// was three quarters of building its topology.
+func (t *Topology) seams() []bool {
+	seam := make([]bool, len(t.Edges))
+	var cands []int
+	surf := map[*srf.SSurface]int{}
+	var parent []int
+	find := func(i int) int {
+		for parent[i] != i {
+			parent[i] = parent[parent[i]]
+			i = parent[i]
+		}
+		return i
+	}
+	id := func(s *srf.SSurface) int {
+		i, ok := surf[s]
+		if !ok {
+			i = len(parent)
+			surf[s] = i
+			parent = append(parent, i)
+		}
+		return i
+	}
+	for e := range t.Edges {
+		a, b, ok := t.seamCandidate(e)
+		if !ok {
+			continue
+		}
+		cands = append(cands, e)
+		parent[find(id(a))] = find(id(b))
+	}
+	group := map[int]int{}
+	var groups [][]int
+	for _, e := range cands {
+		fs := t.EdgeFaces(e)
+		r := find(surf[t.Surface(fs[0])])
+		g, ok := group[r]
+		if !ok {
+			g = len(groups)
+			group[r] = g
+			groups = append(groups, nil)
+		}
+		groups[g] = append(groups[g], e)
+	}
+	// The largest first, so that no long group starts last.
+	slices.SortStableFunc(groups, func(a, b []int) int { return len(b) - len(a) })
+	eachPaced(t.shell, len(groups), func(g int) {
+		for _, e := range groups[g] {
+			seam[e] = t.smoothSeam(e)
+		}
+	})
+	return seam
+}
+
+// seamCandidate is the surfaces of the two faces edge e joins, and
+// whether they may be one sheet's: two different faces, swept from one
+// sketch curve (srf.SSurface.Sheet) or of one identity. It projects
+// nothing; smoothSeam tells whether such an edge is a seam.
+func (t *Topology) seamCandidate(e int) (a, b *srf.SSurface, ok bool) {
 	ed := &t.Edges[e]
 	if len(ed.CoEdges) != 2 {
-		return false
+		return nil, nil, false
 	}
 	fs := t.EdgeFaces(e)
 	if fs[0] < 0 || fs[1] < 0 || fs[0] == fs[1] {
-		return false
+		return nil, nil, false
 	}
-	a, b := t.Surface(fs[0]), t.Surface(fs[1])
+	a, b = t.Surface(fs[0]), t.Surface(fs[1])
 	if a == nil || b == nil {
-		return false
+		return nil, nil, false
 	}
 	same := a.Sheet != 0 && a.Sheet == b.Sheet
 	if id := t.Faces[fs[0]].ID; id != 0 && id == t.Faces[fs[1]].ID {
 		same = true
 	}
-	if !same {
-		return false
-	}
-	for _, p := range edgeSamples(ed.Points) {
+	return a, b, same
+}
+
+// smoothSeam reports whether the normals of the two faces of edge e, a
+// seam candidate, agree along it.
+func (t *Topology) smoothSeam(e int) bool {
+	fs := t.EdgeFaces(e)
+	a, b := t.Surface(fs[0]), t.Surface(fs[1])
+	for _, p := range edgeSamples(t.Edges[e].Points) {
 		var ua, va, ub, vb float64
 		a.ClosestPointToUV(p, &ua, &va, true)
 		b.ClosestPointToUV(p, &ub, &vb, true)

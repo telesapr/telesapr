@@ -666,15 +666,6 @@ func (sk *Sketch) solidIsSound(hg core.HGroup) bool {
 	return !inters && !leaks && len(naked.Edges) == 0
 }
 
-// nextGroupHandle is the handle AddGroup will give the next group.
-func (sk *Sketch) nextGroupHandle() core.HGroup {
-	var h uint32
-	for i := range sk.Groups {
-		h = max(h, sk.Groups[i].H.V)
-	}
-	return core.HGroup{V: h + 1}
-}
-
 // addGroupAfterActive adds g after the active group, as a feature of the Features menu does:
 // in the colour of the solid so far, the later groups moved on. It
 // makes g active and generates its entities, without solving.
