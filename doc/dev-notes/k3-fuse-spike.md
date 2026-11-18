@@ -1,5 +1,8 @@
 # K3 spike: fuse first (2026-11-04)
 
+Refreshed 2026-11-18 (k3-turned-copies-left): the six turned-copies cases left are sound, an
+outline's corner on an equal-cylinder ellipse now cutting it; see "The last six" at the end.
+
 Refreshed 2026-11-18 (k3-turned-copies): the union of a Rotate's copies of a cut drawn in a plane
 through the axis with a corner on it, the decorative tube's triquetra, is sound and taken at once;
 see "Turned copies meeting face to face" at the end.
@@ -574,3 +577,25 @@ its oracle: 1.13 s with the copies cut one at a time, 0.61 s now, both meshes wi
 the ray-cast oracle (1556.43 mm³; meshes 1558.84 and 1559.22, no ray disagreeing). The model of
 2026-11-14 itself (6.2 → 8.0 s) is not in the repository and was not measured.
 `combineStepsInTurn` stays as the fallback for the cases above.
+
+### The last six (2026-11-18, k3-turned-copies-left)
+
+All six failed in the same way. Five copies 45° apart of side 2 at 0°: the pairs 01, 23 and their
+union were sound, and the union with copy 4 (half a turn from copy 0, its cap face to face with
+copy 0's) failed on two cylinder patches, copy 4's arc about its corner b and the union's patch of
+copy 1's arc about cc. Both lie on equal cylinders whose axes cross in the plane x = b.x, and they
+meet in two ellipses crossing at the touching point P at x = b.x − side. Three of the four branches
+leaving P were made; the fourth, the half of the ellipse in the plane through the axis at 202.5°
+running from P towards copy 4's corner g, was dropped whole: its middle lay outside the union's
+patch. The patch's outline leaves it at a corner V where two of its curves meet, one lying in
+copy 1's cap plane (225°), the other an ellipse of an earlier Boolean ending on the 202.5° plane.
+Neither crosses that plane, so `intersectEqualCylinders` made no cut at V, and the piece from P to
+the far cut was judged by a middle past V. Each end of a face's outline lying on the ellipse now
+cuts it there (within LengthEps of the plane and of the ellipse); the piece from P to V is kept
+and the trims close. Six copies 45° apart in pairs, and six 60° apart of side 3 at 30° one after
+another (whose fail depended on the last bits of the plane's angle, the sign at such a corner
+being rounding), are fixed by the same cut.
+
+`TestTurnedCopiesUnionSweep` 240 of 240 sound, `TestRotatedTriquetraSweep` 24 of 24 united at once
+and agreeing with the ray-cast oracle; both allowances are now 0. No golden moved.
+`combineStepsInTurn` stays as the fallback for a union of turned copies that still fails.

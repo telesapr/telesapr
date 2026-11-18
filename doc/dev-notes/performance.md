@@ -3,7 +3,7 @@
 How to measure TeleSAPR's speed, where the time goes, what was decided and why, and what is open.
 Refreshed 2026-11-03 at `c4e18d1a`; the rolling ball's feet 2026-11-17, its mitred chains 2026-11-18, putting its blends in
 and checking the result 2026-11-18, a fillet made once where it was made twice 2026-11-18. Refreshed
-2026-11-18 (branch `chamfer-nondeterminism`): a map's order in the kernel (Traps).
+2026-11-18 (branch `chamfer-nondeterminism`): a map's order in the kernel (Traps); a corner hole's patches solved faster 2026-11-18.
 
 Two studies came before this note: the command line against solvespace-cli (branch `perf-study`,
 2026-10-10, items P1 to P9) and the solver, the kernel's Booleans and the drawing of frames
@@ -134,6 +134,28 @@ bin/telesapr-cli regenerate --cpuprofile cpu.out /tmp/m.tlspr
   (`uvLoops`, filled on first use), so they would race as they are; starting each chain's blend
   as soon as the fits it reads are done gains nothing on the arch, whose last chain reads the
   first chain's fit.
+- Refreshed 2026-11-18 (branch `chamfer-apex-speed`): a corner's hole filled with quintic patches
+  (`setbackPatches`, `blendPatch`) is a least-squares solve of some 340 unknowns and 1700 rows of
+  a few dozen terms each (`leastSquaresDense`). The `apexsome 1.5 0.5 0 0` line of
+  `testdata/topo/chamfer-corners.txt` took 1.3 s, the other lines milliseconds: its corner is
+  first tried as a saddle beside a sharp edge (`saddleSideAt`), 6 splits of the hole times 3
+  legs of its face curve, each laid out from every corner of its 8 sides, and every one of the 18
+  is refused only once solved (12 not tangent to what is round them, 6 folding), before the
+  corner is made another way. The search stays; each solve is cheaper, the same to the bit: the
+  normal equations are summed over each row's own terms, in the order a sweep of the whole row
+  added them; the elimination subtracts the pivot row's nonzero entries only (no entry is ever
+  -0, so subtracting f times a zero changes nothing); and the thin-plate rows, alike for every
+  patch, are a table computed once (`thinPlate`), not Bernstein polynomials and maps per patch.
+  That line 1.30 s to 0.24 s; every line's surfaces the same to the bit, and the fixtures' hashes.
+  On the same branch, a fillet's result had its topology built twice, by the check that it is
+  closed (`unsound`) and by the look for creases turned back (`turnedBackPicks`), each from a
+  copy of the same shell, so the same topology: the check now hands back what it built
+  (`unsoundBuilt`) and builds the solid before's beside its mesh, and the look runs after it, only
+  where the result is sound. Four builds where there were five; the two ran side by side, so on
+  32 idle cores `BenchmarkFilletWrappedArch` is 1.49 s as before (five runs each, medians 1.490 s
+  and 1.484 s, `BenchmarkFilletWrappedArchAdd` 1.482 s and 1.478 s), and the processor time
+  about 8% less; on 4 cores (`-cpu 4`, three runs each) 2.04 to 2.13 s to 1.89 to 1.90 s, and
+  the Add 2.04 to 2.08 s to 1.85 to 1.89 s. The fixtures' hashes are those before.
 
 ## Open
 

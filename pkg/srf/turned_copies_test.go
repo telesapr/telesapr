@@ -206,13 +206,12 @@ func TestTurnedCopiesUnionSweep(t *testing.T) {
 			sweep.Floats("tol", 0.1, 0.03),
 			sweep.Strings("order", "pairs", "turn"),
 		},
-		// 6 of the 240 fail (roadmap K3): six copies 45° apart of the
-		// triquetra of side 2 in the plane at 0°, and five, united in
-		// pairs; and six 60° apart of side 3 in the plane at 30° united
-		// one after another, which fails or not on the last bits of the
-		// plane's angle. Every tolerance alike.
-		MaxFailRate:       0.025,
-		SampleMaxFailRate: 0.05,
+		// Every case is sound. The last six (45° apart in the plane at
+		// 0°, and 60° apart at 30° one after another) lost a piece of
+		// ellipse ending at a corner of an outline that crossed its plane
+		// nowhere, until such corners cut the ellipse.
+		MaxFailRate:       0,
+		SampleMaxFailRate: 0,
 		Sample:            40,
 		Parallel:          true,
 	}

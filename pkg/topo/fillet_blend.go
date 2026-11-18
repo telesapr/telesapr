@@ -482,26 +482,7 @@ func blendPatch(bottom, right, left setbackSide, w, wr float64) (srf.SSurface, e
 		}
 	}
 	// The thin-plate energy.
-	const grid = 7
-	for gu := range grid {
-		for gv := range grid {
-			u, v := (float64(gu)+0.5)/grid, (float64(gv)+0.5)/grid
-			for d := range 3 {
-				uu, uv, vv := map[int]float64{}, map[int]float64{}, map[int]float64{}
-				for i := 0; i <= n; i++ {
-					for j := 0; j <= n; j++ {
-						k := pv(i, j, d)
-						uu[k] = bernsteinD(n, i, u, 2) * bernstein(n, j, v)
-						uv[k] = math.Sqrt2 * bernsteinD(n, i, u, 1) * bernsteinD(n, j, v, 1)
-						vv[k] = bernstein(n, i, u) * bernsteinD(n, j, v, 2)
-					}
-				}
-				eq(uu, 0, 1.0/grid)
-				eq(uv, 0, 1.0/grid)
-				eq(vv, 0, 1.0/grid)
-			}
-		}
-	}
+	a, b = thinPlateRows(a, b, nv, pv, 1.0/thinPlateGrid)
 	x, ok := leastSquaresDense(a, b)
 	if !ok {
 		return srf.SSurface{}, filletErr(p, "the patch's equations have no solution")

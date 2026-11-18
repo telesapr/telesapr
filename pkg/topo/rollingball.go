@@ -1773,9 +1773,16 @@ func (rb *rollingBall) runOffApart(endCuts []rbEndCut, at geom.Vector) error {
 	if len(endCuts) != 2 || endCuts[0].off == nil || endCuts[1].off == nil || len(rb.splitAt) >= maxRunOffSplits {
 		return err
 	}
+	// An end that runs off both its faces cuts up to the further of its
+	// two p2 (rollingrunoff_both.go).
 	guess := rb.length / 2
-	s0 := rb.nearestSection(endCuts[0].off.p2, guess)
-	s1 := rb.nearestSection(endCuts[1].off.p2, guess)
+	s0, s1 := math.Inf(-1), math.Inf(1)
+	for _, ro := range endCuts[0].runOffs() {
+		s0 = max(s0, rb.nearestSection(ro.p2, guess))
+	}
+	for _, ro := range endCuts[1].runOffs() {
+		s1 = min(s1, rb.nearestSection(ro.p2, guess))
+	}
 	// End 0's cut runs from the start to s0, end 1's from s1 to the end:
 	// apart when s0 comes first, by more than a sliver of a patch.
 	if !(s1-s0 > 1e-3*rb.r) {
@@ -2225,9 +2232,8 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 			endCuts = append(endCuts, cut)
 		}
 	}
-	if otherEndRunsOff(endCuts) {
-		return nil, filletErr(at, "the fillet runs off both its faces at one end and a face at the other: "+
-			"make it smaller")
+	if bothEndsRunOffBoth(endCuts) {
+		return nil, filletErr(at, "the fillet runs off both its faces at both its ends: make it smaller")
 	}
 	// Ends that run off: where the fillet takes side j's face whole, only
 	// where the end sections cross the next faces; else where the

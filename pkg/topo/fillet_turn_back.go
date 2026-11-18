@@ -37,25 +37,13 @@ func filletTurnedBack(sh *srf.SShell, rest []FilletPick, r float64, origin uint3
 	*sh = cp
 }
 
-// turnedBackPicks are the edges of sh that run on from an end of a
-// picked edge of before along it, short of its other end: what a fillet
-// that faded out left of the edge.
-func turnedBackPicks(sh, before *srf.SShell, picks []FilletPick) []FilletPick {
-	// Built from copies: Build fills a shell's caches, which moves the
-	// last digits of what is made from it after.
-	bc, sc := before.Clone(), sh.Clone()
-	var tb, t *Topology
-	var berr, err error
-	eachPaced(sh, 2, func(i int) {
-		if i == 0 {
-			tb, berr = Build(&bc)
-		} else {
-			t, err = Build(&sc)
-		}
-	})
-	if berr != nil || err != nil {
-		return nil
-	}
+// turnedBackPicks are the edges of sh (topology t) that run on from an
+// end of a picked edge of the solid before (topology tb) along it, short
+// of its other end: what a fillet that faded out left of the edge. Both
+// topologies are built from copies, as Build fills a shell's caches,
+// which moves the last digits of what is made from it after; t is the
+// one the check that sh is closed built (unsoundBuilt).
+func turnedBackPicks(sh *srf.SShell, t, tb *Topology, picks []FilletPick) []FilletPick {
 	tol := math.Max(1e-6, sh.Tol.ChordTolMm()/10)
 	// The piece's points are the curve's chorded again where the fillet
 	// split the edge: within the chord tolerance of the picked edge's

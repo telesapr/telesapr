@@ -66,6 +66,11 @@ func (rb *rollingBall) consumedRunOff(row []srf.SSurface, cuts []rbEndCut, isCha
 		}
 	}
 	at := cuts[0].end.p0(t)
+	if cuts[0].also != nil || cuts[1].also != nil {
+		// consumedLoops cuts each end by one next face.
+		return nil, filletErr(at, "the fillet takes the face on side %d whole and runs off both its faces at "+
+			"one end: make it smaller", j+1)
+	}
 	f := cuts[0].end.face[j]
 	if cuts[1].end.face[j] != f || len(rb.side[j]) != 1 || rb.side[j][0] != f || len(t.Faces[f].Loops) != 1 {
 		return nil, filletErr(at, "the fillet takes the face on side %d whole, which has more edges than it can "+

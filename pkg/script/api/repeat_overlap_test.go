@@ -121,11 +121,9 @@ func TestRotatedTriquetraSweep(t *testing.T) {
 			sweep.Floats("plane", 30, 13),
 			sweep.Floats("at", 42.4, 20),
 		},
-		// 2 of the 24 fail, six copies 45° apart, whose union fails and
-		// which are then combined one at a time (TestTurnedCopiesUnionSweep's
-		// cases left).
-		MaxFailRate:       0.084,
-		SampleMaxFailRate: 0.125,
+		// Every case is united at once.
+		MaxFailRate:       0,
+		SampleMaxFailRate: 0,
 		Sample:            8,
 		Parallel:          true,
 	}

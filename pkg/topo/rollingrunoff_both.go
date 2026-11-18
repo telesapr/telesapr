@@ -189,9 +189,12 @@ func (e *runOffEdit) closeRunOffBoth(cut rbEndCut, endSec srf.SBezier, across ma
 	return nil
 }
 
-// otherEndRunsOff reports whether an end that runs off both its faces
-// is one of a fillet whose other end runs off too.
-func otherEndRunsOff(cuts []rbEndCut) bool {
-	return slices.ContainsFunc(cuts, func(c rbEndCut) bool { return c.also != nil }) &&
-		!slices.ContainsFunc(cuts, func(c rbEndCut) bool { return c.off == nil })
+// bothEndsRunOffBoth reports whether both of a fillet's ends run off
+// both their faces, which nothing reaches yet (no fixture does: a
+// plate's foot on a cone narrowing towards one end runs off the flat
+// past it at the wide end only). One end running off both and the
+// other one face is cut as two ends running off are, each by its own
+// next faces, where their cuts lie apart (runOffApart).
+func bothEndsRunOffBoth(cuts []rbEndCut) bool {
+	return len(cuts) == 2 && !slices.ContainsFunc(cuts, func(c rbEndCut) bool { return c.also == nil })
 }

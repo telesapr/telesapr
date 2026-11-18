@@ -1,6 +1,7 @@
 # Fillets whose foot runs past the face's sides
 
 Refreshed 2026-11-09 at branches `rd13-fillet-cone` and `rd13-runoff-both`.
+Refreshed 2026-11-18 at branch `runoff-mixed-ends`.
 
 A circular fillet or chamfer (round a rod's foot, a hole's rim) whose foot runs off the flat face
 it rolls on is refused by `contactsClear` (`pkg/topo/fillet_contact.go`), which says which sides
@@ -119,12 +120,31 @@ cut (`rbEndCut`) held one run-off. It now holds a second (`also`, `runOffs`, `of
 
 Refused by name: the two cuts crossing on the fillet or on the end section, where the next faces
 would meet across it (no test reaches it: the plate's foot on the cone runs past the flat all along
-the edge first), a fillet taking material away at either, and both faces at one end with a run-off
-at the other. Measured by `TestBlendRunsOffBothFaces` against the blend that runs off neither (the
+the edge first), a fillet taking material away at either, and both faces at both ends. Measured by `TestBlendRunsOffBothFaces` against the blend that runs off neither (the
 top high, the cone uncut) less what of it lies above the low top's plane and past the flat,
 measured by vertical lines through its mesh above the plane and above the cone's exact surface:
 12 of 12 within 0.15%, 0.08% but for the fillet of 5.5. The roadmap's other way, the setback
 patch, was not needed.
+
+Since 2026-11-18 one end running off both its faces and the other end one face is made: it was
+refused by name only, as nothing had reached it. Each end is cut by its own next faces, as one
+alone and as both at one end are; the only change was `runOffApart`, which split the fillet
+between the two ends' cuts at the end that runs off both by its first `p2` only, and now takes
+the further of its two. `TestBlendRunsOffBothFacesAndOne`: the plate on the cone with its top two
+planes, low at both ends and 10 high at the middle (`peakedConePlate`), so that the end at the
+cone's wide end runs off the top and the flat and the narrow end the top only; chamfers of 2.15
+and fillets of 3.5 and 4, the narrow end's top 0.2 to 1 above the foot: 9 of 9 sound, within
+0.02% (0.007% the chamfers, 0.005% the fillets of 3.5) of the blend of the plate high at both
+ends on the cone uncut less what of it lies above the two planes or past the flat (one column
+counted once, above the lower of the two). A chamfer of 2.25 or a fillet of 4.5 is refused as
+"runs off faces at both its ends": the narrow end's cut reaches back along the edge past where
+the wide end's begins (`TestBlendRunsOffBothFacesAndOneOverlapping`); a flat at 2.5 lets the
+foot on the cone run past it all along. Still refused: both ends running off both faces (no
+fixture: the cone narrows, so the flat is reached at the wide end only), and a face taken whole
+with an end running off both (`consumedRunOff` now refuses it by name, where `consumedLoops`
+would have cut that end by one next face). The two cuts crossing on the fillet is still reached
+by no test: every size tried that reaches past the flat at both sides' cuts runs past it all
+along first.
 
 The ring band's 0.3% to 0.42% (`TestBlendRunsOffPastRingTop`) was the measure, not the kernel nor
 the oracle. Vertical lines through the meshes, each class of column apart (the blend's region

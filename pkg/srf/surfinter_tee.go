@@ -202,8 +202,18 @@ func (s *SSurface) intersectEqualCylinders(b *SSurface, agnstA, agnstB *SShell, 
 			}
 			for _, tr := range pair.srf.Trim {
 				sc := pair.sh.FindCurve(tr.Curve)
-				if sc == nil {
+				if sc == nil || len(sc.Points) == 0 {
 					continue
+				}
+				// An outline's end on the ellipse is a corner of the face
+				// the ellipse leaves it at, though neither curve meeting
+				// there need cross the plane: with copies turned 45°
+				// apart, one lies in a cap's plane and the other ends on
+				// the ellipse's, its sign there rounding (roadmap K3).
+				for _, p := range []geom.Vector{sc.Points[0].P, sc.Points[len(sc.Points)-1].P} {
+					if math.Abs(g(p)) < lengthEps && at(angleOf(p)).Minus(p).Magnitude() < lengthEps {
+						cuts = append(cuts, angleOf(p))
+					}
 				}
 				crosses := false
 				for k := 1; k < len(sc.Points); k++ {

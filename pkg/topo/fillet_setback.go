@@ -450,6 +450,63 @@ func bernsteinD(n, i int, t float64, m int) float64 { //nolint:unparam // n is t
 	return float64(n*(n-1)) * (b(n-2, i-2) - 2*b(n-2, i-1) + b(n-2, i))
 }
 
+// thinPlateGrid is how many points along each parameter a patch's
+// thin-plate energy is sampled at.
+const thinPlateGrid = 7
+
+// thinPlate holds, at each point of the grid of thinPlateGrid² over a
+// patch of degree patchDeg, the factor of control point i, j in its
+// second derivatives along u, across, and along v (the middle one by
+// √2): the thin-plate rows of every patch alike, which setbackUnit and
+// blendPatch would otherwise evaluate afresh for each patch they try.
+var thinPlate = thinPlateTable()
+
+func thinPlateTable() *[thinPlateGrid][thinPlateGrid][patchDeg + 1][patchDeg + 1][3]float64 {
+	const n, g = patchDeg, thinPlateGrid
+	var t [g][g][n + 1][n + 1][3]float64
+	for gu := range g {
+		for gv := range g {
+			u, v := (float64(gu)+0.5)/g, (float64(gv)+0.5)/g
+			for i := 0; i <= n; i++ {
+				for j := 0; j <= n; j++ {
+					t[gu][gv][i][j] = [3]float64{
+						bernsteinD(n, i, u, 2) * bernstein(n, j, v),
+						math.Sqrt2 * bernsteinD(n, i, u, 1) * bernsteinD(n, j, v, 1),
+						bernstein(n, i, u) * bernsteinD(n, j, v, 2),
+					}
+				}
+			}
+		}
+	}
+	return &t
+}
+
+// thinPlateRows appends to a and b the thin-plate rows of a patch whose
+// control point i, j has coordinate d at column pv(i, j, d) of rows nv
+// long, weighted by w: for each grid point and coordinate, the second
+// derivatives along u, across and along v.
+func thinPlateRows(a [][]float64, b []float64, nv int, pv func(i, j, d int) int, w float64) ([][]float64, []float64) {
+	const n, g = patchDeg, thinPlateGrid
+	for gu := range g {
+		for gv := range g {
+			at := &thinPlate[gu][gv]
+			for d := range 3 {
+				for c := range 3 {
+					row := make([]float64, nv)
+					for i := 0; i <= n; i++ {
+						for j := 0; j <= n; j++ {
+							row[pv(i, j, d)] += at[i][j][c] * w
+						}
+					}
+					a = append(a, row)
+					b = append(b, 0*w)
+				}
+			}
+		}
+	}
+	return a, b
+}
+
 // leastSquaresDense solves a x = b in the least-squares sense, by the
 // normal equations and elimination with partial pivoting.
 func leastSquaresDense(a [][]float64, b []float64) ([]float64, bool) {
@@ -462,16 +519,23 @@ func leastSquaresDense(a [][]float64, b []float64) ([]float64, bool) {
 	for i := range m {
 		m[i] = make([]float64, n)
 	}
+	// A row has a few dozen terms of hundreds: the products are taken over
+	// its terms alone, in the order a full sweep would add them, so the
+	// sums are the same to the bit.
+	var nz []int
 	for row := range a {
+		nz = nz[:0]
 		for i, ai := range a[row] {
-			if ai == 0 {
-				continue
+			if ai != 0 {
+				nz = append(nz, i)
 			}
+		}
+		for _, i := range nz {
+			ai := a[row][i]
 			r[i] += ai * b[row]
-			for j, aj := range a[row] {
-				if aj != 0 {
-					m[i][j] += ai * aj
-				}
+			mi := m[i]
+			for _, j := range nz {
+				mi[j] += ai * a[row][j]
 			}
 		}
 	}
@@ -487,13 +551,26 @@ func leastSquaresDense(a [][]float64, b []float64) ([]float64, bool) {
 		}
 		m[i], m[piv] = m[piv], m[i]
 		r[i], r[piv] = r[piv], r[i]
+		// The pivot's row is mostly zeros, and subtracting f times a zero
+		// leaves an entry as it was: no entry is ever -0, the one value it
+		// could change (sums of products and differences that cancel come
+		// to +0, and |f| ≤ 1 by the pivoting), so only its other entries
+		// are subtracted.
+		nz = nz[:0]
+		for j, mij := range m[i][i:] {
+			if mij != 0 {
+				nz = append(nz, i+j)
+			}
+		}
+		mi := m[i]
 		for k := i + 1; k < n; k++ {
 			f := m[k][i] / m[i][i]
 			if f == 0 {
 				continue
 			}
-			for j := i; j < n; j++ {
-				m[k][j] -= f * m[i][j]
+			mk := m[k]
+			for _, j := range nz {
+				mk[j] -= f * mi[j]
 			}
 			r[k] -= f * r[i]
 		}
@@ -967,27 +1044,8 @@ func setbackUnit(sides []setbackSide) ([]srf.SSurface, error) {
 	}
 	// The thin-plate energy of each patch, its second derivatives at
 	// points spread over it.
-	const g = 7
 	for q := range quads {
-		for gu := range g {
-			for gv := range g {
-				u, v := (float64(gu)+0.5)/g, (float64(gv)+0.5)/g
-				for d := range 3 {
-					uu, uv, vv := map[int]float64{}, map[int]float64{}, map[int]float64{}
-					for i := 0; i <= n; i++ {
-						for j := 0; j <= n; j++ {
-							k := pv(q, i, j, d)
-							uu[k] = bernsteinD(n, i, u, 2) * bernstein(n, j, v)
-							uv[k] = math.Sqrt2 * bernsteinD(n, i, u, 1) * bernsteinD(n, j, v, 1)
-							vv[k] = bernstein(n, i, u) * bernsteinD(n, j, v, 2)
-						}
-					}
-					eq(uu, 0, w/g)
-					eq(uv, 0, w/g)
-					eq(vv, 0, w/g)
-				}
-			}
-		}
+		a, b = thinPlateRows(a, b, nv, func(i, j, d int) int { return pv(q, i, j, d) }, w/thinPlateGrid)
 	}
 	x, ok := leastSquaresDense(a, b)
 	if !ok {

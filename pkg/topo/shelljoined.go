@@ -166,14 +166,34 @@ func takeInside(sh, inner *srf.SShell, origin uint32) (*srf.SShell, error) {
 // which change nothing of it (the edges are looked for in the tree's
 // own copy of the triangles).
 func unsound(orig *srf.SShell) bool {
+	bad, _ := unsoundBuilt(orig, nil)
+	return bad
+}
+
+// unsoundBuilt is unsound, with also (if not nil) run beside its work,
+// and the topology it built of its copy of orig, nil where that failed:
+// the same as Build of another copy would give, for a caller that needs
+// it too.
+func unsoundBuilt(orig *srf.SShell, also func()) (bool, *Topology) {
 	meshed, built := orig.Clone(), orig.Clone()
 	var bad srf.SEdgeList
 	var empty, broken bool
 	var meshEuler, euler int
-	eachPaced(orig, 2, func(i int) {
-		if i == 1 {
-			t, err := Build(&built)
-			if broken = err != nil || len(t.Validate()) > 0; !broken {
+	var t *Topology
+	jobs := 2
+	if also != nil {
+		jobs = 3
+	}
+	eachPaced(orig, jobs, func(i int) {
+		switch i {
+		case 2:
+			also()
+			return
+		case 1:
+			var err error
+			if t, err = Build(&built); err != nil {
+				t, broken = nil, true
+			} else if broken = len(t.Validate()) > 0; !broken {
 				euler = t.Euler()
 			}
 			return
@@ -191,7 +211,7 @@ func unsound(orig *srf.SShell) bool {
 			}
 		})
 	})
-	return empty || len(bad.Edges) > 0 || broken || euler != meshEuler
+	return empty || len(bad.Edges) > 0 || broken || euler != meshEuler, t
 }
 
 // joinedInside is the inside of sh (topology t), made of parts, faces

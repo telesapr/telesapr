@@ -292,8 +292,9 @@ bottom both lose their corner with the side, up to the fillet's end and its cut 
 The fillet is refused at the place in these cases:
 
 - the ball can't touch both faces (the radius is too large for the room beside a hole);
-- the fillet's end runs off both its faces at once, each past the end of its edge with the end
-  face.
+- the fillet's end runs off both its faces at once and the faces past them would meet across its
+  end;
+- the fillet runs off both its faces at both its ends.
 
 **A curved end face.** The end face may be curved too, as a box's upright edge between flat walls
 ends at the top on a domed lid. The ball's sweep is cut by the dome, and the fillet's end is a
@@ -326,8 +327,8 @@ These are refused with a message:
 - At a corner of a band raised on a cylinder: a seam of the face that passes the corner less than
   about half a millimetre away without going through it (move the band a little), and chord
   tolerances finer than about 0.01%, where the two fillets' meshes cross at the mitre.
-- A blend whose end runs off both its faces, each onto the face past it, as a plate's foot on a
-  cone cut flat beside the plate where the plate's top is low too.
+- A blend that runs off both its faces at both its ends, or whose two ends' cuts reach past each
+  other along the edge.
 
 Also:
 
