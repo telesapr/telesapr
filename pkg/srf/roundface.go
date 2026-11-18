@@ -195,3 +195,14 @@ func meetOfLines(ps, qs [3]geom.Vector, tol float64) (geom.Vector, bool) {
 	}
 	return p1.Plus(p2).ScaledBy(0.5), true
 }
+
+// holdsCurve reports whether sb lies on f's surface: its points at eight
+// places along it, each within LengthEps of it.
+func (f RoundFace) holdsCurve(sb *SBezier) bool {
+	for i := range 9 {
+		if math.Abs(f.offset(sb.PointAt(float64(i)/8))) > lengthEps {
+			return false
+		}
+	}
+	return true
+}

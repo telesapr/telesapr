@@ -1,5 +1,10 @@
 # K3 spike: fuse first (2026-11-04)
 
+Refreshed 2026-11-18 (k3-coincident-curved): a face on a cylinder or cone lying on one of the other
+operand's, the two cut into patches at other angles round the axis, is joined by every Boolean;
+the fillet past a curved side carried on above its face still is not. See "Coincident curved faces
+cut at other angles" at the end.
+
 Refreshed 2026-11-18 (k3-turned-copies-left): the six turned-copies cases left are sound, an
 outline's corner on an equal-cylinder ellipse now cutting it; see "The last six" at the end.
 
@@ -599,3 +604,81 @@ being rounding), are fixed by the same cut.
 `TestTurnedCopiesUnionSweep` 240 of 240 sound, `TestRotatedTriquetraSweep` 24 of 24 united at once
 and agreeing with the ray-cast oracle; both allowances are now 0. No golden moved.
 `combineStepsInTurn` stays as the fallback for a union of turned copies that still fails.
+
+## Coincident curved faces cut at other angles (k3-coincident-curved, 2026-11-18)
+
+rd13 found that the fillet past a curved side could not cut the widened solid back by the cutter
+less the solid before it, as `beyondCutter` does past a flat side: the cutter's curved face then
+lies on the side, and the Boolean lost that face's loops. The pin in a bore (`TestPinInBoreSweep`)
+and the cone in a countersink were sound because both operands were lathed in quarters: their
+patches had the same seams. The cutter is swept through `arcBreaks`, other angles.
+
+The fixture, `TestCoincidentRoundSweep` (`pkg/srf/contact_curved_coincident_test.go`): a ring
+with a bore of radius 8, upright or widening at 10°, lathed in quarters, with or without a rod
+beside it running into the cutter; the bore's cylinder or cone filled from below the ring to above
+it (the cutter), swept in quarters, in tenths, or in uneven pieces off every seam of the ring;
+turned 0° and 35°; the cutter less the ring, the ring less the cutter, union and intersection: 96
+Booleans. Before: the 32 in quarters right, all 64 others failed or lost loops. After: 96 of 96.
+Four causes, each needed:
+
+1. **Classification across the other face.** A seam of one face runs across the inside of the
+   other's patch: `classifyEdgeOn` reaches the edge-on-surface case, where `ClassifyRegion` takes
+   the edge's normals along chords of the patch, which dip off the surface by its curvature (a
+   direction cosine of chord/2r, 2e-4 at r 8 and chord 0.003, against `DotProductTol` 1e-5), and
+   the region beside it read as inside or outside, not as lying on the face. The seat's rules
+   (the side running onto a face lying on the classified one is coincident; across a non-smooth
+   edge, the side running onto the curved face is) now hold where both patches lie on one
+   cylinder or cone too (`sameRoundSurface`, `pkg/srf/raycast_round.go`), not only on spheres.
+2. **The edge along the bore split at the cutter's seams.** Where the ring's flat end meets its
+   bore, the edge lies on the cutter's surface and crosses its seams nowhere a ray cast along its
+   chords sees (they dip inside the surface). The curve where the flat end meets each of the
+   cutter's patches then ran along part of the edge from a seam to a seam, with a point of its own
+   at each seam that the edge lacked, and neither trim closed. An operand's own exact arc about
+   the axis of a cylinder or cone that the other has patches on is now split where it crosses
+   their straight trims (`roundSeamsUnder`, `roundSeamCrossings`, `pkg/srf/boolean_round_seam.go`,
+   called from `MakeCopySplitAgainst` after every other split). Taken for any exact curve on such
+   a face, it split threads' helices where they cross their blank's seams and moved the last bits
+   of nine thread goldens (`TestThreadGoldens`), so it takes arcs whose control points lie in a
+   plane square to the axis (`roundAbout`).
+3. **The curve following the next patch's edge.** A flat end in quarters meets a cutter patch
+   that spans two of them; the curve where it meets the first quarter is found first and the
+   second follows its points (`findExact`), so the curve has to follow both quarters' edges.
+   `piecesAlongEdges` followed only edges of the two surfaces being intersected; it now follows an
+   operand's edge on a face lying on the same cylinder or cone as either (`roundOf`).
+4. **On a cone, the plane's outline cut to the patch.** A plane meeting a cone in its own outline
+   (the flat end's rim on the cutter) took the outline whole, a quarter of the ring, though the
+   cutter's patch is a tenth; and the outline's points past the patch failed `containsCurve`,
+   whose closest point did not converge there, so the circle was marched instead. The outline is
+   now taken where it lies on the cone (`RoundFace.holdsCurve`) and cut where it crosses the
+   patch's straight sides, a piece beside the patch dropped (`piecesOnRoundPatch`). A cylinder
+   meets a plane by its own projection and needed neither. Turned 35°, two patches of one cone
+   were also marched against each other and gave a curve along a seam both share, a hair off it:
+   patches on one cone are no longer intersected (`intersectAgainst`).
+
+Why it does not move threads and wrapped text, which the seat's rules broke when tried on every
+curved face (2026-11-04): those rules then took any curved face lying within a tenth of the chord
+tolerance of the classified one, and threads' and wrapped letters' faces are fitted surfaces lying
+near their cylinder or cone, not on it. `sameRoundSurface` asks that both patches be found by
+`RoundFaceOf` (straight one way, every sample within 1e-7 of their size of one cylinder or cone)
+and have the same axis and radius, or apex and half angle, within LengthEps (1e-9 for the angle).
+The seam split takes only exact arcs about the axis, the edge following only exact curves on such
+faces, and a crossing only where the refined point lies on both curves within LengthEps away from
+the segment's ends: where
+the faces are cut at the same angles, as every lathed pair before, the crossings are the curves'
+ends and nothing moves. `make test-fast` and `make test` pass with no golden moved; every sweep of
+`pkg/srf` in full (`TELESAPR_SWEEP=1`) passes.
+
+**The fillet, tried and still refused.** With the change, the cutter less the solid round the
+rod beside a bore widening at 10° (`TestFilletPastConeSideRefused`) is sound and of the right
+volume (2104.55: the cutter's 2105.23 less the lens of the rod in it). Cutting the widened,
+filleted solid back by it then fails: the face's plane meets the cutter's cone where the foot
+crosses the rim and the marched circle there leaves the plane's trim open; with the cone line split
+in the face's plane the cut gets further but loses the fillet's faces round its seam through the
+nearest point of the rod, where the cone, the rod and the fillet's tangent edge on the rod meet.
+That is a marching case of three surfaces at a tangent edge, not coincident contact. A hole's rim
+chamfered into the ledge: the half space below the foot is compared whole, which counts the
+chamfer's own cut under the disc; putting back what of the solid lies in the ring past the side
+below the foot needs the solid and the ring, which touch along the foot's circle on one cylinder
+or cone, intersected, and those Booleans failed or came out unsound with the ring cut at the
+cutter's angles and with it cut at the side's own seams. Both cases stay refused by name.
+

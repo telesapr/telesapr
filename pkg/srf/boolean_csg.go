@@ -295,6 +295,12 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 	var touches []geom.Vector
 	touchesOn(&touches, c, srfA, srfB, agnstA)
 	known := knownTouches(agnstA, agnstB)
+	// An operand's own curve, split against the other alone, lying on a
+	// cylinder or cone the other has a face on too.
+	var seams []roundSeam
+	if agnstB == nil {
+		seams = roundSeamsUnder(c, agnstA, srfA, srfB)
+	}
 
 	if len(c.Points) == 0 {
 		return ret
@@ -452,6 +458,12 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 				continue
 			}
 			il = append(il, SInter{P: vtx})
+		}
+		// And where it crosses a seam of the other operand's face on its
+		// cylinder or cone, unless a split already lies there: the
+		// splits above keep their own points.
+		if seams != nil {
+			il = roundSeamCrossings(il, c, seams, prev.P, p.P, tolOf(srfA).ChordTolMm()+geom.LengthEps)
 		}
 		if len(il) > 0 {
 			// And now sort them in order along the line. Note that we must
