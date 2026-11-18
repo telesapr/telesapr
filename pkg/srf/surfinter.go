@@ -20,7 +20,7 @@ func (s *SSurface) AddExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA
 }
 
 func (s *SSurface) addExactIntersectionCurve(sb *SBezier, srfB *SSurface, agnstA, agnstB *SShell, into *curveSink) {
-	for _, piece := range s.piecesAlongEdges(sb, srfB, into) {
+	for _, piece := range s.piecesAlongEdges(sb, srfB, agnstA, agnstB, into) {
 		s.addExactIntersectionPiece(&piece.curve, piece.points, srfB, agnstA, agnstB, into)
 	}
 }
@@ -196,12 +196,24 @@ func (s *SSurface) intersectAgainst(b *SSurface, agnstA, agnstB *SShell, into *c
 					if sc.SurfA != splane.H && sc.SurfB != splane.H {
 						continue
 					}
-					if !splane.ContainsPlaneCurve(sc) || !sext.containsCurve(&sc.Exact) {
+					if !splane.ContainsPlaneCurve(sc) {
+						continue
+					}
+					// On a cylinder or cone the outline may run on past the
+					// patch, where the patch's closest point is not found.
+					f, round := RoundFaceOf(sext)
+					if !(round && f.holdsCurve(&sc.Exact)) && !sext.containsCurve(&sc.Exact) {
+						continue
+					}
+					foundExact = true
+					if round {
+						for _, piece := range piecesOnRoundPatch(sc.Exact, sext, f) {
+							s.addExactIntersectionCurve(&piece, b, agnstA, agnstB, into)
+						}
 						continue
 					}
 					bezier := sc.Exact
 					s.addExactIntersectionCurve(&bezier, b, agnstA, agnstB, into)
-					foundExact = true
 				}
 			}
 			// if we found at lest one of these we don't want to do the numerical
@@ -215,6 +227,14 @@ func (s *SSurface) intersectAgainst(b *SSurface, agnstA, agnstB *SShell, into *c
 			}
 		}
 		if isExtdt && isExtdb && s.intersectEqualCylinders(b, agnstA, agnstB, into) {
+			return
+		}
+		// Two patches on one cone lie on each other where they overlap
+		// and cross nowhere: the classification takes the overlap for
+		// coincident (sameRoundSurface). Marched, turned off the axes,
+		// they gave a curve along a seam both share, a hair off it, which
+		// neither patch's trim could close on (roadmap K3, 2026-11-18).
+		if sameRoundSurface(s, b) {
 			return
 		}
 

@@ -157,7 +157,7 @@ func (s *SShell) classifyEdgeOn(own *SSurface, indir, outdir *Class, ea, eb, p, 
 		// the tangency test, and both sides read as outside.
 		if !smooth {
 			for i := range 2 {
-				if _, _, ok := sphereOfPatch(interSrf[i]); !ok {
+				if !isSpherePatch(interSrf[i]) && !sameRoundSurface(own, interSrf[i]) {
 					continue
 				}
 				if !coincidesWith(own, interSrf[i], p, step(i)) {
@@ -415,7 +415,7 @@ func (s *SShell) classifyEdgeOn(own *SSurface, indir, outdir *Class, ea, eb, p, 
 		// taken along chords, dip off a sphere by its curvature, past the
 		// coincidence test of ClassifyRegion. A side that runs onto the
 		// face, within its trim, is coincident with it.
-		if own != nil && isSpherePatch(own) && isSpherePatch(srf) {
+		if own != nil && (isSpherePatch(own) && isSpherePatch(srf) || sameRoundSurface(own, srf)) {
 			en := [2]geom.Vector{edgeNIn, edgeNOut}
 			ns := [2]geom.Vector{surfNIn, surfNOut}
 			uvs := [2]geom.Point2d{pin, pout}

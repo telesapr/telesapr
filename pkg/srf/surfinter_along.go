@@ -42,7 +42,13 @@ type alongCut struct {
 //
 // Only conics and higher are cut: a line along an edge meets the same
 // split points as the edge, and follows it already.
-func (s *SSurface) piecesAlongEdges(sb *SBezier, srfB *SSurface, into *curveSink) []alongCut {
+//
+// An edge bounding neither, but a face lying on the same cylinder or
+// cone as s or srfB, is followed too: the curve where a flat face meets
+// a patch of the other operand on its bore runs on past the face's
+// patch along the next one's edge, where both operands' faces on the
+// bore are cut at other angles round it (roundOf).
+func (s *SSurface) piecesAlongEdges(sb *SBezier, srfB *SSurface, agnstA, agnstB *SShell, into *curveSink) []alongCut {
 	plain := []alongCut{{curve: *sb}}
 	if sb.Degree < 2 || into.shell == nil {
 		return plain
@@ -59,13 +65,17 @@ func (s *SSurface) piecesAlongEdges(sb *SBezier, srfB *SSurface, into *curveSink
 	var pieces []alongPiece
 	for i := range into.shell.Curve {
 		c := &into.shell.Curve[i]
-		if !c.IsExact || c.Exact.Degree < 2 || !c.edgeOf(s, srfB) || len(c.Points) < 2 {
+		if !c.IsExact || c.Exact.Degree < 2 || len(c.Points) < 2 {
+			continue
+		}
+		own := c.edgeOf(s, srfB)
+		if !own && !c.ofOperand() {
 			continue
 		}
 		if !c.boxMeets(lo, hi) {
 			continue
 		}
-		if pc, ok := sb.runsAlong(c); ok {
+		if pc, ok := sb.runsAlong(c); ok && (own || c.roundOf(s, srfB, agnstA, agnstB)) {
 			pieces = append(pieces, pc)
 		}
 	}
@@ -153,6 +163,33 @@ func (c *SCurve) edgeOf(s, srfB *SSurface) bool {
 		return c.SurfA == s.H || c.SurfB == s.H
 	case CurveSourceOrigB, CurveSourceSplitB:
 		return c.SurfA == srfB.H || c.SurfB == srfB.H
+	}
+	return false
+}
+
+// ofOperand tells whether c is an operand's own curve.
+func (c *SCurve) ofOperand() bool {
+	switch c.Source {
+	case CurveSourceOrigA, CurveSourceSplitA, CurveSourceOrigB, CurveSourceSplitB:
+		return true
+	}
+	return false
+}
+
+// roundOf tells whether c, an operand's own curve, bounds a face lying
+// on the same cylinder or cone as s or srfB (sameRoundSurface).
+func (c *SCurve) roundOf(s, srfB *SSurface, agnstA, agnstB *SShell) bool {
+	if agnstA == nil || agnstB == nil {
+		return false
+	}
+	sh := agnstA
+	if c.Source == CurveSourceOrigB || c.Source == CurveSourceSplitB {
+		sh = agnstB
+	}
+	for _, f := range []*SSurface{sh.FindSurface(c.SurfA), sh.FindSurface(c.SurfB)} {
+		if f != nil && (sameRoundSurface(f, s) || sameRoundSurface(f, srfB)) {
+			return true
+		}
 	}
 	return false
 }
