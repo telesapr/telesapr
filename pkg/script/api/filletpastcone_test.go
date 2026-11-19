@@ -145,6 +145,21 @@ var conePlates = []conePlate{
 			return g, ledge + v - hole
 		},
 	},
+	{
+		// A hole 0.3 from the disc's rim: the slab's wall toward the
+		// solid, inset by 0.4, filled the hole's sliver past it, and the
+		// slab was refused (curvedSide.clearance, 2026-11-19). The chamfer
+		// of 3.5, whose cut into the ledge reaches past the side, is
+		// refused (TestFilletPastConeSideRefused).
+		name: "ledge hole near", c: V(3.7, 0, 4), rho: 4, hole: true, rim: discRim,
+		drafts: []float64{0}, sizes: []float64{2.2, 2.5, 3},
+		make: func(d *Doc, draft float64) (Group, float64) {
+			ledge := ledgeUnder(d, draft)
+			v := draftedDisc(d, draft)
+			g, hole := holeAt(d, 3.7)
+			return g, ledge + v - hole
+		},
+	},
 }
 
 // draftedBore draws a block 40 square and 4 high with a bore of radius 8
@@ -231,12 +246,13 @@ func ringPastCone(cx, cy, rho, r float64, flat, below bool, rim func(z float64) 
 // running into the rod where it widens at 10° (refused before
 // 2026-11-19); and past a disc's rim, upright or drafted, where the
 // solid goes on below it as a ledge (the cutter starting at the side's
-// foot). Refused as running off the face before 2026-11-09. Every case
-// sound and within 3e-4 of the ring's integral within the cone. The
-// ordinary run takes one case of each solid and draft, the size and the
-// kind turning from case to case; -short the hardest, a rod off centre
-// on a drafted disc, the rod the widening bore runs into, and a ledge's
-// chamfer; make test-sweeps all 96.
+// foot), a hole there 0.3 from the side (refused before 2026-11-19).
+// Refused as running off the face before 2026-11-09. Every case sound
+// and within 3e-4 of the ring's integral within the cone. The ordinary
+// run takes one case of each solid and draft, the size and the kind
+// turning from case to case; -short the hardest, a rod off centre on a
+// drafted disc, the rod the widening bore runs into, and a ledge's
+// chamfer; make test-sweeps all 102.
 func TestFilletPastConeSide(t *testing.T) {
 	t.Parallel()
 	combo := 0
@@ -323,9 +339,12 @@ func checkFilletCone(t *testing.T, p conePlate, draft float64, flat bool, r floa
 // What the kernel refuses past a side on a cone, saying why: a hole's
 // rim 0.3 from the disc's side chamfered 3.5 deep, through the disc 3
 // above the ledge into the ledge past the side, which the cutter
-// starting at the side's foot would leave cut. Chamfered so deep 2 from
-// the side, refused too before 2026-11-19, its cut into the ledge lies
-// within the side and is made (TestFilletPastConeSide).
+// starting at the side's foot would leave cut, refused by name since
+// 2026-11-19 (curvedSide.cutsBelow; it failed before in the slab, which
+// filled the hole's sliver past its wall). Chamfered so deep 2 from the
+// side, refused too before 2026-11-19, its cut into the ledge lies
+// within the side and is made, as the hole 0.3 from the side is to 3
+// (TestFilletPastConeSide).
 func TestFilletPastConeSideRefused(t *testing.T) {
 	t.Parallel()
 	for _, c := range []struct {
@@ -341,7 +360,7 @@ func TestFilletPastConeSideRefused(t *testing.T) {
 			draftedDisc(d, 0)
 			g, _ := holeAt(d, 3.7)
 			return g
-		}, V(7.7, 0, 4), true, 3.5, "runs off the face"},
+		}, V(7.7, 0, 4), true, 3.5, "cuts into the solid below the side's foot"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()

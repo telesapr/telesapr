@@ -98,3 +98,56 @@ func TestEditTrialTaken(t *testing.T) {
 		})
 	}
 }
+
+// A fillet or chamfer whose foot runs off its face past a curved side,
+// made on the solid widened past the side and cut back
+// (topo.widenedFillet), is made once: by the trial, whose solid the
+// regeneration takes, and that is the one made again from nothing kept,
+// to the bit. The disc of radius 8 drafted 5°, a rod of radius 4 off its
+// centre whose foot runs past the disc's rim (TestFilletPastConeSide's
+// hardest case). -short keeps the fillet, a few seconds each.
+func TestEditTrialPastCurvedSide(t *testing.T) {
+	t.Parallel()
+	for _, chamfer := range []bool{false, true} {
+		if chamfer && testing.Short() {
+			continue
+		}
+		t.Run(fmt.Sprintf("chamfer %v", chamfer), func(t *testing.T) {
+			t.Parallel()
+			d := api.New()
+			d.Edit.SetChordTolerance(0.003)
+			d.Features.SketchIn(d.Workplane("XY"), "")
+			d.Sketch.Circle(api.V(0, 0, 0), 8)
+			d.Features.Extrude(4, "disc").AsExtrude().SetDraft(5)
+			d.Features.Sketch3D("under")
+			d.Features.SketchIn(d.Sketch.NewWorkplane(api.V(0, 0, -6), api.V(1, 0, 0), api.V(0, 1, 0)), "")
+			d.Sketch.Circle(api.V(2, 0, -6), 4)
+			rod := d.Features.Extrude(16, "rod")
+			foot := []api.SolidEdge{rod.Solid().EdgeAt(api.V(6, 0, 4))}
+			var g api.Group
+			if chamfer {
+				g = d.Features.ChamferSolid(foot, 2.5, "")
+			} else {
+				g = d.Features.FilletSolid(foot, 3, "")
+			}
+			if p := g.Problem(); p != "" {
+				t.Fatal(p)
+			}
+			sk := sketchOf(d)
+			got := solidBits(d, g)
+			if n := sk.EditTrialsTaken(); n != 1 {
+				t.Errorf("%d trials' solids taken, want 1: the regeneration made it again", n)
+			}
+			if rep := g.Analyze().Check(); !rep.Sound() {
+				t.Fatalf("unsound: %s", rep.Summary())
+			}
+			sk.NoSolidCache = true
+			defer func() { sk.NoSolidCache = false }()
+			sk.MarkGroupDirty(g.H, false)
+			sk.GenerateAll()
+			if solidBits(d, g) != got {
+				t.Errorf("the solid taken from the trial is not the one made again")
+			}
+		})
+	}
+}

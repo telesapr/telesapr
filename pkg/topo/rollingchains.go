@@ -137,14 +137,15 @@ func blendGroup(rbs []*rollingBall) ([]*rbBlend, error) {
 	// As one chain's mitre (blend): sections in two spans first, which
 	// follow it down to fine tolerances, then whole, then in four, finer
 	// still; every chain of the group alike, as they share their mitres.
-	// A chain mitred at one end only ends at its face at the other, and
-	// along a curved edge that end's conics stray from the swept surface
-	// as a lone chain's do (blend): its sections fitted to their cuts
-	// come last, which leave the mitres' sections as they are.
+	// A chain mitred or pivoted at one end only ends at its face at the
+	// other, and along a curved edge, or on a curved face, that end's
+	// conics stray from the swept surface as a lone chain's do (blend):
+	// its sections fitted to their cuts come last, which leave the
+	// mitres' sections as they are.
 	var bls []*rbBlend
 	var err error
 	for _, fitCuts := range []bool{false, true} {
-		if fitCuts && !partlyMitred(rbs) {
+		if fitCuts && !endsAtFace(rbs) {
 			break
 		}
 		for _, spans := range mitreSpans {
@@ -218,9 +219,15 @@ func eachChain(rbs []*rollingBall, fn func(rb *rollingBall) error) error {
 	return nil
 }
 
-// partlyMitred reports whether a chain of rbs is mitred at one end only.
-func partlyMitred(rbs []*rollingBall) bool {
-	return slices.ContainsFunc(rbs, func(rb *rollingBall) bool { return rb.anyMitre() && !rb.mitred() })
+// endsAtFace reports whether a chain of rbs ends at a face at either
+// end, meeting no other chain there: an end that is no mitre and no
+// inside corner's pivot (a chain picked with the next rim edge of a
+// pocket, ending at the wall past its other end, is pivoted at one end
+// only).
+func endsAtFace(rbs []*rollingBall) bool {
+	return slices.ContainsFunc(rbs, func(rb *rollingBall) bool {
+		return !rb.closed && slices.ContainsFunc(rb.ends[:], func(e *rbEnd) bool { return e != nil && e.mate == nil && !e.fade })
+	})
 }
 
 // blendMitred blends each of the chains rbs, which meet in mitres, its

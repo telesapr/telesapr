@@ -1,5 +1,10 @@
 # K3 spike: fuse first (2026-11-04)
 
+Refreshed 2026-11-19 (ledge-cut-past-side): a disc united with one of its radius standing on its
+top or bottom, sharing the plane and the side, is sound (`onEdgeCurve`); putting back a ledge's
+ring below a fillet past a disc's rim was made sound by three more changes and not kept. See "The
+ring below a ledge's foot" at the end.
+
 Refreshed 2026-11-19 (fillet-curved-side-cut): the fillet past a curved side carried on above its
 face is made, the cutter less what stands above the face cut back at the tangent edge by three
 changes in the marcher and the classification; a hole's rim chamfered into the ledge within the
@@ -754,3 +759,58 @@ refused; it fails before that check is reached (in the widening or the cut back,
 into), and were it made, putting back what lies past the side below the foot would need the
 solid and the ring there intersected, which touch along the foot's circle (not tried again).
 
+## The ring below a ledge's foot (ledge-cut-past-side, 2026-11-19)
+
+The hole 0.3 from the disc's side, chamfered 3.5 on the disc standing on a ledge, failed first in
+the widening (the slab's wall filled the hole's sliver, `doc/dev-notes/fillet-past-sides.md`);
+with that mended, the fillet and the cut back are sound and the solid past the side below the
+foot is 0.041 mm³ short, the chamfer's cut into the ledge past r = 8. It is refused by name.
+Putting it back was tried as the solid before the fillet intersected with the cutter's ring below
+(`kept`), united with the filleted solid before or after the cut back. What failed, in order:
+
+1. **The ring to the side's foot.** Its inner face meets the side's along the foot's circle, and
+   the intersection came out the whole ledge, 314 mm³ for 113. Taken halfway up the side
+   instead, where its inner face lies on the side's (the coincident faces the k3-coincident-curved
+   work joins), it is right, 113.09.
+2. **A disc's plane and side shared** (kept). `kept` lies in the ledge and shares its top or
+   bottom and its outer cylinder: united, the shared plane lost its whole outline. The curve where
+   that plane meets the other operand's cylinder runs back along the plane's own circle, and the
+   rule for a curve off a patch's edge by less than the chord tolerance (`offChord`, a ring's seam
+   beside a pot) took it for such a sliver and cancelled the two: on a plane `offChord` holds of any
+   curved edge, the uv segment's middle lying on the chord. The two are now one curve when the
+   edge's own point lies on it (`onEdgeCurve`, `pkg/srf/boolean_trim.go`);
+   `TestUnionDiscSharingTopAndSide`, a disc of radius 10 and 1 high with one on its top, bottom or
+   both, either order, chords 0.1 and 0.005: 12 of 12 sound (all but the identical pair failed
+   before). No golden moved.
+3. **A side past a coincident patch's edge** (not kept). In the cut back after the union, the
+   edge of `kept`'s inner face at the foot, lying on the cutter's face's bottom edge, read as
+   coincident both ways: the point a step past the cutter's patch projects back onto its edge,
+   which its trim takes for on it (`classifyOnCoincident`); the side is past the patch where that
+   projection lies off the stepped point. And `coincidesWith` held of a cylinder square to a plane
+   at their shared edge, the step along the plane projecting back onto the edge; it now needs the
+   projection to have moved.
+4. **A side past a plane's curved edge** (not kept). The cutter's bottom, coplanar with the
+   ledge's top piece inside the chamfer, read as coincident both ways at that piece's circle
+   (step 3 of `classifyEdgeOn`, which takes the plane's normal for both sides): p, on the true
+   circle, lies inside the plane's chorded trim by the sag. A side whose probe a few steps out
+   runs off the plane's trim, near its edge, was classified by raycast (`classifyOffEdge`): it
+   made the fixture sound but failed `TestTurnedCopiesUnionSweep` twice in eight.
+5. **The chamfer's arc on the ledge's top** (not kept). The cutter's bottom plane meets the
+   chamfer's cone exactly along the cone's own (marched) edge with the ledge's top past the side;
+   the march never gave that piece, and the cutter's bottom did not close. A plane square to a
+   cone's axis meeting it in the exact arc over the patch's turn (`intersectPlaneAndRoundAxial`)
+   made the fixture sound, 570.64 for 570.598 + 0.041, and 58 of the sweep's 64 (57 without it);
+   taken for every such cone it moved `TestSolidGoldens` and, through the drafted disc's own cone
+   on the ledge, made a drafted chamfer of 3.5 fail; taken only for a cone with a marched edge in
+   the plane, the exact arc and the marched edge met the ledge's two coplanar pieces with
+   different points and the mesh did not close.
+
+Union after the cut back instead: the ring's inner face below the foot and the cut back side's
+above it meet along the foot's circle, opposite ways round, and the chamfer's cone there ends at
+the four-face point where its piece below the foot was cut away; no curve was found where `kept`'s
+inner face meets the cone below the foot (no seed but that point). Not followed further.
+
+A way on: carry the marched edge's points into the exact arc where it runs along one
+(`piecesAlongEdges` follows only exact edges), so that steps 3 to 5 can be kept for the case
+alone; or make the chamfer's cone exact against the ledge's top in the union, so the cut back's
+plane finds an exact edge.

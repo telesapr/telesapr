@@ -224,3 +224,92 @@ func (pf *pivotFrame) curvedChamferAt(phi float64) pivotSwing {
 	ft := rb.foot(side, x)
 	return pivotSwing{phi: phi, c: x, d: ft.p, n: ft.n}
 }
+
+// leansBack reports whether the crease, going down it from the nearer
+// fillet's foot, runs into that fillet's side of its end section.
+func (pf *pivotFrame) leansBack() bool {
+	c := pf.c
+	bl, k, sec, h, q, d := c.a, c.ka, pf.secA, pf.ha, c.qa, c.da
+	if pf.hb < pf.ha {
+		bl, k, sec, h, q, d = c.b, c.kb, pf.secB, pf.hb, c.qb, c.db
+	}
+	if len(bl.secs) < 2 {
+		return false
+	}
+	// The way into the fillet from its end.
+	in := bl.secs[1].c
+	if k == 1 {
+		in = bl.secs[len(bl.secs)-2].c
+	}
+	np := q.Minus(sec.c).Cross(d.Minus(sec.c))
+	if np.Magnitude() == 0 {
+		return false
+	}
+	np = np.WithMagnitude(1)
+	if np.Dot(in.Minus(sec.c)) < 0 {
+		np = np.ScaledBy(-1)
+	}
+	_, down := pf.crease.point(h)
+	return down.Dot(np) > pivotLeanBack
+}
+
+// pivotLeanBack is the sine of the angle past which a crease leans back
+// under the nearer fillet (leansBack): a crease square to the face it
+// meets, as in a flat top, leans by rounding only.
+const pivotLeanBack = 1e-6
+
+// holdShare is the share of the swing's path, from the nearer fillet's
+// end, over which the ball touches the crease above that fillet's foot:
+// on crease the fillet has already taken. Where the crease leans back
+// under that fillet the ball swinging off it rises along the crease at
+// first, its path going on along the fillet's edge, before it falls to
+// the farther foot.
+func (pf *pivotFrame) holdShare() float64 {
+	path := pf.path
+	nearB := pf.hb < pf.ha
+	at := func(i int) pivotSwing {
+		if nearB {
+			return path[len(path)-1-i]
+		}
+		return path[i]
+	}
+	h0 := pf.crease.depth(at(0).c)
+	share := 0.0
+	for i := 1; i < len(path); i++ {
+		sw := at(i)
+		if pf.crease.depth(sw.c) >= h0 {
+			break
+		}
+		share = math.Abs(sw.sigma-at(0).sigma) / pf.total
+	}
+	return min(share, pivotHoldMax)
+}
+
+// pivotHoldMax is the most of the corner its foot on the crease is held
+// for, so that it still has room to move to the farther foot.
+const pivotHoldMax = 0.75
+
+// creaseDepth is the depth of the corner's foot on the crease at t: from
+// the nearer foot's to the farther's, evenly, or where the crease leans
+// back under the nearer fillet (hold) standing at the nearer foot for
+// that share of the corner and then moving off it as the square of the
+// rest, so that its pace is smooth there. Moving down the crease from
+// the start, the corner's sections leave the crease along the nearer
+// wall's face, which is still there below the fillet's foot, and cross
+// the fillet's mesh near its end (the dish's corner of a flat wall and a
+// leaning one, 26°); standing at the foot they turn about it, off the
+// wall, as the ball does, until the ball has come back down to the foot.
+func (pf *pivotFrame) creaseDepth(t float64) float64 {
+	if pf.hold == 0 {
+		return pf.ha + (pf.hb-pf.ha)*t
+	}
+	hn, hf, s := pf.ha, pf.hb, t
+	if pf.hb < pf.ha {
+		hn, hf, s = pf.hb, pf.ha, 1-t
+	}
+	if s <= pf.hold {
+		return hn
+	}
+	x := (s - pf.hold) / (1 - pf.hold)
+	return hn + (hf-hn)*x*x
+}

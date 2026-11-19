@@ -586,14 +586,17 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 			chain.Edges = nil
 			continue
 		}
-		if cThis == BspUvEdgeAntipar && final.hasReversed(chain) && ret.offChord(auv, buv, pt) {
+		if cThis == BspUvEdgeAntipar && final.hasReversed(chain) && ret.offChord(auv, buv, pt) &&
+			!ret.onEdgeCurve(final, se, pt, into, sha, shb) {
 			// The curve runs back along the patch's edge, which is kept:
 			// it meets the edge at both ends and lies within the chord
 			// tolerance of it between, off it but its chord on it (a
 			// ring's seam beside the curve where it meets a pot, roadmap
 			// K3). The sliver between them is none; kept, the two cancel
 			// in the cull below. A curve on the edge itself, as where
-			// two faces' outlines coincide, is classified as ever.
+			// two faces' outlines coincide, is classified as ever: on a
+			// plane offChord holds of any curved edge, whose chord the uv
+			// segment's middle lies on (onEdgeCurve).
 			for _, e := range chain.Edges {
 				final.AddEdge(e.A, e.B, e.AuxA, e.AuxB, 0)
 			}
@@ -648,6 +651,24 @@ func (s *SSurface) offChord(a, b geom.Point2d, p geom.Vector) bool {
 		t = max(0, min(1, uv.Minus(a).Dot(ab)/l))
 	}
 	return s.PointAtUv(a.Plus(ab.ScaledBy(t))).Minus(p).Magnitude() > geom.LengthEps
+}
+
+// onEdgeCurve tells whether p, the point on its curve of se (a piece of
+// a curve on s, edgeNormalsWithinSurface's), lies on the curve of the
+// edge of el that runs back along se: the two are one curve, as where a
+// disc's top is also where it meets the cylinder of a wider disc's side
+// it lies on, the disc on the wider one's top. Cancelled against each
+// other, the top lost its outline (2026-11-19).
+func (s *SSurface) onEdgeCurve(el *SEdgeList, se *SEdge, p geom.Vector, into, sha, shb *SShell) bool {
+	i := slices.IndexFunc(el.Edges, func(e SEdge) bool { return e.A.Equals(se.B) && e.B.Equals(se.A) })
+	if i < 0 {
+		return false
+	}
+	e := el.Edges[i]
+	var n geom.Vector
+	q, _, _ := s.edgeNormalsWithinSurface(geom.Point2d{U: e.A.X, V: e.A.Y}, geom.Point2d{U: e.B.X, V: e.B.Y},
+		into, sha, shb, e.AuxA, &n)
+	return q.Minus(p).Magnitude() <= geom.LengthEps
 }
 
 // hasSame tells whether el holds an edge of chain, run the same way.

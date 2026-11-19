@@ -1,6 +1,6 @@
 # Rolling-ball corners: pivots and mitres at an inside corner
 
-Refreshed 2026-11-19 at branch `pocket-curved-crease`.
+Refreshed 2026-11-19 at branches `pocket-curved-crease`, `fillet-end-leaning-wall` and `pocket-crease-lean-back`.
 
 Where two rolling-ball chains end at one vertex with a crease between their walls that the ball
 goes round (a pocket's rim in a curved face, the foot of a band raised on a tube at the band's
@@ -144,32 +144,88 @@ Three things more were needed:
   foot on the face can stand nearly still as the turn starts.
 
 Against OpenCASCADE (`scripts/fillet-pivot-curved-fixtures.py`, its makeFillet and makeChamfer of
-the same edges; `TestFilletPivotCurvedCrease`, 22 lines): where both walls lean alike in the
+the same edges; `TestFilletPivotCurvedCrease`, 22 lines, 23 since the crease leaning back below): where both walls lean alike in the
 flat top the feet are one point and the corner a mitre, within 1e-5 of its volume and its faces
 within 0.00001 mm of ours. A corner patch takes less, as at a straight crease: in the block
 about 0.026 r³ a fillet's corner and 0.064 d³ a chamfer's, measured against each edge alone,
 whose volumes agree to 3e-5. Our STEP read by FreeCADCmd, sampled within 3 radii of each corner:
 a fillet's faces lie within 0.0005 mm of ours, ours up to 0.08 r of its (0.11 r in the dish);
 a chamfer's within 0.08 mm of ours, ours up to 0.18 to 0.28 d of its: it runs each fillet on into the other past the crease, where ours
-fills between their ends. In the dish ours take 1.2% to 3.1% less, but there the edges alone
-already differ, at their ends against the leaning walls not picked (a y+ fillet alone with both
-walls leaning takes a fifth less than OpenCASCADE's); that is the fillets' ends, not the corners.
+fills between their ends. In the dish ours take 1.2% to 3.1% less, but there OpenCASCADE's
+Volume itself is off by a few tenths of a mm³ (a y+ fillet alone with both walls leaning measured a
+fifth more than ours, where both fillets' faces lie on the ball's envelope and ours is within 0.1%
+of its integral: "The fifth on the dish's y+ edge" below).
 
 Of a grid of 128 (both tops, one or two walls leaning, the corners x+/y+, x+/y- and x-/y+ and
-the whole rim, radii 0.5 to 2, fillets and chamfers, at 0.01 mm), 110 are made sound. Of the 18
-refused, the corner is the reason in one configuration only: the whole rim in the dish with
-both walls leaning, filleted (the pair x- and y+ there is refused too, not looked at apart) (`TestFilletPivotCurvedCreaseRefused`). The crease at the
-x- wall's corner, an arc in that wall's plane, leans back under the y+ fillet, whose foot on it
-lies nearer the vertex: going down the crease from that foot goes 26° into the fillet's side of
-its end section's plane. The corner's sections leave the crease along the y+ wall's face, as the
-fillet's end section does, and with the foot moving down the crease they lie over that face and
-cross the fillet's mesh near its end; the solid is refused as not closed. Tried: the foot held
-at the nearer depth at first (its depth moving as t²): that corner made, the corner where the
-two leaning walls meet broken. What would do: the sections' tangent at the crease turned off
-the shallower wall as the turn starts (a conic through the two feet, tangent there to the ball's
-surface square to its radius), or the foot's pace along the crease tied to the turn. The others
-refused are chains ending against a leaning wall not picked ("the fillet's surface can't be
-fitted", the y+ chain at the x+ wall) and a chamfer of 2 crossing the dish's seam at x = 0.
+the whole rim, radii 0.5 to 2, fillets and chamfers, at 0.01 mm), 110 were made sound by the
+first round, 117 since the crease leaning back below. The 11 refused are chains ending against a
+leaning wall not picked ("the fillet's surface can't be fitted", the y+ chain's chamfer at the
+x+ wall, made since `fillet-end-leaning-wall`, "Chains ending against a leaning wall" below) and a
+chamfer of 2 crossing the dish's seam at x = 0; none at a curved crease's corner.
+
+### A crease leaning back (2026-11-19)
+
+Refused as not closed until then: the dish with both walls leaning, filleted, the whole rim and
+the pair x- and y+ alone, at radii 0.5 to 1.5 (and the whole rim at 2), the mesh crossing itself
+at the x- wall's corner both times, not at the y+ chain's end against the x+ wall. The crease
+there, an arc in the x- wall's plane, leans back under the y+ fillet, whose foot on it lies nearer
+the vertex: going down the crease from that foot goes 26° into the fillet's side of its end
+section's plane (at the dish's other two corners 15° and 36°; in the block's flat top none).
+
+Why the corner crossed, and why turning its sections can't mend it while it stays tangent to the
+fillet: at the nearer foot the corner, the fillet and the wall are tangent to the wall's plane.
+In that plane the fillet's end section leaves the foot up the wall, and the crease down it,
+leaning 26° past the line of the section into the fillet's side. The fillet holds the 90° from
+its foot on the wall to its end section, the wall the 64° from that foot to the crease, so the
+corner must take the 206° from the section round the other way to the crease; a patch whose two
+sides leave a corner along the section and along the crease spans the 154° between them through
+the fillet and the wall instead. So with its foot moving down the crease from the start, the
+corner lay over the wall's face below the fillet's foot and crossed the fillet's mesh near its
+end at any chord tolerance (the corner of the two leaning walls, made at 0.01 mm, crossed at
+0.002 mm too). The true ball shows the way out: swinging off the fillet its centre moves on
+along the fillet's edge, tangent there to the fillet's path (both touch the shared face, and the
+wall's normal at the foot is the radius to the crease), so it touches the crease above the
+nearer foot at first, on crease already gone, and comes back down to it only later (at the x-
+wall's corner, r 1, from depth 0.533 up to 0.405 at 30% of the swing from that end and back by
+60%).
+
+So where the crease leans back under the nearer fillet (`pivotFrame.leansBack`, its tangent
+there into the side of the fillet's end section where the fillet's next section lies), the
+corner's foot on the crease stands at the nearer foot for the share of the swing's path over
+which the ball touches the crease above it (`holdShare`, 0.18 to 0.60 on the dish, at most
+0.75), then moves on to the farther foot as the square of the rest of the way, so that its pace
+is smooth where it starts (`creaseDepth`). While it stands the sections, each the arc through
+the foot and the ball's foot on the shared face, turn about the foot as the ball does, off the
+wall; the corner there has its side on the crease all one point, a pole. It is skinned in two
+(`pivotSpan`, `skinSpan`), each part through its own sections and taking its own derivatives at
+its ends: the depth is smooth at the split, so the two join with the same derivative there. The
+crease is not split at the corner's breaks that lie at the nearer foot (`splitCrease`), and the
+pole sides are left out of the patches' loops (`put`), as `AddBSplineFace` does. The normals
+across the corner's ends keep within 0.0005° of the fillets'. A straight crease, a chamfer and a
+crease that doesn't lean back (all of the block's) take none of this and are the same to the
+bit; the dish's corners that lean back take 0.02% to 0.16% more than before, toward
+OpenCASCADE's. Sound at 0.002 mm too (`TestFilletPivotCurvedCreaseLeansBack` at 0.01). The
+whole rim at 0.002 mm crosses at the x-/y- corner, two flat walls meeting in a straight crease,
+which this does not touch.
+
+Against OpenCASCADE (its makeFillet, `scripts/fillet-pivot-curved-fixtures.py`): the whole rim
+at r 0.5, 1 and 2 took 1.180408, 4.588486 and 17.869764, ours 3.5%, 2.1% and 4.0% less, as the
+dish's other whole rims take 1.8% to 2.5% less (`TestFilletPivotCurvedCrease`, the line at r 1).
+Its faces lie within 0.0004 mm of ours near the corners at r 1, ours up to 0.11 r of its, as
+before; at r 2, 0.11 r to 0.12 r both ways, at the x+/y- corner, the same as before this change.
+The pair x- and y+: 2.077566 at r 1 and 4.111163 at r 1.5, ours 19.5% and 11.0% less, but there
+the edges alone already differ by as much (r 1: y+ alone 0.986673 against 1.233103, x- alone
+0.697145 against 0.790484), which is OpenCASCADE's Volume, not the ends ("The fifth on the dish's
+y+ edge" below).
+
+Tried first: each section the conic through the two feet, tangent to the shared face and at the
+crease square to the ball's radius way(phi). All seven made sound at 0.01 mm, but the normals
+across the corner's ends turned 30° to 69° from the fillets' (the sections' shape changes at once
+off the arc, so the corner moves across itself), and the whole rim crossed at 0.002 mm. Turned
+only toward the nearer end, by (1 - s)² of the way, it crossed at 0.01 mm. The foot held at the
+nearer depth as t² without standing (the first round's try) still crossed here. The foot
+standing exactly needs the pole: the crease's split at a break of no length was refused ("the
+fillets' corner doesn't follow the crease") until `splitCrease` passed over them.
 
 ## A group's chains side by side (2026-11-18)
 
@@ -212,6 +268,47 @@ declared. The paces that made the skin run back come from the chain's ends and a
 every blend of it, and an eased ramp is sound wherever an even one is. Only a chain with no
 mitre is eased, so no chain of a mitred group carries it; no test reaches a later blend of an
 eased chain.
+
+## Chains ending against a leaning wall (2026-11-19)
+
+Of the 128 lines of the curved crease's grid, most refused were not corners but chains that turn
+at a corner of `curvedPocket` and end at their other end against a wall not picked that leans,
+"the fillet's surface can't be fitted" (all chamfers in the dish). A lone edge with the same end
+was made. A lone open chain is blended by `blend`, which, failing, fits the end sections near a
+curved end to their cuts (`fitCuts`) and tries two spans; a chain that pivots at an inside corner
+has a mate there and is blended as a group (`blendGroup`), which tried `fitCuts` only for a chain
+mitred at one end (`partlyMitred`): a pivot end is no mitre. The group now tries it for any chain
+with an end that meets no other chain (`endsAtFace`); its mitres' and pivots' sections are left
+as they were, so nothing made before changes.
+
+The block's x- edge chamfered alone was refused "a curved edge of a face at the fillet is part of
+a longer curve": the y walls' edges with the leaning x+ wall are the profile's arc, drawn to
+z = 25 and cut by the block's top at 20, and the planar chamfer (`edgeCurve`) took only a curve
+that spans the edge. It now takes the piece between the edge's ends (`pieceBetween`), checked
+against the edge's middle point.
+
+The grid of ends (both tops, one or two walls leaning, the lone edges x+, y+, y-, x- and the
+chains x-/y-, y+/x-/y- and x-/y-/x+, r 0.5, 1, 1.5, 2, fillets and chamfers: 224) made 199 sound
+before, 218 now, each sound by `pkg/check`. Left: the leaning crease's corner of the section above
+(the whole y+/x-/y- chain in the dish with both walls leaning, filleted, four radii), and a chamfer
+of 2 on the dish's y+ edge, alone or in a chain, whose foot on the top passes within 0.4 mm of the
+cone's apex and crosses a seam that starts there, not at the edge ("crosses a seam of a face that
+doesn't reach the edge").
+
+**The fifth on the dish's y+ edge.** The lone y+ edge in the dish with both walls leaning,
+filleted: OpenCASCADE's solids' volumes took 1.2331 at r 1, ours 0.9867. Neither end was wrong.
+The ball's envelope integrated directly (`scripts/fillet-envelope-volume.go`: a point is taken
+when in the solid, between the x- wall's plane and the x+ wall's cylinder carried on past the
+pocket, and in the spandrel of the ball whose normal plane along the spine holds it; the spine
+where the top's cone offset by r meets the y+ wall's cylinder grown by r) gives 0.256720,
+0.986804, 2.130773 and 3.630505 at r 0.5, 1, 1.5 and 2, ours 0.257339, 0.986673, 2.129536 and 3.626902 (+0.24%, -0.01%, -0.06%,
+-0.10%). OpenCASCADE's fillet faces, sampled, lie within 0.0005 mm of that envelope from the
+x- wall (x = -12) to the x+ wall (x = 11.55): its fillet is right too, and the fifth is its
+volume integration of the two solids of 75 000 mm³, off by 0.25 mm³ (a tessellation at 0.0005 mm
+of the same two solids differs by 0.948; measured within a box about the rim, 1.316, and as the
+Boolean cut between them, 0.898). The same holds for most dish lines with both walls leaning:
+there OpenCASCADE's volumes, however measured, are off by up to a few tenths of a mm³, against
+2e-5 in the block, and the chains' bands in `TestFilletEndLeaningWall` are wider.
 
 ## Left
 

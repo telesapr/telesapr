@@ -63,6 +63,15 @@ type curvedSide struct {
 	// below is set where the solid goes on below the side, and the
 	// cutter starts at the side's foot.
 	below bool
+	// clear is how far the solid's other faces stand inside the side's
+	// least radius (outside a bore's most) within its height and span
+	// (clearance), which the slab's wall must stay short of; 0 until
+	// found, +Inf where nothing stands there.
+	clear float64
+	// cutsBelow is set where the fillet, taking material away, cut into
+	// the solid below the side's foot and past the side (keepBeyond),
+	// which the refusal says.
+	cutsBelow bool
 }
 
 // curvedStep is the most angle a polygon side of the slab spans: its
@@ -287,6 +296,16 @@ func (c *curvedSide) layout(depth, r float64) (curvedLayout, bool) {
 		// so at one end it stands off the rim by the cone's spread over
 		// the side as well: the inset is kept small.
 		inset = math.Min(coneInset*c.r, 0.2)
+	}
+	// A hole or a notch nearer the side than that keeps the wall off
+	// it by as much again, the chords between the corners sagging
+	// toward it (a hole 0.3 from a disc's rim, whose slab inset by 0.4
+	// filled the hole's sliver past it, 2026-11-19).
+	if sag := c.r * (1 - w); c.clear-sag < 2*inset {
+		inset = (c.clear - sag) / 2
+	}
+	if inset <= 10*geom.LengthEps {
+		return curvedLayout{}, false
 	}
 	rmin, rmax := c.radii(c.lo, 0)
 	cmin, cmax := c.radii(c.lo-1, r+1)
@@ -641,6 +660,9 @@ func meshVolume(sh *srf.SShell) float64 {
 // filled a hole or a notch near the side.
 func widenPastCurved(wide *srf.SShell, sh *srf.SShell, s *runOffSide, off *runOff, r float64) (srf.SShell, bool) {
 	c := s.curved
+	if c.clear == 0 {
+		c.clear = c.clearance(sh)
+	}
 	l, ok := c.layout(math.Max(s.past, 0)+r+1, r)
 	if !ok {
 		return srf.SShell{}, false
@@ -745,4 +767,46 @@ func (c *curvedSide) aboveBox(cut *srf.SShell, h1 float64) srf.SShell {
 		geom.Vector{}, c.axis.ScaledBy(h1+1), core.RGBA{})
 	box.Tol = cut.Tol
 	return box
+}
+
+// clearance is how far inside the side's least radius (outside a
+// bore's most radius) the faces of sh other than the side come within
+// the side's height and span, +Inf where none does: the room the
+// slab's wall toward the solid has. Each triangle of sh's mesh is
+// clipped to the side's height, and its corners measured; those within
+// the chord tolerance of the side are the side's own.
+func (c *curvedSide) clearance(sh *srf.SShell) float64 {
+	var m srf.SMesh
+	cl := sh.Clone()
+	cl.TriangulateInto(&m)
+	rmin, rmax := c.radii(c.lo, 0)
+	eps := 2*sh.Tol.ChordTolMm() + 10*geom.LengthEps
+	h := func(p geom.Vector) float64 { return p.Minus(c.o).Dot(c.axis) }
+	best := math.Inf(1)
+	for _, tr := range m.Triangles {
+		// Flat faces square to the axis (the face the fillet rolls on, a
+		// ledge's top) are left out: their triangles' corners near the
+		// rim stand off it by the chords' sag of their outlines, which
+		// may be coarser than the chord tolerance; what stands in them
+		// near the side (a hole's rim) has walls of its own.
+		if math.Abs(h(tr.A)-h(tr.B)) <= geom.LengthEps && math.Abs(h(tr.B)-h(tr.C)) <= geom.LengthEps {
+			continue
+		}
+		poly := clipBeyond([]geom.Vector{tr.A, tr.B, tr.C}, func(p geom.Vector) float64 { return h(p) - c.lo })
+		poly = clipBeyond(poly, func(p geom.Vector) float64 { return -h(p) })
+		for _, p := range poly {
+			d, a := c.radial(p)
+			if c.past(p) > -eps || !(c.full || turn(c.a0, a) < c.a1-c.a0) {
+				continue
+			}
+			gap := rmin - d
+			if c.sgn < 0 {
+				gap = d - rmax
+			}
+			if gap > 0 {
+				best = math.Min(best, gap)
+			}
+		}
+	}
+	return best
 }

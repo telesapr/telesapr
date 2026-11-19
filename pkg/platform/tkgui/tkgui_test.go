@@ -195,6 +195,18 @@ func TestMenuBarKeyboard(t *testing.T) {
 	}
 	file, edit, view := add("&File", "&New"), add("&Edit", "&Undo"), add("&View", "Zoom &In")
 	w.SetMenuBar(bar)
+	// takigo's menubar closes its posted menu when the toplevel moves or
+	// is resized, and takes the toplevel's first Configure, which brings
+	// the size it was mapped at, for one. That Configure comes just after
+	// the Map; on a busy machine it came after Alt+E had posted the menu,
+	// which it closed, and the step waited for it in vain (2026-11-19).
+	// So the keys wait for it.
+	configured := false
+	p.app.Dispatcher().Bind(w.topWin.PlatformID, event.StructureNotifyMask, func(ev *event.Event) {
+		if ev.Type == event.ConfigureType {
+			configured = true
+		}
+	})
 	w.SetVisible(true)
 
 	posted := func() string {
@@ -216,7 +228,7 @@ func TestMenuBarKeyboard(t *testing.T) {
 	record := func() { got = append(got, posted()) }
 	postedIs := func(want string) func() bool { return func() bool { return posted() == want } }
 	runWaiting(t, p,
-		step{func() { w.Focus() }, func() bool { return w.mapped }},
+		step{func() { w.Focus() }, func() bool { return w.mapped && configured }},
 		step{func() { w.key(platform.KeyPress, synthKey('e', tkplatform.Mod1Mask)) }, postedIs("Undo")},
 		step{func() { record(); key(edit, tkplatform.XK_Right) }, postedIs("Zoom In")},
 		step{func() { record(); key(view, tkplatform.XK_Right) }, postedIs("New")},

@@ -2059,9 +2059,41 @@ func (t *Topology) edgeCurve(ce int) (srf.SBezier, error) {
 	case sb.Start().Equals(b) && sb.Finish().Equals(a):
 		sb.Reverse()
 	default:
-		return srf.SBezier{}, filletErr(a, "a curved edge of a face at the fillet is part of a longer curve")
+		// The curve runs on past the edge, as a lying cylinder's arc drawn
+		// to above a block's top and cut there: the piece between the
+		// edge's ends.
+		piece, ok := pieceBetween(sb, a, b, ed.Points)
+		if !ok {
+			return srf.SBezier{}, filletErr(a, "a curved edge of a face at the fillet is part of a longer curve")
+		}
+		sb = piece
 	}
 	return sb, nil
+}
+
+// pieceBetween is the piece of sb from a to b, both on it, running
+// through pts, the edge's points: false where either end is off the
+// curve or the edge's middle point is off the piece.
+func pieceBetween(sb srf.SBezier, a, b geom.Vector, pts []geom.Vector) (srf.SBezier, bool) {
+	ta, oka := sb.ClosestPointTo(a, true)
+	tb, okb := sb.ClosestPointTo(b, true)
+	const eps = 1e-9
+	if !oka || !okb || ta < -eps || ta > 1+eps || tb < -eps || tb > 1+eps || math.Abs(ta-tb) < 1e-6 {
+		return srf.SBezier{}, false
+	}
+	if !sb.PointAt(ta).EqualsTol(a, geom.LengthEps) || !sb.PointAt(tb).EqualsTol(b, geom.LengthEps) {
+		return srf.SBezier{}, false
+	}
+	piece := sb.Sub(ta, tb)
+	piece.Ctrl[0], piece.Ctrl[piece.Degree] = a, b
+	if len(pts) >= 3 {
+		m := pts[len(pts)/2]
+		tm, ok := piece.ClosestPointTo(m, true)
+		if !ok || tm < 0 || tm > 1 || !piece.PointAt(tm).EqualsTol(m, 1e-6) {
+			return srf.SBezier{}, false
+		}
+	}
+	return piece, true
 }
 
 // chainCurves orders curves into a closed loop, reversing those that

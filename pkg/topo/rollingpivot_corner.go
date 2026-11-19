@@ -15,7 +15,9 @@ import (
 // then fall to the other's: that surface would fold. So, as
 // OpenCASCADE's corners do, the corner fills the hole tangent to what is
 // round it rather than following the ball exactly. Its foot on the
-// crease moves evenly from one fillet's to the other's; its foot on the
+// crease moves evenly from one fillet's to the other's (on a curved
+// crease leaning back under the nearer fillet it stands at that one's
+// foot first, creaseDepth); its foot on the
 // shared face is the swinging ball's, which moves smoothly; and each
 // section is the arc through the two tangent to the face, which at
 // either end is the fillet's own section. A chamfer's corner is ruled
@@ -71,6 +73,9 @@ type pivotFrame struct {
 	// gives of the tangent across u.
 	crease pivotCrease
 	wSign  float64
+	// hold is the share of the corner from the nearer foot over which
+	// its foot on a curved crease stands there (creaseDepth).
+	hold float64
 }
 
 // pivotSwing is a point of the swing: phi of the way round, sigma along
@@ -90,6 +95,9 @@ func newPivotCorner(a *rbBlend, ka int, b *rbBlend, kb int) (*pivotCorner, error
 	}
 	if err := pf.sample(); err != nil {
 		return nil, err
+	}
+	if pf.curved() && !pf.flat && pf.leansBack() {
+		pf.hold = pf.holdShare()
 	}
 	if err := pf.sectionsLike(); err != nil {
 		return nil, err
@@ -303,8 +311,7 @@ func (pf *pivotFrame) section(t float64) (q, d, centre geom.Vector, rho float64)
 	sw := pf.at(t)
 	q = pf.c.qa.Plus(pf.c.qb.Minus(pf.c.qa).ScaledBy(t))
 	if pf.curved() {
-		// On the crease, evenly in depth.
-		q, _ = pf.crease.point(pf.ha + (pf.hb-pf.ha)*t)
+		q, _ = pf.crease.point(pf.creaseDepth(t))
 	}
 	if pf.flat {
 		return q, sw.d, geom.Vector{}, 0
@@ -371,33 +378,78 @@ func (pf *pivotFrame) sectionsLike() error {
 // across its ends (ownDerivatives), not the fillets' (the file's comment
 // says why).
 func (pf *pivotFrame) skin() ([][]srf.SSurface, error) {
-	s0, s1, err := pf.ownDerivatives()
+	if pf.hold == 0 {
+		return pf.skinSpan(pivotSpan{0, 1, pf.first, pf.last})
+	}
+	// Held at the nearer foot, then moving: two skins, the first with
+	// its side on the crease all one point (creaseDepth says why).
+	tH := pf.hold
+	if pf.hb < pf.ha {
+		tH = 1 - pf.hold
+	}
+	mid, ok := pf.curve(tH)
+	if !ok {
+		return nil, filletErr(pf.at(tH).d, "the corner's sections can't be made like the fillets'")
+	}
+	a, err := pf.skinSpan(pivotSpan{0, tH, pf.first, mid})
 	if err != nil {
 		return nil, err
 	}
-	if all, ok := pf.oneSpan(s0, s1, pf.curve); ok {
+	b, err := pf.skinSpan(pivotSpan{tH, 1, mid, pf.last})
+	if err != nil {
+		return nil, err
+	}
+	if len(a) != len(b) {
+		return nil, filletErr(pf.v, "the fillets' corner at the inside corner can't be skinned in two")
+	}
+	for i := range a {
+		a[i] = append(a[i], b[i]...)
+	}
+	return a, nil
+}
+
+// pivotSpan is a part of the corner skinned as one, from t0 to t1, and
+// its first and last sections.
+type pivotSpan struct {
+	t0, t1      float64
+	first, last srf.BSplineCurve
+}
+
+// at is the corner's section at share x of the span.
+func (sp pivotSpan) at(pf *pivotFrame) func(float64) (srf.BSplineCurve, bool) {
+	return func(x float64) (srf.BSplineCurve, bool) { return pf.curve(sp.t0 + (sp.t1-sp.t0)*x) }
+}
+
+// skinSpan is the span's surface, cut into its patches.
+func (pf *pivotFrame) skinSpan(sp pivotSpan) ([][]srf.SSurface, error) {
+	s0, s1, err := pf.ownDerivatives(sp)
+	if err != nil {
+		return nil, err
+	}
+	if all, ok := pf.oneSpan(sp, s0, s1); ok {
 		return all, nil
 	}
-	return pf.manySpans(s0, s1, pf.curve)
+	return pf.manySpans(sp, s0, s1)
 }
 
 // manySpans skins the corner through sections at even steps of t, twice
 // as many each time, until it keeps to sectionAt within the fillets'
 // tolerance between them.
-func (pf *pivotFrame) manySpans(s0, s1 []geom.Vector4, sectionAt func(float64) (srf.BSplineCurve, bool)) ([][]srf.SSurface, error) {
+func (pf *pivotFrame) manySpans(sp pivotSpan, s0, s1 []geom.Vector4) ([][]srf.SSurface, error) {
+	sectionAt := sp.at(pf)
 	for n := 4; ; n *= 2 {
-		curves := []srf.BSplineCurve{pf.first}
+		curves := []srf.BSplineCurve{sp.first}
 		ts := []float64{0}
 		for j := 1; j < n; j++ {
 			t := float64(j) / float64(n)
 			x, ok := sectionAt(t)
 			if !ok {
-				return nil, filletErr(pf.at(t).d, "the corner's sections can't be made like the fillets'")
+				return nil, filletErr(pf.at(sp.t0+(sp.t1-sp.t0)*t).d, "the corner's sections can't be made like the fillets'")
 			}
 			curves = append(curves, x)
 			ts = append(ts, t)
 		}
-		curves = append(curves, pf.last)
+		curves = append(curves, sp.last)
 		ts = append(ts, 1)
 		sf, err := srf.SkinThrough(curves, ts, s0, s1)
 		if err != nil {
@@ -449,14 +501,15 @@ func strays(sf *srf.BSplineSurface, ts []float64, sectionAt func(float64) (srf.B
 // s1 across the ends, and the middle two such that it passes through
 // the sections at a third and two thirds of the way: one patch along
 // the corner, rather than a span between each two sections.
-func (pf *pivotFrame) oneSpan(s0, s1 []geom.Vector4, sectionAt func(float64) (srf.BSplineCurve, bool)) ([][]srf.SSurface, bool) {
+func (pf *pivotFrame) oneSpan(sp pivotSpan, s0, s1 []geom.Vector4) ([][]srf.SSurface, bool) {
+	sectionAt := sp.at(pf)
 	m1, ok1 := sectionAt(1.0 / 3)
 	m2, ok2 := sectionAt(2.0 / 3)
-	a, b := homog(pf.first), homog(pf.last)
+	a, b := homog(sp.first), homog(sp.last)
 	if !ok1 || !ok2 || len(s0) != len(a) || len(s1) != len(b) {
 		return nil, false
 	}
-	sf := &srf.BSplineSurface{DegU: pf.first.Deg, DegV: spanDeg, KnotsU: slices.Clone(pf.first.Knots),
+	sf := &srf.BSplineSurface{DegU: sp.first.Deg, DegV: spanDeg, KnotsU: slices.Clone(sp.first.Knots),
 		KnotsV: []float64{0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1}}
 	for _, row := range quinticRows(a, b, s0, s1, homog(m1), homog(m2)) {
 		var ctrl []geom.Vector
@@ -521,7 +574,7 @@ const pivotStep = 1e-4
 
 // ownDerivatives are the derivatives in t of the corner's own sections'
 // homogeneous control points at its ends, one-sided, of second order.
-func (pf *pivotFrame) ownDerivatives() ([]geom.Vector4, []geom.Vector4, error) {
+func (pf *pivotFrame) ownDerivatives(sp pivotSpan) ([]geom.Vector4, []geom.Vector4, error) {
 	at := func(t float64) ([]geom.Vector4, error) {
 		x, ok := pf.curve(t)
 		if !ok {
@@ -530,7 +583,7 @@ func (pf *pivotFrame) ownDerivatives() ([]geom.Vector4, []geom.Vector4, error) {
 		return homog(x), nil
 	}
 	ends := [2][]geom.Vector4{}
-	for k, t0 := range []float64{0, 1} {
+	for k, t0 := range []float64{sp.t0, sp.t1} {
 		in := 1 - 2*float64(k)
 		var hs [3][]geom.Vector4
 		for i := range 3 {
@@ -544,6 +597,10 @@ func (pf *pivotFrame) ownDerivatives() ([]geom.Vector4, []geom.Vector4, error) {
 		for i := range d {
 			x := hs[0][i].ScaledBy(-3).Plus(hs[1][i].ScaledBy(4)).Minus(hs[2][i])
 			d[i] = x.ScaledBy(1 / (2 * in * pivotStep))
+			if w := sp.t1 - sp.t0; w != 1 {
+				// Per unit of the span's own parameter.
+				d[i] = d[i].ScaledBy(w)
+			}
 		}
 		ends[k] = d
 	}

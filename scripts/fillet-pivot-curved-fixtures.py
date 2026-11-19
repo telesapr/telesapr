@@ -108,6 +108,11 @@ CASES = [
     (True, True, ("x+", "y-"), 1, False),
     (True, True, ("x+", "y+"), 1, True),
     (True, True, ("x+", "y+", "x-", "y-"), 1, True),
+    (True, True, ("x-", "y+"), 1, False),
+    (True, True, ("x-", "y+"), 1.5, False),
+    (True, True, ("x+", "y+", "x-", "y-"), 0.5, False),
+    (True, True, ("x+", "y+", "x-", "y-"), 1, False),
+    (True, True, ("x+", "y+", "x-", "y-"), 2, False),
 ]
 
 

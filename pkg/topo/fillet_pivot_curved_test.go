@@ -145,9 +145,10 @@ func curvedRim(dish, curvedY bool, names ...string) []topo.FilletPick {
 // their ends, as at a straight crease (TestFilletPivotCorner): in the
 // block about 0.026 r³ a fillet's corner and 0.064 d³ a chamfer's,
 // measured against each edge alone, whose volumes agree to 3e-5; in the
-// dish more, where the edges alone already differ, their ends against
-// the leaning walls not picked (a y+ fillet of the dish with both walls
-// leaning alone takes a fifth less than OpenCASCADE's).
+// dish more, where OpenCASCADE's Volume of its own solid is off by a few
+// tenths of a mm³ (a y+ fillet alone with both walls leaning measures a
+// fifth more than ours, which is within 0.1% of the ball's envelope,
+// TestFilletEndLeaningWall).
 func TestFilletPivotCurvedCrease(t *testing.T) {
 	if testing.Short() {
 		t.Skip("rolling-ball fillets and chamfers of pockets' rims with curved creases at their corners, slow")
@@ -181,6 +182,7 @@ func TestFilletPivotCurvedCrease(t *testing.T) {
 		{true, true, "x+,y+", 1.5, false, 2.280799, -0.017, -0.009},
 		{true, true, "x+,y-", 1, false, 2.875632, -0.035, -0.027},
 		{true, true, "x+,y+", 1, true, 12.220162, -0.032, -0.024},
+		{true, true, "x+,y+,x-,y-", 1, false, 4.588486, -0.026, -0.016},
 		{true, true, "x+,y+,x-,y-", 1, true, 28.408016, -0.029, -0.021},
 	}, 0) {
 		t.Run(fmt.Sprintf("dish %v curvedY %v %s r%g flat %v", c.dish, c.curvedY, c.picks, c.r, c.flat), func(t *testing.T) {
@@ -218,22 +220,23 @@ func TestFilletPivotCurvedCreaseQuick(t *testing.T) {
 	sound(t, sh)
 }
 
-// The whole rim of curvedPocket in the dish with both walls leaning,
-// filleted: at the corner where the x- wall meets the leaning y+ wall the
-// crease, an arc in the x- wall's plane, leans back under
-// the y+ fillet, whose foot on it lies nearer the vertex, and the corner
-// patch leaves the crease along the y+ wall's face and crosses that
-// fillet's mesh near its end. The result is refused as not closed, never
-// made unsound; the rim's other three corners are made
-// (TestFilletPivotCurvedCrease). OpenCASCADE makes it.
-func TestFilletPivotCurvedCreaseRefused(t *testing.T) {
+// The x- and y+ edges of curvedPocket's rim in the dish with both walls
+// leaning, filleted: at their corner the crease, an arc in the x- wall's
+// plane, leans back 26° under the y+ fillet, whose foot on it lies
+// nearer the vertex. Refused as not closed before 2026-11-19, the
+// corner's sections leaving the crease along the y+ wall's face and
+// crossing that fillet's mesh near its end; its foot on the crease now
+// stands at the y+ foot while the ball would touch the crease above it
+// (pivotFrame.hold). Sound at a chord tolerance of 0.002 too (by hand,
+// 2026-11-19: 40 s).
+func TestFilletPivotCurvedCreaseLeansBack(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a rolling-ball fillet of a pocket's rim in a cone with a curved crease, slow")
 	}
 	t.Parallel()
 	sh := curvedPocket(true, true, fine(0.01))
-	err := topo.FilletPicks(sh, curvedRim(true, true, "x+", "y+", "x-", "y-"), 1, 1<<30, false)
-	if err == nil || !strings.Contains(err.Error(), "would not be closed") {
-		t.Fatalf("got %v, want it refused as not closed", err)
+	if err := topo.FilletPicks(sh, curvedRim(true, true, "x-", "y+"), 1, 1<<30, false); err != nil {
+		t.Fatal(err)
 	}
+	sound(t, sh)
 }

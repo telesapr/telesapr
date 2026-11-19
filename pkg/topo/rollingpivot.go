@@ -237,7 +237,11 @@ func (c *pivotCorner) splitCrease(sh *srf.SShell, near, far geom.Vector) error {
 	}
 	var breaks []geom.Vector
 	for _, sb := range c.sideCurves(c.creaseU)[1:] {
-		breaks = append(breaks, sb.Start())
+		if p := sb.Start(); !p.Equals(near) {
+			// Not where the corner's foot stands at the nearer foot
+			// (pivotFrame.hold), its side there all one point.
+			breaks = append(breaks, p)
+		}
 	}
 	slices.SortFunc(breaks, func(x, y geom.Vector) int {
 		return cmp.Compare(x.Minus(near).Magnitude(), y.Minus(near).Magnitude())
@@ -335,7 +339,12 @@ func (c *pivotCorner) put(fa *FaceAdder, color core.RGBA, origin uint32) error {
 	for _, row := range c.all {
 		for b := range row {
 			p := row[b]
-			loop := patchLoop(&p)
+			var loop []srf.SBezier
+			for _, sb := range patchLoop(&p) {
+				if !sb.Start().Equals(sb.Finish()) || !pole(&sb) {
+					loop = append(loop, sb)
+				}
+			}
 			p.Color, p.Origin, p.Sheet = color, origin, origin
 			if _, err := fa.Add(p, [][]srf.SBezier{loop}); err != nil {
 				return filletErr(loop[0].Start(), "the fillets' corner at the inside corner can't be put in: %v", err)

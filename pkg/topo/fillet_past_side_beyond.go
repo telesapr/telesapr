@@ -59,6 +59,7 @@ func keepBeyond(out, sh *srf.SShell, off *runOff, r float64) (srf.SShell, bool) 
 				continue
 			}
 			if math.Abs(c.volumePastBelow(out)-c.volumePastBelow(sh)) > tol {
+				c.cutsBelow = true
 				return srf.SShell{}, false
 			}
 			continue

@@ -113,8 +113,9 @@ doc.Features.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 0, 5))}, 1.5, "")
   ledge round the disc below such a side is left as it was, and so is a rod close beside a
   bore that widens toward the face, which the bore's cone carried on past the face runs into.
   A hole's rim may be cut down past such a side's foot into the ledge under it, where the cut
-  stays within the side. Refused: the fillet of a hole's rim so near the side that its cut
-  into the ledge reaches past the side.
+  stays within the side, and a hole's rim may lie close to the side, a few tenths of a
+  millimetre from it. Refused, saying so: the fillet of a hole's rim so near the side that
+  its cut into the ledge reaches past the side.
 - A rounded edge takes with it the edges it meets smoothly, as round a rounded rectangle.
 - Where two rounded edges meet, they are mitred. Where three meet at the corner of a block, a
   sphere rounds the corner.
@@ -323,8 +324,8 @@ These are refused with a message:
 - A corner where a convex edge meets a concave one at a vertex that the stages can't round while
   some edge there is left sharp, but for one, two opposite or three of a saddle's four edges as
   above, fillets or chamfers, and a ridge and a valley side by side.
-- At an inside corner between two fillets between curved faces (above): a sharp edge that is
-  curved, or a corner that would cross a seam of the face the two share (make them smaller).
+- At an inside corner between two fillets between curved faces (above): a corner that would
+  cross a seam of the face the two share (make them smaller).
 - At a corner of a band raised on a cylinder: a seam of the face that passes the corner less than
   about half a millimetre away without going through it (move the band a little), and chord
   tolerances finer than about 0.01%, where the two fillets' meshes cross at the mitre.

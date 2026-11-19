@@ -3,6 +3,7 @@
 Refreshed 2026-11-09 at branches `rd13-fillet-cone` and `rd13-runoff-both`.
 Refreshed 2026-11-18 at branch `runoff-mixed-ends`.
 Refreshed 2026-11-19 at branch `fillet-curved-side-cut`.
+Refreshed 2026-11-19 at branch `ledge-cut-past-side`.
 
 A circular fillet or chamfer (round a rod's foot, a hole's rim) whose foot runs off the flat face
 it rolls on is refused by `contactsClear` (`pkg/topo/fillet_contact.go`), which says which sides
@@ -30,7 +31,12 @@ bore's wall (the solid outside the cylinder, `sgn` -1), a rounded end's arc.
   side: a ring round a disc, a disc filling a bore, a sector over an arc (`curvedSlab`). Its wall
   toward the solid is a polygon inset into the solid by 5% of the radius (at most 0.5), since a
   wall on the cylinder would lie on the side; the union is checked to have grown by just the
-  slab's part past the cylinder, within the chords, so a hole or notch near the rim refuses.
+  slab's part past the cylinder, within the chords, so a hole or notch the wall reaches refuses.
+  Since 2026-11-19 the inset is at most half the room the solid's other faces leave inside the
+  side, less the sag of the wall's chords (`curvedSide.clearance`: the corners of the mesh's
+  triangles clipped to the side's height, flat faces square to the axis left out, whose corners
+  by the rim stand off it by their outline's chords, coarser than the chord tolerance where the
+  segment limit holds): a hole 0.3 from a disc's rim, which the wall at 0.4 cut into.
 - The cutter is the cylinder's ring or sector from the rim outward past the slab, or for a bore
   the bore's cylinder (`curvedCutter`), from below the side to above the face by more than the
   fillet. A ledge round the disc below the side is taken since 2026-11-09 (below); any other
@@ -103,16 +109,41 @@ rim chamfered into the ledge within the side, the chamfer's own cut, and refused
 
 Measured by `TestFilletPastConeSide`: a drafted disc (5°, -5°, 10°) with a rod off centre, a
 drafted disc's hole, a drafted bore beside a rod, an upright or drafted disc on a ledge with a
-rod or a hole, since 2026-11-19 a rod 9 from the axis of a bore widening at 10° and a hole's rim
-cut 3 and 3.5 deep into the ledge; fillets and chamfers of 2.2 to 3.5: 96 of 96 sound, within
-2.4e-4 of the ring's integral within the cone (the heights inside it found exactly).
-`TestFilletPastConeSideRefused`: a hole's rim 0.3 from the disc's side chamfered 3.5 deep, its
-cut into the ledge reaching past the side.
+rod or a hole, since 2026-11-19 a rod 9 from the axis of a bore widening at 10°, a hole's rim
+cut 3 and 3.5 deep into the ledge and a hole on the ledge's disc 0.3 from its rim (2.2 to 3);
+fillets and chamfers of 2.2 to 3.5: 102 of 102 sound, within 2.4e-4 of the ring's integral
+within the cone (the heights inside it found exactly). `TestFilletPastConeSideRefused`: a hole's
+rim 0.3 from the disc's side chamfered 3.5 deep, its cut into the ledge reaching past the side,
+refused by name since 2026-11-19 (`curvedSide.cutsBelow`, set where `keepBeyond` finds the
+solid past the side below the foot changed).
 
-Left: a hole's rim whose cut into a ledge reaches past the side (it fails before the check below
-the foot; the solid past the side put back there would need the solid and the ring past the side
-below its foot, touching along the foot's circle, intersected); a solid standing in the cutter beside the side below the face;
-`ROADMAP.md`, "Fillet leftovers".
+That case failed first in the slab, not the cut back: the wall inset 0.4 filled the hole's
+sliver past it, 0.66 mm³ more than the slab's part past the side (`widenPastCurved`). With the
+inset from the room left (above), the fillet and the cut back are sound and the solid past the
+side below the foot is 0.041 mm³ short, the chamfer's cut into the ledge past r = 8. A sweep of
+the family (`ledge-cut-past-side`, not kept as a test): a hole of radius 4 on the ledge's disc
+0.2, 0.3, 0.5 and 0.8 from the rim at its top, upright and drafted 5°, fillets and chamfers of
+2.2 to 3.5: 43 of 64 made before, 57 of 64 after, all made within 1.4e-4 of the integral. Left:
+the two chamfers of 3.5 at 0.2 and 0.3 upright (by name); the chamfer of 3.5 at 0.5 upright,
+whose cone meets the side's foot circle at one point at the ledge's top, and the fillets and
+chamfers of 3.5 at 0.5 and 0.8 drafted 5°, all failing in the cut back (a loop of the slab's
+outer wall not closing at the ledge's top, the chamfer's at the touching point), refused as
+running off the face before and after.
+
+Putting the solid back past the side below the foot (tried 2026-11-19, not kept): the solid
+before the fillet intersected with the cutter's ring from below the solid to halfway up the side
+(to the side's foot itself, the ring's inner face touched the side along the foot's circle and
+the intersection was the whole ledge), then united with the filleted widened solid before the
+cut back. Four changes in `pkg/srf` made it sound, at 570.64 against 570.598 + 0.041
+(`doc/dev-notes/k3-fuse-spike.md`, "The ring below a ledge's foot"); the last of them, the arc
+where a plane square to a cone's axis meets it taken exactly, moved `TestSolidGoldens` taken for
+every such cone, and taken only for a cone with a marched edge in the plane left the two faces
+of the ledge's top meeting along the chamfer's arc with different points. A cylinder's ring
+united with the solid after the cut back failed where its inner face met the side's along the
+foot's circle.
+
+Left: a hole's rim whose cut into a ledge reaches past the side; a solid standing in the cutter
+beside the side below the face; `ROADMAP.md`, "Fillet leftovers".
 
 ## An end running off both its faces (2026-11-09)
 
