@@ -146,6 +146,15 @@ func (s *SShell) classifyEdgeOn(own *SSurface, indir, outdir *Class, ea, eb, p, 
 				c = SurfCoincSame
 			}
 			*indir, *outdir = c, c
+			// One of them on own's very cylinder or cone, the other a face
+			// tangent to it along the edge, leaving it.
+			if exact0, exact1 := sameRoundSurface(own, interSrf[0]), sameRoundSurface(own, interSrf[1]); exact0 != exact1 {
+				i := 0
+				if exact1 {
+					i = 1
+				}
+				s.classifyPastTangent(own, interEdgeN[i], indir, outdir, ea, eb, p, edgeNIn, edgeNOut)
+			}
 			return true
 		}
 		// One curved face at the edge lies on the surface being classified
@@ -444,7 +453,7 @@ func (s *SShell) classifyEdgeOn(own *SSurface, indir, outdir *Class, ea, eb, p, 
 	// BSP can put it on the wrong side of the true curve; then another
 	// direction is tried. If none is clear, the ray whose nearest hit is
 	// farthest from its surface's trim edges decides.
-	c, _ := s.raycastClass(p)
+	c := s.raycastClass(p)
 	*indir, *outdir = c, c
 	return true
 }
@@ -466,9 +475,8 @@ func rayDirection(i int) geom.Vector {
 	return geom.Vector{X: r * math.Cos(phi), Y: r * math.Sin(phi), Z: z}.ScaledBy(10)
 }
 
-// raycastClass classifies p by the nearest surface along rays, and
-// returns how many directions it tried.
-func (s *SShell) raycastClass(p geom.Vector) (Class, int) {
+// raycastClass classifies p by the nearest surface along rays.
+func (s *SShell) raycastClass(p geom.Vector) Class {
 	tol := s.Tol.ChordTolMm() + lengthEps
 	best, bestClear := SurfOutside, -1.0
 	var buf [16]int
@@ -519,13 +527,13 @@ func (s *SShell) raycastClass(p geom.Vector) (Class, int) {
 			clearance = 0
 		}
 		if clearance >= tol {
-			return c, try + 1
+			return c
 		}
 		if clearance > bestClear {
 			best, bestClear = c, clearance
 		}
 	}
-	return best, raycastTries
+	return best
 }
 
 // classifyOnCoincident is the edge-on-surface check where p lies on an
@@ -594,4 +602,32 @@ func (s *SShell) classifyOnCoincident(own *SSurface, near []int, indir, outdir *
 		*dirs[d] = s.ClassifyRegion(en[d], other.NormalAt(ouv.U, ouv.V), surfN)
 	}
 	return true
+}
+
+// classifyPastTangent classifies again the side of an edge of own that
+// runs away from the face of s lying on own, where the face across the
+// edge, tangent to it there, leaves own (a fillet tangent to a rod
+// along its edge, own a cutter's face on the rod's cylinder): own goes
+// on there, within its trim, under or over that face, which lies too
+// near own beside the edge for the region's normals to tell. A point of
+// own a chord's length past the edge on that side is classified by
+// raycast. onN is the face's normal in its surface at the edge, pointing
+// away from it. Where own has no region on that side (the face across
+// runs past own's edge), the side stays coincident.
+func (s *SShell) classifyPastTangent(own *SSurface, onN geom.Vector, indir, outdir *Class, ea, eb, p, edgeNIn, edgeNOut geom.Vector) {
+	en := [2]geom.Vector{edgeNIn, edgeNOut}
+	dirs := [2]*Class{indir, outdir}
+	for d := range 2 {
+		if en[d].Dot(onN) < 0 {
+			continue
+		}
+		var uv geom.Point2d
+		own.ClosestPointTo(p.Plus(en[d].WithMagnitude(max(ea.Minus(eb).Magnitude(), lengthEps*100))), &uv, false)
+		// own's trim is not at hand: a copy being trimmed is reversed
+		// in u, its classifying BSP not.
+		if uv.U <= 0 || uv.U >= 1 || uv.V <= 0 || uv.V >= 1 {
+			continue
+		}
+		*dirs[d] = s.raycastClass(own.PointAtUv(uv))
+	}
 }

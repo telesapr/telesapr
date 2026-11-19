@@ -237,6 +237,12 @@ func (s *SSurface) intersectAgainst(b *SSurface, agnstA, agnstB *SShell, into *c
 		if sameRoundSurface(s, b) {
 			return
 		}
+		// Where they meet along an edge of either whose face across lies
+		// on the other's cylinder or cone, the edge is the curve, which
+		// the march can't follow where they touch tangent there.
+		if s.alongRoundEdges(b, agnstA, agnstB, into) {
+			return
+		}
 
 		s.intersectByMarching(b, agnstA, agnstB, into)
 	}
@@ -582,12 +588,38 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 	// First, we find all the intersections between a surface and the
 	// boundary of the other surface.
 	var spl SPointList
+	// Seeds where an edge of one meets the other's trim (trimMeetSeed),
+	// taken where the other's own edges gave none there.
+	var meets []SPoint
+	// The seeds lying on a trim of the other surface, where a curve
+	// ending there splits that trim (SShell.meets).
+	var atTrims []geom.Vector
 	for a := range 2 {
 		shA, srfA, srfB, shB := agnstA, s, b, agnstB
 		if a == 1 {
 			shA, srfA, srfB, shB = agnstB, b, s, agnstA
 		}
 		near := srfB.neighbours(shB)
+		// The neighbours on a cylinder or cone, across a trim an edge of
+		// srfA may meet srfB on (trimMeetSeed).
+		roundNear := slices.DeleteFunc(slices.Clone(near), func(nb *SSurface) bool {
+			_, ok := RoundFaceOf(nb)
+			return !ok
+		})
+		// Whether a face lies on the cylinder or cone of one of
+		// roundNear, each face asked once.
+		onRoundNear := map[*SSurface]bool{}
+		liesOnRoundNear := func(o *SSurface) bool {
+			if o == nil {
+				return false
+			}
+			on, ok := onRoundNear[o]
+			if !ok {
+				on = slices.ContainsFunc(roundNear, func(nb *SSurface) bool { return sameRoundSurface(nb, o) })
+				onRoundNear[o] = on
+			}
+			return on
+		}
 
 		var el SEdgeList
 		srfA.MakeEdgesInto(shA, &el, false, nil)
@@ -610,10 +642,9 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 					nb.AllPointsIntersecting(se.A, se.B, &lsi, true, true, false)
 				}
 			}
-			if len(lsi) == 0 {
+			if len(lsi) == 0 && len(roundNear) == 0 {
 				continue
 			}
-
 			// Find the other surface that this curve trims.
 			sc := shA.FindCurve(core.HSCurve{V: uint32(se.AuxA)})
 			hother := sc.SurfA
@@ -621,6 +652,20 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 				hother = sc.SurfB
 			}
 			other := shA.FindSurface(hother)
+			if len(lsi) == 0 {
+				if !liesOnRoundNear(other) {
+					continue
+				}
+				if p, ok := trimMeetSeed(srfA, srfB, other, sc, se, roundNear); ok {
+					sp := SPoint{P: p}
+					var u, v float64
+					srfA.ClosestPointToUV(p, &u, &v, true)
+					sp.AuxV = srfA.NormalAt(u, v).Cross(se.B.Minus(se.A)).WithMagnitude(1)
+					meets = append(meets, sp)
+					atTrims = append(atTrims, p)
+				}
+				continue
+			}
 
 			for i, si := range lsi {
 				p := si.P
@@ -646,8 +691,17 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 					sp.AuxV = sp.AuxV.WithMagnitude(1)
 
 					spl.Points = append(spl.Points, sp)
+					if liesOnRoundNear(other) && onNeighbour(p, roundNear, other) {
+						atTrims = append(atTrims, p)
+					}
 				}
 			}
+		}
+	}
+
+	for _, sp := range meets {
+		if !spl.ContainsPoint(sp.P) {
+			spl.Points = append(spl.Points, sp)
 		}
 	}
 
@@ -733,6 +787,13 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 		}
 		spl.Points = kept
 
+		// A curve that ends at a seed where srfA's edge meets srfB's
+		// trim splits that trim there.
+		for _, end := range []geom.Vector{sc.Points[0].P, sc.Points[len(sc.Points)-1].P} {
+			if slices.ContainsFunc(atTrims, func(m geom.Vector) bool { return m.Equals(end) }) {
+				into.meet(end)
+			}
+		}
 		// And now we split and insert the curve
 		marched = append(marched, sc.Points)
 		split := sc.MakeCopySplitAgainst(agnstA, agnstB, s, b)
@@ -1154,4 +1215,95 @@ func (s *SSurface) containsCurve(sb *SBezier) bool {
 		}
 	}
 	return true
+}
+
+// trimMeetSeed is the seed where the edge se of srfA (trimming it with
+// other, along curve sc) crosses srfB exactly on one of srfB's curved
+// trims, and whether there is one: the point lies on srfA, other, srfB
+// and a neighbour of srfB's across that trim (one of near). There the
+// trimmed hit is lost, the trim's chords putting the point outside the
+// patch, and srfB's trim crossing srfA gives no seed either where it
+// runs tangent to srfA there: a cutter less a rod, its trim round the
+// rod, met by a fillet tangent to the rod along the edge (the fillet
+// past a curved side carried on above its face). Without it the curve
+// where srfA meets srfB had one seed and was not marched.
+func trimMeetSeed(srfA, srfB, other *SSurface, sc *SCurve, se *SEdge, near []*SSurface) (geom.Vector, bool) {
+	if other == nil || len(near) == 0 {
+		return geom.Vector{}, false
+	}
+	var hits []SInter
+	srfB.allPointsIntersecting(se.A, se.B, &hits, true, true, false, srfB.Tol.ChordTolMm())
+	for _, h := range hits {
+		if !h.outsideTrim {
+			continue
+		}
+		var u, v float64
+		srfB.ClosestPointToUV(h.P, &u, &v, true)
+		if sc.IsExact {
+			srfB.PointOnCurve(&sc.Exact, &u, &v)
+		} else {
+			srfB.PointOnSurfaces(srfA, other, &u, &v)
+		}
+		p := srfB.PointAt(u, v)
+		if offPatch(srfB, p, geom.LengthEps) || offPatch(srfA, p, geom.LengthEps) || offPatch(other, p, geom.LengthEps) {
+			continue
+		}
+		if onNeighbour(p, near, other) {
+			return p, true
+		}
+	}
+	return geom.Vector{}, false
+}
+
+// splitAtMeets puts each of s's meets into the curves of a and b, the
+// Boolean's operands, whose segments pass it within the chord
+// tolerance, on both their surfaces, as a vertex: the marched curve that
+// ends there (trimMeetSeed) then meets the trim at a point of its own.
+// Nothing else splits it there: the trim's chords dip inside its round
+// face, and the face they cross there lies tangent to it.
+func (s *SShell) splitAtMeets(a, b *SShell) {
+	if len(s.meets) == 0 {
+		return
+	}
+	tol := s.Tol.ChordTolMm()
+	for _, p := range s.meets {
+		for i := range s.Curve {
+			sc := &s.Curve[i]
+			if sc.Source == CurveSourceIntersection || len(sc.Points) < 2 {
+				continue
+			}
+			sA, sB := sc.SurfaceA(a, b), sc.SurfaceB(a, b)
+			if sA == nil || sB == nil {
+				continue
+			}
+			for k := 1; k < len(sc.Points); k++ {
+				p0, p1 := sc.Points[k-1].P, sc.Points[k].P
+				if p.EqualsTol(p0, splitEndTol) || p.EqualsTol(p1, splitEndTol) {
+					break
+				}
+				// The chord sags off the curve by up to the chord
+				// tolerance, or a quarter of its length where the curve
+				// was chorded coarser than that, as a curve the march
+				// follows on a round face is.
+				d := p1.Minus(p0)
+				if f := p.Minus(p0).Dot(d); f <= 0 || f >= d.Dot(d) ||
+					p.DistanceToLine(p0, d) > max(tol, d.Magnitude()/4) || !onSurface(sA, p) || !onSurface(sB, p) {
+					continue
+				}
+				sc.Points = slices.Insert(sc.Points, k, SCurvePt{Vertex: true, P: p})
+				break
+			}
+		}
+	}
+	s.meets = nil
+}
+
+// onNeighbour reports whether p lies on one of near, a surface's
+// neighbours, that lies on the cylinder or cone of other: on that
+// surface's trim with a face lying on other, the face across the edge
+// whose seed p is.
+func onNeighbour(p geom.Vector, near []*SSurface, other *SSurface) bool {
+	return slices.ContainsFunc(near, func(nb *SSurface) bool {
+		return sameRoundSurface(nb, other) && !offPatch(nb, p, geom.LengthEps)
+	})
 }

@@ -1,5 +1,11 @@
 # K3 spike: fuse first (2026-11-04)
 
+Refreshed 2026-11-19 (fillet-curved-side-cut): the fillet past a curved side carried on above its
+face is made, the cutter less what stands above the face cut back at the tangent edge by three
+changes in the marcher and the classification; a hole's rim chamfered into the ledge within the
+side is made by comparing only what lies past the side. See "The fillet past a curved side
+carried on" at the end.
+
 Refreshed 2026-11-18 (k3-coincident-curved): a face on a cylinder or cone lying on one of the other
 operand's, the two cut into patches at other angles round the axis, is joined by every Boolean;
 the fillet past a curved side carried on above its face still is not. See "Coincident curved faces
@@ -681,4 +687,70 @@ chamfer's own cut under the disc; putting back what of the solid lies in the rin
 below the foot needs the solid and the ring, which touch along the foot's circle on one cylinder
 or cone, intersected, and those Booleans failed or came out unsound with the ring cut at the
 cutter's angles and with it cut at the side's own seams. Both cases stay refused by name.
+
+## The fillet past a curved side carried on (fillet-curved-side-cut, 2026-11-19)
+
+The cutter of the fillet past a curved side is now cut by what of the solid stands in it above
+the face, not by the whole solid (`curvedSide.lessAbove`, `pkg/topo/fillet_past_side_curved.go`):
+cut by the whole solid, as `beyondCutter` does past a flat side, the cutter's cone lies on the
+bore from the block's bottom to its top and is split at both rims there, and the cut back of the
+filleted solid then left the cone's patch open at the block's bottom and top (its arcs lying on
+the widened solid's bottom and top planes, no curve of the Boolean's own there). The solid above
+the face is the solid in a box whose bottom lies on the face; the cutter less it has its cone cut
+only round the rod (the lens where the cone carried on runs into the rod). What failed then, the
+fixture taken down to its Booleans with the trims' open ends printed, was three things at the
+point where the fillet's tangent edge on the rod crosses the cone, which is also on the cutter's
+trim round the rod: three surfaces and a fourth's trim through one point.
+
+1. **No seed there.** The fillet's patch against the cone's had one seed (the foot crossing the
+   rim) and the curve was not marched. The tangent edge crosses the cone exactly on the cone's
+   trim round the rod: the trimmed hit is lost, the trim's chords putting the point outside the
+   patch; and the cone's trim, lying on the rod, touches the fillet tangent there, so its hit is
+   dropped as tangent. A hit outside the trim but within the chord tolerance of a curved trim of
+   it is now refined, and taken as a seed where it lies on the edge's two faces, on the patch and
+   on the neighbour across that trim, which must lie on the same cylinder or cone as the edge's
+   other face (`trimMeetSeed`, `onNeighbour`, `pkg/srf/surfinter.go`).
+2. **The trim round the rod not split there.** The marched curve ends at that point, which the
+   cone's trim round the rod passes between its vertices: its chords dip inside the rod's
+   cylinder, and the fillet they would cross lies tangent to it. A curve marched from such a
+   seed, or from any seed lying on a neighbour of the other patch on the same cylinder or cone as
+   the edge's other face, records the point, and after the intersection curves the operands'
+   curves passing it (on both their surfaces, within the chord tolerance or a quarter of the
+   segment) take it as a vertex (`SShell.meets`, `splitAtMeets`). Taken for every seed on a
+   neighbour, without the same-cylinder test, it failed one case of
+   `TestBoreToLathedTipSweep`.
+3. **The cutter's face on the rod not cut along the tangent edge.** The cutter's face round the
+   rod lies on the rod's cylinder (`sameRoundSurface`), above the tangent edge on the rod's face,
+   below it inside the fillet. Nothing cut it along the edge: patches of one cylinder are not
+   intersected, and the fillet touches it tangent there, which the march can't follow. Where an
+   operand's patch has an edge whose face across lies on the other patch's cylinder or cone, the
+   edge's pieces inside the other patch (its split points, the segments' middles carried onto
+   the surface and classified inside the trim) are the curve where the two meet, and the pair is
+   not marched (`alongRoundEdges`, `pkg/srf/surfinter_round_edge.go`), as a plane takes the
+   other's exact outline lying in it. The chamfer, meeting the rod across its edge, is the same
+   case: marched, its curve along the edge had points of its own and the faces did not meet.
+   Then the classification of that edge on the cutter's face read both sides as coincident: the
+   rod's face lies on it on one side, and the fillet, tangent, lies within the tolerance of it
+   beside the edge on the other (`classifyEdgeOn`'s smooth case, which takes the face that does
+   not lie on the classified patch to run past its edge). Where one of the two faces lies on the
+   classified patch's very cylinder or cone and the other does not, the other side is classified
+   by a raycast from the patch's point a chord's length past the edge (`classifyPastTangent`,
+   `pkg/srf/raycast.go`).
+
+`TestFilletPastConeSide` adds the rod 9 from the axis of the bore widening at 10°, fillets and
+chamfers of 2.2 to 3.5: 8 of 8 sound, within 1.2e-5 of the ring's integral; with the rod at 12.5
+too, 32 of 32 (tried, not kept). No golden moved; every `pkg/srf` sweep passes in full.
+
+**A hole's rim chamfered into the ledge.** It was refused by the check that the solid below the
+side's foot is what it was, which compared the whole half space below the foot and so counted the
+chamfer's own cut into the ledge under the disc, inside the side. Only what lies past the side is
+compared now (`curvedSide.volumePastBelow`, `pkg/topo/fillet_past_side_beyond.go`): the flux,
+through the mesh clipped below the foot, of the radial field (ρ/2 - R(h)²/2ρ) ρ̂ past the side's
+radius R(h) and 0 inside it, continuous, square to the axis and of divergence 1 past the side
+(on a cone too, R varying along the axis), each triangle taken in pieces of 0.1. The ledge's hole
+chamfered and filleted 3 and 3.5, upright and drafted 5°: 8 of 8 sound, within 1.3e-4 of the
+integral. A hole 0.3 from the side, its chamfer's cut into the ledge reaching past the side, stays
+refused; it fails before that check is reached (in the widening or the cut back, not looked
+into), and were it made, putting back what lies past the side below the foot would need the
+solid and the ring there intersected, which touch along the foot's circle (not tried again).
 

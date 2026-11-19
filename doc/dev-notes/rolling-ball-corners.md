@@ -1,6 +1,6 @@
 # Rolling-ball corners: pivots and mitres at an inside corner
 
-Refreshed 2026-11-18 at branches `wrapped-band-speed` and `wrapped-put-speed`.
+Refreshed 2026-11-19 at branch `pocket-curved-crease`.
 
 Where two rolling-ball chains end at one vertex with a crease between their walls that the ball
 goes round (a pocket's rim in a curved face, the foot of a band raised on a tube at the band's
@@ -101,6 +101,75 @@ before and 0.66 mm³ after, once the cone is trimmed anew. Carried to the surfac
 two radii 3e-5, the dish's 0.06% (its corner differs), and the corner patch 0.45% under, as at
 0.01 mm (`TestFilletPivotCorner`, 0.7% to 1.7% under, about 0.03 mm³ a corner at a radius of 1
 and 0.15 at 2), where OpenCASCADE runs each fillet on into the other past the crease.
+
+## A curved crease (2026-11-19)
+
+Refused by name until 2026-11-19 ("can't yet turn an inside corner whose crease is curved"),
+unless the two feet were one point and the corner a mitre. The fixtures are `curvedPocket` in
+`pkg/topo/fillet_pivot_curved_test.go`: a pocket in a block's flat top or in the dish, its x+
+wall a cylinder lying on its side (axis along y, leaning 23.6° at the block's top), and with
+curvedY its y+ wall too (axis along x). The crease where the x+ wall meets a flat y wall is an
+arc in that wall's plane; where it meets the leaning y+ wall, the two cylinders' curve. In the
+flat top a leaning wall and a flat one put the feet at two depths, so the corner is a patch
+even there.
+
+The swing about a line placed the ball's centre a radius from `v + e·h`, the crease's tangent
+at the vertex; a curved crease leaves that line by its sag, x²/2R, 0.01 mm at a depth of 1 on a
+radius of 50, ten times `rb.tol`. Now (`pkg/topo/rollingpivot_crease.go`) the depth h is still
+measured along e, but the crease's point at h is the crease's own (`pivotCrease.point`: Newton's
+steps onto both walls and the plane square to e at once), and the frame the swing turns in is
+u0 turned square to the crease's tangent there (`frameAt`), the turn theta measured in the
+frame at b's foot. The corner's foot on the crease moves evenly in depth along the crease, and
+`dropCrease` finds the crease's piece between the feet by depth (`pivotCrease.on`). A straight
+crease takes none of this: its corners are the same to the bit.
+
+Three things more were needed:
+
+- A chamfer's frame turns from wall a's normal to wall b's, into the solid, as a fillet's turns
+  between its balls' centres. Its own sections' parts square to the crease, which the straight
+  swing turns between, turned 167° the short way, through the pocket, where two leaning walls
+  meet in the dish: the corner's foot on the cone ran into the pocket and the mesh crossed
+  itself. Its foot on the shared face comes from its depth, angle, distance from the crease and
+  offset along it, each moved evenly from a's foot to b's (`curvedChamferAt`), so that at either
+  end it is that chamfer's foot.
+- The corner's parameter along the swing is the share of the swing's path's length, sampled at
+  65 turns. Taken as straight between the samples (the straight crease's `at`), the turn's rate
+  jumps at each; where the swing's speed changes along it, as a chamfer's does whose feet lie at
+  two distances from the crease, the sections came out a few tenths of a micrometre off smooth
+  at the samples, and the corner wasn't fitted to 0.001 mm through 64 of them (0.0012 left,
+  sound only at 256). Through a cubic between the samples (`phiAt`) it fits through 8. Taken
+  evenly in the turn instead, the chamfer fitted, but the fillet's corner where two leaning walls
+  meet in the dish crossed the shallower fillet's mesh near the crease.
+- A chamfer's path is measured on its point before it is put on the face (`pivotSwing.c`): the
+  foot on the face can stand nearly still as the turn starts.
+
+Against OpenCASCADE (`scripts/fillet-pivot-curved-fixtures.py`, its makeFillet and makeChamfer of
+the same edges; `TestFilletPivotCurvedCrease`, 22 lines): where both walls lean alike in the
+flat top the feet are one point and the corner a mitre, within 1e-5 of its volume and its faces
+within 0.00001 mm of ours. A corner patch takes less, as at a straight crease: in the block
+about 0.026 r³ a fillet's corner and 0.064 d³ a chamfer's, measured against each edge alone,
+whose volumes agree to 3e-5. Our STEP read by FreeCADCmd, sampled within 3 radii of each corner:
+a fillet's faces lie within 0.0005 mm of ours, ours up to 0.08 r of its (0.11 r in the dish);
+a chamfer's within 0.08 mm of ours, ours up to 0.18 to 0.28 d of its: it runs each fillet on into the other past the crease, where ours
+fills between their ends. In the dish ours take 1.2% to 3.1% less, but there the edges alone
+already differ, at their ends against the leaning walls not picked (a y+ fillet alone with both
+walls leaning takes a fifth less than OpenCASCADE's); that is the fillets' ends, not the corners.
+
+Of a grid of 128 (both tops, one or two walls leaning, the corners x+/y+, x+/y- and x-/y+ and
+the whole rim, radii 0.5 to 2, fillets and chamfers, at 0.01 mm), 110 are made sound. Of the 18
+refused, the corner is the reason in one configuration only: the whole rim in the dish with
+both walls leaning, filleted (the pair x- and y+ there is refused too, not looked at apart) (`TestFilletPivotCurvedCreaseRefused`). The crease at the
+x- wall's corner, an arc in that wall's plane, leans back under the y+ fillet, whose foot on it
+lies nearer the vertex: going down the crease from that foot goes 26° into the fillet's side of
+its end section's plane. The corner's sections leave the crease along the y+ wall's face, as the
+fillet's end section does, and with the foot moving down the crease they lie over that face and
+cross the fillet's mesh near its end; the solid is refused as not closed. Tried: the foot held
+at the nearer depth at first (its depth moving as t²): that corner made, the corner where the
+two leaning walls meet broken. What would do: the sections' tangent at the crease turned off
+the shallower wall as the turn starts (a conic through the two feet, tangent there to the ball's
+surface square to its radius), or the foot's pace along the crease tied to the turn. The others
+refused are chains ending against a leaning wall not picked ("the fillet's surface can't be
+fitted", the y+ chain at the x+ wall) and a chamfer of 2 crossing the dish's seam at x = 0.
 
 ## A group's chains side by side (2026-11-18)
 

@@ -110,10 +110,11 @@ doc.Features.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 0, 5))}, 1.5, "")
   rim, the arc of a plate's rounded end or the wall of a bore beside a rod, cuts the fillet
   along its own cylinder in the same way, and a side on a cone about an axis square to the
   face, as a drafted disc's rim or a drafted bore, along its cone carried on past the face. A
-  ledge round the disc below such a side is left as it was. Refused: a curved side's surface,
-  carried on past the face, running into the solid (a rod close beside a bore that widens
-  toward the face), and the fillet of a hole's rim cutting down past such a side's foot into a
-  ledge.
+  ledge round the disc below such a side is left as it was, and so is a rod close beside a
+  bore that widens toward the face, which the bore's cone carried on past the face runs into.
+  A hole's rim may be cut down past such a side's foot into the ledge under it, where the cut
+  stays within the side. Refused: the fillet of a hole's rim so near the side that its cut
+  into the ledge reaches past the side.
 - A rounded edge takes with it the edges it meets smoothly, as round a rounded rectangle.
 - Where two rounded edges meet, they are mitred. Where three meet at the corner of a block, a
   sphere rounds the corner.

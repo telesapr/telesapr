@@ -14,7 +14,7 @@ import (
 // an inside corner, as the rim of a pocket cut into a curved face turns
 // at. There the ball doesn't stop where the two swept surfaces cross, as
 // at a mitre (rollingmitre.go): rolling along one edge up to the crease,
-// it swings round the crease's line, touching that line and the face
+// it swings round the crease, touching it and the face
 // both chains share, until it touches the other chain's creased face
 // and rolls on along that edge. So each fillet ends at the ball's own
 // section whose foot on its creased side is on the crease (pivotS), and
@@ -26,7 +26,9 @@ import (
 // the vertex, the other wall's edge with the corner. Chamfers turn such
 // a corner the same way, their corner ruled. Where the two feet are one
 // point, as round a pocket in a flat face, the two ends meet in a mitre
-// instead (rollingmitre_inside.go).
+// instead (rollingmitre_inside.go). A curved crease, as where a wall of a
+// cylinder lying on its side meets another, is swung about as a line is,
+// the swing re-centred along it (rollingpivot_crease.go).
 
 // concaveAt reports whether the crease at end k of the open chain is
 // concave as the ball sees it: for a convex edge, whose ball lies
@@ -96,6 +98,9 @@ type pivotCorner struct {
 	// or 1 in u; the shared face's is the other.
 	creaseU int
 	all     [][]srf.SSurface
+	// crease is the crease the corner swings about, its walls' surfaces
+	// set where it is curved (rollingpivot_crease.go).
+	crease pivotCrease
 }
 
 // pivotCorners are the corners between the blends' pivot ends, each
@@ -253,6 +258,10 @@ func (c *pivotCorner) splitCrease(sh *srf.SShell, near, far geom.Vector) error {
 func (c *pivotCorner) dropCrease(sh *srf.SShell, sOwner, sOther *srf.SSurface, near, far geom.Vector) {
 	onPiece := func(p geom.Vector) bool {
 		return distanceToPolyline(p, []geom.Vector{near, far}) < 10*geom.LengthEps
+	}
+	if c.crease.sa != nil {
+		hn, hf := c.crease.depth(near), c.crease.depth(far)
+		onPiece = func(p geom.Vector) bool { return c.crease.on(p, min(hn, hf), max(hn, hf)) }
 	}
 	keep := func(s *srf.SSurface, drop func(tb srf.STrimBy) bool) {
 		var kept []srf.STrimBy

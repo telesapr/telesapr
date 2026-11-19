@@ -58,10 +58,13 @@ func ledgeUnder(d *Doc, draft float64) float64 {
 
 // holeIn cuts a hole of radius 4 at (2, 0) through the solid, 4 high,
 // and gives its last group and the volume it takes.
-func holeIn(d *Doc) (Group, float64) {
+func holeIn(d *Doc) (Group, float64) { return holeAt(d, 2) }
+
+// holeAt is holeIn with the hole at (x, 0).
+func holeAt(d *Doc, x float64) (Group, float64) {
 	d.Features.Sketch3D("hole")
 	d.Features.SketchIn(d.Workplane("XY"), "")
-	d.Sketch.Circle(V(2, 0, 0), 4)
+	d.Sketch.Circle(V(x, 0, 0), 4)
 	g := d.Features.Extrude(4, "hole")
 	g.SetCombine(Difference)
 	return g, math.Pi * 16 * 4
@@ -76,7 +79,8 @@ func boreRim(z, draft float64) float64 { return 8 + z*tanDeg(draft) }
 // conePlates are the solids the sweep tries: a disc of radius 8 drafted
 // in or out with a rod of radius 4 off its centre, or a hole of radius
 // 4, whose foot runs past the disc's rim; a block whose bore of radius
-// 8 widens toward the top, beside a rod of radius 3; and the drafted or
+// 8 widens toward the top, beside a rod of radius 3, also so close that
+// the bore's cone carried on above the top runs into it; and the drafted or
 // upright disc standing on a wider ledge, the solid going on below the
 // side.
 var conePlates = []conePlate{
@@ -107,6 +111,18 @@ var conePlates = []conePlate{
 		},
 	},
 	{
+		// The rod 9 from the axis at its nearest, the bore's cone,
+		// widening at 10°, 9 across 1.67 above the face: carried on, it
+		// runs into the rod, which the cutter is cut back by
+		// (curvedSide.lessAbove).
+		name: "bore rod close", c: V(12, 0, 4), rho: 3, rim: boreRim, bore: true,
+		drafts: []float64{10}, sizes: []float64{2.2, 2.5, 3, 3.5},
+		make: func(d *Doc, draft float64) (Group, float64) {
+			g, v := draftedBore(d, draft, 12)
+			return g, v
+		},
+	},
+	{
 		name: "ledge rod", c: V(2, 0, 4), rho: 4, rim: discRim,
 		drafts: []float64{0, 5}, sizes: []float64{2.2, 2.5, 3, 3.5},
 		make: func(d *Doc, draft float64) (Group, float64) {
@@ -117,10 +133,11 @@ var conePlates = []conePlate{
 		},
 	},
 	{
-		// A hole's rim taking material away down to 2.5 below the top,
-		// short of the ledge 3 below it.
+		// A hole's rim taking material away down to 2.2 to 3.5 below
+		// the top, into the ledge 3 below it for the larger, but within
+		// the disc's side there (curvedSide.volumePastBelow).
 		name: "ledge hole", c: V(2, 0, 4), rho: 4, hole: true, rim: discRim,
-		drafts: []float64{0, 5}, sizes: []float64{2.2, 2.5},
+		drafts: []float64{0, 5}, sizes: []float64{2.2, 2.5, 3, 3.5},
 		make: func(d *Doc, draft float64) (Group, float64) {
 			ledge := ledgeUnder(d, draft)
 			v := draftedDisc(d, draft)
@@ -210,14 +227,16 @@ func ringPastCone(cx, cy, rho, r float64, flat, below bool, rim func(z float64) 
 // A circular fillet or chamfer whose foot runs off its face into a side
 // on a cone about an axis square to the face: past a drafted disc's rim
 // from a rod's foot or a hole's rim, into a drafted bore beside a rod
-// (fillet_past_side_cone.go); and past a disc's rim, upright or drafted,
-// where the solid goes on below it as a ledge (the cutter starting at
-// the side's foot). Refused as running off the face before 2026-11-09.
-// Every case sound and within 3e-4 of the ring's integral within the
-// cone. The ordinary run takes one case of each solid and draft, the
-// size and the kind turning from case to case; -short the hardest, a
-// rod off centre on a drafted disc, and a ledge's chamfer; make
-// test-sweeps all 80.
+// (fillet_past_side_cone.go), the bore's cone carried on above the top
+// running into the rod where it widens at 10° (refused before
+// 2026-11-19); and past a disc's rim, upright or drafted, where the
+// solid goes on below it as a ledge (the cutter starting at the side's
+// foot). Refused as running off the face before 2026-11-09. Every case
+// sound and within 3e-4 of the ring's integral within the cone. The
+// ordinary run takes one case of each solid and draft, the size and the
+// kind turning from case to case; -short the hardest, a rod off centre
+// on a drafted disc, the rod the widening bore runs into, and a ledge's
+// chamfer; make test-sweeps all 96.
 func TestFilletPastConeSide(t *testing.T) {
 	t.Parallel()
 	combo := 0
@@ -230,7 +249,8 @@ func TestFilletPastConeSide(t *testing.T) {
 					case sweep.Full():
 					case testing.Short():
 						if !(p.name == "disc rod" && draft == 5 && !flat && r == 3) &&
-							!(p.name == "ledge rod" && draft == 5 && flat && r == 2.5) {
+							!(p.name == "ledge rod" && draft == 5 && flat && r == 2.5) &&
+							!(p.name == "bore rod close" && !flat && r == 3) {
 							continue
 						}
 					case flat != (combo%2 == 1) || k != combo%len(p.sizes):
@@ -300,13 +320,12 @@ func checkFilletCone(t *testing.T, p conePlate, draft float64, flat bool, r floa
 	t.Logf("ring %.4f, off by %.1e of the solid", ring, math.Abs(got-want)/want)
 }
 
-// What the kernel refuses past a side on a cone, saying why: a rod
-// beside a bore that widens toward the face, which the bore's cone
-// carried on above the face runs into (the rod at 12, 9 from the axis at
-// its nearest, the cone 9.06 across 2 above the face at a draft of 10);
-// and a hole's rim chamfered 3.5 deep, through the disc 3 above the
-// ledge into the ledge, which the cutter starting at the side's foot
-// would leave cut.
+// What the kernel refuses past a side on a cone, saying why: a hole's
+// rim 0.3 from the disc's side chamfered 3.5 deep, through the disc 3
+// above the ledge into the ledge past the side, which the cutter
+// starting at the side's foot would leave cut. Chamfered so deep 2 from
+// the side, refused too before 2026-11-19, its cut into the ledge lies
+// within the side and is made (TestFilletPastConeSide).
 func TestFilletPastConeSideRefused(t *testing.T) {
 	t.Parallel()
 	for _, c := range []struct {
@@ -317,14 +336,12 @@ func TestFilletPastConeSideRefused(t *testing.T) {
 		r    float64
 		want string
 	}{
-		{"rod beside a widening bore", func(d *Doc) Group { g, _ := draftedBore(d, 10, 12); return g },
-			V(9, 0, 4), false, 3, "carried on past the face"},
-		{"hole's rim into the ledge", func(d *Doc) Group {
+		{"hole's rim into the ledge past the side", func(d *Doc) Group {
 			ledgeUnder(d, 0)
 			draftedDisc(d, 0)
-			g, _ := holeIn(d)
+			g, _ := holeAt(d, 3.7)
 			return g
-		}, V(6, 0, 4), true, 3.5, "runs off the face"},
+		}, V(7.7, 0, 4), true, 3.5, "runs off the face"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()

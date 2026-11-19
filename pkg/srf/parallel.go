@@ -140,6 +140,8 @@ type curveSink struct {
 	// failed is a deferred sink's mark that the Boolean failed, which
 	// commitTo gives the shell: the sinks are filled concurrently.
 	failed bool
+	// meets are a deferred sink's points for the shell's meets.
+	meets []geom.Vector
 }
 
 // sinkEntry is a curve on a deferred sink's list, or an exact curve
@@ -218,6 +220,16 @@ func (k *curveSink) add(sc SCurve) {
 	k.entries = append(k.entries, sinkEntry{curve: sc, added: true})
 }
 
+// meet takes a point where a marched curve ends on an operand's trim
+// between its vertices (SShell.meets).
+func (k *curveSink) meet(p geom.Vector) {
+	if !k.deferred {
+		k.shell.meets = append(k.shell.meets, p)
+		return
+	}
+	k.meets = append(k.meets, p)
+}
+
 // fail marks the Boolean the sink's curves are for as failed.
 func (k *curveSink) fail() {
 	if !k.deferred {
@@ -257,6 +269,7 @@ func (k *curveSink) commitTo(into *SShell, first int, next core.HSCurve) core.HS
 	if k.failed {
 		into.BooleanFailed = true
 	}
+	into.meets = append(into.meets, k.meets...)
 	// Where each entry went in into.Curve; -1 if nowhere, or if it was
 	// made over.
 	at := make([]int, len(k.entries))

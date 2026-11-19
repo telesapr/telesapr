@@ -65,6 +65,12 @@ type pivotFrame struct {
 	ref         srf.BSplineCurve
 	refRb       *rollingBall
 	first, last srf.BSplineCurve
+	// crease is what the swing turns about; where it is curved
+	// (rollingpivot_crease.go) the frame u0, w is re-centred along it,
+	// turned square to its tangent at each depth, w on the side wSign
+	// gives of the tangent across u.
+	crease pivotCrease
+	wSign  float64
 }
 
 // pivotSwing is a point of the swing: phi of the way round, sigma along
@@ -122,11 +128,9 @@ func newPivotFrame(a *rbBlend, ka int, b *rbBlend, kb int) (*pivotFrame, error) 
 		return nil, filletErr(vp, "the fillets at the inside corner have no crease")
 	}
 	crease := ra.ends[ka].a[ia]
-	if !t.Straight(crease) {
-		return nil, filletErr(vp, "the fillets can't yet turn an inside corner whose crease is curved")
-	}
 	pf := &pivotFrame{ra: ra, rb: rbb, ia: ia, ib: ib, secA: a.endSec(ka), secB: b.endSec(kb),
 		v: vp, e: edgeDirAt(t, crease, vi), r: ra.r, flat: ra.flat}
+	pf.crease = pivotCrease{v: pf.v, e: pf.e}
 	c := &pivotCorner{a: a, b: b, ka: ka, kb: kb, v: vp,
 		qa: pf.secA.foot[ia].p, qb: pf.secB.foot[ib].p, da: pf.secA.foot[1-ia].p, db: pf.secB.foot[1-ib].p,
 		fa: pf.secA.foot[ia].f, fb: pf.secB.foot[ib].f, fd: pf.secA.foot[1-ia].f}
@@ -137,7 +141,20 @@ func newPivotFrame(a *rbBlend, ka int, b *rbBlend, kb int) (*pivotFrame, error) 
 	if ia == 1 {
 		c.creaseU = 1
 	}
+	if !t.Straight(crease) {
+		sa, sb := t.Surface(c.fa), t.Surface(c.fb)
+		if sa == nil || sb == nil {
+			return nil, filletErr(vp, "a wall at the inside corner is not in the shell")
+		}
+		// Copies: the shell's surfaces move as the corner's are put in.
+		ca, cb := *sa, *sb
+		pf.crease.sa, pf.crease.sb = &ca, &cb
+	}
+	c.crease = pf.crease
 	pf.ha, pf.hb = c.qa.Minus(vp).Dot(pf.e), c.qb.Minus(vp).Dot(pf.e)
+	if pf.curved() {
+		return pf, pf.curvedFrame()
+	}
 	// The way it swings, square to the crease: from a's centre to b's,
 	// or a chamfer's foot on the shared face.
 	from, to := pf.secA.c, pf.secB.c
@@ -185,6 +202,9 @@ func (pf *pivotFrame) near(phi float64) (*rollingBall, int) {
 // it each moved evenly from a's to b's.
 func (pf *pivotFrame) swingAt(phi float64) (pivotSwing, error) {
 	rb, side := pf.near(phi)
+	if pf.flat && pf.curved() {
+		return pf.curvedChamferAt(phi), nil
+	}
 	if pf.flat {
 		c := pf.c
 		f := phi / pf.theta
@@ -197,6 +217,10 @@ func (pf *pivotFrame) swingAt(phi float64) (pivotSwing, error) {
 	d := pf.way(phi)
 	gap := func(h float64) (pivotSwing, float64) {
 		cc := pf.v.Plus(pf.e.ScaledBy(h)).Plus(d.ScaledBy(pf.r))
+		if pf.curved() {
+			q, dh := pf.wayAt(phi, h)
+			cc = q.Plus(dh.ScaledBy(pf.r))
+		}
 		ft := rb.foot(side, cc)
 		dist := cc.Minus(ft.p)
 		return pivotSwing{phi: phi, c: cc, d: ft.p, n: dist.WithMagnitude(1)}, dist.Magnitude() - pf.r
@@ -255,6 +279,12 @@ func (pf *pivotFrame) sample() error {
 
 // at is the swing at share t of its path's length.
 func (pf *pivotFrame) at(t float64) pivotSwing {
+	if pf.curved() {
+		// Smoothly between the samples (phiAt says why).
+		if sw, err := pf.swingAt(pf.phiAt(t)); err == nil {
+			return sw
+		}
+	}
 	x := t * pf.total
 	j := min(max(sort.Search(len(pf.path), func(i int) bool { return pf.path[i].sigma >= x })-1, 0), len(pf.path)-2)
 	a, b := pf.path[j], pf.path[j+1]
@@ -272,6 +302,10 @@ func (pf *pivotFrame) at(t float64) pivotSwing {
 func (pf *pivotFrame) section(t float64) (q, d, centre geom.Vector, rho float64) {
 	sw := pf.at(t)
 	q = pf.c.qa.Plus(pf.c.qb.Minus(pf.c.qa).ScaledBy(t))
+	if pf.curved() {
+		// On the crease, evenly in depth.
+		q, _ = pf.crease.point(pf.ha + (pf.hb-pf.ha)*t)
+	}
 	if pf.flat {
 		return q, sw.d, geom.Vector{}, 0
 	}

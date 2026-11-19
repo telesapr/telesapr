@@ -495,10 +495,12 @@ func (c *curvedSide) squared() float64 {
 // side's cylinder or cone: its ring or sector from the rim out past the
 // slab, or a bore's cylinder or cone, from below the side (from its foot
 // where the solid goes on below it) to above the face by more than the
-// fillet's size r. Its faces take the side's colour and identity, so
-// that its curved face, where it is kept, is the side again. ok is false
-// where the solid stands in it above the face or beside the side, which
-// sets c.blocked.
+// fillet's size r, less what of the solid stands in it above the face
+// (lessAbove). Its faces take the side's colour and identity, so that
+// its curved face, where it is kept, is the side again. ok is false
+// where the solid stands in it beside the side, below the face, or
+// where what stands above could not be taken from it, which sets
+// c.blocked.
 func (c *curvedSide) curvedCutter(l curvedLayout, r float64, side *srf.SSurface, sh *srf.SShell) (srf.SShell, bool) {
 	h0, h1 := c.lo-1, r+1
 	in := func(p geom.Vector) bool {
@@ -524,27 +526,65 @@ func (c *curvedSide) curvedCutter(l curvedLayout, r float64, side *srf.SSurface,
 	// 2026-11-09: the cone cutter less the block round a drafted bore
 	// lost the loops of the face it shares with the bore). What lies in
 	// it above the face, where the side carried on runs into the solid
-	// (a rod beside a bore that widens toward the face), or beside the
-	// side, is refused.
-	below := false
+	// (a rod beside a bore that widens toward the face), is taken from
+	// the cutter (lessAbove); what lies in it beside the side, between
+	// its foot and the face, is refused.
+	below, above := false, false
 	eps := 2*sh.Tol.ChordTolMm() + 10*geom.LengthEps
 	for _, tr := range m.Triangles {
 		for _, p := range []geom.Vector{tr.A, tr.B, tr.C, tr.A.Plus(tr.B).Plus(tr.C).ScaledBy(1.0 / 3)} {
 			if !in(p) {
 				continue
 			}
-			if p.Minus(c.o).Dot(c.axis) > c.lo+eps {
+			switch h := p.Minus(c.o).Dot(c.axis); {
+			case h > eps:
+				above = true
+			case h > c.lo+eps && h < -eps:
 				c.blocked = true
 				return srf.SShell{}, false
+			case h <= c.lo+eps:
+				below = true
 			}
-			below = true
 		}
 	}
 	c.below = below
 	if below {
 		h0 = c.lo
 	}
-	return c.cutterShell(l, h0, h1, side, sh.Tol)
+	cut, ok := c.cutterShell(l, h0, h1, side, sh.Tol)
+	if !ok || !above {
+		return cut, ok
+	}
+	less, ok := c.lessAbove(&cut, sh, h1)
+	if !ok {
+		c.blocked = true
+	}
+	return less, ok
+}
+
+// lessAbove is cut, curvedCutter's solid reaching h1 up the axis, less
+// what of the solid sh before the fillet stands in it above the face's
+// plane, and whether that is sound: so cut back, the widened solid keeps
+// it (the rod beside a bore that widens toward the face, which the
+// bore's cone carried on above the face runs into). Only what stands
+// above the plane is taken, the box it is cut out by having its bottom
+// on the face: the solid less the whole of the cutter's room, as past a
+// flat side (beyondCutter), splits the cutter's cone where it lies on
+// the bore, at the bore's rims, and the cut back of the filleted solid
+// by it failed there (2026-11-19).
+func (c *curvedSide) lessAbove(cut, sh *srf.SShell, h1 float64) (srf.SShell, bool) {
+	box := c.aboveBox(cut, h1)
+	var up, less srf.SShell
+	before := sh.Clone()
+	up.MakeFromIntersectionOf(&before, &box)
+	if unsound(&up) {
+		return srf.SShell{}, false
+	}
+	less.MakeFromDifferenceOf(cut, &up)
+	if unsound(&less) {
+		return srf.SShell{}, false
+	}
+	return less, true
 }
 
 // cutterShell is curvedCutter's solid from h0 up to h1 along the axis:
@@ -682,4 +722,27 @@ func (off *runOff) distinct() []*runOffSide {
 		out = append(out, s)
 	}
 	return out
+}
+
+// aboveBox is a box from the face's plane up the axis past h1, and
+// wider than cut across it.
+func (c *curvedSide) aboveBox(cut *srf.SShell, h1 float64) srf.SShell {
+	var m srf.SMesh
+	cc := cut.Clone()
+	cc.TriangulateInto(&m)
+	lo, hi := [2]float64{math.Inf(1), math.Inf(1)}, [2]float64{math.Inf(-1), math.Inf(-1)}
+	for _, tr := range m.Triangles {
+		for _, p := range []geom.Vector{tr.A, tr.B, tr.C} {
+			for i, a := range []geom.Vector{c.e1, c.e2} {
+				lo[i] = math.Min(lo[i], p.Minus(c.o).Dot(a))
+				hi[i] = math.Max(hi[i], p.Minus(c.o).Dot(a))
+			}
+		}
+	}
+	at := func(a, b float64) geom.Vector { return c.o.Plus(c.e1.ScaledBy(a)).Plus(c.e2.ScaledBy(b)) }
+	var box srf.SShell
+	box.MakePrism([]geom.Vector{at(lo[0]-1, lo[1]-1), at(hi[0]+1, lo[1]-1), at(hi[0]+1, hi[1]+1), at(lo[0]-1, hi[1]+1)},
+		geom.Vector{}, c.axis.ScaledBy(h1+1), core.RGBA{})
+	box.Tol = cut.Tol
+	return box
 }

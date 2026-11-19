@@ -61,6 +61,7 @@ func (s *SShell) makeBoolean(a, b *SShell, op SurfaceCombineAs) {
 	// the surfaces in B (which is all of the intersection curves).
 	end = stage("intersection curves")
 	a.MakeIntersectionCurvesAgainst(b, s)
+	s.splitAtMeets(a, b)
 	end()
 
 	for i := range s.Curve {

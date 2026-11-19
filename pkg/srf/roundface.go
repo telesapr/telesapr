@@ -156,6 +156,15 @@ func (f RoundFace) normalAt(p geom.Vector) geom.Vector {
 	return radial.ScaledBy(libm.Cos(f.HalfAngle)).Minus(f.Axis.ScaledBy(libm.Sin(f.HalfAngle)))
 }
 
+// onSurface is p carried along the surface's normal onto it.
+func (f RoundFace) onSurface(p geom.Vector) geom.Vector {
+	n := f.normalAt(p)
+	if n.Magnitude() == 0 {
+		return p
+	}
+	return p.Minus(n.ScaledBy(f.offset(p)))
+}
+
 // circumcentre is the centre of the circle through a, b and c; false
 // when they lie on a line.
 func circumcentre(a, b, c geom.Vector) (geom.Vector, bool) {

@@ -2,6 +2,7 @@
 
 Refreshed 2026-11-09 at branches `rd13-fillet-cone` and `rd13-runoff-both`.
 Refreshed 2026-11-18 at branch `runoff-mixed-ends`.
+Refreshed 2026-11-19 at branch `fillet-curved-side-cut`.
 
 A circular fillet or chamfer (round a rod's foot, a hole's rim) whose foot runs off the flat face
 it rolls on is refused by `contactsClear` (`pkg/topo/fillet_contact.go`), which says which sides
@@ -80,7 +81,13 @@ the cylinder's code takes it where it reads the radius (`radiusAt`, `radii`, `sq
   foot crosses the rim tangent to the plane, left the trims open.
 - The cone goes on above the face as far as the cutter reaches (r + 1). Where the solid stands
   in it there (a rod 9 from the axis beside a bore drafted 10°, which is 9.06 across 2 above the
-  face) or beside the side, the fillet is refused, saying so (`curvedSide.blocked`).
+  face), the cutter is cut by what of the solid stands above the face's plane, the solid in a box
+  whose bottom lies on the face (`curvedSide.lessAbove`, since 2026-11-19); the cut back then
+  keeps the rod. Cut by the whole solid, as `beyondCutter` does past a flat side, the cutter's
+  cone is split where it lies on the bore, at the bore's rims, and the cut back failed there.
+  Where the solid stands in the cutter beside the side, below the face, the fillet is refused,
+  saying so (`curvedSide.blocked`). The cut back by the cutter less the rod needed three changes
+  in `pkg/srf` (`doc/dev-notes/k3-fuse-spike.md`, "The fillet past a curved side carried on").
 
 Where the solid goes on below a cylinder or cone side (a ledge round a disc), the cutter starts
 at the side's foot, its bottom on the ledge's top, coplanar faces the Boolean joins. Cutting the
@@ -88,18 +95,24 @@ cutter by the solid, as `beyondCutter` does past a flat side, puts the cutter's 
 the side: the cone cutter less the block round a drafted bore lost that face's loops, and less
 what of the solid lies above the face it kept the rod's cylinder lying on the rod's. A fillet
 taking material away whose cut reaches below the foot would cut into the ledge, which the
-cutter leaves alone; it is refused where the solid below the foot's plane changes
-(`keepBeyond`, conservatively for a hole whose cut there runs all round it).
+cutter leaves alone; it is refused where the solid below the foot's plane and past the side
+changes (`keepBeyond`, `curvedSide.volumePastBelow`: the flux of a radial field that vanishes on
+the side's cylinder or cone, whose divergence is 1 past it, through the mesh clipped below the
+foot). Until 2026-11-19 the whole half space below the foot was compared, which counted a hole's
+rim chamfered into the ledge within the side, the chamfer's own cut, and refused it.
 
 Measured by `TestFilletPastConeSide`: a drafted disc (5°, -5°, 10°) with a rod off centre, a
 drafted disc's hole, a drafted bore beside a rod, an upright or drafted disc on a ledge with a
-rod or a hole; fillets and chamfers of 2.2 to 3.5: 80 of 80 sound, within 2.4e-4 of the ring's
-integral within the cone (the heights inside it found exactly). `TestFilletPastConeSideRefused`:
-the rod beside the widening bore, a hole's rim chamfered into the ledge.
+rod or a hole, since 2026-11-19 a rod 9 from the axis of a bore widening at 10° and a hole's rim
+cut 3 and 3.5 deep into the ledge; fillets and chamfers of 2.2 to 3.5: 96 of 96 sound, within
+2.4e-4 of the ring's integral within the cone (the heights inside it found exactly).
+`TestFilletPastConeSideRefused`: a hole's rim 0.3 from the disc's side chamfered 3.5 deep, its
+cut into the ledge reaching past the side.
 
-Left: a solid standing in the cone or cylinder carried on above the face (the solid past the side
-put back, as `keepBeyond` does past a flat side, would need the cutter's curved face to meet the
-solid's own), and a hole's rim cutting into a ledge; `ROADMAP.md`, "Fillet leftovers".
+Left: a hole's rim whose cut into a ledge reaches past the side (it fails before the check below
+the foot; the solid past the side put back there would need the solid and the ring past the side
+below its foot, touching along the foot's circle, intersected); a solid standing in the cutter beside the side below the face;
+`ROADMAP.md`, "Fillet leftovers".
 
 ## An end running off both its faces (2026-11-09)
 

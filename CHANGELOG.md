@@ -10,7 +10,9 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 ## [Unreleased]
 
 ### Added
+- A fillet or chamfer round a rod beside a drafted bore that widens toward the face is made where the bore's cone, carried on past the face, runs into the rod: the rod is kept and the fillet cut back by the cone round it. So is a chamfer or fillet of a hole's rim on a disc standing on a ledge that cuts down past the disc's foot into the ledge, where that cut stays within the disc's side. Both were refused.
 - A fillet or chamfer that runs off both its faces at one end and one face at the other is made, as of a plate's foot on a cone where the plate's top is low at both ends and the cone is cut flat past the plate's side at its wide end: each end is cut by the faces past it. It was refused ("runs off both its faces at one end and a face at the other").
+- Fillets and chamfers of a pocket's rim turn an inside corner whose crease is curved, as where a wall of a cylinder lying on its side meets a flat wall or another such: the corner between the two is swung about the crease itself. It was refused ("can't yet turn an inside corner whose crease is curved").
 
 ### Changed
 - Menus draw a cascade's arrow and the check and radio marks as shapes, as Tk does, where they were a font's glyphs (takigo 0.4.7).

@@ -96,6 +96,11 @@ type SShell struct {
 	// CleanupAfterBoolean drops it.
 	index *surfaceIndex
 
+	// meets are the points where a curve a Boolean made into the shell
+	// marched ends on an operand's curved trim between its vertices
+	// (trimMeetSeed): splitAtMeets splits the trim there.
+	meets []geom.Vector
+
 	// pace is what the long loops of a Boolean made into the shell, and
 	// of its triangulation, call between their steps (PaceBy); nil for
 	// none.

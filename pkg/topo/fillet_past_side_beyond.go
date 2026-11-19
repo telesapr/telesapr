@@ -50,13 +50,15 @@ func keepBeyond(out, sh *srf.SShell, off *runOff, r float64) (srf.SShell, bool) 
 			// Nothing of sh lies past a curved side but below its foot
 			// (curvedCutter), which the cutter leaves alone: a fillet
 			// that takes material away down past the foot, there, cut
-			// into what goes on below it, and is refused.
+			// into what goes on below it, and is refused. Only what lies
+			// past the side is compared: the fillet's own cut below the
+			// foot inside the side (a hole's rim chamfered deeper than
+			// the side is high, into the ledge under it) is the fillet's.
 			c := s.curved
 			if !c.below {
 				continue
 			}
-			p0, n := c.o.Plus(c.axis.ScaledBy(c.lo)), c.axis.ScaledBy(-1)
-			if math.Abs(volumeBeyond(out, p0, n)-volumeBeyond(sh, p0, n)) > tol {
+			if math.Abs(c.volumePastBelow(out)-c.volumePastBelow(sh)) > tol {
 				return srf.SShell{}, false
 			}
 			continue
@@ -157,4 +159,72 @@ func halfSpaceBox(sh *srf.SShell, s *runOffSide) srf.SShell {
 		box.Surface[i].Sheet = s.surf.Sheet
 	}
 	return box
+}
+
+// volumePastBelow is the volume of the closed solid sh below c's foot
+// (lo up the axis) and past its cylinder or cone, out of the solid the
+// side bounds. By the divergence theorem with the radial field
+// f ρ̂, f = ρ/2 - R(h)²/2ρ for ρ beyond the side's radius R(h) at the
+// height h and 0 short of it, whose divergence is 1 past the side and
+// 0 inside it, and which is continuous across it and square to the
+// axis, so that nothing flows through the plane of the foot: the flux
+// through sh's mesh clipped below that plane. The field is not linear,
+// and each triangle is taken in pieces no wider than pastPiece. For a
+// bore, past it is inside it: the volume below the foot less what lies
+// outside the bore.
+func (c *curvedSide) volumePastBelow(sh *srf.SShell) float64 {
+	var m srf.SMesh
+	cl := sh.Clone()
+	cl.TriangulateInto(&m)
+	h := func(p geom.Vector) float64 { return c.lo - p.Minus(c.o).Dot(c.axis) }
+	field := func(p geom.Vector) geom.Vector {
+		q := p.Minus(c.o)
+		along := q.Dot(c.axis)
+		radial := q.Minus(c.axis.ScaledBy(along))
+		rho, rr := radial.Magnitude(), c.radiusAt(along)
+		if rho <= rr || rho < geom.LengthEps {
+			return geom.Vector{}
+		}
+		return radial.ScaledBy((rho/2 - rr*rr/(2*rho)) / rho)
+	}
+	var past, below float64
+	for _, tr := range m.Triangles {
+		poly := clipBeyond([]geom.Vector{tr.A, tr.B, tr.C}, h)
+		for i := 1; i+1 < len(poly); i++ {
+			a, b, d := poly[0], poly[i], poly[i+1]
+			area := b.Minus(a).Cross(d.Minus(a)).ScaledBy(0.5)
+			below += (h(a) + h(b) + h(d)) / 3 * area.Dot(c.axis.ScaledBy(-1))
+			past += fluxThrough(a, b, d, area, field)
+		}
+	}
+	if c.sgn < 0 {
+		return below - past
+	}
+	return past
+}
+
+// pastPiece is the widest piece of a triangle volumePastBelow takes its
+// field at the middle of.
+const pastPiece = 0.1
+
+// fluxThrough is the flux of field through the triangle a, b, d of
+// area vector area, the field taken at the middle of pieces no wider
+// than pastPiece.
+func fluxThrough(a, b, d, area geom.Vector, field func(geom.Vector) geom.Vector) float64 {
+	long := max(b.Minus(a).Magnitude(), d.Minus(b).Magnitude(), a.Minus(d).Magnitude())
+	n := max(1, int(math.Ceil(long/pastPiece)))
+	// The triangle in n² pieces, n(n+1)/2 upright and n(n-1)/2 turned.
+	u, v := b.Minus(a).ScaledBy(1/float64(n)), d.Minus(a).ScaledBy(1/float64(n))
+	piece := area.ScaledBy(1 / float64(n*n))
+	var flux float64
+	for i := range n {
+		for j := range n - i {
+			o := a.Plus(u.ScaledBy(float64(i))).Plus(v.ScaledBy(float64(j)))
+			flux += field(o.Plus(u.Plus(v).ScaledBy(1.0 / 3))).Dot(piece)
+			if i+j < n-1 {
+				flux += field(o.Plus(u.Plus(v).ScaledBy(2.0 / 3))).Dot(piece)
+			}
+		}
+	}
+	return flux
 }
