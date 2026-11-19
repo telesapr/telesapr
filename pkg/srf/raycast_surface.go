@@ -163,8 +163,9 @@ func (s *SSurface) AllPointsIntersecting(a, b geom.Vector, l *[]SInter,
 
 // allPointsIntersecting is AllPointsIntersecting. With nearCurved > 0,
 // a trimmed search also reports, with OnEdge set, the hits within
-// nearCurved of a curved trim's pwl, on whichever side of it the trim
-// BSP puts them: there the BSP can be wrong about the true curve.
+// nearCurved of a curved trim's pwl, or of its sag where that is more
+// (curvedClearance), on whichever side of it the trim BSP puts them:
+// there the BSP can be wrong about the true curve.
 func (s *SSurface) allPointsIntersecting(a, b geom.Vector, l *[]SInter,
 	asSegment, trimmed, inclTangent bool, nearCurved float64) {
 	if s.LineEntirelyOutsideBbox(a, b, asSegment) {
@@ -301,7 +302,7 @@ func (s *SSurface) allPointsIntersecting(a, b geom.Vector, l *[]SInter,
 		}
 		// A point outside the patch projects onto its boundary, off the
 		// line; only a point really on the line is a hit.
-		near := trimmed && nearCurved > 0 && distanceToEdges(pxyz, &s.curvedEdges) < nearCurved &&
+		near := trimmed && nearCurved > 0 && curvedClearance(pxyz, &s.curvedEdges, nearCurved) < 0 &&
 			pxyz.DistanceToLine(a, ba) < lengthEps
 		if trimmed && c == BspUvOutside && !near {
 			continue

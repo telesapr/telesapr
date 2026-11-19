@@ -522,7 +522,10 @@ func (s *SShell) raycastClass(p geom.Vector) Class {
 		switch {
 		case nearest == nil || !nearest.OnEdge:
 		case nearest.nearTrim:
-			clearance = distanceToEdges(nearest.P, &nearest.Srf.Edges)
+			// Within the band of a chord sagging past the tolerance the hit
+			// is as near as within the tolerance of one that doesn't.
+			clearance = math.Min(distanceToEdges(nearest.P, &nearest.Srf.Edges),
+				tol+curvedClearance(nearest.P, &nearest.Srf.curvedEdges, tol))
 		default:
 			clearance = 0
 		}

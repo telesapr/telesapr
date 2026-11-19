@@ -1,5 +1,10 @@
 # K3 spike: fuse first (2026-11-04)
 
+Refreshed 2026-11-19 (ledge-cutback-35): a ray's hit near a curved trim whose chords sag past
+the chord tolerance (a long arc cut into the most chords a curve may have) is not trusted within
+the sag (`srf.curvedClearance`); a cut whose circle touches a curved side's foot circle on a
+ledge's top from inside is made where the circles cross. See "The ring below a ledge's foot".
+
 Refreshed 2026-11-19 (ledge-cut-past-side): a disc united with one of its radius standing on its
 top or bottom, sharing the plane and the side, is sound (`onEdgeCurve`); putting back a ledge's
 ring below a fillet past a disc's rim was made sound by three more changes and not kept. See "The
@@ -814,3 +819,14 @@ A way on: carry the marched edge's points into the exact arc where it runs along
 (`piecesAlongEdges` follows only exact edges), so that steps 3 to 5 can be kept for the case
 alone; or make the chamfer's cone exact against the ledge's top in the union, so the cut back's
 plane finds an exact edge.
+
+Two more of that family (ledge-cutback-35, 2026-11-19). A cutter's far arc of 156°, cut into the
+most chords a curve may have, sagged thirty times the chord tolerance, and a ray's hit on the
+cutter's cap between the chords and the arc read outside the cap; the slab's outer wall was kept
+in the cut back. Hits within a chord's sag are now not trusted, as within the tolerance
+(`curvedClearance` in `allPointsIntersecting` and `raycastClass`). And two circles on a
+ledge's top tangent from inside, the chamfer's cone's and the side's foot's, broke the cut back
+for gaps of 0 to 0.004 between them while crossing ones were made; where in the Boolean it
+breaks was not found (the band, eight tolerances wide at 0.0005, is no chord's sag; compare
+"Touching tangent at a point"). The feature moves its size to where they cross
+(`doc/dev-notes/fillet-past-sides.md`).

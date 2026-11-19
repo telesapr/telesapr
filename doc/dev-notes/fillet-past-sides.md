@@ -4,6 +4,7 @@ Refreshed 2026-11-09 at branches `rd13-fillet-cone` and `rd13-runoff-both`.
 Refreshed 2026-11-18 at branch `runoff-mixed-ends`.
 Refreshed 2026-11-19 at branch `fillet-curved-side-cut`.
 Refreshed 2026-11-19 at branch `ledge-cut-past-side`.
+Refreshed 2026-11-19 at branch `ledge-cutback-35`.
 
 A circular fillet or chamfer (round a rod's foot, a hole's rim) whose foot runs off the flat face
 it rolls on is refused by `contactsClear` (`pkg/topo/fillet_contact.go`), which says which sides
@@ -130,6 +131,43 @@ chamfers of 3.5 at 0.5 and 0.8 drafted 5°, all failing in the cut back (a loop 
 outer wall not closing at the ledge's top, the chamfer's at the touching point), refused as
 running off the face before and after.
 
+Those five were made at branch `ledge-cutback-35` (2026-11-19), 62 of the 64:
+
+- **The drafted four** failed in the raycast, not the cut back's construction. A face of the
+  slab's outer wall at radius 15.4, wholly inside the cutter, kept its sides and top and lost
+  its bottom on the cutter's bottom plane, and the loop did not close. The chain of its sides
+  was classified by raycast from a point of its top edge; the first ray left the cutter through
+  its cap 0.012 inside the far arc (radius 16.43), and the cap's trim put that point outside:
+  the far arc is one piece of 156° under the fillet (`arcBreaks`), cut into the most chords a
+  curve may have (`Tolerance.MaxSegments`), which sag 0.015 at a chord tolerance of 0.0005,
+  thirty times it. The hit was 0.007 off the chords, past the band within which a ray's hit
+  near a curved trim is not trusted (the chord tolerance), and the ray, meeting nothing else
+  ahead, read outside. The band is now each chord's sag where that is more
+  (`srf.curvedClearance`, the sag L·θ/8 from the turn between neighbouring chords): such a hit
+  is not trusted and another ray decides. No golden moved; a chord's band is the tolerance as
+  before wherever its curve is cut finely enough (`TestCurvedClearanceCoarseChords`).
+- **The upright chamfer at 0.5** has its cone meet the ledge's top in a circle of 4.5 that
+  touches the foot's circle of 8 from inside at one point. The cut back lost the ledge's top
+  and the side on one half of the disc (543 naked edges). Mapped by the hole's distance from
+  the rim: failing from 0.500 to 0.504 at a chord tolerance of 0.0005 (the circles 0 to 0.004
+  apart, eight times the tolerance), made at 0.499 and 0.4995, the circles crossing by 0.0005,
+  where the cut back finds the crossing and the sliver it cuts into the ledge past the side is
+  within `keepBeyond`'s allowance, and made at 0.505; at a tolerance of 0.002 only 0.504 failed.
+  The band does not follow the tolerance and is no chord's sag; where in the Boolean it breaks
+  was not found (`doc/dev-notes/k3-fuse-spike.md`). A size moved within the chord tolerance cannot
+  move the circles out of it from inside. Such a fillet is made at the nearest size at which
+  the circles cross by a quarter to twice the tolerance (`footClearSize`, the cut's outline in
+  the foot's plane measured from the edge's sections, `curvedSide.footReach`), as `nearSize`
+  makes a fillet only just past a flat side; where none does it is refused, "its cut below the
+  face only just meets the side's foot", for a cut within ten tolerances inside the foot
+  (`TestFilletPastConeSideRefused`, the hole at 0.502). The chamfer at 0.5 is made at a size
+  0.0007 larger, within 1.2e-4 of the ring's integral at 3.5.
+
+`TestFilletPastConeSide` takes the five in (108 of 108). Left in the family: the two chamfers of
+3.5 at 0.2 and 0.3 upright, by name (`cutsBelow`). Seen on the way, not followed: at a chord
+setting of 0.001 (tolerance 0.00018) a ledge's hole, even 2 from the rim, is refused as running
+off the face before and after these changes.
+
 Putting the solid back past the side below the foot (tried 2026-11-19, not kept): the solid
 before the fillet intersected with the cutter's ring from below the solid to halfway up the side
 (to the side's foot itself, the ring's inner face touched the side along the foot's circle and
@@ -142,8 +180,8 @@ of the ledge's top meeting along the chamfer's arc with different points. A cyli
 united with the solid after the cut back failed where its inner face met the side's along the
 foot's circle.
 
-Left: a hole's rim whose cut into a ledge reaches past the side; a solid standing in the cutter
-beside the side below the face; `ROADMAP.md`, "Fillet leftovers".
+Left: a hole's rim whose cut into a ledge reaches past the side, or comes just inside the side's
+foot; a solid standing in the cutter beside the side below the face; `ROADMAP.md`, "Fillet leftovers".
 
 ## An end running off both its faces (2026-11-09)
 

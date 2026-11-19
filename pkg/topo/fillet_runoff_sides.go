@@ -33,6 +33,9 @@ type runOff struct {
 	sides map[int]*runOffSide
 	// varies is set where a fillet's radius varies along the edge.
 	varies bool
+	// edge is the rounded edge, whose cross sections at another size
+	// footClearSize measures; nil where unknown.
+	edge *filletEdge
 }
 
 // runOffSide is a flat side face the foot runs into: its plane (a
@@ -187,6 +190,10 @@ func filletPastSides(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 	if !ok && !flat {
 		out, made, ok = nearSize(sh, picks, r, origin, off)
 	}
+	touchesFoot := false
+	if !ok {
+		out, made, touchesFoot, ok = footClearSize(sh, picks, r, origin, flat, off)
+	}
 	if ok {
 		*sh = out
 		return made, nil
@@ -204,6 +211,10 @@ func filletPastSides(sh *srf.SShell, picks []FilletPick, r float64, origin uint3
 			return r, filletErr(at, "the %s's foot only just runs past the side of the face here, too little for "+
 				"the side to cut it back: make it a little smaller or larger", what)
 		}
+	}
+	if touchesFoot {
+		return r, filletErr(at, "the %s runs off the face here into a curved side and its cut below the face only "+
+			"just meets the side's foot, too near for the side to cut it back: make it a little smaller or larger", what)
 	}
 	for _, s := range off.sides {
 		if s.curved != nil && s.curved.blocked {

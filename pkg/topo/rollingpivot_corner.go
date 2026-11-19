@@ -15,9 +15,9 @@ import (
 // then fall to the other's: that surface would fold. So, as
 // OpenCASCADE's corners do, the corner fills the hole tangent to what is
 // round it rather than following the ball exactly. Its foot on the
-// crease moves evenly from one fillet's to the other's (on a curved
-// crease leaning back under the nearer fillet it stands at that one's
-// foot first, creaseDepth); its foot on the
+// crease moves evenly from one fillet's to the other's (on a crease,
+// curved or straight, leaning back under the nearer fillet it stands at
+// that one's foot first, creaseDepth); its foot on the
 // shared face is the swinging ball's, which moves smoothly; and each
 // section is the arc through the two tangent to the face, which at
 // either end is the fillet's own section. A chamfer's corner is ruled
@@ -74,7 +74,7 @@ type pivotFrame struct {
 	crease pivotCrease
 	wSign  float64
 	// hold is the share of the corner from the nearer foot over which
-	// its foot on a curved crease stands there (creaseDepth).
+	// its foot on the crease stands there (creaseDepth).
 	hold float64
 }
 
@@ -96,7 +96,12 @@ func newPivotCorner(a *rbBlend, ka int, b *rbBlend, kb int) (*pivotCorner, error
 	if err := pf.sample(); err != nil {
 		return nil, err
 	}
-	if pf.curved() && !pf.flat && pf.leansBack() {
+	if !pf.flat && pf.leansBack() {
+		// Curved or straight: two flat walls meeting in a line in the
+		// dish lean back so too, where the top falls away from the
+		// corner, and the corner moving off the nearer foot at once
+		// turned through more than half a turn there, crossing that
+		// fillet and wall by a few micrometres (creaseDepth).
 		pf.hold = pf.holdShare()
 	}
 	if err := pf.sectionsLike(); err != nil {
@@ -107,6 +112,11 @@ func newPivotCorner(a *rbBlend, ka int, b *rbBlend, kb int) (*pivotCorner, error
 		return nil, err
 	}
 	pf.c.all = all
+	if pf.c.fdb != pf.c.fd {
+		if err := pf.seamCrossing(); err != nil {
+			return nil, err
+		}
+	}
 	return pf.c, nil
 }
 
@@ -143,9 +153,9 @@ func newPivotFrame(a *rbBlend, ka int, b *rbBlend, kb int) (*pivotFrame, error) 
 		qa: pf.secA.foot[ia].p, qb: pf.secB.foot[ib].p, da: pf.secA.foot[1-ia].p, db: pf.secB.foot[1-ib].p,
 		fa: pf.secA.foot[ia].f, fb: pf.secB.foot[ib].f, fd: pf.secA.foot[1-ia].f}
 	pf.c = c
-	if pf.secB.foot[1-ib].f != c.fd {
-		return nil, filletErr(vp, "the fillets' corner at the inside corner crosses a seam of the face they share: make them smaller")
-	}
+	// Where b's foot on the shared face lies on another patch of it, the
+	// corner crosses the seam between the two (rollingpivot_seam.go).
+	c.fdb = pf.secB.foot[1-ib].f
 	if ia == 1 {
 		c.creaseU = 1
 	}
@@ -309,9 +319,16 @@ func (pf *pivotFrame) at(t float64) pivotSwing {
 // where none fits.
 func (pf *pivotFrame) section(t float64) (q, d, centre geom.Vector, rho float64) {
 	sw := pf.at(t)
-	q = pf.c.qa.Plus(pf.c.qb.Minus(pf.c.qa).ScaledBy(t))
-	if pf.curved() {
+	switch {
+	case pf.curved():
 		q, _ = pf.crease.point(pf.creaseDepth(t))
+	case pf.hold != 0 && pf.hb != pf.ha:
+		// Between the two feet themselves, as below, at the share of the
+		// way creaseDepth puts the foot.
+		f := (pf.creaseDepth(t) - pf.ha) / (pf.hb - pf.ha)
+		q = pf.c.qa.Plus(pf.c.qb.Minus(pf.c.qa).ScaledBy(f))
+	default:
+		q = pf.c.qa.Plus(pf.c.qb.Minus(pf.c.qa).ScaledBy(t))
 	}
 	if pf.flat {
 		return q, sw.d, geom.Vector{}, 0

@@ -92,8 +92,17 @@ type pivotCorner struct {
 	// two fillets' feet on the crease, da and db on the shared face.
 	v              geom.Vector
 	qa, qb, da, db geom.Vector
-	// fa, fb and fd are the creased faces of a and b and the shared face.
-	fa, fb, fd int
+	// fa, fb and fd are the creased faces of a and b and the shared face,
+	// a's patch of it; fdb is b's, another where the corner crosses a seam
+	// of the shared face.
+	fa, fb, fd, fdb int
+	// seam is set where it does: at seamAt along piece seamPiece of the
+	// corner's side on the shared face, at seamX, the seam running from
+	// there to seamEnd on the rim (rollingpivot_seam.go).
+	seam           bool
+	seamPiece      int
+	seamAt         float64
+	seamX, seamEnd geom.Vector
 	// creaseU is the side of the corner's patches along the crease, 0
 	// or 1 in u; the shared face's is the other.
 	creaseU int
@@ -215,14 +224,19 @@ func (c *pivotCorner) cut(sh *srf.SShell) error {
 	sOwner := sh.FindSurface(t.Faces[owner].Surface)
 	sOther := sh.FindSurface(t.Faces[other].Surface)
 	sD := sh.FindSurface(t.Faces[c.fd].Surface)
-	if sOwner == nil || sOther == nil || sD == nil {
+	sDb := sh.FindSurface(t.Faces[c.fdb].Surface)
+	if sOwner == nil || sOther == nil || sD == nil || sDb == nil {
 		return filletErr(c.v, "a face at the inside corner is not in the shell")
 	}
 	if err := c.splitCrease(sh, near, far); err != nil {
 		return err
 	}
 	c.dropCrease(sh, sOwner, sOther, near, far)
-	return c.carryShared(sh, sD)
+	pieces := c.sideCurves(1 - c.creaseU)
+	if !c.seam {
+		return c.carryShared(sh, sD, c.da, pieces)
+	}
+	return c.carryAcrossSeam(sh, sD, sDb, pieces)
 }
 
 // splitCrease splits the crease at the feet, near the vertex first, and
@@ -294,23 +308,24 @@ func (c *pivotCorner) dropCrease(sh *srf.SShell, sOwner, sOther *srf.SSurface, n
 	}
 }
 
-// carryShared adds to the shared face's loop the corner's side on it,
-// from a's foot there to b's, the way the loop runs.
-func (c *pivotCorner) carryShared(sh *srf.SShell, sD *srf.SSurface) error {
+// carryShared adds to the shared face's loop pieces of the corner's
+// side on it, which run on from the fillet's foot there, from, the way
+// the loop runs.
+func (c *pivotCorner) carryShared(sh *srf.SShell, sD *srf.SSurface, from geom.Vector, pieces []srf.SBezier) error {
 	fwd, found := true, false
 	for _, tb := range sD.Trim {
 		switch {
-		case tb.FinishP.Equals(c.da):
+		case tb.FinishP.Equals(from):
 			fwd, found = true, true
-		case tb.StartP.Equals(c.da):
+		case tb.StartP.Equals(from):
 			fwd, found = false, true
 		}
 	}
 	if !found {
-		return filletErr(c.da, "the shared face's edge doesn't reach the fillet's end at the inside corner")
+		return filletErr(from, "the shared face's edge doesn't reach the fillet's end at the inside corner")
 	}
 	h := newCurveHandle(sh)
-	pieces := c.sideCurves(1 - c.creaseU)
+	pieces = slices.Clone(pieces)
 	if !fwd {
 		slices.Reverse(pieces)
 		for i := range pieces {
@@ -336,7 +351,7 @@ func (c *pivotCorner) carryShared(sh *srf.SShell, sD *srf.SSurface) error {
 // put adds the corner's patches, with the colour, origin and sheet of
 // a's fillet.
 func (c *pivotCorner) put(fa *FaceAdder, color core.RGBA, origin uint32) error {
-	for _, row := range c.all {
+	for r, row := range c.all {
 		for b := range row {
 			p := row[b]
 			var loop []srf.SBezier
@@ -345,6 +360,7 @@ func (c *pivotCorner) put(fa *FaceAdder, color core.RGBA, origin uint32) error {
 					loop = append(loop, sb)
 				}
 			}
+			loop = c.seamLoop(r, b, loop)
 			p.Color, p.Origin, p.Sheet = color, origin, origin
 			if _, err := fa.Add(p, [][]srf.SBezier{loop}); err != nil {
 				return filletErr(loop[0].Start(), "the fillets' corner at the inside corner can't be put in: %v", err)

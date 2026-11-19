@@ -160,6 +160,35 @@ var conePlates = []conePlate{
 			return g, ledge + v - hole
 		},
 	},
+	// Holes 0.5 and 0.8 from the rim of a disc drafted 5° at its top,
+	// rounded 3.5: a face of the slab's outer wall was kept by the cut
+	// back, the raycast taking a point inside the cutter for outside, its
+	// ray crossing the cap just inside the far arc of 156°, whose 32
+	// chords sag past the chord tolerance (srf.curvedClearance,
+	// 2026-11-19).
+	ledgeHoleAt("ledge hole drafted 0.5", 5, 0.5),
+	// The hole 0.5 from an upright disc's rim, the chamfer's cone
+	// meeting the ledge's top in a circle that touches the foot's: made
+	// where the circles cross, at a size within the chord tolerance
+	// (topo.footClearSize, 2026-11-19).
+	ledgeHoleAt("ledge hole touching", 0, 0.5),
+	ledgeHoleAt("ledge hole drafted 0.8", 5, 0.8),
+}
+
+// ledgeHoleAt is the ledged disc, drafted by draft, with a hole of
+// radius 4 gap from its rim at the top, rounded 3.5.
+func ledgeHoleAt(name string, draft, gap float64) conePlate {
+	x := discRim(4, draft) - 4 - gap
+	return conePlate{
+		name: name, c: V(x, 0, 4), rho: 4, hole: true, rim: discRim,
+		drafts: []float64{draft}, sizes: []float64{3.5},
+		make: func(d *Doc, draft float64) (Group, float64) {
+			ledge := ledgeUnder(d, draft)
+			v := draftedDisc(d, draft)
+			g, hole := holeAt(d, x)
+			return g, ledge + v - hole
+		},
+	}
 }
 
 // draftedBore draws a block 40 square and 4 high with a bore of radius 8
@@ -246,13 +275,14 @@ func ringPastCone(cx, cy, rho, r float64, flat, below bool, rim func(z float64) 
 // running into the rod where it widens at 10° (refused before
 // 2026-11-19); and past a disc's rim, upright or drafted, where the
 // solid goes on below it as a ledge (the cutter starting at the side's
-// foot), a hole there 0.3 from the side (refused before 2026-11-19).
+// foot), a hole there 0.3 from the side (refused before 2026-11-19),
+// and holes 0.5 and 0.8 from it rounded 3.5 (refused before 2026-11-19).
 // Refused as running off the face before 2026-11-09. Every case sound
 // and within 3e-4 of the ring's integral within the cone. The ordinary
 // run takes one case of each solid and draft, the size and the kind
 // turning from case to case; -short the hardest, a rod off centre on a
 // drafted disc, the rod the widening bore runs into, and a ledge's
-// chamfer; make test-sweeps all 102.
+// chamfer; make test-sweeps all 108.
 func TestFilletPastConeSide(t *testing.T) {
 	t.Parallel()
 	combo := 0
@@ -344,7 +374,10 @@ func checkFilletCone(t *testing.T, p conePlate, draft float64, flat bool, r floa
 // filled the hole's sliver past its wall). Chamfered so deep 2 from the
 // side, refused too before 2026-11-19, its cut into the ledge lies
 // within the side and is made, as the hole 0.3 from the side is to 3
-// (TestFilletPastConeSide).
+// (TestFilletPastConeSide). A hole's rim 0.502 from the side chamfered
+// 3.5, its cone's circle on the ledge's top 0.002 inside the foot's,
+// which the cut back can't take and no size within the chord tolerance
+// makes cross, refused by name since 2026-11-19 (topo.footClearSize).
 func TestFilletPastConeSideRefused(t *testing.T) {
 	t.Parallel()
 	for _, c := range []struct {
@@ -361,6 +394,12 @@ func TestFilletPastConeSideRefused(t *testing.T) {
 			g, _ := holeAt(d, 3.7)
 			return g
 		}, V(7.7, 0, 4), true, 3.5, "cuts into the solid below the side's foot"},
+		{"hole's rim just inside the side's foot", func(d *Doc) Group {
+			ledgeUnder(d, 0)
+			draftedDisc(d, 0)
+			g, _ := holeAt(d, 3.498)
+			return g
+		}, V(7.498, 0, 4), true, 3.5, "only just meets the side's foot"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()

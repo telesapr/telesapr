@@ -1,6 +1,6 @@
 # Rolling-ball corners: pivots and mitres at an inside corner
 
-Refreshed 2026-11-19 at branches `pocket-curved-crease`, `fillet-end-leaning-wall` and `pocket-crease-lean-back`.
+Refreshed 2026-11-19 at branches `pocket-curved-crease`, `fillet-end-leaning-wall`, `pocket-crease-lean-back`, `rim-fine-tol-corner`, `apex-seam-chamfer` and `pivot-shared-seam`.
 
 Where two rolling-ball chains end at one vertex with a crease between their walls that the ball
 goes round (a pocket's rim in a curved face, the foot of a band raised on a tube at the band's
@@ -201,12 +201,32 @@ wall; the corner there has its side on the crease all one point, a pole. It is s
 its ends: the depth is smooth at the split, so the two join with the same derivative there. The
 crease is not split at the corner's breaks that lie at the nearer foot (`splitCrease`), and the
 pole sides are left out of the patches' loops (`put`), as `AddBSplineFace` does. The normals
-across the corner's ends keep within 0.0005° of the fillets'. A straight crease, a chamfer and a
-crease that doesn't lean back (all of the block's) take none of this and are the same to the
-bit; the dish's corners that lean back take 0.02% to 0.16% more than before, toward
-OpenCASCADE's. Sound at 0.002 mm too (`TestFilletPivotCurvedCreaseLeansBack` at 0.01). The
-whole rim at 0.002 mm crosses at the x-/y- corner, two flat walls meeting in a straight crease,
-which this does not touch.
+across the corner's ends keep within 0.0005° of the fillets'. A chamfer and a crease that
+doesn't lean back (all of the block's) take none of this and are the same to the bit; the dish's
+corners that lean back take 0.02% to 0.16% more than before, toward OpenCASCADE's. Sound at
+0.002 mm too (`TestFilletPivotCurvedCreaseLeansBack` at 0.01).
+
+A straight crease leans back too (second fix of the day, branch `rim-fine-tol-corner`): the
+dish's x-/y- corner, two flat walls meeting in a vertical line, where the top falls away from the
+corner along the x- edge, so the x- fillet's end section leaves its foot on the crease 9° off
+the wall's vertical, into the fillet's side. The whole rim at 0.002 mm, one wall or both
+leaning, fillets of 1 and 2, and the pair x- and y- alone, were refused as not closed (sound at
+0.005 and coarser; on 09970236, before the curved crease work, the pair crossed at 0.002 too, so
+it is not new). The crossing edges ran from the x- fillet's foot on the crease, one on the
+x- fillet's mesh, one on the x- wall's, through a triangle of the corner patch from a point of
+the crease just below that foot to the end section: the same 189°-to-fill as above (171° from
+the crease round to the end section through the fillet and wall), at 9° in place of 26°, so
+the fold is a few micrometres and only a mesh at 0.002 mm showed it. `holdShare` there is 0.57
+(r 1 and 2). Now `leansBack` and the hold are taken on a straight crease too (`newPivotCorner`;
+`section` puts the foot between the two feet at the share `creaseDepth` gives): the whole rims
+of the dish at r 1, 1.5 and 2, fillets and chamfers, one wall or both leaning, are sound at
+0.002 and 0.005 mm (4 of 24 refused before, all fillets; the chamfer of 2 with both walls
+leaning was refused at both by the apex's seam, made since: "Feet past a pole" below); the
+block's 24 were sound before and are the same. Of the 23 OpenCASCADE lines of
+`TestFilletPivotCurvedCrease` only the dish's two whole rims filleted at r 1 (the x+ wall leaning, and both)
+move, by 0.006% and 0.008%, toward its; the rest are the same to the printed digit.
+`TestFilletPivotStraightCreaseLeansBack` (the pair at 0.002 mm, about 50 s of processor, skipped
+under -short).
 
 Against OpenCASCADE (its makeFillet, `scripts/fillet-pivot-curved-fixtures.py`): the whole rim
 at r 0.5, 1 and 2 took 1.180408, 4.588486 and 17.869764, ours 3.5%, 2.1% and 4.0% less, as the
@@ -289,7 +309,7 @@ against the edge's middle point.
 
 The grid of ends (both tops, one or two walls leaning, the lone edges x+, y+, y-, x- and the
 chains x-/y-, y+/x-/y- and x-/y-/x+, r 0.5, 1, 1.5, 2, fillets and chamfers: 224) made 199 sound
-before, 218 now, each sound by `pkg/check`. Left: the leaning crease's corner of the section above
+before, 218 then (222 by devel fbcf98b5, 224 since "Feet past a pole" below), each sound by `pkg/check`. Left then: the leaning crease's corner of the section above
 (the whole y+/x-/y- chain in the dish with both walls leaning, filleted, four radii), and a chamfer
 of 2 on the dish's y+ edge, alone or in a chain, whose foot on the top passes within 0.4 mm of the
 cone's apex and crosses a seam that starts there, not at the edge ("crosses a seam of a face that
@@ -310,7 +330,125 @@ Boolean cut between them, 0.898). The same holds for most dish lines with both w
 there OpenCASCADE's volumes, however measured, are off by up to a few tenths of a mm³, against
 2e-5 in the block, and the chains' bands in `TestFilletEndLeaningWall` are wider.
 
+## Feet past a pole (2026-11-19)
+
+The chamfer of 2 on the dish's y+ edge: the edge crosses the top 1.56 from the cone's apex, and
+the chamfer's foot on the top, 2 from it, passes 0.40 beyond the apex. The lathed top is four
+patches whose seams all start at the apex; the edge runs through all four, the foot through the
+two far ones only, crossing the seam between them, which runs from the apex outward and never
+meets the edge. `cutBack` cut each crossed seam from the ball's point to the seam's end on the
+chain, and found none. The other three seams run from the apex to the edge, inside the strip the
+chamfer takes, and the two near patches' pieces round the apex lie wholly in it.
+
+So a crossed seam that doesn't reach the edge is looked at for a pole (`seamPole`, in
+`rollingball_pole.go`): a vertex of it every other edge of which is a seam between faces of the
+same side that either runs to the chain or is crossed by the ball's point too. The seam is cut at
+the crossing and its piece to the pole goes; so do the pole's seams to the chain, and a patch
+round the pole with no foot on it loses that loop (the dish's near quarters keep the rest of
+their faces on the far side of the pocket, and must still close, `trimsClose`), or, with nothing
+left, is dropped. A crossing within the chord tolerance of the pole is refused by name ("passes
+through a pole of the face"): the seam's piece to the pole would be a speck.
+
+On a ball the foot can go on to a patch the edge never touches (a pocket turned 45° about z, its
+rim 1 or 0.5 from the pole in plan: the edge runs through three quarters, the foot through the
+fourth too), and `footNear`, which looks only among the side's faces, lost the ball there ("the
+ball the fillet rolls doesn't touch the face"). The patches collapsed at a pole within 4 radii of
+the chain are now taken among the side's faces (`addPoleFaces`), and such a patch, with no trim
+along the edge to say which way its loop runs, takes the way of a face of the side collapsed at
+the same pole (`poleForwards`, read before any face is cut back).
+
+Checked: the dish's y+ chamfer of 1.5, 1.75 and 2 within 0.25% of the chamfer's own integral
+(`scripts/fillet-envelope-volume.go -chamfer`: in each normal plane of the edge, the line between
+the top's and the wall's points d from the edge, as `chamferSection` puts them; 21.663, 28.870,
+36.661 at -n 120 -dx 0.04, still moving by up to 0.06% between -n 60 and 120; ours 21.653, 28.804, 36.615), OpenCASCADE's
+makeChamfer 21.673, 28.924, 36.625. In the y+/x-/y- chain the chamfer of 2 takes 100.045 to
+OpenCASCADE's 101.576 (-1.5%); the x-/y- chain alone, which passes no apex, is -0.94%. The grid
+of 224 ends made 222 on devel fbcf98b5 (the leaning crease's corner had been made by then), 224
+now, and taking in the patches round a pole changed none of its volumes. The ball's pocket
+(`spherePolePocket`, `TestFilletPastPole`), rims 1 and 0.5 from the pole, r 0.5 to 2.5, fillets
+and chamfers: 17 of 20 made, at most 3 before, each within 5e-4 of OpenCASCADE's measured within
+a box about the rim (`scripts/fillet-sphere-pole-fixtures.py`). Refused: the two fillets whose
+ball's point passes through the pole, as OpenCASCADE refuses them, and the chamfer of 1 with the
+rim 1 from the pole, whose foot passes 2e-4 short of the pole (its seams split a hair from the
+pole, the mesh comes out open; OpenCASCADE makes it, 5.078).
+
+From 2.25 the dish's y+ chamfer is refused as not closed: its foot on the leaning wall runs past
+the wall's foot on the pocket's floor (the naked edges are along the wall's edge with the floor at
+z = 4), a run-off, not the apex.
+
+## A corner on a seam of the shared face (2026-11-19)
+
+`seamPocket` (`pkg/topo/fillet_pivot_seam_test.go`): `dishPocket`'s dish, its quarters one sheet
+as a lathed sketch's are, a square pocket 8 on a side whose corner at (16, off) points along +x,
+turned by rot about it. The quarters' seam at y = 0 then runs from the rim, inside the fillets'
+bands, out past the corner: one fillet's foot on the dish lies on one quarter, the other's on the
+next. Each topology face is a quarter, so `pivotCorner.fd` (a's foot's) and `fdb` (b's) differ.
+
+- **A corner patch** (feet at two depths, one radius; refused "crosses a seam of the face they
+  share" before). `pivotFrame.seamCrossing` finds, on the patch's own side on the shared face
+  (`sideCurves`), where the quarter's parameter across the seam reaches its side (`seamParam`),
+  by bisection on the side's Bézier; the side and its patch's loop are split there
+  (`splitAtSeam`, `seamLoop`), the seam cut there (`splitNearest`) and its piece back to the rim
+  dropped from both quarters, each quarter given the side up to the seam from its own fillet's
+  foot (`carryAcrossSeam`). The seam's end on the rim is the vertex of either chain nearest the
+  corner on an edge between the two quarters (`Topology.seamBetween`). The point lies about
+  9 µm off the cone, as the whole side does (the corner's side strays from the cone by up to
+  9.4 µm, measured the same with the pocket turned off the seam: the sections are on it, the
+  quintic between them is held to them only from u = 0.05 to 0.95).
+- **Tried first**: the corner skinned in two at the seam (`skin` with a break), a section through
+  the crossing, exactly on the cone. The break put a vertex on the crease; near the nearer foot
+  the corner leaves the crease tangent to the owner wall, and its sections a little short of the
+  near end leave the crease leaning past the wall's plane by about 1e-4 mm (at t = 0.9, 9° past
+  it at 0.0007 mm from the crease), so the ear clipper's triangles from that vertex crossed the
+  wall's: 7 of 90 corners of one radius refused as not closed, as a break forced at t from 0.8
+  to 0.95 on the same corner turned off the seam was too. The single skin has the same lean
+  (its normal turns over across u = 0.96..0.97 at the near end) and meshes clean.
+- **A kinked mitre** (two radii or distances; "a loop doesn't close" before). The mitre's point
+  lies on one quarter while one chain's edge, and so its side faces (`rollingBall.side`), lie
+  wholly on the other: its foot crosses the seam a little before the mitre onto a quarter it is
+  never looked for on, carried on along its own quarter's surface past the patch (which, a
+  rational quadratic in the angle, is the same cone), and its band is cut into that quarter up to
+  the mitre. `mitreSeams` (`rollingmitre_seam.go`), after the faces are cut back, walks that
+  quarter's trims from the mitre's point back to the trim that crosses the seam, cuts it there,
+  moves the trims on to the mitre to the next quarter, cuts the seam there and drops its piece
+  back to the rim; the fillets' patch loops are split at the point (`splitAtSeams`). A seam
+  leaving the mitre's vertex through the mitre's point (the corner on the seam, unturned) is
+  `splitMitreSeams`'s. The seam's side of the patch is the one every point of the seam lies on
+  (`seamParam`): taken at the seam's middle point first, it was the wrong one for the arch wrapped
+  on a tube centred on its seam (`TestFilletWrappedArch`), whose seam is a line of two points
+  ending at the tube's end, a corner of the patch where both parameters sit on a side, so the
+  mitre's point on the seam was taken as past it and its foot refused as not cut at the seam.
+- **Refused**: a chamfer of 1 and 1.5 at (−0.3, 20°) and its mirror: the smaller chain's own
+  foot crosses the seam 0.008 mm short of the mitre, its section on the seam so near the mitre's
+  (whose weights are not 1) that the skin's weights interpolate below zero between them;
+  `crossingNearEnd` says so ("just short of its end"), and at 0.95 or 1.05 it is made.
+
+`TestFilletPivotSeamSweep` (off −0.3 to 0.3 with 0, rot −20, 0, 20, sizes 0.5 to 1.5 alike or
+unlike, fillets and chamfers, 0.01 mm): 208 of 210 sound, 54 before (110 refused by name, 44 "a loop
+doesn't close", 2 weights below zero). Against OpenCASCADE
+(`scripts/fillet-pivot-seam-fixtures.py`, FreeCADCmd; Part Fillet and Part Chamfer features for a
+size per edge): across its own seam this near the corner its fillets came out inside out (a
+compound of negative volume, one edge alone too), so its dish is turned to put its seam at −x.
+`TestFilletPivotSeam`, 12 lines: fillets' corner patches 1% to 1.8% under its volumes, as the
+dish's others are; chamfers' corner patches 0.05% over and 0.8% under; mitres within 0.05%. The
+same pocket turned 45° about the axis, its corner well inside a quarter, takes within 0.12% of
+ours (the fillets' fit sampled elsewhere). Our STEP read by FreeCADCmd: our faces within
+0.0003 mm of its near a mitre, 0.04 to 0.14 mm near a corner patch (0.08 r a fillet's, as
+before); the other way the comparison is spoiled by our files (below). Turned 30° instead, the
+chamfers of 1 and 1.5 at (0.1, 0) were refused as not closed, away from any seam.
+
+Timing: a corner across the seam costs what one off it does (`TestFilletPivotSeamQuick`, 0.64 s
+at 0.05 mm against 0.34 s for `TestFilletPivotCornerQuick`'s, a pocket's two corners there);
+the 210-line sweep runs in 36 s on 16 cores.
+
 ## Left
 
 - The corner patches of the strip are joined into the fillets' faces or kept apart (`Faces`)
   differently at different tolerances: 15 faces at 0.02%, 14 at 0.015%.
+- Our STEP files of `seamPocket`'s rounded corners, written as `stepEdgesOffFaces` writes them,
+  read back by FreeCADCmd as a shell of no solid (the seam's corners) or as two solids and once
+  not valid (the same pocket turned off the seam): faces of the dish near the corner are lost on
+  reading. Not looked into; the meshes are sound.
+- Without one sheet for the lathe's quarters (`dishPocket` as the older tests build it), the
+  seam is an edge of the solid: a pocket's corner exactly on it is refused "not an edge for a
+  rolling ball" (its vertex has three other edges).

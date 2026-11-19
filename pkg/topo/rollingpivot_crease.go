@@ -299,6 +299,13 @@ const pivotHoldMax = 0.75
 // the fillet's mesh near its end (the dish's corner of a flat wall and a
 // leaning one, 26°); standing at the foot they turn about it, off the
 // wall, as the ball does, until the ball has come back down to the foot.
+// A straight crease leans back so too where the shared face falls away
+// from the corner along the nearer fillet's edge, as at the dish's corner
+// of two flat walls, 9°: there the corner's side on the crease left the
+// foot opposite the fillet's end section turned 9° off it, so the corner
+// had 189° of the turn round the foot to fill, which a patch cornered
+// there covers only by folding over the wall and the fillet: by so
+// little that a mesh crossed them only at a chord tolerance of 0.002.
 func (pf *pivotFrame) creaseDepth(t float64) float64 {
 	if pf.hold == 0 {
 		return pf.ha + (pf.hb-pf.ha)*t

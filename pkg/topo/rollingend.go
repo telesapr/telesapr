@@ -755,7 +755,7 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		}
 		sf, err := srf.SkinThrough(curves, ts, d0, d1)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, rb.crossingNearEnd(cross, s0, s1, err)
 		}
 		var more []rbSpec
 		worst, where := 0.0, geom.Vector{}
@@ -1721,4 +1721,25 @@ func (rb *rollingBall) chamferFootNormals(sec rbSection) [2]rbFoot {
 		}
 	}
 	return feet
+}
+
+// crossingNearEnd is the refusal of a fillet whose surface couldn't be
+// skinned through its sections, err, from s0 to s1: where its foot
+// crosses a seam within a hundredth of its length of an end, the section
+// on the seam stands so near the end's, as a mitre's at a pocket's inside
+// corner turned onto a lathe's seam, that the two sections' weights
+// interpolate below zero between them, and the refusal says so.
+func (rb *rollingBall) crossingNearEnd(cross []rbCrossing, s0, s1 float64, err error) error {
+	for _, c := range cross {
+		if d := math.Min(c.s-s0, s1-c.s); d < 0.01*(s1-s0) {
+			sec, serr := rb.section(c.s)
+			at := rb.t.Vertices[rb.verts[0]].P
+			if serr == nil {
+				at = sec.foot[c.side].p
+			}
+			return filletErr(at, "the fillet's foot crosses a seam of its face just short of its end: "+
+				"make it a little smaller or larger")
+		}
+	}
+	return err
 }

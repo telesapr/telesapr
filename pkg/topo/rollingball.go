@@ -98,7 +98,10 @@ type rollingBall struct {
 	pieces   []ChainPiece
 	verts    []int // the chain's vertices, verts[i] where piece i starts
 	side     [2][]int
-	closed   bool
+	// poleOf is, for a face of side taken in round a pole near the chain
+	// that the edge doesn't reach (addPoleFaces), the pole.
+	poleOf map[int]geom.Vector
+	closed bool
 	// For an open chain, the flat faces it ends at, at its start and its
 	// end.
 	ends [2]*rbEnd
@@ -441,6 +444,7 @@ func (t *Topology) newChain(e int, r float64, flat bool) (*rollingBall, error) {
 			}
 		}
 	}
+	rb.addPoleFaces()
 	rb.tol = math.Max(t.shell.Tol.ChordTolMm()/10, 1e-6)
 	if !closed {
 		for k, at := range []struct {
@@ -1902,6 +1906,10 @@ func putBlends(sh *srf.SShell, bls []*rbBlend, origin uint32) error {
 	if len(corners) > 0 {
 		dropUnusedCurves(sh)
 	}
+	seamCuts, err := mitreSeams(sh, bls)
+	if err != nil {
+		return err
+	}
 
 	// The fillet's patches.
 	patchLoops := make([][][][]srf.SBezier, len(bls))
@@ -1920,6 +1928,7 @@ func putBlends(sh *srf.SShell, bls []*rbBlend, origin uint32) error {
 	}
 	splitAtMitres(bls, patchLoops)
 	splitAtPivots(bls, corners, patchLoops)
+	splitAtSeams(bls, seamCuts, patchLoops)
 	fa := NewFaceAdder(sh)
 	for i, bl := range bls {
 		color := t.Surface(bl.rb.side[0][0]).Color
@@ -2118,6 +2127,8 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 	// the edge to the cut goes.
 	type pair struct{ a, b geom.Vector }
 	var drop []pair
+	// The patches round a pole the strip takes whole (seamPole).
+	swallowed := map[int]bool{}
 	for _, c := range cross {
 		j, best := -1, 1e-5*rb.length
 		for i := range secs {
@@ -2158,7 +2169,37 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 			}
 		}
 		if x < 0 {
-			return nil, filletErr(q, "the fillet crosses a seam of a face that doesn't reach the edge: make it smaller")
+			// The seam may start at a pole of the face, where all its
+			// patches' seams meet (a cone's apex, a sphere's top) inside
+			// the strip the fillet takes: the cut runs to the pole, and the
+			// seams from it to the edge go, and the patches between them
+			// the ball's point never reaches.
+			p, ok := rb.seamPole(c, cross, q, isChain, func(v int) bool {
+				return onChain[v] || onChainLine(t.Vertices[v].P)
+			})
+			speck := math.Max(t.shell.Tol.ChordTolMm(), 10*geom.LengthEps)
+			if !ok {
+				if rb.atSeamEnd(c.faces, q, speck) {
+					return nil, filletErr(q, "the fillet's edge passes through a pole of the face: make it a little smaller or larger")
+				}
+				return nil, filletErr(q, "the fillet crosses a seam of a face that doesn't reach the edge: make it smaller")
+			}
+			if q.Minus(t.Vertices[p.v].P).Magnitude() < speck {
+				// Split there, the seam's piece to the pole is a speck the
+				// faces round it can't be trimmed by.
+				return nil, filletErr(q, "the fillet's edge passes through a pole of the face: make it a little smaller or larger")
+			}
+			if err := splitNearest(sh, q, t.Vertices[p.v].P); err != nil {
+				return nil, filletErr(q, "the fillet is wider than a patch of the face here: make it smaller")
+			}
+			drop = append(drop, pair{q, t.Vertices[p.v].P})
+			for _, w := range p.to {
+				drop = append(drop, pair{t.Vertices[p.v].P, t.Vertices[w].P})
+			}
+			for _, f := range p.swallowed {
+				swallowed[f] = true
+			}
+			continue
 		}
 		// By the curve nearest the point: a curve may run along both
 		// seams, and an earlier cut gives it new handles.
@@ -2348,6 +2389,11 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 	for k := range 2 {
 		if cons != nil && k == cons.j {
 			// Side j's face goes whole, below.
+			for _, f := range rb.side[k] {
+				if swallowed[f] {
+					return nil, filletErr(at, "the fillet crosses a seam from a pole of a face it takes whole: make it smaller")
+				}
+			}
 			continue
 		}
 		pieces := map[int][]int{}
@@ -2362,12 +2408,16 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 			f := sec.foot[k].f
 			pieces[f] = append(pieces[f], b)
 		}
+		poleFwd := rb.poleForwards(sh, k, chainCurve)
 		for _, f := range rb.side[k] {
 			s := sh.FindSurface(t.Faces[f].Surface)
 			if s == nil {
 				return nil, filletErr(at, "a face at the edge is not in the shell")
 			}
 			fwd, found := rb.forward(sh, s, chainCurve)
+			if pf, ok := poleFwd[f]; ok && !found {
+				fwd, found = pf, true
+			}
 			var kept []srf.STrimBy
 			for _, tb := range s.Trim {
 				if chainCurve[tb.Curve] {
@@ -2383,6 +2433,20 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 					kept = append(kept, tb)
 				}
 			}
+			if swallowed[f] && len(pieces[f]) == 0 {
+				// Round the pole, with no foot on it: its loop there goes
+				// whole, and what the patch has elsewhere stays, closed.
+				if !trimsClose(kept) {
+					return nil, filletErr(at, "the fillet crosses a seam from a pole of a face that runs on past the fillet: make it smaller")
+				}
+				if len(kept) > 0 {
+					s.Trim = kept
+					forget(s)
+					delete(swallowed, f)
+				}
+				continue
+			}
+			delete(swallowed, f)
 			if len(pieces[f]) > 0 && !found {
 				return nil, filletErr(at, "a face the fillet touches is not along the edge")
 			}
@@ -2483,6 +2547,9 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 	}
 	if cons != nil {
 		dropSurfaceOf(sh, t, cons.f)
+	}
+	for _, f := range slices.Sorted(maps.Keys(swallowed)) {
+		dropSurfaceOf(sh, t, f)
 	}
 	return loops, nil
 }

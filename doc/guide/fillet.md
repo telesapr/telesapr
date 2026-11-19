@@ -114,8 +114,12 @@ doc.Features.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 0, 5))}, 1.5, "")
   bore that widens toward the face, which the bore's cone carried on past the face runs into.
   A hole's rim may be cut down past such a side's foot into the ledge under it, where the cut
   stays within the side, and a hole's rim may lie close to the side, a few tenths of a
-  millimetre from it. Refused, saying so: the fillet of a hole's rim so near the side that
-  its cut into the ledge reaches past the side.
+  millimetre from it. Where that cut only just meets the side's foot on the ledge's top, the
+  fillet is made at the nearest size at which it crosses the foot, within the chord tolerance
+  of the one asked for, and the group says so as above. Refused, saying so: the fillet of a
+  hole's rim so near the side that its cut into the ledge reaches past the side, and one whose
+  cut comes just inside the side's foot without meeting it, too near for the side to cut it
+  back (make it a little smaller or larger).
 - A rounded edge takes with it the edges it meets smoothly, as round a rounded rectangle.
 - Where two rounded edges meet, they are mitred. Where three meet at the corner of a block, a
   sphere rounds the corner.
@@ -227,6 +231,10 @@ one of its own radius at its other corner the same way too, not by a corner patc
 whose end lies deeper on the sharp edge takes the larger one's part. So a rim of 2, 1 and 1 mm is
 rounded all round.
 
+A pocket's corner may stand on or near a seam of the face it is cut into, as where a lathed
+dish's quarters meet. The fillets' feet on that face then lie on both sides of the seam: the seam
+is cut where the corner patch, or the foot of one fillet just short of the mitre, crosses it.
+
 The foot of a band raised on a cylinder or a cone ([Wrap](wrap.md)) is rounded the same way, all
 of its foot edges picked together: the ball rolls outside the solid, between the face and the
 band's sides. At a corner of the band, where its sides meet at a sharp edge that stays sharp, the
@@ -324,8 +332,9 @@ These are refused with a message:
 - A corner where a convex edge meets a concave one at a vertex that the stages can't round while
   some edge there is left sharp, but for one, two opposite or three of a saddle's four edges as
   above, fillets or chamfers, and a ridge and a valley side by side.
-- At an inside corner between two fillets between curved faces (above): a corner that would
-  cross a seam of the face the two share (make them smaller).
+- At an inside corner between two fillets between curved faces (above): a chamfer of two
+  distances whose smaller one's foot crosses a seam of the shared face just short of the mitre
+  (make it a little smaller or larger).
 - At a corner of a band raised on a cylinder: a seam of the face that passes the corner less than
   about half a millimetre away without going through it (move the band a little), and chord
   tolerances finer than about 0.01%, where the two fillets' meshes cross at the mitre.

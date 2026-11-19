@@ -94,6 +94,8 @@ func (t *Topology) contactsClear(fe *filletEdge, rounded map[int]int, flat bool)
 					side.past = math.Max(side.past, furthestPast(foot, side))
 				}
 				off.varies = fe.r1 != 0
+				edge := *fe
+				off.edge = &edge
 				err.off = off
 			}
 			return err

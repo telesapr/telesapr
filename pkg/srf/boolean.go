@@ -373,6 +373,66 @@ func distanceToSegment(p, a, b geom.Vector) float64 {
 	return p.Minus(a.Plus(ab.ScaledBy(t))).Magnitude()
 }
 
+// curvedClearance is how far p lies outside the band about the curved
+// trims' pwl el within which the trim BSP can put a point on the wrong
+// side of the true curve, negative inside it: tol either side of each
+// chord, or the chord's sag where that is more. A curve is cut into no
+// more than MaxSegments chords, so a long arc at a fine tolerance sags
+// past it: the cutter's far arc of 156° and radius 16.4 round a drafted
+// disc, at 0.003, sags 0.015, and a ray's hit 0.012 inside the arc, 0.007
+// off its chord, was taken for outside the cap (2026-11-19). The sag is
+// L·θ/8 for a chord of length L turning by θ from its neighbours, as on
+// a circle.
+func curvedClearance(p geom.Vector, el *SEdgeList, tol float64) float64 {
+	c := veryPositive
+	for i := range el.Edges {
+		e := &el.Edges[i]
+		band := tol
+		if sag := chordSag(el, i); sag > band {
+			band = sag
+		}
+		c = math.Min(c, distanceToSegment(p, e.A, e.B)-band)
+	}
+	return c
+}
+
+// chordSag is the sag of the curve over el's edge i, from the angles it
+// turns by from the edges before and after it that meet its ends.
+func chordSag(el *SEdgeList, i int) float64 {
+	e := &el.Edges[i]
+	d := e.B.Minus(e.A)
+	l := d.Magnitude()
+	if l <= lengthEps {
+		return 0
+	}
+	var turn float64
+	n := 0
+	for _, j := range []int{i - 1, i + 1} {
+		if j < 0 || j >= len(el.Edges) {
+			continue
+		}
+		o := &el.Edges[j]
+		var od geom.Vector
+		switch {
+		case j < i && o.B.Equals(e.A):
+			od = o.B.Minus(o.A)
+		case j > i && o.A.Equals(e.B):
+			od = o.B.Minus(o.A)
+		default:
+			continue
+		}
+		if od.Magnitude() <= lengthEps {
+			continue
+		}
+		turn += math.Acos(math.Max(-1, math.Min(1, od.Dot(d)/(od.Magnitude()*l))))
+		n++
+	}
+	if n == 0 {
+		return 0
+	}
+	return l * turn / float64(n) / 8
+}
+
 // distanceToEdges is the distance from p to the nearest edge of el, or
 // veryPositive for none.
 func distanceToEdges(p geom.Vector, el *SEdgeList) float64 {

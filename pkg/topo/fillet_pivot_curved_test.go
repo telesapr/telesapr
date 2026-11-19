@@ -240,3 +240,26 @@ func TestFilletPivotCurvedCreaseLeansBack(t *testing.T) {
 	}
 	sound(t, sh)
 }
+
+// The x- and y- edges of curvedPocket's rim in the dish, filleted, at a
+// chord tolerance of 0.002: their corner's crease, where the two flat
+// walls meet, is straight, and leans back 9° under the x- fillet, whose
+// foot on it lies nearer the vertex, the dish's top falling away from
+// the corner along that edge. Refused as not closed at this tolerance
+// before 2026-11-19 (sound at 0.005 and coarser): the corner's foot
+// moved down the crease from the start, and the corner folded over the
+// x- wall and fillet by a few micrometres at that foot. Its foot now
+// stands there as at a curved crease leaning back (creaseDepth). The
+// whole rim, with either wall or both leaning, at radii 1 to 2, came out
+// the same way; all are sound now at 0.002 and 0.005.
+func TestFilletPivotStraightCreaseLeansBack(t *testing.T) {
+	if testing.Short() {
+		t.Skip("a rolling-ball fillet of a pocket's rim in a cone at a fine chord tolerance, slow")
+	}
+	t.Parallel()
+	sh := curvedPocket(true, false, fine(0.002))
+	if err := topo.FilletPicks(sh, curvedRim(true, false, "x-", "y-"), 1, 1<<30, false); err != nil {
+		t.Fatal(err)
+	}
+	sound(t, sh)
+}

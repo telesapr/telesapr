@@ -41,6 +41,9 @@ func TestFilletEndLeaningWall(t *testing.T) {
 		{true, "x-,y-", 1, 15.709651, -0.02, 0.005},
 		{true, "x-,y-,x+", 1.5, 40.520750, -0.03, 0.005},
 		{true, "y+,x-,y-", 1, 25.650403, -0.02, 0.01},
+		// The y+ edge's foot passes over the cone's apex (TestFilletEndLeaningWallsChamfer);
+		// the chain x-,y- of 2 alone takes 0.94% less than OpenCASCADE.
+		{true, "y+,x-,y-", 2, 101.576165, -0.02, 0.005},
 	}, 0) {
 		t.Run(fmt.Sprintf("curvedY %v %s r%g", c.curvedY, c.picks, c.r), func(t *testing.T) {
 			t.Parallel()
@@ -98,6 +101,53 @@ func TestFilletEndLeaningWalls(t *testing.T) {
 			t.Logf("took %.6f, the envelope %.6f, %+.5f", took, c.want, took/c.want-1)
 			if d := took/c.want - 1; d < -0.003 || d > 0.003 {
 				t.Errorf("took %.6f, the envelope's integral %.6f", took, c.want)
+			}
+		})
+	}
+}
+
+// The same y+ rim edge chamfered: from a distance of about 1.7 its foot
+// on the top passes beyond the cone's apex, crossing the seam between
+// the top's two far quarters, which starts at the apex, not at the edge.
+// Refused before 2026-11-19 ("crosses a seam of a face that doesn't
+// reach the edge"): the seam is now cut from the apex, the seams from
+// the apex to the edge go, and the near quarters' pieces between them
+// (seamPole). The volumes are the chamfer's own integral
+// (scripts/fillet-envelope-volume.go -chamfer -n 120 -dx 0.04), which
+// ours keep to within 0.3%; OpenCASCADE's makeChamfer took 21.673237,
+// 28.924226 and 36.624994, its Volume off here as in
+// TestFilletEndLeaningWalls. From 2.25 the chamfer's foot on the wall
+// runs past the wall's foot on the pocket's floor, and the result is
+// refused as open.
+func TestFilletEndLeaningWallsChamfer(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ d, want float64 }{
+		{1.5, 21.663350},
+		{1.75, 28.870196},
+		{2, 36.661389},
+	}
+	if testing.Short() {
+		cases = cases[2:]
+	}
+	for _, c := range cases {
+		t.Run(fmt.Sprintf("d%g", c.d), func(t *testing.T) {
+			t.Parallel()
+			sh := curvedPocket(true, true, fine(0.01))
+			before := surfaceVolume(t, sh)
+			if err := topo.FilletPicks(sh, curvedRim(true, true, "y+"), c.d, 1<<30, true); err != nil {
+				t.Fatal(err)
+			}
+			if !testing.Short() {
+				// Writing and reading the STEP is most of the case's time.
+				if off, where := stepEdgesOffFaces(t, sh); off > 1e-6 {
+					t.Errorf("written as STEP, an edge lies %.3g off its face: %s", off, where)
+				}
+			}
+			sound(t, sh)
+			took := before - surfaceVolume(t, sh)
+			t.Logf("took %.6f, the integral %.6f, %+.5f", took, c.want, took/c.want-1)
+			if d := took/c.want - 1; d < -0.003 || d > 0.003 {
+				t.Errorf("took %.6f, the chamfer's integral %.6f", took, c.want)
 			}
 		})
 	}
