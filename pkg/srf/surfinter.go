@@ -677,7 +677,7 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 					srfB.PointOnSurfaces(srfA, other, &u, &v)
 				}
 				p = srfB.PointAt(u, v)
-				if !seedOnPatch(srfB, srfA, other, p, i < own) ||
+				if missesCurve(sc, p, s.Tol.ChordTolMm()) || !seedOnPatch(srfB, srfA, other, p, i < own) ||
 					i >= own && !(u > 0 && u < 1 && v > 0 && v < 1 && p.OnLineSegment(se.A, se.B, s.Tol.ChordTolMm())) {
 					continue
 				}

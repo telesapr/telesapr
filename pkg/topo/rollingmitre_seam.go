@@ -129,8 +129,8 @@ func (bl *rbBlend) mitreSeam(sh *srf.SShell, bls []*rbBlend, k int) (geom.Vector
 		return geom.Vector{}, false, nil
 	}
 	sec := bl.endSec(k)
-	m, f1 := sec.foot[i].p, sec.foot[i].f
-	s1 := t.Surface(f1)
+	m := sec.foot[i].p
+	f1, s1 := bl.mitreFootFace(k, i)
 	if s1 == nil || insidePatch(s1, m) {
 		return geom.Vector{}, false, nil
 	}

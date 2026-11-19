@@ -5,6 +5,7 @@ Refreshed 2026-11-18 at branch `runoff-mixed-ends`.
 Refreshed 2026-11-19 at branch `fillet-curved-side-cut`.
 Refreshed 2026-11-19 at branch `ledge-cut-past-side`.
 Refreshed 2026-11-19 at branch `ledge-cutback-35`.
+Refreshed 2026-11-19 at branch `ledge-touch-finechord`.
 
 A circular fillet or chamfer (round a rod's foot, a hole's rim) whose foot runs off the flat face
 it rolls on is refused by `contactsClear` (`pkg/topo/fillet_contact.go`), which says which sides
@@ -164,9 +165,38 @@ Those five were made at branch `ledge-cutback-35` (2026-11-19), 62 of the 64:
   0.0007 larger, within 1.2e-4 of the ring's integral at 3.5.
 
 `TestFilletPastConeSide` takes the five in (108 of 108). Left in the family: the two chamfers of
-3.5 at 0.2 and 0.3 upright, by name (`cutsBelow`). Seen on the way, not followed: at a chord
-setting of 0.001 (tolerance 0.00018) a ledge's hole, even 2 from the rim, is refused as running
-off the face before and after these changes.
+3.5 at 0.2 and 0.3 upright, by name (`cutsBelow`).
+
+Both followed up at branch `ledge-touch-finechord` (2026-11-19):
+
+- **Where the Boolean broke** for the circles 0 to 0.004 apart. The cutter's circle at the
+  side's foot is one arc of 143° under the chamfer (`arcBreaks`) in 32 chords, which sag up to
+  0.005 there: the band of failures was that sag, not the tolerance's. The chords dipped into the
+  chamfer's cone where the circle stays outside it; each crossing was refined onto the cone
+  (`PointOnCurve`), which with no root stops where the two come closest, 0.0013 off the circle,
+  and the circle was split there, the marcher took a seed there and went off along the cone and
+  the cutter's wall a second time, and the cone's circle on the ledge's top kept pieces between
+  the chords and the arc, inside the ledge's face. A split or seed refined off its exact curve by
+  more than the chord tolerance is now dropped, and the chord halved with the curve's own points
+  until it no longer crosses (`srf.missesCurve`, `srf.halveMissed`), so the mesh keeps to its
+  side too. Within the chord tolerance a near miss is left as it was, to the fuse
+  (`snapBetween`): a pin 0.03 over a bore at 0.1 is fused there (`TestBetweenFusedSaysHowFar`),
+  and dropping its splits made the Boolean pass and come out wrong. The fixture is
+  `srf.TestBooleanTouchingRingSweep`: a disc with a conical hole less, with and united with a
+  ring whose bottom's inner circle lies 1 to 20 chord tolerances outside the hole's, the touching
+  point on a seam of either or inside a patch, at 0.0005 and 0.002: 42 of 168 failed, 0 now.
+  The holes 0.5005 to 0.504 from the rim are made at 3.5 (`TestFilletPastConeSideNearFoot`).
+  Touching exactly (0.500) the Booleans still fail: near the point the two circles lie within
+  `LengthEps` of each other for 0.009 along them, and seeds land anywhere there; handing the
+  point over as a touch (`SShell.Touch`) did not help, the marcher's other seeds still a hair from
+  it. `footClearSize` stays for that case and makes it at 0.0007 larger.
+- **The fine chord.** At a chord setting of 0.001 (tolerance 0.00018) the slab past the rim was
+  refused: the solid grew by 0.096 more than lies past the cylinder, and the allowance, twice the
+  tolerance over the side's area, was 0.055. The rim's mesh stands inside the cylinder by its
+  chords' sag, 0.0024 for a quarter of radius 8 in 32 chords, and the slab fills that. The
+  allowance now takes the larger of the tolerance and the side's edges' own sag
+  (`curvedSide.sag`); holes 2 and 0.5 from the rim, filleted and chamfered 2.5 and 3.5, are made
+  (`TestFilletPastConeSideFineChord`). The family of 64 at the default stays 62.
 
 Putting the solid back past the side below the foot (tried 2026-11-19, not kept): the solid
 before the fillet intersected with the cutter's ring from below the solid to halfway up the side
@@ -180,8 +210,8 @@ of the ledge's top meeting along the chamfer's arc with different points. A cyli
 united with the solid after the cut back failed where its inner face met the side's along the
 foot's circle.
 
-Left: a hole's rim whose cut into a ledge reaches past the side, or comes just inside the side's
-foot; a solid standing in the cutter beside the side below the face; `ROADMAP.md`, "Fillet leftovers".
+Left: a hole's rim whose cut into a ledge reaches past the side, or touches the side's foot
+exactly where no size near crosses it; a solid standing in the cutter beside the side below the face; `ROADMAP.md`, "Fillet leftovers".
 
 ## An end running off both its faces (2026-11-09)
 

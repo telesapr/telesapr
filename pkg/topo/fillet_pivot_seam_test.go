@@ -1,10 +1,8 @@
 package topo_test
 
 import (
-	"errors"
 	"fmt"
 	"math"
-	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/check"
@@ -154,35 +152,86 @@ func TestFilletPivotSeamQuick(t *testing.T) {
 }
 
 // A chamfer of two distances whose smaller chain's foot crosses the seam
-// within a hundredth of its length of the mitre, 0.008 mm: the section
-// on the seam stands so near the mitre's that their weights interpolate
-// below zero between them. It is refused by name; a little larger or
-// smaller it is made.
+// within a hundredth of its length of the mitre, 0.008 mm, and its
+// mirror image: the section rampCrossings puts on the seam stands so
+// near the mitre's that their weights interpolate below zero between
+// them, refused "just short of its end" before 2026-11-19. The blend is
+// tried again with no section there, the foot crossing the seam within
+// the end patch and its piece on to the mitre carried onto the next
+// quarter (rampSkipNear, mitreFootFace). OpenCASCADE's chamfers of the
+// same edges (scripts/fillet-pivot-seam-fixtures.py) took the volumes:
+// ours within 1e-5 of the first and 4.3e-4 of its mirror, as the
+// mirror's neighbours at 1.48 and 1.52, made with a section on the seam,
+// take 3e-4 more than the same pocket turned off the seam.
 func TestFilletPivotSeamNearEnd(t *testing.T) {
 	if testing.Short() {
 		t.Skip("chamfers of a pocket's corner beside a lathe's seam, slow")
 	}
 	t.Parallel()
-	sh, picks := seamPocket(-0.3, 20, 0, fine(0.01))
-	err := topo.FilletPicks(sh, picks(1, 1.5), 1, 1<<30, true)
-	if fx, ok := errors.AsType[*topo.FilletError](err); !ok || !strings.Contains(fx.Msg, "just short of its end") {
-		t.Fatalf("got %v, want the seam just short of the chamfer's end refused", err)
+	for _, c := range []struct {
+		off, rot, ra, rb, occ float64
+	}{
+		{-0.3, 20, 1, 1.5, 13.135870},
+		{0.3, -20, 1.5, 1, 13.135707},
+	} {
+		t.Run(fmt.Sprintf("off %g rot %g %g,%g", c.off, c.rot, c.ra, c.rb), func(t *testing.T) {
+			t.Parallel()
+			sh, picks := seamPocket(c.off, c.rot, 0, fine(0.01))
+			before := surfaceVolume(t, sh)
+			if err := topo.FilletPicks(sh, picks(c.ra, c.rb), 1, 1<<30, true); err != nil {
+				t.Fatal(err)
+			}
+			sound(t, sh)
+			if !onSeamNearCorner(build(t, sh), c.off, max(c.ra, c.rb)) {
+				t.Errorf("no vertex on the seam near the corner")
+			}
+			if took := before - surfaceVolume(t, sh); math.Abs(took/c.occ-1) > 5e-4 {
+				t.Errorf("took %.6f, OpenCASCADE %.6f", took, c.occ)
+			}
+		})
 	}
-	for _, d := range []float64{0.95, 1.05} {
-		sh, picks := seamPocket(-0.3, 20, 0, fine(0.01))
-		if err := topo.FilletPicks(sh, picks(d, 1.5), 1, 1<<30, true); err != nil {
-			t.Errorf("at %g: %v", d, err)
-			continue
+}
+
+// The corner of TestFilletPivotSeamNearEnd with its offset from the seam
+// and the smaller chain's size moved finely about it, fillets and
+// chamfers, so that the smaller foot's crossing of the seam runs up to
+// the mitre and past it: each made sound. Before 2026-11-19 the grid's
+// full run made 112 of 126 (14 chamfers refused "just short of its
+// end").
+func TestFilletPivotSeamNearEndSweep(t *testing.T) {
+	if testing.Short() {
+		t.Skip("a grid of a pocket's corners beside a lathe's seam, slow")
+	}
+	t.Parallel()
+	grid := sweep.Grid{
+		Parallel: true,
+		Axes: []sweep.Axis{
+			sweep.Floats("off", -0.34, -0.33, -0.32, -0.31, -0.3, -0.29, -0.28, -0.27, -0.26),
+			sweep.Floats("size", 0.96, 0.98, 0.99, 1, 1.01, 1.02, 1.04),
+			sweep.Bools("flat"),
+		},
+		Sample: 12,
+	}
+	grid.Run(func(p sweep.Point) error {
+		sh, picks := seamPocket(p.Float("off"), 20, 0, fine(0.01))
+		if err := topo.FilletPicks(sh, picks(p.Float("size"), 1.5), 1, 1<<30, p.Bool("flat")); err != nil {
+			return err
 		}
-		sound(t, sh)
-	}
+		var m srf.SMesh
+		sh.TriangulateInto(&m)
+		if rep := check.Solid(sh, &m); !rep.Sound() {
+			return fmt.Errorf("unsound: %s", rep.String())
+		}
+		return nil
+	}).Require(t)
 }
 
 // The corner on the seam and a few tenths off it either way, turned by
 // up to 20 degrees, fillets and chamfers of one size or two (0.5 to 1.5)
 // at a chord tolerance of 0.01 mm: each made sound. The rate allowed,
-// 1%, was fixed after the grid's first full run (2026-11-19): two
-// chamfers of 1 and 1.5 a mirror pair, refused as TestFilletPivotSeamNearEnd's.
+// 1%, was fixed after the grid's first full run (2026-11-19), two
+// chamfers of 1 and 1.5 a mirror pair refused as
+// TestFilletPivotSeamNearEnd's were; made since 2026-11-19, none is.
 func TestFilletPivotSeamSweep(t *testing.T) {
 	if testing.Short() {
 		t.Skip("a grid of a pocket's corners on a lathe's seam, slow")
@@ -196,9 +245,7 @@ func TestFilletPivotSeamSweep(t *testing.T) {
 			sweep.Strings("sizes", "0.5,0.5", "1,1", "1.5,1.5", "1,1.5", "1.5,1"),
 			sweep.Bools("flat"),
 		},
-		MaxFailRate:       0.01,
-		Sample:            24,
-		SampleMaxFailRate: 0.05,
+		Sample: 24,
 	}
 	grid.Run(func(p sweep.Point) error {
 		var ra, rb float64

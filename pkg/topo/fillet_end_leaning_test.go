@@ -117,8 +117,8 @@ func TestFilletEndLeaningWalls(t *testing.T) {
 // ours keep to within 0.3%; OpenCASCADE's makeChamfer took 21.673237,
 // 28.924226 and 36.624994, its Volume off here as in
 // TestFilletEndLeaningWalls. From 2.25 the chamfer's foot on the wall
-// runs past the wall's foot on the pocket's floor, and the result is
-// refused as open.
+// runs past the wall's foot on the pocket's floor
+// (TestFilletEndLeaningWallsChamferPastFloor).
 func TestFilletEndLeaningWallsChamfer(t *testing.T) {
 	t.Parallel()
 	cases := []struct{ d, want float64 }{

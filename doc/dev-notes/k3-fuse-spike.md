@@ -1,5 +1,10 @@
 # K3 spike: fuse first (2026-11-04)
 
+Refreshed 2026-11-19 (ledge-touch-finechord): where a chord of an exact curve crosses a surface
+the curve misses by more than the chord tolerance, the split is dropped and the chord halved
+(`srf.missesCurve`, `srf.halveMissed`); two circles in one plane, one just inside the other, are
+sound by every Boolean (`TestBooleanTouchingRingSweep`). See "The ring below a ledge's foot".
+
 Refreshed 2026-11-19 (ledge-cutback-35): a ray's hit near a curved trim whose chords sag past
 the chord tolerance (a long arc cut into the most chords a curve may have) is not trusted within
 the sag (`srf.curvedClearance`); a cut whose circle touches a curved side's foot circle on a
@@ -830,3 +835,17 @@ for gaps of 0 to 0.004 between them while crossing ones were made; where in the 
 breaks was not found (the band, eight tolerances wide at 0.0005, is no chord's sag; compare
 "Touching tangent at a point"). The feature moves its size to where they cross
 (`doc/dev-notes/fillet-past-sides.md`).
+
+Found (ledge-touch-finechord, 2026-11-19): the band is the sag of the cutter's foot circle, one
+arc of 143° in 32 chords, 0.005, not the tolerance. Its chords crossed the chamfer's cone where
+the circle stays outside it; the crossing, refined onto the cone with no root to find, stopped
+where the two come closest, 0.0013 off the circle, and the circle was split there and the
+marcher seeded there (a second branch along the cone and the cutter's wall, and pieces of the
+cone's circle on the ledge between the chords and the arc). A split or seed off its exact curve
+by more than the chord tolerance is dropped, and the chord halved until it crosses no more, so
+that the mesh keeps to its side too (`missesCurve`, `halveMissed`; within the tolerance a near
+miss is the fuse's, `TestBetweenFusedSaysHowFar`). `TestBooleanTouchingRingSweep`, a conical
+hole's circle 1 to 20 tolerances inside a ring's bottom circle, every Boolean: 42 of 168 failed
+before, 0 after; no golden moved. Touching exactly the Booleans still fail: the circles lie
+within `LengthEps` of each other for 0.009 along them and seeds land anywhere there; the point
+handed over as a touch (`SShell.Touch`, `touchSinks`) did not help.

@@ -593,6 +593,7 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	}
 	// Where the points the ball touches cross seams, between the conics.
 	n := int(math.Min(2000, math.Max(64, 4*(r1-r0)/rb.r)))
+	rb.poleSnaps = nil // found again from this scan (nearPoles)
 	scan := make([]rbSection, n+1)
 	for i := range scan {
 		sec, err := rb.section(r0 + (r1-r0)*float64(i)/float64(n))
@@ -605,6 +606,7 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	at, pairs, sides = rb.nearPoles(at, pairs, sides)
 	var cross []rbCrossing
 	breaks := []float64{r0}
 	for i, s := range at {
@@ -618,6 +620,7 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	ramped = rb.withoutSkipped(ramped)
 	for _, s := range rb.splitAt {
 		if s > r0 && s < r1 {
 			breaks = append(breaks, s)
@@ -755,7 +758,19 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		}
 		sf, err := srf.SkinThrough(curves, ts, d0, d1)
 		if err != nil {
-			return nil, nil, nil, rb.crossingNearEnd(cross, s0, s1, err)
+			refusal := rb.crossingNearEnd(cross, s0, s1, err)
+			secS := make([]float64, len(ramped))
+			for x, rc := range ramped {
+				secS[x] = cache[rc.spec].s
+			}
+			if rb.rampSkipNear(ramped, secS, s0, s1) {
+				// Again, the seam crossed within the end patch.
+				if sf, secs, cross, err := rb.blendOpen(); err == nil {
+					return sf, secs, cross, nil
+				}
+				rb.rampSkips = nil
+			}
+			return nil, nil, nil, refusal
 		}
 		var more []rbSpec
 		worst, where := 0.0, geom.Vector{}

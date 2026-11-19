@@ -101,7 +101,13 @@ type rollingBall struct {
 	// poleOf is, for a face of side taken in round a pole near the chain
 	// that the edge doesn't reach (addPoleFaces), the pole.
 	poleOf map[int]geom.Vector
-	closed bool
+	// poleSnaps are the sections whose foot is put on a pole it passes
+	// within a speck of (nearPoles).
+	poleSnaps []rbPoleSnap
+	// rampSkips are the seams crossed within a ramp a hair short of an
+	// inside mitre left without a section (rampSkipNear).
+	rampSkips []rbRampSkip
+	closed    bool
 	// For an open chain, the flat faces it ends at, at its start and its
 	// end.
 	ends [2]*rbEnd
@@ -1180,9 +1186,9 @@ func (rb *rollingBall) turnAt(i int) geom.Vector {
 	return slope(prev).ScaledBy(hn).Plus(slope(i).ScaledBy(hp)).ScaledBy(1 / (hp + hn))
 }
 
-// section is the ball at arc length s along the edge: in the plane
+// ballSection is the ball at arc length s along the edge: in the plane
 // square to the edge there, touching both faces.
-func (rb *rollingBall) section(s float64) (rbSection, error) {
+func (rb *rollingBall) ballSection(s float64) (rbSection, error) {
 	rb.t.shell.Paced()
 	if rb.flat {
 		return rb.chamferSection(s)
@@ -1650,6 +1656,7 @@ func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, 
 		return sf, secs, cross, err
 	}
 	n := int(math.Min(2000, math.Max(64, 4*rb.length/rb.r)))
+	rb.poleSnaps = nil // found again from this scan (nearPoles)
 	scan := make([]rbSection, n)
 	for i := range scan {
 		sec, err := rb.section(rb.length * float64(i) / float64(n))
@@ -1662,6 +1669,7 @@ func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, 
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	at, pairs, sides = rb.nearPoles(at, pairs, sides)
 	// A crossing at the chain's start is where the fillet closes round
 	// (closeAtSquareSeam). Found past it, or short of its end, by more
 	// than a millionth of the chain but within the tolerance, as a foot
@@ -1847,6 +1855,9 @@ type rbBlend struct {
 	all   [][]srf.SSurface
 	secs  []rbSection
 	cross []rbCrossing
+	// rowLoops are, by row and patch, the loops of the patches a foot
+	// that runs off its face along the chain cuts (rollingrunoff_dip.go).
+	rowLoops map[[2]int][]srf.SBezier
 }
 
 // patches is the blend of surface sf, cut into its patches.
@@ -1920,6 +1931,9 @@ func putBlends(sh *srf.SShell, bls []*rbBlend, origin uint32) error {
 			for b := range row {
 				loop := patchLoop(&row[b])
 				if l, ok := loops[i][b]; ok {
+					loop = l
+				}
+				if l, ok := bl.rowLoops[[2]int{r, b}]; ok {
 					loop = l
 				}
 				patchLoops[i][r][b] = loop
@@ -2148,6 +2162,23 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 			return nil, filletErr(at, "a seam's crossing is not among the fillet's sections")
 		}
 		q := corner(j, c.side)
+		if sn, ok := rb.poleSnapAt(c); ok {
+			// Through a pole (nearPoles): no seam is cut, those from the
+			// pole to the edge go, and the patches between them.
+			p, ok := rb.passPole(sn.v, c, isChain, func(v int) bool {
+				return onChain[v] || onChainLine(t.Vertices[v].P)
+			})
+			if !ok {
+				return nil, filletErr(q, "the fillet's edge passes through a pole of the face: make it a little smaller or larger")
+			}
+			for _, w := range p.to {
+				drop = append(drop, pair{t.Vertices[p.v].P, t.Vertices[w].P})
+			}
+			for _, f := range p.swallowed {
+				swallowed[f] = true
+			}
+			continue
+		}
 		// The seam between the two patches from a vertex of the edge, the
 		// one nearest the crossing: two patches may meet along two seams,
 		// either side of a hole.
@@ -2177,7 +2208,7 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 			p, ok := rb.seamPole(c, cross, q, isChain, func(v int) bool {
 				return onChain[v] || onChainLine(t.Vertices[v].P)
 			})
-			speck := math.Max(t.shell.Tol.ChordTolMm(), 10*geom.LengthEps)
+			speck := rb.poleSpeck()
 			if !ok {
 				if rb.atSeamEnd(c.faces, q, speck) {
 					return nil, filletErr(q, "the fillet's edge passes through a pole of the face: make it a little smaller or larger")
@@ -2186,7 +2217,8 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 			}
 			if q.Minus(t.Vertices[p.v].P).Magnitude() < speck {
 				// Split there, the seam's piece to the pole is a speck the
-				// faces round it can't be trimmed by.
+				// faces round it can't be trimmed by; two crossings that
+				// near it were put through it (nearPoles).
 				return nil, filletErr(q, "the fillet's edge passes through a pole of the face: make it a little smaller or larger")
 			}
 			if err := splitNearest(sh, q, t.Vertices[p.v].P); err != nil {
@@ -2346,6 +2378,25 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 		}
 		maps.Copy(acrossOf, as)
 	}
+	// Feet that run off their faces along the chain and come back, cut
+	// by the faces they run onto (rollingrunoff_dip.go).
+	var dips []*rbDip
+	for k := range 2 {
+		if cons != nil && k == cons.j {
+			continue
+		}
+		on, err := rb.dipsOn(k, sideRow(k), isChain, endCuts)
+		if err != nil {
+			return nil, err
+		}
+		dips = append(dips, on...)
+	}
+	if len(dips) > 0 {
+		bl.rowLoops = map[[2]int][]srf.SBezier{}
+		if err := rb.cutDips(sh, all, dips, loops, bl.rowLoops, func(a, b geom.Vector) { drop = append(drop, pair{a, b}) }); err != nil {
+			return nil, err
+		}
+	}
 
 	// Where the crease fades out, the edge goes on past the fillet: it
 	// is split there, and only the piece the fillet takes goes. A crease
@@ -2409,6 +2460,7 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 			pieces[f] = append(pieces[f], b)
 		}
 		poleFwd := rb.poleForwards(sh, k, chainCurve)
+		kDips := dipsAt(dips, k)
 		for _, f := range rb.side[k] {
 			s := sh.FindSurface(t.Faces[f].Surface)
 			if s == nil {
@@ -2455,20 +2507,22 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 				if !ok {
 					continue
 				}
-				var pts []geom.Vector
-				sb.MakePwlIntoPoints(&pts, sh.Tol, 0)
-				pts[0], pts[len(pts)-1] = sb.Start(), sb.Finish()
-				nc := srf.SCurve{H: nextH, Exact: sb, IsExact: true, Deg: sb.Degree, SurfA: s.H}
-				nextH.V++
-				for _, p := range pts {
-					nc.Points = append(nc.Points, srf.SCurvePt{Vertex: true, P: p})
+				for _, sb := range dipPieces(sb, b, kDips) {
+					var pts []geom.Vector
+					sb.MakePwlIntoPoints(&pts, sh.Tol, 0)
+					pts[0], pts[len(pts)-1] = sb.Start(), sb.Finish()
+					nc := srf.SCurve{H: nextH, Exact: sb, IsExact: true, Deg: sb.Degree, SurfA: s.H}
+					nextH.V++
+					for _, p := range pts {
+						nc.Points = append(nc.Points, srf.SCurvePt{Vertex: true, P: p})
+					}
+					tb := srf.STrimBy{Curve: nc.H, StartP: sb.Start(), FinishP: sb.Finish(), Start: 0, Finish: 1}
+					if !fwd {
+						tb.Backwards, tb.StartP, tb.FinishP = true, sb.Finish(), sb.Start()
+					}
+					kept = append(kept, tb)
+					sh.Curve = append(sh.Curve, nc)
 				}
-				tb := srf.STrimBy{Curve: nc.H, StartP: sb.Start(), FinishP: sb.Finish(), Start: 0, Finish: 1}
-				if !fwd {
-					tb.Backwards, tb.StartP, tb.FinishP = true, sb.Finish(), sb.Start()
-				}
-				kept = append(kept, tb)
-				sh.Curve = append(sh.Curve, nc)
 				for ke := range rb.ends {
 					if !rb.mateKinked(ke) || b != ke*(m-1) || rb.ends[ke].ban[k] < 0 {
 						continue
@@ -2544,6 +2598,9 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 		if err := rb.closeEnd(sh, cut, &nextH); err != nil {
 			return nil, err
 		}
+	}
+	if err := rb.closeDips(sh, dips, &nextH); err != nil {
+		return nil, err
 	}
 	if cons != nil {
 		dropSurfaceOf(sh, t, cons.f)

@@ -14,6 +14,13 @@
 # With STEP=dir set, it also reads each of our results written there as
 # <name>.step (name as name() makes it) and prints how far its faces and
 # OpenCASCADE's lie apart within 3 sizes of the corner, sampled both ways.
+# TestFilletPivotSeamStep (pkg/topo) writes such files with
+# TELESAPR_STEP_OUT=dir, and beside them <name>_one.step (one surface
+# per face), spun_<name>.step (the pocket turned 45 degrees off the seam)
+# and spun_<name>_one.step: for each it finds, it prints whether it reads
+# as one valid solid, and its volume tessellated (OpenCASCADE's Volume of
+# a face written as one surface over a lathe's quarters is off, see
+# doc/dev-notes/rolling-ball-corners.md).
 #
 # Each line: off, rot, the two sizes, chamfer, volume taken, valid.
 import math
@@ -101,6 +108,17 @@ def rounded(sh, edges, sizes, flat):
     return out
 
 
+def read_back(path):
+    """Whether the STEP file reads as one valid solid, and its volume
+    from a tessellation."""
+    s = Part.Shape()
+    s.read(path)
+    pts, tris = s.tessellate(0.005)
+    vol = sum(pts[a].dot(pts[b].cross(pts[c])) for a, b, c in tris) / 6
+    return "valid %s, %d solids, %d shells, %d faces, volume %.3f" % (
+        s.isValid(), len(s.Solids), len(s.Shells), len(s.Faces), vol)
+
+
 step_dir = os.environ.get("STEP")
 for off, rot, sizes, flat in CASES:
     sh, pa, pb, corner = solid(off, rot)
@@ -117,6 +135,11 @@ for off, rot, sizes, flat in CASES:
     path = os.path.join(step_dir, name(off, rot, sizes, flat) + ".step")
     if not os.path.exists(path):
         continue
+    for variant in (name(off, rot, sizes, flat), name(off, rot, sizes, flat) + "_one",
+                    "spun_" + name(off, rot, sizes, flat), "spun_" + name(off, rot, sizes, flat) + "_one"):
+        vp = os.path.join(step_dir, variant + ".step")
+        if os.path.exists(vp):
+            print("   %s: %s" % (variant, read_back(vp)))
     ours = Part.read(path)
     reach = 3 * max(sizes)
     worst = [0.0, 0.0]

@@ -72,6 +72,11 @@ type curvedSide struct {
 	// the solid below the side's foot and past the side (keepBeyond),
 	// which the refusal says.
 	cutsBelow bool
+	// sag is how far the chords of the side's edges stand off its
+	// cylinder or cone at most (curvedExtent), which the solid's mesh
+	// follows: more than the chord tolerance where a curve's chords
+	// are as many as one curve may have.
+	sag float64
 }
 
 // curvedStep is the most angle a polygon side of the slab spans: its
@@ -160,6 +165,7 @@ func (t *Topology) curvedExtent(c *curvedSide) bool {
 		for _, l := range t.Faces[f].Loops {
 			for _, ce := range t.Loops[l].CoEdges {
 				pts := t.Edges[t.CoEdges[ce].Edge].Points
+				c.sag = math.Max(c.sag, c.chordSag(pts))
 				top := true
 				for _, q := range pts {
 					h := q.Minus(c.o).Dot(c.axis)
@@ -224,6 +230,18 @@ func (t *Topology) curvedExtent(c *curvedSide) bool {
 	}
 	c.a0, c.a1 = merged[0].a, merged[0].b
 	return true
+}
+
+// chordSag is how far the chords between pts, points on c's cylinder or
+// cone, stand inside it at their middles at most.
+func (c *curvedSide) chordSag(pts []geom.Vector) float64 {
+	var most float64
+	for i := 1; i < len(pts); i++ {
+		m := pts[i-1].Plus(pts[i]).ScaledBy(0.5)
+		d, _ := c.radial(m)
+		most = math.Max(most, math.Abs(c.radiusAt(m.Minus(c.o).Dot(c.axis))-d))
+	}
+	return most
 }
 
 // turn is how far round from angle a to angle b, counter-clockwise, in
@@ -681,7 +699,11 @@ func widenPastCurved(wide *srf.SShell, sh *srf.SShell, s *runOffSide, off *runOf
 	// The slab's top merges with the face the fillet rolls on, so that
 	// the foot lies inside one face.
 	u.MergeCoincidentSurfaces()
-	allow := 2*sh.Tol.ChordTolMm()*c.r*(c.a1-c.a0)*(-c.lo) + 1e-6
+	// The solid's mesh of the side stands inside it by up to its chords'
+	// sag, which the slab fills: at a chord tolerance of 0.00018 a disc's
+	// rim of radius 8 in quarters of 32 chords sags 0.0024, thirteen
+	// times as much, and a ledge's hole near it was refused (2026-11-19).
+	allow := 2*math.Max(sh.Tol.ChordTolMm(), c.sag)*c.r*(c.a1-c.a0)*(-c.lo) + 1e-6
 	if unsound(&u) || math.Abs(meshVolume(&u)-before-adds) > allow {
 		return srf.SShell{}, false
 	}

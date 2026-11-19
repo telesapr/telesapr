@@ -50,9 +50,16 @@ var (
 // wall, the two cylinders' curve of intersection.
 func curvedPocket(dish, curvedY bool, tol srf.Tolerance) *srf.SShell {
 	floor := 8.0
-	var base *srf.SShell
 	if dish {
 		floor = 4
+	}
+	return curvedPocketFloor(dish, curvedY, floor, tol)
+}
+
+// curvedPocketFloor is curvedPocket with its floor at height floor.
+func curvedPocketFloor(dish, curvedY bool, floor float64, tol srf.Tolerance) *srf.SShell {
+	var base *srf.SShell
+	if dish {
 		base = lathed([]geom.Vector{v(0, 0, 0), v(40, 0, 0), v(40, 0, 20), v(0, 0, 5)}, tol)
 	} else {
 		base = &srf.SShell{Tol: tol}

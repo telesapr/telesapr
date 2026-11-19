@@ -16,7 +16,11 @@
 // With -chamfer it is the chamfer of distance r instead, as pkg/topo's
 // chamferSection makes it: in each normal plane of the edge, the line
 // between the top's and the wall's points r from the edge
-// (TestFilletEndLeaningWallsChamfer).
+// (TestFilletEndLeaningWallsChamfer). From 2.25 the chamfer's foot on
+// the wall runs below the wall's foot on the pocket's floor, z = 4,
+// where the rim dips lowest; the floor's plane then cuts the chamfer,
+// and -floor 4 takes only what lies above it
+// (TestFilletEndLeaningWallsChamferPastFloor).
 //
 // With -pts file, it instead reads lines "P face x y z" (points sampled
 // on another program's fillet faces) and prints how far each face's
@@ -102,11 +106,16 @@ func inSolid(p vec) bool {
 		p.x >= -12 && math.Hypot(p.x+28, p.z-40) <= 50
 }
 
+// floorZ is the height of the plane below which nothing is taken
+// (-floor): the pocket's floor, which cuts a fillet or chamfer whose
+// foot on the wall runs below the wall's foot.
+var floorZ = math.Inf(-1)
+
 // taken is whether the fillet takes p: in the solid, past the ball and
 // between the ball's radii to its feet on the top and the wall; with
 // chamfer, the chamfer of distance r (chamferTaken).
 func taken(r float64, chamfer bool, p, guess vec) bool {
-	if !inSolid(p) {
+	if !inSolid(p) || p.z < floorZ {
 		return false
 	}
 	if chamfer {
@@ -188,6 +197,7 @@ func main() {
 	dx := flag.Float64("dx", 0.01, "the step between slices along x")
 	chamfer := flag.Bool("chamfer", false, "the chamfer between the ball's feet, not the fillet")
 	pts := flag.String("pts", "", "a file of points to check against the envelope instead")
+	flag.Float64Var(&floorZ, "floor", math.Inf(-1), "the height of the pocket's floor, below which nothing is taken")
 	flag.Parse()
 	if *pts != "" {
 		checkPoints(*r, *pts)

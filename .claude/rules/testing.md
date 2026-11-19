@@ -64,7 +64,7 @@ paths:
 | `TELESAPR_REGEN_GOLDEN=1` | The golden tests rewrite their goldens instead of comparing; set by `scripts/regen-golden.sh`. |
 | `TELESAPR_SWEEP=1` | Robustness sweeps run their whole grid instead of a sample, and sampled tables and fixture lists all their cases (`pkg/internal/sweep`); set by `make test-sweeps`. |
 | `TELESAPR_STEP_CORPUS=dir` | `TestExternalCorpus` reads the STEP files `testdata/step/corpus/external.txt` lists from `dir`. |
-| `TELESAPR_STEP_OUT=dir`, `TELESAPR_KEEP_STEP=1`, `TELESAPR_RENDER_DIR=dir`, `TELESAPR_PATHEQUIV_DIR=dir`, `TELESAPR_GL_DUMP=dir` | Tests in `pkg/ui` and `pkg/render/gl` keep what they produced there, for a diff. |
+| `TELESAPR_STEP_OUT=dir`, `TELESAPR_KEEP_STEP=1`, `TELESAPR_RENDER_DIR=dir`, `TELESAPR_PATHEQUIV_DIR=dir`, `TELESAPR_GL_DUMP=dir` | Tests in `pkg/ui` and `pkg/render/gl` keep what they produced there, for a diff; `TestFilletPivotSeamStep` (`pkg/topo`) keeps its STEP files in `TELESAPR_STEP_OUT`, for `scripts/fillet-pivot-seam-fixtures.py`. |
 | `TELESAPR_DOC_SHOTS=dir`, `TELESAPR_DOC_VIDEOS=dir` | `TestDocScenarios` (`pkg/ui`) writes the guide's pictures and videos of `doc/guide/scenarios` there; set by `scripts/regen-doc-images.sh` and `scripts/regen-guide-videos.sh`. |
 | `TELESAPR_DOC_SCENARIO=name` | `TestDocScenario` prints what one scenario shows. |
 | `TELESAPR_DOC_WINDOW_SHOTS=dir` | `TestDocWindowShots` (`pkg/ui`) writes the guide's pictures of the real window's menus and dialogs there; needs `DISPLAY`, `scripts/regen-doc-window-images.sh` gives it an Xvfb. Skipped without it. |

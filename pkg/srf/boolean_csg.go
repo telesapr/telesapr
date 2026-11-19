@@ -305,12 +305,18 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 	if len(c.Points) == 0 {
 		return ret
 	}
-	prev := c.Points[0]
+	// The points are c's, and where a chord crosses a surface c misses,
+	// the curve's own points put in between (halveMissed); depth is how
+	// many times the segment ending at each was halved.
+	pts := c.Points
+	var depth []int
+	prev := pts[0]
 	ret.Points = append(ret.Points, prev)
 
-	for k := 1; k < len(c.Points); k++ {
-		p := c.Points[k]
+	for k := 1; k < len(pts); k++ {
+		p := pts[k]
 		var il []SInter
+		missed := false
 
 		// Find all the intersections with the two passed shells
 		if agnstA != nil {
@@ -404,6 +410,10 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 						continue
 					}
 				}
+				if missesCurve(c, pi.P, tolOf(srfA).ChordTolMm()) {
+					missed = true
+					continue
+				}
 				// A split at the segment's end is none: the curve has a
 				// vertex there. Where pi.Srf meets srfA or srfB smoothly,
 				// as the next patch of a face does across the seam the
@@ -425,6 +435,13 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 				kept = append(kept, pi)
 			}
 			il = kept
+		}
+		if missed {
+			if more, d, ok := halveMissed(c, pts, depth, k); ok {
+				pts, depth = more, d
+				k--
+				continue
+			}
 		}
 		// The surfaces the segment lies in, as the next patch of a flat
 		// face does across a seam, are crossed nowhere AllPointsIntersecting

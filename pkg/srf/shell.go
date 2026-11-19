@@ -1202,49 +1202,8 @@ func (s *SSurface) openPoles(sel *SEdgeList, start int) {
 	if s.DegM < 1 || s.DegN < 1 {
 		return
 	}
-	// side is the side of the uv square (0 to 3: u = 0, u = 1, v = 0,
-	// v = 1) that p lies on and that the surface folds to a point, or -1.
-	folds := [4]int{-1, -1, -1, -1}
-	var side func(p geom.Vector) int
-	side = func(p geom.Vector) int {
-		const eps = 1e-9
-		k := -1
-		switch {
-		case math.Abs(p.X) < eps:
-			k = 0
-		case math.Abs(p.X-1) < eps:
-			k = 1
-		case math.Abs(p.Y) < eps:
-			k = 2
-		case math.Abs(p.Y-1) < eps:
-			k = 3
-		}
-		if k < 0 {
-			return -1
-		}
-		if folds[k] < 0 {
-			folds[k] = 0
-			if s.foldsSide(k) {
-				folds[k] = 1
-			}
-		}
-		if folds[k] == 1 {
-			return k
-		}
-		// A corner: the other side through it may fold.
-		if k < 2 && (math.Abs(p.Y) < eps || math.Abs(p.Y-1) < eps) {
-			return side(geom.Vector{X: 0.5, Y: p.Y})
-		}
-		return -1
-	}
-	// along sets p's parameter along side k to q's.
-	along := func(p *geom.Vector, q geom.Vector, k int) {
-		if k < 2 {
-			p.Y = q.Y
-		} else {
-			p.X = q.X
-		}
-	}
+	ps := newPoleSides(s)
+	side, along := ps.side, alongSide
 	type end struct {
 		i  int
 		ok bool
@@ -1384,6 +1343,7 @@ func (s *SSurface) MakeSectionEdgesInto(shell *SShell, sel *SEdgeList, sbl *SBez
 
 			var keepBef, junkAft SBezier
 			keepAft.SplitAt(tf, &keepBef, &junkAft)
+			snapSectionEnds(&keepBef, stb, s.Tol.ChordTolMm())
 
 			sbl.Curves = append(sbl.Curves, keepBef)
 
@@ -1470,6 +1430,27 @@ func (s *SSurface) MakeSectionEdgesInto(shell *SShell, sel *SEdgeList, sbl *SBez
 			s.makeTrimEdgesInto(sel, false, sc, stb)
 		}
 	}
+}
+
+// snapSectionEnds moves the ends of sb, a trim's piece of its exact
+// curve, onto the trim's own end points where they lie apart by more
+// than LengthEps but within tol. A trim's ends are the vertices the
+// faces round it share; its exact curve can pass a little off one, as
+// a crease line a fillet's foot was cut from does by a few millionths,
+// and the piece of the curve nearest it then leaves the face's loop
+// open by that much: STEP export drops a face whose loop doesn't close.
+func snapSectionEnds(sb *SBezier, stb *STrimBy, tol float64) {
+	start, finish := stb.StartP, stb.FinishP
+	if stb.Backwards {
+		start, finish = finish, start
+	}
+	snap := func(at *geom.Vector, want geom.Vector) {
+		if d := at.Minus(want).Magnitude(); d > geom.LengthEps && d <= tol {
+			*at = want
+		}
+	}
+	snap(&sb.Ctrl[0], start)
+	snap(&sb.Ctrl[sb.Degree], finish)
 }
 
 // RemapFaces rewrites each surface's face to the group's copy

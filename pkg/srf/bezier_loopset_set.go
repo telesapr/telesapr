@@ -67,10 +67,18 @@ func (s *SBezierLoopSetSet) FindOuterFacesFrom(sbl *SBezierList, spxyz *SPolygon
 	var spuv SPolygon
 	for i := range spxyz.Contours {
 		spuv.AddEmptyContour()
+		uvs := make([]geom.Vector, 0, len(spxyz.Contours[i].Points))
 		for _, pt := range spxyz.Contours[i].Points {
 			var u, v float64
 			srfuv.ClosestPointToUV(pt.P, &u, &v, true)
-			spuv.Contours[len(spuv.Contours)-1].AddPoint(geom.Vector{X: u, Y: v})
+			uvs = append(uvs, geom.Vector{X: u, Y: v})
+		}
+		// Through a pole, as a cone's face's outline up to its apex
+		// and back, the closest points would cut a corner off the
+		// outline, and a hole there would be taken for a face of its
+		// own.
+		for _, p := range srfuv.uvOffPoles(uvs) {
+			spuv.Contours[len(spuv.Contours)-1].AddPoint(p)
 		}
 	}
 	spuv.Normal = geom.Vector{Z: 1} // must be, since it's in xy plane now

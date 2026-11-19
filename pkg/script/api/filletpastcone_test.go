@@ -170,7 +170,9 @@ var conePlates = []conePlate{
 	// The hole 0.5 from an upright disc's rim, the chamfer's cone
 	// meeting the ledge's top in a circle that touches the foot's: made
 	// where the circles cross, at a size within the chord tolerance
-	// (topo.footClearSize, 2026-11-19).
+	// (topo.footClearSize, 2026-11-19). The Booleans fail where the
+	// circles touch exactly; nearer than that 0.0005 they are made at
+	// the size asked for (TestFilletPastConeSideNearFoot).
 	ledgeHoleAt("ledge hole touching", 0, 0.5),
 	ledgeHoleAt("ledge hole drafted 0.8", 5, 0.8),
 }
@@ -335,8 +337,15 @@ func filletOrChamfer(d *Doc, base Group, at Vec, flat bool, r float64) (g Group,
 // sound and holds the ring within p's cone.
 func checkFilletCone(t *testing.T, p conePlate, draft float64, flat bool, r float64) {
 	t.Helper()
+	checkFilletConeAt(t, p, draft, flat, r, 0.003)
+}
+
+// checkFilletConeAt is checkFilletCone at the chord tolerance chord, and
+// gives the rounded group.
+func checkFilletConeAt(t *testing.T, p conePlate, draft float64, flat bool, r, chord float64) Group {
+	t.Helper()
 	d := New()
-	d.Edit.SetChordTolerance(0.003)
+	d.Edit.SetChordTolerance(chord)
 	base, vol := p.make(d, draft)
 	if msg := base.Problem(); msg != "" {
 		t.Fatal(msg)
@@ -364,6 +373,57 @@ func checkFilletCone(t *testing.T, p conePlate, draft float64, flat bool, r floa
 		t.Errorf("volume %.4f, want %.4f (off by %.1e)", got, want, off)
 	}
 	t.Logf("ring %.4f, off by %.1e of the solid", ring, math.Abs(got-want)/want)
+	return g
+}
+
+// The hole chamfered 3.5 on the upright disc on a ledge, 0.5005 to 0.504
+// from the rim: the chamfer's cone meets the ledge's top in a circle of
+// radius 4.5 just inside the foot's of radius 8, 0.0005 to 0.004 from
+// it. The cutter's circle there, a long arc in 32 chords, sags 0.005
+// off its arc, and the chords crossed the cone where the circle does
+// not, which the cut back took for crossings, and it lost the ledge's
+// top and the side on one half of the disc (srf.refineNearMisses,
+// 2026-11-19). Made at the size asked for since 2026-11-19, moved by
+// footClearSize or refused before. The hole 0.5 from the rim, the
+// circles touching, is made at a size within the chord tolerance
+// (TestFilletPastConeSide). Each case takes 20 s of processor: -short
+// leaves them to srf.TestBooleanTouchingRingSweep.
+func TestFilletPastConeSideNearFoot(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("holes near a ledged disc's foot, 20 s of processor each")
+	}
+	for _, gap := range []float64{0.5005, 0.501, 0.502, 0.503, 0.504} {
+		t.Run(fmt.Sprint(gap), func(t *testing.T) {
+			t.Parallel()
+			g := checkFilletConeAt(t, ledgeHoleAt("", 0, gap), 0, true, 3.5, 0.003)
+			if note := g.Note(); note != "" {
+				t.Errorf("made at another size: %s", note)
+			}
+		})
+	}
+}
+
+// Holes in the disc on a ledge at a chord tolerance of 0.001, 2 and 0.5
+// from the rim, rounded and chamfered: the slab past the rim was refused
+// as filling more than lies past the side, the allowance taken from the
+// chord tolerance (0.00018) where the rim's mesh, its quarters in 32
+// chords each, sags 0.0024 inside it (curvedSide.sag, 2026-11-19); each
+// was refused as running off the face, and made at the coarser default.
+// -short takes one.
+func TestFilletPastConeSideFineChord(t *testing.T) {
+	t.Parallel()
+	for _, gap := range []float64{2, 0.5} {
+		for _, flat := range []bool{false, true} {
+			if testing.Short() && (gap != 2 || !flat) {
+				continue
+			}
+			t.Run(fmt.Sprintf("%g %v", gap, flat), func(t *testing.T) {
+				t.Parallel()
+				checkFilletConeAt(t, ledgeHoleAt("", 0, gap), 0, flat, 2.5, 0.001)
+			})
+		}
+	}
 }
 
 // What the kernel refuses past a side on a cone, saying why: a hole's
@@ -376,8 +436,8 @@ func checkFilletCone(t *testing.T, p conePlate, draft float64, flat bool, r floa
 // within the side and is made, as the hole 0.3 from the side is to 3
 // (TestFilletPastConeSide). A hole's rim 0.502 from the side chamfered
 // 3.5, its cone's circle on the ledge's top 0.002 inside the foot's,
-// which the cut back can't take and no size within the chord tolerance
-// makes cross, refused by name since 2026-11-19 (topo.footClearSize).
+// refused by name on 2026-11-19 (topo.footClearSize), is made since the
+// same day (TestFilletPastConeSideNearFoot).
 func TestFilletPastConeSideRefused(t *testing.T) {
 	t.Parallel()
 	for _, c := range []struct {
@@ -394,12 +454,6 @@ func TestFilletPastConeSideRefused(t *testing.T) {
 			g, _ := holeAt(d, 3.7)
 			return g
 		}, V(7.7, 0, 4), true, 3.5, "cuts into the solid below the side's foot"},
-		{"hole's rim just inside the side's foot", func(d *Doc) Group {
-			ledgeUnder(d, 0)
-			draftedDisc(d, 0)
-			g, _ := holeAt(d, 3.498)
-			return g
-		}, V(7.498, 0, 4), true, 3.5, "only just meets the side's foot"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
