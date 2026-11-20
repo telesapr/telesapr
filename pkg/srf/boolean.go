@@ -335,7 +335,7 @@ func buildCurvedTrimEdgesXYZ(sh *SShell, srf *SSurface, useCurvesFrom *SShell) S
 			}
 		}
 		if !sc.isStraight() {
-			srf.makeTrimEdgesInto(&el, false, sc, stb)
+			srf.makeTrimEdgesInto(&el, false, sc, stb, nil)
 		}
 	}
 	return el
