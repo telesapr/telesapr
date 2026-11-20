@@ -1138,12 +1138,7 @@ func (b *solidBuilder) gridFace(f *Face, g *faceGrid) error {
 					smps[k].v += dv
 					eu, ev := g.pointEps(smps[k], c)
 					if !c.contains(smps[k].u, smps[k].v, eu, ev) {
-						return fmt.Errorf("a bound leaves a cell between the points it was cut at, at %v DEBUG cell %v %v %v %v us %v all %v", smps[k].p, c.u0, c.u1, c.v0, c.v1, g.us, func() (o [][2]float64) {
-							for _, q := range smps {
-								o = append(o, [2]float64{q.u, q.v})
-							}
-							return
-						}())
+						return fmt.Errorf("a bound leaves a cell between the points it was cut at, at %v", smps[k].p)
 					}
 				}
 				ps = append(ps, gridPiece{sb: sb, smps: smps, cell: i*nv + j})
