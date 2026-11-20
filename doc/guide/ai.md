@@ -48,7 +48,8 @@ may be closed and opened again in the middle of a conversation.
 - **Script > Stop** stops a script that is running.
 - You can go on working in the window while the model works. When you change the drawing
   yourself between two of its calls (draw, delete, undo, change a dimension, open another file),
-  the model's next call that reads the drawing starts with a line that tells it so, and whether
+  the model's next call on the drawing (a script, a description, a picture, a measurement or an
+  export) starts with a line that tells it so, and whether
   it is another drawing altogether, so it doesn't go on from what it saw before. A change you make
   while one of its scripts runs counts too, and so does one made by a second AI program connected
   to the same window. The model's own scripts don't, nor does selecting, turning the view or
