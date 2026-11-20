@@ -535,7 +535,13 @@ func (b *solidBuilder) layout(f *Face) (*faceGrid, error) {
 	})
 	// The grid along each parameter: a period's worth where the surface
 	// closes on itself, from where the bounds leave the widest gap; else
-	// the bounds' extent and a little more, but not past a pole.
+	// the bounds' extent and a little more, but not past a pole. The more
+	// is three thousandths of the extent, past what pointEps takes for on
+	// a cell's side (at most a thousandth of the cell): a joint of the
+	// bounds at their extreme, as where a chamfer's face narrows to a
+	// vertex at its surface's end, would else lie on the grid's last line
+	// and the face run along that line to its corner, past the face
+	// beyond.
 	lines := func(period, dlo, dhi float64, smpLo, smpHi float64, breaks func(lo, hi float64) []float64,
 		vals func() []float64, isBspline bool, poleLo, poleHi float64, atLo, atHi bool) ([]float64, float64, error) {
 		if period > 0 {
@@ -554,7 +560,7 @@ func (b *solidBuilder) layout(f *Face) (*faceGrid, error) {
 			return append(append([]float64{dlo}, breaks(dlo, dhi)...), dhi), 0, nil
 		}
 		w := smpHi - smpLo
-		d := 1e-3*w + 1e-9*(1+math.Abs(smpLo)+math.Abs(smpHi))
+		d := 3e-3*w + 1e-9*(1+math.Abs(smpLo)+math.Abs(smpHi))
 		a, z := smpLo-d, smpHi+d
 		// Not past a pole, and for a surface that ends, not past its
 		// end; a B-spline reaches past its end by extending its last

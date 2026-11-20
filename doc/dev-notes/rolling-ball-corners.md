@@ -1,6 +1,6 @@
 # Rolling-ball corners: pivots and mitres at an inside corner
 
-Refreshed 2026-11-19 at branches `pocket-curved-crease`, `fillet-end-leaning-wall`, `pocket-crease-lean-back`, `rim-fine-tol-corner`, `apex-seam-chamfer`, `pivot-shared-seam`, `step-seam-corners`, `seam-near-point` and `dish-chamfer-wall-foot`.
+Refreshed 2026-11-19 at branches `pocket-curved-crease`, `fillet-end-leaning-wall`, `pocket-crease-lean-back`, `rim-fine-tol-corner`, `apex-seam-chamfer`, `pivot-shared-seam`, `step-seam-corners`, `seam-near-point`, `dish-chamfer-wall-foot` and (2026-11-20) `step-chamfer-one-face`.
 
 Where two rolling-ball chains end at one vertex with a crease between their walls that the ball
 goes round (a pocket's rim in a curved face, the foot of a band raised on a tube at the band's
@@ -587,16 +587,26 @@ rational spans, C0 at the knots; its own tessellation of the same file gives 74 
 cylinder unpocketed 100 443 by `Volume` against 100 528 tessellated and π·40²·20 = 100 531.
 Measure such files by their tessellation.
 
+Our own reader closed all of them but the chamfers of 1 and 1.5 written one surface per face,
+which it left open by a sliver 0.0016 mm long at the vertex where the chamfer's face narrows to
+its surface's end in u (2026-11-20, branch `step-chamfer-one-face`). The note here blamed a piece
+of the foot laid on a line of the cone's grid; it was the chamfer's own grid. That grid runs past
+the bounds' extent by a margin, a thousandth of the extent, and a point of a bound within
+`pointEps` of a cell's side, at most a thousandth of the cell, counts as on it: with one cell
+along u the margin is the smaller, so the joint of the foot's two edges at the extreme counted as
+on the grid's last line, the bound was broken there, and the cell's walk ran along that line from
+the vertex to the cell's corner, an edge no other face has. The margin is now three thousandths
+(`layout`, `pkg/persist/step/solid.go`); `TestFilletPivotSeamStep` reads all eight files back as
+sound solids of our volume, and the corpus reads as before.
+
 ## Left
 
 - The corner patches of the strip are joined into the fillets' faces or kept apart (`Faces`)
   differently at different tolerances: 15 faces at 0.02%, 14 at 0.015%.
-- Our STEP reader doesn't close `seamPocket`'s chamfers of 1 and 1.5 written one surface per
-  face (FreeCADCmd reads them as one valid solid): a piece of the chamfer's foot it lays on a line
-  of the cone's grid (`onLines`) ends about 0.0013 mm off the file's vertex. Nor `dishPocket`'s
-  whole rims x+ and y+ filleted, either way: the edges by the pivot on the crease at (12, 6)
-  leave points of the reader's own 1.7e-4 mm apart, and one surface per face three faces meet
-  along the cone's seam. FreeCADCmd reads both as one valid solid.
+- Our STEP reader doesn't close `dishPocket`'s whole rims x+ and y+ filleted, either way: the
+  edges by the pivot on the crease at (12, 6) leave points of the reader's own 1.7e-4 mm apart,
+  and one surface per face three faces meet along the cone's seam. FreeCADCmd reads it as one
+  valid solid.
 - Without one sheet for the lathe's quarters (`dishPocket` as the older tests build it), the
   seam is an edge of the solid: a pocket's corner exactly on it is refused "not an edge for a
   rolling ball" (its vertex has three other edges).

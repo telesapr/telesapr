@@ -17,10 +17,10 @@ import (
 
 // stepRoundTrip writes sh as STEP, one surface per face when one, and
 // reads it back as a solid with the STEP reader: the file's faces and
-// the solid read, nil when unread. With TELESAPR_STEP_OUT set the file
+// the solid read. With TELESAPR_STEP_OUT set the file
 // is kept there as name.step, for scripts/fillet-pivot-seam-fixtures.py
 // to read.
-func stepRoundTrip(t *testing.T, sh *srf.SShell, unread, one bool, name string) (faces int, read *srf.SShell) {
+func stepRoundTrip(t *testing.T, sh *srf.SShell, one bool, name string) (faces int, read *srf.SShell) {
 	t.Helper()
 	sk := sketch.NewSketch()
 	sk.NewFile()
@@ -44,9 +44,6 @@ func stepRoundTrip(t *testing.T, sh *srf.SShell, unread, one bool, name string) 
 	if len(m.Shapes) != 1 {
 		t.Fatalf("%d shapes read, want one", len(m.Shapes))
 	}
-	if unread {
-		return len(m.Shapes[0].Faces), nil
-	}
 	read, err = m.ShellOf(0, 0, sh.Tol)
 	if err != nil {
 		t.Fatalf("read back: %v", err)
@@ -65,11 +62,10 @@ func stepRoundTrip(t *testing.T, sh *srf.SShell, unread, one bool, name string) 
 // outline in its parameters cut a corner off at the apex, and the
 // hole was written as a face of its own (uvOffPoles): read back as a
 // solid and an open shell. One surface per face or one per patch, as
-// the window and a script write them. (Chamfers of 1 and 1.5 written
-// one surface per face, which OpenCASCADE reads as one valid solid,
-// our reader doesn't close: a piece of the chamfer's foot it lays on a
-// line of the cone's grid moves off the vertex by a thousandth; their
-// faces are counted only.)
+// the window and a script write them. Chamfers of 1 and 1.5 written
+// one surface per face were left open by our reader before 2026-11-20:
+// the joint of the foot's two edges at the end of the chamfer's
+// surface counted as on its grid's last line, a margin past it.
 func TestFilletPivotSeamStep(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -105,7 +101,7 @@ func TestFilletPivotSeamStep(t *testing.T) {
 					t.Fatal(err)
 				}
 				want := surfaceVolume(t, sh)
-				faces, read := stepRoundTrip(t, sh, one && c.flat, one, name)
+				faces, read := stepRoundTrip(t, sh, one, name)
 				tp, err := topo.Build(sh)
 				if err != nil {
 					t.Fatal(err)
@@ -117,9 +113,6 @@ func TestFilletPivotSeamStep(t *testing.T) {
 				}
 				if one && faces >= len(tp.Faces) {
 					t.Errorf("%d faces written, ours %d: no sheet written as one", faces, len(tp.Faces))
-				}
-				if read == nil {
-					return
 				}
 				sound(t, read)
 				if got := surfaceVolume(t, read); math.Abs(got-want) > 2e-4*want {
