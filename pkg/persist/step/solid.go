@@ -463,21 +463,51 @@ func (g *faceGrid) sampleUV(sb srf.SBezier, prev *uvSample, n int) []uvSample {
 		guess = &[2]float64{q.u, q.v}
 	}
 	// A point where u (v) is undefined, as at a pole, takes it from
-	// the point next to it inside the curve.
+	// the point next to it inside the curve, or where the surface folds
+	// to the point only past it, the nearest to it that still reaches
+	// the point.
 	for k := range out {
 		q := g.s.point(out[k].p, &[2]float64{out[k].u, out[k].v})
 		nb := k + 1
 		if k == len(out)-1 {
 			nb = k - 1
 		}
-		if q.singU && nb >= 0 && nb < len(out) {
-			out[k].u = out[nb].u
+		if nb < 0 || nb >= len(out) {
+			continue
 		}
-		if q.singV && nb >= 0 && nb < len(out) {
-			out[k].v = out[nb].v
+		if q.singU {
+			out[k].u = g.s.foldEnd(func(x float64) geom.Vector { return g.s.Eval(x, out[k].v) }, out[k].p, out[k].u, out[nb].u)
+		}
+		if q.singV {
+			out[k].v = g.s.foldEnd(func(x float64) geom.Vector { return g.s.Eval(out[k].u, x) }, out[k].p, out[k].v, out[nb].v)
 		}
 	}
 	return out
+}
+
+// foldEnd is the parameter nearest off of those, from on to off, at
+// which the surface (at) is at p, on being one: off itself at a pole,
+// where the surface is at p all along, but where one piece of a
+// B-spline folds its side to p and the next runs on from it, where the
+// fold begins. A bound coming along that side to the fold ends there,
+// on the knot between the pieces; taken from the point before it, it
+// stopped short of the knot, inside a cell of the grid (a fillet's
+// sheet that ends in the corner patch folded to the point where the
+// pocket's two rim fillets meet, 2026-11-20).
+func (s *faceSurface) foldEnd(at func(x float64) geom.Vector, p geom.Vector, on, off float64) float64 {
+	eps := 1e-9 * s.scale
+	if at(off).Minus(p).Magnitude() <= eps || at(on).Minus(p).Magnitude() > eps {
+		return off
+	}
+	for range 60 {
+		m := (on + off) / 2
+		if at(m).Minus(p).Magnitude() <= eps {
+			on = m
+		} else {
+			off = m
+		}
+	}
+	return on
 }
 
 // layout lays out a face's bounds on its surface, chooses its grid,
@@ -948,6 +978,9 @@ type gridPiece struct {
 	sb   srf.SBezier
 	smps []uvSample
 	cell int
+	// fold is set for a piece along a side the surface folds to a
+	// point (withFolds): parameters only, no curve.
+	fold bool
 }
 
 // cellLoop is a loop of a cell's region: its curves, and its points in
@@ -1112,6 +1145,10 @@ func (b *solidBuilder) gridFace(f *Face, g *faceGrid) error {
 		}
 		if len(ps) == 0 {
 			continue
+		}
+		ps, err := g.withFolds(ps, cells)
+		if err != nil {
+			return err
 		}
 		// Runs of pieces in one cell, broken where the cell changes and
 		// where a joint lies on the cell's side, as at a pole, where the
@@ -1325,11 +1362,85 @@ func (b *solidBuilder) gridFace(f *Face, g *faceGrid) error {
 	return nil
 }
 
+// withFolds are a bound's pieces with, between two that meet at one
+// point at different parameters, the way between them in the
+// parameters, cut where it crosses the grid's lines: a fold, of no
+// length in space. A B-spline that folds part of its side to a point
+// has the point all along that part, and a bound coming along the side
+// ends where the fold begins while the next leaves from where it ends
+// (foldEnd); the cells need the way along the fold to close their
+// loops, as they go along a pole on their sides. Where both lie on
+// their cells' sides, as at a pole the grid stops at, the cells go
+// along them; but a side of the surface's domain lies a margin inside
+// the grid, within a side's reach, and walked along the side there the
+// one cell's loop went out past the fold to the cell's corner.
+func (g *faceGrid) withFolds(ps []gridPiece, cells []*gridCell) ([]gridPiece, error) {
+	nv := len(g.vs) - 1
+	onSide := func(q uvSample, cell int) bool {
+		c := cells[cell]
+		eu, ev := g.pointEps(q, c)
+		_, on := c.perimeter(q.u, q.v, 0.01*eu, 0.01*ev)
+		return on
+	}
+	var out []gridPiece
+	for k, pc := range ps {
+		out = append(out, pc)
+		next := ps[(k+1)%len(ps)]
+		a, z := pc.smps[len(pc.smps)-1], next.smps[0]
+		if !a.p.Equals(z.p) || (onSide(a, pc.cell) && onSide(z, next.cell)) {
+			continue
+		}
+		// Apart by more than rounding, as the search for the point on
+		// the surface leaves it, or than whole periods, as at a seam
+		// between the cells.
+		eu, ev := g.pointEps(a, cells[pc.cell])
+		if math.Abs(snapTo(z.u, a.u, g.pu)-z.u) <= eu && math.Abs(snapTo(z.v, a.v, g.pv)-z.v) <= ev {
+			continue
+		}
+		// Where the way crosses the grid's lines.
+		ts := []float64{0, 1}
+		for _, ln := range g.crossed(a.u, z.u, g.us, g.pu) {
+			ts = append(ts, (ln-a.u)/(z.u-a.u))
+		}
+		for _, ln := range g.crossed(a.v, z.v, g.vs, g.pv) {
+			ts = append(ts, (ln-a.v)/(z.v-a.v))
+		}
+		slices.Sort(ts)
+		at := func(t float64) uvSample {
+			return uvSample{t: t, p: a.p, u: a.u + t*(z.u-a.u), v: a.v + t*(z.v-a.v)}
+		}
+		for m := 0; m+1 < len(ts); m++ {
+			t0, t1 := ts[m], ts[m+1]
+			if t1-t0 < 1e-12 {
+				continue
+			}
+			var smps []uvSample
+			for n := range 3 {
+				smps = append(smps, at(t0+(t1-t0)*float64(n)/2))
+			}
+			i, j, du, dv := g.pieceCell(smps)
+			c := cells[i*nv+j]
+			for n := range smps {
+				smps[n].u += du
+				smps[n].v += dv
+				eu, ev := g.pointEps(smps[n], c)
+				if !c.contains(smps[n].u, smps[n].v, eu, ev) {
+					return nil, fmt.Errorf("a fold of the surface leaves a cell, at %v", a.p)
+				}
+			}
+			out = append(out, gridPiece{smps: smps, cell: i*nv + j, fold: true})
+		}
+	}
+	return out, nil
+}
+
 // chainLoop is a closed run of pieces as a loop.
 func chainLoop(ch []gridPiece) cellLoop {
 	var l cellLoop
 	for _, p := range ch {
-		l.curves = append(l.curves, p.sb)
+		if !p.fold {
+			l.curves = append(l.curves, p.sb)
+		}
 		for _, q := range p.smps[:len(p.smps)-1] {
 			l.poly = append(l.poly, geom.Vector{X: q.u, Y: q.v})
 		}
@@ -1383,19 +1494,34 @@ func (g *faceGrid) pointEps(q uvSample, c *gridCell) (eu, ev float64) {
 }
 
 // perimeter is where (u, v), on the cell's side, lies round it counter-
-// clockwise from its corner (u0, v0), in [0, 4): a unit a side.
+// clockwise from its corner (u0, v0), in [0, 4): a unit a side. A point
+// within reach of two sides, by a corner, is on the first of bottom,
+// right, top and left, but on one it lies on to a hundredth of its
+// reach before one it is only near: a bound along the end of a
+// surface's domain lies a margin inside the grid's last line, about as
+// far as the reach, and its point on a line across the grid there, put
+// on the right side of the cell below the line and on the bottom of
+// the cell above it, sent the one cell's loop round the corner between
+// and not the other's (a fillet's foot crossing the seam of a lathed
+// dish, 2026-11-20).
 func (c *gridCell) perimeter(u, v, epsU, epsV float64) (float64, bool) {
 	fu := (u - c.u0) / (c.u1 - c.u0)
 	fv := (v - c.v0) / (c.v1 - c.v0)
 	eu, ev := epsU/(c.u1-c.u0), epsV/(c.v1-c.v0)
-	switch {
-	case math.Abs(fv) <= ev:
+	// Each side's distance in its reach: bottom, right, top, left.
+	d := [4]float64{math.Abs(fv) / ev, math.Abs(fu-1) / eu, math.Abs(fv-1) / ev, math.Abs(fu) / eu}
+	side := slices.IndexFunc(d[:], func(x float64) bool { return x <= 0.01 })
+	if side < 0 {
+		side = slices.IndexFunc(d[:], func(x float64) bool { return x <= 1 })
+	}
+	switch side {
+	case 0:
 		return math.Max(0, math.Min(1, fu)), true
-	case math.Abs(fu-1) <= eu:
+	case 1:
 		return 1 + math.Max(0, math.Min(1, fv)), true
-	case math.Abs(fv-1) <= ev:
+	case 2:
 		return 2 + math.Max(0, math.Min(1, 1-fu)), true
-	case math.Abs(fu) <= eu:
+	case 3:
 		s := 3 + math.Max(0, math.Min(1, 1-fv))
 		if s >= 4 {
 			s = 0
@@ -1602,8 +1728,9 @@ func (b *solidBuilder) walk(g *faceGrid, c *gridCell) ([]cellLoop, [4]bool, erro
 		if !ok0 || !ok1 {
 			return nil, sides, fmt.Errorf("a bound stops inside a cell, at %v", f.p)
 		}
-		starts[k] = end{s0, ch[0].sb.Start()}
-		ends[k] = end{s1, ch[len(ch)-1].sb.Finish()}
+		// The points themselves, which a fold has with no curve.
+		starts[k] = end{s0, f.p}
+		ends[k] = end{s1, l.p}
 	}
 	used := make([]bool, n)
 	var out []cellLoop

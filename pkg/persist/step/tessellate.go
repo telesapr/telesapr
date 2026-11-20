@@ -175,9 +175,37 @@ type faceSurface struct {
 
 func (s *faceSurface) point(p geom.Vector, guess *[2]float64) uvPoint {
 	u, v := s.Project(p, guess)
-	_, su, sv := s.Derivs(u, v)
+	q, su, sv := s.Derivs(u, v)
 	eps := 1e-7 * s.scale
-	return uvPoint{p: p, u: u, v: v, singU: su.Magnitude() < eps, singV: sv.Magnitude() < eps}
+	singU := su.Magnitude() < eps && s.collapses(q, func(d float64) geom.Vector { return s.Eval(u+d, v) }, u, s.u0, s.u1)
+	singV := sv.Magnitude() < eps && s.collapses(q, func(d float64) geom.Vector { return s.Eval(u, v+d) }, v, s.v0, s.v1)
+	return uvPoint{p: p, u: u, v: v, singU: singU, singV: singV}
+}
+
+// collapses reports whether the surface stays at q as one parameter, at
+// x in [lo, hi], moves a hundredth of its range one way or the other
+// (at): at a pole, where the parameter is undefined, or on a side of a
+// B-spline that one of its pieces folds to a point while the next runs
+// on (the corner of a fillet's end written in the fillet's sheet).
+// A derivative may also vanish where the surface doesn't collapse: a
+// patch whose side starts on two control points at one place has no
+// derivative along that side at its corner, though the side runs on
+// from it, and the parameter is as defined there as anywhere. Taken for
+// a pole, the corner's parameter was copied from the point before it, a
+// bound's end put a fiftieth of a millimetre up the side, and the cell's
+// loop closed round its corner (the end of a pocket's rim fillet on the
+// crease, 2026-11-20).
+func (s *faceSurface) collapses(q geom.Vector, at func(d float64) geom.Vector, x, lo, hi float64) bool {
+	h := 0.01
+	if !math.IsInf(lo, 0) && !math.IsInf(hi, 0) {
+		h *= hi - lo
+	}
+	for _, d := range []float64{-h, h} {
+		if x+d >= lo && x+d <= hi && at(d).Minus(q).Magnitude() <= 1e-9*s.scale {
+			return true
+		}
+	}
+	return false
 }
 
 // face tessellates a face into triangles whose corners are in space,

@@ -1169,6 +1169,18 @@ func (s *SSurface) MakeEdgesInto(shell *SShell, sel *SEdgeList, asUV bool, useCu
 			s.openPoles(sel, start)
 		}
 	}()
+	// A point the trims of a file's face share, where one ends and the
+	// next starts, has one place in the parameters: where the surface's
+	// derivative along a side vanishes at a corner, as at the end of a
+	// fillet written as a patch, the closest point to it is the same in
+	// space a range of parameters wide, and the search from each trim's
+	// last point found a different one, so the outline didn't close. The
+	// kernel's own surfaces search as they did: the last bits of their
+	// trims' parameters are what the goldens record.
+	var uvOf map[geom.Vector]geom.Vector
+	if asUV && s.SnapToTrims {
+		uvOf = map[geom.Vector]geom.Vector{}
+	}
 	for i := range s.Trim {
 		stb := &s.Trim[i]
 		sc := shell.FindCurve(stb.Curve)
@@ -1183,7 +1195,7 @@ func (s *SSurface) MakeEdgesInto(shell *SShell, sel *SEdgeList, asUV bool, useCu
 			}
 		}
 
-		s.makeTrimEdgesInto(sel, asUV, sc, stb)
+		s.makeTrimEdgesInto(sel, asUV, sc, stb, uvOf)
 	}
 }
 
@@ -1255,7 +1267,7 @@ func (s *SSurface) foldsSide(k int) bool {
 
 // makeTrimEdgesInto walks sc's pwl from stb's start to its finish
 // (backwards if stb says so), emitting edges in uv or xyz.
-func (s *SSurface) makeTrimEdgesInto(sel *SEdgeList, asUV bool, sc *SCurve, stb *STrimBy) {
+func (s *SSurface) makeTrimEdgesInto(sel *SEdgeList, asUV bool, sc *SCurve, stb *STrimBy, uvOf map[geom.Vector]geom.Vector) {
 	var prev geom.Vector
 	inCurve := false
 
@@ -1271,9 +1283,16 @@ func (s *SSurface) makeTrimEdgesInto(sel *SEdgeList, asUV bool, sc *SCurve, stb 
 		pt := sc.Points[i].P
 		tpt := pt
 		if asUV {
-			var u, v float64
-			s.ClosestPointToUV(pt, &u, &v, true)
-			tpt = geom.Vector{X: u, Y: v}
+			if uv, ok := uvOf[pt]; ok {
+				tpt = uv
+			} else {
+				var u, v float64
+				s.ClosestPointToUV(pt, &u, &v, true)
+				tpt = geom.Vector{X: u, Y: v}
+				if uvOf != nil {
+					uvOf[pt] = tpt
+				}
+			}
 		}
 
 		if inCurve {
@@ -1427,7 +1446,7 @@ func (s *SSurface) MakeSectionEdgesInto(shell *SShell, sel *SEdgeList, sbl *SBez
 			}
 
 		case sel != nil:
-			s.makeTrimEdgesInto(sel, false, sc, stb)
+			s.makeTrimEdgesInto(sel, false, sc, stb, nil)
 		}
 	}
 }

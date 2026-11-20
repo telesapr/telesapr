@@ -1,6 +1,6 @@
 # Rolling-ball corners: pivots and mitres at an inside corner
 
-Refreshed 2026-11-19 at branches `pocket-curved-crease`, `fillet-end-leaning-wall`, `pocket-crease-lean-back`, `rim-fine-tol-corner`, `apex-seam-chamfer`, `pivot-shared-seam`, `step-seam-corners`, `seam-near-point` and `dish-chamfer-wall-foot`.
+Refreshed 2026-11-19 at branches `pocket-curved-crease`, `fillet-end-leaning-wall`, `pocket-crease-lean-back`, `rim-fine-tol-corner`, `apex-seam-chamfer`, `pivot-shared-seam`, `step-seam-corners`, `seam-near-point` and `dish-chamfer-wall-foot`; 2026-11-20 at `step-dish-rims`.
 
 Where two rolling-ball chains end at one vertex with a crease between their walls that the ball
 goes round (a pocket's rim in a curved face, the foot of a band raised on a tube at the band's
@@ -587,16 +587,50 @@ rational spans, C0 at the knots; its own tessellation of the same file gives 74 
 cylinder unpocketed 100 443 by `Volume` against 100 528 tessellated and π·40²·20 = 100 531.
 Measure such files by their tessellation.
 
+### STEP files of a pocket's whole rims (2026-11-20)
+
+`dishPocket`'s rims x+ and y+ filleted whole, at 1 and 2, written one surface per patch and one
+per face: FreeCADCmd reads all four as one valid solid, our reader closed none. Our files were
+right; four faults of the reader (`TestFilletDishRimStep`):
+
+- **A corner taken for a pole.** The y+ fillet's end on the crease is a patch whose side along
+  the crease starts on two control points at the corner (12, 6, zc): its derivative along that
+  side vanishes there, though the side runs on. `faceSurface.point` took any vanishing
+  derivative for a pole, and the bound's end at the corner got the parameter of the sample
+  before it, a fiftieth of a millimetre up the side; the cell's loop closed round its corner, a
+  sliver of two trims 1.7e-4 mm long (the "points 1.7e-4 apart" seen first). A parameter is
+  undefined only where the surface stays put as it moves a hundredth of its range one way or the
+  other (`collapses`).
+- **Two places for the corner in the kernel's parameters.** Read back, that patch made no
+  triangles: `MakeEdgesInto`'s search for each trim's points, from the last point found, put the
+  corner 6e-5 apart in v for the two trims through it, where a whole range of v is within 1e-9
+  mm of it, and the outline didn't close. For a file's surface (`SnapToTrims`) a point the trims
+  share now has the one place first found (`makeTrimEdgesInto`); the kernel's own surfaces
+  search as before, since nine solid goldens moved in their last bits when they did too.
+- **A fold of a sheet's side.** One surface per face, the x+ fillet's sheet ends in the corner
+  patch, which folds the sheet's side u = 0 to the corner over its last span. The foot along that
+  side ends where the fold begins, on the knot, and the next bound leaves from where it ends: the
+  end took the parameter of the sample before it, short of the knot inside a cell, and the cells
+  had no way along the fold. The end now goes to where the fold begins (`foldEnd`), and between
+  two pieces that meet at one point at different parameters the bound runs along the fold, a
+  piece of no curve, cut at the grid's lines (`withFolds`); where both ends lie on their cells'
+  sides, as at a pole the grid stops at, the cells go along them as before.
+- **A corner of two sides.** At 1, the x+ foot on the cone crosses the dish's seam at y = 0, on
+  a knot line of the sheet; the foot lies along the sheet's side u = 1, which the grid's margin
+  puts about a side's reach inside the last line. `perimeter` took the first side in reach, the
+  right in the cell below the knot and the bottom in the cell above, and the one went round the
+  corner between, the other not: three faces on one edge 2e-6 long. A side the point lies on to
+  a hundredth of its reach now comes before one it is only near (the "three faces along the
+  cone's seam").
+
 ## Left
 
 - The corner patches of the strip are joined into the fillets' faces or kept apart (`Faces`)
   differently at different tolerances: 15 faces at 0.02%, 14 at 0.015%.
 - Our STEP reader doesn't close `seamPocket`'s chamfers of 1 and 1.5 written one surface per
   face (FreeCADCmd reads them as one valid solid): a piece of the chamfer's foot it lays on a line
-  of the cone's grid (`onLines`) ends about 0.0013 mm off the file's vertex. Nor `dishPocket`'s
-  whole rims x+ and y+ filleted, either way: the edges by the pivot on the crease at (12, 6)
-  leave points of the reader's own 1.7e-4 mm apart, and one surface per face three faces meet
-  along the cone's seam. FreeCADCmd reads both as one valid solid.
+  of the cone's grid (`onLines`) ends about 0.0013 mm off the file's vertex. FreeCADCmd reads
+  them as one valid solid.
 - Without one sheet for the lathe's quarters (`dishPocket` as the older tests build it), the
   seam is an edge of the solid: a pocket's corner exactly on it is refused "not an edge for a
   rolling ball" (its vertex has three other edges).

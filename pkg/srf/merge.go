@@ -99,7 +99,7 @@ func (s *SSurface) edgesInto(curveAt map[core.HSCurve]*SCurve, sel *SEdgeList) {
 	for i := range s.Trim {
 		stb := &s.Trim[i]
 		if sc := curveAt[stb.Curve]; sc != nil {
-			s.makeTrimEdgesInto(sel, false, sc, stb)
+			s.makeTrimEdgesInto(sel, false, sc, stb, nil)
 		}
 	}
 }
