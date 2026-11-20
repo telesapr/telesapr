@@ -74,6 +74,10 @@ type stepFileWriter struct {
 	pointCells           pointCells
 	exportParts          bool
 	currentColor         core.RGBA
+	// open are where faces were left out of the file, one point of
+	// each, their outlines not closing: told to Warn once the file is
+	// written.
+	open []geom.Vector
 }
 
 func (w *stepFileWriter) printf(format string, args ...any) {
@@ -536,6 +540,16 @@ func (w *stepFileWriter) ExportSurface(ss *srf.SSurface, sbl *srf.SBezierList) {
 	// contour directions and determine inner vs. outer contours.
 	sblss.FindOuterFacesFrom(sbl, &spxyz, ss, w.o.Tol,
 		&allClosed, &notClosedAt, nil, nil, nil)
+	if !allClosed || len(sblss.Sets) == 0 {
+		// Trims that don't close are no bound to write: what of the
+		// face they bound is left out, and the solid read back is open
+		// there, so the user is told.
+		at := notClosedAt.A
+		if allClosed && len(sbl.Curves) > 0 {
+			at = sbl.Curves[0].Start()
+		}
+		w.open = append(w.open, at)
+	}
 
 	// So in our list of SBezierLoopSet, each set contains at least one
 	// loop (the outer boundary), plus any inner loops associated with
@@ -1055,8 +1069,24 @@ func WriteStep(out io.Writer, sk *sketch.Sketch, g *sketch.Group, o Options) err
 		w.printf("#%d=SHAPE_REPRESENTATION_RELATIONSHIP($,$,#169,#%d);\n", w.id+3, w.id+2)
 	}
 	w.WriteFooter()
+	w.warnOpen()
 	_, err := out.Write(buf.Bytes())
 	return err
+}
+
+// warnOpen tells Warn of the faces left out of the file, where the
+// first of them is: a reader takes the solid for an open shell.
+func (w *stepFileWriter) warnOpen() {
+	if len(w.open) == 0 || w.o.Warn == nil {
+		return
+	}
+	p := w.open[0]
+	faces := "A face was"
+	if n := len(w.open); n > 1 {
+		faces = fmt.Sprintf("%d faces were", n)
+	}
+	w.o.Warn(fmt.Sprintf("%s left out of the STEP file: the outline doesn't close "+
+		"(near %.4f, %.4f, %.4f). The file's solid is open there.", faces, p.X, p.Y, p.Z))
 }
 
 // exportShellFaces writes the faces of shell, scaled by scale, adding
