@@ -9,6 +9,8 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.6.7] - 2026-11-21
+
 ### Added
 - AI connection: the model is told when the drawing was changed by someone else since its last call: by you in the window (drawing, deleting, undoing, changing a dimension, dragging, opening another file or starting a new one), or by a second AI program connected to the same window, including while one of the model's scripts runs. The next run_script, get_drawing, render, measure, export or open starts with a line that says so, or that another drawing is open, and run_script's structured result has `drawingChanged`; the model's own scripts, and one taken back, don't count. In a browser, `agent-client.js`'s `call` gives each answer's `revision`. `telesapr-cli mcp` and the window must be the same version (the protocol is now 8).
 - The example scripts are built into the program. An AI model asks the MCP server's `api_help` for `examples` to list them, each with what it makes, and for `example bolt` to read one; the primer says so. The script console's `help("examples")` and `help("example bolt")` do the same, in the window and in `telesapr-cli repl`.
