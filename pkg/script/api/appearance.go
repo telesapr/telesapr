@@ -6,7 +6,7 @@ import (
 )
 
 // Appearances are the appearances a solid or a face can have, how it
-// takes light when the window shades (roadmap 19.2): matte, plastic,
+// takes light when the window shades: matte, plastic,
 // glossy and metal.
 func Appearances() []string { return append([]string(nil), render.MaterialNames...) }
 

@@ -90,7 +90,7 @@ func (sk *Sketch) NewSmoothLoft(profiles []core.HGroup, name string) (Group, err
 
 // SetLoftProfiles makes the loft hg go through profiles, two or more
 // sketches in order, instead of the profiles it goes through now: a
-// loft's profiles can be changed after it is made (ROADMAP F7). A
+// loft's profiles can be changed after it is made. A
 // profile between the ends that the loft is held square to stays so
 // where it is kept; its guides stay. The loft is tried as NewSmoothLoft
 // tries it, so profiles it can't join are an error here and nothing
@@ -143,8 +143,7 @@ func (sk *Sketch) SetLoftProfiles(hg core.HGroup, profiles []core.HGroup) error 
 }
 
 // LoftEnds is how the loft leaves its first profile and reaches its
-// last: ValB and ValC, square to each profile by that much, 0 free
-// (roadmap 28.3).
+// last: ValB and ValC, square to each profile by that much, 0 free.
 func (g *Group) LoftEnds() topo.LoftEnds { return topo.LoftEnds{Start: g.ValB, End: g.ValC} }
 
 // loftEnds is LoftEnds as the loft is made: an end along the solid's

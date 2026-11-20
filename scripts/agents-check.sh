@@ -47,7 +47,7 @@ done
 
 # 3. Tests and benchmarks: `TestName` or `BenchmarkName` must be defined.
 spans | grep -oE '^[^:]*:(Test|Benchmark|Fuzz)[A-Z][A-Za-z0-9_]*' | sort -u | while IFS=: read -r f t; do
-  grep -rqE --include='*_test.go' "^func $t\(" pkg cmd || report "$f" "no test '$t'"
+  grep -rqE --include='*_test.go' "^func $t\(" pkg cmd examples || report "$f" "no test '$t'"
 done
 
 # 4. TELESAPR_* variables: every one the code or a script reads is in the

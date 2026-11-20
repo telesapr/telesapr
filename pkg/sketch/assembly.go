@@ -10,8 +10,8 @@ import (
 	"github.com/telesapr/telesapr/pkg/srf"
 )
 
-// AssemblyPart is a part of an assembly as a STEP file gives it
-// (roadmap 16.8): a linked file's solid in the file's own coordinates,
+// AssemblyPart is a part of an assembly as a STEP file gives it: a
+// linked file's solid in the file's own coordinates,
 // placed by the link's rotation and offset, so that a file linked twice
 // is one product placed twice; or another group's solid, where it is.
 type AssemblyPart struct {

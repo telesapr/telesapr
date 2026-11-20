@@ -18,6 +18,7 @@ func (sk *Sketch) ClearExisting() {
 	}
 	sk.Clear()
 	sk.Images = nil
+	sk.anotherDrawing()
 }
 
 // CreateDefaultDrawingGroup adds the empty group in the XY plane that a

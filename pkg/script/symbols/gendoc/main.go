@@ -3,10 +3,14 @@
 // and methods as declared, with their comments. It is run by go
 // generate in pkg/script/symbols:
 //
-//	gendoc [-full package,...] package...
+//	gendoc [-full package,...] [-fields package,...] package...
 //
 // The comments of the packages after -full are kept whole, those of
-// the others down to their first sentence.
+// the others down to their first sentence. The fields of the struct
+// types of the packages after -fields are written with their comments;
+// help finds the fields of the others' by reflection, without them,
+// which keeps the file smaller (the fields of every package would add
+// a sixth to it).
 package main
 
 import (
@@ -31,11 +35,15 @@ import (
 func main() {
 	log.SetFlags(0)
 	full := flag.String("full", "", "packages whose comments are kept whole")
+	fields := flag.String("fields", "", "packages whose struct fields are written")
 	out := flag.String("o", "docs.json", "the file to write")
 	flag.Parse()
-	whole := map[string]bool{}
+	whole, withFields := map[string]bool{}, map[string]bool{}
 	for p := range strings.SplitSeq(*full, ",") {
 		whole[p] = true
+	}
+	for p := range strings.SplitSeq(*fields, ",") {
+		withFields[p] = true
 	}
 
 	docs := map[string]*symbols.PackageDoc{}
@@ -44,7 +52,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("gendoc: %v", err)
 		}
-		docs[path] = describe(pkg, whole[path])
+		docs[path] = describe(pkg, whole[path], withFields[path])
 	}
 	data, err := json.MarshalIndent(docs, "", "\t")
 	if err != nil {
@@ -56,7 +64,7 @@ func main() {
 }
 
 // describe reads a package's sources for what it exports.
-func describe(pkg *build.Package, whole bool) *symbols.PackageDoc {
+func describe(pkg *build.Package, whole, fields bool) *symbols.PackageDoc {
 	fset := token.NewFileSet()
 	var files []*ast.File
 	for _, name := range pkg.GoFiles {
@@ -113,6 +121,9 @@ func describe(pkg *build.Package, whole bool) *symbols.PackageDoc {
 	}
 	for _, t := range d.Types {
 		td := &symbols.TypeDoc{Text: text(t.Doc), Kind: kindOf(t), Methods: map[string]symbols.Doc{}}
+		if fields {
+			td.Fields = fieldsOf(t, text)
+		}
 		for _, m := range t.Methods {
 			td.Methods[m.Name] = function(m)
 		}
@@ -126,6 +137,42 @@ func describe(pkg *build.Package, whole bool) *symbols.PackageDoc {
 		p.Types[t.Name] = td
 	}
 	return p
+}
+
+// fieldsOf are the exported fields of a struct type, with their
+// comments as text gives them: the comment above a field, or else the
+// one after it on its line. An embedded field is named by its type.
+func fieldsOf(t *doc.Type, text func(string) string) []symbols.Field {
+	var out []symbols.Field
+	for _, spec := range t.Decl.Specs {
+		ts, ok := spec.(*ast.TypeSpec)
+		if !ok || ts.Name.Name != t.Name {
+			continue
+		}
+		st, ok := ts.Type.(*ast.StructType)
+		if !ok {
+			return nil
+		}
+		for _, f := range st.Fields.List {
+			var b bytes.Buffer
+			_ = printer.Fprint(&b, token.NewFileSet(), f.Type)
+			typ := strings.Join(strings.Fields(b.String()), " ")
+			comment := f.Doc.Text()
+			if comment == "" {
+				comment = f.Comment.Text()
+			}
+			names := f.Names
+			if len(names) == 0 {
+				names = []*ast.Ident{{Name: strings.TrimPrefix(typ[strings.LastIndex(typ, ".")+1:], "*")}}
+			}
+			for _, n := range names {
+				if ast.IsExported(n.Name) {
+					out = append(out, symbols.Field{Name: n.Name, Type: typ, Text: text(comment)})
+				}
+			}
+		}
+	}
+	return out
 }
 
 // kindOf says what a type is declared as: "struct", "interface", or

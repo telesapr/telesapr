@@ -33,7 +33,7 @@ func (m ParamsMenu) Get(name string) (p Parameter, ok bool) {
 
 // Set gives the parameter name the expression expr, and adds
 // it to the table if there is none:
-// SetParameter("wall", "2.5"), then SetParameter("bore", "wall*4").
+// doc.Params.Set("wall", "2.5"), then doc.Params.Set("bore", "wall*4").
 // An expression that names an unknown parameter, makes a cycle or has
 // no value is refused, and the table is left as it was. What uses the
 // parameter regenerates.
@@ -88,7 +88,7 @@ func (m ParamsMenu) Errors() (errs []string) {
 
 // AddConfiguration adds a configuration, a named set of the parameters'
 // expressions, from the table as it is, and makes it active: while it
-// is, SetParameter changes it as well as the table.
+// is, Set changes it as well as the table.
 func (m ParamsMenu) AddConfiguration(name string) (err error) {
 	d := m.d
 	d.change(func(sk *sketch.Sketch) { err = sk.AddConfiguration(name) })

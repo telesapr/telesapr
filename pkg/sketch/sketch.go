@@ -128,6 +128,8 @@ type Sketch struct {
 
 	// Unsaved is whether the sketch changed since it was saved.
 	Unsaved bool
+	// revision tells this state of the content from others (Revision).
+	revision Revision
 
 	scheduledGenerateAll bool
 	// scheduledAdded is the group just added whose regeneration is

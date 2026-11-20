@@ -192,8 +192,9 @@ headless platform, timed under node) was removed on 2026-11-03; it is in `git sh
 ## Open
 
 - The agent's connection comes through postMessage (`pkg/script/agent/socket_js.go`,
-  `msgconn.go`, `web/agent-client.js`), carrying the agent's own protocol, not MCP. An MCP client
-  outside the browser has no way in: the MCP server in the page would bring `net/http` back, and a
+  `msgconn.go`, `web/agent-client.js`), carrying the agent's own protocol, not MCP (with the
+  drawing's revision on each answer since protocol 8, which `agent-client.js`'s `call` passes
+  on). An MCP client outside the browser has no way in: the MCP server in the page would bring `net/http` back, and a
   relay through a browser extension (`telesapr-cli browser-relay`, built 2026-11-04) was removed
   on 2026-11-05 as needing a local `telesapr-cli` that can as well drive the window. A site other
   than the page's is asked about in a dialog, which a headless browser can't answer, so only the

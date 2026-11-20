@@ -15,7 +15,8 @@ paths:
   `scripts/generate-symbols.sh`) and `make generate-check` passing.
 - An example under `examples/scripts/<name>` runs with `telesapr-cli run` and no arguments in a
   directory of its own (`TestExamplesRun` in `cmd/telesapr-cli`); a `lib` folder beside it is
-  its script library. Each guide page is built on one.
+  its script library. Each guide page is built on one. Its first comment sentence is its title
+  in `help("examples")` and api_help (`examples/embed.go`, `TestListHasEveryExample`).
 - Scripts run in yaegi: no range over an integer or a function in `examples/`, which the lint
   exclusions allow; lengths are mm, angles degrees. A test in `pkg/script/api` covers misuse as
   well as use, as `TestMisuse` does.
@@ -23,7 +24,9 @@ paths:
   `TELESAPR_SCRIPT_OUT=dir` keeps the scripts that fail to come back.
 - `telesapr-cli regenerate` writes its result over the input file: work on a copy.
 - The MCP server is `telesapr-cli mcp` (`pkg/mcpserver`, backends in `pkg/script/agent`,
-  `doc/dev-notes/mcp.md`); the primer an AI model reads first is `api_help` with no name, and
+  `doc/dev-notes/mcp.md`): tools, prompts (`pkg/mcpserver/prompts.go`) that carry what the
+  tools give, and resources (`pkg/mcpserver/resources.go`), all through the same `agent.Backend`; a call a tool description or a prompt names is
+  checked by `TestDescriptionsNameRealCalls`. The primer an AI model reads first is `api_help` with no name, and
   the user's page is `doc/guide/ai.md`. The socket protocol has a version: a change to a message
   bumps it in the command and the window together. Recorded sessions under `testdata/mcp` replay
   in tests.

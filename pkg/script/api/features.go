@@ -270,9 +270,11 @@ func (m FeaturesMenu) SketchOnFace(face SolidFace, name string) Group {
 
 // Extrude makes a solid of the active group's sketch by extruding it
 // by depth along the normal of its workplane, or against it for a
-// negative depth. The depth is where the extrusion starts, as when it
-// is dragged; constrain a point of it to keep it. The new group
-// becomes active.
+// negative depth. The depth is not held: it is a degree of freedom of
+// the new group, which stays where it is put unless it is dragged, as
+// in the window. g.AsExtrude().SetDepth(depth) holds it, as does a
+// dimension on an edge along the extrusion. The new group becomes
+// active.
 func (m FeaturesMenu) Extrude(depth float64, name string) Group {
 	d := m.d
 	var n Vec

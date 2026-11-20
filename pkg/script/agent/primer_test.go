@@ -16,9 +16,9 @@ func TestPrimerNamesRealCalls(t *testing.T) {
 // TestUnknownCalls checks that the check sees a wrong call.
 func TestUnknownCalls(t *testing.T) {
 	t.Parallel()
-	const text = `a := g.Analyze()  a.Analyze().Volume()  g.SolidEdgez()  doc.Features.Extrudes(1)  "Group.SetCombine" "Features.Nope" Features > No Such Entry`
+	const text = `a := g.Analyze()  a.Analyze().Volume()  g.SolidEdgez()  doc.Features.Extrudes(1)  "Group.SetCombine" "Features.Nope" Features > No Such Entry doc.Constraint("c00a").SetExpr doc.Constraint("c00a").SetExprs`
 	bad := UnknownCalls(text)
-	for _, want := range []string{"g.SolidEdgez", "doc.Features.Extrudes", `"Features.Nope"`, "Features > No Such Entry"} {
+	for _, want := range []string{"g.SolidEdgez", "doc.Features.Extrudes", `"Features.Nope"`, "Features > No Such Entry", `doc.Constraint("c00a").SetExprs`} {
 		found := false
 		for _, b := range bad {
 			found = found || b == want
@@ -27,7 +27,7 @@ func TestUnknownCalls(t *testing.T) {
 			t.Errorf("%q is not reported in %v", want, bad)
 		}
 	}
-	if len(bad) != 5 {
-		t.Errorf("reported %v, want 4 wrong calls and a.Analyze", bad)
+	if len(bad) != 6 {
+		t.Errorf("reported %v, want 5 wrong calls and a.Analyze", bad)
 	}
 }

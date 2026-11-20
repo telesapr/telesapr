@@ -15,7 +15,7 @@ import "reflect"
 
 //
 // What help() says about all of those, from their sources.
-//go:generate go run ./gendoc -full github.com/telesapr/telesapr/pkg/script/api github.com/telesapr/telesapr/pkg/script/api github.com/telesapr/telesapr/pkg/check github.com/telesapr/telesapr/pkg/geom github.com/telesapr/telesapr/pkg/core github.com/telesapr/telesapr/pkg/sketch github.com/telesapr/telesapr/pkg/srf github.com/telesapr/telesapr/pkg/persist/tlspr github.com/telesapr/telesapr/pkg/persist/convert bufio bytes cmp context encoding/csv encoding/json errors flag fmt io io/fs math math/bits math/cmplx math/rand os path path/filepath regexp sort strconv strings sync text/tabwriter time unicode unicode/utf8
+//go:generate go run ./gendoc -full github.com/telesapr/telesapr/pkg/script/api -fields github.com/telesapr/telesapr/pkg/script/api,github.com/telesapr/telesapr/pkg/check github.com/telesapr/telesapr/pkg/script/api github.com/telesapr/telesapr/pkg/check github.com/telesapr/telesapr/pkg/geom github.com/telesapr/telesapr/pkg/core github.com/telesapr/telesapr/pkg/sketch github.com/telesapr/telesapr/pkg/srf github.com/telesapr/telesapr/pkg/persist/tlspr github.com/telesapr/telesapr/pkg/persist/convert bufio bytes cmp context encoding/csv encoding/json errors flag fmt io io/fs math math/bits math/cmplx math/rand os path path/filepath regexp sort strconv strings sync text/tabwriter time unicode unicode/utf8
 
 // Symbols maps an import path, with the package's name after it, to
 // the package's exported symbols.

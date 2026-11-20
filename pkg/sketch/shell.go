@@ -58,7 +58,7 @@ func (sk *Sketch) NewShell(faces []srf.FaceID, thick float64, name string) (Grou
 
 // SetShellFaces makes the shell hg open where faces, picked on the
 // solid before it, are taken away, instead of the faces it takes away
-// now: a shell's faces can be changed after it is made (ROADMAP F7).
+// now: a shell's faces can be changed after it is made.
 // The shell is tried on a copy of the solid before it, so a face it
 // can't open is an error here and nothing changes. The caller remembers
 // the undo state.

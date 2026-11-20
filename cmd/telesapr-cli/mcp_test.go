@@ -34,8 +34,25 @@ type answer struct {
 			Data     string `json:"data"`
 			MIMEType string `json:"mimeType"`
 		} `json:"content"`
-		IsError      bool   `json:"isError"`
-		Instructions string `json:"instructions"`
+		IsError      bool           `json:"isError"`
+		Instructions string         `json:"instructions"`
+		Capabilities map[string]any `json:"capabilities"`
+		Prompts      []struct {
+			Name      string `json:"name"`
+			Arguments []struct {
+				Name string `json:"name"`
+			} `json:"arguments"`
+		} `json:"prompts"`
+		Messages []struct {
+			Role    string `json:"role"`
+			Content struct {
+				Type string `json:"type"`
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"messages"`
+		Completion struct {
+			Values []string `json:"values"`
+		} `json:"completion"`
 	} `json:"result"`
 	Error *struct {
 		Message string `json:"message"`
@@ -215,6 +232,53 @@ func TestMCPBracket(t *testing.T) {
 	}
 }
 
+// A client's recorded conversation lists the prompts, gets check on a
+// plate the client drew, and completes its group: the prompt comes with
+// the drawing and the measurement in it.
+func TestMCPPrompts(t *testing.T) {
+	t.Parallel()
+	recorded, err := os.ReadFile(filepath.Join("..", "..", "testdata", "mcp", "prompts.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	answers, status, stderr := converse(t, []string{"--headless"}, strings.Split(string(recorded), "\n"))
+	if status != exitOK || stderr != "" {
+		t.Fatalf("mcp --headless: status %d, stderr %q", status, stderr)
+	}
+	for id, a := range answers {
+		if a.Error != nil {
+			t.Errorf("request %d was answered with the error %q", id, a.Error.Message)
+		}
+	}
+	if caps := answers[1].Result.Capabilities; caps["prompts"] == nil || caps["completions"] == nil {
+		t.Errorf("the server's capabilities are %v", caps)
+	}
+	var listed []string
+	for _, p := range answers[3].Result.Prompts {
+		var args []string
+		for _, a := range p.Arguments {
+			args = append(args, a.Name)
+		}
+		listed = append(listed, p.Name+"("+strings.Join(args, ",")+")")
+	}
+	if got := strings.Join(listed, " "); got != "check(group) draw(what) explain() parametrize() sheet(paper)" {
+		t.Errorf("the prompts listed are %s", got)
+	}
+	msgs := answers[4].Result.Messages
+	if len(msgs) != 4 {
+		t.Fatalf("check has %d messages: %+v", len(msgs), msgs)
+	}
+	for i, want := range []string{"Check the drawing that is open in TeleSAPR, above all the group plate",
+		"g003-plate, extrude: solved", "g003-plate, extrude: solved, 1 DOF, volume 1000 mm³", "Volume: 1000 mm^3"} {
+		if m := msgs[i]; m.Role != "user" || m.Content.Type != "text" || !strings.Contains(m.Content.Text, want) {
+			t.Errorf("check's message %d has no %q: %+v", i, want, m)
+		}
+	}
+	if got := answers[5].Result.Completion.Values; len(got) != 1 || got[0] != "g003-plate" {
+		t.Errorf("the group completes as %v", got)
+	}
+}
+
 // A sketch file is the drawing served, and what is wrong with the
 // command line is said.
 func TestMCPCommandLine(t *testing.T) {
@@ -284,9 +348,10 @@ func TestMCPThroughSocket(t *testing.T) {
 	}
 
 	// Nothing listens: the server starts all the same, help works, and
-	// a tool that needs the drawing says what to do.
+	// a tool or a prompt that needs the drawing says what to do.
 	answers, status, stderr := converse(t, []string{"--socket", socket}, append(hello, call,
-		`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"api_help","arguments":{"name":"Sketch.Circle"}}}`))
+		`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"api_help","arguments":{"name":"Sketch.Circle"}}}`,
+		`{"jsonrpc":"2.0","id":4,"method":"prompts/get","params":{"name":"explain"}}`))
 	if status != exitOK || stderr != "" {
 		t.Fatalf("mcp --socket: status %d, stderr %q", status, stderr)
 	}
@@ -295,6 +360,10 @@ func TestMCPThroughSocket(t *testing.T) {
 	}
 	if a := answers[3]; a.Result.IsError || !strings.Contains(a.text(), "func (m SketchMenu) Circle(") {
 		t.Errorf("help with no TeleSAPR running: error %v, %q", a.Result.IsError, a.text())
+	}
+	if m := answers[4].Result.Messages; answers[4].Error != nil || len(m) != 2 || !strings.HasPrefix(m[0].Content.Text, "Explain how") ||
+		!strings.Contains(m[1].Content.Text, "Allow AI Connections") {
+		t.Errorf("explain with no TeleSAPR running: %+v", answers[4])
 	}
 
 	// A program that has a drawing listens.

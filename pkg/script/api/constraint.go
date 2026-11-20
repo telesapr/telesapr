@@ -211,7 +211,7 @@ func (c Constraint) Other() (other bool) {
 // SetOther makes an angle measure the supplementary angle, the other
 // one of the two its lines make, or not; for an equal-angle
 // constraint it pairs the other angles; a diameter is shown as a
-// radius, as the text window's "show as radius" does (ShowAsRadius).
+// radius, as the text window's "show as radius" does (SetShowAsRadius).
 // Constrain > Other Supplementary Angle toggles it.
 func (c Constraint) SetOther(other bool) {
 	c.d.change(func(sk *sketch.Sketch) {

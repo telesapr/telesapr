@@ -77,7 +77,7 @@ func (sk *Sketch) newChamferTwo(edges []core.HEntity, solidEdges []topo.Name, di
 
 // SetChamferEdges makes the chamfer hg cut edges and solidEdges, picked
 // on the solid before it, instead of the edges it cuts now: a
-// chamfer's edges can be changed after it is made (ROADMAP F7). The
+// chamfer's edges can be changed after it is made. The
 // chamfer is tried on a copy of the solid before it with its
 // distances, so an edge it can't cut is an error here and nothing
 // changes. An edge's own distances stay with it, as a fillet's edge's

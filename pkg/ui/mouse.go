@@ -1336,6 +1336,10 @@ func (gw *graphicsWindow) MouseLeftUp(mx, my float64, shiftDown, ctrlDown bool) 
 		gw.ClearPending(true)
 		// What a drag drew from moved parts' meshes is meshed as ever.
 		gw.sk().RemakeMovedDisplays()
+		// The drag remembered its undo state as it began, and has moved
+		// things since: a program that read the drawing during it
+		// is to know.
+		gw.sk().NoteChange()
 		gw.Invalidate(false)
 
 	case pendingDraggingMarquee:

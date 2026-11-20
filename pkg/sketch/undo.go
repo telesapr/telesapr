@@ -46,6 +46,7 @@ func wrapUndo(v int) int { return ((v % MaxUndo) + MaxUndo) % MaxUndo }
 func (s *Sketch) UndoRemember() {
 	s.PushFromCurrentOnto(&s.Undo)
 	s.UndoClearStack(&s.Redo)
+	s.revision.Change++
 }
 
 // UndoRememberFor records the current state for undo, as UndoRemember
@@ -58,6 +59,7 @@ func (s *Sketch) UndoRememberFor(fn func() error) error {
 		return err
 	}
 	s.UndoClearStack(&s.Redo)
+	s.revision.Change++
 	return nil
 }
 
@@ -93,6 +95,7 @@ func (s *Sketch) UndoUndo() bool {
 	s.PushFromCurrentOnto(&s.Redo)
 	s.PopOntoCurrentFrom(&s.Undo)
 	s.ClearBrokenReferences()
+	s.revision.Change++
 	return true
 }
 
@@ -105,6 +108,7 @@ func (s *Sketch) UndoRedo() bool {
 	s.PushFromCurrentOnto(&s.Undo)
 	s.PopOntoCurrentFrom(&s.Redo)
 	s.ClearBrokenReferences()
+	s.revision.Change++
 	return true
 }
 

@@ -1,0 +1,14 @@
+# get_drawing: the groups
+    g002-sketch-in-plane, sketch-in-plane: solved, 0 DOF
+    g003-head, extrude: solved, 1 DOF, volume 1418.896 mm³, bounds (-8, -9.238, 0) to (8, 9.238, 6.4)
+    g004-shank-outline, sketch-in-plane: solved, 0 DOF
+    g005-shank, extrude: solved, 1 DOF, volume 4542.694 mm³, bounds (-8, -9.238, -40) to (8, 9.238, 6.4)
+    g006-M10-end, sketch-in-plane: solved, 0 DOF
+    g007-M10-blank, sketch-in-plane: solved, 0 DOF
+    g008-M10-core, lathe: solved, 0 DOF, volume 3957.365 mm³, bounds (-8, -9.238, -40) to (8, 9.238, 6.4)
+    g009-M10-profile, sketch-in-plane: solved, 0 DOF
+    g00a-M10-thread, helix: solved, 0 DOF, volume 4180.217 mm³, bounds (-8, -9.238, -40) to (8, 9.238, 6.4); active
+# measure
+The solid is sound: closed, not self-intersecting, and its Boolean succeeded.
+Volume: 4180.22 mm^3
+Extent: 16 x 18.4752 x 46.4 mm

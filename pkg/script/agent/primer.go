@@ -51,14 +51,14 @@ A variable defined in one run_script call is there in the next, until the progra
 
 A drawing is a list of groups, built in order. A sketch group holds what is drawn: requests (a line, a circle, an arc, ...), each with entities (the line and its two end points), and the constraints that hold them. A solid group (extrude, lathe, ...) makes a solid of the sketch group before it and combines it with the solid so far.
 
-- A new drawing has one sketch group, in the XY workplane, and it is active. What is drawn goes into the active group, in its workplane; z is then 0, or use doc.Sketch.UV(u, v).
+- A new drawing has one sketch group, in the XY workplane, and it is active. What is drawn goes into the active group, in its workplane; z is then 0, or use doc.Sketch.UV(u, v). The normals of the workplanes XY, YZ and ZX point along +z, +x and +y; an extrusion of a positive depth goes that way.
 - Draw roughly, then constrain: doc.Sketch.Line(a, b) puts a line somewhere, doc.Constrain.Length(l, 40) and doc.Constrain.Horizontal(l) make it stay. The solver moves the geometry to fit, so read positions back (e.Pos(), e.Start().Pos()) rather than assuming them.
 - Fix the sketch to the origin with doc.Constrain.Coincident(point, doc.Origin()). A sketch that is fully held has 0 degrees of freedom (g.Dof()); get_drawing and the status say how many are left.
 - doc.Sketch.Rect returns its four sides, bottom first and going around counter-clockwise, already joined, horizontal and vertical. doc.Sketch.Polyline(true, points...) is a closed outline, joined but otherwise free.
 - A solid needs closed outlines in the sketch. A circle or outline inside another is a hole.
 - doc.Features.Extrude(depth, "name") makes a solid of the active sketch along its workplane's normal and becomes the active group. To add to that solid, start another sketch (doc.Features.SketchIn(doc.Workplane("XY"), "name"), doc.Features.SketchAt(point, u, v, "name"), or doc.Features.SketchOnFace(g.Solid().FaceAt(point), "name") in a flat face of the solid at group g, which follows the face), draw, and extrude again; g.SetCombine(Difference) makes the new solid a cut, Intersection keeps what is common.
-- doc.Features.Revolve(axis, degrees, "name") turns a positive angle the other way to the right-hand rule about the axis line, from its first point to its second: about a line along +x, a sketch on +y turns towards -z. A negative angle turns it the other way. Check where the solid went (g.Analyze().Bounds()) before cutting or joining near it.
-- doc.Features.Fillet, doc.Features.Chamfer and doc.Features.Shell work on the solid so far. The edges and faces of the solid up to a group g come from g.Solid(): .Edges(), .Edge("name"), .EdgesAlong(dir), .EdgesBetween(a, b), .FaceAt(point) and .Faces(); doc.Features.FilletSolid(edges, radius, name) and ChamferSolid take those edges (Fillet takes the []Entity of the sketch's lines). g.SolidEdges() is only for a chamfer group.
+- doc.Features.Revolve(axis, degrees, "name") turns a positive angle the other way to the right-hand rule about the axis line, from its first point to its second: about a line along +x, a sketch on +y turns towards -z. A negative angle turns it the other way. Check where the solid went (lo, hi := g.Analyze().Bounds(), two corners) before cutting or joining near it.
+- doc.Features.Fillet, doc.Features.Chamfer and doc.Features.Shell work on the solid so far. The edges and faces of the solid up to a group g come from g.Solid(): .Edges(), .Edge("name") with the whole name get_drawing gives ("edge 80030007 8003002c 0 of 1"), g.Solid().EdgeAt(point) by a point on the edge with no name, .EdgesAlong(dir), .EdgesBetween(a, b), .FaceAt(point) and .Faces(); doc.Features.FilletSolid(edges, radius, name) and ChamferSolid take those edges (Fillet takes the []Entity of the sketch's lines). g.SolidEdges() is only for a chamfer group.
 - What only one kind of group has is on a view of it: g.AsFillet().SetRadius(3), g.AsExtrude().SetDraft(2). g.History() moves a group, g.Analyze() measures the solid up to it.
 - To change what exists, look it up by the names get_drawing gives: doc.Group("plate"), doc.Request("r004").Entity(), doc.Constraint("c00a").Set(50). doc.Activate(g) goes back to an earlier group to draw more in it.
 - A parameter is a named number: doc.Params.Set("width", "60"), then c.SetExpr("width/2") on a dimension.
@@ -67,9 +67,9 @@ A drawing is a list of groups, built in order. A sketch group holds what is draw
 
 ` + primerChecks + `
 
-doc.Script() is the whole drawing as a script, the quickest way to see how a drawing you didn't make is built (get_drawing with script does the same).
+src, notes := doc.Script() is the whole drawing as a script (notes say what it could not write), the quickest way to see how a drawing you didn't make is built (get_drawing with script does the same).
 
-A sketch should have 0 degrees of freedom when it is done. An extrusion keeps 1, its depth, which nothing holds unless a dimension is put on it; that is as the program's own users leave it.
+A sketch should have 0 degrees of freedom when it is done. An extrusion keeps 1, its depth, which nothing holds unless g.AsExtrude().SetDepth(depth) or a dimension holds it; that is as the program's own users leave it.
 
 To fillet, chamfer, shell or sketch on a face, ask get_drawing with solid (or print g.DescribeSolid()): it lists the faces of the solid up to the group with their IDs, shapes and a point on each, and its edges with the names g.Solid().Edge takes, their shapes, lengths and ends, so the edges and faces can be picked by name rather than found by trial.
 
@@ -81,6 +81,7 @@ A call that can't do what it is asked stops the script with an error that says w
 
 - No "for i := range 10" over a number; write "for i := 0; i < 10; i++".
 - No generic functions without their type arguments; slices.Sort, slices.Max and maps.Clone are missing (sort.Ints and slices.Contains work).
+- The builtins min, max and clear are missing (the error says "undefined: min", or "conversion to main.min"): write math.Min(a, b) and math.Max(a, b) for float64s, an if for integers, and a loop with delete, or a new map or slice, for clear.
 - A name that isn't defined is reported as "constant definition loop, or a name that isn't defined".
 - math.Pi and math's other float constants are float64: 2.0 * math.Pi works, a float32 needs float32(math.Pi).
 - A struct literal without field names, or a literal of a type the script declared, can't hold a method called on an element of a slice a call returned, as P{gs[0].Name()} with gs := doc.Groups(): put the value in a variable first, n := gs[0].Name(), then P{n}. The error says so. In a slice, array or map literal, as []api.Entity{lines[0].Start()}, it works.
@@ -90,6 +91,8 @@ A call that can't do what it is asked stops the script with an error that says w
 A plate of 60 by 20 mm, 4 mm thick, with three 5 mm holes in a row, its four vertical edges rounded, then a round pocket 2 mm deep cut into its underside:
 
 ` + primerExample + `
+More examples, each a whole program showing how calls combine (threads, drawing sheets, lofts, sweeps, assemblies, mechanisms): api_help with "examples" lists them with what each makes, and with "example bolt" gives the source of one. An example is package main and takes doc from api.Current(); in run_script, send the body of its main.
+
 ## Every call
 
 api_help with a name says more about one: a menu, "Features"; a call, "Features.Extrude" or "Group.SetCombine"; a type, "Group" or "Entity"; or an entry of the window's menu, "Features > Fillet Edges", for what a script calls in its place.
@@ -138,7 +141,8 @@ const primerChecks = `    g := doc.Active()                    // or doc.Group("
     g.Redundancies()                     // the sets of them that say each other again
     a := g.Analyze()                     // the solid up to and with the group
     a.Volume()
-    a.Bounds()
+    lo, hi := a.Bounds()                 // two values: the box's lowest and highest corners
+    fmt.Println("from", lo, "to", hi)
     a.Check().Sound()
     g.DescribeSolid()                    // the solid's faces and edges by name
     doc.Describe()                       // what get_drawing returns`

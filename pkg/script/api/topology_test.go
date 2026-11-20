@@ -199,6 +199,28 @@ func TestSolidMisuse(t *testing.T) {
 	}()
 }
 
+// A name that is nearly right, as one without its ordinal or with one
+// of its faces wrong, fails naming the edges it nearly names and how
+// to find one without a name.
+func TestEdgeNameNearlyRight(t *testing.T) {
+	t.Parallel()
+	d := openSlot(t)
+	s := d.Group("slot").Solid()
+	right := s.Edges()[0].Name()
+	f := strings.Fields(right)
+	const how = "g.Solid().EdgeAt(point) finds one by a point on it"
+	mustFail(t, "no ordinal", `the solid's edges between those two faces are "`+right+`"`, func() {
+		s.Edge("edge " + f[1] + " " + f[2])
+	})
+	mustFail(t, "no ordinal", how, func() { s.Edge("edge " + f[1] + " " + f[2]) })
+	mustFail(t, "a face wrong", `the solid's edges of those faces are "`, func() {
+		s.Edge("edge " + f[1] + " 1 0")
+	})
+	mustFail(t, "nothing near", "; get_drawing with solid, or g.DescribeSolid(), lists every edge's name", func() {
+		s.Edge("edge 1 2 0")
+	})
+}
+
 // TestSolidSheets extrudes a circle: its side is one face of four
 // patches, its rims one edge each of four pieces, and it has no
 // vertex.

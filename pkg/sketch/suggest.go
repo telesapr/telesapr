@@ -7,9 +7,9 @@ import (
 	"github.com/telesapr/telesapr/pkg/geom"
 )
 
-// Suggestion is a constraint an entity being drawn would get when it is
-// placed (roadmap 16.11 for lines, 29.4 for arcs and circles): its type,
-// its entities, and which ends of curves it takes.
+// Suggestion is a constraint a line, an arc or a circle being drawn
+// would get when it is placed: its type, its entities, and which ends
+// of curves it takes.
 type Suggestion struct {
 	Type          core.ConstraintType
 	A, B          core.HEntity

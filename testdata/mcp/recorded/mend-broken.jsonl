@@ -1,0 +1,13 @@
+{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "driver", "version": "1"}}}
+{"jsonrpc": "2.0", "method": "notifications/initialized"}
+{"jsonrpc": "2.0", "id": 2, "method": "tools/list"}
+{"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "open", "arguments": {"path": "broken.tlspr"}}}
+{"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "api_help", "arguments": {}}}
+{"jsonrpc": "2.0", "id": 5, "method": "tools/call", "params": {"name": "run_script", "arguments": {"code": "g := doc.Active()\nfmt.Println(g.Solved(), g.Dof())\nfmt.Println(\"conflicts:\", g.Conflicts())\nfmt.Println(\"redundancies:\", g.Redundancies())\nfmt.Println(\"problem:\", g.Problem())"}}}
+{"jsonrpc": "2.0", "id": 6, "method": "tools/call", "params": {"name": "run_script", "arguments": {"code": "doc.Constraint(\"c00c\").Delete()\ng := doc.Active()\nfmt.Println(g.Solved(), g.Dof())\nfmt.Println(\"conflicts:\", g.Conflicts())\nfmt.Println(\"redundancies:\", g.Redundancies())"}}}
+{"jsonrpc": "2.0", "id": 7, "method": "tools/call", "params": {"name": "api_help", "arguments": {"name": "Group.Redundancies"}}}
+{"jsonrpc": "2.0", "id": 8, "method": "tools/call", "params": {"name": "run_script", "arguments": {"code": "fmt.Println(doc.Active().AllowRedundant())"}}}
+{"jsonrpc": "2.0", "id": 9, "method": "tools/call", "params": {"name": "get_drawing", "arguments": {}}}
+{"jsonrpc": "2.0", "id": 10, "method": "tools/call", "params": {"name": "run_script", "arguments": {"code": "g := doc.Active()\ng.SetAllowRedundant(false)\nfmt.Println(g.Solved(), g.Dof(), g.Redundancies())\ng.SetAllowRedundant(true)"}}}
+{"jsonrpc": "2.0", "id": 11, "method": "tools/call", "params": {"name": "run_script", "arguments": {"code": "doc.Constraint(\"c00d\").Delete()\ng := doc.Active()\ng.SetAllowRedundant(false)\nfmt.Println(g.Solved(), g.Dof(), g.Redundancies(), g.Conflicts())\ng.SetAllowRedundant(true)\nfmt.Println(g.Solved(), g.Dof())\nfor _, r := range g.Requests() { fmt.Println(r, r.Entity().Length()) }"}}}
+{"jsonrpc": "2.0", "id": 12, "method": "tools/call", "params": {"name": "render", "arguments": {"view": "front"}}}

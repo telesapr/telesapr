@@ -58,7 +58,7 @@ func (m AssemblyMenu) ExportBOM(path string) error {
 // a group, named after the file if name is empty. The new group becomes
 // active. A STEP file comes in as a reference mesh, its faces
 // tessellated, with a point at each vertex and at the centre of each
-// circular edge for constraints to use; LinkInfo and LinkProblem say
+// circular edge for constraints to use; g.AsLink().Info() and Problem() say
 // what was read.
 func (m AssemblyMenu) Link(path, name string) (g Group, err error) {
 	d := m.d
@@ -98,7 +98,7 @@ func (m AssemblyMenu) Link(path, name string) (g Group, err error) {
 // LinkStep links a STEP file as Link does, as a solid when asSolid is
 // set: its faces exact, so the solid takes part in Booleans, fillets
 // and the rest as a solid made here does. A file that can't be read as
-// a solid comes in as a reference mesh, and LinkProblem says why.
+// a solid comes in as a reference mesh, and g.AsLink().Problem() says why.
 func (m AssemblyMenu) LinkStep(path, name string, asSolid bool) (Group, error) {
 	d := m.d
 	g, err := d.Assembly.Link(path, name)
@@ -269,7 +269,7 @@ func (m AssemblyMenu) Hinge(a, b Entity) []Constraint {
 
 // MotionStudy drives the parameter param from from to to in steps
 // equal steps, steps+1 frames with both ends, regenerating the model at
-// each (roadmap 16.3). With frames not "", each frame is saved to the
+// each. With frames not "", each frame is saved to the
 // file frames names with the step's number in place of its verb, as
 // "frames/f%03d.png": a picture of the view the window shows for .png,
 // in the application, and otherwise what Export writes for the

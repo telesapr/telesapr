@@ -103,6 +103,45 @@ func TestPrimerChecks(t *testing.T) {
 	if res := run(t, s, primerChecks); res.Error != "" {
 		t.Fatalf("the primer's checks fail: %s", res.Error)
 	}
+	// A line shown as a value on its own is one a model prints beside
+	// other things, fmt.Println("volume", a.Volume()): Go refuses that of
+	// a call with two results, which must be shown assigned, as
+	// lo, hi := a.Bounds() is.
+	for line := range strings.Lines(primerChecks) {
+		expr, _, _ := strings.Cut(line, "//")
+		expr = strings.TrimSpace(expr)
+		if strings.Contains(expr, "=") || strings.HasPrefix(expr, "fmt.") {
+			continue
+		}
+		if res := run(t, s, `fmt.Println("value:", `+expr+`)`); res.Error != "" {
+			t.Errorf("%s, as the primer shows it, can't be printed beside another value: %s", expr, res.Error)
+		}
+	}
+}
+
+// The builtins the primer says the interpreter lacks are lacking, and
+// what it says to write instead works: when the interpreter gains one,
+// this fails and the primer's line is to change.
+func TestPrimerMissingBuiltins(t *testing.T) {
+	t.Parallel()
+	for builtin, code := range map[string]string{
+		"min":   "x := min(1, 2)",
+		"max":   "x := max(1.5, 2.5)",
+		"clear": "m := map[string]int{\"a\": 1}\nclear(m)",
+	} {
+		if !strings.Contains(Primer(), "The builtins min, max and clear are missing") {
+			t.Fatal("the primer no longer lists the missing builtins")
+		}
+		// A session each: after a failed call of a missing builtin the
+		// interpreter has the name half defined, and says another thing.
+		s := newSession(t)
+		if res := run(t, s, code); !strings.Contains(res.Error, "undefined: "+builtin) && !strings.Contains(res.Error, "conversion to main."+builtin) {
+			t.Errorf("%s: the primer says it is missing, but %q gives the error %q", builtin, code, res.Error)
+		}
+	}
+	if res := run(t, newSession(t), "a, b := 1.5, 2.5\nfmt.Println(math.Min(a, b), math.Max(a, b))"); res.Error != "" {
+		t.Errorf("what the primer says to write for min and max fails: %s", res.Error)
+	}
 }
 
 func TestPrimerAndInstructions(t *testing.T) {

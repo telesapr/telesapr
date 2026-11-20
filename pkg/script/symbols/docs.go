@@ -14,11 +14,22 @@ type Doc struct {
 	Text string `json:"text,omitempty"`
 }
 
+// Field is an exported field of a struct type.
+type Field struct {
+	Name string `json:"name"`
+	// Type is its type as declared: "float64", "[]Vec".
+	Type string `json:"type"`
+	// Text is its comment, or the first sentence of it.
+	Text string `json:"text,omitempty"`
+}
+
 // TypeDoc is a type of a package.
 type TypeDoc struct {
 	Text string `json:"text,omitempty"`
 	// Kind is what the type is declared as: "struct", "int", ...
-	Kind    string         `json:"kind,omitempty"`
+	Kind string `json:"kind,omitempty"`
+	// Fields are a struct's exported fields, in the order declared.
+	Fields  []Field        `json:"fields,omitempty"`
 	Methods map[string]Doc `json:"methods,omitempty"`
 	// Makers are the package's functions that return the type, and
 	// Values its constants and variables of the type.

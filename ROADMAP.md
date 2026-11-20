@@ -293,7 +293,8 @@ Each stays out until its reason stops holding.
 | The section view saved in files | View state; goes with saved views, which nothing plans |
 | Open thread ends in STEP | Closing them would invent geometry |
 | CSG and swept solids in STEP | No vendor file in the corpus has them; the export half is cheap once the group tree is walkable |
-| A chat window, MCP resources and prompts, an HTTP transport | "An MCP server, and nothing else" until a user needs more (`doc/guide/ai.md`) |
+| A chat window, an HTTP transport | "An MCP server, and nothing else" until a user needs more (`doc/guide/ai.md`) |
+| MCP resource subscriptions (`resources/updated` when the drawing changes) | Few clients act on them, and they need an event stream from the window, which the socket protocol does not have; a resource is read again when it is attached (`doc/dev-notes/mcp.md`) |
 | `make ai-eval` | Needs a model and an account, outside CI; sessions recorded with `mcp --record` replay in the tests without one (`doc/dev-notes/mcp.md`) |
 | Tolerances per edge and vertex | Healing within a file's tolerance suffices so far |
 | Generated entities left out of `.tlspr` | Possible behind the version number; no need yet |

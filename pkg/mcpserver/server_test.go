@@ -54,6 +54,12 @@ func connect(t *testing.T) (*mcp.ClientSession, *painter) {
 		t.Fatal(err)
 	}
 	backend := &painter{Session: session}
+	return connectTo(t, backend), backend
+}
+
+// connectTo is a client's session with a server on backend.
+func connectTo(t *testing.T, backend agent.Backend) *mcp.ClientSession {
+	t.Helper()
 	ctx := context.Background()
 	clientSide, serverSide := mcp.NewInMemoryTransports()
 	served, err := New(backend, "1.2").Connect(ctx, serverSide, nil)
@@ -69,7 +75,7 @@ func connect(t *testing.T) (*mcp.ClientSession, *painter) {
 		_ = cs.Close()
 		_ = served.Wait()
 	})
-	return cs, backend
+	return cs
 }
 
 // call calls a tool, and returns its result with the text of it.
@@ -135,7 +141,8 @@ func TestToolsAndInstructions(t *testing.T) {
 		// their data holds.
 		fields := map[string][]string{ToolRun: {"output", "groups"}, ToolFiles: {"dir", "entries"},
 			ToolDescribe: {"unit", "groups", "requests", "constraints", "selected", "hover", "solid", "faces", "edges", "script"},
-			ToolMeasure:  {"group", "sound", "volume", "centerOfMass", "bounds", "gaps", "walls", "selection"}}[tool.Name]
+			ToolMeasure:  {"group", "sound", "volume", "centerOfMass", "bounds", "gaps", "walls", "selection"},
+			ToolExport:   {"path", "bytes"}}[tool.Name]
 		out, _ := tool.OutputSchema.(map[string]any)
 		props, _ := out["properties"].(map[string]any)
 		for _, f := range fields {
@@ -259,12 +266,43 @@ func TestDescribeHelpRender(t *testing.T) {
 	}
 }
 
-// The hand-written descriptions name only calls that exist.
+// api_help reaches the example scripts: the list, one by name, and an
+// error naming the nearest for a name no example has.
+func TestHelpExamples(t *testing.T) {
+	t.Parallel()
+	cs, _ := connect(t)
+	res, list := call(t, cs, ToolHelp, map[string]any{"name": "examples"})
+	if res.IsError || !strings.Contains(list, "\nbolt ") || !strings.Contains(list, "A hexagon head bolt with a screw thread.\n") ||
+		!strings.Contains(list, "\ndrawing ") {
+		t.Errorf("the examples are listed as\n%s", list)
+	}
+	res, src := call(t, cs, ToolHelp, map[string]any{"name": "example threadfit"})
+	if res.IsError || !strings.HasPrefix(src, "Example threadfit: ") || !strings.Contains(src, "\npackage main\n") ||
+		!strings.Contains(src, "api.Current()") || !strings.Contains(src, "In run_script") {
+		t.Errorf("example threadfit reads\n%s", src)
+	}
+	if res, text := call(t, cs, ToolHelp, map[string]any{"name": "example bolts"}); !res.IsError ||
+		!strings.Contains(text, `no example is called "bolts"; the nearest are "bolt"`) {
+		t.Errorf("an example that isn't there: error %v, text %q", res.IsError, text)
+	}
+	if res, text := call(t, cs, ToolHelp, map[string]any{"name": "Group.NoSuchCall"}); !res.IsError || !strings.Contains(text, `"examples"`) {
+		t.Errorf("a name nothing has: error %v, text %q", res.IsError, text)
+	}
+}
+
+// The hand-written descriptions of the tools, and the texts of the
+// prompts, name only calls that exist.
 func TestDescriptionsNameRealCalls(t *testing.T) {
 	t.Parallel()
+	texts := func(s ...string) string { return strings.Join(s, "\n") }
 	for name, text := range map[string]string{"run": runDescription, "describe": describeDescription,
 		"render": renderDescription, "measure": measureDescription, "export": exportDescription,
-		"open": openDescription, "files": filesDescription, "help": helpDescription} {
+		"open": openDescription, "files": filesDescription, "help": helpDescription,
+		"draw prompt":        texts(drawDescription, drawWhatDescription, drawWhat, drawAsk, drawInstruction),
+		"check prompt":       texts(checkDescription, checkGroupDescription, checkInstruction),
+		"explain prompt":     texts(explainDescription, explainInstruction),
+		"parametrize prompt": texts(parametrizeDescription, parametrizeInstruction),
+		"sheet prompt":       texts(sheetDescription, sheetPaperDescription, sheetInstruction)} {
 		if bad := agent.UnknownCalls(text); len(bad) > 0 {
 			t.Errorf("the %s description names calls that do not exist: %v", name, bad)
 		}

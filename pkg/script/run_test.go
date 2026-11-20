@@ -125,27 +125,27 @@ func main() {
 func TestHelpByName(t *testing.T) {
 	t.Parallel()
 	var out bytes.Buffer
-	if !Help(&out, "") || out.String() != helpText {
+	if Help(&out, "") != nil || out.String() != helpText {
 		t.Errorf("Help of no name wrote %q, want the summary", out.String())
 	}
 	out.Reset()
-	if !Help(&out, "Doc.Describe") || !strings.Contains(out.String(), "func (d *Doc) Describe() (s string)") {
+	if Help(&out, "Doc.Describe") != nil || !strings.Contains(out.String(), "func (d *Doc) Describe() (s string)") {
 		t.Errorf("Help of Doc.Describe wrote %q", out.String())
 	}
 	out.Reset()
-	if !Help(&out, " Features > Extrude ") || !strings.Contains(out.String(), "Features > Extrude is, in a script:\n\nfunc (m FeaturesMenu) Extrude(") {
+	if Help(&out, " Features > Extrude ") != nil || !strings.Contains(out.String(), "Features > Extrude is, in a script:\n\nfunc (m FeaturesMenu) Extrude(") {
 		t.Errorf("Help of a menu entry wrote %q", out.String())
 	}
 	out.Reset()
-	if !Help(&out, "View/Zoom In") || out.String() != "View > Zoom In has no call of its own: the window's view.\n" {
+	if Help(&out, "View/Zoom In") != nil || out.String() != "View > Zoom In has no call of its own: the window's view.\n" {
 		t.Errorf("Help of a menu entry with no call wrote %q", out.String())
 	}
 	out.Reset()
-	if Help(&out, "Features > Nothing") || out.Len() != 0 {
+	if !errors.Is(Help(&out, "Features > Nothing"), ErrNoHelp) || out.Len() != 0 {
 		t.Errorf("Help of a menu entry there isn't wrote %q", out.String())
 	}
 	out.Reset()
-	if Help(&out, "Doc.NoSuchThing") || out.Len() != 0 {
+	if !errors.Is(Help(&out, "Doc.NoSuchThing"), ErrNoHelp) || out.Len() != 0 {
 		t.Errorf("Help of a name nothing has wrote %q", out.String())
 	}
 }

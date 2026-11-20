@@ -61,9 +61,10 @@ type Measuring struct {
 // Measure is the solid up to m.Group as Check Solid reports it, with
 // the gaps and walls m asks about, or what the user has selected,
 // measured.
-func (s *Session) Measure(_ context.Context, m Measuring) (out Measured, err error) {
+func (s *Session) Measure(ctx context.Context, m Measuring) (out Measured, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.track(ctx, false)()
 	doc := s.engine.Doc()
 	group, selected := m.Group, m.Selected
 	err = try(func() {
@@ -186,9 +187,10 @@ func wallsText(g api.Group, below float64) (string, WallInfo) {
 }
 
 // Export writes the drawing to a file.
-func (s *Session) Export(_ context.Context, path string) (string, error) {
+func (s *Session) Export(ctx context.Context, path string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.track(ctx, false)()
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		return "", err
@@ -220,9 +222,10 @@ func (s *Session) Export(_ context.Context, path string) (string, error) {
 }
 
 // Open replaces the drawing by a file's.
-func (s *Session) Open(_ context.Context, path string) (text string, err error) {
+func (s *Session) Open(ctx context.Context, path string) (text string, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.track(ctx, true)()
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		return "", err

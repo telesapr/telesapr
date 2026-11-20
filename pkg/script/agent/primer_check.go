@@ -16,6 +16,9 @@ var (
 	callDocField = regexp.MustCompile(`\bdoc\.([A-Z]\w*)\.([A-Z]\w*)`)
 	// doc.Describe, doc.Group; a field of Doc is not a method
 	callDoc = regexp.MustCompile(`\bdoc\.([A-Z]\w*)\b`)
+	// doc.Constraint("c00a").SetExpr, doc.Active().Analyze: a method of
+	// what a method of Doc returns
+	callDocResult = regexp.MustCompile(`\bdoc\.([A-Z]\w*)\([^()]*\)\.([A-Z]\w*)`)
 	// g.Analyze, g.AsFillet().SetRadius, g.Solid().FaceAt
 	callGroup = regexp.MustCompile(`\bg\.([A-Z]\w*)(?:\(\)\.([A-Z]\w*))?`)
 	// a.Volume, with a := g.Analyze()
@@ -28,8 +31,8 @@ var (
 
 // UnknownCalls are the calls of package api that text names and that
 // do not exist, in the forms the primer and the tool descriptions use:
-// doc.Features.Extrude, doc.Describe, g.Analyze(), g.Solid().FaceAt,
-// a.Volume() (a being a group's analysis), "Group.SetCombine" and menu
+// doc.Features.Extrude, doc.Describe, doc.Constraint("c00a").SetExpr,
+// g.Analyze(), g.Solid().FaceAt, a.Volume() (a being a group's analysis), "Group.SetCombine" and menu
 // entries as "Features > Fillet Edges". It is for a test that keeps
 // the hand-written texts true to the interface.
 func UnknownCalls(text string) []string {
@@ -73,6 +76,11 @@ func UnknownCalls(text string) []string {
 		if fieldType(m[1]) == "" {
 			check(m[0], hasMethod("Doc", m[1]))
 		}
+	}
+	docPtr := reflect.TypeFor[*api.Doc]()
+	for _, m := range callDocResult.FindAllStringSubmatch(text, -1) {
+		method, ok := docPtr.MethodByName(m[1])
+		check(m[0], ok && method.Type.NumOut() > 0 && hasMethod(method.Type.Out(0).Name(), m[2]))
 	}
 	for _, m := range callGroup.FindAllStringSubmatch(text, -1) {
 		check("g."+m[1], hasMethod("Group", m[1]))

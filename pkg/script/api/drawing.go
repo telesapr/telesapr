@@ -6,8 +6,8 @@ import (
 	"github.com/telesapr/telesapr/pkg/topo"
 )
 
-// Drawing is the model's sheet of views (roadmap step 18): its size,
-// scale, projection, views and title block. See sketch.Drawing.
+// Drawing is the model's sheet of views: its size, scale, projection,
+// views and title block. See sketch.Drawing.
 type Drawing = sketch.Drawing
 
 // DrawingView is a view on the sheet, see sketch.DrawingView.
@@ -27,11 +27,14 @@ type DrawingDimension = sketch.DrawingDimension
 
 // DrawingMenu holds the calls of View > Drawing Sheet and File > Export
 // > Drawing: the sheet of views, sections and dimensions. A script
-// reaches it as doc.Drawing.
+// reaches it as doc.Drawing. To look at the sheet, call
+// doc.Drawing.Show(true), then doc.File.Render with the view "window" (over
+// MCP, the render tool with view "window"); Show(false) brings the
+// model back.
 type DrawingMenu struct{ d *Doc }
 
 // Get is the model's drawing, or the default one, an A3 sheet
-// fitted, if it has none yet. It is a copy: SetDrawing changes it.
+// fitted, if it has none yet. It is a copy: Set changes it.
 func (m DrawingMenu) Get() (dr Drawing) {
 	d := m.d
 	d.read(func(sk *sketch.Sketch) {
@@ -55,9 +58,12 @@ func (m DrawingMenu) Set(dr Drawing) {
 	d.change(func(sk *sketch.Sketch) { sk.Drawing = dr.Clone() })
 }
 
-// Export writes the model's drawing to a vector file, by its
-// extension: .pdf, .svg, .dxf, .eps, .ps, .plt. It needs the
-// application, or telesapr-cli export-drawing.
+// Export writes the model's drawing sheet to a vector file, by its
+// extension: .pdf, .svg, .dxf, .eps, .ps, .plt. It works wherever
+// TeleSAPR runs the script: the window, telesapr-cli run and repl, and
+// the MCP server with or without a window. It is an error only for a
+// bare sketch with no application around it (New); telesapr-cli
+// export-drawing writes the drawing of a file.
 func (m DrawingMenu) Export(path string) (err error) {
 	d := m.d
 	if err := d.checkFile(path, true); err != nil {
@@ -100,7 +106,7 @@ func (m DrawingMenu) Dimensions() (values []float64, errs []error) {
 }
 
 // AddFaceDimension adds a dimension of faces to the drawing's
-// view, as AddDrawingDimension does of edges: "distance" between two
+// view, as AddDimension does of edges: "distance" between two
 // parallel flat faces, "diameter" or "radius" of a face's circular
 // edge, the largest, as a cylinder's or a round end's. The dimension
 // holds the faces' identities, so it measures them again as the model
@@ -118,7 +124,7 @@ func (m DrawingMenu) AddFaceDimension(view, kind string, offset float64, faces .
 
 // AddEdgeFaceDistance adds to the drawing's view the distance
 // from a straight edge to a flat face it runs parallel to, as
-// AddDrawingDimension does between edges.
+// AddDimension does between edges.
 func (m DrawingMenu) AddEdgeFaceDistance(view string, offset float64, edge SolidEdge, face SolidFace) {
 	d := m.d
 	dr := d.Drawing.Get()

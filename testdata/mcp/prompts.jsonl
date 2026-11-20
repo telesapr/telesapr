@@ -1,0 +1,6 @@
+{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "recorded", "version": "1"}}}
+{"jsonrpc": "2.0", "method": "notifications/initialized"}
+{"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "run_script", "arguments": {"code": "doc.Sketch.Rect(V(0, 0, 0), V(10, 20, 0))\ndoc.Features.Extrude(5, \"plate\")"}}}
+{"jsonrpc": "2.0", "id": 3, "method": "prompts/list", "params": {}}
+{"jsonrpc": "2.0", "id": 4, "method": "prompts/get", "params": {"name": "check", "arguments": {"group": "plate"}}}
+{"jsonrpc": "2.0", "id": 5, "method": "completion/complete", "params": {"ref": {"type": "ref/prompt", "name": "check"}, "argument": {"name": "group", "value": "pl"}}}

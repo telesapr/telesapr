@@ -145,6 +145,10 @@ type SketchHost struct {
 	sk       *sketch.Sketch
 	saveFile string
 	changed  bool
+	// runs counts the changes made in Run (RunChanges), and depth is
+	// how deep Run calls are nested.
+	runs  uint64
+	depth int
 	// export is the export options, nil until set: the settings
 	// store's, which has the defaults.
 	export *ExportOptions
@@ -161,6 +165,9 @@ func NewSketchHost(sk *sketch.Sketch, saveFile string) *SketchHost {
 }
 
 func (h *SketchHost) adopt(sk *sketch.Sketch) {
+	if h.sk != nil && h.sk != sk {
+		sk.Follow(h.sk)
+	}
 	h.sk = sk
 	sk.ReloadAllLinked = func(sk *sketch.Sketch) { link.ReloadAllLinked(sk, h.saveFile) }
 	sk.GenerateAll()
@@ -176,7 +183,24 @@ func (h *SketchHost) adopt(sk *sketch.Sketch) {
 func (h *SketchHost) Sketch() *sketch.Sketch { return h.sk }
 
 // Run runs fn at once: a bare sketch has no goroutine of its own.
-func (h *SketchHost) Run(fn func()) { fn() }
+func (h *SketchHost) Run(fn func()) {
+	if h.depth > 0 {
+		fn()
+		return
+	}
+	h.depth++
+	from := h.sk.Revision().Change
+	defer func() {
+		h.depth--
+		h.runs += h.sk.Revision().Change - from
+	}()
+	fn()
+}
+
+// RunChanges is how far the sketch's revision (sketch.Revision) moved
+// inside Run calls: the changes scripts made, told from those made
+// between them by whoever else holds the sketch. It is read inside Run.
+func (h *SketchHost) RunChanges() uint64 { return h.runs }
 
 // BeginEval starts a step of a script: its first change is remembered
 // for undo.
@@ -191,7 +215,11 @@ func (h *SketchHost) Changing() {
 	if !h.changed {
 		h.changed = true
 		h.sk.UndoRemember()
+		return
 	}
+	// The step's undo state was remembered at its first change; a
+	// reader of the revision is to know of this one too.
+	h.sk.NoteChange()
 }
 
 // Remembered folds the n steps of undo a change remembered itself into

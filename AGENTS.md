@@ -22,7 +22,9 @@ does not exist: keep them true, in the same commit as the change.
   `ttf`, `dxf`, `thread` and `res` (embedded resources) are leaves that `sketch`, `export` and
   `render` use; `persist/step` sits with `topo`, since `persist/link` reads STEP. The font and
   DXF libraries know nothing of the kernel: text outlines go through `ttf.OutlineSink`, which
-  `srf.OutlineInto` takes into Béziers. `pkg/sketch` is the model: every way of changing a model
+  `srf.OutlineInto` takes into Béziers. Package `examples` (`examples/embed.go`, outside `pkg/`
+  because embed reaches only below it) holds the example scripts as text, a leaf `pkg/script`'s
+  help uses. `pkg/sketch` is the model: every way of changing a model
   (window, script, file) reaches the same entry point there.
 - One concern per file, named for what it holds (`group_generate.go`, not `util.go`). A function
   longer than a screen is split.

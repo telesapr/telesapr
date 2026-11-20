@@ -244,6 +244,7 @@ func init() {
 		"Request":              reflect.ValueOf((*sketch.Request)(nil)),
 		"RequestList":          reflect.ValueOf((*sketch.RequestList)(nil)),
 		"RequestType":          reflect.ValueOf((*sketch.RequestType)(nil)),
+		"Revision":             reflect.ValueOf((*sketch.Revision)(nil)),
 		"Runtime":              reflect.ValueOf((*sketch.Runtime)(nil)),
 		"Section":              reflect.ValueOf((*sketch.Section)(nil)),
 		"Selection":            reflect.ValueOf((*sketch.Selection)(nil)),

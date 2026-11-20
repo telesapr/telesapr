@@ -20,3 +20,4 @@ pkg/persist/dxf
 pkg/internal/cxxutf8
 pkg/internal/fixtures
 pkg/platform/lineedit
+examples

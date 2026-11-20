@@ -47,6 +47,16 @@ interpreter finds as it runs, it can name the start of the statement, or of the 
 you entered, rather than the exact call. What a call of the scripting interface can't do, it says in its own words
 (`line r004-line-segment isn't a circle or an arc`).
 
+`help("ThreadOptions")` shows a type: its fields, each with its type and what it is, and its
+methods. `help("ThreadOptions.Length")` says all there is of one field, as
+`help("Features.Thread")` does of one call.
+
+`help("examples")` lists the example scripts that come with TeleSAPR, each with what it makes,
+and `help("example bolt")` shows the source of one, with the files of its script library if it
+has one. An example is a whole program, `package main` taking `doc` from `api.Current()`; to try
+it at the console, enter the body of its `main`. A name that isn't an example's gets the nearest
+ones.
+
 ## Forms
 
 A script can ask for its values when it runs. It declares them with an `api.Form`, a variable at
@@ -298,5 +308,8 @@ The pictures and the console's text are made by
   `gs := doc.Groups()`, or in a literal of a type the script declared. The error names the line
   and says to put the value in a variable first: `n := gs[0].Name()`, then `P{n}`. In a slice,
   array or map literal, as `[]api.Entity{lines[0].Start()}`, it works.
+- The interpreter has no `min`, `max` or `clear`. Write `math.Min(a, b)` and `math.Max(a, b)`
+  for numbers with a fraction, an `if` for whole numbers, and a loop with `delete`, or a new map,
+  for `clear`.
 - An AI program's scripts are kept to some folders ([Drawing with an AI model](ai.md#files));
   yours are not.

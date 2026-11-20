@@ -108,6 +108,9 @@ func (h appHooks) KernelPace() func() {
 // setSketch makes sk the sketch the application edits, wired to the
 // view, the show flags and the event loop.
 func (ss *Application) setSketch(sk *sketch.Sketch) {
+	if ss.SK != nil && ss.SK != sk {
+		sk.Follow(ss.SK)
+	}
 	ss.SK = sk
 	sk.Fonts = ss.fonts
 	sk.Settings = ss.Settings

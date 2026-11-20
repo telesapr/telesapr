@@ -10,7 +10,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/topo"
 )
 
-// A drawing (roadmap step 18) is a sheet of paper with views of the
+// A drawing is a sheet of paper with views of the
 // solid: the standard ones (front, top, a side and an isometric)
 // placed by the projection's convention, at a scale, in a border with a
 // title block. It is part of the model, saved with it; what is drawn is
@@ -24,7 +24,7 @@ type DrawingView struct {
 	X, Y float64
 }
 
-// DrawingSection is a section view (roadmap 18.3): the solid cut by
+// DrawingSection is a section view: the solid cut by
 // the plane square to View's direction through the solid's middle,
 // moved Offset mm toward the viewer, the half beyond seen, the cut face
 // hatched; at X, Y on the sheet, or placed when both are 0.
@@ -33,7 +33,7 @@ type DrawingSection struct {
 	Offset, X, Y float64
 }
 
-// DrawingDetail is a detail view (roadmap 18.3): the part of View
+// DrawingDetail is a detail view: the part of View
 // within R mm of the point CX, CY (mm right and up from the view's
 // middle, on the model), enlarged Scale times the sheet's scale; at X,
 // Y on the sheet, or placed when both are 0.
@@ -42,10 +42,9 @@ type DrawingDetail struct {
 	CX, CY, R, Scale, X, Y float64
 }
 
-// DrawingDimension is a dimension on a view of the drawing (roadmap
-// 18.4, H2): the length of an edge, the distance between two, or the
+// DrawingDimension is a dimension on a view of the drawing: the length of an edge, the distance between two, or the
 // diameter or radius of a circular one, the edges held by their names
-// (step 9), so that it measures them again as the model changes. Offset
+// so that it measures them again as the model changes. Offset
 // is how far, in sheet mm, the dimension line stands off what it
 // measures, out from the view's middle (in toward it when negative; 0
 // for 10).

@@ -101,6 +101,9 @@ type response struct {
 	PNG     []byte          `json:"png,omitempty"`
 	Caption string          `json:"caption,omitempty"`
 	Listing *Listing        `json:"listing,omitempty"`
+	// Revision is what the request found of the drawing's revision,
+	// on the answer to any that reads or changes the drawing.
+	Revision *Seen `json:"revision,omitempty"`
 }
 
 // maxLine is the longest line either side reads: a picture of
@@ -170,6 +173,7 @@ func Serve(ctx context.Context, conn io.ReadWriter, b Backend) error {
 // progress of a run, if b says it (ProgressRunner).
 func answer(ctx context.Context, b Backend, req request, report func(Progress)) response {
 	res := response{ID: req.ID}
+	ctx, watch := WatchRevision(ctx)
 	var err error
 	switch req.Op {
 	case opRun:
@@ -220,6 +224,9 @@ func answer(ctx context.Context, b Backend, req request, report func(Progress)) 
 	}
 	if err != nil {
 		res.Error = err.Error()
+	}
+	if seen, ok := watch.Seen(); ok {
+		res.Revision = &seen
 	}
 	return res
 }
@@ -417,6 +424,9 @@ func (r *Remote) call(ctx context.Context, req request) (response, error) {
 			return response{}, err
 		case res.Error != "":
 			return response{}, errors.New(res.Error)
+		}
+		if w := watchOf(ctx); w != nil && res.Revision != nil {
+			w.set(*res.Revision)
 		}
 		return res, nil
 	}

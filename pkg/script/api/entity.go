@@ -379,7 +379,7 @@ func (e Entity) FacePoint() (p Vec) {
 
 // Visible reports whether the entity is drawn, as the window draws it:
 // the show flags of View > Show and the group's own show and suppress
-// modes decide, as PointOfRayCasting and a drawing in the window see
+// modes decide, as picking in the window and a drawing there see
 // it.
 func (e Entity) Visible() (visible bool) {
 	e.d.read(func(sk *sketch.Sketch) { visible = sk.EntityIsVisible(e.get(sk)) })

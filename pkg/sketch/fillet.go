@@ -52,7 +52,7 @@ func (sk *Sketch) NewFillet(edges []core.HEntity, solidEdges []topo.Name, radius
 
 // SetFilletEdges makes the fillet hg round edges and solidEdges, picked
 // on the solid before it, instead of the edges it rounds now: a
-// fillet's edges can be changed after it is made (ROADMAP F7). An
+// fillet's edges can be changed after it is made. An
 // edge's own radius stays with it; an edge taken away takes its
 // radius with it, and an edge added takes the fillet's. The fillet is
 // tried on a copy of the solid before it, so an edge it can't round is

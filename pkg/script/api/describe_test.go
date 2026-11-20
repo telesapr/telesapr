@@ -108,8 +108,13 @@ func TestDescribeTrouble(t *testing.T) {
 	// A second length is a reference where the window would make it one;
 	// the group fails only once it is a driving dimension.
 	d.Constrain.Length(line, 12).SetReference(false)
-	if got := d.Describe(); !strings.Contains(got, "NOT SOLVED") {
+	if got := d.Describe(); !strings.Contains(got, "NOT SOLVED (at odds: c002-pt-pt-distance), ") {
 		t.Errorf("two lengths on one line, and the description says:\n%s", got)
+	}
+	// A group that allows redundant constraints and still fails says so.
+	d.Active().SetAllowRedundant(true)
+	if got := d.Describe(); !strings.Contains(got, "NOT SOLVED (at odds: c002-pt-pt-distance), redundant constraints allowed, ") {
+		t.Errorf("allowing redundant constraints, the description says:\n%s", got)
 	}
 
 	d = New()

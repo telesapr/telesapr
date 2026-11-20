@@ -1,0 +1,14 @@
+{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "recorded", "version": "1"}}}
+{"jsonrpc": "2.0", "method": "notifications/initialized"}
+{"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "run_script", "arguments": {"code": "doc.Sketch.Rect(V(0, 0, 0), V(10, 20, 0))\ndoc.Features.Extrude(5, \"plate\")"}}}
+{"jsonrpc": "2.0", "id": 3, "method": "resources/list", "params": {}}
+{"jsonrpc": "2.0", "id": 4, "method": "resources/templates/list", "params": {}}
+{"jsonrpc": "2.0", "id": 5, "method": "resources/read", "params": {"uri": "telesapr://drawing"}}
+{"jsonrpc": "2.0", "id": 6, "method": "resources/read", "params": {"uri": "telesapr://drawing/script"}}
+{"jsonrpc": "2.0", "id": 7, "method": "resources/read", "params": {"uri": "telesapr://drawing/picture"}}
+{"jsonrpc": "2.0", "id": 8, "method": "resources/read", "params": {"uri": "telesapr://help/primer"}}
+{"jsonrpc": "2.0", "id": 9, "method": "resources/read", "params": {"uri": "telesapr://drawing/group/plate"}}
+{"jsonrpc": "2.0", "id": 10, "method": "resources/read", "params": {"uri": "telesapr://examples/bolt"}}
+{"jsonrpc": "2.0", "id": 11, "method": "resources/read", "params": {"uri": "telesapr://examples/nothing"}}
+{"jsonrpc": "2.0", "id": 12, "method": "completion/complete", "params": {"ref": {"type": "ref/resource", "uri": "telesapr://drawing/group/{name}"}, "argument": {"name": "name", "value": "pl"}}}
+{"jsonrpc": "2.0", "id": 13, "method": "tools/call", "params": {"name": "export", "arguments": {"path": "plate.stl"}}}

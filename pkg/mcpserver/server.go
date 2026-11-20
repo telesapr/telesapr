@@ -1,9 +1,12 @@
 // Package mcpserver offers a drawing to a Model Context Protocol
 // client, such as an AI model's program, as tools: run a script,
 // describe the drawing, render a picture of it, measure it, export it,
-// open a file, list a directory, and the scripting interface's help.
-// What the tools do is an agent.Backend's; this package is the
-// protocol around it.
+// open a file, list a directory, and the scripting interface's help;
+// and as prompts, the tasks a user starts from the client's menu, each
+// with what the model needs of the drawing to begin. What the tools do
+// is an agent.Backend's; this package is the protocol around it. The
+// drawing, the primer and the example scripts are resources too, for a
+// user to attach to a message.
 package mcpserver
 
 import (
@@ -44,13 +47,15 @@ Call api_help with no name before the first script.`
 
 	describeDescription = `Returns the drawing that is open in TeleSAPR, in words: the unit, the parameters, every group in the order the model is built with how it solved, its degrees of freedom, what is wrong with it, and the volume and bounds of the solid up to it; then the requests of the active group with where they are, in mm, its constraints with their values and what they are on, and what the user has selected.
 
-The names it gives (g003-plate, r004-line-segment, c00a-pt-pt-distance) are the ones doc.Group, doc.Request and doc.Constraint take in a script. With group, it lists the requests and constraints of that group instead of the active one's. With script, it returns instead the whole drawing (group is not used) as the Go script that builds it again, as File > Export > Script (.go) writes it: the way to see how a drawing you didn't make is built.
+The names it gives (g003-plate, r004-line-segment, c00a-pt-pt-distance) are the ones doc.Group, doc.Request and doc.Constraint take in a script. With group, it lists the requests and constraints of that group instead of the active one's. With script, it returns instead the whole drawing (group is not used) as the Go script that builds it again, as File > Export > Script (.go) writes it: the way to see how a drawing you didn't make is built. The script's variables have names of its own (c18, r5), not the names above.
 
 With solid, it lists instead the faces and edges of the solid up to the group (the active one if group is left out): each face with its ID, shape and a point on it, each edge with its name, shape, length and ends, the names g.Solid().Face, g.Solid().FaceAt and g.Solid().Edge take, to pick what to fillet, chamfer, shell or sketch on. Script wins over solid.`
 
 	renderDescription = `Returns a picture (PNG) of the drawing that is open in TeleSAPR, fitted to the picture: the solid shaded, with the sketch of the active group and its dimensions. Look at it to check that what was drawn is what was asked for.
 
-The view is "isometric" (the default), "front" (the XY plane, where a new drawing's first sketch is: x to the right, y up), "back", "top", "bottom", "left" or "right", fitted; or "window", the view the user has in the window, as they see it. With group, the drawing is drawn as it is up to that group, as if it were active.
+The view is "isometric" (the default), "front" (the XY plane, where a new drawing's first sketch is: x to the right, y up), "back", "top", "bottom", "left" or "right", fitted; or "window", the view the user has in the window, as they see it. Each looks from the side it names: front from +z (the XY workplane's normal points at the viewer, so an extrusion of a sketch in it comes toward you), back from -z, top from +y, bottom from -y, right from +x, left from -x. With group, the drawing is drawn as it is up to that group, as if it were active.
+
+To see the drawing sheet, run doc.Drawing.Show(true) with run_script, then render with view "window"; doc.Drawing.Show(false) brings the model back.
 
 With section ("XY", "YZ" or "ZX"), the solid is drawn cut by a plane parallel to that workplane, to see inside it: section_offset moves the plane along the workplane's normal (a number or an expression, in the drawing's unit), and the side the normal points to is taken away, or the other side with section_flip. The user's own section view is left as it was. A line of text beside the picture says what it shows, with the solid's bounds in mm.`
 
@@ -60,7 +65,7 @@ With gaps, it also lists the gaps between the parts of an assembly less than tha
 
 With selected, it measures what the user has selected instead, as Analyze > Measure Selection does: a line's length, a circle's radius, the distance between two points, from a point to a line or a face, or the angle between two lines or faces. To measure other things, use run_script with doc.Analyze.`
 
-	exportDescription = `Writes the drawing that is open in TeleSAPR to a file, in the format the file's extension names: a mesh of the solid (.stl, .3mf, .glb, .obj, .wrl), its exact surfaces (.step), a 2d view (.svg, .dxf, .pdf, .eps), a picture (.png), or a Go program that builds the model again (.go), with what it couldn't write listed. It says where it wrote and how many bytes. A relative path is taken from the directory TeleSAPR works in; list_files shows which that is.
+	exportDescription = `Writes the drawing that is open in TeleSAPR to a file, in the format the file's extension names: a mesh of the solid (.stl, .3mf, .glb, .obj, .wrl), its exact surfaces (.step), a 2d view of the model as the window looks at it (.svg, .dxf, .pdf, .eps; not the drawing sheet, which run_script writes with doc.Drawing.Export(path)), a picture (.png), or a Go program that builds the model again (.go), with what it couldn't write listed. It says where it wrote and how many bytes, with a link to the file. A relative path is taken from the directory TeleSAPR works in; list_files shows which that is.
 
 Export only when the user asks for a file. The user may be asked to allow it.`
 
@@ -70,7 +75,7 @@ Open a file only when the user asks for it. The user may be asked to allow it.`
 
 	filesDescription = `Lists a directory on the computer TeleSAPR runs on: the directories and files in it, with their sizes, but for hidden ones. With no dir, the directory TeleSAPR works in, which is where export and open take a relative path from. Use it to find a drawing the user names, or where to export.`
 
-	helpDescription = `Returns the documentation of TeleSAPR's scripting interface. With no name it is the primer: how scripts and drawings work, what the interpreter can't do, an example, and every call there is; read it once before writing the first script. With a name it is the documentation of that type, method or function: "Features.Extrude", "Group", "Group.SetCombine", "Entity", "ThreadOptions", "math.Hypot"; or of what a script calls in place of an entry of the window's menu, as "Features > Fillet Edges". The calls that change the drawing are grouped by menu: "Features" lists them all.`
+	helpDescription = `Returns the documentation of TeleSAPR's scripting interface. With no name it is the primer: how scripts and drawings work, what the interpreter can't do, an example, and every call there is; read it once before writing the first script. With a name it is the documentation of that type, method or function: "Features.Extrude", "Group", "Group.SetCombine", "Entity", "ThreadOptions", "math.Hypot"; or of what a script calls in place of an entry of the window's menu, as "Features > Fillet Edges". The calls that change the drawing are grouped by menu: "Features" lists them all. "examples" lists the example scripts, each a whole program that shows calls combined (threads, drawing sheets, lofts, assemblies, ...), and "example bolt" is the source of one.`
 )
 
 // RunInput is what run_script takes.
@@ -128,11 +133,12 @@ type RunOutput struct {
 	Restarted        bool                `json:"restarted,omitempty" jsonschema:"whether the interpreter was started afresh, so the variables of earlier calls are gone"`
 	Groups           []agent.GroupStatus `json:"groups" jsonschema:"the active group, then every group in trouble: not solved, or with a problem"`
 	ExpressionErrors []string            `json:"expressionErrors,omitempty" jsonschema:"expressions that can't be worked out"`
+	DrawingChanged   bool                `json:"drawingChanged,omitempty" jsonschema:"whether the user or another program changed the drawing since the last call, before or while the script ran"`
 }
 
 // HelpInput is what api_help takes.
 type HelpInput struct {
-	Name string `json:"name,omitempty" jsonschema:"a menu, type, method or function, as Features, Features.Extrude or Group, or a menu entry, as Features > Fillet Edges; the primer if left out"`
+	Name string `json:"name,omitempty" jsonschema:"a menu, type, method or function, as Features, Features.Extrude or Group, or a menu entry, as Features > Fillet Edges; examples, or example and a name, for the example scripts; the primer if left out"`
 }
 
 // text is a tool's result that is text.
@@ -169,14 +175,17 @@ func RunText(res agent.Result) string {
 	return b.String()
 }
 
-// New is an MCP server that offers b's drawing; version is the
-// program's.
+// New is an MCP server that offers b's drawing through tools, prompts
+// and resources; version is the program's.
 func New(b agent.Backend, version string) *mcp.Server {
 	s := mcp.NewServer(
 		&mcp.Implementation{Name: "telesapr", Title: "TeleSAPR", Version: version},
-		&mcp.ServerOptions{Instructions: agent.Instructions},
+		&mcp.ServerOptions{Instructions: agent.Instructions, CompletionHandler: complete(b)},
 	)
+	addPrompts(s, b)
+	addResources(s, b)
 	closed := false
+	seen := &tracker{}
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        ToolRun,
@@ -192,6 +201,7 @@ func New(b agent.Backend, version string) *mcp.Server {
 			return out, RunOutput{Error: err.Error(), Groups: []agent.GroupStatus{}}, nil //nolint:nilerr // reported in the result
 		}
 		var res agent.Result
+		ctx, watch := agent.WatchRevision(ctx)
 		if pr, ok := b.(agent.ProgressRunner); ok {
 			res, err = pr.RunWithProgress(ctx, code, runReporter(ctx, req))
 		} else {
@@ -200,14 +210,16 @@ func New(b agent.Backend, version string) *mcp.Server {
 		if err != nil {
 			return nil, RunOutput{}, err
 		}
-		out := text(RunText(res))
+		notice := seen.notice(watch, ToolRun)
+		out := noticed(text(RunText(res)), notice)
 		out.IsError = res.Error != ""
 		groups := res.Groups
 		if groups == nil {
 			groups = []agent.GroupStatus{}
 		}
 		return out, RunOutput{
-			Output: res.Output, Value: res.Value, Error: res.Error, RolledBack: res.RolledBack, Restarted: res.Restarted, Groups: groups, ExpressionErrors: res.ExpressionErrors}, nil
+			Output: res.Output, Value: res.Value, Error: res.Error, RolledBack: res.RolledBack, Restarted: res.Restarted, Groups: groups, ExpressionErrors: res.ExpressionErrors,
+			DrawingChanged: notice != ""}, nil
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -216,11 +228,12 @@ func New(b agent.Backend, version string) *mcp.Server {
 		Description: describeDescription,
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, OpenWorldHint: &closed},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in DescribeInput) (*mcp.CallToolResult, agent.Description, error) {
+		ctx, watch := agent.WatchRevision(ctx)
 		d, err := b.Describe(ctx, agent.Describing{Group: in.Group, Script: in.Script, Solid: in.Solid})
 		if err != nil {
 			return nil, agent.Description{}, err
 		}
-		return text(d.Text), d.Data, nil
+		return noticed(text(d.Text), seen.notice(watch, ToolDescribe)), d.Data, nil
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -229,6 +242,7 @@ func New(b agent.Backend, version string) *mcp.Server {
 		Description: renderDescription,
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, OpenWorldHint: &closed},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in RenderInput) (*mcp.CallToolResult, any, error) {
+		ctx, watch := agent.WatchRevision(ctx)
 		pic, err := b.Render(ctx, agent.Picture{View: in.View, Group: in.Group, Width: in.Width, Height: in.Height,
 			Section: in.Section, SectionOffset: in.SectionOffset, SectionFlip: in.SectionFlip})
 		if err != nil {
@@ -238,7 +252,7 @@ func New(b agent.Backend, version string) *mcp.Server {
 		if pic.Caption != "" {
 			content = append(content, &mcp.TextContent{Text: pic.Caption})
 		}
-		return &mcp.CallToolResult{Content: content}, nil, nil
+		return noticed(&mcp.CallToolResult{Content: content}, seen.notice(watch, ToolRender)), nil, nil
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -260,12 +274,13 @@ func New(b agent.Backend, version string) *mcp.Server {
 		Description: measureDescription,
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, OpenWorldHint: &closed},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in MeasureInput) (*mcp.CallToolResult, agent.Measurement, error) {
+		ctx, watch := agent.WatchRevision(ctx)
 		m, err := b.Measure(ctx, agent.Measuring{Group: in.Group, Selected: in.Selected,
 			Gaps: in.Gaps, Within: in.Within, Walls: in.Walls})
 		if err != nil {
 			return nil, agent.Measurement{}, err
 		}
-		return text(m.Text), m.Data, nil
+		return noticed(text(m.Text), seen.notice(watch, ToolMeasure)), m.Data, nil
 	})
 
 	// Writing a file replaces any of that name, so export is
@@ -277,12 +292,14 @@ func New(b agent.Backend, version string) *mcp.Server {
 		Title:       "Export the drawing to a file",
 		Description: exportDescription,
 		Annotations: &mcp.ToolAnnotations{DestructiveHint: &destructive, IdempotentHint: true, OpenWorldHint: &closed},
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in PathInput) (*mcp.CallToolResult, any, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in PathInput) (*mcp.CallToolResult, ExportOutput, error) {
+		ctx, watch := agent.WatchRevision(ctx)
 		s, err := b.Export(ctx, in.Path)
 		if err != nil {
-			return nil, nil, err
+			return nil, ExportOutput{}, err
 		}
-		return text(s), nil, nil
+		res, out := exportResult(s)
+		return noticed(res, seen.notice(watch, ToolExport)), out, nil
 	})
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -291,11 +308,12 @@ func New(b agent.Backend, version string) *mcp.Server {
 		Description: openDescription,
 		Annotations: &mcp.ToolAnnotations{DestructiveHint: &destructive, OpenWorldHint: &closed},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in PathInput) (*mcp.CallToolResult, any, error) {
+		ctx, watch := agent.WatchRevision(ctx)
 		s, err := b.Open(ctx, in.Path)
 		if err != nil {
 			return nil, nil, err
 		}
-		return text(s), nil, nil
+		return noticed(text(s), seen.notice(watch, ToolOpen)), nil, nil
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

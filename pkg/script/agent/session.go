@@ -283,6 +283,7 @@ func (s *Session) RunWithProgress(ctx context.Context, code string, report func(
 	if strings.TrimSpace(code) == "" {
 		return Result{}, errors.New("no code to run")
 	}
+	defer s.track(ctx, true)()
 
 	s.out.Start()
 	if report != nil {
@@ -396,9 +397,10 @@ func groupStatus(g api.Group, active bool) GroupStatus {
 
 // Describe is the drawing, or one group of it, in words, or the
 // solid at a group, or the whole drawing as a script.
-func (s *Session) Describe(_ context.Context, d Describing) (out Described, err error) {
+func (s *Session) Describe(ctx context.Context, d Describing) (out Described, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.track(ctx, false)()
 	doc := s.engine.Doc()
 	err = try(func() {
 		switch {
@@ -454,9 +456,10 @@ func (p *Picture) size() {
 }
 
 // Render is a picture of the drawing.
-func (s *Session) Render(_ context.Context, p Picture) (out Rendered, err error) {
+func (s *Session) Render(ctx context.Context, p Picture) (out Rendered, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.track(ctx, false)()
 	if p.View == "" {
 		p.View = DefaultView
 	}
@@ -477,10 +480,19 @@ func (s *Session) Render(_ context.Context, p Picture) (out Rendered, err error)
 		doc := api.NewDoc(s.engine.Host())
 		if p.Group != "" {
 			g := groupNamed(doc, p.Group)
-			// Drawn as if active, and the active group put back.
-			was := doc.Active()
+			// Drawn as if active, and the active group put back. An
+			// activation counts as a change, since the file keeps
+			// which group is active; one that is undone here is none,
+			// so a saved drawing stays saved, and an open after the
+			// picture is not refused for it.
+			was, unsaved := doc.Active(), doc.File.Unsaved()
 			doc.Activate(g)
-			defer doc.Activate(was)
+			defer func() {
+				doc.Activate(was)
+				if !unsaved {
+					doc.File.ForgetChanges()
+				}
+			}()
 		}
 		if p.Section != "" {
 			// The user's own section view, if any, comes back after.
@@ -556,8 +568,11 @@ func Help(name string) (string, error) {
 		return Primer(), nil
 	}
 	var b strings.Builder
-	if !script.Help(&b, name) {
-		return "", fmt.Errorf(`nothing is called %q; names are like "api", "Doc", "Features", "Features.Extrude", "Features > Extrude", "Group.Solved", "strings.ToUpper"`, name)
+	switch err := script.Help(&b, name); {
+	case errors.Is(err, script.ErrNoHelp):
+		return "", fmt.Errorf(`nothing is called %q; names are like "api", "Doc", "Features", "Features.Extrude", "Features > Extrude", "Group.Solved", "strings.ToUpper", or "examples" for the example scripts`, name)
+	case err != nil:
+		return "", err
 	}
 	return b.String(), nil
 }

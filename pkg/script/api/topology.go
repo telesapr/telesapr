@@ -1,8 +1,11 @@
 package api
 
 import (
+	"fmt"
 	"math"
 	"slices"
+	"strconv"
+	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/sketch"
@@ -132,18 +135,20 @@ func (s Solid) Vertices() (vs []SolidVertex) {
 }
 
 // Edge is the edge a name, as SolidEdge.Name writes it, names; it fails
-// when the name doesn't resolve, saying why. A name may leave out the
-// count, "edge A B N" for "edge A B N of M"; the edge has it.
+// when the name doesn't resolve, saying why and naming the solid's
+// edges between the faces the name gives, or of either face. A name may
+// leave out the count, "edge A B N" for "edge A B N of M"; the edge has
+// it. EdgeAt finds an edge by a point on it, with no name.
 func (s Solid) Edge(name string) (e SolidEdge) {
-	n, err := topo.ParseName(name)
-	if err != nil {
-		fail("%v", err)
-	}
+	n, perr := topo.ParseName(name)
 	s.d.read(func(sk *sketch.Sketch) {
 		tp := s.topology(sk)
+		if perr != nil {
+			fail("%v%s", perr, nearEdgeNames(tp, name))
+		}
 		i, err := tp.Resolve(n)
 		if err != nil {
-			fail("%s: %v", sk.SolidEdgeName(n), err)
+			fail("%s: %v%s", sk.SolidEdgeName(n), err, nearEdgeNames(tp, name))
 		}
 		// The edge's own name, which counts the edges between its faces
 		// as picking it does, whether or not the name given did.
@@ -154,11 +159,55 @@ func (s Solid) Edge(name string) (e SolidEdge) {
 	return SolidEdge{s: s, name: n}
 }
 
+// nearEdgeNames says which of the solid's edge names a name that
+// doesn't resolve nearly is: those between the two faces it gives, or
+// else those of either face, a few at most; and how to find an edge
+// without one.
+func nearEdgeNames(tp *topo.Topology, name string) string {
+	const most = 6
+	var faces []srf.FaceID
+	f := strings.Fields(name)
+	for i := 1; i < len(f) && i <= 2; i++ {
+		if h, err := strconv.ParseUint(f[i], 16, 32); err == nil {
+			faces = append(faces, srf.FaceID(h))
+		}
+	}
+	var both, either []string
+	for _, e := range tp.SolidEdges() {
+		n, err := tp.NameOf(e)
+		if err != nil {
+			continue
+		}
+		hasA, hasB := slices.Contains(faces, n.A), slices.Contains(faces, n.B)
+		switch {
+		case hasA && hasB:
+			both = append(both, `"`+n.String()+`"`)
+		case hasA || hasB:
+			either = append(either, `"`+n.String()+`"`)
+		}
+	}
+	near, what := both, "between those two faces"
+	if len(near) == 0 {
+		near, what = either, "of those faces"
+	}
+	slices.Sort(near)
+	const how = "get_drawing with solid, or g.DescribeSolid(), lists every edge's name, and g.Solid().EdgeAt(point) finds one by a point on it"
+	if len(near) == 0 {
+		return "; " + how
+	}
+	more := ""
+	if len(near) > most {
+		more = fmt.Sprintf(" and %d more", len(near)-most)
+		near = near[:most]
+	}
+	return fmt.Sprintf("; the solid's edges %s are %s%s (%s)", what, strings.Join(near, ", "), more, how)
+}
+
 // Face is the face with identity id, as SolidFace.ID gives it: the
 // face of which a patch has that identity, whichever patch it is, so a
 // face of several patches can be named by any of theirs (an extruded
 // circle's side by any quarter's). It fails for an identity no patch
-// of the solid has (roadmap 14.1).
+// of the solid has.
 func (s Solid) Face(id uint32) (f SolidFace) {
 	s.d.read(func(sk *sketch.Sketch) {
 		tp := s.topology(sk)

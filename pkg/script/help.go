@@ -1,6 +1,7 @@
 package script
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -61,16 +62,29 @@ var funcNames = sync.OnceValue(func() map[uintptr][2]string {
 
 // Help writes what help("name") prints in a console: what the package,
 // type, function or method called name is, as "api", "Group",
-// "Features.Extrude", a menu entry, "Features > Extrude", or "strings.ToUpper"; for "", the summary help()
-// prints. It is false if nothing is called that, and then nothing was
-// written.
-func Help(w io.Writer, name string) bool {
+// "Features.Extrude", a menu entry, "Features > Extrude", or
+// "strings.ToUpper"; "examples", the example scripts built into the
+// program, and "example bolt", one of them; for "", the summary help()
+// prints. It is ErrNoHelp if nothing is called that, and an error that
+// names the nearest examples for an example that isn't there; then
+// nothing was written.
+func Help(w io.Writer, name string) error {
 	if name == "" {
 		_, _ = fmt.Fprint(w, helpText)
-		return true
+		return nil
 	}
-	return helpName(w, name)
+	name = strings.TrimSpace(name)
+	if ok, err := helpExample(w, name); ok {
+		return err
+	}
+	if !helpName(w, name) {
+		return ErrNoHelp
+	}
+	return nil
 }
+
+// ErrNoHelp is Help's error for a name it knows nothing of.
+var ErrNoHelp = errors.New("nothing help knows is called that")
 
 // help writes what each of values is; with none, the summary.
 func (e *Engine) help(values ...any) {
@@ -83,14 +97,18 @@ func (e *Engine) help(values ...any) {
 		if i > 0 {
 			_, _ = fmt.Fprintln(w)
 		}
-		if name, ok := v.(string); ok {
-			if !helpName(w, name) {
-				_, _ = fmt.Fprintf(w, "%q is a string, and nothing help knows is called that.\n", name)
-				_, _ = fmt.Fprintln(w, `Names are like "api", "Group", "Features.Extrude", "Features > Extrude" or "strings.ToUpper".`)
-			}
+		name, ok := v.(string)
+		if !ok {
+			helpValue(w, v)
 			continue
 		}
-		helpValue(w, v)
+		switch err := Help(w, name); {
+		case errors.Is(err, ErrNoHelp):
+			_, _ = fmt.Fprintf(w, "%q is a string, and nothing help knows is called that.\n", name)
+			_, _ = fmt.Fprintln(w, `Names are like "api", "Group", "Features.Extrude", "Features > Extrude", "strings.ToUpper" or "examples".`)
+		case err != nil:
+			_, _ = fmt.Fprintln(w, err)
+		}
 	}
 }
 
@@ -177,7 +195,7 @@ func helpPackage(w io.Writer, importPath string, p *symbols.PackageDoc) {
 		slices.Sort(names)
 		fmt.Fprintf(w, "\nConstants and variables:\n    %s\n", strings.Join(names, " "))
 	}
-	fmt.Fprintf(w, "\nhelp(\"%s.Name\") says more about one.\n", p.Name)
+	fmt.Fprintf(w, "\nHelp for %q says more about one.\n", p.Name+".Name")
 }
 
 // helpType writes what a type is: its comment, its fields if t is
@@ -187,7 +205,11 @@ func helpType(w io.Writer, p *symbols.PackageDoc, name string, td *symbols.TypeD
 	if td.Text != "" {
 		fmt.Fprintln(w, indent(td.Text))
 	}
-	helpFields(w, t)
+	if len(td.Fields) > 0 {
+		docFields(w, td.Fields)
+	} else {
+		helpFields(w, t)
+	}
 	listed(w, "Made by", p.Funcs, append([]string{}, td.Makers...))
 	if len(td.Values) > 0 {
 		values := append([]string{}, td.Values...)
@@ -199,8 +221,37 @@ func helpType(w io.Writer, p *symbols.PackageDoc, name string, td *symbols.TypeD
 		if field, ok := menuFields()[name]; ok && p.Name == "api" && strings.HasSuffix(name, "Menu") {
 			name = field
 		}
-		fmt.Fprintf(w, "\nhelp(\"%s.Method\") says more about one.\n", name)
+		fmt.Fprintf(w, "\nHelp for %q says more about one.\n", name+".Method")
 	}
+}
+
+// docFields writes a struct's fields as its documentation has them,
+// each with its type and the first sentence of its comment.
+func docFields(w io.Writer, fields []symbols.Field) {
+	const column = 20
+	fmt.Fprintln(w, "\nFields:")
+	for _, f := range fields {
+		line := fmt.Sprintf("%-*s %s", column, f.Name, f.Type)
+		if about := synopsis(f.Text); about != "" {
+			const typeColumn = column + 1 + 12
+			if len(line) < typeColumn {
+				line = fmt.Sprintf("%-*s %s", typeColumn, line, about)
+			} else {
+				line += "  " + about
+			}
+		}
+		fmt.Fprintln(w, "    "+line)
+	}
+}
+
+// fieldOf is the field called name of a struct's documentation.
+func fieldOf(td *symbols.TypeDoc, name string) (symbols.Field, bool) {
+	for _, f := range td.Fields {
+		if f.Name == name {
+			return f, true
+		}
+	}
+	return symbols.Field{}, false
 }
 
 // helpFields writes the exported fields of a struct type.
@@ -262,7 +313,11 @@ func helpName(w io.Writer, name string) bool {
 			}
 		}
 	}
-	// in looks a name, and a method of it, up in one package.
+	// A struct can't have a field and a method of one name, but a type
+	// of another package of that name can: then both are shown, the
+	// field first.
+	fieldFound := false
+	// in looks a name, and a method or field of it, up in one package.
 	in := func(importPath string, names []string) bool {
 		p := docs[importPath]
 		if p == nil {
@@ -284,6 +339,14 @@ func helpName(w io.Writer, name string) bool {
 			}
 		case 2:
 			if td := p.Types[names[0]]; td != nil {
+				if f, ok := fieldOf(td, names[1]); ok {
+					fmt.Fprintf(w, "field %s.%s.%s %s\n", p.Name, names[0], f.Name, f.Type)
+					if f.Text != "" {
+						fmt.Fprintln(w, indent(f.Text))
+					}
+					fieldFound = true
+					return true
+				}
 				if d, ok := td.Methods[names[1]]; ok {
 					helpDoc(w, d)
 					if importPath == apiPath {
@@ -310,12 +373,31 @@ func helpName(w io.Writer, name string) bool {
 			}
 		}
 	}
-	for _, p := range helpPackages() {
+	for i, p := range helpPackages() {
 		if in(p, parts) {
+			if fieldFound {
+				alsoMethod(w, helpPackages()[i+1:], parts)
+			}
 			return true
 		}
 	}
 	return false
+}
+
+// alsoMethod writes a method of a type and name a field of another
+// package's type has been shown for, if one of paths has it.
+func alsoMethod(w io.Writer, paths, parts []string) {
+	for _, p := range paths {
+		pd := symbols.Docs()[p]
+		if pd == nil || pd.Types[parts[0]] == nil {
+			continue
+		}
+		if d, ok := pd.Types[parts[0]].Methods[parts[1]]; ok {
+			fmt.Fprintf(w, "\n%s.%s, another type of that name, has a method %s:\n", pd.Name, parts[0], parts[1])
+			helpDoc(w, d)
+			return
+		}
+	}
 }
 
 // typeDoc finds what is known about a named type.

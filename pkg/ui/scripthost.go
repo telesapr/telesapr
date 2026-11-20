@@ -37,6 +37,10 @@ type ScriptHost struct {
 	// changed is whether the script's step has changed the sketch,
 	// and so been remembered for undo.
 	changed bool
+	// runs counts the changes made in Run (RunChanges), and depth is
+	// how deep Run calls are nested; both are the loop's.
+	runs  uint64
+	depth int
 	// failures collects the errors of a call that returns them.
 	failures   []string
 	collecting bool
@@ -80,7 +84,7 @@ func (h *ScriptHost) Sketch() *sketch.Sketch { return h.ss.SK }
 // fn itself calls, it just runs fn.
 func (h *ScriptHost) Run(fn func()) {
 	if h.poster == nil || goid() == h.loop.Load() {
-		fn()
+		h.counted(fn)
 		return
 	}
 	type result struct {
@@ -97,7 +101,7 @@ func (h *ScriptHost) Run(fn func()) {
 			}
 			done <- r
 		}()
-		fn()
+		h.counted(fn)
 		r.panicked = false
 	})
 	select {
@@ -109,6 +113,30 @@ func (h *ScriptHost) Run(fn func()) {
 		panic(ErrLoopEnded)
 	}
 }
+
+// counted runs fn, on the loop, counting what it changes (RunChanges)
+// unless it is called inside another Run.
+func (h *ScriptHost) counted(fn func()) {
+	if h.depth > 0 {
+		fn()
+		return
+	}
+	h.depth++
+	// A file loaded in fn replaces the sketch by one that follows it
+	// (sketch.Sketch.Follow), whose revision is the greater.
+	from := h.ss.SK.Revision().Change
+	defer func() {
+		h.depth--
+		h.runs += h.ss.SK.Revision().Change - from
+	}()
+	fn()
+}
+
+// RunChanges is how far the sketch's revision (sketch.Revision) moved
+// inside Run calls: what scripts changed, and not what the user did in
+// the window between their calls, as during a script that runs. It is
+// read inside Run.
+func (h *ScriptHost) RunChanges() uint64 { return h.runs }
 
 // message takes what the application would show in a dialog.
 func (h *ScriptHost) message(text string, isError bool) {
@@ -165,7 +193,11 @@ func (h *ScriptHost) Changing() {
 	if !h.changed {
 		h.changed = true
 		h.ss.UndoRemember()
+		return
 	}
+	// The step's undo state was remembered at its first change; a
+	// reader of the revision is to know of this one too.
+	h.ss.SK.NoteChange()
 }
 
 // Remembered folds the n steps of undo a change remembered itself, as

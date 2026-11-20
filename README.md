@@ -132,7 +132,8 @@ where the window's commands do: `doc.Sketch` holds what the Sketch menu does, `d
 Features menu, and so on, and what only one kind of group has is on a view of it
 (`g.AsFillet().SetRadius(3)`). In a console `help()` lists the most used of it, `help(x)` says
 what a value is and what methods it has, `help("Features.Extrude")` or `help("api")` looks a name
-up, and `help("Features > Fillet Edges")` says what a script calls in place of a menu entry. A script file is a Go program that
+up, `help("Features > Fillet Edges")` says what a script calls in place of a menu entry, and
+`help("examples")` lists the example scripts, built into the program (`help("example bolt")` shows one). A script file is a Go program that
 imports that package and starts from `api.Current()`, so it can also be compiled as it is; see
 [`examples/scripts`](examples/scripts), each of which a test runs.
 

@@ -46,6 +46,13 @@ may be closed and opened again in the middle of a conversation.
   in plain words, and the text of the statement that failed. A script you stop (Script > Stop)
   takes the interpreter's variables with it; the model is told that too, and defines them again.
 - **Script > Stop** stops a script that is running.
+- You can go on working in the window while the model works. When you change the drawing
+  yourself between two of its calls (draw, delete, undo, change a dimension, open another file),
+  the model's next call that reads the drawing starts with a line that tells it so, and whether
+  it is another drawing altogether, so it doesn't go on from what it saw before. A change you make
+  while one of its scripts runs counts too, and so does one made by a second AI program connected
+  to the same window. The model's own scripts don't, nor does selecting, turning the view or
+  activating a group.
 - The window makes a solid in the background after a change, while you go on working. A script
   that reads a solid (its volume, its check, its problem, its faces and edges) waits until the
   window has made it, so it never reads the one from before the change.
@@ -65,17 +72,56 @@ The model gets eight tools.
 | Tool | What it does |
 |---|---|
 | `run_script` | Runs Go on the drawing, as the script console does. It returns what the script printed, the value of its last expression, and how the drawing solved afterwards: the active group, any group that failed, and the groups after the active one that the script left as they were made, marked "old". With `form`, it fills in the fields of the form the script declares, as the window's dialog does ([Scripts](scripts.md#forms)). |
-| `get_drawing` | Describes the drawing in words: the unit, the parameters, the groups with how they solved and the volume and bounds of the solid up to each (a group after the active one that a change left as it was made is marked "old" instead, and made when it is asked for by `group`), the active group's requests with their positions and its constraints, what you have selected, and what your mouse is over, so that "this" can be pointed at. With `group`, it lists that group's requests and constraints instead of the active one's. With `script`, it returns the whole drawing as the Go script that builds it again, as File > Export > Script (.go) writes it, to see how a drawing the model didn't make is built. With `solid`, it lists instead the faces and edges of the solid up to the group (the active one without `group`): each face with its ID, shape and a point on it, each edge with its name, shape, length and ends, the names a script's `Solid().Face`, `FaceAt` and `Edge` take, so that the model can pick what to fillet, chamfer, shell or sketch on without trying ([`Group.DescribeSolid`](scripts.md#a-model-in-words)); `script` wins over it. Each answer comes with the same as data a program can read (MCP's structured content, with its schema): the groups, requests, constraints, faces and edges by name, with their numbers. |
-| `render` | Returns a picture of the drawing, so the model can check its work. It is 800 by 600 pixels unless `width` and `height` say otherwise (given one, the other follows at 4:3), from a named view (`isometric`, `front`, `back`, `top`, `bottom`, `left` or `right`), fitted, or as your window shows it (`window`). With `group`, it draws the drawing up to that group. With `section`, it cuts the solid open by a plane parallel to the XY, YZ or ZX workplane, moved along its normal by `section_offset`, with the other side taken away by `section_flip`. Your own section view is left as it was. A line of text comes with the picture: the view, its size, the group drawn, the section, and the solid's bounds in mm. |
-| `api_help` | Returns the documentation of the scripting interface: a primer, or one menu, type or method, or what a script calls in place of an entry of the window's menu ("Features > Fillet Edges"). |
+| `get_drawing` | Describes the drawing in words: the unit, the parameters, the groups with how they solved and the volume and bounds of the solid up to each (a group after the active one that a change left as it was made is marked "old" instead, and made when it is asked for by `group`), the active group's requests with their positions and its constraints, what you have selected, and what your mouse is over, so that "this" can be pointed at. With `group`, it lists that group's requests and constraints instead of the active one's. With `script`, it returns the whole drawing as the Go script that builds it again, as File > Export > Script (.go) writes it, to see how a drawing the model didn't make is built. The script names its variables in its own way (`c18`, `r5`), not as the description does. With `solid`, it lists instead the faces and edges of the solid up to the group (the active one without `group`): each face with its ID, shape and a point on it, each edge with its name, shape, length and ends, the names a script's `Solid().Face`, `FaceAt` and `Edge` take, so that the model can pick what to fillet, chamfer, shell or sketch on without trying ([`Group.DescribeSolid`](scripts.md#a-model-in-words)); `script` wins over it. Each answer comes with the same as data a program can read (MCP's structured content, with its schema): the groups, requests, constraints, faces and edges by name, with their numbers. |
+| `render` | Returns a picture of the drawing, so the model can check its work. It is 800 by 600 pixels unless `width` and `height` say otherwise (given one, the other follows at 4:3), from a named view (`isometric`, `front`, `back`, `top`, `bottom`, `left` or `right`), fitted, or as your window shows it (`window`). Each named view looks from the side it names: `front` from +z, onto the XY workplane, `top` from +y, `right` from +x. To see the drawing sheet, the model's script calls `doc.Drawing.Show(true)` and renders the `window` view. With `group`, it draws the drawing up to that group. With `section`, it cuts the solid open by a plane parallel to the XY, YZ or ZX workplane, moved along its normal by `section_offset`, with the other side taken away by `section_flip`. Your own section view is left as it was. A line of text comes with the picture: the view, its size, the group drawn, the section, and the solid's bounds in mm. |
+| `api_help` | Returns the documentation of the scripting interface: a primer, or one menu, type (with what each of its fields is), field or method, or what a script calls in place of an entry of the window's menu ("Features > Fillet Edges"). With `examples` it lists the example scripts that come with TeleSAPR, each with what it makes, and with `example bolt` it returns the source of one, so the model can see how calls are combined for a thread, a drawing sheet, a loft or an assembly. |
 | `measure` | Reports the solid as Analyze > Check Solid does: volume, centre of mass, bounding box, and whether it is sound. It measures the model up to the active group, or up to the one `group` names. With `selected`, it measures what you have selected, as Analyze > Measure Selection does. With `gaps` and `walls` it also lists the gaps between parts and the walls thinner than those many mm, as Analyze > Clearance and Walls does ([Clearance and walls](clearance.md)). `within_parts` takes a part made of several solids by its solids. It comes with the same as data a program can read: the volume, centre of mass, bounds, soundness, gaps and walls as numbers. |
-| `export` | Writes the drawing to the file `path` names, in the format its extension names (`.stl`, `.3mf`, `.glb`, `.obj`, `.wrl`, `.step`, `.svg`, `.dxf`, `.pdf`, `.eps`, `.png`), and says where. To `.go` it writes the program that builds the model again, as File > Export > Script does, and lists what it couldn't write. |
+| `export` | Writes the drawing to the file `path` names, in the format its extension names (`.stl`, `.3mf`, `.glb`, `.obj`, `.wrl`, `.step`, `.svg`, `.dxf`, `.pdf`, `.eps`, `.png`), and says where and how many bytes. It also gives a link to the file, which a client may show you to open. A `.svg`, `.dxf`, `.pdf` or `.eps` is the model as the window looks at it, not the drawing sheet, which a script writes with `doc.Drawing.Export`. To `.go` it writes the program that builds the model again, as File > Export > Script does, and lists what it couldn't write. |
 | `open` | Opens the `.tlspr` drawing `path` names in place of the one on screen, and describes it. It never replaces a drawing with changes that aren't saved. |
 | `list_files` | Lists a directory (`dir`), so the model can find the drawing you name or where to export. |
 
 `measure`, `render` and `list_files` only read. `export` and `open` are shown in the console as
 the script that would do the same. With the confirmation setting on, you are asked before each,
 as for a script.
+
+## Prompts
+
+The server also offers five prompts: tasks you start from the client's menu of commands, for
+clients that support MCP prompts. Each comes with what the model needs of the drawing as it is
+when you start it, so the model can begin at once.
+
+In Claude Code a prompt is a command, shown as `/telesapr:draw (MCP)`; you can also type it as
+`/mcp__telesapr__draw`. Type what the prompt is about after the command, or in your next
+message.
+
+| Prompt | What you give | What the model does |
+|---|---|---|
+| `draw` | what to draw, with its sizes | Draws it: sketches held by dimensions to 0 degrees of freedom, the features on them, then a picture to check that it is what you asked for. It draws no more than you asked, and leaves what is in the drawing as it is. |
+| `check` | a group, if you want one looked at closely | Reports what is wrong: sketches that can still move and what would hold them, constraints that conflict or say a thing twice, groups that made no solid, a solid that isn't sound. It says what would mend each, and changes nothing. |
+| `explain` | nothing | Says how the drawing is built, group by group, from the script that builds it and a picture of it. It changes nothing. |
+| `parametrize` | nothing | Names the sizes that matter as parameters and puts the dimensions on them ([Parameters and units](parameters-and-units.md)), keeping the shape. It gives the volume before and after, which are the same. |
+| `sheet` | the paper (A4 to A0, Letter or Tabloid), if not the one that fits | Makes a drawing sheet of the solid ([Drawings](drawings.md)): the views, a section where it helps, and the main dimensions. |
+
+A prompt you start with no TeleSAPR window running still comes up, and tells the model why it
+can't see the drawing.
+
+## Resources
+
+The server also offers resources: things you can attach to a message, so the model reads them
+with what you write. In Claude Code you type `@` and pick one, or type it whole, as
+`@telesapr:telesapr://drawing`. A resource is read when you attach it, as the drawing is then.
+
+| Resource | What it holds |
+|---|---|
+| `telesapr://drawing` | The drawing in words, as `get_drawing` gives it. |
+| `telesapr://drawing/script` | The drawing as the Go script that builds it again. |
+| `telesapr://drawing/picture` | A picture of the drawing from the isometric view, 800 by 600 pixels. |
+| `telesapr://drawing/group/g003` | One group's requests and constraints; put the group's name, or its number as `g003`, in place of `g003`. |
+| `telesapr://help/primer` | The primer of the scripting interface, as `api_help` gives it. |
+| `telesapr://examples/bolt` | One of the example scripts, with its script library if it has one. Each example is listed by its name, as `telesapr://examples/bolt`, with what it makes. |
+
+With no TeleSAPR window running, the drawing's resources can't be read, and the error says why.
+The primer and the examples can still be read.
 
 ## Files
 
@@ -158,7 +204,9 @@ tele.close();
 
 What goes through is the protocol between `telesapr-cli mcp` and the window (requests to run,
 describe, render, help, measure, export, open and list files), not MCP itself. The messages are
-described in `pkg/script/agent/socket_js.go`.
+described in `pkg/script/agent/wire.go`. Each answer that read or changed the drawing has its
+`revision` (`tele.call` gives the whole answer): compare it with the last one to see whether
+someone else changed the drawing in between.
 
 ## If it does not work
 
@@ -183,7 +231,8 @@ described in `pkg/script/agent/socket_js.go`.
 MCP client ──stdin/stdout, MCP──> telesapr-cli mcp ──socket file, JSON lines──> telesapr
 ```
 
-`telesapr-cli mcp` speaks MCP (`pkg/mcpserver`, on the official Go SDK) and passes each call to
+`telesapr-cli mcp` speaks MCP (`pkg/mcpserver`, on the official Go SDK) and passes each call, and
+what a prompt needs of the drawing, to
 the application over the socket (`pkg/script/agent`). There it runs in an interpreter of its own,
 kept to the allowed files, or in the script console's when that guard is off (`pkg/ui/agent.go`).
 The model writes scripts against the same `pkg/script/api` that scripts and the console use, so

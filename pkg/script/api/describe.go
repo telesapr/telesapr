@@ -57,6 +57,13 @@ func groupState(sk *sketch.Sketch, group *sketch.Group) (string, GroupInfo) {
 		if why := sk.RedundancyText(group.H); why != "" {
 			info.Redundant = why
 			parts[0] += " (" + why + ")"
+		} else if odds := conflictNames(sk, group); odds != "" {
+			// What the last solve left unsatisfied, as Group.Conflicts
+			// gives it: read from the group, with no solve again.
+			parts[0] += " (at odds: " + odds + ")"
+		}
+		if group.AllowRedundant {
+			parts[0] += ", redundant constraints allowed"
 		}
 	}
 	if group.Solved.Dof < 0 {
@@ -80,6 +87,18 @@ func groupState(sk *sketch.Sketch, group *sketch.Group) (string, GroupInfo) {
 		}
 	}
 	return strings.Join(parts, ", "), info
+}
+
+// conflictNames names the constraints the group's last solve could not
+// satisfy, as Conflicts lists them.
+func conflictNames(sk *sketch.Sketch, group *sketch.Group) string {
+	var names []string
+	for _, hc := range group.Solved.Remove {
+		if c := sk.Constraint(hc); c != nil {
+			names = append(names, c.DescriptionString())
+		}
+	}
+	return strings.Join(names, ", ")
 }
 
 // requestGeometry says where what a request drew is, in words and as

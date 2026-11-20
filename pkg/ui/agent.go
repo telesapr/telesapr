@@ -204,8 +204,10 @@ func (b consoleBackend) RunWithProgress(ctx context.Context, code string, report
 		shown := strings.ReplaceAll(strings.TrimRight(code, "\n"), "\n", "\n"+strings.Repeat(" ", len(agentPrompt)))
 		c.print(platform.ConsoleInput, agentPrompt+shown+"\n")
 		c.start(func(jobCtx context.Context) func() {
-			// The program's request ending stops the script too.
-			runCtx, cancel := context.WithCancel(jobCtx)
+			// The program's request ending stops the script too, and
+			// what the run finds of the drawing's revision is the
+			// request's (agent.WatchRevision).
+			runCtx, cancel := context.WithCancel(agent.KeepWatch(jobCtx, ctx))
 			stop := context.AfterFunc(ctx, cancel)
 			res, err := session.RunWithProgress(runCtx, code, report)
 			stop()

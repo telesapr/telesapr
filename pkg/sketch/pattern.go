@@ -58,7 +58,7 @@ func (sk *Sketch) NewPathPattern(path []core.HEntity, copies int, name string) (
 
 // SetPatternPath makes the pattern hg repeat its solid along path, line
 // segments and arcs, instead of the path it follows now: a pattern's
-// path can be changed after it is made (ROADMAP F7). The path is tried
+// path can be changed after it is made. The path is tried
 // as NewPathPattern tries it, so one the copies can't be placed along
 // is an error here and nothing changes. The caller remembers the undo
 // state.

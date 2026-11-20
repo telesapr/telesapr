@@ -13,6 +13,9 @@
 // call(op, fields) sends any request of the protocol (pkg/script/agent,
 // wire.go): run, describe, render, help, measure, export, open, files;
 // onProgress, if given, is called with each progress line of a run.
+// Its answer has the drawing's revision, {drawing, change, own}: the
+// drawing changed by someone else since the last answer when change -
+// own differs from that answer's change.
 async function telesaprAgent(target = window, origin = location.origin) {
   const channel = new MessageChannel();
   const port = channel.port1;

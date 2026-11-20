@@ -44,7 +44,7 @@ func (sk *Sketch) NewSweep(path []core.HEntity, name string) (Group, error) {
 }
 
 // NewSweepAlong is NewSweep along path and edges of the solid so far,
-// by name, together one chain (roadmap 28.4): straight and circular
+// by name, together one chain: straight and circular
 // edges, and curved ones as cubics are.
 func (sk *Sketch) NewSweepAlong(path []core.HEntity, solidEdges []topo.Name, name string) (Group, error) {
 	g := NewGroup()
@@ -77,7 +77,7 @@ func (sk *Sketch) NewSweepAlong(path []core.HEntity, solidEdges []topo.Name, nam
 // SetSweepPath makes the sweep hg follow path, line segments and arcs,
 // and solidEdges, edges of the solid before it by name, instead of the
 // path it follows now: a sweep's path can be changed after it is made
-// (ROADMAP F7). The path is tried as NewSweepAlong tries it, so one the
+// The path is tried as NewSweepAlong tries it, so one the
 // profile can't be swept along is an error here and nothing changes.
 // The caller remembers the undo state.
 func (sk *Sketch) SetSweepPath(hg core.HGroup, path []core.HEntity, solidEdges []topo.Name) error {

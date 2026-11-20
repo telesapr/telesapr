@@ -1,6 +1,6 @@
 #!/bin/sh
-# Runs every test with a coverage profile over ./pkg/..., prints the
-# total, and fails when a package listed in scripts/coverage-packages.txt
+# Runs every test with a coverage profile over ./pkg/... and ./examples
+# (the embedded example scripts), prints the total, and fails when a package listed in scripts/coverage-packages.txt
 # has less than MIN percent of its statements covered (doc/dev-notes/done-audit.md:
 # new packages hold at least 85%).
 #
@@ -18,7 +18,7 @@ TIMEOUT=${TIMEOUT:-90m}
 LIST=scripts/coverage-packages.txt
 MODULE=$(go list -m)
 
-COVERPROFILE="$PROFILE" scripts/go-test.sh -coverpkg=./pkg/... -timeout "$TIMEOUT"
+COVERPROFILE="$PROFILE" scripts/go-test.sh -coverpkg=./pkg/...,./examples -timeout "$TIMEOUT"
 
 # A block appears once per test binary that was built with it: it is
 # covered when any of them ran it.
@@ -41,7 +41,7 @@ END {
 		total[pkg] += stmts[block]; all += stmts[block]
 		if (block in hit) { covered[pkg] += stmts[block]; allCovered += stmts[block] }
 	}
-	printf "total: %.1f%% of %d statements in ./pkg/...\n", 100 * allCovered / all, all
+	printf "total: %.1f%% of %d statements in ./pkg/... and ./examples\n", 100 * allCovered / all, all
 	bad = 0
 	for (pkg in want) {
 		if (!(pkg in total)) {

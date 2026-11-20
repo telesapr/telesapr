@@ -173,6 +173,7 @@ help(x) says what a value is and what it can do: help(doc), help(doc.Sketch).
 help("name") says what a package, a type, a function or a method is:
 help("api"), help("Group"), help("Features.Extrude"), help("strings.ToUpper").
 help("Features > Fillet Edges") says what a script calls for an entry of a menu.
+help("examples") lists the example scripts; help("example bolt") shows one.
 
 The packages fmt, math, strings, os and others of Go are there without an
 import. The whole of it is package github.com/telesapr/telesapr/pkg/script/api.

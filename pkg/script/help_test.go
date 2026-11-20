@@ -30,12 +30,12 @@ func TestHelpOfValues(t *testing.T) {
 		"Fields:\n    H                    core.HGroup",
 		"    Analyze() GroupAnalysis                      Analyze measures and checks the solid",
 		"    SetColor(red, green, blue int)               SetColor colours the group's solid",
-		`help("Group.Method") says more about one.`)
+		`Help for "Group.Method" says more about one.`)
 
 	// A pointer has the methods of what it points at.
 	got = helped(t, `help(doc)`)
 	mustContain(t, got, "type api.Doc struct", "Made by:\n    Current() *Doc",
-		"Fields:\n    File                 api.FileMenu",
+		"Fields:\n    File                 FileMenu",
 		"    Origin() Entity                              Origin is the point at the origin.")
 
 	// A menu's calls are a field of doc.
@@ -45,7 +45,7 @@ func TestHelpOfValues(t *testing.T) {
 		// A declaration too long for its column has its line to itself.
 		"    Raw(t core.ConstraintType, ptA, ptB, entityA, entityB Entity, other, other2 bool) Constraint\n"+
 			strings.Repeat(" ", 49)+"Raw adds a constraint of any type",
-		`help("Constrain.Method") says more about one.`)
+		`Help for "Constrain.Method" says more about one.`)
 
 	// A list is described by what is in it.
 	got = helped(t, `help(doc.Groups())`)
@@ -61,6 +61,27 @@ func TestHelpOfValues(t *testing.T) {
 	got = helped(t, `help(3.5)`, `help("a" == "b")`, `help(nil)`)
 	mustContain(t, got, "float64 = 3.5\n", "bool = false\n",
 		"nil: a value that isn't there has no type to tell about.")
+}
+
+// help of a struct of package api shows its fields with their types
+// and comments, and help of a field all of its comment; a field and a
+// method of one name are both shown.
+func TestHelpOfFields(t *testing.T) {
+	t.Parallel()
+	got := helped(t, `help("ThreadOptions")`)
+	mustContain(t, got, "Fields:\n    Designation          string       Designation is the thread,",
+		"\n    Length               float64      Length is how far the thread reaches")
+
+	got = helped(t, `help("ThreadOptions.Length")`)
+	mustContain(t, got, "field api.ThreadOptions.Length float64\n    Length is how far the thread reaches",
+		"It is no more\n    than the part reaches along it.")
+
+	// A struct has no field and method of one name, but package sketch
+	// has a ThreadOptions with a method Designation: both are shown,
+	// the field of package api first.
+	got = helped(t, `help("ThreadOptions.Designation")`)
+	mustContain(t, got, "field api.ThreadOptions.Designation string\n    Designation is the thread,",
+		"\nsketch.ThreadOptions, another type of that name, has a method Designation:\nfunc (o ThreadOptions) Designation() string")
 }
 
 // A function of a package is told from its value; a method isn't,

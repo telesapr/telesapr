@@ -1693,6 +1693,16 @@
 			"Interval": {
 				"text": "Interval is a stretch of a ray inside the solid, from From to To in the ray's parameter.",
 				"kind": "struct",
+				"fields": [
+					{
+						"name": "From",
+						"type": "float64"
+					},
+					{
+						"name": "To",
+						"type": "float64"
+					}
+				],
 				"makers": [
 					"MeshProbe"
 				]
@@ -1700,6 +1710,28 @@
 			"Manifold": {
 				"text": "Manifold is what one pass over a mesh's sorted half-edges finds, as a closed two-manifold has none of: each undirected edge should be used by exactly two triangles, once each way.",
 				"kind": "struct",
+				"fields": [
+					{
+						"name": "Unmatched",
+						"type": "int",
+						"text": "Unmatched counts edges used once: the mesh is open there."
+					},
+					{
+						"name": "Excess",
+						"type": "int",
+						"text": "Excess counts edges used by more than two triangles."
+					},
+					{
+						"name": "Misoriented",
+						"type": "int",
+						"text": "Misoriented counts edges used twice the same way: two triangles there face opposite ways."
+					},
+					{
+						"name": "Degenerate",
+						"type": "int",
+						"text": "Degenerate counts triangles with two corners at one place."
+					}
+				],
 				"methods": {
 					"Closed": {
 						"decl": "func (m Manifold) Closed() bool",
@@ -1713,6 +1745,16 @@
 			"Oracle": {
 				"text": "Oracle is a group's solid as the ray-cast oracle builds it.",
 				"kind": "struct",
+				"fields": [
+					{
+						"name": "Min",
+						"type": "geom.Vector"
+					},
+					{
+						"name": "Max",
+						"type": "geom.Vector"
+					}
+				],
 				"methods": {
 					"Diff": {
 						"decl": "func (o *Oracle) Diff(mesh *srf.SMesh, n int, tol float64) []RayDiff",
@@ -1737,11 +1779,60 @@
 			},
 			"RayDiff": {
 				"text": "RayDiff is a ray along which the oracle and a mesh disagree.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "From",
+						"type": "geom.Vector"
+					},
+					{
+						"name": "Dir",
+						"type": "geom.Vector"
+					},
+					{
+						"name": "Oracle",
+						"type": "[]Interval"
+					},
+					{
+						"name": "Mesh",
+						"type": "[]Interval"
+					},
+					{
+						"name": "By",
+						"type": "float64",
+						"text": "By is the length of the ray inside one of them and not the other."
+					}
+				]
 			},
 			"RayMeasure": {
 				"text": "RayMeasure is what three grids of rays find of a solid: its volume and centroid by each grid's direction, and their mean.",
 				"kind": "struct",
+				"fields": [
+					{
+						"name": "Volume",
+						"type": "float64",
+						"text": "Volume and CenterOfMass are the three grids' mean."
+					},
+					{
+						"name": "CenterOfMass",
+						"type": "geom.Vector"
+					},
+					{
+						"name": "Volumes",
+						"type": "[3]float64",
+						"text": "Volumes are the grids' along x, y and z."
+					},
+					{
+						"name": "Inertia",
+						"type": "[3][3]float64",
+						"text": "Inertia is the inertia tensor about the centre of mass, for a density of one (mm⁵ for mm): on the diagonal the moments about the axes through it along x, y and z, the integrals of y²+z², z²+x² and x²+y²; off it the products, less the integrals of xy, yz and zx."
+					},
+					{
+						"name": "Rays",
+						"type": "int",
+						"text": "Rays is how many rays each grid cast, along one side."
+					}
+				],
 				"methods": {
 					"PrincipalMoments": {
 						"decl": "func (m RayMeasure) PrincipalMoments() [3]float64",
@@ -1756,6 +1847,33 @@
 			"RayReport": {
 				"text": "RayReport is what the ray-cast oracle finds of a group's solid, against the kernel's.",
 				"kind": "struct",
+				"fields": [
+					{
+						"name": "Measure",
+						"type": "RayMeasure",
+						"text": "Measure is the oracle's volume and centroid."
+					},
+					{
+						"name": "MeshVolume",
+						"type": "float64",
+						"text": "MeshVolume is the volume the kernel's mesh encloses."
+					},
+					{
+						"name": "Disagree",
+						"type": "[]RayDiff",
+						"text": "Disagree are the rays along which the oracle and the mesh differ by more than twice the chord tolerance."
+					},
+					{
+						"name": "Rays",
+						"type": "int",
+						"text": "Rays is how many rays were compared."
+					},
+					{
+						"name": "Manifold",
+						"type": "Manifold",
+						"text": "Manifold is what the mesh's half-edges say."
+					}
+				],
 				"makers": [
 					"RayCheck"
 				]
@@ -1763,6 +1881,97 @@
 			"Report": {
 				"text": "Report is what Solid finds.",
 				"kind": "struct",
+				"fields": [
+					{
+						"name": "Triangles",
+						"type": "int",
+						"text": "Triangles is the number of triangles in the mesh."
+					},
+					{
+						"name": "Faces",
+						"type": "int",
+						"text": "Faces is the number of faces of the shell, each one or more patches joined smoothly (topo.Sheet); zero for a group that makes a mesh and no shell."
+					},
+					{
+						"name": "Patches",
+						"type": "int",
+						"text": "Patches is the number of surfaces in the shell."
+					},
+					{
+						"name": "NakedEdges",
+						"type": "int",
+						"text": "NakedEdges is the number of mesh edges with no mate running the other way, so where the mesh is open."
+					},
+					{
+						"name": "SelfIntersecting",
+						"type": "int",
+						"text": "SelfIntersecting is the number of mesh edges that pass through a triangle, or lie on a coplanar one."
+					},
+					{
+						"name": "BooleanFailed",
+						"type": "bool",
+						"text": "BooleanFailed is set when the Boolean that made the shell could not classify every edge."
+					},
+					{
+						"name": "Volume",
+						"type": "float64",
+						"text": "Volume is the volume the mesh encloses."
+					},
+					{
+						"name": "CenterOfMass",
+						"type": "geom.Vector",
+						"text": "CenterOfMass is the centroid of that volume, zero when the volume is zero."
+					},
+					{
+						"name": "Min",
+						"type": "geom.Vector",
+						"text": "Min and Max are the corners of the mesh's bounding box, both zero for an empty mesh."
+					},
+					{
+						"name": "Max",
+						"type": "geom.Vector",
+						"text": "Min and Max are the corners of the mesh's bounding box, both zero for an empty mesh."
+					},
+					{
+						"name": "TopologyProblems",
+						"type": "int",
+						"text": "TopologyProblems counts what the shell's topology gets wrong (topo.Validate): an edge not shared by exactly two faces running it opposite ways, a loop that doesn't close; and, for a closed mesh, an Euler characteristic that isn't the mesh's."
+					},
+					{
+						"name": "Euler",
+						"type": "int",
+						"text": "Euler is the shell's Euler characteristic, V - E + F - H: two for each closed piece, less two for each hole through it."
+					},
+					{
+						"name": "Topology",
+						"type": "[]topo.Problem",
+						"text": "Topology lists the topology's problems, for showing."
+					},
+					{
+						"name": "Problem",
+						"type": "string",
+						"text": "Problem is what the group's regeneration found wrong with its input (Group.Problem), so that it added no solid, for a group that makes one from a sketch (sketch.Group.MakesSolidFromSketch), as an extrusion of a sketch that crosses itself; \"\" when there is nothing, and for other groups, which pass the solid so far through when they have a problem."
+					},
+					{
+						"name": "TopologyEdges",
+						"type": "srf.SEdgeList",
+						"text": "TopologyEdges are the edges of the topology's problems, to mark."
+					},
+					{
+						"name": "Problems",
+						"type": "srf.SEdgeList",
+						"text": "Problems holds the naked and self-intersecting edges, for drawing."
+					},
+					{
+						"name": "Touches",
+						"type": "bool",
+						"text": "Touches is set when every naked or self-intersecting edge lies where the group's part and the solid before it touch at a point or along a line, as a ball resting on a plate: their union is the true result and not a manifold there, not a Boolean that failed."
+					},
+					{
+						"name": "TouchAt",
+						"type": "geom.Vector"
+					}
+				],
 				"methods": {
 					"Empty": {
 						"decl": "func (r *Report) Empty() bool",
@@ -4340,15 +4549,15 @@
 					},
 					"Link": {
 						"decl": "func (m AssemblyMenu) Link(path, name string) (g Group, err error)",
-						"text": "Link brings in another sketch file, a STEP file, or a mesh file (STL\nor OBJ), as\na group, named after the file if name is empty. The new group becomes\nactive. A STEP file comes in as a reference mesh, its faces\ntessellated, with a point at each vertex and at the centre of each\ncircular edge for constraints to use; LinkInfo and LinkProblem say\nwhat was read."
+						"text": "Link brings in another sketch file, a STEP file, or a mesh file (STL\nor OBJ), as\na group, named after the file if name is empty. The new group becomes\nactive. A STEP file comes in as a reference mesh, its faces\ntessellated, with a point at each vertex and at the centre of each\ncircular edge for constraints to use; g.AsLink().Info() and Problem() say\nwhat was read."
 					},
 					"LinkStep": {
 						"decl": "func (m AssemblyMenu) LinkStep(path, name string, asSolid bool) (Group, error)",
-						"text": "LinkStep links a STEP file as Link does, as a solid when asSolid is\nset: its faces exact, so the solid takes part in Booleans, fillets\nand the rest as a solid made here does. A file that can't be read as\na solid comes in as a reference mesh, and LinkProblem says why."
+						"text": "LinkStep links a STEP file as Link does, as a solid when asSolid is\nset: its faces exact, so the solid takes part in Booleans, fillets\nand the rest as a solid made here does. A file that can't be read as\na solid comes in as a reference mesh, and g.AsLink().Problem() says why."
 					},
 					"MotionStudy": {
 						"decl": "func (m AssemblyMenu) MotionStudy(param string, from, to float64, steps int, frames string) (out []MotionFrame, err error)",
-						"text": "MotionStudy drives the parameter param from from to to in steps\nequal steps, steps+1 frames with both ends, regenerating the model at\neach (roadmap 16.3). With frames not \"\", each frame is saved to the\nfile frames names with the step's number in place of its verb, as\n\"frames/f%03d.png\": a picture of the view the window shows for .png,\nin the application, and otherwise what Export writes for the\nextension. The parameter gets its expression back after, whatever\nhappened. A step whose groups don't all solve is kept, marked so."
+						"text": "MotionStudy drives the parameter param from from to to in steps\nequal steps, steps+1 frames with both ends, regenerating the model at\neach. With frames not \"\", each frame is saved to the\nfile frames names with the step's number in place of its verb, as\n\"frames/f%03d.png\": a picture of the view the window shows for .png,\nin the application, and otherwise what Export writes for the\nextension. The parameter gets its expression back after, whatever\nhappened. A step whose groups don't all solve is kept, marked so."
 					},
 					"Screw": {
 						"decl": "func (m AssemblyMenu) Screw(a, b Entity, lead float64) (mate ScrewMate)",
@@ -4358,11 +4567,43 @@
 			},
 			"Bounds": {
 				"text": "Bounds are the corners of a box, in mm.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Lo",
+						"type": "[3]float64"
+					},
+					{
+						"name": "Hi",
+						"type": "[3]float64"
+					}
+				]
 			},
 			"BrokenReference": {
 				"text": "BrokenReference is something a regeneration deleted because what it\nused was gone: a group whose sketch was deleted, or a constraint on a\nline that was.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Group",
+						"type": "Group",
+						"text": "Group is the group it was in, or the deleted group itself; it\nmay be gone too."
+					},
+					{
+						"name": "Item",
+						"type": "string",
+						"text": "Item names what was deleted: \"c012-pt-pt-distance\" or\n\"g005-extrude\"."
+					},
+					{
+						"name": "Missing",
+						"type": "string",
+						"text": "Missing names what it used: \"r005-line-segment of\ng002-sketch-in-plane\", or a group."
+					},
+					{
+						"name": "Text",
+						"type": "string",
+						"text": "Text says it all in a line: \"deleted g005-extrude, which used\ng004-sketch-in-plane\"."
+					}
+				]
 			},
 			"ChamferGroup": {
 				"text": "ChamferGroup is the view of a chamfer: its distances.",
@@ -4420,7 +4661,47 @@
 			},
 			"Clearance": {
 				"text": "Clearance is the gap in mm between two parts of an assembly\n(Assembly.Clearances), 0 where they touch or overlap, and the nearest\npoint of each. The gap is found on the parts' meshes, then followed\nonto the surfaces of those that have shells (Refined).\nTolerance is how far the true gap may be from Gap: the two meshes'\nchord tolerances, or, refined, the gap less the meshes' gap less\nthose tolerances.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "A",
+						"type": "Group"
+					},
+					{
+						"name": "B",
+						"type": "Group"
+					},
+					{
+						"name": "Gap",
+						"type": "float64"
+					},
+					{
+						"name": "PA",
+						"type": "Vec"
+					},
+					{
+						"name": "PB",
+						"type": "Vec"
+					},
+					{
+						"name": "Tolerance",
+						"type": "float64"
+					},
+					{
+						"name": "Refined",
+						"type": "bool"
+					},
+					{
+						"name": "SolidA",
+						"type": "int",
+						"text": "SolidA and SolidB are which solid of each part the gap is to,\ncounted from 1, from Assembly.ClearancesWithin; 0 for the whole\npart."
+					},
+					{
+						"name": "SolidB",
+						"type": "int",
+						"text": "SolidA and SolidB are which solid of each part the gap is to,\ncounted from 1, from Assembly.ClearancesWithin; 0 for the whole\npart."
+					}
+				]
 			},
 			"ConstrainMenu": {
 				"text": "ConstrainMenu holds the calls of the Constrain menu: the dimensions\nand constraints that hold a sketch. A script reaches it as\ndoc.Constrain. As in the window, a constraint the sketch already has\nis not added twice (the call returns the old one), and a dimension\nthat would over-constrain the group is made a reference dimension\ninstead, silently, unless the group allows redundant constraints.",
@@ -4551,6 +4832,12 @@
 			"Constraint": {
 				"text": "Constraint is a constraint of the sketch: a dimension, such as a\ndistance or an angle, or a relation, such as two lines being\nparallel.",
 				"kind": "struct",
+				"fields": [
+					{
+						"name": "H",
+						"type": "core.HConstraint"
+					}
+				],
 				"methods": {
 					"Comment": {
 						"decl": "func (c Constraint) Comment() (text string)",
@@ -4614,7 +4901,7 @@
 					},
 					"SetOther": {
 						"decl": "func (c Constraint) SetOther(other bool)",
-						"text": "SetOther makes an angle measure the supplementary angle, the other\none of the two its lines make, or not; for an equal-angle\nconstraint it pairs the other angles; a diameter is shown as a\nradius, as the text window's \"show as radius\" does (ShowAsRadius).\nConstrain \u003e Other Supplementary Angle toggles it."
+						"text": "SetOther makes an angle measure the supplementary angle, the other\none of the two its lines make, or not; for an equal-angle\nconstraint it pairs the other angles; a diameter is shown as a\nradius, as the text window's \"show as radius\" does (SetShowAsRadius).\nConstrain \u003e Other Supplementary Angle toggles it."
 					},
 					"SetReference": {
 						"decl": "func (c Constraint) SetReference(reference bool)",
@@ -4652,11 +4939,61 @@
 			},
 			"ConstraintInfo": {
 				"text": "ConstraintInfo is a constraint of a group.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Name",
+						"type": "string",
+						"text": "Name is the constraint as Doc.Constraint takes it,\n\"c00a-pt-pt-distance\", and Type the part after its number."
+					},
+					{
+						"name": "Type",
+						"type": "string"
+					},
+					{
+						"name": "Value",
+						"type": "*float64",
+						"text": "Value is a dimension's, as the drawing labels it, as\nConstraint.Value has it."
+					},
+					{
+						"name": "Expr",
+						"type": "string",
+						"text": "Expr is the expression that drives the value."
+					},
+					{
+						"name": "Reference",
+						"type": "bool"
+					},
+					{
+						"name": "Comment",
+						"type": "string",
+						"text": "Comment is a comment's text."
+					},
+					{
+						"name": "On",
+						"type": "[]string",
+						"text": "On are the requests and groups whose entities it is on."
+					}
+				]
 			},
 			"Datum": {
 				"text": "Datum is a name and the entity it names, as Datums.List gives them.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Name",
+						"type": "string"
+					},
+					{
+						"name": "Entity",
+						"type": "Entity"
+					},
+					{
+						"name": "Kind",
+						"type": "string",
+						"text": "Kind is what a datum on a face or an edge of a solid stands for:\n\"plane\", \"axis\", \"line\", \"face-point\" (the plane touching a face)\nor \"edge-point\" (the line along an edge); \"\" for a datum of any\nother entity."
+					}
+				]
 			},
 			"DatumsMenu": {
 				"text": "DatumsMenu holds the calls of Edit \u003e Datums: names given to the\nentities a model offers others, a point, a workplane, a face or an\naxis, so that a part declares its interfaces and an assembly linking\nit finds them by name rather than by where they are. A script reaches\nit as doc.Datums.",
@@ -4702,11 +5039,126 @@
 			},
 			"Description": {
 				"text": "Description is the drawing, a group of it or the solid at a group,\nas Doc.Describe, Group.Describe and Group.DescribeSolid say it in\nwords. What a description doesn't hold is left empty, and out of its\nJSON.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Unit",
+						"type": "string",
+						"text": "Unit is the document's unit, as a .tlspr file names it: \"mm\",\n\"inch\", \"m\" or \"ft-in\"."
+					},
+					{
+						"name": "Unsaved",
+						"type": "bool",
+						"text": "Unsaved is set when the drawing has changes that aren't saved."
+					},
+					{
+						"name": "Params",
+						"type": "[]ParamInfo",
+						"text": "Params are the drawing's parameters, in order."
+					},
+					{
+						"name": "ExprErrors",
+						"type": "[]string",
+						"text": "ExprErrors are the expressions that could not be worked out."
+					},
+					{
+						"name": "Groups",
+						"type": "[]GroupInfo",
+						"text": "Groups are the groups in the order the model is built; for\nGroup.Describe, that group alone."
+					},
+					{
+						"name": "Group",
+						"type": "string",
+						"text": "Group is the group whose Requests and Constraints are listed: the\nactive one for Doc.Describe."
+					},
+					{
+						"name": "Requests",
+						"type": "[]RequestInfo",
+						"text": "Requests and Constraints are that group's."
+					},
+					{
+						"name": "Constraints",
+						"type": "[]ConstraintInfo"
+					},
+					{
+						"name": "Selected",
+						"type": "[]string",
+						"text": "Selected is what the user has selected, each as the text says it."
+					},
+					{
+						"name": "Hover",
+						"type": "string",
+						"text": "Hover is what is under the mouse, which \"this\" or \"here\" may mean."
+					},
+					{
+						"name": "Solid",
+						"type": "*SolidInfo",
+						"text": "Solid is the solid at the group DescribeSolid was asked of, and\nFaces and Edges its faces and edges, at most 40 and 60 of them."
+					},
+					{
+						"name": "Faces",
+						"type": "[]FaceInfo"
+					},
+					{
+						"name": "Edges",
+						"type": "[]EdgeInfo"
+					},
+					{
+						"name": "Script",
+						"type": "string",
+						"text": "Script is the drawing as the Go program that builds it again,\nwhen that was asked for instead (Doc.Script)."
+					}
+				]
 			},
 			"Doc": {
 				"text": "Doc is a sketch: the drawing a script reads and changes. Its own\nmethods find what the drawing holds; what changes it is in the\nfields, one for each menu of the window, so that a call is where\nthe command it does is: doc.Sketch.Line is Sketch \u003e Line Segment,\ndoc.Features.Extrude is Features \u003e Extrude.",
 				"kind": "struct",
+				"fields": [
+					{
+						"name": "File",
+						"type": "FileMenu"
+					},
+					{
+						"name": "Edit",
+						"type": "EditMenu"
+					},
+					{
+						"name": "Params",
+						"type": "ParamsMenu"
+					},
+					{
+						"name": "Datums",
+						"type": "DatumsMenu"
+					},
+					{
+						"name": "View",
+						"type": "ViewMenu"
+					},
+					{
+						"name": "Drawing",
+						"type": "DrawingMenu"
+					},
+					{
+						"name": "Sketch",
+						"type": "SketchMenu"
+					},
+					{
+						"name": "Constrain",
+						"type": "ConstrainMenu"
+					},
+					{
+						"name": "Features",
+						"type": "FeaturesMenu"
+					},
+					{
+						"name": "Assembly",
+						"type": "AssemblyMenu"
+					},
+					{
+						"name": "Analyze",
+						"type": "AnalyzeMenu"
+					}
+				],
 				"methods": {
 					"Activate": {
 						"decl": "func (d *Doc) Activate(g Group)",
@@ -4802,7 +5254,7 @@
 				]
 			},
 			"Drawing": {
-				"text": "Drawing is the model's sheet of views (roadmap step 18): its size,\nscale, projection, views and title block. See sketch.Drawing.",
+				"text": "Drawing is the model's sheet of views: its size, scale, projection,\nviews and title block. See sketch.Drawing.",
 				"kind": "sketch.Drawing"
 			},
 			"DrawingDetail": {
@@ -4814,7 +5266,7 @@
 				"kind": "sketch.DrawingDimension"
 			},
 			"DrawingMenu": {
-				"text": "DrawingMenu holds the calls of View \u003e Drawing Sheet and File \u003e Export\n\u003e Drawing: the sheet of views, sections and dimensions. A script\nreaches it as doc.Drawing.",
+				"text": "DrawingMenu holds the calls of View \u003e Drawing Sheet and File \u003e Export\n\u003e Drawing: the sheet of views, sections and dimensions. A script\nreaches it as doc.Drawing. To look at the sheet, call\ndoc.Drawing.Show(true), then doc.File.Render with the view \"window\" (over\nMCP, the render tool with view \"window\"); Show(false) brings the\nmodel back.",
 				"kind": "struct",
 				"methods": {
 					"AddDetail": {
@@ -4827,11 +5279,11 @@
 					},
 					"AddEdgeFaceDistance": {
 						"decl": "func (m DrawingMenu) AddEdgeFaceDistance(view string, offset float64, edge SolidEdge, face SolidFace)",
-						"text": "AddEdgeFaceDistance adds to the drawing's view the distance\nfrom a straight edge to a flat face it runs parallel to, as\nAddDrawingDimension does between edges."
+						"text": "AddEdgeFaceDistance adds to the drawing's view the distance\nfrom a straight edge to a flat face it runs parallel to, as\nAddDimension does between edges."
 					},
 					"AddFaceDimension": {
 						"decl": "func (m DrawingMenu) AddFaceDimension(view, kind string, offset float64, faces ...SolidFace)",
-						"text": "AddFaceDimension adds a dimension of faces to the drawing's\nview, as AddDrawingDimension does of edges: \"distance\" between two\nparallel flat faces, \"diameter\" or \"radius\" of a face's circular\nedge, the largest, as a cylinder's or a round end's. The dimension\nholds the faces' identities, so it measures them again as the model\nchanges."
+						"text": "AddFaceDimension adds a dimension of faces to the drawing's\nview, as AddDimension does of edges: \"distance\" between two\nparallel flat faces, \"diameter\" or \"radius\" of a face's circular\nedge, the largest, as a cylinder's or a round end's. The dimension\nholds the faces' identities, so it measures them again as the model\nchanges."
 					},
 					"AddSection": {
 						"decl": "func (m DrawingMenu) AddSection(view string, offset float64) (letter string)",
@@ -4843,11 +5295,11 @@
 					},
 					"Export": {
 						"decl": "func (m DrawingMenu) Export(path string) (err error)",
-						"text": "Export writes the model's drawing to a vector file, by its\nextension: .pdf, .svg, .dxf, .eps, .ps, .plt. It needs the\napplication, or telesapr-cli export-drawing."
+						"text": "Export writes the model's drawing sheet to a vector file, by its\nextension: .pdf, .svg, .dxf, .eps, .ps, .plt. It works wherever\nTeleSAPR runs the script: the window, telesapr-cli run and repl, and\nthe MCP server with or without a window. It is an error only for a\nbare sketch with no application around it (New); telesapr-cli\nexport-drawing writes the drawing of a file."
 					},
 					"Get": {
 						"decl": "func (m DrawingMenu) Get() (dr Drawing)",
-						"text": "Get is the model's drawing, or the default one, an A3 sheet\nfitted, if it has none yet. It is a copy: SetDrawing changes it."
+						"text": "Get is the model's drawing, or the default one, an A3 sheet\nfitted, if it has none yet. It is a copy: Set changes it."
 					},
 					"RemoveDetail": {
 						"decl": "func (m DrawingMenu) RemoveDetail(letter string)",
@@ -4882,6 +5334,17 @@
 			"DrivenMate": {
 				"text": "DrivenMate is what HingeDriven or ConcentricDriven made: the\nparameter that drives the joint, and the mate's constraints, the one\nthe parameter drives last.",
 				"kind": "struct",
+				"fields": [
+					{
+						"name": "Param",
+						"type": "string",
+						"text": "Param names the parameter that drives the joint: a hinge's angle,\nin degrees from where the part was, or a concentric mate's\ntravel along the axis, in the document's unit from where it was.\nIt starts at 0."
+					},
+					{
+						"name": "Constraints",
+						"type": "[]Constraint"
+					}
+				],
 				"methods": {
 					"SetRange": {
 						"decl": "func (dm DrivenMate) SetRange(lo, hi float64) []Constraint",
@@ -4895,7 +5358,46 @@
 			},
 			"EdgeInfo": {
 				"text": "EdgeInfo is an edge of a solid.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Name",
+						"type": "string",
+						"text": "Name is what Solid.Edge takes."
+					},
+					{
+						"name": "Shape",
+						"type": "string",
+						"text": "Shape is \"straight\", \"arc\", \"circle\" or \"curve\"; an arc and a\ncircle have their Centre and Radius."
+					},
+					{
+						"name": "Centre",
+						"type": "*[3]float64"
+					},
+					{
+						"name": "Radius",
+						"type": "float64"
+					},
+					{
+						"name": "Length",
+						"type": "float64",
+						"text": "Length is in mm, an arc's or a circle's as the circle has it."
+					},
+					{
+						"name": "Closed",
+						"type": "bool",
+						"text": "Closed is set for an edge that closes on itself, which has no\nEnds."
+					},
+					{
+						"name": "Ends",
+						"type": "*[2][3]float64"
+					},
+					{
+						"name": "Faces",
+						"type": "[]uint32",
+						"text": "Faces are the IDs of the faces it bounds."
+					}
+				]
 			},
 			"EditMenu": {
 				"text": "EditMenu holds the calls of the Edit menu: undo, regeneration, the\nclipboard, the selection, commands and preferences. A script reaches\nit as doc.Edit.",
@@ -4986,6 +5488,12 @@
 			"Entity": {
 				"text": "Entity is something on the drawing: a point, a line segment, a\ncircle, an arc, a curve, a workplane, a normal, a face. What is\ndrawn makes several: a line segment is an entity and so are its two\nends.",
 				"kind": "struct",
+				"fields": [
+					{
+						"name": "H",
+						"type": "core.HEntity"
+					}
+				],
 				"methods": {
 					"AddSplinePoint": {
 						"decl": "func (e Entity) AddSplinePoint(p Vec)",
@@ -5145,13 +5653,31 @@
 					},
 					"Visible": {
 						"decl": "func (e Entity) Visible() (visible bool)",
-						"text": "Visible reports whether the entity is drawn, as the window draws it:\nthe show flags of View \u003e Show and the group's own show and suppress\nmodes decide, as PointOfRayCasting and a drawing in the window see\nit."
+						"text": "Visible reports whether the entity is drawn, as the window draws it:\nthe show flags of View \u003e Show and the group's own show and suppress\nmodes decide, as picking in the window and a drawing there see\nit."
 					}
 				}
 			},
 			"ExportCanvas": {
 				"text": "ExportCanvas is a 2d file's page when its size is fixed, in mm, and\nwhere the geometry starts on it.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Width",
+						"type": "float64"
+					},
+					{
+						"name": "Height",
+						"type": "float64"
+					},
+					{
+						"name": "Dx",
+						"type": "float64"
+					},
+					{
+						"name": "Dy",
+						"type": "float64"
+					}
+				]
 			},
 			"ExportKind": {
 				"text": "ExportKind is what Export writes.",
@@ -5166,11 +5692,98 @@
 			},
 			"ExportMargin": {
 				"text": "ExportMargin is the space left around the exported geometry when the\npage size is automatic, in mm.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Left",
+						"type": "float64"
+					},
+					{
+						"name": "Right",
+						"type": "float64"
+					},
+					{
+						"name": "Bottom",
+						"type": "float64"
+					},
+					{
+						"name": "Top",
+						"type": "float64"
+					}
+				]
 			},
 			"ExportOptions": {
 				"text": "ExportOptions are the settings that change what an export writes:\nthe ones the configuration screen shows. Lengths are in mm. Get them\nwith File.ExportOptions, change the fields and give them back to\nFile.SetExportOptions; they stay set for the rest of the session and\napply to every export after, whether the script or the window asks.",
 				"kind": "struct",
+				"fields": [
+					{
+						"name": "Scale",
+						"type": "float64",
+						"text": "Scale is the export scale factor: the file is 1:Scale (1 is mm,\n25.4 is inch). It must be at least 0.001 in size."
+					},
+					{
+						"name": "CutterOffset",
+						"type": "float64",
+						"text": "CutterOffset is the cutter radius offset, 0 for none; it must not\nbe negative. With an offset curves are exported as lines."
+					},
+					{
+						"name": "ShadedTriangles",
+						"type": "bool",
+						"text": "ShadedTriangles exports the shaded solid as 2d triangles."
+					},
+					{
+						"name": "PwlCurves",
+						"type": "bool",
+						"text": "PwlCurves exports curves as piecewise linear."
+					},
+					{
+						"name": "FixColors",
+						"type": "bool",
+						"text": "FixColors fixes white exported lines."
+					},
+					{
+						"name": "Background",
+						"type": "bool",
+						"text": "Background exports the background colour."
+					},
+					{
+						"name": "CanvasAuto",
+						"type": "bool",
+						"text": "CanvasAuto sizes the page by Margin around the geometry; if it is\nfalse, Canvas is the page."
+					},
+					{
+						"name": "Margin",
+						"type": "ExportMargin"
+					},
+					{
+						"name": "Canvas",
+						"type": "ExportCanvas"
+					},
+					{
+						"name": "GCode",
+						"type": "GCodeOptions"
+					},
+					{
+						"name": "ChordTol",
+						"type": "float64",
+						"text": "ChordTol is the chord tolerance exported curves follow, in mm\nbefore scaling by Scale; 0 or more."
+					},
+					{
+						"name": "MaxSegments",
+						"type": "int",
+						"text": "MaxSegments is the most pieces a curve is cut into when exported,\n7 to 1000."
+					},
+					{
+						"name": "AngleTol",
+						"type": "float64",
+						"text": "AngleTol is the angular tolerance in degrees: the most a curve's\ntangent or a surface's normal may turn across one facet of an\nexported mesh; 0 for none, 0 to 180."
+					},
+					{
+						"name": "StrictMesh",
+						"type": "bool",
+						"text": "StrictMesh makes a mesh export refuse a mesh with naked edges or\nself-intersections, with an error wrapping sketch.ErrMeshNotSound,\ninstead of writing it with a warning."
+					}
+				],
 				"methods": {
 					"Quality": {
 						"decl": "func (o ExportOptions) Quality() MeshQuality",
@@ -5234,7 +5847,61 @@
 			},
 			"FaceInfo": {
 				"text": "FaceInfo is a face of a solid.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "ID",
+						"type": "uint32",
+						"text": "ID is what Solid.Face takes, and Name the face as the window\nnames it; Piece is which of Pieces sheets with this ID it is,\nwhen there are more than one."
+					},
+					{
+						"name": "Name",
+						"type": "string"
+					},
+					{
+						"name": "Piece",
+						"type": "int"
+					},
+					{
+						"name": "Pieces",
+						"type": "int"
+					},
+					{
+						"name": "Shape",
+						"type": "string",
+						"text": "Shape is \"flat\", \"cylinder\", \"cone\", \"sphere\" or \"curved\". A flat\nface has its outward Normal; a cylinder its Axis through Centre\nand its Radius; a cone its Axis from its apex, Centre, and\nHalfAngle in degrees; a sphere its Centre and Radius."
+					},
+					{
+						"name": "Normal",
+						"type": "*[3]float64"
+					},
+					{
+						"name": "Axis",
+						"type": "*[3]float64"
+					},
+					{
+						"name": "Centre",
+						"type": "*[3]float64"
+					},
+					{
+						"name": "Radius",
+						"type": "float64"
+					},
+					{
+						"name": "HalfAngle",
+						"type": "float64"
+					},
+					{
+						"name": "Point",
+						"type": "*[3]float64",
+						"text": "Point is a point of the face that Solid.FaceAt finds it by."
+					},
+					{
+						"name": "Edges",
+						"type": "int",
+						"text": "Edges is how many named edges bound it."
+					}
+				]
 			},
 			"FeaturesMenu": {
 				"text": "FeaturesMenu holds the calls of the Features menu: the groups that\nstart a sketch or make a solid. Each adds a group after the active\none and makes it active. A script reaches it as doc.Features.",
@@ -5270,7 +5937,7 @@
 					},
 					"Extrude": {
 						"decl": "func (m FeaturesMenu) Extrude(depth float64, name string) Group",
-						"text": "Extrude makes a solid of the active group's sketch by extruding it\nby depth along the normal of its workplane, or against it for a\nnegative depth. The depth is where the extrusion starts, as when it\nis dragged; constrain a point of it to keep it. The new group\nbecomes active."
+						"text": "Extrude makes a solid of the active group's sketch by extruding it\nby depth along the normal of its workplane, or against it for a\nnegative depth. The depth is not held: it is a degree of freedom of\nthe new group, which stays where it is put unless it is dragged, as\nin the window. g.AsExtrude().SetDepth(depth) holds it, as does a\ndimension on an edge along the extrusion. The new group becomes\nactive."
 					},
 					"Fillet": {
 						"decl": "func (m FeaturesMenu) Fillet(edges []Entity, radius float64, name string) Group",
@@ -5412,7 +6079,29 @@
 			},
 			"Field": {
 				"text": "Field is one value a Form asks for.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Name",
+						"type": "string",
+						"text": "Name is what the script and --set call the field."
+					},
+					{
+						"name": "Label",
+						"type": "string",
+						"text": "Label is what the dialog shows beside it; the Name if empty."
+					},
+					{
+						"name": "Value",
+						"type": "any",
+						"text": "Value is the field's value: as written in the script, or as\ngiven when it was run."
+					},
+					{
+						"name": "Choices",
+						"type": "[]string",
+						"text": "Choices, if any, are the strings the field may take."
+					}
+				]
 			},
 			"FileGuard": {
 				"text": "FileGuard is a Host that says which files a script may use: the\nengine of a script whose files are guarded (script.Files) gives its\ndocuments such a host, and every call of this package that reads or\nwrites a file the script names asks it first.",
@@ -5513,6 +6202,17 @@
 			"Form": {
 				"text": "Form declares the values a script asks for when it is run, as a\nvariable at the top level of the script:\n\n\tvar Form = api.Form{\n\t\tTitle: \"Gear blank\",\n\t\tFields: []api.Field{\n\t\t\t{Name: \"teeth\", Label: \"Teeth\", Value: 24},\n\t\t\t{Name: \"module\", Label: \"Module (mm)\", Value: 2.0},\n\t\t\t{Name: \"hub\", Label: \"Hub\", Value: true},\n\t\t\t{Name: \"material\", Value: \"steel\", Choices: []string{\"steel\", \"brass\"}},\n\t\t},\n\t}\n\n(Form{...} without the package's name in a script of statements.)\nScript \u003e Run File shows the fields in a dialog before the script\nruns, telesapr-cli run takes them as --set teeth=30, and an AI\nprogram's run_script as its form argument; what is given replaces\nthe field's Value in the script's text, so the script reads the\nvalues with Int, Float, Text and Bool whichever way it was run. A\nscript run with nothing given has the Values as written.\n\nEach Value is a literal: a whole number, a number with a point, a\nquoted string or true or false, which says what the field takes. A\nfield with Choices takes one of them, and its Value is the first\ntaken.",
 				"kind": "struct",
+				"fields": [
+					{
+						"name": "Title",
+						"type": "string",
+						"text": "Title is the dialog's title; the script's file name if empty."
+					},
+					{
+						"name": "Fields",
+						"type": "[]Field"
+					}
+				],
 				"methods": {
 					"Bool": {
 						"decl": "func (f Form) Bool(name string) bool",
@@ -5534,11 +6234,40 @@
 			},
 			"GCodeOptions": {
 				"text": "GCodeOptions is what an exported G-code file cuts with, in mm.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Depth",
+						"type": "float64"
+					},
+					{
+						"name": "SafeHeight",
+						"type": "float64"
+					},
+					{
+						"name": "Passes",
+						"type": "int",
+						"text": "Passes is how many passes the depth is cut in, 1 to 1000."
+					},
+					{
+						"name": "Feed",
+						"type": "float64"
+					},
+					{
+						"name": "PlungeFeed",
+						"type": "float64"
+					}
+				]
 			},
 			"Group": {
 				"text": "Group is a group of the sketch: a drawing in a workplane or in 3d,\nor a step that makes a solid from the group before it, as an\nextrusion does.",
 				"kind": "struct",
+				"fields": [
+					{
+						"name": "H",
+						"type": "core.HGroup"
+					}
+				],
 				"methods": {
 					"AllDimsReference": {
 						"decl": "func (g Group) AllDimsReference() (on bool)",
@@ -5944,7 +6673,61 @@
 			},
 			"GroupInfo": {
 				"text": "GroupInfo is how a group came out of the last regeneration.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Name",
+						"type": "string",
+						"text": "Name is the group as Doc.Group takes it, \"g003-plate\"."
+					},
+					{
+						"name": "Kind",
+						"type": "string",
+						"text": "Kind is what the group is, as Group.Kind says it."
+					},
+					{
+						"name": "Active",
+						"type": "bool"
+					},
+					{
+						"name": "Solved",
+						"type": "bool",
+						"text": "Solved is whether the group's sketch solved; DOF is the degrees\nof freedom it has left, -1 when they were not counted."
+					},
+					{
+						"name": "DOF",
+						"type": "int"
+					},
+					{
+						"name": "Problem",
+						"type": "string",
+						"text": "Problem is why the group made no solid, or that its Boolean\nfailed."
+					},
+					{
+						"name": "Redundant",
+						"type": "string",
+						"text": "Redundant says which constraints over-determine each other, when\nthe group failed to solve for that (Group.Redundancies)."
+					},
+					{
+						"name": "LeftOut",
+						"type": "string",
+						"text": "LeftOut is why the group is left out of the model; such a group\nis neither solved nor counted."
+					},
+					{
+						"name": "Old",
+						"type": "bool",
+						"text": "Old is set for a group after the active one that a change left as\nit was made before (Group.Old): how it solved, its degrees of\nfreedom (-1) and its volume are not given. A read of the group\nitself, as Group.Description, makes it."
+					},
+					{
+						"name": "Volume",
+						"type": "*float64",
+						"text": "Volume, in mm³, and Bounds are the model's up to the group, for a\ngroup that is not drawn in and has a solid."
+					},
+					{
+						"name": "Bounds",
+						"type": "*Bounds"
+					}
+				]
 			},
 			"Host": {
 				"text": "Host owns a sketch on behalf of a Doc: it is the program around the\nsketch, with or without windows. All of it but Run must be called\ninside Run.",
@@ -5952,7 +6735,29 @@
 			},
 			"Interference": {
 				"text": "Interference is two parts of an assembly that overlap, and the\nvolume they share in mm³. Approximate is set when the volume is\nthat of the parts' meshes, within the chord tolerance of their\nsurfaces, the Boolean of their shells having failed, or that of a\npart before a cut that failed on it. Failed is set when nothing is\nknown of the pair: the Boolean of their shells failed and so did that\nof their meshes; Volume is then zero.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "A",
+						"type": "Group"
+					},
+					{
+						"name": "B",
+						"type": "Group"
+					},
+					{
+						"name": "Volume",
+						"type": "float64"
+					},
+					{
+						"name": "Approximate",
+						"type": "bool"
+					},
+					{
+						"name": "Failed",
+						"type": "bool"
+					}
+				]
 			},
 			"LinkGroup": {
 				"text": "LinkGroup is the view of a linked part: the file it links and how.",
@@ -6146,11 +6951,39 @@
 			},
 			"MotionFrame": {
 				"text": "MotionFrame is a step of a motion study: the parameter's value, the\nfile its frame went to, if any, whether every group solved, and the\nvolume of the solid up to the active group.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Step",
+						"type": "int"
+					},
+					{
+						"name": "Value",
+						"type": "float64"
+					},
+					{
+						"name": "File",
+						"type": "string"
+					},
+					{
+						"name": "Solved",
+						"type": "bool"
+					},
+					{
+						"name": "Volume",
+						"type": "float64"
+					}
+				]
 			},
 			"Param": {
 				"text": "Param is one of the numbers the solver works out: a coordinate of a\npoint, a radius, the depth of an extrusion.",
 				"kind": "struct",
+				"fields": [
+					{
+						"name": "H",
+						"type": "core.HParam"
+					}
+				],
 				"methods": {
 					"Set": {
 						"decl": "func (p Param) Set(v float64)",
@@ -6172,11 +7005,51 @@
 			},
 			"ParamInfo": {
 				"text": "ParamInfo is a parameter of the drawing.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Name",
+						"type": "string"
+					},
+					{
+						"name": "Expr",
+						"type": "string"
+					},
+					{
+						"name": "Value",
+						"type": "float64"
+					},
+					{
+						"name": "Error",
+						"type": "string",
+						"text": "Error is why the expression could not be worked out."
+					}
+				]
 			},
 			"Parameter": {
 				"text": "Parameter is a named value of the document's parameter table, which\nexpressions on dimensions and group values can name, as Edit \u003e\nParameters shows it. It is not a Param, which is one of the solver's\nunknowns.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Name",
+						"type": "string"
+					},
+					{
+						"name": "Expr",
+						"type": "string",
+						"text": "Expr is the expression the value comes from; it may name other\nparameters. A parameter is a plain number, which counts in the\ndocument's unit where it drives a length."
+					},
+					{
+						"name": "Value",
+						"type": "float64",
+						"text": "Value is the expression's value at the last regeneration."
+					},
+					{
+						"name": "Err",
+						"type": "string",
+						"text": "Err says why Expr could not be evaluated, a cycle or an unknown\nname; Value then keeps the last good value."
+					}
+				]
 			},
 			"ParamsMenu": {
 				"text": "ParamsMenu holds the calls of Edit \u003e Parameters: the named numbers\nthat expressions use, and the configurations that give them other\nvalues. A script reaches it as doc.Params.",
@@ -6192,7 +7065,7 @@
 					},
 					"AddConfiguration": {
 						"decl": "func (m ParamsMenu) AddConfiguration(name string) (err error)",
-						"text": "AddConfiguration adds a configuration, a named set of the parameters'\nexpressions, from the table as it is, and makes it active: while it\nis, SetParameter changes it as well as the table."
+						"text": "AddConfiguration adds a configuration, a named set of the parameters'\nexpressions, from the table as it is, and makes it active: while it\nis, Set changes it as well as the table."
 					},
 					"Configurations": {
 						"decl": "func (m ParamsMenu) Configurations() (names []string)",
@@ -6228,7 +7101,7 @@
 					},
 					"Set": {
 						"decl": "func (m ParamsMenu) Set(name, expr string) (err error)",
-						"text": "Set gives the parameter name the expression expr, and adds\nit to the table if there is none:\nSetParameter(\"wall\", \"2.5\"), then SetParameter(\"bore\", \"wall*4\").\nAn expression that names an unknown parameter, makes a cycle or has\nno value is refused, and the table is left as it was. What uses the\nparameter regenerates."
+						"text": "Set gives the parameter name the expression expr, and adds\nit to the table if there is none:\ndoc.Params.Set(\"wall\", \"2.5\"), then doc.Params.Set(\"bore\", \"wall*4\").\nAn expression that names an unknown parameter, makes a cycle or has\nno value is refused, and the table is left as it was. What uses the\nparameter regenerates."
 					},
 					"Users": {
 						"decl": "func (m ParamsMenu) Users(name string) (users []string)",
@@ -6238,7 +7111,52 @@
 			},
 			"PartFreedom": {
 				"text": "PartFreedom is how a part of a mechanism can move, as\nLinkGroup.Freedom counts it from its mates.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Turns",
+						"type": "int",
+						"text": "Turns is the ways the part can turn, 0 to 3, and Slides the ways\nit can slide without turning; both 0 for a part held fixed."
+					},
+					{
+						"name": "Slides",
+						"type": "int",
+						"text": "Turns is the ways the part can turn, 0 to 3, and Slides the ways\nit can slide without turning; both 0 for a part held fixed."
+					},
+					{
+						"name": "Invariant",
+						"type": "string",
+						"text": "Invariant is what stays put while the part moves: \"point\" (it\nturns about Point), \"axis\" (it turns about the axis through Point\nalong Dir, and may slide or screw along it), \"plane\" (it moves in\nthe plane through Point normal to Dir), \"direction\" (it slides\nalong Dir) or \"none\"."
+					},
+					{
+						"name": "Point",
+						"type": "Vec"
+					},
+					{
+						"name": "Dir",
+						"type": "Vec"
+					},
+					{
+						"name": "Lead",
+						"type": "float64",
+						"text": "Lead is how far a part that screws along its axis goes along Dir\nin a turn, in mm; 0 for a plain turn."
+					},
+					{
+						"name": "Moving",
+						"type": "bool",
+						"text": "Moving is that the part turns about an axis that moves as the\nmechanism does, as a four-bar's coupler does: no invariant."
+					},
+					{
+						"name": "DrivenBy",
+						"type": "[]string",
+						"text": "DrivenBy are the parameters that drive the part, as a driven\nhinge's angle: the counts are the mates' freedom with the drives\nand the bounds let go."
+					},
+					{
+						"name": "Text",
+						"type": "string",
+						"text": "Text says it in words, as the link group's screen does: \"turns\nabout the axis through (0, 0, 0) along (0, 0, 1)\", in mm."
+					}
+				]
 			},
 			"RepeatGroup": {
 				"text": "RepeatGroup is the view of a step and repeat, translating or\nrotating, or of a pattern along a path: how many copies it makes.",
@@ -6269,6 +7187,12 @@
 			"Request": {
 				"text": "Request is something that was drawn: a line segment, a circle, a\ndatum point. The property browser lists the requests of a group.",
 				"kind": "struct",
+				"fields": [
+					{
+						"name": "H",
+						"type": "core.HRequest"
+					}
+				],
 				"methods": {
 					"Construction": {
 						"decl": "func (r Request) Construction() (construction bool)",
@@ -6314,7 +7238,38 @@
 			},
 			"RequestInfo": {
 				"text": "RequestInfo is a request, what was drawn, and where it is.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Name",
+						"type": "string",
+						"text": "Name is the request as Doc.Request takes it, \"r004-line-segment\"."
+					},
+					{
+						"name": "Kind",
+						"type": "string",
+						"text": "Kind is what its entity is, as Entity.Kind says it: \"point\",\n\"line\", \"circle\", \"arc\", ...; \"\" when it was not generated."
+					},
+					{
+						"name": "Points",
+						"type": "[][3]float64",
+						"text": "Points are where it is: a point's, a line's two ends, a circle's\ncentre, an arc's centre, start and end; another's points in order."
+					},
+					{
+						"name": "Radius",
+						"type": "float64",
+						"text": "Radius is a circle's or an arc's."
+					},
+					{
+						"name": "Construction",
+						"type": "bool"
+					},
+					{
+						"name": "Text",
+						"type": "string",
+						"text": "Text is a text request's string."
+					}
+				]
 			},
 			"RevolveGroup": {
 				"text": "RevolveGroup is the view of a revolve or a helix: the angle it turns\nby.",
@@ -6340,11 +7295,82 @@
 			},
 			"ScrewMate": {
 				"text": "ScrewMate is what Screw made: the parameters that drive it and its\nconstraints.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Turn",
+						"type": "string",
+						"text": "Turn names the parameter that turns the part, in degrees from\nwhere it was; it starts at 0."
+					},
+					{
+						"name": "Lead",
+						"type": "string",
+						"text": "Lead names the parameter that is how far a whole turn moves the\npart along the axis, in the document's unit, negative for a\nleft-hand screw."
+					},
+					{
+						"name": "Constraints",
+						"type": "[]Constraint"
+					}
+				]
 			},
 			"Section": {
 				"text": "Section is the state of the section view, as its screen shows it,\nand the cut of the active group's solid.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "On",
+						"type": "bool",
+						"text": "On is whether the section view is on; the rest is zero when it\nis off."
+					},
+					{
+						"name": "Plane",
+						"type": "Entity",
+						"text": "Plane is the workplane or face the cut is parallel to, and\nPlaneName is how the section screen names it."
+					},
+					{
+						"name": "PlaneName",
+						"type": "string",
+						"text": "PlaneName names the plane for the user: a workplane by its\nrequest or group, a face by the group it is of."
+					},
+					{
+						"name": "Offset",
+						"type": "string",
+						"text": "Offset is the cut's distance from Plane along its normal, as\ntyped, in the document's unit."
+					},
+					{
+						"name": "Flip",
+						"type": "bool",
+						"text": "Flip is set when the side the normal points to is kept."
+					},
+					{
+						"name": "Err",
+						"type": "string",
+						"text": "Err says why the view can't cut, as when Plane was deleted."
+					},
+					{
+						"name": "Normal",
+						"type": "Vec",
+						"text": "Normal points to the side cut away, and Point is on the cut."
+					},
+					{
+						"name": "Point",
+						"type": "Vec",
+						"text": "Normal points to the side cut away, and Point is on the cut."
+					},
+					{
+						"name": "Area",
+						"type": "float64",
+						"text": "Area is the area in mm² of the cap, the cut through the active\ngroup's solid; Loops is how many loops bound it, and Closed is\nfalse when one of them is open because the solid is not closed."
+					},
+					{
+						"name": "Loops",
+						"type": "int"
+					},
+					{
+						"name": "Closed",
+						"type": "bool"
+					}
+				]
 			},
 			"ShellGroup": {
 				"text": "ShellGroup is the view of a shell: the thickness of its wall.",
@@ -6459,6 +7485,10 @@
 					"Run": {
 						"decl": "func (h *SketchHost) Run(fn func())",
 						"text": "Run runs fn at once: a bare sketch has no goroutine of its own."
+					},
+					"RunChanges": {
+						"decl": "func (h *SketchHost) RunChanges() uint64",
+						"text": "RunChanges is how far the sketch's revision (sketch.Revision) moved\ninside Run calls: the changes scripts made, told from those made\nbetween them by whoever else holds the sketch. It is read inside Run."
 					},
 					"RunCommand": {
 						"decl": "func (h *SketchHost) RunCommand(label string) error",
@@ -6609,7 +7639,7 @@
 				"methods": {
 					"Edge": {
 						"decl": "func (s Solid) Edge(name string) (e SolidEdge)",
-						"text": "Edge is the edge a name, as SolidEdge.Name writes it, names; it fails\nwhen the name doesn't resolve, saying why. A name may leave out the\ncount, \"edge A B N\" for \"edge A B N of M\"; the edge has it."
+						"text": "Edge is the edge a name, as SolidEdge.Name writes it, names; it fails\nwhen the name doesn't resolve, saying why and naming the solid's\nedges between the faces the name gives, or of either face. A name may\nleave out the count, \"edge A B N\" for \"edge A B N of M\"; the edge has\nit. EdgeAt finds an edge by a point on it, with no name."
 					},
 					"EdgeAt": {
 						"decl": "func (s Solid) EdgeAt(p Vec) (e SolidEdge)",
@@ -6633,7 +7663,7 @@
 					},
 					"Face": {
 						"decl": "func (s Solid) Face(id uint32) (f SolidFace)",
-						"text": "Face is the face with identity id, as SolidFace.ID gives it: the\nface of which a patch has that identity, whichever patch it is, so a\nface of several patches can be named by any of theirs (an extruded\ncircle's side by any quarter's). It fails for an identity no patch\nof the solid has (roadmap 14.1)."
+						"text": "Face is the face with identity id, as SolidFace.ID gives it: the\nface of which a patch has that identity, whichever patch it is, so a\nface of several patches can be named by any of theirs (an extruded\ncircle's side by any quarter's). It fails for an identity no patch\nof the solid has."
 					},
 					"FaceAt": {
 						"decl": "func (s Solid) FaceAt(p Vec) (f SolidFace)",
@@ -6727,7 +7757,49 @@
 			},
 			"SolidInfo": {
 				"text": "SolidInfo is the solid DescribeSolid lists the faces and edges of.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Group",
+						"type": "string",
+						"text": "Group is the group asked of, and MadeBy the group that made the\nsolid there, when that is another."
+					},
+					{
+						"name": "MadeBy",
+						"type": "string"
+					},
+					{
+						"name": "Note",
+						"type": "string",
+						"text": "Note says why no faces and edges are listed: there is no solid\nyet, it is a triangle mesh, or its faces could not be found."
+					},
+					{
+						"name": "Faces",
+						"type": "int",
+						"text": "Faces, Edges and Vertices are how many it has, all of them."
+					},
+					{
+						"name": "Edges",
+						"type": "int"
+					},
+					{
+						"name": "Vertices",
+						"type": "int"
+					},
+					{
+						"name": "Sound",
+						"type": "bool",
+						"text": "Sound is whether its topology is valid; Problems are the first\nfive of ProblemCount problems if not."
+					},
+					{
+						"name": "ProblemCount",
+						"type": "int"
+					},
+					{
+						"name": "Problems",
+						"type": "[]string"
+					}
+				]
 			},
 			"SolidVertex": {
 				"text": "SolidVertex is a vertex of a solid, by position.",
@@ -6746,6 +7818,12 @@
 			"Style": {
 				"text": "Style is a line style: how a request or a dimension is drawn, and\nwhether it goes in an exported file. A script reaches the drawing's\nstyles as doc.Styles, and makes a new one as doc.NewStyle, which is\nwhat Edit \u003e Line Styles does on the group screen.\n\nThe styles the program has of its own — the active group's, a solid\nedge's, a datum's — may be changed too, but not deleted, and a\ncustom style may not be renamed away from what the screen gives it\nwithout the window's edit control: Style.SetName does both, and says\nso.",
 				"kind": "struct",
+				"fields": [
+					{
+						"name": "H",
+						"type": "core.HStyle"
+					}
+				],
 				"methods": {
 					"Color": {
 						"decl": "func (s Style) Color() (red, green, blue int)",
@@ -6992,7 +8070,99 @@
 			},
 			"ThreadOptions": {
 				"text": "ThreadOptions are what Features \u003e Screw Thread asks for. The zero\nvalue is what the screen starts with: the standard thread nearest\nthe circle's diameter, external, one and a half diameters long,\nending at a shoulder.",
-				"kind": "struct"
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Designation",
+						"type": "string",
+						"text": "Designation is the thread, as \"M8\", \"M8x1 LH\", \"1/4-20 UNC\",\n\"Tr20x4\", \"1/4 BSW\", \"G1/2\", \"1/2-10 ACME\", or the buttress\nthreads \"S20x4\" (DIN 513) and \"1-12 BUTT\" (ASME B1.9); \"\" takes the\nstandard one nearest the circle. ThreadSizes and ThreadPitches\nlist the standard ones."
+					},
+					{
+						"name": "LeftHand",
+						"type": "bool",
+						"text": "LeftHand makes the thread left-hand, as -LH at the end of the\ndesignation does; either is enough. Options gives the\ndesignation without the -LH and says the hand here."
+					},
+					{
+						"name": "Internal",
+						"type": "bool",
+						"text": "Internal makes a nut's thread: the circle is bored out and the\nridge put inside. Otherwise the part is turned down and the\nridge put around it."
+					},
+					{
+						"name": "Length",
+						"type": "float64",
+						"text": "Length is how far the thread reaches from the circle's plane, in\nmm; 0 is one and a half diameters, rounded up. It is no more\nthan the part reaches along it."
+					},
+					{
+						"name": "Through",
+						"type": "bool",
+						"text": "Through carries the turning or boring past Length, for a part\nthat ends there; otherwise it stops at a shoulder."
+					},
+					{
+						"name": "Reverse",
+						"type": "bool",
+						"text": "Reverse runs the thread against the circle's normal: into the\npart from a circle at its top, which points out of it."
+					},
+					{
+						"name": "Clearance",
+						"type": "float64",
+						"text": "Clearance moves the thread away from its mate, in mm, when it\nhas no Class. Options gives the clearance the class sets."
+					},
+					{
+						"name": "Class",
+						"type": "string",
+						"text": "Class is the tolerance class, which sets the clearance to the\nmiddle of its zone: \"6g\", \"6h\", \"6f\", \"6e\", \"4h\" or \"8g\" for an\nISO metric screw, \"6H\", \"4H\", \"5H\", \"7H\" or \"6G\" for its nut;\n\"1A\", \"2A\", \"3A\" and \"1B\", \"2B\", \"3B\" for unified threads; \"7e\",\n\"8e\" and \"7H\", \"8H\" for trapezoidal ones; \"2G\" to \"5G\" for ACME\nones, screw and nut; \"2A\", \"3A\" and \"2B\", \"3B\" for ASME B1.9\nbuttress ones; \"7e\", \"8e\", \"8c\", \"9c\" and \"7H\", \"8H\", \"9H\" for DIN\n513 buttress ones. \"\" is Clearance as given. ThreadClasses lists a thread's. A Cosmetic thread keeps\nits class as a record, its part left at the nominal size."
+					},
+					{
+						"name": "LengthExpr",
+						"type": "string",
+						"text": "LengthExpr is an expression of the parameters for the length, in\nthe document's unit, as \"len\" or \"2*d\"; when it is not \"\", it\ndrives the length in place of Length."
+					},
+					{
+						"name": "Crest",
+						"type": "string",
+						"text": "Crest is the shape of the ridge's top: \"standard\" (or \"\"), the\nflat crest the standards give; \"truncated\", cut lower by a\nquarter of the ridge's height; or \"rounded\", an arc tangent to\nboth flanks, which prints better (on a buttress thread its top\nlies off the crest's middle, towards the steeper flank)."
+					},
+					{
+						"name": "RunOut",
+						"type": "float64",
+						"text": "RunOut is how far, in mm, the thread fades out before its\nshoulder: the turned or bored surface tapers from the root to\nabout the crest, as a die leaves a thread. 0 is none; a Through\nthread has none."
+					},
+					{
+						"name": "LevelStarts",
+						"type": "bool",
+						"text": "LevelStarts begins every start of a thread of several at the\ncircle's plane, each a ridge sketch and a helix of its own;\notherwise one helix sweeps the ridges stacked a pitch apart."
+					},
+					{
+						"name": "LoadFlankBack",
+						"type": "bool",
+						"text": "LoadFlankBack turns a buttress thread's ridge about. As drawn, a\nscrew's 45° clearance flank leads, facing where the thread starts,\nand a nut's 7° load flank faces its mouth; turned, the other way.\nA screw and a nut mate when their load flanks face each other:\nAssembly.Screw refuses two that face the same way. An ASME B1.9\ndesignation sets it, by the flank that leads: \"BUTT\" (or\n\"PULL-BUTT\") pulls, the clearance flank leading, and \"PUSH-BUTT\"\npushes, the load flank leading, on a screw and a nut alike; read\nback, the designation says which. A DIN 513 designation (\"S20x4\")\nsays nothing of it, and this field turns the ridge. Other threads'\nridges are symmetric and stay as they are."
+					},
+					{
+						"name": "RoundRoot",
+						"type": "bool",
+						"text": "RoundRoot rounds the roots of an ASME B1.9 buttress thread (BUTT)\nas the standard does, by an arc of 0.07141 pitches tangent to both\nflanks; otherwise they are flat. The arcs are small: where the\nchord tolerance (Edit.SetChordTolerance) is coarser than they\ntake, the thread and the part it is made in are made at a finer\none, the groups after it at the model's. Other threads' roots\nstay flat."
+					},
+					{
+						"name": "Phase",
+						"type": "float64",
+						"text": "Phase turns the thread about its axis, in degrees: its ridges\nmove along it, away from the circle, by that part of the lead,\nand are a pitch shorter, for the room; with a run-out, their end\nis kept off the circle where the root turns into the run-out's\ncone where the phase has moved it. A Cosmetic thread, with no\nridges, keeps it for when it is modelled. Assembly.Screw fits a screw and a nut in an\nassembly without it."
+					},
+					{
+						"name": "FullLength",
+						"type": "bool",
+						"text": "FullLength, for a thread made on a face (ThreadOnFace,\nThreadOnEdge), runs it the face's whole length, through where the\nface reaches the part's end, in place of Length; the face is\nmeasured again at every regeneration, and the thread's length\nfollows it. A face come to reach the part's end or to stop short\nof it, or too short for the thread, is reported on the thread's\ngroup (Group.Problem) and taken up when the thread is edited."
+					},
+					{
+						"name": "Cosmetic",
+						"type": "bool",
+						"text": "Cosmetic records the thread on the part without modelling its\nturns, as drawings show a thread anyway: a screw's rod is left at\nits major diameter (turned down to it when thicker) and a nut's\npart bored to its minor diameter, unless a hole that wide is there\nalready. Its one group, a sketch, keeps it (two where the part is\ncut, the sketch and a lathe); drawings show it by the convention.\nCrest and LevelStarts shape only a modelled thread."
+					},
+					{
+						"name": "Chamfer",
+						"type": "bool",
+						"text": "Chamfer cuts the thread's free end, the circle's, by a cone at\n45° to the axis from a little inside the minor diameter out past\nthe crest: a screw's end chamfered, a nut's mouth countersunk, so\nthat the thread starts clean. A Through thread is chamfered at\nboth ends. A Cosmetic thread's part is cut so, and a \"rounded\"\nCrest as any other."
+					}
+				]
 			},
 			"Vec": {
 				"text": "Vec is a point or a direction in space, in mm.",
@@ -7061,7 +8231,7 @@
 		"funcs": {
 			"Appearances": {
 				"decl": "func Appearances() []string",
-				"text": "Appearances are the appearances a solid or a face can have, how it\ntakes light when the window shades (roadmap 19.2): matte, plastic,\nglossy and metal."
+				"text": "Appearances are the appearances a solid or a face can have, how it\ntakes light when the window shades: matte, plastic,\nglossy and metal."
 			},
 			"Commands": {
 				"decl": "func Commands() []string",
@@ -7279,7 +8449,7 @@
 		"text": "Package sketch is the model: the groups of a part's history, with their requests, constraints and solids, and what regenerates them.",
 		"types": {
 			"AssemblyPart": {
-				"text": "AssemblyPart is a part of an assembly as a STEP file gives it (roadmap 16.8): a linked file's solid in the file's own coordinates, placed by the link's rotation and offset, so that a file linked twice is one product placed twice; or another group's solid, where it is.",
+				"text": "AssemblyPart is a part of an assembly as a STEP file gives it: a linked file's solid in the file's own coordinates, placed by the link's rotation and offset, so that a file linked twice is one product placed twice; or another group's solid, where it is.",
 				"kind": "struct"
 			},
 			"BOMItem": {
@@ -7435,15 +8605,15 @@
 				]
 			},
 			"DrawingDetail": {
-				"text": "DrawingDetail is a detail view (roadmap 18.3): the part of View within R mm of the point CX, CY (mm right and up from the view's middle, on the model), enlarged Scale times the sheet's scale; at X, Y on the sheet, or placed when both are 0.",
+				"text": "DrawingDetail is a detail view: the part of View within R mm of the point CX, CY (mm right and up from the view's middle, on the model), enlarged Scale times the sheet's scale; at X, Y on the sheet, or placed when both are 0.",
 				"kind": "struct"
 			},
 			"DrawingDimension": {
-				"text": "DrawingDimension is a dimension on a view of the drawing (roadmap 18.4, H2): the length of an edge, the distance between two, or the diameter or radius of a circular one, the edges held by their names (step 9), so that it measures them again as the model changes.",
+				"text": "DrawingDimension is a dimension on a view of the drawing: the length of an edge, the distance between two, or the diameter or radius of a circular one, the edges held by their names so that it measures them again as the model changes.",
 				"kind": "struct"
 			},
 			"DrawingSection": {
-				"text": "DrawingSection is a section view (roadmap 18.3): the solid cut by the plane square to View's direction through the solid's middle, moved Offset mm toward the viewer, the half beyond seen, the cut face hatched; at X, Y on the sheet, or placed when both are 0.",
+				"text": "DrawingSection is a section view: the solid cut by the plane square to View's direction through the solid's middle, moved Offset mm toward the viewer, the half beyond seen, the cut face hatched; at X, Y on the sheet, or placed when both are 0.",
 				"kind": "struct"
 			},
 			"DrawingView": {
@@ -7668,7 +8838,7 @@
 					},
 					"LoftEnds": {
 						"decl": "func (g *Group) LoftEnds() topo.LoftEnds",
-						"text": "LoftEnds is how the loft leaves its first profile and reaches its last: ValB and ValC, square to each profile by that much, 0 free (roadmap 28.3)."
+						"text": "LoftEnds is how the loft leaves its first profile and reaches its last: ValB and ValC, square to each profile by that much, 0 free."
 					},
 					"LoftProfileTangency": {
 						"decl": "func (g *Group) LoftProfileTangency(profile core.HGroup) float64",
@@ -8044,6 +9214,10 @@
 					"RequestLineSegment",
 					"RequestTTFText"
 				]
+			},
+			"Revision": {
+				"text": "Revision tells one state of a sketch's content from another, for a program that reads the sketch now and then and wants to know whether anyone changed it in between (an AI model through the MCP server).",
+				"kind": "struct"
 			},
 			"Runtime": {
 				"text": "Runtime provides quick handle-based lookup for a Sketch.",
@@ -8525,6 +9699,10 @@
 						"decl": "func (sk *Sketch) FixConstraintsForRequestBeingDeleted(hr core.HRequest)",
 						"text": "FixConstraintsForRequestBeingDeleted keeps the points made coincident through a point of request hr, which is being deleted, coincident."
 					},
+					"Follow": {
+						"decl": "func (sk *Sketch) Follow(old *Sketch)",
+						"text": "Follow makes sk the successor of old, which it replaces as the drawing open: its revision is old's, as of another drawing."
+					},
 					"FontFiles": {
 						"decl": "func (sk *Sketch) FontFiles() []string",
 						"text": "FontFiles is the basenames of the font files a text can be set in, as the text window lists them."
@@ -8802,7 +9980,7 @@
 					},
 					"NewSweepAlong": {
 						"decl": "func (sk *Sketch) NewSweepAlong(path []core.HEntity, solidEdges []topo.Name, name string) (Group, error)",
-						"text": "NewSweepAlong is NewSweep along path and edges of the solid so far, by name, together one chain (roadmap 28.4): straight and circular edges, and curved ones as cubics are."
+						"text": "NewSweepAlong is NewSweep along path and edges of the solid so far, by name, together one chain: straight and circular edges, and curved ones as cubics are."
 					},
 					"NewWrap": {
 						"decl": "func (sk *Sketch) NewWrap(face srf.FaceID, height float64, engrave bool, name string) (Group, error)",
@@ -8811,6 +9989,10 @@
 					"NormalOf": {
 						"decl": "func (sk *Sketch) NormalOf(he core.HEntity) core.HEntity",
 						"text": "NormalOf is the normal entity that he stands for: he itself when it is a normal, the normal of a workplane, a circle or an arc otherwise."
+					},
+					"NoteChange": {
+						"decl": "func (sk *Sketch) NoteChange()",
+						"text": "NoteChange moves the revision for a change that remembers no undo state of its own: a drag after the state remembered as it began, a script's change after the first of its step."
 					},
 					"OrientNormal": {
 						"decl": "func (sk *Sketch) OrientNormal(he core.HEntity, q geom.Quaternion) error",
@@ -8966,6 +10148,10 @@
 						"decl": "func (sk *Sketch) ResolveDatum(path string) (core.HEntity, error)",
 						"text": "ResolveDatum is the entity a datum name answers to: \"name\" for this sketch's own, \"group.name\" for a datum of the model the link group called group links, as the link placed it."
 					},
+					"Revision": {
+						"decl": "func (sk *Sketch) Revision() Revision",
+						"text": "Revision is the sketch's revision."
+					},
 					"RunningMeshGroupFor": {
 						"decl": "func (s *Sketch) RunningMeshGroupFor(h core.HGroup) *Group"
 					},
@@ -8999,7 +10185,7 @@
 					},
 					"SetChamferEdges": {
 						"decl": "func (sk *Sketch) SetChamferEdges(hg core.HGroup, edges []core.HEntity, solidEdges []topo.Name) error",
-						"text": "SetChamferEdges makes the chamfer hg cut edges and solidEdges, picked on the solid before it, instead of the edges it cuts now: a chamfer's edges can be changed after it is made (ROADMAP F7)."
+						"text": "SetChamferEdges makes the chamfer hg cut edges and solidEdges, picked on the solid before it, instead of the edges it cuts now: a chamfer's edges can be changed after it is made."
 					},
 					"SetChamferSecondDistance": {
 						"decl": "func (sk *Sketch) SetChamferSecondDistance(h core.HGroup, mm float64) error",
@@ -9055,7 +10241,7 @@
 					},
 					"SetFilletEdges": {
 						"decl": "func (sk *Sketch) SetFilletEdges(hg core.HGroup, edges []core.HEntity, solidEdges []topo.Name) error",
-						"text": "SetFilletEdges makes the fillet hg round edges and solidEdges, picked on the solid before it, instead of the edges it rounds now: a fillet's edges can be changed after it is made (ROADMAP F7)."
+						"text": "SetFilletEdges makes the fillet hg round edges and solidEdges, picked on the solid before it, instead of the edges it rounds now: a fillet's edges can be changed after it is made."
 					},
 					"SetGroupAppearance": {
 						"decl": "func (sk *Sketch) SetGroupAppearance(hg core.HGroup, name string) error",
@@ -9143,11 +10329,11 @@
 					},
 					"SetLoftProfiles": {
 						"decl": "func (sk *Sketch) SetLoftProfiles(hg core.HGroup, profiles []core.HGroup) error",
-						"text": "SetLoftProfiles makes the loft hg go through profiles, two or more sketches in order, instead of the profiles it goes through now: a loft's profiles can be changed after it is made (ROADMAP F7)."
+						"text": "SetLoftProfiles makes the loft hg go through profiles, two or more sketches in order, instead of the profiles it goes through now: a loft's profiles can be changed after it is made."
 					},
 					"SetMirrorPlane": {
 						"decl": "func (sk *Sketch) SetMirrorPlane(hg core.HGroup, plane core.HEntity) error",
-						"text": "SetMirrorPlane makes the mirror hg reflect in plane, a workplane or a planar face made before it, instead of the plane it reflects in now: a mirror's plane can be changed after it is made (ROADMAP F7)."
+						"text": "SetMirrorPlane makes the mirror hg reflect in plane, a workplane or a planar face made before it, instead of the plane it reflects in now: a mirror's plane can be changed after it is made."
 					},
 					"SetParameterExpr": {
 						"decl": "func (sk *Sketch) SetParameterExpr(name, expr string) error",
@@ -9155,7 +10341,7 @@
 					},
 					"SetPatternPath": {
 						"decl": "func (sk *Sketch) SetPatternPath(hg core.HGroup, path []core.HEntity) error",
-						"text": "SetPatternPath makes the pattern hg repeat its solid along path, line segments and arcs, instead of the path it follows now: a pattern's path can be changed after it is made (ROADMAP F7)."
+						"text": "SetPatternPath makes the pattern hg repeat its solid along path, line segments and arcs, instead of the path it follows now: a pattern's path can be changed after it is made."
 					},
 					"SetSection": {
 						"decl": "func (sk *Sketch) SetSection(plane core.HEntity, offset string, flip bool) error",
@@ -9163,7 +10349,7 @@
 					},
 					"SetShellFaces": {
 						"decl": "func (sk *Sketch) SetShellFaces(hg core.HGroup, faces []srf.FaceID) error",
-						"text": "SetShellFaces makes the shell hg open where faces, picked on the solid before it, are taken away, instead of the faces it takes away now: a shell's faces can be changed after it is made (ROADMAP F7)."
+						"text": "SetShellFaces makes the shell hg open where faces, picked on the solid before it, are taken away, instead of the faces it takes away now: a shell's faces can be changed after it is made."
 					},
 					"SetSplinePoints": {
 						"decl": "func (sk *Sketch) SetSplinePoints(hr core.HRequest, pts []geom.Vector) error",
@@ -9191,7 +10377,7 @@
 					},
 					"SetSweepPath": {
 						"decl": "func (sk *Sketch) SetSweepPath(hg core.HGroup, path []core.HEntity, solidEdges []topo.Name) error",
-						"text": "SetSweepPath makes the sweep hg follow path, line segments and arcs, and solidEdges, edges of the solid before it by name, instead of the path it follows now: a sweep's path can be changed after it is made (ROADMAP F7)."
+						"text": "SetSweepPath makes the sweep hg follow path, line segments and arcs, and solidEdges, edges of the solid before it by name, instead of the path it follows now: a sweep's path can be changed after it is made The path is tried as NewSweepAlong tries it, so one the profile can't be swept along is an error here and nothing changes."
 					},
 					"SetSweepUp": {
 						"decl": "func (sk *Sketch) SetSweepUp(hg core.HGroup, up geom.Vector) error",
@@ -9466,7 +10652,7 @@
 				"kind": "struct"
 			},
 			"Suggestion": {
-				"text": "Suggestion is a constraint an entity being drawn would get when it is placed (roadmap 16.11 for lines, 29.4 for arcs and circles): its type, its entities, and which ends of curves it takes.",
+				"text": "Suggestion is a constraint a line, an arc or a circle being drawn would get when it is placed: its type, its entities, and which ends of curves it takes.",
 				"kind": "struct"
 			},
 			"TangentArcSettings": {
