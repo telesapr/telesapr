@@ -43,7 +43,7 @@ func TestFilletDishRimStep(t *testing.T) {
 					t.Fatal(err)
 				}
 				want := surfaceVolume(t, sh)
-				_, read := stepRoundTrip(t, sh, false, one, name)
+				_, read := stepRoundTrip(t, sh, one, name)
 				sound(t, read)
 				if got := surfaceVolume(t, read); math.Abs(got-want) > 2e-4*want {
 					t.Errorf("volume read %.4f, ours %.4f", got, want)
