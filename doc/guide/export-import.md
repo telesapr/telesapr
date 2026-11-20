@@ -27,6 +27,10 @@ File > Export has one entry for each kind of file:
 `File.Export` tells from the extension what to write. Every export is of the model as it is at
 the active group.
 
+Surfaces writes each face of the solid with the curves that bound it. A face whose bounding
+curves don't meet in a closed outline can't be written: it is left out, and the export warns
+where, since another program then reads the file as an open shell rather than a solid.
+
 ### Mesh quality
 
 A triangle mesh follows the curved faces only so closely. Triangle Mesh asks for three settings
