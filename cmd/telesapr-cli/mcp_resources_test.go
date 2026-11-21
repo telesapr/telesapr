@@ -135,7 +135,13 @@ func TestMCPResources(t *testing.T) {
 	if ex.Structured.Path != abs || ex.Structured.Bytes != fi.Size() {
 		t.Errorf("export says it wrote %+v, want %s of %d bytes", ex.Structured, abs, fi.Size())
 	}
-	want := (&url.URL{Scheme: "file", Path: filepath.ToSlash(abs)}).String()
+	// A drive path takes a slash before it, file:///C:/x, as a Unix one
+	// has its own.
+	slashed := filepath.ToSlash(abs)
+	if !strings.HasPrefix(slashed, "/") {
+		slashed = "/" + slashed
+	}
+	want := (&url.URL{Scheme: "file", Path: slashed}).String()
 	if len(ex.Content) != 2 || ex.Content[1].Type != "resource_link" || ex.Content[1].URI != want ||
 		ex.Content[1].Name != "plate.stl" || ex.Content[1].MIMEType != "model/stl" {
 		t.Errorf("export's content is %+v, want a link to %s", ex.Content, want)
