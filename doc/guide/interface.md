@@ -1,9 +1,11 @@
 # A tour of the window
 
-The window has two parts. The graphics window, on the left, shows the model; you draw and pick
-there. The property browser, on the right, shows text screens: the list of groups, a group's
-settings, what is selected. Its links are clicked like a web page's. View > Show Property
-Browser (Tab) hides and shows it.
+The window has two parts:
+
+- the **graphics window**, on the left, shows the model. You draw and pick there.
+- the **property browser**, on the right, shows text screens: the list of groups, a group's
+  settings, what is selected. Its links are clicked like a web page's. View > Show Property
+  Browser (Tab) hides and shows it.
 
 ![The window with the fillet example](images/interface-1-window.png)
 
@@ -63,14 +65,19 @@ The home screen lists the groups in the order they are made:
 - **active**: click the circle to make a group active. You draw in the active group, and the
   groups after it are left out of the model until you go back.
 - **shown**: the box hides or shows the group. A "-" marks a group after the active one.
-- **dof**: "ok" when the group is fully held, or how many degrees of freedom are left. "err"
-  means the group has a problem, as an extrusion of a sketch whose outline is not closed (and
-  that sketch with it; a sketch no solid is made from, as a sweep's path, may be open), and
-  "ERR" that it could not be solved. "old" marks a group after the active one that a change
-  left as it was: the model is made only as far as the active group, so what the group showed
-  before the change is not shown. Click the value to see how the group was solved.
+- **dof**: how the group solved (the table below). Click the value to see more.
 - **group-name**: click it to open the group's screen. The arrows move the group earlier or
   later in the history.
+
+The **dof** column says:
+
+| Value | Means |
+|---|---|
+| ok | fully held |
+| a number | the degrees of freedom left |
+| err | a problem, as a sketch whose outline is not closed under an extrusion. A sketch no solid is made from, as a sweep's path, may be open. The message is written in the top left of the graphics window, with a cross on the model where the problem is |
+| ERR | the group could not be solved |
+| old | a group after the active one, not made again since the last change ([History](history.md#inserting-a-group)) |
 
 Below the list, "show all" and "hide all" show or hide every group at once, and "only
 unconstrained" shows only the groups with degrees of freedom left. The links "line styles",
@@ -94,10 +101,13 @@ drawn with a dotted pattern.
 ![The top face hovered](images/interface-5-hover.png)
 
 A line, a point or a dimension within 10 pixels of the pointer is hovered before the face under
-it, so that thin things are easy to hit. A line or a point that the solid hides is not: where the
-solid's faces are shown and can be picked, the face in front of it is hovered instead. To pick
-something behind the solid, turn the view, or show hidden lines as visible lines (the last
-switch above), which makes them pickable again.
+it, so that thin things are easy to hit. A line or a point hidden behind the solid is not: the
+face in front of it is hovered instead. To pick something behind the solid, turn the view, or
+show hidden lines as visible lines (the last switch above).
+
+Where several points lie at one place, the property browser lists them under ALSO HERE, with
+the curves through that place, so that you can pick one a click can't reach
+([Constraints](constraints.md#what-lies-at-a-point)).
 
 **Click** selects what is hovered. Selected things are drawn in red, and the property browser
 describes them: here a flat face, its normal and a point on it, and its group. Each further click
@@ -126,29 +136,35 @@ Edit > Select All (Ctrl+A) selects everything shown in the active group. Edit > 
 Chain (Ctrl+E) adds the lines and curves of the active group joined end to end with those
 selected.
 
-**Dragging.** Drag a point or a line to move it; what is not held follows. A point of a part
-that moves in a mechanism is pulled along the mechanism's freedom: the part turns about its
-hinges and the parts joined to it move with it ([mechanisms](mechanisms.md), experimental).
-While a linked part moves, an assembly is drawn from each part's mesh moved where its link puts
-it, and meshed again when the drag ends.
-A drag keeps the sketch the way it was: a point moved far in one go, more than a quarter of the
-sketch's size, is moved there in steps, so an arm's elbow stays bent the way it was and a
-triangle does not turn over. An arc's end dragged past its start takes the start along rather
-than wrap the arc round. Where no solution keeps the sketch the way it was, as an arc whose
-start is locked, the drag still moves it, and the group is marked "(note)" in the list of groups,
-its screen saying what turned over ([constraints](constraints.md#large-edits-and-drags)).
-Drag a dimension's label to move the label. The arrow keys move what is selected by one pixel, ten with Shift.
-Delete removes what is selected.
+**Dragging.**
+
+- Drag a point or a line to move it. What is not held follows.
+- A long drag keeps the sketch the way it was drawn: an arm's elbow stays bent the same way, and
+  a triangle does not turn over. Where that can't be done, the drag still moves it, and the
+  group is marked "(note)" ([Constraints](constraints.md#large-edits-and-drags)).
+- Drag a dimension's label to move the label.
+- In an assembly, a part that moves in a mechanism is pulled along its hinges, and the parts
+  joined to it move with it ([Mechanisms](mechanisms.md), experimental).
+- The arrow keys move what is selected by one pixel of the view, ten with Shift, as a drag does
+  (`Entity.MoveBy` in a script).
+- Delete removes what is selected.
 
 ## The context menu
 
 A right click (without dragging) selects what is under the pointer and opens a menu of what
-applies to it. On a face of the solid it offers, among others, Shell Solid Open Here, Mirror in
-This Plane, Select Face Edges, Sketch On Face, an Appearance submenu and Measure Selection. On an
-edge it offers Fillet Edges, Chamfer Edges and Sweep Along Edges. On a dimension it offers Edit
-Value. A Group submenu activates, hides, suppresses or deletes the group the thing belongs to.
-The entries are listed in [the guide's first page](README.md). Right-clicking empty space offers
-Select All.
+applies to it:
+
+| Under the pointer | Offers, among others |
+|---|---|
+| an edge of the solid | Fillet Edges, Chamfer Edges, Sweep Along Edges |
+| a face of the solid | Shell Solid Open Here, Select Face Edges, Sketch On Face, an Appearance submenu, Measure Selection |
+| a flat face an entity makes | Mirror in This Plane too |
+| a face, while a drafted extrusion is active | Draft Selected Sides |
+| a face, while a sketch is active | Wrap Sketch Onto This Face |
+| a cylindrical face or a circular edge | Screw Thread... |
+| a dimension | Edit Value... |
+| anything of a group | a Group submenu: Activate, Hide, Suppress with What Uses It, Delete Group |
+| empty space | Select All |
 
 ![The context menu of an edge](images/interface-8-context-menu.png)
 

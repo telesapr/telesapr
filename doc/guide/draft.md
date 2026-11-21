@@ -43,16 +43,16 @@ replays the same clicks on the program (`scripts/regen-doc-images.sh`).
 
 ## What it does
 
-The sketch's plane is the neutral plane: the sides pass through the sketch there. The far end is
-the sketch's outline offset into the solid by the length times the tangent of the angle. A line's
-side becomes a plane. An arc's side becomes a cone about the arc's centre. The outside narrows
-and a hole widens. A negative angle leans the sides out instead. A two-sided extrusion leans both
-ways from the plane.
+The sketch's plane is the neutral plane: the sides pass through the sketch there. At the far end
+the outline is offset inward by the length times the tangent of the angle. A line's side becomes
+a plane, an arc's side a cone about the arc's centre. The outside narrows and a hole widens. A
+negative angle leans the sides out instead. A two-sided extrusion leans both ways from the plane.
+A drafted extrusion can be hollowed by [Shell](shell.md).
 
-The extrusion keeps its own entities at the far end and along the sides where they would be
-without the draft, so constraints and sketches that refer to them keep working. They are hidden,
-since they are off the solid. The faces are picked as an extrusion's: the ends, and the side of
-each line segment.
+The extrusion's own entities at the far end and along the sides stay where they would be without
+the draft, so constraints and sketches that refer to them keep working. They are hidden, since
+they are off the solid. The faces are picked as an extrusion's: the ends, and the side of each
+line segment.
 
 ## In the window
 
@@ -73,8 +73,9 @@ boss.SetExpr(sketch.GroupValC, "angle")
 
 A draft may lean only some of the sides. With the extrusion active, select them as lines, arcs
 or circles of the extruded sketch, as their copies at the extrusion's ends, or as the side faces
-themselves. Then choose Features > Draft Selected Sides. The group's screen says how many sides
-are drafted, and *[all]* drafts every side again. The other sides stay upright.
+themselves. Then choose Features > Draft Selected Sides, or right-click a side face of a drafted
+extrusion and choose it there. The group's screen says how many sides are drafted, and *[all]*
+drafts every side again. The other sides stay upright.
 
 The sides lean from the sketch's plane to begin with. The screen's *from the plane* row moves the
 neutral plane along the extrusion. At that plane the solid has the sketch's outline, and it
@@ -96,8 +97,8 @@ boss.AsExtrude().SetDraftFaces([]api.Entity{arc})  // only the arc's side
 ## Not yet
 
 - The sketch must be made of lines and arcs. Splines and text are refused.
-- Where two arcs meet at a sharp corner, their cones meet in a curve of degree four. The solid
-  follows it to within a millionth of a millimetre, not exactly.
+- Where two arcs meet at a sharp corner, the solid follows the curve where their cones meet to
+  within a millionth of a millimetre, not exactly.
 - Sides that meet tangent must lean by the same angle.
 - The far end's entities are not moved onto the drafted solid.
 - A draft about a plane that is not square to the extrusion is not done.

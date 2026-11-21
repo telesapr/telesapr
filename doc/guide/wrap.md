@@ -55,16 +55,16 @@ These pictures are made by [`scenarios/wrap.scenario`](scenarios/wrap.scenario).
 The sketch lands on the side of the face that faces it, and seen from there it looks as it was
 drawn. Lengths in the sketch are lengths on the face: a word 30 mm long covers 30 mm round a
 cylinder, whatever the radius. On a cone, the sketch is laid along the line of the cone that
-faces it and rolled on from there. Lines across or along a cylinder's axis wrap exactly. Other
-curves wrap within 1e-7 mm.
+faces it and rolled on from there.
 
 The group starts raised by 1 mm. Its screen shows the face, the **height**, which takes a number
 or an expression of the parameters, and **raised** or **sunk**.
 
-The band reaches a little through the face: into the wall under an emboss, or into the air over
-an engraving. That way the Boolean crosses the face rather than touching it. The extra part is
-hidden in the result. Where the wall is too thin for it, or the room before the solid starts
-again is, the group says how thin and where.
+Where the wall under an emboss is too thin to join the band through, or the room over an
+engraving before the solid starts again is too small, the group says how thin and where.
+
+The raised band's foot and top edges can be filleted and chamfered like any other edges (see
+[Fillet](fillet.md) and [Chamfer](chamfer.md)).
 
 ## From a script
 
@@ -89,9 +89,7 @@ gives the height an expression.
   letters may go further, because each letter is its own loop.
 - An engraving as deep as the axis is refused, and so is a sketch on a cone that reaches past
   the cone's apex.
-- Where the Boolean of a loop with the face fails at a corner of the loop, the group tries
-  again loop by loop, reaching through the face by other amounts. Where none joins, the group
-  is refused with a problem on it, and the solid so far passes through unchanged. A smaller
-  height may join.
+- Now and then a loop cannot be joined to the face at one of its corners. The group then shows a
+  problem and the solid passes through unchanged. A smaller height may join.
 - The face cannot be changed on the group's screen. Delete the group and wrap again onto the
   other face.

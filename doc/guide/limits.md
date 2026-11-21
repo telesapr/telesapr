@@ -43,37 +43,36 @@ These pictures are made by [`scenarios/limits.scenario`](scenarios/limits.scenar
 
 ## In the window
 
-Constrain > Minimum Dimension and Constrain > Maximum Dimension make one. Select what Distance
-/ Diameter or Angle takes: two points, a line, a point and a line, a workplane or a face, a
-circle or an arc, two lines or normals. The bound is made at the value the sketch has now,
-labelled "min 30.00" or "max 30°", and its editor opens so that you can type the bound in. The
-editor takes expressions and names, as a dimension's does.
+**Constrain > Minimum Dimension** and **Constrain > Maximum Dimension** make a bound. They take
+what Distance / Diameter or Angle takes: two points, a line, a point and a line, a workplane or
+a face, a circle or an arc, two lines or normals.
 
-With a dimension selected, the same menu entries turn it into a bound. If it is already that
-bound, they turn it back into a dimension. A distance from a line or a plane keeps to its side,
-as the dimension does, and the bound is on how far.
+- The bound is made at the value the sketch has now, labelled "min 30.00" or "max 30°".
+- Its editor opens so that you can type the bound. It takes expressions and names, as a
+  dimension's editor does.
+- With a dimension selected, the same entries turn it into a bound. On a bound of that kind,
+  the entry turns it back into a dimension.
+- A distance from a line or a plane keeps to its side, as the dimension does. The bound is on
+  how far.
+- A turn about an axis takes a bound too: the `turn` of a screw mate, or a part's turn about a
+  hinge's pin. A negative turn is a turn the other way, and its minimum is the least turn. So a
+  hinge can be kept between 0 and 90°.
 
-A turn about an axis takes a bound too: the `turn` of a screw mate, or a part's turn about a
-hinge's pin. A negative turn is a turn the other way, not the other side, and its minimum is
-the least turn, as for a positive one. So a hinge can be kept between 0 and 90°.
-
-Constrain > On Segment keeps a point on a line segment, between its ends. On Point / Curve /
+**Constrain > On Segment** keeps a point on a line segment, between its ends. On Point / Curve /
 Plane, by contrast, lets the point go anywhere along the segment's line.
 
 How a bound behaves:
 
-- A bound holds only where the sketch would cross it. Inside the bound it takes no degree of
-  freedom: the points move as they would without it, and the property browser counts the
-  freedom they have.
+- Inside the bound it takes no degree of freedom. The points move as they would without it, and
+  the property browser counts the freedom they have.
 - Dragged against it, the sketch stops at the bound. The bound then takes one degree of freedom,
-  as a dimension of that value would. A point on a segment that is stopped at an end is fixed
-  there.
+  as a dimension of that value would. A point on a segment stopped at an end is fixed there.
 - Two bounds that can't both hold, or a bound beyond a dimension, fail to solve. The property
   browser names the bound.
-- A bound made at the value a dimension already holds, such as a maximum of 40 on a line 40
-  long, is no conflict. It is not counted as taking the freedom the dimension took.
+- A bound at the value a dimension already holds, as a maximum of 40 on a line 40 long, is no
+  conflict.
 
-From a script:
+## From a script
 
 ```go
 rod := doc.Sketch.Line(api.V(0, 0, 0), api.V(30, 0, 0))
@@ -89,6 +88,6 @@ doc.Constrain.OnSegment(slider, slot)
 
 ## Not yet
 
-Ratios and differences of lengths can't be bounds. A bound is labelled "min" and "max", because
-the drawing's font has no ≥ or ≤. A DXF export of the drawing writes a bound as the dimension it
-bounds.
+- Ratios and differences of lengths can't be bounds.
+- A bound is labelled "min" and "max", not ≥ and ≤: the drawing's font has no such signs.
+- A DXF export of the drawing writes a bound as the dimension it bounds.

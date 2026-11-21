@@ -38,10 +38,10 @@ These pictures are made by [`scenarios/sketch-on-face.scenario`](scenarios/sketc
 
 ## In the window
 
-Features > Sketch On Face (Shift+B) starts a sketch whose workplane lies in a flat face of the
-solid so far. Select one face on the model. It may be a face an extrusion made, or one that no
-entity stands for, such as a chamfer's face or a shell's. A right click on a face offers the
-same entry. Sketch In New Workplane with a face selected does the same thing.
+Select one flat face on the model, then choose Features > Sketch On Face (Shift+B). A new
+sketch starts with its workplane in that face. The face may be one an extrusion made, or one
+that no entity stands for, such as a chamfer's face or a shell's. A right click on a face offers
+the same entry, and Sketch In New Workplane with a face selected does the same thing.
 
 Where the workplane goes:
 
@@ -54,13 +54,12 @@ Where the workplane goes:
 
 The sketch follows the face. When an edit earlier in the history moves or turns the face (a
 deeper extrusion, another draft angle), the workplane, what is drawn in it and the solids made
-from it all move with the face, in the same regeneration. The corner and the edge are chosen by
-the edges' names, not by where they are. So they stay the same corner and edge for as long as
-the face keeps its edges.
+from it all move with it. The corner and the edge stay the same for as long as the face keeps
+its edges.
 
-When the face goes, for example when the group that made it is suppressed, the workplane stays
-where it was, and the group says why. It follows the face again when the face comes back. The
-group's screen names the face.
+The group's screen names the face. When the face goes, for example when the group that made it
+is suppressed, the workplane stays where it was, and the group's screen says "The sketch can't
+follow its face" and why. It follows the face again when the face comes back.
 
 From a script:
 
@@ -76,8 +75,9 @@ a sketch lies in.
 
 ## Not yet
 
-The face can't be changed on the group's screen. Delete the sketch and start it on the other
-face. The corner and the edge are chosen for you. To draw from another corner, constrain the
-sketch to the face's edges. An extrusion from the sketch whose depth is left free is kept as
-near its old direction as the solver can. So when the face turns, that extrusion comes out a
-little shorter. A dimension on the depth holds it.
+- The face can't be changed on the group's screen. Delete the sketch and start it on the other
+  face.
+- The corner and the edge are chosen for you. To draw from another corner, constrain the sketch
+  to the face's edges.
+- When the face turns, an extrusion from the sketch whose depth is left free comes out a little
+  shorter. Hold the depth (its **held** box, or a dimension) to keep it.

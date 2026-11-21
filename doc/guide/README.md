@@ -1,7 +1,7 @@
 # TeleSAPR user's guide
 
 TeleSAPR draws the way SolveSpace does. You sketch in a workplane, hold the sketch with
-constraints, and turn it into a solid with groups. Each group adds one step to the model's
+constraints, and turn it into a solid with groups. Each group is one step of the model's
 history. SolveSpace's own [tutorials](https://solvespace.com/tutorial.pl) teach that part, and
 everything in them holds for TeleSAPR.
 
@@ -14,54 +14,28 @@ under [`examples/scripts`](../../examples/scripts). An example runs without a wi
 or in the application, from Script > Run File, or with `telesapr --script <file>`.
 
 New to TeleSAPR? Start with [Getting started](getting-started.md), which builds a first part
-step by step, and [The window](interface.md), a tour of what is on the screen. The
+step by step, and [The window](interface.md), a tour of the screen. The
 [menu reference](reference/menus.md), [keyboard shortcuts](reference/shortcuts.md) and
 [toolbar](reference/toolbar.md) pages are written from the program itself, so they list every
 entry as it is. `make guide-site` builds these pages as a web site in `site/guide`.
 
 Every feature can be scripted. The console (Script > Show Console, Ctrl+Shift+K) takes the same
-Go, one line at a time, and `help()` there lists what a script can call.
+Go, one line at a time. `help()` there lists what a script can call.
 
 ## Finding your way around the window
 
-**The menus** run in the order of the work:
+[The window](interface.md) has the detail. In short:
 
-- **Sketch** draws, and **Constrain** holds what is drawn.
-- **Features** makes the groups of the history: sketches first, then the solids that create,
-  change and repeat them, then the entries that move a group in the history.
-- **Assembly** links files, mates them, and checks them against each other.
-- **Analyze** measures and checks.
-- **View > Show** shows and hides what the icons at the top of the property browser do. It also
-  shows and hides reference dimensions and comments apart from the other constraints.
-
-An entry with nothing to work on is greyed out, and its key does nothing. Paste with an empty
-clipboard is one example.
-
-**Edit > Find Command** (Ctrl+K) finds any entry by words of its name. Entries that can't run
-right now are listed last, with the reason.
-
-**A right click** offers what applies to what is under the pointer:
-
-- on an edge of the solid: Fillet Edges, Chamfer Edges and Sweep Along Edges;
-- on a face: Shell Solid Open Here, Select Face Edges, Sketch On Face and the face's appearance;
-  Mirror in This Plane on a flat face an entity makes; Draft Selected Sides while a drafted
-  extrusion is active; and Wrap Sketch Onto This Face while a sketch is active;
-- on a cylindrical face or a circular edge: Screw Thread;
-- on a dimension: Edit Value;
-- on anything: a Group submenu to activate, hide, suppress or delete the group it belongs to.
-
-**The keyboard and the mouse.** The arrow keys move what is selected by one pixel of the view,
-or ten with Shift, as a drag does (`Entity.MoveBy` in a script). A rectangle dragged from left to
-right selects what lies wholly inside it. Dragged from right to left, it is drawn in the
-selection's colour and selects whatever it crosses.
-
-**The toolbar** at the left has buttons for the features that take a selection (fillet, chamfer,
-shell, sweep, loft, mirror, pattern), for measuring, and for the section view. It takes three
-columns when the window is too short for two.
-
-**The property browser's** first line says where its screen is, as in "home › g004-extrude". A
-group's screen offers, beside rename and delete, to make the group active, hide it, or move it
-earlier or later.
+- **The menus** run in the order of the work: **Sketch** draws, **Constrain** holds what is
+  drawn, **Features** makes the groups of the history, **Assembly** links and mates files,
+  **Analyze** measures and checks.
+- An entry with nothing to work on is greyed out, and its key does nothing.
+- **Edit > Find Command** (Ctrl+K) finds any entry by words of its name.
+- **A right click** offers what applies to what is under the pointer: Fillet Edges on an edge,
+  Sketch On Face on a face, Edit Value on a dimension, and a Group submenu everywhere.
+- **The toolbar** down the left has a button for each common entry.
+- **The property browser** on the right shows the groups, and the screen of the group or
+  selection you click.
 
 **Changing what a feature is built from.** A fillet, chamfer, shell, sweep, pattern, loft or
 mirror can be given other edges, faces, a path, profiles or a plane after it is made. On the
@@ -69,59 +43,64 @@ group's screen, [change] takes the current selection. From a script, the typed g
 `SetEdges`, `SetFaces`, `SetPath`, `SetProfiles` and `SetPlane`. See
 [`examples/scripts/rework`](../../examples/scripts/rework/rework.go).
 
-**Menu entries from a script.** Every entry of the menus has a script call, unless it belongs to
-the window itself (its view and its panels). The Edit and Analyze entries are `Edit.Copy`,
-`Edit.Paste`, `Analyze.CurveLength`, `GroupAnalysis.Area`, `Analyze.FacesArea` and
-`GroupAnalysis.CenterOfMass` (see [`examples/scripts/measure`](../../examples/scripts/measure)).
-A script can also run an entry by the name the command search lists it under:
-`doc.Edit.RunCommand("Features > Extrude")`. The names the entries had before the menus took
-this order still work.
+**Menu entries from a script.** Every menu entry has a script call, unless it belongs to the
+window itself (its view and its panels). The [menu reference](reference/menus.md) names the
+call beside each entry; [`examples/scripts/measure`](../../examples/scripts/measure) uses the
+Edit and Analyze ones. A script can also run an entry by its name in the command search:
+`doc.Edit.RunCommand("Features > Extrude")`. The names entries had before the menus were
+reordered still work.
 
 ## The pages
 
 | Page | What it covers | Example |
 |---|---|---|
-| [Parameters and units](parameters-and-units.md) | Named values that drive dimensions; an extrusion's depth and a revolve's angle held; configurations; a motion study; dimensions read by name; the document's unit of length; measuring | `plate`, `extent`, `configurations`, `motion`, `dimensions`, `feedback` |
 | [Constraints while drawing](drawing.md) | Tangent, perpendicular, parallel and equal, added by themselves as you draw | `autoconstrain` |
-| [Constraints](constraints.md) | Ratios and differences of lengths, equal distances and angles, distances along a direction, constraints on faces, what lies at a point, a text's font | `ratio`, `equal`, `text`, `overlap` |
-| [Minimum and maximum dimensions](limits.md) | Distances, lengths, radii and angles bounded from one side; a point kept between a segment's ends | `limits` |
-| [History](history.md) | Moving a group, suppressing a group with what uses it, broken references | `history` |
-| [Appearance and shading](appearance.md) | Matte, plastic, glossy and metal faces, lit by a shader; glTF with the colours | `appearance`, `gltf` |
+| [Constraints](constraints.md) | Ratios and differences of lengths, equal distances and angles, distances along a direction, constraints on faces, what lies at a point, a text's font, large edits and drags | `ratio`, `equal`, `text`, `overlap` |
+| [Parameters and units](parameters-and-units.md) | Named values that drive dimensions; an extrusion's depth and a revolve's angle held; configurations; a motion study; dimensions read by name; the document's unit of length; measuring | `plate`, `extent`, `configurations`, `motion`, `dimensions`, `feedback` |
+| [Datums](datums.md) | Names for what a part offers, on entities or on its solid's faces and edges; mates by name | `datums`, `datums_solid`, `datums_freeform` |
 | [Sketch on a face](sketch-on-face.md) | A sketch in a flat face of the solid, which follows the face | `pedestal` |
-| [Section view](section-view.md) | Cutting the model open to look inside | `section` |
+| [Minimum and maximum dimensions](limits.md) | Distances, lengths, radii and angles bounded from one side; a point kept between a segment's ends | `limits` |
+| [Fillet](fillet.md) | Edges rounded, or filled where they go in | `fillet`, `roundbox`, `tray` |
+| [Chamfer](chamfer.md) | Edges cut at a distance | `chamfer`, `edges` |
+| [Draft](draft.md) | An extrusion's sides leaned for a mould | `draft` |
+| [Shell](shell.md) | A solid hollowed to walls | `shell`, `pot` |
 | [Two-sided groups](two-sided.md) | An extrusion, revolve or repeat run both ways from its sketch | `spacer` |
 | [Mirror](mirror.md) | A group reflected in a plane | `mirror` |
-| [Chamfer](chamfer.md) | Edges cut at a distance | `chamfer`, `edges` |
-| [Fillet](fillet.md) | Edges rounded, or filled where they go in | `fillet`, `roundbox`, `tray` |
-| [Shell](shell.md) | A solid hollowed to walls | `shell`, `pot` |
-| [Draft](draft.md) | An extrusion's sides leaned for a mould | `draft` |
+| [Pattern along a path](pattern.md) | A solid repeated along a path | `pattern` |
 | [Loft](loft.md) | Profiles joined by ruled faces or by one smooth surface | `loft` |
 | [Sweep](sweep.md) | A profile moved along a path | `sweep` |
-| [Pattern along a path](pattern.md) | A solid repeated along a path | `pattern` |
-| [Screw threads](threads.md) | Metric, unified, trapezoidal, Whitworth, pipe, ACME and buttress threads | `bolt` |
 | [Wrap and emboss](wrap.md) | A sketch rolled onto a cylinder or a cone, raised from it or sunk into it | `wrap` |
-| [Drawings](drawings.md) | A sheet of the standard views, sections and details with a title block, to PDF and DXF | `drawing` |
+| [Screw threads](threads.md) | Metric, unified, trapezoidal, Whitworth, pipe, ACME and buttress threads | `bolt` |
+| [History](history.md) | Moving a group, suppressing a group with what uses it, broken references, damaged files | `history`, `damaged` |
+| [Appearance and shading](appearance.md) | Matte, plastic, glossy and metal faces, lit by a shader; glTF with the colours | `appearance`, `gltf` |
+| [Section view](section-view.md) | Cutting the model open to look inside | `section` |
+| [Check Solid](check-solid.md) | Whether a solid is sound, and its volume | every example |
+| [Density and mass](mass.md) | A density for each part; the mass, centre of mass and inertia of each and of the whole | `mass` |
+| [Clearance and walls](clearance.md) | Gaps between parts and walls thinner than a limit, before printing or machining | `clearance` |
 | [STEP links](step-links.md) | A STEP file, or an STL or OBJ mesh, linked as a reference or as a solid | `step` |
-| [Datums](datums.md) | Names for what a part offers, on entities or on its solid's faces and edges; mates by name | `datums`, `datums_solid` |
 | [Assemblies](bill-of-materials.md) | Links relinked, or given a configuration and parameter values; mates, a screw among them; the parts counted, with their masses, to a CSV file; interfering parts; STEP with its structure | `partsizes`, `mates`, `screw`, `bom` |
 | [Mechanisms](mechanisms.md) (experimental) | Linked parts that move together: a lid on its hinge pulled open in the window, an engine's crank and piston driven round through a motion study | `lid`, `engine` |
-| [Density and mass](mass.md) | A density for each part; the mass, centre of mass and inertia of each and of the whole | `mass` |
+| [Drawings](drawings.md) | A sheet of the standard views, sections and details with a title block, to PDF and DXF | `drawing` |
+| [Export and import](export-import.md) | Every export, mesh quality presets and strict meshes, sections, DXF import, the command line | `meshquality`, `dxfsection`, `gltf` |
 | [Scripts](scripts.md) | The console's keys; forms that ask for a script's values; packages of your own in a script library folder; a model written as a script | `form`, `library`, `exportscript`, `describe` |
 | [Drawing with an AI model](ai.md) | Letting an AI program draw in your window over the Model Context Protocol; what it can do, what it may touch | (none) |
-| [Clearance and walls](clearance.md) | Gaps between parts and walls thinner than a limit, before printing or machining | `clearance` |
-| [Export and import](export-import.md) | Every export, mesh quality presets and strict meshes, sections, DXF import, the command line | `meshquality`, `dxfsection`, `gltf` |
-| [Check Solid](check-solid.md) | Whether a solid is sound, and its volume | every example |
 
 A few examples show things no page is about:
-[`bracket`](../../examples/scripts/bracket/bracket.go), a plate with a row of holes that takes
-its width and hole count from the command line;
-[`workplanes`](../../examples/scripts/workplanes/workplanes.go), workplanes that follow their
-geometry, and an axis given as a point and a direction;
-[`styles`](../../examples/scripts/styles/styles.go), line styles of your own;
-[`spline`](../../examples/scripts/spline/spline.go), a cubic spline's points added and taken
-away; [`solve`](../../examples/scripts/solve/solve.go), how a group is solved and the options
-its screen carries; and [`imported`](../../examples/scripts/imported/imported.go), what a DXF
-import draws and the window does not.
+
+- [`bracket`](../../examples/scripts/bracket/bracket.go): a plate with a row of holes that
+  takes its width and hole count from the command line.
+- [`workplanes`](../../examples/scripts/workplanes/workplanes.go): workplanes that follow their
+  geometry, and an axis given as a point and a direction.
+- [`styles`](../../examples/scripts/styles/styles.go): line styles of your own.
+- [`spline`](../../examples/scripts/spline/spline.go): a cubic spline's points added and taken
+  away.
+- [`solve`](../../examples/scripts/solve/solve.go): how a group is solved, and the options its
+  screen carries.
+- [`imported`](../../examples/scripts/imported/imported.go): what a DXF import draws and the
+  window does not.
+- [`measure`](../../examples/scripts/measure): the Edit and Analyze menu entries from a script.
+- [`rework`](../../examples/scripts/rework/rework.go): a feature given other edges, faces or a
+  path after it is made.
 
 ## Files
 
@@ -135,20 +114,19 @@ The project's site, [telesapr.sourceforge.io](https://telesapr.sourceforge.io), 
 window in a browser ("Try in browser"), with nothing installed. It differs from the desktop
 program in a few ways:
 
-- Files are kept in the browser's storage, on that computer only; clearing the site's data
-  removes them. A save dialog also offers the file as a download, and the **Files** button lists,
-  downloads and deletes what is stored. Ctrl+S writes to the storage only. Saving under the
-  name of a file already stored asks before replacing it.
-- A large model holds the page while it regenerates: the window is not redrawn and takes no
-  clicks or keys until it is done, but after a moment a box says how long it has taken. The page
-  is let to draw between the model's groups and while a group is combined with the solid before
-  it (a screw thread's with its blank), but not during a feature's own long work, such as a
-  sweep or a fillet, which holds it for as long as that takes.
-- It has no socket for `telesapr-cli mcp` (`--agent`). Script > Allow AI Connections lets a
-  program in the browser work on the drawing through the page instead (see
+- **Files** are kept in the browser's storage, on that computer only. Clearing the site's data
+  removes them. A save dialog also offers the file as a download. Ctrl+S writes to the storage
+  only. Saving under the name of a stored file asks before replacing it. The **Files** button
+  lists, downloads and deletes what is stored.
+- **A large model holds the page** while it regenerates: the window takes no clicks or keys
+  until it is done. After a moment a box says how long it has taken, with a bar for how far it
+  has got.
+- **AI programs** can't connect through `telesapr-cli mcp` (`--agent`). Script > Allow AI
+  Connections lets a program in the browser work on the drawing through the page instead (see
   [Drawing with an AI model](ai.md#in-a-browser)).
-- File > Exit ends the program in the page; **Start Again** loads it afresh, with the files kept.
-- The browser keeps Ctrl+N, Ctrl+T and Ctrl+W (new window, new tab, close the tab) for itself:
-  New is Ctrl+Alt+N there, Paste Transformed Ctrl+Alt+T, Show Naked Edges Ctrl+Alt+Shift+N and
-  Trace Point Ctrl+Alt+Shift+T. Full screen (View > Full Screen), Chrome and Edge give the page
-  the Ctrl keys too. Menus open with Alt and their underlined letter, as on the desktop.
+- **File > Exit** ends the program in the page. **Start Again** loads it afresh, with the files
+  kept.
+- **Keys.** The browser keeps Ctrl+N, Ctrl+T and Ctrl+W for itself. There, New is Ctrl+Alt+N,
+  Paste Transformed Ctrl+Alt+T, Show Naked Edges Ctrl+Alt+Shift+N and Trace Point
+  Ctrl+Alt+Shift+T. In full screen (View > Full Screen), Chrome and Edge give the page the Ctrl
+  keys too. Menus open with Alt and their underlined letter, as on the desktop.

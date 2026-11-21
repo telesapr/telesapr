@@ -1,27 +1,25 @@
 # Mechanisms
 
-> **Experimental.** Mechanisms are new and still being worked on. What the menus, the group
-> screen's **part** and **freedom** rows and the script calls (`SetMoves`, `HingeDriven`,
-> `ConcentricDriven`, `SetRange`, `Freedom`) do may change in a later version, and a drag may move the parts otherwise than it
-> does now. A model saved with parts that move in a mechanism (`link-moves` in the file) opens in
-> later versions, but its parts may come to rest elsewhere. Check what a mechanism does before
-> relying on it, and say where it goes wrong.
+> **Experimental.** There is no switch to turn mechanisms on: you set a linked part's **part**
+> row to `moves in a mechanism`, and that part joins a mechanism. What is experimental is how
+> they behave. The menus, the **part** and **freedom** rows and the script calls (`SetMoves`,
+> `HingeDriven`, `ConcentricDriven`, `SetRange`, `Freedom`) may change in a later version, and a
+> drag may move the parts otherwise than it does now. A model saved with moving parts
+> (`link-moves` in the file) opens in later versions, but its parts may come to rest elsewhere.
+> Check what a mechanism does before relying on it.
 
 Examples: [`examples/scripts/lid`](../../examples/scripts/lid/lid.go), a box with a hinged lid
 that opens up to 110°; [`examples/scripts/engine`](../../examples/scripts/engine/engine.go), an
 engine's crank, connecting rod and piston turned round by the crank.
 
-A mechanism is linked parts joined by mates that move together: a lid on its hinge, a crank, a
-connecting rod and a piston. Pull one part and the parts joined to it move as their joints let
-them. Drive one joint by a parameter, and a motion study turns the whole mechanism.
+A mechanism is linked parts, joined by mates, that move together: a lid on its hinge, or a
+crank, a connecting rod and a piston. Pull one part and the parts joined to it move as their
+joints let them. Drive one joint by a parameter, and a motion study runs the whole mechanism.
 
-Ordinarily each group is solved alone, with every group before it held where it is. A mate in
-the active group then moves only the part that group places, a loop of parts can't be closed,
-and a linked part dragged in the window snaps back to where its mates hold it. A mechanism
-solves its parts together instead, as one system, and a drag moves them as their mates allow.
-It is the same constraints and the same solver: only which parts are solved together, and how a
-drag moves them, change. There are no forces, no contact and no collisions: the parts are rigid
-and held by their constraints alone.
+Ordinarily each group is solved alone, with every group before it held still. A mate then moves
+only the part its own group places, a loop of parts can't close, and a dragged part snaps back.
+A mechanism solves its parts together, as one system, and a drag moves them as their mates
+allow. The parts are rigid: there are no forces, contact or collisions.
 
 ## Step by step
 
@@ -44,17 +42,16 @@ Hinge a lid on a box and open it:
 
    ![The lid hinged on the box, closed](images/mechanisms-3-closed.png)
 
-4. Drag the lid's front edge up. The lid swings open about the hinge, as far as you drag it. A part
-   that doesn't move in a mechanism would snap back: the hinge can bring its edge back only by
-   moving the lid, never by turning it.
+4. Drag the lid's front edge up. The lid swings open about the hinge, as far as you drag it. A
+   part that doesn't move in a mechanism would snap back instead.
 
    ![The lid swung open](images/mechanisms-4-open.png)
 
 5. To open it by a number instead, undo the drag and the hinge, select the two edges again and
    choose Assembly > Mate Hinge, Driven. The hinge now makes a parameter, `angle`, the lid's
    opening in degrees, 0 where it is closed. In Edit > Parameters, `[edit]` it to 60: the lid
-   opens 60°. The hinge's dimension on the drawing counts the turn from its own frame, so it reads
-   another number, the turn closed plus `angle`.
+   opens 60°. The hinge's dimension on the drawing reads another number: it counts the turn from
+   its own frame, so it is the closed turn plus `angle`.
 
    ![The driven hinge opened to 60 in the parameter table](images/mechanisms-5-driven.png)
 
@@ -62,122 +59,109 @@ These pictures are made by [`scenarios/mechanisms.scenario`](scenarios/mechanism
 
 ## Parts that move together
 
-On a link group's screen, **part** is `fixed` by default. Set to `moves in a mechanism`, the
-link group joins the link groups so flagged that stand next to it in the list of groups: those
-are one mechanism. Their constraints, the mates among them included, are solved as one system,
-so a mate in any of them moves the others. Unflagged links, and every group before the
-mechanism, are the ground, held where they are. A group of another kind between two flagged
-links, a 3D sketch with a datum too, ends the mechanism there: put such groups before the
-mechanism or after it.
+A link group's **part** row is `fixed` by default. Set it to `moves in a mechanism`:
+
+- Flagged link groups that stand next to each other in the list of groups make one mechanism.
+  Their constraints, mates included, are solved together.
+- Unflagged links, and every group before the mechanism, are the ground and stay still.
+- A group of another kind between two flagged links (a 3D sketch with a datum, say) ends the
+  mechanism there. Put such groups before or after it.
 
 Every group of a mechanism reports the same result: solved or not, and the degrees of freedom
-left in the whole mechanism. A hinged lid keeps one; an engine's crank, rod and piston keep one,
-the crank's turn. A change in any of its groups solves all of them again. The flag is one step
-of undo, and is saved in the file (`link-moves`); a file without it is solved as before.
+of the whole mechanism. A hinged lid keeps one; an engine's crank, rod and piston keep one, the
+crank's turn. The flag is one step of undo and is saved in the file.
 
 ## Joints
 
 A joint is the mates that hold two parts together:
 
-- **A hinge on an edge**: Mate Hinge, with an edge of each part along the hinge's line, as the lid
-  above.
-- **A pin in its hole**: Mate Concentric, with the hole's circle and the pin's (or the other
-  hole's), puts them on one axis; the part may still slide along it, which Mate Flush of a face on
-  the face beside it holds. The crank on its bearing, the rod on the crank pin and the piston on
-  its pin in the [engine](../../examples/scripts/engine/engine.go) are each joined so.
-- **A slide**: a point of the part on a line, as the piston's pin on the cylinder's axis, with a
-  line of the part kept parallel to it, so that it slides without turning.
+- **A hinge on an edge**: Mate Hinge, with an edge of each part along the hinge line.
+- **A pin in its hole**: Mate Concentric on the two circles puts them on one axis. Add Mate
+  Flush of a face on the face beside it, so the pin can't slide along the axis. The
+  [engine](../../examples/scripts/engine/engine.go)'s crank, rod and piston are joined so.
+- **A slide**: a point of the part on a line (Constrain > On Point / Curve / Plane), with a line of the part kept
+  parallel to it, so it slides without turning, as the piston's pin on the cylinder's axis.
 
-Where the parts lie in layers, one above the other, as an engine's do, a slide's point on a line
-is made in the XY workplane (Sketch > In Workplane): there it holds in the plane what the parts,
-stacked at different heights, couldn't hold in 3D.
+Where the parts lie stacked at different heights, as an engine's do, make a slide's point on a
+line in the XY workplane (Sketch > In Workplane). In the workplane the point only has to lie
+on the line as seen from above; in 3D it would have to reach the line's height, which a part
+at another height can't.
 
 ## Closing a loop
 
-The crank, the rod and the piston make a loop with the frame: the last joint, the piston's slide,
-closes it. A four-bar linkage, a crank, a coupler and a rocker hinged on a ground bar, closes its
-loop with a last hinge. In 3D that hinge says again something the other hinges already hold: that
-the rocker's axis is parallel to the ground's. Its constraints over-determine the others, but only
-as mates do, and they stay consistent however the linkage moves. A mechanism accepts that: it
-solves, keeps its freedom, and the constraints that say the same thing again are marked
-`(implied)` in the group's list of constraints. A point on a line, or a slide made in a workplane,
-closes a loop as well, with no repetition.
+The crank, rod and piston make a loop with the frame; the piston's slide closes it. A four-bar
+linkage closes its loop with a last hinge. That hinge repeats something the other hinges already
+hold (that the axes are parallel). A mechanism accepts such a repeat: it solves, keeps its
+freedom, and marks the repeated constraints `(implied)` in the group's list of constraints.
 
-What is still refused is a repetition that isn't a mate's: a dimension with a value, which another
-dimension could contradict, is made a reference dimension, as in any sketch. And a loop that can't
-close, as a chain too short for the gap it spans, doesn't solve at all.
+Still refused:
 
-Put the parts roughly where they go before the last joint closes the loop. Parts lying in one
-straight line are at full stretch, where the loop's end can't move along it at first, and the
-solve can't close the loop from there.
+- a dimension that repeats another: it is made a reference dimension, as in any sketch;
+- a loop that can't close, as a chain too short for its gap: it doesn't solve.
+
+Put the parts roughly where they go before the last joint closes the loop. From full stretch, all
+in one straight line, the solve can't close it.
 
 ## How each part can move
 
-A link group's screen, for a part that moves in a mechanism, shows two more rows: the mechanism's
-size and its degrees of freedom (`mechanism of 3 parts, 1 DOF`), and how the part can move in it,
+For a part that moves in a mechanism, the link group's screen shows two more rows: the
+mechanism's size and freedom (`mechanism of 3 parts, 1 DOF`), and how this part can move,
 counted from its mates:
 
-- `fixed`: the part can't move.
-- `turns about the axis through (x, y, z) along (dx, dy, dz)`: a part on a hinge, as a four-bar's
-  crank and rocker, or a pin flush in its hole.
-- `turns about and slides along the axis ...`: a pin in a hole that isn't held flush.
-- `screws along the axis ..., 2.00 a turn`: a part on a screw mate.
-- `moves in the plane through ... normal to ...`: a part flush on a face, free to slide and turn
-  on it.
-- `slides along (dx, dy, dz)`: the engine's piston.
-- `turns about the point (x, y, z)`: a ball joint, a point of the part on a point.
-- `turns about an axis that moves with the mechanism`: a four-bar's coupler, or an engine's rod.
-  At each moment it turns about some point, but that point moves as the linkage does, so nothing
-  of the part stays put.
-- `free`, or a count such as `turns 1 way and slides 1 way` where nothing stays put.
+| The screen says | For example |
+|---|---|
+| `fixed` | a part that can't move |
+| `turns about the axis through (x, y, z) along (dx, dy, dz)` | a part on a hinge, a pin flush in its hole |
+| `turns about and slides along the axis ...` | a pin in a hole, not held flush |
+| `screws along the axis ..., 2.00 a turn` | a part on a screw mate |
+| `moves in the plane through ... normal to ...` | a part flush on a face |
+| `slides in the plane through ... normal to ...` | a part that slides on a face but can't turn |
+| `slides along (dx, dy, dz)` | the engine's piston |
+| `turns about the point (x, y, z)` | a ball joint: a point of the part on a point |
+| `turns about an axis that moves with the mechanism` | a four-bar's coupler, an engine's rod |
+| `free`, or a count such as `turns 1 way and slides 1 way` | nothing stays put |
 
-A driven joint adds `driven by angle`: the count is what the mates allow, with the driving
-dimension and any minimum or maximum let go, so a driven lid still `turns about` its hinge. The
-count is taken where the parts are now. At a position where the mechanism locks up for a moment,
-as a chain pulled straight, it counts what the mechanism can do there, as the group's DOF does.
+A driven joint adds `driven by angle`. The count is what the mates allow with the drive and any
+limits let go, so a driven lid still `turns about` its hinge. It is counted where the parts are
+now.
 
 ## Dragging
 
 Drag a point or a line of a mechanism's part, or move one from a script (`Entity.MoveTo`,
-`Entity.MoveBy`), and it is pulled along the mechanism's freedom: the part turns and slides as
-its mates let it, the parts joined to it move with it, and the point stops as near where it was
-sent as they can bring it. Where a mate lets a part both slide and turn, it slides. A minimum or
-maximum on a dimension of the mechanism stops the pull there. A mechanism with no freedom left
-doesn't move. A point of any other part is put where it is sent, and its constraints then move
-it, as before.
+`Entity.MoveBy`). The part turns and slides as its mates let it, the parts joined to it follow,
+and the point stops as near where it was sent as they can bring it.
 
-The pull follows the mouse in the view's plane. A hinge holds its part in the plane square to its
-line: dragged along the line, the part hardly moves. Turn the view so that the plane the part
-turns in faces you.
+- Where a mate lets a part both slide and turn, it slides.
+- A minimum or maximum on a dimension of the mechanism stops the drag there.
+- A mechanism with no freedom left doesn't move.
 
-While a linked part is dragged, an assembly is drawn from each part's mesh moved where its link
-places it, and meshed again when the drag ends.
+The drag follows the mouse in the view's plane. A hinged part dragged along its hinge line hardly
+moves: turn the view so that the plane the part turns in faces you.
 
 ## Driven joints
 
 A driven joint is turned or slid by a parameter, which a motion study then drives:
 
-- **Mate Hinge, Driven**, with two line segments, makes the hinge Mate Hinge makes, and holds the
-  second part's turn about the first line by a new parameter, `angle`, in degrees from where
-  the part is, starting at 0. With two circles or arcs, a pin and its hole, it puts them on one
-  axis as Mate Concentric does and drives the turn about the first one's axis. A second driven
-  hinge gets `angle2`, and so on. A positive angle turns the part anticlockwise seen from the
-  line's end looking back to its start, or from the side the first circle's normal points to.
-- **Mate Concentric, Driven**, with two circles or arcs, makes the concentric mate, and holds the
-  second circle's distance along the first one's axis by a new parameter, `travel`, from where it
-  is. The part may still turn about the axis: hold that with another mate.
+- **Mate Hinge, Driven**: the hinge of Mate Hinge, with the second part's turn held by a new
+  parameter, `angle`, in degrees from where the part is. With two line segments it hinges on the
+  first line; with two circles or arcs, a pin and its hole, it puts them on one axis and drives
+  the turn about it. A positive angle turns anticlockwise seen from the line's end looking back to
+  its start, or from the side the first circle's normal points to.
+- **Mate Concentric, Driven**, with two circles or arcs: the concentric mate, with the second
+  circle's distance along the axis held by a new parameter, `travel`. The part may still turn:
+  hold that with another mate.
 
-A driven joint leaves no freedom: dragging its parts moves nothing, while the parameter, edited in
-the parameter table, does. Both mates are made in 3D. Assembly > Motion Study on `angle` turns the
-joint through a range, saving a picture or a mesh of each step
-([motion study](parameters-and-units.md#motion-study)): the engine's crank driven from 0 to 360
-turns round and runs the piston up and down its stroke, twice the crank's throw.
+A second driven joint gets `angle2` or `travel2`, and so on. Both mates are made in 3D. Dragging
+a driven joint's parts moves nothing; editing its parameter in Edit > Parameters does.
+
+Assembly > Motion Study on `angle` turns the joint through a range, saving a picture or a mesh at
+each step ([motion study](parameters-and-units.md#motion-study)). The engine's crank driven from 0
+to 360 runs the piston up and down its stroke.
 
 To keep a joint within a range, select its dimension and choose Constrain > Minimum Dimension or
-Maximum Dimension. On a dimension that a parameter drives, the bound is put beside it rather than
-in its place, and a value of the parameter past it fails to solve: a motion study marks such a
-step unsolved, as the lid's past 110°. A turn about an axis takes a bound as a distance does
-([limits](limits.md)).
+Maximum Dimension. On a driven dimension the bound is added beside the drive. A parameter value
+past the bound fails to solve, and a motion study marks that step unsolved, as the lid's past
+110°. See [limits](limits.md).
 
 ## From a script
 
@@ -198,7 +182,8 @@ fmt.Println(piston.AsLink().Mechanism(), piston.Dof())
 ```
 
 `Moves` reads the flag back, and `Mechanism` lists the groups of the link's mechanism, in order.
-`Freedom` says how the part can move, as the link group's screen does:
+`Group.Implied` lists the constraints a closed loop repeats. `Freedom` says how the part can
+move, as the screen does:
 
 ```go
 f := piston.AsLink().Freedom()
@@ -207,23 +192,27 @@ fmt.Println(f.Turns, f.Slides)      // 0 1
 fmt.Println(f.Invariant, f.Dir)     // direction (0, 1, 0)
 ```
 
-`Turns` and `Slides` count the ways it turns and slides; `Invariant` is what stays put, `"point"`,
-`"axis"`, `"plane"`, `"direction"` or `"none"`, at `Point` along or normal to `Dir`; `Lead` is a
-screw's travel a turn, `Moving` a turn about an axis that moves, `DrivenBy` the parameters that
-drive it. `Group.Implied` lists the constraints a closed loop repeats.
+| Field | What it holds |
+|---|---|
+| `Turns`, `Slides` | how many ways the part turns and slides |
+| `Invariant` | what stays put: `"point"`, `"axis"`, `"plane"`, `"direction"` or `"none"` |
+| `Point`, `Dir` | where the invariant is, and its direction |
+| `Lead` | a screw's travel in one turn |
+| `Moving` | the part turns about an axis that moves |
+| `DrivenBy` | the parameters that drive it |
 
 ## Not yet
 
-- A motion study drives one parameter: two driven joints moved together need an expression
+- A motion study drives one parameter. Two driven joints moved together need an expression
   tying one to the other.
-- Turning a mechanism's part with Shift or Ctrl while dragging, or by its normal, puts it where
-  it is turned and solves, as for any part: it doesn't follow the mechanism's freedom.
-- A drag of an assembly with a Boolean among its groups (a cut through two parts) meshes the
-  assembly again at every step, which is slower.
-- The joints are the mates there are: no ball, cylindrical, planar or slot mate of their own yet.
-  A point on a point makes a ball joint, a Concentric alone a cylindrical one.
-- A 3D sketch can't be a part of a mechanism, and a drag doesn't write back into a driving
-  parameter.
-- Edges that lie on each other, as a closed lid's on its box's, can't both be picked where they
-  are: the one of the active group is. Link a part where its edge is clear, as the lid beside the
-  box, or turn the view.
+- A drag doesn't write back into a driving parameter.
+- A 3D sketch can't be part of a mechanism.
+- No ball, cylindrical, planar or slot mate of its own. A point on a point makes a ball joint,
+  Mate Concentric alone a cylindrical one.
+- Parts need a start position near where they go: a loop can't close from full stretch.
+- Turning a part with Shift or Ctrl while dragging, or by its normal, doesn't follow the
+  mechanism's freedom: the part is put where it is turned, then solved.
+- Dragging an assembly with a Boolean among its groups (a cut through two parts) is slower: the
+  assembly is meshed again at every step.
+- Edges that lie on each other, as a closed lid's on its box's, can't both be picked: you get the
+  active group's. Link the part where its edge is clear, or turn the view.

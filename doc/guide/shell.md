@@ -56,12 +56,18 @@ replays the same clicks on the program (`scripts/regen-doc-images.sh`). Its last
 Select one or more faces of the solid to take away, then choose Features > Shell Solid
 (Shift+G). A right click on a face offers the same as Shell Solid Open Here.
 
-The group's screen lists the faces taken away and takes the thickness, as a number or an
-expression. "[change]" beside the faces takes the current selection as the faces to take away
-instead (with nothing suitable selected it activates the group before the shell, says what to
-pick, and reads "[take the selection]" until you do). "[remove]" on a face's row keeps that face
-as a wall again. A thickness at which the walls would meet is a problem on the group, and the
-solid passes through unchanged.
+The group's screen:
+
+- The thickness starts at 1 mm. "[change]" takes a number or an expression.
+- Each face taken away has a row. "[remove]" keeps that face as a wall again.
+- "[change]" beside the faces takes the current selection as the faces to take away instead.
+  With nothing suitable selected, it activates the group before the shell, says what to pick,
+  and the link reads "[take the selection]" until you do.
+
+A thickness at which the walls would meet, or a solid the shell can't hollow, is a problem on
+the group that says why, and the solid passes through unchanged. Where the shell has to stop a
+wall a little short of where it should, the group carries a note that says how far (`Note()` on
+the group in a script).
 
 From a script:
 
@@ -70,112 +76,56 @@ box := doc.Features.Extrude(25, "box")
 top := box.Solid().FaceAt(api.V(30, 20, 25))
 sh := doc.Features.ShellSolid([]api.SolidFace{top}, 2, "")
 sh.AsShell().SetThickness(1.5)
+side := box.Solid().FaceAt(api.V(30, 0, 10))
+sh.AsShell().SetFaces([]api.SolidFace{top, side}) // open at the front too
 ```
+
+`Features.Shell` takes face entities instead, as `Group.Faces` gives an extrusion's.
 
 ## What it hollows
 
-**A solid of flat faces** can be open at any of them.
+The walls are moved in square to themselves by the thickness: a flat face stays flat, a cylinder
+or a cone keeps its axis and changes its radius, a sphere stays a sphere. Each wall is exactly the
+thickness.
 
-**A prism** whose sides are flat or round, such as an extruded circle, a rounded rectangle, or a
-block with a round hole, can be open at its ends. Its arcs keep their centres and lose or gain
-the thickness on their radius. A round corner smaller than the thickness becomes a sharp corner
-inside.
+| Solid | Can be open at |
+|---|---|
+| A solid of flat faces | any face |
+| A prism with round sides (an extruded circle, a rounded rectangle, a block with a round hole) | its ends |
+| A lathe or revolve of lines and arcs, or several lathes about one axis joined | any face, flat or curved; a ring open all round its outer side leaves a channel |
+| A drafted extrusion with round sides (a drafted cylinder, ring or slot), one-sided or two-sided | its ends, or a round side |
+| A union of such parts (a turned body with a boss out of its side, a block with a round post) | any of the parts' faces |
+| Such parts taken away from a solid or intersected with it (a round pocket, a groove, a ball cut flat) | any face, including a pocket's floor |
 
-**A lathe or revolve** of lines and arcs, with no other solid before or after it, is hollowed by
-its profile. So are several lathes about one axis joined to each other (a cup with a flange round
-its foot, a groove turned out of a cylinder), drawn in any planes through the axis. The lathes'
-profiles are joined, then the profile is offset into the material: each line is moved square to
-itself, each arc gets a smaller or larger radius about its centre, and the result is turned
-again. So a cone gets a coned inside and a sphere a spherical one, each wall exactly the
-thickness. Such a solid can be open at any of its faces: a flat one, such as a cup's top, or a
-curved one, such as a ring open all round its outer side, which leaves a channel. Where a curved
-face taken away meets a flat face at an inside corner, as a stepped shaft's narrower part meets
-the step, the inside steps along the flat face's plane round the corner, so the wall under the
-step keeps its thickness. Beside a cone, a sphere or a torus at an inside corner, as a cylinder
-standing on a coned or rounded shoulder, the wall under that face keeps its thickness too and
-ends square to it at the corner. Where that face is taken away too, the two are both open there.
-Past a curved face taken away the inside runs out a little beyond the solid; where the solid comes
-back within the thickness outside the face, as across a slot narrower than the thickness, it runs
-out less, down to an eighth of the thickness. A revolve's flat ends are walls too, unless they are taken away. Where the ends of a
-revolve of more than half a turn meet at the axis, the inside keeps the thickness from each end
-and is rounded about the axis.
+Details:
 
-**A drafted extrusion whose sides are cones**, such as a drafted cylinder, ring or slot, with no
-other solid before or after it, is hollowed by its profile too. Each side, plane or cone, is
-moved in square to itself. The inside is the same draft of the profile, offset across by the
-thickness divided by the cosine of the draft angle, between the ends moved in. It can be open
-at its ends, or at a round side, past which the inside runs out. Where a round side taken away
-meets a flat side kept at an inside corner, as a round lobe on a block's edge does, the inside
-wall under the flat side stops a little short of the corner: the corner moves along a curve going
-up, and the inside's faces are flat. On a lobe of radius 4 on a block 10 high it stops about a
-fiftieth of the thickness short at small drafts and up to 0.25 at a draft of 10°, and the volume
-stays within 0.22% of a shell whose walls reach the corner. Beside a round side kept, as a lobe
-on a disc's rim, the wall under the rim stops short the same way, on a flat face square to the
-rim at the inside's foot; there the step can be set further back, to leave room outside the rim:
-on a lobe of radius 3 on a disc of radius 10, 10 high, from 0.01 short at small drafts up to
-nearly 1 at a draft of 8° and a thickness of 0.5, the volume within 1.3% of walls reaching the
-corner. Beside a hollow round side kept, as a lobe in a crescent's hollow, the wall stops short
-the same way, and the inside's face outside the side follows its circle, so it never runs into the
-material beyond: on a lobe of radius 2 in hollows of radius 4 to 9, it stops 0.01 to 0.15 short.
-The group says how far short in a note on its screen (and in a
-script, `Note()` on the group). A
-two-sided draft's inside leans both ways from its neutral plane, as the solid does, and each half
-of a side, above and below that plane, is a face of its own: one can be taken away and the other
-kept, as a lobe opened above the sketch only, whose half below stays a wall. Steep drafts are
-hollowed too, round sides kept and all: a disc drafted 20° both ways, whose two halves meet in a
-crease of 40°. (A drafted
-extrusion of lines only has flat faces, and is hollowed like any solid of flat faces.)
-
-**A union of such parts.** A solid joined by unions from lathes, revolves and extrusions,
-drafted or not, each of which a shell could hollow alone, is hollowed as the union of the parts'
-insides. Examples: a turned body with an extruded boss out of its side, a cup with a lug revolved
-part of a turn round it, a block with a round boss. Each part's walls are moved in. But a face of
-a part that lies inside the others, such as a boss's foot sunk into the body, is moved out by the
-thickness instead. So the boss's inside runs into the body's with no wall between them, and the
-walls round the joint keep the thickness. The ends of a revolve standing inside another part, such
-as a ring on a block's side, move out the same way, whatever its turn. An end in the air beside
-them is a wall, which runs on round the axis: on a half turn, whose two ends lie in one plane,
-the inside steps there, the thickness past the axis. A prism's
-sides move each as it lies: a round post half sunk into a block's side is walled all round, its
-inside reaching into the block's. Where a part's foot moved out would carry its inside past the
-wall of the part it stands in (a post sunk into a block's top just beside its side, standing out
-of the block), the foot is kept as a wall there instead, the other part's wall. A top that two
-parts share in one plane, as a block's and a round post's sunk into it as high as the block, can
-be opened at the block's face or at both; the post's top is a wall unless it is opened too. Lathes about one axis are joined by their
-profiles first, as above.
-
-**Parts taken away or intersected.** Such parts can also be taken away from the solid before
-them, or intersected with it: a round pocket or a groove lathed into a block, a cone or a ball
-cut flat by a block. A part taken away takes away from the inside that part grown by the
-thickness, every face moved out, so a wall of the thickness stands round the pocket and over its
-floor. A revolve of less than a whole turn taken away grows across its ends' planes too. A part
-intersected with cuts the inside by that part moved in. The parts are taken in the order they
-were made. A face taken away that lies on a part taken away (a pocket's floor, extruded or
-turned) or intersected with (the flat cut down a cone's side, a lathe's top) opens the inside
-through it.
+- A round corner smaller than the thickness becomes a sharp corner inside.
+- In a union, the insides of the parts run into each other with no wall between them, and the
+  walls round the joint keep the thickness.
+- A part taken away leaves a wall of the thickness round the pocket and over its floor.
+- A two-sided draft's side has a face above and one below the neutral plane; either can be
+  opened alone.
+- Where a drafted extrusion's round side is opened at an inside corner, as a round lobe on a
+  block's edge, the inside wall beside it stops a little short of the corner. The group's note
+  says how far, a few hundredths of the thickness at small drafts.
+- Past a curved face taken away, the inside runs out a little beyond the solid, less where the
+  solid comes back close outside it (across a narrow slot).
 
 ## Not yet
 
-- A solid with curved faces must be one of these: a prism whose sides all run one way, open
-  only at its ends; one lathe or revolve; lathes about one axis; or a solid joined from such
-  parts. A solid with a helix, or with a feature after those parts, is refused.
-- In a union, a part whose inside would touch another's along a line or at a point (a round post
-  sunk beside a block's side, as high as the block, its inside just meeting the block's) is
-  refused: the walls either side would meet with no thickness, which is no closed solid. Move
-  the post or change the thickness. So is a prism whose inside's outline would touch itself (the
-  same post standing on the block's own bottom): the walls either side would meet along a line.
-- A face moved out that would come out of the solid is refused. So is one that would leave a
-  wall beyond it thinner than the thickness, where a part joined to another is thinner there than
-  twice the thickness.
-- A revolve's curved face opened where the solid comes back within an eighth of the thickness
-  outside it, as across a slot that narrow, is refused: the inside would cut into the far side.
-  A drafted extrusion's round side opened at an inside corner is refused where the corner is too
-  tight for the wall's end to step round it, beside a flat or a round side kept.
+- A solid with curved faces must be one of the kinds above. A solid with a helix, or with a
+  feature after those parts, is refused.
+- Filleted and lofted solids can't be shelled yet.
 - A profile of curves other than lines and arcs is refused.
-- Beside a round hole, walls thinner than about twice the chord tolerance (how far the mesh may
-  stray from the true surface, set on the configuration screen) can come out unsound: the hole's
-  chords and the wall's cross.
-- Where four faces meet at a vertex and, moved in, don't meet at one point, as at an off-centre
-  pyramid's apex, the inside gets a short new edge there. Five or more such faces are refused.
-- Filleted and lofted solids can't be shelled yet. That waits for offsets of other kinds of
-  surface.
+- Where two parts' insides would touch along a line or at a point (a round post sunk just
+  beside a block's side), or a prism's inside outline would touch itself, it is refused: move the
+  part or change the thickness.
+- A face moved out that would come out of the solid, or leave a wall beyond it thinner than the
+  thickness, is refused.
+- A revolve's curved face opened where the solid comes back within an eighth of the thickness
+  outside it, as across a slot that narrow, is refused.
+- A drafted extrusion's round side opened at an inside corner too tight for the wall to step
+  round is refused.
+- Five or more faces meeting at a vertex that, moved in, don't meet at one point, are refused.
+  Four such faces (an off-centre pyramid's apex) get a short new edge inside.
+- Beside a round hole, walls thinner than about twice the chord tolerance can come out unsound.

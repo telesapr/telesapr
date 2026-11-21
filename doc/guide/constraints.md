@@ -7,7 +7,8 @@ so that one dimension sizes the whole tray; [`equal`](../../examples/scripts/equ
 other features on this page.
 
 All of SolveSpace's constraints are here, under the Constrain menu. TeleSAPR adds the ones
-below. Each is one undo step, and each has a script call on `doc.Constrain`.
+below. Each is one undo step, and each has a script call on `doc.Constrain`. Minimum and maximum
+dimensions have [a page of their own](limits.md).
 
 ## Step by step
 
@@ -32,13 +33,13 @@ These pictures are made by [`scenarios/constraints.scenario`](scenarios/constrai
 
 ## Ratios and differences of lengths
 
-Constrain > Length / Arc Ratio (Z) makes one length a multiple of another. Length / Arc
-Difference (J) makes one length longer than another by an amount.
+- **Constrain > Length / Arc Ratio** (Z) makes one length a multiple of another.
+- **Constrain > Length / Arc Difference** (J) makes one length longer than another by an amount.
 
 Each takes two line segments, two arcs (measured along the arc), or a line segment and an arc.
-With a line and an arc, the ratio or difference is the line's length over the arc's. A
-difference is a size, taken without its sign. If you want a shorter than b, select them the
-other way round.
+With two of a kind, the first picked is the one set from the second. With a line and an arc,
+the line is the one set from the arc. A difference has no sign: if you want a shorter than b,
+pick them the other way round.
 
 ```go
 constrain.Ratio(outer[1], outer[0], 0.5)       // depth is half the width
@@ -49,14 +50,16 @@ constrain.Difference(outer[0], pocket[0], 8)   // the pocket 8 mm narrower
 
 Constrain > Equal Length / Radius (Q) also takes:
 
-- a point and two line segments: the point is as far from the first line as the second line is
-  long;
-- a line segment and two points, or two line segments with a point each: the points are as far
-  from their line as each other.
+| Selection | Holds |
+|---|---|
+| a point and two line segments | the point as far from the first line as the second line is long |
+| a line segment and two points | the two points equally far from the line |
+| two line segments with a point each | each point as far from its line as the other |
 
-Constrain > Angle / Equal Angle (N) with three line segments or normals makes the two angles
-that share the middle one equal. With four, the angle of the first pair equals the angle of the
-second pair.
+Constrain > Angle / Equal Angle (N) makes angles equal:
+
+- three line segments or normals: the two angles that share the middle one;
+- four: the angle of the first pair and the angle of the second pair.
 
 ```go
 doc.Constrain.Equal(line, p, q)          // p and q equally far from line
@@ -73,16 +76,18 @@ height over a plane. In a script: `Constrain.ProjectedDistance(a, b, along, v)`.
 
 - **Parallel / Tangent** and **Perpendicular** take two flat faces of the solid, as well as line
   segments and normals (`Constrain.Parallel`, `Constrain.Perpendicular`).
-- **Tangent** for two curves that don't share an end: select the end points to make tangent too.
-  In a script, `Constrain.Tangent(arc, line, arcEnd)`; for two curves, give an end of each.
+- **Tangent** for two curves that don't share an end: select the ends to make tangent too. In a
+  script, `Constrain.Tangent(arc, line, arcEnd)`; for two curves, give an end of each.
 - **At Midpoint** works inside a workplane.
 - **Symmetric** with only a line segment selected makes its two ends symmetric about the
-  workplane's axis. The line's horizontal or vertical constraint is dropped, since it is no
-  longer needed (`Constrain.Symmetric(line, Entity{}, Entity{})`).
+  workplane's axis. The line's horizontal or vertical constraint is dropped, as it is no longer
+  needed (`Constrain.Symmetric(line, api.Entity{}, api.Entity{})`).
 - **Comment** with a point selected writes the text beside that point, and the text follows the
   point (`Constrain.CommentOn`). Drag the label to move it, or call
   `Constraint.SetLabelOffset`.
 - A diameter can be shown as a radius, from its screen (`Constraint.SetShowAsRadius(true)`).
+- A new dimension's label is put clear of the labels and points already shown. Drag it to move
+  it.
 
 ## What lies at a point
 
@@ -98,29 +103,32 @@ from `Sketch.Fonts()`, or "" for the built-in font) and `Entity.SetKerning`.
 
 ## Large edits and drags
 
-A sketch has more than one shape that meets its constraints: a triangle given its three sides
-can be drawn either way round, an arm given the length of its two links can bend its elbow
-either way. TeleSAPR keeps the one you drew. When a dimension changes by more than a quarter of
-its value, as a side typed two and a half times longer, the sketch is moved to the new value in
-steps, each solved from the one before; a point dragged far in one move is moved in steps the
-same way. After each step the corners between dimensioned lengths are checked: one that turned
-over is put back to its side, and an arc's sweep may not wrap round past its start.
+A sketch can meet its constraints in more than one shape. A triangle given its three sides can
+be drawn either way round; an arm given its two link lengths can bend its elbow either way.
+TeleSAPR keeps the shape you drew:
 
-The edit is never refused. Where no shape near the new one keeps the sketch the way it was, the
-sketch takes the new shape, and the group is marked "(note)" in the list of groups; its screen
-says which corner or arc turned over. In a script, `Group.Note` says the same. The note stays
-until the next edit or drag of the group.
+- A dimension changed by more than a quarter of its value, as a side typed two and a half times
+  longer, is moved to the new value in steps.
+- A point dragged far in one move, more than a quarter of the sketch's size, is moved in steps
+  the same way.
+- After each step, a corner between dimensioned lengths that turned over is put back. An arc's
+  end dragged past its start takes the start along rather than wrap the arc round.
 
-Only an edit or a drag does this: opening a file or regenerating solves the sketch as before,
-from where it is. A dimension changed through a parameter's value, or by Step Dimension in the
-text window, is solved in one step.
+The edit is never refused. Where no nearby shape keeps the sketch the way it was, as an arc
+whose start is locked, the sketch takes the new shape. The group is then marked "(note)" in the
+list of groups, and its screen says which corner or arc turned over. In a script, `Group.Note`
+says the same. The note stays until the next edit or drag of the group.
+
+Only an edit or a drag does this. Opening a file or regenerating solves the sketch from where it
+is. A dimension changed through a parameter, or by Analyze > Step Dimension, is solved in one
+step.
 
 ## Not yet
 
-A ratio or difference takes the lengths of lines and arcs only. It does not take cubics, or the
-radii of circles.
-
-The corners a large edit or drag keeps are those between two lengths held by dimensions (or by
-an equal-length, ratio, difference, angle or perpendicular constraint), in a workplane. A sketch
-in 3d, and the turn of a curve, are not checked. A parameter's new value is not followed in
-steps.
+- A ratio or difference takes the lengths of lines and arcs only: not cubics, nor the radii of
+  circles.
+- Ratios and differences can't be minimum or maximum bounds ([Limits](limits.md)).
+- A large edit or drag keeps only the corners between two held lengths in a workplane (held by
+  dimensions, or by an equal-length, ratio, difference, angle or perpendicular constraint). A
+  sketch in 3d, and the turn of a curve, are not checked.
+- A parameter's new value is not followed in steps.

@@ -59,9 +59,9 @@ These pictures are made by [`scenarios/loft.scenario`](scenarios/loft.scenario).
 
 With one other sketch picked, the two loops are joined by ruled faces, curve by curve. With two
 or more, one smooth surface goes through all the loops. The profiles are taken in the order of
-the history, starting from the active sketch, which must be the first or the last of them. The
-window shows only the groups up to the active one, so activate the last profile and pick the
-earlier ones.
+the history, from the active sketch, which must be the first or the last of them. The window
+shows only the groups up to the active one, so activate the last profile and pick the earlier
+ones.
 
 The loops need not have the same number of curves. A circle counts as four arcs. A loop with
 fewer curves has its longest curve split in two until the counts match, so a triangle lofts to
@@ -69,13 +69,18 @@ a square.
 
 The group's screen shows:
 
-- the profiles, with "[change]" to loft through the sketches of the selected entities instead,
-  in the order of the history;
-- "turn the second by [-1] [+1]" (for a smooth loft, "turn those after the first by"). This
-  shifts which curve of one loop is joined to which curve of the next. A square turned a
-  quarter has saddle faces. A smooth loft first turns each profile to start at the curve
-  nearest where the one before it starts, and the turn twists from there. A large twist can
-  fold the surface through itself, which Analyze > Check Solid reports.
+- the profiles, with "[change]" to loft through the sketches of the selected entities instead;
+- "turn the second by [-1] [+1]" (for a smooth loft, "turn those after the first by"), which
+  shifts which curve of one loop is joined to which of the next. A square turned by one side
+  has saddle faces. A large turn can fold the surface through itself, which Analyze > Check
+  Solid reports;
+- how the loft leaves the first profile and reaches the last ([Square to the ends](#square-to-the-ends));
+- its guides ([Guide curves](#guide-curves));
+- for a smooth loft, how it passes each middle profile, and whether it is closed into a ring.
+
+The smooth surface passes exactly through each profile. Arcs stay exact, so circles about one
+axis loft to a true surface of revolution. Where a profile has a corner, the surface has a
+crease there, which fades out toward smooth profiles; the window draws it as an edge.
 
 ## From a script
 
@@ -83,29 +88,20 @@ The group's screen shows:
 l := doc.Features.Loft(bottom, top, "duct")
 l.AsLoft().SetTurn(1)
 
-v := doc.Features.LoftThrough([]Group{foot, belly, neck, lip}, "vase")
+v := doc.Features.LoftThrough([]api.Group{foot, belly, neck, lip}, "vase")
 v.AsLoft().Profiles() // foot, belly, neck, lip
 ```
 
-## How the smooth surface is made
-
-Each loop becomes one B-spline curve. Its pieces are raised to one degree, with a knot at each
-joint. The curves are then interpolated across the profiles by a cubic B-spline (a quadratic
-one through three profiles), spaced by the distances between the profiles. Arcs stay exact, so
-circles about one axis loft to a true surface of revolution. The surface passes through each
-profile exactly. Where a profile has a corner, the surface has a crease there. The crease fades
-out toward smooth profiles, and the window draws it as an edge.
-
 ## Square to the ends
 
-The loft's screen says how the loft *leaves the first* profile and *reaches the last*:
+The rows "leaves the first" and "reaches the last" say how the loft meets its end profiles:
 
 - **free**: the surface is shaped by the profiles alone;
-- **square to it, by a number**: the surface leaves the profile along the profile's normal. The
-  number is how far that direction is held: the slope across the end is that many times the
-  loft's length. 1 is a natural curve. More holds the normal longer.
+- **square to it, n**: the surface leaves along the profile's normal. The number is how long
+  that direction is held: the slope across the end is n times the loft's length. 1 is a natural
+  curve; more holds the normal longer. "[change]" sets it, and 0 frees it again.
 
-A loft of two profiles with an end set is one smooth surface, not ruled patches. Example:
+A loft of two profiles with an end set is one smooth surface, not ruled faces. Example:
 [`examples/scripts/nozzle`](../../examples/scripts/nozzle/nozzle.go), a square duct turning
 into a round one, square to both ends.
 
@@ -114,20 +110,15 @@ loft.AsLoft().SetTangency(1, 1) // square to both ends
 loft.AsLoft().SetTangency(0, 0) // free again
 ```
 
-## Along a solid's sides
+### Along a solid's sides
 
 A profile may be drawn on a face of the solid made before the loft, along that face's edges.
-The loft can then leave along the solid's sides instead of square to the profile: click
-"[along sides]" beside that end on the loft's screen ("[square]" puts it back).
+Click "[along sides]" beside that end, and the loft leaves along the solid's side faces instead
+of square to the profile ("[square]" puts it back). The side carries on into the loft without a
+crease: where the sides lean, as on a drafted extrusion or a cone, the loft follows the lean.
+The number means the same as for square ends.
 
-At each point of the profile, the loft leaves in the tangent plane of the side face that meets
-the edge there. So the side carries on into the loft without a crease. At a corner between two
-sides, the loft leaves along the line where they meet. Where the sides are square to the face,
-this is the same as square to the profile. Where they lean, as a drafted extrusion's or a cone's
-do, the loft follows the lean. The number means the same as for square ends, and 1 where it is 0.
-
-A profile that is not on the edges of a side below its face is a problem on the group. A loft
-held by guides follows the sides too, and still holds its guides. Example:
+A profile that is not on the edges of a side face is a problem on the group. Example:
 [`examples/scripts/spire`](../../examples/scripts/spire/spire.go), a spire on a tapered post.
 
 ```go
@@ -136,22 +127,20 @@ loft.AsLoft().SetAlongSides(true, false) // leave the first profile along the si
 
 ## Guide curves
 
-A loft can be held to guide curves. A guide is a chain of line segments, arcs and cubics drawn
-in a sketch before the loft, joined end to end. It runs from a point of the first profile
-through every profile to the last. On a closed loft it goes round the ring (see below).
+A guide is a chain of line segments, arcs and cubics, drawn in a sketch before the loft, joined
+end to end. It runs from a point of the first profile through every profile to the last.
 
 Activate the loft, select the curves and choose Features > Guide Loft by Selected Curves. The
 loft's screen says how many curves guide it, and "[none]" takes them away.
 
-- One guide moves the loft's sections across, each within its own plane. The loft then runs
-  along the guide where it would have run straight.
-- Two guides move, turn and scale the sections. The loft widens and narrows between them.
+- One guide moves the loft's sections across: the loft runs along the guide where it would have
+  run straight.
+- Two guides move, turn and scale the sections: the loft widens and narrows between them.
 
-The surface holds the guides at a dozen sections between each two profiles, and closely between
-those, and still goes through every profile. A guide that misses a profile, or does not start
-and end on the end profiles, is a problem on the group, and the message says how far it is off.
-Example: [`examples/scripts/horn`](../../examples/scripts/horn/horn.go), a horn flared by two
-guides.
+The loft still goes through every profile. A guide that misses a profile, or does not start and
+end on the end profiles, is a problem on the group, and the message says how far it is off. A
+guided loft can also leave its ends along a solid's sides. Example:
+[`examples/scripts/horn`](../../examples/scripts/horn/horn.go), a horn flared by two guides.
 
 ```go
 loft.AsLoft().SetGuides([]api.Entity{right, left}) // two guides
@@ -160,18 +149,10 @@ loft.AsLoft().SetGuides(nil)                       // none again
 
 ## Square to a profile between the ends
 
-A smooth loft can also be held square to a profile between its ends. Each such profile's row on
-the loft's screen says how the loft *passed* it: free, or square to it by a number. "[change]"
-sets the number, and 0 frees it again.
-
-The number works as at the ends: the slope across the profile is that many times the loft's
-length, so the loft runs straight through the profile for a stretch. Free, it would bend
-through the profile as the profiles about it shape it. The loft is then one surface from each
-held profile to the next, meeting there with one slope, and still one face.
-
-A guided loft can hold profiles between its ends too. The guides move the sections, and the loft
-still leaves each held profile square to it. Where a guide crosses the profile at a slant, the
-loft turns onto the guide within a twelfth of the way to the next section. Example:
+Each middle profile's row on a smooth loft's screen says how the loft *passed* it: free, or
+square to it by a number. "[change]" sets the number, and 0 frees it again. Held square, the
+loft runs straight through the profile for a stretch, where free it would bend through it. A
+guided loft can hold middle profiles too. Example:
 [`examples/scripts/waist`](../../examples/scripts/waist/waist.go), a column running straight up
 through its waist.
 
@@ -183,24 +164,17 @@ loft.AsLoft().SetProfileTangency(waist, 0)   // free again
 ## Closed into a ring
 
 A smooth loft of three profiles or more can go on from its last profile back to its first. Click
-"[closed]" on the last row of its screen ("[open]" undoes it). The ring has no caps, and it is
-as smooth where it closes as anywhere else.
+"[closed]" on its screen's last row ("[open]" undoes it). The ring has no caps, and it is as
+smooth where it closes as anywhere else.
 
-- A ring has no ends, so it cannot carry a solid's sides on, and it cannot turn its profiles.
-  Either setting is a problem on the group. A ring passes through every profile, so one drawn
-  on a solid's face goes on into the solid; hold that profile square instead.
-- Any of its profiles can be held square, as an open loft's middle ones are. The ring is then
-  one surface from each held profile round to the next, and still one face. The first and last
-  profiles are held by the rows that set an open loft's ends (`SetTangency` in a script, or
-  `SetProfileTangency` with that profile). The ring then meets itself tangent there.
-- Guides hold a ring as they hold an open loft. Each guide goes round the ring through every
-  profile and closes on itself. A guide with ends is a problem on the group.
-- A ring can be held by guides and square to its profiles at once.
-- Between profiles, the sections turn with the ring, as a closed sweep's do, so they keep the
-  profiles' size. Three circles round a circle make a torus within a fifth of a percent.
-- Profiles can be any distance apart round the ring: three bunched on one side make the whole
-  ring, going back from the last to the first the long way round. They must go once round the
-  ring in their order; profiles drawn out of order, or on a line, are a problem on the group.
+- The profiles must go once round the ring, in their order. They may be any distance apart:
+  three bunched on one side still make the whole ring. Profiles out of order, or on a line, are
+  a problem on the group.
+- Any profile can be held square, the first and last by the rows that set an open loft's ends.
+- Guides hold a ring too. Each goes round the ring through every profile and closes on itself;
+  a guide with ends is a problem on the group.
+- A ring cannot turn its profiles or leave along a solid's sides: both are problems on the
+  group. A profile drawn on a solid's face goes on into the solid; hold it square instead.
 
 Examples: [`examples/scripts/ring`](../../examples/scripts/ring/ring.go), a ring that swells
 and narrows, running straight through its narrow profiles;
@@ -217,4 +191,4 @@ ring.AsLoft().SetGuides(guide) // cubics round the ring, end to end
 
 ## Not yet
 
-Three guides or more are refused: a loft takes two at most.
+A loft takes two guides at most; three or more are refused.

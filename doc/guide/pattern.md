@@ -6,7 +6,7 @@ rail of a straight run, a bend and another run, and
 circle.
 
 A pattern repeats a group's solid along a path. The path is line segments and arcs, joined end
-to end and meeting tangent, as a sweep's path is.
+to end and meeting tangent.
 
 ## Step by step
 
@@ -76,5 +76,7 @@ fmt.Println(pegs.AsRepeat().Copies(), pegs.Edges())
 
 ## Not yet
 
-The solid is repeated, not the sketch's entities, so the copies cannot be constrained or
-dimensioned one by one. A group forced to a triangle mesh cannot be patterned.
+- The solid is repeated, not the sketch's entities, so the copies cannot be constrained or
+  dimensioned one by one.
+- A group forced to a triangle mesh cannot be patterned.
+- The path cannot have cubics or sharp corners, as a sweep's can.

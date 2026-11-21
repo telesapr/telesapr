@@ -10,7 +10,7 @@ Example: [`examples/scripts/clearance`](../../examples/scripts/clearance/clearan
 
    ![The pin in its plate, and the hollowed box](images/clearance-1-model.png)
 
-2. Choose Analyze > Clearance and Walls. Its screen opens in the property browser. Click
+2. Choose Analyze > Clearance and Walls... Its screen opens in the property browser. Click
    [check gaps].
 
    ![The Clearance and Walls screen](images/clearance-2-screen.png)
@@ -21,10 +21,10 @@ Example: [`examples/scripts/clearance`](../../examples/scripts/clearance/clearan
 
    ![The gap between the pin and the plate](images/clearance-3-gaps.png)
 
-4. Click [change] beside walls thinner than, type 1.5, and click [check walls]. The thinnest
-   wall is 1.20, in the hollowed box, marked as a gap is, with its thickness. Thin red lines
-   cross every point of the walls thinner than 1.5 mm, fainter where the wall hides them, so
-   the thin walls show shaded red.
+4. Click [change] beside walls thinner than, type 1.5, and click [check walls]. The screen says
+   "The thinnest wall is 1.20, in g004-walls." It is marked as a gap is, with its thickness. Thin
+   red lines cross every point of the walls thinner than 1.5 mm, fainter where the wall hides
+   them, so the thin walls show shaded red.
 
    ![The box's walls thinner than 1.5 mm](images/clearance-4-walls.png)
 
@@ -32,82 +32,50 @@ These pictures are made by [`scenarios/clearance.scenario`](scenarios/clearance.
 
 ## What it does
 
-Before a model is printed or machined, two things are worth checking: are any two parts too
-close together, and is any wall too thin? Analyze > Clearance and Walls opens a screen in the
-property browser that checks both, on the model up to the active group.
+Before a model is printed or machined, two things are worth checking: are two parts too close,
+and is a wall too thin? Analyze > Clearance and Walls... checks both, on the model up to the
+active group.
+
+The parts are the ones Show Interfering Parts checks: each group set to **assemble**, and the
+solid made before the first of them. A group that cuts the assembly after them cuts each part
+it reaches. Parts made of triangles (linked as a mesh, or with **force NURBS surfaces to
+triangle mesh** ticked) are taken too.
 
 ### Gaps between parts
 
-The screen's first row is **gaps less than** a distance, 1 mm to start with. [change] sets it.
+The first row is **gaps less than** a distance, 1 mm to start with; [change] sets it.
 
-The parts are the same ones Show Interfering Parts checks: each group assembled into the model,
-and the solid made before the first of them, even when that solid was made as triangles
-(**force NURBS surfaces to triangle mesh**). A group that cuts the assembly after them cuts each
-part it reaches, a part made of triangles too (forced to a triangle mesh, or linked as a mesh).
-A cutting group with no surfaces of its own, as a linked mesh, cuts the parts it reaches as
-triangles, which are then parts of triangles: Show Interfering Parts can't check those.
+[check gaps] lists every pair of parts nearer than that, the nearest first. Each gap is marked
+on the model: a red line between the two nearest points, a tick across each end and a leader to
+its size. Where a solid hides the gap, the line and leader are dashed. A gap that is the same
+along a length, as round a pin in its bore, is marked at one place.
 
-[check gaps] lists every pair of parts nearer than the distance, the nearest first, and marks
-each gap on the model: a red line between its two nearest points, a tick across each end and a
-leader to its size. Where a solid hides the gap, the line and the leader are dashed. A gap that
-is as narrow along a length, as round a pin in its bore, is marked at one place along it. Parts that touch or overlap have a gap of 0. Which of those
-overlap, Show Interfering Parts tells.
+Parts that touch or overlap have a gap of 0. Show Interfering Parts tells which of them overlap.
 
 With **solids within parts** ticked, a part made of several solids, such as a linked assembly,
-is taken solid by solid, and the gaps between its own solids are listed too, as
-"g004-tile solid 2". A part linked as a mesh is taken by its pieces: the triangles that are
-joined by shared corners.
+is taken solid by solid. The gaps between its own solids are listed too, as
+"g004-tile solid 2". A part linked as a mesh is taken by its pieces: triangles joined by shared
+corners.
+
+The screen says how far the gaps may be off. A gap is found on the meshes, then measured again
+on the exact surfaces, so a pin in its bore comes out at its true gap.
 
 ### Walls thinner than a thickness
 
 The second row is **walls thinner than** a thickness, also 1 mm to start with.
 
-[check walls] measures the walls of each part. From points on each triangle of the part's mesh,
-it casts a ray straight into the solid, square to the triangle, to where the ray leaves the
-part again. The screen says what the thinnest wall is and where. On the model the thinnest wall
-is marked as a gap is, with a line across it, a tick at each end and a leader to its thickness,
-and a thin line crosses each point thinner than asked, faint where the wall hides it.
+[check walls] measures each part's walls at many points: from each point a ray goes straight
+into the solid, to where it leaves again. The screen says:
 
-How the points are chosen:
+- the thinnest wall and the part it is in, marked on the model with its thickness;
+- how many points are thinner than asked, each crossed by a thin red line;
+- how exact the measure is, and how far apart the points were.
 
-- They are no further apart than half the thickness asked about, or a fiftieth of the model's
-  size. So a thin spot narrower than the triangles around it, such as near the tip of a cone,
-  is not missed between their middles.
-- Around the thinnest spots the points are placed closer again.
-- Between two points a wall can be thinner still, as under the tip of a narrow groove. A ray
-  from one flat triangle to the one it leaves through grows or shrinks evenly as it moves, so
-  the corners of where the two triangles overlap are measured too. The thinnest spot is among
-  them.
-- So that no such spot is missed where no ray happened to land, as under a dimple narrower than
-  the points are apart, every pair of triangles that face each other closer than the thinnest
-  wall found is measured the same way.
-- A sharp edge, as where a thread's ridge runs out of an end face, has a thickness of nothing
-  there, and is listed so.
+The points are no further apart than half the thickness asked about, and closer around the
+thinnest spots. A sharp edge, as where a thread's ridge runs out of an end face, has a
+thickness of nothing there, and is listed so. Each solid of a part is measured on its own.
 
-The screen says how far apart the points were.
-
-Each solid of a part is measured on its own. A hollow's inside is measured together with the
-solid around it, so a ray from one solid does not stop on another standing on it.
-
-### How exact it is
-
-Gaps are first found on the parts' meshes. Then the nearest points are followed onto the exact
-surfaces the triangles stand for. So a pin in a bore comes out at its true gap, even though the
-meshes' chords are a little nearer. A part linked as a mesh has no exact surfaces: its
-triangles are its geometry, so the gap is followed on them and onto the other part's surfaces.
-
-The screen says how far the gaps may be off: the chord tolerances of the two meshes (how far
-each mesh may stray from its true surface), plus more where the points were followed onto the
-surfaces and moved.
-
-A wall is measured between two points of the mesh, each within the chord tolerance of the
-surface. The thinnest points are then followed onto the two surfaces of the wall. Where two
-faces meet square or wider, as a cup's inside meets its rim, the triangles beside the edge can
-lean in by a little, and a ray from one leaves through the other at once; such a ray measures
-the mesh's fold, not a wall, and is left out where the part has surfaces to tell: only rays
-whose two faces face each other by more than a degree count.
-
-When the last hundredths matter, set the chord tolerance smaller on the configuration screen.
+When the last hundredths matter, set the chord tolerance smaller in Edit > Preferences.
 
 ## From a script
 
@@ -127,7 +95,5 @@ The MCP `measure` tool reports both when asked with `gaps` and `walls`
 
 ## Not yet
 
-- A part can have more pairs of triangles facing each other within its thinnest wall than are
-  measured (4 million a part, each pair covering some of the other). Past them a wall can still
-  be missed, and the screen says so. No part has come near: a ball of 159,000 triangles has a
-  few.
+- A part with very many triangles facing each other within its thinnest wall (over 4 million
+  pairs) is not measured everywhere, and a thinner wall can be missed. The screen says so.

@@ -24,12 +24,12 @@ File > Export has one entry for each kind of file:
 | Script | `.go` | `File.ExportScript` |
 | Drawing | as 2d View | see [Drawings](drawings.md) |
 
-`File.Export` tells from the extension what to write. Every export is of the model as it is at
-the active group.
+`File.Export` tells from the extension what to write (`.step` is Surfaces). Every export is of
+the model as it is at the active group.
 
-Surfaces writes each face of the solid with the curves that bound it. A face whose bounding
-curves don't meet in a closed outline can't be written: it is left out, and the export warns
-where, since another program then reads the file as an open shell rather than a solid.
+Surfaces writes each face of the solid as an exact surface with the curves that bound it. A
+face whose bounding curves don't close can't be written: it is left out, and the export warns
+where, since other programs then read the file as an open shell.
 
 ### Mesh quality
 
@@ -42,15 +42,15 @@ that say how closely, and offers them as presets:
 | standard (default) | 0.1 mm | none | 64 |
 | fine | 0.02 mm | 10° | 256 |
 
-The chord tolerance is how far a facet may stray from the true surface. A curved face is meshed
-by placing points over it where it bends and joining them into triangles (a constrained
-Delaunay mesh), so that its facets keep within the chord tolerance; flat faces are triangles
-between their edges' points. The segments per curve limit how finely the face is cut too: with
-few segments and a fine chord tolerance, a strongly curved face strays by what its fewest
-segments allow. The angular tolerance
-bounds the turn between neighbouring facets, so small radii are followed as closely as large
-ones. **Strict** refuses to write a mesh that has naked edges or self-intersections. Without it,
-such a mesh is written with a warning. Facets of no area are left out.
+- The **chord tolerance** is how far a facet may stray from the true surface.
+- The **segments per curve** cap how finely a curve is cut. With few segments, a tight curve
+  strays further than the chord tolerance asks.
+- The **angular tolerance** caps the turn between neighbouring facets, so small radii are
+  followed as closely as large ones.
+- **Strict** refuses to write a mesh that has naked edges or self-intersections. Without it,
+  such a mesh is written with a warning.
+
+Facets of no area are left out.
 
 In the window, File > Export > Triangle Mesh first shows a dialog, Export Triangle Mesh. It has
 **Quality** (Draft, Standard, Fine or Custom), **Chord tolerance** in mm, **Angular tolerance**
@@ -95,8 +95,8 @@ The upper box holds the mesh's chord tolerance and segments, as the Triangle Mes
 them. The lower one holds the 2d exports' settings: the scale factor, the cutter radius offset,
 whether shaded triangles are written, whether curves are written as straight pieces, whether
 white lines are written black, whether the background is written, and the canvas, fixed or sized
-by margins round what is exported. Each value is
-changed with its `[change]`. Below them are the depth, passes and feeds of G-code.
+by margins round what is exported. Each value has its `[change]`. Below them are the depth,
+passes and feeds of G-code (`ExportOptions`'s `GCode` in a script).
 
 This picture is made by [`scenarios/export-import.scenario`](scenarios/export-import.scenario).
 
@@ -120,30 +120,45 @@ STEP, STL and OBJ files are linked rather than imported: see [STEP links](step-l
 
 ## While a file opens or is written
 
-Opening a large model, saving it or exporting it takes a while. Once you have chosen the file
-and its options, those dialogs close and a small window shows what is being done: the file being
-read when one is opened, then each group as it is regenerated, with a bar for how far it has
-got, then the file being written. It closes when the work is done. Meanwhile the program takes
-no clicks or keys. A question the work has to ask, such as where a missing linked file is,
-comes up in its place.
-In the browser the same shows in a box over the page.
+Opening, saving or exporting a large model takes a while. Once you have chosen the file and its
+options, a small window shows what is being done: the file being read, each group as it is
+regenerated with a bar for how far it has got, then the file being written. It closes when the
+work is done. Meanwhile the program takes no clicks or keys. A question the work has to ask,
+such as where a missing linked file is, comes up in its place. In the browser the same shows in
+a box over the page.
 
-This is so for File > Open and Open Recent, a file named on the command line, File > Save and
-Save As (also when closing asks whether to save), File > Import and every entry of File > Export
-but Image. The autosave shows no window, nor do a script's `File.Load`, `File.Save` and
-`File.Export`.
+The window shows for File > Open and Open Recent, a file named on the command line, File > Save
+and Save As (also when closing asks whether to save), File > Import and every entry of
+File > Export but Image. The autosave shows none, nor do a script's `File.Load`, `File.Save`
+and `File.Export`.
 
 ## The command line
 
-`telesapr-cli` exports without a window. Its commands are `thumbnail`, `export-view`,
-`export-section`, `export-wireframe`, `export-mesh`, `export-surfaces`, `export-drawing` and
-`export-script`, and `convert` for `.slvs` files. Some flags:
+`telesapr-cli` exports without a window. Each command takes the model files last and writes
+`--output` (`-o`); a `%` in it is replaced by each model's name.
 
+| Command | Writes | As |
+|---|---|---|
+| `thumbnail --size 800x600` | `.png` | Image |
+| `export-view` | a 2d format | 2d View |
+| `export-section` | a 2d format | 2d Section |
+| `export-wireframe` | `.step`, `.dxf` | 3d Wireframe |
+| `export-mesh` | a mesh format | Triangle Mesh |
+| `export-surfaces` | `.step` | Surfaces |
+| `export-drawing` | a 2d format | Drawing |
+| `export-script` | `.go`, by default beside the model | Script |
+| `convert` | `.tlspr` from `.slvs`, beside it | File > Import of a `.slvs` |
+
+Some flags:
+
+- `--view` (`-v`) picks the direction for `thumbnail` and `export-view`: top, bottom, left,
+  right, front, back or isometric;
 - `--group` exports the model up to a group (every export command but `export-drawing`);
+- `--chord-tol` sets the chord tolerance in mm;
 - `export-mesh` takes `--quality draft|standard|fine`, `--angle-tol`, `--max-segments` and
   `--strict`;
 - `export-section --plane z=15` cuts square to an axis, or `--plane x,y,z,nx,ny,nz` through a
-  point with a normal.
+  point with a normal. Without it the plane is the workplane active when the model was saved.
 
 `telesapr-cli --help` lists them all.
 
@@ -152,4 +167,6 @@ but Image. The autosave shows no window, nor do a script's `File.Load`, `File.Sa
 
 ## Not yet
 
-DXF is the only 2d format imported. A STEP file can't be imported as editable geometry.
+- DXF is the only 2d format imported; DWG is not read.
+- A STEP file comes in as a linked part, not as sketches and features you can edit.
+- IGES is neither read nor written.

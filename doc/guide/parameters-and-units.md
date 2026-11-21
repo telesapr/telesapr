@@ -33,8 +33,8 @@ Size a rectangle and its extrusion from two parameters:
 
    ![The rectangle at 90 mm wide](images/parameters-and-units-5-width-90.png)
 
-5. Press Esc, then Shift+X to extrude. The depth starts at 50 mm: half the width, which is more
-   than the height, rounded. On the extrusion's screen, click "held" beside the depth.
+5. Press Esc, then Shift+X to extrude. The depth starts at 50 mm, about half the width. On the
+   extrusion's screen, click "held" beside the depth.
 
    ![The held box beside the depth](images/parameters-and-units-6-held-box.png)
 
@@ -83,27 +83,29 @@ the expressions that could not be evaluated.
 Example: [`examples/scripts/extent`](../../examples/scripts/extent/extent.go), a plate whose
 depth is the parameter `thick`, and an arc of a ring turned by the parameter `arc`.
 
-An extrusion's depth is free until something holds it. The same goes for a revolve's angle and
-a helix's angle. Two things can hold it: a dimension on the solid, or the group's own value.
+An extrusion's depth is free until something holds it. So are a revolve's angle and a helix's
+angle. Two things can hold it: a dimension on the solid, or the group's own value.
 
-A new extrusion made in the window starts at the shorter side of its sketch's bounding box, or
-half the longer side if that is more, rounded to 1, 2 or 5 times a power of ten: a 40 by 25
-rectangle starts 20 mm deep, a 90 by 10 one 50 mm, a circle 10 mm across 10 mm.
-It goes along the workplane's normal, towards you, or away if you look at the sketch from behind.
+A new extrusion made in the window starts at about the size of its sketch: the shorter side of
+its bounding box, or half the longer side if that is more, rounded to 1, 2 or 5 times a power
+of ten. A 40 by 25 rectangle starts 20 mm deep, a 90 by 10 one 50 mm, a circle 10 mm across
+10 mm. It goes along the workplane's normal, towards you.
 
-The group's screen shows the depth or angle it has now, on the row of its sides, with a **held**
-box beside it:
+The group's screen shows the depth or angle on the row of its sides, with a **held** box beside
+it:
 
-- Checked, the value is held where it is. Dragging no longer moves the far end. `[change]`
-  takes a number or an expression of the parameters, such as `thick`. A dimension that also held
-  it is now redundant.
-- Unchecked, the value is free again. You can drag it or dimension it.
+- Ticked, the value is held where it is, and dragging no longer moves the far end. `[change]`
+  takes a number or an expression, such as `thick`. A dimension that also held it is now
+  redundant.
+- Cleared, the value is free again. You can drag it or dimension it.
 
-A revolve turns by 360 degrees at most. A positive angle turns the other way to the right-hand
-rule about the axis, taken from the line's first point to its second: with the axis along +x,
-a sketch on +y turns towards -z. A negative angle, or the axis line drawn the other way, turns
-it towards +z. An extrusion of a sketch drawn in 3d has no normal to
-hold its depth along, so it can't be held.
+A revolve turns by 360 degrees at most. A positive angle turns against the right-hand rule
+about the axis, taken from the line's first point to its second: with the axis along +x, a
+sketch on +y turns towards -z. A negative angle, or the axis line drawn the other way, turns it
+towards +z.
+
+An extrusion of a sketch drawn in 3d has no normal to hold its depth along, so its depth can't
+be held.
 
 ```go
 must(plate.SetExpr(sketch.GroupExtent, "thick"))
@@ -117,8 +119,8 @@ fmt.Println(plate.AsExtrude().Depth(), plate.AsExtrude().DepthHeld(), ring.AsRev
 Example: [`examples/scripts/configurations`](../../examples/scripts/configurations/configurations.go),
 one plate in three sizes.
 
-A configuration is a named set of expressions for the parameters. It lets you keep the same
-model in a small size and a large size, from one table filled in two ways.
+A configuration is a named set of expressions for the parameters. It keeps one model in a
+small size and a large size, from one table filled in two ways.
 
 On the parameters screen, under CONFIGURATIONS:
 
@@ -127,9 +129,11 @@ On the parameters screen, under CONFIGURATIONS:
 - Choosing another configuration writes its expressions into the table, and the model follows.
 - Choosing `none` leaves the table as it is. Changes then go to the table alone.
 
-A parameter renamed is renamed in every configuration. A parameter that an inactive
-configuration still uses can't be deleted. The file keeps the configurations and which one is
-active.
+- A parameter renamed is renamed in every configuration.
+- A parameter that an inactive configuration still uses can't be deleted.
+- The file keeps the configurations and which one is active.
+- A linked part can be given one of its configurations
+  ([Assemblies](bill-of-materials.md)).
 
 ```go
 must(doc.Params.AddConfiguration("small"))
@@ -152,12 +156,16 @@ parameter, the value to start from, the value to end at, and the number of steps
   numbered. For `.png` it saves a picture of the view as the window shows it, which makes an
   animation. For `.stl`, `.3mf` and `.glb` it saves a mesh.
 
-Afterwards the parameter gets its own expression back. The `turn` parameter of a
-[screw mate](bill-of-materials.md#mates) is such a parameter: a study of it runs a nut up its
-screw. So are the `angle` of a driven hinge and the `travel` of a driven concentric mate
-([mechanisms](mechanisms.md), experimental): a study of an engine's crank angle from 0 to 360
-turns the crank round and runs the piston up and down. A step past a range set on the joint,
-as a lid's past its 110°, is marked unsolved.
+Afterwards the parameter gets its own expression back.
+
+A mate's parameter can be driven too:
+
+- the `turn` of a [screw mate](bill-of-materials.md#mates): a study runs a nut up its screw;
+- the `angle` of a driven hinge and the `travel` of a driven concentric mate
+  ([mechanisms](mechanisms.md), experimental): a study of an engine's crank angle from 0 to 360
+  turns the crank and runs the piston up and down.
+
+A step past a range set on the joint, as a lid's past its 110°, is marked unsolved.
 
 ```go
 frames, err := doc.Assembly.MotionStudy("w", 20, 80, 6, "frames/plate-%02d.stl")
@@ -210,12 +218,13 @@ always take millimetres. Only text, as in `SetExpr("2")`, is in the document's u
   while they can still move. From a script, `entity.Free()` is `sketch.FreedomFixed`,
   `sketch.FreedomPartly` or `sketch.FreedomFree`.
 - **Conflicts.** When a group does not solve, its screen lists the constraints to blame, and
-  the canvas marks them. When the constraints cannot all hold, these are the ones left
-  unsatisfied. When they say again what others say (two horizontal lines also made parallel),
-  the screen lists the whole set that over-determines itself, and any one of the set can go.
-  A group can hold more than one such set; the screen then lists each set under its own
-  heading, and one constraint of each set is to go. From a script, `group.Conflicts()` lists
-  every constraint to blame, and `group.Redundancies()` the sets.
+  the canvas marks them.
+  - Constraints that can't all hold: the ones left unsatisfied are listed.
+  - Constraints that say again what others say (two horizontal lines also made parallel): each
+    such set is listed under its own heading. Delete any one constraint of each set.
+
+  From a script, `group.Conflicts()` lists every constraint to blame, and
+  `group.Redundancies()` the sets.
 - **Measure.** Analyze > Measure Selection shows the length, radius, distance or angle of what
   you selected on the canvas, without adding a constraint. From a script,
   `doc.Analyze.Measure(a, b)`.
@@ -225,6 +234,8 @@ always take millimetres. Only text, as in `SetExpr("2")`, is in the document's u
 
 ## Not yet
 
-A parameter that reads a named length changes with the document's unit. When you change the
-unit, the window lists such parameters, so that you can check them. A configuration holds the
-parameters' expressions only: not a group's own values, and not which groups are suppressed.
+- A parameter that reads a named length changes with the document's unit. When you change the
+  unit, the window lists such parameters so that you can check them.
+- A configuration holds the parameters' expressions only: not a group's own values, and not
+  which groups are suppressed.
+- A motion study drives one parameter at a time.

@@ -5,8 +5,8 @@ bracket and its drawing on an A3 sheet.
 
 A drawing is a sheet of paper with views of the solid of the active group: front, top, a side
 view and an isometric view. The views are placed as the projection puts them, at one scale, in a
-frame with a title block. The drawing is part of the model and is saved with it. Each time the
-sheet is written, the views are made from the solid again, so the drawing follows the model.
+frame with a title block. The drawing is saved with the model. The views are made from the
+solid each time the sheet is shown or written, so the drawing follows the model.
 
 ## Step by step
 
@@ -54,10 +54,9 @@ View > Drawing Sheet opens the drawing's screen in the property browser. It has 
 
 - **sheet**: A4 up to A0, Letter or Tabloid, in landscape or portrait. `[next]` steps through
   the sizes.
-- **scale**: "fitted to the sheet" to begin with. That is the largest of 10:1, 5:1, 2:1, 1:1,
-  1:2, 1:5 and so on down at which the views, and the sections and details placed beside them,
-  fit above the title block. Or type one with
-  `[change]`, as `1:2`, `2:1` or a plain number.
+- **scale**: "fitted to the sheet" to begin with: the largest of 10:1, 5:1, 2:1, 1:1, 1:2, 1:5
+  and so on at which the views, with their sections and details, fit above the title block.
+  `[change]` takes one, as `1:2`, `2:1` or a plain number.
 - **projection**: third angle (the top view above the front view, the right view on its right),
   or first angle as ISO has it (the top view below, the left view on the right).
 - **hidden edges, dashed**: draws the edges behind the material, dashed, in the orthographic
@@ -85,41 +84,38 @@ face reaches the crest and is hatched up to it, with the root a thin line on it.
 ### Sections and details
 
 - `[add a section]` asks for a view and an offset, as `top 0`. The solid is cut by the plane
-  square to that view's direction, through the solid's middle, moved the offset in mm toward the
-  viewer. The half beyond the plane is drawn, with its cut face hatched every 3 mm on the sheet.
-  It is labelled SECTION A-A. The cutting plane is drawn dashed and lettered on the views that
-  see it edge on: a letter past each end of the line, or beside the end when a dimension's text
-  is there. A view's name that a letter or a dimension would cover is moved down below it.
-  The plane must cut the solid: an offset that puts it on the solid's outermost face, or
-  further, is refused.
-- `[add a detail]` asks for a view, the point it enlarges (in mm right and up from the view's
+  square to that view, through the solid's middle, moved the offset in mm toward the viewer.
+  The half beyond the plane is drawn, its cut face hatched, labelled SECTION A-A. The cutting
+  plane is drawn dashed on the views that see it edge on, with a letter at each end. The plane
+  must cut the solid: an offset that puts it on the solid's outermost face, or beyond, is
+  refused.
+- `[add a detail]` asks for a view, the point to enlarge (mm right and up from the view's
   middle), a radius and how many times larger, as `front 10 5 8 2`. What lies within that circle
-  is drawn enlarged, inside a circle, labelled DETAIL B with its scale. The circle is drawn
-  dashed and lettered on the view. The point must lie within the solid's outline on the view.
+  is drawn enlarged, labelled DETAIL B with its scale, and the circle is drawn dashed on the
+  view. The point must lie within the solid's outline on the view.
 
-Sections and details are lettered A, B, ..., the sections first, each kind in the order it was
-added: a section added after a detail takes the detail's letter, and the detail, with the
-dimensions on it, moves to the next. They are placed in columns to the right of the views,
-unless `[place]` on their row, or a script's `X` and `Y`, gives them a place. `[delete]` on a
-row takes one away, unless a dimension is on it; the letters after it move back one.
+Sections are lettered first, then details, each in the order added. So a section added after a
+detail takes the detail's letter, and the detail moves on, its dimensions with it. They are
+placed in columns right of the views, unless `[place]` on their row (or a script's `X` and `Y`)
+puts them elsewhere. `[delete]` takes one away, unless a dimension is on it; the letters after
+it move back.
 
 ### Dimensions
 
 With the drawing's screen shown, select one or two edges or faces of the solid in the model.
-The screen stays open and counts what is selected. Where a line of a sketch lies along an
-edge, a click picks the line, which the count leaves out: click the edge where no line is
-drawn, or pick a face. Then click `[dimension the selected edges or faces]` and type the view
-and the kind, as `front length`, or `front distance 15` with how far out the dimension is
-drawn, in mm. Without that number it is drawn on what it measures. The view is front, back,
-top, bottom, left, right or iso, or a section or a detail by its letter, as `A diameter`.
+The screen stays open and counts what is selected. Where a sketch line lies along an edge, a
+click picks the line, which the count leaves out: click the edge where no line is drawn, or
+pick a face. Then click `[dimension the selected edges or faces]` and type the view and the
+kind, as `front length`, or `front distance 15` with how far out to draw it, in mm. The view is
+front, back, top, bottom, left, right or iso, or a section or detail by its letter, as
+`A diameter`.
 
-A dimension keeps the edges' names and the faces' identities. Each time the drawing is made it
-finds them in the solid as it now is and measures them. The kinds are:
+A dimension remembers its edges and faces by name. Each time the drawing is made it finds them
+in the solid as it is now and measures them again. The kinds are:
 
 - **length** of a straight edge, as seen in the view. On the isometric view it is the edge's
-  own length, not the foreshortened one. An edge inside the view's outline has its dimension
-  drawn out past the outline: in an orthographic view out from the view's middle, in the
-  isometric on whichever side the outline is nearer.
+  true length, not the foreshortened one. An edge inside the view's outline has its dimension
+  drawn out past the outline.
 - **distance** from a straight edge to another edge, square to the first, as the view shows it.
   With faces: between two parallel flat faces, or from a straight edge to a flat face it runs
   parallel to. It is drawn out to the side of what it measures.
@@ -143,13 +139,15 @@ takes a picture of it.
 ## Writing the sheet to a file
 
 File > Export > Drawing writes the sheet as PDF, EPS or PostScript, SVG, DXF, HPGL (`.plt`) or
-G-code (`.ngc`). The canvas is the sheet's size in millimetres. Lines are weighted as the 0.35 mm
-group of ISO 128 has them: the views' visible edges at 0.35 mm, the frame at 0.5 mm, and
-0.18 mm for a thread's root, hidden edges, hatching, dimensions, text and the title block's rows.
+G-code (`.ngc`). The page is the sheet's size in millimetres. Lines are weighted as ISO 128's
+0.35 mm group: visible edges 0.35 mm, the frame 0.5 mm, and 0.18 mm for a thread's root, hidden
+edges, hatching, dimensions, text and the title block's rows.
 
 Without a window:
 
     telesapr-cli export-drawing -o sheet.pdf model.tlspr
+
+A model that has no drawing gets the default one: A3, the standard views, fitted.
 
 ## From a script
 
@@ -158,15 +156,18 @@ d := doc.Drawing.Get()
 d.Sheet, d.Scale, d.FirstAngle = "A2", 0.5, true
 d.Title, d.Number = "BRACKET", "TS-0001"
 doc.Drawing.Set(d)
-must(doc.Drawing.Export("bracket.pdf"))   // in the application
+must(doc.Drawing.Export("bracket.pdf"))
 ```
 
+- The other rows of the screen are fields too: `d.Portrait`, `d.Hidden`, `d.ModelledThreads`,
+  and the title block's `Author`, `Revision`, `Material` and `Company`. A `Scale` of 0 fits.
+- `doc.Drawing.Export` works in the window, in `telesapr-cli run` and over an AI connection.
 - `doc.Drawing.AddDimension("front", "length", 10, edge)` adds a dimension by edges of the
   solid.
 - `doc.Drawing.AddFaceDimension("top", "distance", 10, upper, lower)` adds one by faces.
 - `doc.Drawing.AddEdgeFaceDistance("top", 10, edge, face)` adds the distance from an edge to a
   face.
-- `doc.Drawing.Dimensions()` measures them all.
+- `doc.Drawing.Dimensions()` measures them all, with an error for each it can't.
 - `doc.Drawing.AddSection("top", 8)` adds a section, as `[add a section]` does, and returns its
   letter, which `AddDimension` takes as a view. `doc.Drawing.AddDetail("front", 10, 5, 8, 2)`
   adds a detail: the view, the point, the radius and how many times larger. A section that

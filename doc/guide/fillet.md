@@ -14,6 +14,9 @@ Examples:
 - [`soap`](../../examples/scripts/soap): a rim rounded all the way round.
 - [`knob`](../../examples/scripts/knob): a fillet beside a chamfer.
 - [`casing`](../../examples/scripts/casing): two radii in one fillet.
+- [`setback`](../../examples/scripts/setback/setback.go): a corner of three radii.
+- [`tee`](../../examples/scripts/tee/tee.go) and
+  [`bandfillet`](../../examples/scripts/bandfillet/bandfillet.go): fillets between curved faces.
 
 ## Step by step
 
@@ -55,290 +58,128 @@ replays the same clicks on the program (`scripts/regen-doc-images.sh`).
 
 ## In the window
 
-Choose Features > Fillet Edges (Shift+F). It rounds edges of the solid built so far. The radius
-starts at 1 mm. Select the same kind of things as for a chamfer:
+Select the edges, then choose Features > Fillet Edges (Shift+F), or right-click an edge and
+choose Fillet Edges. It rounds edges of the solid built so far. You can select:
 
-- line segments that lie along edges between two flat faces;
-- circles where a flat face meets a cylinder or a cone, or where a cylinder and a cone, or two
-  cones, meet about one axis, such as a frustum turned on a shaft;
-- straight or circular edges of the solid, picked on the model.
+- line segments along edges between two flat faces;
+- circles where a flat face meets a cylinder or a cone, or where two such faces meet about one
+  axis (a frustum turned on a shaft);
+- edges of the solid itself, picked on the model, including edges between curved faces.
 
-With nothing it can round selected, it says what it takes:
+To take every edge round a face, right-click the face and choose Select Face Edges. With
+nothing it can round selected, Fillet Edges says what it takes:
 
 ![The message of Fillet Edges with nothing selected](images/fillet-7-selection-message.png)
 
-The radius takes a number or an expression. A radius too large for the faces is a problem on
-the group, named on its screen, and the solid passes through unrounded. So is a fillet whose
-result would not be a closed solid where the solid before it was one: the message says the
-rounded solid would not be closed and to make it a little smaller or larger.
+The group's screen:
 
-The group's screen lists the edges. Under each edge, "[own radius]" gives that edge a radius of
-its own, and "[remove]" takes the edge out of the fillet. "[change]" beside the list takes the
-current selection as the fillet's edges instead. With nothing suitable selected, it activates
-the group before the fillet, whose solid the edges are rounded on, says what to pick, and the
-link reads "[take the selection]" until you do. An edge's own radius stays with it through such
-a change.
+- The radius starts at 1 mm. "[change]" takes a number or an expression.
+- Under each edge, "[own radius]" gives that edge a radius of its own; "[the fillet's]" takes
+  it off again. "[remove]" takes the edge out of the fillet.
+- "[change]" beside the list takes the current selection as the edges instead. With nothing
+  suitable selected, it activates the group before the fillet, says what to pick, and the link
+  reads "[take the selection]" until you do. An edge keeps its own radius through the change.
 
-From a script:
+When the fillet can't be made, the group shows a problem that says why and where, and the solid
+passes through unrounded. A radius too large for the faces is one such problem. So is a result
+that would not be a closed solid: the message says "the rounded solid would not be closed" and to
+make it a little smaller or larger.
+
+Sometimes a size very close to the one asked for is made instead, as when a fillet's foot just
+misses a side by a hair. The group is then marked "(note)" in the list of groups, and its screen
+says the size it was made at, as "made at radius 2 mm, the nearest the kernel can cut to
+2.001 mm". The size made is within the chord tolerance of the one asked for.
+
+## From a script
 
 ```go
-f := doc.Features.Fillet(edges, 8, "")
-f.AsFillet().SetRadius(6)
-f.AsFillet().SetEdgeRadius(1, 3) // the second edge alone
+round := doc.Features.Fillet(edges, 8, "")   // line segments and circles
+round.AsFillet().SetRadius(6)
+round.AsFillet().SetEdgeRadius(1, 3)         // the second edge alone; 0 gives it the fillet's again
+s := block.Solid()                           // edges of the solid, by name or by a point on them
 doc.Features.FilletSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 0, 5))}, 1.5, "")
 ```
 
+`SetEdgeRadiusExpr` gives an edge's radius as an expression. `SetEdges(entities, solidEdges)`
+changes which edges are rounded. `Problem()` and `Note()` on the group read its problem and its
+note.
+
 ## What it makes
 
-- A convex edge is rounded by an exact cylinder, or by a torus round a circle. A concave edge
-  is filled.
-- A circle's fillet whose foot reaches past the flat face it lies on, as round a rod through a
-  narrow plate, is cut by the planes of the face's flat sides it runs into, and those sides grow
-  up by its sections. Where the foot just reaches a side, the face is pinched to a point there,
-  two faces touching. A fillet whose foot runs past a side by less than about a hundredth of its
-  radius stands above the face there by less than the program can tell apart, so it is made at
-  the nearest size that the program can cut and that is within the chord tolerance of the one
-  asked for, and says so: the group is marked "(note)" in the list of groups, and its screen,
-  and `Group.Note()` in a script, say "made at radius 2 mm, the nearest the kernel can cut
-  to 2.001 mm". At a chord tolerance too fine for that it is refused (make it a little smaller
-  or larger). Where the solid goes on past the side, as a ledge below it or a tab standing off
-  it, what lies past the side is left as it was, even where the fillet of a hole's rim would
-  have cut down into it, and a side with holes in it, as a cross bore, keeps them. A side
-  that leans to the face, as a drafted plate's, cuts the fillet along its own plane, up to
-  about 53° off square, unless that plane runs on above the face into the solid (as into the
-  rod beside a side leaning out by 45°). A curved side square to the face, as a disc's round
-  rim, the arc of a plate's rounded end or the wall of a bore beside a rod, cuts the fillet
-  along its own cylinder in the same way, and a side on a cone about an axis square to the
-  face, as a drafted disc's rim or a drafted bore, along its cone carried on past the face. A
-  ledge round the disc below such a side is left as it was, and so is a rod close beside a
-  bore that widens toward the face, which the bore's cone carried on past the face runs into.
-  A hole's rim may be cut down past such a side's foot into the ledge under it, where the cut
-  stays within the side, and a hole's rim may lie close to the side, a few tenths of a
-  millimetre from it. Where that cut only just meets the side's foot on the ledge's top, the
-  fillet is made at the nearest size at which it crosses the foot, within the chord tolerance
-  of the one asked for, and the group says so as above. Refused, saying so: the fillet of a
-  hole's rim so near the side that its cut into the ledge reaches past the side, and one whose
-  cut only just meets the side's foot where no size near it crosses (make it a little smaller
-  or larger).
-- A rounded edge takes with it the edges it meets smoothly, as round a rounded rectangle.
-- Where two rounded edges meet, they are mitred. Where three meet at the corner of a block, a
-  sphere rounds the corner.
-- The foot of a rib or a boss with sharp edges can be filled all round. Where two of the foot's
-  fillets meet below a sharp convex edge, they are mitred outside the rib, beyond that edge.
-  Where they turn by different angles, as below a sloping top, the sloping face grows out to the
-  mitre. The sharp edge is shortened to where the fillets reach up it.
-- A rib's top edges can be rounded after its foot was filled, in a fillet of their own. Where an
-  upright or a slope's edge runs down onto the foot's fillets, its fillet is cut short (set
-  back), the foot's two fillets are cut at their sections too, and patches tangent to the three
-  fillets, the two faces and the floor fill the corner: the setback corner below of the three
-  edges that met there before the foot was filled. The foot's fillets must be straight, of one radius between flat
-  faces; a chamfered foot is not taken.
+- A convex edge is rounded by a cylinder, or by a torus round a circle. A concave edge is
+  filled.
+- A rounded edge carries on round the edges it meets smoothly, as round a rounded rectangle.
+- Two rounded edges that meet are mitred. Three at the corner of a block meet in a sphere.
+- The foot of a rib or a boss can be filled all round. Its top edges can be rounded later, in a
+  fillet of their own; the corners where they come down onto the foot are set back (below).
+  This needs a foot filled with one radius between flat faces, not a chamfered one.
 
-**Edges of different radii, or of both kinds.** Where edges of different radii meet, or convex
-edges meet concave ones, the fillet rounds them one radius and one kind at a time, the larger
-radius first. The later edges go on round the corners the earlier ones rounded. For example, a
-block's upright edges at 8 mm and its top edges at 3 mm: the top's fillet follows the arcs the
-upright fillets cut in the top face, with a torus at each. A boss's sides and the foot that joins
-it to a plate work the same way.
+### Edges of different radii, or of both kinds
 
-**Setback corners.** Sometimes the later edges can't go on round the corner: a top ring larger
-than the upright edges, three edges of three radii at a corner, or more than three rounded edges
-at a corner (a pyramid's apex). Then each fillet is cut short of the corner (set back), and the
-hole is filled by patches tangent to the fillets and the faces round it. The setback is half the
-largest radius past where the fillets' tangent lines cross. Corners with radii up to about 3 to 1
-are always filled. Where radii of 5 or 6 to 1 sit side by side, the patches can fold, and the
-corner is refused at its point. Example:
-[`examples/scripts/setback`](../../examples/scripts/setback/setback.go).
+The fillet rounds them in stages, one radius and one kind at a time, the larger radius first.
+The later edges go on round the corners the earlier ones made. For example, a block's upright
+edges at 8 mm and its top edges at 3 mm: the top's fillet follows the arcs the uprights cut.
 
-**A convex and a concave edge meeting, the third edge left sharp.** Take a ledge's top edge with
-the inside upright below it, or a rib's upright with one of its foot edges. The two fillets are
-blended there by one patch, tangent to both fillets and the face, and the sharp edge ends in its
-corner. Where one fillet's radius is several times how far the other reaches along the face, the
-patch would fold, and the corner is refused at its point.
+### Corners
 
-**All three rounded, two of one kind with different radii.** For example, a ledge's two top
-edges at 1 and 2 mm over the inside upright, or a rib's two foot edges under its upright. The
-edge of the other kind is rounded first. The two then go on round the arc it leaves, with a
-radius that changes from one's to the other's along it, tangent all round.
+| At the corner | What is made |
+|---|---|
+| Two rounded edges of different radii, the third edge left sharp | One fillet ends on the other. Where neither can, it is refused: "fillets of radius 1 and 2 meet here above an edge left sharp ... round that edge too, or give the fillets one radius". |
+| A convex and a concave edge, the third left sharp (a ledge's top edge over the inside upright) | One patch blends the two fillets. |
+| All three rounded, two of one kind at different radii | The other kind first; the two then go round its arc with a radius that changes from one to the other. |
+| Edges that can't go round each other (three radii, a pyramid's apex, a large top ring over small uprights) | Each fillet is set back from the corner and patches fill the hole. |
+| A saddle (two ridges and two valleys), all four rounded | Set back, as above. |
+| A saddle with some edges left sharp: one, two opposite, three, or a ridge and a valley side by side | Made, the fillets ending at the sharp edges or meeting in a mitre. |
 
-**Four or more edges of both kinds at a corner.** Take the middle of a saddle, where two ridges
-and two valleys meet, all rounded. Each fillet is set back and the hole is filled by patches,
-as at a corner of three radii.
-
-Round three of the saddle's four edges and leave the fourth sharp, and the two fillets beside
-the sharp edge run up to it and are cut there, the third is set back, and patches fill the
-hole, their surface turning from one fillet to the other where the sharp edge ends. Where the
-two fillets beside the sharp edge have different radii they reach it at two points: the
-smaller one stops short of the edge, its face runs on beside the edge up to where the larger
-one reaches it, and the patches fill the rest. Steep saddles are made too.
-Chamfers of three of the four edges are cut the same way: the two beside the sharp edge are
-cut up to it, the third is set back, and curved patches fill the corner between them. A
-steep saddle chamfered at one distance is cut in two goes, the ridges and the valleys apart.
-
-Round one of the saddle's four edges alone and its fillet runs on into the two faces across the
-middle, ending where its surface meets their planes, as a fillet ends on the face at a box's
-corner. Round its two ridges, or its two valleys, with the other two left sharp, and the two
-fillets meet in a mitre in the plane of the two sharp edges. At different radii their ends lie
-apart in that plane, and the plane between them is a flat step from the smaller fillet's end to
-the larger's. Chamfers are cut the same way.
-Round a ridge and a valley side by side, with the other two left sharp, and each fillet runs
-up to the sharp edge beside it; patches fill the corner between the two cuts and the sharp
-edges, which stay sharp. Chamfers are cut the same way.
-
-**Refused.** Two top edges of different radii over an upright edge that stays sharp are refused,
-and the message names the radii: the blend would need a crease. Round the upright edge too, or
-give the two edges one radius.
+A set-back corner is filled when its radii differ by up to about 3 to 1. At 5 or 6 to 1 side by
+side the patches can fold, and the corner is refused at its point. So is a convex-and-concave
+corner whose one radius is several times the other.
 
 ## Between two curved faces
 
 Two curved faces can meet along an edge that is not a circle about a shared axis: a branch pipe
-on a pipe, a spout on a pot, a rod through a ball, a band's side on a cone. There the fillet
-rolls a ball of its radius along the edge, touching both faces. The rounded face is the surface
-the ball sweeps. It is fitted through the ball's arcs to within a tenth of the chord tolerance
-(how far a mesh may stray from the true surface, set on the configuration screen). The faces
-are cut back along the curves where the ball touches them. A chamfer is made the same way, with
-straight sections between the points at its distance along each face from the edge.
+on a pipe, a spout on a pot, a rod through a ball. There the fillet rolls a ball of its radius
+along the edge, touching both faces, and the rounded face is the surface the ball sweeps. It
+follows the true surface to within a tenth of the chord tolerance (set on the configuration
+screen). A chamfer of such an edge is made the same way.
 
-Such an edge, and an edge that ends on a curved face (below), is rounded on its own. When it is
-picked together with other edges whose fillets don't reach it, the others are rounded first,
-then each such edge alone. A lid's four upright edges picked together are done this way. Where
-its fillet meets another picked edge's fillet at a corner whose third edge stays sharp, as a lid's
-upright edge meets the bottom edge, the two are mitred there, chamfers the same as fillets.
-Fillets of different radii are mitred too: the smaller ends against the larger on its own wall,
-and the larger's end turns there onto that wall, down to the corner, at each of its ends,
-whatever the radii beyond. Chamfers of different distances are mitred alike. Any other meeting
-at a vertex the two share is refused there, with the message "pick it alone".
+- Such an edge is rounded on its own. Picked with other edges, the others are rounded first,
+  then each such edge.
+- Where two of its fillets meet at a corner whose third edge stays sharp, as a lid's upright edge
+  meets its bottom edge, they are mitred, also at different radii. Any other meeting at a shared
+  corner is refused with "pick it alone".
+- A pocket's rim can be rounded all round, or any of its edges, in a flat or a curved face (a
+  dish), at one radius or several. At the inside corners the fillets meet in a mitre, or a patch
+  fills between them.
+- The foot and the top edges of a band raised on a cylinder or a cone with
+  [Wrap](wrap.md) are rounded all round, all their edges picked together.
+- An edge along a crease that fades out, as up a loft's side, is rounded up to where the crease
+  fades and ends there.
 
-Where that corner is an inside one, as where the rim of a pocket turns, each fillet ends where its
-ball touches its wall on the sharp edge between the pocket's walls. Where the two reach that edge
-at one point, as in a flat face, each is carried on past the sharp edge along its own wall's plane
-and they are mitred where they cross. Where the face they share slopes
-differently each way, as a dish's does, the two ends lie at different depths on the sharp edge:
-the ball swings round the sharp edge between them, and a corner patch, tangent to both fillets and
-to the shared face, fills between their ends. The sharp edge stops at the deeper end, and between
-the two it is the shallower fillet's wall's edge with the corner. Chamfers turn such corners the same way, the corner patch ruled
-between the sharp edge and the shared face. A rim that comes back to its own inside corner, as a
-teardrop pocket's, is rounded the same way. Any one, two or three edges of a pocket's rim in a
-flat face are rounded so too, those that meet no other ending at the pocket's walls.
-
-Fillets of different radii meet at such a corner too, in a flat face or a curved one. Each is
-carried on past the sharp edge, as the balls rolling along both edges would cut it: the smaller
-ends where it meets the larger, and the larger ends partly on the smaller, partly on the smaller
-one's wall, which grows a little way past the sharp edge, from the larger fillet's depth on that
-edge up to the smaller's. Chamfers of different distances
-meet the same way. Round a dish, a fillet that meets one of another radius at one corner meets
-one of its own radius at its other corner the same way too, not by a corner patch: the fillet
-whose end lies deeper on the sharp edge takes the larger one's part. So a rim of 2, 1 and 1 mm is
-rounded all round.
-
-A pocket's corner may stand on or near a seam of the face it is cut into, as where a lathed
-dish's quarters meet. The fillets' feet on that face then lie on both sides of the seam: the seam
-is cut where the corner patch, or the foot of one fillet just short of the mitre, crosses it.
-
-The foot of a band raised on a cylinder or a cone ([Wrap](wrap.md)) is rounded the same way, all
-of its foot edges picked together: the ball rolls outside the solid, between the face and the
-band's sides. At a corner of the band, where its sides meet at a sharp edge that stays sharp, the
-two fillets meet as at a pocket's inside corner turned inside out: carried on past the sharp edge,
-each along its own side's plane, and mitred where they cross. Where the band's outline turns the
-other way, as inside a pointed arch's tip, the two fillets lie in the wedge between the sides and
-are mitred as a lid's upright edge and bottom edge are. A band's end square to the axis is a flat
-face that grows down to the face round the fillet's end. A corner may stand on a seam of the face,
-as a band centred on a quarter of a lathed tube does: the seam is cut where the mitre meets it.
-
-The edges round the band's top are rounded or chamfered all round too, picked together. A
-chamfer's distance is measured along each face: down the side, and round the curved top. Inside a
-pointed arch's tip the band's sides meet at an edge that goes in, and the two fillets or chamfers
-meet there as at a pocket's inside corner turned inside out: each is carried on past that edge,
-along its own side, and they are mitred where they cross.
-
-An edge along a crease that fades out, as a loft's crease from a corner of its square foot up to
-where its sides meet smoothly, is rounded or chamfered up to where its faces turn by almost
-nothing, and ends there. Where the crease turns back above that, its faces meeting at an angle
-the other way, that part is rounded too, by a fillet that widens from nothing where the first
-ended and narrows to nothing where the crease fades out again; where it only fades out, the edge
-goes on above as it is.
-
-**Where the edge ends.** The edge may close on itself, as such joints do. Or it may end where it
-meets a flat face at each end, as a band's side on a cone ends at the base and at the band's end.
-There the fillet ends in the flat face's plane, along the curve where that plane cuts the ball's
-swept surface, and the flat face takes that curve as its edge. Where one of the faces goes on
-past the flat face's plane (the cone above the band's end), the flat face grows by the fillet's
-section up to where the plane cuts that face.
-
-The fillet's end may run off one face past the end of its edge with the flat face, as a wide
-chamfer of the band's side does past the band's top. If the face it runs onto is flat, the fillet
-goes on to that face: its plane cuts the fillet too, and both the end face and that face grow by
-the fillet's end. If the face it runs onto is curved, as a band's rounded top, that surface is
-carried on past its edge with the face the fillet ran off, it cuts the fillet, and it grows over
-the fillet's end, sharing with the end face the line or curve where the end face's plane meets
-that surface, or where the end face's own surface meets it when that is curved too. Where the fillet's end only just runs off onto a curved face, within two chord
-tolerances of its edge, the end is taken to that edge's corner, so the face doesn't grow by a
-sliver too thin to mesh. A curved face that bends away from the edge so fast that, carried on
-past it, it comes round under the fillet's end again, as a band's top rounded tightly across a
-narrow band, would cut the end in the wrong place: there that face is carried on flat instead,
-by the plane tangent to it along its edge, where that edge is straight. The plane becomes a flat
-face beside the curved one, meeting it smoothly and counted as the same face, and the fillet's
-end runs onto it as onto a flat face. Where that edge is curved, as the edge of a ring-shaped
-band's rounded top with its side, the face is carried on by its tangents across the edge instead:
-a curved face beside it, meeting it smoothly along the whole edge and counted as the same face. A wide chamfer of the band's side whose end lay wholly past
-the rounded top carried on is made so; so is any blend there of a top that sags 2 across a band
-6 wide. Where the end runs off only just, so that the flat face would be a sliver of no area, the
-fillet is refused, saying so.
-
-Both ends may run off this way, as a chamfer of a short plate's foot on a rod does past both
-slopes of the plate's gabled top. Each end cuts the fillet on its own; where the two cuts would
-fall on one piece of the fillet's surface, that surface is split between them first. Where the
-fillet is so large that it reaches over the plate's side all along, above one slope or the other,
-it takes the side whole: both slopes cut it, meeting across it on the line of the ridge carried
-on, each slope grows over the fillet up to that line, and the side goes. This holds however large
-the blend: where an end's section reaches above the far slope carried on past the ridge, it is
-above the near slope there too, which cuts that part away.
-
-A fillet that takes material away may run off too, as one of an arched bar's top edge whose side
-is lower at the end than the fillet reaches. Its end then crosses the next face (the bar's bottom)
-on the end face's own edge with it, and the faces shrink instead of growing: the end face and the
-bottom both lose their corner with the side, up to the fillet's end and its cut by the bottom.
-
-The fillet is refused at the place in these cases:
-
-- the ball can't touch both faces (the radius is too large for the room beside a hole);
-- the fillet's end runs off both its faces at once and the faces past them would meet across its
-  end;
-- the fillet runs off both its faces at both its ends.
-
-**A curved end face.** The end face may be curved too, as a box's upright edge between flat walls
-ends at the top on a domed lid. The ball's sweep is cut by the dome, and the fillet's end is a
-curve of degree 5 fitted to where the two meet, the dome's edge as well, keeping to both within
-half the chord tolerance. Where the dome bends too much across a wide fillet for one such curve,
-the fillet is refused at the place with "make it smaller". A chamfer ends on a curved face the
-same way, its end fitted to where it meets it. So does a chamfer of a loft's foot edge where the
-sides meet in creases. Where a side's face goes on past the curved face, as the cone past a
-band's rounded top, the curved face grows by the fillet's end up to where the side's face meets
-its surface carried on, as a flat end face does. A chamfer ending this way is refused where its
-end can't be fitted.
-
-Examples: [`examples/scripts/tee`](../../examples/scripts/tee/tee.go),
-[`examples/scripts/bandfillet`](../../examples/scripts/bandfillet/bandfillet.go).
+Where the edge ends at a flat face, the fillet ends in that face's plane and the face grows to
+meet it. Where the fillet's end runs past the edge onto the next face, flat or curved, that
+face cuts it and grows over its end. A curved end face, as a domed lid, cuts the fillet too;
+where it bends too much across a wide fillet, it is refused with "make it smaller".
 
 ## Not yet
 
 These are refused with a message:
 
-- A fillet between curved faces along an edge that ends at a curved face which the side faces go
-  on past.
-- Chamfers meeting above an edge left sharp that they would cut at two points, or at a corner
-  where their distances are too unlike for a face to close it ([Chamfer](chamfer.md) says what
-  is made).
-- A corner where a convex edge meets a concave one at a vertex that the stages can't round while
-  some edge there is left sharp, but for one, two opposite or three of a saddle's four edges as
-  above, fillets or chamfers, and a ridge and a valley side by side.
-- At a corner of a band raised on a cylinder: a seam of the face that passes the corner less than
-  about half a millimetre away without going through it (move the band a little), and chord
-  tolerances finer than about 0.01%, where the two fillets' meshes cross at the mitre.
-- A blend that runs off both its faces at both its ends, or whose two ends' cuts reach past each
-  other along the edge.
+- The ball can't touch both faces, as a radius too large for the room beside a hole.
+- A fillet between curved faces whose edge ends at a curved face that the side faces go on past.
+- A fillet whose end runs off both its faces at once where the faces past them meet across its
+  end; one that runs off both faces at both ends, or whose two ends' cuts pass each other.
+- A circle's fillet whose foot runs into a side leaning more than about 53° off square, or a side
+  whose plane runs on above the face into the solid.
+- A fillet of a hole's rim near a side standing on a ledge, where its cut into the ledge reaches
+  past the side, or only just meets the side's foot.
+- A corner of both kinds that the stages can't round while an edge there is left sharp, other
+  than the saddle cases above. [Chamfer](chamfer.md) lists the chamfer corners it refuses.
+- At a corner of a band raised on a cylinder: a seam of the face that passes less than about
+  half a millimetre from the corner without going through it (move the band a little), and
+  chord tolerances finer than about 0.01%.
 
 Also:
 
-- A fillet whose radius stops its chain at a rounded corner names the curved face in its message
-  rather than saying that the radius is the problem.
+- A fillet whose radius stops its chain at a rounded corner names the curved face in its
+  message, rather than saying that the radius is the problem.

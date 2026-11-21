@@ -26,8 +26,8 @@ Reflect a block in one of its faces:
 
 The `mirror` example reflects a bracket's half in the YZ workplane, with the box "the whole
 solid so far" checked. The half is made by two groups: an extrusion, and a bore cut down its
-upright by a group of its own. The mirror was made with the bore's group active, so with the box
-checked the whole half is reflected, bore and all:
+upright. The mirror was made with the bore's group active, so with the box checked the whole
+half is reflected, bore and all:
 
 ![The mirror example: the bracket's two halves](images/mirror-4-bracket.png)
 
@@ -43,20 +43,24 @@ replays the same clicks on the program (`scripts/regen-doc-images.sh`).
 
 1. Make the group to reflect active.
 2. Select the plane: a workplane, or a flat face of the solid.
-3. Choose Features > Mirror (Shift+Y). A right click on a flat face offers the same as Mirror
-   in This Plane.
+3. Choose Features > Mirror (Shift+Y). Right-clicking a flat face offers the same as **Mirror in
+   This Plane**.
+
+With anything else selected, the mirror is refused: "Bad selection for a new mirror group",
+followed by what to select.
 
 The reflection follows its group: change the half, and the other half changes with it. The
 sketch's entities are reflected too, so a circle's copy can be constrained and measured.
 
-The group's screen names the plane, with "[change]" to reflect in the selected workplane or
-face instead. It has:
+The group's screen names the plane, with [change] to reflect in the selected workplane or face
+instead. It has:
 
 - **solid**: "with original" or "reflection only";
-- the box **the whole solid so far**. A mirror reflects its source group, the one that was
-  active when the mirror was made. With the box checked, it reflects the whole solid up to it
-  instead. A body made of several groups needs this: a hole cut by a later group is then
-  reflected too.
+- **the whole solid so far**. A mirror reflects its source group, the one active when the mirror
+  was made. With this box checked, it reflects the whole solid up to it instead. Use it for a
+  body made of several groups, so that a hole cut by a later group is reflected too.
+
+A mirror combines as its source does: the reflection of an assembled part is another part.
 
 ## From a script
 
@@ -67,7 +71,9 @@ m.AsMirror().SetKeepOriginal(false) // only the reflection
 m.AsMirror().SetMirrorSolid(true)   // the whole solid so far
 ```
 
+`KeepOriginal` and `MirrorSolid` read them back.
+
 ## Not yet
 
-A part symmetric about the plane is kept as it is, because it is its own reflection. A part
-that only partly coincides with its reflection, a face here and there, can fail as a Boolean.
+- A part that partly coincides with its own reflection (a face here and there on the plane) can
+  fail as a Boolean. A part wholly symmetric about the plane is kept as it is.

@@ -28,15 +28,25 @@ replays the same clicks on the program (`scripts/regen-doc-images.sh`).
 
 ## Other groups
 
-The same choice is on a revolve, a helix, and a step and repeat. A revolve or a helix turns as
-far each way. A step and repeat lays its copies on both sides of the original.
+The same choice is on these groups:
+
+| Group | Two-sided |
+|---|---|
+| extrusion | runs both ways, the sketch in the middle |
+| revolve, helix | turns as far each way |
+| step and repeat | lays its copies on both sides of the original |
+
+An extrusion's **skewed** box, beside the choice, lets its sides lean off square to the
+sketch; it stays set whichever way the extrusion runs. A [draft](draft.md) on a two-sided
+extrusion leans both ways from its plane.
+
+## From a script
 
 ```go
 spacer := doc.Features.Extrude(8, "spacer")
 spacer.SetTwoSided(true)
+spacer.AsExtrude().SetSkewed(true) // sides may lean off square
 ```
-
-Leaning sides (`SetSkewed`) stay whichever way the group runs.
 
 ## Not yet
 

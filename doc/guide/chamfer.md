@@ -46,39 +46,35 @@ replays the same clicks on the program (`scripts/regen-doc-images.sh`).
 
 ## In the window
 
-Choose Features > Chamfer Edges (Shift+Q). It cuts edges of the solid built so far. The
-distance starts at 1 mm. A convex edge (one that sticks out) is cut away. A concave edge (one
-that goes in, like the floor of a pocket) is filled instead. Where a chamfered edge runs
-smoothly into the next edge, the chamfer carries on round it. Round the corners of a rounded
-rectangle it goes by cones.
+Select the edges, then choose Features > Chamfer Edges (Shift+Q), or right-click an edge and
+choose Chamfer Edges. It cuts edges of the solid built so far. A convex edge (one that sticks out) is cut away. A concave edge (one that goes in,
+like the floor of a pocket) is filled instead. A chamfer carries on round edges that meet it
+smoothly, as round the corners of a rounded rectangle. You can select:
 
-Before choosing the menu entry, select one or more of these:
-
-- line segments that lie along edges between two flat faces, such as the edges an extrusion
-  makes;
+- line segments along edges between two flat faces, such as the edges an extrusion makes;
 - circles where a flat face meets a cylinder or a cone, such as the rims of an extruded circle;
-- straight or circular edges of the solid itself, picked on the model. These include edges that
-  no entity draws, such as where a pocket's wall meets the block's face.
+- edges of the solid itself, picked on the model, including edges no entity draws (where a
+  pocket's wall meets the block's face) and edges between curved faces.
 
 To take every edge round a face at once, right-click the face and choose Select Face Edges
 ([`examples/scripts/face_edges`](../../examples/scripts/face_edges/face_edges.go);
 `Edit.SelectFaceEdges` in a script).
 
-The group's screen lists the edges and takes a new distance, as a number or an expression.
-An edge that is named by the two faces it lies between is hovered and selected on the model
-from its row, as a line's row does. The links on the screen:
+The group's screen:
 
-- "[change]" beside the edges takes the current selection as the chamfer's edges instead. With
-  nothing suitable selected, it activates the group before the chamfer, whose solid the edges
-  are picked on, says what to pick, and the link reads "[take the selection]" until you do.
-- "[remove]" on an edge's row takes that edge out of the chamfer.
+- The distance starts at 1 mm. "[change]" takes a number or an expression.
+- Each edge has a row. Hovering it shows the edge on the model; clicking it selects the edge.
+  "[remove]" takes the edge out of the chamfer.
+- "[change]" beside the edges takes the current selection as the edges instead. With nothing
+  suitable selected, it activates the group before the chamfer, says what to pick, and the link
+  reads "[take the selection]" until you do.
 
-A chamfer whose result would not be a closed solid, where the solid before it was one, is a
-problem on the group, which says to make it a little smaller or larger; the solid passes
-through uncut.
+A chamfer that can't be cut is a problem on the group that says why, and the solid passes
+through uncut. A result that would not be a closed solid says to make it a little smaller or
+larger.
 
-Edges between curved faces, and edges that end on a curved face, are chamfered the same way
-they are filleted. See [Fillet](fillet.md#between-two-curved-faces).
+Edges between curved faces, and edges that end on a curved face, are chamfered the way they are
+filleted: see [Fillet](fillet.md#between-two-curved-faces).
 
 ## Two distances
 
@@ -86,30 +82,33 @@ A chamfer can cut further back on one face than on the other. The screen's *seco
 row says "the same" to begin with. Give it a distance, and that is how far the cut goes back on
 each edge's second face.
 
-Which face is the first? The one with the lower identity, the one the edge's name gives first.
-If that turns out the wrong way round, *[swap]* exchanges the two distances. *[same]* makes the
-chamfer one of a single distance again.
+The first face is the one the edge's name gives first. If that turns out the wrong way round,
+*[swap]* exchanges the two distances. *[same]* makes it a chamfer of one distance again.
 
 From a script:
 
 ```go
 c := doc.Features.Chamfer([]api.Entity{edge}, 2, "")
 c.AsChamfer().SetDistance(1.5)
-c.AsChamfer().SetSecondDistance(3) // 1.5 on the first face, 3 on the second
+c.AsChamfer().SetSecondDistance(3) // 1.5 on the first face, 3 on the second; 0 for one distance
 c.AsChamfer().SwapDistances()      // 3 on the first, 1.5 on the second
-s := doc.Active().Solid()
+s := block.Solid()
 doc.Features.ChamferSolid([]api.SolidEdge{s.EdgeAt(api.V(15, 2, 10))}, 1, "")
 ```
 
+`SetEdges(entities, solidEdges)` changes which edges are cut.
+
 ## A distance of an edge's own
 
-One edge can be cut at a distance of its own, and at a second distance of its own, while the
-other edges keep the chamfer's. Under each edge on the group's screen, *[own distance]* and
-*[own second distance]* take a number or an expression. The row then shows the value with
-*[change]* and *[the chamfer's]*, which takes the own distance off again.
+One edge can have a distance of its own, and a second distance of its own, while the others
+keep the chamfer's. Under each edge on the group's screen, *[own distance]* and *[own second
+distance]* take a number or an expression. The row then shows the value with *[change]* and
+*[the chamfer's]*, which takes it off again.
 
-In a script, edges are counted as the screen lists them: the line segments first, then the
-edges of the solid, starting from 0. Example:
+*[swap]* swaps the edges' own distances too. *[same]* takes off their own second distances.
+
+In a script, edges are counted as the screen lists them, from 0: the line segments first, then
+the edges of the solid. Example:
 [`examples/scripts/chamferedges`](../../examples/scripts/chamferedges/chamferedges.go), a block
 whose front top edge is cut wider than the others.
 
@@ -121,86 +120,48 @@ must(c.AsChamfer().SetEdgeDistanceExpr(1, "w/2"))
 c.AsChamfer().SetEdgeDistance(0, 0)          // the chamfer's distance again
 ```
 
-Swapping the chamfer's distances swaps each edge's own distances as well. *[same]* takes off
-the edges' own second distances along with the chamfer's.
-
-Where edges of different distances meet above an edge that stays sharp, they meet in a mitre
-(see Corners, below). At a corner of three chamfered edges of different distances that the
-chamfer can't make by its normal edit, each straight edge is cut by a plain wedge instead.
-
 ## Corners
 
-**Every edge at the corner chamfered.** Where three or more straight edges between flat faces
-meet at a corner and all of them are chamfered, the chamfers' lines on each face cross, and the
-corner is cut this way:
-
-- Three chamfers of one distance at a square corner: the corner becomes the triangle between
-  the three points where their lines cross.
-- Otherwise (different distances, an edge with two distances, or faces that don't all meet
-  square): one chamfer, the one with the largest distance whose lines cross the others' furthest
-  out, ends in a straight line between its two crossing points. The other two are cut square to
-  their edges where their lines cross the first one's. The face between them takes a line from
-  one cut to the other. The hole that is left is filled by a plane, or by a twisted four-sided
-  patch with straight sides when its corners don't lie in one plane.
-- Four or more edges at a corner, such as a pyramid's apex: the chamfers end between the points
-  where their lines cross, and the hole is filled the same way, or by triangles about its middle
-  when it has more than four sides.
+**Every edge at the corner chamfered.** Three chamfers of one distance at a square corner cut
+the corner to a triangle. Otherwise (different distances, two distances, faces not square, four
+or more edges as at a pyramid's apex) the chamfers end where their lines cross, and the hole
+left is filled by a flat or a twisted face.
 
 Example: [`examples/scripts/chamfercorner`](../../examples/scripts/chamfercorner/chamfercorner.go),
 a block with every edge chamfered at two distances.
 
 ![The chamfercorner example: every edge cut at 2 and 4 mm](images/chamfer-8-corners.png)
 
-**Two chamfered edges meet, the third edge left sharp.** The two chamfers meet along the line
-where their planes cross, whatever their distances. The one that reaches further down the sharp
-edge goes on past that line to the sharp edge, along the line where it cuts the other chamfer's
-side face. Where the chamfers fill rather than cut, as at the foot of a block standing on a
-plate, the side face grows out to meet them.
+**Some edges left sharp.**
 
-**One convex and one concave.** Take a ledge's top edge with the inside upright below it, or a
-block's upright edge with one of its foot edges. The two chamfers meet in a three-sided face. On
-the face they share, their lines cross. One chamfer runs from there to the sharp edge; the other
-is cut square to its edge. The face the sharp edge bounds takes a curve from that cut, along its
-chamfer's line, round onto the sharp edge. The corner's face fills between that curve and the two
-ends.
+- Two chamfered edges over a sharp edge meet along the line where their planes cross, whatever
+  their distances. At the foot of a block on a plate, the side face grows out to meet them.
+- A convex and a concave chamfer (a ledge's top edge over the inside upright) meet in a
+  three-sided face.
+- At a saddle (two ridges and two valleys), one, two opposite, three, or a ridge and a valley
+  side by side can be chamfered with the rest left sharp, as [Fillet](fillet.md#corners) rounds
+  them.
+- At a pocket's inside corner, two chamfers of its rim meet in a mitre, in a flat or a curved
+  face, at one distance or two.
 
-**Three of a saddle's four edges.** At the middle of a saddle, where two ridges and two valleys
-meet, three edges can be chamfered with the fourth left sharp. The two chamfers beside the sharp
-edge are cut up to it, the third is set back, and curved patches fill the corner between them,
-as [Fillet](fillet.md) rounds the same corner, also where the two have different distances and
-reach the sharp edge at two points. Where the saddle is steep and the three have one distance,
-the patches would fold, so the chamfers are cut in two goes, the ridges and the valleys apart,
-each ending on the faces across the middle. One of the four edges chamfered alone runs on into the two
-faces across the middle, and two opposite ones meet in a mitre in the plane of the two left
-sharp, with a flat step in that plane between their ends where their distances differ; a ridge and a valley side by side are each cut up to the sharp edge beside it, and
-patches fill the corner between.
-
-**An inside corner of a pocket's rim.** Where two chamfers of a pocket's rim, picked together,
-meet at an inside corner whose third edge stays sharp, each ends where its cut on its wall reaches
-the sharp edge between the pocket's walls. In a flat face the two meet in a mitre, carried on past
-the sharp edge. In a curved face, where they reach the
-sharp edge at different depths, a ruled face fills between their ends, from the sharp edge to the
-face the two share, as [Fillet](fillet.md) rounds the same corner. Chamfers of different distances meet in a mitre too, in a flat face or a curved
-one: the smaller is carried past the sharp edge up to the larger's cut, and the larger ends on the
-smaller's cut above the smaller's depth and on the smaller's wall, grown past the sharp edge, below
-it.
+Where the chamfer can't make a corner, as where a concave edge meets the cut, it falls back to
+cutting each straight edge by a wedge. That takes convex edges between flat faces only.
 
 ## Edge names
 
 An edge of the solid is saved by name, not by where it is. The name holds the two faces the
-edge lies between, its place among their edges, and how many edges they had. If an edit splits or
-joins the edges between those two faces, the group reports it rather than moving the chamfer to
-another piece. So a chamfer on a named edge stays on that edge when the model upstream changes.
-The `edges` example shows this by moving a notch through a parameter.
+edge lies between and its place among their edges. If an edit upstream splits or joins those
+edges, the group reports it rather than moving the chamfer to another piece. The `edges` example
+shows this by moving a notch through a parameter.
 
 In a script, `Solid` gives a group's faces, edges and vertices. `Edge(name)`, `EdgeAt(point)`,
 `EdgesBetween(a, b)` and `EdgesAlong(dir)` find edges.
 
 ## Not yet
 
-- A chamfer by a distance and an angle is not done.
-- A chamfer of two distances can't take circular edges that meet other chamfered edges at a
-  corner.
-- Where the edit that cuts a chamfer can't make a corner, as where a concave edge meets the cut,
-  the chamfer falls back to a wedge and a Boolean. That fallback takes convex edges between flat
-  faces only. Where it can't cut an edge either, the group gives the reason the edit couldn't.
+- A chamfer by a distance and an angle.
+- A chamfer of two distances on circular edges that meet other chamfered edges at a corner.
+- Where the wedge fallback can't cut an edge either (a concave edge, or one on a curved face),
+  the group gives the reason the normal cut failed.
+- Chamfers meeting above a sharp edge that they would cut at two points, or at a corner where
+  their distances are too unlike for a face to close it, are refused.
