@@ -9,6 +9,9 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+### Fixed
+- On macOS on Apple silicon (and other arm64 builds), a fillet or chamfer whose foot runs past a curved side of the face, as round a rod near a drafted disc's rim, was refused as running off the face; it is made as on other systems.
+
 ## [0.6.7] - 2026-11-21
 
 ### Added

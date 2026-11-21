@@ -273,6 +273,10 @@ func (c *curvedSide) past(p geom.Vector) float64 {
 	return c.sgn * (d - c.radiusAt(p.Minus(c.o).Dot(c.axis)))
 }
 
+// onSide reports whether p lies on the side's surface, within eps of
+// it.
+func (c *curvedSide) onSide(p geom.Vector, eps float64) bool { return math.Abs(c.past(p)) <= eps }
+
 // radiusAt is the side's radius at h up the axis from o.
 func (c *curvedSide) radiusAt(h float64) float64 { return c.r + c.k*h }
 
@@ -812,6 +816,15 @@ func (c *curvedSide) clearance(sh *srf.SShell) float64 {
 		// may be coarser than the chord tolerance; what stands in them
 		// near the side (a hole's rim) has walls of its own.
 		if math.Abs(h(tr.A)-h(tr.B)) <= geom.LengthEps && math.Abs(h(tr.B)-h(tr.C)) <= geom.LengthEps {
+			continue
+		}
+		// A triangle of the side itself is left out whole. Clipped, it
+		// may give points on its chords, which stand inside the side by
+		// up to their sag: with the rim's corners a rounding error
+		// either side of the face's plane (arm64's fused multiply-add,
+		// ±9e-16), the cut at that plane fell mid-chord, 0.0022 inside
+		// a disc's rim, and the slab had no room (2026-11-21).
+		if c.onSide(tr.A, eps) && c.onSide(tr.B, eps) && c.onSide(tr.C, eps) {
 			continue
 		}
 		poly := clipBeyond([]geom.Vector{tr.A, tr.B, tr.C}, func(p geom.Vector) float64 { return h(p) - c.lo })
