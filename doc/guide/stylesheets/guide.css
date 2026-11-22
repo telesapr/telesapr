@@ -1,0 +1,119 @@
+/* The guide in the look of the site it sits under (site/style.css):
+   drawing paper and ink, headings lettered in a drafting hand, tables
+   ruled all round; a blueprint in the dark scheme. The font is the
+   landing page's, two directories up on the site. */
+
+@font-face {
+  font-family: "Drafting";
+  src: url("../../fonts/osifont.woff2") format("woff2");
+  font-display: swap;
+}
+
+:root {
+  --md-text-font: "PT Serif", "Liberation Serif", "Noto Serif", Georgia, "Times New Roman", serif;
+  --md-code-font: "PT Mono", ui-monospace, "Cascadia Mono", "DejaVu Sans Mono", Menlo, Consolas, "Courier New", monospace;
+  --ts-letter: "Drafting", "Arial Narrow", "Liberation Sans Narrow", sans-serif;
+}
+body, input { font-family: var(--md-text-font); }
+code, pre, kbd { font-family: var(--md-code-font); }
+
+[data-md-color-scheme="default"] {
+  --ts-paper: #ece4cf;
+  --ts-sheet: #f6f0df;
+  --ts-ink: #1a1915;
+  --ts-red: #b3231b;
+  --md-default-bg-color: #ece4cf;
+  --md-default-fg-color: #1a1915;
+  --md-default-fg-color--light: #575246;
+  --md-default-fg-color--lighter: #8f8773;
+  --md-default-fg-color--lightest: #c9bfa6;
+  --md-primary-fg-color: #ece4cf;
+  --md-primary-bg-color: #1a1915;
+  --md-primary-bg-color--light: #575246;
+  --md-accent-fg-color: #b3231b;
+  --md-typeset-color: #1a1915;
+  --md-typeset-a-color: #24378a;
+  --md-code-bg-color: #f6f0df;
+  --md-code-fg-color: #1a1915;
+  --md-footer-bg-color: #1a1915;
+  --md-footer-bg-color--dark: #1a1915;
+}
+[data-md-color-scheme="slate"] {
+  --ts-paper: #0f2c57;
+  --ts-sheet: #143567;
+  --ts-ink: #e6eef8;
+  --ts-red: #ffb38a;
+  --md-default-bg-color: #0f2c57;
+  --md-default-fg-color: #e6eef8;
+  --md-default-fg-color--light: #a9bdd8;
+  --md-default-fg-color--lighter: #5f7ea8;
+  --md-default-fg-color--lightest: #2c4f85;
+  --md-primary-fg-color: #0f2c57;
+  --md-primary-bg-color: #e6eef8;
+  --md-primary-bg-color--light: #a9bdd8;
+  --md-accent-fg-color: #ffb38a;
+  --md-typeset-color: #e6eef8;
+  --md-typeset-a-color: #cfe0ff;
+  --md-code-bg-color: #143567;
+  --md-code-fg-color: #e6eef8;
+  --md-footer-bg-color: #0c2549;
+  --md-footer-bg-color--dark: #0c2549;
+}
+
+/* The running head: paper, ruled below, lettered */
+.md-header { box-shadow: none; border-bottom: 2px solid var(--ts-ink); }
+.md-header__title, .md-nav__title, .md-tabs__link {
+  font-family: var(--ts-letter); letter-spacing: 0.07em; text-transform: uppercase; font-weight: normal;
+}
+.md-header__title { font-size: 1.05rem; }
+.md-search__form { border: 1px solid var(--ts-ink); border-radius: 0; background: var(--ts-sheet); }
+.md-search__input, .md-search__input::placeholder, .md-search__icon { color: var(--ts-ink); }
+
+/* The contents at the side */
+.md-nav { font-size: 0.72rem; }
+.md-nav__item--section > .md-nav__link, .md-nav__title {
+  font-family: var(--ts-letter); font-size: 0.86rem; letter-spacing: 0.08em; text-transform: uppercase;
+  font-weight: normal; color: var(--ts-red);
+}
+.md-nav__link--active { color: var(--ts-red); text-decoration: underline; text-underline-offset: 0.2em; }
+
+/* The page */
+.md-typeset { font-size: 0.82rem; line-height: 1.6; }
+.md-typeset h1, .md-typeset h2, .md-typeset h3, .md-typeset h4 {
+  font-family: var(--ts-letter); font-weight: normal; letter-spacing: 0.06em; color: var(--ts-ink);
+}
+.md-typeset h1 { font-size: 2.3rem; text-transform: uppercase; border-bottom: 2px solid var(--ts-ink); padding-bottom: 0.2em; margin-bottom: 0.9em; }
+.md-typeset h2 { font-size: 1.55rem; text-transform: uppercase; border-bottom: 1px solid var(--ts-ink); padding-bottom: 0.15em; }
+.md-typeset h3 { font-size: 1.25rem; }
+.md-typeset h4 { font-size: 1.05rem; text-transform: none; }
+.md-typeset a { text-decoration: underline; text-underline-offset: 0.15em; }
+.md-typeset a:hover { color: var(--ts-red); }
+
+.md-typeset img { border: 2px solid var(--ts-ink); }
+.md-typeset video { border: 2px solid var(--ts-ink); max-width: 100%; }
+
+.md-typeset table:not([class]) {
+  border: 2px solid var(--ts-ink); border-radius: 0; box-shadow: none;
+  background: var(--ts-sheet); font-size: 0.74rem;
+}
+.md-typeset table:not([class]) th {
+  font-family: var(--ts-letter); font-weight: normal; font-size: 0.9rem;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  border-bottom: 2px solid var(--ts-ink);
+}
+.md-typeset table:not([class]) th, .md-typeset table:not([class]) td { border: 1px solid var(--ts-ink); }
+.md-typeset table:not([class]) tbody tr:hover { background: transparent; }
+
+.md-typeset code { border-radius: 0; }
+.md-typeset pre > code { border: 1px solid var(--ts-ink); border-left-width: 4px; }
+.md-typeset .admonition, .md-typeset details {
+  border: 2px solid var(--ts-ink); border-radius: 0; box-shadow: none; background: var(--ts-sheet);
+}
+.md-typeset .admonition-title, .md-typeset summary {
+  font-family: var(--ts-letter); font-weight: normal; letter-spacing: 0.07em; text-transform: uppercase;
+  background: transparent;
+}
+.md-typeset kbd { border-radius: 0; box-shadow: none; border: 1px solid var(--ts-ink); background: var(--ts-sheet); }
+
+.md-footer { border-top: 2px solid var(--ts-ink); }
+.md-footer__title { font-family: var(--ts-letter); letter-spacing: 0.06em; }

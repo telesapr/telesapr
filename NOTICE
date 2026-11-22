@@ -107,6 +107,12 @@ pkg/res/data/fonts/unifont.hex.gz: GNU Unifont, by Roman Czyborra, Paul
 pkg/res/data/fonts/unicode.lff.gz: the LibreCAD vector font; GNU General
   Public License, version 2 or later.
 
+site/fonts/osifont.woff2: osifont, an ISO 3098 drafting font by Zefram
+  Cochrane and contributors (https://github.com/hikikomori82/osifont), cut
+  down to the characters the web site uses; GNU Lesser General Public
+  License, version 3, with the GPL font exception. It is the site's
+  lettering and is not part of the program.
+
 pkg/res/data/threejs/three-r111.min.js.gz: three.js r111.
   Copyright (c) 2010-2019 three.js authors. MIT License.
 

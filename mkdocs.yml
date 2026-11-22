@@ -23,9 +23,20 @@ theme:
     - navigation.top
     - search.suggest
     - content.code.copy
+  # No fonts from another site: the stylesheet names the site's own.
+  font: false
   palette:
-    - scheme: slate
-      primary: blue grey
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+# The look of the landing page (site/style.css): paper, ink and lettering.
+extra_css:
+  - stylesheets/guide.css
 markdown_extensions:
   - tables
   - admonition
