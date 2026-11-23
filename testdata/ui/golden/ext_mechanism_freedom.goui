@@ -50,7 +50,7 @@ row 18    mechanism of 3 parts, 1 DOF
  0-2 64 64 0
  3-11 74 64 0
  12-99 64 64 0
-row 20    freedom: turns about the axis through (28.28, 28.28, 0.00) along (0, 0, 1)
+row 20    freedom: turns about the axis through (28.28, 28.28, 0.00) along (0, 0, 1): a hinge
  0-2 64 64 0
  3-10 74 64 0
  11-99 64 64 0
@@ -322,7 +322,7 @@ row 18    mechanism of 3 parts, 1 DOF
  0-2 64 64 0
  3-11 74 64 0
  12-99 64 64 0
-row 20    freedom: turns about the axis through (88.28, 28.28, 0.00) along (0, 0, 1)
+row 20    freedom: turns about the axis through (88.28, 28.28, 0.00) along (0, 0, 1): a hinge
  0-2 64 64 0
  3-10 74 64 0
  11-99 64 64 0
@@ -485,7 +485,7 @@ row 18    mechanism of 3 parts, 1 DOF
  0-2 64 64 0
  3-11 74 64 0
  12-99 64 64 0
-row 20    freedom: turns about the axis through (88.28, 28.28, 0.00) along (0, 0, 1)
+row 20    freedom: turns about the axis through (88.28, 28.28, 0.00) along (0, 0, 1): a hinge
  0-2 64 64 0
  3-10 74 64 0
  11-99 64 64 0

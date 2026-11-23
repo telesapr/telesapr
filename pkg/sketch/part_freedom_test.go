@@ -147,6 +147,70 @@ func TestPartFreedomLid(t *testing.T) {
 	}
 }
 
+// A flap shut on a driven hinge along a block's front top edge, as
+// examples/scripts/flaps' front flap: its hinge's axis angle is 90
+// exactly there, where the cosine of a step of a thousandth of a degree
+// was within the expression folding's old tolerance of 0 and folded
+// away, so the drive's step moved nothing and the flap counted fixed.
+// Shut, open, and turned right over, it turns about the edge, driven by
+// angle.
+func TestPartFreedomFlapShut(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	b := api.New()
+	b.Sketch.Rect(api.V(0, 0, 0), api.V(60, 40, 0))
+	b.Features.Extrude(25, "block")
+	f := api.New()
+	f.Sketch.Anywhere3D()
+	f.Features.SketchIn(f.Sketch.NewWorkplane(api.V(0, 0, 25), api.V(1, 0, 0), api.V(0, 1, 0)), "outline")
+	f.Sketch.Rect(api.V(0, 0, 25), api.V(60, 20, 25))
+	f.Features.Extrude(3, "flap")
+	d := api.New()
+	var links []api.Group
+	for _, p := range []struct {
+		doc  *api.Doc
+		name string
+	}{{b, "block"}, {f, "flap"}} {
+		path := filepath.Join(dir, p.name+".tlspr")
+		if err := p.doc.File.Save(path); err != nil {
+			t.Fatal(err)
+		}
+		g, err := d.Assembly.Link(path, p.name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		links = append(links, g)
+	}
+	block, flap := links[0], links[1]
+	flap.AsLink().SetMoves(true)
+	// The edges along x at the file's y 0, z 25, found where the links
+	// put them: the block's, and the flap's bottom one. Every link of
+	// these files is put with its least y at the same place.
+	y0 := math.Inf(1)
+	for _, e := range block.Entities() {
+		if e.Kind() == "point" {
+			y0 = min(y0, e.Pos().Y)
+		}
+	}
+	edge := func(g api.Group) api.Entity {
+		return first(t, g, "line", func(e api.Entity) bool {
+			s, e2 := e.Start().Pos(), e.End().Pos()
+			return math.Abs(s.Y-y0) < 1e-6 && math.Abs(e2.Y-y0) < 1e-6 && math.Abs(s.Z-25) < 1e-6 &&
+				math.Abs(e2.Z-25) < 1e-6 && math.Abs(e2.X-s.X) > 1
+		})
+	}
+	d.Sketch.Anywhere3D()
+	mate := d.Assembly.HingeDriven(edge(block), edge(flap))
+	for _, angle := range []float64{0, 20, 180} {
+		setParam(t, d, mate.Param, angle)
+		f := flap.AsLink().Freedom()
+		if !flap.Solved() || f.Joint != "hinge" || f.Moving || !slices.Equal(f.DrivenBy, []string{mate.Param}) ||
+			!near3(api.V(math.Abs(f.Dir.X), f.Dir.Y, f.Dir.Z), api.V(1, 0, 0)) {
+			t.Errorf("angle %g: solved %v, %+v; want a hinge along x, driven by %s", angle, flap.Solved(), f, mate.Param)
+		}
+	}
+}
+
 // examples/scripts/engine's slider-crank: the crank turns about its
 // bearing, the rod about an axis that moves, and the piston slides up
 // the cylinder, all driven by the crank's angle, here and a quarter turn
@@ -164,7 +228,7 @@ func TestPartFreedomEngine(t *testing.T) {
 	if f.Turns != 0 || f.Slides != 1 || f.Invariant != "direction" || !near3(f.Dir, api.V(0, 1, 0)) {
 		t.Errorf("piston: %+v, want a slide along y", f)
 	}
-	if f.Text != "slides along (0, 1, 0), driven by angle" {
+	if f.Text != "slides along (0, 1, 0): a slide, driven by angle" {
 		t.Errorf("piston: %q", f.Text)
 	}
 	// A quarter turn on, the same.
@@ -259,7 +323,7 @@ func engine(t *testing.T) (d *api.Doc, crank, rod, piston api.Group, bearingAt a
 	crankBottom, crankTop := ends(crank)
 	rodBottom, rodTop := ends(rod)
 	pistonBottom, _ := ends(piston)
-	turn(crank, 90)
+	turn(crank, 60)
 	turn(rod, 80)
 	d.Sketch.Anywhere3D()
 	d.Assembly.HingeDriven(bearing, mainHole)

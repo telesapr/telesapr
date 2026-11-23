@@ -49,7 +49,8 @@ func (sk *Sketch) MovePointsBy(points []core.HEntity, d geom.Vector) {
 // what it moves to be solved again. A point of a part that moves in a
 // mechanism is pulled along the mechanism's freedom (pullPoint): the
 // part turns and slides as its joints let it, and the parts joined to
-// it move with it. Any other point is put at p (PointForceTo), and the
+// it move with it, a drive with them, written into its parameter. Any
+// other point is put at p (PointForceTo), and the
 // solve then moves it as its constraints require, following it there in
 // steps where the move is large (continuation.go).
 func (sk *Sketch) MovePointTo(he core.HEntity, p geom.Vector) {

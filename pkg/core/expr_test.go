@@ -40,6 +40,38 @@ func TestExprEvalAndDerivative(t *testing.T) {
 	}
 }
 
+// Folding drops a term only for a constant that is 0 or 1 exactly: the
+// cosine of a thousandth of a degree off a right angle, 1.7e-5, and the
+// sine there, a little under 1, stay what they are, or the equation they
+// are in is another (TestPartFreedomFlapShut).
+func TestFoldConstantsKeepsNearZeroAndOne(t *testing.T) {
+	t.Parallel()
+	p := HParam{V: 0x00010001}
+	if f := NewParam(p).Times(NewConstant(1)).FoldConstants(); f.Op != OpParam {
+		t.Errorf("x times 1 folded to %v, want x", f.Op)
+	}
+	if f := NewConstant(0).Times(NewParam(p)).FoldConstants(); f.Op != OpConstant || f.Value != 0 {
+		t.Errorf("0 times x folded to %v, want 0", f.Op)
+	}
+	ctx := stubParamProvider{values: map[HParam]float64{p: 25}}
+	a := 89.999 * math.Pi / 180
+	for _, tc := range []struct {
+		name string
+		e    *Expr
+		want float64
+	}{
+		{"x times a small cosine", NewParam(p).Times(NewConstant(math.Cos(a))), 25 * math.Cos(a)},
+		{"a small cosine times x", NewConstant(math.Cos(a)).Times(NewParam(p)), 25 * math.Cos(a)},
+		{"x times a sine near 1", NewParam(p).Times(NewConstant(math.Sin(a))), 25 * math.Sin(a)},
+		{"x plus a small constant", NewParam(p).Plus(NewConstant(1e-5)), 25 + 1e-5},
+	} {
+		f := tc.e.FoldConstants()
+		if got := f.Eval(ctx, nil); got != tc.want {
+			t.Errorf("%s: folded to %g, want %g", tc.name, got, tc.want)
+		}
+	}
+}
+
 func TestExprQuaternionRotate(t *testing.T) {
 	t.Parallel()
 	vec := func(x, y, z float64) ExprVector {

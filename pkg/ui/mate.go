@@ -7,8 +7,9 @@ import (
 )
 
 // MenuMate makes a mate of the selection (roadmap 16.9): the
-// constraints api.Doc.Concentric, Flush, Hinge, Screw, HingeDriven or
-// ConcentricDriven make, as one step of undo, in the active group; a
+// constraints api.Doc.Concentric, Flush, Hinge, Screw, Ball,
+// Cylindrical, Planar, Slot, HingeDriven or ConcentricDriven make, as
+// one step of undo, in the active group; a
 // driven mate's parameter, angle or travel, is changed in the table.
 // Concentric and Flush take datums on a solid selected as their
 // workplanes or, through a link, their normals, as the datums screen's
@@ -64,6 +65,26 @@ func (ss *Application) MenuMate(id Command) {
 				picked = append(picked, h.V)
 			}
 		}
+	case cmdMateBall:
+		what, need = "ball", "two points, or circles or arcs for their centres"
+		run = func(d *api.Doc, a, b api.Entity) { d.Assembly.Ball(a, b) }
+		picked = gw.pickedForMate(func(e *core.Entity) bool { return e.IsPoint() || isRound(e) })
+	case cmdMateCylindrical:
+		what, need = "cylindrical", "two line segments, circles, arcs or datum axes"
+		run = func(d *api.Doc, a, b api.Entity) { d.Assembly.Cylindrical(a, b) }
+		picked = gw.pickedForMate(func(e *core.Entity) bool {
+			return e.Type == core.EntityLineSegment || isRound(e) || isDatumFrame(e)
+		})
+	case cmdMatePlanar:
+		what, need = "planar", "two faces or datum planes"
+		run = func(d *api.Doc, a, b api.Entity) { d.Assembly.Planar(a, b) }
+		picked = gw.pickedForMate(func(e *core.Entity) bool { return e.IsFace() || isDatumFrame(e) })
+	case cmdMateSlot:
+		what, need = "slot", "a line segment and a point, or a circle or arc for its centre"
+		run = func(d *api.Doc, a, b api.Entity) { d.Assembly.Slot(a, b) }
+		picked = gw.pickedForMate(func(e *core.Entity) bool {
+			return e.Type == core.EntityLineSegment || e.IsPoint() || isRound(e)
+		})
 	case cmdMateHingeDriven:
 		what, need = "driven hinge", "two line segments, or two circles or arcs (a pin and its hole)"
 		run = func(d *api.Doc, a, b api.Entity) { d.Assembly.HingeDriven(a, b) }
@@ -114,6 +135,11 @@ func isDatumFrame(e *core.Entity) bool {
 	return e.IsWorkplane() || e.IsNormal() && e.Point[0].V != 0
 }
 
+// isRound reports whether e is a circle or an arc.
+func isRound(e *core.Entity) bool {
+	return e.Type == core.EntityCircle || e.Type == core.EntityArcOfCircle
+}
+
 // makeMate runs mate, which makes the constraints of a mate by what, as
 // one step of undo, or says why it can't.
 func (ss *Application) makeMate(what string, mate func(d *api.Doc)) {
@@ -135,7 +161,11 @@ func (ss *Application) makeMate(what string, mate func(d *api.Doc)) {
 	}()
 	if err != nil {
 		host.Rollback()
+	}
+	// The message after the evaluation: during it, a message goes to
+	// the script's sink and the user never sees it.
+	host.EndEval()
+	if err != nil {
 		ss.Error("Can't make the %s mate: %s.", what, err.Error())
 	}
-	host.EndEval()
 }

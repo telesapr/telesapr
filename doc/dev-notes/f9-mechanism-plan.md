@@ -1,7 +1,11 @@
 # F9 Mechanisms: the plan (2026-11-05)
 
-Refreshed 2026-11-09: the degrees of freedom analysis, items 1 and 2, is built ("Built
-2026-11-09" under "Degrees of freedom analysis").
+Refreshed 2026-11-23: a loop closed by Concentric, a hinge made before the flag and a driven
+hinge counted at a right angle, fixed ("Fixed 2026-11-23"). Refreshed 2026-11-22: a drag written back into its drive, several parameters in one study and
+glTF animation channels; the joints of their own; incremental assembly, items 3 to 5 but the
+drag; and turns along the freedom with the root kept by continuity where the plan doesn't stand
+in (the "Built 2026-11-22" sections). Refreshed 2026-11-09: the degrees of freedom analysis,
+items 1 and 2, is built ("Built 2026-11-09" under "Degrees of freedom analysis").
 
 The user asked whether a mechanism can be moved: parts linked and joined, one pulled in the
 window and the others turning and sliding with it. This is what was found on devel `19f6d08f`,
@@ -389,6 +393,254 @@ dimension there (`addsRank`).
 
 *Left*: item 1's marker model and the missing joints (ball, cylindrical, planar and slot as mates
 of their own; a point on a point already makes a ball joint); items 3 to 5. In `ROADMAP.md`.
+
+**Built 2026-11-22: the joints of their own and the marker model.** Branch `f9-joints`
+(`pkg/script/api/joints.go`). Each joint is ordinary constraints, as the other mates are, so the
+count above needs nothing new for them, and a reader of the constraints (plan fragments) sees
+the kinds it already knows:
+
+| Mate | Kramer | Constraints | Freedom left |
+|---|---|---|---|
+| `Ball` | coincident | one `PointsCoincident` (3d) of two points or circles' centres | 3 turns, about the point |
+| `Slot` | in-line | one `PtOnLine` (3d) of a point or centre on a line segment, either way round | 3 turns, 1 slide |
+| `Cylindrical` | in-line + parallel-z | of two circles or axes what `Concentric` makes (`Parallel` of the normals and two `ProjPtDistance` across); with a line segment, `Parallel` of the directions and a `PtOnLine` of the other's point (centre or start) on it | 1 turn, 1 slide |
+| `Planar` | in-plane + parallel-z | what `Flush` makes: `Parallel` of the faces and `PtOnFace`/`PtInPlane` | 1 turn, 2 slides |
+
+Concentric stays, and Cylindrical is its own mate rather than an alias: it takes edges for axes
+and refuses a workplane, where Concentric puts the centres on each other. Planar is Flush under
+the joint's name, since Flush already is in-plane + parallel-z. The `Parallel` of a cylindrical
+mate is left out by `addUnlessRedundant` both when it holds already and when the solve can't turn
+the part to it (a line square to the axis: the 3d parallel's equations are singular there), so a
+cylindrical mate whose `Parallel` was left out checks the axes and refuses if they aren't
+parallel, rather than making a slot.
+
+The count gained an invariant for the slot, `InvariantLine`: three turns and one slide, and a
+point whose speed under every twist lies along the slide, found by least squares with the
+slide projected out (`pointMovingAlong`, which with no slides is the ball's still point it
+replaces). `PartFreedom.Joint` names the joint a count amounts to (hinge, screw, cylindrical,
+ball, planar, slide, slot), and `Text`, the freedom row, ends with it: the screen says what the
+mates leave the part in the joint's name, whichever constraints made it. The menu's mates also
+showed no message when refused: `makeMate` gave it to the script host's sink before `EndEval`.
+
+**Built 2026-11-22: a drag written back into its drive** (branch `f9-drives`). The pull
+(`pullPoint`) takes each drive of the block, a parameter that is all of some dimension's
+expression and whose own expression is a number (`pullDrives`, `mechanism_drive.go`), as one more
+unknown: its motion, read by the same central difference of ±0.001 the count uses, is put beside
+the null vectors, the least-squares step is taken over both, and the drive's share is written
+into the parameter (`SetParameterExpr`, rounded to a millionth). A step that would carry a drive
+past a bound beside the dimension it drives (a bound measuring the same thing, `sameMeasure`) is
+cut short there, by halving, since the expression need not be linear; a drive already at its
+bound and pulled past it is dropped and the step taken over the rest. So the lid of `boxlid.tlspr`
+dragged up opens, `angle` reading the turn, and stops at 110 exactly (`TestDragDrivenLid`); the
+engine's piston pulled down its cylinder turns the crank (`TestDragDrivenCrankEngine`). A
+parameter worked out from others is not written. At a dead centre (the engine's crank at 0) the
+drive's motion of the pulled point is nil and the drag does nothing, as a null vector would.
+
+A pull from a script started from a stale model: `Entity.MoveTo` right after `Params.Set` ran
+on the parameter's old solution, since a change only marks the model to regenerate and a read
+does it. `MoveTo` and `MoveBy` now regenerate first (`Doc.moving`). And a long pull round a hinge
+stopped after a step: each step is cut to some 11° (`pullScale`), which gains less than the
+tenth the stop rule asks for on a chord of 150°; a step cut short now goes on while it gains a
+hundredth.
+
+**Built 2026-11-22: several parameters in one study, and glTF animation channels** (branch
+`f9-drives`). `AssemblyMenu.MotionStudyOf([]Drive{{Param, From, To}}, steps, frames)` sets every
+drive before each step's one regeneration; `MotionStudy` is its one-drive case, and
+`MotionFrame.Values` holds each drive's value beside `Value`, the first's. The window's screen
+keeps a list of drives (`[drive another parameter with it]`, `[remove]`). A frames name that is a
+`.glb` or `.gltf` with no verb is one animation: `Sketch.NewMotionTrack` takes the parts of an
+assembly of linked parts only (`linkedParts`, the test the drag's moved display already makes),
+`MotionTrack.Record` keeps each part's move and turn after each step's regeneration, and
+`Sketch.ExportMotionTo` writes a node per part, its mesh in its own frame at the export tolerance
+(as `partDisplayOf` makes it), its rest place the first step's, and for each moving part a
+translation and a rotation sampler, LINEAR, one keyframe a step at 0.1 s
+(`MotionSecondsPerStep`), each quaternion turned to the side of the one before so that a
+viewer's slerp takes the short way. The glTF writer became a builder (`gltfBuilder`) shared with
+`ExportMeshAsGlbTo`, whose bytes are as they were (`TestExportGlb`). A `.gltf` holds its buffer
+as a data URI. Checked: `TestMotionStudyGLTF` reads the file back (counts, times, unit
+quaternions, the lid's node at each step where its link puts it); Blender 5.2 imports `lid.glb` as
+two meshes and one action of 22 steps whose last frame has the lid turned 110°, and `engine.glb`
+as four meshes, the crank back where it started after the turn. Not done: a solid of the model's
+own or a part linked as a mesh in the animation (refused, `ErrNotAnimatable`), a part whose
+shape changes over the study (it is meshed once).
+
+**Built 2026-11-22: incremental assembly, items 3 to 5, beside the null space.** Branch
+`f9-closedform`. Of the joints of their own (above), Cylindrical and Planar are the kinds the
+plan reads and places (a free turn and one or two slides); Ball and Slot are a point on a point
+and a point on a line alone, which leave the part its turn (below). The count stays the null space's; the plan is for positions only, a fast path
+before `solveBlock`, which stays the fallback and still does every count and report.
+
+*Where it sits.* `solveBlock` first calls `solveByPlan` (`mechanism_plan.go`): for a mechanism
+whose every constraint is a mate the plan knows, with nothing dragged or pulled, it places the
+parts, and checks the placement on the block's own equations (`blockResidual`, to
+`solver.ConvergeTolerance`). If the solve before, of the same plan, left the block solved with
+no freedom and no bound held, met or crossed (`notePlanSolved`, `boundsClear`), the plan stands
+for the solve: the groups keep the results that solve wrote (DOF, `Solved.Remove`, `Implied`),
+which the plan's placement, of the same constraints, satisfies too. Otherwise the solve runs as
+ever, from the plan's placement, or from where the parts were when the plan failed (its params
+put back). A start that already holds the equations is left to the bit, so a file loads and
+saves as before. A drag or a pull (`sk.pulled`, the window's dragged params, a point move being
+followed) never runs the plan: their solve keeps the pulled part as near as it can, the plan
+places from the ground out.
+
+*Mates* (`mechanism_mates.go`): a constraint of the block is read as a mate between one or two
+parts and the ground (a reference axis that a concentric mate's distances run along is the
+ground's, between two parts). Known: point on point, point on line, point on a face or a
+workplane, parallel (all in 3d); a distance along a direction (`ProjPtDistance`, Concentric's
+and a driven slide's); the axis angle; and point on point, point on line and parallel seen in a
+workplane (the engine's slide). A reference, a comment or a bound holds nothing for the plan (a
+bound is checked after). Anything else, a feature not a rigid copy of its part (`bodyOf`), a
+constraint within one part, or a workplane the mechanism moves, and the block isn't covered. The
+features are read in their parts' frames from where the parts are when a run starts, so the
+compiled plan holds handles only, and its key (`planKey`) is the groups, the constraints'
+handles, types, workplanes, flags and the types of the entities they hold.
+
+*Order*: from the ground, next the part the most mates join to those placed; a part none joins
+stays where it is (anchored), and what is mated to it is placed from it.
+
+*The fragments* (`mechanism_fragments.go`), per part, from the mates joining it to what is
+placed, all in closed form but one search:
+
+| What the part's mates give | Its turn | Its move |
+|---|---|---|
+| no alignment (a ball, a point on a line) | kept as it is | least squares |
+| one alignment: a parallel; a point on a point with a second point on a line through it (a hinge's pin); two points on two points | the least turn laying the direction along the other, nearer way round; then free about it, or held by the part's own mates | least squares, the anchor kept |
+| two alignments not parallel | fixed: the second laid in by a turn about the first | least squares |
+| a turn held by its own mates (axis angle, a parallel in a workplane, a loop's closing mate) | a one-angle search: Newton from where it was, and at a run's first placement, or where Newton doesn't settle, the least of the minima of a sweep of 36 round the turn, nearest first | least squares at each angle |
+
+The move: with the turn held, every mate's residual is affine in the move, so the move is a
+3-column linear least squares (`settleMove`, its normal matrix by Jacobi's eigenvalues), the
+part's mates' points kept where they were along the directions the mates leave free; those
+directions are the part's slides. What the least squares leaves is what the part's mates to two
+placed bodies can't both hold: the open loop.
+
+*The loop* (`mechanism_loop.go`): the free turns and slides of the parts are the loop's
+unknowns (one for a driven four-bar or the engine: the coupler's or the rod's turn; two for an
+undriven four-bar, crank and coupler), zero meaning where the part is. Levenberg–Marquardt from
+zero, central differences, steps under a radian; if it doesn't close, again from each of a sweep
+of 36 of each turn, nearest first. A circle meeting a line or a plane is Kramer's locus
+intersection; here it is the one-angle search of the closing part, numerical, so that one search
+serves every mate rather than a table of loci. With more unknowns than the loop takes up (an
+undriven four-bar), the damped step stays near zero: the free turns are kept where they were.
+
+*What it changes.* The four-bar from full stretch, from every part where its link put it on the
+ground, or from the origin, assembles, driven or not (`TestFourBarFromFullStretch`,
+`TestFourBarFromOrigin`; the first two fail with the plan off). Every driven fixture (four-bar,
+driven hinge of lines and of pins, driven concentric, screw, the engine, the lid) is placed where
+`solveBlock` alone puts it from the same start, to 1e-6 (`TestPlanAgreesWithSolveBlock`); an
+undriven mechanism from an unsolved start comes to rest where the plan puts it, the free turns
+kept, which is not where the solve alone would have (its least change of every param). The engine
+round a turn in steps of 45° stays on its branch (`TestEngineFullTurnFlipFree`). A distance
+between two parts falls back whole (`TestPlanFallsBack`); a constraint added compiles the plan
+again, a motion study doesn't (`TestPlanCacheInvalidated`).
+
+One fixture moved: the engine was drawn with its crank straight up, which the plan, keeping the
+crank's turn, assembles at top dead centre, where the null-space count sees the rod and piston
+turning about a moving axis rather than the piston sliding (the singular position the count's
+note above warns of). The solve alone had swung the crank 127° away from where it was drawn. The
+example and the test fixture now turn the crank 60°.
+
+*Numbers* (Ryzen 9 5950X, on devel after the other F9 lanes, at a load of about 13 of 32; the
+machine was shared, so a wall time is good to a tenth or so). The engine stepped by 5° round
+three turns, regenerated each step (216 steps): 6.3 ms a step with the solve alone, 2.1 with the
+plan; of it the solve 5.0 ms of CPU against 1.0 (the two checks on the equations 0.4, the
+loop's search 0.2). A motion study of the engine with its volume check each frame
+(`MotionStudy`, 73 frames): 105 against 83 ms a frame, 8.1 against 0.7 ms of it the solve; the
+volume check and the display are the rest. `BenchmarkDragMechanism10`: the drag pulls, and the
+plan stands aside, 44 to 47 drag-ms a frame with the plan off and 44 to 46 with it (33 on master
+before the F9 lanes, at no load). A first version computed the plan's key after every solve, a
+pull's many included, and cost the drag 13 ms a frame; the key is now built only after a solve
+that left no freedom, and without reflection.
+
+*Not done, and why.* The drag (item 4's second half): the pull maps the pointer onto the null
+space and solves, and its weighting of the pulled part is not the plan's from-the-ground placement;
+mapping the pointer onto the plan's unknowns would be the way, and is `ROADMAP.md`'s row. A part
+held by points alone keeps its turn: a ball joint has three turns and no direction to align, and
+the fragments have no closed form for it, so a loop through one falls to the solve. No hand-written
+locus table: the closing part's one-angle search stands for it, and was enough for every fixture.
+Tried first and dropped: a sweep at every one-angle search, which cost 2.5 ms a step of the engine
+in the loop's search alone; the sweep now runs at a run's first placement and where Newton's
+doesn't settle.
+
+**Built 2026-11-22: turns along the freedom, and item 5, the root by continuity.** Branch
+`f9-orient`.
+
+*Turns.* `pullLinkOrientation` of the design is `pullPart` (`mechanism_pull.go`) with a goal:
+`pullPoint` aims three rows, the point's coordinates, and `turnGoal` (`mechanism_turn.go`) aims
+the part's rotation vector, weighed by 10 m a radian (`turnLever`), and for a turn about a point
+that point's coordinates too. The rows of the turn are the part's angular velocity for a change of
+its quaternion, ω = 2·vec(dq·q⁻¹), linear in the four params. `OrientNormal` sends a member's
+`NormalNRot` through it, and the window's Shift and Ctrl turns go through the new
+`Sketch.TurnPointBy`, which scripts reach as `Entity.Turn`; `LinkGroup.SetOrientation` and
+`Rotate` stay placements. Merged with the drag written back into its drive: `pullPart` keeps the
+drives as unknowns for either goal, so a lid on a driven hinge turned with Shift moves its `angle`
+within its bounds, and the stop rule is the drives' one, a step cut short going on while it gains a
+hundredth, which a turn of 150° in steps of 11° (7% a step) needs too; this branch's own rule, the
+gain judged by the share the step was cut to, was dropped for it. Measured on the four-bar's
+crank turned by its hole's normal before: 5° turned it 0°, 30° 2°, 60° 21°, 90° 40°, 150° 79°
+(solved back toward where it was); now each to 0.01°, 150° in one call. `MarkDraggedParams` was
+left alone: `sk.pulled` holds the part's seven params already.
+
+*Flips, measured first.* With the drive an axis angle, `seedAxisAngles` turns the driven part by
+the whole step before Newton, and Newton from there found the near assembly in every Grashof case
+tried: the engine and four-bars of six other sets of lengths driven round two turns in steps up
+to 180°, slider-cranks with rods of 21 to 30 on a crank of 20, and the crank pulled round in
+jumps of 30° to 90°. Flips came from a drive that is not seeded: a slider-crank driven by its
+slide's distance (`slideDriven` in the tests), a step of 20 of the slide mirrored the crank about
+the slide, and in `TestMotionStudyNoFlip` a step of 38 left it 151.8° off. A change-point
+four-bar (40, 20, 30, 30), whose branches meet, stops unsolved where a step lands on the meeting
+point; that is a true bifurcation and is left.
+
+*The rule* (`mechanism_follow.go`). Newton homotopy: the block solved for F(x) − (1−t)·F(x0) = 0
+from t = 0 to 1, the share taken off each equation in `writeEqSystem`. A step is kept where it
+lands within a tenth of its own length of where two half steps land, and halved otherwise, down
+to 1/64; a kept step doubles the next. It runs only for a mechanism solved at its last solve with
+the same constraints (`blockKey`: a mate added is not a drive changed, so building a mechanism
+solves as before and no golden moved), whose residual where it is exceeds 1e-3, and not inside a
+pull's steps, which follow the freedom already (`BenchmarkDragMechanism10` follows none). The
+slide's step of 38 now lands 0.000° from steps of 1. Cost: each followed change takes at least
+three solves; the engine's study of 24 steps took 7.2 s against 5.4 s with `NoFollow`, on a
+loaded machine. The secant predictor and a first-order prediction along the null space were
+thought of first: the half-step check needs neither the drive's derivative nor a history, and
+judges the first step of a study as well as the rest.
+
+With the plan beside it (`f9-closedform`, above): where the plan stands for the solve nothing
+is followed; where it falls back to the solve, the follow runs from where the parts are, placed
+by the plan or not, and takes a step only if they are still off their equations by more than
+1e-3. The engine's study of 24 steps is the plan's (26 solves stood for, 0 followed); the
+slider-crank driven by its slide's distance falls back and is followed, and without the follow
+still flips (`TestMotionStudyNoFlip`).
+
+**Fixed 2026-11-23: three defects found writing the samples** (branch `f9-fixes`).
+
+*A loop closed by Concentric stayed open.* Four bars with holes, linked stacked, each pin a
+Concentric and a Flush, the loop closed by a Concentric: the closing mate's distances across the
+axis (`ProjPtDistance` of zero) went through `SettleConstraint`, whose rank test, taken where the
+parts are, found the group redundant. Stacked, the bars lie in a line, where the distance along
+them moves nothing to first order, and with the parts not yet flagged nothing in the active group
+moves them at all; `addsRank` didn't help, since the rank with and without it is the same there.
+So the distance became a reference, the loop stayed 50 open, and the group said solved with 2
+DOF. The judgement of redundancy at a start position is wrong for a mate: a mate's zero distance
+in a link group (`isLinkMate`) is now never made a reference, as a coincidence never was. Kept,
+it either holds (its redundancy, if any, implied by mates) or the solve says it can't: the loop
+closes flagged before or after the mates are made, and one too long to close doesn't solve
+(`TestFourBarClosedByConcentric`).
+
+*A hinge on unflagged stacked parts dropped its point on a line.* `addUnlessRedundant` deleted
+the constraint when the active group didn't solve after it. Made in the last part's group, a
+mate between two earlier, unflagged parts is a set of constant equations, and the group stops
+solving at the first one; every later point on a line was then dropped. It now drops the
+constraint only when the group solved before it (`TestHingeBeforeFlag`); Flush's parallel after
+a Concentric is still left out (`TestMates`).
+
+*A driven hinge at 0° counted fixed.* Not the drive's derivative: the axis angle's equation
+d·(v cos a − u sin a) has no singularity. The flap shut has its axis angle at 90 exactly, and
+the count's step to 89.999 gave a cosine of 1.7e-5, which `FoldNode` took for 0 (it matched 0
+and 1 within 0.001, `exprTol`), so the folded equation was the one at 90, satisfied, and the
+step moved nothing. Folding now matches 0 and 1 exactly. The same folding had solved a driven
+hinge within 0.06° of a right angle at the right angle, and taken a sine within 0.001 of 1 for 1
+within some 2.6° of one. One golden moved in its last bits (`ext_mate_screw`'s text window).
+The flaps example counts at 0° again (`TestPartFreedomFlapShut`).
 
 ## The examples (2026-11-06)
 

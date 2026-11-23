@@ -419,15 +419,14 @@ func (e *Expr) ReferencedParams(set map[HParam]struct{}) {
 	}
 }
 
-// exprTol is the tolerance FoldConstants uses to recognize 0 and 1
-// (deliberately coarse).
-func exprTol(a, b float64) bool {
-	return math.Abs(a-b) < 0.001
-}
-
 // FoldConstants returns a simplified copy of the expression: constant
 // subtrees are evaluated, and x+0, 0+x, x*1, 1*x reduce to x and x*0,
-// 0*x to 0, where 0 and 1 are matched within exprTol.
+// 0*x to 0, for a constant that is 0 or 1 exactly. A constant near them
+// is kept: the solver's equations are folded so (System.WriteJacobian),
+// and a coefficient of 1e-5, as the cosine in a turn's equation a
+// thousandth of a degree off a right angle, folded to 0 made the
+// equation another, held where it wasn't (2026-11-23; it was matched
+// within 0.001 before).
 func (e *Expr) FoldConstants() *Expr {
 	if e == nil {
 		return nil
@@ -456,24 +455,24 @@ func (e *Expr) FoldNode() *Expr {
 			return NewConstant(n.Eval(nil, nil))
 		}
 		// x + 0 = 0 + x = x
-		if e.Op == OpPlus && right.Op == OpConstant && exprTol(right.Value, 0) {
+		if e.Op == OpPlus && right.Op == OpConstant && right.Value == 0 {
 			return left
 		}
-		if e.Op == OpPlus && left.Op == OpConstant && exprTol(left.Value, 0) {
+		if e.Op == OpPlus && left.Op == OpConstant && left.Value == 0 {
 			return right
 		}
 		// 1*x = x*1 = x
-		if e.Op == OpTimes && right.Op == OpConstant && exprTol(right.Value, 1) {
+		if e.Op == OpTimes && right.Op == OpConstant && right.Value == 1 {
 			return left
 		}
-		if e.Op == OpTimes && left.Op == OpConstant && exprTol(left.Value, 1) {
+		if e.Op == OpTimes && left.Op == OpConstant && left.Value == 1 {
 			return right
 		}
 		// 0*x = x*0 = 0
-		if e.Op == OpTimes && right.Op == OpConstant && exprTol(right.Value, 0) {
+		if e.Op == OpTimes && right.Op == OpConstant && right.Value == 0 {
 			return NewConstant(0)
 		}
-		if e.Op == OpTimes && left.Op == OpConstant && exprTol(left.Value, 0) {
+		if e.Op == OpTimes && left.Op == OpConstant && left.Value == 0 {
 			return NewConstant(0)
 		}
 

@@ -191,6 +191,27 @@ type Sketch struct {
 	// FollowSteps the steps they took before the last (continuation.go):
 	// a regeneration with nothing edited or dragged adds to neither.
 	Followed, FollowSteps int
+	// NoMechanismPlan has every mechanism solved from where its parts
+	// are, as before its plan (mechanism_plan.go); for a measure of what
+	// the plan does. PlanCompiles counts the plans compiled, PlanPlaced
+	// the solves the plan placed the parts for, PlanSolved those it
+	// stood for.
+	NoMechanismPlan                      bool
+	PlanCompiles, PlanPlaced, PlanSolved int
+	plans                                map[core.HGroup]*mechanismPlan
+	// FollowedDrives counts the solves of a mechanism that followed a
+	// change of its drive in steps, and FollowDriveSteps the steps kept
+	// (mechanism_follow.go). NoFollow turns that off too.
+	FollowedDrives, FollowDriveSteps int
+	// solvedKeys names, by its first group, the constraints of each
+	// mechanism at its last solve that solved every member, and
+	// homotopy is what writeEqSystem takes off a mechanism's equations
+	// while a change of its drive is followed (mechanism_follow.go);
+	// pulling is set while a pull solves its steps, which follow the
+	// mechanism's freedom already.
+	solvedKeys map[core.HGroup]string
+	homotopy   *homotopy
+	pulling    bool
 	// orderCache is the order shape a follow built last
 	// (flip_shape_cache.go).
 	orderCache *orderShapeCache

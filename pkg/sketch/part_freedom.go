@@ -63,6 +63,9 @@ const (
 	InvariantPlane
 	// InvariantDirection is a part that slides one way and does not turn.
 	InvariantDirection
+	// InvariantLine is a part that turns every way about a point of it
+	// that slides along a line: a slot, a pin's end in a groove.
+	InvariantLine
 )
 
 func (iv Invariant) String() string {
@@ -75,6 +78,8 @@ func (iv Invariant) String() string {
 		return "plane"
 	case InvariantDirection:
 		return "direction"
+	case InvariantLine:
+		return "line"
 	}
 	return "none"
 }
@@ -89,8 +94,9 @@ type PartFreedom struct {
 	Turns, Slides int
 	// Invariant is what stays put: the point it turns about (Point), the
 	// axis it turns about (through Point, along Dir), the plane it moves
-	// in (through Point, normal Dir) or the direction it slides along
-	// (Dir).
+	// in (through Point, normal Dir), the direction it slides along
+	// (Dir) or the line a point it turns about slides along (through
+	// Point, along Dir).
 	Invariant  Invariant
 	Point, Dir geom.Vector
 	// Lead is, for a part that screws along its axis, how far it goes
@@ -107,8 +113,47 @@ type PartFreedom struct {
 	DrivenBy []string
 }
 
-// Text says how the part can move, as "turns about the axis through
-// (0, 0, 0) along (0, 0, 1)", its lengths written by length.
+// Joint names the joint the part's freedom amounts to, by what stays
+// put: "hinge" (a turn about a fixed axis), "screw", "cylindrical" (a
+// turn about an axis and a slide along it), "ball" (turns about a
+// point), "planar" (moves in a plane, turning about its normal),
+// "slide" (one way, no turn) or "slot" (turns about a point that
+// slides along a line); "" where it is none of them, fixed, free or
+// moving with its mechanism.
+func (f PartFreedom) Joint() string {
+	switch {
+	case f.Invariant == InvariantAxis && f.Slides == 1:
+		return "cylindrical"
+	case f.Invariant == InvariantAxis && f.Lead != 0:
+		return "screw"
+	case f.Invariant == InvariantAxis:
+		return "hinge"
+	case f.Invariant == InvariantPoint:
+		return "ball"
+	case f.Invariant == InvariantPlane && f.Turns == 1:
+		return "planar"
+	case f.Invariant == InvariantDirection:
+		return "slide"
+	case f.Invariant == InvariantLine:
+		return "slot"
+	}
+	return ""
+}
+
+// jointWords is how Text names a joint: "a hinge", "a ball joint".
+var jointWords = map[string]string{
+	"hinge":       "a hinge",
+	"screw":       "a screw",
+	"cylindrical": "a cylindrical joint",
+	"ball":        "a ball joint",
+	"planar":      "a planar joint",
+	"slide":       "a slide",
+	"slot":        "a slot",
+}
+
+// Text says how the part can move, and the joint that is, as "turns
+// about the axis through (0, 0, 0) along (0, 0, 1): a hinge", its
+// lengths written by length.
 func (f PartFreedom) Text(length func(float64) string) string {
 	vec := func(v geom.Vector) string {
 		return "(" + length(v.X) + ", " + length(v.Y) + ", " + length(v.Z) + ")"
@@ -136,6 +181,8 @@ func (f PartFreedom) Text(length func(float64) string) string {
 		s = "slides in the plane through " + vec(f.Point) + " normal to " + dir(f.Dir)
 	case f.Invariant == InvariantDirection:
 		s = "slides along " + dir(f.Dir)
+	case f.Invariant == InvariantLine:
+		s = "turns about a point that slides along the line through " + vec(f.Point) + " along " + dir(f.Dir)
 	case f.Moving && f.Turns == 1 && f.Slides == 0:
 		s = "turns about an axis that moves with the mechanism"
 	default:
@@ -148,6 +195,9 @@ func (f PartFreedom) Text(length func(float64) string) string {
 		if f.Moving {
 			s += ", about a point or an axis that moves with the mechanism"
 		}
+	}
+	if j := f.Joint(); j != "" {
+		s += ": " + jointWords[j]
 	}
 	if len(f.DrivenBy) > 0 {
 		s += ", driven by " + strings.Join(f.DrivenBy, ", ")
@@ -675,44 +725,62 @@ func analyseTwists(hg core.HGroup, o geom.Vector, ts []twist) PartFreedom {
 			f.Invariant, f.Point, f.Dir = InvariantPlane, o, axis
 		}
 	case 2, 3:
-		if f.Slides > 0 {
-			break
-		}
-		if d, ok := fixedPoint(bt); ok {
-			f.Invariant, f.Point = InvariantPoint, o.Plus(d)
+		switch {
+		case f.Slides == 0:
+			if d, ok := pointMovingAlong(bt, nil); ok {
+				f.Invariant, f.Point = InvariantPoint, o.Plus(d)
+			}
+		case f.Turns == 3 && f.Slides == 1:
+			// A slot: a point that moves only along the slide.
+			if d, ok := pointMovingAlong(bt, slides); ok {
+				f.Invariant, f.Point, f.Dir = InvariantLine, o.Plus(d), slides[0]
+			}
 		}
 	}
-	if f.Invariant == InvariantAxis || f.Invariant == InvariantPlane || f.Invariant == InvariantDirection {
+	if f.Invariant == InvariantAxis || f.Invariant == InvariantPlane || f.Invariant == InvariantDirection ||
+		f.Invariant == InvariantLine {
 		f.Dir = canonicalDir(f.Dir)
 	}
 	f.Point, f.Dir = roundVec(f.Point), roundVec(f.Dir)
 	return f
 }
 
-// fixedPoint is the point, from the origin, that every twist of ts
-// leaves still: d with w × d + v = 0 for each, by least squares, and
-// whether it is still for all of them.
-func fixedPoint(ts []twist) (geom.Vector, bool) {
-	// Σ (|w|² I - w wᵀ) d = Σ w × v.
+// pointMovingAlong is the point, from the origin, that every twist of
+// ts moves along the slides only, unit and square to each other: d
+// with w × d + v in their span for each twist, by least squares, and
+// whether it is so for all of them. With no slides it is the point
+// every twist leaves still, a ball's centre.
+func pointMovingAlong(ts []twist, slides []geom.Vector) (geom.Vector, bool) {
+	// The part of a speed off the slides: P u = u - Σ s (s·u).
+	off := func(u geom.Vector) geom.Vector {
+		for _, s := range slides {
+			u = u.Minus(s.ScaledBy(s.Dot(u)))
+		}
+		return u
+	}
+	// Σ Aᵀ A d = -Σ Aᵀ P v, A = P [w]×: the columns of A are P (w × eᵢ).
 	var a [3][3]float64
 	var b geom.Vector
+	units := [3]geom.Vector{{X: 1}, {Y: 1}, {Z: 1}}
 	for _, t := range ts {
-		w := [3]float64{t.w.X, t.w.Y, t.w.Z}
-		w2 := t.w.Dot(t.w)
+		var cols [3]geom.Vector
+		for i, e := range units {
+			cols[i] = off(t.w.Cross(e))
+		}
+		pv := off(t.v)
 		for i := range 3 {
 			for j := range 3 {
-				a[i][j] -= w[i] * w[j]
+				a[i][j] += cols[i].Dot(cols[j])
 			}
-			a[i][i] += w2
 		}
-		b = b.Plus(t.w.Cross(t.v))
+		b = b.Minus(geom.Vector{X: cols[0].Dot(pv), Y: cols[1].Dot(pv), Z: cols[2].Dot(pv)})
 	}
 	d, ok := solve3(a, b)
 	if !ok {
 		return geom.Vector{}, false
 	}
 	for _, t := range ts {
-		if t.w.Cross(d).Plus(t.v).Magnitude() > invariantTol*math.Max(1, t.v.Magnitude()) {
+		if off(t.w.Cross(d).Plus(t.v)).Magnitude() > invariantTol*math.Max(1, t.v.Magnitude()) {
 			return geom.Vector{}, false
 		}
 	}
@@ -919,7 +987,7 @@ func sameInvariant(a, b PartFreedom) bool {
 	switch a.Invariant {
 	case InvariantPoint:
 		return off.Magnitude() < movedTol
-	case InvariantAxis:
+	case InvariantAxis, InvariantLine:
 		return a.Dir.Cross(b.Dir).Magnitude() < movedTol && off.Cross(a.Dir).Magnitude() < movedTol
 	case InvariantPlane:
 		return a.Dir.Cross(b.Dir).Magnitude() < movedTol && math.Abs(off.Dot(a.Dir)) < movedTol

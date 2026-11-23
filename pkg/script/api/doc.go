@@ -197,6 +197,20 @@ func (d *Doc) change(fn func(sk *sketch.Sketch)) {
 	d.changeOf(core.HGroup{}, fn)
 }
 
+// moving is change for a move of points, which starts from where they
+// are: a regeneration an earlier change left pending is made first, as
+// a read makes it, so that a point moved by an offset is moved from
+// where it is solved, and a mechanism's part is pulled from where its
+// drives and mates put it (Sketch.MovePointTo).
+func (d *Doc) moving(fn func(sk *sketch.Sketch)) {
+	d.h.Run(func() {
+		if d.h.Sketch().RegenerationPending() {
+			d.h.Regenerate()
+		}
+	})
+	d.change(fn)
+}
+
 // changeOf is change for a change of group hg's own settings. A group
 // that makes a solid is made at the read after it is added
 // (SketchHost.AddGroup); a change of anything else makes it first, so

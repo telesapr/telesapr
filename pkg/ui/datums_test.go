@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/telesapr/telesapr/pkg/platform"
+	"github.com/telesapr/telesapr/pkg/platform/headless"
 	"github.com/telesapr/telesapr/pkg/script/api"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -122,7 +124,7 @@ func TestMateMenuTakesDatums(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ss, _ = newTestApp(t)
+	ss, p := newTestApp(t)
 	doc = api.NewDoc(ss.ScriptHost())
 	if _, err := doc.Assembly.Link(path, "a"); err != nil {
 		t.Fatal(err)
@@ -139,9 +141,13 @@ func TestMateMenuTakesDatums(t *testing.T) {
 			gw.selection = append(gw.selection, Selection{Entity: doc.Datums.Get(n).H})
 		}
 	}
-	// The script host takes the window's messages while it runs.
+	// A mate refused says why in a message, after the mate's
+	// evaluation is over.
 	var said strings.Builder
-	ss.ScriptHost().Messages = &said
+	p.OnMessageDialog = func(d *headless.MessageDialog) {
+		said.WriteString(d.Message + " " + d.Description)
+		p.DialogResponses = append(p.DialogResponses, platform.ResponseOK)
+	}
 	before := len(ss.SK.Constraints)
 	pick("a.front", "b.front")
 	ss.MenuMate(cmdMateFlush)

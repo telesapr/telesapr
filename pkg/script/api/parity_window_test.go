@@ -329,6 +329,8 @@ var windowActions = map[string]string{
 	"ScreenChangeMotion/s":            "Assembly.MotionStudy",
 	"ScreenChangeMotion/r":            "Assembly.MotionStudy",
 	"ScreenChangeMotion/R":            "Assembly.MotionStudy",
+	"ScreenChangeMotion/a":            "Assembly.MotionStudyOf",
+	"ScreenChangeMotion/x":            "Assembly.MotionStudyOf",
 	"ScreenChangeClearance/g":         "Assembly.Clearances",
 	"ScreenChangeClearance/w":         "GroupAnalysis.WallThickness",
 	"ScreenChangeClearance/c":         "Assembly.Clearances",
@@ -625,7 +627,7 @@ var windowActions = map[string]string{
 	"ctx:Delete Group":                       "Group.Delete",
 
 	// Drags (mouse.go).
-	"dragPoints":        "Entity.MoveTo Entity.MoveBy",
+	"dragPoints":        "Entity.MoveTo Entity.MoveBy Entity.Turn",
 	"dragMarquee":       "- a selection made with the mouse; a script names the entities, Edit.Select",
 	"dragConstraint":    "Constraint.SetLabelOffset",
 	"dragNewPoint":      "Sketch.Point Sketch.Line Sketch.Rect Sketch.Circle",
@@ -835,6 +837,7 @@ Request          -q
 Pos              -q
 MoveTo           dragPoints; ctx:Snap to Grid
 MoveBy           dragPoints
+Turn             dragPoints
 Points           -q
 Part             -q
 Overlap          -q

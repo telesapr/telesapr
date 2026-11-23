@@ -1,7 +1,11 @@
 # The pictures of mechanisms.md: a box and a lid linked, the lid set to
 # move in a mechanism and hinged on the box's back edge, then swung
-# open; the hinge made a driven one, opened to 100° in the parameter
-# table.
+# open; the hinge made a driven one, opened to 60° in the parameter
+# table. Then a ball joint between two plates and the plate's freedom;
+# a four-bar whose bars lie on top of each other assembling once they
+# are set to move (fourbar_stacked.tlspr); the driven lid of
+# boxlid.tlspr dragged open and on past its range; the four-bar's
+# coupler turned with Ctrl.
 file $testdata/ui/mechanism/host.tlspr
 menu File|Open...
 file $testdata/ui/mechanism/box.tlspr
@@ -62,3 +66,108 @@ click-tw [edit]
 edit 60
 cursor off
 shot mechanisms-5-driven both
+# A ball joint: two plates, the top circles of their holes picked and
+# made a ball mate; the second plate set to move, its screen says how.
+size tw 800 600
+answer no
+file $testdata/ui/screw_pair.tlspr
+menu File|Open...
+view rotated
+key f
+menu Sketch|Anywhere In 3d
+cursor on
+click-entity 80030045
+click-entity 80040045
+shot mechanisms-6-ball-circles gw
+menu Assembly|Mate Ball
+click-tw g004-b
+click-tw moves in a mechanism
+cursor off
+mark 28 202 600 22 tw
+shot mechanisms-7-ball-freedom both
+# Parts need no start position: four bars linked on top of each other
+# and hinged in a loop, but fixed, so the loop can't close; set to move,
+# they assemble.
+answer no
+file $testdata/ui/mechanism/fourbar_stacked.tlspr
+menu File|Open...
+view rotated
+key f
+mark 90 212 150 22 tw
+shot mechanisms-8-stacked both
+click-tw g004-crank
+click-tw moves in a mechanism
+click-tw home
+click-tw g005-coupler
+click-tw moves in a mechanism
+click-tw home
+click-tw g006-rocker
+click-tw moves in a mechanism
+view rotated
+key f
+mark 28 162 760 62 tw
+shot mechanisms-9-assembled both
+# The lid on its driven hinge dragged open: angle follows, then stops at
+# the range's 110.
+answer no
+file $testdata/ui/mechanism/boxlid.tlspr
+menu File|Open...
+view rotated
+key f
+cursor on
+move-entity 80040023
+down L 574.90 248.36
+move 574.90 238.36 L
+move 574.90 218.36 L
+move 574.90 198.36 L
+move 574.90 178.36 L
+move 574.90 148.36 L
+up L 574.90 148.36
+menu Edit|Parameters...
+tw
+mark 28 112 230 22 tw
+shot mechanisms-10-drag-driven both
+# Taken back, and dragged on past the range.
+key z ctrl
+move-entity 80040023
+down L 574.90 248.36
+move 574.90 238.36 L
+move 574.90 218.36 L
+move 574.90 198.36 L
+up L 574.90 198.36
+down L 574.90 198.36
+move 574.90 178.36 L
+move 574.90 148.36 L
+move 574.90 118.36 L
+move 574.90 88.36 L
+move 574.90 58.36 L
+move 574.90 28.36 L
+move 574.90 8.36 L
+move 574.90 -11.64 L
+move 574.90 -31.64 L
+move 574.90 -51.64 L
+move 534.90 -41.64 L
+move 494.90 -31.64 L
+move 454.90 -21.64 L
+move 414.90 -11.64 L
+move 374.90 -1.64 L
+up L 374.90 -1.64
+menu Edit|Parameters...
+tw
+mark 28 112 230 22 tw
+shot mechanisms-11-drag-range both
+# The four-bar's coupler turned with Ctrl held: the crank and the rocker
+# follow.
+answer no
+file $testdata/ui/mechanism/fourbar.tlspr
+menu File|Open...
+cursor on
+move 405 135
+shot mechanisms-12-coupler gw
+down L 405 135
+move 410 125 L ctrl
+move 440 125 L ctrl
+move 450 140 L ctrl
+move 455 160 L ctrl
+shot mechanisms-13-turned gw
+up L 455 160

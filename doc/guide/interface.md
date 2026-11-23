@@ -144,7 +144,9 @@ selected.
   group is marked "(note)" ([Constraints](constraints.md#large-edits-and-drags)).
 - Drag a dimension's label to move the label.
 - In an assembly, a part that moves in a mechanism is pulled along its hinges, and the parts
-  joined to it move with it ([Mechanisms](mechanisms.md), experimental).
+  joined to it move with it ([Mechanisms](mechanisms.md), experimental). Dragging a point of a
+  linked part with Shift or Ctrl turns the part; a mechanism's part turns only as its hinges let
+  it.
 - The arrow keys move what is selected by one pixel of the view, ten with Shift, as a drag does
   (`Entity.MoveBy` in a script).
 - Delete removes what is selected.

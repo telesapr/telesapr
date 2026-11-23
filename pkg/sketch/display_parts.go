@@ -54,6 +54,19 @@ type partDisplayKey struct {
 // none mirrored, none forced to a mesh: then g's display can be their
 // meshes moved. Nil when g's solid is anything else.
 func (sk *Sketch) movedDisplayParts(g *Group) []*Group {
+	parts := sk.linkedParts(g)
+	if len(parts) < 2 {
+		// One part is meshed as it is: nothing to gain.
+		return nil
+	}
+	return parts
+}
+
+// linkedParts are the link groups whose parts make up group g's solid,
+// in order, when that solid is an assembly of linked parts only, as
+// movedDisplayParts takes them, one part or more; nil when it is
+// anything else.
+func (sk *Sketch) linkedParts(g *Group) []*Group {
 	var parts []*Group
 	for _, hg := range sk.GroupOrder {
 		h := sk.Group(hg)
@@ -67,10 +80,6 @@ func (sk *Sketch) movedDisplayParts(g *Group) []*Group {
 		if hg == g.H {
 			break
 		}
-	}
-	if len(parts) < 2 {
-		// One part is meshed as it is: nothing to gain.
-		return nil
 	}
 	return parts
 }

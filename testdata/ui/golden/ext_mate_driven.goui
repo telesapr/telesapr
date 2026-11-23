@@ -24,7 +24,7 @@ param 30020 0.5 0 1
 param 30021 -0.5 0 1
 param 30022 -0.5 0 1
 param 30023 -0.5 0 1
-param 40000002 0.99999999999999989 0 0
+param 40000002 1 0 0
 param 80030000 28.284271247461898 0 1
 param 80030001 28.284271247461898 0 1
 param 80030002 0 0 1
@@ -32,12 +32,12 @@ param 80030003 1 0 1
 param 80030004 0 0 1
 param 80030005 0 0 1
 param 80030006 0 0 1
-param 80040000 38.284271247461895 0 0
+param 80040000 38.284271247461902 0 0
 param 80040001 28.284271247461898 0 0
-param 80040002 1.0601380674196753e-13 0 0
+param 80040002 0 0 0
 param 80040003 1 0 0
 param 80040004 0 0 0
-param 80040005 1.0560505427570422e-15 0 0
+param 80040005 0 0 0
 param 80040006 0 0 0
 group 1 0 0 0 1
 group 2 0 0 1 1
@@ -94,28 +94,30 @@ row 18    mechanism of 1 part, 0 DOF
  0-2 64 64 0
  3-11 74 64 0
  12-99 64 64 0
-row 20    freedom: turns about the axis through (88.28, 28.28, 0.00) along (0, 0, 1), driven by angle
+row 20    freedom: turns about the axis through (88.28, 28.28, 0.00) along (0, 0, 1): a hinge, driven by
  0-2 64 64 0
  3-10 74 64 0
  11-99 64 64 0
-row 22 
+row 22      angle
  0-99 64 64 0
-row 24  solid model as
+row 24 
+ 0-99 64 64 0
+row 26  solid model as
  0-0 64 64 0
  1-99 74 64 0
-row 26     union   assemble
+row 28     union   assemble
  0-2 64 61 0
  3-9 64 61 99 0 1 0
  10-11 64 61 0
  12-21 64 61 99 2 1 0
  22-99 64 61 0
-row 28     difference   intersection
+row 30     difference   intersection
  0-2 64 61 0
  3-14 64 61 99 1 1 0
  15-16 64 61 0
  17-30 64 61 99 3 1 0
  31-99 64 61 0
-row 30    appearance   matte   plastic   glossy   metal   density not set [change]
+row 32    appearance   matte   plastic   glossy   metal   density not set [change]
  0-2 64 64 0
  3-12 74 64 0
  13-14 64 64 0
@@ -131,63 +133,63 @@ row 30    appearance   matte   plastic   glossy   metal   density no
  62-70 64 64 0
  71-78 6c 64 102 0 1 0
  79-99 64 64 0
-row 32      suppress this group's solid model
+row 34      suppress this group's solid model
  0-2 64 64 0
  3-38 64 64 80 0 1 0
  39-99 64 64 0
-row 34 
+row 36 
  0-99 64 64 0
-row 36    show entities from this group
+row 38    show entities from this group
  0-0 64 64 0
  1-32 64 64 118 0 1 0
  33-99 64 64 0
-row 38    suppress this group and the groups that use it
+row 40    suppress this group and the groups that use it
  0-0 64 64 0
  1-49 64 64 65 0 1 0
  50-99 64 64 0
-row 40    force NURBS surfaces to triangle mesh
+row 42    force NURBS surfaces to triangle mesh
  0-0 64 64 0
  1-40 64 64 102 0 1 0
  41-99 64 64 0
-row 43    relax constraints and dimensions
+row 45    relax constraints and dimensions
  0-0 64 64 0
  1-35 64 64 114 0 1 0
  36-99 64 64 0
-row 45    allow redundant constraints
+row 47    allow redundant constraints
  0-0 64 64 0
  1-30 64 64 101 0 1 0
  31-99 64 64 0
-row 47    suppress dof calculation (improves solver performance)
+row 49    suppress dof calculation (improves solver performance)
  0-0 64 64 0
  1-57 64 64 68 0 1 0
  58-99 64 64 0
-row 49    treat all dimensions as reference
+row 51    treat all dimensions as reference
  0-0 64 64 0
  1-36 64 64 100 0 1 0
  37-99 64 64 0
-row 51 
+row 53 
  0-99 64 64 0
-row 53  requests in group
+row 55  requests in group
  0-99 74 64 0
-row 55    (none)
+row 57    (none)
  0-99 64 61 0
-row 57 
+row 59 
  0-99 64 64 0
-row 59  constraints in group (0 DOF)
+row 61  constraints in group (0 DOF)
  0-99 74 64 0
-row 61    c001-pts-coincident
+row 63    c001-pts-coincident
  0-2 64 61 0
  3-21 6c 61 108 1 1 1
  22-99 64 61 0
-row 63    c002-pt-on-line
+row 65    c002-pt-on-line
  0-2 64 64 0
  3-17 6c 64 108 2 1 1
  18-99 64 64 0
-row 65    c003-axis-angle
+row 67    c003-axis-angle
  0-2 64 61 0
  3-17 6c 61 108 3 1 1
  18-99 64 61 0
-row 67 
+row 69 
  0-99 64 64 0
 param 10010 0 0 1
 param 10011 0 0 1

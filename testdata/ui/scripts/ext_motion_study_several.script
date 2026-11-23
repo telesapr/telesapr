@@ -1,0 +1,23 @@
+# Motion study of several parameters, and as one glTF animation (F9
+# Mechanisms): the box and its driven lid, a second parameter added;
+# Assembly > Motion Study drives angle from 0 to 110 and the other with
+# it in two steps, listing both; the other taken out, the study saved as
+# lid.glb lists the one file once, on its first step.
+file $testdata/ui/mechanism/boxlid.tlspr
+menu File|Open...
+menu Edit|Parameters...
+click-tw [add a parameter]
+edit gap = 2
+menu Assembly|Motion Study...
+tw
+click-tw [drive another parameter with it]
+click-tw #3 [change]
+edit 110
+click-tw #7 [change]
+edit 2
+click-tw [run]
+tw
+click-tw #2 [remove]
+file $tmp/lid.glb
+click-tw [run, saving each step...]
+tw

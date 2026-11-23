@@ -25,11 +25,11 @@ twmove 200 155
 twdown L 200 155
 twup L 200 155
 cursor on
-twmove 676 245
-mark 495 240 258 22 tw
+twmove 676 265
+mark 495 260 258 22 tw
 shot bill-of-materials-3-link tw
-twdown L 676 245
-twup L 676 245
+twdown L 676 265
+twup L 676 265
 edit 2.7
 cursor off
 menu Assembly|Bill of Materials

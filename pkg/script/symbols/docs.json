@@ -2538,7 +2538,7 @@
 					},
 					"FoldConstants": {
 						"decl": "func (e *Expr) FoldConstants() *Expr",
-						"text": "FoldConstants returns a simplified copy of the expression: constant subtrees are evaluated, and x+0, 0+x, x*1, 1*x reduce to x and x*0, 0*x to 0, where 0 and 1 are matched within exprTol."
+						"text": "FoldConstants returns a simplified copy of the expression: constant subtrees are evaluated, and x+0, 0+x, x*1, 1*x reduce to x and x*0, 0*x to 0, for a constant that is 0 or 1 exactly."
 					},
 					"FoldNode": {
 						"decl": "func (e *Expr) FoldNode() *Expr",
@@ -4507,6 +4507,10 @@
 				"text": "AssemblyMenu holds the calls of the Assembly menu: linked parts,\nmates, interference, the bill of materials and motion. A script\nreaches it as doc.Assembly.",
 				"kind": "struct",
 				"methods": {
+					"Ball": {
+						"decl": "func (m AssemblyMenu) Ball(a, b Entity) []Constraint",
+						"text": "Ball puts a point of the second part on a point of the first: the\npart may turn every way about it, and not slide, as on a ball joint.\nEach of a and b is a point, or a circle or an arc for its centre, as\nof a ball's equator. It is one coincident constraint, made in 3d."
+					},
 					"BillOfMaterials": {
 						"decl": "func (m AssemblyMenu) BillOfMaterials() (items []sketch.BOMItem)",
 						"text": "BillOfMaterials is the parts the model places by linking files, one\nitem a file: each link group places one, and a step and repeat, a\nmirror or a pattern of a link group its copies, but for one where the\npart already is. Groups left out of the model place none. The parts a\nlinked model links in turn count too, once for each place the model\nis, their groups named \"here \u003e there\". Each file is named relative to\nthe model's file, as the model's file stores a link, or absolute while\nthe model is unsaved."
@@ -4527,6 +4531,10 @@
 						"decl": "func (m AssemblyMenu) ConcentricDriven(a, b Entity) DrivenMate",
 						"text": "ConcentricDriven puts two circles or arcs on one axis as Concentric\ndoes, and drives the second's travel along the first's normal by a\nnew parameter, \"travel\" (or with a number after), in the document's\nunit from where it is, so that a motion study of it slides the part.\nThe part may still turn about the axis; hold that by another mate, as\na flat face on a flat face. The mate is made in 3d."
 					},
+					"Cylindrical": {
+						"decl": "func (m AssemblyMenu) Cylindrical(a, b Entity) []Constraint",
+						"text": "Cylindrical puts the second part's axis on the first's: the part may\nturn about the axis and slide along it, as a rod in a bore. Each of\na and b is a line segment, a circle or an arc (its axis, through its\ncentre along its normal), or a datum axis, as Concentric takes. The\naxes are made parallel, and a point of one axis put on the other: of\ntwo circles or axes it is what Concentric makes in 3d; where one is a\nline segment, the other's point (its centre, or its start) is put on\nthat line. It is made in 3d."
+					},
 					"ExportBOM": {
 						"decl": "func (m AssemblyMenu) ExportBOM(path string) error",
 						"text": "ExportBOM writes the bill of materials to a CSV file: part, count,\nfile and the groups that place them, the files named as\nBillOfMaterials names them."
@@ -4541,7 +4549,7 @@
 					},
 					"HingeDriven": {
 						"decl": "func (m AssemblyMenu) HingeDriven(a, b Entity) DrivenMate",
-						"text": "HingeDriven puts line b on line a as Hinge does, and drives b's turn\nabout a by a new parameter, \"angle\" (or with a number after for a\nsecond), in degrees from where the part is, so that a motion study of\nit turns the part, and the parts of a mechanism joined to it with\nit. Of two circles or arcs, a pin in its hole, it puts them on one\naxis as Concentric does and drives the turn about the first one's\naxis; the second part may still slide along the axis, which a Flush\nof its face on the first part's holds. The turn is held by the\nhalf-plane through the axis in which the point of b's part farthest\nfrom it lies (an axis-angle constraint), which counts whole turns and\neither way. A driven joint has no freedom left: dragging the part\nmoves nothing, the parameter does. The mate is made in 3d."
+						"text": "HingeDriven puts line b on line a as Hinge does, and drives b's turn\nabout a by a new parameter, \"angle\" (or with a number after for a\nsecond), in degrees from where the part is, so that a motion study of\nit turns the part, and the parts of a mechanism joined to it with\nit. Of two circles or arcs, a pin in its hole, it puts them on one\naxis as Concentric does and drives the turn about the first one's\naxis; the second part may still slide along the axis, which a Flush\nof its face on the first part's holds. The turn is held by the\nhalf-plane through the axis in which the point of b's part farthest\nfrom it lies (an axis-angle constraint), which counts whole turns and\neither way. A driven joint has no freedom left but its drive:\ndragging the part, or Entity.MoveTo on a point of it, turns it and\nwrites the turn into the parameter, stopping at a bound SetRange\nset. The mate is made in 3d."
 					},
 					"Interferences": {
 						"decl": "func (m AssemblyMenu) Interferences() (found []Interference, meshOnly []Group)",
@@ -4557,11 +4565,23 @@
 					},
 					"MotionStudy": {
 						"decl": "func (m AssemblyMenu) MotionStudy(param string, from, to float64, steps int, frames string) (out []MotionFrame, err error)",
-						"text": "MotionStudy drives the parameter param from from to to in steps\nequal steps, steps+1 frames with both ends, regenerating the model at\neach. With frames not \"\", each frame is saved to the\nfile frames names with the step's number in place of its verb, as\n\"frames/f%03d.png\": a picture of the view the window shows for .png,\nin the application, and otherwise what Export writes for the\nextension. The parameter gets its expression back after, whatever\nhappened. A step whose groups don't all solve is kept, marked so."
+						"text": "MotionStudy drives the parameter param from from to to in steps\nequal steps, steps+1 frames with both ends, regenerating the model at\neach. With frames not \"\", each frame is saved to the\nfile frames names with the step's number in place of its verb, as\n\"frames/f%03d.png\": a picture of the view the window shows for .png,\nin the application, and otherwise what Export writes for the\nextension. A .glb or .gltf with no verb is one glTF animation of the\nwhole study (MotionStudyOf). The parameter gets its expression back\nafter, whatever happened. A step whose groups don't all solve is\nkept, marked so. MotionStudyOf drives several parameters together."
+					},
+					"MotionStudyOf": {
+						"decl": "func (m AssemblyMenu) MotionStudyOf(drives []Drive, steps int, frames string) (out []MotionFrame, err error)",
+						"text": "MotionStudyOf drives several parameters together, each through its\nown range, over the same steps: steps equal steps, steps+1 frames\nwith both ends, regenerating the model at each, as MotionStudy does\nfor one; MotionFrame.Values holds each drive's value at the step.\nframes is as MotionStudy takes it, a file name with a verb for the\nstep's number, or one .glb or .gltf file with none: then the study is\nwritten as one glTF animation, a node per linked part and, for each\npart that moves in a mechanism, a translation and a rotation channel\nwith a keyframe a step, a tenth of a second apart, so that a glTF\nviewer plays it. The animation needs a solid that is an assembly of\nlinked parts, each read as a solid. Each parameter gets its\nexpression back after, whatever happened. A step whose groups don't\nall solve is kept, marked so."
+					},
+					"Planar": {
+						"decl": "func (m AssemblyMenu) Planar(faceA, faceB Entity) []Constraint",
+						"text": "Planar lays a face of the second part flat on a face of the first:\nthe part may slide two ways on it and turn about its normal, as a\nblock on a table. It is Flush under the joint's name, of what Flush\ntakes: two faces, workplanes or datums on flat faces."
 					},
 					"Screw": {
 						"decl": "func (m AssemblyMenu) Screw(a, b Entity, lead float64) (mate ScrewMate)",
 						"text": "Screw puts two circles or arcs on one axis, as Concentric does, and\ncouples the second part's turn about it to its travel along it, as a\nnut's on a screw: the part turns by the parameter Turn names and moves\nalong the first circle's normal by Turn/360 times the parameter Lead\nnames, from where it is, so that a motion study of Turn screws it in.\nThe turn is held by the half-plane through the axis that a point of\nthe second part lies in (an axis-angle constraint), which counts whole\nturns and either way; the travel by a distance along the axis. lead is\nin mm, as the parameter's first value. The parameters are new, named\n\"turn\" and \"lead\", or with a number after for a second screw. The\nmate is made in 3d, and the second part needs a point off the axis.\n\nWhen the circles carry screw threads, a screw's and a nut's of one\nsize (made on them, or on their axis in the same part, as on the\nother rim of a nut's hole), the part is first moved along the axis,\nby less than half a pitch, to where its thread's ridges lie between\nthe other's; a lead of 0 is the threads' own, negative for left-hand\nones. With the threads' lead the two then fit at every turn."
+					},
+					"Slot": {
+						"decl": "func (m AssemblyMenu) Slot(a, b Entity) []Constraint",
+						"text": "Slot puts a point of one part on a line of the other: the point\nslides along the line, and the part turns every way about it, as a\npin's ball end in a groove. One of a and b is a line segment, the\nother a point, or a circle or an arc for its centre; either may come\nfirst. It is one point-on-line constraint, made in 3d."
 					}
 				}
 			},
@@ -5331,6 +5351,24 @@
 				"text": "DrawingView is a view on the sheet, see sketch.DrawingView.",
 				"kind": "sketch.DrawingView"
 			},
+			"Drive": {
+				"text": "Drive is a parameter a motion study drives, and the range it drives\nit through, from From at the first step to To at the last.",
+				"kind": "struct",
+				"fields": [
+					{
+						"name": "Param",
+						"type": "string"
+					},
+					{
+						"name": "From",
+						"type": "float64"
+					},
+					{
+						"name": "To",
+						"type": "float64"
+					}
+				]
+			},
 			"DrivenMate": {
 				"text": "DrivenMate is what HingeDriven or ConcentricDriven made: the\nparameter that drives the joint, and the mate's constraints, the one\nthe parameter drives last.",
 				"kind": "struct",
@@ -5569,7 +5607,7 @@
 					},
 					"MoveTo": {
 						"decl": "func (e Entity) MoveTo(p Vec)",
-						"text": "MoveTo puts a point at p, as dragging it there does: the solver\nthen moves it as the constraints require. A point of a part that\nmoves in a mechanism (LinkGroup.SetMoves) is pulled toward p along\nthe mechanism's freedom instead: the part turns and slides as its\nmates let it, the parts joined to it with it, and stops as near p as\nthey can bring it."
+						"text": "MoveTo puts a point at p, as dragging it there does: the solver\nthen moves it as the constraints require. A point of a part that\nmoves in a mechanism (LinkGroup.SetMoves) is pulled toward p along\nthe mechanism's freedom instead: the part turns and slides as its\nmates let it, the parts joined to it with it, and stops as near p as\nthey can bring it. A drive the part moves by, as the parameter of\nAssemblyMenu.HingeDriven, moves with it: the pull writes the drive's\nnew value into the parameter, and stops where a bound of the driven\ndimension (DrivenMate.SetRange) does."
 					},
 					"Normal": {
 						"decl": "func (e Entity) Normal() (n Entity)",
@@ -5642,6 +5680,10 @@
 					"Text": {
 						"decl": "func (e Entity) Text() (text string)",
 						"text": "Text is the string of a text drawn with Sketch.Text."
+					},
+					"Turn": {
+						"decl": "func (e Entity) Turn(axis Vec, degrees float64)",
+						"text": "Turn turns the part that point e is a point of by degrees about axis,\nthrough e, as Shift- or Ctrl-dragging the point in the window does.\nThe turn is counter-clockwise looking against the axis. A part that\nmoves in a mechanism (LinkGroup.SetMoves) turns as its mates let it,\nthe parts joined to it with it: a lid on its hinge turns about the\nhinge, by as much of the turn as is about the hinge; one on a driven\nhinge turns its drive with it, within the drive's bounds, as dragging\nit does; and a part with no freedom stays. Any other linked part is\nput where it is turned, then solved. Only a point of a linked part\ncan be turned so."
 					},
 					"Type": {
 						"decl": "func (e Entity) Type() (t core.EntityType)",
@@ -6845,7 +6887,7 @@
 					},
 					"SetOrientation": {
 						"decl": "func (v LinkGroup) SetOrientation(u, w Vec)",
-						"text": "SetOrientation turns the part so that its own x and y directions\npoint along u and w, which must not be parallel (w is made square to\nu), as dragging the part's normal in the window does."
+						"text": "SetOrientation turns the part so that its own x and y directions\npoint along u and w, which must not be parallel (w is made square to\nu): it places the part so, and the solve then moves it as its\nconstraints require. To turn a part of a mechanism as its mates let\nit, as dragging its normal in the window does, use Entity.Turn or\nEntity.SetOrientation on one of its circles."
 					},
 					"SetParam": {
 						"decl": "func (v LinkGroup) SetParam(name, expr string)",
@@ -6959,7 +7001,12 @@
 					},
 					{
 						"name": "Value",
-						"type": "float64"
+						"type": "float64",
+						"text": "Value is the first drive's value at the step, Values each drive's,\nin the order the study was given them."
+					},
+					{
+						"name": "Values",
+						"type": "[]float64"
 					},
 					{
 						"name": "File",
@@ -7126,7 +7173,7 @@
 					{
 						"name": "Invariant",
 						"type": "string",
-						"text": "Invariant is what stays put while the part moves: \"point\" (it\nturns about Point), \"axis\" (it turns about the axis through Point\nalong Dir, and may slide or screw along it), \"plane\" (it moves in\nthe plane through Point normal to Dir), \"direction\" (it slides\nalong Dir) or \"none\"."
+						"text": "Invariant is what stays put while the part moves: \"point\" (it\nturns about Point), \"axis\" (it turns about the axis through Point\nalong Dir, and may slide or screw along it), \"plane\" (it moves in\nthe plane through Point normal to Dir), \"direction\" (it slides\nalong Dir), \"line\" (it turns every way about a point that slides\nalong the line through Point along Dir, as in a slot) or \"none\"."
 					},
 					{
 						"name": "Point",
@@ -7135,6 +7182,11 @@
 					{
 						"name": "Dir",
 						"type": "Vec"
+					},
+					{
+						"name": "Joint",
+						"type": "string",
+						"text": "Joint names the joint the freedom amounts to: \"hinge\", \"screw\",\n\"cylindrical\", \"ball\", \"planar\", \"slide\" or \"slot\"; \"\" for a part\nfixed, free, or moving with its mechanism."
 					},
 					{
 						"name": "Lead",
@@ -7154,7 +7206,7 @@
 					{
 						"name": "Text",
 						"type": "string",
-						"text": "Text says it in words, as the link group's screen does: \"turns\nabout the axis through (0, 0, 0) along (0, 0, 1)\", in mm."
+						"text": "Text says it in words, as the link group's screen does: \"turns\nabout the axis through (0, 0, 0) along (0, 0, 1): a hinge\", in mm."
 					}
 				]
 			},
@@ -9026,7 +9078,8 @@
 					"InvariantPoint",
 					"InvariantAxis",
 					"InvariantPlane",
-					"InvariantDirection"
+					"InvariantDirection",
+					"InvariantLine"
 				]
 			},
 			"KernelPacer": {
@@ -9117,6 +9170,20 @@
 					}
 				}
 			},
+			"MotionTrack": {
+				"text": "MotionTrack is where each part of an assembly is at each step of a motion study, recorded as the study runs (Record), for ExportMotionTo.",
+				"kind": "struct",
+				"methods": {
+					"Record": {
+						"decl": "func (mt *MotionTrack) Record(sk *Sketch)",
+						"text": "Record adds a step: where each part is now."
+					},
+					"Steps": {
+						"decl": "func (mt *MotionTrack) Steps() int",
+						"text": "Steps is how many steps the track holds."
+					}
+				}
+			},
 			"MoveError": {
 				"text": "MoveError is why a group can't move where it was asked to: Group would come before On, which it refers to through Why.",
 				"kind": "struct",
@@ -9162,13 +9229,17 @@
 				"text": "PartFreedom is how a part of a mechanism can move: how many ways it turns and slides, and what stays put while it does.",
 				"kind": "struct",
 				"methods": {
+					"Joint": {
+						"decl": "func (f PartFreedom) Joint() string",
+						"text": "Joint names the joint the part's freedom amounts to, by what stays put: \"hinge\" (a turn about a fixed axis), \"screw\", \"cylindrical\" (a turn about an axis and a slide along it), \"ball\" (turns about a point), \"planar\" (moves in a plane, turning about its normal), \"slide\" (one way, no turn) or \"slot\" (turns about a point that slides along a line); \"\" where it is none of them, fixed, free or moving with its mechanism."
+					},
 					"String": {
 						"decl": "func (f PartFreedom) String() string",
 						"text": "String is Text with lengths in mm."
 					},
 					"Text": {
 						"decl": "func (f PartFreedom) Text(length func(float64) string) string",
-						"text": "Text says how the part can move, as \"turns about the axis through (0, 0, 0) along (0, 0, 1)\", its lengths written by length."
+						"text": "Text says how the part can move, and the joint that is, as \"turns about the axis through (0, 0, 0) along (0, 0, 1): a hinge\", its lengths written by length."
 					}
 				}
 			},
@@ -9679,6 +9750,10 @@
 						"decl": "func (sk *Sketch) ExportMeshTo(filename string, es ExportSettings) error",
 						"text": "ExportMeshTo writes the active group's mesh, regenerated at the export chord tolerance, to filename; the extension picks the format, STL or 3MF."
 					},
+					"ExportMotionTo": {
+						"decl": "func (sk *Sketch) ExportMotionTo(filename string, mt *MotionTrack, es ExportSettings) error",
+						"text": "ExportMotionTo writes the track as an animated glTF to filename, a .glb or a .gltf (its buffer a data URI in the file), each part's mesh made at the export settings' chord tolerance in its own frame."
+					},
 					"FaceEdges": {
 						"decl": "func (sk *Sketch) FaceEdges(faces []srf.FaceID) ([]topo.Name, error)",
 						"text": "FaceEdges are the edges of the solid at the active group that bound any of faces, where the face meets another: what the menu's Select Face Edges and a script's SolidFace.SelectEdges select."
@@ -9945,6 +10020,10 @@
 					"NewMirror": {
 						"decl": "func (sk *Sketch) NewMirror(plane core.HEntity, name string) (Group, error)",
 						"text": "NewMirror starts a mirror group that reflects the active group in plane, a workplane or a planar face."
+					},
+					"NewMotionTrack": {
+						"decl": "func (sk *Sketch) NewMotionTrack() (*MotionTrack, error)",
+						"text": "NewMotionTrack is an empty track of the parts of the active group's solid, or ErrNotAnimatable where that solid is not an assembly of linked parts (linkedParts): a solid of the model's own has no frame to move it by."
 					},
 					"NewPathPattern": {
 						"decl": "func (sk *Sketch) NewPathPattern(path []core.HEntity, copies int, name string) (Group, error)",
@@ -10598,6 +10677,10 @@
 						"decl": "func (sk *Sketch) TurnAxis(point, vector core.HEntity) (origin, dir core.HEntity, err error)",
 						"text": "TurnAxis is the point and the direction a lathe, a revolve or a helix turns about: the point and a vector (a line segment or a normal), the axis through the point parallel to it; or, with no point (a zero handle), a line segment, the axis along it from its first end."
 					},
+					"TurnPointBy": {
+						"decl": "func (sk *Sketch) TurnPointBy(he core.HEntity, r geom.Quaternion) bool",
+						"text": "TurnPointBy turns the part that point he is a point of by r, about he, as Shift- or Ctrl-dragging the point in the window does, and marks it to be solved again."
+					},
 					"UndoClearStack": {
 						"decl": "func (s *Sketch) UndoClearStack(uk *UndoStack)",
 						"text": "UndoClearStack forgets every state on uk."
@@ -11077,6 +11160,10 @@
 				"decl": "var ErrNormalLocked",
 				"text": "ErrNormalLocked is what OrientNormal returns for a normal that nothing turns: one lying in a workplane, or copied from another group."
 			},
+			"ErrNotAnimatable": {
+				"decl": "var ErrNotAnimatable",
+				"text": "ErrNotAnimatable is the refusal of an animation of a model whose solid isn't an assembly of linked parts read as solids only."
+			},
 			"ErrNotCopies": {
 				"decl": "var ErrNotCopies",
 				"text": "ErrNotCopies is CopyPlacements' error for a group that makes no copies: not a step and repeat, a pattern along a path or a mirror."
@@ -11288,6 +11375,9 @@
 			"InvariantDirection": {
 				"decl": "const InvariantDirection"
 			},
+			"InvariantLine": {
+				"decl": "const InvariantLine"
+			},
 			"InvariantNone": {
 				"decl": "const InvariantNone"
 			},
@@ -11324,6 +11414,10 @@
 			},
 			"MeshQualityStandard": {
 				"decl": "const MeshQualityStandard"
+			},
+			"MotionSecondsPerStep": {
+				"decl": "const MotionSecondsPerStep",
+				"text": "MotionSecondsPerStep is how long a step of a motion study lasts in its animation: ten steps a second, so the lid's 14 steps of examples/ scripts/lid open it in 1.4 s."
 			},
 			"RemapBottom": {
 				"decl": "const RemapBottom",

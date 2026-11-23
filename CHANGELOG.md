@@ -9,6 +9,29 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+### Added
+- Assembly > Mate Ball, Mate Cylindrical, Mate Planar and Mate Slot, and `Assembly.Ball`, `Cylindrical`, `Planar` and `Slot` in a script: a point on a point (the part turns every way about it), an axis on an axis of line segments, circles or datum axes (turns about it and slides along it), a face flat on a face (slides two ways and turns about its normal) and a point on a line (slides along it and turns every way). Each is ordinary constraints in one step of undo, made in 3D.
+- A moving part's **freedom** row, and `LinkGroup.Freedom`'s `Text`, name the joint its freedom amounts to (`: a hinge`, `: a ball joint`, `: a slot`, ...); `Freedom` has `Joint`, and a part that turns every way about a point sliding along a line is counted as one (`Invariant` `"line"`).
+- Mechanisms: dragging a part held by a driven joint, as the lid on a driven hinge or the engine's piston, moves it by its drive and writes the new value into the drive's parameter (`angle`, `travel`), stopping at the joint's range; it moved nothing before. `Entity.MoveTo` in a script does the same. The drag is one step of undo.
+- Motion study of several parameters: Assembly > Motion Study's `[drive another parameter with it]` drives more parameters together, each through its own range over the same steps, as two driven joints of a mechanism; from a script, `doc.Assembly.MotionStudyOf([]api.Drive{...}, steps, frames)`, each frame's `Values` holding every parameter's value. `MotionStudy` stays as it was.
+- A motion study saved as one glTF animation: the choice "glTF animation of the whole study", or a `.glb` or `.gltf` file name with no step number from a script, writes a node per linked part and, for each part that moves in a mechanism, a translation and a rotation per step, so that a glTF viewer plays the lid opening or the engine turning. The model must be an assembly of linked parts read as solids.
+
+### Changed
+- Mechanisms assemble from wherever their parts are: each part is put in place from the ground out by its mates, and a loop is closed by searching the turn the parts before it leave free, so a four-bar drawn at full stretch, or with every part on top of the ground where its link put it, now solves, where it didn't. Of two ways to close a loop the one nearest where the parts are is taken, and a motion study keeps to it from step to step; a step of a driven mechanism's motion study is solved without the solver, several times faster to solve. A mechanism with a constraint other than a mate, or a loop through a part held only by points, is solved as before. The engine example starts with its crank turned 60° rather than straight up, where it would now rest at top dead centre.
+
+### Fixed
+- Mechanisms: a four-bar closed by Mate Concentric on its last pin's holes, its bars lying on top of each other where their links put them, stayed open while its groups said solved: the mate's distances across the axis were made reference dimensions. A mate's constraints are now never made references, so the loop closes whether the parts are set to move before the mates are made or after, and a loop that can't close says it doesn't solve.
+- Mechanisms: Mate Hinge on parts not yet set to move, lying on top of each other, kept its point on a point and dropped its point on a line; it keeps both, and setting the parts to move assembles them.
+- Mechanisms: a part on a driven hinge where the hinge's angle is a right angle to the frame it is counted in, as a flap shut on its box, read `fixed` in its **freedom** row; it reads a hinge, driven by its parameter. The solver took a coefficient within 0.001 of 0 for 0, and one within 0.001 of 1 for 1, so an equation with such a coefficient, as a driven hinge's within a few degrees of a right angle, was solved a little off what it asks; coefficients are now kept as they are.
+- Scripts: `Entity.MoveTo` and `MoveBy` right after a change, as setting a parameter, moved the points from where they were before the change; they now move them from where the change puts them.
+
+### Changed
+- Mechanisms (experimental): turning a part of a mechanism, by dragging one of its points with Shift or Ctrl or by dragging its normal, turns it as its mates let it, the parts joined to it following: a lid on its hinge turns about the hinge, and a lid on a driven hinge turns its `angle` with it, within its bounds. Before, the part was put where it was turned and then solved back. Scripts do the same with the new `Entity.Turn(axis, degrees)` and with `Entity.SetOrientation` on a part's circle.
+- Mechanisms (experimental): a large step of a driven joint, as a coarse motion study's, keeps the mechanism as it was put together: a slider-crank driven by its slide no longer flips its crank to the other side of the slide.
+
+### Fixed
+- A mate that can't be made from the Assembly menu (or a datum screen's `[mate]`) says why in a message; it made nothing and said nothing.
+
 ## [0.6.8] - 2026-11-21
 
 ### Fixed

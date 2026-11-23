@@ -1,0 +1,25 @@
+# Turning a part of a mechanism (F9): the four-bar's coupler dragged by
+# one of its lines with Ctrl held turns in the screen's plane, about
+# the point, as far as its hinges let it: the crank and the rocker turn
+# with it and the loop stays closed. One step of undo puts it back.
+# Dragged with Shift, which turns it about the view's own axes, it
+# turns by the share of that turn about the hinges' upright pins, the
+# crank and the rocker with it. params prints the parts' placements.
+file $testdata/ui/mechanism/fourbar.tlspr
+menu File|Open...
+params
+down L 405 135
+move 410 125 L ctrl
+move 440 125 L ctrl
+move 450 140 L ctrl
+move 455 160 L ctrl
+up L 455 160
+params
+key z ctrl
+params
+down L 405 135
+move 410 125 L shift
+move 420 115 L shift
+move 430 105 L shift
+up L 430 105
+params

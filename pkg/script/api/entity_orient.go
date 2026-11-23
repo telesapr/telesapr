@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/sketch"
@@ -38,7 +39,7 @@ func (e Entity) SetOrientation(u, w Vec) {
 	}
 	u = u.WithMagnitude(1)
 	w = w.Minus(u.ScaledBy(w.Dot(u))).WithMagnitude(1)
-	e.d.change(func(sk *sketch.Sketch) {
+	e.d.moving(func(sk *sketch.Sketch) {
 		ent := e.get(sk)
 		err := sk.OrientNormal(ent.H, geom.QuaternionFromBasis(u, w))
 		switch {
@@ -46,6 +47,33 @@ func (e Entity) SetOrientation(u, w Vec) {
 			fail("%s has a fixed normal: it lies in a workplane or is copied from another group", e.describe(sk))
 		case err != nil:
 			panic(fmt.Errorf("%s: %w", e.describe(sk), err))
+		}
+	})
+}
+
+// Turn turns the part that point e is a point of by degrees about axis,
+// through e, as Shift- or Ctrl-dragging the point in the window does.
+// The turn is counter-clockwise looking against the axis. A part that
+// moves in a mechanism (LinkGroup.SetMoves) turns as its mates let it,
+// the parts joined to it with it: a lid on its hinge turns about the
+// hinge, by as much of the turn as is about the hinge; one on a driven
+// hinge turns its drive with it, within the drive's bounds, as dragging
+// it does; and a part with no freedom stays. Any other linked part is
+// put where it is turned, then solved. Only a point of a linked part
+// can be turned so.
+func (e Entity) Turn(axis Vec, degrees float64) {
+	checkFinite("an axis", axis)
+	if axis.Magnitude() == 0 {
+		fail("a turn needs an axis, not the zero vector")
+	}
+	if math.IsNaN(degrees) || math.IsInf(degrees, 0) {
+		fail("a turn of %g degrees", degrees)
+	}
+	e.d.moving(func(sk *sketch.Sketch) {
+		ent := e.get(sk)
+		q := geom.QuaternionFromAxisAngle(axis.WithMagnitude(1), degrees*math.Pi/180)
+		if !sk.TurnPointBy(ent.H, q) {
+			fail("%s isn't a point of a linked part, which a turn turns", e.describe(sk))
 		}
 	})
 }

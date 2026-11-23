@@ -1,0 +1,21 @@
+# Ball, cylindrical, planar and slot mates (F9): with nothing fitting
+# selected, Mate Slot says what to select; two circles picked are not a
+# slot's line and point, and the mate says so and makes nothing. The
+# same circles made a ball mate put the second plate's hole centre on
+# the first's; set to move in a mechanism, the plate's screen says it
+# turns about that point, a ball joint.
+file $testdata/ui/screw_pair.tlspr
+menu File|Open...
+key f
+answer ok
+menu Assembly|Mate Slot
+click-entity 80030045
+click-entity 80040045
+answer ok
+menu Assembly|Mate Slot
+click-entity 80030045
+click-entity 80040045
+menu Assembly|Mate Ball
+click-tw g004-b
+click-tw moves in a mechanism
+tw

@@ -93,6 +93,13 @@ the part it links). Then choose from the Assembly menu:
 | Mate Flush | two faces | makes the faces parallel and puts a point of the first on the second | slide and turn on the face |
 | Mate Hinge | two line segments | puts the starts together and the second's end on the first's line | turn about the line |
 | Mate Screw | two circles or arcs | as Concentric, and ties the turn to the travel along the axis, like a nut on a screw | turn, by the parameter `turn` |
+| Mate Ball | two points, or circles or arcs for their centres | puts the second point on the first | turn every way about the point |
+| Mate Cylindrical | two line segments, circles, arcs or datum axes | makes the axes parallel and puts a point of one on the other | turn about the axis and slide along it |
+| Mate Planar | two faces | as Flush | slide and turn on the face |
+| Mate Slot | a line segment and a point, or a circle or arc for its centre | puts the point on the line | slide along the line, turn every way |
+
+Mate Ball, Cylindrical and Slot are made in 3d. [Mechanisms](mechanisms.md#joints) says what each
+mate is made of.
 
 Each mate makes ordinary constraints, in one step of undo. They are listed, edited and deleted
 like any other. A constraint that would repeat what is already there is left out.

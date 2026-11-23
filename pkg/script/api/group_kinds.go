@@ -473,9 +473,14 @@ type PartFreedom struct {
 	// turns about Point), "axis" (it turns about the axis through Point
 	// along Dir, and may slide or screw along it), "plane" (it moves in
 	// the plane through Point normal to Dir), "direction" (it slides
-	// along Dir) or "none".
+	// along Dir), "line" (it turns every way about a point that slides
+	// along the line through Point along Dir, as in a slot) or "none".
 	Invariant  string
 	Point, Dir Vec
+	// Joint names the joint the freedom amounts to: "hinge", "screw",
+	// "cylindrical", "ball", "planar", "slide" or "slot"; "" for a part
+	// fixed, free, or moving with its mechanism.
+	Joint string
 	// Lead is how far a part that screws along its axis goes along Dir
 	// in a turn, in mm; 0 for a plain turn.
 	Lead float64
@@ -487,7 +492,7 @@ type PartFreedom struct {
 	// and the bounds let go.
 	DrivenBy []string
 	// Text says it in words, as the link group's screen does: "turns
-	// about the axis through (0, 0, 0) along (0, 0, 1)", in mm.
+	// about the axis through (0, 0, 0) along (0, 0, 1): a hinge", in mm.
 	Text string
 }
 
@@ -508,7 +513,7 @@ func (v LinkGroup) Freedom() (out PartFreedom) {
 			fail("the freedom of %s: %v", sk.GroupName(g.H), err)
 		}
 		out = PartFreedom{Turns: f.Turns, Slides: f.Slides, Invariant: f.Invariant.String(),
-			Point: f.Point, Dir: f.Dir, Lead: f.Lead, Moving: f.Moving, DrivenBy: f.DrivenBy, Text: f.String()}
+			Point: f.Point, Dir: f.Dir, Joint: f.Joint(), Lead: f.Lead, Moving: f.Moving, DrivenBy: f.DrivenBy, Text: f.String()}
 	})
 	return out
 }

@@ -1,6 +1,7 @@
 # The pictures of parameters-and-units.md: a rectangle whose width is
 # the parameter width, changed in the table; then extruded, its depth
-# held at an expression of the parameter.
+# held at an expression of the parameter. Last, the motion study of the
+# driven lid of testdata/ui/mechanism/boxlid.tlspr.
 size tw 760 600
 cursor on
 key r
@@ -69,3 +70,31 @@ view rotated
 menu View|Zoom To Fit
 cursor off
 shot parameters-and-units-7-depth-thick
+# The motion study of the box and its driven lid: angle driven from 0 to
+# 110, a second parameter driven with it, then the study saved as one
+# glTF animation.
+answer no
+file $testdata/ui/mechanism/boxlid.tlspr
+menu File|Open...
+menu Edit|Parameters...
+click-tw [add a parameter]
+edit gap = 2
+menu Assembly|Motion Study...
+click-tw #3 [change]
+edit 110
+cursor on
+twmove 150 193
+mark 28 182 350 22 tw
+shot parameters-and-units-8-motion-study tw
+click-tw [drive another parameter with it]
+click-tw #7 [change]
+edit 4
+click-tw [run]
+cursor off
+mark 28 292 250 120 tw
+shot parameters-and-units-9-two-drives tw
+click-tw #2 [remove]
+file $tmp/lid.glb
+click-tw [run, saving each step...]
+mark 412 262 82 22 tw
+shot parameters-and-units-10-gltf tw

@@ -19,7 +19,7 @@ item is sized only after a two-day spike on its hardest fixture.
 | 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Round profiles twisted at a cubic corner or round its loops; fitted and closed paths crossing themselves; drafted shells' corners |
 | 3 | [Thread leftovers](#thread-leftovers) | feature | S each | DIN 513's nut deviation, B1.9's pitches and multi-start allowances wait for sources |
 | 4 | [K3 contact](#k3-coincident-and-tangent-contact) | kernel foundation | ? | Touching points the marcher finds itself; turned copies meeting face to face (six 45° apart left); one fitted-tube cross's difference |
-| 5 | [F9 Mechanisms](#f9-mechanisms) | feature | M | Built 2026-11-06, freedom per part 2026-11-09; plan fragments if asked |
+| 5 | [F9 Mechanisms](#f9-mechanisms) | feature | M | Built 2026-11-06, freedom per part 2026-11-09, incremental assembly 2026-11-22; the plan for a drag if asked |
 | 6 | [F5 small conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
 | 7 | [F8 TeleSAPR in a browser](#f8-telesapr-in-a-browser) | feature | S each | Built; module size only |
 | 8 | [F6 IGES](#f6-iges-import-and-export) | feature | L | Only if asked for |
@@ -256,14 +256,14 @@ Neosolve reads and writes IGES. STEP covers the exchange; take it when a user as
 Built 2026-11-06 (`doc/guide/mechanisms.md`, the done-audit row "Mechanisms"): link groups flagged
 "moves in a mechanism" solved as one system, a pull along the mechanism's freedom from the window
 and `Entity.MoveTo`, driven hinge and concentric mates with limits, and a drag drawn from each part's
-moved mesh. `doc/dev-notes/f9-mechanism-plan.md` has the design. Left:
+moved mesh. Built 2026-11-22: turns (Shift, Ctrl, a normal, `Entity.Turn`) along the freedom, and
+a large step of a drive followed so that the mechanism doesn't flip.
+`doc/dev-notes/f9-mechanism-plan.md` has the design. Left:
 
 | Item | State | Size |
 |---|---|---|
-| Left out until asked for: a 3D sketch as a member, a drag written back into its driving parameter, several parameters in one motion study, glTF animation channels | not planned | |
-| Joints of their own and the mates' marker model, the rest of the degrees of freedom analysis (counts and invariants per part, and the closing hinge accepted, built 2026-11-09, `doc/dev-notes/f9-mechanism-plan.md`): ball, cylindrical, planar and slot mates, each with its freedom cost; Hinge, Concentric, Flush and Screw described as Kramer's marker constraints (in-line, in-plane, helical), so that a mate's screen can say what it leaves | not planned, until asked for | M |
-| Incremental assembly: parts a chain of mates reaches from the ground placed in closed form by plan fragments, the loop-closing mate left as a 1-D search over the remaining freedom, so parts need no start position and a loop closes from full stretch; `solveBlock` the fallback for what the table does not cover | from the reading of 2026-11-08, not planned | L |
-| The plan compiled once and run per step: a motion study and a drag place the parts by rigid transforms, no Newton a frame, the drag writing back into its driving parameter; of two roots at a locus intersection the one nearest the previous configuration, so a mechanism does not flip during a drag | from the reading of 2026-11-08, not planned | M |
+| Left out until asked for: a 3D sketch as a member | not planned | |
+| The plan (incremental assembly, built 2026-11-22, `doc/dev-notes/f9-mechanism-plan.md`) run for a drag too: the pointer mapped onto the plan's free turns and slides, the parts placed by it, rather than null-space steps each followed by a solve; a part held by points alone (ball, slot) turned by the plan rather than left to the solve | not planned | M |
 
 ### F8 TeleSAPR in a browser
 

@@ -779,9 +779,11 @@ func (sk *Sketch) writeEqSystem(hgs []core.HGroup, params []core.HParam) (*solve
 		FindToFixTimeout: sk.findToFixTimeout(),
 		Constraints:      constraints,
 		WriteEquationsExceptFor: func(hc core.HConstraint, l *[]core.Equation) {
+			from := len(*l)
 			for _, hg := range hgs {
 				sk.WriteEquationsExceptFor(hg, hc, l)
 			}
+			sk.homotopy.offset((*l)[from:])
 		},
 	}
 	for _, hg := range hgs {
@@ -923,8 +925,13 @@ func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam,
 // the groups themselves generate, holding every other param fixed. The
 // result, the freedom left and the constraints to remove are written to
 // every group of the block alike, so that any of them answers for the
-// mechanism.
+// mechanism. A mechanism's plan places its parts first
+// (mechanism_plan.go), and stands for the solve where it may.
 func (sk *Sketch) solveBlock(hgs []core.HGroup, params []core.HParam, andFindFree bool) {
+	if sk.solveByPlan(hgs) {
+		return
+	}
+	defer sk.notePlanSolved(hgs)
 	defer trace.StartRegion(context.Background(), "solve").End()
 	defer sk.timed(hgs[0], timingSolve)()
 	var diagnostic *SketchDiagnostic
@@ -960,6 +967,9 @@ func (sk *Sketch) solveBlock(hgs []core.HGroup, params []core.HParam, andFindFre
 			return sk.solveStep(hgs, params, dofCheckOk)
 		})
 	}
+	// A mechanism's drive changed is followed in steps too, so that it
+	// keeps its assembly (mechanism_follow.go).
+	sk.followDrive(hgs, params, dofCheckOk)
 	sk.solveHoldingBounds(hgs, solve, func() core.SolveResult { return how })
 	note := ""
 	if f != nil {
@@ -985,6 +995,7 @@ func (sk *Sketch) solveBlock(hgs []core.HGroup, params []core.HParam, andFindFre
 		g.Solved.How = how
 		sk.recalculateGroupEntities(hg)
 	}
+	sk.noteSolved(hgs)
 }
 
 // solveStep solves the block of groups hgs for params as solveBlock

@@ -648,6 +648,153 @@ func TestFourBarClosedByHinge(t *testing.T) {
 	}
 }
 
+// holeAt is linked bar g's hole at x along it from its start, its
+// circle in the bar's bottom face, found where its link put it.
+func holeAt(t *testing.T, g api.Group, x float64) api.Entity {
+	t.Helper()
+	x0 := math.Inf(1)
+	for _, e := range g.Entities() {
+		if e.Kind() == "line" {
+			x0 = min(x0, e.Start().Pos().X)
+		}
+	}
+	return first(t, g, "circle", func(e api.Entity) bool {
+		c := e.Center().Pos()
+		return math.Abs(c.X-x0-x) < 1e-6 && math.Abs(c.Z) < 1e-6
+	})
+}
+
+// A four-bar of bars with a hole at each end, lying on top of each other
+// where their links put them, each pin a Concentric and a Flush, each
+// bar on the one before, and the loop closed by a Concentric of the
+// rocker's far hole on the ground's: the closing mate's two distances
+// across the axis are kept, not made references, and the loop closes,
+// whether the bars are flagged before they are mated or after. Stacked,
+// the bars lie in a line, where the closing distance along them moves
+// nothing to first order; the rank test there took it for redundant and
+// made it a reference, leaving the loop 50 open and the group solved.
+// A ground too long for the chain to reach leaves the loop unsolved,
+// said so, rather than open.
+func TestFourBarClosedByConcentric(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		flagFirst bool
+		ground    float64
+	}{{true, 70}, {false, 70}, {true, 210}} {
+		t.Run(fmt.Sprintf("flagged first %v, ground %g", tc.flagFirst, tc.ground), func(t *testing.T) {
+			t.Parallel()
+			if tc.ground > 70 && testing.Short() {
+				t.Skip("a loop that can't close: some seconds of the solver failing to converge")
+			}
+			fourBarByConcentric(t, tc.flagFirst, tc.ground)
+		})
+	}
+}
+
+// fourBarByConcentric is a case of TestFourBarClosedByConcentric.
+func fourBarByConcentric(t *testing.T, flagFirst bool, groundLength float64) {
+	t.Helper()
+	dir := t.TempDir()
+	d := api.New()
+	link := func(length float64, name string) api.Group {
+		g, err := d.Assembly.Link(barFile(t, dir, length), name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return g
+	}
+	ground, crank, coupler, rocker := link(groundLength, "ground"), link(30, "crank"), link(60, "coupler"), link(50, "rocker")
+	flag := func() {
+		for _, g := range []api.Group{crank, coupler, rocker} {
+			g.AsLink().SetMoves(true)
+		}
+	}
+	if flagFirst {
+		flag()
+	}
+	g5, g65 := holeAt(t, ground, 5), holeAt(t, ground, groundLength-5)
+	c5, c25 := holeAt(t, crank, 5), holeAt(t, crank, 25)
+	b5, b55 := holeAt(t, coupler, 5), holeAt(t, coupler, 55)
+	r5, r45 := holeAt(t, rocker, 5), holeAt(t, rocker, 45)
+	_, gt := ends(ground)
+	cb, ct := ends(crank)
+	bb, bt := ends(coupler)
+	rb, _ := ends(rocker)
+	d.Sketch.Anywhere3D()
+	d.Assembly.Concentric(g5, c5)
+	d.Assembly.Flush(gt, cb)
+	d.Assembly.Concentric(c25, b5)
+	d.Assembly.Flush(ct, bb)
+	d.Assembly.Concentric(b55, r5)
+	d.Assembly.Flush(bt, rb)
+	closing := d.Assembly.Concentric(g65, r45)
+	if !flagFirst {
+		flag()
+	}
+	if groundLength > 70 {
+		if rocker.Solved() {
+			t.Error("a loop that cannot close solved")
+		}
+		return
+	}
+	for _, c := range closing {
+		if c.Reference() {
+			t.Errorf("the closing mate's %v was made a reference", c.Type())
+		}
+	}
+	for _, g := range []api.Group{crank, coupler, rocker} {
+		if !g.Solved() || g.Dof() != 1 {
+			t.Errorf("%s solved %v, %d DOF; want solved, 1", g.Name(), g.Solved(), g.Dof())
+		}
+	}
+	for _, pin := range [][2]api.Entity{{g5, c5}, {c25, b5}, {b55, r5}, {g65, r45}} {
+		a, b := pin[0].Center().Pos(), pin[1].Center().Pos()
+		if gap := math.Hypot(a.X-b.X, a.Y-b.Y); gap > 1e-6 {
+			t.Errorf("a pin is open by %g", gap)
+		}
+	}
+}
+
+// A hinge made on parts not yet flagged, lying on top of each other
+// where their links put them, keeps both its constraints: in the last
+// part's group the earlier parts are held where they are, so the group
+// doesn't solve and told nothing of the point on the line, which was
+// dropped as redundant. Flagged after, the hinges assemble the four-bar
+// as they do when the parts are flagged first.
+func TestHingeBeforeFlag(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	d := api.New()
+	link := func(length float64, name string) api.Group {
+		g, err := d.Assembly.Link(barFile(t, dir, length), name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return g
+	}
+	frame, crank, coupler, rocker := link(60, "frame"), link(20, "crank"), link(50, "coupler"), link(40, "rocker")
+	pf, pc, pb, pr := uprights(t, frame), uprights(t, crank), uprights(t, coupler), uprights(t, rocker)
+	d.Sketch.Anywhere3D()
+	for i, pins := range [][2]api.Entity{{pf[0], pc[0]}, {pc[20], pb[0]}, {pb[50], pr[0]}, {pf[60], pr[40]}} {
+		if cs := d.Assembly.Hinge(pins[0], pins[1]); len(cs) != 2 {
+			t.Errorf("hinge %d before the flag: %d constraints, want 2", i, len(cs))
+		}
+	}
+	for _, g := range []api.Group{crank, coupler, rocker} {
+		g.AsLink().SetMoves(true)
+	}
+	for _, g := range []api.Group{crank, coupler, rocker} {
+		if !g.Solved() || g.Dof() != 1 {
+			t.Errorf("%s: solved %v, %d DOF; want solved, 1", g.Name(), g.Solved(), g.Dof())
+		}
+	}
+	for _, pin := range [][2]api.Entity{{pf[0], pc[0]}, {pc[20], pb[0]}, {pb[50], pr[0]}, {pf[60], pr[40]}} {
+		if gap := pin[0].Start().Pos().Minus(pin[1].Start().Pos()).Magnitude(); gap > 1e-6 {
+			t.Errorf("a hinge is open by %g", gap)
+		}
+	}
+}
+
 // What is redundant and inconsistent is refused as before: a ground
 // whose second pin is 200 from its first, which a chain of 20, 60 and
 // 50 cannot reach, leaves the loop unsolved; and a redundant dimension,

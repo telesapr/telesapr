@@ -82,7 +82,8 @@ a three.js viewer or a web page can open it. The file holds:
 
 Without a window, `telesapr-cli export-mesh --output %.glb model.tlspr` writes the same file.
 From a script, call `doc.File.Export("model.glb")`. A motion study can save its frames as
-`.glb` too.
+`.glb` too, or the whole study as one animated `.glb` of an assembly's moving parts
+([motion study](parameters-and-units.md#motion-study)).
 
 ## Not yet
 

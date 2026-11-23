@@ -20,7 +20,8 @@ func setParam(t *testing.T, d *api.Doc, name string, v float64) {
 
 // A driven hinge: the bar turns about the ground's pin by the parameter
 // angle, from where it was, either way and past a whole turn, and keeps
-// no freedom, so a pull moves nothing; the mate is one step of undo,
+// no freedom but its drive, so a pull turns it and writes the turn into
+// angle (TestDragDrivenLid has the rest); the mate is one step of undo,
 // and redo brings it back. The pin runs from the top down, so a
 // positive angle is clockwise seen from above.
 func TestDrivenHinge(t *testing.T) {
@@ -50,8 +51,8 @@ func TestDrivenHinge(t *testing.T) {
 	}
 	at := far.Pos()
 	far.MoveTo(turned(at, pivot, 20))
-	if !near3(far.Pos(), at) {
-		t.Errorf("a pull moved a driven hinge to %v", far.Pos())
+	if a := paramValue(t, d, "angle"); math.Abs(a-380) > 1e-3 || far.Pos().Minus(turned(at, pivot, 20)).Magnitude() > 1e-3 {
+		t.Errorf("pulled 20° back: angle %g, want 380; the corner at %v, want %v", a, far.Pos(), turned(at, pivot, 20))
 	}
 }
 

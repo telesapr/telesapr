@@ -2,12 +2,9 @@ package api
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
 	"math"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -273,52 +270,12 @@ func (m AssemblyMenu) Hinge(a, b Entity) []Constraint {
 // file frames names with the step's number in place of its verb, as
 // "frames/f%03d.png": a picture of the view the window shows for .png,
 // in the application, and otherwise what Export writes for the
-// extension. The parameter gets its expression back after, whatever
-// happened. A step whose groups don't all solve is kept, marked so.
+// extension. A .glb or .gltf with no verb is one glTF animation of the
+// whole study (MotionStudyOf). The parameter gets its expression back
+// after, whatever happened. A step whose groups don't all solve is
+// kept, marked so. MotionStudyOf drives several parameters together.
 func (m AssemblyMenu) MotionStudy(param string, from, to float64, steps int, frames string) (out []MotionFrame, err error) {
-	d := m.d
-	p, ok := d.Params.Get(param)
-	if !ok {
-		return nil, fmt.Errorf("no parameter %q", param)
-	}
-	if steps < 1 || steps > 10000 {
-		return nil, fmt.Errorf("a motion study takes from 1 to 10000 steps, not %d", steps)
-	}
-	if frames != "" && !strings.Contains(frames, "%") {
-		return nil, errors.New("the frames' file name needs a verb for the step's number, as f%03d.png")
-	}
-	defer func() {
-		if rerr := d.Params.Set(param, p.Expr); rerr != nil && err == nil {
-			err = rerr
-		}
-		d.Edit.Regen()
-	}()
-	for i := 0; i <= steps; i++ {
-		v := from + (to-from)*float64(i)/float64(steps)
-		if err := d.Params.Set(param, strconv.FormatFloat(v, 'g', -1, 64)); err != nil {
-			return out, fmt.Errorf("step %d, %s = %g: %w", i, param, v, err)
-		}
-		d.Edit.Regen()
-		f := MotionFrame{Step: i, Value: v, Solved: true}
-		for _, g := range d.Groups() {
-			f.Solved = f.Solved && g.Solved()
-		}
-		f.Volume = d.Active().Analyze().Check().Volume
-		if frames != "" {
-			f.File = fmt.Sprintf(frames, i)
-			var ferr error
-			if strings.EqualFold(filepath.Ext(f.File), ".png") {
-				ferr = d.File.Render(f.File, 800, 600, "window")
-			} else {
-				ferr = d.File.Export(f.File)
-			}
-			if ferr != nil {
-				return out, fmt.Errorf("frame %d: %w", i, ferr)
-			}
-		}
-		out = append(out, f)
-	}
-	return out, nil
+	return m.MotionStudyOf([]Drive{{Param: param, From: from, To: to}}, steps, frames)
 }
 
 // Interferences checks the parts of the assembly up to the active

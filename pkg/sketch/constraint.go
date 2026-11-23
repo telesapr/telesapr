@@ -82,7 +82,7 @@ func (sk *Sketch) SettleConstraint(hc core.HConstraint) (existing core.HConstrai
 		sk.RemoveConstraint(hc)
 		return old, true
 	}
-	if !c.IsInequality() && c.HasLabel() {
+	if !c.IsInequality() && c.HasLabel() && !isLinkMate(sk, c) {
 		g := sk.Group(c.Group)
 		if g != nil && !g.AllowRedundant {
 			if how, rank := sk.TestRankForGroup(c.Group); how == core.SolveRedundantOkay && !sk.addsRank(c, rank) {
@@ -91,6 +91,20 @@ func (sk *Sketch) SettleConstraint(hc core.HConstraint) (existing core.HConstrai
 		}
 	}
 	return hc, false
+}
+
+// isLinkMate reports whether c is a mate's zero distance in a link
+// group (isMateConstraint), as Concentric puts a centre on an axis by:
+// an incidence by another name, never made a reference. The rank test
+// at the position the parts are in when it is made says nothing of it:
+// parts stacked as their links put them lie in a line, where the
+// closing mate's distance along the bars moves nothing to first order,
+// and parts not yet flagged are held where they are. Kept, it holds
+// what it asks or the solve says it can't, as a coincidence does; made
+// a reference, the loop it closes stayed open and the group solved.
+func isLinkMate(sk *Sketch, c *core.Constraint) bool {
+	g := sk.Group(c.Group)
+	return g != nil && g.Type == GroupLinked && core.IsFreeIn3D(c.Workplane) && isMateConstraint(c)
 }
 
 // addsRank reports whether dimension c, with which its group's rank is

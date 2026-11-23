@@ -33,8 +33,10 @@ type DrivenMate struct {
 // of its face on the first part's holds. The turn is held by the
 // half-plane through the axis in which the point of b's part farthest
 // from it lies (an axis-angle constraint), which counts whole turns and
-// either way. A driven joint has no freedom left: dragging the part
-// moves nothing, the parameter does. The mate is made in 3d.
+// either way. A driven joint has no freedom left but its drive:
+// dragging the part, or Entity.MoveTo on a point of it, turns it and
+// writes the turn into the parameter, stopping at a bound SetRange
+// set. The mate is made in 3d.
 func (m AssemblyMenu) HingeDriven(a, b Entity) DrivenMate {
 	d := m.d
 	var circles bool

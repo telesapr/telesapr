@@ -1,0 +1,9 @@
+# The top circles of the holes of screw_pair.tlspr's two plates picked
+# with the mouse and made a ball mate; the same as path_mate_ball.go
+# makes (TestPathEquivalence/mate_ball).
+file $testdata/ui/screw_pair.tlspr
+menu File|Open...
+key f
+click-entity 80030045
+click-entity 80040045
+menu Assembly|Mate Ball

@@ -43,6 +43,7 @@ type gltfDoc struct {
 	Accessors   []gltfAccessor   `json:"accessors,omitempty"`
 	BufferViews []gltfBufferView `json:"bufferViews,omitempty"`
 	Buffers     []gltfBuffer     `json:"buffers,omitempty"`
+	Animations  []gltfAnimation  `json:"animations,omitempty"`
 }
 
 type gltfAsset struct {
@@ -57,6 +58,10 @@ type gltfScene struct {
 type gltfNode struct {
 	Mesh *int   `json:"mesh,omitempty"`
 	Name string `json:"name,omitempty"`
+	// Translation, in metres, and Rotation, a unit quaternion as x, y,
+	// z, w, place a part's node where its link places it.
+	Translation []float64 `json:"translation,omitempty"`
+	Rotation    []float64 `json:"rotation,omitempty"`
 }
 
 type gltfMesh struct {
@@ -95,11 +100,15 @@ type gltfBufferView struct {
 	Buffer     int `json:"buffer"`
 	ByteOffset int `json:"byteOffset"`
 	ByteLength int `json:"byteLength"`
-	Target     int `json:"target"`
+	// Target is 0, and left out, for an animation's keyframes.
+	Target int `json:"target,omitempty"`
 }
 
 type gltfBuffer struct {
 	ByteLength int `json:"byteLength"`
+	// URI holds the bytes in a .gltf, as a data URI; a .glb has them in
+	// its binary chunk.
+	URI string `json:"uri,omitempty"`
 }
 
 // gltfVertex is a corner as glTF holds it: a position and a normal,
@@ -122,24 +131,51 @@ type gltfPrim struct {
 // one empty node, which glTF allows where it does not allow a mesh of
 // no primitives or a buffer of no bytes.
 func ExportMeshAsGlbTo(w io.Writer, m *srf.SMesh) error {
+	b := newGltfBuilder()
+	b.doc.Scenes = []gltfScene{{Nodes: []int{0}}}
+	b.doc.Nodes = []gltfNode{{}}
+	if mi, ok := b.addMesh(m); ok {
+		b.doc.Nodes[0].Mesh = new(mi)
+	}
+	return b.writeGlb(w)
+}
+
+// gltfBuilder is a glTF document being made, and its binary buffer.
+type gltfBuilder struct {
+	doc gltfDoc
+	bin bytes.Buffer
+	// material is the index of each colour's material, shared by the
+	// meshes that have the colour.
+	material map[core.RGBA]int
+}
+
+// newGltfBuilder is an empty document.
+func newGltfBuilder() *gltfBuilder {
+	return &gltfBuilder{doc: gltfDoc{Asset: gltfAsset{Version: "2.0", Generator: "TeleSAPR"}},
+		material: map[core.RGBA]int{}}
+}
+
+// view appends data to the buffer as a view of it, for target (0 for
+// none), and returns the view's index.
+func (b *gltfBuilder) view(data []byte, target int) int {
+	b.doc.BufferViews = append(b.doc.BufferViews, gltfBufferView{
+		ByteOffset: b.bin.Len(), ByteLength: len(data), Target: target})
+	b.bin.Write(data)
+	return len(b.doc.BufferViews) - 1
+}
+
+// addMesh adds mesh m, a primitive per colour, and returns its index;
+// false, with nothing added, when m has no triangles glTF would keep.
+func (b *gltfBuilder) addMesh(m *srf.SMesh) (int, bool) {
 	prims := gltfPrims(m)
-	doc := gltfDoc{
-		Asset:  gltfAsset{Version: "2.0", Generator: "TeleSAPR"},
-		Scenes: []gltfScene{{Nodes: []int{0}}},
-		Nodes:  []gltfNode{{}},
+	if len(prims) == 0 {
+		return 0, false
 	}
-	if len(prims) > 0 {
-		doc.Nodes[0].Mesh = new(0)
-		doc.Meshes = []gltfMesh{{}}
-	}
-	var bin bytes.Buffer
-	view := func(data []byte, target int) int {
-		doc.BufferViews = append(doc.BufferViews, gltfBufferView{
-			ByteOffset: bin.Len(), ByteLength: len(data), Target: target})
-		bin.Write(data)
-		return len(doc.BufferViews) - 1
-	}
-	for i, pr := range prims {
+	mi := len(b.doc.Meshes)
+	b.doc.Meshes = append(b.doc.Meshes, gltfMesh{})
+	doc := &b.doc
+	view := b.view
+	for _, pr := range prims {
 		pos, nrm := make([]byte, 0, len(pr.verts)*12), make([]byte, 0, len(pr.verts)*12)
 		lo := [3]float32{math.MaxFloat32, math.MaxFloat32, math.MaxFloat32}
 		hi := [3]float32{-math.MaxFloat32, -math.MaxFloat32, -math.MaxFloat32}
@@ -162,19 +198,39 @@ func ExportMeshAsGlbTo(w io.Writer, m *srf.SMesh) error {
 				Count: len(pr.verts), Type: "VEC3"},
 			gltfAccessor{BufferView: view(idx, gltfElementArray), ComponentType: gltfUnsignedInt,
 				Count: len(pr.indices), Type: "SCALAR"})
-		doc.Meshes[0].Primitives = append(doc.Meshes[0].Primitives, gltfPrimitive{
+		mat, ok := b.material[pr.color]
+		if !ok {
+			mat = len(doc.Materials)
+			b.material[pr.color] = mat
+			doc.Materials = append(doc.Materials, gltfMaterialOf(pr.color, mat))
+		}
+		doc.Meshes[mi].Primitives = append(doc.Meshes[mi].Primitives, gltfPrimitive{
 			Attributes: map[string]int{"POSITION": a, "NORMAL": a + 1},
-			Indices:    a + 2, Material: i, Mode: gltfTriangles})
-		doc.Materials = append(doc.Materials, gltfMaterialOf(pr.color, i))
+			Indices:    a + 2, Material: mat, Mode: gltfTriangles})
 	}
-	if bin.Len() > 0 {
-		doc.Buffers = []gltfBuffer{{ByteLength: bin.Len()}}
-	}
+	return mi, true
+}
 
-	js, err := json.Marshal(doc)
-	if err != nil {
-		return fmt.Errorf("encoding glTF: %w", err)
+// encode is the document as JSON, its buffer's length set, and uri the
+// buffer's data URI or "" to leave the bytes to a binary chunk.
+func (b *gltfBuilder) encode(uri string) ([]byte, error) {
+	if b.bin.Len() > 0 {
+		b.doc.Buffers = []gltfBuffer{{ByteLength: b.bin.Len(), URI: uri}}
 	}
+	js, err := json.Marshal(b.doc)
+	if err != nil {
+		return nil, fmt.Errorf("encoding glTF: %w", err)
+	}
+	return js, nil
+}
+
+// writeGlb writes the document as binary glTF.
+func (b *gltfBuilder) writeGlb(w io.Writer) error {
+	js, err := b.encode("")
+	if err != nil {
+		return err
+	}
+	bin := &b.bin
 	// Each chunk is padded to four bytes: the JSON with spaces, the
 	// binary with zeros.
 	for len(js)%4 != 0 {

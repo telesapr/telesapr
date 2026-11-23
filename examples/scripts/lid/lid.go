@@ -16,8 +16,13 @@
 // degrees; a range (SetRange) keeps it between 0 and 110. A motion study
 // of angle from 0 to 150 opens the lid: the steps up to 105 solve, those
 // past 110 don't. The script checks that, and that at 90 the lid's front
-// top edge stands 40 above the hinge, √(40² + 3²) from it, and saves
-// lid.tlspr, unless given "-".
+// top edge stands 40 above the hinge, √(40² + 3²) from it. Pulled up by
+// its front edge, as a drag would, the lid opens by its drive, angle
+// taking the turn, and stops at 110. Turned about the hinge's direction
+// through its front edge (Entity.Turn), as Shift-dragging that point
+// turns it, it opens by as much of the turn as is about the hinge. It
+// saves lid.tlspr, and lid.glb, the lid opening as a glTF animation,
+// unless given "-".
 package main
 
 import (
@@ -127,7 +132,36 @@ func main() {
 		os.Exit(1)
 	}
 	must(doc.Params.Set(mate.Param, "0"))
+
+	// Pulled up by its front edge, as a drag would, the lid opens by its
+	// drive, which takes the turn; pulled on to 150°, it stops at 110.
+	front.MoveTo(api.V(p.X, h.Y-26.16, h.Z+30.41))
+	got, _ := doc.Params.Get(mate.Param)
+	fmt.Printf("pulled up 45°: %s = %.1f\n", mate.Param, got.Value)
+	front.MoveTo(api.V(p.X, h.Y+36.14, h.Z+17.40))
+	got, _ = doc.Params.Get(mate.Param)
+	fmt.Printf("pulled on past the range: %s = %g\n", mate.Param, got.Value)
+	if got.Value != 110 {
+		fmt.Fprintln(os.Stderr, "the pull didn't stop at 110")
+		os.Exit(1)
+	}
+	must(doc.Params.Set(mate.Param, "0"))
+
+	// Turned about the hinge's direction through its front edge, as
+	// Shift-dragging the point turns the part, the lid turns its drive
+	// with it.
+	front.Turn(api.V(-1, 0, 0), 30)
+	got, _ = doc.Params.Get(mate.Param)
+	fmt.Printf("turned 30° about the hinge's direction: %s = %.1f\n", mate.Param, got.Value)
+	if math.Abs(got.Value-30) > 0.5 {
+		fmt.Fprintln(os.Stderr, "the turn didn't open the lid by 30")
+		os.Exit(1)
+	}
+	must(doc.Params.Set(mate.Param, "0"))
 	if write {
 		must(doc.File.Save("lid.tlspr"))
+		// The lid opening, as an animation a glTF viewer plays.
+		_, err := doc.Assembly.MotionStudy(mate.Param, 0, 110, 22, "lid.glb")
+		must(err)
 	}
 }

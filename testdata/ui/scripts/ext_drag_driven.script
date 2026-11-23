@@ -1,0 +1,40 @@
+# Dragging a part held by a driven joint (F9 Mechanisms): the box and its
+# lid on a driven hinge, the view turned. The lid's front corner dragged
+# up opens the lid, and its parameter angle takes the turn, as Edit >
+# Parameters shows; dragged on far over, the lid stops at the range's
+# 110. One step of undo puts the lid and angle back.
+file $testdata/ui/mechanism/boxlid.tlspr
+menu File|Open...
+view rotated
+key f
+move-entity 80040023
+down L 574.90 248.36
+move 574.90 238.36 L
+move 574.90 218.36 L
+move 574.90 198.36 L
+up L 574.90 198.36
+menu Edit|Parameters...
+tw
+move-entity 80040023
+down L 574.90 198.36
+move 574.90 178.36 L
+move 574.90 148.36 L
+move 574.90 118.36 L
+move 574.90 88.36 L
+move 574.90 58.36 L
+move 574.90 28.36 L
+move 574.90 8.36 L
+move 574.90 -11.64 L
+move 574.90 -31.64 L
+move 574.90 -51.64 L
+move 534.90 -41.64 L
+move 494.90 -31.64 L
+move 454.90 -21.64 L
+move 414.90 -11.64 L
+move 374.90 -1.64 L
+up L 374.90 -1.64
+menu Edit|Parameters...
+tw
+key z ctrl
+menu Edit|Parameters...
+tw

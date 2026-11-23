@@ -159,9 +159,12 @@ func (e Entity) Pos() (p Vec) {
 // moves in a mechanism (LinkGroup.SetMoves) is pulled toward p along
 // the mechanism's freedom instead: the part turns and slides as its
 // mates let it, the parts joined to it with it, and stops as near p as
-// they can bring it.
+// they can bring it. A drive the part moves by, as the parameter of
+// AssemblyMenu.HingeDriven, moves with it: the pull writes the drive's
+// new value into the parameter, and stops where a bound of the driven
+// dimension (DrivenMate.SetRange) does.
 func (e Entity) MoveTo(p Vec) {
-	e.d.change(func(sk *sketch.Sketch) {
+	e.d.moving(func(sk *sketch.Sketch) {
 		ent := e.get(sk)
 		if !ent.IsPoint() {
 			fail("%s isn't a point", e.describe(sk))
@@ -175,7 +178,7 @@ func (e Entity) MoveTo(p Vec) {
 // the selection; the solver then moves them as the constraints require,
 // holding them as near where they were put as it can.
 func (e Entity) MoveBy(d Vec) {
-	e.d.change(func(sk *sketch.Sketch) {
+	e.d.moving(func(sk *sketch.Sketch) {
 		points := sk.MovablePoints(e.get(sk).H)
 		if len(points) == 0 {
 			fail("%s has no points to move", e.describe(sk))

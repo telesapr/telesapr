@@ -2,6 +2,7 @@ package sketch
 
 import (
 	"math"
+	"slices"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -47,78 +48,190 @@ func (sk *Sketch) pullable(he core.HEntity) bool {
 // move and turn with it, rather than putting it there and letting the
 // solve pull it back, as PointForceTo does: a part hinged at its own
 // origin can come back to its hinge only by its move, never by its
-// turn, so it would snap back. Each step finds the mechanism's null
-// space (solver.System.NullSpace), takes the least-squares step in it
-// that moves the point nearest to, and solves the mechanism to take
-// up what the step being linear left. The part's params are then
-// recorded as pulled, so that the regeneration after keeps them as
-// near as it can while it moves the others.
+// turn, so it would snap back. The pull (pullPart) aims the point's
+// three coordinates at to.
 func (sk *Sketch) pullPoint(he core.HEntity, to geom.Vector) {
-	block := sk.Mechanism(sk.Entity(he).Group)
+	e := sk.Entity(he)
+	sk.pullPart(e.Group, sk.partParams(he), pointGoal{he: he, to: to})
+}
+
+// pullGoal is what a pull aims at, as rows of numbers: residual is how
+// far each row is from its aim at the params' values now, and reach the
+// length, in mm, that a step may move a part by on its way there; rows
+// is each row's change for a change of the unknowns hs, len(hs) numbers
+// for each row of the residual.
+type pullGoal interface {
+	residual(sk *Sketch) (b []float64, reach float64)
+	rows(sk *Sketch, hs []core.HParam) [][]float64
+}
+
+// pointGoal aims point he at to: three rows, its coordinates.
+type pointGoal struct {
+	he core.HEntity
+	to geom.Vector
+}
+
+func (g pointGoal) residual(sk *Sketch) ([]float64, float64) {
+	r := g.to.Minus(sk.Entity(g.he).PointGetNum(sk))
+	return []float64{r.X, r.Y, r.Z}, r.Magnitude()
+}
+
+func (g pointGoal) rows(sk *Sketch, hs []core.HParam) [][]float64 {
+	ex := sk.Entity(g.he).PointGetExprs(sk)
+	a := make([][]float64, 3)
+	for i, c := range []*core.Expr{ex.X, ex.Y, ex.Z} {
+		a[i] = make([]float64, len(hs))
+		for j, h := range hs {
+			a[i][j] = core.EvalExpr(sk, c.Derivative(h))
+		}
+	}
+	return a
+}
+
+// pullPart moves the mechanism of group hg toward what goal aims at,
+// along the freedom the mechanism leaves. Each step finds the
+// mechanism's null space (solver.System.NullSpace), takes the
+// least-squares step in it that comes nearest the aim, and solves the
+// mechanism to take up what the step being linear left. A drive of the
+// mechanism, a parameter that is all of a dimension's expression and a
+// number itself (pullDrives), takes part as an unknown: its motion
+// joins the null space, and its new value is written into the
+// parameter, the step cut short where it would cross a bound of the
+// dimension it drives. So a part whose only freedom is a drive, as a
+// lid on a driven hinge, drags and turns too. part, the params of the
+// part pulled, are then recorded as pulled, so that the regeneration
+// after keeps them as near as it can while it moves the others.
+func (sk *Sketch) pullPart(hg core.HGroup, part []core.HParam, goal pullGoal) {
+	block := sk.Mechanism(hg)
 	params := sk.groupParams(block...)
 	last := math.Inf(1)
+	capped := false
 	for range pullSteps {
-		e := sk.Entity(he)
-		r := to.Minus(e.PointGetNum(sk))
-		// Done where the point is there, or where the last step brought
+		b, reach := goal.residual(sk)
+		res := magnitude(b)
+		// Done where the aim is reached, or where the last step brought
 		// it less than a tenth nearer: at the end of a chain stretched
-		// toward the target each step gains less than the one before.
-		if r.Magnitude() < core.LengthEps || r.Magnitude() > 0.9*last {
+		// toward the target each step gains less than the one before. A
+		// step cut short (pullScale) gains less by being short, as a long
+		// pull or turn round a hinge: it goes on while it gains a
+		// hundredth.
+		if gain := res / last; res < core.LengthEps || gain > 0.9 && (!capped || gain > 0.99) {
 			break
 		}
-		last = r.Magnitude()
+		last = res
 		sys, sg := sk.writeEqSystem(block, params)
 		hs, null := sys.NullSpace(sg)
-		if len(null) == 0 {
+		// A drive leaves no null vector, but its motion is one the pull
+		// may take, writing the drive's new value into its parameter.
+		var drives []pullDrive
+		if hs != nil {
+			drives = sk.pullDrives(block, hs)
+		}
+		rows := goal.rows(sk, hs)
+		w := sk.pullWeights(block, hs)
+		var y []float64
+		var basis [][]float64
+		scale, room := 1.0, 1.0
+		for {
+			basis = slices.Clone(null)
+			for _, d := range drives {
+				basis = append(basis, d.by)
+			}
+			if len(basis) == 0 {
+				break
+			}
+			y = leastSquares(overBasis(rows, basis), b, basis, w)
+			scale = sk.pullScale(hs, basis, y, w, reach)
+			// A drive at its bound, pulled past it, is held there and the
+			// rest solved for again; one short of it stops the step there.
+			room = 1.0
+			blocked := -1
+			for i, d := range drives {
+				t := d.room(sk, y[len(null)+i]/scale)
+				if t < 1e-9 {
+					blocked = i
+					break
+				}
+				room = math.Min(room, t)
+			}
+			if blocked < 0 {
+				break
+			}
+			drives = slices.Delete(drives, blocked, blocked+1)
+		}
+		if len(basis) == 0 {
 			break
 		}
-		// The point's Jacobian over the unknowns, then over the null
-		// space: a, three rows of k.
-		ex := e.PointGetExprs(sk)
-		k := len(null)
-		var a [3][]float64
-		for i, c := range []*core.Expr{ex.X, ex.Y, ex.Z} {
-			a[i] = make([]float64, k)
-			for j, h := range hs {
-				d := core.EvalExpr(sk, c.Derivative(h))
-				if d == 0 {
-					continue
-				}
-				for v := range k {
-					a[i][v] += d * null[v][j]
-				}
-			}
-		}
-		w := sk.pullWeights(block, hs)
-		y := leastSquares3(a, [3]float64{r.X, r.Y, r.Z}, null, w)
-		step := make([]float64, len(hs))
-		maxMove, maxTurn := 0.0, 0.0
-		for j := range hs {
-			for v := range k {
-				step[j] += y[v] * null[v][j]
-			}
-			if w[j] > 1 {
-				maxTurn = math.Max(maxTurn, math.Abs(step[j]))
-			} else {
-				maxMove = math.Max(maxMove, math.Abs(step[j]))
-			}
-		}
-		// The step is linear, and good only while it is small. Near a
-		// stretched chain, where the point can't go all the way, the
-		// least-squares step that comes nearest runs off by hundreds
-		// of millimetres and whole turns, and the solve can't bring the
-		// parts back onto their mates. So a step moves no part by more
-		// than twice the way left to go, nor turns it by more than some
-		// 11° (pullMaxTurn); the next step goes on from there.
-		scale := math.Max(1, math.Max(maxMove/(2*r.Magnitude()), maxTurn/pullMaxTurn))
+		capped = scale > 1
 		for j, h := range hs {
-			sk.MustParam(h).Val += step[j] / scale
+			step := 0.0
+			for v := range basis {
+				step += y[v] * basis[v][j]
+			}
+			sk.MustParam(h).Val += step * room / scale
 		}
-		sk.pulled = sk.partParams(he)
+		for i, d := range drives {
+			sk.writeDrive(d.name, d.at+y[len(null)+i]*room/scale)
+		}
+		sk.pulled = part
+		sk.pulling = true
 		sk.solveBlock(block, params, false)
+		sk.pulling = false
 	}
-	sk.pulled = sk.partParams(he)
+	sk.pulled = part
 	sk.MarkGroupDirty(block[0], false)
+}
+
+// overBasis is rows, each a change of what a pull aims at for a change
+// of the unknowns, over the motions basis, each a change of the
+// unknowns: a row of len(basis) for each row.
+func overBasis(rows, basis [][]float64) [][]float64 {
+	a := make([][]float64, len(rows))
+	for i, row := range rows {
+		a[i] = make([]float64, len(basis))
+		for j, d := range row {
+			if d == 0 {
+				continue
+			}
+			for v := range basis {
+				a[i][v] += d * basis[v][j]
+			}
+		}
+	}
+	return a
+}
+
+// magnitude is the length of v.
+func magnitude(v []float64) float64 {
+	var s float64
+	for _, x := range v {
+		s += x * x
+	}
+	return math.Sqrt(s)
+}
+
+// pullScale is what a pull's step, basis·y, is divided by. The step is
+// linear, and good only while it is small. Near a stretched chain,
+// where the point can't go all the way, the least-squares step that
+// comes nearest runs off by hundreds of millimetres and whole turns,
+// and the solve can't bring the parts back onto their mates. So a step
+// moves no part by more than twice the way left to go, dist, nor turns
+// it by more than some 11° (pullMaxTurn); the next step goes on from
+// there.
+func (sk *Sketch) pullScale(hs []core.HParam, basis [][]float64, y, w []float64, dist float64) float64 {
+	maxMove, maxTurn := 0.0, 0.0
+	for j := range hs {
+		step := 0.0
+		for v := range basis {
+			step += y[v] * basis[v][j]
+		}
+		if w[j] > 1 {
+			maxTurn = math.Max(maxTurn, math.Abs(step))
+		} else {
+			maxMove = math.Max(maxMove, math.Abs(step))
+		}
+	}
+	return math.Max(1, math.Max(maxMove/(2*dist), maxTurn/pullMaxTurn))
 }
 
 // pullWeights are what each of params, unknowns of the mechanism
@@ -148,14 +261,14 @@ func (sk *Sketch) partParams(he core.HEntity) []core.HParam {
 	return append([]core.HParam(nil), e.Param[:7]...)
 }
 
-// leastSquares3 is the y, of k, that makes a·y nearest b, a three rows
-// of k, by the normal equations. Where a has fewer than k independent
-// columns (a mechanism with more freedom than the point can show), of
+// leastSquares is the y, of k, that makes a·y nearest b, a rows of k,
+// by the normal equations. Where a has fewer than k independent
+// columns (a mechanism with more freedom than the aim can show), of
 // the y that do so equally well it takes the one whose step null·y, a
 // change of the unknowns, is least weighed by w (pullWeights): the
 // equations are damped by that weighed size, slightly, so that they
 // stay positive definite.
-func leastSquares3(a [3][]float64, b [3]float64, null [][]float64, w []float64) []float64 {
+func leastSquares(a [][]float64, b []float64, null [][]float64, w []float64) []float64 {
 	k := len(null)
 	m := make([][]float64, k)
 	y := make([]float64, k)
@@ -165,7 +278,7 @@ func leastSquares3(a [3][]float64, b [3]float64, null [][]float64, w []float64) 
 		m[c] = make([]float64, k)
 		metric[c] = make([]float64, k)
 		for d := range k {
-			for i := range 3 {
+			for i := range a {
 				m[c][d] += a[i][c] * a[i][d]
 			}
 			for j, wj := range w {
@@ -174,7 +287,7 @@ func leastSquares3(a [3][]float64, b [3]float64, null [][]float64, w []float64) 
 		}
 		traceA += m[c][c]
 		traceM += metric[c][c]
-		for i := range 3 {
+		for i := range a {
 			y[c] += a[i][c] * b[i]
 		}
 	}

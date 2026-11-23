@@ -625,6 +625,15 @@ var pathEquivalences = map[string]pathCheck{
 			t.Errorf("the screw's parameters: %+v", ui.Parameters)
 		}
 	},
+	// A ball mate of two picked circles' centres, and the same made by a
+	// script: the second plate turns every way about the centre.
+	"mate_ball": func(t *testing.T, ui, _ *sketch.Sketch) {
+		b := ui.Group(ui.Active)
+		f, err := ui.PartFreedomOf(b.H)
+		if err != nil || f.Joint() != "ball" || f.Turns != 3 || f.Slides != 0 {
+			t.Errorf("the plate's freedom: %+v (%v)", f, err)
+		}
+	},
 	// A thread made with its class chosen and its phase typed on its
 	// screen, and the same made by a script.
 	"thread_fit": func(t *testing.T, ui, _ *sketch.Sketch) {

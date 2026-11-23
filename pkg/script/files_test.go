@@ -210,6 +210,7 @@ func TestGuardedScript(t *testing.T) {
 		"doc.Assembly.Link(" + q(away+".tlspr") + ", \"\")",
 		"doc.Assembly.LinkStep(" + q(away+".step") + ", \"\", false)",
 		"doc.Assembly.MotionStudy(\"p\", 1, 2, 1, " + q(away+"%d.png") + ")",
+		"doc.Assembly.MotionStudyOf([]Drive{{Param: \"p\", From: 1, To: 2}}, 1, " + q(away+".glb") + ")",
 		"doc.Sketch.Image(" + q(away+".png") + ", V(0, 0, 0), 10)",
 		"doc.Host()",
 	}

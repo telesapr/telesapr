@@ -23,11 +23,15 @@
 // parallel to it, both in the XY workplane, where they hold in
 // projection what the stacked parts can't hold in 3d. That leaves the
 // mechanism one freedom, which angle takes; the script prints how each
-// part moves, its freedom counted from its mates (Freedom), and checks
+// part moves, its freedom counted from its mates (Freedom, with the joint
+// it amounts to), and checks
 // that the piston slides. A motion study of angle
 // round a turn solves at every step; the piston's stroke, read every
-// 5°, is twice the crank's throw, 24. The script checks both, and
-// saves engine.tlspr, unless given "-".
+// 5°, is twice the crank's throw, 24. Pulled down its cylinder, as a drag
+// would, the piston turns the crank, and angle takes the turn. The
+// script checks all three, and saves engine.tlspr and engine.glb, the
+// crank turning round as a glTF animation,
+// unless given "-".
 package main
 
 import (
@@ -166,8 +170,12 @@ func main() {
 	crankBottom, crankTop := faces(crank)
 	rodBottom, rodTop := faces(rod)
 	pistonBottom, _ := faces(piston)
-	// Roughly where they go: the crank up, the rod up the cylinder.
-	turn(crank, 90)
+	// Roughly where they go: the crank up and over, the rod up the
+	// cylinder. Not straight up: the mechanism is assembled as near
+	// where its parts are as it can be, and with the crank straight up
+	// that is top dead centre, where the rod and the crank lie in one
+	// line and the freedom can't be counted (Freedom).
+	turn(crank, 60)
 	turn(rod, 80)
 
 	doc.Sketch.Anywhere3D()
@@ -186,7 +194,8 @@ func main() {
 	// How each part moves, counted from its mates: the crank turns about
 	// its bearing, the rod about an axis that moves, the piston slides.
 	for _, g := range []api.Group{crank, rod, piston} {
-		fmt.Printf("the %s %s\n", g.Name(), g.AsLink().Freedom().Text)
+		f := g.AsLink().Freedom()
+		fmt.Printf("the %s %s (joint %q)\n", g.Name(), f.Text, f.Joint)
 	}
 	slides := piston.AsLink().Freedom().Invariant == "direction"
 
@@ -214,7 +223,22 @@ func main() {
 	if !ok || !slides || math.Abs(hi-lo-24) > 0.05 {
 		os.Exit(1)
 	}
+
+	// The piston pulled 5 down its cylinder, as a drag would, turns the
+	// crank, and angle takes the turn.
+	must(doc.Params.Set(mate.Param, "40"))
+	pin := pistonPin.Center()
+	pin.MoveTo(pin.Pos().Plus(api.V(0, -5, 0)))
+	got, _ := doc.Params.Get(mate.Param)
+	fmt.Printf("the piston pulled 5 down from the crank at 40°: angle %.1f\n", got.Value)
+	if math.Abs(got.Value-40) < 1 {
+		os.Exit(1)
+	}
+	must(doc.Params.Set(mate.Param, "0"))
 	if write {
 		must(doc.File.Save("engine.tlspr"))
+		// A turn of the crank, as an animation a glTF viewer plays.
+		_, err := doc.Assembly.MotionStudy(mate.Param, 0, 360, 36, "engine.glb")
+		must(err)
 	}
 }

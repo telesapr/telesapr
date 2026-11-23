@@ -193,6 +193,10 @@ const (
 	cmdExportScript
 	cmdMateHingeDriven
 	cmdMateConcentricDriven
+	cmdMateBall
+	cmdMateCylindrical
+	cmdMatePlanar
+	cmdMateSlot
 )
 
 // Pending is an operation to be completed by doing something with the

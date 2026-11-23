@@ -2,6 +2,7 @@ package api
 
 import (
 	"math"
+	"path/filepath"
 	"testing"
 )
 
@@ -47,6 +48,45 @@ func TestEntityOrientation(t *testing.T) {
 	d.Features.SketchIn(wp, "")
 	c := d.Sketch.Circle(V(1, 1, 0), 2)
 	mustFail(t, "fixed", "fixed normal", func() { c.SetOrientation(V(1, 0, 0), V(0, 1, 0)) })
+}
+
+// A point of a linked part turns the part about the point, as Shift or
+// Ctrl dragging it does, in one step of undo; a point of a sketch, a
+// zero axis and an angle that is no number are refused.
+func TestEntityTurn(t *testing.T) {
+	t.Parallel()
+	d := New()
+	g, err := d.Assembly.Link(filepath.Join("..", "..", "..", "testdata", "step", "shapes", "box.step"), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var pt Entity
+	for _, e := range g.Entities() {
+		if e.Kind() == "point" && e.Pos().Magnitude() > 1 {
+			pt = e
+			break
+		}
+	}
+	if pt.H.V == 0 {
+		t.Fatal("no point of the part away from its origin")
+	}
+	at := pt.Pos()
+	d.Host().(*SketchHost).BeginEval()
+	pt.Turn(V(0, 0, 1), 90)
+	if u, _ := g.AsLink().Orientation(); !nearVec(pt.Pos(), at) || u.Minus(V(0, 1, 0)).Magnitude() > 1e-9 {
+		t.Errorf("turned a quarter about z through %v: the point at %v, the part's x %v", at, pt.Pos(), u)
+	}
+	if !d.Edit.Undo() {
+		t.Fatal("nothing to undo")
+	}
+	if u, _ := g.AsLink().Orientation(); !nearVec(u, V(1, 0, 0)) {
+		t.Errorf("after undo the part's x is %v", u)
+	}
+	mustFail(t, "no axis", "zero vector", func() { pt.Turn(V(0, 0, 0), 10) })
+	mustFail(t, "nan", "a turn of", func() { pt.Turn(V(0, 0, 1), math.NaN()) })
+	d.Features.Sketch3D("free")
+	p := d.Sketch.Point(V(1, 2, 3))
+	mustFail(t, "sketch point", "linked part", func() { p.Turn(V(0, 0, 1), 10) })
 }
 
 // nearVec reports whether two vectors are within a nanometre.

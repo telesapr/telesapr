@@ -399,13 +399,10 @@ func (gw *graphicsWindow) dragPoints(x, y float64, shiftDown, ctrlDown bool) {
 					gw.UpdateDraggedPoint(he, x, y)
 				}
 			} else {
-				q := e.PointGetQuaternion(sk)
-				p := e.PointGetNum(sk)
-				q = qt.Times(q)
-				e.PointForceQuaternionTo(sk, q)
-				// Let's rotate about the selected point; so fix up the
-				// translation so that that point didn't move.
-				e.PointForceTo(sk, p)
+				// About the point, through the sketch's entry point, as a
+				// script's turn: a part of a mechanism turns as its mates
+				// let it.
+				sk.TurnPointBy(he, qt)
 			}
 			sk.MarkGroupDirtyByEntity(e.H)
 		}

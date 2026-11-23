@@ -67,7 +67,10 @@ func linkQuaternion(sk *sketch.Sketch, group *sketch.Group) geom.Quaternion {
 
 // SetOrientation turns the part so that its own x and y directions
 // point along u and w, which must not be parallel (w is made square to
-// u), as dragging the part's normal in the window does.
+// u): it places the part so, and the solve then moves it as its
+// constraints require. To turn a part of a mechanism as its mates let
+// it, as dragging its normal in the window does, use Entity.Turn or
+// Entity.SetOrientation on one of its circles.
 func (v LinkGroup) SetOrientation(u, w Vec) {
 	checkFinite("an orientation", u)
 	checkFinite("an orientation", w)

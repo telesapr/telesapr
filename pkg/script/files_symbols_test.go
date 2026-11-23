@@ -290,6 +290,7 @@ var apiGuarded = []string{
 	"AssemblyMenu.Link",
 	"AssemblyMenu.LinkStep",
 	"AssemblyMenu.MotionStudy",
+	"AssemblyMenu.MotionStudyOf",
 	"DrawingMenu.Export",
 	"FileMenu.Export",
 	"FileMenu.ExportAs",

@@ -147,14 +147,19 @@ must(doc.Params.ActivateConfiguration("small"))
 Example: [`examples/scripts/motion`](../../examples/scripts/motion/motion.go), a plate grown
 through a range of widths, with a mesh saved at each step.
 
-Assembly > Motion Study drives one parameter through a range of values. Its screen takes the
+Assembly > Motion Study drives parameters through ranges of values. Its screen takes the
 parameter, the value to start from, the value to end at, and the number of steps.
+`[drive another parameter with it]` adds a parameter with its own range, driven over the same
+steps, and `[remove]` takes one out again: a lid's `angle` and a slide's `travel` move together.
 
 - `[run]` regenerates the model at each step. It lists the value, whether every group solved,
   and the volume of the solid.
 - `[run, saving each step...]` asks for a file name and saves one frame per step beside it,
   numbered. For `.png` it saves a picture of the view as the window shows it, which makes an
-  animation. For `.stl`, `.3mf` and `.glb` it saves a mesh.
+  animation. For `.stl` and `.3mf` it saves a mesh. A name ending `.glb` or `.gltf` saves the
+  whole study as one file that a glTF viewer plays: a part per
+  linked part, and the parts that move in a [mechanism](mechanisms.md) moved at each step, ten
+  steps a second.
 
 Afterwards the parameter gets its own expression back.
 
@@ -167,14 +172,47 @@ A mate's parameter can be driven too:
 
 A step past a range set on the joint, as a lid's past its 110°, is marked unsolved.
 
+To run the hinged lid of [mechanisms](mechanisms.md) open, with a second parameter driven beside
+it (here `gap`, added in Edit > Parameters as `gap = 2`):
+
+1. Choose Assembly > Motion Study. It takes the first parameter, `angle`. Click `[change]` beside
+   **to** and type 110.
+
+   ![The motion study's screen, angle from 0 to 110](images/parameters-and-units-8-motion-study.png)
+
+2. Click `[drive another parameter with it]`. It adds the first parameter not driven yet, here
+   `gap`, from its value, 2, to twice that. Set **steps** to 4 and click `[run]`. Each step lists the value of both.
+
+   ![Two parameters driven together over 4 steps](images/parameters-and-units-9-two-drives.png)
+
+3. Click `[remove]` beside `gap`, then `[run, saving each step...]`. In the file dialog, choose
+   the type "glTF animation of the whole study" and a name, `lid.glb`. One file is saved, listed
+   on the first step: in a glTF viewer the lid opens.
+
+   ![The study saved as one glTF animation, lid.glb](images/parameters-and-units-10-gltf.png)
+
 ```go
 frames, err := doc.Assembly.MotionStudy("w", 20, 80, 6, "frames/plate-%02d.stl")
 for _, f := range frames {
 	fmt.Println(f.Value, f.Solved, f.Volume, f.File)
 }
+
+// Two parameters together, over the same 10 steps.
+frames, err = doc.Assembly.MotionStudyOf([]api.Drive{{Param: "angle", From: 0, To: 90},
+	{Param: "travel", From: 0, To: 10}}, 10, "")
+fmt.Println(frames[10].Values) // [90 10]
+
+// The whole study as one glTF animation.
+_, err = doc.Assembly.MotionStudy("angle", 0, 110, 22, "lid.glb")
 ```
 
-Pictures need the application's window. `telesapr-cli` saves meshes only.
+[`examples/scripts/flaps`](../../examples/scripts/flaps/flaps.go) drives a box's two flaps, `angle`
+and `angle2`, together.
+
+Pictures need the application's window. `telesapr-cli` saves meshes and animations only.
+
+The animation is of an assembly of linked parts, each read as a solid: a model with a solid of
+its own, or a part linked as a mesh, is refused.
 
 ## Dimensions by name
 
@@ -238,4 +276,5 @@ always take millimetres. Only text, as in `SetExpr("2")`, is in the document's u
   unit, the window lists such parameters so that you can check them.
 - A configuration holds the parameters' expressions only: not a group's own values, and not
   which groups are suppressed.
-- A motion study drives one parameter at a time.
+- A motion study's animation holds the parts' places only: a part whose shape changes with
+  the parameters, as a plate grown wider, is shown as it is at the end of the study.

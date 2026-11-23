@@ -175,6 +175,10 @@ Asse&mbly ind=0 en=1 act=0
   Mate &Flush ind=0 en=1 act=0
   Mate &Hinge ind=0 en=1 act=0
   Mate &Screw ind=0 en=1 act=0
+  Mate B&all ind=0 en=1 act=0
+  Mate C&ylindrical ind=0 en=1 act=0
+  Mate &Planar ind=0 en=1 act=0
+  Mate Sl&ot ind=0 en=1 act=0
   Mate Hinge, &Driven ind=0 en=1 act=0
   Mate Concentric, D&riven ind=0 en=1 act=0
   ---
@@ -1016,6 +1020,10 @@ Asse&mbly ind=0 en=1 act=0
   Mate &Flush ind=0 en=1 act=0
   Mate &Hinge ind=0 en=1 act=0
   Mate &Screw ind=0 en=1 act=0
+  Mate B&all ind=0 en=1 act=0
+  Mate C&ylindrical ind=0 en=1 act=0
+  Mate &Planar ind=0 en=1 act=0
+  Mate Sl&ot ind=0 en=1 act=0
   Mate Hinge, &Driven ind=0 en=1 act=0
   Mate Concentric, D&riven ind=0 en=1 act=0
   ---
@@ -1227,6 +1235,10 @@ Asse&mbly ind=0 en=1 act=0
   Mate &Flush ind=0 en=1 act=0
   Mate &Hinge ind=0 en=1 act=0
   Mate &Screw ind=0 en=1 act=0
+  Mate B&all ind=0 en=1 act=0
+  Mate C&ylindrical ind=0 en=1 act=0
+  Mate &Planar ind=0 en=1 act=0
+  Mate Sl&ot ind=0 en=1 act=0
   Mate Hinge, &Driven ind=0 en=1 act=0
   Mate Concentric, D&riven ind=0 en=1 act=0
   ---
