@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -144,6 +146,9 @@ func NewWriter(filename string, sk *sketch.Sketch, o Options) (Writer, error) {
 		ret = &hpglFileWriter{}
 	case hasExtension(filename, "step"), hasExtension(filename, "stp"):
 		ret = &step2dFileWriter{}
+		if o.StepName == "" {
+			o.StepName = strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename))
+		}
 	case hasExtension(filename, "txt"), hasExtension(filename, "ngc"):
 		ret = &gcodeFileWriter{}
 	default:

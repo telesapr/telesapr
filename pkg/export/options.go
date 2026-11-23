@@ -6,6 +6,7 @@ package export
 import (
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -39,6 +40,12 @@ type Options struct {
 	// StepOneSurfacePerFace writes a STEP face of several patches as
 	// one surface.
 	StepOneSurfacePerFace bool
+	// StepName is the name a STEP file gives itself and its product, the
+	// file's name without its extension; empty is "telesapr".
+	StepName string
+	// StepTime is when a STEP file says it was written; the zero time
+	// writes 1970-01-01, so that the same model writes the same bytes.
+	StepTime time.Time
 	// Lights and Ambient light the mesh formats that carry a scene.
 	Lights  [2]Light
 	Ambient float64

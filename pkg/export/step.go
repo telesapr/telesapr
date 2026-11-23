@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"time"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -74,6 +75,15 @@ type stepFileWriter struct {
 	pointCells           pointCells
 	exportParts          bool
 	currentColor         core.RGBA
+	// freeCurves is set for a wireframe's curves, which no edge bounds:
+	// written as B-splines, as a LINE or CIRCLE is unbounded.
+	freeCurves bool
+	// areaUnit and volumeUnit are the units the validation properties
+	// are in, once written (step_validation.go).
+	areaUnit, volumeUnit int
+	// products are the PRODUCTs written, which the file's end puts in
+	// the category of parts.
+	products []int
 	// open are where faces were left out of the file, one point of
 	// each, their outlines not closing: told to Warn once the file is
 	// written.
@@ -285,6 +295,32 @@ func (w *stepFileWriter) InsertOrientedEdge(number int) int {
 	return -1
 }
 
+// stepSchema is the schema a STEP file is written in: AP242, edition 4
+// (ISO 10303-242:2025) by its object identifier. The name is the same
+// in every edition; the identifier's fifth number tells them apart: 1
+// the first, 2 or 3 the second, 4 the third, 7 the fourth, as NIST's
+// STEP File Analyzer takes them (5 and 6 were the fourth's drafts, and
+// it asks for 7).
+const stepSchema = "AP242_MANAGED_MODEL_BASED_3D_ENGINEERING_MIM_LF { 1 0 10303 442 7 1 4 }"
+
+// stepName is the name the file and its product go by.
+func (w *stepFileWriter) stepName() string {
+	if w.o.StepName == "" {
+		return "telesapr"
+	}
+	return w.o.StepName
+}
+
+// stepTime is when the file says it was written, in the ISO 8601 form
+// Part 21 asks for; the zero time is the Unix epoch, for the goldens.
+func (w *stepFileWriter) stepTime() string {
+	t := w.o.StepTime
+	if t.IsZero() {
+		t = time.Unix(0, 0).UTC()
+	}
+	return t.Format("2006-01-02T15:04:05-07:00")
+}
+
 // WriteHeader writes the header, and the units and tolerances, which
 // are always the same.
 func (w *stepFileWriter) WriteHeader() {
@@ -292,19 +328,19 @@ func (w *stepFileWriter) WriteHeader() {
 		"ISO-10303-21;\n"+
 			"HEADER;\n"+
 			"\n"+
-			"FILE_DESCRIPTION((''), '2;1');\n"+
+			"FILE_DESCRIPTION(('TeleSAPR model'), '2;1');\n"+
 			"\n"+
 			"FILE_NAME(\n"+
-			"    'output_file',\n"+
-			"    '2009-06-07T17:44:47-07:00',\n"+
+			"    %s,\n"+
+			"    '%s',\n"+
 			"    (''),\n"+
 			"    (''),\n"+
 			"    'TeleSAPR',\n"+
-			"    '',\n"+
+			"    'TeleSAPR',\n"+
 			"    ''\n"+
 			");\n"+
 			"\n"+
-			"FILE_SCHEMA (('CONFIG_CONTROL_DESIGN'));\n"+
+			"FILE_SCHEMA (('%s'));\n"+
 			"ENDSEC;\n"+
 			"\n"+
 			"DATA;\n"+
@@ -343,26 +379,30 @@ func (w *stepFileWriter) WriteHeader() {
 			"#172=DIRECTION('',(1.,0.,0.));\n"+
 			"#173=CARTESIAN_POINT('',(0.,0.,0.));\n"+
 			"\n",
-		stepPrecision)
+		stepString(w.stepName()+".step"), w.stepTime(), stepSchema, stepPrecision)
 
 	// Start the ID somewhere beyond the header IDs.
 	w.id = 200
 }
 
-// WriteProductHeader writes the product definition.
+// WriteProductHeader writes the product definition: the model, a part
+// named after the file, in AP242's application context, as the PDM
+// Usage Guide has a part.
 func (w *stepFileWriter) WriteProductHeader() {
+	name := stepString(w.stepName())
 	w.printf(
-		"#175 = SHAPE_DEFINITION_REPRESENTATION(#176, #169);\n" +
-			"#176 = PRODUCT_DEFINITION_SHAPE('Version', 'Test Part', #177);\n" +
-			"#177 = PRODUCT_DEFINITION('Version', 'Test Part', #182, #178);\n" +
-			"#178 = DESIGN_CONTEXT('3D Mechanical Parts', #181, 'design');\n" +
-			"#179 = PRODUCT('1', 'Product', 'Test Part', (#180));\n" +
-			"#180 = MECHANICAL_CONTEXT('3D Mechanical Parts', #181, 'mechanical');\n" +
-			"#181 = APPLICATION_CONTEXT(\n" +
-			"'configuration controlled 3d designs of mechanical parts and assemblies');\n" +
-			"#182 = PRODUCT_DEFINITION_FORMATION_WITH_SPECIFIED_SOURCE('Version',\n" +
-			"'Test Part', #179, .MADE.);\n" +
-			"\n")
+		"#175=SHAPE_DEFINITION_REPRESENTATION(#176,#169);\n"+
+			"#176=PRODUCT_DEFINITION_SHAPE('','',#177);\n"+
+			"#177=PRODUCT_DEFINITION('design','',#182,#178);\n"+
+			"#178=PRODUCT_DEFINITION_CONTEXT('part definition',#181,'design');\n"+
+			"#179=PRODUCT(%s,%s,'',(#180));\n"+
+			"#180=PRODUCT_CONTEXT('',#181,'mechanical');\n"+
+			"#181=APPLICATION_CONTEXT('managed model based 3d engineering');\n"+
+			"#182=PRODUCT_DEFINITION_FORMATION('','',#179);\n"+
+			"#183=APPLICATION_PROTOCOL_DEFINITION('international standard',"+
+			"'ap242_managed_model_based_3d_engineering',2025,#181);\n"+
+			"\n", name, name)
+	w.products = append(w.products, 179)
 }
 
 // ExportCurve writes a curve and returns its id.
@@ -381,7 +421,14 @@ func (w *stepFileWriter) ExportCurve(sb *srf.SBezier) int {
 		curvePoints = append(curvePoints, w.InsertPoint(w.id+1+i))
 	}
 
+	next := ret + 1 + (sb.Degree + 1)
 	if !w.HasBSplineCurveAnAlias(ret, curvePoints) {
+		if !w.freeCurves {
+			if n, ok := w.writeLineOrCircle(ret, next, sb); ok {
+				w.id = n
+				return ret
+			}
+		}
 		w.printf("#%d=(\n", ret)
 		w.printf("BOUNDED_CURVE()\n")
 		w.printf("B_SPLINE_CURVE(%d,(", sb.Degree)
@@ -408,7 +455,7 @@ func (w *stepFileWriter) ExportCurve(sb *srf.SBezier) int {
 		w.printf("\n")
 	}
 
-	w.id = ret + 1 + (sb.Degree + 1)
+	w.id = next
 	return ret
 }
 
@@ -517,16 +564,21 @@ func (w *stepFileWriter) ExportSurface(ss *srf.SSurface, sbl *srf.SBezierList) {
 		ss = &over
 	}
 
-	// First, define the control points for the untrimmed surface, if
-	// they were not already defined. We always specify a rational
-	// B-spline surface (in fact, just a Bezier surface).
-	ctrl := make([][]geom.Vector, ss.DegM+1)
-	weight := make([][]float64, ss.DegM+1)
-	for i := range ctrl {
-		ctrl[i] = ss.Ctrl[i][:ss.DegN+1]
-		weight[i] = ss.Weight[i][:ss.DegN+1]
+	// The surface: a plane, cylinder, cone, sphere or torus as itself,
+	// any other as a rational Bezier patch.
+	var srfid int
+	sense := true
+	if a, ok := analyticOf(ss); ok {
+		srfid, sense = w.writeAnalytic(a, seamOf(a, ss)), a.sameSense(ss)
+	} else {
+		ctrl := make([][]geom.Vector, ss.DegM+1)
+		weight := make([][]float64, ss.DegM+1)
+		for i := range ctrl {
+			ctrl[i] = ss.Ctrl[i][:ss.DegN+1]
+			weight[i] = ss.Weight[i][:ss.DegN+1]
+		}
+		srfid = w.writeSurface(ss.DegM, ss.DegN, nil, nil, ctrl, weight, false)
 	}
-	srfid := w.writeSurface(ss.DegM, ss.DegN, nil, nil, ctrl, weight, false)
 
 	// Now we do the trim curves. We must group each outer loop
 	// separately along with its inner faces, so do that now.
@@ -555,7 +607,7 @@ func (w *stepFileWriter) ExportSurface(ss *srf.SSurface, sbl *srf.SBezierList) {
 	// loop (the outer boundary), plus any inner loops associated with
 	// that outer loop.
 	for si := range sblss.Sets {
-		w.writeFace(srfid, loopsOf(&sblss.Sets[si]), true, ss.Color)
+		w.writeFace(srfid, sense, loopsOf(&sblss.Sets[si]), true, ss.Color)
 	}
 }
 
@@ -665,8 +717,9 @@ func (w *stepFileWriter) writeSurface(du, dv int, knotsU, knotsV []float64, ctrl
 }
 
 // writeFace writes an advanced face on surface srfid, bounded by
-// loops, the first its outer bound when firstOuter, and its colour.
-func (w *stepFileWriter) writeFace(srfid int, loops []*srf.SBezierLoop, firstOuter bool, color core.RGBA) {
+// loops, the first its outer bound when firstOuter, and its colour; sense
+// is whether the face's outward normal is the surface's own.
+func (w *stepFileWriter) writeFace(srfid int, sense bool, loops []*srf.SBezierLoop, firstOuter bool, color core.RGBA) {
 	var listOfLoops []int
 	for i, loop := range loops {
 		listOfLoops = append(listOfLoops, w.ExportCurveLoop(loop, i > 0 || !firstOuter))
@@ -683,7 +736,11 @@ func (w *stepFileWriter) writeFace(srfid int, loops []*srf.SBezierLoop, firstOut
 		}
 	}
 
-	w.printf("),#%d,.T.);\n", srfid)
+	same := ".T."
+	if !sense {
+		same = ".F."
+	}
+	w.printf("),#%d,%s);\n", srfid, same)
 	w.advancedFaces = append(w.advancedFaces, advFaceID)
 
 	// Export the surface color and transparency
@@ -841,14 +898,6 @@ func (w *stepFileWriter) ExportSheet(shell *srf.SShell, sh *stepSheet, scale flo
 	}
 	w.currentColor = color
 	bs := sh.grid.Surface
-	ctrl := make([][]geom.Vector, len(bs.Ctrl))
-	for i := range ctrl {
-		ctrl[i] = make([]geom.Vector, len(bs.Ctrl[i]))
-		for j := range ctrl[i] {
-			ctrl[i][j] = bs.Ctrl[i][j].ScaledBy(scale)
-		}
-	}
-	srfid := w.writeSurface(bs.DegU, bs.DegV, bs.KnotsU, bs.KnotsV, ctrl, bs.Weight, sh.grid.ClosedU)
 	// STEP runs a bound with the face on its left, seen from outside;
 	// SolveSpace's trims run the other way.
 	var ls []*srf.SBezierLoop
@@ -862,7 +911,31 @@ func (w *stepFileWriter) ExportSheet(shell *srf.SShell, sh *stepSheet, scale flo
 		}
 		ls = append(ls, &r)
 	}
-	w.writeFace(srfid, ls, len(ls) == 1, color)
+	var srfid int
+	sense := true
+	// The patches lie on one surface: a plane, cylinder, cone, sphere or
+	// torus is written as itself, its parameter starting where the
+	// sheet's does; one whose bounds reach its apex or pole stays a
+	// B-spline, which our reader takes (reachesPole).
+	patches := make([]*srf.SSurface, len(sh.patches))
+	for i, h := range sh.patches {
+		patches[i] = shell.FindSurface(h)
+	}
+	first := patches[0]
+	if a, ok := analyticOf(first); ok && a.holdsAll(patches) && !reachesPole(a.scaled(scale), ls) {
+		srfid = w.writeAnalytic(a.scaled(scale), seamOf(a, first).ScaledBy(scale))
+		sense = a.sameSense(first)
+	} else {
+		ctrl := make([][]geom.Vector, len(bs.Ctrl))
+		for i := range ctrl {
+			ctrl[i] = make([]geom.Vector, len(bs.Ctrl[i]))
+			for j := range ctrl[i] {
+				ctrl[i][j] = bs.Ctrl[i][j].ScaledBy(scale)
+			}
+		}
+		srfid = w.writeSurface(bs.DegU, bs.DegV, bs.KnotsU, bs.KnotsV, ctrl, bs.Weight, sh.grid.ClosedU)
+	}
+	w.writeFace(srfid, sense, ls, len(ls) == 1, color)
 }
 
 // stepLoop is a loop of a face's trims, as SolveSpace runs them, and
@@ -1055,23 +1128,24 @@ func WriteStep(out io.Writer, sk *sketch.Sketch, g *sketch.Group, o Options) err
 		// An assembly: a product a part, placed.
 		w.WriteAssembly(parts, 1.0/o.Scale)
 	} else {
-		w.exportShellFaces(shell, 1.0/o.Scale)
-		w.printf("#%d=CLOSED_SHELL('',(", w.id)
-		for i, af := range w.advancedFaces {
-			w.printf("#%d", af)
-			if i+1 < len(w.advancedFaces) {
-				w.printf(",")
-			}
-		}
-		w.printf("));\n")
-		w.printf("#%d=MANIFOLD_SOLID_BREP('brep',#%d);\n", w.id+1, w.id)
-		w.printf("#%d=ADVANCED_BREP_SHAPE_REPRESENTATION('',(#%d,#170),#168);\n", w.id+2, w.id+1)
-		w.printf("#%d=SHAPE_REPRESENTATION_RELATIONSHIP($,$,#169,#%d);\n", w.id+3, w.id+2)
+		v := validationOf(shell, 1.0/o.Scale)
+		breps := w.writeBodies(shell, 1.0/o.Scale, stepString(w.stepName()))
+		w.printf("#%d=ADVANCED_BREP_SHAPE_REPRESENTATION('',(%s,#170),#168);\n", w.id, stepRefs(breps...))
+		w.printf("#%d=SHAPE_REPRESENTATION_RELATIONSHIP($,$,#169,#%d);\n", w.id+1, w.id)
+		w.id += 2
+		w.writeValidation(176, w.stepName(), v)
 	}
+	w.writeCategory()
 	w.WriteFooter()
 	w.warnOpen()
 	_, err := out.Write(buf.Bytes())
 	return err
+}
+
+// writeCategory puts every product written in the category of parts.
+func (w *stepFileWriter) writeCategory() {
+	w.printf("#%d=PRODUCT_RELATED_PRODUCT_CATEGORY('part',$,(%s));\n", w.id, stepRefs(w.products...))
+	w.id++
 }
 
 // warnOpen tells Warn of the faces left out of the file, where the

@@ -1,19 +1,19 @@
 ISO-10303-21;
 HEADER;
 
-FILE_DESCRIPTION((''), '2;1');
+FILE_DESCRIPTION(('TeleSAPR model'), '2;1');
 
 FILE_NAME(
-    'output_file',
-    '2009-06-07T17:44:47-07:00',
+    'view.step',
+    '1970-01-01T00:00:00+00:00',
     (''),
     (''),
     'TeleSAPR',
-    '',
+    'TeleSAPR',
     ''
 );
 
-FILE_SCHEMA (('CONFIG_CONTROL_DESIGN'));
+FILE_SCHEMA (('AP242_MANAGED_MODEL_BASED_3D_ENGINEERING_MIM_LF { 1 0 10303 442 7 1 4 }'));
 ENDSEC;
 
 DATA;

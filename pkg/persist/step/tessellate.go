@@ -379,11 +379,21 @@ func (s *faceSurface) loop(b *Bound, polys map[*Edge][]geom.Vector, uses map[*Ed
 		st := pc.pts[0]
 		du, dv := 0.0, 0.0
 		switch {
+		case pc.seam == 1 && end.singU:
+			// From a pole onto the seam: the pole's u was only its
+			// neighbour's, so the seam keeps its own u, on the side of
+			// the pole that keeps the face on the left. Put at the pole's
+			// u, a seam after an edge ending at the pole on another side
+			// (a sphere whose pole lies on the edge of a box it is fused
+			// with) was a period off, and the face covered nearly twice
+			// over.
+			du = s.acrossPole(end, st, sense)
+			dv = s.shift(end.v, st.v, s.pv)
 		case pc.seam == 1:
 			for i := range pc.pts {
 				pc.pts[i].u = end.u
 			}
-			if end.singU || st.singU {
+			if st.singU {
 				// Back down the seam on its other side, round the pole.
 				du = s.acrossPole(end, pc.pts[0], sense)
 			}

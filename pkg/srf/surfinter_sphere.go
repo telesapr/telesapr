@@ -41,6 +41,10 @@ func sphereOfPatch(s *SSurface) (c geom.Vector, r float64, ok bool) {
 	return c, r, true
 }
 
+// SphereOf reports the centre and radius of the sphere s lies on, if it
+// does, as the Booleans find it: what STEP export writes as a sphere.
+func SphereOf(s *SSurface) (c geom.Vector, r float64, ok bool) { return sphereOfPatch(s) }
+
 // isSpherePatch reports whether s lies on a sphere. The classification
 // of edges on a sphere's patches allows for their chords dipping off it,
 // which on other curved faces (threads, cylinders) moved results that

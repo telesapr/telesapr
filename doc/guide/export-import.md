@@ -27,8 +27,19 @@ File > Export has one entry for each kind of file:
 `File.Export` tells from the extension what to write (`.step` is Surfaces). Every export is of
 the model as it is at the active group.
 
-Surfaces writes each face of the solid as an exact surface with the curves that bound it. A
-face whose bounding curves don't close can't be written: it is left out, and the export warns
+Surfaces writes each face of the solid as an exact surface with the curves that bound it, in
+STEP AP242 (edition 4):
+
+- A flat face is written as a plane, and a round one as a cylinder, cone, sphere or torus, so the
+  program that reads the file sees a hole as a cylinder of its diameter. Straight and round edges
+  are written as lines and circles. Faces of any other shape are written as B-spline surfaces.
+- Each body is its own solid. A mirror copy beside the original, or the copies of a pattern, come
+  in as separate solids.
+- The part's volume, surface area and centre are written into the file. A program that reads the
+  file can measure the solid it read and compare.
+- The part is named after the file, and the file says when it was written.
+
+A face whose bounding curves don't close can't be written: it is left out, and the export warns
 where, since other programs then read the file as an open shell.
 
 ### Mesh quality
@@ -178,4 +189,7 @@ Some flags:
 
 - DXF is the only 2d format imported; DWG is not read.
 - A STEP file comes in as a linked part, not as sketches and features you can edit.
+- A STEP file's own volume and area, where it has them, are not compared with what was read.
+- A solid with a hollow inside it is written as one shell, not as a solid with a void.
+- Dimensions and tolerances (PMI) are neither read nor written.
 - IGES is neither read nor written.

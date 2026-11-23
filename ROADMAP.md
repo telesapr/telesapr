@@ -1,6 +1,6 @@
 # Roadmap
 
-What is left to build, as of 2026-11-18. Only open work is listed. What is built is described in
+What is left to build, as of 2026-11-23. Only open work is listed. What is built is described in
 `doc/guide`, `doc/guide/ai.md` and `doc/dev-notes/done-audit.md`; `doc/dev-notes/done-audit.md` also holds the definition of
 done. The dated "Done" and "Tried" notes of every item, cut from this file on 2026-10-30, are in
 `git show af848717:ROADMAP.md`; read an item's there before taking it up, so as not to try again
@@ -19,10 +19,11 @@ item is sized only after a two-day spike on its hardest fixture.
 | 2 | [Solid feature leftovers](#solid-feature-leftovers) | kernel | ? | Twisted profiles where a cubic beside a sharp corner comes back over the line; fitted and closed paths crossing themselves; drafted shells' corners |
 | 3 | [Thread leftovers](#thread-leftovers) | feature | S each | DIN 513's nut deviation, B1.9's pitches and multi-start allowances wait for sources |
 | 4 | [K3 contact](#k3-coincident-and-tangent-contact) | kernel foundation | ? | Touching points the marcher finds itself; turned copies meeting face to face (six 45° apart left); one fitted-tube cross's difference |
-| 5 | [F9 Mechanisms](#f9-mechanisms) | feature | M | Built 2026-11-06, freedom per part 2026-11-09, incremental assembly 2026-11-22; the plan for a drag if asked |
-| 6 | [F5 small conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
-| 7 | [F8 TeleSAPR in a browser](#f8-telesapr-in-a-browser) | feature | S each | Built; module size only |
-| 8 | [F6 IGES](#f6-iges-import-and-export) | feature | L | Only if asked for |
+| 5 | [STEP to AP242](#step-to-ap242) | feature | S each | The writer is AP242 since 2026-11-23; left: reading validation properties, a broken mesh link's message, cavities; `scripts/step-exchange.sh` checks each against OpenCASCADE, FreeCAD and NIST's SFA |
+| 6 | [F9 Mechanisms](#f9-mechanisms) | feature | M | Built 2026-11-06, freedom per part 2026-11-09, incremental assembly 2026-11-22; the plan for a drag if asked |
+| 7 | [F5 small conveniences](#f5-small-ui-and-cli-conveniences) | feature | S each | Usability, not capability |
+| 8 | [F8 TeleSAPR in a browser](#f8-telesapr-in-a-browser) | feature | S each | Built; module size only |
+| 9 | [F6 IGES](#f6-iges-import-and-export) | feature | L | Only if asked for |
 
 ## Open defects
 
@@ -239,6 +240,22 @@ tagged inference, one accounted result per entity; `repair_missing_singular_trim
 STEP's `newtonOnSurface` keeps its own steps (`srf.ProjectFrom` grew NIST_MBE_PMI_6's slivers).
 
 ## Features
+
+### STEP to AP242
+
+Code: `pkg/export/step*.go`, `pkg/persist/step`; `doc/dev-notes/step.md` holds the rules of AP242
+edition 4 and the MBx-IF Recommended Practices, where we stand on each, and the exchange check
+(`scripts/step-exchange.sh`, `TestExchangeFixtures`). The writer writes AP242 edition 4, planes,
+cylinders, cones, spheres and tori, lines and circles, a solid per body and validation properties
+since 2026-11-23. Each row is checked by the exchange before and after.
+
+| Item | State |
+|---|---|
+| Validation properties read | Written, not read: a link could compare the file's declared volume, area and centre with what it read, and say where they differ (GVP 4.13) |
+| A broken mesh link says nothing | A file whose faces tessellate open or crossing (the ball's pole on an edge, fixed 2026-11-23) came in with no problem said: the link's mesh could be checked as Check Solid does, and the link say so |
+| Our reader on analytic faces of several patches | A dish's lathed cone written as one CONICAL_SURFACE face, a pocket at its seam reaching the apex, read back as a solid crossed the bounds of one of its cells ("the bounds in a cell cross"), whatever the cone's reference direction, where the same face as a B-spline and each patch as a cone read back; OpenCASCADE reads all of them. The writer keeps such a face (one reaching its apex or pole) a B-spline (`reachesPole`); another program's file of such a face would still fail here. Not looked into further |
+| Cavities | A solid with a hollow inside is written as one CLOSED_SHELL holding both: to write BREP_WITH_VOIDS, the cavity an ORIENTED_CLOSED_SHELL of its faces turned outward |
+| PCURVE, PMI, layers, ed. 4's tessellated B-rep and UUIDs | Not read or written; PCURVE only if a receiver is seen to rebuild our trims badly |
 
 ### F5 Small UI and CLI conveniences
 

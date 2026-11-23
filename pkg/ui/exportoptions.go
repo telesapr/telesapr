@@ -20,6 +20,7 @@ func (ss *Application) exportOptions() export.Options {
 		ViewScale:             ss.GW.view.Scale,
 		GCode:                 ss.GCode,
 		StepOneSurfacePerFace: ss.StepOneSurfacePerFace,
+		StepTime:              ss.Now(),
 		Ambient:               ss.AmbientIntensity,
 		Format:                func(mm float64) string { return ss.MmToString(mm, false) },
 		Constraints:           exportConstraints{ss},

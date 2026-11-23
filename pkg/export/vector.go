@@ -666,7 +666,7 @@ func (w *step2dFileWriter) HasCanvasSize() bool { return false }
 func (w *step2dFileWriter) CanOutputMesh() bool { return false }
 
 func (w *step2dFileWriter) StartFile() {
-	w.sfw = stepFileWriter{sk: w.sk, o: w.o, f: &w.out, exportParts: true}
+	w.sfw = stepFileWriter{sk: w.sk, o: w.o, f: &w.out, exportParts: true, freeCurves: true}
 	w.sfw.WriteHeader()
 }
 

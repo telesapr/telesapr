@@ -35,11 +35,11 @@ func (w *stepFileWriter) WriteAssembly(parts []sketch.AssemblyPart, scale float6
 		// Each part's solid stands alone: no point or edge is shared
 		// with another's.
 		w.resetAliases()
-		w.advancedFaces = w.advancedFaces[:0]
 
 		id := w.id
 		name := stepString(p.Name)
 		w.printf("#%d=PRODUCT(%s,%s,'',(#180));\n", id, name, name)
+		w.products = append(w.products, id)
 		w.printf("#%d=PRODUCT_DEFINITION_FORMATION_WITH_SPECIFIED_SOURCE('',%s,#%d,.MADE.);\n", id+1, name, id)
 		w.printf("#%d=PRODUCT_DEFINITION('design',%s,#%d,#178);\n", id+2, name, id+1)
 		w.printf("#%d=PRODUCT_DEFINITION_SHAPE('','',#%d);\n", id+3, id+2)
@@ -49,19 +49,12 @@ func (w *stepFileWriter) WriteAssembly(parts []sketch.AssemblyPart, scale float6
 		products[p.Key] = product{definition: id + 2, shape: id + 5, axis: id + 4}
 		w.id = id + 7
 
-		w.exportShellFaces(p.Shell, scale)
-		w.printf("#%d=CLOSED_SHELL('',(", w.id)
-		for i, af := range w.advancedFaces {
-			w.printf("#%d", af)
-			if i+1 < len(w.advancedFaces) {
-				w.printf(",")
-			}
-		}
-		w.printf("));\n")
-		w.printf("#%d=MANIFOLD_SOLID_BREP(%s,#%d);\n", w.id+1, name, w.id)
-		w.printf("#%d=ADVANCED_BREP_SHAPE_REPRESENTATION(%s,(#%d,#%d),#168);\n", w.id+2, name, w.id+1, id+4)
-		w.printf("#%d=SHAPE_REPRESENTATION_RELATIONSHIP($,$,#%d,#%d);\n", w.id+3, id+5, w.id+2)
-		w.id += 4
+		v := validationOf(p.Shell, scale)
+		breps := w.writeBodies(p.Shell, scale, name)
+		w.printf("#%d=ADVANCED_BREP_SHAPE_REPRESENTATION(%s,(%s,#%d),#168);\n", w.id, name, stepRefs(breps...), id+4)
+		w.printf("#%d=SHAPE_REPRESENTATION_RELATIONSHIP($,$,#%d,#%d);\n", w.id+1, id+5, w.id)
+		w.id += 2
+		w.writeValidation(id+3, p.Name, v)
 		w.printf("\n")
 	}
 
@@ -92,5 +85,12 @@ func stepDirection(v geom.Vector) string {
 }
 
 // cfmtReal writes a real for STEP: ten decimals at most, with the point
-// a STEP real must have, as "1." or "0.7071067812".
-func cfmtReal(v float64) string { return strings.TrimRight(fmt.Sprintf("%.10f", v), "0") }
+// a STEP real must have, as "1." or "0.7071067812"; what rounds to zero
+// is "0.", not "-0.".
+func cfmtReal(v float64) string {
+	s := strings.TrimRight(fmt.Sprintf("%.10f", v), "0")
+	if s == "-0." {
+		return "0."
+	}
+	return s
+}

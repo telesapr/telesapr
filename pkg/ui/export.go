@@ -12,6 +12,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/export"
@@ -801,7 +802,9 @@ func (ss *Application) ExportSurfacesTo(filename string) error {
 	g := ss.SK.Group(ss.GW.activeGroupH())
 	ss.progressPhase("Writing " + filepath.Base(filename))
 	var out bytes.Buffer
-	if err := export.WriteStep(&out, ss.SK, g, ss.exportOptions()); err != nil {
+	o := ss.exportOptions()
+	o.StepName = strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename))
+	if err := export.WriteStep(&out, ss.SK, g, o); err != nil {
 		return err
 	}
 	if err := os.WriteFile(filename, out.Bytes(), 0o644); err != nil {

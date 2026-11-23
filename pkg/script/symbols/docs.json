@@ -13471,6 +13471,10 @@
 				"decl": "func SkinWithEnds(sections []BSplineCurve, ts []float64, start, end []geom.Vector) (*BSplineSurface, error)",
 				"text": "SkinWithEnds is the cubic surface through sections, curves of one degree and knot vector, their weights their own, at the parameters ts across, from 0 to 1, with the derivatives across at the first and the last given for each control point (Piegl and Tiller, 9.2.2): the interior knots are the sections' own parameters, and two more control points meet the derivatives."
 			},
+			"SphereOf": {
+				"decl": "func SphereOf(s *SSurface) (c geom.Vector, r float64, ok bool)",
+				"text": "SphereOf reports the centre and radius of the sphere s lies on, if it does, as the Booleans find it: what STEP export writes as a sphere."
+			},
 			"SweepEnd": {
 				"decl": "func SweepEnd(steps []SweepStep) Rigid",
 				"text": "SweepEnd is where the steps take the profile."

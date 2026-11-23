@@ -98,12 +98,23 @@ bored = Part.makeSphere(7).cut(Part.makeCylinder(3, 20, V(0, 0, -10)))
 h = math.sqrt(49 - 9)
 add("sphere_bored", bored, 4.0 / 3 * pi * h ** 3)
 
+# A box with a ball fused at a corner of its top, the ball's lower pole on
+# the box's upright edge: the ball's face goes round that pole between
+# two of its rims and then up its seam.
+corner = Part.makeBox(20, 20, 10).fuse(Part.makeSphere(5, V(20, 20, 10))).removeSplitter()
+add("box_ball_pole_on_edge", corner, 20 * 20 * 10 + 7.0 / 8 * 4.0 / 3 * pi * 125)
+
+# STEP_FIXTURES_ONLY names the fixtures to write, by commas, leaving the
+# others' files as they are (each file holds the time it was written).
+only = [n for n in os.environ.get("STEP_FIXTURES_ONLY", "").split(",") if n]
+
 with open(os.path.join(out, "expected.txt"), "w") as f:
     f.write("# name volume area (mm3, mm2): volumes worked out from the dimensions;\n")
     f.write("# a measured one is marked m. Written by scripts/step-fixtures.py.\n")
     for name, shape, vol in shapes:
         path = os.path.join(out, name + ".step")
-        shape.exportStep(path)
+        if not only or name in only:
+            shape.exportStep(path)
         mark = ""
         if vol is None:
             vol, mark = shape.Volume, " m"

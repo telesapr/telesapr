@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -54,6 +55,8 @@ func exportAllFor(t testing.TB, path, dir string) {
 		p.DialogResponses = append(p.DialogResponses, platform.ResponseOK)
 	}
 	ss := New(p)
+	// The goldens are dated by the zero time, written as 1970-01-01.
+	ss.Now = func() time.Time { return time.Time{} }
 	ss.LoadSettings()
 	if err := ss.Load(path); err != nil {
 		t.Fatal(err)

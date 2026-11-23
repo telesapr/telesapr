@@ -109,6 +109,7 @@ func init() {
 		"Skin":                        reflect.ValueOf(srf.Skin),
 		"SkinThrough":                 reflect.ValueOf(srf.SkinThrough),
 		"SkinWithEnds":                reflect.ValueOf(srf.SkinWithEnds),
+		"SphereOf":                    reflect.ValueOf(srf.SphereOf),
 		"SurfCoincOpp":                reflect.ValueOf(srf.SurfCoincOpp),
 		"SurfCoincSame":               reflect.ValueOf(srf.SurfCoincSame),
 		"SurfInside":                  reflect.ValueOf(srf.SurfInside),

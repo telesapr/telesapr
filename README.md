@@ -30,7 +30,9 @@ It is built and tested on Linux. See [`ROADMAP.md`](ROADMAP.md) for where it is 
 - **Sketch feedback**: entities coloured by how free they are, conflicting constraints marked,
   measuring without a constraint, and a search over every command.
 - **Section view**, an OpenGL renderer, and **Check Solid**, which says whether a solid is sound.
-- **STEP files** linked as reference meshes, and STEP export with one surface per face; 3MF
+- **STEP files** linked as reference meshes or as solids, and STEP AP242 export: planes,
+  cylinders, cones, spheres and tori as themselves, a solid per body, and each part's volume,
+  area and centre for the receiver to check; 3MF
   and glTF (`.glb`, for Blender and web viewers) export of the mesh with its colours. STL export has quality presets (draft, standard, fine)
   and an angular tolerance, also as `telesapr-cli export-mesh --quality`.
 - **Scripting in Go**, with forms that ask for a script's values and a library folder of your
