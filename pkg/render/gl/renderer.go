@@ -215,7 +215,9 @@ func (r *Renderer) FinishFrame() {
 func (r *Renderer) ReadFrame() *image.RGBA {
 	r.unSelectPrimitive()
 	w, h := r.pixelSize()
-	if r.ctx.DoubleBuffered() {
+	if f, ok := r.ctx.(Framebuffered); ok && f.Framebuffered() {
+		glapi.ReadBuffer(glapi.COLOR_ATTACHMENT0)
+	} else if r.ctx.DoubleBuffered() {
 		glapi.ReadBuffer(glapi.BACK)
 	} else {
 		glapi.ReadBuffer(glapi.FRONT)

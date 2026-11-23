@@ -79,6 +79,12 @@ type rbRunOff struct {
 	// lies on the end face's edge with the next face, between w and that
 	// edge's far end (rollingrunoff_away.go).
 	away bool
+	// crossed marks both run-offs of an end whose two cuts cross on the
+	// fillet (rollingrunoff_crossed.go): x is where they cross, and meet
+	// where the line the two next faces' planes share meets the end
+	// face's plane.
+	crossed bool
+	meet    geom.Vector
 }
 
 // runOffSliver is, in chord tolerances, how near w the end section

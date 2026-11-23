@@ -114,14 +114,22 @@ func (r *uiScriptRunner) videoEnd() {
 	if v.name == "" {
 		return
 	}
+	if err := v.finish(); err != nil {
+		r.t.Fatal(err)
+	}
+}
+
+// finish writes the video from the frames added, as NAME.webm and
+// NAME.mp4 in v.dir, and removes the frames.
+func (v *docVideo) finish() error {
 	defer func() { _ = os.RemoveAll(v.frames) }()
-	r.flushFrame()
+	v.flush()
 	// The concat demuxer shows the last file for no time unless it
 	// comes again.
 	fmt.Fprintf(&v.list, "file 'f%05d.png'\n", v.n-1)
 	listPath := filepath.Join(v.frames, "list.txt")
 	if err := os.WriteFile(listPath, v.list.Bytes(), 0o644); err != nil {
-		r.t.Fatal(err)
+		return err
 	}
 	out := filepath.Join(v.dir, v.name+".webm")
 	// VP9 at a constant quality: the windows are flat colour and
@@ -132,7 +140,7 @@ func (r *uiScriptRunner) videoEnd() {
 		"-vf", "fps=25,format=yuv420p", "-c:v", "libvpx-vp9", "-b:v", "0", "-crf", "42",
 		"-row-mt", "1", "-deadline", "good", "-an", out)
 	if b, err := cmd.CombinedOutput(); err != nil {
-		r.t.Fatalf("ffmpeg for %s: %v\n%s", out, err, b)
+		return fmt.Errorf("ffmpeg for %s: %w\n%s", out, err, b)
 	}
 	// H.264 beside it, for the browsers and players that lack VP9.
 	// yuv420p and +faststart make it play in all of them and start
@@ -144,9 +152,10 @@ func (r *uiScriptRunner) videoEnd() {
 		"-vf", "fps=25,format=yuv420p", "-c:v", "libx264", "-preset", "slow", "-crf", "30",
 		"-movflags", "+faststart", "-an", mp4)
 	if b, err := cmd.CombinedOutput(); err != nil {
-		r.t.Fatalf("ffmpeg for %s: %v\n%s", mp4, err, b)
+		return fmt.Errorf("ffmpeg for %s: %w\n%s", mp4, err, b)
 	}
 	v.name = ""
+	return nil
 }
 
 // videoMouse glides the pointer to x, y before a move, and notes a
@@ -204,13 +213,17 @@ func (r *uiScriptRunner) videoOrigins() (size image.Point, gwOrigin, twOrigin im
 // videoBase is what the windows show, with the caption band under them
 // and no pointer.
 func (r *uiScriptRunner) videoBase() *image.RGBA {
-	v := &r.doc.video
-	shot, _, _ := r.composeShot(v.which)
+	shot, _, _ := r.composeShot(r.doc.video.which)
+	return r.doc.video.withCaption(shot)
+}
+
+// withCaption is shot with the caption band under it.
+func (v *docVideo) withCaption(shot *image.RGBA) *image.RGBA {
 	b := shot.Bounds()
 	img := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()+captionHeight))
 	draw.Draw(img, img.Bounds(), image.NewUniform(color.RGBA{R: 32, G: 32, B: 32, A: 255}), image.Point{}, draw.Src)
 	draw.Draw(img, b, shot, b.Min, draw.Src)
-	r.videoText(img, v.caption, 12, b.Dy()+(captionHeight-16)/2, color.RGBA{R: 240, G: 240, B: 240, A: 255})
+	v.text(img, v.caption, 12, b.Dy()+(captionHeight-16)/2, color.RGBA{R: 240, G: 240, B: 240, A: 255})
 	return img
 }
 
@@ -284,7 +297,10 @@ func keyLabel(t []string) string {
 // videoKeyBadge shows the key the step pressed at the caption band's
 // right-hand end.
 func (r *uiScriptRunner) videoKeyBadge(img *image.RGBA) {
-	v := &r.doc.video
+	r.doc.video.keyBadge(img)
+}
+
+func (v *docVideo) keyBadge(img *image.RGBA) {
 	if v.key == "" {
 		return
 	}
@@ -292,13 +308,15 @@ func (r *uiScriptRunner) videoKeyBadge(img *image.RGBA) {
 	b := img.Bounds()
 	rc := image.Rect(b.Max.X-w-12, b.Max.Y-captionHeight+4, b.Max.X-12, b.Max.Y-4)
 	draw.Draw(img, rc, image.NewUniform(color.RGBA{R: 240, G: 240, B: 240, A: 255}), image.Point{}, draw.Src)
-	r.videoText(img, v.key, rc.Min.X+8, rc.Min.Y+(rc.Dy()-16)/2, color.RGBA{R: 16, G: 16, B: 16, A: 255})
+	v.text(img, v.key, rc.Min.X+8, rc.Min.Y+(rc.Dy()-16)/2, color.RGBA{R: 16, G: 16, B: 16, A: 255})
 }
 
-// videoText draws s in the property browser's font, its top left at x,
-// y.
-func (r *uiScriptRunner) videoText(img *image.RGBA, s string, x, y int, c color.RGBA) {
-	f := r.doc.video.font
+// text draws s in the property browser's font, its top left at x, y.
+func (v *docVideo) text(img *image.RGBA, s string, x, y int, c color.RGBA) {
+	if v.font == nil {
+		v.font = res.NewBitmapFont()
+	}
+	f := v.font
 	tex := f.Texture
 	for _, ch := range s {
 		s0, t0, _, _, w, h := f.LocateGlyph(ch)
@@ -345,22 +363,30 @@ func (r *uiScriptRunner) videoFrameOf(img *image.RGBA, dur float64) {
 		v.lastDur += dur
 		return
 	}
-	r.flushFrame()
-	var buf bytes.Buffer
-	if err := (&png.Encoder{CompressionLevel: png.BestSpeed}).Encode(&buf, img); err != nil {
+	if err := v.add(img, dur); err != nil {
 		r.t.Fatal(err)
 	}
+}
+
+// add writes img as the next frame, shown for dur seconds, the one
+// before it now being complete.
+func (v *docVideo) add(img *image.RGBA, dur float64) error {
+	v.flush()
+	var buf bytes.Buffer
+	if err := (&png.Encoder{CompressionLevel: png.BestSpeed}).Encode(&buf, img); err != nil {
+		return err
+	}
 	if err := os.WriteFile(filepath.Join(v.frames, fmt.Sprintf("f%05d.png", v.n)), buf.Bytes(), 0o644); err != nil {
-		r.t.Fatal(err)
+		return err
 	}
 	v.n++
 	v.last, v.lastDur = img.Pix, dur
+	return nil
 }
 
-// flushFrame writes the last frame's line of the concat list, now that
-// how long it is shown is known.
-func (r *uiScriptRunner) flushFrame() {
-	v := &r.doc.video
+// flush writes the last frame's line of the concat list, now that how
+// long it is shown is known.
+func (v *docVideo) flush() {
 	if v.last == nil {
 		return
 	}

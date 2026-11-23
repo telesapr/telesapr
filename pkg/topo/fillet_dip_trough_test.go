@@ -132,24 +132,45 @@ func TestFilletTroughPastFloor(t *testing.T) {
 
 // The trough's y+ rim edge at 2, its walls' height where the top is
 // lowest: the foot touches the floor there, the wall pinched to a
-// point, and it is refused by name; at 3.5 the foot runs below the
-// floor all along, which an end's run-off refuses.
+// point, which neither cut nor left whole comes out closed. Refused by
+// name before 2026-11-23; now made at the nearest size within the chord
+// tolerance at which the foot crosses the floor's edge or stays clear
+// of it (footAtEdgeSize), sound and within the integral at that size as
+// TestFilletTroughPastFloor's are. At 3.5 the foot runs below the floor
+// all along, which an end's run-off refuses.
 func TestFilletTroughTouchesFloor(t *testing.T) {
 	t.Parallel()
 	for _, c := range []struct {
-		r    float64
-		flat bool
-		want string
+		r      float64
+		flat   bool
+		lo, hi float64
 	}{
-		{2, false, "only just reaches the edge of its face"},
-		{2, true, "only just reaches the edge of its face"},
-		{3.5, false, "runs off the face on side 2 all along"},
+		{2, false, -1e-4, 1e-4},
+		{2, true, -0.0015, -0.0011},
 	} {
-		sh := troughPocket(fine(0.01))
-		pick := []topo.FilletPick{{Arc: true, At: v(0, 3, troughAxis-troughR)}}
-		err := topo.FilletPicks(sh, pick, c.r, 1<<30, c.flat)
-		if err == nil || !strings.Contains(err.Error(), c.want) {
-			t.Errorf("r %g flat %v: got %v, want a refusal %q", c.r, c.flat, err, c.want)
-		}
+		t.Run(fmt.Sprintf("r%g flat %v", c.r, c.flat), func(t *testing.T) {
+			t.Parallel()
+			sh := troughPocket(fine(0.01))
+			before := surfaceVolume(t, sh)
+			pick := []topo.FilletPick{{Arc: true, At: v(0, 3, troughAxis-troughR)}}
+			made, err := topo.FilletPicksMade(sh, pick, c.r, 1<<30, c.flat)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if made == c.r || math.Abs(made-c.r) > sh.Tol.ChordTolMm()/(math.Sqrt2-1) {
+				t.Errorf("made at %g, want a size near %g but not it", made, c.r)
+			}
+			sound(t, sh)
+			took, want := before-surfaceVolume(t, sh), troughTaken(made, c.flat)
+			t.Logf("made at %.6f, took %.6f, the integral %.6f, %+.5f", made, took, want, took/want-1)
+			if d := took/want - 1; d < c.lo || d > c.hi {
+				t.Errorf("took %.6f, the integral %.6f", took, want)
+			}
+		})
+	}
+	sh := troughPocket(fine(0.01))
+	pick := []topo.FilletPick{{Arc: true, At: v(0, 3, troughAxis-troughR)}}
+	if err := topo.FilletPicks(sh, pick, 3.5, 1<<30, false); err == nil || !strings.Contains(err.Error(), "runs off the face on side 2 all along") {
+		t.Errorf("r 3.5: got %v, want a refusal of a foot below the floor all along", err)
 	}
 }

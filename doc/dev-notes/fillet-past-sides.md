@@ -6,6 +6,7 @@ Refreshed 2026-11-19 at branch `fillet-curved-side-cut`.
 Refreshed 2026-11-19 at branch `ledge-cut-past-side`.
 Refreshed 2026-11-19 at branch `ledge-cutback-35`.
 Refreshed 2026-11-19 at branch `ledge-touch-finechord`.
+Refreshed 2026-11-23 at branch `fillet-runoff-cuts-cross`.
 
 A circular fillet or chamfer (round a rod's foot, a hole's rim) whose foot runs off the flat face
 it rolls on is refused by `contactsClear` (`pkg/topo/fillet_contact.go`), which says which sides
@@ -231,8 +232,9 @@ cut (`rbEndCut`) held one run-off. It now holds a second (`also`, `runOffs`, `of
   out of `closeRunOff` with the face edits it shares, `runOffEdit`).
 
 Refused by name: the two cuts crossing on the fillet or on the end section, where the next faces
-would meet across it (no test reaches it: the plate's foot on the cone runs past the flat all along
-the edge first), a fillet taking material away at either, and both faces at both ends. Measured by `TestBlendRunsOffBothFaces` against the blend that runs off neither (the
+would meet across it (no test reached it: the plate's foot on the cone runs past the flat all along
+the edge first; made since 2026-11-23, below), a fillet taking material away at either, and both
+faces at both ends (made since 2026-11-23). Measured by `TestBlendRunsOffBothFaces` against the blend that runs off neither (the
 top high, the cone uncut) less what of it lies above the low top's plane and past the flat,
 measured by vertical lines through its mesh above the plane and above the cone's exact surface:
 12 of 12 within 0.15%, 0.08% but for the fillet of 5.5. The roadmap's other way, the setback
@@ -257,6 +259,42 @@ with an end running off both (`consumedRunOff` now refuses it by name, where `co
 would have cut that end by one next face). The two cuts crossing on the fillet is still reached
 by no test: every size tried that reaches past the flat at both sides' cuts runs past it all
 along first.
+
+Since 2026-11-23 the two cuts crossing on the fillet, and both ends running off both faces, are
+made; both needed a fixture first. `slantConePlate` turns the flat to a slant, y = c0 + s·x, so
+that it comes in close beside the plate at the cone's wide end (c0 1.6 to 2.4) and leaves the foot
+room further along (s 0.1 or 0.2): the end section there crosses the flat above where it crosses
+the low top, and of 120 sizes tried, 40 were refused as "the faces past them meet across its
+end". `rollingrunoff_crossed.go` makes them (`crossedRunOffs`, from `bothRunOffs`): the top and
+the flat, both flat, meet across the fillet along the line their planes share, from x, where
+their cuts on the fillet cross (`crossedX`, the one end their curves across share, found as
+`consumedX` finds the ridge's x), to m, where that line meets the end face's plane, past both
+w on the end face's edges with the next faces. The patches past x are cut away whole
+(`clipRunOffs` keeps them as empty loops), the patch holding x keeps the corner the two cuts make;
+the end face takes no end section, only the lines from each w to m; each next face takes its cut
+from p2 to x, the line from x to m and the line from m to its w (`closeRunOffCrossed`). 36 of the
+40 came out sound at once; the other four, chamfers of 4 with s 0.2, are open at the plate's
+other end, where the flat leaves the cone at x = 10 just where the plate ends, not at the
+crossing. `TestBlendRunsOffBothFacesCutsCrossing`, 16 of them, within 0.06% of the uncut,
+high-topped plate's blend less what lies above the top or past the slanted flat
+(`crossedOracle`), as far as the blends that don't cross.
+
+Both ends running off both faces needed the cone to end with the plate at x = 10, so that the end
+face there is one plane across both (`shortConePlate`; on the long cone the end at x = 10 ends on
+a face going on, and a foot past the flat there comes out open, refused only by the closed check),
+and two flats meeting at x = 5 that come in at both ends. Each end was then refused by name
+only: with `bothEndsRunOffBoth` taken out, each end is cut by its own next faces as one end
+running off both is, and 54 of 60 sizes came out sound, the other six refused by name (the two
+ends' cuts overlapping, `runOffApart`, or the face taken whole, `consumedRunOff`).
+`TestBlendRunsOffBothFacesAtBothEnds`, 12 of them, within 0.05% of the reference blend less what
+lies above the top's planes or past the flats (`bothEndsOracle`). That reference is on the cone
+cut by a flat that takes nothing: on the cone uncut the blend's own meshed volume moves by up to
+0.16% (the cone's faces and chords fall otherwise), which put one fillet 0.12% off.
+
+Still refused: a crossing whose next faces or end face are curved (no fixture), and an end
+running off both faces taking material away at one of them; no fixture reaches it either: a
+convex edge's foot on its second face would have to run off that face past its far corner at the
+end only.
 
 The ring band's 0.3% to 0.42% (`TestBlendRunsOffPastRingTop`) was the measure, not the kernel nor
 the oracle. Vertical lines through the meshes, each class of column apart (the blend's region

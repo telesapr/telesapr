@@ -258,6 +258,11 @@ type rbCentres struct {
 // centresNear are the ball's centres within mitreZone radii of end k,
 // either side of it, worked out once.
 func (rb *rollingBall) centresNear(k int) *rbCentres {
+	// Read by the chains that meet this one, on goroutines of their own
+	// (blendChainsAtOnce): worked out by the first to ask, the others
+	// waiting for it.
+	rb.centresMu[k].Lock()
+	defer rb.centresMu[k].Unlock()
 	if rb.mitreC[k] != nil {
 		return rb.mitreC[k]
 	}
@@ -266,13 +271,23 @@ func (rb *rollingBall) centresNear(k int) *rbCentres {
 	zone := math.Min(rb.length/2, mitreZone*rb.r)
 	n := int(math.Ceil(2 * zone / rb.r * mitreSamples))
 	cs := &rbCentres{}
-	for i := 0; i <= n; i++ {
+	type sample struct {
+		s   float64
+		sec rbSection
+		err error
+	}
+	samples := make([]sample, n+1)
+	rb.each(n+1, func(i int) {
 		s := -zone + 2*zone*float64(i)/float64(n)
 		if k == 1 {
 			s = rb.length - zone + 2*zone*float64(i)/float64(n)
 		}
 		sec, err := rb.section(s)
-		if err != nil {
+		samples[i] = sample{s, sec, err}
+	})
+	for _, sm := range samples {
+		s, sec := sm.s, sm.sec
+		if sm.err != nil {
 			continue
 		}
 		cs.s = append(cs.s, s)
@@ -445,6 +460,7 @@ func (rb *rollingBall) mitreFoot(k, i int) (float64, rbSection, error) {
 			if start != from && !rb.flat {
 				break
 			}
+			rb.warmSections(scanAt(start, zone, step, arc)...)
 			prev, prevG := math.NaN(), math.NaN()
 			for x := start; x <= zone; x += step {
 				g, _, ok := gap(arc(x))
@@ -471,6 +487,7 @@ func (rb *rollingBall) mitreFoot(k, i int) (float64, rbSection, error) {
 		return 0, rbSection{}, filletErr(at, "the fillet's mitre doesn't reach the crease here")
 	}
 	best, bestG := math.NaN(), math.Inf(1)
+	rb.warmSections(scanAt(from, zone, step, arc)...)
 	for x := from; x <= zone; x += step {
 		if g, _, ok := gap(arc(x)); ok && g < bestG {
 			best, bestG = x, g
@@ -483,6 +500,7 @@ func (rb *rollingBall) mitreFoot(k, i int) (float64, rbSection, error) {
 	gr := (math.Sqrt(5) - 1) / 2
 	for range 80 {
 		a, b := hi-gr*(hi-lo), lo+gr*(hi-lo)
+		rb.warmSections(arc(a), arc(b))
 		ga, _, oka := gap(arc(a))
 		gb, _, okb := gap(arc(b))
 		if oka && (!okb || ga < gb) {
@@ -497,6 +515,16 @@ func (rb *rollingBall) mitreFoot(k, i int) (float64, rbSection, error) {
 		return 0, sec, filletErr(at, "the fillet's two sides don't meet in a mitre on the face here (%.3g mm apart)", g)
 	}
 	return s, sec, nil
+}
+
+// scanAt are the arc lengths a scan of x from start to zone by step
+// takes, as the loop adds them up.
+func scanAt(start, zone, step float64, arc func(float64) float64) []float64 {
+	var ss []float64
+	for x := start; x <= zone; x += step {
+		ss = append(ss, arc(x))
+	}
+	return ss
 }
 
 // mitreRoot is the arc length near end k where the point g measures
@@ -544,6 +572,7 @@ func (rb *rollingBall) mitreRoot(k int, g func(rbSection) float64) (float64, rbS
 	gr := (math.Sqrt(5) - 1) / 2
 	for b-a > mitreBandEps*rb.r {
 		x1, x2 := b-gr*(b-a), a+gr*(b-a)
+		rb.warmSections(arc(x1), arc(x2))
 		g1, _ := h(x1)
 		g2, _ := h(x2)
 		if g1 < g2 || math.IsNaN(g2) {
@@ -607,28 +636,60 @@ const mitreGrid = 16
 // the ends the points the mitre touches the faces at (endSection's), the
 // points between mitreRoot's.
 func (rb *rollingBall) mitreRoots(k int) ([]float64, error) {
+	rb.rootsMu[k].Lock()
+	defer rb.rootsMu[k].Unlock()
 	if rb.mitreS[k] != nil {
 		return rb.mitreS[k], nil
 	}
-	end := rb.ends[k]
-	ts := rb.mitreTs(k)
-	ss := make([]float64, mitreGrid+1)
+	in, err := rb.mitreInterior(k)
+	if err != nil {
+		return nil, err
+	}
+	ss := slices.Clone(in)
 	ss[0], ss[mitreGrid] = rb.endS[k][0], rb.endS[k][1]
-	for j := 1; j < mitreGrid; j++ {
+	rb.mitreS[k] = ss
+	return ss, nil
+}
+
+// rbMitreInterior are the arc lengths between a mitre's ends that
+// mitreRoots finds, at the arcs' parameters ts.
+type rbMitreInterior struct {
+	ts, ss []float64
+}
+
+// mitreInterior are mitreRoots' arc lengths but its ends (ss[0] and
+// ss[mitreGrid] left 0), mitreRoot's at the parameters between, worked
+// out once for those parameters: they don't depend on the ends, so the
+// search for the ends may run beside them (findEndSection).
+func (rb *rollingBall) mitreInterior(k int) ([]float64, error) {
+	ts := rb.mitreTs(k)
+	rb.interiorMu[k].Lock()
+	defer rb.interiorMu[k].Unlock()
+	if in := rb.mitreIn[k]; in != nil && slices.Equal(in.ts, ts) {
+		return in.ss, nil
+	}
+	end := rb.ends[k]
+	ss := make([]float64, mitreGrid+1)
+	// Each root from its own search: at once (each), the error the first
+	// in order's.
+	errs := make([]error, mitreGrid+1)
+	kinked := rb.kinkedEnd(k)
+	rb.eachWhile(mitreGrid-1, func(i int) bool {
+		j := i + 1
 		tj := ts[j]
-		var s float64
-		var err error
-		if rb.kinkedEnd(k) {
-			s, _, err = rb.kinkRoot(k, tj)
+		if kinked {
+			ss[j], _, errs[j] = rb.kinkRoot(k, tj)
 		} else {
-			s, _, err = rb.mitreRoot(k, func(x rbSection) float64 { return rb.endHeight(end, x.arc.PointAt(tj)) })
+			ss[j], _, errs[j] = rb.mitreRoot(k, func(x rbSection) float64 { return rb.endHeight(end, x.arc.PointAt(tj)) })
 		}
+		return errs[j] == nil
+	})
+	for _, err := range errs {
 		if err != nil {
 			return nil, err
 		}
-		ss[j] = s
 	}
-	rb.mitreS[k] = ss
+	rb.mitreIn[k] = &rbMitreInterior{ts: ts, ss: ss}
 	return ss, nil
 }
 
@@ -670,9 +731,17 @@ func (rb *rollingBall) mitreSectionWithin(k int, lam, slack float64) (rbSection,
 	if k == 1 {
 		inner = math.Inf(1)
 	}
+	// Each grid point's section alone, at once (each), then taken in
+	// order.
+	secs := make([]rbSection, mitreGrid+1)
+	errs := make([]error, mitreGrid+1)
+	rb.eachWhile(mitreGrid+1, func(j int) bool {
+		secs[j], errs[j] = rb.section((1-lam)*ms[j] + lam*rb.target[k])
+		return errs[j] == nil
+	})
 	for j := range mitreGrid + 1 {
 		s := (1-lam)*ms[j] + lam*rb.target[k]
-		sec, err := rb.section(s)
+		sec, err := secs[j], errs[j]
 		if err != nil {
 			return rbSection{}, 0, err
 		}

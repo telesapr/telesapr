@@ -4,6 +4,8 @@
 # the headless platform, through ffmpeg. Watch every video that changed
 # before committing, and commit them on their own. They are not
 # goldens: ffmpeg's versions write different bytes for the same frames.
+# The videos of the real window's menus and dialogs are made by
+# scripts/regen-doc-window-images.sh videos instead.
 #
 # Usage:
 #     ./scripts/regen-guide-videos.sh [scenario names...]

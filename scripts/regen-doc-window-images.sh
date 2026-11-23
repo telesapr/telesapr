@@ -12,15 +12,29 @@
 # at every picture that changed before committing, and commit them on
 # their own.
 #
+# With "videos" it records the guide's videos of the real window instead
+# (TestDocWindowVideos, pkg/ui/docwindowvideo_test.go): a step is done, the
+# screen waited for until it has settled, and that frame held for the
+# step's time, then encoded as the headless videos are, through ffmpeg.
+# They are not goldens: watch each before committing, in a commit of its
+# own.
+#
 # Usage:
-#     ./scripts/regen-doc-window-images.sh
+#     ./scripts/regen-doc-window-images.sh [images|videos]
 set -euo pipefail
+
+what="${1:-images}"
+case "$what" in
+    images|videos) ;;
+    *) echo "usage: $0 [images|videos]" >&2; exit 2 ;;
+esac
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 command -v Xvfb >/dev/null || { echo "Xvfb is needed" >&2; exit 2; }
+[ "$what" = images ] || command -v ffmpeg >/dev/null || { echo "ffmpeg is needed" >&2; exit 2; }
 command -v fc-list >/dev/null || { echo "fc-list (fontconfig) is needed" >&2; exit 2; }
 
 # The fonts: copies of the Liberation files in a directory of their own,
@@ -65,6 +79,14 @@ for _ in $(seq 50); do
     sleep 0.1
 done
 
+if [ "$what" = videos ]; then
+    mkdir -p doc/guide/videos
+    DISPLAY=":$display" TELESAPR_DOC_WINDOW_VIDEOS="$REPO_ROOT/doc/guide/videos" \
+        go test ./pkg/ui -run '^TestDocWindowVideos$' -count=1
+    ls -l doc/guide/videos
+    git status --short doc/guide/videos
+    exit 0
+fi
 mkdir -p doc/guide/images
 DISPLAY=":$display" TELESAPR_DOC_WINDOW_SHOTS="$REPO_ROOT/doc/guide/images" \
     go test ./pkg/ui -run '^TestDocWindowShots$' -count=1

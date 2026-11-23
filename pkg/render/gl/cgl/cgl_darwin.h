@@ -22,4 +22,17 @@ int cglDouble(cglBox b);
 double cglScale(cglBox b);
 void cglDestroy(cglBox b);
 
+// A context with no view: a CGLContextObj drawing into a framebuffer
+// object it made. Opaque to Go.
+typedef void *cglOff;
+
+// cglOffNew makes one with a colour buffer of w by h pixels. It returns
+// NULL and the reason in *err (a static string) on failure, and leaves
+// the calling thread's current context as it was. *renderer is the
+// kind of pixel format that served: 1 accelerated, 2 the software one.
+cglOff cglOffNew(int w, int h, const char **err, int *renderer);
+// cglOffMakeCurrent binds the context to the calling thread.
+int cglOffMakeCurrent(cglOff o);
+void cglOffDestroy(cglOff o);
+
 #endif

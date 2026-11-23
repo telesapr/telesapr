@@ -2,7 +2,6 @@ package topo
 
 import (
 	"math"
-	"slices"
 
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -20,9 +19,11 @@ import (
 // with the sides' faces and takes the end section between the two
 // crossings, p1 of each, and from each p1 the edge it shares with that
 // next face to its w (closeNext). Made where both next faces fill a
-// corner (no fillet taking material away) and their cuts stay apart on
-// the fillet: where they cross, the two next faces would meet across
-// it, an edge of theirs the fillet doesn't make.
+// corner (no fillet taking material away). Where the two cuts cross on
+// the fillet, the two next faces meet across it instead
+// (rollingrunoff_crossed.go). Both ends of a fillet may run off both
+// their faces, each cut by its own next faces, where their cuts lie
+// apart along the edge (runOffApart refuses them where they overlap).
 
 // bothRunOffs refuses an end that runs off both its faces where this
 // can't follow it, once each side's cuts are found.
@@ -39,8 +40,8 @@ func (rb *rollingBall) bothRunOffs(row []srf.SSurface, k int, cut rbEndCut) erro
 		return filletErr(sec.PointAt(0.5), "the fillet's end runs off one of its faces twice here: make it smaller")
 	}
 	if bezierRoot(&sec, r0.h, 0, 1) >= bezierRoot(&sec, r1.h, 0, 1) {
-		return filletErr(sec.PointAt(0.5), "the fillet's end runs off both its faces here, and the faces past "+
-			"them meet across its end: make it smaller")
+		// The two cuts cross on the fillet (rollingrunoff_crossed.go).
+		return rb.crossedRunOffs(cut, sec.PointAt(0.5))
 	}
 	return nil
 }
@@ -111,11 +112,16 @@ func (rb *rollingBall) clipRunOffs(sh *srf.SShell, row []srf.SSurface, cut rbEnd
 			if err != nil {
 				return nil, nil, err
 			}
+			if l == nil && on[0].crossed {
+				// Past where the cuts cross: cut away whole.
+				loops[b] = nil
+				continue
+			}
 			if l == nil {
 				return nil, nil, filletErr(row[b].PointAt(0.5, 0.5), "the fillet's end runs off both its faces "+
 					"here, and the faces past them cut it away: make it smaller")
 			}
-			if curvesMeet(a[0], a[1]) {
+			if !on[0].crossed && len(sharedEnds(a[0], a[1])) > 0 {
 				return nil, nil, filletErr(row[b].PointAt(0.5, 0.5), "the fillet's end runs off both its faces "+
 					"here, and the faces past them meet across it: make it smaller")
 			}
@@ -123,6 +129,13 @@ func (rb *rollingBall) clipRunOffs(sh *srf.SShell, row []srf.SSurface, cut rbEnd
 			across[on[0]] = append(across[on[0]], a[0]...)
 			across[on[1]] = append(across[on[1]], a[1]...)
 		}
+	}
+	if len(ros) == 2 && ros[0].crossed {
+		x, err := crossedX(across[ros[0]], across[ros[1]], ros[0].meet)
+		if err != nil {
+			return nil, nil, err
+		}
+		ros[0].x, ros[1].x = x, x
 	}
 	for _, ro := range ros {
 		for b := range loops {
@@ -151,25 +164,14 @@ func clipOne(p *srf.SSurface, ro *rbRunOff, tol float64) ([]srf.SBezier, []srf.S
 	return clipPatch(p, ro, tol)
 }
 
-// curvesMeet reports whether any curve of a and any of b share an end.
-func curvesMeet(a, b []srf.SBezier) bool {
-	for _, x := range a {
-		for _, y := range b {
-			for _, p := range []geom.Vector{x.Start(), x.Finish()} {
-				if p.Equals(y.Start()) || p.Equals(y.Finish()) {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
 // closeRunOffBoth puts an end that runs off both its faces into the end
 // face and the two next faces: the end face loses its edges with both
 // sides' faces and takes the end section from one p1 to the other, and
 // each next face is closed as a run-off alone closes it (closeNext).
 func (e *runOffEdit) closeRunOffBoth(cut rbEndCut, endSec srf.SBezier, across map[*rbRunOff][]srf.SBezier) error {
+	if cut.off.crossed {
+		return e.closeRunOffCrossed(cut, across)
+	}
 	t := e.rb.t
 	v := t.Vertices[cut.end.v].P
 	a, b := cut.off, cut.also
@@ -187,14 +189,4 @@ func (e *runOffEdit) closeRunOffBoth(cut rbEndCut, endSec srf.SBezier, across ma
 		}
 	}
 	return nil
-}
-
-// bothEndsRunOffBoth reports whether both of a fillet's ends run off
-// both their faces, which nothing reaches yet (no fixture does: a
-// plate's foot on a cone narrowing towards one end runs off the flat
-// past it at the wide end only). One end running off both and the
-// other one face is cut as two ends running off are, each by its own
-// next faces, where their cuts lie apart (runOffApart).
-func bothEndsRunOffBoth(cuts []rbEndCut) bool {
-	return len(cuts) == 2 && !slices.ContainsFunc(cuts, func(c rbEndCut) bool { return c.also == nil })
 }

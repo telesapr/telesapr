@@ -11,6 +11,15 @@ func NewForWindow(uint64) (*Context, error) { return nil, ErrUnavailable }
 // MakeCurrent returns ErrUnavailable.
 func (c *Context) MakeCurrent() error { return ErrUnavailable }
 
+// NewOffscreen returns ErrUnavailable.
+func NewOffscreen(int, int) (*Context, error) { return nil, ErrUnavailable }
+
+// Software is false.
+func (c *Context) Software() bool { return false }
+
+// Framebuffered is false.
+func (c *Context) Framebuffered() bool { return false }
+
 // DoubleBuffered is false.
 func (c *Context) DoubleBuffered() bool { return false }
 

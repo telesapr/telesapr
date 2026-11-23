@@ -308,6 +308,10 @@ func TestDocScenarios(t *testing.T) {
 			runDocScenario(t, f, dir)
 		})
 	}
+	// The real window's videos (TestDocWindowVideos) are made too.
+	for _, v := range docWindowVideos {
+		videos[v.name] = true
+	}
 	// The real window's pictures (TestDocWindowShots) are made too.
 	for _, sh := range docWindowShots {
 		made[sh.name] = true

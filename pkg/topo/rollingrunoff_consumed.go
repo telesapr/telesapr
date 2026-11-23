@@ -201,16 +201,7 @@ func anyAcross(isAcross []bool) bool { return slices.Contains(isAcross, true) }
 // consumedX is where the curves across the fillet in the two next faces'
 // planes meet: the one end they share.
 func consumedX(across [2][]srf.SBezier, at geom.Vector) (geom.Vector, error) {
-	var xs []geom.Vector
-	for _, a := range across[0] {
-		for _, b := range across[1] {
-			for _, p := range []geom.Vector{a.Start(), a.Finish()} {
-				if (p.Equals(b.Start()) || p.Equals(b.Finish())) && !slices.ContainsFunc(xs, p.Equals) {
-					xs = append(xs, p)
-				}
-			}
-		}
-	}
+	xs := sharedEnds(across[0], across[1])
 	if len(xs) != 1 {
 		return geom.Vector{}, filletErr(at, "the fillet takes a face whole, and the faces it runs onto at its ends "+
 			"meet across it %d times: make it smaller", len(xs))

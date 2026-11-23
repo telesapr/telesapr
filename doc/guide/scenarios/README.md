@@ -50,6 +50,19 @@ scenario records, and on one in `videos/` that no page shows. Videos are not gol
 versions write other bytes for the same frames. Watch every one before committing it, and commit
 them on their own. Keep each under about 1 MB.
 
+A video of what the headless frames don't draw, a menu or a dialog, is made from the real window
+instead, under the Xvfb and the Liberation fonts of the window pictures
+(`TestDocWindowVideos`, `pkg/ui/docwindowvideo_test.go`; the videos are the list `docWindowVideos`
+there, each a list of steps with a caption, a key and how long its frame is held):
+
+    ./scripts/regen-doc-window-images.sh videos
+
+Each step is done and the screen waited for until it has stayed the same for half a second and
+differs from the step before's (a step the busy server dropped is done again); that one frame is
+held for the step's time. The frames are the same however slowly the machine ran, and the same
+encode as above makes the WebM and the MP4. The pointer is not on the screen's pixels, so these
+videos are of keys, each named in the caption band's corner. `export-mesh` (17 s) is the one so far.
+
 ## The language
 
 One command per line; `#` starts a comment. The graphics window is 600×600 pixels, the property

@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"math"
 	"slices"
+	"sync/atomic"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -255,6 +256,54 @@ func (rb *rollingBall) planeRoot(g func(rbSection) float64, s0, dir float64, at 
 // give. Its arc length is the mean of the three, and the innermost of
 // them comes back too.
 func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error) {
+	if lam != 0 || !rb.keepsEndSection(k) {
+		return rb.findEndSection(k, lam)
+	}
+	// A mitre's last section is found again by each blend of the chain
+	// and by the fit before them (fitMitres), from what is fixed by then
+	// but its end's plane: the last found is kept, by that plane.
+	end := rb.ends[k]
+	rb.endMu[k].Lock()
+	kept := rb.endKept[k]
+	rb.endMu[k].Unlock()
+	if kept != nil && kept.n == end.n && kept.d == end.d && kept.sign == end.sign {
+		return kept.sec, kept.inner, nil
+	}
+	sec, inner, err := rb.findEndSection(k, 0)
+	if err == nil {
+		rb.endMu[k].Lock()
+		rb.endKept[k] = &rbEndKept{n: end.n, d: end.d, sign: end.sign, sec: sec, inner: inner}
+		rb.endMu[k].Unlock()
+	}
+	return sec, inner, err
+}
+
+// rbEndKept is a mitre's last section as endSection last found it, and
+// the plane of its end then.
+type rbEndKept struct {
+	n       geom.Vector
+	d, sign float64
+	sec     rbSection
+	inner   float64
+}
+
+// keepsEndSection reports whether end k's last section, once found, is
+// kept for the next to ask (endSection): a mitre's, neither kinked nor
+// copying a kinked mate's, while the chain's sections don't depend on
+// the order they are found in (atOnce) and none is put on a pole
+// (poleSnaps, which a blend finds again). It is then the same each time
+// from the same plane: what else it is found from (the chain's edge and
+// faces, its mate's centres, and its mitre's arc lengths, worked out
+// once) is fixed once the chains are traced and mitred, and it sets only
+// endS of its own end, to the same each time.
+func (rb *rollingBall) keepsEndSection(k int) bool {
+	end := rb.ends[k]
+	return rb.atOnce && len(rb.poleSnaps) == 0 && end != nil && end.mitre && !end.fade && !end.pivot &&
+		!rb.kinkedEnd(k) && !rb.mateKinked(k)
+}
+
+// findEndSection is endSection, found.
+func (rb *rollingBall) findEndSection(k int, lam float64) (rbSection, float64, error) {
 	end := rb.ends[k]
 	dir := endDir(k)
 	s0 := 0.0
@@ -265,12 +314,15 @@ func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error
 	if lam != 0 {
 		ss := rb.rampS(k, lam)
 		var secs [3]rbSection
-		for i := range ss {
-			sec, err := rb.section(ss[i])
+		var errs [3]error
+		rb.eachWhile(len(ss), func(i int) bool {
+			secs[i], errs[i] = rb.section(ss[i])
+			return errs[i] == nil
+		})
+		for _, err := range errs {
 			if err != nil {
 				return rbSection{}, 0, err
 			}
-			secs[i] = sec
 		}
 		f0, f1 := secs[0].foot[0], secs[1].foot[1]
 		m := secs[2].arc.PointAt(0.5)
@@ -314,41 +366,53 @@ func (rb *rollingBall) endSection(k int, lam float64) (rbSection, float64, error
 	nrm, d := end.n, end.d
 	var ss [3]float64
 	var feet [2]rbFoot
-	for i := range 2 {
-		var s float64
-		var sec rbSection
-		var err error
+	// Each foot and the middle from searches of their own, at once
+	// (each); the error the first in order's.
+	var secs [3]rbSection
+	var errs [3]error
+	mid := func(x rbSection) float64 { return rb.endHeight(end, x.arc.PointAt(0.5)) }
+	// A mitre's arc lengths between its ends, which it needs next
+	// (mitreRoots), found beside its feet where the order doesn't matter;
+	// an error is found again there, in its place.
+	tasks := 3
+	if rb.atOnce && end.mitre && !rb.kinkedEnd(k) {
+		tasks = 4
+	}
+	rb.eachWhile(tasks, func(i int) bool {
+		if i == 3 {
+			_, _ = rb.mitreInterior(k)
+			return true
+		}
+		if i == 2 {
+			switch {
+			case rb.kinkedEnd(k):
+				ss[2], secs[2], errs[2] = rb.kinkRoot(k, 0.5)
+			case end.mitre:
+				ss[2], secs[2], errs[2] = rb.mitreRoot(k, mid)
+			default:
+				ss[2], secs[2], errs[2] = rb.planeRoot(mid, s0, dir, at)
+			}
+			return errs[2] == nil
+		}
 		switch {
 		case rb.kinkedEnd(k) && end.ban[i] >= 0:
 			// The larger end's foot on its creased side is where it
 			// crosses the mate's wall: at the crease.
-			s, sec, err = rb.wallRoot(k, func(x rbSection) float64 { return rb.wallHeight(k, x.foot[i].p) })
+			ss[i], secs[i], errs[i] = rb.wallRoot(k, func(x rbSection) float64 { return rb.wallHeight(k, x.foot[i].p) })
 		case end.mitre:
-			s, sec, err = rb.mitreFoot(k, i)
+			ss[i], secs[i], errs[i] = rb.mitreFoot(k, i)
 		default:
-			s, sec, err = rb.planeRoot(func(x rbSection) float64 { return rb.endHeight(end, x.foot[i].p) }, s0, dir, at)
+			ss[i], secs[i], errs[i] = rb.planeRoot(func(x rbSection) float64 { return rb.endHeight(end, x.foot[i].p) }, s0, dir, at)
 		}
+		return errs[i] == nil
+	})
+	for _, err := range errs {
 		if err != nil {
 			return rbSection{}, 0, err
 		}
-		ss[i], feet[i] = s, sec.foot[i]
 	}
-	mid := func(x rbSection) float64 { return rb.endHeight(end, x.arc.PointAt(0.5)) }
-	var sm float64
-	var msec rbSection
-	var err error
-	switch {
-	case rb.kinkedEnd(k):
-		sm, msec, err = rb.kinkRoot(k, 0.5)
-	case end.mitre:
-		sm, msec, err = rb.mitreRoot(k, mid)
-	default:
-		sm, msec, err = rb.planeRoot(mid, s0, dir, at)
-	}
-	if err != nil {
-		return rbSection{}, 0, err
-	}
-	ss[2] = sm
+	feet[0], feet[1] = secs[0].foot[0], secs[1].foot[1]
+	msec := secs[2]
 	if rb.kinkedEnd(k) {
 		// The kinked mitre is fitted through its cuts in two spans, as
 		// the sections near it are.
@@ -518,6 +582,23 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	var inner [2]float64
 	var deriv [2][]geom.Vector4
 	var at0 [2]rbSection
+	// Both ends' last sections at once, where neither end is turned to
+	// face on past the chain, refused, a pivot or faded out below, so
+	// that finding them first changes nothing the loop would do.
+	var pre [2]struct {
+		sec rbSection
+		in  float64
+		err error
+	}
+	both := rb.atOnce && !slices.ContainsFunc(rb.ends[:], func(e *rbEnd) bool { return e.fade || e.pivot }) &&
+		rb.ends[0].n.Dot(beyond[0]) >= endAlong && rb.ends[1].n.Dot(beyond[1]) >= endAlong
+	if both {
+		rb.each(2, func(k int) { pre[k].sec, pre[k].in, pre[k].err = rb.endSection(k, 0) })
+	}
+	// With no pole to put a foot on now or when the sections are taken
+	// (nearPoles), each end's last section is found from what it was found
+	// from here, independently of the order (atOnce): eval takes it.
+	reuse := rb.atOnce && len(rb.poleSnaps) == 0
 	for k, end := range rb.ends {
 		if end.fade {
 			// No face: the ball's own sections run to the end.
@@ -540,7 +621,14 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 			inner[k] = s
 			continue
 		}
-		sec, in, err := rb.endSection(k, 0)
+		var sec rbSection
+		var in float64
+		var err error
+		if both {
+			sec, in, err = pre[k].sec, pre[k].in, pre[k].err
+		} else {
+			sec, in, err = rb.endSection(k, 0)
+		}
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -595,12 +683,15 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 	n := int(math.Min(2000, math.Max(64, 4*(r1-r0)/rb.r)))
 	rb.poleSnaps = nil // found again from this scan (nearPoles)
 	scan := make([]rbSection, n+1)
-	for i := range scan {
-		sec, err := rb.section(r0 + (r1-r0)*float64(i)/float64(n))
+	scanErrs := make([]error, n+1)
+	rb.eachWhile(n+1, func(i int) bool {
+		scan[i], scanErrs[i] = rb.section(r0 + (r1-r0)*float64(i)/float64(n))
+		return scanErrs[i] == nil
+	})
+	for _, err := range scanErrs {
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		scan[i] = sec
 	}
 	at, pairs, sides, err := rb.crossings(scan)
 	if err != nil {
@@ -674,6 +765,8 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 				cache[sp] = sec
 			}
 			return sec, err
+		case sp.lam == 0 && reuse && len(rb.poleSnaps) == 0 && !rb.kinkedEnd(sp.end) && !rb.ends[sp.end].pivot:
+			sec = at0[sp.end]
 		default:
 			sec, _, err = rb.endSection(sp.end, sp.lam)
 		}
@@ -714,6 +807,48 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		}
 		return sec, err
 	}
+	// The ball's own sections, each found alone, are found at once
+	// (each) before eval takes them in order; the rest, which read and
+	// set the ends' shared mitres, in order. A section that fails is
+	// found again by eval, which gives its error where it comes.
+	// A mitre's sections between its own and the ball's are found from
+	// its arc lengths and the ball's alone too (mitreSection), and taken
+	// so.
+	prefetch := func(sps []rbSpec) {
+		var own []rbSpec
+		seen := map[rbSpec]bool{}
+		for _, sp := range sps {
+			if _, ok := cache[sp]; ok || seen[sp] {
+				continue
+			}
+			if sp.end < 0 || sp.lam != 0 && rb.ends[sp.end].mitre {
+				seen[sp] = true
+				own = append(own, sp)
+			}
+		}
+		if len(own) < 2 || !rb.atOnce {
+			return
+		}
+		got := make([]rbSection, len(own))
+		errs := make([]error, len(own))
+		rb.each(len(own), func(i int) {
+			sp := own[i]
+			if sp.end >= 0 {
+				got[i], _, errs[i] = rb.mitreSection(sp.end, sp.lam)
+				return
+			}
+			got[i], errs[i] = rb.section(sp.s)
+			if errs[i] == nil && quartic {
+				got[i].arc = rb.splitSection(raised(got[i].arc))
+			}
+		})
+		for i, sp := range own {
+			if errs[i] == nil {
+				cache[sp] = got[i]
+			}
+		}
+	}
+	prefetch(specs)
 	if len(ramped) > 0 {
 		for _, rc := range ramped {
 			sec, err := eval(rc.spec)
@@ -775,18 +910,23 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		var more []rbSpec
 		worst, where := 0.0, geom.Vector{}
 		endWorst := false
-		for i := 0; i+1 < len(secs); i++ {
+		// Each gap's misfit alone, at once (each), then taken in order.
+		gapE := make([]float64, len(secs))
+		gapW := make([]geom.Vector, len(secs))
+		rb.each(len(secs)-1, func(i int) {
 			a, b := specs[i], specs[i+1]
-			sm := (secs[i].s + secs[i+1].s) / 2
-			var e float64
-			var w geom.Vector
 			for _, u := range []float64{0.25, 0.5, 0.75} {
 				su := secs[i].s + (secs[i+1].s-secs[i].s)*u
 				eu, wu := rb.misfit(sf, ts[i]+(ts[i+1]-ts[i])*u, su, a.end >= 0 || b.end >= 0)
-				if eu > e {
-					e, w = eu, wu
+				if eu > gapE[i] {
+					gapE[i], gapW[i] = eu, wu
 				}
 			}
+		})
+		for i := 0; i+1 < len(secs); i++ {
+			a, b := specs[i], specs[i+1]
+			sm := (secs[i].s + secs[i+1].s) / 2
+			e, w := gapE[i], gapW[i]
 			if e <= rb.tol {
 				continue
 			}
@@ -833,6 +973,7 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 				rb.tol, worst)
 		}
 		specs = append(specs, more...)
+		prefetch(more)
 		for _, sp := range more {
 			if _, err := eval(sp); err != nil {
 				return nil, nil, nil, err
@@ -1491,22 +1632,30 @@ func (rb *rollingBall) fitCut(k int, sec rbSection, mitre bool, tanAt func(q, n 
 	}
 	// Where the swept surface meets the cut, along the ball's arcs.
 	dir := endDir(k)
-	nPts := 9
-	if n > endDeg {
-		nPts = 17
-	}
+	nPts := cutPoints(n)
 	var ts []float64
 	var xs []geom.Vector
 	skipped := 0
-	for j := 1; j < nPts; j++ {
+	// Each point from a search of its own, at once (each), and taken in
+	// order.
+	xsecs := make([]rbSection, nPts)
+	xerrs := make([]error, nPts)
+	var failed atomic.Int32
+	rb.eachWhile(nPts-1, func(i int) bool {
+		j := i + 1
 		tj := float64(j) / float64(nPts)
 		g := func(x rbSection) float64 { return height(x.arc.PointAt(tj)) }
-		var xsec rbSection
 		if mitre {
-			_, xsec, err = rb.mitreRoot(k, g)
+			_, xsecs[j], xerrs[j] = rb.mitreRoot(k, g)
 		} else {
-			_, xsec, err = rb.planeRoot(g, sec.s, dir, at)
+			_, xsecs[j], xerrs[j] = rb.planeRoot(g, sec.s, dir, at)
 		}
+		// In order, the loop below gives up after this many fail.
+		return xerrs[j] == nil || failed.Add(1) <= maxSkippedCuts
+	})
+	for j := 1; j < nPts; j++ {
+		tj := float64(j) / float64(nPts)
+		xsec, err := xsecs[j], xerrs[j]
 		if err != nil {
 			// An oblique cut may meet the swept surface at a point near a
 			// side far along the chain: up to two such points are left
@@ -1623,6 +1772,25 @@ func fitThrough(c srf.BSplineCurve, w []float64, ways [2][]geom.Vector, ts []flo
 		}
 	}
 	return fit, us, true
+}
+
+// cutPoints is how many steps across fitCut takes its points at, for a
+// section whose last control point is n: more for one split into spans.
+func cutPoints(n int) int {
+	if n > endDeg {
+		return 17
+	}
+	return 9
+}
+
+// mitreCutPoints is cutPoints for the chain's end sections, raised and
+// split as fitCut has them (splitSection).
+func (rb *rollingBall) mitreCutPoints() int {
+	c := srf.BSplineCurve{Deg: endDeg, Knots: endSpanKnots(), Ctrl: make([]geom.Vector, endDeg+1), Weight: make([]float64, endDeg+1)}
+	for i := range c.Weight {
+		c.Weight[i] = 1
+	}
+	return cutPoints(len(rb.splitSection(c).Ctrl) - 1)
 }
 
 // maxSkippedCuts is how many of a fitted section's points fitCut may go

@@ -70,6 +70,24 @@ func (b *MenuBar) OpenSubMenu(i int, label string) {
 	}
 }
 
+// ChooseInSubMenu types the mnemonic r in the cascade labelled label of
+// menu i, once OpenSubMenu has opened it, which chooses the entry with
+// that mnemonic as the key does. It does nothing when the cascade is
+// not open.
+func (b *MenuBar) ChooseInSubMenu(i int, label string, r rune) {
+	if i < 0 || i >= len(b.menus) {
+		return
+	}
+	for _, e := range b.menus[i].menu.m.Entries() {
+		if e.SubMenu == nil || e.Label != label || !e.SubMenu.IsPosted() {
+			continue
+		}
+		b.p.app.Dispatcher().Dispatch(&event.Event{Type: event.KeyPressType, Window: e.SubMenu.Window().PlatformID,
+			KeySym: tkplatform.RuneToKeySym(unicode.ToLower(r))})
+		return
+	}
+}
+
 // Click moves the pointer to x, y in the drawing area, so that what is
 // under it is hovered, then presses and releases button there, with the
 // pointer's place on the screen set as the X server would, so that a

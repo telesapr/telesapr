@@ -3,6 +3,7 @@ package topo_test
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 
@@ -48,8 +49,8 @@ func pastFloor(t *testing.T, picks []string, d float64) float64 {
 // integral too (scripts/fillet-envelope-volume.go -chamfer -n 120
 // -dx 0.04 -floor 4; ours within 0.03% of it at 2.5, 3 and 3.5, where without
 // the floor's cut it is 0.11% and 2.3% more).
-// The chain of 3.25 is refused by name: its foot on the y- wall, 3.25
-// tall at x = 0, just touches the floor there.
+// The chain of 3.25, whose foot on the y- wall, 3.25 tall at x = 0,
+// just touches the floor there, is TestFilletEndLeaningWallsChamferTouchesFloor's.
 func TestFilletEndLeaningWallsChamferPastFloor(t *testing.T) {
 	if testing.Short() {
 		t.Skip("chamfers of the dish pocket's rim past the walls' feet, slow")
@@ -105,15 +106,34 @@ func TestFilletEndLeaningWallsChamferPastFloor(t *testing.T) {
 // The chain y+/x-/y- chamfered at 3.25: its foot on the upright y- wall,
 // 3.25 tall where the rim dips lowest, touches the floor there, the
 // wall pinched to a point, which neither cut nor left whole comes out
-// closed: refused by name.
+// closed. Refused by name before 2026-11-23; now made at the nearest
+// size within the chord tolerance at which the foot crosses the floor's
+// edge or stays clear of it (footAtEdgeSize), sound and within 0.15% of
+// the deeper pocket's chamfer at that size less what lies below the
+// floor, as TestFilletEndLeaningWallsChamferPastFloor's are.
 func TestFilletEndLeaningWallsChamferTouchesFloor(t *testing.T) {
 	if testing.Short() {
 		t.Skip("the dish pocket's rim chamfered at 3.25, slow; TestFilletTroughTouchesFloor is the quick one")
 	}
 	t.Parallel()
+	picks := []string{"y+", "x-", "y-"}
 	sh := curvedPocket(true, true, fine(0.01))
-	err := topo.FilletPicks(sh, curvedRim(true, true, "y+", "x-", "y-"), 3.25, 1<<30, true)
-	if err == nil || !strings.Contains(err.Error(), "only just reaches the edge of its face") {
-		t.Fatalf("got %v, want a refusal of a foot that only just reaches the floor", err)
+	before := surfaceVolume(t, sh)
+	made, err := topo.FilletPicksMade(sh, curvedRim(true, true, picks...), 3.25, 1<<30, true)
+	if err != nil {
+		if fe, ok := errors.AsType[*topo.FilletError](err); ok {
+			t.Fatalf("%v at %v", err, fe.At)
+		}
+		t.Fatal(err)
+	}
+	if made == 3.25 || math.Abs(made-3.25) > sh.Tol.ChordTolMm()*math.Sqrt2 {
+		t.Errorf("made at %g, want a size near 3.25 but not it", made)
+	}
+	sound(t, sh)
+	took := before - surfaceVolume(t, sh)
+	want := pastFloor(t, picks, made)
+	t.Logf("made at %.6f, took %.6f, the deeper pocket's above the floor %.6f, %+.5f", made, took, want, took/want-1)
+	if d := took/want - 1; d < -0.0015 || d > 0.0015 {
+		t.Errorf("took %.6f, the deeper pocket's chamfer above the floor %.6f", took, want)
 	}
 }

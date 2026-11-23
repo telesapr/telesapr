@@ -6,6 +6,8 @@ import (
 	"math"
 	"slices"
 	"sort"
+	"sync"
+	"sync/atomic"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -86,18 +88,24 @@ type rollingBall struct {
 	// fadeIn lets trace start the fillet where the crease fades in, at
 	// the chain's start, as well as end it where it fades out (finish).
 	fadeIn bool
-	// robust has the feet projected by srf.SSurface.Project, for a
-	// section whose plain steps didn't settle.
-	robust bool
-	// lastFoot is, by side, the place among the side's faces of the one
-	// footNear last found a foot within; -1 for none.
-	lastFoot [2]int
-	r        float64
-	flat     bool
-	sigma    float64 // 1 for a convex edge, whose ball lies inside the solid
-	pieces   []ChainPiece
-	verts    []int // the chain's vertices, verts[i] where piece i starts
-	side     [2][]int
+	// lastFoot is, by side, one more than the place among the side's
+	// faces of the one footNear last found a foot within; 0 for none.
+	// It only orders the search, so a chain's sections may be found on
+	// several goroutines at once (atOnce) whatever it holds.
+	lastFoot [2]atomic.Int32
+	// atOnce lets a chain find its sections on several goroutines at
+	// once (each) and keep what it found (endSection, mitreInterior):
+	// set while a mitred group's chains are blended (blendingAtOnce),
+	// traced and mitred, their shell's surfaces projected on
+	// independently (srf.SShell.ProjectIndependently), so that a
+	// section is the same whatever was projected before it.
+	atOnce bool
+	r      float64
+	flat   bool
+	sigma  float64 // 1 for a convex edge, whose ball lies inside the solid
+	pieces []ChainPiece
+	verts  []int // the chain's vertices, verts[i] where piece i starts
+	side   [2][]int
 	// poleOf is, for a face of side taken in round a pole near the chain
 	// that the edge doesn't reach (addPoleFaces), the pole.
 	poleOf map[int]geom.Vector
@@ -155,8 +163,24 @@ type rollingBall struct {
 	// mitreS the arc lengths of its mitre (mitreRoots).
 	mitreC [2]*rbCentres
 	mitreS [2][]float64
-	// uvLoops are faces' trims in their patches' (u, v).
+	// centresMu and rootsMu guard mitreC and mitreS, each end's worked
+	// out once by whichever goroutine asks first.
+	centresMu, rootsMu [2]sync.Mutex
+	// mitreIn are the arc lengths between each end's mitre's ends
+	// (mitreInterior), under interiorMu.
+	mitreIn    [2]*rbMitreInterior
+	interiorMu [2]sync.Mutex
+	// endKept is each end's last section as endSection last found it,
+	// under endMu, where it keeps it (keepsEndSection).
+	endKept [2]*rbEndKept
+	endMu   [2]sync.Mutex
+	// kept are the chain's sections found while it is blended, nil
+	// when they are not kept (blendingAtOnce).
+	kept *rbKept
+	// uvLoops are faces' trims in their patches' (u, v), filled on
+	// first use under uvMu.
 	uvLoops map[int][][]geom.Vector
+	uvMu    sync.Mutex
 	// tangentFaces are the flat faces an end that runs off past a curved
 	// next face adds there, tangent to it (rollingrunoff_tangent.go).
 	tangentFaces []tangentFace
@@ -417,7 +441,7 @@ func (t *Topology) newChain(e int, r float64, flat bool) (*rollingBall, error) {
 	if closed {
 		pieces, verts = t.closeAtSquareSeam(pieces, verts)
 	}
-	rb := &rollingBall{t: t, r: r, flat: flat, pieces: pieces, verts: verts, closed: closed, lastFoot: [2]int{-1, -1}}
+	rb := &rollingBall{t: t, r: r, flat: flat, pieces: pieces, verts: verts, closed: closed}
 	// Each piece's faces, side by side with the first's.
 	fs := t.EdgeFaces(pieces[0].Edge)
 	first := fs
@@ -673,6 +697,12 @@ func boxDistance(s *srf.SSurface, x geom.Vector) float64 {
 // only the end's own face is: the ball there runs on along its own face
 // carried on past the crease.
 func (rb *rollingBall) footNear(k int, x geom.Vector, nr rbNear) rbFoot {
+	return rb.footBy(k, x, nr, false)
+}
+
+// footBy is footNear, the feet projected by srf.SSurface.Project where
+// robust, for a section whose plain steps didn't settle.
+func (rb *rollingBall) footBy(k int, x geom.Vector, nr rbNear, robust bool) rbFoot {
 	ban, only := -1, -1
 	if nr.end >= 0 && rb.ends[nr.end] != nil && rb.ends[nr.end].ban[k] >= 0 {
 		ban = rb.ends[nr.end].ban[k]
@@ -694,7 +724,7 @@ func (rb *rollingBall) footNear(k int, x geom.Vector, nr rbNear) rbFoot {
 	side := rb.side[k]
 	tried := make([]rbTried, len(side))
 	order := make([]int, 0, len(side))
-	if l := rb.lastFoot[k]; l >= 0 && l < len(side) {
+	if l := int(rb.lastFoot[k].Load()) - 1; l >= 0 && l < len(side) {
 		order = append(order, l)
 	}
 	for i := range side {
@@ -714,7 +744,7 @@ func (rb *rollingBall) footNear(k int, x geom.Vector, nr rbNear) rbFoot {
 		}
 		var u, v float64
 		var p geom.Vector
-		if rb.robust {
+		if robust {
 			pr := s.Project(x, ext)
 			u, v, p = pr.U, pr.V, pr.P
 		} else {
@@ -729,7 +759,7 @@ func (rb *rollingBall) footNear(k int, x geom.Vector, nr rbNear) rbFoot {
 		}
 	}
 	if nearest >= 0 {
-		rb.lastFoot[k] = nearest
+		rb.lastFoot[k].Store(int32(nearest + 1))
 	}
 	// Chosen as when every face is projected on, in their order: a face
 	// left out could not have been.
@@ -838,24 +868,39 @@ func (rb *rollingBall) into(k, i int, n geom.Vector) geom.Vector {
 // onFaceUV reports whether (u, v) of face f's patch lies inside the
 // face's trims, their loops in (u, v) found once.
 func (rb *rollingBall) onFaceUV(f int, u, v float64) bool {
-	if rb.uvLoops == nil {
-		rb.uvLoops = map[int][][]geom.Vector{}
-	}
-	loops, ok := rb.uvLoops[f]
-	if !ok {
-		s := rb.t.Surface(f)
-		for _, l := range rb.t.Faces[f].Loops {
-			loops = append(loops, rb.t.loopUV(s, rb.t.Loops[l].CoEdges))
-		}
-		rb.uvLoops[f] = loops
-	}
 	in := false
-	for _, uv := range loops {
+	for _, uv := range rb.faceUV(f) {
 		if len(uv) > 2 && pointInPolygon(geom.Vector{X: u, Y: v}, uv) {
 			in = !in
 		}
 	}
 	return in
+}
+
+// faceUV is face f's trims in its patch's (u, v), found once. Two
+// goroutines finding them at once find the same (atOnce): the first
+// kept is the one both use.
+func (rb *rollingBall) faceUV(f int) [][]geom.Vector {
+	rb.uvMu.Lock()
+	loops, ok := rb.uvLoops[f]
+	rb.uvMu.Unlock()
+	if ok {
+		return loops
+	}
+	s := rb.t.Surface(f)
+	for _, l := range rb.t.Faces[f].Loops {
+		loops = append(loops, rb.t.loopUV(s, rb.t.Loops[l].CoEdges))
+	}
+	rb.uvMu.Lock()
+	defer rb.uvMu.Unlock()
+	if kept, ok := rb.uvLoops[f]; ok {
+		return kept
+	}
+	if rb.uvLoops == nil {
+		rb.uvLoops = map[int][][]geom.Vector{}
+	}
+	rb.uvLoops[f] = loops
+	return loops
 }
 
 // sameSurface reports whether two patches are the same surface: of one
@@ -892,11 +937,16 @@ func (t *Topology) onFace(f int, p geom.Vector) bool {
 // onEdge is the point of both sides' faces in the plane through x
 // square to d, near x, with their normals there.
 func (rb *rollingBall) onEdge(x, d geom.Vector, nr rbNear) (geom.Vector, rbFoot, rbFoot, bool) {
+	return rb.onEdgeBy(x, d, nr, false)
+}
+
+// onEdgeBy is onEdge, its feet found robustly where robust (footBy).
+func (rb *rollingBall) onEdgeBy(x, d geom.Vector, nr rbNear, robust bool) (geom.Vector, rbFoot, rbFoot, bool) {
 	rb.t.shell.Paced()
 	p := x
 	var a, b rbFoot
 	for range 60 {
-		a, b = rb.footNear(0, p, nr), rb.footNear(1, p, nr)
+		a, b = rb.footBy(0, p, nr, robust), rb.footBy(1, p, nr, robust)
 		if math.Abs(a.n.Dot(b.n.Cross(d))) < 1e-9 {
 			return p, a, b, false
 		}
@@ -1190,12 +1240,29 @@ func (rb *rollingBall) turnAt(i int) geom.Vector {
 // square to the edge there, touching both faces.
 func (rb *rollingBall) ballSection(s float64) (rbSection, error) {
 	rb.t.shell.Paced()
-	if rb.flat {
-		return rb.chamferSection(s)
+	if sec, ok := rb.keptSection(s); ok {
+		return sec, nil
 	}
+	var sec rbSection
+	var err error
+	if rb.flat {
+		sec, err = rb.chamferSection(s)
+	} else {
+		sec, err = rb.ballSectionBy(s, false)
+	}
+	if err == nil {
+		rb.keepSection(s, sec)
+	}
+	return sec, err
+}
+
+// ballSectionBy is ballSection, its feet found robustly where robust
+// (footBy): an argument, not a field of the chain, so that its sections
+// may be found at once.
+func (rb *rollingBall) ballSectionBy(s float64, robust bool) (rbSection, error) {
 	x, d := rb.along(s)
 	near := rb.nearEnd(s)
-	p, a, b, ok := rb.onEdge(x, d, near)
+	p, a, b, ok := rb.onEdgeBy(x, d, near, robust)
 	sec := rbSection{s: s}
 	if !ok {
 		return sec, filletErr(x, "the faces meet tangent here: a fillet rounds an edge where they meet at an angle")
@@ -1204,7 +1271,7 @@ func (rb *rollingBall) ballSection(s float64) (rbSection, error) {
 	c := meet3(a.n, a.n.Dot(p)-sr, b.n, b.n.Dot(p)-sr, d, d.Dot(x))
 	converged := false
 	for range 200 {
-		a, b = rb.footNear(0, c, near), rb.footNear(1, c, near)
+		a, b = rb.footBy(0, c, near, robust), rb.footBy(1, c, near, robust)
 		if math.Abs(a.n.Dot(b.n.Cross(d))) < 1e-9 {
 			break
 		}
@@ -1216,7 +1283,7 @@ func (rb *rollingBall) ballSection(s float64) (rbSection, error) {
 			break
 		}
 	}
-	a, b = rb.footNear(0, c, near), rb.footNear(1, c, near)
+	a, b = rb.footBy(0, c, near, robust), rb.footBy(1, c, near, robust)
 	for k, f := range []rbFoot{a, b} {
 		dist := c.Minus(f.p)
 		eps := 1e-6 * math.Max(1, rb.r)
@@ -1227,12 +1294,14 @@ func (rb *rollingBall) ballSection(s float64) (rbSection, error) {
 			eps += 2 * rb.r * (1 - seamCos)
 		}
 		if !converged || math.Abs(dist.Magnitude()-rb.r) > eps || math.Abs(dist.Dot(f.n)+sr) > eps {
-			if !rb.robust {
+			if !robust {
 				// The steps may have stopped short of a foot on a twisted
-				// patch: the section again, the feet projected robustly.
-				rb.robust = true
-				sec, err := rb.section(s)
-				rb.robust = false
+				// patch: the section again, the feet projected robustly,
+				// put on the poles it passes as section puts it.
+				sec, err := rb.ballSectionBy(s, true)
+				if err == nil {
+					rb.snapPoles(&sec)
+				}
 				return sec, err
 			}
 			return sec, filletErr(f.p, "the ball the fillet rolls doesn't touch the face on side %d here: "+
@@ -1354,7 +1423,10 @@ func (rb *rollingBall) derivative(s float64) ([]geom.Vector4, error) {
 }
 
 // crossings are the arc lengths where the ball's point on side k moves
-// from one patch to the next, at a seam, found from a scan.
+// from one patch to the next, at a seam, found from a scan. Between each
+// two samples on different faces the seams are found by halving, from
+// one to the next, on their own (each): what they find is then taken in
+// order.
 func (rb *rollingBall) crossings(scan []rbSection) ([]float64, [][2]int, []int, error) {
 	var at []float64
 	var pairs [][2]int
@@ -1364,57 +1436,91 @@ func (rb *rollingBall) crossings(scan []rbSection) ([]float64, [][2]int, []int, 
 	if !rb.closed {
 		pairsN = n - 1
 	}
+	// The samples on different faces, by side and in order.
+	type gap struct{ k, i int }
+	var gaps []gap
 	for k := range 2 {
 		for i := range pairsN {
-			a, b := scan[i], scan[(i+1)%n]
-			fa, fb := a.foot[k].f, b.foot[k].f
-			end := b.s
-			if end < a.s {
-				end += rb.length
+			if scan[i].foot[k].f != scan[(i+1)%n].foot[k].f {
+				gaps = append(gaps, gap{k, i})
 			}
-			// A face may lie between the two samples' (a patch cut narrow
-			// round a hole): from each crossing found, on to the next,
-			// until the face after it is the second sample's.
-			from := a.s
-			for crossed := 0; fa != fb; crossed++ {
-				if crossed == maxCrossingsBetween {
-					return nil, nil, nil, filletErr(a.c, "the ball crosses too many faces' seams here")
-				}
-				lo, hi, fh := from, end, fb
-				for it := 0; it < 60 && hi-lo > 1e-10*rb.length; it++ {
-					m := (lo + hi) / 2
-					sec, err := rb.section(m)
-					if err != nil {
-						return nil, nil, nil, err
-					}
-					if f := sec.foot[k].f; f == fa {
-						lo = m
-					} else {
-						hi, fh = m, f
-					}
-				}
-				s := (lo + hi) / 2
-				if rb.closed {
-					s = math.Mod(s, rb.length)
-				}
-				// A face the ball's point is on for no length is a
-				// vertex it passes: the crossing before is this one.
-				if last := len(at) - 1; last >= 0 && sides[last] == k && math.Abs(at[last]-s) < geom.LengthEps {
-					if pairs[last][0] == fh {
-						at, pairs, sides = at[:last], pairs[:last], sides[:last]
-					} else {
-						pairs[last][1] = fh
-					}
+		}
+	}
+	found := make([][]rbSeamStep, len(gaps))
+	errs := make([]error, len(gaps))
+	rb.eachWhile(len(gaps), func(g int) bool {
+		found[g], errs[g] = rb.seamSteps(scan[gaps[g].i], scan[(gaps[g].i+1)%n], gaps[g].k)
+		return errs[g] == nil
+	})
+	for g, gp := range gaps {
+		if errs[g] != nil {
+			return nil, nil, nil, errs[g]
+		}
+		k := gp.k
+		for _, st := range found[g] {
+			s, fa, fh := st.s, st.fa, st.fh
+			// A face the ball's point is on for no length is a
+			// vertex it passes: the crossing before is this one.
+			if last := len(at) - 1; last >= 0 && sides[last] == k && math.Abs(at[last]-s) < geom.LengthEps {
+				if pairs[last][0] == fh {
+					at, pairs, sides = at[:last], pairs[:last], sides[:last]
 				} else {
-					at = append(at, s)
-					pairs = append(pairs, [2]int{fa, fh})
-					sides = append(sides, k)
+					pairs[last][1] = fh
 				}
-				fa, from = fh, hi
+			} else {
+				at = append(at, s)
+				pairs = append(pairs, [2]int{fa, fh})
+				sides = append(sides, k)
 			}
 		}
 	}
 	return at, pairs, sides, nil
+}
+
+// rbSeamStep is a seam side k's foot crosses between two samples: at arc
+// length s, from face fa to face fh.
+type rbSeamStep struct {
+	s      float64
+	fa, fh int
+}
+
+// seamSteps are the seams side k's foot crosses between samples a and b
+// of the scan, in order, each found by halving on from the one before:
+// a face may lie between the two samples' (a patch cut narrow round a
+// hole).
+func (rb *rollingBall) seamSteps(a, b rbSection, k int) ([]rbSeamStep, error) {
+	var out []rbSeamStep
+	fa, fb := a.foot[k].f, b.foot[k].f
+	end := b.s
+	if end < a.s {
+		end += rb.length
+	}
+	from := a.s
+	for crossed := 0; fa != fb; crossed++ {
+		if crossed == maxCrossingsBetween {
+			return nil, filletErr(a.c, "the ball crosses too many faces' seams here")
+		}
+		lo, hi, fh := from, end, fb
+		for it := 0; it < 60 && hi-lo > 1e-10*rb.length; it++ {
+			m := (lo + hi) / 2
+			sec, err := rb.section(m)
+			if err != nil {
+				return nil, err
+			}
+			if f := sec.foot[k].f; f == fa {
+				lo = m
+			} else {
+				hi, fh = m, f
+			}
+		}
+		s := (lo + hi) / 2
+		if rb.closed {
+			s = math.Mod(s, rb.length)
+		}
+		out = append(out, rbSeamStep{s: s, fa: fa, fh: fh})
+		fa, from = fh, hi
+	}
+	return out, nil
 }
 
 // maxCrossingsBetween is how many faces' seams the ball may cross between
@@ -1946,6 +2052,9 @@ func putBlends(sh *srf.SShell, bls []*rbBlend, origin uint32) error {
 	fa := NewFaceAdder(sh)
 	for i, bl := range bls {
 		color := t.Surface(bl.rb.side[0][0]).Color
+		// The blend's patches go in together (addAll), each turned to
+		// face out at once.
+		var faces []faceToAdd
 		for r, row := range bl.all {
 			for b := range row {
 				p := row[b]
@@ -1956,10 +2065,11 @@ func putBlends(sh *srf.SShell, bls []*rbBlend, origin uint32) error {
 				p.Color = color
 				p.Origin = origin + uint32(i)
 				p.Sheet = origin + uint32(i)
-				if _, err := fa.Add(p, [][]srf.SBezier{loop}); err != nil {
-					return filletErr(loop[0].Start(), "the fillet's face can't be put in: %v", err)
-				}
+				faces = append(faces, faceToAdd{s: p, loops: [][]srf.SBezier{loop}})
 			}
+		}
+		if _, at, err := fa.addAll(faces); err != nil {
+			return filletErr(faces[at].loops[0][0].Start(), "the fillet's face can't be put in: %v", err)
 		}
 		if err := bl.rb.putTangentFaces(fa); err != nil {
 			return err
@@ -2304,9 +2414,6 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 			}
 			endCuts = append(endCuts, cut)
 		}
-	}
-	if bothEndsRunOffBoth(endCuts) {
-		return nil, filletErr(at, "the fillet runs off both its faces at both its ends: make it smaller")
 	}
 	// Ends that run off: where the fillet takes side j's face whole, only
 	// where the end sections cross the next faces; else where the

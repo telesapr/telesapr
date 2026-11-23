@@ -264,6 +264,22 @@ func FilletPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 // side, filletPastSides), which the caller should say.
 func FilletPicksMade(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) (float64, error) {
 	before := sh.Clone()
+	made, err := filletPicksChecked(sh, picks, r, origin, flat)
+	if footAtEdgeRefusal(err) {
+		// A foot that only just reaches its face's edge with the next
+		// face: made at a size near r that crosses it or stays short.
+		if out, made, ok := footAtEdgeSize(&before, picks, r, origin, flat); ok {
+			*sh = out
+			return made, nil
+		}
+	}
+	return made, err
+}
+
+// filletPicksChecked is FilletPicksMade at r alone: its result checked
+// closed where sh was.
+func filletPicksChecked(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, flat bool) (float64, error) {
+	before := sh.Clone()
 	made, err := filletPicksAny(sh, picks, r, origin, flat)
 	if err != nil {
 		return r, err

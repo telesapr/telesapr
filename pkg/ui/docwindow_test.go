@@ -114,12 +114,11 @@ const docWindowGW, docWindowTW, docWindowH = 800, 440, 600
 // directory.
 var docWindowRepo = mustAbs(filepath.Join("..", ".."))
 
-func TestDocWindowShots(t *testing.T) {
-	dir := os.Getenv("TELESAPR_DOC_WINDOW_SHOTS")
-	if dir == "" || os.Getenv("DISPLAY") == "" {
-		t.Skip("set TELESAPR_DOC_WINDOW_SHOTS and DISPLAY (scripts/regen-doc-window-images.sh)")
-	}
-	dir = mustAbs(dir)
+// newDocWindow opens the window the guide's pictures and videos are of:
+// the two windows side by side, software rendering, the model of
+// interface.md's pictures in the nearest isometric view. It changes
+// the working directory to a temporary one.
+func newDocWindow(t *testing.T) (*docWindowPlatform, *tkgui.Platform) {
 	t.Chdir(t.TempDir())
 	p, err := tkgui.New("")
 	if err != nil {
@@ -140,15 +139,22 @@ func TestDocWindowShots(t *testing.T) {
 	app.BackgroundShells = false
 	app.RendererOverride = "software"
 	app.Init()
-	// The model of interface.md's pictures: examples/scripts/fillet, in
-	// the nearest isometric view.
 	app.Console().RunFile(filepath.Join(docWindowRepo, "examples", "scripts", "fillet", "fillet.go"))
 	for _, c := range []string{"View > Nearest Isometric View", "View > Zoom To Fit"} {
 		if err := app.RunCommand(c); err != nil {
 			t.Fatal(err)
 		}
 	}
+	return s, p
+}
 
+func TestDocWindowShots(t *testing.T) {
+	dir := os.Getenv("TELESAPR_DOC_WINDOW_SHOTS")
+	if dir == "" || os.Getenv("DISPLAY") == "" {
+		t.Skip("set TELESAPR_DOC_WINDOW_SHOTS and DISPLAY (scripts/regen-doc-window-images.sh)")
+	}
+	dir = mustAbs(dir)
+	s, p := newDocWindow(t)
 	i := -1 // the shot being waited for; -1 is the model drawn
 	var prev, clean []byte
 	same, stalled := 0, 0

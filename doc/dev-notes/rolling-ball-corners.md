@@ -1,6 +1,7 @@
 # Rolling-ball corners: pivots and mitres at an inside corner
 
-Refreshed 2026-11-19 at branches `pocket-curved-crease`, `fillet-end-leaning-wall`, `pocket-crease-lean-back`, `rim-fine-tol-corner`, `apex-seam-chamfer`, `pivot-shared-seam`, `step-seam-corners`, `seam-near-point` and `dish-chamfer-wall-foot`; 2026-11-20 at `step-chamfer-one-face` and `step-dish-rims`.
+Refreshed 2026-11-19 at branches `pocket-curved-crease`, `fillet-end-leaning-wall`, `pocket-crease-lean-back`, `rim-fine-tol-corner`, `apex-seam-chamfer`, `pivot-shared-seam`, `step-seam-corners`, `seam-near-point` and `dish-chamfer-wall-foot`; 2026-11-20 at `step-chamfer-one-face` and `step-dish-rims`; 2026-11-23 at `fillet-foot-at-edge`.
+Refreshed 2026-11-23 at `wrapped-cutback-speed`: a chain's sections at once.
 
 Where two rolling-ball chains end at one vertex with a crease between their walls that the ball
 goes round (a pocket's rim in a curved face, the foot of a band raised on a tube at the band's
@@ -257,8 +258,8 @@ were, and then the chains are blended at once (`blendChainsAtOnce`,
 `pkg/topo/rollingchains_atonce.go`). What a chain's blend reads of another is fixed by then: the
 mitres, the radii, and the centres its ball runs through near its ends (`centresNear`, a cache
 filled on first use, so it is filled for every mitred end before any chain reads another's; a
-chain's `section` changes the chain, `robust` and `lastFoot`, and is never called on another chain
-while they blend). A chain that fits its mitre uses it in its blend (`blendOpen`'s case for an
+chain's `section` is never called on another chain while they blend; since 2026-11-23 it changes
+nothing of the chain, below). A chain that fits its mitre uses it in its blend (`blendOpen`'s case for an
 end's own `shared`) rather than fitting it again.
 
 The result is the order's to the bit, and so is the error: the chains up to the first whose mitre
@@ -288,6 +289,58 @@ declared. The paces that made the skin run back come from the chain's ends and a
 every blend of it, and an eased ramp is sound wherever an even one is. Only a chain with no
 mitre is eased, so no chain of a mitred group carries it; no test reaches a later blend of an
 eased chain.
+
+## A chain's sections at once (2026-11-23)
+
+After the chains of a group were blended side by side, the critical path of a group was the first
+chain fitting both its mitres in turn, then the slowest blend, and each of those a few searches
+one after another, each of a hundred or more sections one after another: a mitre's feet
+(`mitreFoot`), its middle and its sixteen arc lengths (`mitreRoot`, `mitreRoots`), the points a
+fitted end passes through (`fitCut`), the blend's scan for seams and the seams between its
+samples (`crossings`), its sections and its misfits round by round. While a group is blended its
+shell's surfaces are projected on independently (`ProjectIndependently`) and the chains are
+traced and mitred, so a section depends only on its arc length. Within `blendingAtOnce`
+(`pkg/topo/rollingsection_kept.go`) a chain's searches that don't depend on each other run at
+once (`rollingBall.each`, `eachWhile`, through `pkg/internal/par`), every result taken in the
+order the loop took it; in order, outside, a loop that returned early still stops there
+(`eachWhile`), since what it would not have projected moves where the next projection starts.
+For that a section changes nothing of its chain: `robust` is an argument (`ballSectionBy`), not a
+field set round the second try; `lastFoot`, which only orders `footNear`'s search, is atomic;
+`uvLoops`, `mitreC` and `mitreS` are filled under locks.
+
+What is found again is kept: every section found while blending, by its arc length's bits
+(`keptSection`; about half the sections were found before, the searches of one end starting
+from one bracket and both feet scanning one grid), cloned when handed out; a mitre's last
+section by its end's plane (`endSection`, `keepsEndSection`: each blend of the chain found it
+again, and the fit before them), and the arc lengths between its ends (`mitreInterior`), found
+beside its feet. A pole snap (`poleSnaps`) is put on after the kept section; while a chain has
+any, its end sections are found afresh. What is found ahead only fills those: the sections of a
+golden-section step's two points and of a mitre foot's scan (`warmSections`), the points of a
+mitre's fit to the cut (`warmMitreCut`) beside its end section, the end sections each chain
+copies from its mate beside the fits. A blend's patches are put in together (`FaceAdder.addAll`:
+prepared in order, the open edges each takes or leaves being the next's, each turned to face out
+at once, since that projects only on the patch's own copy of its surface, and put in in order);
+the curves they take are found by a filed place (`FaceAdder.findCurve`) and a face's surface by
+one too (`Topology.surface`), where an edited shell's are out of their handles' order and
+`FindSurface` looked through them all, a tenth of the barrel's chamfer.
+
+The same to the bit: every result of the fillet and chamfer tests of `pkg/topo`, `pkg/sketch`
+and `pkg/script/api` hashed before and after (surfaces with their closest-point caches, trims and
+curves), the same set but for the three tests whose results differ from run to run before as
+after; the barrel's saved file the same to the byte, with `TELESAPR_PARALLEL=off` too, and the
+fixtures' hashes (`scripts/perf-fixture-hashes.sh`). `BenchmarkFilletWrappedArch` 1.50 s to
+0.74 s on 32 threads, 1.90 s to 1.23 s on 4, 4.99 s to 4.02 s on one (28 100 sections found
+where 59 100 were); `BenchmarkFilletWrappedArchAdd` 1.45 s to 0.70 s; the barrel with its
+mouldings' tops chamfered regenerates in 4.8 s, 5.9 s before.
+
+Left on one core: cutting the faces back (`cutBack`, 0.06 s of the arch's 0.75 s, a second of
+the barrel's): its sections and the heights of the next faces where a foot dips (`dipsOn`,
+`rbRunOff.h`) are projected on the shell's surfaces with each projection starting where the one
+before ended (`SSurface.Cached`), so found at once or independently they would differ in their
+last bits; and `FaceAdder`'s preparing and putting in, a few milliseconds. A mitre's searches end
+in halvings, one section after another. What is left of a group's blend (the centres near the
+mitres, 0.1 s, the fits, 0.1 s, the blends, 0.06 s on the arch) runs on all cores, the centres
+as many sections as there are cores to find them.
 
 ## Chains ending against a leaning wall (2026-11-19)
 
@@ -440,9 +493,20 @@ between a and b.
 
 A foot that only just reaches the edge, the face pinched to a point (no sample past it, the
 highest within a tenth of the chord tolerance under it, on the edge), or runs past it by less
-than that, is refused by name, "only just reaches the edge of its face": left whole the mesh is
-open, cut it is a speck. The chain y+/x-/y- at 3.25 is one: its foot on the upright y- wall, 3.25
-tall at x = 0, touches the floor there within the fit. Both a dip and a touch need the foot to
+than that, is refused there, "only just reaches the edge of its face" (`footAtEdgeMsg`): left
+whole the mesh is open, cut it is a speck. The chain y+/x-/y- at 3.25 is one: its foot on the
+upright y- wall, 3.25 tall at x = 0, touches the floor there within the fit. Since 2026-11-23
+`FilletPicksMade` takes that refusal and makes the fillet again from the solid before at the
+sizes nearest the one asked for, a quarter, a half, three quarters and the whole of the chord
+tolerance's worth either side (`footAtEdgeSize`: the size moved by no more than moves the
+surface by the chord tolerance, (sqrt 2 - 1)|r - c| for a fillet, |r - c|/sqrt 2 for a chamfer,
+as `footClearSize` measures it), and keeps the first that comes out closed; the group says the
+size made (`Group.Note`). Either way is taken: past the edge by enough the dip is cut, short of
+it by enough the face is left whole. The chain at 3.25 is made at 3.2465, short of the floor,
+within 0.02% of `pastFloor` at that size; the trough's fillet at 2 at 2.006, past it, within 5e-5
+of the integral; its chamfer at 1.9965, short, 0.13% under it as its neighbours. The cost is a
+fillet per size tried: the chain's first try is made, 30 s at 0.01% with `pastFloor`'s chamfer.
+A pick of a size of its own is not moved, and stays refused. Both a dip and a touch need the foot to
 stand clear of the next face by more than that somewhere before and somewhere after: a contact
 that starts on a face it meets at a corner the chain turns lies along it within the fit, 1e-6
 past it, and was first taken for a dip that grazes it (`TestFilletWrappedArch`).
@@ -453,8 +517,8 @@ meets many faces; looked at only for an edge some point of the contact comes wit
 is 1.49 s to 1.51 s on 32 cores (2.35 s looking at every point). The dish's chamfers cost what
 they did when refused, about 1.7 s each at 0.01%.
 
-Checked: the dish's y+ chamfer 2.25 to 3.5 alone and in the y+/x-/y- chain, 11 of 12 sound
-(`TestFilletEndLeaningWallsChamferPastFloor`), each within 0.15% (0.02% to 0.11% under) of the
+Checked: the dish's y+ chamfer 2.25 to 3.5 alone and in the y+/x-/y- chain, 12 of 12 sound, the chain at 3.25 at
+3.2465 (`TestFilletEndLeaningWallsChamferPastFloor`, `TestFilletEndLeaningWallsChamferTouchesFloor`), each within 0.15% (0.02% to 0.11% under) of the
 same chamfer of the pocket with its floor at 2.5, which no foot reaches, less what that takes
 below z = 4 (`pastFloor`, `surfaceVolumeAbove`: the meshes' triangles carried out to their
 surfaces, those cut by the plane taken as chords). The edge alone within 0.03% of the chamfer's
@@ -465,7 +529,7 @@ uncut 54.242049 at 2.5 and 96.527108 at 3.5, 2.3% more). The dish's fillets neve
 (`troughPocket`, `fillet_dip_trough_test.go`: a block whose top is a concave cylinder of radius 20,
 its pocket's walls 2 tall where the top is lowest), whose fillet is a torus cut by the floor's
 plane and the end walls' and integrates in closed form round the axis: fillets of 2.001 to 3
-within 1e-4 of it (2.001 cuts a dip 0.001 deep), at 2 refused by name; chamfers 0.08% to 0.12%
+within 1e-4 of it (2.001 cuts a dip 0.001 deep), at 2 made at 2.006 (`footAtEdgeSize`); chamfers 0.08% to 0.12%
 under it before any reaches the floor (0.5 to 1.9, the same at 0.01% and 0.002%: the integral cuts
 the chamfer's triangles square to the edge by the end walls, where the chamfer's end sections are
 its own) and on past it as smoothly, 0.13% to 0.16% under from 2.001 to 3. At 3.5 the trough's foot

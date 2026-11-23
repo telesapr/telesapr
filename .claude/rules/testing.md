@@ -68,6 +68,7 @@ paths:
 | `TELESAPR_DOC_SHOTS=dir`, `TELESAPR_DOC_VIDEOS=dir` | `TestDocScenarios` (`pkg/ui`) writes the guide's pictures and videos of `doc/guide/scenarios` there; set by `scripts/regen-doc-images.sh` and `scripts/regen-guide-videos.sh`. |
 | `TELESAPR_DOC_SCENARIO=name` | `TestDocScenario` prints what one scenario shows. |
 | `TELESAPR_DOC_WINDOW_SHOTS=dir` | `TestDocWindowShots` (`pkg/ui`) writes the guide's pictures of the real window's menus and dialogs there; needs `DISPLAY`, `scripts/regen-doc-window-images.sh` gives it an Xvfb. Skipped without it. |
+| `TELESAPR_DOC_WINDOW_VIDEOS=dir` | `TestDocWindowVideos` (`pkg/ui`) records the guide's videos of the real window there, through ffmpeg; needs `DISPLAY`, `scripts/regen-doc-window-images.sh videos` gives it an Xvfb. Skipped without it. |
 | `TELESAPR_UI_SCRIPT=name` | `TestUIScript` prints what the interface shows for one script of `testdata/ui/scripts`. |
 | `TELESAPR_CACHE_DIR=dir` | Where tessellations of STEP files are kept; tests keep none unless it is set. |
 | `TELESAPR_SCRIPT_OUT=dir` | `TestScriptRoundTrip` (`pkg/script`) writes there the script of each fixture that fails to come back. |

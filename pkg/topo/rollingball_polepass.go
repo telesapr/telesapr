@@ -22,12 +22,17 @@ func (rb *rollingBall) section(s float64) (rbSection, error) {
 	if err != nil {
 		return sec, err
 	}
+	rb.snapPoles(&sec)
+	return sec, nil
+}
+
+// snapPoles puts sec's feet on the poles nearPoles found it passes.
+func (rb *rollingBall) snapPoles(sec *rbSection) {
 	for _, sn := range rb.poleSnaps {
-		if sn.s == s {
-			snapFoot(&sec, sn.k, rb.t.Vertices[sn.v].P)
+		if sn.s == sec.s {
+			snapFoot(sec, sn.k, rb.t.Vertices[sn.v].P)
 		}
 	}
-	return sec, nil
 }
 
 // snapFoot moves side k's foot of sec to p, and the section's curve

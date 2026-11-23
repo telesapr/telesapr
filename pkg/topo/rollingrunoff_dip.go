@@ -151,8 +151,7 @@ func (rb *rollingBall) dipsOn(k int, sideRow []srf.SSurface, isChain map[int]boo
 				}
 				if i := highest(hs); hs[i] <= 0 && hs[i] > -graze && i > 0 && i < len(pts)-1 && standsClear(i, i+1) &&
 					distanceToPolyline(pts[i].p, t.Edges[x].Points) <= tol {
-					return nil, filletErr(pts[i].p, "the %s's foot only just reaches the edge of its face here, where the next face "+
-						"begins, too near to cut it there: make it a little smaller or larger", rb.what())
+					return nil, filletErr(pts[i].p, footAtEdgeMsg, rb.what())
 				}
 				// Each run of points past the face, short of both ends.
 				for i := 1; i < len(pts); i++ {
@@ -191,9 +190,9 @@ func (rb *rollingBall) dipsOn(k int, sideRow []srf.SSurface, isChain map[int]boo
 						// Within a tenth of the chord tolerance of the edge,
 						// as where it only just reaches it from above: the
 						// face is pinched to a point there, and neither cut
-						// nor left whole comes out closed.
-						return nil, filletErr(a, "the %s's foot only just reaches the edge of its face here, where the next face "+
-							"begins, too near to cut it there: make it a little smaller or larger", rb.what())
+						// nor left whole comes out closed; FilletPicksMade
+						// makes it at a size near (footAtEdgeSize).
+						return nil, filletErr(a, footAtEdgeMsg, rb.what())
 					}
 					out = append(out, &rbDip{ro: ro, x: x, a: a, b: bp, first: ba, after: bb + 1})
 				}

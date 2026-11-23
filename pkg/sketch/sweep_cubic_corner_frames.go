@@ -1,6 +1,7 @@
 package sketch
 
 import (
+	"iter"
 	"math"
 
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -48,6 +49,38 @@ import (
 //     whole turns, so that the last run ends on the section the first
 //     starts from. A plane path's frames come back unturned, and its
 //     runs stay exact.
+
+// turnsIntoItself reports whether the profile, turned about the line
+// through at along t by any angle, is itself: every loop a circle about
+// at in the plane square to t, as a round profile centred on the path
+// is. Twisting such a profile along the path sweeps the same solid as
+// not twisting it, so the runs are made untwisted (fitRuns): exact
+// along lines and arcs, with no stretches held still beside the corners
+// and no twisted fitted skin to cross another run's tube where the path
+// comes back.
+func turnsIntoItself(sbls *srf.SBezierLoopSetSet, at, t geom.Vector) bool {
+	t = t.WithMagnitude(1)
+	found := false
+	for si := range sbls.Sets {
+		for _, l := range sbls.Sets[si].Loops() {
+			r := -1.0
+			for ci := range l.Curves {
+				for j := range 9 {
+					q := l.Curves[ci].PointAt(float64(j) / 8).Minus(at)
+					d := q.Magnitude()
+					if r < 0 {
+						r = d
+					}
+					if math.Abs(q.Dot(t)) > 1e-9*(1+d) || math.Abs(d-r) > 1e-9*(1+r) {
+						return false
+					}
+				}
+			}
+			found = true
+		}
+	}
+	return found
+}
 
 // heldAgree reports whether frames held to up, turned by a corner from
 // the tangent d1 to d2, are the frames held to up after it; true for no
@@ -142,8 +175,9 @@ func (sr *sweepRuns) holdLength(angle float64) float64 {
 // leaves the most of the path to twist on, but where the cubic bends
 // beside the corner the runs' tubes overlap further than a line's would,
 // and their twisted skins fail to join; held twice as far, more of them
-// join (TestSweepSharpCornerBesideCubicFramesSweep).
-var holdScales = []float64{1, 2}
+// join, and a diamond at a corner of 30° beside a cubic bent a quarter
+// turn on only three times as far (TestSweepSharpCornerBesideCubicFramesSweep).
+var holdScales = []float64{1, 2, 3}
 
 // heldBy is the runs with the twist held still beside each corner over
 // hold times holdLength and spread over the rest, fitted; a pathError
@@ -162,22 +196,41 @@ func (sr *sweepRuns) heldBy(hold float64) (*sweepRuns, error) {
 	return c, nil
 }
 
-// holdsToTry are the runs to join: sr, and, twisted, sr with the twist
-// held still further beside the corners, as far as holdScales go.
-func (sr *sweepRuns) holdsToTry() []*sweepRuns {
-	out := []*sweepRuns{sr}
-	if sr.twist == 0 {
-		return out
-	}
-	for _, hold := range holdScales {
-		if hold <= sr.hold {
-			continue
+// holdsToTry are the runs to join, each made only once the one before
+// failed: sr, and, twisted, sr with the twist held still further beside
+// the corners, as far as holdScales go; then the runs cut again
+// (cutComeBack, sweep_cubic_corner_comeback.go), twisted with the twist
+// held beside the runs' own corners too and then also where the path
+// comes back, at each of the holds, and untwisted cut where a run comes
+// back near itself.
+func (sr *sweepRuns) holdsToTry() iter.Seq[*sweepRuns] {
+	return func(yield func(*sweepRuns) bool) {
+		if !yield(sr) {
+			return
 		}
-		if c, err := sr.heldBy(hold); err == nil {
-			out = append(out, c)
+		holds := []float64{1}
+		if sr.twist != 0 {
+			holds = holdScales
+			for _, hold := range holdScales {
+				if hold <= sr.hold {
+					continue
+				}
+				if c, err := sr.heldBy(hold); err == nil && !yield(c) {
+					return
+				}
+			}
+		}
+		for _, back := range []bool{false, true} {
+			if !back && sr.twist == 0 {
+				continue
+			}
+			for _, hold := range holds {
+				if c, err := sr.cutComeBack(hold, back); err == nil && c != nil && !yield(c) {
+					return
+				}
+			}
 		}
 	}
-	return out
 }
 
 // heldCuts are the chain, cut at the corners kinds marks (kinds[i] the
@@ -235,7 +288,7 @@ func (sr *sweepRuns) heldCuts(chain []pathPiece, kinds []int) ([]pathPiece, []in
 // nowhere to twist.
 func (sr *sweepRuns) spreadTwist(twist float64) error {
 	held := func(k int) bool {
-		return sr.pre(k) && sr.corner(k-1) || sr.post(k) && sr.corner(k)
+		return sr.pre(k) && sr.corner(k-1) || sr.post(k) && sr.corner(k) || sr.nearHeld != nil && sr.nearHeld[k]
 	}
 	total := 0.0
 	lengths := make([]float64, len(sr.chains))

@@ -68,12 +68,58 @@ func (t *Topology) Validate() []Problem {
 // of shells less their genus, the same as MeshEuler gives the mesh.
 func (t *Topology) Euler() int {
 	holes := 0
-	for _, l := range t.Loops {
-		if !l.Outer {
+	for _, f := range t.Faces {
+		holes += t.faceHoles(f)
+	}
+	return len(t.Vertices) - len(t.Edges) + len(t.Faces) - holes
+}
+
+// faceHoles is how many holes the face has, as its Euler characteristic
+// counts them: a hole touching the outer loop at one vertex, and no
+// other loop, none, the face being a disc whose boundary passes the
+// vertex twice, as its mesh counts it (where two equal tubes crossing
+// touch tangent on a patch's seam). One touching the outer loop at two
+// vertices or more, or another hole, is counted, as a face touching
+// another along a line is no closed solid.
+func (t *Topology) faceHoles(f Face) int {
+	verts := func(l int) map[int]bool {
+		out := map[int]bool{}
+		for _, ce := range t.Loops[l].CoEdges {
+			out[t.Start(ce)] = true
+		}
+		return out
+	}
+	var outer map[int]bool
+	for _, l := range f.Loops {
+		if t.Loops[l].Outer {
+			outer = verts(l)
+		}
+	}
+	holes := 0
+	for _, l := range f.Loops {
+		if t.Loops[l].Outer {
+			continue
+		}
+		vs := verts(l)
+		onOuter, onHole := 0, false
+		for v := range vs {
+			if outer[v] {
+				onOuter++
+			}
+		}
+		for _, o := range f.Loops {
+			if o == l || t.Loops[o].Outer {
+				continue
+			}
+			for v := range verts(o) {
+				onHole = onHole || vs[v]
+			}
+		}
+		if onOuter != 1 || onHole {
 			holes++
 		}
 	}
-	return len(t.Vertices) - len(t.Edges) + len(t.Faces) - holes
+	return holes
 }
 
 // MeshEuler is V - E + F of a triangle mesh, its vertices merged where

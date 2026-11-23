@@ -390,6 +390,31 @@ type FaceAdder struct {
 	// in (openKey), for along: a fillet's thousands of patches each
 	// looked through all of them.
 	byStart map[vertexKey][]int
+	// curveAt is where each curve lies in the shell, filed on first use
+	// and kept as faces go in (findCurve): an edited shell's curves are
+	// out of their handles' order, where FindCurve looks through them all.
+	curveAt map[core.HSCurve]int
+}
+
+// findCurve is the shell's curve of handle h, as srf.SShell.FindCurve
+// finds it; handles are unique, so the filed place is the one.
+func (fa *FaceAdder) findCurve(h core.HSCurve) *srf.SCurve {
+	sh := fa.sh
+	if i := int(h.V) - 1; i >= 0 && i < len(sh.Curve) && sh.Curve[i].H == h {
+		return &sh.Curve[i]
+	}
+	if fa.curveAt == nil {
+		fa.curveAt = make(map[core.HSCurve]int, len(sh.Curve))
+		for i := range sh.Curve {
+			if _, ok := fa.curveAt[sh.Curve[i].H]; !ok {
+				fa.curveAt[sh.Curve[i].H] = i
+			}
+		}
+	}
+	if i, ok := fa.curveAt[h]; ok && i < len(sh.Curve) && sh.Curve[i].H == h {
+		return &sh.Curve[i]
+	}
+	return sh.FindCurve(h)
 }
 
 // openEdge is an edge only one face has: its curve, and its points from
@@ -481,28 +506,51 @@ func (fa *FaceAdder) runsAlong(i int, a, b, mid geom.Vector) bool {
 
 // Add puts a face into the shell as AddFace does.
 func (fa *FaceAdder) Add(s srf.SSurface, loops [][]srf.SBezier) (core.HSSurface, error) {
-	sh := fa.sh
 	if len(loops) == 0 || len(loops[0]) == 0 {
-		return core.HSSurface{}, errors.New("topo: a face needs a loop")
+		return core.HSSurface{}, errNoLoop
 	}
-	s.H = newSurfaceHandle(sh)
+	pf := fa.prepare(s, loops, newSurfaceHandle(fa.sh), newCurveHandle(fa.sh))
+	pf.orient()
+	fa.commit(pf)
+	return pf.s.H, nil
+}
+
+// addPiece is a side of a face being put in: the curve it runs along, an
+// open edge's or a fresh one, between a and b through points.
+type addPiece struct {
+	curve core.HSCurve
+	// fresh is a new curve, to be added.
+	fresh  *srf.SCurve
+	a, b   geom.Vector
+	points []geom.Vector
+	// taken is the open edge the piece runs along, or -1.
+	taken int
+}
+
+// addFace is a face prepared to go in (FaceAdder.prepare): its surface
+// with its handle, its loops' pieces, and the handle after its fresh
+// curves'.
+type addFace struct {
+	s     srf.SSurface
+	all   [][]addPiece
+	nextH core.HSCurve
+}
+
+// prepare is the first part of Add: face s with handle h, its loops run
+// the way the open edges they take say, each side an open edge's or a
+// fresh curve from nextH on. The open edges are kept as if the face were
+// in: the fresh ones its, those it takes gone. Nothing of the shell is
+// changed, so the next face may be prepared before this one goes in.
+func (fa *FaceAdder) prepare(s srf.SSurface, loops [][]srf.SBezier, h core.HSSurface, nextH core.HSCurve) *addFace {
+	sh := fa.sh
+	s.H = h
 	s.Trim = nil
 	s.TrimBuilt = true
 	forget(&s)
 
-	type piece struct {
-		curve core.HSCurve
-		// fresh is a new curve, to be added.
-		fresh  *srf.SCurve
-		a, b   geom.Vector
-		points []geom.Vector
-		// taken is the open edge the piece runs along, or -1.
-		taken int
-	}
-	var all [][]piece
-	nextH := newCurveHandle(sh)
-	for li, loop := range loops {
-		var ps []piece
+	var all [][]addPiece
+	for _, loop := range loops {
+		var ps []addPiece
 		// Run the loop the way an open edge it takes says.
 		flip := false
 		for _, sb := range loop {
@@ -523,7 +571,7 @@ func (fa *FaceAdder) Add(s srf.SSurface, loops [][]srf.SBezier) (core.HSSurface,
 			}
 		}
 		for _, sb := range seq {
-			pc := piece{a: sb.Start(), b: sb.Finish(), taken: -1}
+			pc := addPiece{a: sb.Start(), b: sb.Finish(), taken: -1}
 			if e := fa.along(sb); e >= 0 {
 				pc.curve = fa.open[e].curve
 				pc.points = fa.open[e].points
@@ -545,34 +593,53 @@ func (fa *FaceAdder) Add(s srf.SSurface, loops [][]srf.SBezier) (core.HSSurface,
 			}
 			ps = append(ps, pc)
 		}
-		if li == 0 {
-			// Clockwise in the surface's parameters, or turn it over. A
-			// point at a pole, a side of the patch folded to one point,
-			// has any parameter along that side, which can turn the
-			// outline over (a wedge of a sphere from a circle of latitude
-			// up to its pole, Schenkel): it is opened along the side
-			// (openPoleUV).
-			area := 0.0
-			var pts []geom.Vector
-			for _, pc := range ps {
-				pts = append(pts, pc.points[:len(pc.points)-1]...)
-			}
-			uv := surfaceLoopUV(&s, pts)
-			for k := range uv {
-				p, q := uv[k], uv[(k+1)%len(uv)]
-				area += (p.X*q.Y - q.X*p.Y) / 2
-			}
-			if area > 0 {
-				s.Reverse()
-			}
-		}
 		all = append(all, ps)
 	}
 	for _, ps := range all {
 		for _, pc := range ps {
+			if pc.fresh != nil {
+				fa.addOpen(openEdge{curve: pc.curve, points: pc.points})
+			} else if pc.taken >= 0 {
+				fa.open[pc.taken].gone = true
+			}
+		}
+	}
+	return &addFace{s: s, all: all, nextH: nextH}
+}
+
+// orient turns the face's surface over unless its outer loop runs
+// clockwise in its parameters. It projects on the face's own copy of
+// its surface alone, so that faces may be oriented at once.
+func (pf *addFace) orient() {
+	// A point at a pole, a side of the patch folded to one point, has
+	// any parameter along that side, which can turn the outline over (a
+	// wedge of a sphere from a circle of latitude up to its pole,
+	// Schenkel): it is opened along the side (openPoleUV).
+	area := 0.0
+	var pts []geom.Vector
+	for _, pc := range pf.all[0] {
+		pts = append(pts, pc.points[:len(pc.points)-1]...)
+	}
+	uv := surfaceLoopUV(&pf.s, pts)
+	for k := range uv {
+		p, q := uv[k], uv[(k+1)%len(uv)]
+		area += (p.X*q.Y - q.X*p.Y) / 2
+	}
+	if area > 0 {
+		pf.s.Reverse()
+	}
+}
+
+// commit puts the prepared face in: its trims, the curves it shares told
+// of it, its fresh curves and the surface added to the shell.
+func (fa *FaceAdder) commit(pf *addFace) {
+	sh := fa.sh
+	s := pf.s
+	for _, ps := range pf.all {
+		for _, pc := range ps {
 			c := pc.fresh
 			if c == nil {
-				c = sh.FindCurve(pc.curve)
+				c = fa.findCurve(pc.curve)
 			}
 			// Along the curve's own points or against them: the curve may
 			// run past the edge's ends, as a Boolean's do.
@@ -588,16 +655,17 @@ func (fa *FaceAdder) Add(s srf.SSurface, loops [][]srf.SBezier) (core.HSSurface,
 			s.Trim = append(s.Trim, srf.STrimBy{Curve: pc.curve, Backwards: back, StartP: pc.a, FinishP: pc.b,
 				Start: 0, Finish: 1})
 			if pc.fresh != nil {
+				if fa.curveAt != nil {
+					if _, ok := fa.curveAt[pc.fresh.H]; !ok {
+						fa.curveAt[pc.fresh.H] = len(sh.Curve)
+					}
+				}
 				sh.Curve = append(sh.Curve, *pc.fresh)
-				fa.addOpen(openEdge{curve: pc.curve, points: pc.points})
-			} else if pc.taken >= 0 {
-				fa.open[pc.taken].gone = true
 			}
 		}
 	}
 	s.Tol = sh.Tol
 	sh.Surface = append(sh.Surface, s)
-	return s.H, nil
 }
 
 // ReplaceSurface gives face f's surface new geometry, keeping its

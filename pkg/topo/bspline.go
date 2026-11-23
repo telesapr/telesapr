@@ -94,7 +94,7 @@ func (fa *FaceAdder) AddPlanarFace(loops [][]srf.SBezier, id uint32, color core.
 // (srf.SSurface.SnapToTrims).
 func (fa *FaceAdder) AddPlanarFaceWithin(loops [][]srf.SBezier, id uint32, color core.RGBA, n geom.Vector, tol float64) (core.HSSurface, error) {
 	if len(loops) == 0 || len(loops[0]) == 0 {
-		return core.HSSurface{}, errors.New("topo: a face needs a loop")
+		return core.HSSurface{}, errNoLoop
 	}
 	var pts, poly []geom.Vector
 	for li, l := range loops {

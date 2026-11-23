@@ -4,6 +4,7 @@ How to measure TeleSAPR's speed, where the time goes, what was decided and why, 
 Refreshed 2026-11-03 at `c4e18d1a`; the rolling ball's feet 2026-11-17, its mitred chains 2026-11-18, putting its blends in
 and checking the result 2026-11-18, a fillet made once where it was made twice 2026-11-18. Refreshed
 2026-11-18 (branch `chamfer-nondeterminism`): a map's order in the kernel (Traps); a corner hole's patches solved faster 2026-11-18.
+Refreshed 2026-11-23 (branch `wrapped-cutback-speed`): a mitred group's sections at once and kept.
 
 Two studies came before this note: the command line against solvespace-cli (branch `perf-study`,
 2026-10-10, items P1 to P9) and the solver, the kernel's Booleans and the drawing of frames
@@ -133,7 +134,18 @@ bin/telesapr-cli regenerate --cpuprofile cpu.out /tmp/m.tlspr
   (`rollingBall.lastFoot`, which only orders the search) and its faces' (u, v) loops
   (`uvLoops`, filled on first use), so they would race as they are; starting each chain's blend
   as soon as the fits it reads are done gains nothing on the arch, whose last chain reads the
-  first chain's fit.
+  first chain's fit. Refreshed 2026-11-23 (branch `wrapped-cutback-speed`): within each chain,
+  the searches that don't depend on each other run at once (a mitre's feet, middle and arc
+  lengths, a fitted end's points, the scan and its seams, a blend's sections and misfits), what
+  is found again is kept (every section by its arc length, a mitre's last section and its arc
+  lengths), the two fits of a chain run at once (`robust` an argument, `lastFoot` atomic, the
+  caches locked), a blend's patches are turned to face out at once (`FaceAdder.addAll`) and the
+  curves and surfaces it looks up found by a filed place
+  (`doc/dev-notes/rolling-ball-corners.md`, "A chain's sections at once"): the same solids to the
+  bit, `BenchmarkFilletWrappedArch` 1.50 s to 0.74 s, 1.90 s to 1.23 s on 4 cores, the barrel's
+  regeneration with the chamfer 5.9 s to 4.8 s. Left on one core: cutting the faces back
+  (`cutBack`, 0.06 s of the arch, a second of the barrel), whose projections each start where
+  the one before ended.
 - Refreshed 2026-11-18 (branch `chamfer-apex-speed`): a corner's hole filled with quintic patches
   (`setbackPatches`, `blendPatch`) is a least-squares solve of some 340 unknowns and 1700 rows of
   a few dozen terms each (`leastSquaresDense`). The `apexsome 1.5 0.5 0 0` line of

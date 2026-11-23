@@ -20,3 +20,11 @@ type WindowContext interface {
 type Scaled interface {
 	PixelRatio() float64
 }
+
+// Framebuffered is a Context that draws into a framebuffer object (an
+// offscreen context on macOS), not the default framebuffer: it has no
+// front or back buffer to read, and ReadFrame reads the colour
+// attachment.
+type Framebuffered interface {
+	Framebuffered() bool
+}

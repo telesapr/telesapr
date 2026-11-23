@@ -152,6 +152,7 @@ func (rb *rollingBall) insideMitreFoot(k, i int, gap func(float64) (float64, rbS
 	at := rb.t.Vertices[rb.ends[k].v].P
 	from := -3 * rb.pastR(k)
 	if rb.ends[k].ban[i] >= 0 || rb.flat {
+		rb.warmSections(scanAt(from, zone, step, arc)...)
 		prev, prevG := math.NaN(), math.NaN()
 		for x := from; x <= zone; x += step {
 			g, _, ok := gap(arc(x))
@@ -177,6 +178,7 @@ func (rb *rollingBall) insideMitreFoot(k, i int, gap func(float64) (float64, rbS
 		return 0, rbSection{}, filletErr(at, "the fillet's mitre at the inside corner doesn't reach the crease here")
 	}
 	best, bestG := math.NaN(), math.Inf(1)
+	rb.warmSections(scanAt(from, zone, step, arc)...)
 	for x := from; x <= zone; x += step {
 		if g, _, ok := gap(arc(x)); ok && g < bestG {
 			best, bestG = x, g
@@ -189,6 +191,7 @@ func (rb *rollingBall) insideMitreFoot(k, i int, gap func(float64) (float64, rbS
 	gr := (math.Sqrt(5) - 1) / 2
 	for range 80 {
 		a, b := hi-gr*(hi-lo), lo+gr*(hi-lo)
+		rb.warmSections(arc(a), arc(b))
 		ga, _, oka := gap(arc(a))
 		gb, _, okb := gap(arc(b))
 		if oka && (!okb || ga < gb) {
@@ -214,6 +217,7 @@ func (rb *rollingBall) insideMitreRoot(k int, h func(float64) (float64, rbSectio
 	arc func(float64) float64, zone float64) (float64, rbSection, error) {
 	at := rb.t.Vertices[rb.ends[k].v].P
 	lo, hi := -3*rb.pastR(k), zone
+	rb.warmSections(arc(lo), arc(hi))
 	gl, _ := h(lo)
 	gh, _ := h(hi)
 	// A chamfer's mate is a plane, not a ball's surface: carried on past
@@ -231,6 +235,7 @@ func (rb *rollingBall) insideMitreRoot(k int, h func(float64) (float64, rbSectio
 		gr := (math.Sqrt(5) - 1) / 2
 		for b-a > mitreBandEps*rb.r {
 			x1, x2 := b-gr*(b-a), a+gr*(b-a)
+			rb.warmSections(arc(x1), arc(x2))
 			g1, _ := h(x1)
 			g2, _ := h(x2)
 			if g1 < g2 || math.IsNaN(g2) {

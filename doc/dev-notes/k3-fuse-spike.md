@@ -1,9 +1,17 @@
 # K3 spike: fuse first (2026-11-04)
 
+Refreshed 2026-11-23 (sweep-cubic-corner-joins): the sweep corner beside a cubic's failing joins
+were found to be the path coming back over itself, not the corner: runs cut again where they come
+back, a twist held off them, and the topology's Euler count of a hole touching its face's rim. See
+"Runs cut again where the path comes back" at the end.
+
 Refreshed 2026-11-19 (ledge-touch-finechord): where a chord of an exact curve crosses a surface
 the curve misses by more than the chord tolerance, the split is dropped and the chord halved
 (`srf.missesCurve`, `srf.halveMissed`); two circles in one plane, one just inside the other, are
 sound by every Boolean (`TestBooleanTouchingRingSweep`). See "The ring below a ledge's foot".
+
+Refreshed 2026-11-23 (fillet-runoff-cuts-cross): the circles touching exactly, spiked and not
+kept; see "Touching exactly" at the end.
 
 Refreshed 2026-11-19 (ledge-cutback-35): a ray's hit near a curved trim whose chords sag past
 the chord tolerance (a long arc cut into the most chords a curve may have) is not trusted within
@@ -849,3 +857,94 @@ hole's circle 1 to 20 tolerances inside a ring's bottom circle, every Boolean: 4
 before, 0 after; no golden moved. Touching exactly the Booleans still fail: the circles lie
 within `LengthEps` of each other for 0.009 along them and seeds land anywhere there; the point
 handed over as a touch (`SShell.Touch`, `touchSinks`) did not help.
+
+### Touching exactly (fillet-runoff-cuts-cross, 2026-11-23)
+
+`touchRingPair` at a gap of 0, the hole's circle on the ring's bottom touching the ring's inner
+circle at (8, 0, 1): all 24 of chords 0.0005 and 0.002, the hole turned 0 or 30°, the ring 0 or
+40°, three Booleans, failed in the trim of the hole's cone or the ring's cylinder. What the
+Boolean saw, at the hole and ring unturned: the cone meets the ring's cylinder in a curve that
+touches the plane of the ring's bottom at the touch point, along it; the ring's bottom circle,
+tangent to the cone there, hits it twice a hair either side (±0.0004 at a chord of 0.002), and
+each hit is a seed. The march from the true seed at the touch, where the cone's seam crosses the
+cylinder, stops at the hit beside it at once (a curve of two points), and the curve's far seed is
+left alone, so the cone and the cylinder lose that curve. And the hole's circle, in the ring's
+bottom plane, lies between the ring's chorded inner circle and its arc for about a chord either
+side of the touch, so its pieces there are classified inside the ring's bottom face and kept,
+dangling from the touch point.
+
+Tried, on branch `k3-touch-exact-spike` (not merged; env-gated, `MERGE`, `PAIR`, `PRUNE`,
+`PRUNEL`), each in `intersectByMarching` or `makeCopyTrimAgainst`:
+
+1. A seed from an edge grazing the other surface (the edge's direction within 0.05 of square to
+   its normal) snapped to a vertex of either surface's edges within the chord tolerance that lies
+   on both, and merged with a steeper seed within the tolerance. Merging every seed within the
+   tolerance broke threads (`TestThreadLengthDimension`, `TestWrapTextConeSweep`): their seeds
+   lie that near legitimately. 6 of 24 sound, then 12 with 3 (the hole turned 30°: no vertex at
+   the touch).
+2. Two grazing seeds within the tolerance with no steeper one beside them dropped, the curve
+   marched through the touch: 18 of 24.
+3. Where a surface's trim doesn't assemble, chains dangling from a point where three or more
+   edges meet, shorter than 1 mm, dropped: the hole's circle's pieces within the sag.
+
+With all three, every `-short` test passed and no golden moved, but the fillet beside the ledge
+at 0.500 (`ledgeHoleAt(0, 0.5)`, chamfer 3.5) still came out unsound at its own size: the
+Booleans close, the mesh does not, 30 naked edges at the touch point, where the ledge's top is
+pinched between the chamfer's cut and the side's foot. `footClearSize` still moves it (by 1.7e-4
+at a chord tolerance of 0.003). Left: the hole turned 30° with the ring turned 40° (the touch
+inside every patch, no vertex there) and the mesh of a face pinched at a point that two curves
+touch tangent.
+
+## Runs cut again where the path comes back (sweep-cubic-corner-joins, 2026-11-23)
+
+Measured first on devel `d519a709`, the whole grids of `TestSweepSharpCornerBesideCubicFramesSweep`
+and `TestSweepSharpCornerBesideCubicLoopSweep` no longer gave rd13's counts: the K3 work since had
+made most round profiles. Bars 2×4, a circle, bars 4×2, a diamond: twisted 90° 58, 60, 59, 56;
+rounded 60, 58, 60, 59; loops 26, 26, 20, 24; twisted loops 20, 24, 16, 24. Each refused point was
+taken apart, the runs and every Boolean of the join in order (which part, naked edges, the final
+union's crossing edges, the topology's Euler against the mesh's):
+
+- **A run passing through itself.** A loop's run from the profile down, across, up and along the
+  cubic, where the cubic comes back past the profile (a diamond, corner 150°, bend 30°): the run's
+  own fitted skin crossed itself, 37 naked edges before any Boolean. Fixed by cutting such a run
+  smoothly in two, in the middle of the longest piece between the two places it comes back near
+  itself (`selfSplits`), so that the two halves are joined by a Boolean told the crossing's
+  touches. A point comes back near another when the path, walked on from it, goes further than
+  twice the profile's reach and comes within it again: a sharp corner's two legs, which only part,
+  are not counted.
+- **A twisted run crossing another's tube.** Twisted bars and diamonds where the cubic is bent back
+  over the line (150°, bend 90°) and twisted loops: the run the twist is spread over (the cubic's
+  far part, or a loop's foot) crosses an untwisted run's tube, and the union of the twisted fitted
+  skin with it leaves 16 to 27 edges open along the crossing; the untwisted runs always joined.
+  Holding the twist still where the path comes back too (`comeBackCuts`) leaves nowhere to twist on
+  these paths: every point of them is within reach of another. Those stay refused.
+- **The kernel's holds beside a run's own corners.** A twisted loop of bars 2×4 whose run of lines
+  holds the twist beside its corners between lines, by the kernel's hold, where the foot between
+  two of them is too short for both (the untwisted run takes both mitres): refused as "too short"
+  by `topo.MakePathSweep`, reported as the corner's join failing. Held untwisted beside them as
+  well (`comeBackCuts` without the coming back), two more loops are made; four more are too short
+  untwisted too, the bar turned by the twist where it reaches the foot. The error is now the path's
+  ("too short for the mitres"), as are the six untwisted loops of bars 4×2, whose foot is too short
+  for any bar so wide.
+- **A hole touching its face's rim.** A circle rounded after the cubic first: the last line's tube
+  crosses the cubic's, equal tubes touching tangent at points on the cubic patches' seams, and each
+  patch kept the lens between the curves as a hole touching its outer loop at the seam's vertex.
+  The union was closed, its mesh with no naked or crossing edge, but `topologySound` refused it: the topology's
+  Euler counted the hole (−2 against the mesh's 0). A hole touching its outer loop at a vertex
+  leaves the face a disc, its boundary passing the vertex twice; `Topology.Euler` now counts such a
+  hole none (`faceHoles`); one touching it at two vertices or another hole still counts, as a shell's inside touching another along a line must stay refused (`TestShellBlockAndFlushPost`). A diamond the same way too.
+- **Holds three times a mitre's reach.** A diamond twisted at a corner of 30° beside a cubic bent a
+  quarter turn: the held line beside the corner failed to join, held once or twice as far, and
+  joins held three times (`holdScales`).
+- A round profile centred on the path (`turnsIntoItself`) twisted is the same solid untwisted, and
+  is swept so: no held stretches and no twisted skins, round a closed path by any turn.
+
+The tries are made in order only once the one before failed (`holdsToTry`, an iterator), and the
+problem a user sees is the first cut's. After, the whole grids: twisted 58, 60, 59, 58; rounded
+60, 59, 60, 60; loops 26, 26, 20, 26; twisted loops 22, 26, 22, 26; none unsound. Left: the twisted
+paths coming back over the line everywhere within reach (five points), and a circle rounded, line
+first, at 150° and bend 90°, whose cubic's tube passes through the sweep's start cap by its rim:
+the union leaves an edge of the cap through the tube there (not followed further). Tried and not
+kept: holding the twist only where the path comes back (nowhere left to twist), holds four times
+a mitre's reach (nothing more made). No golden moved; `pkg/srf` untouched.
+

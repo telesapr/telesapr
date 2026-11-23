@@ -74,6 +74,10 @@ type sweepRuns struct {
 	kinds []int
 	twist float64
 	hold  float64
+	// nearHeld marks the runs held untwisted where the path comes back
+	// near where it has been, or beside a corner of their own
+	// (sweep_cubic_corner_comeback.go); nil for none.
+	nearHeld []bool
 }
 
 // pre says whether run k starts at a turn, and post whether it ends at
@@ -201,9 +205,10 @@ const (
 // radius rounds the path's other corners first, those between lines and
 // arcs (roundCorners leaves the corners beside a cubic sharp). The runs'
 // frames are then made to meet at each corner and, round a closed path,
-// where it closes (sweep_cubic_corner_frames.go). A pathError where a
-// corner can't be taken so.
-func (sk *Sketch) fitRuns(g *Group, chain []pathPiece, at []int, closed bool, reach float64) (*sweepRuns, error) {
+// where it closes (sweep_cubic_corner_frames.go); a profile round about
+// the path (round, turnsIntoItself) is swept untwisted. A pathError
+// where a corner can't be taken so.
+func (sk *Sketch) fitRuns(g *Group, chain []pathPiece, at []int, closed, round bool, reach float64) (*sweepRuns, error) {
 	if g.ValB > 0 && !closed {
 		var err error
 		if chain, err = sk.roundCorners(chain, g.ValB); err != nil {
@@ -225,6 +230,12 @@ func (sk *Sketch) fitRuns(g *Group, chain []pathPiece, at []int, closed bool, re
 		return nil, err
 	}
 	twist := g.ValC * math.Pi / 180
+	if round {
+		// A round profile centred on the path twisted is the same
+		// solid untwisted (turnsIntoItself), round a closed path by any
+		// turn: it meets itself however it is turned.
+		twist = 0
+	}
 	if closed {
 		var err error
 		if twist, err = sr.closingTwist(twist); err != nil {
@@ -375,6 +386,11 @@ func (sr *sweepRuns) sweepRunsJoined(sbls *srf.SBezierLoopSetSet, color core.RGB
 				}
 				var err error
 				if sh, err = topo.MakePathSweep(run, loops, color, s, e, next, tol); err != nil {
+					// A line too short for its mitres is the path's,
+					// not the join's.
+					if pe := fittedCornerError(err); pe != nil {
+						return nil, pe
+					}
 					return nil, err
 				}
 				next += uint32(len(sh.Surface))
@@ -428,7 +444,10 @@ func (g *Group) generateRunsSweepShell(sk *Sketch, src *Group, start, end uint32
 	var err error
 	// A twist held still further beside the corners, where the runs
 	// held as far as a mitre would reach don't join.
-	for _, c := range sr.holdsToTry() {
+	// What the runs as first cut give is the problem where none
+	// joins: the others are tries.
+	first := true
+	for c := range sr.holdsToTry() {
 		for _, run := range c.runs {
 			defer sk.lendPathPace(run)()
 		}
@@ -437,7 +456,9 @@ func (g *Group) generateRunsSweepShell(sk *Sketch, src *Group, start, end uint32
 			sr, err = c, nil
 			break
 		}
-		err = cmp.Or(err, e)
+		if first {
+			err, first = e, false
+		}
 	}
 	if err == nil && sh == nil {
 		err = &srf.CornerError{At: sr.turns[sr.firstCorner()].Center, Err: srf.ErrCornerNoJoint}

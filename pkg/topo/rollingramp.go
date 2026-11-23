@@ -46,12 +46,15 @@ func (rb *rollingBall) rampCrossings() ([]rbRampCrossing, error) {
 			}
 			n := int(math.Min(400, math.Max(8, 16*(hi-lo)/rb.r)))
 			scan := make([]rbSection, n+1)
-			for j := range scan {
-				sec, err := rb.section(lo + (hi-lo)*float64(j)/float64(n))
+			errs := make([]error, n+1)
+			rb.eachWhile(n+1, func(j int) bool {
+				scan[j], errs[j] = rb.section(lo + (hi-lo)*float64(j)/float64(n))
+				return errs[j] == nil
+			})
+			for _, err := range errs {
 				if err != nil {
 					return nil, err
 				}
-				scan[j] = sec
 			}
 			at, pairs, sides, err := rb.crossings(scan)
 			if err != nil {

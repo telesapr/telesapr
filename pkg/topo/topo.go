@@ -16,6 +16,7 @@ import (
 	"slices"
 	"sort"
 	"sync"
+	"sync/atomic"
 
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
@@ -46,6 +47,9 @@ type Topology struct {
 	// for FaceAt (loop_uv_cache.go), made by uvOnce.
 	uvOnce  sync.Once
 	uvCache *loopUVCache
+	// surfAt is where each surface handle is among the shell's surfaces
+	// (surface), found again when the shell has changed.
+	surfAt atomic.Pointer[map[core.HSSurface]int]
 }
 
 // Vertex is a point where edges end.
@@ -138,7 +142,7 @@ func (t *Topology) Shell() *srf.SShell { return t.shell }
 
 // Surface is the surface of a face.
 func (t *Topology) Surface(face int) *srf.SSurface {
-	return t.shell.FindSurface(t.Faces[face].Surface)
+	return t.surface(t.Faces[face].Surface)
 }
 
 // vertexKey quantises a point for finding the vertex at it.

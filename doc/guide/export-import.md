@@ -62,6 +62,15 @@ segments are also on the preferences screen (below).
 
 ![The Export Triangle Mesh dialog](images/export-import-1-mesh-dialog.png)
 
+The video opens File > Export > Triangle Mesh and cancels the dialog:
+
+<video controls muted loop playsinline style="width:100%">
+<source src="videos/export-mesh.webm" type="video/webm">
+<source src="videos/export-mesh.mp4" type="video/mp4">
+</video>
+
+([export-mesh.webm](videos/export-mesh.webm), [export-mesh.mp4](videos/export-mesh.mp4), where the page shows no video.)
+
 ```go
 doc.File.SetMeshQuality(api.MeshFine)
 o := doc.File.ExportOptions()

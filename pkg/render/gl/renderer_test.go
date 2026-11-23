@@ -14,7 +14,6 @@ import (
 	"github.com/telesapr/telesapr/pkg/core"
 	"github.com/telesapr/telesapr/pkg/geom"
 	"github.com/telesapr/telesapr/pkg/render"
-	"github.com/telesapr/telesapr/pkg/render/gl/glx"
 	"github.com/telesapr/telesapr/pkg/render/soft"
 	"github.com/telesapr/telesapr/pkg/res"
 	"github.com/telesapr/telesapr/pkg/srf"
@@ -30,22 +29,21 @@ var (
 
 const width, height = 240, 180
 
-// newGL makes a renderer on an offscreen context, or skips the test
-// where there is no X display with GLX. The calling test's goroutine
-// stays on its thread, as GL wants.
+// offscreenContext is what the tests need of an offscreen context.
+type offscreenContext interface {
+	Context
+	Destroy()
+}
+
+// newGL makes a renderer on an offscreen context (offscreen, in the
+// file of the system's backend), or skips the test where there is
+// none. The calling test's goroutine stays on its thread, as GL
+// wants.
 func newGL(t *testing.T) *Renderer {
 	t.Helper()
-	// Read here so that go test's cache knows the result depends on
-	// it: Xlib reads it in C, which the cache doesn't see.
-	if os.Getenv("DISPLAY") == "" {
-		t.Skip("no X display")
-	}
 	runtime.LockOSThread()
 	t.Cleanup(runtime.UnlockOSThread)
-	ctx, err := glx.NewOffscreen(width, height)
-	if err != nil {
-		t.Skipf("no GL: %v", err)
-	}
+	ctx := offscreen(t, width, height)
 	t.Cleanup(ctx.Destroy)
 	r, err := New(ctx)
 	if err != nil {

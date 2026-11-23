@@ -36,21 +36,46 @@ func blendChainsAtOnce(rbs []*rollingBall) ([]*rbBlend, error) {
 		saved[i] = rb.blendState()
 	}
 	// The centres are worked out once, on first use, by whichever chain
-	// asks: each chain its own, before any reads another's.
-	par.For(len(rbs), func(i int) {
-		rb := rbs[i]
+	// asks: each chain's at each mitred end, all at once, before any
+	// reads another's.
+	type at struct {
+		rb *rollingBall
+		k  int
+	}
+	var ends []at
+	for _, rb := range rbs {
 		for k, end := range rb.ends {
 			if !rb.closed && end != nil && end.mitre {
-				rb.centresNear(k)
+				ends = append(ends, at{rb, k})
 			}
 		}
-	})
+	}
+	par.For(len(ends), func(i int) { ends[i].rb.centresNear(ends[i].k) })
 	pos := make(map[*rollingBall]int, len(rbs))
 	for i, rb := range rbs {
 		pos[rb] = i
 	}
 	fitErrs := make([]error, len(rbs))
-	par.For(len(rbs), func(i int) {
+	// Beside the fits, the last sections of the mitres each chain copies
+	// from its mate, which its blend finds first and endSection keeps:
+	// found here, they are what the blend would find (keepsEndSection),
+	// so its blend starts with both. An error is left for the blend to
+	// find again, in its place.
+	var copied []at
+	for _, rb := range rbs {
+		for k, end := range rb.ends {
+			if !rb.closed && end != nil && end.mitre && end.mate != rb && pos[end.mate] < pos[rb] &&
+				rb.keepsEndSection(k) && end.n.Dot(rb.beyond(k)) >= endAlong {
+				copied = append(copied, at{rb, k})
+			}
+		}
+	}
+	par.For(len(rbs)+len(copied), func(i int) {
+		if i >= len(rbs) {
+			c := copied[i-len(rbs)]
+			_, _, _ = c.rb.endSection(c.k, 0)
+			return
+		}
 		fitErrs[i] = rbs[i].fitMitres(pos)
 	})
 	// The chains up to the first whose mitre couldn't be fitted are
@@ -93,6 +118,9 @@ func (rb *rollingBall) fitMitres(pos map[*rollingBall]int) error {
 	if rb.closed {
 		return nil
 	}
+	// The ends to fit, in order, up to one whose plane is refused.
+	var fit []int
+	var refused error
 	for k, end := range rb.ends {
 		if end == nil || !end.mitre || end.mate == rb || pos[end.mate] < pos[rb] || rb.kinkedEnd(k) || rb.mateKinked(k) {
 			continue
@@ -100,18 +128,60 @@ func (rb *rollingBall) fitMitres(pos map[*rollingBall]int) error {
 		// The mitre's plane halves the turn at the crease, so it faces
 		// on past the end; blendOpen refuses one that faces along it.
 		if end.n.Dot(rb.beyond(k)) < endAlong {
-			return errMitreLater
+			refused = errMitreLater
+			break
 		}
-		sec, _, err := rb.endSection(k, 0)
-		if err != nil {
-			return err
-		}
-		if sec, err = rb.curvedEndSection(k, sec); err != nil {
-			return err
-		}
-		end.shared = &sec
+		fit = append(fit, k)
 	}
-	return nil
+	// A chain's two mitres are fitted at once: each reads of the chain
+	// only what its own end sets (endS, mitreS, mitreC by end) and what
+	// is fixed by now. They are kept in order, up to the first that
+	// fails, as fitting them in turn would.
+	secs := make([]rbSection, len(fit))
+	errs := make([]error, len(fit))
+	rb.eachWhile(len(fit), func(i int) bool {
+		k := fit[i]
+		// Beside the end's section, the searches its fit to the swept
+		// surfaces' cut makes next (curvedEndSection's points), which
+		// don't depend on it: the sections they find are kept
+		// (keptSection), and the fit finds them again at once.
+		var sec rbSection
+		var err error
+		rb.each(2, func(j int) {
+			if j == 1 {
+				rb.warmMitreCut(k)
+				return
+			}
+			sec, _, err = rb.endSection(k, 0)
+		})
+		if err == nil {
+			sec, err = rb.curvedEndSection(k, sec)
+		}
+		secs[i], errs[i] = sec, err
+		return err == nil
+	})
+	for i, k := range fit {
+		if errs[i] != nil {
+			return errs[i]
+		}
+		rb.ends[k].shared = &secs[i]
+	}
+	return refused
+}
+
+// warmMitreCut makes the searches curvedEndSection makes for mitre end
+// k's points (fitCut), for the sections they find to be kept, where they
+// are (keptSection); what they find is dropped.
+func (rb *rollingBall) warmMitreCut(k int) {
+	end := rb.ends[k]
+	if rb.kept == nil || !end.mitre {
+		return
+	}
+	n := rb.mitreCutPoints()
+	rb.each(n-1, func(i int) {
+		tj := float64(i+1) / float64(n)
+		_, _, _ = rb.mitreRoot(k, func(x rbSection) float64 { return rb.endHeight(end, x.arc.PointAt(tj)) })
+	})
 }
 
 // rbBlendState is what a chain's blend changes of it that a later blend

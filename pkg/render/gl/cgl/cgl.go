@@ -15,10 +15,15 @@ import (
 	"unsafe"
 )
 
-// Context is an NSOpenGLContext with the view it draws in.
+// Context is an NSOpenGLContext with the view it draws in, or an
+// offscreen CGL context with a framebuffer of its own (NewOffscreen).
 type Context struct {
 	box    C.cglBox
+	off    C.cglOff
 	double bool
+
+	width, height int  // offscreen: the framebuffer's size in pixels
+	software      bool // offscreen: the software pixel format served
 }
 
 // NewForWindow makes a context drawing over the toolkit's view with the
@@ -40,6 +45,12 @@ func NewForWindow(id uint64) (*Context, error) {
 // context to the calling OS thread, which must stay locked to its
 // goroutine while it draws.
 func (c *Context) MakeCurrent() error {
+	if c.off != nil {
+		if C.cglOffMakeCurrent(c.off) == 0 {
+			return errors.New("cgl: can't make the context current")
+		}
+		return nil
+	}
 	if c.box == nil {
 		return errors.New("cgl: context destroyed")
 	}
@@ -61,7 +72,8 @@ func (c *Context) SwapBuffers() {
 }
 
 // PixelRatio is the pixels per point of the screen the view is on, as
-// of the last MakeCurrent (2 on Retina).
+// of the last MakeCurrent (2 on Retina). An offscreen context has a
+// pixel to a point.
 func (c *Context) PixelRatio() float64 {
 	if c.box == nil {
 		return 1
@@ -69,8 +81,12 @@ func (c *Context) PixelRatio() float64 {
 	return float64(C.cglScale(c.box))
 }
 
-// Size is the view's size in points.
+// Size is the view's size in points, or the offscreen framebuffer's in
+// pixels.
 func (c *Context) Size() (width, height int) {
+	if c.off != nil {
+		return c.width, c.height
+	}
 	if c.box == nil {
 		return 0, 0
 	}
@@ -82,6 +98,10 @@ func (c *Context) Size() (width, height int) {
 // Destroy frees the context and removes its view. The toolkit's view
 // stays.
 func (c *Context) Destroy() {
+	if c.off != nil {
+		C.cglOffDestroy(c.off)
+		c.off = nil
+	}
 	if c.box != nil {
 		C.cglDestroy(c.box)
 		c.box = nil

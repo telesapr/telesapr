@@ -244,7 +244,8 @@ func (g *Group) sweepPath(sk *Sketch) ([]srf.SweepStep, error) {
 	g.sweepRuns = nil
 	if at := cubicCorners(chain); len(at) > 0 {
 		g.fittedPath = nil
-		sr, err := sk.fitRuns(g, chain, at, closed, reach)
+		round := !partway && turnsIntoItself(sbls, chain[0].start, chain[0].tangentAt(false))
+		sr, err := sk.fitRuns(g, chain, at, closed, round, reach)
 		if err != nil {
 			return nil, err
 		}

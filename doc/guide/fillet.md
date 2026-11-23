@@ -168,7 +168,7 @@ These are refused with a message:
 - The ball can't touch both faces, as a radius too large for the room beside a hole.
 - A fillet between curved faces whose edge ends at a curved face that the side faces go on past.
 - A fillet whose end runs off both its faces at once where the faces past them meet across its
-  end; one that runs off both faces at both ends, or whose two ends' cuts pass each other.
+  end and one of them is curved; one whose two ends' cuts pass each other.
 - A circle's fillet whose foot runs into a side leaning more than about 53° off square, or a side
   whose plane runs on above the face into the solid.
 - A fillet of a hole's rim near a side standing on a ledge, where its cut into the ledge reaches

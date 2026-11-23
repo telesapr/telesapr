@@ -68,7 +68,10 @@ func rollingBallFilletsAt(sh *srf.SShell, t *Topology, edges []int, radii []floa
 		if err = mitreChains(rbs); err != nil {
 			return
 		}
-		bls, err = blendGroups(rbs, groups)
+		// Traced and mitred, each chain's sections depend only on where
+		// along it they are: they are found at once and kept while the
+		// chains are blended.
+		blendingAtOnce(rbs, func() { bls, err = blendGroups(rbs, groups) })
 	})
 	if err != nil {
 		return err

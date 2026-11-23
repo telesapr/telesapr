@@ -190,5 +190,6 @@ Repeating a solid along a path, instead of sweeping a profile, is
   closed path, a sharp corner beside an arc or a cubic.
 - A corner whose pieces' outer sides never meet (an arc turning back against a corner of 150° or
   more) needs a corner radius.
-- A sharp corner next to a cubic is made only where its pieces join: some round profiles at
-  very sharp corners, and some twisted ones, are refused.
+- A sharp corner next to a cubic is made only where its pieces join. A twisted profile is
+  refused where the cubic comes back over the line before the corner, so that no stretch of the
+  path is clear to twist on.

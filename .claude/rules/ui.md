@@ -29,4 +29,5 @@ paths:
   in the browser; PNG goldens compare them.
 - The guide's pictures come from `doc/guide/scenarios` through `TestDocScenarios`
   (`scripts/regen-doc-images.sh`, `scripts/regen-guide-videos.sh`); a changed screen means
-  regenerated pictures, in a commit of their own.
+  regenerated pictures, in a commit of their own. The videos of the real window's menus and
+  dialogs are `TestDocWindowVideos` (`scripts/regen-doc-window-images.sh videos`).
