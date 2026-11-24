@@ -134,7 +134,7 @@ func TestButtressDesignations(t *testing.T) {
 			t.Errorf("%q: %q reads back as %+v, %v", tc.text, got.String(), back, err)
 		}
 	}
-	for _, bad := range []string{"S21", "5 BUTT", "S", "1-12 PUSH", "1-12 PUSH-ACME", "1-12 BUTT-4A"} {
+	for _, bad := range []string{"S21", "25 BUTT", "S", "1-12 PUSH", "1-12 PUSH-ACME", "1-12 BUTT-4A"} {
 		if _, err := Parse(bad); err == nil {
 			t.Errorf("%q read", bad)
 		}
@@ -166,8 +166,8 @@ func TestButtressSeries(t *testing.T) {
 	if want := []string{"1-10 BUTT", "1-12 BUTT", "1-16 BUTT"}; !slices.Equal(names, want) {
 		t.Errorf("1 BUTT's pitches %v, want %v", names, want)
 	}
-	if got := Pitches(Spec{Form: FormButtressInch, Diameter: 5 * mmPerInch, Pitch: 4}); len(got) != 0 {
-		t.Errorf("5 inch buttress has pitches %v", got)
+	if got := Pitches(Spec{Form: FormButtressInch, Diameter: 25 * mmPerInch, Pitch: 4}); len(got) != 0 {
+		t.Errorf("25 inch buttress has pitches %v", got)
 	}
 	if SeriesOf(sizes[0]) != SeriesButtress || SeriesOf(inch[0]) != SeriesButtressInch {
 		t.Error("buttress sizes are of another series")
@@ -296,6 +296,48 @@ func TestButtressRootArcs(t *testing.T) {
 		}
 		if !(upper.End[1] < lower.End[1]+s.Pitch) {
 			t.Errorf("the root arcs' ends cross: %g past %g", upper.End[1], lower.End[1]+s.Pitch)
+		}
+	}
+}
+
+// TestButtressInchPitches checks ASME B1.9-1973's Table 1 as Machinery's
+// Handbook (28th edition, p. 1851) prints it: each row's diameters,
+// their threads per inch, and the three preferred, whose middle one a
+// designation without threads per inch takes.
+func TestButtressInchPitches(t *testing.T) {
+	t.Parallel()
+	for _, r := range []struct {
+		diameters []string
+		tpi       []float64
+		preferred [3]float64
+	}{
+		{[]string{"1/2", "5/8", "3/4"}, []float64{20, 16, 12}, [3]float64{20, 16, 12}},
+		{[]string{"7/8", "1"}, []float64{16, 12, 10}, [3]float64{16, 12, 10}},
+		{[]string{"1 1/4", "1 3/8", "1 1/2"}, []float64{16, 12, 10, 8, 6}, [3]float64{12, 10, 8}},
+		{[]string{"1 3/4", "2", "2 1/4", "2 1/2"}, []float64{16, 12, 10, 8, 6, 5, 4}, [3]float64{10, 8, 6}},
+		{[]string{"2 3/4", "3", "3 1/2", "4"}, []float64{16, 12, 10, 8, 6, 5, 4}, [3]float64{8, 6, 5}},
+		{[]string{"4 1/2", "5", "5 1/2", "6"}, []float64{12, 10, 8, 6, 5, 4, 3}, [3]float64{6, 5, 4}},
+		{[]string{"7", "8", "9", "10"}, []float64{10, 8, 6, 5, 4, 3, 2.5, 2}, [3]float64{5, 4, 3}},
+		{[]string{"11", "12", "14", "16"}, []float64{10, 8, 6, 5, 4, 3, 2.5, 2, 1.5, 1.25}, [3]float64{4, 3, 2.5}},
+		{[]string{"18", "20", "22", "24"}, []float64{8, 6, 5, 4, 3, 2.5, 2, 1.5, 1.25, 1}, [3]float64{3, 2.5, 2}},
+	} {
+		for _, name := range r.diameters {
+			s, err := Parse(name + " BUTT")
+			if err != nil {
+				t.Errorf("%s BUTT: %v", name, err)
+				continue
+			}
+			if got := mmPerInch / s.Pitch; math.Abs(got-r.preferred[1]) > 1e-9 {
+				t.Errorf("%s BUTT: %g threads per inch, want %g", name, got, r.preferred[1])
+			}
+			var tpi []float64
+			for _, p := range Pitches(s) {
+				tpi = append(tpi, math.Round(mmPerInch/p.Pitch*100)/100)
+			}
+			slices.Reverse(tpi) // Pitches lists the coarsest first
+			if !slices.Equal(tpi, r.tpi) {
+				t.Errorf("%s BUTT: threads per inch %v, Table 1's %v", name, tpi, r.tpi)
+			}
 		}
 	}
 }

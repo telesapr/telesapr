@@ -24,10 +24,15 @@ import "math"
 // trapezoidal threads, grades 7 to 9 (its Tables 8 and 9), with
 // fundamental deviations of positions c and e of its own (Table 2), and
 // a nut's in position H. DIN 513-3 gives the nut's pitch diameter a
-// fundamental deviation EI of 3.1758 a, 2/(tan 3° + tan 30°) times the
-// axial play a of DIN 513-1, which is not to hand: H is taken as basic,
-// as ISO 2903's trapezoidal H is. A thread of several starts takes the
-// tolerances of its pitch times the factor of DIN 513-3 clause 12.
+// fundamental deviation EI of 3.1758 a (clause 6), 2/(tan 3° + tan 30°)
+// times the axial play a = 0.1 P^(1/2) mm that DIN 513-1:1985's Figure 2
+// leaves on the trailing flank: H is a nut moved off the basic profile
+// by that play, not a basic one as ISO 2903's trapezoidal H is. The play
+// is read from IS 4696 (Part 1):2004, Table 2, which follows DIN 513-1
+// (a 0.1414 mm at 2 mm of pitch, 0.2 at 4), and from hexagon.de's notes
+// to Dose's screw calculation, citing DIN 513's Figure 2 alike. A thread
+// of several starts takes the tolerances of its pitch times the factor
+// of DIN 513-3 clause 12, and the play of its pitch.
 
 // buttressInchRanges are the limits of H28's ranges of major diameter,
 // in inches: a size is over one limit and up to and including the next,
@@ -217,9 +222,16 @@ func buttressClearance(s Spec, internal bool, class string) float64 {
 	if n := s.NumStarts(); n > 1 {
 		td2 *= buttressStartFactors[min(n, 5)-2]
 	}
-	es := 0.0
+	es := buttressNutDeviation(s.Pitch)
 	if !internal {
 		es = buttressPitchDeviation(s.Pitch, position)
 	}
 	return (es + td2/2) / 2 / 1000
+}
+
+// buttressNutDeviation is the fundamental deviation EI, µm, of the pitch
+// diameter of a DIN 513 nut of pitch p, mm: 3.1758 a, a = 0.1 p^(1/2) mm
+// the axial play of DIN 513-1.
+func buttressNutDeviation(p float64) float64 {
+	return 3.1758 * 0.1 * math.Sqrt(p) * 1000
 }

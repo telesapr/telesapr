@@ -6859,7 +6859,7 @@
 					},
 					"Problem": {
 						"decl": "func (v LinkGroup) Problem() (msg string)",
-						"text": "Problem says what of the file a link group links could not be\nread, such as the faces of a STEP file on a kind of surface the\nreader does not support, or that the file holds no solid it can\nread; \"\" when all of it was."
+						"text": "Problem says what of the file a link group links could not be\nread, such as the faces of a STEP file on a kind of surface the\nreader does not support, or that the file holds no solid it can\nread; for a STEP file also a solid whose mesh came in open or\ncrossing itself, and a part whose volume, area or centre differs\nfrom what the file declares; \"\" when all is well."
 					},
 					"Rotate": {
 						"decl": "func (v LinkGroup) Rotate(axis Vec, degrees float64)",

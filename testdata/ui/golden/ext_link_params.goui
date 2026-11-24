@@ -483,10 +483,10 @@ row 16    part  fixed   moves in a mechanism
  15-16 64 61 0
  17-38 64 61 109 0 1 0
  39-99 64 61 0
-row 18    Not all of the file was read: no configuration "long"; the model has no parameter "L".
+row 18    Not all is well with the file: no configuration "long"; the model has no parameter "L".
  0-2 64 64 0
- 3-88 78 64 0
- 89-99 64 64 0
+ 3-89 78 64 0
+ 90-99 64 64 0
 row 20 
  0-99 64 64 0
 row 22  solid model as

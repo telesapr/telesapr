@@ -24,7 +24,11 @@ import (
 
 // stepDiskVersion changes when what is kept, or how it is made, does.
 // 2: the format of stepdisk_format.go in place of encoding/gob.
-const stepDiskVersion = 2
+// 3: the report says which solids' meshes are broken and how the
+// validation properties compare.
+// 4: a shell used against its orientation (a void) turned over whole,
+// its faces' bounds as well as their normals.
+const stepDiskVersion = 4
 
 var (
 	// stepDiskHits and stepDiskWrites count, for the tests.

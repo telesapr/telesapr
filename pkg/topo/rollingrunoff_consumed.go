@@ -31,6 +31,9 @@ type rbConsumed struct {
 	j, f int
 	r    int
 	x    geom.Vector
+	// whole marks both ends running off onto the same next face, the
+	// foot past it all along (rollingrunoff_whole.go): no ridge, r is -1.
+	whole bool
 }
 
 // consumedSamples is how many points along each patch's side the
@@ -48,7 +51,13 @@ func (rb *rollingBall) consumedRunOff(row []srf.SSurface, cuts []rbEndCut, isCha
 	}
 	ro0, ro1 := cuts[0].off, cuts[1].off
 	j := ro0.j
-	if ro1.j != j || ro0.n == ro1.n || ro0.ns != nil || ro1.ns != nil {
+	if ro1.j != j {
+		return nil, nil
+	}
+	if ro0.n == ro1.n {
+		return rb.wholeRunOff(row, cuts, isChain)
+	}
+	if ro0.ns != nil || ro1.ns != nil {
 		return nil, nil
 	}
 	ui, uo := 3, 1

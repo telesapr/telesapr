@@ -81,12 +81,32 @@ bd_warehouse's library have: tapers and ready-made fasteners.
 
 ## What is left
 
-**In ROADMAP's "Thread leftovers"** (details and approaches there):
+Refreshed 2026-11-24: the three rows that waited for the standards' numbers are built, each
+from a source that can be cited, read on that day:
 
-- DIN 513-3's nut deviation. 7H/8H/9H are taken as basic until DIN 513-1's axial play `a` is
-  found.
-- B1.9's preferred pitches and the default pitch per size, which wait for B1.9 Table 1.
-- Multi-start allowances for B1.5 and B1.9, which wait for B1.5 appendix B's K factor.
+- **DIN 513 nuts.** DIN 513-3:2020 clause 6 puts a nut's pitch diameter at EI = 3.1758·a, `a` the
+  axial play DIN 513-1:1985 leaves on the trailing flank (its Figure 2). DIN 513-1 is not free,
+  but IS 4696 (Part 1):2004, the Indian standard that follows it (free at law.resource.org),
+  gives `a = 0.1·√P` in its Table 2 (0.1414 mm at 2 mm of pitch, 0.2 at 4), and hexagon.de's
+  notes to Dose's screw calculation quote DIN 513's Figure 2 the same. 7H, 8H and 9H now carry
+  that deviation (`buttressNutDeviation`, `TestButtressNutPlay`): an S20x4 7H nut's clearance
+  went from 0.089 to 0.406 mm. It is large because a 3° flank turns an axial play into a wide
+  change of pitch diameter: 2/(tan 3° + tan 30°) = 3.1758.
+- **B1.9's pitches.** ASME B1.9-1973's Table 1, "Diameter-Pitch Combinations", as Machinery's
+  Handbook (28th edition, p. 1851) reprints it, with the three preferred threads per inch of
+  each range in parentheses. A scan of the 1973 standard's text agrees on the ranges and the
+  pitches, but its heavy lines, which mark the preferred ones, are lost. `buttressInchSeries`
+  holds the rows; the sizes now reach 24 inches, and a size without its threads per inch takes the
+  middle of the three preferred, which moved 3/4 BUTT from 12 to 16 and 1 1/2 BUTT from 8 to 10
+  (`TestButtressInchPitches`). H28 (1957) had no such table; its ranges were the old guess.
+- **Several starts.** ASME B1.5-1997's Nonmandatory Appendix B (B1, B2.2, p. 81): a nut's
+  maximum major, pitch and minor diameters grow by 50% of its class's allowance `es` for two
+  starts, 75% for three, 100% for four or more; its minimum and the GO gauge stay, and a screw is
+  as one of one start. Its example, 0.002, 0.003 and 0.004 inch on a 0.25-16 ACME-2G nut, is
+  `TestACMEStarts`. Machinery's Handbook's older wording (p. 1828) moves the GO gauge by as much
+  too; the 1997 appendix does not, and nor does `acmeClearance`. ASME B1.9 has no rule for several
+  starts beyond the designation (its 9.2.2, `10-0.25P-0.5L-BUTT-3B (2 START)`), so a B1.9 thread
+  of several starts keeps the tolerances of its pitch.
 
 Chamfered nuts at coarse chord tolerances, unsound where the chamfer's cone met the ridges
 (buttress nuts from 0.2%, ISO, UNC and trapezoidal nuts from 0.5–1%), were fixed in `a68c4c8b`: a
@@ -142,5 +162,7 @@ FreeCAD:
 - Fasteners WB: https://github.com/shaise/FreeCAD_FastenersWB/blob/master/FastenersCmd.py
 - TechDraw thread lines: https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_ExtensionThreadHoleSide.md
 
-Thread standards used for the classes: see ROADMAP's "Thread leftovers" (DIN 513-3:2020,
-NBS H28 (1957) Part III, Machinery's Handbook, Engineers Edge's ACME rows).
+Thread standards used for the classes: DIN 513-3:2020 (free text at normsplash.com), IS 4696
+(Part 1):2004 for DIN 513-1's axial play, NBS H28 (1957) Part III, ASME B1.9-1973 Table 1 and
+ASME B1.5-1997 Appendix B (both as Machinery's Handbook, 28th edition, reprints them),
+Engineers Edge's ACME rows.

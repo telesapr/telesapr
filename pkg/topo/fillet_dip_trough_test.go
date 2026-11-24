@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"strings"
 	"testing"
 
 	"github.com/telesapr/telesapr/pkg/core"
@@ -136,8 +135,7 @@ func TestFilletTroughPastFloor(t *testing.T) {
 // name before 2026-11-23; now made at the nearest size within the chord
 // tolerance at which the foot crosses the floor's edge or stays clear
 // of it (footAtEdgeSize), sound and within the integral at that size as
-// TestFilletTroughPastFloor's are. At 3.5 the foot runs below the floor
-// all along, which an end's run-off refuses.
+// TestFilletTroughPastFloor's are.
 func TestFilletTroughTouchesFloor(t *testing.T) {
 	t.Parallel()
 	for _, c := range []struct {
@@ -168,9 +166,55 @@ func TestFilletTroughTouchesFloor(t *testing.T) {
 			}
 		})
 	}
-	sh := troughPocket(fine(0.01))
-	pick := []topo.FilletPick{{Arc: true, At: v(0, 3, troughAxis-troughR)}}
-	if err := topo.FilletPicks(sh, pick, 3.5, 1<<30, false); err == nil || !strings.Contains(err.Error(), "runs off the face on side 2 all along") {
-		t.Errorf("r 3.5: got %v, want a refusal of a foot below the floor all along", err)
+}
+
+// The trough's y+ rim edge from 3.5, where the foot on the wall runs
+// below the floor all along, from end wall to end wall: the floor's
+// plane cuts the fillet over its whole length and the wall goes whole
+// (rollingrunoff_whole.go). Refused by name before 2026-11-24 ("runs off
+// the face on side 2 all along"). Within the integral as
+// TestFilletTroughPastFloor's are, the fillets 2e-5 to 1.2e-4 over it,
+// the chamfers 0.13% to 0.17% under. The chamfer of 4 crosses the
+// floor's plane at the middle of a straight section, on a sample of
+// clipLoop's: refused before that sample was passed over. OpenCASCADE
+// refuses all of these, and from where the foot reaches the floor (2)
+// takes less than the integral, 0.07% at 2.1, 2.3% at 2.5, 7.8% at 3:
+// its ball leaves the wall there and rolls on the wall's edge with the
+// floor, where ours rolls on as if the wall went on below and the
+// floor's plane cuts the fillet, as a dip's does (rollingrunoff_dip.go).
+func TestFilletTroughWallTakenWhole(t *testing.T) {
+	t.Parallel()
+	for _, c := range sweep.Pick([]struct {
+		r      float64
+		flat   bool
+		lo, hi float64
+	}{
+		{3.5, false, -1e-4, 1e-4},
+		{4, false, -1e-4, 1e-4},
+		{5, false, -1e-4, 1.5e-4},
+		{6.5, false, -1e-4, 1.5e-4},
+		{3.5, true, -0.002, -0.001},
+		{4, true, -0.002, -0.001},
+		{5, true, -0.002, -0.001},
+		{6.5, true, -0.002, -0.001},
+	}, 0) {
+		t.Run(fmt.Sprintf("r%g flat %v", c.r, c.flat), func(t *testing.T) {
+			t.Parallel()
+			sh := troughPocket(fine(0.01))
+			before := surfaceVolume(t, sh)
+			pick := []topo.FilletPick{{Arc: true, At: v(0, 3, troughAxis-troughR)}}
+			if err := topo.FilletPicks(sh, pick, c.r, 1<<30, c.flat); err != nil {
+				if fe, ok := errors.AsType[*topo.FilletError](err); ok {
+					t.Fatalf("%v at %v", err, fe.At)
+				}
+				t.Fatal(err)
+			}
+			sound(t, sh)
+			took, want := before-surfaceVolume(t, sh), troughTaken(c.r, c.flat)
+			t.Logf("took %.6f, the integral %.6f, %+.5f", took, want, took/want-1)
+			if d := took/want - 1; d < c.lo || d > c.hi {
+				t.Errorf("took %.6f, the integral %.6f", took, want)
+			}
+		})
 	}
 }

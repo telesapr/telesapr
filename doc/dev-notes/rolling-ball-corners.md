@@ -3,6 +3,7 @@
 Refreshed 2026-11-19 at branches `pocket-curved-crease`, `fillet-end-leaning-wall`, `pocket-crease-lean-back`, `rim-fine-tol-corner`, `apex-seam-chamfer`, `pivot-shared-seam`, `step-seam-corners`, `seam-near-point` and `dish-chamfer-wall-foot`; 2026-11-20 at `step-chamfer-one-face` and `step-dish-rims`; 2026-11-23 at `fillet-foot-at-edge`.
 Refreshed 2026-11-23 at `wrapped-cutback-speed`: a chain's sections at once.
 Refreshed 2026-11-24 at `chamfer-section-spacing`: a chamfer's sections by how its edge bends.
+Refreshed 2026-11-24 at `fillet-foot-below-edge`: a foot below the floor all along, the wall taken whole.
 
 Where two rolling-ball chains end at one vertex with a crease between their walls that the ball
 goes round (a pocket's rim in a curved face, the foot of a band raised on a tube at the band's
@@ -568,8 +569,26 @@ plane and the end walls' and integrates in closed form round the axis: fillets o
 within 1e-4 of it (2.001 cuts a dip 0.001 deep), at 2 made at 2.006 (`footAtEdgeSize`); chamfers 0.08% to 0.12%
 under it before any reaches the floor (0.5 to 1.9, the same at 0.01% and 0.002%: the integral cuts
 the chamfer's triangles square to the edge by the end walls, where the chamfer's end sections are
-its own) and on past it as smoothly, 0.13% to 0.16% under from 2.001 to 3. At 3.5 the trough's foot
-is below the floor all along, which an end's run-off refuses by name.
+its own) and on past it as smoothly, 0.13% to 0.16% under from 2.001 to 3.
+
+Past 3.41 the trough's foot is below the floor all along, from end wall to end wall, which
+an end's run-off refused by name ("runs off the face on side 2 all along"): it found no point
+where the contact came back above the floor's plane. Both ends run off onto the floor, so the two
+run-offs are one cut, as `consumedRunOff`'s two next faces meeting at a ridge are, with no ridge
+(`wholeRunOff`, `rollingrunoff_whole.go`, 2026-11-24): every patch is cut by the floor's plane
+once (`wholeLoops`), the cut runs from one end's p1 to the other's, the floor loses its edge with
+the wall from w to w and takes the cut, put in once by the end at 0 (`closeNext`, `wholeLead`),
+each end face takes its section to p1 and the line from p1 to w with the floor, and the wall goes
+(`dropSurfaceOf`). Sound at 3.5, 4, 5 and 6.5, fillets 2e-5 to 1.2e-4 over the integral and
+chamfers 0.13% to 0.17% under (`TestFilletTroughWallTakenWhole`); from 7 the foot on the top
+reaches the block's side at y = 10 and the mesh is refused as open. The chamfer of 4 first failed
+"can't follow where the next face's plane cuts it": a straight section crossed the plane exactly
+on one of `clipLoop`'s 64 samples (h = 0 there), which neither interval took as a crossing; a
+sample on the plane is now passed over. OpenCASCADE (`makeFillet` in FreeCADCmd) agrees with the
+integral to 4e-5 up to 1.99, takes less from where the foot reaches the floor (0.07% at 2.1, 0.8%
+at 2.3, 2.3% at 2.5, 7.8% at 3) and refuses from 3.5, its chamfers from 2.5: its ball leaves the
+wall where the foot reaches the floor and rolls on the wall's edge with it, where ours rolls on
+as if the wall went on below and the floor's plane cuts the fillet, as for a dip.
 
 ## A corner on a seam of the shared face (2026-11-19)
 

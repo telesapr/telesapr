@@ -350,6 +350,26 @@ func TestButtressInchTable(t *testing.T) {
 	}
 }
 
+// TestButtressNutPlay checks a DIN 513 nut's fundamental deviation EI
+// = 3.1758 a against the axial play a of IS 4696 (Part 1):2004's Table
+// 2, which follows DIN 513-1:1985, to its four places; and S20x4 7H's
+// clearance worked by hand: EI 3.1758 · 0.2 mm = 635.16 µm, TD2 355 µm,
+// (635.16 + 177.5) / 2 µm = 0.40633 mm on the radius.
+func TestButtressNutPlay(t *testing.T) {
+	t.Parallel()
+	for _, r := range []struct{ pitch, play float64 }{
+		{2, 0.1414}, {3, 0.1732}, {4, 0.2}, {5, 0.2236},
+	} {
+		if got := buttressNutDeviation(r.pitch); math.Abs(got-3175.8*r.play) > 3175.8*0.00005 {
+			t.Errorf("P%g: EI %.2f µm, 3.1758 · %g mm is %.2f", r.pitch, got, r.play, 3175.8*r.play)
+		}
+	}
+	s, _ := Parse("S20x4")
+	if got, err := ClassClearance(s, true, "7H"); err != nil || math.Abs(got-0.40633) > 5e-6 {
+		t.Errorf("S20x4 7H: %v, %v; want 0.40633 mm", got, err)
+	}
+}
+
 // TestButtressMetricTable checks DIN 513-3:2020's classes: the
 // deviations of Table 2 and the tolerances of Tables 8 and 9, a row of
 // each range, and the formulae for what they lack; and that its grades
@@ -363,16 +383,16 @@ func TestButtressMetricTable(t *testing.T) {
 	}{
 		{"S10x2", "7e", false, 71, 190},
 		{"S10x2", "9c", false, 150, 300},
-		{"S10x2", "9H", true, 0, 400},
+		{"S10x2", "9H", true, 449.13, 400},
 		{"S20x4", "7e", false, 95, 265},
 		{"S20x4", "8c", false, 190, 335},
-		{"S20x4", "7H", true, 0, 355},
+		{"S20x4", "7H", true, 635.16, 355},
 		{"S40x7", "8e", false, 125, 450},
 		{"S70x10", "9c", false, 300, 670},
-		{"S120x14", "8H", true, 0, 900},
+		{"S120x14", "8H", true, 1188.28, 900},
 		{"S300x24", "7e", false, 236, 710},
 		{"S400x12", "9c", false, 335, 900},
-		{"S400x44", "9H", true, 0, 2000},
+		{"S400x44", "9H", true, 2106.59, 2000},
 		// Two starts of 7 mm: the tolerance times DIN 513-3's 1.12,
 		// the deviation of the pitch.
 		{"S40x14(P7)", "7e", false, 125, 355 * 1.12},
@@ -391,7 +411,7 @@ func TestButtressMetricTable(t *testing.T) {
 			t.Errorf("%s %s: %v", tc.thread, tc.class, err)
 			continue
 		}
-		if want := (tc.es + tc.td2/2) / 2 / 1000; math.Abs(got-want) > 1e-9 {
+		if want := (tc.es + tc.td2/2) / 2 / 1000; math.Abs(got-want) > 1e-5 {
 			t.Errorf("%s %s: clearance %.5f mm, the table's %.5f", tc.thread, tc.class, got, want)
 		}
 	}
@@ -417,5 +437,35 @@ func TestButtressMetricTable(t *testing.T) {
 		if math.Abs(float64(r.e)-e) > 0.035*e || math.Abs(float64(r.c)-c) > 0.03*c {
 			t.Errorf("P%g: c %d, e %d; the formulae's %.0f, %.0f", r.pitch, r.c, r.e, c, e)
 		}
+	}
+}
+
+// TestACMEStarts checks ASME B1.5-1997's Appendix B on a nut of several
+// starts against its example: a 0.25-16 ACME-2G nut 0.002, 0.003, 0.004
+// and 0.004 inch larger at its maximum pitch diameter for two, three,
+// four and five starts, so a quarter of that on the clearance, a radius
+// in the middle of the zone; the screw is as one of one start.
+func TestACMEStarts(t *testing.T) {
+	t.Parallel()
+	one := Spec{Form: FormACME, Diameter: mmPerInch / 4, Pitch: mmPerInch / 16}
+	nut, _ := ClassClearance(one, true, "2G")
+	screw, _ := ClassClearance(one, false, "2G")
+	for n, more := range map[int]float64{2: 0.002, 3: 0.003, 4: 0.004, 5: 0.004} {
+		s := one
+		s.Starts = n
+		got, err := ClassClearance(s, true, "2G")
+		if want := nut + more/4*mmPerInch; err != nil || math.Abs(got-want) > 1e-9 {
+			t.Errorf("%d starts: nut clearance %v, %v; want %.6f mm", n, got, err, want)
+		}
+		if got, _ := ClassClearance(s, false, "2G"); got != screw {
+			t.Errorf("%d starts: screw clearance %v, one start's %v", n, got, screw)
+		}
+	}
+	// 5G has no allowance, so nothing to add.
+	five := one
+	five.Starts = 4
+	a, _ := ClassClearance(one, true, "5G")
+	if b, _ := ClassClearance(five, true, "5G"); a != b {
+		t.Errorf("5G four starts %v, one %v", b, a)
 	}
 }

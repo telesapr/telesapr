@@ -130,6 +130,10 @@ func linkStep(path string, sk *sketch.Sketch, m *srf.SMesh, _ *srf.SShell, rep *
 		fmt.Sprintf("%s, %s, %s", shapes, plural(r.Faces, "face"), plural(r.Triangles, "triangle")),
 		fmt.Sprintf("chord tolerance %.3g mm", r.ChordTol),
 	}
+	if r.Validated > 0 {
+		rep.Info = append(rep.Info, fmt.Sprintf("volume, area and centre as the file declares for %s",
+			plural(r.Validated, "part")))
+	}
 	rep.Problem = r.Problem()
 
 	b := entities{id: 1}
@@ -198,6 +202,12 @@ func linkStepSolid(path string, sk *sketch.Sketch, m *srf.SMesh, sh *srf.SShell,
 	}
 	m.Clear()
 	*sh = *solid
+	// The mesh is not used: what is said of it goes, and the solid is
+	// checked as every group's is.
+	if r := res.Report; r.BrokenSolids > 0 {
+		r.BrokenSolids = 0
+		rep.Problem = r.Problem()
+	}
 	rep.Info = append(rep.Info, fmt.Sprintf("read as a solid, %s exact", plural(faces, "face")))
 	return ents, true
 }

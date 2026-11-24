@@ -116,6 +116,13 @@ func encodeStepDisk(w io.Writer, res *step.Result) error {
 		e.string(r.Details[k])
 	}
 	e.int(r.Crossed)
+	for _, v := range [...]int{r.BrokenSolids, r.NakedEdges, r.SelfIntersecting, r.Validated} {
+		e.int(v)
+	}
+	e.int(len(r.Mismatches))
+	for _, s := range r.Mismatches {
+		e.string(s)
+	}
 	return e.w.Flush()
 }
 
@@ -256,6 +263,16 @@ func decodeStepDisk(r io.Reader) (*step.Result, error) {
 		}
 	}
 	rp.Crossed = d.int()
+	rp.BrokenSolids, rp.NakedEdges, rp.SelfIntersecting, rp.Validated = d.int(), d.int(), d.int(), d.int()
+	if n := d.count(); d.err == nil && n > 0 {
+		rp.Mismatches = make([]string, 0, min(n, 1<<10))
+		for range n {
+			if d.err != nil {
+				break
+			}
+			rp.Mismatches = append(rp.Mismatches, d.string())
+		}
+	}
 	if d.err != nil {
 		return nil, fmt.Errorf("reading a kept tessellation: %w", d.err)
 	}

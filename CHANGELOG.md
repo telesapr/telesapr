@@ -9,6 +9,35 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+### Added
+
+- Fillets and chamfers of a pocket's rim wider than its wall is high all along, as in a trough whose top dips lower than the fillet's radius above the floor: the floor cuts the fillet from end to end and the wall goes; refused before ("runs off the face on side 2 all along").
+- A linked STEP file's declared volume, surface area and centre (its validation properties) are
+  compared with what was read: the link's screen says "volume, area and centre as the file
+  declares for 1 part", or, where they differ by more than 1%, names the part and how
+  (`g.AsLink().Problem()` in a script).
+- A linked STEP solid whose triangles come in open or crossing themselves is said on the link's
+  screen ("the mesh of 1 solid has 3 naked edges, so it is not closed"); it came in silently.
+
+### Changed
+
+- DIN 513 buttress nuts (7H, 8H, 9H) are made with the standard's pitch diameter deviation, 3.1758
+  times the axial play 0.1·√P: an S20x4 7H nut has 0.41 mm of clearance, 0.09 mm before.
+- ASME B1.9 buttress threads have the sizes and pitches of the standard's Table 1, from 1/2 to 24
+  inches, and a size given without its threads per inch takes the middle of the three preferred:
+  3/4 BUTT is now 3/4-16 BUTT (12 before) and 1 1/2 BUTT is 1 1/2-10 BUTT (8 before).
+- ACME nuts of several starts get the extra clearance of ASME B1.5's Appendix B: 50%, 75% and 100%
+  of the class's allowance for two, three, and four or more starts.
+- A link's problem on its screen starts "Not all is well with the file:", in place of "Not all
+  of the file was read:", since it may now be about what was read.
+- A solid with a hollow inside it is exported to STEP as a solid with a void (`BREP_WITH_VOIDS`),
+  each cavity a void of the body round it; it was one shell holding both.
+
+### Fixed
+
+- A STEP file's void whose faces were written turned over, bounds and all, as the standard has it,
+  came in open where its faces were patches of a sphere.
+
 ## [0.6.10] - 2026-11-24
 
 ### Fixed

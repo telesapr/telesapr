@@ -98,8 +98,9 @@ The **thread** row holds the designation. These forms are read:
 - **[change]** takes any designation you type. If the thread is written another way, the screen
   says so: `'M8x1.25' is written M8`. A size the series does not have is refused, and the
   message offers a way out: `give its pitch, as in Tr21x4, or take the nearest, Tr20x4`.
-- The S series takes its sizes from ISO 2902, from 10 mm up. A BUTT size given without its
-  threads per inch takes the middle of the pitches recommended for that diameter.
+- The S series takes its sizes from ISO 2902, from 10 mm up. The BUTT series has ASME B1.9's
+  sizes, from 1/2 to 24 inches. A BUTT size given without its threads per inch takes the middle
+  of the three that B1.9 prefers for that diameter: `1 BUTT` is 1-12 BUTT.
 
 ### The rows
 
@@ -147,6 +148,12 @@ default.
 A class sets the clearance to the middle of its tolerance zone. So a 6g screw fits a 6H nut as
 real parts do on average (M10: 0.049 and 0.044 mm). Typing a clearance sets the class to none.
 Made internal, a screw's class becomes the nut's default.
+
+- A DIN 513 nut (7H, 8H, 9H) is made larger than the basic size by the standard's axial play on
+  its trailing flank. An S20x4 7H nut has 0.41 mm of clearance.
+- An ACME nut of several starts gets more clearance, as ASME B1.5 asks: half of its class's
+  allowance more for two starts, three quarters for three, all of it for four or more. The screw
+  is the same as for one start.
 
 ### Buttress threads and the load flank
 
@@ -344,6 +351,4 @@ cone's outline at 45°, with the root's thin lines running to it.
 
 - Tapered threads (NPT, BSPT) and a variable pitch: not planned.
 - A thread that runs through to the part's end has no run-out.
-- DIN 513 nuts (7H, 8H, 9H) are made at the basic size: the standard's nut deviation is not yet
-  taken.
 - Without level starts, the first pitches of a thread of several starts have fewer ridges.

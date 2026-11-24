@@ -1596,7 +1596,7 @@ func (tw *textWindow) showLinkedInfo(g *sketch.Group) {
 		tw.Printf(false, "   %Fd%s%E", line)
 	}
 	if g.LinkProblem != "" {
-		for i, line := range wrapWords("Not all of the file was read: "+g.LinkProblem+".", maxCols-6) {
+		for i, line := range wrapWords("Not all is well with the file: "+g.LinkProblem+".", maxCols-6) {
 			indent := "   "
 			if i > 0 {
 				indent = "     "

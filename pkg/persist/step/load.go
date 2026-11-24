@@ -70,12 +70,21 @@ type Report struct {
 	// Crossed counts the faces kept although their bounds crossed in
 	// the surface's parameters, which can leave gaps or overlaps.
 	Crossed int
+	// BrokenSolids counts the solids whose meshes are open or cross
+	// themselves, NakedEdges and SelfIntersecting their edges so
+	// (meshcheck.go).
+	BrokenSolids, NakedEdges, SelfIntersecting int
+	// Validated counts the products whose declared volume, area and
+	// centre agree with what was read; Mismatches says how each other
+	// one differs (validation.go).
+	Validated  int
+	Mismatches []string
 }
 
 // Problem is a sentence for the user about what was not imported, or
 // "" when everything was.
 func (r *Report) Problem() string {
-	if len(r.Reasons) == 0 && r.Shapes > 0 && r.Crossed == 0 {
+	if len(r.Reasons) == 0 && r.Shapes > 0 && r.Crossed == 0 && r.BrokenSolids == 0 && len(r.Mismatches) == 0 {
 		return ""
 	}
 	var unsup, other []string
@@ -113,7 +122,31 @@ func (r *Report) Problem() string {
 	if r.Crossed > 0 {
 		parts = append(parts, fmt.Sprintf("%d faces have bounds that cross, and may show gaps", r.Crossed))
 	}
+	if r.BrokenSolids > 0 {
+		parts = append(parts, r.MeshProblem())
+	}
+	parts = append(parts, r.Mismatches...)
 	return strings.Join(parts, "; ")
+}
+
+// MeshProblem is a sentence for the user about the solids whose meshes
+// are open or cross themselves, or "".
+func (r *Report) MeshProblem() string {
+	if r.BrokenSolids == 0 {
+		return ""
+	}
+	var what []string
+	if r.NakedEdges > 0 {
+		what = append(what, fmt.Sprintf("%d naked edges, so it is not closed", r.NakedEdges))
+	}
+	if r.SelfIntersecting > 0 {
+		what = append(what, fmt.Sprintf("%d self-intersecting edges", r.SelfIntersecting))
+	}
+	solids := "the mesh of 1 solid has"
+	if r.BrokenSolids > 1 {
+		solids = fmt.Sprintf("the meshes of %d solids have", r.BrokenSolids)
+	}
+	return solids + " " + strings.Join(what, " and ")
 }
 
 // ReadFile reads a STEP file. The error is for a file that can't be
@@ -197,8 +230,11 @@ func FromModel(schema string, m *Model, o Options) *Result {
 
 	meshes := make([]shapeMesh, len(m.Shapes))
 	for i, sh := range m.Shapes {
+		skipped := rep.Skipped
 		meshes[i] = tessellateShape(sh, tol, rep)
+		checkMesh(sh, meshes[i], rep.Skipped > skipped, rep)
 	}
+	checkValidations(m, meshes, tol, rep)
 
 	seenV := map[geom.Vector]bool{}
 	for _, pl := range m.Placements {

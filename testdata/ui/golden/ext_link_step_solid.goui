@@ -348,10 +348,10 @@ row 22    0 shapes, 0 faces, 0 triangles
  0-99 64 64 0
 row 24    chord tolerance 0.1 mm
  0-99 64 64 0
-row 26    Not all of the file was read: the file holds no solid or shell that can be read; it holds
+row 26    Not all is well with the file: the file holds no solid or shell that can be read; it holds
  0-2 64 64 0
- 3-91 78 64 0
- 92-99 64 64 0
+ 3-92 78 64 0
+ 93-99 64 64 0
 row 28      BLOCK (1), BOOLEAN_RESULT (6), CSG_SOLID (1), HALF_SPACE_SOLID (1), RIGHT_ANGULAR_WEDGE (1),
  0-4 64 64 0
  5-96 78 64 0

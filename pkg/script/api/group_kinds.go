@@ -548,7 +548,9 @@ func (v LinkGroup) Info() (lines []string) {
 // Problem says what of the file a link group links could not be
 // read, such as the faces of a STEP file on a kind of surface the
 // reader does not support, or that the file holds no solid it can
-// read; "" when all of it was.
+// read; for a STEP file also a solid whose mesh came in open or
+// crossing itself, and a part whose volume, area or centre differs
+// from what the file declares; "" when all is well.
 func (v LinkGroup) Problem() (msg string) {
 	g := v.g
 	g.d.read(func(sk *sketch.Sketch) {

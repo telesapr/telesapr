@@ -107,31 +107,54 @@ func ButtressPitch(d float64) (float64, bool) {
 	return 0, false
 }
 
-// buttressInch are ASME B1.9's preferred diameters, each with the
-// threads per inch a designation without them takes: the middle of
-// those B1.9 recommends for its range of diameters (buttressInchTPI).
+// buttressInch are ASME B1.9's preferred nominal diameters, each with
+// the threads per inch a designation without them takes: the middle of
+// the three Table 1 prefers for its range of diameters (buttressInchTPI).
 var buttressInch = []inchSize{
-	{"1/2", 1.0 / 2, 16}, {"5/8", 5.0 / 8, 16}, {"3/4", 3.0 / 4, 12},
+	{"1/2", 1.0 / 2, 16}, {"5/8", 5.0 / 8, 16}, {"3/4", 3.0 / 4, 16},
 	{"7/8", 7.0 / 8, 12}, {"1", 1, 12}, {"1 1/4", 1 + 1.0/4, 10},
-	{"1 3/8", 1 + 3.0/8, 10}, {"1 1/2", 1 + 1.0/2, 8}, {"1 3/4", 1 + 3.0/4, 8},
+	{"1 3/8", 1 + 3.0/8, 10}, {"1 1/2", 1 + 1.0/2, 10}, {"1 3/4", 1 + 3.0/4, 8},
 	{"2", 2, 8}, {"2 1/4", 2 + 1.0/4, 8}, {"2 1/2", 2 + 1.0/2, 8},
 	{"2 3/4", 2 + 3.0/4, 6}, {"3", 3, 6}, {"3 1/2", 3 + 1.0/2, 6}, {"4", 4, 6},
+	{"4 1/2", 4 + 1.0/2, 5}, {"5", 5, 5}, {"5 1/2", 5 + 1.0/2, 5}, {"6", 6, 5},
+	{"7", 7, 4}, {"8", 8, 4}, {"9", 9, 4}, {"10", 10, 4},
+	{"11", 11, 3}, {"12", 12, 3}, {"14", 14, 3}, {"16", 16, 3},
+	{"18", 18, 2.5}, {"20", 20, 2.5}, {"22", 22, 2.5}, {"24", 24, 2.5},
+}
+
+// buttressInchSeries are the rows of ASME B1.9-1973's Table 1,
+// "Diameter-Pitch Combinations for 7°/45° Buttress Threads": a range of
+// major diameters, in inches, over the first (the first row from it)
+// and up to and including the second, and the threads per inch it
+// takes, coarsest first. Machinery's Handbook (28th edition, p. 1851,
+// Table 1) reprints the table, the three preferred of each row in
+// parentheses there; the 1973 standard's own pages agree on the ranges
+// and the pitches (its scan's text keeps them, not the heavy lines that
+// mark the preferred ones).
+var buttressInchSeries = []struct {
+	over, thru float64
+	tpi        []float64
+}{
+	{0.5, 0.75, []float64{12, 16, 20}},
+	{0.75, 1, []float64{10, 12, 16}},
+	{1, 1.5, []float64{6, 8, 10, 12, 16}},
+	{1.5, 2.5, []float64{4, 5, 6, 8, 10, 12, 16}},
+	{2.5, 4, []float64{4, 5, 6, 8, 10, 12, 16}},
+	{4, 6, []float64{3, 4, 5, 6, 8, 10, 12}},
+	{6, 10, []float64{2, 2.5, 3, 4, 5, 6, 8, 10}},
+	{10, 16, []float64{1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10}},
+	{16, 24, []float64{1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8}},
 }
 
 // buttressInchTPI are the threads per inch ASME B1.9 recommends for a
 // diameter in inches, coarsest first.
 func buttressInchTPI(d float64) []float64 {
-	switch {
-	case d < 0.5-1e-9 || d > 4+1e-9:
-		return nil
-	case d < 0.75-1e-9:
-		return []float64{12, 16, 20}
-	case d < 1.0625-1e-9:
-		return []float64{10, 12, 16}
-	case d < 1.5-1e-9:
-		return []float64{6, 8, 10, 12, 16}
+	for i, r := range buttressInchSeries {
+		if (d > r.over+1e-9 || i == 0 && d > r.over-1e-9) && d <= r.thru+1e-9 {
+			return r.tpi
+		}
 	}
-	return []float64{4, 5, 6, 8, 10, 12, 16}
+	return nil
 }
 
 // Load is the way a buttress thread carries its load, as ASME B1.9's

@@ -158,8 +158,10 @@ screen). A chamfer of such an edge is made the same way.
 
 Where the edge ends at a flat face, the fillet ends in that face's plane and the face grows to
 meet it. Where the fillet's end runs past the edge onto the next face, flat or curved, that
-face cuts it and grows over its end. A curved end face, as a domed lid, cuts the fillet too;
-where it bends too much across a wide fillet, it is refused with "make it smaller".
+face cuts it and grows over its end. Where the fillet is wider than a pocket's wall is high all
+along, the floor cuts it from end to end and the wall goes. A curved end face, as a domed lid,
+cuts the fillet too; where it bends too much across a wide fillet, it is refused with "make it
+smaller".
 
 ## Not yet
 

@@ -35,6 +35,8 @@ STEP AP242 (edition 4):
   are written as lines and circles. Faces of any other shape are written as B-spline surfaces.
 - Each body is its own solid. A mirror copy beside the original, or the copies of a pattern, come
   in as separate solids.
+- A solid with a hollow inside it, closed all round, is written as a solid with a void, so the
+  program that reads the file sees one solid with a cavity, not two.
 - The part's volume, surface area and centre are written into the file. A program that reads the
   file can measure the solid it read and compare.
 - The part is named after the file, and the file says when it was written.
@@ -190,6 +192,5 @@ Some flags:
 - DXF is the only 2d format imported; DWG is not read.
 - A STEP file comes in as a linked part, not as sketches and features you can edit.
 - A STEP file's own volume and area, where it has them, are not compared with what was read.
-- A solid with a hollow inside it is written as one shell, not as a solid with a void.
 - Dimensions and tolerances (PMI) are neither read nor written.
 - IGES is neither read nor written.

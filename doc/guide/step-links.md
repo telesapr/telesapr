@@ -50,9 +50,24 @@ The link group's screen says what was read from a STEP file:
 - the file's schema and unit;
 - how many shapes, faces and triangles it gave;
 - the chord tolerance (how far the mesh may stray from the true surface);
-- the entities it could not read, by name.
+- the entities it could not read, by name;
+- whether the volume, area and centre the file declares for its parts agree with what was read.
 
 A file with no shape the reader takes links as an empty mesh, and the screen says why.
+
+### What the screen warns of
+
+A STEP file may declare each part's volume, surface area and centre (its "validation
+properties"). TeleSAPR writes them, and so do many other programs. When a linked file has them,
+the screen says "volume, area and centre as the file declares for 1 part". When a part differs by
+more than 1% (the centre: by more than 1% of the part's size), the screen says so in red, as
+`"bracket" is not what the file declares it to be: volume 1100 mm³ declared, 1000 read`. Then the
+part did not come across as it was made. A file that declares nothing says nothing.
+
+The triangles of each solid are also checked, as Analyze > Check Solid checks a solid. A solid
+whose triangles leave a gap or cross each other gives "the mesh of 1 solid has 3 naked edges,
+so it is not closed". Try reading it as a solid, or ask for the file again. Touching parts of an
+assembly, and open shells, are not warned of.
 
 ### Reading the file again
 
@@ -113,3 +128,5 @@ part.AsLink().SetAsSolid(false)                                      // back to 
 - A tessellated STEP file (triangles only) links as a mesh, never as a solid.
 - A STEP file whose edges lie further than 0.001 mm from their faces is not read as a solid.
 - An IDF file gives the board alone: the parts placed on it are not read.
+- Validation properties of a part used in an assembly, when the part holds no shapes of its own
+  (only sub-parts), are not compared; nor are a file's other properties (counts of faces, PMI).

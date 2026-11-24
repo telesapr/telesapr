@@ -19,7 +19,7 @@ The plan, with what existed before each item, is at
 | 1 | Wrap or emboss a sketch onto cylinders and cones | C2 | `pkg/sketch/wrap.go` |
 | 2 | Named datums | B4 | `pkg/sketch/datum.go` |
 | 3 | Parametric links and relink | B3 | `pkg/sketch/link_params.go`; the link cache is keyed by the values passed |
-| 4 | Thread as one parametric group | B1 | `pkg/sketch/thread*.go`; open rows in ROADMAP, "Thread leftovers" |
+| 4 | Thread as one parametric group | B1 | `pkg/sketch/thread*.go`; the classes' sources in `thread-evaluation.md` |
 | 5 | Script forms | B5 | `api.Form` |
 | 6 | Script library imports | A4 | One library folder, read by the console, `run` and MCP |
 | 7 | Shells of curved solids | C1 | `pkg/topo/shellrevolve*.go`, `shelldraft.go`, `shellprism.go`, `shelljoined*.go`: lathes and revolves of lines and arcs, drafted extrusions, prisms, and solids joined or cut from such parts. The general shell (E12) is parked |

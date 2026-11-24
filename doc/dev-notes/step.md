@@ -1,7 +1,9 @@
 # STEP exchange
 
-Refreshed 2026-11-24 on branch `step-edge-merge`, from devel 3ecef233, after the writer joined an
-edge's pieces (first written 2026-11-23, after the writer was moved to AP242). How TeleSAPR's STEP
+Refreshed 2026-11-24 on branch `step-voids`, from devel a2b990de, after the writer came to write a
+cavity as a void (first written 2026-11-23, after the writer was moved to AP242; refreshed on
+`step-edge-merge` when the writer joined an edge's pieces, and on `step-link-checks` when the
+reader came to read validation properties and check each solid's mesh). How TeleSAPR's STEP
 reader (`pkg/persist/step`, `pkg/persist/link`) and writer (`pkg/export/step.go`,
 `step_analytic.go`, `step_analytic_curve.go`, `step_bodies.go`, `step_edge_merge.go`,
 `step_validation.go`) stand against the
@@ -38,10 +40,10 @@ this note works from what is free:
 | Units | SI with prefixes, conversion-based (inch, degree) | mm, radian, steradian, uncertainty 2 × LengthEps |
 | Analytic surfaces | plane, cylinder, cone, sphere, torus, extrusion, revolution, offset | plane, cylinder, cone, sphere and torus where every point of a 5 × 5 grid on the patch (on every patch of a face written as one) lies on it within 1e-7 of its size; lines and circles for an edge's straight and circular curves; the rest rational B-splines. A wireframe's free curves stay B-splines, a LINE or CIRCLE being unbounded |
 | Edges | the EDGE_CURVEs of each EDGE_LOOP, their 3D curves | an EDGE_CURVE per run of a face's trim pieces between real vertices, shared by both faces (`step_edge_merge.go`); see "Edges across patches" below |
-| Bodies | each MANIFOLD_SOLID_BREP, BREP_WITH_VOIDS, shell model, tessellated shape | a MANIFOLD_SOLID_BREP of its own CLOSED_SHELL per body (`srf.SShell.Pieces`); a shell with a cavity, a piece whose mesh encloses a negative volume, still one CLOSED_SHELL: no BREP_WITH_VOIDS yet |
+| Bodies | each MANIFOLD_SOLID_BREP, BREP_WITH_VOIDS, shell model, tessellated shape | a MANIFOLD_SOLID_BREP of its own CLOSED_SHELL per body (`srf.SShell.Pieces`); a body with cavities a BREP_WITH_VOIDS, each cavity an ORIENTED_CLOSED_SHELL `.F.` of its faces turned out (`step_bodies.go`); see "Voids" below |
 | PCURVE | not read; trims projected from the 3D curves | not written |
 | Colours (Styling 1.10) | STYLED_ITEM and OVER_RIDING_STYLED_ITEM, RGB and named colours | a STYLED_ITEM per face, its group's colour |
-| Validation properties (GVP 4.6) | not read | volume, surface area and centre per part, at the part's level, combined in one REPRESENTATION (4.12), measured on the shell meshed at a twentieth of its tolerance |
+| Validation properties (GVP 4.6) | a product's volume, area and centre, a property each or combined, compared with what was read (see "Reading validation properties" below) | volume, surface area and centre per part, at the part's level, combined in one REPRESENTATION (4.12), measured on the shell meshed at a twentieth of its tolerance |
 | PMI, layers, tessellated B-rep, UUIDs | not read | not written |
 
 ## The exchange check
@@ -143,6 +145,91 @@ thresholds, as before; OpenCASCADE's volumes moved by under 5e-5 (the bolt's mos
 2072.369 → 2072.454, its thread flanks' pcurves projected from the longer curves), ours and the
 round trip's not at all. No golden under `testdata/export` moved: their solids are planes and
 circles.
+
+## Reading validation properties, 2026-11-24
+
+`pkg/persist/step/validation.go` reads every PROPERTY_DEFINITION named 'geometric validation
+property' of a PRODUCT_DEFINITION_SHAPE (or of a PRODUCT_DEFINITION) through its
+PROPERTY_DEFINITION_REPRESENTATION: a MEASURE_REPRESENTATION_ITEM's VOLUME_MEASURE or
+AREA_MEASURE, simple or complex, in its DERIVED_UNIT of a length unit (else the representation's
+length unit to the power), and a CARTESIAN_POINT, the centre, in the representation's context.
+Ours put the three in one representation, other programs one each; both read. A product's shapes
+are those in the spaces its SHAPE_DEFINITION_REPRESENTATIONs reach (the assembly's union-find,
+`assembly.repsOfPD`), measured in their own space as a part's properties are; a product holding no
+shape that is no other's child, an assembly's root, is measured as every placement. A product used
+in an assembly with no shapes of its own is left out.
+
+The tolerances: 1% of the volume and of the area, the Recommended Practices' "good", and 1% of the
+part's box diagonal for the centre. The link's mesh is measured first; a product that differs is
+tessellated again at a twentieth of the chord tolerance (`validationFiner`) before it is said,
+since a thin rod's chords take more than 1% of its volume at the link's tolerance. A product that
+agrees counts in `Report.Validated` and the link's screen says "volume, area and centre as the
+file declares for n parts"; one that differs is a sentence in `Report.Mismatches`, which
+`Problem` joins. The cost is a pass over the triangles; the finer tessellation only on a
+difference.
+
+Checked by `TestValidationProperties`: OpenCASCADE's eight exchange fixtures with their
+`reference.txt` values added as other programs write them, in millimetres and in metres, agree;
+5% more volume and the centre 5 mm away are said, and the area is not blamed. Our own exports
+(`testdata/export/*/*/*/surfaces.step`) agree.
+
+## Checking a mesh link, 2026-11-24
+
+The box fused with a ball whose pole lay on its edge came in as a mesh with 254 naked edges and
+409 crossing ones and nothing said (fixed 2026-11-23). Each solid's mesh
+(MANIFOLD_SOLID_BREP, BREP_WITH_VOIDS, FACETED_BREP, TESSELLATED_SOLID; not shells, which may be
+open) is now searched as Check Solid searches a group's (`meshcheck.go`): in its own space, so an
+assembly's parts touching don't count, after its T-junctions are snapped, and not when faces were
+left out, which the report already says. The problem reads "the mesh of 1 solid has 3 naked edges,
+so it is not closed". A link read as a solid drops it: the solid is checked as any group's.
+
+Triangles lying on one another count as touching, not crossing (`coplanarIsInter` false): with
+them counted, NIST_MBE_PMI_6's pole slivers gave two crossing edges and the knife-edge Boolean's
+export (`testdata/export/group/boolean_knife_edge`) one, both where faces only touch. With it
+false the corpus, the exchange fixtures and our exports say nothing.
+
+Cost, on the corpus read without the cache: 0.50 s of 2.47 s (NIST_MBE_PMI_3: 135 ms of 278 ms,
+2136 triangles; the edge search is parallel, `badEdgesInto`), paid once, since the tessellation
+and its report are kept (`stepDiskVersion` 3; 4 since voids are turned over whole, below). Tested by `TestMeshCheck` (a tessellated cube
+whole, open and pierced; an open shell says nothing) and `TestLinkStepOpenMesh`.
+
+## Voids, 2026-11-24
+
+A shell's pieces (`srf.SShell.Pieces`) are each meshed: one enclosing a positive volume is a body,
+one enclosing a negative volume a cavity, its faces facing into the hollow. Each cavity goes to the
+smallest body whose mesh winds round a point of the cavity's surface (`stepBodies`,
+`SMesh.WindingNumber`), so a body standing in another's cavity is a solid of its own and its own
+cavities its own. A cavity in no body, or a shell with no body, is written as before, one
+CLOSED_SHELL of every face.
+
+ISO 10303-42 has a void as an `oriented_closed_shell` used against the orientation of its closed
+shell: the closed shell is the cavity as a solid of its own, faces out of the hollow, and `.F.`
+turns them back. The writer writes the cavity's faces turned over (`stepFileWriter.turned`): the
+ADVANCED_FACE's same sense and each FACE_BOUND's orientation both flipped, which is the
+standard's `face_reverse`. OpenCASCADE reads each void's closed shell alone as the solid of the
+cavity (2000 mm³ and 2144.66 for the hollow model's box and ball), and its own BREP_WITH_VOIDS
+the same way (`hollow_AP242.step` in `testdata/step/exchange`).
+
+Our reader turned a shell used against its orientation by flipping its faces' sense only, not
+their bounds. A face whose bounds tell its orientation by their turn in the surface's parameters
+was then read the wrong way: the hollow model's ball cavity, eight sphere patches, came in as a
+mesh 3283 mm³ short with 80 naked edges, and as a solid "edge 26 is used by 6 co-edges". Planes
+and OpenCASCADE's one-face sphere, bounded through its poles, read right either way. The reader
+now turns such a face over whole (`reversedFace`); `stepDiskVersion` went to 4, as the CLI's
+cache in the user's folder otherwise hands back the tessellation made before.
+
+The hollow model (`scripts/step-exchange/hollow.go`, 60 × 30 × 30 with a box of 20 × 10 × 10
+and a ball of radius 8 inside), by `scripts/step-exchange.sh`: before, one CLOSED_SHELL of 20
+faces, OpenCASCADE 49855.339415 mm³ and FreeCAD valid, closed, one solid; after, a
+BREP_WITH_VOIDS of the outer shell and two voids, OpenCASCADE 49855.339415 (the exact
+60·30·30 − 2000 − 4/3·π·8³) and its centre the same, FreeCAD valid, closed, one solid, SFA clean,
+our link of it 49857.66 as a mesh and 49857.42 as a solid (ours before 49857.63, the chords'
+sag), its declared volume, area and centre matching what was read. The other 21 models as
+before, 22 of 22 within the thresholds. SFA hung under wine at the sixth file from the end
+(`shell-revolve`) on this run and was stopped; the 17 it checked, the hollow model among them,
+are clean. `TestStepVoids` (`pkg/export`): a block with a box and a ball cavity, and a cube in the
+box's cavity, is one BREP_WITH_VOIDS with two voids and one MANIFOLD_SOLID_BREP, read back as a
+mesh and as solids to the model's volume, its properties validated.
 
 ## Traps
 

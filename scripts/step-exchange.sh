@@ -54,6 +54,7 @@ models=(
 	examples/scripts/knob/knob.go
 	examples/scripts/vase/vase.go
 	scripts/step-exchange/colours.go
+	scripts/step-exchange/hollow.go
 )
 
 for m in "${models[@]}"; do

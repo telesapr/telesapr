@@ -23,8 +23,10 @@ func stepDiskSample() *step.Result {
 		Report: step.Report{
 			Schema: "AP214", Unit: "inch", Shapes: 3, Placements: 5, Faces: 120, Skipped: 2,
 			Triangles: 4000, ChordTol: 0.0125, Crossed: 1,
-			Reasons: map[string]int{"unsupported OFFSET_CURVE_3D": 2, "ä bound": 1},
-			Details: map[string]string{"unsupported OFFSET_CURVE_3D": "#31: an offset curve", "ä bound": "#7"},
+			BrokenSolids: 1, NakedEdges: 6, SelfIntersecting: 2, Validated: 1,
+			Mismatches: []string{`"ä" is not what the file declares it to be: volume 1 mm³ declared, 2 read (+1e+02%)`},
+			Reasons:    map[string]int{"unsupported OFFSET_CURVE_3D": 2, "ä bound": 1},
+			Details:    map[string]string{"unsupported OFFSET_CURVE_3D": "#31: an offset curve", "ä bound": "#7"},
 		},
 	}
 	res.Mesh.FlipNormal, res.Mesh.KeepCoplanar, res.Mesh.IsTransparent = true, true, true

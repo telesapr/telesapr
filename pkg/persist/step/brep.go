@@ -25,6 +25,9 @@ type Model struct {
 	unsupported map[string]int
 	// errDetail is the first error of each reason, for the report.
 	errDetail map[string]string
+	// Validations are the products' geometric validation properties,
+	// each matched to the shapes it measures.
+	Validations []Validation
 }
 
 // Placement is one use of a shape.
@@ -1201,9 +1204,7 @@ func (r *reader) shellFaces(in *Instance, flip bool, skip map[string]int, errs m
 			continue
 		}
 		if flip {
-			g := *f
-			g.Sense = !g.Sense
-			f = &g
+			f = reversedFace(f)
 		}
 		faces = append(faces, f)
 	}
@@ -1658,6 +1659,12 @@ type assembly struct {
 	f      *File
 	parent map[int]int // union-find over representations of one space
 	ups    map[int][]link
+	// repsOfPD are the representations each product definition is
+	// shown by, and child the definitions used in another's assembly:
+	// the validation properties of a product are matched to its
+	// shapes through them (validation.go).
+	repsOfPD map[int][]int
+	child    map[int]bool
 }
 
 // link places a child representation's space in a parent's.
@@ -1748,7 +1755,7 @@ func (a *assembly) placementOf(ref int, rep int) (Transform, bool) {
 
 // readAssembly builds the representation graph of a file.
 func readAssembly(f *File) *assembly {
-	a := &assembly{f: f, parent: map[int]int{}, ups: map[int][]link{}}
+	a := &assembly{f: f, parent: map[int]int{}, ups: map[int][]link{}, child: map[int]bool{}}
 	// The representation each product definition is shown by, to tell
 	// parent from child in an assembly.
 	pdOfPDS := map[int]int{} // PRODUCT_DEFINITION_SHAPE -> its definition
@@ -1771,6 +1778,7 @@ func readAssembly(f *File) *assembly {
 			if ps := params(in, "NEXT_ASSEMBLY_USAGE_OCCURRENCE"); len(ps) >= 5 &&
 				ps[3].Kind == KindRef && ps[4].Kind == KindRef {
 				nauo[id] = [2]int{ps[3].Ref, ps[4].Ref}
+				a.child[ps[4].Ref] = true
 			}
 		case in.Is("CONTEXT_DEPENDENT_SHAPE_REPRESENTATION"):
 			if ps := params(in, "CONTEXT_DEPENDENT_SHAPE_REPRESENTATION"); len(ps) >= 2 &&
@@ -1805,6 +1813,7 @@ func readAssembly(f *File) *assembly {
 			a.union(r1, r2)
 		}
 	}
+	a.repsOfPD = repsOfPD
 	// A transform links child to parent; which of rep_1 and rep_2 is
 	// the child is told by the assembly usage when there is one, and is
 	// rep_1 when there isn't (the CAx-IF recommended practice).
@@ -2071,6 +2080,9 @@ func ReadModel(f *File) *Model {
 		}
 	}
 	units := map[int]bool{}
+	// The spaces each shape is in, to match a product's validation
+	// properties to its shapes.
+	var spaces [][]int
 	readers := map[[2]float64]*reader{}
 	errs := map[string]string{}
 	// The items of a tessellated shell or solid are read with it.
@@ -2137,6 +2149,11 @@ func ReadModel(f *File) *Model {
 		}
 		idx := len(m.Shapes)
 		m.Shapes = append(m.Shapes, sh)
+		var inSpaces []int
+		for _, rep := range reps {
+			inSpaces = append(inSpaces, asm.find(rep))
+		}
+		spaces = append(spaces, inSpaces)
 		if len(reps) == 0 {
 			m.Placements = append(m.Placements, Placement{Shape: idx, T: Identity()})
 			continue
@@ -2177,5 +2194,28 @@ func ReadModel(f *File) *Model {
 		}
 	}
 	m.errDetail = errs
+	m.Validations = readValidations(f, asm, spaces)
 	return m
+}
+
+// reversedFace is f turned over, as ISO 10303-42's face_reverse turns
+// a face of a shell used against its orientation: its normal the other
+// way and each bound run backwards, so that the bounds still run the
+// right way round the new normal.
+func reversedFace(f *Face) *Face {
+	g := *f
+	g.Sense = !g.Sense
+	g.Bounds = make([]*Bound, len(f.Bounds))
+	for i, bd := range f.Bounds {
+		nb := &Bound{}
+		for _, oe := range slices.Backward(bd.Edges) {
+			nb.Edges = append(nb.Edges, OrientedEdge{E: oe.E, Forward: !oe.Forward})
+		}
+		if bd.Poly != nil {
+			nb.Poly = slices.Clone(bd.Poly)
+			slices.Reverse(nb.Poly)
+		}
+		g.Bounds[i] = nb
+	}
+	return &g
 }

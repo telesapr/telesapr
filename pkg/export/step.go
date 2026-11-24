@@ -75,6 +75,11 @@ type stepFileWriter struct {
 	pointCells           pointCells
 	exportParts          bool
 	currentColor         core.RGBA
+	// turned is set while a cavity is written as the closed shell its
+	// void refers to: every face turned to face out of the cavity, the
+	// ORIENTED_CLOSED_SHELL of the void turning them back
+	// (step_bodies.go).
+	turned bool
 	// freeCurves is set for a wireframe's curves, which no edge bounds:
 	// written as B-splines, as a LINE or CIRCLE is unbounded.
 	freeCurves bool
@@ -550,7 +555,12 @@ func (w *stepFileWriter) ExportCurveLoop(loop *srf.SBezierLoop, inner bool) int 
 	if inner {
 		bound = "FACE_BOUND"
 	}
-	w.printf("#%d=%s('',#%d,.F.);\n", fb, bound, w.id)
+	// A turned face runs its loops the other way round its normal.
+	orient := ".F."
+	if w.turned {
+		orient = ".T."
+	}
+	w.printf("#%d=%s('',#%d,%s);\n", fb, bound, w.id, orient)
 
 	w.id += 2
 
@@ -766,7 +776,7 @@ func (w *stepFileWriter) writeFace(srfid int, sense bool, loops []*srf.SBezierLo
 	}
 
 	same := ".T."
-	if !sense {
+	if sense == w.turned {
 		same = ".F."
 	}
 	w.printf("),#%d,%s);\n", srfid, same)

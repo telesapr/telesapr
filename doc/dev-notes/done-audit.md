@@ -216,7 +216,7 @@ row adds no menu, screen or call of its own.
 
 | Feature | Scenario | Path pair | Example | Golden | Sweep | Benchmark | Undo | Round trip |
 |---|---|---|---|---|---|---|---|---|
-| STEP link | `ext_link_step` | `path_link_step` | `step` | `ext_link_step.goui`, `testdata/step` | `FuzzStep` | `BenchmarkReadNIST5` | `TestLinkStepUndo` | `TestEveryFieldRoundTrips` (the link's path) |
+| STEP link | `ext_link_step` | `path_link_step` | `step` | `ext_link_step.goui`, `testdata/step` | `FuzzStep`, `TestMeshCheck`, `TestValidationProperties`, `TestLinkStepValidation` | `BenchmarkReadNIST5` | `TestLinkStepUndo` | `TestEveryFieldRoundTrips` (the link's path) |
 | STEP link read as a solid | `ext_link_step_solid` | `path_link_step_solid` | `stepsolid` | `ext_link_step_solid.goui` | `TestSolidCorpus`, `TestSolidShapes`, `TestSolidBooleans` (`pkg/persist/step`) | `BenchmarkSolidNIST3` | n/a: a box on the link's screen, no test of its own | `TestEveryFieldRoundTrips` |
 | Relink; parametric links (a configuration and parameter values passed into a linked model) | `ext_link_params` | `path_link_params` | `partsizes` | `ext_link_params.goui` | n/a: no new solid; `TestParametricLink`, `TestParametricLinkNested` | n/a: one regeneration per set of values, cached (`TestParametricLinkCache`) | `TestRelink` | `TestEveryFieldRoundTrips` (`link-configuration`, `link-param`), `TestParametricLink` |
 | Mates (concentric, flush and the rest) | `ext_mate` | `path_mate` | `mates` | `ext_mate.goui` | n/a: no solid of its own; `TestMates` | n/a: equations in the solve | n/a: constraints, as any | `TestEveryFieldRoundTrips` |

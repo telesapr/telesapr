@@ -2455,7 +2455,12 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 			if err := rb.runOffCross(sh, row, k, ro); err != nil {
 				return nil, err
 			}
-			ro.consumed, ro.r, ro.first, ro.after = true, t.Vertices[cons.r].P, 0, m
+			ro.consumed, ro.first, ro.after = true, 0, m
+			if cons.whole {
+				ro.whole, ro.wholeLead = endCuts[1-k].off, k == 0
+			} else {
+				ro.r = t.Vertices[cons.r].P
+			}
 			drop = append(drop, pair{t.Vertices[cut.end.v].P, w})
 			continue
 		}
@@ -2468,7 +2473,14 @@ func (bl *rbBlend) cutBack(sh *srf.SShell) (map[int][]srf.SBezier, error) {
 	// curves across them in the next face's plane.
 	loops := map[int][]srf.SBezier{}
 	var across [2][]srf.SBezier
-	if cons != nil {
+	switch {
+	case cons != nil && cons.whole:
+		var cut []srf.SBezier
+		if loops, cut, err = rb.wholeLoops(sh, row, endCuts); err != nil {
+			return nil, err
+		}
+		across = [2][]srf.SBezier{cut, cut}
+	case cons != nil:
 		if loops, across, err = rb.consumedLoops(sh, row, endCuts, cons); err != nil {
 			return nil, err
 		}

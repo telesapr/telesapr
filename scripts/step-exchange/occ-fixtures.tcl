@@ -31,8 +31,17 @@ bcut hole bb h
 psphere s2 10
 ttranslate s2 40 40 20
 bfuse fused hole s2
+# A block with two cavities, a box and a ball, neither reaching its
+# sides: a solid of three shells, which OpenCASCADE writes as a
+# BREP_WITH_VOIDS.
+box hb 0 0 0 60 30 30
+box hc 5 10 10 20 10 10
+psphere hs 8
+ttranslate hs 42 15 15
+bcut h1 hb hc
+bcut hollow h1 hs
 
-set shapes {b cyl cone ball ring fillet hole fused}
+set shapes {b cyl cone ball ring fillet hole fused hollow}
 set f [open $out/reference.txt w]
 puts $f "# name, volume (mm3), area (mm2), centre x, y, z: separated by tabs."
 puts $f "# OpenCASCADE's, by vprops and sprops at 1e-9 of the shapes it built,"

@@ -161,7 +161,7 @@ uses a faster level, which is nearer the column's.
   the scripts' symbol tables name v2's options.
 - `encoding/gob` came in only for the STEP tessellation cache, which the browser keeps in
   IndexedDB. The cache is now written in a format of its own (`pkg/persist/link/stepdisk_format.go`,
-  version 2 of `stepDiskVersion`, files `.mesh`): a cache, not a user's file, so one of another
+  since version 2 of `stepDiskVersion`, files `.mesh`): a cache, not a user's file, so one of another
   version is simply made again. 0.46 MB after `wasm-opt`, 93 kB gzipped, 110 kB brotli.
 - Tried, left: `docs.json` embedded gzipped (measured 2026-11-04) takes 0.63 MB off the raw module
   but 2 kB off it gzipped and 6 kB brotli, since the wire's compression already takes the JSON to

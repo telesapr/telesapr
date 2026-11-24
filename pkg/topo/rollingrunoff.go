@@ -67,6 +67,12 @@ type rbRunOff struct {
 	// two next faces' planes meet across the fillet, in place of p2.
 	consumed bool
 	r, x     geom.Vector
+	// whole is, where both ends run off onto the same next face and the
+	// fillet takes side j's face whole (rollingrunoff_whole.go), the
+	// other end's run-off; wholeLead marks the end at 0, whose closing
+	// puts the fillet's whole cut into the next face.
+	whole     *rbRunOff
+	wholeLead bool
 	// tangent marks a curved next face replaced by its tangent plane
 	// along its edge with side j's face (rollingrunoff_tangent.go): the
 	// plane is np, nd, ns is nil, and the fillet's end goes on a new
@@ -415,14 +421,20 @@ func clipLoop(p *srf.SSurface, loop []srf.SBezier, uvAt func(i int, t float64) (
 	for i, sb := range loop {
 		const n = 64
 		ts := []float64{0}
-		prev := ro.h(sb.PointAt(0))
+		// A sample exactly on the plane is passed over: the crossing is
+		// between the samples either side of it, as where a chamfer's
+		// straight section crosses the plane at its middle.
+		prevX, prev := 0.0, ro.h(sb.PointAt(0))
 		for s := 1; s <= n; s++ {
 			x := float64(s) / n
 			hv := ro.h(sb.PointAt(x))
-			if prev < 0 && hv > 0 || prev > 0 && hv < 0 {
-				ts = append(ts, bezierRoot(&sb, ro.h, float64(s-1)/n, x))
+			if hv == 0 && s < n {
+				continue
 			}
-			prev = hv
+			if prev < 0 && hv > 0 || prev > 0 && hv < 0 {
+				ts = append(ts, bezierRoot(&sb, ro.h, prevX, x))
+			}
+			prevX, prev = x, hv
 		}
 		ts = append(ts, 1)
 		for s := 1; s < len(ts); s++ {
@@ -777,17 +789,29 @@ func (e *runOffEdit) closeNext(cut rbEndCut, ro *rbRunOff, across []srf.SBezier,
 		}
 	}
 	gap, fill := ro.p2, across
-	if ro.consumed {
+	if ro.consumed && ro.whole == nil {
 		gap, fill = ro.r, append([]srf.SBezier{srf.SBezierFrom2(ro.r, ro.x)}, across...)
 	}
-	if ro.tangent {
+	switch {
+	case ro.whole != nil:
+		// The next face's edge with side j's face goes from w to the other
+		// end's w, the cut across the fillet in its place, put in once.
+		if ro.wholeLead {
+			ow := t.Vertices[ro.whole.w].P
+			if _, err := e.put(ro.n, [][2]geom.Vector{{w, ow}}, across, ro.p1, ro.whole.p1, w); err != nil {
+				return err
+			}
+		}
+	case ro.tangent:
 		// The next face is the tangent plane's new face, put in with the
 		// fillet's patches: its outline is kept for then.
 		if err := rb.keepTangentFace(ro, across, shared); err != nil {
 			return err
 		}
-	} else if _, err := e.put(ro.n, [][2]geom.Vector{{w, gap}}, fill, gap, ro.p1, gap); err != nil {
-		return err
+	default:
+		if _, err := e.put(ro.n, [][2]geom.Vector{{w, gap}}, fill, gap, ro.p1, gap); err != nil {
+			return err
+		}
 	}
 	if ro.p1.Equals(w) {
 		return nil
