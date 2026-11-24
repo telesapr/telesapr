@@ -9,6 +9,8 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.6.9] - 2026-11-24
+
 ### Added
 - The Export and import page of the guide has a video of the real window: File > Export > Triangle Mesh, opened from its menu and cancelled.
 - Fillets and chamfers whose end runs off both their faces where the two faces past them meet across the fillet's end, as a plate's foot on a cone whose top is low at the end and whose flat comes in close beside the plate: the two faces now grow to meet along the line they share; refused before. Fillets and chamfers that run off both their faces at both ends are made too; refused before.
