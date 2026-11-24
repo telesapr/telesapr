@@ -74,6 +74,11 @@ func TestWrappedArchTop(t *testing.T) {
 			if took := before - c.Volume; !c.Sound() || took <= 0 {
 				t.Errorf("%s, took %g", c.Summary(), took)
 			}
+			if kind == "chamfer" {
+				// The whole chamfer, legs and arcs, sampled densely against
+				// its closed form, the mitres left out.
+				checkDenseChamfer(t, d, g, archPieces(), R, r, 1)
+			}
 			// Each leg's edge leaves a line on its side and one on the top,
 			// part of a chain that goes on round the arch: the points of the
 			// edges over the legs' length that lie near either line lie on it.

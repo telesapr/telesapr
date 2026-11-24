@@ -190,6 +190,10 @@ type rollingBall struct {
 	arcl   []float64
 	length float64
 	tol    float64
+	// nrm is the faces' normals at pts, zero where the crease fades
+	// (fadePoint): how fast they and the edge turn spaces a chamfer's
+	// sections (flatSpacing).
+	nrm [][2]geom.Vector
 }
 
 // smoothEdge reports whether edge x joins two faces that meet smoothly
@@ -1003,8 +1007,10 @@ func (rb *rollingBall) trace() error {
 	}
 	// The crease's turn at a point: the sine of the angle between the
 	// faces, signed by which way they turn about the edge.
+	var na, nb geom.Vector
 	turnAt := func(x, d geom.Vector) (geom.Vector, geom.Vector, float64, bool) {
 		p, fa, fb, ok := rb.onEdge(x, d, near())
+		na, nb = fa.n, fb.n
 		if !ok {
 			return p, geom.Vector{}, 0, false
 		}
@@ -1056,6 +1062,8 @@ traced:
 				x = b
 			}
 			p, tn, turn, ok := turnAt(x, d)
+			// fadePoint below finds normals of its own.
+			xa, xb := na, nb
 			if fadesIn && len(rb.pts) == 0 && (!ok || turn*sign0 < fadeSine) {
 				lastFlat, flat = x, true
 				continue
@@ -1069,6 +1077,7 @@ traced:
 				fp, ftn := rb.fadePoint(x, lastFlat, d, sign0, turnAt)
 				rb.pts = append(rb.pts, fp)
 				rb.tan = append(rb.tan, ftn)
+				rb.nrm = append(rb.nrm, [2]geom.Vector{})
 				rb.ends[0].fade, rb.ends[0].p = true, fp
 			}
 			if !ok || turn*sign0 < fadeSine {
@@ -1083,6 +1092,7 @@ traced:
 				fp, ftn := rb.fadePoint(prev, x, d, sign0, turnAt)
 				rb.pts = append(rb.pts, fp)
 				rb.tan = append(rb.tan, ftn)
+				rb.nrm = append(rb.nrm, [2]geom.Vector{})
 				rb.ends[1].fade, rb.ends[1].p = true, fp
 				break traced
 			}
@@ -1092,6 +1102,7 @@ traced:
 			}
 			rb.pts = append(rb.pts, p)
 			rb.tan = append(rb.tan, tn)
+			rb.nrm = append(rb.nrm, [2]geom.Vector{xa, xb})
 			prev = x
 		}
 		if i < segs {
@@ -1164,7 +1175,7 @@ func (rb *rollingBall) reset() {
 	for _, end := range rb.ends {
 		end.fade = false
 	}
-	rb.pts, rb.tan, rb.arcl = nil, nil, nil
+	rb.pts, rb.tan, rb.arcl, rb.nrm = nil, nil, nil, nil
 }
 
 // along is the point and tangent of the dense edge at arc length s,
@@ -1813,7 +1824,8 @@ func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, 
 	slices.Sort(breaks)
 	breaks = append(breaks, start+rb.length)
 	// Sections between the crossings, no further apart than a twelfth of
-	// the edge or two radii.
+	// the edge or two radii, or for a chamfer as the edge bends
+	// (firstSections).
 	h := math.Min(rb.length/12, 2*rb.r)
 	var ss []float64
 	for i := 0; i+1 < len(breaks); i++ {
@@ -1822,10 +1834,7 @@ func (rb *rollingBall) blend() (*srf.BSplineSurface, []rbSection, []rbCrossing, 
 			// Crossings on the two sides at one place: one section for both.
 			continue
 		}
-		m := int(math.Ceil((b - a) / h))
-		for j := range m {
-			ss = append(ss, a+(b-a)*float64(j)/float64(m))
-		}
+		ss = append(ss, rb.firstSections(a, b, h)...)
 	}
 	for round := 0; ; round++ {
 		sf, secs, ts, err := rb.fit(ss)

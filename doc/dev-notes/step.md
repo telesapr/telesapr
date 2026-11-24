@@ -1,8 +1,9 @@
 # STEP exchange
 
-Refreshed 2026-11-23 on branch `step-mesh-pole`, from devel b3270583, after the writer was moved to
-AP242. How TeleSAPR's STEP reader (`pkg/persist/step`, `pkg/persist/link`) and writer
-(`pkg/export/step.go`, `step_analytic.go`, `step_analytic_curve.go`, `step_bodies.go`,
+Refreshed 2026-11-24 on branch `step-edge-merge`, from devel 3ecef233, after the writer joined an
+edge's pieces (first written 2026-11-23, after the writer was moved to AP242). How TeleSAPR's STEP
+reader (`pkg/persist/step`, `pkg/persist/link`) and writer (`pkg/export/step.go`,
+`step_analytic.go`, `step_analytic_curve.go`, `step_bodies.go`, `step_edge_merge.go`,
 `step_validation.go`) stand against the
 current standard and its Recommended Practices, how an exchange with other programs is checked,
 and what that check found.
@@ -36,6 +37,7 @@ this note works from what is free:
 | Product | assemblies by NAUO and CDSR, mapped items, mirrored placements | named after the file, in AP242's application context with its protocol definition, every product in the category 'part' (PDM Usage Guide); an assembly's parts named after their groups |
 | Units | SI with prefixes, conversion-based (inch, degree) | mm, radian, steradian, uncertainty 2 × LengthEps |
 | Analytic surfaces | plane, cylinder, cone, sphere, torus, extrusion, revolution, offset | plane, cylinder, cone, sphere and torus where every point of a 5 × 5 grid on the patch (on every patch of a face written as one) lies on it within 1e-7 of its size; lines and circles for an edge's straight and circular curves; the rest rational B-splines. A wireframe's free curves stay B-splines, a LINE or CIRCLE being unbounded |
+| Edges | the EDGE_CURVEs of each EDGE_LOOP, their 3D curves | an EDGE_CURVE per run of a face's trim pieces between real vertices, shared by both faces (`step_edge_merge.go`); see "Edges across patches" below |
 | Bodies | each MANIFOLD_SOLID_BREP, BREP_WITH_VOIDS, shell model, tessellated shape | a MANIFOLD_SOLID_BREP of its own CLOSED_SHELL per body (`srf.SShell.Pieces`); a shell with a cavity, a piece whose mesh encloses a negative volume, still one CLOSED_SHELL: no BREP_WITH_VOIDS yet |
 | PCURVE | not read; trims projected from the 3D curves | not written |
 | Colours (Styling 1.10) | STYLED_ITEM and OVER_RIDING_STYLED_ITEM, RGB and named colours | a STYLED_ITEM per face, its group's colour |
@@ -92,6 +94,56 @@ ball's lower pole, which lies on the block's upright edge, between two of its ri
 the ball's seam, which the tessellator put at the pole's borrowed u, a whole turn off
 (`faceSurface.loop`; fixed, `box_ball_pole_on_edge` in `testdata/step/shapes`).
 
+## Edges across patches, 2026-11-24
+
+A face's trims come as pieces, a Bezier each, cut wherever the trim crosses a patch of a sheet or
+was cut by an intersection, and the writer made each piece an EDGE_CURVE with its own B-spline
+and vertices. A pen's barrel, a chamfer of many small patches along wrapped mouldings, had 213
+faces and 6015 edges on 634 pairs of faces (149 on one pair); its edge curves and their points
+were 3 MB of the 4.9 MB file.
+
+`exportShellFaces` now works out every face of a shell first (`shellJobs`: `surfaceJob` for a
+patch, `sheetJobs` for a sheet written as one surface, each a closure that writes the surface
+and the faces' loops) and writes them in the same order after. Between, `stepJoints` counts the
+loop corners at each point, to `stepPrecision`. A joint goes when exactly two corners lie there
+(an edge's two faces, or a seam's face twice), the curves either side of the two are the same
+(their far ends and middles, either way round: a sheet's loops are turned round for the file,
+so its edges may run the same way on both faces), and none of them is a LINE or CIRCLE
+(`lineOrCircleOf`, which `writeLineOrCircle` writes). `edgeRuns` cuts each loop into runs
+between the vertices kept; a run that ends where it starts (a ring between two faces, or a
+ring that touches the rest of its face's loop at one vertex) is cut at the joint farthest from
+that point, ties to the first in coordinate order, which both faces choose alike: a closed
+curve's points are not found again as one curve's by `HasBSplineCurveAnAlias`, and the other
+face wrote its own edge. A run of two or more pieces is one `B_SPLINE_CURVE_WITH_KNOTS`
+(`joinedCurve`): each piece raised to the run's highest degree, its weights put in the form whose
+end weights are 1 (`standardWeights`, a change of parameter, not of curve) so that they agree at
+the joints, knots of multiplicity the degree at each joint spaced by the control polygons'
+lengths. Each span is its piece exactly, whatever the knots. The other face's run is the same
+pieces the other way, the same points, and the curve and edge aliases find it.
+
+Written as patches (`StepOneSurfacePerFace` off) a joint is mostly where a third patch meets, and
+little is joined. A loop with a T-junction, one face's piece running past the other's joint,
+keeps its vertex: its sides don't match. Without that check the wrapped text fixture was read
+back open by our reader.
+
+| Model | faces | EDGE_CURVE | VERTEX_POINT | bytes |
+|---|---|---|---|---|
+| barrel (pen) | 213 | 6015 → 679 | 5772 → 436 | 4898640 → 2734135 |
+| bolt_m8x30 | 82 | 488 → 240 | 410 → 162 | 400191 → 303057 |
+| nut_m8 | 24 | 158 → 72 | 136 → 50 | 120901 → 87406 |
+| lead_tr20 | 36 | 217 → 105 | 184 → 72 | 168655 → 125008 |
+| sweep-twisted-arcs | 18 | 92 → 36 | 76 → 20 | 73755 → 51790 |
+| wrap-cylinder-text-sunk | 29 | 118 → 74 | 94 → 50 | 108493 → 91297 |
+
+The barrel read by OpenCASCADE: one valid solid of 213 faces, 679 edges and 436 vertices,
+1770.99293 mm³ by `vprops` at 1e-9 where the file before gave 1770.99387; FreeCAD: valid,
+closed, 213 faces of the same kinds; TeleSAPR linking it as a solid, 1771.541654 mm³ from either
+file. `scripts/step-exchange.sh`: 21 of 21 within the
+thresholds, as before; OpenCASCADE's volumes moved by under 5e-5 (the bolt's most,
+2072.369 → 2072.454, its thread flanks' pcurves projected from the longer curves), ours and the
+round trip's not at all. No golden under `testdata/export` moved: their solids are planes and
+circles.
+
 ## Traps
 
 - OpenCASCADE's and FreeCAD's `Shape.Volume`, and `vprops` without a tolerance, were 0.13% short
@@ -107,7 +159,7 @@ the ball's seam, which the tessellator put at the pole's borrowed u, a whole tur
 - In `DRAWEXE`, `param write.step.schema` takes 3 (AP203), 4 (AP214) or 5 (AP242), and a
   `newmodel` before `stepwrite` for it to hold; the names (`AP242DIS`) are taken and ignored.
 - Blender 5.2 has no STEP reader.
-- A face of several patches written as one surface (`ExportSheet`) may mix surfaces: a swept
+- A face of several patches written as one surface (`sheetJobs`) may mix surfaces: a swept
   pipe's one smooth face is a cylinder along the path's line and a torus round its arc. Taken from
   its first patch alone, the face came in invalid and 78% short; every patch is checked.
 - SFA calls `(AREA_UNIT()DERIVED_UNIT(...))` wrongly mapped: AREA_UNIT and VOLUME_UNIT are

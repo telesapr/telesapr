@@ -84,6 +84,9 @@ type stepFileWriter struct {
 	// products are the PRODUCTs written, which the file's end puts in
 	// the category of parts.
 	products []int
+	// joints are the current shell's loop joints, which tell which
+	// pieces of an edge are written as one (step_edge_merge.go).
+	joints *stepJoints
 	// open are where faces were left out of the file, one point of
 	// each, their outlines not closing: told to Warn once the file is
 	// written.
@@ -485,23 +488,24 @@ func (w *stepFileWriter) ExportCurveLoop(loop *srf.SBezierLoop, inner bool) int 
 
 	var listOfTrims []int
 
-	sb := &loop.Curves[len(loop.Curves)-1]
+	// The runs of pieces that are one edge each (step_edge_merge.go).
+	runs := w.joints.edgeRuns(loop)
+	last := runs[len(runs)-1]
 
 	// Generate "exactly closed" contours, with the same vertex id for
 	// the finish of a previous edge and the start of the next one. So we
-	// need the finish of the last Bezier in the loop before we start our
+	// need the finish of the last edge in the loop before we start our
 	// process.
-	lastFinish := w.vertexFor(sb.Finish())
+	lastFinish := w.vertexFor(last[len(last)-1].Finish())
 	prevFinish := lastFinish
 	w.id += 2
 
-	for i := range loop.Curves {
-		sb := &loop.Curves[i]
-		curveID := w.ExportCurve(sb)
+	for i, run := range runs {
+		curveID := w.exportRun(run)
 
 		var thisFinish int
-		if i+1 < len(loop.Curves) {
-			thisFinish = w.vertexFor(sb.Finish())
+		if i+1 < len(runs) {
+			thisFinish = w.vertexFor(run[len(run)-1].Finish())
 			w.id += 2
 		} else {
 			thisFinish = lastFinish
@@ -553,31 +557,55 @@ func (w *stepFileWriter) ExportCurveLoop(loop *srf.SBezierLoop, inner bool) int 
 	return fb
 }
 
-// ExportSurface writes a trimmed surface as advanced faces.
-func (w *stepFileWriter) ExportSurface(ss *srf.SSurface, sbl *srf.SBezierList) {
-	// Read the colour of the surface: use it to tell apart surfaces from
-	// different parts.
-	w.currentColor = ss.Color
+// stepFaceJob is a surface to write and the faces on it, each its
+// loops: a shell's faces are all worked out before any is written, so
+// that the joints of their loops are known (step_edge_merge.go).
+type stepFaceJob struct {
+	// surface writes the surface and returns its id, and whether a
+	// face's outward normal is the surface's own.
+	surface func() (srfid int, sense bool)
+	// faces are each face's loops; the first is its outer bound when
+	// firstOuter.
+	faces      [][]*srf.SBezierLoop
+	firstOuter bool
+	color      core.RGBA
+}
+
+// writeJob writes a job's surface and its faces.
+func (w *stepFileWriter) writeJob(job *stepFaceJob) {
+	// The colour of the surface tells apart surfaces from different
+	// parts.
+	w.currentColor = job.color
+	srfid, sense := job.surface()
+	for _, loops := range job.faces {
+		w.writeFace(srfid, sense, loops, job.firstOuter, job.color)
+	}
+}
+
+// surfaceJob is a trimmed surface's job: its advanced faces.
+func (w *stepFileWriter) surfaceJob(ss *srf.SSurface, sbl *srf.SBezierList) stepFaceJob {
 	// A plane face whose trims run past its patch is written on the
 	// plane carried on over them: a reader bounds the face by it.
 	if over, ok := ss.OverCurves(sbl.Curves); ok {
 		ss = &over
 	}
+	surface := *ss
+	ss = &surface
+	job := stepFaceJob{color: ss.Color, firstOuter: true}
 
 	// The surface: a plane, cylinder, cone, sphere or torus as itself,
 	// any other as a rational Bezier patch.
-	var srfid int
-	sense := true
-	if a, ok := analyticOf(ss); ok {
-		srfid, sense = w.writeAnalytic(a, seamOf(a, ss)), a.sameSense(ss)
-	} else {
+	job.surface = func() (int, bool) {
+		if a, ok := analyticOf(ss); ok {
+			return w.writeAnalytic(a, seamOf(a, ss)), a.sameSense(ss)
+		}
 		ctrl := make([][]geom.Vector, ss.DegM+1)
 		weight := make([][]float64, ss.DegM+1)
 		for i := range ctrl {
 			ctrl[i] = ss.Ctrl[i][:ss.DegN+1]
 			weight[i] = ss.Weight[i][:ss.DegN+1]
 		}
-		srfid = w.writeSurface(ss.DegM, ss.DegN, nil, nil, ctrl, weight, false)
+		return w.writeSurface(ss.DegM, ss.DegN, nil, nil, ctrl, weight, false), true
 	}
 
 	// Now we do the trim curves. We must group each outer loop
@@ -607,8 +635,9 @@ func (w *stepFileWriter) ExportSurface(ss *srf.SSurface, sbl *srf.SBezierList) {
 	// loop (the outer boundary), plus any inner loops associated with
 	// that outer loop.
 	for si := range sblss.Sets {
-		w.writeFace(srfid, sense, loopsOf(&sblss.Sets[si]), true, ss.Color)
+		job.faces = append(job.faces, loopsOf(&sblss.Sets[si]))
 	}
+	return job
 }
 
 // stepKnot writes a knot: for the ends of a Bezier patch, and to ten
@@ -839,12 +868,12 @@ func stepSheets(shell *srf.SShell) map[core.HSSurface]*stepSheet {
 	return out
 }
 
-// ExportSheet writes a face of several patches as one advanced face on
-// one B-spline surface: the trims of all its patches but those along
-// its seams, joined into loops, each trim running as the face's
-// patches run it. When they don't join, it writes the patches one by
-// one after all.
-func (w *stepFileWriter) ExportSheet(shell *srf.SShell, sh *stepSheet, scale float64) {
+// sheetJobs are the jobs of a face of several patches: one advanced
+// face on one B-spline surface, bounded by the trims of all its patches
+// but those along its seams, joined into loops, each trim running as
+// the face's patches run it. When they don't join, the patches are
+// written one by one after all.
+func (w *stepFileWriter) sheetJobs(shell *srf.SShell, sh *stepSheet, scale float64) []stepFaceJob {
 	var pieces []srf.SBezier
 	var cols []int
 	column := map[core.HSSurface]int{}
@@ -886,17 +915,17 @@ func (w *stepFileWriter) ExportSheet(shell *srf.SShell, sh *stepSheet, scale flo
 		loops, ok = sh.seamLoops(loops)
 	}
 	if !ok {
+		var jobs []stepFaceJob
 		for _, h := range sh.patches {
 			p := shell.FindSurface(h)
 			var sbl srf.SBezierList
 			p.MakeSectionEdgesInto(shell, nil, &sbl)
 			p.ScaleSelfBy(scale)
 			sbl.ScaleSelfBy(scale)
-			w.ExportSurface(p, &sbl)
+			jobs = append(jobs, w.surfaceJob(p, &sbl))
 		}
-		return
+		return jobs
 	}
-	w.currentColor = color
 	bs := sh.grid.Surface
 	// STEP runs a bound with the face on its left, seen from outside;
 	// SolveSpace's trims run the other way.
@@ -911,8 +940,7 @@ func (w *stepFileWriter) ExportSheet(shell *srf.SShell, sh *stepSheet, scale flo
 		}
 		ls = append(ls, &r)
 	}
-	var srfid int
-	sense := true
+	job := stepFaceJob{color: color, faces: [][]*srf.SBezierLoop{ls}, firstOuter: len(ls) == 1}
 	// The patches lie on one surface: a plane, cylinder, cone, sphere or
 	// torus is written as itself, its parameter starting where the
 	// sheet's does; one whose bounds reach its apex or pole stays a
@@ -923,19 +951,23 @@ func (w *stepFileWriter) ExportSheet(shell *srf.SShell, sh *stepSheet, scale flo
 	}
 	first := patches[0]
 	if a, ok := analyticOf(first); ok && a.holdsAll(patches) && !reachesPole(a.scaled(scale), ls) {
-		srfid = w.writeAnalytic(a.scaled(scale), seamOf(a, first).ScaledBy(scale))
-		sense = a.sameSense(first)
-	} else {
-		ctrl := make([][]geom.Vector, len(bs.Ctrl))
-		for i := range ctrl {
-			ctrl[i] = make([]geom.Vector, len(bs.Ctrl[i]))
-			for j := range ctrl[i] {
-				ctrl[i][j] = bs.Ctrl[i][j].ScaledBy(scale)
-			}
+		seam, sense := seamOf(a, first).ScaledBy(scale), a.sameSense(first)
+		job.surface = func() (int, bool) {
+			return w.writeAnalytic(a.scaled(scale), seam), sense
 		}
-		srfid = w.writeSurface(bs.DegU, bs.DegV, bs.KnotsU, bs.KnotsV, ctrl, bs.Weight, sh.grid.ClosedU)
+		return []stepFaceJob{job}
 	}
-	w.writeFace(srfid, sense, ls, len(ls) == 1, color)
+	ctrl := make([][]geom.Vector, len(bs.Ctrl))
+	for i := range ctrl {
+		ctrl[i] = make([]geom.Vector, len(bs.Ctrl[i]))
+		for j := range ctrl[i] {
+			ctrl[i][j] = bs.Ctrl[i][j].ScaledBy(scale)
+		}
+	}
+	job.surface = func() (int, bool) {
+		return w.writeSurface(bs.DegU, bs.DegV, bs.KnotsU, bs.KnotsV, ctrl, bs.Weight, sh.grid.ClosedU), true
+	}
+	return []stepFaceJob{job}
 }
 
 // stepLoop is a loop of a face's trims, as SolveSpace runs them, and
@@ -1164,8 +1196,28 @@ func (w *stepFileWriter) warnOpen() {
 }
 
 // exportShellFaces writes the faces of shell, scaled by scale, adding
-// them to w.advancedFaces.
+// them to w.advancedFaces: every face's loops first, then the faces,
+// with the pieces of an edge that no third face meets joined.
 func (w *stepFileWriter) exportShellFaces(shell *srf.SShell, scale float64) {
+	jobs := w.shellJobs(shell, scale)
+	w.joints = &stepJoints{}
+	for i := range jobs {
+		for _, loops := range jobs[i].faces {
+			for _, l := range loops {
+				w.joints.addLoop(l)
+			}
+		}
+	}
+	for i := range jobs {
+		w.writeJob(&jobs[i])
+	}
+	w.joints = nil
+}
+
+// shellJobs are the jobs of shell's faces, scaled by scale, in the
+// order they are written.
+func (w *stepFileWriter) shellJobs(shell *srf.SShell, scale float64) []stepFaceJob {
+	var jobs []stepFaceJob
 	sheets := map[core.HSSurface]*stepSheet{}
 	if w.o.StepOneSurfacePerFace {
 		sheets = stepSheets(shell)
@@ -1181,7 +1233,7 @@ func (w *stepFileWriter) exportShellFaces(shell *srf.SShell, scale float64) {
 			// A face of several patches, written as one surface where
 			// its first patch comes.
 			if sh != nil {
-				w.ExportSheet(shell, sh, scale)
+				jobs = append(jobs, w.sheetJobs(shell, sh, scale)...)
 				for _, h := range sh.patches {
 					sheets[h] = nil
 				}
@@ -1200,8 +1252,9 @@ func (w *stepFileWriter) exportShellFaces(shell *srf.SShell, scale float64) {
 		srfc.ScaleSelfBy(scale)
 		sbl.ScaleSelfBy(scale)
 
-		w.ExportSurface(srfc, &sbl)
+		jobs = append(jobs, w.surfaceJob(srfc, &sbl))
 	}
+	return jobs
 }
 
 // WriteWireframe writes the curves as a wireframe.

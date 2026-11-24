@@ -733,9 +733,8 @@ func (rb *rollingBall) blendOpen() (*srf.BSplineSurface, []rbSection, []rbCrossi
 		if b-a < 1e-6*rb.length {
 			continue
 		}
-		m := int(math.Ceil((b - a) / h))
-		for j := range m {
-			specs = append(specs, rbSpec{end: -1, s: a + (b-a)*float64(j)/float64(m)})
+		for _, s := range rb.firstSections(a, b, h) {
+			specs = append(specs, rbSpec{end: -1, s: s})
 		}
 	}
 	specs = append(specs, rbSpec{end: -1, s: r1})

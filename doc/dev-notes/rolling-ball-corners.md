@@ -2,6 +2,7 @@
 
 Refreshed 2026-11-19 at branches `pocket-curved-crease`, `fillet-end-leaning-wall`, `pocket-crease-lean-back`, `rim-fine-tol-corner`, `apex-seam-chamfer`, `pivot-shared-seam`, `step-seam-corners`, `seam-near-point` and `dish-chamfer-wall-foot`; 2026-11-20 at `step-chamfer-one-face` and `step-dish-rims`; 2026-11-23 at `fillet-foot-at-edge`.
 Refreshed 2026-11-23 at `wrapped-cutback-speed`: a chain's sections at once.
+Refreshed 2026-11-24 at `chamfer-section-spacing`: a chamfer's sections by how its edge bends.
 
 Where two rolling-ball chains end at one vertex with a crease between their walls that the ball
 goes round (a pocket's rim in a curved face, the foot of a band raised on a tube at the band's
@@ -342,6 +343,41 @@ in halvings, one section after another. What is left of a group's blend (the cen
 mitres, 0.1 s, the fits, 0.1 s, the blends, 0.06 s on the arch) runs on all cores, the centres
 as many sections as there are cores to find them.
 
+## A chamfer's sections by how its edge bends (2026-11-24)
+
+A blend's first sections were a twelfth of the edge or two radii apart, whichever is less, a
+chamfer's radius being its distance: for the barrel's chamfers of 0.2 a section every 0.4 mm
+whatever the edge did, 4816 of the solid's 5354 patches, and the misfit added almost nothing on
+top. A fillet needs the radius in it, its arc turning with the ball; a chamfer is flat across, so
+how far apart its sections must be is set by how the edge and its faces bend. `firstSections`
+(`pkg/topo/rollingchamfer_spacing.go`) keeps the fillets' rule and for a chamfer spaces them by
+a density along the dense edge (`chamferSpacing`): at each of its pieces, the length along which
+the edge's tangent or either face's normal (kept from `trace`, `rollingBall.nrm`) turns by
+`chamferTurn` (π/8), and no more than 2 `chamferTurnChange` (π/64) over how much their rate of
+turn changes within a twelfth of the edge either side, the length kept between the old spacing
+and a twelfth of the edge, so there are never more sections than before. The sections between
+two crossings are spread evenly in that density. The second limit is for where the bending
+changes at once, a sketch's line going on into an arc: with the first alone the pointed arch's
+spans across its legs' ends were 2.6 mm, and the skin, smooth across its sections, rang 1e-3 mm
+off the true chamfer along the straight legs and 4e-3 near the joins, under the fit's 5.5e-3 so
+that the misfit added nothing; with it, 5e-4 along the legs (`TestWrappedArchTop`) and 1.6e-3 at
+worst. Where the spacing comes out h all along (an edge shorter than twelve times h, or bending
+fast everywhere) the sections are the fillets' to the bit: the trough's chamfer of 2.001, its foot
+dipping under the floor (`TestFilletTroughPastFloor`), took 0.48% less than its integral, not
+0.13%, with its sections moved by 1e-14 mm. The misfit between sections is checked as before, at three points along each span of an
+open chain; a closed chain's at its middle.
+
+`TestChamferWrappedBossDense` and `TestWrappedArchTop` sample every patch of the chamfer on a
+16 by 16 grid over its whole square, edges and all, against the chamfer's closed form (the top a
+cylinder, the side the radial lines over the wrapped sketch curve, the line square to the edge
+from its point at the distance on one face to that on the other), and fail past the fit's
+tolerance anywhere outside a millimetre of the mitres. Worst before and after: a wrapped disc's
+closed chain 1.3e-6 and 2.0e-5 mm (64 patches to 32), half a disc's two mitred chains 2.7e-4 and
+5.0e-4 (112 to 82), the arch's ten 4.4e-4 and 1.6e-3 (708 to 268); at a chord tolerance of
+0.01% the disc's the same and half a disc's 2.7e-4 both (112 to 86). The barrel: 4816 chamfer
+patches to 1264, its file 23.1 MB to 7.1 MB, STL 4.5 to 1.3 MB, STEP 4.9 to 2.4 MB, regeneration
+5.3 s to 2.9 s; the group sound, its mesh volume 1780.701 mm³ and 1780.677.
+
 ## Chains ending against a leaning wall (2026-11-19)
 
 Of the 128 lines of the curved crease's grid, most refused were not corners but chains that turn
@@ -623,7 +659,7 @@ the fillet's nor the seam's:
 - **Faces left out.** The corner's two walls were not in the file. The crease's line, which both
   fillets' feet end on, passes 4.7e-6 mm off its trims' ends (the vertex where the feet meet it),
   and a wall's loop of the pieces of its trims' exact curves was open by that much, past
-  `LengthEps`: `ExportSurface` writes no face for a loop that doesn't close (it says so since
+  `LengthEps`: `ExportSurface` (now `surfaceJob`) writes no face for a loop that doesn't close (it says so since
   2026-11-20, through `Options.Warn`, branch `step-export-open-face`). A trim's piece of its
   exact curve now ends on the trim's own ends where they lie apart by up to the chord tolerance
   (`snapSectionEnds`, `pkg/srf/shell.go`): 4.7e-6 and 7e-6 mm are all that move in these files,
