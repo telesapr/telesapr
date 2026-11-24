@@ -74,7 +74,11 @@ func TestStepJoinsEdgePieces(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%s: read back: %v", model, err)
 			}
-			if got := solidVolume(t, read); math.Abs(got-want) > 1e-3*want {
+			// Both volumes are of meshes at the chord tolerance, and one
+			// surface per face is a fit of the patches: on amd64 the fit
+			// reads 0.10% under ours, and on arm64 the fused multiply-add
+			// moves our mesh by another 0.03%, so 0.2% is the bound.
+			if got := solidVolume(t, read); math.Abs(got-want) > 2e-3*want {
 				t.Errorf("%s, one surface per face %v: volume read %.4f, ours %.4f", model, one, got, want)
 			}
 		}

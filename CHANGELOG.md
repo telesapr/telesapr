@@ -9,6 +9,11 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+### Fixed
+
+- The macOS build, which did not compile (the offscreen OpenGL context), so 0.6.9 shipped no
+  packages.
+
 ## [0.6.9] - 2026-11-24
 
 ### Added

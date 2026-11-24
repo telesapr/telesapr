@@ -8,6 +8,7 @@
 
 #define GL_SILENCE_DEPRECATION 1
 #define GL_GLEXT_PROTOTYPES 1
+#include <stddef.h>
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>

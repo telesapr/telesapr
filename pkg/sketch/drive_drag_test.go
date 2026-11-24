@@ -3,6 +3,7 @@ package sketch_test
 import (
 	"bytes"
 	"math"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -26,7 +27,15 @@ func paramValue(t *testing.T, d *api.Doc, name string) float64 {
 // takes the angle back with the lid.
 func TestDragDrivenLid(t *testing.T) {
 	t.Parallel()
-	d, err := api.Open(filepath.Join("..", "..", "testdata", "ui", "mechanism", "boxlid.tlspr"))
+	// Opened from a copy in the temporary directory, which is where
+	// saved writes: a sketch with links saves only on the volume of the
+	// files it links, and on Windows the checkout and the temporary
+	// directory are on different drives.
+	dir := t.TempDir()
+	if err := os.CopyFS(dir, os.DirFS(filepath.Join("..", "..", "testdata", "ui", "mechanism"))); err != nil {
+		t.Fatal(err)
+	}
+	d, err := api.Open(filepath.Join(dir, "boxlid.tlspr"))
 	if err != nil {
 		t.Fatal(err)
 	}
