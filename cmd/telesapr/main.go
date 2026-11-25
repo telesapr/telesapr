@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/telesapr/telesapr/doc/guide"
 	"github.com/telesapr/telesapr/pkg/platform"
 	"github.com/telesapr/telesapr/pkg/platform/tkgui"
 	"github.com/telesapr/telesapr/pkg/script"
@@ -51,6 +52,7 @@ func run(cfg options, logger *slog.Logger) error {
 
 	ss := ui.New(p)
 	ss.RendererOverride = cfg.renderer
+	ss.GuidePages = guide.Pages
 	// The solids are made off the interface's thread unless
 	// TELESAPR_BACKGROUND is off (roadmap 17.3).
 	ss.BackgroundShells = os.Getenv("TELESAPR_BACKGROUND") != "off"

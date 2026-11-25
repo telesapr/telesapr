@@ -496,6 +496,10 @@ func (ss *Application) UpdateCenterOfMass() {
 func (ss *Application) MenuHelp(id Command) {
 	switch id {
 	case cmdWebsite:
+		if host, ok := ss.Platform.(platform.GuideHost); ok && ss.GuidePages != nil {
+			host.ShowGuide(ss.GuidePages, "README.md", version.Guide)
+			return
+		}
 		ss.Platform.OpenInBrowser(version.Guide)
 
 	case cmdAbout:

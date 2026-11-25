@@ -6,6 +6,7 @@ package ui
 
 import (
 	"fmt"
+	"io/fs"
 	"math"
 	"strconv"
 	"strings"
@@ -52,6 +53,11 @@ type Application struct {
 	// choice of renderer for this run, and wins over the UseOpenGL
 	// setting until the setting is changed.
 	RendererOverride string
+
+	// GuidePages are the user's guide's pages, which Help > User's Guide
+	// shows in a window of the platform's when it has one; nil, or on a
+	// platform without, it opens the guide's site.
+	GuidePages fs.FS
 	// ScreenshotFile, while set, is where the next redraw is saved.
 	ScreenshotFile string
 	// ExportMode is on while a regeneration follows the export

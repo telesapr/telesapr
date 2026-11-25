@@ -24,6 +24,9 @@ type Platform struct {
 	rootUsed bool
 	names    int
 
+	// guide is the user's guide's window, made when first shown.
+	guide *guideWindow
+
 	// glReported is set once a GL failure has been logged.
 	glReported bool
 

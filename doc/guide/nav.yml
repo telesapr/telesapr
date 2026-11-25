@@ -1,0 +1,46 @@
+# The guide's contents, for the contents pane of the guide's window: a copy of
+# the nav of mkdocs.yml, which TestGuideNavMatchesSite keeps equal to it.
+- Home: README.md
+- First steps:
+    - Getting started: getting-started.md
+    - The window: interface.md
+- Sketching:
+    - Constraints while drawing: drawing.md
+    - Constraints: constraints.md
+    - Parameters and units: parameters-and-units.md
+    - Datums: datums.md
+    - Sketch on a face: sketch-on-face.md
+    - Limits: limits.md
+- Solid features:
+    - Fillet: fillet.md
+    - Chamfer: chamfer.md
+    - Draft: draft.md
+    - Shell: shell.md
+    - Two-sided extrusion: two-sided.md
+    - Mirror: mirror.md
+    - Pattern: pattern.md
+    - Loft: loft.md
+    - Sweep: sweep.md
+    - Wrap: wrap.md
+    - Threads: threads.md
+    - History: history.md
+- Looking and checking:
+    - Appearance: appearance.md
+    - Section view: section-view.md
+    - Check solid: check-solid.md
+    - Mass: mass.md
+    - Clearance: clearance.md
+- Assemblies:
+    - STEP and links: step-links.md
+    - Bill of materials: bill-of-materials.md
+    - Mechanisms (experimental): mechanisms.md
+- Drawings and files:
+    - Drawings: drawings.md
+    - Export and import: export-import.md
+- Scripting:
+    - Scripts: scripts.md
+    - AI assistants: ai.md
+- Reference:
+    - Menus: reference/menus.md
+    - Keyboard shortcuts: reference/shortcuts.md
+    - Toolbar: reference/toolbar.md

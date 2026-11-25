@@ -7,6 +7,8 @@ repo_url: https://github.com/telesapr/telesapr
 edit_uri: ""
 exclude_docs: |
   scenarios/
+  embed.go
+  nav.yml
 hooks:
   - tools/docs/hooks.py
 # The logo goes back to the landing page the guide sits under.

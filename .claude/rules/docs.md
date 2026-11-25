@@ -26,6 +26,11 @@ document holds what:
   Its pictures are made by the scenarios in `doc/guide/scenarios` (`TestDocScenarios`) and
   regenerated with `scripts/regen-doc-images.sh`; `make guide-site` builds it with mkdocs
   (`mkdocs.yml`, `tools/docs/hooks.py`).
+- The program carries the guide too (`doc/guide/embed.go`) and Help > User's Guide shows it in a
+  window of its own, read with `pkg/internal/markdown`, which knows only the Markdown the guide
+  uses (`TestGuidePagesParse` fails on what it would show wrong). Its contents are
+  `doc/guide/nav.yml`, a copy of the site's nav in `mkdocs.yml` kept equal by
+  `TestGuideNavMatchesSite`: a page added to the one is added to the other.
 - After a rename or a removal, grep `doc/` and `ROADMAP.md` for the old name. A merge of several
   branches reads the docs they touched once more.
 - A release renames `## [Unreleased]` to the version in the commit that bumps
