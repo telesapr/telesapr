@@ -9,6 +9,8 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.6.11] - 2026-11-26
+
 ### Added
 
 - Help > User's Guide opens the guide in a window of its own, from pages the program carries, so it reads without a network: the site's look, its contents down the left (hidden with ☰ Contents), tables, pictures that follow the window's width up to their own size, the videos played in the page as animations, links followed in the window, Back (Alt+Left), and Open Online for the page on the site. The browser version still opens the site.
