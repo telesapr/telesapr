@@ -22,6 +22,9 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ### Changed
 
+- The mouse wheel scrolls the guide window and the script console by a steady distance (takigo
+  v0.4.11), no longer three lines at a time, so a guide page with pictures no longer jumps a whole
+  picture per notch.
 - DIN 513 buttress nuts (7H, 8H, 9H) are made with the standard's pitch diameter deviation, 3.1758
   times the axial play 0.1·√P: an S20x4 7H nut has 0.41 mm of clearance, 0.09 mm before.
 - ASME B1.9 buttress threads have the sizes and pitches of the standard's Table 1, from 1/2 to 24
