@@ -36,7 +36,10 @@ and Mono), so another machine with the same Liberation version makes the same by
 A scenario records a video of some of its steps between `video start NAME` and `video end`:
 a frame after each step, the pointer gliding to where it is moved, a ring where it presses, the
 key a step presses at the bottom right, and the scenario's `caption` under the windows. ffmpeg
-makes `../videos/NAME.webm` (VP9) and `../videos/NAME.mp4` (H.264, yuv420p, faststart) of the frames:
+makes `../videos/NAME.webm` (VP9) and `../videos/NAME.mp4` (H.264, yuv420p, faststart) of the frames,
+and `../videos/NAME.gif` for the program's guide window, which plays no video: frames that repeat
+the one before are dropped, so a still step is one frame held for its time, and the last frame is
+held as long as it was recorded:
 
     ./scripts/regen-guide-videos.sh                    # every scenario that records one
     ./scripts/regen-guide-videos.sh getting-started   # one
@@ -60,7 +63,7 @@ there, each a list of steps with a caption, a key and how long its frame is held
 Each step is done and the screen waited for until it has stayed the same for half a second and
 differs from the step before's (a step the busy server dropped is done again); that one frame is
 held for the step's time. The frames are the same however slowly the machine ran, and the same
-encode as above makes the WebM and the MP4. The pointer is not on the screen's pixels, so these
+encode as above makes the WebM, the MP4 and the GIF. The pointer is not on the screen's pixels, so these
 videos are of keys, each named in the caption band's corner. `export-mesh` (17 s) is the one so far.
 
 ## The language
@@ -91,7 +94,7 @@ browser beside it 600×600. Coordinates are pixels from the window's top left.
 | `mark X Y W H [tw]` | An orange box round something, on the next shot only (`tw`: property browser coordinates) |
 | `shot NAME [gw\|tw\|both]` | Saves `images/NAME.png`: the graphics window, the property browser, or both side by side (default) |
 | `size gw\|tw W H` | Resizes a window |
-| `video start NAME [gw\|tw\|both]`, `video end` | Records the steps between them as `videos/NAME.webm` and `NAME.mp4` (see Videos), of the graphics window, the property browser or both (default) |
+| `video start NAME [gw\|tw\|both]`, `video end` | Records the steps between them as `videos/NAME.webm`, `NAME.mp4` and `NAME.gif` (see Videos), of the graphics window, the property browser or both (default) |
 | `caption TEXT`, `pause S` | The caption under the video's frames from here on; hold the last frame S seconds longer |
 | `dump`, `tw`, `hover`, `hovergrid N` | Print the model, the property browser's rows, what is under the mouse, or what is under each point of an N×N grid: use them to find where to click |
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Record doc/guide/videos: the videos the scenarios in
 # doc/guide/scenarios record between `video start` and `video end`, on
-# the headless platform, through ffmpeg. Watch every video that changed
+# the headless platform, through ffmpeg: NAME.webm and NAME.mp4 for the
+# site, NAME.gif for the program's guide window. Watch every video that changed
 # before committing, and commit them on their own. They are not
 # goldens: ffmpeg's versions write different bytes for the same frames.
 # The videos of the real window's menus and dialogs are made by

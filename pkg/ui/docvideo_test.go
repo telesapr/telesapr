@@ -119,8 +119,8 @@ func (r *uiScriptRunner) videoEnd() {
 	}
 }
 
-// finish writes the video from the frames added, as NAME.webm and
-// NAME.mp4 in v.dir, and removes the frames.
+// finish writes the video from the frames added, as NAME.webm, NAME.mp4
+// and NAME.gif in v.dir, and removes the frames.
 func (v *docVideo) finish() error {
 	defer func() { _ = os.RemoveAll(v.frames) }()
 	v.flush()
@@ -153,6 +153,22 @@ func (v *docVideo) finish() error {
 		"-movflags", "+faststart", "-an", mp4)
 	if b, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("ffmpeg for %s: %w\n%s", mp4, err, b)
+	}
+	// An animated GIF for the guide's window, which plays no video:
+	// mpdecimate drops the frames that repeat the one before, so a
+	// still step is one frame shown for its time, and each frame keeps
+	// only the rectangle that changed. The windows' few colours fit
+	// one palette without dithering. The last frame, which a variable
+	// frame rate gives no time of its own, is held as long as it was
+	// recorded, so the result stays a while before the GIF loops.
+	gifPath := filepath.Join(v.dir, v.name+".gif")
+	cmd = exec.Command("ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+		"-f", "concat", "-safe", "0", "-i", listPath,
+		"-vf", "fps=25,mpdecimate,split[a][b];[a]palettegen=stats_mode=diff[p];"+
+			"[b][p]paletteuse=dither=none:diff_mode=rectangle",
+		"-fps_mode", "vfr", "-final_delay", strconv.Itoa(max(int(math.Round(v.lastDur*100)), 1)), gifPath)
+	if b, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("ffmpeg for %s: %w\n%s", gifPath, err, b)
 	}
 	v.name = ""
 	return nil

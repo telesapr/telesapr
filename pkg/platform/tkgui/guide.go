@@ -42,7 +42,11 @@ type guideWindow struct {
 	back   []string
 	// photos keeps the pictures read, shrunk to the page's width.
 	photos map[string]*tkimage.Photo
-	style  guideStyle
+	// anims are the animated pictures read, by their photo's name, and
+	// playing the timers of those the page shown plays.
+	anims   map[string]*guideAnimation
+	playing map[*guideAnimation]func() bool
+	style   guideStyle
 }
 
 // guideWidth and guideHeight are the size of the guide's text, in
@@ -67,7 +71,8 @@ func (p *Platform) ShowGuide(pages fs.FS, page, online string) {
 }
 
 func (p *Platform) newGuide() *guideWindow {
-	g := &guideWindow{p: p, photos: map[string]*tkimage.Photo{}}
+	g := &guideWindow{p: p, photos: map[string]*tkimage.Photo{},
+		anims: map[string]*guideAnimation{}, playing: map[*guideAnimation]func() bool{}}
 	g.top = toplevel.New(p.app, p.newName("guide"), toplevel.Title("TeleSAPR User's Guide"))
 	g.top.Hide()
 	g.frame = Window{p: p, top: g.top, topWin: g.top.Window(), wmInfo: g.top.WmInfo, toolTop: g.top}
@@ -194,6 +199,9 @@ func (g *guideWindow) render(blocks []markdown.Block) {
 	_ = g.title.Configure(ttk.LabelText(g.page))
 	g.contents.showPage(g.page, blocks)
 	page := g.page
+	g.stopPlaying()
+	var played []string
+	blocks = g.animated(page, blocks)
 	err := richtext.Render(g.view, markdown.HTML(lettered(blocks), g.onlineURL(page)),
 		richtext.BaseFont(g.style.font()),
 		richtext.Stylesheet(g.style.css()),
@@ -203,8 +211,14 @@ func (g *guideWindow) render(blocks []markdown.Block) {
 			if ph == nil {
 				return nil, fmt.Errorf("guide picture %s: %w", src, fs.ErrNotExist)
 			}
+			if g.anims[ph.Name()] != nil {
+				played = append(played, ph.Name())
+			}
 			return ph, nil
 		}))
+	for _, name := range played {
+		g.play(name)
+	}
 	if err != nil {
 		// What could be inserted is shown; the rest is left out.
 		_ = g.view.Insert(g.view.EndIndex(), "\n"+err.Error())
@@ -237,6 +251,9 @@ func (g *guideWindow) photo(name string) *tkimage.Photo {
 		return nil
 	}
 	defer func() { _ = f.Close() }()
+	if path.Ext(name) == ".gif" {
+		return g.animation(name, f)
+	}
 	rgba, err := decodePicture(f)
 	if err != nil {
 		return nil

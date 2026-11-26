@@ -11,7 +11,7 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ### Added
 
-- Help > User's Guide opens the guide in a window of its own, from pages the program carries, so it reads without a network: the site's look, its contents down the left (hidden with ☰ Contents), tables, pictures that follow the window's width up to their own size, links followed in the window, Back (Alt+Left), and Open Online for the page on the site. The browser version still opens the site.
+- Help > User's Guide opens the guide in a window of its own, from pages the program carries, so it reads without a network: the site's look, its contents down the left (hidden with ☰ Contents), tables, pictures that follow the window's width up to their own size, the videos played in the page as animations, links followed in the window, Back (Alt+Left), and Open Online for the page on the site. The browser version still opens the site.
 - Fillets and chamfers of a pocket's rim wider than its wall is high all along, as in a trough whose top dips lower than the fillet's radius above the floor: the floor cuts the fillet from end to end and the wall goes; refused before ("runs off the face on side 2 all along").
 - A linked STEP file's declared volume, surface area and centre (its validation properties) are
   compared with what was read: the link's screen says "volume, area and centre as the file
