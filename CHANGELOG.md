@@ -37,7 +37,7 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 - A Boolean of two solids where a circle of one touches a face of the other at a single point, as
   a conical hole's circle touching a ring's inner circle in the plane of the ring's bottom, is made;
   it failed before.
-- Ray-Cast Check rebuilt a lathe or a revolve of such a profile wrongly, and reported rays that disagree on a sound solid.
+- Ray-Cast Check rebuilt a lathe or a revolve of a profile on a plane leaning to the axis wrongly, and reported rays that disagree on a sound solid.
 
 ## [0.6.11] - 2026-11-26
 
