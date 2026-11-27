@@ -168,7 +168,27 @@ applies to it:
 | anything of a group | a Group submenu: Activate, Hide, Suppress with What Uses It, Delete Group |
 | empty space | Select All |
 
+The menu leaves out Fillet Edges and Chamfer Edges where they would refuse what is selected.
+
 ![The context menu of an edge](images/interface-8-context-menu.png)
+
+The video right-clicks an edge of a block and chooses Fillet Edges. The edge is rounded, and
+with it the edges it runs on into:
+
+<video controls muted loop playsinline style="width:100%">
+<source src="videos/context-menu.webm" type="video/webm">
+<source src="videos/context-menu.mp4" type="video/mp4">
+</video>
+
+([context-menu.webm](videos/context-menu.webm), [context-menu.mp4](videos/context-menu.mp4), where the page shows no video.)
+
+Where a line of a sketch or an extrusion lies along an edge of the solid, a click takes the
+line. To pick the edge, hide the line's group: on the group's screen, clear "show entities from
+this group". The block in the picture and the video has these lines hidden.
+
+A line can lie along only part of an edge, or run on past its end, as an extrusion's line does
+past a rounded corner. Its menu has no Fillet Edges, which needs a whole edge. Chamfer Edges
+stays where it can cut along the line.
 
 While you draw lines or arcs, a right click stops drawing, as Esc does.
 

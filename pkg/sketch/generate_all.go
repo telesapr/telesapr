@@ -51,7 +51,7 @@ func (sk *Sketch) generateAll(typ GenerateType, andFindFree bool, pass regenPass
 	// What a pull asked to keep holds for the regeneration after it; the
 	// build pass is the last.
 	if pass == passBuild {
-		defer func() { sk.pulled = nil }()
+		defer func() { sk.pulled, sk.planPulled = nil, core.HGroup{} }()
 		defer sk.forgetMotion()
 	}
 	name := "regenerate"
@@ -928,7 +928,7 @@ func (sk *Sketch) SolveGroupAndReport(hg core.HGroup, groupParams []core.HParam,
 // mechanism. A mechanism's plan places its parts first
 // (mechanism_plan.go), and stands for the solve where it may.
 func (sk *Sketch) solveBlock(hgs []core.HGroup, params []core.HParam, andFindFree bool) {
-	if sk.solveByPlan(hgs) {
+	if !andFindFree && sk.placedByPull(hgs) || sk.solveByPlan(hgs) {
 		return
 	}
 	defer sk.notePlanSolved(hgs)

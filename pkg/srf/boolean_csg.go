@@ -22,16 +22,22 @@ func (s *SShell) CopyCurvesSplitAgainst(opA bool, agnst, into *SShell) {
 	// The curves are split at once, or in order (see parallel.go), and
 	// then added in order.
 	scn := make([]SCurve, len(s.Curve))
+	finds := make([][]geom.Vector, len(s.Curve))
 	loop(atOnce, into.pace, len(s.Curve), func(i int) {
 		sc := &s.Curve[i]
-		scn[i] = sc.MakeCopySplitAgainst(agnst, nil,
-			s.FindSurface(sc.SurfA), s.FindSurface(sc.SurfB))
+		scn[i] = sc.copySplitAgainst(agnst, nil,
+			s.FindSurface(sc.SurfA), s.FindSurface(sc.SurfB), into.touchFound, &finds[i])
 		if opA {
 			scn[i].Source = CurveSourceOrigA
 		} else {
 			scn[i].Source = CurveSourceOrigB
 		}
 	})
+	for _, f := range finds {
+		for _, p := range f {
+			into.touchFound = addTouch(into.touchFound, p)
+		}
+	}
 	into.Curve = slices.Grow(into.Curve, len(scn))
 	next := into.nextCurveID()
 	for i := range scn {
@@ -279,6 +285,15 @@ func onSurface(s *SSurface, p geom.Vector) bool {
 // agnstB, and at any trim vertex of those shells lying on the curve.
 // srfA and srfB are the surfaces c trims, whose crossings don't count.
 func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurface) SCurve {
+	return c.copySplitAgainst(agnstA, agnstB, srfA, srfB, nil, nil)
+}
+
+// copySplitAgainst is MakeCopySplitAgainst, split also at found, the
+// touching points the Boolean found itself (SShell.touchFound), as at
+// the known ones. Where c touches a surface tangent (exactTouch), the
+// split is made at the touching point, which is added to *finds if
+// finds is not nil.
+func (c *SCurve) copySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurface, found []geom.Vector, finds *[]geom.Vector) SCurve {
 	ret := *c
 	ret.Points = nil
 
@@ -294,7 +309,7 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 	}
 	var touches []geom.Vector
 	touchesOn(&touches, c, srfA, srfB, agnstA)
-	known := knownTouches(agnstA, agnstB)
+	known := unionTouch(knownTouches(agnstA, agnstB), found)
 	// An operand's own curve, split against the other alone, lying on a
 	// cylinder or cone the other has a face on too.
 	var seams []roundSeam
@@ -408,6 +423,12 @@ func (c *SCurve) MakeCopySplitAgainst(agnstA, agnstB *SShell, srfA, srfB *SSurfa
 					}
 					if !moved && covered {
 						continue
+					}
+				}
+				if q, ok := exactTouch(c, pi.Srf, pi.P, prev.P, p.P); ok {
+					pi.P = q
+					if finds != nil {
+						*finds = addTouch(*finds, q)
 					}
 				}
 				if missesCurve(c, pi.P, tolOf(srfA).ChordTolMm()) {

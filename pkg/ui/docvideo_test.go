@@ -190,18 +190,26 @@ func (r *uiScriptRunner) videoMouse(op string, x, y float64, inTW bool) {
 	if !ok || from == to {
 		return
 	}
-	dist := math.Hypot(float64(to.X-from.X), float64(to.Y-from.Y))
-	n := min(max(int(dist/30), 4), 14)
 	r.settle()
 	base := r.videoBase()
-	for i := 1; i <= n; i++ {
-		s := float64(i) / float64(n)
-		s = s * s * (3 - 2*s) // eased at both ends
-		p := image.Pt(from.X+int(math.Round(s*float64(to.X-from.X))), from.Y+int(math.Round(s*float64(to.Y-from.Y))))
+	for _, p := range glidePoints(from, to) {
 		img := cloneRGBA(base)
 		drawCursor(img, p.X, p.Y)
 		r.videoFrameOf(img, videoFrame)
 	}
+}
+
+// glidePoints are the pointer's places on its way from from to to, one
+// a frame, eased at both ends; the last is to.
+func glidePoints(from, to image.Point) []image.Point {
+	dist := math.Hypot(float64(to.X-from.X), float64(to.Y-from.Y))
+	points := make([]image.Point, min(max(int(dist/30), 4), 14))
+	for i := range points {
+		s := float64(i+1) / float64(len(points))
+		s = s * s * (3 - 2*s)
+		points[i] = image.Pt(from.X+int(math.Round(s*float64(to.X-from.X))), from.Y+int(math.Round(s*float64(to.Y-from.Y))))
+	}
+	return points
 }
 
 // videoPointer is where a mouse position lies in the video's frame;

@@ -22,7 +22,8 @@ import (
 // in its hole), or held by another of its mates (a driven hinge's axis
 // angle, a direction parallel seen in a workplane, or a mate that
 // closes a loop), which a search over that one angle meets. With no
-// alignment the part keeps the turn it has.
+// alignment, a part held by points alone (a ball, a slot), its turn is
+// three unknowns of the loop's search, from the turn it has.
 //
 // The move: with the turn held, what every mate misses by is affine in
 // the part's move, so the move is a linear least squares in its three
@@ -125,7 +126,8 @@ func leastTurn(a, b geom.Vector) geom.Quaternion {
 
 // alignTurn is the turn of a part that turned qs before satisfies its
 // alignments al, nearest qs; with turns, it may still turn about axis.
-// With no alignment it is qs, free of the plan.
+// With no alignment it is qs, which placeBody turns by the loop's
+// unknowns.
 func alignTurn(qs geom.Quaternion, al []align) (q geom.Quaternion, axis geom.Vector, turns bool) {
 	if len(al) == 0 {
 		return qs, geom.Vector{}, false
@@ -224,7 +226,24 @@ func (r *planRun) bodyResidual(b int, out []float64) []float64 {
 // unknown.
 func (r *planRun) placeBody(b int, vars []float64, structure bool) {
 	br := &r.bodies[b]
-	q0, axis, turns := alignTurn(r.start[b].q, r.alignments(b))
+	al := r.alignments(b)
+	q0, axis, turns := alignTurn(r.start[b].q, al)
+	// A part held by points alone, a ball or a slot, has no direction to
+	// lay along another: its turn is three unknowns of the loop, a
+	// rotation vector, zero where it is turned now.
+	if len(al) == 0 && len(r.plan.placing[b]) > 0 {
+		if structure {
+			br.ballVar = r.nv
+			r.nv += 3
+			r.isTurn = append(r.isTurn, true, true, true)
+		}
+		if br.ballVar >= 0 {
+			v := geom.Vector{X: varAt(vars, br.ballVar), Y: varAt(vars, br.ballVar+1), Z: varAt(vars, br.ballVar+2)}
+			if a := v.Magnitude(); a > 0 {
+				q0 = geom.QuaternionFromAxisAngle(v.ScaledBy(1/a), a).Times(q0).WithMagnitude(1)
+			}
+		}
+	}
 	var free []geom.Vector
 	at := func(th float64) []float64 {
 		q := q0

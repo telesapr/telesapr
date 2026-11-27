@@ -42,19 +42,26 @@ func (r *planRun) evalPlan(vars []float64, structure bool) []float64 {
 	return f
 }
 
-// closeLoops places the mechanism, its loops closed; false where the
-// search can't close them.
-func (r *planRun) closeLoops() bool {
+// closeLoops places the mechanism, its loops closed, and returns the
+// loop's unknowns it is closed at; false where the search can't close
+// them. Without sweep the search starts only from where the parts are,
+// as a drag's must, to keep the assembly they are in; and a drag takes
+// them as closed within tol, which may be more than planTol
+// (mechanism_drag.go).
+func (r *planRun) closeLoops(sweep bool, tol float64) ([]float64, bool) {
 	f := r.evalPlan(nil, true)
-	if maxAbs(f) <= planTol {
-		return true
+	vars := make([]float64, r.nv)
+	if maxAbs(f) <= tol {
+		return vars, true
 	}
 	if r.nv == 0 {
-		return false
+		return nil, false
 	}
-	vars := make([]float64, r.nv)
-	if r.levenberg(vars) {
-		return true
+	if r.levenberg(vars) || tol > planTol && maxAbs(r.evalPlan(vars, false)) <= tol {
+		return vars, true
+	}
+	if !sweep {
+		return nil, false
 	}
 	for j := r.nv - 1; j >= 0; j-- {
 		if !r.isTurn[j] {
@@ -69,11 +76,11 @@ func (r *planRun) closeLoops() bool {
 			clear(vars)
 			vars[j] = a
 			if r.levenberg(vars) {
-				return true
+				return vars, true
 			}
 		}
 	}
-	return false
+	return nil, false
 }
 
 // levenberg solves for the loop's unknowns from vars by

@@ -246,7 +246,7 @@ func TestPartFreedomEngine(t *testing.T) {
 // piston moving in a mechanism, pinned and flush, the piston's pin on
 // the cylinder's axis and its own line parallel to it in the XY
 // workplane. It returns the bearing's centre.
-func engine(t *testing.T) (d *api.Doc, crank, rod, piston api.Group, bearingAt api.Vec) {
+func engine(t testing.TB) (d *api.Doc, crank, rod, piston api.Group, bearingAt api.Vec) {
 	t.Helper()
 	dir := t.TempDir()
 	d = api.New()

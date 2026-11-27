@@ -39,7 +39,7 @@ func filletOneChain(sh *srf.SShell, picks []FilletPick, r float64, origin uint32
 	picked := map[int]bool{}
 	first := -1
 	for _, p := range picks {
-		e, err := t.pickEdge(p)
+		e, err := t.PickEdge(p)
 		if err != nil {
 			return errNotOneChain
 		}

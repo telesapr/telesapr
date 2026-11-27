@@ -102,8 +102,7 @@ the stretches of a line that lie inside the solid.
 The rebuilt model takes:
 
 - extrusions, with or without a draft;
-- lathes and revolves;
-- helices of a profile drawn in a plane through their axis;
+- lathes, revolves and helices, of a profile in a plane through the axis or leaning to it;
 - sweeps along a path, mitred or with a corner radius, along a cubic, twisted, held to a
   direction, or round a closed path out of a plane;
 - the copies of all of these made by step and repeat, pattern along a path and mirror.
@@ -113,5 +112,6 @@ Any other solid group is refused, and the message names the group.
 ## Not yet
 
 - The ray-cast check refuses fillets, chamfers, lofts, shells, wraps and STEP links.
-- It also refuses a sweep whose profile leans to an arc's axis, and a corner beside an arc or a
-  cubic in a sweep's path.
+- It also refuses a corner beside an arc or a cubic in a sweep's path.
+- A lathe of a profile that crosses the axis, drawn in a plane through the axis, is wrong with
+  no message. Its volume is too small. Keep such a profile on one side of the axis.

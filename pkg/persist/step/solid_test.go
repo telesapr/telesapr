@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync/atomic"
 	"testing"
 
@@ -282,8 +283,11 @@ func TestSolidCorpus(t *testing.T) {
 	t.Logf("%d sound", sound.Load())
 }
 
-// TestTurnedLoopsAtPole: a bound through a pole of a closed surface is
-// taken as the file runs it, whichever way round its layout goes.
+// TestTurnedLoopsAtPole: a bound that jumps along a pole more than once
+// is taken as the file runs it, whichever way round its layout goes;
+// one that jumps once, on a surface of one pole, is closed along the
+// pole the way the rest of it fixes; on a sphere every bound is taken
+// as the file runs it.
 func TestTurnedLoopsAtPole(t *testing.T) {
 	t.Parallel()
 	half := math.Pi / 2
@@ -298,11 +302,42 @@ func TestTurnedLoopsAtPole(t *testing.T) {
 	}
 	pole := func(q uvSample) bool { return math.Abs(math.Abs(q.v)-half) < 1e-12 }
 	none := func(uvSample) bool { return false }
-	if !turnedLoops([][]uvSample{l}, 2*math.Pi, 0, none) {
+	if !turnedLoops([][]uvSample{l}, 2*math.Pi, 0, false, none) {
 		t.Error("a clockwise bound not taken as turned")
 	}
-	if turnedLoops([][]uvSample{l}, 2*math.Pi, 0, pole) {
+	if turnedLoops([][]uvSample{l}, 2*math.Pi, 0, false, pole) {
 		t.Error("a bound through a pole taken as turned")
+	}
+
+	// Half a cone from its apex at v = 0 up to v = 1, u from 3 pi / 2 to
+	// 5 pi / 2, its bound run clockwise: from the middle of its top to
+	// the right, down to the apex, and up the left side laid out a turn
+	// on, where the half turn's jump along the apex came out the wrong
+	// way, then on along the top.
+	a, b := 3*half, 5*half
+	cw := []uvSample{{u: 2 * math.Pi, v: 1}, {u: b, v: 1}, {u: b, v: 0.5}, {u: b, v: 0},
+		{u: a + 2*math.Pi, v: 0}, {u: a + 2*math.Pi, v: 0.5}, {u: a + 2*math.Pi, v: 1}, {u: 3.5 * math.Pi, v: 1}}
+	apex := func(q uvSample) bool { return q.v == 0 }
+	if !turnedLoops([][]uvSample{cw}, 2*math.Pi, 0, false, apex) {
+		t.Error("a clockwise bound jumping once at the apex not taken as turned")
+	}
+	ccw := slices.Clone(cw)
+	slices.Reverse(ccw)
+	if turnedLoops([][]uvSample{ccw}, 2*math.Pi, 0, false, apex) {
+		t.Error("a counter-clockwise bound jumping once at the apex taken as turned")
+	}
+	if turnedLoops([][]uvSample{cw}, 2*math.Pi, 0, true, apex) {
+		t.Error("a bound on a sphere taken as turned")
+	}
+
+	// A sphere's face bounded by a hole, clockwise, holds its poles; by
+	// the hole's outline, counter-clockwise, it does not.
+	hole := []uvSample{{u: 1, v: 0}, {u: 1, v: 0.5}, {u: 2, v: 0.5}, {u: 2, v: 0}}
+	if !holdsPoles([][]uvSample{hole}, 2*math.Pi, 0, false, pole) {
+		t.Error("a face bounded by a hole holds no pole")
+	}
+	if holdsPoles([][]uvSample{hole}, 2*math.Pi, 0, true, pole) {
+		t.Error("a face bounded by an outline turned round holds a pole")
 	}
 }
 

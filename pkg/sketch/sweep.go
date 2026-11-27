@@ -733,6 +733,9 @@ func (g *Group) generateSweepShell(sk *Sketch) {
 		g.generateRunsSweepShell(sk, src, uint32(start), uint32(end))
 		return
 	}
+	if g.fittedPath == nil && g.refuseStraddlingSweep(prof, steps) {
+		return
+	}
 	if g.fittedPath != nil {
 		g.generateFittedSweepShell(sk, src, uint32(start), uint32(end))
 		g.refuseCrossing(sk, func() bool { return curvesComeBack(prof, g.fittedPath.Pieces()) },

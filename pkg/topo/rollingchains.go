@@ -306,7 +306,7 @@ func filletCornerPicks(sh *srf.SShell, picks []FilletPick, r float64, origin uin
 	}
 	edges := make([]int, 0, len(picks))
 	for _, p := range picks {
-		e, err := t.pickEdge(p)
+		e, err := t.PickEdge(p)
 		if err != nil {
 			return errNotMitred
 		}

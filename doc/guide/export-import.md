@@ -75,7 +75,8 @@ segments are also on the preferences screen (below).
 
 ![The Export Triangle Mesh dialog](images/export-import-1-mesh-dialog.png)
 
-The video opens File > Export > Triangle Mesh and cancels the dialog:
+The video opens File > Export > Triangle Mesh from the keyboard. In the dialog it sets
+Quality to Fine and ticks the strict box. Then it cancels, so nothing is written:
 
 <video controls muted loop playsinline style="width:100%">
 <source src="videos/export-mesh.webm" type="video/webm">

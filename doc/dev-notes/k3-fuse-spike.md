@@ -1,5 +1,11 @@
 # K3 spike: fuse first (2026-11-04)
 
+Refreshed 2026-11-27 (k3-exact-touch): two circles touching exactly are sound by every Boolean,
+the touching point found where an exact curve touches the other surface tangent
+(`srf.exactTouch`, `TestBooleanTouchingRingExact`); the chamfer beside the ledge at 0.500 still
+needs `footClearSize`, its mesh open at the sliver beside the point. See "Touching exactly, the
+point found".
+
 Refreshed 2026-11-23 (sweep-cubic-corner-joins): the sweep corner beside a cubic's failing joins
 were found to be the path coming back over itself, not the corner: runs cut again where they come
 back, a twist held off them, and the topology's Euler count of a hole touching its face's rim. See
@@ -894,6 +900,72 @@ pinched between the chamfer's cut and the side's foot. `footClearSize` still mov
 at a chord tolerance of 0.003). Left: the hole turned 30° with the ring turned 40° (the touch
 inside every patch, no vertex there) and the mesh of a face pinched at a point that two curves
 touch tangent.
+
+### Touching exactly, the point found (k3-exact-touch, 2026-11-27)
+
+Measured first on devel `97f62b67`: `touchRingPair` at a gap of 0, the 24 Booleans of the spike
+(chords 0.0005 and 0.002, hole turned 0 or 30°, ring 0 or 40°, three ops), 0 of 24 sound; with the
+touching point handed over as `SShell.Touch`, still 0. Taken apart at chord 0.002, unturned: the
+ring's inner circle (an exact curve of the ring's bottom and its cylinder) is split against the
+hole's cone at (8, ±0.0004, 1), where its chord crosses the cone; the seed there on the cone's
+curve with the cylinder stops the march from the true seed at the touch at once, and the curve
+from the cone's top to the touch is never marched. With the point given as a sink the seeds within
+a hundredth of the tolerance of it are dropped, these are not, and the marches end at them, not at
+the point.
+
+Now (`pkg/srf/boolean_touch_find.go`, `boolean_touch_trim.go`):
+
+1. **The point found.** Where an operand's exact curve (not a line) is split against the other's
+   surface at a grazing angle (the cosine between the curve and the surface's normal under 0.05,
+   `grazingTouch`), the split is moved to the root, between the segment's ends, of that cosine
+   along the curve, found by Newton's method on the exact curve, if the curve there lies within
+   LengthEps of the surface and on its patch (`exactTouch`). The distance is flat there, the
+   cosine's root is not: the crossings anywhere in the 0.009 the circles share within LengthEps
+   converge on the one point. A crossing elsewhere has no root within LengthEps of the surface
+   and is left as it was. Such points are the Boolean's own (`SShell.touchFound`, not carried
+   into the result's `Touch`): the original curves are split first, so the intersection curves
+   are split at them as at known touches (`copySplitAgainst`, `snapToKnownTouches`).
+2. **Marched to.** In `intersectByMarching` a found point on both patches is a sink, and the
+   seeds within the tolerance of it, or whose edge's chord runs past it within the tolerance or an
+   eighth of the chord's length and are no further from it than the chord is long, are dropped
+   (`foundSinks`, `dropGrazingSeeds`). The chord rule is for the fine tolerances: past
+   MaxSegments the chords sag more than the tolerance, and at 9.2e-5 the grazing seeds lay 0.0002
+   either side of a ledge's foot.
+3. **The side from the exact trim.** The hole's circle in the ring's bottom, from the touch, lies
+   between the ring's chords and its arc for a long way whatever the chords' length (the chord
+   from the point sags y(L-y)/2R below the arc, the circle y²/2R', and over the first part of each
+   chord the chord is the deeper), so its segments beside the point were taken inside the ring's
+   face by the trim BSP and kept, dangling. Where the Boolean found a point near the other face,
+   a segment the BSP puts inside, within a chord's sag of a curved trim whose curve is exact, is
+   dropped if its middle (on both surfaces) lies outside that exact curve by more than LengthEps,
+   the face's side of the chord taken from the BSP just off the chord's middle
+   (`outsideExactTrim`).
+
+`TestBooleanTouchingRingExact`: 24 of 24 sound, within 0.023% of the integrated volumes (the
+sweep allows 0.2%). The steps alone: the point found and the seeds within the tolerance dropped,
+18 of 24 (the hole turned 30° with the ring unturned left the dangling pieces); with the exact
+side, 22 (two differences meshed open where a grazing split at the end of the ring's quarter, the
+root a hair outside the segment's span, was kept: the span is allowed 1e-9 of parameter either
+side); then 24. No golden moved; `TestBooleanTouchingRingSweep` (gaps of 1 to 20 tolerances)
+unchanged, 0 of its sample failing.
+
+The chamfer beside the ledge at 0.500 (`ledgeHoleAt(0, 0.5)`, 3.5, `footClearSize` switched off
+to see it) is not made at its own size yet. At a chord setting of 0.003 the touch is found at
+(8, 0, 1), the cut back closes, and its mesh has 30 naked edges: the disc's side below the cut is
+a sliver between the foot's circle and the cut's curve, as wide as the distance from the point
+squared, too thin for the mesher to put a point in, and its triangles fan from the far end of the
+foot's chord, 0.72 long (the foot, a long arc, is cut into the most chords a curve may have), and
+sag 0.007 inside the cylinder through the chamfer's cone. Tried and not kept: cutting the foot's
+chords at the point into pieces of the tolerance's sag (12 naked edges left), and halving them
+towards the point as well (to 300 tolerances: 4 left; to 1 to 100 tolerances the Boolean failed,
+the foot's points within LengthEps of the cone). At 0.0005 the cut back fails in the ledge top's
+trim, the cone's circle on it kept from its seams at (3.5, ±4.5, 1) to the touch (not followed
+further). `footClearSize` makes both, at a size within the chord tolerance, as before. The fillet
+of 3.5 (not a chamfer) at 0.500 is made at its own size with `footClearSize` switched off.
+
+Left: the chamfer at 0.500 (the mesh of a face pinched to a sliver beside a tangent touch, K4's,
+and the fine tolerance's ledge trim); touches between two surfaces that no exact curve of either
+crosses (tubes touching tangent), still given only by the feature (`SShell.Touch`).
 
 ## Runs cut again where the path comes back (sweep-cubic-corner-joins, 2026-11-23)
 

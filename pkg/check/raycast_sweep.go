@@ -48,13 +48,11 @@ func newCutPrism(pr profile, along geom.Vector, start, end halfSpace) *prism {
 
 // sweepLeaves is a fitted sweep's profile placed along its path by the
 // oracle's own frames (pathSweep), or a sweep along lines and arcs as
-// its steps move each of
-// the profile's loop sets: a prism along each line, ended by the
-// profile's plane or by the plane halving a mitred corner, and a
-// revolution about each arc's axis. A run along an arc is a revolve
-// only where the profile, moved to the arc's start, lies in a plane
-// through the arc's axis, as a profile square to the path does; one
-// leaning to it is refused.
+// its steps move each of the profile's loop sets: a prism along each
+// line, ended by the profile's plane or by the plane halving a mitred
+// corner, and about each arc's axis a revolution where the profile,
+// moved to the arc's start, lies in a plane through that axis, as a
+// profile square to the path does, and a leanSweep where it leans to it.
 func sweepLeaves(sk *sketch.Sketch, g *sketch.Group) (union, error) {
 	// The profile as the steps or the path's frames move it, from the
 	// path's start: drawn partway along an open path, carried back there.
@@ -102,10 +100,14 @@ func sweepLeaves(sk *sketch.Sketch, g *sketch.Group) (union, error) {
 			case st.Corner:
 			case st.Arc:
 				axis := st.Axis.WithMagnitude(1)
-				if math.Abs(n.Dot(axis)) > 1e-9 || math.Abs(moved.Point.Minus(st.Center).Dot(n)) > 1e-6 {
-					return nil, fmt.Errorf("%s: the profile leans to an arc's axis: %w", g.DescriptionString(), ErrUnsupported)
+				if throughAxis(moved, st.Center, axis) {
+					leaves = append(leaves, newRevolution(moved, st.Center, axis, st.Angle >= 2*math.Pi, 0, st.Angle))
+					break
 				}
-				leaves = append(leaves, newRevolution(moved, st.Center, axis, st.Angle >= 2*math.Pi, 0, st.Angle))
+				// A step that turns through nothing sweeps nothing.
+				if ls, ok := newLeanSweep(moved, st.Center, axis, 0, st.Angle, 0, 0); ok {
+					leaves = append(leaves, ls)
+				}
 			default:
 				d := lineAt(k)
 				if n.Dot(d) < 0 {

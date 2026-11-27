@@ -9,6 +9,7 @@ import (
 	"github.com/telesapr/telesapr/pkg/platform/headless"
 	"github.com/telesapr/telesapr/pkg/sketch"
 	"github.com/telesapr/telesapr/pkg/srf"
+	"github.com/telesapr/telesapr/pkg/topo"
 )
 
 // contextMenuFor selects he alone, opens the context menu and returns
@@ -39,6 +40,8 @@ func TestContextMenuSolid(t *testing.T) {
 	if err := ss.LoadFromFile(filepath.Join("..", "..", "testdata", "topo", "slot.tlspr")); err != nil {
 		t.Fatal(err)
 	}
+	// The solid is made, which the menu asks whether it can fillet.
+	ss.AfterNewFile()
 	sk := ss.SK
 	var sketchLine, extrudedLine core.HEntity
 	for i := range sk.Entities {
@@ -189,6 +192,98 @@ func TestContextMenuSpline(t *testing.T) {
 	if !sk.PointIsCoincident(end) {
 		t.Error("undo did not bring the coincidence back")
 	}
+}
+
+// A line that runs past the end of the solid's edge, as the block's does
+// once its corners are rounded, is not offered Fillet Edges, which would
+// refuse it; Chamfer Edges, whose wedge takes it, still is. Before the
+// rounding the same line is a whole edge and offers both. What the menu
+// offers is what NewFillet and NewChamfer take.
+func TestContextMenuPartEdge(t *testing.T) {
+	t.Parallel()
+	ss, p := newTestApp(t)
+	ss.BackgroundShells = false
+	ss.Console().RunFile(filepath.Join("..", "..", "examples", "scripts", "fillet", "fillet.go"), "-")
+	sk := ss.SK
+	rounded := sk.Active
+	if g := sk.Group(rounded); g.Type != sketch.GroupFillet {
+		t.Fatalf("the example's active group is %s, no fillet", g.Name)
+	}
+	block := sk.Group(rounded).PreviousGroup(sk).H
+	var lines []core.HEntity
+	for i := range sk.Entities {
+		if e := &sk.Entities[i]; e.Type == core.EntityLineSegment && e.Group == block {
+			lines = append(lines, e.H)
+		}
+	}
+
+	// check looks at every line of the block's with active active, and
+	// counts those offered Fillet Edges, Chamfer Edges only, and neither.
+	check := func(active core.HGroup) (fillet, chamferOnly, neither int) {
+		t.Helper()
+		sk.Active = active
+		for _, he := range lines {
+			labels, _ := contextMenuFor(t, ss, p, he)
+			f, c := slices.Contains(labels, "Fillet Edges"), slices.Contains(labels, "Chamfer Edges")
+			_, ferr := sk.NewFillet([]core.HEntity{he}, nil, 1, "")
+			_, cerr := sk.NewChamfer([]core.HEntity{he}, nil, 1, "")
+			if f != (ferr == nil) {
+				t.Errorf("line %x: Fillet Edges offered %t, NewFillet: %v", he.V, f, ferr)
+			}
+			if c != (cerr == nil) {
+				t.Errorf("line %x: Chamfer Edges offered %t, NewChamfer: %v", he.V, c, cerr)
+			}
+			switch {
+			case f:
+				fillet++
+			case c:
+				chamferOnly++
+			default:
+				neither++
+			}
+		}
+		return fillet, chamferOnly, neither
+	}
+
+	fillet, chamferOnly, neither := check(block)
+	if fillet == 0 || chamferOnly != 0 || neither != 0 {
+		t.Errorf("on the block, whose lines are whole edges: %d lines offer Fillet Edges, %d Chamfer Edges only, %d neither",
+			fillet, chamferOnly, neither)
+	}
+	// Rounded: the top and bottom lines run past their edges' ends, and
+	// the upright ones are rounded away.
+	fillet, chamferOnly, neither = check(rounded)
+	if fillet != 0 || chamferOnly == 0 || neither == 0 {
+		t.Errorf("rounded: %d lines offer Fillet Edges, %d Chamfer Edges only, %d neither", fillet, chamferOnly, neither)
+	}
+
+	// An edge of the rounded solid itself offers both.
+	tp, err := sk.Group(rounded).Topology()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for e := range tp.Edges {
+		if tp.Edges[e].Seam || !tp.Straight(e) {
+			continue
+		}
+		name, err := tp.NameOf(e)
+		if err != nil {
+			continue
+		}
+		if sk.CheckFilletEdges(nil, []topo.Name{name}) != nil {
+			continue
+		}
+		ss.GW.ClearSelection()
+		ss.GW.selection = append(ss.GW.selection, Selection{Edge: name})
+		var shown *headless.Menu
+		p.PopUpHook = func(m *headless.Menu) *headless.MenuItem { shown = m; return nil }
+		ss.GW.showContextMenu(0, 0)
+		if shown.Find("Fillet Edges") == nil || shown.Find("Chamfer Edges") == nil {
+			t.Errorf("%s: no Fillet Edges or no Chamfer Edges", sk.SolidEdgeName(name))
+		}
+		return
+	}
+	t.Error("no straight edge of the rounded block can be filleted")
 }
 
 // The context menu of one face of the solid gives that face an

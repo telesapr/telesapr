@@ -103,6 +103,12 @@ func (g pointGoal) rows(sk *Sketch, hs []core.HParam) [][]float64 {
 // after keeps them as near as it can while it moves the others.
 func (sk *Sketch) pullPart(hg core.HGroup, part []core.HParam, goal pullGoal) {
 	block := sk.Mechanism(hg)
+	sk.planPulled = core.HGroup{}
+	if sk.pullByPlan(block, part, goal) {
+		sk.pulled = part
+		sk.MarkGroupDirty(block[0], false)
+		return
+	}
 	params := sk.groupParams(block...)
 	last := math.Inf(1)
 	capped := false

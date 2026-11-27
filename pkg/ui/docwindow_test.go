@@ -28,11 +28,29 @@ type docWindowShot struct {
 }
 
 // docWindowPlatform is the window's platform, keeping the windows the
-// application makes so that a shot can click in them.
+// application makes so that a shot can click in them, and its popup
+// menus so that a video can click in the one that is open.
 type docWindowPlatform struct {
 	*tkgui.Platform
 	app     *Application
 	windows []*tkgui.Window
+	menus   []*tkgui.Menu
+}
+
+func (s *docWindowPlatform) CreateMenu() platform.Menu {
+	m := s.Platform.CreateMenu()
+	s.menus = append(s.menus, m.(*tkgui.Menu))
+	return m
+}
+
+// menuEntry is the entry labelled label of the popup menu that is open.
+func (s *docWindowPlatform) menuEntry(label string) (tkgui.Spot, bool) {
+	for _, m := range s.menus {
+		if at, ok := m.EntrySpot(label); ok {
+			return at, true
+		}
+	}
+	return tkgui.Spot{}, false
 }
 
 func (s *docWindowPlatform) CreateWindow(kind platform.WindowKind, parent platform.Window) platform.Window {
@@ -61,15 +79,29 @@ var docWindowShots = []docWindowShot{
 		},
 		after: func(s *docWindowPlatform) { s.CloseMenus() }},
 	{name: "interface-8-context-menu",
-		// A right click on the block's top back edge, which opens the
-		// menu of what applies to an edge.
-		before: func(s *docWindowPlatform) { s.windows[0].Click(400, 150, 3) },
-		after:  func(s *docWindowPlatform) { s.CloseMenus() }},
+		// A right click on the front face's top edge, the solid's own,
+		// which opens the menu of what applies to an edge. The lines of
+		// the sketch and the extrusion are hidden: they run along the
+		// solid's edges, and a click takes a line before an edge.
+		before: func(s *docWindowPlatform) {
+			hideSketches(s)
+			s.windows[0].Click(472, 203, 3)
+		},
+		after: func(s *docWindowPlatform) {
+			s.CloseMenus()
+			s.app.GW.ClearSelection()
+			showSketches(s)
+		}},
 	{name: "export-import-1-mesh-dialog",
 		// The dialog is modal: the command returns once after has
-		// closed it.
+		// closed it. Behind it the block's top back line is drawn
+		// hovered, the pointer put there: this runs inside the context
+		// menu's loop, where the window takes no motion unless told the
+		// menu is gone.
 		before: func(s *docWindowPlatform) {
 			s.app.GW.ClearSelection()
+			s.app.GW.context.active = false
+			s.windows[0].Spot(400, 150).Hover()
 			_ = s.app.RunCommand("File > Export > Triangle Mesh...")
 		},
 		after: func(s *docWindowPlatform) { s.CloseDialogs() }},

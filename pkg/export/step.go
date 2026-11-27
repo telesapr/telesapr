@@ -937,14 +937,16 @@ func (w *stepFileWriter) sheetJobs(shell *srf.SShell, sh *stepSheet, scale float
 		return jobs
 	}
 	bs := sh.grid.Surface
-	// STEP runs a bound with the face on its left, seen from outside;
-	// SolveSpace's trims run the other way.
+	// The loops run as the kernel's trims do, clockwise about the face;
+	// the bound runs them backwards (ExportCurveLoop), as a patch's.
+	// Turned round here as well before 2026-11-27, a sheet's face had
+	// its bounds clockwise, each edge it shares run the same way by both
+	// faces: readers set it right from the bounds' layout, but ours
+	// can't through a sphere's pole, and such faces were kept B-splines.
 	var ls []*srf.SBezierLoop
 	for _, l := range loops {
 		var r srf.SBezierLoop
-		for _, c := range slices.Backward(l.curves) {
-
-			c.Reverse()
+		for _, c := range l.curves {
 			c.ScaleSelfBy(scale)
 			r.Curves = append(r.Curves, c)
 		}
@@ -953,14 +955,13 @@ func (w *stepFileWriter) sheetJobs(shell *srf.SShell, sh *stepSheet, scale float
 	job := stepFaceJob{color: color, faces: [][]*srf.SBezierLoop{ls}, firstOuter: len(ls) == 1}
 	// The patches lie on one surface: a plane, cylinder, cone, sphere or
 	// torus is written as itself, its parameter starting where the
-	// sheet's does; one whose bounds reach its apex or pole stays a
-	// B-spline, which our reader takes (reachesPole).
+	// sheet's does.
 	patches := make([]*srf.SSurface, len(sh.patches))
 	for i, h := range sh.patches {
 		patches[i] = shell.FindSurface(h)
 	}
 	first := patches[0]
-	if a, ok := analyticOf(first); ok && a.holdsAll(patches) && !reachesPole(a.scaled(scale), ls) {
+	if a, ok := analyticOf(first); ok && a.holdsAll(patches) {
 		seam, sense := seamOf(a, first).ScaledBy(scale), a.sameSense(first)
 		job.surface = func() (int, bool) {
 			return w.writeAnalytic(a.scaled(scale), seam), sense

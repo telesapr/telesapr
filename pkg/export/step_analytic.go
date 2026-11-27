@@ -94,33 +94,6 @@ func sphereAxis(s *srf.SSurface, c geom.Vector, tol float64) geom.Vector {
 	return geom.Vector{Z: 1}
 }
 
-// reachesPole reports whether a loop of a face on a touches a point
-// where the surface's parameter around its axis is undefined: a cone's
-// apex, a sphere's pole. Our reader takes a face of several patches
-// that does, written as one surface, as a B-spline but not as a cone:
-// a dish's lathed cone, a pocket at its seam reaching the apex, crossed
-// the bounds of one of its cells whatever the cone's reference
-// direction (TestFilletPivotSeamStep); a patch alone reads back as a
-// cone.
-func reachesPole(a analytic, loops []*srf.SBezierLoop) bool {
-	if a.kind != analyticCone && a.kind != analyticSphere {
-		return false
-	}
-	tol := 10 * geom.LengthEps
-	for _, l := range loops {
-		for i := range l.Curves {
-			c := &l.Curves[i]
-			for k := range 9 {
-				rel := c.PointAt(float64(k) / 8).Minus(a.origin)
-				if rel.Minus(a.axis.ScaledBy(rel.Dot(a.axis))).Magnitude() < tol {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
 // seamOf is where a's parameter is to start for the patch s: a corner of
 // s off the axis, so the surface starts where the patch does. A sheet's
 // first control point may be a cone's apex or a sphere's pole, where no

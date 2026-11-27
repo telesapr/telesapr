@@ -230,8 +230,14 @@ func (gw *graphicsWindow) addModelItems(menu platform.Menu, gs *groupedSelection
 		menu.AddSeparator()
 	}
 	if edges {
-		menu.AddItem("Fillet Edges", func() { ss.MenuFeatures(cmdGroupFillet, "") }, true)
-		menu.AddItem("Chamfer Edges", func() { ss.MenuFeatures(cmdGroupChamfer, "") }, true)
+		// Left out where they would refuse what is selected, as a line
+		// that runs on past the end of the solid's edge.
+		if sk.CheckFilletEdges(gs.entity, gs.solidEdge) == nil {
+			menu.AddItem("Fillet Edges", func() { ss.MenuFeatures(cmdGroupFillet, "") }, true)
+		}
+		if sk.CheckChamferEdges(gs.entity, gs.solidEdge) == nil {
+			menu.AddItem("Chamfer Edges", func() { ss.MenuFeatures(cmdGroupChamfer, "") }, true)
+		}
 		menu.AddItem("Sweep Along Edges", func() { ss.MenuFeatures(cmdGroupSweep, "") }, true)
 	}
 	if faces {

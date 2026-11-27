@@ -11,7 +11,7 @@ import (
 )
 
 // paramValue is parameter name's value.
-func paramValue(t *testing.T, d *api.Doc, name string) float64 {
+func paramValue(t testing.TB, d *api.Doc, name string) float64 {
 	t.Helper()
 	p, ok := d.Params.Get(name)
 	if !ok {

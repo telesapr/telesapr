@@ -1,9 +1,11 @@
 # STEP exchange
 
-Refreshed 2026-11-24 on branch `step-voids`, from devel a2b990de, after the writer came to write a
-cavity as a void (first written 2026-11-23, after the writer was moved to AP242; refreshed on
-`step-edge-merge` when the writer joined an edge's pieces, and on `step-link-checks` when the
-reader came to read validation properties and check each solid's mesh). How TeleSAPR's STEP
+Refreshed 2026-11-27 on branch `step-apex-faces`, from devel 97f62b67, after a face of several
+patches came to run its bounds the STEP way and the reader to read faces through a pole (first
+written 2026-11-23, after the writer was moved to AP242; refreshed on `step-edge-merge` when the
+writer joined an edge's pieces, on `step-link-checks` when the reader came to read validation
+properties and check each solid's mesh, and on `step-voids` when the writer came to write a
+cavity as a void). How TeleSAPR's STEP
 reader (`pkg/persist/step`, `pkg/persist/link`) and writer (`pkg/export/step.go`,
 `step_analytic.go`, `step_analytic_curve.go`, `step_bodies.go`, `step_edge_merge.go`,
 `step_validation.go`) stand against the
@@ -109,8 +111,8 @@ patch, `sheetJobs` for a sheet written as one surface, each a closure that write
 and the faces' loops) and writes them in the same order after. Between, `stepJoints` counts the
 loop corners at each point, to `stepPrecision`. A joint goes when exactly two corners lie there
 (an edge's two faces, or a seam's face twice), the curves either side of the two are the same
-(their far ends and middles, either way round: a sheet's loops are turned round for the file,
-so its edges may run the same way on both faces), and none of them is a LINE or CIRCLE
+(their far ends and middles, either way round: a sheet's loops ran turned round before
+2026-11-27, its edges the same way on both faces, below), and none of them is a LINE or CIRCLE
 (`lineOrCircleOf`, which `writeLineOrCircle` writes). `edgeRuns` cuts each loop into runs
 between the vertices kept; a run that ends where it starts (a ring between two faces, or a
 ring that touches the rest of its face's loop at one vertex) is cut at the joint farthest from
@@ -231,6 +233,44 @@ are clean. `TestStepVoids` (`pkg/export`): a block with a box and a ball cavity,
 box's cavity, is one BREP_WITH_VOIDS with two voids and one MANIFOLD_SOLID_BREP, read back as a
 mesh and as solids to the model's volume, its properties validated.
 
+## Faces through a pole, 2026-11-27
+
+A dish's lathed cone written as one CONICAL_SURFACE face, a pocket at its seam reaching the apex,
+read back in our reader with "the bounds in a cell cross", at every reference direction tried, and
+the writer kept such faces (bounds reaching an apex or pole) B-splines (`reachesPole`). The cause
+was the writer's: `sheetJobs` turned a sheet's loops round for the file, and `ExportCurveLoop`'s
+FACE_BOUND `.F.` turned them again, so every face of several patches written as one surface ran
+its bounds clockwise about its normal, each edge it shares run the same way by both faces (the
+pivot-seam file: 11 of 31 edges; the knob: 8 of 19; 11 of the exchange's 22 models had such
+edges, none since). Our reader set such faces right by the turn
+of their bounds in the surface's parameters (`turnedLoops`), but took every bound through a pole
+as the file gave it: the dish's face, its outer bound jumping at the apex by exactly half a turn
+and its pocket's bound touching the apex up and down the seam, came in turned. OpenCASCADE and
+FreeCAD fix wire orientation on reading and said nothing. A sheet's loops now run as a patch's
+(`sheetJobs`), every edge is used once each way, `reachesPole` is gone, and the original reader
+reads the corrected dish file. `scripts/step-exchange.sh` before and after: 22 of 22 models
+within the thresholds, OpenCASCADE and FreeCAD valid, volumes the same.
+
+The reader was made to read such files too, and faces of a sphere through or round a pole:
+
+- A bound that jumps along a pole once, on a surface of one pole (a cone), is laid out from just
+  past the jump and closed along the pole (`boundArea`, `fromJump`): the way round the rest of
+  it takes fixes the jump's. So the old writer's dish file reads too.
+- On a sphere (`onePole` false, closed one way) bounds are taken as the file gives them: a face
+  may hold a pole all round, its bounds then enclosing its outside, and the turn of its bounds
+  can't tell that from a face turned round. Taken by the turn, a ball with half of its cap cut off
+  by a plane through its axis, one SPHERICAL_SURFACE face, read back 448 of 3736 mm³.
+- A sphere's face whose bounds enclose less than nothing holds the poles they don't reach
+  (`holdsPoles`), and its grid runs from pole to pole; it ran over the bounds' extent alone, and
+  the half-capped ball came in open along the cut's parallel.
+
+`TestStepSheetReachingPole` (`pkg/export`): the ball less half its cap and a cone less half its
+tip, each cut by a block whose side runs down the axis, and a ball with a square hole through
+it, written one surface per face: analytic faces, no B-spline, every edge once each way, read back
+as solids within 0.1% of the same written a patch at a time. The kernel's own Booleans of such
+blocks with a raw lathe's ball or cone are unsound at several turns of the block (300°, 120° for
+the cone), and at 10° and 75° the ball's sheet is written a patch at a time (ROADMAP).
+
 ## Traps
 
 - OpenCASCADE's and FreeCAD's `Shape.Volume`, and `vprops` without a tolerance, were 0.13% short
@@ -255,11 +295,11 @@ mesh and as solids to the model's volume, its properties validated.
   surfaces are meshed at a twentieth of it (0.014%). The trims keep the points the shell was built
   with, so a thread's stays 0.17% short; a finer tolerance on the shell alone changed nothing.
 - `TestFilletPivotSeamStep` (`pkg/topo`, not in `make test-fast`) reads our STEP back as a
-  solid: a dish's lathed cone written as one CONICAL_SURFACE face, a pocket at its seam reaching
-  the apex, failed in our reader ("the bounds in a cell cross") at every reference direction
-  tried (0° to 270°), where OpenCASCADE read it; a face of several patches reaching its apex or
-  pole is now written as a B-spline (`reachesPole`), and the reader's gap is a ROADMAP row. The
-  sheet's first control point may be that apex, so the reference direction is taken from a
-  corner of the first patch off the axis (`seamOf`).
+  solid, a dish's lathed cone with a pocket at its seam reaching the apex among them (see "Faces
+  through a pole" above). The sheet's first control point may be that apex, so the reference
+  direction is taken from a corner of the first patch off the axis (`seamOf`).
+- A face's bounds that run the wrong way round pass OpenCASCADE's `checkshape` and FreeCAD's
+  check as valid, with the right volume: their readers set the wires right. Count each edge's
+  uses forwards and back in the file (`stepEdgeUses`) to see it.
 - SFA writes its options file on a `csv` run and then fails a `syntax` run with "can't read
   gen(Excel)", after its report; the report above it stands.

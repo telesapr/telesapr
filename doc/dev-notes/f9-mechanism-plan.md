@@ -1,5 +1,7 @@
 # F9 Mechanisms: the plan (2026-11-05)
 
+Refreshed 2026-11-27: the drag and the turn run by the plan, and a part held by points alone
+turned by it ("Built 2026-11-27").
 Refreshed 2026-11-23: a loop closed by Concentric, a hinge made before the flag and a driven
 hinge counted at a right angle, fixed ("Fixed 2026-11-23"). Refreshed 2026-11-22: a drag written back into its drive, several parameters in one study and
 glTF animation channels; the joints of their own; incremental assembly, items 3 to 5 but the
@@ -467,7 +469,7 @@ shape changes over the study (it is meshed once).
 **Built 2026-11-22: incremental assembly, items 3 to 5, beside the null space.** Branch
 `f9-closedform`. Of the joints of their own (above), Cylindrical and Planar are the kinds the
 plan reads and places (a free turn and one or two slides); Ball and Slot are a point on a point
-and a point on a line alone, which leave the part its turn (below). The count stays the null space's; the plan is for positions only, a fast path
+and a point on a line alone, which left the part its turn (below; turned since 2026-11-27). The count stays the null space's; the plan is for positions only, a fast path
 before `solveBlock`, which stays the fallback and still does every count and report.
 
 *Where it sits.* `solveBlock` first calls `solveByPlan` (`mechanism_plan.go`): for a mechanism
@@ -503,7 +505,7 @@ placed, all in closed form but one search:
 
 | What the part's mates give | Its turn | Its move |
 |---|---|---|
-| no alignment (a ball, a point on a line) | kept as it is | least squares |
+| no alignment (a ball, a point on a line) | kept as it is; since 2026-11-27 three unknowns of the loop, a rotation vector (below) | least squares |
 | one alignment: a parallel; a point on a point with a second point on a line through it (a hinge's pin); two points on two points | the least turn laying the direction along the other, nearer way round; then free about it, or held by the part's own mates | least squares, the anchor kept |
 | two alignments not parallel | fixed: the second laid in by a turn about the first | least squares |
 | a turn held by its own mates (axis angle, a parallel in a workplane, a loop's closing mate) | a one-angle search: Newton from where it was, and at a run's first placement, or where Newton doesn't settle, the least of the minima of a sweep of 36 round the turn, nearest first | least squares at each angle |
@@ -554,9 +556,10 @@ that left no freedom, and without reflection.
 
 *Not done, and why.* The drag (item 4's second half): the pull maps the pointer onto the null
 space and solves, and its weighting of the pulled part is not the plan's from-the-ground placement;
-mapping the pointer onto the plan's unknowns would be the way, and is `ROADMAP.md`'s row. A part
+mapping the pointer onto the plan's unknowns would be the way (built 2026-11-27, below). A part
 held by points alone keeps its turn: a ball joint has three turns and no direction to align, and
-the fragments have no closed form for it, so a loop through one falls to the solve. No hand-written
+the fragments have no closed form for it, so a loop through one falls to the solve (turned by the
+loop's search since 2026-11-27, below). No hand-written
 locus table: the closing part's one-angle search stands for it, and was enough for every fixture.
 Tried first and dropped: a sweep at every one-angle search, which cost 2.5 ms a step of the engine
 in the loop's search alone; the sweep now runs at a run's first placement and where Newton's
@@ -641,6 +644,81 @@ step moved nothing. Folding now matches 0 and 1 exactly. The same folding had so
 hinge within 0.06° of a right angle at the right angle, and taken a sine within 0.001 of 1 for 1
 within some 2.6° of one. One golden moved in its last bits (`ext_mate_screw`'s text window).
 The flaps example counts at 0° again (`TestPartFreedomFlapShut`).
+
+**Built 2026-11-27: the drag by the plan, and a part held by points alone turned.** Branch
+`f9-drag-plan` (`pkg/sketch/mechanism_drag.go`).
+
+*The ball.* A part with no alignment (a ball, a slot, a point on a face) had its turn kept, so the
+plan could place it only where its mates held as it was turned. Its turn is now three unknowns of
+the loop's search, a rotation vector applied before the turn it had, about its origin, the move
+then settled by least squares as before, which keeps the ball's centre. The loop's search treats
+them as turns (the sweep tries each). A bar on a ball whose far corner is put on a face 5 above it
+is now turned down by the plan (`TestPlanTurnsBall`; with the three unknowns off, the solve
+alone did it).
+
+*The drag.* `pullPart` first tries `pullByPlan`. Its unknowns are the loop's (the free turns, the
+balls' rotation vectors, the slides), zero where the parts are, and each drive's change, a
+parameter that is all of a dimension's expression and a number itself (`planDrives`, as
+`pullDrives` finds them), which re-evaluates the dimensions it drives (`freedomSetting.setDrive`)
+and so the live mates' values (`liveMate.setValue`); the axis angle's held turn is searched again
+from where it was at each evaluation. What the pull aims at is the same `pullGoal` as the null
+space's pull: a point's coordinates, or a turn's rotation vector and its anchor, read from the
+pulled part's params after its placement is written into them. A step is Gauss–Newton over the
+unknowns, by central differences of 1e-6: the aim's rows, and the rows of what the loops miss by
+weighed 1e4 (`dragWeight`), so that the step keeps the loops closed to first order, damped by the
+same weighed size as a pull's (a radian of a turn weighs 5e4 mm). A drive that the step would carry
+past a bound of the dimension it drives is held and the step taken again without it; one short of
+it cuts the step there. The step is cut so that no turn unknown moves more than 0.2 rad and no
+slide more than twice the way left to go, then halved until the loops close again from it (the
+plan's Levenberg–Marquardt from the step, no sweep, so the assembly is kept), no part turned more
+than 0.25 rad, and the aim nearer. The drag stops where the aim is reached or a step gains less
+than a micron (`dragGain`): steps are cheap, so it goes on to where the point comes nearest along
+its path, where the null-space pull stops when a step gains less than a tenth. A drive moved is
+rounded to a millionth, as `writeDrive` writes it, the loops closed there, the parts written, and
+the block's equations checked to the solver's tolerance; anything else and the params, the
+dimensions' values and the drives are put back and the null-space pull runs.
+
+*The solve after.* The regeneration after a pull solved the mechanism again with the pulled part
+weighted, which a placement on the mates to round-off doesn't need: `placedByPull` lets the
+placement stand for that solve where the pull by the plan placed this mechanism since the last
+regeneration, the plan's key is the same, every member was solved, no bound is met or crossed and
+the equations hold. The groups keep what the solve before wrote (DOF, removed, implied), as the
+plan standing for a driven solve does; a DOF counted at a singular position the drag reaches is
+the count from before it. A drag that ends at a drive's bound is solved after, which holds the
+bound. Standing is not done when the solve is asked to find the free params.
+
+*Where it stands aside.* A part nothing joins (anchored), which the plan leaves where it is and the
+pull slides with what is joined to it; a bound that no drive's dimension measures, which the plan
+doesn't hold (`TestPullStopsAtBound`, `TestAxisAngleBound`); a mechanism the plan doesn't cover;
+one whose equations don't hold where it starts; a loop that doesn't close from where the parts
+are; no unknown at all (`TestPullFixedStays`). `NoMechanismPlan` turns the drag by the plan off
+too, for a measure.
+
+*Measured* (Ryzen 9 5950X, a shared machine; `BenchmarkDragMechanisms`, each fixture dragged in
+steps of 3° or 5° or 1 mm and once back, the pull and the regeneration after; then
+`BenchmarkDragMechanism10` in the window):
+
+| Drag | Plan, ms a step | Null space, ms a step | Off the target, plan / null space |
+|---|---|---|---|
+| hinged bar, 21 steps round its pin | 0.53 | 1.02 | 0 / 2e-7 mm (at most 1e-6) |
+| bar on a ball, round and up | 0.55 | 0.90 | 0 / 2e-7 mm |
+| four-bar's coupler, pulled 1 to 20 mm across its path | 2.6 | 4.3 | 8.848 mm both, the target off the path; each step no farther than the null space's (`TestDragByPlanAgrees`) |
+| the lid opened 5° to 100° and shut | 0.63 | 4.4 | 0 both |
+| the engine's piston down 1 to 10 mm, its crank driven | 4.0 | 96 | 3e-7 / 2e-7 mm (at most 9e-7 both) |
+| ten bars in a chain, the window's drag | 9.3 | 49 | |
+
+The pull alone of the four-bar is slower by the plan (1.4 against 1.0 ms), as it goes on to the
+nearest point; the solve after, which the placement stands for, is what it saves. The engine's
+null-space pull is slow for its drive: each step reads the drive's motion by two solves of the
+block (`pullDrives`) besides its own.
+
+*Tried and dropped.* The pull's stop rule (a step gaining less than a tenth) left the four-bar's
+coupler some 0.001 mm farther from its target than the null-space pull put it, step after step;
+the micron rule fixed it. The loops judged closed at the plan's own tolerance, 1e-11: the lid's
+turn, searched by its axis angle, lands within 2e-11 at its front edge, so half the lid's steps
+fell back; a drag takes 1e-10 (`dragTol`). The halving to a bound (`pullDrive.room`) can leave a
+drive a hair past it, where `room` gives the whole step, so the lid turned on past 110°; a drag's
+`room` gives none to a drive past its bound that would go further.
 
 ## The examples (2026-11-06)
 

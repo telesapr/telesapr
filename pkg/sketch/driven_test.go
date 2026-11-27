@@ -11,7 +11,7 @@ import (
 )
 
 // setParam sets parameter name to v.
-func setParam(t *testing.T, d *api.Doc, name string, v float64) {
+func setParam(t testing.TB, d *api.Doc, name string, v float64) {
 	t.Helper()
 	if err := d.Params.Set(name, strconv.FormatFloat(v, 'g', -1, 64)); err != nil {
 		t.Fatal(err)

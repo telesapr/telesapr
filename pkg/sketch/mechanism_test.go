@@ -113,7 +113,7 @@ func TestSetMovesRefusedOnSketch(t *testing.T) {
 
 // barFile saves a bar length x 10 x 4 drawn from its origin along x,
 // with a hole at each end, into dir.
-func barFile(t *testing.T, dir string, length float64) string {
+func barFile(t testing.TB, dir string, length float64) string {
 	t.Helper()
 	b := api.New()
 	b.Sketch.Rect(api.V(0, 0, 0), api.V(length, 10, 0))
@@ -130,7 +130,7 @@ func barFile(t *testing.T, dir string, length float64) string {
 // uprights are the upright edges of a linked bar, by their distance
 // along it from its origin's: the bar is found where its link put it,
 // before anything turned it.
-func uprights(t *testing.T, g api.Group) map[float64]api.Entity {
+func uprights(t testing.TB, g api.Group) map[float64]api.Entity {
 	t.Helper()
 	x0, y0 := math.Inf(1), math.Inf(1)
 	for _, e := range g.Entities() {
@@ -160,7 +160,7 @@ func uprights(t *testing.T, g api.Group) map[float64]api.Entity {
 // hinges about parallel axes would be redundant in 3d, so the last pin
 // puts the rocker's end on the ground's upright line, two equations.
 // With moving, the three are flagged before they are mated.
-func fourBar(t *testing.T, moving bool) (d *api.Doc, ground, crank, coupler, rocker api.Group, closeAt func() float64) {
+func fourBar(t testing.TB, moving bool) (d *api.Doc, ground, crank, coupler, rocker api.Group, closeAt func() float64) {
 	t.Helper()
 	return makeFourBar(t, moving, false)
 }
@@ -173,7 +173,7 @@ func fourBarDriven(t *testing.T) (d *api.Doc, ground, crank, coupler, rocker api
 }
 
 // makeFourBar is fourBar, its crank's hinge driven when driven.
-func makeFourBar(t *testing.T, moving, driven bool) (d *api.Doc, ground, crank, coupler, rocker api.Group, closeAt func() float64) {
+func makeFourBar(t testing.TB, moving, driven bool) (d *api.Doc, ground, crank, coupler, rocker api.Group, closeAt func() float64) {
 	t.Helper()
 	return buildFourBar(t, fourBarOpts{moving: moving, driven: driven, ground: 60})
 }
@@ -188,7 +188,7 @@ type fourBarOpts struct {
 }
 
 // buildFourBar is fourBar as o says.
-func buildFourBar(t *testing.T, o fourBarOpts) (d *api.Doc, ground, crank, coupler, rocker api.Group, closeAt func() float64) {
+func buildFourBar(t testing.TB, o fourBarOpts) (d *api.Doc, ground, crank, coupler, rocker api.Group, closeAt func() float64) {
 	t.Helper()
 	moving, driven := o.moving, o.driven
 	dir := t.TempDir()
@@ -361,7 +361,7 @@ func TestCrankSlider(t *testing.T) {
 // hingedBar is a ground bar of 60, held, and a bar of 60 flagged to
 // move, hinged at its origin's upright edge to the ground's far one.
 // It returns the bar's far top corner and the hinge's pivot.
-func hingedBar(t *testing.T) (d *api.Doc, ground, bar api.Group, far api.Entity, pivot api.Vec) {
+func hingedBar(t testing.TB) (d *api.Doc, ground, bar api.Group, far api.Entity, pivot api.Vec) {
 	t.Helper()
 	d, ground, bar = twoBars(t)
 	ug, ub := uprights(t, ground), uprights(t, bar)
@@ -374,7 +374,7 @@ func hingedBar(t *testing.T) (d *api.Doc, ground, bar api.Group, far api.Entity,
 
 // twoBars is a ground bar of 60, held, and a bar of 60 linked after it
 // and flagged to move, not yet mated.
-func twoBars(t *testing.T) (d *api.Doc, ground, bar api.Group) {
+func twoBars(t testing.TB) (d *api.Doc, ground, bar api.Group) {
 	t.Helper()
 	dir := t.TempDir()
 	d = api.New()

@@ -33,7 +33,7 @@ func matePart(t *testing.T) (d *api.Doc, a, b api.Group) {
 }
 
 // first is g's first entity of kind whose test holds.
-func first(t *testing.T, g api.Group, kind string, test func(api.Entity) bool) api.Entity {
+func first(t testing.TB, g api.Group, kind string, test func(api.Entity) bool) api.Entity {
 	t.Helper()
 	for _, e := range g.Entities() {
 		if e.Kind() == kind && test(e) {

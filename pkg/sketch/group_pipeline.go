@@ -696,6 +696,9 @@ func (g *Group) generateRevolveShell(sk *Sketch) {
 	sg := shellGroup{g: g, sk: sk}
 
 	angles, anglef, whole := g.revolveAngles(sk)
+	if g.refuseStraddling(src.BezierLoops.Sets, pt, axis, anglef-angles, 0) {
+		return
+	}
 	for i := range src.BezierLoops.Sets {
 		sbls := &src.BezierLoops.Sets[i]
 		if whole {
@@ -730,6 +733,11 @@ func (g *Group) generateHelixShell(sk *Sketch) {
 	if !g.haveSource(sk) {
 		return
 	}
+	pt, axis := g.revolveAxis(sk)
+	angles, anglef, dists, distf := g.helixRange(sk)
+	if g.refuseStraddling(sk.Group(g.OpA).BezierLoops.Sets, pt, axis, anglef-angles, distf-dists) {
+		return
+	}
 	g.sweepHelix(sk)
 	if fine, ok := g.ridgeRetol(sk); ok {
 		g.ThisShell.Clear()
@@ -743,21 +751,25 @@ func (g *Group) generateHelixShell(sk *Sketch) {
 func (g *Group) sweepHelix(sk *Sketch) {
 	src := sk.Group(g.OpA)
 	pt, axis := g.revolveAxis(sk)
+	angles, anglef, dists, distf := g.helixRange(sk)
+	for i := range src.BezierLoops.Sets {
+		g.ThisShell.MakeFromHelicalRevolutionOf(&src.BezierLoops.Sets[i], pt, axis, g.Color,
+			shellGroup{g: g, sk: sk}, angles, anglef, dists, distf)
+	}
+}
 
-	anglef := paramFloat(sk, g.H.Param(3)) * 4 // why the 4 is needed?
-	dists, distf := 0.0, 0.0
-	angles := 0.0
-	distf = paramFloat(sk, g.H.Param(7)) * 2 // dist is applied twice
+// helixRange is the angles, in radians, and the distances along its
+// axis a helix moves its profile between.
+func (g *Group) helixRange(sk *Sketch) (angles, anglef, dists, distf float64) {
+	anglef = paramFloat(sk, g.H.Param(3)) * 4 // why the 4 is needed?
+	distf = paramFloat(sk, g.H.Param(7)) * 2  // dist is applied twice
 	if g.Subtype != GroupOneSided {
 		anglef *= 0.5
 		angles = -anglef
 		distf *= 0.5
 		dists = -distf
 	}
-	for i := range src.BezierLoops.Sets {
-		g.ThisShell.MakeFromHelicalRevolutionOf(&src.BezierLoops.Sets[i], pt, axis, g.Color,
-			shellGroup{g: g, sk: sk}, angles, anglef, dists, distf)
-	}
+	return angles, anglef, dists, distf
 }
 
 // generateForBooleanShell combines prevs and thiss into outs with the

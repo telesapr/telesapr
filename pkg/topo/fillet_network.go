@@ -492,7 +492,7 @@ func picksMeet(sh *srf.SShell, picks []FilletPick) bool {
 	}
 	seen := map[int]bool{}
 	for _, p := range picks {
-		e, err := t.pickEdge(p)
+		e, err := t.PickEdge(p)
 		if err != nil {
 			return true
 		}

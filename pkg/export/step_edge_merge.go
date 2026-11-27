@@ -80,8 +80,9 @@ func sidesOf(prev, next *srf.SBezier) stepSides {
 }
 
 // match tells whether s are the sides of t, run either way: the other
-// face of an edge runs its loop along it the other way, or the same way
-// when one face's loops are turned round for the file (sheetJobs).
+// face of an edge runs its loop along it the other way. The same way
+// matches too, as a sheet's face ran its loops before 2026-11-27, though
+// no two faces of a sound shell do now.
 func (s stepSides) match(t stepSides) bool {
 	const tol = 10 * geom.LengthEps
 	same, back := true, true

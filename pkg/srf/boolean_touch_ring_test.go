@@ -73,7 +73,7 @@ func touchRingVolumes(gap float64) (diff, inter, aV float64) {
 // ring are turned about their axes so that the touching point falls on
 // a seam of either or inside a patch. Nearer than the chord tolerance
 // the two are fused (snapBetween), as near contacts are; touching
-// exactly, the Booleans fail (roadmap K3).
+// exactly is TestBooleanTouchingRingExact.
 func TestBooleanTouchingRingSweep(t *testing.T) {
 	t.Parallel()
 	grid := sweep.Grid{
@@ -89,34 +89,70 @@ func TestBooleanTouchingRingSweep(t *testing.T) {
 		Parallel:    true,
 	}
 	grid.Run(func(p sweep.Point) error {
-		ct := p.Float("chord")
-		gap := p.Float("gap") * ct
-		tol := Tol(ct, 20)
-		a, b := touchRingPair(gap, p.Float("turn hole"), p.Float("turn ring"), tol)
-		diff, inter, aV := touchRingVolumes(gap)
-		var out SShell
-		var want float64
-		switch p.String("op") {
-		case "difference":
-			out.MakeFromBoolean(a, b, SurfaceDiff)
-			want = diff
-		case "intersection":
-			out.MakeFromBoolean(a, b, SurfaceInter)
-			want = inter
-		default:
-			out.MakeFromBoolean(a, b, SurfaceUnion)
-			want = aV - inter + shellVolume(b)
-		}
-		if out.BooleanFailed {
-			return errUnsound(true)
-		}
-		got, sound := soundVolume(&out)
-		if !sound {
-			return errUnsound(false)
-		}
-		if math.Abs(got-want) > 2e-3*want {
-			return fmt.Errorf("%w: %g, want %g", errNearVolume, got, want)
-		}
-		return nil
+		return touchRingCase(p.Float("chord"), p.Float("gap")*p.Float("chord"),
+			p.Float("turn hole"), p.Float("turn ring"), p.String("op"))
 	}).Require(t)
+}
+
+// TestBooleanTouchingRingExact is TestBooleanTouchingRingSweep with the
+// hole's circle touching the ring's inner circle exactly at (8, 0, 1).
+// The two lie within LengthEps of each other for 0.009 along them, and
+// the ring's chord crossed the hole's cone twice a hair either side of
+// the point: each crossing split the circle and seeded a march, which
+// stopped at once at the other, and the hole's circle in the ring's
+// bottom, between the ring's chords and its arc beside the point, was
+// kept inside the ring's face, dangling from it. All 24 failed. The
+// point is found where the circle's tangent lies in the cone
+// (exactTouch), split at and marched to (touchSinks), the crossings'
+// seeds beside it dropped (dropGrazingSeeds), and the side of the
+// ring's trim beside it taken from the exact circle (outsideExactTrim):
+// all 24 sound (2026-11-27).
+func TestBooleanTouchingRingExact(t *testing.T) {
+	t.Parallel()
+	grid := sweep.Grid{
+		Axes: []sweep.Axis{
+			sweep.Floats("chord", 0.0005, 0.002),
+			sweep.Floats("turn hole", 0, 30),
+			sweep.Floats("turn ring", 0, 40),
+			sweep.Strings("op", "difference", "intersection", "union"),
+		},
+		MaxFailRate: 0,
+		Parallel:    true,
+	}
+	grid.Run(func(p sweep.Point) error {
+		return touchRingCase(p.Float("chord"), 0, p.Float("turn hole"), p.Float("turn ring"), p.String("op"))
+	}).Require(t)
+}
+
+// touchRingCase makes the Boolean op of touchRingPair at chord
+// tolerance ct and the gap and turns given, and checks it closes into a
+// sound mesh of the volume touchRingVolumes integrates.
+func touchRingCase(ct, gap, turnHole, turnRing float64, op string) error {
+	tol := Tol(ct, 20)
+	a, b := touchRingPair(gap, turnHole, turnRing, tol)
+	diff, inter, aV := touchRingVolumes(gap)
+	var out SShell
+	var want float64
+	switch op {
+	case "difference":
+		out.MakeFromBoolean(a, b, SurfaceDiff)
+		want = diff
+	case "intersection":
+		out.MakeFromBoolean(a, b, SurfaceInter)
+		want = inter
+	default:
+		out.MakeFromBoolean(a, b, SurfaceUnion)
+		want = aV - inter + shellVolume(b)
+	}
+	if out.BooleanFailed {
+		return errUnsound(true)
+	}
+	got, sound := soundVolume(&out)
+	if !sound {
+		return errUnsound(false)
+	}
+	if math.Abs(got-want) > 2e-3*want {
+		return fmt.Errorf("%w: %g, want %g", errNearVolume, got, want)
+	}
+	return nil
 }

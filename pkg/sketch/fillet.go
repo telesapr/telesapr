@@ -89,13 +89,7 @@ func (sk *Sketch) SetFilletEdges(hg core.HGroup, edges []core.HEntity, solidEdge
 // NewFillet's group will be added as), and what it made is kept for
 // that group's regeneration (edit_trial.go).
 func (sk *Sketch) filletTrial(solid *Group, hg core.HGroup, edges []core.HEntity, solidEdges []topo.Name, radius float64, radii []EdgeRadius) error {
-	if solid == nil || len(solid.RunningShell.Surface) == 0 {
-		return errors.New("there is no solid with surfaces to fillet")
-	}
-	if solid.IsForcedToMesh(sk) {
-		return errors.New("the solid is a triangle mesh, which has no edges to round")
-	}
-	segs, err := sk.chamferSegments(solid, edges, solidEdges)
+	segs, err := sk.filletSegments(solid, edges, solidEdges)
 	if err != nil {
 		return err
 	}

@@ -185,6 +185,10 @@ Repeating a solid along a path, instead of sweeping a profile, is
 
 ## Not yet
 
+- A profile tilted far from square to an arc in the path is refused when one part of it goes
+  forward through its own plane and another part back. The group's problem says so and marks
+  the line between the two parts. Tilt the profile less, or keep it to one side of that line.
+  A lathe, revolve or helix of such a profile is refused the same way.
 - A path that comes back over itself is refused about half the time round lines and arcs, and
   more often along a twisted, held or cubic path: a round profile held to a direction, a twisted
   closed path, a sharp corner beside an arc or a cubic.

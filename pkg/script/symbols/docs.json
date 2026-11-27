@@ -2049,7 +2049,7 @@
 			},
 			"ErrUnsupported": {
 				"decl": "var ErrUnsupported",
-				"text": "ErrUnsupported is returned for a group tree with a leaf the oracle can't build: anything but extrusions, drafted or not, lathes, revolves, helices of a profile in a plane through their axis, sweeps (along lines and arcs, or fitted along cubics, twisted or held to a direction), and the step and repeats, patterns along a path and mirrors of those."
+				"text": "ErrUnsupported is returned for a group tree with a leaf the oracle can't build: anything but extrusions, drafted or not, lathes, revolves, helices, sweeps (along lines and arcs, or fitted along cubics, twisted or held to a direction), and the step and repeats, patterns along a path and mirrors of those."
 			}
 		}
 	},
@@ -9525,6 +9525,14 @@
 						"decl": "func (sk *Sketch) CenterOfMass(hg core.HGroup) (geom.Vector, error)",
 						"text": "CenterOfMass is the centre of mass of the solid at group hg, taken as of one density throughout."
 					},
+					"CheckChamferEdges": {
+						"decl": "func (sk *Sketch) CheckChamferEdges(edges []core.HEntity, solidEdges []topo.Name) error",
+						"text": "CheckChamferEdges says why NewChamfer would refuse edges and solidEdges whatever the distance, or nil."
+					},
+					"CheckFilletEdges": {
+						"decl": "func (sk *Sketch) CheckFilletEdges(edges []core.HEntity, solidEdges []topo.Name) error",
+						"text": "CheckFilletEdges says why NewFillet would refuse edges and solidEdges whatever the radius, or nil: each must be a whole edge of the solid so far at the active group, or a circle through one."
+					},
 					"CheckMoveGroup": {
 						"decl": "func (sk *Sketch) CheckMoveGroup(h, before core.HGroup) error",
 						"text": "CheckMoveGroup reports the error MoveGroup(h, before) would give, without moving anything."
@@ -11199,6 +11207,10 @@
 			"ErrNothingLeftOut": {
 				"decl": "var ErrNothingLeftOut",
 				"text": "ErrNothingLeftOut is DiscardLeftOut's error when the load left nothing out."
+			},
+			"ErrProfileStraddles": {
+				"decl": "var ErrProfileStraddles",
+				"text": "ErrProfileStraddles is the problem of a lathe, a revolve, a helix or a sweep round an arc whose profile moves forward through its own plane in one part and back in another: its plane does not hold the axis, and the profile reaches both sides of the line on it where the motion runs along the plane."
 			},
 			"ErrSplinePointsFull": {
 				"decl": "var ErrSplinePointsFull",

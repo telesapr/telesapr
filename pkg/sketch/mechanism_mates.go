@@ -325,12 +325,24 @@ func (m *liveMate) residual(pl []place, out []float64) []float64 {
 	panic("unknown mate kind")
 }
 
+// setValue gives live mate m the value constraint c has now: a
+// distance's, or an axis angle's cosine and sine; a drag's drive
+// (mechanism_drag.go) changes it while the features stay.
+func (m *liveMate) setValue(c *core.Constraint) {
+	m.val = c.ValA
+	if m.kind == mateAxisAngle {
+		a := c.ValA * math.Pi / 180
+		m.ca, m.sa = math.Cos(a), math.Sin(a)
+	}
+}
+
 // liveMateOf reads mate m where the mechanism is now, its features in
 // the frames of their bodies at start (each body's move and turn when
 // the run began).
 func (sk *Sketch) liveMateOf(m *planMate, start []place) liveMate {
 	c := sk.Constraint(m.c)
-	lm := liveMate{kind: m.kind, bodies: m.bodies, val: c.ValA}
+	lm := liveMate{kind: m.kind, bodies: m.bodies}
+	lm.setValue(c)
 	toPoint := func(b int, w geom.Vector) feat {
 		if b == 0 {
 			return feat{0, w}
@@ -362,8 +374,6 @@ func (sk *Sketch) liveMateOf(m *planMate, start []place) liveMate {
 		_, u, v := c.AxisFrameNum(sk)
 		b := m.vecBody[0]
 		lm.u, lm.v = toDir(b, u), toDir(b, v)
-		a := c.ValA * math.Pi / 180
-		lm.ca, lm.sa = math.Cos(a), math.Sin(a)
 	default:
 		for i, h := range m.vecs {
 			lm.d = append(lm.d, toDir(m.vecBody[i], sk.MustEntity(h).VectorGetNum(sk)))

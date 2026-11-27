@@ -152,7 +152,7 @@ func (sk *Sketch) chamferTrial(solid *Group, hg core.HGroup, edges []core.HEntit
 	}
 	if len(arcs) > 0 {
 		if solid.IsForcedToMesh(sk) || len(solid.RunningShell.Surface) == 0 {
-			return errors.New("the solid is a triangle mesh, which has no circular edges to cut")
+			return errNoCircularEdges
 		}
 		if _, _, err := sk.editSolid(&solid.RunningShell, arcs, distance, srf.OriginFor(hg.V, 0), true, trialKeep, nil); err != nil {
 			return err
@@ -329,41 +329,65 @@ func solidMesh(g *Group, m *srf.SMesh) {
 	m.Triangles = append(m.Triangles, g.RunningMesh.Triangles...)
 }
 
+// wedgeCorner is what a wedge takes from the edge it cuts: the edge's
+// unit direction ed, length and middle, the outward normals of the two
+// faces at it, the vectors w1 and w2 across it, and how far off it the
+// solid is probed.
+type wedgeCorner struct {
+	ed, mid, n1, n2, w1, w2 geom.Vector
+	length, probe           float64
+}
+
+// cornerForWedge is the corner at seg of the solid whose triangles are
+// in mesh, for a wedge of distance d, or why no wedge cuts there: the
+// segment must run along a corner of two flat faces that sticks out.
+func cornerForWedge(mesh *srf.SMesh, seg chamferSegment, d float64) (wedgeCorner, error) {
+	var c wedgeCorner
+	a, b := seg.a, seg.b
+	c.length = b.Minus(a).Magnitude()
+	if c.length < core.LengthEps {
+		return c, fmt.Errorf("%s has no length", seg.label)
+	}
+	c.ed = b.Minus(a).ScaledBy(1 / c.length)
+	normals := edgeFaceNormals(mesh, a, b)
+	if len(normals) != 2 {
+		return c, fmt.Errorf("%s is %w (it touches %d)", seg.label, errEdgeNotFlat, len(normals))
+	}
+	c.n1, c.n2 = normals[0], normals[1]
+	// w1 is off plane 1 and in plane 2, w2 the other way round, so
+	// that the quarter behind both faces is where both components are
+	// negative.
+	c.w1 = c.ed.Cross(c.n2)
+	c.w1 = c.w1.ScaledBy(1 / c.n1.Dot(c.w1))
+	c.w2 = c.ed.Cross(c.n1)
+	c.w2 = c.w2.ScaledBy(1 / c.n2.Dot(c.w2))
+	c.mid = a.Plus(b).ScaledBy(0.5)
+	c.probe = 0.1 * math.Min(d, c.length)
+	at := func(s1, s2 float64) geom.Vector {
+		return c.mid.Plus(c.w1.WithMagnitude(c.probe * s1)).Plus(c.w2.WithMagnitude(c.probe * s2))
+	}
+	inside := func(p geom.Vector) bool { return mesh.WindingNumber(p) > 0.5 }
+	switch {
+	case !inside(at(-1, -1)) || inside(at(1, 1)):
+		return c, fmt.Errorf("%s is not an edge of the solid", seg.label)
+	case inside(at(1, -1)) || inside(at(-1, 1)):
+		return c, fmt.Errorf("%s is concave: a chamfer cuts only edges that stick out", seg.label)
+	}
+	return c, nil
+}
+
 // chamferWedge is the wedge that cuts edge he of the solid whose
 // triangles are in mesh, at distance d: a triangle at the start of
 // the edge and the vector it is swept along. With a second distance d2,
 // d lies on the face whose outward normal is first and d2 on the other.
 func chamferWedge(mesh *srf.SMesh, seg chamferSegment, d, d2 float64, first geom.Vector) (tri [3]geom.Vector, along geom.Vector, err error) {
-	a, b := seg.a, seg.b
-	length := b.Minus(a).Magnitude()
-	if length < core.LengthEps {
-		return tri, along, fmt.Errorf("%s has no length", seg.label)
+	c, err := cornerForWedge(mesh, seg, d)
+	if err != nil {
+		return tri, along, err
 	}
-	ed := b.Minus(a).ScaledBy(1 / length)
-	normals := edgeFaceNormals(mesh, a, b)
-	if len(normals) != 2 {
-		return tri, along, fmt.Errorf("%s is %w (it touches %d)", seg.label, errEdgeNotFlat, len(normals))
-	}
-	n1, n2 := normals[0], normals[1]
-	// w1 is off plane 1 and in plane 2, w2 the other way round, so
-	// that the quarter behind both faces is where both components are
-	// negative.
-	w1 := ed.Cross(n2)
-	w1 = w1.ScaledBy(1 / n1.Dot(w1))
-	w2 := ed.Cross(n1)
-	w2 = w2.ScaledBy(1 / n2.Dot(w2))
-	m := a.Plus(b).ScaledBy(0.5)
-	probe := 0.1 * math.Min(d, length)
-	at := func(s1, s2 float64) geom.Vector {
-		return m.Plus(w1.WithMagnitude(probe * s1)).Plus(w2.WithMagnitude(probe * s2))
-	}
+	a, length, ed, probe, m := seg.a, c.length, c.ed, c.probe, c.mid
+	n1, n2, w1, w2 := c.n1, c.n2, c.w1, c.w2
 	inside := func(p geom.Vector) bool { return mesh.WindingNumber(p) > 0.5 }
-	switch {
-	case !inside(at(-1, -1)) || inside(at(1, 1)):
-		return tri, along, fmt.Errorf("%s is not an edge of the solid", seg.label)
-	case inside(at(1, -1)) || inside(at(-1, 1)):
-		return tri, along, fmt.Errorf("%s is concave: a chamfer cuts only edges that stick out", seg.label)
-	}
 	// Face 1 goes on from the edge against w2, face 2 against w1.
 	u1, u2 := w2.WithMagnitude(1).ScaledBy(-1), w1.WithMagnitude(1).ScaledBy(-1)
 	d1, dd2 := d, d

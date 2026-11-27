@@ -61,7 +61,7 @@ func (s *SSurface) addExactIntersectionPiece(sb *SBezier, along []SCurvePt, srfB
 	default:
 		sc.Points = makePwlSCurvePoints(sb, s.Tol, 0)
 		// and split the line where it intersects our existing surfaces
-		split = sc.MakeCopySplitAgainst(agnstA, agnstB, s, srfB)
+		split = sc.copySplitAgainst(agnstA, agnstB, s, srfB, into.shell.touchFound, nil)
 	}
 
 	// Test if the curve lies entirely outside one of the
@@ -594,6 +594,8 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 	// The seeds lying on a trim of the other surface, where a curve
 	// ending there splits that trim (SShell.meets).
 	var atTrims []geom.Vector
+	// The chord of the edge each seed came from, by the seed's point.
+	chords := map[geom.Vector][2]geom.Vector{}
 	for a := range 2 {
 		shA, srfA, srfB, shB := agnstA, s, b, agnstB
 		if a == 1 {
@@ -691,6 +693,7 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 					sp.AuxV = sp.AuxV.WithMagnitude(1)
 
 					spl.Points = append(spl.Points, sp)
+					chords[p] = [2]geom.Vector{se.A, se.B}
 					if liesOnRoundNear(other) && onNeighbour(p, roundNear, other) {
 						atTrims = append(atTrims, p)
 					}
@@ -709,6 +712,13 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 	// and a seed there is none. A seed left alone is marched there too.
 	sinks := s.touchSinks(b, agnstA, agnstB)
 	spl.Points = dropSeedsAt(spl.Points, sinks, s.Tol.ChordTolMm()/100)
+	// Where the Boolean found a curve touching a surface (exactTouch),
+	// the seeds of that curve's crossings a hair either side of the
+	// point are dropped too (dropGrazingSeeds).
+	if found := s.foundSinks(b, into.shell.touchFound, sinks); len(found) > 0 {
+		spl.Points = dropGrazingSeeds(spl.Points, found, chords, s.Tol.ChordTolMm())
+		sinks = append(sinks, found...)
+	}
 
 	// The seeds a march went on from, each once.
 	var passed []geom.Vector
@@ -796,7 +806,7 @@ func (s *SSurface) intersectByMarching(b *SSurface, agnstA, agnstB *SShell, into
 		}
 		// And now we split and insert the curve
 		marched = append(marched, sc.Points)
-		split := sc.MakeCopySplitAgainst(agnstA, agnstB, s, b)
+		split := sc.copySplitAgainst(agnstA, agnstB, s, b, into.shell.touchFound, nil)
 		into.add(split)
 	}
 
@@ -1065,7 +1075,7 @@ func (s *SSurface) intersectClosedLoops(b *SSurface, agnstA, agnstB *SShell, int
 				Source:  CurveSourceIntersection,
 				Points:  piece,
 			}
-			split := sc.MakeCopySplitAgainst(agnstA, agnstB, s, b)
+			split := sc.copySplitAgainst(agnstA, agnstB, s, b, into.shell.touchFound, nil)
 			into.add(split)
 		}
 	}

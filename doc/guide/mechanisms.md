@@ -183,9 +183,10 @@ Where they are still matters:
 - The mechanism comes to rest as near as it can to where the parts are. Drawn exactly at a dead
   centre, as an engine's crank pointing straight up the cylinder, it stays there, and the part's
   freedom (below) can't be counted at that position. Turn the crank a little off it.
-- A part held only by points (a ball joint, a slot) keeps the turn it has; a loop that
-  needs it turned is solved from where the parts are, as before.
-- So is a mechanism with a constraint other than a mate in it, as a distance between two parts.
+- A part held only by points (a ball joint, a slot) is turned too, as far as its other mates
+  need: a bar on a ball with its far end on a face is turned down onto the face.
+- A mechanism with a constraint other than a mate in it, as a distance between two parts, is
+  solved from where the parts are, as before.
 
 ## How each part can move
 
@@ -274,6 +275,13 @@ where it is turned, then solve.
 A long drag or turn, and a large step of a driven joint, keep the mechanism as it was put
 together. A slider-crank's crank stays on its side of the slide, and a four-bar's elbow stays
 bent the same way: a large change is solved in smaller steps, each from the one before.
+
+A drag moves the parts the way they are put together (above): it changes the turns and slides
+their mates leave free, and the drives, and puts each part in place from the ground out. The
+parts stay exactly on their mates and the drag is quicker, some five times for a chain of ten
+bars, twenty for the engine. Where the parts can't be put together so (a limit that isn't a
+driven joint's range, a part that no mate holds, a constraint other than a mate), the drag
+works as before: the same motion, only slower.
 
 ## Driven joints
 

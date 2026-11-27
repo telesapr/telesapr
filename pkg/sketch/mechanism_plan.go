@@ -80,6 +80,9 @@ type bodyRun struct {
 	solvedTurn bool
 	theta      float64
 	turnVar    int
+	// ballVar is the first of the three unknowns of the turn of a part
+	// held by points alone, or -1.
+	ballVar int
 	// slides are its free moves, slideVar the first of their unknowns.
 	slides   []geom.Vector
 	slideVar int
@@ -257,12 +260,30 @@ func (sk *Sketch) planParams(hgs []core.HGroup) []core.HParam {
 // was, where it can't, or where what it placed doesn't hold the
 // mechanism's equations.
 func (sk *Sketch) runPlan(p *mechanismPlan, hgs []core.HGroup) bool {
-	hs := sk.planParams(hgs)
+	restore := sk.saveParams(sk.planParams(hgs), hgs)
+	r, ok := sk.startRun(p, hgs)
+	if !ok {
+		return restore()
+	}
+	if _, ok := r.closeLoops(true, planTol); !ok {
+		return restore()
+	}
+	sk.writeRun(r, hgs)
+	if res, ok := sk.blockResidual(hgs); !ok || res > solver.ConvergeTolerance {
+		return restore()
+	}
+	return true
+}
+
+// saveParams keeps the values of params hs, and returns what puts them
+// back, the entities of mechanism hgs made again from them, and reports
+// false.
+func (sk *Sketch) saveParams(hs []core.HParam, hgs []core.HGroup) func() bool {
 	saved := make([]float64, len(hs))
 	for i, h := range hs {
 		saved[i] = sk.MustParam(h).Val
 	}
-	restore := func() bool {
+	return func() bool {
 		for i, h := range hs {
 			sk.MustParam(h).Val = saved[i]
 		}
@@ -271,13 +292,20 @@ func (sk *Sketch) runPlan(p *mechanismPlan, hgs []core.HGroup) bool {
 		}
 		return false
 	}
+}
+
+// startRun begins a run of plan p on mechanism hgs where its parts are
+// now: their turns made unit, its mates read in their frames, each
+// body's anchor found. False, with params changed, where a part's turn
+// is none or a mate can't be read.
+func (sk *Sketch) startRun(p *mechanismPlan, hgs []core.HGroup) (*planRun, bool) {
 	n := len(hgs) + 1
 	r := &planRun{plan: p, start: make([]place, n), pl: make([]place, n), bodies: make([]bodyRun, n)}
 	r.start[0] = place{q: geom.Quaternion{W: 1}}
 	for i, hg := range hgs {
 		pl, ok := sk.placementOf(hg)
 		if !ok {
-			return false
+			return nil, false
 		}
 		// The turn made unit first, so that the features read in each
 		// part's frame are where the turn puts them.
@@ -291,11 +319,11 @@ func (sk *Sketch) runPlan(p *mechanismPlan, hgs []core.HGroup) bool {
 			r.mates = append(r.mates, sk.liveMateOf(&p.mates[i], r.start))
 		}
 	}); err != nil {
-		return restore()
+		return nil, false
 	}
 	for b := 1; b < n; b++ {
 		br := &r.bodies[b]
-		br.turnVar = -1
+		br.turnVar, br.ballVar = -1, -1
 		var sum geom.Vector
 		count := 0
 		for _, mi := range p.placing[b] {
@@ -312,18 +340,18 @@ func (sk *Sketch) runPlan(p *mechanismPlan, hgs []core.HGroup) bool {
 		}
 		br.anchorWorld = feat{b, br.anchorLocal}.point(r.start)
 	}
-	if !r.closeLoops() {
-		return restore()
-	}
+	return r, true
+}
+
+// writeRun puts the parts of mechanism hgs where run r placed them,
+// and gives the params of its points on lines and parallels the values
+// that hold there.
+func (sk *Sketch) writeRun(r *planRun, hgs []core.HGroup) {
 	for i, hg := range hgs {
 		sk.setPlacement(hg, r.pl[i+1], r.start[i+1].q)
 		sk.recalculateGroupEntities(hg)
 	}
 	sk.settleMateParams(hgs)
-	if res, ok := sk.blockResidual(hgs); !ok || res > solver.ConvergeTolerance {
-		return restore()
-	}
-	return true
 }
 
 // settleMateParams gives the params of the points on lines and the

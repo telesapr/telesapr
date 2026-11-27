@@ -430,6 +430,10 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 		if ss == nil {
 			continue
 		}
+		// Beside a point where the Boolean found a curve touching a
+		// surface, the BSP's side of the other face's curved trims is
+		// checked against their exact curves (outsideExactTrim).
+		touchy := ss.touchesNear(into.touchFound, ss.Tol.ChordTolMm())
 		into.paced()
 		for k := 1; k < len(ic.Points); k++ {
 			a := ic.Points[k-1].P
@@ -444,6 +448,9 @@ func (s *SSurface) makeCopyTrimAgainst(parent, sha, shb, into *SShell,
 				c = ss.Bsp.ClassifyEdge(auv, buv, ss)
 			}
 			if c == BspUvOutside {
+				continue
+			}
+			if touchy && ss.outsideExactTrim(into, ret, a, b) {
 				continue
 			}
 			var tap, tbp geom.Point2d

@@ -43,7 +43,7 @@ func filletApart(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 	var chains [][]int
 	edgeVerts := map[int]int{}
 	for _, p := range picks {
-		e, err := t.pickEdge(p)
+		e, err := t.PickEdge(p)
 		if err != nil {
 			return errNotApart
 		}
@@ -123,8 +123,10 @@ func filletApart(sh *srf.SShell, picks []FilletPick, r float64, origin uint32, f
 	return nil
 }
 
-// pickEdge is the edge of the solid that p picks.
-func (t *Topology) pickEdge(p FilletPick) (int, error) {
+// PickEdge is the edge of the solid that p picks, or why it picks none:
+// the first thing a fillet asks of each pick, and what the interface
+// asks before it offers one.
+func (t *Topology) PickEdge(p FilletPick) (int, error) {
 	if p.Arc {
 		e := t.curvedEdgeAt(p.At)
 		if e < 0 {

@@ -32,13 +32,14 @@ const helixStepsMost = 1 << 16
 
 // newHelix is the helix of the loop set about the axis through c along
 // w, from the angle th0, moved d0 along the axis, to th1, moved d1. It
-// is false where the profile is not in a plane through the axis or
-// crosses it.
+// is false where the profile is not in a plane through the axis
+// (throughAxis; leanSweep is the helix of one that isn't) or crosses
+// it.
 func newHelix(sbls *srf.SBezierLoopSet, c, w geom.Vector, th0, th1, d0, d1 float64) (*helix, bool) {
-	n := sbls.Normal.WithMagnitude(1)
-	if math.Abs(n.Dot(w)) > 1e-9 || math.Abs(sbls.Point.Minus(c).Dot(n)) > 1e-6 {
+	if !throughAxis(sbls, c, w) {
 		return nil, false
 	}
+	n := sbls.Normal.WithMagnitude(1)
 	if th1 < th0 {
 		th0, th1, d0, d1 = th1, th0, d1, d0
 	}

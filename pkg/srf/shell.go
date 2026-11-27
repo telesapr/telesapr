@@ -83,6 +83,10 @@ type SShell struct {
 	// marcher ends each branch at such a point (touchSinks). A Boolean's
 	// result takes both operands'.
 	Touch []geom.Vector
+	// touchFound are the points where the Boolean being made into s
+	// found an operand's curve touching the other's surface tangent
+	// (exactTouch), split at and marched to as Touch is.
+	touchFound []geom.Vector
 
 	// parts are where the parts of an assembly (MakeFromAssemblyOf)
 	// start among the surfaces, in order, the first at 0; none for a

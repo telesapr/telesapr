@@ -42,6 +42,7 @@ func (s *SShell) makeBoolean(a, b *SShell, op SurfaceCombineAs) {
 	// Boolean's projections (SSurface.forgetGuess).
 	a.forgetGuesses()
 	b.forgetGuesses()
+	s.touchFound = nil
 	end := stage("classifying bsps")
 	a.MakeClassifyingBsps(nil)
 	s.paced()

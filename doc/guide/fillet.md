@@ -66,6 +66,10 @@ choose Fillet Edges. It rounds edges of the solid built so far. You can select:
   axis (a frustum turned on a shaft);
 - edges of the solid itself, picked on the model, including edges between curved faces.
 
+A line must be a whole edge. An extrusion's line that runs on past a rounded corner is not one,
+and its right-click menu has no Fillet Edges. Pick the solid's own edge instead
+([The context menu](interface.md#the-context-menu)).
+
 To take every edge round a face, right-click the face and choose Select Face Edges. With
 nothing it can round selected, Fillet Edges says what it takes:
 

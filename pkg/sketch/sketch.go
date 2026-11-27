@@ -178,6 +178,10 @@ type Sketch struct {
 	// as it can, as it does the window's dragged ones; cleared at the
 	// end of each regeneration.
 	pulled []core.HParam
+	// planPulled is the first group of the mechanism a pull placed by
+	// its plan since the last regeneration (mechanism_drag.go), whose
+	// solve the placement stands for; cleared with pulled.
+	planPulled core.HGroup
 	// edits and moves are the dimensions the user changed and the points
 	// they moved since the last solve of their groups, which that solve
 	// follows (continuation.go); cleared at the end of each regeneration.
@@ -195,10 +199,12 @@ type Sketch struct {
 	// are, as before its plan (mechanism_plan.go); for a measure of what
 	// the plan does. PlanCompiles counts the plans compiled, PlanPlaced
 	// the solves the plan placed the parts for, PlanSolved those it
-	// stood for.
-	NoMechanismPlan                      bool
-	PlanCompiles, PlanPlaced, PlanSolved int
-	plans                                map[core.HGroup]*mechanismPlan
+	// stood for, PlanPulls the pulls and turns it took
+	// (mechanism_drag.go); NoMechanismPlan has those go along the null
+	// space too.
+	NoMechanismPlan                                 bool
+	PlanCompiles, PlanPlaced, PlanSolved, PlanPulls int
+	plans                                           map[core.HGroup]*mechanismPlan
 	// FollowedDrives counts the solves of a mechanism that followed a
 	// change of its drive in steps, and FollowDriveSteps the steps kept
 	// (mechanism_follow.go). NoFollow turns that off too.

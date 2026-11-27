@@ -150,8 +150,8 @@ RACE_PACKAGES ?= $(RACE_ENGINE_PACKAGES) ./pkg/ui ./pkg/script/api
 # RACE_TESTS is scripts/go-test.sh's TESTS for test-race: light, the
 # suite without its HEAVY tests, by default. The heavy tests of
 # pkg/sketch, pkg/topo, pkg/script/api and pkg/ui were most of the race
-# stage's time, which took those packages within five minutes of the
-# limit inside make ci; the nightly workflow runs them under the
+# stage's time, which took those packages within five minutes of a
+# limit of 30 minutes inside make ci; the nightly workflow runs them under the
 # detector instead (test-race-heavy for the engine packages, and
 # RACE_TESTS=all over pkg/ui and pkg/script/api).
 RACE_TESTS ?= light
@@ -160,11 +160,13 @@ RACE_TESTS ?= light
 # (fixtures.Sample in pkg/internal/fixtures, sweep.Grid.Run), which needs
 # the code that runs on several goroutines, not every model; so do the
 # slowest single cases of pkg/script/api, pkg/sketch, pkg/topo, pkg/check
-# and pkg/ui, whose packages came within five minutes of the limit below
+# and pkg/ui, whose packages came within five minutes of 30 minutes
 # inside make ci.
-# RACE_TIMEOUT bounds each go test process; a runner is about twice as
-# slow, so the nightly workflow gives pkg/ui and pkg/script/api more.
-RACE_TIMEOUT ?= 30m
+# RACE_TIMEOUT bounds each go test process. It is twice what pkg/topo,
+# the slowest, takes on a workstation: about 30 minutes, past it when
+# something else loads the machine. A runner is about twice as slow, so
+# the nightly workflow gives pkg/ui and pkg/script/api more.
+RACE_TIMEOUT ?= 60m
 
 test-race:
 	@echo "==> go test -race $(RACE_PACKAGES) (TESTS=$(RACE_TESTS))"
@@ -211,7 +213,7 @@ agents-check:
 # detector, in one go: the checks, then test, test-heavy, lint and vuln
 # side by side, each target's output printed when it is done, then
 # test-race alone. Run beside test and test-heavy, the race stage's
-# slowest packages came within five minutes of RACE_TIMEOUT, and the
+# slowest packages came within five minutes of 30 minutes, and the
 # heavy tests' too: after them it has the machine to itself. govet is in
 # the lint; the GUI packages run under Xvfb inside test. The workflow
 # runs test-race only on request (workflow_dispatch), on master as on a

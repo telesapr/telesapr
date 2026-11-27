@@ -24,10 +24,9 @@ import (
 
 // ErrUnsupported is returned for a group tree with a leaf the oracle
 // can't build: anything but extrusions, drafted or not, lathes,
-// revolves, helices of a profile in a plane through their axis, sweeps
-// (along lines and arcs, or fitted along cubics, twisted or held to a
-// direction), and the step and repeats, patterns along a path and
-// mirrors of those. Lofts and the solids made by editing others
+// revolves, helices, sweeps (along lines and arcs, or fitted along
+// cubics, twisted or held to a direction), and the step and repeats,
+// patterns along a path and mirrors of those. Lofts and the solids made by editing others
 // (fillets, chamfers, shells) are refused.
 var ErrUnsupported = errors.New("the ray-cast oracle builds extrusions, lathes, revolves, helices, sweeps, and their copies only")
 
@@ -87,13 +86,18 @@ type profile struct {
 
 // newProfile cuts the loop set's curves into polygons.
 func newProfile(sbls *srf.SBezierLoopSet, origin, eu, ev geom.Vector) profile {
+	return newProfileAt(sbls, origin, eu, ev, profileTol)
+}
+
+// newProfileAt is newProfile to the chord tolerance tol.
+func newProfileAt(sbls *srf.SBezierLoopSet, origin, eu, ev geom.Vector, tol float64) profile {
 	pr := profile{origin: origin, eu: eu, ev: ev, n: eu.Cross(ev)}
 	loops := append([]srf.SBezierLoop{sbls.Outer}, sbls.Holes...)
 	for _, l := range loops {
 		var poly [][2]float64
 		for i := range l.Curves {
 			var pts []geom.Vector
-			l.Curves[i].MakePwlIntoPoints(&pts, srf.Tol(profileTol, 100000), 0)
+			l.Curves[i].MakePwlIntoPoints(&pts, srf.Tol(tol, 100000), 0)
 			for _, p := range pts[:len(pts)-1] {
 				q := p.Minus(origin)
 				poly = append(poly, [2]float64{q.Dot(eu), q.Dot(ev)})
@@ -505,7 +509,20 @@ func oracleLeaf(sk *sketch.Sketch, g *sketch.Group) (node, error) {
 			full = math.Abs(phi1-phi0) >= 2*math.Pi
 		}
 		for i := range src.BezierLoops.Sets {
-			leaves = append(leaves, newRevolution(&src.BezierLoops.Sets[i], pt, axis, full, phi0, phi1))
+			sbls := &src.BezierLoops.Sets[i]
+			if throughAxis(sbls, pt, axis) {
+				leaves = append(leaves, newRevolution(sbls, pt, axis, full, phi0, phi1))
+				continue
+			}
+			from, to := phi0, phi1
+			if full {
+				from, to = 0, 2*math.Pi
+			}
+			ls, ok := newLeanSweep(sbls, pt, axis, from, to, 0, 0)
+			if !ok {
+				return nil, fmt.Errorf("%s: it turns through no angle: %w", g.DescriptionString(), ErrUnsupported)
+			}
+			leaves = append(leaves, ls)
 		}
 	case g.Type == sketch.GroupHelix && src != nil:
 		pt := sk.MustEntity(g.Predef.Origin).PointGetNum(sk)
@@ -518,11 +535,18 @@ func oracleLeaf(sk *sketch.Sketch, g *sketch.Group) (node, error) {
 			th0, d0 = -th1, -d1
 		}
 		for i := range src.BezierLoops.Sets {
-			hx, ok := newHelix(&src.BezierLoops.Sets[i], pt, axis, th0, th1, d0, d1)
-			if !ok {
-				return nil, fmt.Errorf("%s: its profile is not in a plane through the axis: %w", g.DescriptionString(), ErrUnsupported)
+			sbls := &src.BezierLoops.Sets[i]
+			var leaf node
+			var ok bool
+			if throughAxis(sbls, pt, axis) {
+				leaf, ok = newHelix(sbls, pt, axis, th0, th1, d0, d1)
+			} else {
+				leaf, ok = newLeanSweep(sbls, pt, axis, th0, th1, d0, d1)
 			}
-			leaves = append(leaves, hx)
+			if !ok {
+				return nil, fmt.Errorf("%s: it turns through no angle, or its profile crosses the axis: %w", g.DescriptionString(), ErrUnsupported)
+			}
+			leaves = append(leaves, leaf)
 		}
 	case g.Type == sketch.GroupSweep && src != nil:
 		sw, err := sweepLeaves(sk, g)

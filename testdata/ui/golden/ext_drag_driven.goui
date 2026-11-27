@@ -15,7 +15,7 @@ row 7 PARAMETERS
 row 9    name         value        expression
  0-42 74 64 0
  43-99 64 64 0
-row 11    angle        19.3576      19.3576        [edit] [rename] [delete]
+row 11    angle        19.62855     19.62855       [edit] [rename] [delete]
  0-43 64 61 0
  44-49 6c 61 101 0 1 0
  50-50 64 61 0
@@ -122,7 +122,7 @@ row 7 PARAMETERS
 row 9    name         value        expression
  0-42 74 64 0
  43-99 64 64 0
-row 11    angle        19.3576      19.3576        [edit] [rename] [delete]
+row 11    angle        19.62855     19.62855       [edit] [rename] [delete]
  0-43 64 61 0
  44-49 6c 61 101 0 1 0
  50-50 64 61 0

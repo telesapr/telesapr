@@ -559,10 +559,12 @@ func (b *solidBuilder) layout(f *Face) (*faceGrid, error) {
 	if s.scale == 0 {
 		s.scale = 1
 	}
-	b.turned[f] = turnedLoops(loopSmps, s.pu, s.pv, func(q uvSample) bool {
+	atPole := func(q uvSample) bool {
 		pt := s.point(q.p, &[2]float64{q.u, q.v})
 		return (pt.singU && s.pu > 0) || (pt.singV && s.pv > 0)
-	})
+	}
+	sphere := (s.pu > 0 || s.pv > 0) && !onePole(f.Surf)
+	b.turned[f] = turnedLoops(loopSmps, s.pu, s.pv, sphere, atPole)
 	// The grid along each parameter: a period's worth where the surface
 	// closes on itself, from where the bounds leave the widest gap; else
 	// the bounds' extent and a little more, but not past a pole. The more
@@ -573,7 +575,7 @@ func (b *solidBuilder) layout(f *Face) (*faceGrid, error) {
 	// and the face run along that line to its corner, past the face
 	// beyond.
 	lines := func(period, dlo, dhi float64, smpLo, smpHi float64, breaks func(lo, hi float64) []float64,
-		vals func() []float64, isBspline bool, poleLo, poleHi float64, atLo, atHi bool) ([]float64, float64, error) {
+		vals func() []float64, isBspline, wholeSpan bool, poleLo, poleHi float64, atLo, atHi bool) ([]float64, float64, error) {
 		if period > 0 {
 			c := dlo
 			if !isBspline {
@@ -597,6 +599,9 @@ func (b *solidBuilder) layout(f *Face) (*faceGrid, error) {
 		// piece.
 		// A pole only clips the side it lies on: a cone gives its apex
 		// for both.
+		if wholeSpan && atLo && atHi && poleLo != poleHi {
+			return append(append([]float64{poleLo}, breaks(poleLo, poleHi)...), poleHi), 0, nil
+		}
 		atLo = atLo && poleLo <= smpLo+1e-6*(w+1)
 		atHi = atHi && poleHi >= smpHi-1e-6*(w+1)
 		if atLo {
@@ -616,6 +621,9 @@ func (b *solidBuilder) layout(f *Face) (*faceGrid, error) {
 	qu1, pu1 := s.Pole(poleUMax)
 	qv0, pv0 := s.Pole(poleVMin)
 	qv1, pv1 := s.Pole(poleVMax)
+	// A face of a sphere that holds a pole its bounds don't reach runs on
+	// past their extent to it: its grid from pole to pole.
+	held := !first && sphere && holdsPoles(loopSmps, s.pu, s.pv, b.turned[f], atPole)
 	vals := func(v bool) func() []float64 {
 		return func() []float64 {
 			var out []float64
@@ -631,10 +639,10 @@ func (b *solidBuilder) layout(f *Face) (*faceGrid, error) {
 			return out
 		}
 	}
-	if g.us, g.pu, err = lines(s.pu, s.u0, s.u1, lo.X, hi.X, cells.breaksU, vals(false), isB, qu0, qu1, pu0, pu1); err != nil {
+	if g.us, g.pu, err = lines(s.pu, s.u0, s.u1, lo.X, hi.X, cells.breaksU, vals(false), isB, held && s.pv > 0, qu0, qu1, pu0, pu1); err != nil {
 		return nil, err
 	}
-	if g.vs, g.pv, err = lines(s.pv, s.v0, s.v1, lo.Y, hi.Y, cells.breaksV, vals(true), isB, qv0, qv1, pv0, pv1); err != nil {
+	if g.vs, g.pv, err = lines(s.pv, s.v0, s.v1, lo.Y, hi.Y, cells.breaksV, vals(true), isB, held && s.pu > 0, qv0, qv1, pv0, pv1); err != nil {
 		return nil, err
 	}
 	g.epsU = 1e-9 * (1 + math.Abs(g.us[0]) + math.Abs(g.us[len(g.us)-1]-g.us[0]))
@@ -695,32 +703,132 @@ func (b *solidBuilder) layout(f *Face) (*faceGrid, error) {
 // surface's parameters, run the wrong way: the largest clockwise, where
 // the face on their left would have it counter-clockwise. Bounds that go
 // round a closed surface have no inside to tell by, and are taken as
-// the file gives them; so are bounds through a pole of a closed surface,
-// where they may turn by any part of a period and go either way round
-// (package 27.3: two halves of a sphere-like face, each bounded by two
-// meridians from pole to pole). atPole tells such a point.
-func turnedLoops(loops [][]uvSample, pu, pv float64, atPole func(uvSample) bool) bool {
+// the file gives them; so are bounds that jump along a pole more than
+// once, where they may turn by any part of a period and go either way
+// round (package 27.3: two halves of a sphere-like face, each bounded by
+// two meridians from pole to pole). atPole tells a point at a pole. A
+// bound that jumps once, as a cone's face from its apex, is read from
+// just past the jump, so that the way back along the pole closes it:
+// the way round that the rest of it takes fixes the jump's.
+//
+// On a sphere (a surface closed one way and ending in a pole at both
+// ends of the other) the bounds are always taken as the file gives
+// them: a face may hold a pole all round, and its bounds then enclose
+// its outside, as a hole's do; laid out, they can't tell a face turned
+// from one that holds the poles (holdsPoles).
+//
+// Our writer ran a face of several patches written as one surface the
+// wrong way before 2026-11-27: a dish's lathed cone with a pocket at its
+// seam reaching the apex read back with its cells' bounds crossing while
+// every bound through a pole was taken as the file gave it, its outer
+// bound jumping at the apex by half a turn, laid out the wrong way round.
+func turnedLoops(loops [][]uvSample, pu, pv float64, sphere bool, atPole func(uvSample) bool) bool {
+	if sphere {
+		return false
+	}
 	best, area := -1.0, 0.0
 	for _, l := range loops {
 		if len(l) < 3 {
 			continue
 		}
-		a, z := l[0], l[len(l)-1]
-		if (pu > 0 && math.Abs(z.u-a.u) > pu/2) || (pv > 0 && math.Abs(z.v-a.v) > pv/2) {
+		x, ok := boundArea(l, pu, pv, atPole)
+		if !ok {
 			return false
 		}
-		if slices.ContainsFunc(l, atPole) {
-			return false
-		}
-		poly := make([]geom.Vector, len(l))
-		for i, q := range l {
-			poly[i] = geom.Vector{X: q.u, Y: q.v}
-		}
-		if x := polyArea(poly); math.Abs(x) > best {
+		if math.Abs(x) > best {
 			best, area = math.Abs(x), x
 		}
 	}
 	return area < 0
+}
+
+// boundArea is the signed area a bound encloses in the surface's
+// parameters, counter-clockwise positive, or false where it has none to
+// tell: a bound that goes round a closed surface, or jumps along a pole
+// more than once. A bound that jumps once is closed by the way back
+// along the pole (fromJump).
+func boundArea(l []uvSample, pu, pv float64, atPole func(uvSample) bool) (float64, bool) {
+	var jumps []int
+	for i := range l {
+		p, q := l[i], l[(i+1)%len(l)]
+		if atPole(p) && atPole(q) && (math.Abs(p.u-q.u) > 1e-6*(1+pu) || math.Abs(p.v-q.v) > 1e-6*(1+pv)) {
+			jumps = append(jumps, i)
+		}
+	}
+	switch len(jumps) {
+	case 0:
+		a, z := l[0], l[len(l)-1]
+		if (pu > 0 && math.Abs(z.u-a.u) > pu/2) || (pv > 0 && math.Abs(z.v-a.v) > pv/2) {
+			return 0, false
+		}
+	case 1:
+		l = fromJump(l, jumps[0], pu, pv)
+	default:
+		return 0, false
+	}
+	poly := make([]geom.Vector, len(l))
+	for i, q := range l {
+		poly[i] = geom.Vector{X: q.u, Y: q.v}
+	}
+	return polyArea(poly), true
+}
+
+// holdsPoles reports whether a face on a surface closed one way round
+// and ending in a pole at both ends of the other parameter, a sphere,
+// holds the poles its bounds don't reach: its bounds, the face on their
+// left, enclosing less than nothing, the face all that lies outside
+// them (a ball with half of its cap cut off by a plane through its
+// axis). turned says the bounds run the other way.
+func holdsPoles(loops [][]uvSample, pu, pv float64, turned bool, atPole func(uvSample) bool) bool {
+	total := 0.0
+	for _, l := range loops {
+		if len(l) < 3 {
+			continue
+		}
+		x, ok := boundArea(l, pu, pv, atPole)
+		if !ok {
+			return false
+		}
+		total += x
+	}
+	if turned {
+		total = -total
+	}
+	return total < 0
+}
+
+// fromJump is the bound l laid out from just past its jump along a pole
+// after sample k, the samples up to k moved to the end and shifted by
+// whole periods to run on from the bound's old end.
+func fromJump(l []uvSample, k int, pu, pv float64) []uvSample {
+	head := slices.Clone(l[:k+1])
+	a, z := l[0], l[len(l)-1]
+	for i := range head {
+		if pu > 0 {
+			head[i].u += math.Round((z.u-a.u)/pu) * pu
+		}
+		if pv > 0 {
+			head[i].v += math.Round((z.v-a.v)/pv) * pv
+		}
+	}
+	return append(slices.Clone(l[k+1:]), head...)
+}
+
+// onePole reports whether s has at most one pole, as a cone has its
+// apex at either end of its parameter along the axis, and a sphere two.
+func onePole(s Surface) bool {
+	n := 0
+	for _, sides := range [][2]int{{poleUMin, poleUMax}, {poleVMin, poleVMax}} {
+		lo, okLo := s.Pole(sides[0])
+		hi, okHi := s.Pole(sides[1])
+		switch {
+		case okLo && okHi && lo != hi:
+			n += 2
+		case okLo || okHi:
+			n++
+		}
+	}
+	return n <= 1
 }
 
 // widestGap is the middle of the widest gap, a period round, between

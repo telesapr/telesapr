@@ -9,6 +9,35 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+### Added
+
+- The guide has videos that click: the Window page right-clicks an edge and chooses Fillet Edges,
+  and the Export and import page's video now sets the Triangle Mesh dialog's Quality to Fine.
+- Analyze > Ray-Cast Check and `group.Analyze().RayCheck()` check a helix, and a sweep round an arc, of a profile on a plane leaning to the axis; both were refused.
+
+### Changed
+
+- Dragging or turning a part of a mechanism moves the parts by the way they are put together:
+  the turns and slides their mates leave free, and the drives, with each part put in place from
+  the ground out, rather than a small move and a solve, over and over. The parts stay on their
+  mates to round-off and the drag is quicker: a chain of ten bars 49 to 9 ms a frame, the
+  engine's piston 96 to 4 ms a step. A part held by points alone (a ball joint, a slot) is turned
+  too when a mechanism is put together; it kept its turn before, and a loop that needed it turned
+  was left to the solve. A mechanism the plan doesn't cover drags as before.
+
+### Fixed
+
+- STEP export: a face made of several patches (many curved faces) ran its bounds the wrong way round, an edge it shares with the next face running the same way on both. Every release from 0.2.0 to 0.6.11 wrote such files. OpenCASCADE and FreeCAD put them right on reading; where another program refuses one or reads it wrongly, export it again. The faces run the STEP way now, and one reaching a cone's apex or a sphere's pole is written as the cone or sphere, not as a B-spline.
+- A lathe, revolve, helix or sweep round an arc of a profile that moves forward through its own plane in one part and back in another, as a sketch on a plane beside the axis reaching across the plane's line nearest the axis, is refused with a problem that marks that line. It was made wrong with no message, its volume too small.
+- The context menu no longer offers Fillet Edges or Chamfer Edges where they would refuse what is
+  selected, as a line that runs past the end of the solid's edge ("The segment is not a whole edge
+  of the solid").
+- Reading a STEP file as a solid: a sphere's face holding a pole its bounds don't reach (a ball with half of its cap cut off through the axis) came in a fraction of its size or open, and a cone's face reaching its apex from a file whose bounds run the wrong way failed with "the bounds in a cell cross".
+- A Boolean of two solids where a circle of one touches a face of the other at a single point, as
+  a conical hole's circle touching a ring's inner circle in the plane of the ring's bottom, is made;
+  it failed before.
+- Ray-Cast Check rebuilt a lathe or a revolve of such a profile wrongly, and reported rays that disagree on a sound solid.
+
 ## [0.6.11] - 2026-11-26
 
 ### Added
