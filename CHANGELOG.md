@@ -9,6 +9,8 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 
 ## [Unreleased]
 
+## [0.6.12] - 2026-11-27
+
 ### Added
 
 - The guide has videos that click: the Window page right-clicks an edge and chooses Fillet Edges,
