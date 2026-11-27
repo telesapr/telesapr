@@ -696,7 +696,7 @@ func (g *Group) generateRevolveShell(sk *Sketch) {
 	sg := shellGroup{g: g, sk: sk}
 
 	angles, anglef, whole := g.revolveAngles(sk)
-	if g.refuseStraddling(src.BezierLoops.Sets, pt, axis, anglef-angles, 0) {
+	if g.refuseTurned(src.BezierLoops.Sets, pt, axis, anglef-angles, 0) {
 		return
 	}
 	for i := range src.BezierLoops.Sets {
@@ -735,7 +735,7 @@ func (g *Group) generateHelixShell(sk *Sketch) {
 	}
 	pt, axis := g.revolveAxis(sk)
 	angles, anglef, dists, distf := g.helixRange(sk)
-	if g.refuseStraddling(sk.Group(g.OpA).BezierLoops.Sets, pt, axis, anglef-angles, distf-dists) {
+	if g.refuseTurned(sk.Group(g.OpA).BezierLoops.Sets, pt, axis, anglef-angles, distf-dists) {
 		return
 	}
 	g.sweepHelix(sk)

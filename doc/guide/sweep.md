@@ -189,6 +189,9 @@ Repeating a solid along a path, instead of sweeping a profile, is
   forward through its own plane and another part back. The group's problem says so and marks
   the line between the two parts. Tilt the profile less, or keep it to one side of that line.
   A lathe, revolve or helix of such a profile is refused the same way.
+- A lathe, revolve or helix refuses a profile that crosses its axis. The profile may touch the
+  axis but must stay on one side of it: draw half a cross-section, not the whole. The problem
+  marks the axis where the profile crosses it.
 - A path that comes back over itself is refused about half the time round lines and arcs, and
   more often along a twisted, held or cubic path: a round profile held to a direction, a twisted
   closed path, a sharp corner beside an arc or a cubic.

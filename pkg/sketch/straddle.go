@@ -22,6 +22,16 @@ var ErrProfileStraddles = errors.New("the profile moves forward through its own 
 // straddleAdvice is what the problem tells the user to do about it.
 const straddleAdvice = "draw the profile on a plane through the axis, or keep it to one side of the marked line, where the motion runs along its plane"
 
+// ErrProfileCrossesAxis is the problem of a lathe, a revolve or a helix
+// whose profile, on a plane that holds the axis, reaches both sides of
+// it: the part across the axis would turn the other way through the
+// plane, and count against the rest. A sweep's path says the same of
+// its own arcs, as a bend too tight for the profile.
+var ErrProfileCrossesAxis = errors.New("the profile crosses the axis it turns about")
+
+// crossAdvice is what that problem tells the user to do about it.
+const crossAdvice = "keep it to one side of the axis"
+
 // straddleDepth bounds the halving of a curve while its extremes are
 // sought; a curve that only comes within straddleEps of the line after
 // that many halvings touches it.
@@ -36,8 +46,7 @@ const straddleEps = core.LengthEps
 // profile's plane, inside the profile, where the profile reaches both
 // sides of that line as it turns about the axis through pt along the
 // unit axis by da while advancing dx along it; ok false where it does
-// not, or where the plane holds the axis (its profile crossing the axis
-// is another matter, left as it is).
+// not, or where the plane holds the axis (that is axisCrossing's).
 func turnStraddle(sbls *srf.SBezierLoopSet, pt, axis geom.Vector, da, dx float64) (at geom.Vector, ok bool) {
 	n := sbls.Normal.WithMagnitude(1)
 	if holdsAxis(sbls, n, pt, axis) {
@@ -64,8 +73,38 @@ func turnStraddle(sbls *srf.SBezierLoopSet, pt, axis geom.Vector, da, dx float64
 	}
 	// g is linear, so it is zero on the chord between them at this
 	// fraction: a point on the line, inside a convex profile.
+	return zeroBetween(g, hi, lo), true
+}
+
+// axisCrossing is the point of the axis through pt along the unit axis
+// inside the profile, where the profile's plane holds the axis and the
+// profile reaches both sides of it; ok false where it does not, as one
+// that only touches the axis.
+func axisCrossing(sbls *srf.SBezierLoopSet, pt, axis geom.Vector) (at geom.Vector, ok bool) {
+	n := sbls.Normal.WithMagnitude(1)
+	if !holdsAxis(sbls, n, pt, axis) {
+		return geom.Vector{}, false
+	}
+	// The distance from the axis, signed by the side of it.
+	side := n.Cross(axis).WithMagnitude(1)
+	g := func(q geom.Vector) float64 { return q.Minus(pt).Dot(side) }
+	hi, okHi := loopSetReaches(sbls, g, 1)
+	if !okHi {
+		return geom.Vector{}, false
+	}
+	lo, okLo := loopSetReaches(sbls, g, -1)
+	if !okLo {
+		return geom.Vector{}, false
+	}
+	return zeroBetween(g, hi, lo), true
+}
+
+// zeroBetween is the point of the chord from hi to lo where the linear
+// g, positive at hi and negative at lo, is zero: inside a convex
+// profile they are points of.
+func zeroBetween(g func(geom.Vector) float64, hi, lo geom.Vector) geom.Vector {
 	gh, gl := g(hi), g(lo)
-	return hi.Plus(lo.Minus(hi).ScaledBy(gh / (gh - gl))), true
+	return hi.Plus(lo.Minus(hi).ScaledBy(gh / (gh - gl)))
 }
 
 // holdsAxis reports whether the plane of the loop set, of unit normal
@@ -147,12 +186,17 @@ func curveReaches(b srf.SBezier, g func(geom.Vector) float64, sign float64, dept
 	return curveReaches(aft, g, sign, depth-1)
 }
 
-// refuseStraddling sets the group's problem and reports true where one
-// of the source's loop sets straddles the line on its plane where the
-// turn about the axis through pt along axis, by da with an advance of dx
-// along it, runs along the plane.
-func (g *Group) refuseStraddling(sets []srf.SBezierLoopSet, pt, axis geom.Vector, da, dx float64) bool {
+// refuseTurned sets the group's problem and reports true where one of
+// the source's loop sets crosses the axis through pt along axis, in a
+// plane that holds it, or else straddles the line on its plane where the
+// turn about it, by da with an advance of dx along it, runs along the
+// plane.
+func (g *Group) refuseTurned(sets []srf.SBezierLoopSet, pt, axis geom.Vector, da, dx float64) bool {
 	for i := range sets {
+		if at, ok := axisCrossing(&sets[i], pt, axis); ok {
+			g.setProblem(&at, "%v: %s", ErrProfileCrossesAxis, crossAdvice)
+			return true
+		}
 		if at, ok := turnStraddle(&sets[i], pt, axis, da, dx); ok {
 			g.setProblem(&at, "%v: %s", ErrProfileStraddles, straddleAdvice)
 			return true
@@ -161,8 +205,9 @@ func (g *Group) refuseStraddling(sets []srf.SBezierLoopSet, pt, axis geom.Vector
 	return false
 }
 
-// refuseStraddlingSweep is refuseStraddling for each arc of a sweep's
-// rigid steps, the profile moved there by the steps before it.
+// refuseStraddlingSweep refuses a straddling profile at each arc of a
+// sweep's rigid steps, the profile moved there by the steps before it.
+// A profile crossing an arc's axis is refused by the sweep's path.
 func (g *Group) refuseStraddlingSweep(prof *srf.SBezierLoopSetSet, steps []srf.SweepStep) bool {
 	r := srf.RigidIdentity
 	for _, st := range steps {

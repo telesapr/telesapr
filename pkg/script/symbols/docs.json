@@ -5991,7 +5991,7 @@
 					},
 					"Helix": {
 						"decl": "func (m FeaturesMenu) Helix(axis Entity, degrees, length float64, name string) Group",
-						"text": "Helix makes a solid of the active group's sketch by sweeping it\naround a line segment by an angle in degrees while moving it along\nthe segment's direction by length, as a screw thread does: 360 and a\nlength of the pitch make one turn. A negative angle turns the other\nway. The new group becomes active."
+						"text": "Helix makes a solid of the active group's sketch by sweeping it\naround a line segment by an angle in degrees while moving it along\nthe segment's direction by length, as a screw thread does: 360 and a\nlength of the pitch make one turn. A negative angle turns the other\nway. As for Lathe, the profile must not cross the line. The new group\nbecomes active."
 					},
 					"HelixAbout": {
 						"decl": "func (m FeaturesMenu) HelixAbout(point, vector Entity, degrees, length float64, name string) Group",
@@ -5999,7 +5999,7 @@
 					},
 					"Lathe": {
 						"decl": "func (m FeaturesMenu) Lathe(axis Entity, name string) Group",
-						"text": "Lathe makes a solid of the active group's sketch by turning it all\nthe way around a line segment. The new group becomes active."
+						"text": "Lathe makes a solid of the active group's sketch by turning it all\nthe way around a line segment. The profile may touch the line but not\ncross it. The new group becomes active."
 					},
 					"LatheAbout": {
 						"decl": "func (m FeaturesMenu) LatheAbout(point, vector Entity, name string) Group",
@@ -6051,7 +6051,7 @@
 					},
 					"Revolve": {
 						"decl": "func (m FeaturesMenu) Revolve(axis Entity, degrees float64, name string) Group",
-						"text": "Revolve makes a solid of the active group's sketch by turning it by\nan angle in degrees around a line segment. The new group becomes\nactive. A positive angle turns the other way to the right-hand rule\nabout the line from its first point to its second: with the line\nalong +x, a sketch on +y turns towards -z. A negative angle, or the\nline drawn the other way, turns it towards +z. SetTwoSided turns it\nhalf the angle each way."
+						"text": "Revolve makes a solid of the active group's sketch by turning it by\nan angle in degrees around a line segment. The new group becomes\nactive. A positive angle turns the other way to the right-hand rule\nabout the line from its first point to its second: with the line\nalong +x, a sketch on +y turns towards -z. A negative angle, or the\nline drawn the other way, turns it towards +z. SetTwoSided turns it\nhalf the angle each way. As for Lathe, the profile must not cross\nthe line."
 					},
 					"RevolveAbout": {
 						"decl": "func (m FeaturesMenu) RevolveAbout(point, vector Entity, degrees float64, name string) Group",
@@ -11207,6 +11207,10 @@
 			"ErrNothingLeftOut": {
 				"decl": "var ErrNothingLeftOut",
 				"text": "ErrNothingLeftOut is DiscardLeftOut's error when the load left nothing out."
+			},
+			"ErrProfileCrossesAxis": {
+				"decl": "var ErrProfileCrossesAxis",
+				"text": "ErrProfileCrossesAxis is the problem of a lathe, a revolve or a helix whose profile, on a plane that holds the axis, reaches both sides of it: the part across the axis would turn the other way through the plane, and count against the rest."
 			},
 			"ErrProfileStraddles": {
 				"decl": "var ErrProfileStraddles",

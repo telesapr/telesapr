@@ -113,5 +113,3 @@ Any other solid group is refused, and the message names the group.
 
 - The ray-cast check refuses fillets, chamfers, lofts, shells, wraps and STEP links.
 - It also refuses a corner beside an arc or a cubic in a sweep's path.
-- A lathe of a profile that crosses the axis, drawn in a plane through the axis, is wrong with
-  no message. Its volume is too small. Keep such a profile on one side of the axis.

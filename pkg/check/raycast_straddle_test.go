@@ -196,3 +196,72 @@ func TestOracleTouchingProfile(t *testing.T) {
 		})
 	}
 }
+
+// A lathe, revolve or helix of a profile that crosses the axis, in a
+// plane through it, is refused, with the problem marked on the axis; one
+// with an edge on the axis is made. Made, the part across the axis
+// counted against the rest: a rectangle from x -2 to 4, 6 high, had a
+// mesh of 226 mm³ that passed Check Solid where the solid is 302, and a
+// circle centred on the axis one of no volume.
+func TestOracleProfileAcrossAxis(t *testing.T) {
+	t.Parallel()
+	build := func(kind string, x0 float64, circle bool) *api.Doc {
+		d := api.New()
+		d.Edit.SetChordTolerance(0.01)
+		d.Features.SketchIn(d.Workplane("XY"), "")
+		axis := d.Sketch.Line(api.V(0, -8, 0), api.V(0, 10, 0))
+		axis.SetConstruction(true)
+		if circle {
+			d.Sketch.Circle(api.V(0, 0, 0), 5)
+		} else {
+			d.Sketch.Rect(api.V(x0, 0, 0), api.V(4, 6, 0))
+		}
+		switch kind {
+		case "lathe":
+			d.Features.Lathe(axis, "")
+		case "revolve":
+			d.Features.Revolve(axis, 90, "")
+		case "helix":
+			d.Features.Helix(axis, 270, 20, "")
+		}
+		return d
+	}
+	for name, c := range map[string]struct {
+		kind   string
+		x0     float64
+		circle bool
+	}{
+		"lathe":     {kind: "lathe", x0: -2},
+		"symmetric": {kind: "lathe", x0: -4},
+		"circle":    {kind: "lathe", circle: true},
+		"revolve":   {kind: "revolve", x0: -2},
+		"helix":     {kind: "helix", x0: -2},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			d := build(c.kind, c.x0, c.circle)
+			sk := d.Host().Sketch()
+			sk.GenerateAll()
+			g := sk.Group(sk.ActiveGroup())
+			if !strings.HasPrefix(g.Problem.Msg, sketch.ErrProfileCrossesAxis.Error()) {
+				t.Fatalf("problem %q, want that the profile crosses the axis", g.Problem.Msg)
+			}
+			if at := g.Problem.At; !g.Problem.HasPoint || math.Abs(at.X) > 1e-9 || math.Abs(at.Z) > 1e-9 {
+				t.Errorf("the problem is marked at %v, off the axis", at)
+			}
+			if n := len(g.ThisShell.Surface); n != 0 {
+				t.Errorf("a refused group made %d surfaces", n)
+			}
+		})
+	}
+	t.Run("touching", func(t *testing.T) {
+		t.Parallel()
+		d := build("lathe", 0, false)
+		if p := d.Active().Problem(); p != "" {
+			t.Fatalf("the kernel refused it: %s", p)
+		}
+		if v, want := meshVolume(d), math.Pi*16*6; !near(v, want, 3e-3) {
+			t.Errorf("the mesh's volume %g, want %g", v, want)
+		}
+	})
+}

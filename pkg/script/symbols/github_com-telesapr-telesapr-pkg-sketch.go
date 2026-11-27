@@ -71,6 +71,7 @@ func init() {
 		"ErrNotTextRequest":            reflect.ValueOf(&sketch.ErrNotTextRequest).Elem(),
 		"ErrNotThread":                 reflect.ValueOf(&sketch.ErrNotThread).Elem(),
 		"ErrNothingLeftOut":            reflect.ValueOf(&sketch.ErrNothingLeftOut).Elem(),
+		"ErrProfileCrossesAxis":        reflect.ValueOf(&sketch.ErrProfileCrossesAxis).Elem(),
 		"ErrProfileStraddles":          reflect.ValueOf(&sketch.ErrProfileStraddles).Elem(),
 		"ErrSplinePointsFull":          reflect.ValueOf(&sketch.ErrSplinePointsFull).Elem(),
 		"ErrSweepCrossesItself":        reflect.ValueOf(&sketch.ErrSweepCrossesItself).Elem(),

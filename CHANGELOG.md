@@ -28,6 +28,7 @@ to `## [X.Y.Z] - YYYY-MM-DD` and put a new empty `## [Unreleased]` above it.
 ### Fixed
 
 - STEP export: a face made of several patches (many curved faces) ran its bounds the wrong way round, an edge it shares with the next face running the same way on both. Every release from 0.2.0 to 0.6.11 wrote such files. OpenCASCADE and FreeCAD put them right on reading; where another program refuses one or reads it wrongly, export it again. The faces run the STEP way now, and one reaching a cone's apex or a sphere's pole is written as the cone or sphere, not as a B-spline.
+- A lathe, revolve or helix of a profile that crosses its axis, as a whole circle or cross-section drawn about it, is refused with a problem that marks the axis. It was made wrong with no message: too small, or nothing at all. A profile that touches the axis is made as before.
 - A lathe, revolve, helix or sweep round an arc of a profile that moves forward through its own plane in one part and back in another, as a sketch on a plane beside the axis reaching across the plane's line nearest the axis, is refused with a problem that marks that line. It was made wrong with no message, its volume too small.
 - The context menu no longer offers Fillet Edges or Chamfer Edges where they would refuse what is
   selected, as a line that runs past the end of the solid's edge ("The segment is not a whole edge

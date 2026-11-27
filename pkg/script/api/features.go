@@ -294,7 +294,8 @@ func (m FeaturesMenu) Extrude(depth float64, name string) Group {
 }
 
 // Lathe makes a solid of the active group's sketch by turning it all
-// the way around a line segment. The new group becomes active.
+// the way around a line segment. The profile may touch the line but not
+// cross it. The new group becomes active.
 func (m FeaturesMenu) Lathe(axis Entity, name string) Group {
 	return m.LatheAbout(Entity{}, axis, name)
 }
@@ -319,7 +320,8 @@ func (m FeaturesMenu) LatheAbout(point, vector Entity, name string) Group {
 // about the line from its first point to its second: with the line
 // along +x, a sketch on +y turns towards -z. A negative angle, or the
 // line drawn the other way, turns it towards +z. SetTwoSided turns it
-// half the angle each way.
+// half the angle each way. As for Lathe, the profile must not cross
+// the line.
 func (m FeaturesMenu) Revolve(axis Entity, degrees float64, name string) Group {
 	return m.RevolveAbout(Entity{}, axis, degrees, name)
 }
@@ -348,7 +350,8 @@ func (m FeaturesMenu) RevolveAbout(point, vector Entity, degrees float64, name s
 // around a line segment by an angle in degrees while moving it along
 // the segment's direction by length, as a screw thread does: 360 and a
 // length of the pitch make one turn. A negative angle turns the other
-// way. The new group becomes active.
+// way. As for Lathe, the profile must not cross the line. The new group
+// becomes active.
 func (m FeaturesMenu) Helix(axis Entity, degrees, length float64, name string) Group {
 	return m.HelixAbout(Entity{}, axis, degrees, length, name)
 }

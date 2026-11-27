@@ -17,6 +17,64 @@ func polygonSet(n geom.Vector, ps ...geom.Vector) *srf.SBezierLoopSet {
 	return s
 }
 
+// The test by which a lathe, revolve or helix of a profile in a plane
+// through the axis is refused: a profile reaching both sides of the axis
+// is, with the point marked on it, and one that touches it, lies on one
+// side of it or lies in a plane beside it is not.
+func TestAxisCrossing(t *testing.T) {
+	t.Parallel()
+	y := geom.Vector{Y: 1}
+	rect := func(x0, x1, z float64) *srf.SBezierLoopSet {
+		return polygonSet(geom.Vector{Z: 1}, geom.Vector{X: x0, Z: z}, geom.Vector{X: x1, Z: z},
+			geom.Vector{X: x1, Y: 6, Z: z}, geom.Vector{X: x0, Y: 6, Z: z})
+	}
+	// A whole circle of radius 3 in four rational quarters, its centre
+	// x from the axis: its extremes are at its arcs' ends, so one turned
+	// by 45° has them inside its arcs.
+	circle := func(x, turn float64) *srf.SBezierLoopSet {
+		c := geom.Vector{X: x}
+		s := &srf.SBezierLoopSet{Normal: geom.Vector{Z: 1}, Point: c}
+		at := func(a, r float64) geom.Vector {
+			sin, cos := math.Sincos(a)
+			return c.Plus(geom.Vector{X: r * cos, Y: r * sin})
+		}
+		for i := range 4 {
+			a := turn + float64(i)*math.Pi/2
+			b := srf.SBezier{Degree: 2}
+			b.Ctrl[0], b.Ctrl[1], b.Ctrl[2] = at(a, 3), at(a+math.Pi/4, 3*math.Sqrt2), at(a+math.Pi/2, 3)
+			b.Weight[0], b.Weight[1], b.Weight[2] = 1, math.Sqrt(0.5), 1
+			s.Outer.Curves = append(s.Outer.Curves, b)
+		}
+		return s
+	}
+	for name, c := range map[string]struct {
+		set     *srf.SBezierLoopSet
+		refused bool
+	}{
+		"across":          {set: rect(-2, 4, 0), refused: true},
+		"symmetric":       {set: rect(-4, 4, 0), refused: true},
+		"barely":          {set: rect(-1e-4, 4, 0), refused: true},
+		"touching":        {set: rect(0, 4, 0)},
+		"touching left":   {set: rect(-4, 0, 0)},
+		"one side":        {set: rect(1, 4, 0)},
+		"beside":          {set: rect(-2, 4, 5)},
+		"circle on it":    {set: circle(0, 0), refused: true},
+		"circle over":     {set: circle(2.99, math.Pi/4), refused: true},
+		"circle touching": {set: circle(3, math.Pi/4)},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			at, refused := axisCrossing(c.set, geom.Vector{}, y)
+			if refused != c.refused {
+				t.Fatalf("refused %v, want %v", refused, c.refused)
+			}
+			if refused && (math.Abs(at.X) > 1e-9 || math.Abs(at.Z) > 1e-9) {
+				t.Errorf("marked at %v, off the axis", at)
+			}
+		})
+	}
+}
+
 // The test by which a lathe, revolve, helix or sweep's arc is refused:
 // a profile reaching both sides of the line on its plane where the
 // motion runs along it is, one that touches the line, lies on one side
